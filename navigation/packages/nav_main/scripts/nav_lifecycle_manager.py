@@ -30,8 +30,8 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10)
         self.lidar_msg = None
         self.check_door_srv = self.create_service(LaserGet, CHECK_DOOR_SERVICE, self.check_door)
-        self.range_min = 0
-        self.range_max = 200
+        self.range_min = 637
+        self.range_max = 718
 
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
@@ -47,9 +47,13 @@ class NavDependencyLifecycleManager(LifecycleNode):
         while opened == False:
             door_points = []
             for count, r in enumerate(self.lidar_msg.ranges):
-                print(f"distance={r}, number = {count}")
-                if self.range_min <= count <= self.range_max:
+                #print(f"distance={r}, number = {count}")
+                if self.range_min > self.range_max:
+                    if count <= self.range_max && count >= self.range_min:
+                        door_points.append(r)
+                elif self.range_min <= count <= self.range_max:
                     door_points.append(r)
+            print(f"Average: {sum(door_points)/ len(door_points)}")
          
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
