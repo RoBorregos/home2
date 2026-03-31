@@ -79,25 +79,21 @@ private:
     // --- D-pad left (axes[6] > 0.5): increase linear speed ---
     if (msg->axes[6] > 0.5) {
       linear_speed_ = std::min(linear_speed_ + 0.05, 1.0);
-      RCLCPP_INFO(this->get_logger(), "Linear speed: %.2f", linear_speed_);
     }
 
     // --- D-pad right (axes[6] < -0.5): decrease linear speed ---
     if (msg->axes[6] < -0.5) {
       linear_speed_ = std::max(linear_speed_ - 0.05, 0.05);
-      RCLCPP_INFO(this->get_logger(), "Linear speed: %.2f", linear_speed_);
     }
 
     // --- D-pad up (axes[7] > 0.5): increase rotation speed ---
     if (msg->axes[7] > 0.5) {
       rotation_speed_ = std::min(rotation_speed_ + 0.05, 1.0);
-      RCLCPP_INFO(this->get_logger(), "Rotation speed: %.2f", rotation_speed_);
     }
 
     // --- D-pad down (axes[7] < -0.5): decrease rotation speed ---
     if (msg->axes[7] < -0.5) {
       rotation_speed_ = std::max(rotation_speed_ - 0.05, 0.05);
-      RCLCPP_INFO(this->get_logger(), "Rotation speed: %.2f", rotation_speed_);
     }
   }
 
