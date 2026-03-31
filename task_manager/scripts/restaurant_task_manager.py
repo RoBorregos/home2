@@ -112,12 +112,41 @@ class RestaurantTaskManager(Node):
         )
 
         status, confirmation = self.subtask_manager.hri.confirm(
-            "Have you placed the object in my gripper?", False, retries=3, wait_between_retries=2
+            "Have you placed the object in my gripper?",
+            use_hotwords=True,
+            retries=3,
+            wait_between_retries=5,
         )
 
         if confirmation == "yes":
             self.subtask_manager.manipulation.close_gripper()
             self.subtask_manager.hri.say("Thank you. I have received the object.")
+            return Status.EXECUTION_SUCCESS
+
+        return Status.EXECUTION_ERROR
+
+    def place_object(self):
+        """Attempt to place object with retries, fallback to deus ex machina."""
+        for attempt in range(ATTEMPT_LIMIT):
+            Logger.info(self, f"Place attempt {attempt + 1}/{ATTEMPT_LIMIT}")
+            status = self.subtask_manager.manipulation.place()
+            if status == Status.EXECUTION_SUCCESS:
+                return Status.EXECUTION_SUCCESS
+            self.timeout(1)
+
+        # Failed - ask human to take object
+        self.subtask_manager.hri.say(
+            "I couldn't place the object. Please grab it from my gripper and say yes when done."
+        )
+        status, confirmation = self.subtask_manager.hri.confirm(
+            "Have you grabbed the object from my gripper?",
+            use_hotwords=True,
+            retries=3,
+            wait_between_retries=5,
+        )
+        if confirmation == "yes":
+            self.subtask_manager.manipulation.open_gripper()
+            self.subtask_manager.hri.say("Thank you.")
             return Status.EXECUTION_SUCCESS
 
         return Status.EXECUTION_ERROR
@@ -286,9 +315,7 @@ class RestaurantTaskManager(Node):
 
             # Deliver items one by one
             if self.current_delivery_item_index < len(table["orders"]):
-                order_entry = table["orders"][self.current_delivery_item_index]
-                item = order_entry["order"]
-                customer_point = order_entry["customer_point"]
+                item = table["orders"][self.current_delivery_item_index]
 
                 Logger.state(
                     self,
@@ -307,16 +334,12 @@ class RestaurantTaskManager(Node):
                         self, f"Picked {item}. Delivering to table {self.current_table_idx}..."
                     )
 
-                    # Navigate to the saved customer_point if available, else fallback
+                    # Navigate to the table
                     self.subtask_manager.manipulation.move_joint_positions(
                         named_position="nav_pose", velocity=0.5, degrees=True
                     )
                     self.subtask_manager.nav.resume_nav()
-                    if customer_point is not None:
-                        self.subtask_manager.nav.move_to_point(customer_point)
-                    else:
-                        # fallback: move to table (could be None)
-                        self.subtask_manager.nav.move_to_point(table["coordinates"])
+                    self.subtask_manager.nav.move_to_point(table["coordinates"])
                     self.subtask_manager.nav.pause_nav()
 
                     # Place item on table
@@ -325,7 +348,7 @@ class RestaurantTaskManager(Node):
                         named_position="table_stare", velocity=0.5, degrees=True
                     )
 
-                    status = self.subtask_manager.manipulation.place()
+                    status = self.place_object()
 
                     if status == Status.EXECUTION_SUCCESS:
                         Logger.success(self, f"Delivered {item} to table {self.current_table_idx}")
