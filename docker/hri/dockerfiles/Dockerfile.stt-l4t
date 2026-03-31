@@ -43,11 +43,5 @@ RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --upgrade protobuf
 
-# CycloneDDS
-RUN apt-get update -qq && apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
-    && rm -rf /var/lib/apt/lists/*
-COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
-RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_setup.sh
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
-RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+COPY ../../hri/proto_interfaces /tmp/proto_interfaces
+RUN pip install --no-cache-dir /tmp/proto_interfaces

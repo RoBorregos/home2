@@ -8,7 +8,7 @@ This runs a basic Q&A (llm wrapper), with keyword spotting.
 
 Note: requires wifi connection for llm (local option could be set up in `hri/packages/nlp/config/command_interpreter.yaml`, but ollama setup is currently not available in this repo)
 
-For the question answering, you can add more context in `hri/packages/nlp/nlp/assets/prompts.py`. For better word recognition, you can add hotwords in `hri/packages/speech/scripts/stt/Faster-whisper.py` (line 43)
+For the question answering, you can add more context in `hri/packages/nlp/nlp/assets/prompts.py`. For better word recognition, you can add hotwords in `hri/microservices/stt/faster-whisper-streaming.py`
 
 In laptop (doesn't need gpu)
 
