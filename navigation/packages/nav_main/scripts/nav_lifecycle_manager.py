@@ -39,7 +39,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         if self.managed_nodes == ['']:
             self.managed_nodes = []
 
-    def lidar_callback(self, self.msg):
+    def lidar_callback(self, msg):
         self.lidar_msg = msg
     def check_door(self,request, response):
         self.get_logger().info("Checking for opened door")
