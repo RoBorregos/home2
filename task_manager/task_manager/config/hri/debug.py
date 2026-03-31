@@ -1,6 +1,6 @@
 from random import randint
 
-from utils.config import SubtaskConfig
+from task_manager.utils.config import SubtaskConfig
 
 from frida_constants.hri_constants import COMMAND_INTERPRETER_SERVICE, STT_SERVICE_NAME
 

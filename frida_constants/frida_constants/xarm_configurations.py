@@ -58,6 +58,18 @@ PICK_STARE_AT_TABLE = {
     "degrees": True,
 }
 
+CUTLERY_STARE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -10.0,
+        "joint3": -170.0,
+        "joint4": 0.0,
+        "joint5": 100.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 # Creditos a dominguez
 
 
@@ -114,6 +126,7 @@ XARM_CONFIGURATIONS = {
     "front_low_stare": FRONT_LOW_STARE,
     "table_stare": TABLE_STARE,
     "receive_object": RECEIVE_OBJECT,
+    "cutlery_stare": CUTLERY_STARE,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
     "carry_pose": CARRY_POSE,

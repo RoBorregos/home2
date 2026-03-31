@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from utils.status import Status
+from task_manager.utils.status import Status
 
 # from subtask_managers.hri_tasks import HRITasks
 
@@ -122,7 +122,7 @@ class HRIHand:
         if status == Status.EXECUTION_SUCCESS:
             # Use the PostgreSQL adapter to find the closest matching hand items
             # Include room context in the search if provided
-            closest_by_name, closest_by_description = self.hri_manager.pg.get_hand_items(response)
+            closest_by_name, closest_by_description = self.hri_manager.get_hand_items(response)
 
             if closest_by_description:
                 # Confirm with the user using the description

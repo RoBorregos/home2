@@ -1,3 +1,3 @@
 ---
 bool found
-geometry_msgs/PointStamped point
+frida_interfaces/PersonList people

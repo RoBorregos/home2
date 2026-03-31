@@ -1,9 +1,9 @@
-from config.hri.debug import config as test_hri_config
-from config.hri.mocked import config as mocked_hri_config
-from subtask_managers.hri_tasks import HRITasks
-from subtask_managers.manipulation_tasks import ManipulationTasks
-from subtask_managers.nav_tasks import NavigationTasks
-from subtask_managers.vision_tasks import VisionTasks
+from task_manager.config.hri.debug import config as test_hri_config
+from task_manager.config.hri.mocked import config as mocked_hri_config
+from task_manager.subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
+from task_manager.subtask_managers.nav_tasks import NavigationTasks
+from task_manager.subtask_managers.vision_tasks import VisionTasks
 
 from .task import Task
 

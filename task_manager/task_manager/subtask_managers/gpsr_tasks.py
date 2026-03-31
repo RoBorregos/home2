@@ -5,7 +5,7 @@ import time
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
-from utils.baml_client.types import (
+from task_manager.utils.baml_client.types import (
     Count,
     FindPersonByName,
     FollowPersonUntil,
@@ -13,9 +13,9 @@ from utils.baml_client.types import (
     GiveObject,
     GuidePersonTo,
 )
-from utils.status import Status
+from task_manager.utils.status import Status
 
-from subtask_managers.generic_tasks import GenericTask
+from task_manager.subtask_managers.generic_tasks import GenericTask
 
 
 class GPSRTask(GenericTask):

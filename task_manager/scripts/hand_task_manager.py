@@ -11,8 +11,8 @@ import time
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
-from utils.logger import Logger
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.logger import Logger
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 

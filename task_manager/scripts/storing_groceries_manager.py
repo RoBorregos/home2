@@ -11,9 +11,9 @@ from frida_interfaces.srv import PointTransformation
 from geometry_msgs.msg import PointStamped, Twist
 from pydantic import BaseModel
 from rclpy.node import Node
-from utils.logger import Logger
-from utils.status import Status
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 ATTEMPT_LIMIT = 5

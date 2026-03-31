@@ -4,16 +4,16 @@ services:
     image: roborregos/home2:hri-tts-${ENV_TYPE:-cpu}
     build:
       context: ../../..
-      dockerfile: docker/hri/dockerfiles/Dockerfile.tts
+      dockerfile: docker/hri/dockerfiles/Dockerfile.tts${ENV_SUFFIX-:""}
       args:
-        BASE_IMAGE: python:3.10-bookworm
+        BASE_IMAGE: ${TTS_BASE_IMAGE:-python:3.10-bookworm}
     volumes:
       - ../../../hri/microservices/tts/:/app
       - ../../../hri/packages/speech/assets/downloads/offline_voice/audios/:/app/audios
       - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
       - ~/.config/pulse:/tmp/pulse
     network_mode: host
-    runtime: ${RUNTIME:-}
+    runtime: ${RUNTIME:-runc}
     user: ${LOCAL_USER_ID:-1000}:${LOCAL_GROUP_ID:-1000}
     privileged: true
     tty: true

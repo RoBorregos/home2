@@ -75,7 +75,9 @@ case $ENV_TYPE in
 esac
 
 # Clean build artifacts if requested
-clean_workspace_directories
+if [ "$CLEAN" == "true" ]; then
+  clean_directories .
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
@@ -83,7 +85,7 @@ mkdir -p install build log
 #_________________________RUN_________________________
 
 # Commands to run inside the container
-GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"

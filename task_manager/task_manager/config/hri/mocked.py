@@ -1,7 +1,7 @@
 from random import randint
 
-from utils.config import SubtaskConfig
-from utils.status import Status
+from task_manager.utils.config import SubtaskConfig
+from task_manager.utils.status import Status
 
 
 def mock_extract_data(query, complete_text, context):

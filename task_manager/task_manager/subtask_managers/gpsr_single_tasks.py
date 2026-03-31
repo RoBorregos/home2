@@ -2,7 +2,7 @@ import time
 
 import rclpy
 from frida_constants.hri_constants import GPSR_COMMANDS
-from utils.baml_client.types import (
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     GetVisualInfo,
     GoTo,
@@ -10,9 +10,9 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.status import Status
+from task_manager.utils.status import Status
 
-from subtask_managers.generic_tasks import GenericTask
+from task_manager.subtask_managers.generic_tasks import GenericTask
 
 RETRIES = 3
 

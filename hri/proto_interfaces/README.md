@@ -10,6 +10,7 @@ This package contains Protocol Buffer definitions and gRPC service interfaces fo
 ## Usage
 
 ### ROS2 Nodes
+
 ```python
 from proto_interfaces import speech_pb2_grpc, speech_pb2
 
@@ -19,6 +20,7 @@ stub = speech_pb2_grpc.SpeechStreamStub(channel)
 ```
 
 ### Microservices
+
 ```python
 from proto_interfaces import speech_pb2_grpc, speech_pb2
 
@@ -30,17 +32,4 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
 
 ## Regenerating Proto Files
 
-If you modify the `.proto` files, regenerate the Python code:
-
-```bash
-cd hri/proto_interfaces
-
-# Install grpcio-tools
-pip install grpcio-tools
-
-# Generate speech protos
-python -m grpc_tools.protoc -I. --python_out=proto_interfaces --grpc_python_out=proto_interfaces proto/speech.proto
-
-# Generate TTS protos  
-python -m grpc_tools.protoc -I. --python_out=proto_interfaces --grpc_python_out=proto_interfaces proto/tts.proto
-```
+Run `run.sh hri --build-proto` to automatically generate the python scripts.

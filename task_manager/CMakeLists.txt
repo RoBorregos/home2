@@ -21,9 +21,6 @@ ament_python_install_package(${PROJECT_NAME})
 
 file (GLOB TASK_MANAGERS scripts/*.py)
 file (GLOB UTIL_NODES scripts/util_nodes/*.py)
-file (GLOB SUBTASK_MANAGERS scripts/subtask_managers/*.py)
-file (GLOB UTILS scripts/utils/*.py)
-file (GLOB BAML_CLIENT scripts/utils/baml_client/*.py)
 file (GLOB TEST_SUBTASK_MANAGERS scripts/test/*.py)
 file (GLOB MISC_NODES scripts/misc/*.py)
 
@@ -40,28 +37,13 @@ DESTINATION lib/${PROJECT_NAME}/util_nodes
 )
 
 install(PROGRAMS
-${SUBTASK_MANAGERS}
-DESTINATION lib/${PROJECT_NAME}/subtask_managers
-)
-
-install(PROGRAMS
-${UTILS}
-DESTINATION lib/${PROJECT_NAME}/utils
-)
-
-install(PROGRAMS
-${BAML_CLIENT}
-DESTINATION lib/${PROJECT_NAME}/utils/baml_client
-)
-
-install(PROGRAMS
 ${TEST_SUBTASK_MANAGERS}
-DESTINATION lib/${PROJECT_NAME}
+DESTINATION lib/${PROJECT_NAME}/test
 )
 
 install(PROGRAMS
 ${MISC_NODES}
-DESTINATION lib/${PROJECT_NAME}
+DESTINATION lib/${PROJECT_NAME}/misc
 )
 
 install(DIRECTORY launch scripts
