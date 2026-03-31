@@ -142,7 +142,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
 
 def main(args=None):
     rclpy.init(args=args)
-    executor = rclpy.executors.SingleThreadedExecutor()
+    executor = rclpy.executors.MultiThreadedExecutor()
     node = NavDependencyLifecycleManager('nav_lifecycle_manager')
     executor.add_node(node)
     
