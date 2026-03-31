@@ -74,8 +74,8 @@ class RESTAURANTCommands(Node):
         tables_points2d = self.get_moondream_points("table")
         customer_people = self.get_customers()
 
-        if not customer_people or not tables_points2d:
-            self.get_logger().error("No detections found")
+        if not tables_points2d:
+            self.get_logger().error("No tables detected")
             response.customer_tables = []
             response.success = False
             return response
@@ -103,7 +103,7 @@ class RESTAURANTCommands(Node):
             table_groups.append(table_msg)
 
         assigned_customers = 0
-        for person in customer_people:
+        for person in customer_people or []:
             customer_xyz = (
                 float(person.point3d.point.x),
                 float(person.point3d.point.y),
