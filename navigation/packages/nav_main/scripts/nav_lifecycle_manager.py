@@ -27,7 +27,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.ready_to_activate = False
         self.timer = None
         
-        self.lidar_reciever = self.create_subcription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10)
+        self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10)
         self.lidar_msg = None
         self.check_door_srv = self.create_service(LaserGet, CHECK_DOOR_SERVICE, self.check_door)
         self.range_min = 0
@@ -45,11 +45,11 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.get_logger().info("Checking for opened door")
         opened = False
         while opened == False:
-        door_points = []
-        for count, r in enumerate(self.lidar_msg.ranges):
-            print(f"distance={r}, number = {count}")
-            if self.range_min <= count <= self.range_max:
-                door_points.append(r)
+            door_points = []
+            for count, r in enumerate(self.lidar_msg.ranges):
+                print(f"distance={r}, number = {count}")
+                if self.range_min <= count <= self.range_max:
+                    door_points.append(r)
          
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
