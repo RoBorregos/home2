@@ -49,7 +49,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
             for count, r in enumerate(self.lidar_msg.ranges):
                 #print(f"distance={r}, number = {count}")
                 if self.range_min > self.range_max:
-                    if count <= self.range_max && count >= self.range_min:
+                    if count <= self.range_max and count >= self.range_min:
                         door_points.append(r)
                 elif self.range_min <= count <= self.range_max:
                     door_points.append(r)
