@@ -164,15 +164,15 @@ class RestaurantTaskManager(Node):
                     customer_angles = []
                     orders = []
                     num_customers = 0
-                    if len(table_msg.people) == 0:
-                        Logger.warn(
+                    if len(table_msg.people.list) == 0:
+                        Logger.warning(
                             self, f"Table {table_id} has no detected customers, skipping..."
                         )
                         continue
-                    for person in table_msg.people:
+                    for person in table_msg.people.list:
                         customer_points.append(person.point3d)
                         customer_angles.append(person.angle)
-                    num_customers = len(table_msg.people)
+                    num_customers = len(table_msg.people.list)
                     self.tables[table_id] = {
                         "customer_points": customer_points,
                         "customer_angles": customer_angles,
