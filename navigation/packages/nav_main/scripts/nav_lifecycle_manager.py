@@ -3,6 +3,7 @@ import sys
 import rclpy
 from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
 from rclpy.lifecycle import State
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 import tf2_ros
 from lifecycle_msgs.srv import ChangeState
 from lifecycle_msgs.msg import Transition as MsgTransition
@@ -26,13 +27,15 @@ class NavDependencyLifecycleManager(LifecycleNode):
         
         self.ready_to_activate = False
         self.timer = None
-        
-        self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10)
+       
+        self.lidar_group = ReentrantCallbackGroup()
+        self.service_group = MutuallyExclusiveCallbackGroup()
+        self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10,callback_group=self.lidar_group )
         self.lidar_msg = None
-        self.check_door_srv = self.create_service(LaserGet, CHECK_DOOR_SERVICE, self.check_door)
+        self.check_door_srv = self.create_service(LaserGet, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
         self.range_min = 637
         self.range_max = 718
-
+        self.door_rate = 0.5
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
         self.managed_nodes = self.get_parameter('managed_nodes').get_parameter_value().string_array_value
@@ -46,6 +49,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         opened = False
         lidar_last = self.lidar_msg
         while opened == False:
+            t.sleep(self.door_rate)
             door_points = []
             if lidar_last == self.lidar_msg:
                 print("Is the same ")
