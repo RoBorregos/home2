@@ -117,15 +117,21 @@ private:
 
   std::shared_ptr<ClientNode> client_node;
 
+  bool force_horizontal_plane_;
+
 public:
   AddPrimitivesNode(std::shared_ptr<ClientNode> client_node)
       : Node("add_primitives_node") {
+
+    this->force_horizontal_plane_ =
+        this->declare_parameter("force_horizontal_plane", true);
 
     this->tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     this->tf_listener =
         std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
-    RCLCPP_INFO(this->get_logger(), "Starting Add Primitives Node");
+    RCLCPP_INFO(this->get_logger(), "Starting Add Primitives Node (force_horizontal_plane=%s)",
+                this->force_horizontal_plane_ ? "true" : "false");
 
     this->tf_broadcaster =
         std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -608,14 +614,49 @@ public:
 
       req2->collision_objects[0].pose.header.stamp = this->now();
 
-      req2->collision_objects[0].pose.pose.position.x = box_params.centroid.x;
-      req2->collision_objects[0].pose.pose.position.y = box_params.centroid.y;
-      req2->collision_objects[0].pose.pose.position.z = box_params.centroid.z;
+      if (this->force_horizontal_plane_) {
+        // Force horizontal: use axis-aligned bounding box from the cloud
+        pcl::PointXYZ min_pt, max_pt;
+        pcl::getMinMax3D(*cloud, min_pt, max_pt);
 
-      req2->collision_objects[0].pose.pose.orientation = box_params.orientation;
+        req2->collision_objects[0].pose.pose.position.x =
+            (min_pt.x + max_pt.x) / 2.0;
+        req2->collision_objects[0].pose.pose.position.y =
+            (min_pt.y + max_pt.y) / 2.0;
+        req2->collision_objects[0].pose.pose.position.z =
+            (min_pt.z + max_pt.z) / 2.0;
 
-      req2->collision_objects[0].dimensions.x = box_params.width;
-      req2->collision_objects[0].dimensions.y = box_params.depth;
+        // Identity quaternion — perfectly horizontal
+        req2->collision_objects[0].pose.pose.orientation.x = 0.0;
+        req2->collision_objects[0].pose.pose.orientation.y = 0.0;
+        req2->collision_objects[0].pose.pose.orientation.z = 0.0;
+        req2->collision_objects[0].pose.pose.orientation.w = 1.0;
+
+        // Axis-aligned dimensions
+        req2->collision_objects[0].dimensions.x = max_pt.x - min_pt.x;
+        req2->collision_objects[0].dimensions.y = max_pt.y - min_pt.y;
+
+        RCLCPP_INFO(this->get_logger(),
+                     "[PlaneService] Forcing horizontal plane at Z=%.3f "
+                     "(dims: %.3f x %.3f)",
+                     req2->collision_objects[0].pose.pose.position.z,
+                     req2->collision_objects[0].dimensions.x,
+                     req2->collision_objects[0].dimensions.y);
+      } else {
+        req2->collision_objects[0].pose.pose.position.x =
+            box_params.centroid.x;
+        req2->collision_objects[0].pose.pose.position.y =
+            box_params.centroid.y;
+        req2->collision_objects[0].pose.pose.position.z =
+            box_params.centroid.z;
+
+        req2->collision_objects[0].pose.pose.orientation =
+            box_params.orientation;
+
+        req2->collision_objects[0].dimensions.x = box_params.width;
+        req2->collision_objects[0].dimensions.y = box_params.depth;
+      }
+
       req2->collision_objects[0].dimensions.z = 0.025;
 
       auto res = this->add_collision_object_client->async_send_request(
@@ -624,9 +665,6 @@ public:
                      SharedFuture future) {
             RCLCPP_INFO(this->get_logger(), "add_collision_object");
           });
-
-      RCLCPP_INFO(this->get_logger(), "Plane primitive added");
-      // res.wait();e
 
       RCLCPP_INFO(this->get_logger(), "Plane primitive added");
     } else {
@@ -768,7 +806,67 @@ public:
                            response->health_response);
     box_params.height = 0.035;
 
-    if (true) {
+    if (this->force_horizontal_plane_) {
+      // Axis-aligned bounding box — no TF dance needed
+      pcl::PointXYZ min_pt, max_pt;
+      pcl::getMinMax3D(*cloud_out, min_pt, max_pt);
+
+      float cx = (min_pt.x + max_pt.x) / 2.0f;
+      float cy = (min_pt.y + max_pt.y) / 2.0f;
+      float cz = (min_pt.z + max_pt.z) / 2.0f;
+
+      RCLCPP_INFO(this->get_logger(),
+                   "[PlaneService] get_plane_bbox forcing horizontal at Z=%.3f", cz);
+
+      auto stamp = this->now();
+
+      response->center.header.frame_id = "base_link";
+      response->center.header.stamp = stamp;
+      response->center.point.x = cx;
+      response->center.point.y = cy;
+      response->center.point.z = cz;
+
+      // Corners: axis-aligned rectangle at the mean Z
+      response->pt1.header.frame_id = "base_link";
+      response->pt1.header.stamp = stamp;
+      response->pt1.point.x = min_pt.x;
+      response->pt1.point.y = min_pt.y;
+      response->pt1.point.z = cz;
+
+      response->pt2.header.frame_id = "base_link";
+      response->pt2.header.stamp = stamp;
+      response->pt2.point.x = min_pt.x;
+      response->pt2.point.y = max_pt.y;
+      response->pt2.point.z = cz;
+
+      response->pt3.header.frame_id = "base_link";
+      response->pt3.header.stamp = stamp;
+      response->pt3.point.x = max_pt.x;
+      response->pt3.point.y = max_pt.y;
+      response->pt3.point.z = cz;
+
+      response->pt4.header.frame_id = "base_link";
+      response->pt4.header.stamp = stamp;
+      response->pt4.point.x = max_pt.x;
+      response->pt4.point.y = min_pt.y;
+      response->pt4.point.z = cz;
+
+      // Broadcast plane_center TF for debugging
+      geometry_msgs::msg::TransformStamped transform;
+      transform.header.stamp = stamp;
+      transform.header.frame_id = "base_link";
+      transform.child_frame_id = "plane_center";
+      transform.transform.translation.x = cx;
+      transform.transform.translation.y = cy;
+      transform.transform.translation.z = cz;
+      transform.transform.rotation.x = 0.0;
+      transform.transform.rotation.y = 0.0;
+      transform.transform.rotation.z = 0.0;
+      transform.transform.rotation.w = 1.0;
+      this->tf_broadcaster->sendTransform(transform);
+
+    } else {
+      // Original behavior: PCA-oriented corners via TF transforms
 
       // Send and lookup plane center transform
       geometry_msgs::msg::TransformStamped transform;
