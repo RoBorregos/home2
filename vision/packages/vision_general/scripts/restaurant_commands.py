@@ -206,7 +206,7 @@ class RESTAURANTCommands(Node):
         req.subject = subject
 
         future = self.moondream_point_client.call_async(req)
-        future = wait_for_future(future, 15)
+        future = wait_for_future(future, 20)
 
         if future is False or not future.done():
             self.get_logger().error("MoonDream service call timed out or failed")

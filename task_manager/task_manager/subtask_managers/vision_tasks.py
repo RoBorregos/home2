@@ -1061,7 +1061,7 @@ class VisionTasks:
         """Detect the tables and the customers associated to them."""
         req = CustomerTables.Request()
         future = self.customer_table_client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
         if not future.done():
             Logger.warn(self.node, "customer_tables service call timed out")
             return Status.EXECUTION_ERROR, []
