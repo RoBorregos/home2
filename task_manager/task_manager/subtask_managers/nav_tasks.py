@@ -9,7 +9,12 @@ import os
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC, AREAS_SERVICE
+from frida_constants.navigation_constants import( 
+    FOLLOWING_SERVICE,
+    GOAL_TOPIC, 
+    AREAS_SERVICE
+    CHECK_DOOR_SERVICE
+    )
 from frida_interfaces.srv import (
     LaserGet,
     PointTransformation,
@@ -465,46 +470,24 @@ class NavigationTasks:
 
         return future
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
-    @service_check("laser_send", (Status.EXECUTION_ERROR, "open"), TIMEOUT)
-    def check_door(self) -> tuple[int, str]:
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
+    @service_check("laser_send", Status.EXECUTION_ERROR, TIMEOUT)
+    def check_door(self) -> int:
         """Check if the door is open or closed"""
-
         request = LaserGet.Request()
         future = self.laser_send.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        rclpy.spin_until_future_complete(self.node, future)
         result = future.result()
         if result is not None:
             if result.status:
-                self.laser_sub = result.data
+                Logger.info(self.node, "Door open")
+                return Status.EXECUTION_SUCCESS
             else:
-                Logger.error(self.node, "Error with request")
-                return (Status.EXECUTION_ERROR, "")
+                Logger.error(self.node, "Error getting state with door")
+                return Status.EXECUTION_ERROR
         else:
             Logger.error(self.node, "Error with request")
-            return (Status.EXECUTION_ERROR, "")
-        # print(self.laser_sub.ranges)
-        door_points = []
-        for count, r in enumerate(self.laser_sub.ranges):
-            print(f"distance={r}, number = {count}")
-            if self.range_min <= count <= self.range_max:
-                door_points.append(r)
-
-        # Check if the door is open
-        if len(door_points) > 0:
-            # Calculate the average distance of the door points
-            avg_distance = sum(door_points) / len(door_points)
-            # Check if the average distance is less than a threshold
-            Logger.info(self.node, f"Average distance: {avg_distance}")
-            if avg_distance < self.closed_distance:
-                Logger.info(self.node, "Door closed")
-                return (Status.EXECUTION_SUCCESS, "closed")
-            else:
-                Logger.info(self.node, "Door open")
-                return (Status.EXECUTION_SUCCESS, "open")
-        else:
-            Logger.error(self.node, "No points detected")
-            return (Status.EXECUTION_ERROR, "")
+            return Status.EXECUTION_ERROR
 
     def ReturnLocation_callback(self):
         try:

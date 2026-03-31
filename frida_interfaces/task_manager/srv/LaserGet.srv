@@ -1,5 +1,4 @@
 # Request
 ---
 # Response
-sensor_msgs/LaserScan data
 bool status

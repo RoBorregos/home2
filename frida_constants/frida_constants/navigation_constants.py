@@ -1,3 +1,5 @@
 GOAL_TOPIC = "/navigate_to_pose"
 FOLLOWING_SERVICE = "/navigation/activate_following"
 AREAS_SERVICE = "/areas_json"
+SCAN_TOPIC = "/scan"
+CHECK_DOOR_SERVICE = "/is_door_open"

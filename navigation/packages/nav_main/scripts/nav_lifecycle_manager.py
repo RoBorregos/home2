@@ -7,7 +7,14 @@ import tf2_ros
 from lifecycle_msgs.srv import ChangeState
 from lifecycle_msgs.msg import Transition as MsgTransition
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType
-
+from sensor_msgs.msg import LaserScan
+from frida_constants.navigation_constants import(
+        SCAN_TOPIC,
+        CHECK_DOOR_SERVICE
+        ) 
+from frida_interfaces.srv import (
+        LaserGet
+        )
 class NavDependencyLifecycleManager(LifecycleNode):
     def __init__(self, node_name):
         super().__init__(node_name)
@@ -20,11 +27,30 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.ready_to_activate = False
         self.timer = None
         
+        self.lidar_reciever = self.create_subcription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10)
+        self.lidar_msg = None
+        self.check_door_srv = self.create_service(LaserGet, CHECK_DOOR_SERVICE, self.check_door)
+        self.range_min = 0
+        self.range_max = 200
+
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
         self.managed_nodes = self.get_parameter('managed_nodes').get_parameter_value().string_array_value
         if self.managed_nodes == ['']:
             self.managed_nodes = []
+
+    def lidar_callback(self, self.msg):
+        self.lidar_msg = msg
+    def check_door(self,request, response):
+        self.get_logger().info("Checking for opened door")
+        opened = False
+        while opened == False:
+        door_points = []
+        for count, r in enumerate(self.lidar_msg.ranges):
+            print(f"distance={r}, number = {count}")
+            if self.range_min <= count <= self.range_max:
+                door_points.append(r)
+         
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("Configurando: Iniciando monitoreo autónomo de dependencias")
@@ -33,7 +59,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         
         if self.timer is not None:
             self.timer.cancel()
-            
+
         self.timer = self.create_timer(2.0, self.monitor_callback)
         return TransitionCallbackReturn.SUCCESS
 
