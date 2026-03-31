@@ -9,7 +9,7 @@ const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
 export function VideoFeed() {
   const [videoTopic, setVideoTopic] = useState<string>(
-    "/zed/zed_node/rgb/image_rect_color"
+    "/vision/detections_image"
   );
 
   useEffect(() => {

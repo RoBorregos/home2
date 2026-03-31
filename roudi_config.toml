@@ -6,29 +6,29 @@ version = 1
 # Small messages (parameter events, tf, small services)
 [[segment.mempool]]
 size = 128
-count = 100000
+count = 200000
 
 # Medium messages (sensor data, joint states, detections)
 [[segment.mempool]]
 size = 1024
-count = 20000
+count = 50000
 
 # Larger messages (camera info, compressed data)
 [[segment.mempool]]
 size = 16384
-count = 500
+count = 2000
 
 # Medium images (depth maps, smaller frames)
 [[segment.mempool]]
 size = 524288
-count = 50
+count = 200
 
 # Full camera frames (~2MB each at 960x540 BGR)
 [[segment.mempool]]
 size = 2097152
-count = 30
+count = 100
 
 # Large images (HD1080 full resolution ~6MB)
 [[segment.mempool]]
 size = 8388608
-count = 10
+count = 30
