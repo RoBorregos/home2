@@ -34,8 +34,8 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10,callback_group=self.lidar_group )
         self.lidar_msg = None
         self.check_door_srv = self.create_service(LaserGet, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
-        self.range_min = 637
-        self.range_max = 718
+        self.range_min = 670
+        self.range_max = 70
         self.door_rate = 0.5
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
@@ -52,11 +52,6 @@ class NavDependencyLifecycleManager(LifecycleNode):
         while opened == False:
             t.sleep(self.door_rate)
             door_points = []
-            if lidar_last == self.lidar_msg:
-                print("Is the same ")
-            else:
-                print("Isnt the same")
-
             lidar_last = self.lidar_msg
             for count, r in enumerate(self.lidar_msg.ranges):
                 #print(f"distance={r}, number = {count}")
