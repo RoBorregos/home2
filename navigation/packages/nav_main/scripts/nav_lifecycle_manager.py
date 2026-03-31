@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import time as t
+import math
 import sys
 import rclpy
 from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
@@ -52,16 +53,25 @@ class NavDependencyLifecycleManager(LifecycleNode):
         while opened == False:
             t.sleep(self.door_rate)
             door_points = []
+            inf_count = 0
+            count = 0
             lidar_last = self.lidar_msg
             for count, r in enumerate(self.lidar_msg.ranges):
                 #print(f"distance={r}, number = {count}")
                 if self.range_min > self.range_max:
                     if (count <= self.range_max and count >= 0 ) or (count >= self.range_min):
                         door_points.append(r)
+                        if(math.isinf(r)):
+                            inf_count += 1
+                        count += 1
+
                 elif self.range_min <= count <= self.range_max:
                     door_points.append(r)
 
-            print(f"Average: {sum(door_points)/ len(door_points)}")
+            if inf_count < count / 3:
+                door_points = [x for x in door_points if not math.isinf(x)] 
+
+            print(f"Average: {sum(door_points)/ len(door_points)} infs = {inf_count} count_ttotal= {count}")
          
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
