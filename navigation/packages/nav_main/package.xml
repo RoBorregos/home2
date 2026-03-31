@@ -16,6 +16,7 @@
   <depend>sensor_msgs</depend>
   <depend>p9n_node</depend>
   <depend>rclcpp_components</depend>
+  <depend>rclcpp_action</depend>
   <depend>navigation2</depend>
   <depend>nav2_bringup</depend>
   <depend>robot_localization</depend>
