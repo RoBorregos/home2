@@ -152,12 +152,7 @@ class PoseDetection:
         try:
             if (
                 points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
-                and points[LEFT_WRIST][1] > points[LEFT_SHOULDER][1]
-            ):
-                return True
-            if (
-                points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1]
-                and points[RIGHT_WRIST][1] > points[RIGHT_SHOULDER][1]
+                or points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1]
             ):
                 return True
             return False

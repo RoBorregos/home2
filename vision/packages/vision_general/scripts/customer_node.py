@@ -180,6 +180,9 @@ class CustomerNode(Node):
                 self.customer_image = cropped_image.copy()
 
                 raising = self.pose_detection.is_waving_customer(cropped_image)
+                if not raising:
+                    self.get_logger().info("Customer not raising hand")
+                    continue
                 sitting = self.pose_detection.is_sitting_yolo(cropped_image)
 
                 if not sitting:

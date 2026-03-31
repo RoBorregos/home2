@@ -1055,7 +1055,7 @@ class VisionTasks:
 
         return Status.EXECUTION_SUCCESS, location
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, None))
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
     @service_check("customer_tables", [Status.EXECUTION_ERROR, None], TIMEOUT)
     def customer_tables(self) -> tuple[int, list[CustomerTable]]:
         """Detect the tables and the customers associated to them."""
@@ -1063,11 +1063,11 @@ class VisionTasks:
         future = self.customer_table_client.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if not future.done():
-            Logger.warning(self, "customer_tables service call timed out")
+            Logger.warn(self.node, "customer_tables service call timed out")
             return Status.EXECUTION_ERROR, []
         result = future.result()
         if result is None or not result.success:
-            Logger.warning(self, "customer_tables service call failed or returned no tables")
+            Logger.warn(self.node, "customer_tables service call failed or returned no tables")
             return Status.EXECUTION_ERROR, []
         return Status.EXECUTION_SUCCESS, result.customer_tables
 

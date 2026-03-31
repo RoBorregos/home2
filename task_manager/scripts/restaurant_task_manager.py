@@ -4,7 +4,7 @@
 Task Manager for Restaurant task of Robocup @Home 2026
 """
 
-from frida_constants.frida_constants.vision_constants import (
+from frida_constants.vision_constants import (
     RESTAURANT_TABLES_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
 )
@@ -12,10 +12,10 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped
 
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-from utils.logger import Logger
-from utils.status import Status
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
 import time
 
 ATTEMPT_LIMIT = 3
@@ -32,7 +32,7 @@ class RestaurantTaskManager(Node):
         NAVIGATE_TO_TABLE = "NAVIGATE_TO_TABLE"
         TAKE_ORDERS = "TAKE_ORDERS"
         NAVIGATE_TO_BAR = "NAVIGATE_TO_BAR"
-        PICK_ORDER = "PICK_ORDER"
+        PREPARE_DELIVERY = "PREPARE_DELIVERY"
         DELIVER_TO_TABLE = "DELIVER_TO_TABLE"
         END = "END"
 
@@ -74,7 +74,7 @@ class RestaurantTaskManager(Node):
         # Pan angles per-customer
         self.pan_angles = []
 
-        self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON
+        self.current_state = RestaurantTaskManager.TaskStates.START
 
         self.get_logger().info("RestaurantTaskManager has started.")
 
@@ -105,7 +105,7 @@ class RestaurantTaskManager(Node):
             self.timeout(1)
 
         # Failed after all attempts - deux ex machina
-        Logger.warning(
+        Logger.warn(
             self,
             f"Failed to pick {object_name} after {ATTEMPT_LIMIT} attempts. Requesting human assistance.",
         )
@@ -143,29 +143,20 @@ class RestaurantTaskManager(Node):
             Logger.state(self, "Moving closer to tables area for better detection...")
             self.subtask_manager.hri.say("I will move closer to the tables area.")
             # TODO: move to a point near the tables area
-            # Move slightly forward (e.g., 0.5 meters)
-            # Move 0.5 meters forward in the robot's frame
-            forward_point = PointStamped()
-            forward_point.header.frame_id = "map"
-            forward_point.point.x = 0.5
-            forward_point.point.y = 0.0
-            forward_point.point.z = 0.0
-
-            status = self.subtask_manager.nav.move_to_point(forward_point)
+            # status = self.subtask_manager.nav.move_to_point(forward_point)
+            status = Status.EXECUTION_SUCCESS
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Arrived near tables for customer detection.")
                 # Get table groups and positions directly from vision task
                 status, customer_tables = self.subtask_manager.vision.customer_tables()
                 self.subtask_manager.hri.publish_display_topic(RESTAURANT_TABLES_TOPIC)
                 if status != Status.EXECUTION_SUCCESS or not customer_tables:
-                    Logger.warning(
+                    Logger.warn(
                         self, "No tables with customers detected. Waiting and retrying..."
                     )
                     self.timeout(2)
                     return
                 Logger.info(self, f"Detected {len(customer_tables)} table(s) with customers")
-                # Create table entries
-                self.tables = {}
                 idx = 0
                 for table_msg in customer_tables:
                     table_id = idx
@@ -174,7 +165,7 @@ class RestaurantTaskManager(Node):
                     orders = []
                     num_customers = 0
                     if len(table_msg.people) == 0:
-                        Logger.warning(
+                        Logger.warn(
                             self, f"Table {table_id} has no detected customers, skipping..."
                         )
                         continue
@@ -238,7 +229,7 @@ class RestaurantTaskManager(Node):
                         table["orders"].append(order)
                         Logger.success(self, f"Order received: {order}")
                 else:
-                    Logger.warning(self, "Failed to get order from customer.")
+                    Logger.warn(self, "Failed to get order from customer.")
                     self.subtask_manager.hri.say(
                         "Sorry, I didn't catch that. I'll move to the next customer."
                     )
