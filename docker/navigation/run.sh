@@ -114,7 +114,7 @@ case $TASK in
         RUN="ros2 launch nav_main mapping.launch.py"
         ;;
     "--gpsr")
-        RUN="ros2 launch nav_main mapping.launch.py"
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
     "--hric")
         RUN="ros2 launch nav_main navigation_composition.launch.py"
