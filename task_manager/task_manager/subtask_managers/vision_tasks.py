@@ -34,9 +34,10 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
+    CUSTOMER_TABLES_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.msg import ObjectDetection, PersonList
+from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
     CountByColor,
@@ -53,6 +54,7 @@ from frida_interfaces.srv import (
     ShelfDetectionHandler,
     TrackBy,
     DetectHand,
+    CustomerTables,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -126,6 +128,8 @@ class VisionTasks:
         )
 
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
+
+        self.customer_table_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
 
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -202,6 +206,13 @@ class VisionTasks:
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
+            },
+            Task.RESTAURANT: {
+                "customer_tables": {
+                    "client": self.customer_table_client,
+                    "type": "service",
+                },
+                "customer": {"client": self.customer_client, "type": "service"},
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -1043,6 +1054,22 @@ class VisionTasks:
             location += f"to the left of the {detections[right_pos].classname.lower()}"
 
         return Status.EXECUTION_SUCCESS, location
+
+    @mockable(return_value=(Status.EXECUTION_ERROR, None))
+    @service_check("customer_tables", [Status.EXECUTION_ERROR, None], TIMEOUT)
+    def customer_tables(self) -> tuple[int, list[CustomerTable]]:
+        """Detect the tables and the customers associated to them."""
+        req = CustomerTables.Request()
+        future = self.customer_table_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if not future.done():
+            Logger.warning(self, "customer_tables service call timed out")
+            return Status.EXECUTION_ERROR, []
+        result = future.result()
+        if result is None or not result.success:
+            Logger.warning(self, "customer_tables service call failed or returned no tables")
+            return Status.EXECUTION_ERROR, []
+        return Status.EXECUTION_SUCCESS, result.customer_tables
 
 
 if __name__ == "__main__":

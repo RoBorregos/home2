@@ -167,6 +167,7 @@ class CustomerNode(Node):
 
         self.frame = self.image.copy()
         self.output_image = self.frame.copy()
+        image_width = self.frame.shape[1] if self.frame is not None else 1280
 
         for out in self.results:
             for box in out.boxes:
@@ -216,12 +217,18 @@ class CustomerNode(Node):
                     person.x = (x1 + x2) // 2
                     person.y = (y1 + y2) // 2
                     person.point3d = coords
+                    # Calculate angle using x pixel and image width, as in HRIC
+                    diff = person.x - (image_width / 2)
+                    max_degree = 50.0
+                    angle = diff * max_degree / (image_width / 2)
+                    if hasattr(person, "angle"):
+                        person.angle = angle
                     res.people.list.append(person)
 
                     res.found = True
                     self.success("Customer found")
                     self.get_logger().info(
-                        f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}"
+                        f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}, angle={angle:.1f}"
                     )
 
         self.get_logger().info(f"Customers detected: {len(res.people.list)}")
