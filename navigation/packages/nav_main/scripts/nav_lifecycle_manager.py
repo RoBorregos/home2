@@ -64,15 +64,16 @@ class NavDependencyLifecycleManager(LifecycleNode):
                         if(math.isinf(r)):
                             inf_count += 1
                         count += 1
-
                 elif self.range_min <= count <= self.range_max:
                     door_points.append(r)
-
             if inf_count < count / 3:
                 door_points = [x for x in door_points if not math.isinf(x)] 
-
-            print(f"Average: {sum(door_points)/ len(door_points)} infs = {inf_count} count_ttotal= {count}")
-         
+            
+            avg_points = sum(door_points)/ len(door_points)
+            print(f"Average: {avg_points} infs = {inf_count} count_ttotal= {count}")
+            if(avg_points > self.door_distance):
+                response.status = True
+                return response
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("Configurando: Iniciando monitoreo autónomo de dependencias")
