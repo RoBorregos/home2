@@ -44,8 +44,15 @@ class NavDependencyLifecycleManager(LifecycleNode):
     def check_door(self,request, response):
         self.get_logger().info("Checking for opened door")
         opened = False
+        lidar_last = self.lidar_msg
         while opened == False:
             door_points = []
+            if lidar_last == self.lidar_msg:
+                print("Is the same ")
+            else:
+                print("Isnt the same")
+
+            lidar_last = self.lidar_msg
             for count, r in enumerate(self.lidar_msg.ranges):
                 #print(f"distance={r}, number = {count}")
                 if self.range_min > self.range_max:
