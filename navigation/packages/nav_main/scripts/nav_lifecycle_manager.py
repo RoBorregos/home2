@@ -38,6 +38,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.range_min = 670
         self.range_max = 70
         self.door_rate = 0.5
+        self.door_distance = 0.6
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
         self.managed_nodes = self.get_parameter('managed_nodes').get_parameter_value().string_array_value
