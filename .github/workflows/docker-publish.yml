@@ -234,11 +234,19 @@ jobs:
       - name: Set base image arg
         id: base
         run: |
-          case "${{ matrix.env }}" in
-            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
-            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
-            l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
-          esac
+          if [[ "${{ matrix.service }}" == "stt" || "${{ matrix.service }}" == "tts" ]]; then
+            case "${{ matrix.env }}" in
+              cpu)  echo "image=python:3.10-bookworm" >> $GITHUB_OUTPUT ;;
+              cuda) echo "image=nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04" >> $GITHUB_OUTPUT ;;
+              l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+            esac
+          else
+            case "${{ matrix.env }}" in
+              cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+              cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+              l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+            esac
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -310,12 +318,15 @@ jobs:
             --network host \
             --user root \
             -v ${{ github.workspace }}:/workspace/src \
+            -e SKIP_ROS_CONNECTION=true \
+            -e CYCLONEDDS_URI='<CycloneDDS><Domain><General><NetworkInterfaceAddress>lo</NetworkInterfaceAddress><AllowMulticast>false</AllowMulticast></General></Domain></CycloneDDS>' \
             roborregos/home2:hri-cpu \
             bash -c "
-              mkdir -p /tmp/pkg/embeddings &&
-              cp /workspace/src/hri/packages/embeddings/embeddings/__init__.py /tmp/pkg/embeddings/ &&
-              cp /workspace/src/hri/packages/embeddings/scripts/*.py /tmp/pkg/embeddings/ &&
-              PYTHONPATH=/tmp/pkg:/workspace/src/frida_constants python3 /workspace/src/hri/packages/embeddings/scripts/create_sql_dump.py
+              cd /workspace &&
+              source /opt/ros/humble/setup.bash &&
+              colcon build --packages-select frida_interfaces frida_constants nlp embeddings &&
+              source install/setup.bash &&
+              python3 src/hri/packages/embeddings/scripts/create_sql_dump.py
             "
           echo "Generated SQL dumps:"
           ls -la docker/hri/sql_dumps/

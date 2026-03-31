@@ -17,8 +17,6 @@
   <depend>xarm_msgs</depend>
   <depend>nav2_msgs</depend>
   <!-- Workspace dependencies -->
-  <depend>nlp</depend>
-  <depend>embeddings</depend>
   <depend>frida_constants</depend>
   <depend>frida_interfaces</depend>
 

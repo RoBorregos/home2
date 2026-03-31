@@ -36,6 +36,7 @@ install(TARGETS
 
   #Install python scripts
   install(PROGRAMS
+    scripts/nav_lifecycle_manager.py
     ${PYTHON_SCRIPTS}
     DESTINATION lib/${PROJECT_NAME}
   )

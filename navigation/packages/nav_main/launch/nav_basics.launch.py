@@ -1,13 +1,15 @@
 
 from ament_index_python import get_package_share_directory
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
 from launch.substitutions import PythonExpression
 from launch import LaunchDescription
+from launch.event_handlers import OnProcessExit
+from launch.events import Shutdown
 import os
 def launch_setup(context, *args, **kwargs):
     publish_urdf = LaunchConfiguration('publish_tf', default='false')
@@ -80,15 +82,26 @@ def launch_setup(context, *args, **kwargs):
                     FindPackageShare("nav_main"),
                     "launch",
                     "dualshock_cmd_vel.launch.py",
-                ]
+                ],
             ),
             
         ),
         condition=IfCondition(use_dualshock),
         )
 
+    # Event handler: shut down the entire launch if any node exits with an error
+    shutdown_on_failure = RegisterEventHandler(
+        OnProcessExit(
+            on_exit=[
+                LogInfo(msg="A navigation node has exited. Checking return code..."),
+                EmitEvent(event=Shutdown(reason="A critical navigation node exited unexpectedly.")),
+            ]
+        )
+    )
+
     if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
         return_launch = [
+        shutdown_on_failure,
         dashgo_driver,
         ekf_launch,
         robot_description_launch,
@@ -99,6 +112,7 @@ def launch_setup(context, *args, **kwargs):
     ]
     else:
         return_launch = [
+        shutdown_on_failure,
         dashgo_driver,
         ekf_launch,
         laser_launch,
