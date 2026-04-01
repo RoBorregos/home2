@@ -167,12 +167,8 @@ class PoseDetection:
         l_elbow = lm[mp_pose.LEFT_ELBOW]
         r_elbow = lm[mp_pose.RIGHT_ELBOW]
 
-        left_raised = (
-            l_wrist.y < l_shoulder.y or l_elbow.y < l_shoulder.y
-        )
-        right_raised = (
-            r_wrist.y < r_shoulder.y or r_elbow.y < r_shoulder.y
-        )
+        left_raised = l_wrist.y < l_shoulder.y or l_elbow.y < l_shoulder.y
+        right_raised = r_wrist.y < r_shoulder.y or r_elbow.y < r_shoulder.y
         return left_raised or right_raised
 
     # ── Gesture sub-checks ──
