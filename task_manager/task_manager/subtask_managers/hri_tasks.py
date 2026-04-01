@@ -41,7 +41,6 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
-from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
     AddEntry,
     CategorizeShelves,
@@ -57,10 +56,12 @@ from frida_interfaces.srv import (
     QueryEntry,
     Speak,
 )
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+
 from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,

@@ -7,11 +7,11 @@ Task Manager for GPSR task of Robocup @Home 2025
 import time
 
 import rclpy
+from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.node import Node
+
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
-from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
-
 
 # from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from task_manager.utils.baml_client.types import CommandListLLM
@@ -134,6 +134,9 @@ class GPSRTM(Node):
             self.current_state = GPSRTM.States.WAIT_BUTTON_COMMAND
 
         elif self.current_state == GPSRTM.States.WAIT_BUTTON_COMMAND:
+            if self.executed_commands >= MAX_COMMANDS:
+                self.current_state = GPSRTM.States.DONE
+                return
             # Wait for the start button to be pressed
             say_time = 5
             start_time = time.time()
@@ -149,13 +152,6 @@ class GPSRTM(Node):
             Logger.success(self, "Start button pressed, receptionist task will begin now")
             self.current_state = GPSRTM.States.WAITING_FOR_COMMAND
         elif self.current_state == GPSRTM.States.WAITING_FOR_COMMAND:
-            if self.prev_state != self.current_state:
-                self.navigate_to("start_area", "", False)
-
-            if self.executed_commands >= MAX_COMMANDS:
-                self.current_state = GPSRTM.States.DONE
-                return
-
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )
@@ -181,7 +177,6 @@ class GPSRTM(Node):
                     wait=True,
                 )
                 self.current_hear_attempt += 1
-                return
             else:
                 self.subtask_manager.hri.say(
                     "I am planning how to perform your command, please wait a moment", wait=False
@@ -242,7 +237,7 @@ class GPSRTM(Node):
             )
         elif self.current_state == GPSRTM.States.DONE:
             self.subtask_manager.hri.say(
-                "I am done with the task. I will now return to my home position.",
+                "I am done with the task. Hip hip, hooray!",
                 wait=False,
             )
             self.subtask_manager.hri.reset_task_status()
