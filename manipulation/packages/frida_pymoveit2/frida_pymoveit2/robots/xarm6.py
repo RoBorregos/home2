@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 MOVE_GROUP_ARM: str = "xarm6"
@@ -5,6 +6,17 @@ MOVE_GROUP_GRIPPER: str = "xarm_gripper"
 
 OPEN_GRIPPER_JOINT_POSITIONS: List[float] = [0.0]
 CLOSED_GRIPPER_JOINT_POSITIONS: List[float] = [0.85]
+
+# Position limits per joint (radians). Must match the URDF xacro definitions
+# in xarm6_robot_macro.xacro (jointN_lower/upper_limit = ±pi*0.99).
+JOINT_POSITION_LIMITS = {
+    "joint1": (-math.pi * 0.99, math.pi * 0.99),
+    "joint2": (-math.pi * 0.99, math.pi * 0.99),
+    "joint3": (-math.pi * 0.99, math.pi * 0.99),
+    "joint4": (-math.pi * 0.99, math.pi * 0.99),
+    "joint5": (-math.pi * 0.99, math.pi * 0.99),
+    "joint6": (-math.pi * 0.99, math.pi * 0.99),
+}
 
 
 def joint_names(prefix: str = "") -> List[str]:
