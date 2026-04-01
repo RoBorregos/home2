@@ -39,11 +39,9 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
     ros2 run vision_general moondream_node
 """
 
-
 import cv2
 import time
 import numpy as np
-from ultralytics import YOLO
 from PIL import Image as PILImage
 import tqdm
 import torch.nn as nn
@@ -265,7 +263,6 @@ class SingleTracker(Node):
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
 
-
     def success(self, message) -> None:
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
@@ -280,7 +277,7 @@ class SingleTracker(Node):
     def _run_deepsort(self, frame, yolo_results):
         """Run DeepSORT on YOLO detections, returns list of confirmed tracks."""
         frame_h, frame_w = frame.shape[:2]  # ✅ use distinct names
-            
+
         detections = []
         for out in yolo_results:
             for box in out.boxes:
@@ -316,10 +313,10 @@ class SingleTracker(Node):
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue
             bbox = track.to_tlbr()
-            
+
             x1 = max(0, int(bbox[0]))
             y1 = max(0, int(bbox[1]))
-            x2 = min(frame_w, int(bbox[2]))  
+            x2 = min(frame_w, int(bbox[2]))
             y2 = min(frame_h, int(bbox[3]))
 
             tracks.append(
@@ -607,7 +604,7 @@ class SingleTracker(Node):
                         ):
                             # We need to reset the embeddings and angles because the person was reidentified
                             self._reset_person_data()
-                            
+
                             self.person_data["id"] = person["track_id"]
                             self.person_data["coordinates"] = (
                                 person["x1"],
@@ -615,7 +612,6 @@ class SingleTracker(Node):
                                 person["x2"],
                                 person["y2"],
                             )
-
 
                             self.success(
                                 f"Person re-identified: {person['track_id']} with angle {person_angle}"
@@ -637,7 +633,7 @@ class SingleTracker(Node):
                                 f"Person re-identified: {person['track_id']} without angle"
                             )
                             self._reset_person_data()
-                            
+
                             self.person_data["id"] = person["track_id"]
                             self.person_data["coordinates"] = (
                                 person["x1"],
@@ -645,7 +641,7 @@ class SingleTracker(Node):
                                 person["x2"],
                                 person["y2"],
                             )
-                            
+
                             person_in_frame = True
                             break
 
