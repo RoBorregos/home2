@@ -190,12 +190,6 @@ class PourMotionServer(Node):
             True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
         )
 
-        # Tighter constraints when carrying an object to keep it level during approach
-        if object_already_grasped:
-            approach_tolerances = [0.4, 0.4, 3.14 * 2]
-        else:
-            approach_tolerances = None  # use defaults
-
         pose = self.receive_pose(goal_handle.request.pour_pose)
         is_upside_down = self.is_upside_down(pose)
         self.get_logger().info(f"Is upside down: {is_upside_down}")
@@ -215,7 +209,6 @@ class PourMotionServer(Node):
             try:
                 goal_handle_result, action_result = self.move_to_pose(
                     pose, isConstrained, planning_time=10.0, planning_attempts=100,
-                    constraint_tolerances=approach_tolerances,
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
@@ -246,20 +239,13 @@ class PourMotionServer(Node):
         self.get_logger().info(f"Current joints: {current_joints}")
 
         joint6_val = current_joints["joints"]["joint6"]
-        if joint6_val + pour_angle <= joint6_upper_limit:
-            current_joints["joints"]["joint6"] += pour_angle
-        elif joint6_val - pour_angle >= joint6_lower_limit:
-            current_joints["joints"]["joint6"] -= pour_angle
-            self.get_logger().info("Pouring in reverse direction to respect joint limits")
-        else:
-            # Both directions exceed limits — use whichever gets closer to the limit
-            dist_upper = joint6_upper_limit - joint6_val
-            dist_lower = joint6_val - joint6_lower_limit
-            if dist_upper >= dist_lower:
-                current_joints["joints"]["joint6"] = joint6_upper_limit
-            else:
-                current_joints["joints"]["joint6"] = joint6_lower_limit
-            self.get_logger().warn("Pour angle limited by joint6 bounds")
+        target = joint6_val + pour_angle
+        if target > joint6_upper_limit:
+            target = joint6_upper_limit
+            self.get_logger().warn(
+                f"Pour angle clamped to joint6 upper limit ({joint6_upper_limit:.2f})"
+            )
+        current_joints["joints"]["joint6"] = target
 
         self.get_logger().info(f"Current joints after pour angle: {current_joints}")
         action_result = move_joint_positions(
