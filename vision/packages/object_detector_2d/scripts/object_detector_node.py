@@ -97,6 +97,7 @@ class object_detector_node(rclpy.node.Node):
         self.rgb_image = []
         self.camera_info = CameraInfo()
         self.detections_frame = []
+        self.latest_detections = ObjectDetectionArray()
 
         # Load cutlery detection model (YOLO TRT)
         cutlery_model_path = os.path.join(
@@ -290,6 +291,11 @@ class object_detector_node(rclpy.node.Node):
             )
             if self.node_params.VERBOSE:
                 self.get_logger().info(self.node_params.DETECTIONS_ACTIVE_TOPIC)
+        
+        self.create_subscription(
+            ObjectDetectionArray, DETECTIONS_TOPIC,
+            self.detections_callback, 10,
+        )
 
     # Callback for active flag
     def activeFlagCallback(self, msg):
@@ -340,6 +346,9 @@ class object_detector_node(rclpy.node.Node):
                 self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8")
             )
 
+    def detections_callback(self, data):
+        self.latest_detections = data
+
     def visualize_detections(
         self,
         image,
@@ -349,6 +358,7 @@ class object_detector_node(rclpy.node.Node):
         agnostic_mode=False,
     ):
         """Visualize detections on an input image."""
+
 
         # Convert image to BGR format (OpenCV uses BGR instead of RGB)
         image = cv.cvtColor(image, cv.COLOR_RGB2BGR)

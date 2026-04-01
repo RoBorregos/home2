@@ -21,12 +21,12 @@ from frida_constants.vision_constants import (
     TRASHCAN_SERVICE,
 )
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
-from frida_interfaces.srv import SetDetectorClasses, ObjectPoints, TrashcanDetection
+from frida_interfaces.srv import SetTrashCategory, ObjectPoints, TrashcanDetection
 from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from vision_general.utils.ros_utils import wait_for_future
 
 TRASH_DEBUG_IMAGE_TOPIC = "/vision/trash_detection_debug"
-
+CATEGORIES = {'drinks', 'snacks', 'food', 'fruits': {'pear', 'orange'}, 'toys', 'cleaning supplies'}
 
 class TrashDetectionNode(Node):
     def __init__(self) -> None:
@@ -35,7 +35,7 @@ class TrashDetectionNode(Node):
         self.latest_detections = ObjectDetectionArray()
         self.image = None
         self.imageInfo = None
-        self.labels = set()
+        self.category = None
         self.depth_image = None
 
         self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
@@ -52,9 +52,9 @@ class TrashDetectionNode(Node):
         )
 
         self.create_service(
-            SetDetectorClasses,
-            TRASH_SERVICE_CLASSES,
-            self.set_trash_classes,
+            SetTrashCategory,
+            TRASH_SERVICE_CATEGORY,
+            self.set_trash_category,
         )
 
         self.create_service(
@@ -104,7 +104,7 @@ class TrashDetectionNode(Node):
         else:
             allowed_labels = {}
 
-        self.labels = allowed_labels
+        self.category = allowed_labels
         res.success = True
         return res
 
@@ -117,7 +117,7 @@ class TrashDetectionNode(Node):
                 continue
 
             detection = ObjectDetection()
-            if self.labels and det.label_text.lower() in self.labels:
+            if self.category and det.label_text.lower() in CATEGORIES[self.category]:
                 self.get_logger().info(f"Detected TRASH/{det.label_text}")
                 detection.label = det.label
                 detection.label_text = f"trash/{det.label_text}"

@@ -107,7 +107,7 @@ case $TASK in
     "--ppc")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general ppc_launch.py"
-        PROFILES=("vision")
+        PROFILES=("vision" "moondream")
         ;;
     "--carry")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
