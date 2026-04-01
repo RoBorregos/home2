@@ -328,11 +328,13 @@ def point2d_to_ros_point_stamped(
     point2d: tuple[int, int],
     frame_id: str,
     stamp,
-    is_optical: bool = True,
+    is_optical: bool = False,
 ) -> PointStamped:
     """
     Given 2D pixel coordinates (x, y), intrinsic camera info and a depth image,
     calculates the 3D position and directly returns a standard ROS PointStamped.
+    The point is in the camera optical frame by default (is_optical=False means no extra conversion).
+    Set is_optical=True only if you want to manually convert from optical to ROS base_link convention.
     """
     point_3d = point2d_to_3d(image_info, depth_image, point2d)
     return point3d_to_ros_point_stamped(point_3d, frame_id, stamp, is_optical)
