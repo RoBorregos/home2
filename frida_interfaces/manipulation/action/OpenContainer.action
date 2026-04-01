@@ -1,4 +1,5 @@
-geometry_msgs/PointStamped close_point
+geometry_msgs/PointStamped handle_point
+float32 radius
 ---
 #result definition
 int32 success
