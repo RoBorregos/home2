@@ -1,15 +1,12 @@
-ARG BASE_IMAGE=python:3.10-bookworm
-FROM ${BASE_IMAGE}
+FROM dustynv/l4t-pytorch:r36.4.0
 
-WORKDIR /app
+ENV PIP_INDEX_URL=https://pypi.jetson-ai-lab.io/jp6/cu126 \
+    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+    PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io
 
 ARG USERNAME=ros
 ARG USER_UID=1000
 ARG USER_GID=1000
-
-ENV VIRTUAL_ENV=/opt/venv
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-ENV PYTHONUNBUFFERED=1
 
 # Create a non-root user
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -21,9 +18,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     && rm -rf /var/lib/apt/lists/*
 
+# Install audio and speech synthesis dependencies natively for L4T
 RUN apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
     python3-venv \
     libopenmpi-dev \
     libportaudio2 \
@@ -32,13 +28,16 @@ RUN apt-get update && apt-get install -y \
     espeak-ng \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m venv "$VIRTUAL_ENV"
+WORKDIR /tmp
+RUN pip install virtualenv
 
-COPY hri/requirements/tts.txt requirements.txt
+# Install Python dependencies
+WORKDIR /app
+COPY ../../hri/requirements/tts.txt requirements.txt
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --upgrade protobuf
 RUN python3 -m spacy download en_core_web_sm
 
-COPY hri/proto_interfaces /tmp/proto_interfaces
+COPY ../../hri/proto_interfaces /tmp/proto_interfaces
 RUN pip install --no-cache-dir /tmp/proto_interfaces

@@ -17,6 +17,9 @@ from sensor_msgs_py import point_cloud2
 from sensor_msgs.msg import PointCloud2
 import time
 from scipy.spatial.transform import Rotation as R
+import rclpy
+from frida_interfaces.msg import PickResult
+from frida_constants.manipulation_constants import GRASP_LINK_FRAME
 
 import copy
 
@@ -50,8 +53,15 @@ class PourManager:
             PointStamped, "/manipulation/debug_bowl_centroid", 10
         )
 
-    def execute(self, object_name: str, container_object_name: str) -> bool:
-        self.node.get_logger().info("Executing Pour Task")
+    def execute(
+        self,
+        object_name: str,
+        container_object_name: str,
+        object_already_grasped: bool = False,
+    ) -> bool:
+        self.node.get_logger().info(
+            f"Executing Pour Task (object_already_grasped={object_already_grasped})"
+        )
 
         # 1. Initial Position
         send_joint_goal(
@@ -60,13 +70,14 @@ class PourManager:
             velocity=0.3,
         )
 
-        # 2. Get Object Point
-        object_point = self.get_object_point(object_name)
-        if object_point.header.frame_id == "":
-            self.node.get_logger().error(f"Object {object_name} not found")
-            return False, None
+        if not object_already_grasped:
+            # 2. Get Object Point
+            object_point = self.get_object_point(object_name)
+            if object_point.header.frame_id == "":
+                self.node.get_logger().error(f"Object {object_name} not found")
+                return False, None
 
-        self.debug_object_point_pub.publish(object_point)
+            self.debug_object_point_pub.publish(object_point)
 
         # 3. Get Bowl Point
         bowl_point = self.get_object_point(container_object_name)
@@ -83,15 +94,16 @@ class PourManager:
         self.node.remove_all_collision_object(attached=True)
         self.node.remove_all_collision_object(attached=True)
 
-        object_cluster = self.get_object_cluster(object_point, add_primitives=True)
-        if object_cluster is None:
-            return False, None
+        if not object_already_grasped:
+            object_cluster = self.get_object_cluster(object_point, add_primitives=True)
+            if object_cluster is None:
+                return False, None
 
-        # 5. Open Gripper
-        gripper_request = SetBool.Request()
-        gripper_request.data = True
-        future = self.node._gripper_set_state_client.call_async(gripper_request)
-        wait_for_future(future)
+            # 5. Open Gripper
+            gripper_request = SetBool.Request()
+            gripper_request.data = True
+            future = self.node._gripper_set_state_client.call_async(gripper_request)
+            wait_for_future(future)
 
         # 8. Compute Centroid/Height and Set Pour Pose
         cloud_gen = point_cloud2.read_points(
@@ -115,12 +127,22 @@ class PourManager:
         bowl_centroid_point.point.z = float(max_z + 0.05)  # Slightly above the bowl
         self.debug_centroid_pub.publish(bowl_centroid_point)
 
-        pick_result = None
-        # 6. Pick Motion
-        pick_success, pick_result = self.pick_motion(object_cluster)
-        if not pick_success:
-            self.node.get_logger().error("Pick motion failed")
-            return False, pick_result.pick_result
+        if not object_already_grasped:
+            pick_result = None
+            # 6. Pick Motion
+            pick_success, pick_result = self.pick_motion(object_cluster)
+            if not pick_success:
+                self.node.get_logger().error("Pick motion failed")
+                return False, pick_result.pick_result
+            pick_result_msg = pick_result.pick_result
+        else:
+            # Object already in gripper — build synthetic PickResult from current EEF pose
+            pick_result_msg = self._get_synthetic_pick_result()
+            if pick_result_msg is None:
+                self.node.get_logger().error(
+                    "Failed to get current EEF pose for synthetic PickResult"
+                )
+                return False, None
 
         pour_pose = PoseStamped()
         pour_pose.header.frame_id = bowl_centroid_point.header.frame_id
@@ -129,17 +151,13 @@ class PourManager:
         pour_pose.pose.position.y = float(centroid[1])
         pour_pose.pose.position.z = float(max_z + 0.15)  # Slightly above the bowl
 
-        if pick_result is not None:
-            pick_pose = getattr(pick_result.pick_result, "pick_pose", None)
-            if pick_pose:
-                pour_pose.pose.orientation = pick_pose.pose.orientation
-                self.node.get_logger().info(
-                    f"Pour Pose Orientation: {pour_pose.pose.orientation}"
-                )
+        pick_pose = getattr(pick_result_msg, "pick_pose", None)
+        if pick_pose:
+            pour_pose.pose.orientation = pick_pose.pose.orientation
+            self.node.get_logger().info(
+                f"Pour Pose Orientation: {pour_pose.pose.orientation}"
+            )
         else:
-            # self.node.get_logger().error("Invalid pick pose in result")
-            # return False
-            print("Debug ----------")
             pour_orientation = [0.707, 0.000, 0.707, 0.002]
             pour_pose.pose.orientation.x = pour_orientation[0]
             pour_pose.pose.orientation.y = pour_orientation[1]
@@ -147,9 +165,9 @@ class PourManager:
             pour_pose.pose.orientation.w = pour_orientation[3]
 
         # 9. Pour Motion
-        if not self.pour_motion(pour_pose, pick_result):
+        if not self.pour_motion(pour_pose, pick_result_msg, object_already_grasped):
             self.node.get_logger().error("Pour motion failed")
-            return False, pick_result.pick_result
+            return False, pick_result_msg
 
         # 10. Return to Initial Pose Again
         time.sleep(5)
@@ -164,7 +182,7 @@ class PourManager:
                 break
 
         self.node.get_logger().info("Pour Task Completed Successfully")
-        return True, pick_result.pick_result
+        return True, pick_result_msg
 
     def pick_motion(self, object_cluster: PointCloud2):
         # open gripper
@@ -270,10 +288,17 @@ class PourManager:
             return False, pick_result
         return True, pick_result
 
-    def pour_motion(self, pose_msg: PoseStamped, pick_result) -> bool:
+    def pour_motion(
+        self,
+        pose_msg: PoseStamped,
+        pick_result_msg,
+        object_already_grasped: bool = False,
+    ) -> bool:
         self.node.get_logger().warning("FF 1.3")
         goal_msg = PourMotion.Goal(
-            pour_pose=pose_msg, pick_result=pick_result.pick_result
+            pour_pose=pose_msg,
+            pick_result=pick_result_msg,
+            object_already_grasped=object_already_grasped,
         )
 
         self.node.get_logger().warning("FF 1.4")
@@ -301,6 +326,30 @@ class PourManager:
             pass
         # self.get_logger().info("Execution done with status: " + str(future.result()))
         return future  # 4 is the status for success
+
+    def _get_synthetic_pick_result(self):
+        """Build a synthetic PickResult from the current EEF pose.
+
+        Used when object_already_grasped=True so that pour_server
+        can lift from the current arm position before moving to the bowl.
+        """
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                "base_link", GRASP_LINK_FRAME, rclpy.time.Time()
+            )
+        except Exception as e:
+            self.node.get_logger().error(f"TF lookup failed: {e}")
+            return None
+
+        result = PickResult()
+        result.pick_pose = PoseStamped()
+        result.pick_pose.header.frame_id = "base_link"
+        result.pick_pose.header.stamp = self.node.get_clock().now().to_msg()
+        result.pick_pose.pose.position.x = transform.transform.translation.x
+        result.pick_pose.pose.position.y = transform.transform.translation.y
+        result.pick_pose.pose.position.z = transform.transform.translation.z
+        result.pick_pose.pose.orientation = transform.transform.rotation
+        return result
 
     def get_object_point(self, object_name: str) -> PointStamped:
         request = DetectionHandler.Request()

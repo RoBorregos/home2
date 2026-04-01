@@ -41,14 +41,14 @@ class NavDependencyLifecycleManager(LifecycleNode):
         if not self.ready_to_activate:
             self.get_logger().warn("Intento de activación sin dependencias listas")
             return TransitionCallbackReturn.FAILURE
-            
+
         self.get_logger().info("Sistema ACTIVO: Gestionando nodos dependientes")
-        
-        # Transition managed nodes to ACTIVE
+
+        # Transition managed nodes: configure then activate
         for node_name in self.managed_nodes:
             self.transition_node(node_name, MsgTransition.TRANSITION_CONFIGURE)
             self.transition_node(node_name, MsgTransition.TRANSITION_ACTIVATE)
-            
+
         return TransitionCallbackReturn.SUCCESS
 
     def on_deactivate(self, state: State) -> TransitionCallbackReturn:
