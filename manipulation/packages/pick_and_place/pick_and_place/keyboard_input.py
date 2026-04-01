@@ -316,7 +316,9 @@ def main(args=None):
             elif choice == "-10":
                 object_name = input("Enter object name (in gripper): ")
                 bowl_name = input("Enter bowl name: ")
-                node.send_pour_request(object_name, bowl_name, object_already_grasped=True)
+                node.send_pour_request(
+                    object_name, bowl_name, object_already_grasped=True
+                )
 
             elif choice.isdigit():
                 try:

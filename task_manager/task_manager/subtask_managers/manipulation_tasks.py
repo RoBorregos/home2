@@ -540,7 +540,9 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
-    def pour(self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False):
+    def pour(
+        self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False
+    ):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.POUR
         goal_msg.pour_params.object_name = pour_object_name

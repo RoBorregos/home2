@@ -53,7 +53,12 @@ class PourManager:
             PointStamped, "/manipulation/debug_bowl_centroid", 10
         )
 
-    def execute(self, object_name: str, container_object_name: str, object_already_grasped: bool = False) -> bool:
+    def execute(
+        self,
+        object_name: str,
+        container_object_name: str,
+        object_already_grasped: bool = False,
+    ) -> bool:
         self.node.get_logger().info(
             f"Executing Pour Task (object_already_grasped={object_already_grasped})"
         )
@@ -283,7 +288,12 @@ class PourManager:
             return False, pick_result
         return True, pick_result
 
-    def pour_motion(self, pose_msg: PoseStamped, pick_result_msg, object_already_grasped: bool = False) -> bool:
+    def pour_motion(
+        self,
+        pose_msg: PoseStamped,
+        pick_result_msg,
+        object_already_grasped: bool = False,
+    ) -> bool:
         self.node.get_logger().warning("FF 1.3")
         goal_msg = PourMotion.Goal(
             pour_pose=pose_msg,

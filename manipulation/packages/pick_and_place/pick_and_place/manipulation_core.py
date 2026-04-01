@@ -194,7 +194,9 @@ class ManipulationCore(Node):
             self.get_logger().error(f"Place exception: {e}")
             return False
 
-    def pour_execute(self, object_name=None, bowl_name=None, object_already_grasped=False):
+    def pour_execute(
+        self, object_name=None, bowl_name=None, object_already_grasped=False
+    ):
         # self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info(f"ObjectName: {object_name}")
         self.get_logger().info(f"BowlName: {bowl_name}")

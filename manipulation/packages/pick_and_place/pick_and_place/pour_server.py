@@ -209,7 +209,10 @@ class PourMotionServer(Node):
             # call the move_to_pose function
             try:
                 goal_handle_result, action_result = self.move_to_pose(
-                    pose, isConstrained, planning_time=10.0, planning_attempts=100,
+                    pose,
+                    isConstrained,
+                    planning_time=10.0,
+                    planning_attempts=100,
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
@@ -235,16 +238,20 @@ class PourMotionServer(Node):
         joint6_lower_limit, joint6_upper_limit = JOINT_POSITION_LIMITS["joint6"]
 
         # Determine correct pour direction based on bowl position vs gripper
-        bowl_pos = np.array([
-            goal_handle.request.pour_pose.pose.position.x,
-            goal_handle.request.pour_pose.pose.position.y,
-            0.0,
-        ])
-        gripper_pos = np.array([
-            pose.pose.position.x,
-            pose.pose.position.y,
-            0.0,
-        ])
+        bowl_pos = np.array(
+            [
+                goal_handle.request.pour_pose.pose.position.x,
+                goal_handle.request.pour_pose.pose.position.y,
+                0.0,
+            ]
+        )
+        gripper_pos = np.array(
+            [
+                pose.pose.position.x,
+                pose.pose.position.y,
+                0.0,
+            ]
+        )
         to_bowl = bowl_pos - gripper_pos
         to_bowl_norm = np.linalg.norm(to_bowl)
 
@@ -254,18 +261,24 @@ class PourMotionServer(Node):
             pose.pose.orientation.z,
             pose.pose.orientation.w,
         ]
-        self.get_logger().info(f"Pour direction calc — bowl_pos_xy={bowl_pos[:2]}, "
-                               f"gripper_pos_xy={gripper_pos[:2]}, to_bowl_norm={to_bowl_norm:.4f}")
-        self.get_logger().info(f"Pour direction calc — quat=[{quat[0]:.4f}, {quat[1]:.4f}, "
-                               f"{quat[2]:.4f}, {quat[3]:.4f}]")
+        self.get_logger().info(
+            f"Pour direction calc — bowl_pos_xy={bowl_pos[:2]}, "
+            f"gripper_pos_xy={gripper_pos[:2]}, to_bowl_norm={to_bowl_norm:.4f}"
+        )
+        self.get_logger().info(
+            f"Pour direction calc — quat=[{quat[0]:.4f}, {quat[1]:.4f}, "
+            f"{quat[2]:.4f}, {quat[3]:.4f}]"
+        )
 
         rotation_matrix = quat2mat(quat)
         local_x_full = rotation_matrix[:, 0].copy()
         local_x = local_x_full.copy()
         local_x[2] = 0.0
         local_x_norm = np.linalg.norm(local_x)
-        self.get_logger().info(f"Pour direction calc — local_x_full={local_x_full}, "
-                               f"local_x_xy={local_x[:2]}, local_x_norm={local_x_norm:.4f}")
+        self.get_logger().info(
+            f"Pour direction calc — local_x_full={local_x_full}, "
+            f"local_x_xy={local_x[:2]}, local_x_norm={local_x_norm:.4f}"
+        )
 
         # +joint6 tilts contents in -local_X direction
         # If -local_X points towards bowl → pour positive
