@@ -6,6 +6,7 @@ import os
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
 from ultralytics import YOLO
+import mediapipe as mp
 
 # ── YOLO COCO keypoint indices ──
 NOSE = 0
@@ -50,6 +51,12 @@ class PoseDetection:
     def __init__(self):
         print("Pose Detection Ready (YOLO TensorRT)")
         self.yolo_pose = load_yolo_pose("yolo11m-pose.pt")
+        self.mp_pose = mp.solutions.pose.Pose(
+            static_image_mode=False,
+            model_complexity=1,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
 
     # ── Core keypoint extraction ──
 
@@ -145,19 +152,28 @@ class PoseDetection:
         return gesture
 
     def is_waving_customer(self, image):
-        """Check if person has one hand raised (waving)."""
-        points, conf = self._get_keypoints(image)
-        if points is None:
+        """Check if person has one hand raised (waving) using MediaPipe."""
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.mp_pose.process(rgb)
+        if not results.pose_landmarks:
             return False
-        try:
-            if (
-                points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
-                or points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1]
-            ):
-                return True
-            return False
-        except Exception:
-            return False
+        lm = results.pose_landmarks.landmark
+        mp_pose = mp.solutions.pose.PoseLandmark
+
+        l_wrist = lm[mp_pose.LEFT_WRIST]
+        r_wrist = lm[mp_pose.RIGHT_WRIST]
+        l_shoulder = lm[mp_pose.LEFT_SHOULDER]
+        r_shoulder = lm[mp_pose.RIGHT_SHOULDER]
+        l_elbow = lm[mp_pose.LEFT_ELBOW]
+        r_elbow = lm[mp_pose.RIGHT_ELBOW]
+
+        left_raised = (
+            l_wrist.y < l_shoulder.y or l_elbow.y < l_shoulder.y
+        )
+        right_raised = (
+            r_wrist.y < r_shoulder.y or r_elbow.y < r_shoulder.y
+        )
+        return left_raised or right_raised
 
     # ── Gesture sub-checks ──
 

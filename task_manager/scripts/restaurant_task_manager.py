@@ -90,40 +90,62 @@ class RestaurantTaskManager(Node):
             f"Tables sorted by customers: {[(tid, self.tables[tid]['num_customers']) for tid in self.tables_sorted_by_customers]}",
         )
 
-    def pick_object(self, object_name):
-        """Attempt to pick object with retries, fallback to deux ex machina."""
-        for attempt in range(ATTEMPT_LIMIT):
-            Logger.info(self, f"Pick attempt {attempt + 1}/{ATTEMPT_LIMIT} for {object_name}")
-            status = self.subtask_manager.manipulation.pick_object(object_name)
-
-            if status == Status.EXECUTION_SUCCESS:
-                return Status.EXECUTION_SUCCESS
-
-            self.timeout(1)
-
-        # Failed after all attempts - deux ex machina
-        Logger.warn(
-            self,
-            f"Failed to pick {object_name} after {ATTEMPT_LIMIT} attempts. Requesting human assistance.",
-        )
+    def deus_pick(self, object_name):
+        """Fallback: ask human to place object in gripper."""
+        Logger.warn(self, f"Requesting human assistance for {object_name}.")
         self.subtask_manager.manipulation.open_gripper()
         self.subtask_manager.hri.say(
             f"I am having trouble picking the {object_name}. Please place it in my gripper and say yes when done."
         )
-
         status, confirmation = self.subtask_manager.hri.confirm(
             "Have you placed the object in my gripper?",
             use_hotwords=True,
             retries=3,
             wait_between_retries=5,
         )
-
         if confirmation == "yes":
             self.subtask_manager.manipulation.close_gripper()
             self.subtask_manager.hri.say("Thank you. I have received the object.")
             return Status.EXECUTION_SUCCESS
-
         return Status.EXECUTION_ERROR
+
+    def pick_object(self, object_name):
+        """Detect objects, find closest match, and pick. Similar to GPSR flow."""
+        self.subtask_manager.hri.say(f"I will pick the {object_name}.", wait=False)
+
+        # Detect objects with retries
+        detections = []
+        for attempt in range(ATTEMPT_LIMIT):
+            status, detections = self.subtask_manager.vision.detect_objects()
+            if status == Status.EXECUTION_SUCCESS and len(detections) > 0:
+                break
+            Logger.warn(self, f"No objects detected, attempt {attempt + 1}/{ATTEMPT_LIMIT}")
+
+        if not detections:
+            self.subtask_manager.hri.say(f"I could not see the {object_name}.")
+            return self.deus_pick(object_name)
+
+        # Find closest match to requested object
+        labels = self.subtask_manager.vision.get_labels(detections)
+        Logger.info(self, f"Detected labels: {labels}")
+        status, closest = self.subtask_manager.hri.find_closest(labels, object_name)
+        if status != Status.EXECUTION_SUCCESS or not closest.results:
+            Logger.warn(self, f"Could not match '{object_name}' in detected labels: {labels}")
+            return self.deus_pick(object_name)
+
+        matched_label = closest.results[0]
+        Logger.info(self, f"Matched '{object_name}' to detection label: '{matched_label}'")
+
+        # Pick with retries
+        for attempt in range(ATTEMPT_LIMIT):
+            Logger.info(self, f"Pick attempt {attempt + 1}/{ATTEMPT_LIMIT} for '{matched_label}'")
+            status = self.subtask_manager.manipulation.pick_object(matched_label)
+            if status == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(f"I have picked the {object_name}.")
+                return Status.EXECUTION_SUCCESS
+            Logger.warn(self, "Pick failed, retrying...")
+
+        return self.deus_pick(object_name)
 
     def place_object(self):
         """Attempt to place object with retries, fallback to deus ex machina."""
@@ -173,9 +195,7 @@ class RestaurantTaskManager(Node):
             status = Status.EXECUTION_SUCCESS
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Arrived near tables for customer detection.")
-                self.subtask_manager.manipulation.move_joint_positions(
-                    named_position="front_low_stare", velocity=0.5, degrees=True
-                )
+                self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
                 # Get table groups and positions directly from vision task
                 status, customer_tables = self.subtask_manager.vision.customer_tables()
                 self.subtask_manager.hri.publish_display_topic(RESTAURANT_TABLES_TOPIC)
@@ -248,9 +268,7 @@ class RestaurantTaskManager(Node):
                 self.subtask_manager.vision.activate_face_recognition()
                 self.subtask_manager.manipulation.follow_face(True)
 
-                self.subtask_manager.manipulation.move_joint_positions(
-                    named_position="front_stare", velocity=0.5, degrees=True
-                )
+                self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
                 self.subtask_manager.manipulation.follow_face(True)
                 # Use HRI take_order function
                 status, orders = self.subtask_manager.hri.take_order(retries=3)
@@ -281,9 +299,7 @@ class RestaurantTaskManager(Node):
             Logger.state(self, "Navigating to bar station to get items...")
             self.subtask_manager.hri.say("I will now go to the bar to get the orders.")
 
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="nav_pose", velocity=0.5, degrees=True
-            )
+            self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
             self.subtask_manager.nav.resume_nav()
             result = self.subtask_manager.nav.move_to_zero()
             if hasattr(result, "add_done_callback"):
@@ -322,10 +338,8 @@ class RestaurantTaskManager(Node):
                     f"Picking item {self.current_delivery_item_index + 1}/{len(table['orders'])}: {item}",
                 )
 
-                # At bar, pick the item
-                self.subtask_manager.manipulation.move_joint_positions(
-                    named_position="front_stare", velocity=0.5, degrees=True
-                )
+                # Move arm to table_stare pose BEFORE detection/pick
+                self.subtask_manager.manipulation.move_to_position("table_stare", velocity=0.5)
 
                 status = self.pick_object(item)
 
@@ -335,18 +349,14 @@ class RestaurantTaskManager(Node):
                     )
 
                     # Navigate to the table
-                    self.subtask_manager.manipulation.move_joint_positions(
-                        named_position="nav_pose", velocity=0.5, degrees=True
-                    )
+                    self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
                     self.subtask_manager.nav.resume_nav()
                     self.subtask_manager.nav.move_to_point(table["coordinates"])
                     self.subtask_manager.nav.pause_nav()
 
                     # Place item on table
                     self.subtask_manager.hri.say(f"Here is your {item}.")
-                    self.subtask_manager.manipulation.move_joint_positions(
-                        named_position="table_stare", velocity=0.5, degrees=True
-                    )
+                    self.subtask_manager.manipulation.move_to_position("table_stare", velocity=0.5)
 
                     status = self.place_object()
 
