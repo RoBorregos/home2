@@ -16,7 +16,7 @@ from rclpy.node import Node
 from frida_interfaces.msg import AudioData
 import df as DF_MODULE
 
-SAVE_PATH = "/tmp"
+SAVE_PATH = "/workspace/src/hri/packages/speech/debugs/audios"
 SAVE_IT = 100
 run_frames = []
 
@@ -183,6 +183,7 @@ class NoiseCancellation(Node):
 
     def save_audio(self):
         self.get_logger().info("Saving processed audio stream.")
+        os.makedirs(SAVE_PATH, exist_ok=True)
         output_file = os.path.join(SAVE_PATH, "last_run_noise_cancelled.wav")
         with wave.open(output_file, "wb") as wf:
             wf.setnchannels(1)
