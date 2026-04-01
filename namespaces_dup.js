@@ -11,6 +11,9 @@ var namespaces_dup =
       [ "get2DCentroidNormalized", "namespacecalculations.html#aed62b46cb698edbf80e14a22e1839aca", null ],
       [ "get_depth", "namespacecalculations.html#a19db582aa5483cc03e16968a79a25a28", null ],
       [ "map", "namespacecalculations.html#ab20c1a0c376ea6c16cebfb03541d2ee3", null ],
+      [ "point2d_to_3d", "namespacecalculations.html#a6026fc3d0ab025701ce2f0253fc6f4f1", null ],
+      [ "point2d_to_ros_point_stamped", "namespacecalculations.html#a763bb3c0bc055bdabfbc4812bd75ad4d", null ],
+      [ "point3d_to_ros_point_stamped", "namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02", null ],
       [ "FLT_EPSILON", "namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388", null ]
     ] ],
     [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", "namespacecalibrate__ignore__laser" ],

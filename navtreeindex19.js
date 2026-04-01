@@ -1,5 +1,6 @@
 var NAVTREEINDEX19 =
 {
+"classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3ecd87d3b9655f0868c93116b151f915":[24,0,82,0,6,0,35],
 "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3ecd87d3b9655f0868c93116b151f915":[23,0,138,1,7,0,35],
 "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3f4b877e33afbdc634e567c33f35db8b":[23,0,138,1,7,0,12],
 "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3f4b877e33afbdc634e567c33f35db8b":[24,0,82,0,6,0,12],
@@ -248,6 +249,5 @@ var NAVTREEINDEX19 =
 "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aaaf6264897eb235876f8deedb98dbbdc":[23,0,138,1,10,0,5],
 "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aaaf6264897eb235876f8deedb98dbbdc":[24,0,82,0,9,0,5],
 "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aadb75ddadd2e2a01a9147893447db639":[24,0,82,0,9,0,59],
-"classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aadb75ddadd2e2a01a9147893447db639":[23,0,138,1,10,0,59],
-"classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab0eac7b68007e1a89b61d029aec3c965":[23,0,138,1,10,0,11]
+"classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aadb75ddadd2e2a01a9147893447db639":[23,0,138,1,10,0,59]
 };

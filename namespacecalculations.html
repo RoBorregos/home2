@@ -109,6 +109,12 @@ Functions</h2></td></tr>
 <tr class="separator:a19db582aa5483cc03e16968a79a25a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8d8159051ab90fd57ec31e9221579f5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#af8d8159051ab90fd57ec31e9221579f5">deproject_pixel_to_point</a> (cv_image_rgb_info, pixel, depth)</td></tr>
 <tr class="separator:af8d8159051ab90fd57ec31e9221579f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6026fc3d0ab025701ce2f0253fc6f4f1"><td class="memItemLeft" align="right" valign="top">tuple[float, float, float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a6026fc3d0ab025701ce2f0253fc6f4f1">point2d_to_3d</a> (image_info, depth_image, tuple[int, int] point2d)</td></tr>
+<tr class="separator:a6026fc3d0ab025701ce2f0253fc6f4f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a181b15f652845f523b8d576fcf2c5b02"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02">point3d_to_ros_point_stamped</a> (tuple[float, float, float] point3d, str frame_id, stamp, bool is_optical=True)</td></tr>
+<tr class="separator:a181b15f652845f523b8d576fcf2c5b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a763bb3c0bc055bdabfbc4812bd75ad4d"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a763bb3c0bc055bdabfbc4812bd75ad4d">point2d_to_ros_point_stamped</a> (image_info, depth_image, tuple[int, int] point2d, str frame_id, stamp, bool is_optical=False)</td></tr>
+<tr class="separator:a763bb3c0bc055bdabfbc4812bd75ad4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -282,6 +288,142 @@ Reference: https://github.com/IntelRealSense/librealsense/blob/e9f05c55f88f68766
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a6026fc3d0ab025701ce2f0253fc6f4f1" name="a6026fc3d0ab025701ce2f0253fc6f4f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6026fc3d0ab025701ce2f0253fc6f4f1">&#9670;&#160;</a></span>point2d_to_3d()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[float, float, float] calculations.point2d_to_3d </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>image_info</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>depth_image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">tuple[int, int]
+&#160;</td>
+          <td class="paramname"><em>point2d</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Given 2D pixel coordinates (x, y), intrinsic camera info and a depth image,
+calculates the proper depth and deprojects it into 3D Optical coordinates.
+</pre> 
+</div>
+</div>
+<a id="a763bb3c0bc055bdabfbc4812bd75ad4d" name="a763bb3c0bc055bdabfbc4812bd75ad4d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a763bb3c0bc055bdabfbc4812bd75ad4d">&#9670;&#160;</a></span>point2d_to_ros_point_stamped()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> PointStamped calculations.point2d_to_ros_point_stamped </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>image_info</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>depth_image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">tuple[int, int]&#160;</td>
+          <td class="paramname"><em>point2d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>frame_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>stamp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>is_optical</em> = <code>False</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Given 2D pixel coordinates (x, y), intrinsic camera info and a depth image,
+calculates the 3D position and directly returns a standard ROS PointStamped.
+The point is in the camera optical frame by default (is_optical=False means no extra conversion).
+Set is_optical=True only if you want to manually convert from optical to ROS base_link convention.
+</pre> 
+</div>
+</div>
+<a id="a181b15f652845f523b8d576fcf2c5b02" name="a181b15f652845f523b8d576fcf2c5b02"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a181b15f652845f523b8d576fcf2c5b02">&#9670;&#160;</a></span>point3d_to_ros_point_stamped()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> PointStamped calculations.point3d_to_ros_point_stamped </td>
+          <td>(</td>
+          <td class="paramtype">tuple[float, float, float]&#160;</td>
+          <td class="paramname"><em>point3d</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>frame_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>stamp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>is_optical</em> = <code>True</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Given a 3D point, transforms it into a standard ROS PointStamped.
+If is_optical=True (default), it converts from Camera Optical Frame (Z_forward, X_right, Y_down)
+to standard ROS base_link Frame (X_forward, Y_left, Z_up).
+</pre> 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>

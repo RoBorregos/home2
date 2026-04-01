@@ -1,7 +1,6 @@
 var classrestaurant__commands_1_1RESTAURANTCommands =
 [
     [ "__init__", "classrestaurant__commands_1_1RESTAURANTCommands.html#a15a857ca655ec5c9282f490992ce28bb", null ],
-    [ "build_point_stamped", "classrestaurant__commands_1_1RESTAURANTCommands.html#a0c7976b324c0c006a0c6360b8e73191d", null ],
     [ "customer_table_callback", "classrestaurant__commands_1_1RESTAURANTCommands.html#a69848f09f180ebec7afbdd1872756cfd", null ],
     [ "depth_callback", "classrestaurant__commands_1_1RESTAURANTCommands.html#acc45cb7b5187bcc9b5b43ac134f84812", null ],
     [ "get_customers", "classrestaurant__commands_1_1RESTAURANTCommands.html#ae38426dee2fa09684e4cedcba0de4db5", null ],

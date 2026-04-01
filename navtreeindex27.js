@@ -1,10 +1,14 @@
 var NAVTREEINDEX27 =
 {
+"namespacearm__pkg_1_1utils.html#a3ae85e33595c84274bc8d8fd016a62c7":[23,0,2,2,1],
 "namespacearm__pkg_1_1utils.html#a7c0b33dacd672c3d3e9838e099c94994":[23,0,2,2,0],
 "namespacearm__pkg_1_1utils.html#ae9eb22e558e6f2b39ff28482a2960667":[23,0,2,2,2],
 "namespacecalculations.html":[23,0,3],
+"namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02":[23,0,3,7],
 "namespacecalculations.html#a19db582aa5483cc03e16968a79a25a28":[23,0,3,3],
-"namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388":[23,0,3,5],
+"namespacecalculations.html#a6026fc3d0ab025701ce2f0253fc6f4f1":[23,0,3,5],
+"namespacecalculations.html#a763bb3c0bc055bdabfbc4812bd75ad4d":[23,0,3,6],
+"namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388":[23,0,3,8],
 "namespacecalculations.html#a9b5eb19cdc3b480d8b741b2a394bd49a":[23,0,3,1],
 "namespacecalculations.html#ab20c1a0c376ea6c16cebfb03541d2ee3":[23,0,3,4],
 "namespacecalculations.html#aed62b46cb698edbf80e14a22e1839aca":[23,0,3,2],
@@ -245,9 +249,5 @@ var NAVTREEINDEX27 =
 "namespacefrida__constants_1_1manipulation__constants.html#a0b7108a7f04682d83eb47aacc396c94b":[23,0,49,2,5],
 "namespacefrida__constants_1_1manipulation__constants.html#a0dc8f7fb16d410b4a27d8c1aac4cc769":[23,0,49,2,49],
 "namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f":[23,0,49,2,51],
-"namespacefrida__constants_1_1manipulation__constants.html#a1bd51b80a924a289d9d7836620eca1f6":[23,0,49,2,48],
-"namespacefrida__constants_1_1manipulation__constants.html#a21af79d5b4fabb9ddd588da869e67c4b":[23,0,49,2,31],
-"namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0":[23,0,49,2,10],
-"namespacefrida__constants_1_1manipulation__constants.html#a2885d522797d86e74fc04768cf3b50a6":[23,0,49,2,4],
-"namespacefrida__constants_1_1manipulation__constants.html#a2b9fe2eb921dacceca8b4fd08e9eb64f":[23,0,49,2,25]
+"namespacefrida__constants_1_1manipulation__constants.html#a1bd51b80a924a289d9d7836620eca1f6":[23,0,49,2,48]
 };
