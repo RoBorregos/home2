@@ -186,9 +186,10 @@ class PourMotionServer(Node):
         else:
             self.get_logger().info("Object already grasped — skipping lift step")
 
-        isConstrained = (
-            True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
-        )
+        if object_already_grasped:
+            isConstrained = False  # Skip constraints — faster planning, fewer flips
+        else:
+            isConstrained = True
 
         pose = self.receive_pose(goal_handle.request.pour_pose)
         is_upside_down = self.is_upside_down(pose)
@@ -253,24 +254,36 @@ class PourMotionServer(Node):
             pose.pose.orientation.z,
             pose.pose.orientation.w,
         ]
+        self.get_logger().info(f"Pour direction calc — bowl_pos_xy={bowl_pos[:2]}, "
+                               f"gripper_pos_xy={gripper_pos[:2]}, to_bowl_norm={to_bowl_norm:.4f}")
+        self.get_logger().info(f"Pour direction calc — quat=[{quat[0]:.4f}, {quat[1]:.4f}, "
+                               f"{quat[2]:.4f}, {quat[3]:.4f}]")
+
         rotation_matrix = quat2mat(quat)
-        local_x = rotation_matrix[:, 0].copy()
+        local_x_full = rotation_matrix[:, 0].copy()
+        local_x = local_x_full.copy()
         local_x[2] = 0.0
+        local_x_norm = np.linalg.norm(local_x)
+        self.get_logger().info(f"Pour direction calc — local_x_full={local_x_full}, "
+                               f"local_x_xy={local_x[:2]}, local_x_norm={local_x_norm:.4f}")
 
         # +joint6 tilts contents in -local_X direction
         # If -local_X points towards bowl → pour positive
-        if to_bowl_norm > 1e-3 and np.linalg.norm(local_x) > 1e-3:
+        if to_bowl_norm > 1e-3 and local_x_norm > 1e-3:
             to_bowl_unit = to_bowl / to_bowl_norm
-            local_x_unit = local_x / np.linalg.norm(local_x)
+            local_x_unit = local_x / local_x_norm
             dot = np.dot(-local_x_unit, to_bowl_unit)
             pour_direction = 1.0 if dot >= 0 else -1.0
             self.get_logger().info(
                 f"Pour direction: {'positive' if pour_direction > 0 else 'negative'} "
-                f"(dot={dot:.3f})"
+                f"(dot={dot:.3f}, -local_x_unit={-local_x_unit[:2]}, to_bowl_unit={to_bowl_unit[:2]})"
             )
         else:
             pour_direction = 1.0
-            self.get_logger().warn("Could not determine pour direction, defaulting to positive")
+            self.get_logger().warn(
+                f"Could not determine pour direction (to_bowl_norm={to_bowl_norm:.4f}, "
+                f"local_x_norm={local_x_norm:.4f}), defaulting to positive"
+            )
 
         current_joints = get_joint_positions(
             self._get_joints_client,
