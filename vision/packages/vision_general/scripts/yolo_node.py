@@ -34,7 +34,7 @@ class YoloNode(Node):
         self.latest_frame = None
 
         # Load YOLO with TensorRT acceleration for Orin AGX
-        self.model = load_yolo_trt(YOLO_LOCATION)
+        self.model = YOLO(YOLO_LOCATION)
         self.get_logger().info("YOLO model loaded successfully")
 
         self.detect_service = self.create_service(

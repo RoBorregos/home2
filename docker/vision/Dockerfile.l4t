@@ -58,7 +58,8 @@ RUN pip install --upgrade pip && \
     pyyaml \
     scipy \
     onnxslim>=0.1.71 \
-    onnxruntime-gpu
+    onnxruntime-gpu \
+    mediapipe
 
 # ── YOLOv5 for legacy YoloV5ObjectDetector ──
 WORKDIR /workspace
