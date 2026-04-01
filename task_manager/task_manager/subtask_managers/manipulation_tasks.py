@@ -540,11 +540,12 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
-    def pour(self, pour_object_name: str, pour_container_name: str):
+    def pour(self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.POUR
         goal_msg.pour_params.object_name = pour_object_name
         goal_msg.pour_params.bowl_name = pour_container_name
+        goal_msg.pour_params.object_already_grasped = object_already_grasped
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
