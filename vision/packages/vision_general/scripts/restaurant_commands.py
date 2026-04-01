@@ -26,6 +26,7 @@ from frida_constants.vision_constants import (
 from frida_interfaces.msg import CustomerTable, PersonList
 from frida_interfaces.srv import Customer, CustomerTables, ObjectPoints
 
+from builtin_interfaces.msg import Time
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from vision_general.utils.ros_utils import wait_for_future
 
@@ -40,7 +41,6 @@ class RESTAURANTCommands(Node):
 
         self.image = None
         self.depth_image = []
-        self.depth_stamp = None
         self.imageInfo = None
 
         self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
@@ -97,7 +97,7 @@ class RESTAURANTCommands(Node):
                 self.depth_image,
                 point2d,
                 CAMERA_FRAME,
-                self.depth_stamp,
+                Time(sec=0, nanosec=0),
             )
             table_msg.people = PersonList()
             table_msg.people.list = []
@@ -233,7 +233,6 @@ class RESTAURANTCommands(Node):
     def depth_callback(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-            self.depth_stamp = data.header.stamp
         except Exception as e:
             self.get_logger().error(f"Depth conversion error: {e}")
 

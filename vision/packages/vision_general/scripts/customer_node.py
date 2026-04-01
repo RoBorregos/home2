@@ -8,6 +8,7 @@ re-id them if necessary
 import cv2
 from vision_general.utils.trt_utils import load_yolo_trt
 import tqdm
+from builtin_interfaces.msg import Time
 from vision_general.utils.calculations import (
     get2DCentroid,
     point2d_to_ros_point_stamped,
@@ -199,7 +200,7 @@ class CustomerNode(Node):
                         self.depth_image,
                         point2D,
                         self.frame_id,
-                        self.depth_image_time,
+                        Time(sec=0, nanosec=0),
                     )
                     self.results_publisher.publish(coords)
 
