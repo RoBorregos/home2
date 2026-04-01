@@ -922,37 +922,6 @@ class HRITasks(metaclass=SubtaskMeta):
         plan = ", then ".join(steps[:-1]) + f", and finally {steps[-1]}"
         return f"My plan is to {plan}."
 
-    def confirm_plan(self, commands: list, retries: int = 2) -> tuple:
-        """
-        Says the interpreted plan out loud and asks the user for confirmation.
-
-        Args:
-            commands: list of command objects to be confirmed
-            retries: number of confirmation attempts
-
-        Returns:
-            tuple: (Status, bool) - Status of the confirmation and whether it was confirmed
-        """
-        plan_text = self.parse_plan_to_text(commands)
-        Logger.info(self.node, f"Parsed plan: {plan_text}")
-
-        for attempt in range(retries):
-            self.say(plan_text, wait=True)
-            s, confirmation = self.confirm(
-                "Should I proceed with this plan? Please say yes or no.",
-                use_hotwords=True,
-                retries=2,
-            )
-            if s == Status.EXECUTION_SUCCESS:
-                if confirmation == "yes":
-                    return Status.EXECUTION_SUCCESS, True
-                else:
-                    self.say("Understood, I will not execute the plan.")
-                    return Status.EXECUTION_SUCCESS, False
-
-        Logger.warn(self.node, "Plan confirmation timed out.")
-        return Status.TIMEOUT, False
-
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
