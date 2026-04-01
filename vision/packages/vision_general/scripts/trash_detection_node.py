@@ -25,11 +25,6 @@ from frida_interfaces.srv import SetDetectorClasses, ObjectPoints, TrashcanDetec
 from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from vision_general.utils.ros_utils import wait_for_future
 
-DEFAULT_LABELS = [
-    "apple",
-    "milk",
-    "juice",
-]
 TRASH_DEBUG_IMAGE_TOPIC = "/vision/trash_detection_debug"
 
 
@@ -40,7 +35,7 @@ class TrashDetectionNode(Node):
         self.latest_detections = ObjectDetectionArray()
         self.image = None
         self.imageInfo = None
-        self.labels = DEFAULT_LABELS
+        self.labels = set()
         self.depth_image = None
 
         self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
@@ -122,7 +117,7 @@ class TrashDetectionNode(Node):
                 continue
 
             detection = ObjectDetection()
-            if det.label_text.lower() in self.labels:
+            if self.labels and det.label_text.lower() in self.labels:
                 self.get_logger().info(f"Detected TRASH/{det.label_text}")
                 detection.label = det.label
                 detection.label_text = f"trash/{det.label_text}"
