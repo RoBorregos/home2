@@ -11,6 +11,7 @@ from rclpy.node import Node
 from std_srvs.srv import SetBool
 from sensor_msgs.msg import JointState
 from frida_pymoveit2.robots import xarm6
+from frida_pymoveit2.robots.xarm6 import JOINT_POSITION_LIMITS
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions,
     get_joint_positions,
@@ -148,37 +149,42 @@ class PourMotionServer(Node):
         """Perform the pour operation."""
         self.get_logger().info("Trying to pour object")
 
-        # move higher than current pose
-        curr_pose = goal_handle.request.pick_result.pick_pose
-        self.get_logger().info(f"Current pose: {curr_pose.pose}")
+        object_already_grasped = goal_handle.request.object_already_grasped
 
-        new_pose = curr_pose
-        new_pose.pose.position.z += 0.2
+        if not object_already_grasped:
+            # move higher than current pose (only when pour_server did the pick)
+            curr_pose = goal_handle.request.pick_result.pick_pose
+            self.get_logger().info(f"Current pose: {curr_pose.pose}")
 
-        tries = 2
-        distance_between_tries = 0.025
-        for i in range(tries):
-            self.get_logger().warn("Trying to move to pour pose")
-            new_pose.pose.position.z += distance_between_tries
-            self.get_logger().info(f"Pour pose: {new_pose.pose}")
-            # call the move_to_pose function
-            try:
-                goal_handle_result, action_result = self.move_to_pose(
-                    new_pose,
-                    useConstraint=True,
-                    planning_time=10.0,
-                    planning_attempts=100,
-                )
-            except Exception as e:
-                self.get_logger().error(f"Failed to move to pour pose: {e}")
-                open_gripper(self._gripper_set_state_client)
-                return False, None
+            new_pose = curr_pose
+            new_pose.pose.position.z += 0.2
 
-            if action_result.result.success:
-                self.get_logger().info("Pour pose reached")
-                break
-            else:
-                self.get_logger().error("Failed to reach pour pose")
+            tries = 2
+            distance_between_tries = 0.025
+            for i in range(tries):
+                self.get_logger().warn("Trying to move to pour pose")
+                new_pose.pose.position.z += distance_between_tries
+                self.get_logger().info(f"Pour pose: {new_pose.pose}")
+                # call the move_to_pose function
+                try:
+                    goal_handle_result, action_result = self.move_to_pose(
+                        new_pose,
+                        useConstraint=True,
+                        planning_time=10.0,
+                        planning_attempts=100,
+                    )
+                except Exception as e:
+                    self.get_logger().error(f"Failed to move to pour pose: {e}")
+                    open_gripper(self._gripper_set_state_client)
+                    return False, None
+
+                if action_result.result.success:
+                    self.get_logger().info("Pour pose reached")
+                    break
+                else:
+                    self.get_logger().error("Failed to reach pour pose")
+        else:
+            self.get_logger().info("Object already grasped — skipping lift step")
 
         isConstrained = (
             True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
@@ -224,13 +230,30 @@ class PourMotionServer(Node):
                     self.get_logger().info(f"Retrying pour pose: {pose.pose}")
         time.sleep(3.0)
         pour_angle = 3.0
+        joint6_lower_limit, joint6_upper_limit = JOINT_POSITION_LIMITS["joint6"]
 
         current_joints = get_joint_positions(
             self._get_joints_client,
-            degrees=False,  # set to true to return in degrees
+            degrees=False,
         )
         self.get_logger().info(f"Current joints: {current_joints}")
-        current_joints["joints"]["joint6"] += pour_angle
+
+        joint6_val = current_joints["joints"]["joint6"]
+        if joint6_val + pour_angle <= joint6_upper_limit:
+            current_joints["joints"]["joint6"] += pour_angle
+        elif joint6_val - pour_angle >= joint6_lower_limit:
+            current_joints["joints"]["joint6"] -= pour_angle
+            self.get_logger().info("Pouring in reverse direction to respect joint limits")
+        else:
+            # Both directions exceed limits — use whichever gets closer to the limit
+            dist_upper = joint6_upper_limit - joint6_val
+            dist_lower = joint6_val - joint6_lower_limit
+            if dist_upper >= dist_lower:
+                current_joints["joints"]["joint6"] = joint6_upper_limit
+            else:
+                current_joints["joints"]["joint6"] = joint6_lower_limit
+            self.get_logger().warn("Pour angle limited by joint6 bounds")
+
         self.get_logger().info(f"Current joints after pour angle: {current_joints}")
         action_result = move_joint_positions(
             move_joints_action_client=self._move_joints_action_client,

@@ -160,7 +160,7 @@ class PourManager:
             pour_pose.pose.orientation.w = pour_orientation[3]
 
         # 9. Pour Motion
-        if not self.pour_motion(pour_pose, pick_result_msg):
+        if not self.pour_motion(pour_pose, pick_result_msg, object_already_grasped):
             self.node.get_logger().error("Pour motion failed")
             return False, pick_result_msg
 
@@ -283,10 +283,12 @@ class PourManager:
             return False, pick_result
         return True, pick_result
 
-    def pour_motion(self, pose_msg: PoseStamped, pick_result_msg) -> bool:
+    def pour_motion(self, pose_msg: PoseStamped, pick_result_msg, object_already_grasped: bool = False) -> bool:
         self.node.get_logger().warning("FF 1.3")
         goal_msg = PourMotion.Goal(
-            pour_pose=pose_msg, pick_result=pick_result_msg
+            pour_pose=pose_msg,
+            pick_result=pick_result_msg,
+            object_already_grasped=object_already_grasped,
         )
 
         self.node.get_logger().warning("FF 1.4")
