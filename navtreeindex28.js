@@ -1,5 +1,15 @@
 var NAVTREEINDEX28 =
 {
+"namespacefrida__constants_1_1integration__constants.html":[23,0,49,1],
+"namespacefrida__constants_1_1integration__constants.html#a11ddde52afff1d42912d1949fd60d27e":[23,0,49,1,0],
+"namespacefrida__constants_1_1integration__constants.html#a6afb4839f1987ec652b6d312adee8407":[23,0,49,1,1],
+"namespacefrida__constants_1_1integration__constants.html#a92bf4c688dac25bab266591c51f2956a":[23,0,49,1,2],
+"namespacefrida__constants_1_1manipulation__constants.html":[23,0,49,2],
+"namespacefrida__constants_1_1manipulation__constants.html#a05480f19a8f62082d5be5c02acc98f72":[23,0,49,2,0],
+"namespacefrida__constants_1_1manipulation__constants.html#a0b7108a7f04682d83eb47aacc396c94b":[23,0,49,2,5],
+"namespacefrida__constants_1_1manipulation__constants.html#a0dc8f7fb16d410b4a27d8c1aac4cc769":[23,0,49,2,49],
+"namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f":[23,0,49,2,51],
+"namespacefrida__constants_1_1manipulation__constants.html#a1bd51b80a924a289d9d7836620eca1f6":[23,0,49,2,48],
 "namespacefrida__constants_1_1manipulation__constants.html#a21af79d5b4fabb9ddd588da869e67c4b":[23,0,49,2,31],
 "namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0":[23,0,49,2,10],
 "namespacefrida__constants_1_1manipulation__constants.html#a2885d522797d86e74fc04768cf3b50a6":[23,0,49,2,4],
@@ -239,15 +249,5 @@ var NAVTREEINDEX28 =
 "namespacelocal__camera.html#afff3f00fd586a1308f7b1090b40ec44e":[23,0,74,2],
 "namespacelook__at__example.html":[23,0,75],
 "namespacelook__at__example.html#adc1b4dbd73f98a092d682f946ed57ef3":[23,0,75,1],
-"namespacemap__area__tagger.html":[23,0,76],
-"namespacemap__area__tagger.html#a0a8c16661fedc07a4d89252f175f3fde":[23,0,76,3],
-"namespacemap__area__tagger.html#a33c0e02922d99d9405848a521fad78ab":[23,0,76,2],
-"namespacemap__area__tagger.html#a5ff188d3d9297ca930d16ba3349e0f0d":[23,0,76,5],
-"namespacemap__area__tagger.html#a8b8e125ab7b5ed1f090345e6c568893f":[23,0,76,6],
-"namespacemap__area__tagger.html#a9c0f1fffca59ee4d50efdcc6d8995046":[23,0,76,7],
-"namespacemap__area__tagger.html#aa51966e06f7d42b83f9394fc912a38ab":[23,0,76,4],
-"namespacemap__publisher.html":[23,0,77],
-"namespacemap__publisher.html#a9d18f91950638e3c533f05c59cb83061":[23,0,77,1],
-"namespacemapping.html":[23,0,78],
-"namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20":[23,0,78,0]
+"namespacemap__area__tagger.html":[23,0,76]
 };

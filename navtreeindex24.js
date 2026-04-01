@@ -1,5 +1,15 @@
 var NAVTREEINDEX24 =
 {
+"face__recognition__node_8py.html#a2cdad657ac233e7e409732e4566479fb":[25,0,7,0,3,1,3,6],
+"face__recognition__node_8py.html#a33dbc1cbcf289e06efcd75671ebea200":[25,0,7,0,3,1,3,7],
+"face__recognition__node_8py.html#a56617f4391f49f52c38a3bdabc308aad":[25,0,7,0,3,1,3,5],
+"face__recognition__node_8py.html#a7d4636518fc66a1e7d866bd84deb7929":[25,0,7,0,3,1,3,4],
+"face__recognition__node_8py.html#abe2d04ddc5e2378a7b776a096ca9c278":[25,0,7,0,3,1,3,1],
+"face__recognition__node_8py.html#af990b03ce580e863acd6da4c4481f1ff":[25,0,7,0,3,1,3,2],
+"files.html":[25,0],
+"fix__position__to__plane_8py.html":[25,0,3,0,5,1,4],
+"fix__position__to__plane_8py.html#a053681b0552bb6c9176409d6c7509cc1":[25,0,3,0,5,1,4,6],
+"fix__position__to__plane_8py.html#a981872820e9c142622f621bd32260f1e":[25,0,3,0,5,1,4,3],
 "fix__position__to__plane_8py.html#aa0e2e9e442a6a2d03f862a7fb7e7db35":[25,0,3,0,5,1,4,5],
 "fix__position__to__plane_8py.html#ad893908b1dedf7dd24269b1a04089551":[25,0,3,0,5,1,4,2],
 "fix__position__to__plane_8py.html#aeaa9b43d281424bcdeda997af6006cbb":[25,0,3,0,5,1,4,4],
@@ -140,8 +150,8 @@ var NAVTREEINDEX24 =
 "functions_t.html":[24,3,0,20],
 "functions_u.html":[24,3,0,21],
 "functions_v.html":[24,3,0,22],
-"functions_vars.html":[24,3,2],
 "functions_vars.html":[24,3,2,0],
+"functions_vars.html":[24,3,2],
 "functions_vars_a.html":[24,3,2,1],
 "functions_vars_b.html":[24,3,2,2],
 "functions_vars_c.html":[24,3,2,3],
@@ -239,15 +249,5 @@ var NAVTREEINDEX24 =
 "grasp__detection__example_8py.html#a40a8024a9f168af4327222571de3ea94":[25,0,3,0,0,1,0,1],
 "grasp__markers_8py.html":[25,0,3,0,0,4,0],
 "grasp__markers_8py.html#a6e921905b580cbab9b3bbfd11f2231af":[25,0,3,0,0,4,0,1],
-"grasp__utils_8py.html":[25,0,3,0,5,1,2,0],
-"grasp__utils_8py.html#a66bfdc2901b1b5ef677a6921c55939d6":[25,0,3,0,5,1,2,0,0],
-"grasp__utils_8py.html#a9597ffd3c2a1573ab6036bd81117a64e":[25,0,3,0,5,1,2,0,1],
-"hand__task__manager_8py.html":[25,0,6,1,7],
-"hand__task__manager_8py.html#a91d2488b83a8d7b6e91bb400d9ff6b17":[25,0,6,1,7,2],
-"hand__task__manager_8py.html#a99cf5ff5956cbf1fe5d95cd0d41ba15e":[25,0,6,1,7,3],
-"heatmapPlace__Server_8py.html":[25,0,3,0,6,1,0],
-"heatmapPlace__Server_8py.html#a10435d751d9f6423cad540218af8f216":[25,0,3,0,6,1,0,2],
-"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[25,0,3,0,6,1,0,1],
-"help__me__carry_8py.html":[25,0,6,1,0,7],
-"help__me__carry_8py.html#ab5e4a679e827451f1c0776fcf4137ac0":[25,0,6,1,0,7,2]
+"grasp__utils_8py.html":[25,0,3,0,5,1,2,0]
 };

@@ -215,6 +215,7 @@ var hierarchy =
       [ "test_manager.TestTaskManager", "classtest__manager_1_1TestTaskManager.html", null ],
       [ "test_manipulation_manager.TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", null ],
       [ "test_nav_manager.TestNavigationManager", "classtest__nav__manager_1_1TestNavigationManager.html", null ],
+      [ "test_plan_parser.TestPlanParser", "classtest__plan__parser_1_1TestPlanParser.html", null ],
       [ "test_start_button.TestHriManager", "classtest__start__button_1_1TestHriManager.html", null ],
       [ "test_vision_manager.TestVision", "classtest__vision__manager_1_1TestVision.html", null ],
       [ "tracker_node.SingleTracker", "classtracker__node_1_1SingleTracker.html", null ],

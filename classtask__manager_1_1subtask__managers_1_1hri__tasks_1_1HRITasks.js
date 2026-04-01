@@ -30,6 +30,7 @@ var classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "interpret_keyword", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#acb4cabdbc9ca826675a0e51657b8b225", null ],
     [ "is_negative", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a2d99faaa11e11c340c4de49deaebb5a0", null ],
     [ "is_positive", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a38378e41d20508d10a287f02d3d15adc", null ],
+    [ "parse_plan_to_text", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aab0e5d14bbff335bdcac181817729903", null ],
     [ "publish_display_topic", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a6b585eaedb621fbd08533d8ea38f6426", null ],
     [ "query_command_history", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a02d28510f034f3bd5f9340d49524af31", null ],
     [ "query_location", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4a938ab11119f6726ad1a7bf5517be86", null ],

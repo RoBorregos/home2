@@ -145,6 +145,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a0c16535bf1bb8602091fd73193b5184a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a209bbb22747ca2343e6cd3692e427eaf"><td class="memItemLeft" align="right" valign="top">List[<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a44f64af8d322961b668968e808f3d511">InterpreterAvailableCommands</a>]|Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a209bbb22747ca2343e6cd3692e427eaf">command_interpreter</a> (self, str text, is_async=False)</td></tr>
 <tr class="separator:a209bbb22747ca2343e6cd3692e427eaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab0e5d14bbff335bdcac181817729903"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aab0e5d14bbff335bdcac181817729903">parse_plan_to_text</a> (self, list commands)</td></tr>
+<tr class="separator:aab0e5d14bbff335bdcac181817729903"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38378e41d20508d10a287f02d3d15adc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a38378e41d20508d10a287f02d3d15adc">is_positive</a> (self, text, async_call=False)</td></tr>
 <tr class="separator:a38378e41d20508d10a287f02d3d15adc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d99faaa11e11c340c4de49deaebb5a0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a2d99faaa11e11c340c4de49deaebb5a0">is_negative</a> (self, text, async_call=False)</td></tr>
@@ -1529,6 +1531,41 @@ Args:
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="aab0e5d14bbff335bdcac181817729903" name="aab0e5d14bbff335bdcac181817729903"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab0e5d14bbff335bdcac181817729903">&#9670;&#160;</a></span>parse_plan_to_text()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> str task_manager.subtask_managers.hri_tasks.HRITasks.parse_plan_to_text </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list&#160;</td>
+          <td class="paramname"><em>commands</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Converts a list of interpreted commands into a human-readable plan description.
+
+Args:
+    commands: list of command objects (GoTo, PickObject, etc.)
+
+Returns:
+    str: A human-readable sentence describing the plan.
+</pre> 
 </div>
 </div>
 <a id="a6b585eaedb621fbd08533d8ea38f6426" name="a6b585eaedb621fbd08533d8ea38f6426"></a>

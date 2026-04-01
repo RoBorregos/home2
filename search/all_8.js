@@ -1,8 +1,8 @@
 var searchData=
 [
   ['h_0',['h',['../namespacereid__model.html#af38d74c51ee6e8a581c116ac98a03817',1,'reid_model.h()'],['../classObjectDetector_1_1BBOX.html#afcd37814eb448512ef6ecdfe6ebd9c9e',1,'ObjectDetector.BBOX.h()'],['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a38d9b91745429d6dd18dcafde08adc15',1,'frida_constants.vision_classes.BBOX.h()']]],
-  ['hand_1',['hand',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ad34b2a84b6e0c385d10234c72e59754e',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['hand_2',['HAND',['../classtask__manager_1_1utils_1_1task_1_1Task.html#a42178176865995e6f228c612d9aa2ce3',1,'task_manager::utils::task::Task']]],
+  ['hand_1',['HAND',['../classtask__manager_1_1utils_1_1task_1_1Task.html#a42178176865995e6f228c612d9aa2ce3',1,'task_manager::utils::task::Task']]],
+  ['hand_2',['hand',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ad34b2a84b6e0c385d10234c72e59754e',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['hand_5fitems_3',['hand_items',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a8d569c5fdc0b4cbe9d39359268dab9e9',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['hand_5ftask_5fmanager_4',['hand_task_manager',['../namespacehand__task__manager.html',1,'']]],
   ['hand_5ftask_5fmanager_2epy_5',['hand_task_manager.py',['../hand__task__manager_8py.html',1,'']]],
@@ -52,7 +52,7 @@ var searchData=
   ['home_20navigation_49',['Home Navigation',['../md_navigation_README.html',1,'']]],
   ['hotword_5fservice_5fname_50',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],
   ['hri_51',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
-  ['hri_52',['hri',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#a0a1dc120ada78fa8cda9a7d8932893be',1,'task_manager::utils::subtask_manager::SubtaskManager']]],
+  ['hri_52',['hri',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#a0a1dc120ada78fa8cda9a7d8932893be',1,'task_manager.utils.subtask_manager.SubtaskManager.hri()'],['../classtest__plan__parser_1_1TestPlanParser.html#a29796b14a8c019e1fe0ca0c9c1383af7',1,'test_plan_parser.TestPlanParser.hri()']]],
   ['hri_53',['HRI',['../md_docs_Run_Areas_hri.html',1,'']]],
   ['hri_2emd_54',['hri.md',['../hri_8md.html',1,'']]],
   ['hri_5fconstants_2epy_55',['hri_constants.py',['../hri__constants_8py.html',1,'']]],

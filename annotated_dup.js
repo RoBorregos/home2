@@ -406,6 +406,9 @@ var annotated_dup =
     [ "test_nav_manager", "namespacetest__nav__manager.html", [
       [ "TestNavigationManager", "classtest__nav__manager_1_1TestNavigationManager.html", "classtest__nav__manager_1_1TestNavigationManager" ]
     ] ],
+    [ "test_plan_parser", "namespacetest__plan__parser.html", [
+      [ "TestPlanParser", "classtest__plan__parser_1_1TestPlanParser.html", "classtest__plan__parser_1_1TestPlanParser" ]
+    ] ],
     [ "test_start_button", "namespacetest__start__button.html", [
       [ "TestHriManager", "classtest__start__button_1_1TestHriManager.html", "classtest__start__button_1_1TestHriManager" ]
     ] ],
