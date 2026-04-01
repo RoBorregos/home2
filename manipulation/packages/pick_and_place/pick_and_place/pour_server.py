@@ -190,6 +190,12 @@ class PourMotionServer(Node):
             True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
         )
 
+        # Tighter constraints when carrying an object to keep it level during approach
+        if object_already_grasped:
+            approach_tolerances = [0.4, 0.4, 3.14 * 2]
+        else:
+            approach_tolerances = None  # use defaults
+
         pose = self.receive_pose(goal_handle.request.pour_pose)
         is_upside_down = self.is_upside_down(pose)
         self.get_logger().info(f"Is upside down: {is_upside_down}")
@@ -208,7 +214,8 @@ class PourMotionServer(Node):
             # call the move_to_pose function
             try:
                 goal_handle_result, action_result = self.move_to_pose(
-                    pose, isConstrained, planning_time=10.0, planning_attempts=100
+                    pose, isConstrained, planning_time=10.0, planning_attempts=100,
+                    constraint_tolerances=approach_tolerances,
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
@@ -375,6 +382,7 @@ class PourMotionServer(Node):
         useConstraint: bool = False,
         planning_time: float = 0.5,
         planning_attempts: int = 5,
+        constraint_tolerances=None,
     ):
         """Move the robot to the given pose."""
         self.get_logger().warn(f"Moving to pose: {pose}")
@@ -399,8 +407,10 @@ class PourMotionServer(Node):
             constraint_msg.orientation = pose.pose.orientation
             constraint_msg.frame_id = pose.header.frame_id
             constraint_msg.target_link = GRASP_LINK_FRAME
-            # Modify in case need to modify the limits for the path
-            constraint_msg.tolerance_orientation = [3.14 * 2, 2.0, 2.0]
+            if constraint_tolerances is not None:
+                constraint_msg.tolerance_orientation = constraint_tolerances
+            else:
+                constraint_msg.tolerance_orientation = [3.14 * 2, 2.0, 2.0]
             constraint_msg.weight = 1.0
             constraint_msg.parameterization = 0
             request.constraint = constraint_msg
