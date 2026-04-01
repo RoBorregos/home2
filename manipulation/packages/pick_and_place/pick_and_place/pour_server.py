@@ -11,6 +11,7 @@ from rclpy.node import Node
 from std_srvs.srv import SetBool
 from sensor_msgs.msg import JointState
 from frida_pymoveit2.robots import xarm6
+from frida_pymoveit2.robots.xarm6 import JOINT_POSITION_LIMITS
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions,
     get_joint_positions,
@@ -148,41 +149,47 @@ class PourMotionServer(Node):
         """Perform the pour operation."""
         self.get_logger().info("Trying to pour object")
 
-        # move higher than current pose
-        curr_pose = goal_handle.request.pick_result.pick_pose
-        self.get_logger().info(f"Current pose: {curr_pose.pose}")
+        object_already_grasped = goal_handle.request.object_already_grasped
 
-        new_pose = curr_pose
-        new_pose.pose.position.z += 0.2
+        if not object_already_grasped:
+            # move higher than current pose (only when pour_server did the pick)
+            curr_pose = goal_handle.request.pick_result.pick_pose
+            self.get_logger().info(f"Current pose: {curr_pose.pose}")
 
-        tries = 2
-        distance_between_tries = 0.025
-        for i in range(tries):
-            self.get_logger().warn("Trying to move to pour pose")
-            new_pose.pose.position.z += distance_between_tries
-            self.get_logger().info(f"Pour pose: {new_pose.pose}")
-            # call the move_to_pose function
-            try:
-                goal_handle_result, action_result = self.move_to_pose(
-                    new_pose,
-                    useConstraint=True,
-                    planning_time=10.0,
-                    planning_attempts=100,
-                )
-            except Exception as e:
-                self.get_logger().error(f"Failed to move to pour pose: {e}")
-                open_gripper(self._gripper_set_state_client)
-                return False, None
+            new_pose = curr_pose
+            new_pose.pose.position.z += 0.2
 
-            if action_result.result.success:
-                self.get_logger().info("Pour pose reached")
-                break
-            else:
-                self.get_logger().error("Failed to reach pour pose")
+            tries = 2
+            distance_between_tries = 0.025
+            for i in range(tries):
+                self.get_logger().warn("Trying to move to pour pose")
+                new_pose.pose.position.z += distance_between_tries
+                self.get_logger().info(f"Pour pose: {new_pose.pose}")
+                # call the move_to_pose function
+                try:
+                    goal_handle_result, action_result = self.move_to_pose(
+                        new_pose,
+                        useConstraint=True,
+                        planning_time=10.0,
+                        planning_attempts=100,
+                    )
+                except Exception as e:
+                    self.get_logger().error(f"Failed to move to pour pose: {e}")
+                    open_gripper(self._gripper_set_state_client)
+                    return False, None
 
-        isConstrained = (
-            True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
-        )
+                if action_result.result.success:
+                    self.get_logger().info("Pour pose reached")
+                    break
+                else:
+                    self.get_logger().error("Failed to reach pour pose")
+        else:
+            self.get_logger().info("Object already grasped — skipping lift step")
+
+        if object_already_grasped:
+            isConstrained = False  # Skip constraints — faster planning, fewer flips
+        else:
+            isConstrained = True
 
         pose = self.receive_pose(goal_handle.request.pour_pose)
         is_upside_down = self.is_upside_down(pose)
@@ -202,7 +209,10 @@ class PourMotionServer(Node):
             # call the move_to_pose function
             try:
                 goal_handle_result, action_result = self.move_to_pose(
-                    pose, isConstrained, planning_time=10.0, planning_attempts=100
+                    pose,
+                    isConstrained,
+                    planning_time=10.0,
+                    planning_attempts=100,
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
@@ -224,13 +234,90 @@ class PourMotionServer(Node):
                     self.get_logger().info(f"Retrying pour pose: {pose.pose}")
         time.sleep(3.0)
         pour_angle = 3.0
+        min_pour_angle = 1.0
+        joint6_lower_limit, joint6_upper_limit = JOINT_POSITION_LIMITS["joint6"]
+
+        # Determine correct pour direction based on bowl position vs gripper
+        bowl_pos = np.array(
+            [
+                goal_handle.request.pour_pose.pose.position.x,
+                goal_handle.request.pour_pose.pose.position.y,
+                0.0,
+            ]
+        )
+        gripper_pos = np.array(
+            [
+                pose.pose.position.x,
+                pose.pose.position.y,
+                0.0,
+            ]
+        )
+        to_bowl = bowl_pos - gripper_pos
+        to_bowl_norm = np.linalg.norm(to_bowl)
+
+        quat = [
+            pose.pose.orientation.x,
+            pose.pose.orientation.y,
+            pose.pose.orientation.z,
+            pose.pose.orientation.w,
+        ]
+        self.get_logger().info(
+            f"Pour direction calc — bowl_pos_xy={bowl_pos[:2]}, "
+            f"gripper_pos_xy={gripper_pos[:2]}, to_bowl_norm={to_bowl_norm:.4f}"
+        )
+        self.get_logger().info(
+            f"Pour direction calc — quat=[{quat[0]:.4f}, {quat[1]:.4f}, "
+            f"{quat[2]:.4f}, {quat[3]:.4f}]"
+        )
+
+        rotation_matrix = quat2mat(quat)
+        local_x_full = rotation_matrix[:, 0].copy()
+        local_x = local_x_full.copy()
+        local_x[2] = 0.0
+        local_x_norm = np.linalg.norm(local_x)
+        self.get_logger().info(
+            f"Pour direction calc — local_x_full={local_x_full}, "
+            f"local_x_xy={local_x[:2]}, local_x_norm={local_x_norm:.4f}"
+        )
+
+        # +joint6 tilts contents in -local_X direction
+        # If -local_X points towards bowl → pour positive
+        if to_bowl_norm > 1e-3 and local_x_norm > 1e-3:
+            to_bowl_unit = to_bowl / to_bowl_norm
+            local_x_unit = local_x / local_x_norm
+            dot = np.dot(-local_x_unit, to_bowl_unit)
+            pour_direction = 1.0 if dot >= 0 else -1.0
+            self.get_logger().info(
+                f"Pour direction: {'positive' if pour_direction > 0 else 'negative'} "
+                f"(dot={dot:.3f}, -local_x_unit={-local_x_unit[:2]}, to_bowl_unit={to_bowl_unit[:2]})"
+            )
+        else:
+            pour_direction = 1.0
+            self.get_logger().warn(
+                f"Could not determine pour direction (to_bowl_norm={to_bowl_norm:.4f}, "
+                f"local_x_norm={local_x_norm:.4f}), defaulting to positive"
+            )
 
         current_joints = get_joint_positions(
             self._get_joints_client,
-            degrees=False,  # set to true to return in degrees
+            degrees=False,
         )
         self.get_logger().info(f"Current joints: {current_joints}")
-        current_joints["joints"]["joint6"] += pour_angle
+
+        joint6_val = current_joints["joints"]["joint6"]
+        target = joint6_val + pour_direction * pour_angle
+        target = max(joint6_lower_limit, min(joint6_upper_limit, target))
+
+        actual_rotation = abs(target - joint6_val)
+        if actual_rotation < min_pour_angle:
+            self.get_logger().error(
+                f"Cannot pour enough in correct direction "
+                f"(only {actual_rotation:.2f} rad available, need {min_pour_angle}). "
+                f"Joint6 too close to limit."
+            )
+            return False, None
+
+        current_joints["joints"]["joint6"] = target
         self.get_logger().info(f"Current joints after pour angle: {current_joints}")
         action_result = move_joint_positions(
             move_joints_action_client=self._move_joints_action_client,
@@ -352,6 +439,7 @@ class PourMotionServer(Node):
         useConstraint: bool = False,
         planning_time: float = 0.5,
         planning_attempts: int = 5,
+        constraint_tolerances=None,
     ):
         """Move the robot to the given pose."""
         self.get_logger().warn(f"Moving to pose: {pose}")
@@ -376,8 +464,10 @@ class PourMotionServer(Node):
             constraint_msg.orientation = pose.pose.orientation
             constraint_msg.frame_id = pose.header.frame_id
             constraint_msg.target_link = GRASP_LINK_FRAME
-            # Modify in case need to modify the limits for the path
-            constraint_msg.tolerance_orientation = [3.14 * 2, 2.0, 2.0]
+            if constraint_tolerances is not None:
+                constraint_msg.tolerance_orientation = constraint_tolerances
+            else:
+                constraint_msg.tolerance_orientation = [3.14 * 2, 2.0, 2.0]
             constraint_msg.weight = 1.0
             constraint_msg.parameterization = 0
             request.constraint = constraint_msg
