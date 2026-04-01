@@ -230,7 +230,47 @@ class PourMotionServer(Node):
                     self.get_logger().info(f"Retrying pour pose: {pose.pose}")
         time.sleep(3.0)
         pour_angle = 3.0
+        min_pour_angle = 1.0
         joint6_lower_limit, joint6_upper_limit = JOINT_POSITION_LIMITS["joint6"]
+
+        # Determine correct pour direction based on bowl position vs gripper
+        bowl_pos = np.array([
+            goal_handle.request.pour_pose.pose.position.x,
+            goal_handle.request.pour_pose.pose.position.y,
+            0.0,
+        ])
+        gripper_pos = np.array([
+            pose.pose.position.x,
+            pose.pose.position.y,
+            0.0,
+        ])
+        to_bowl = bowl_pos - gripper_pos
+        to_bowl_norm = np.linalg.norm(to_bowl)
+
+        quat = [
+            pose.pose.orientation.x,
+            pose.pose.orientation.y,
+            pose.pose.orientation.z,
+            pose.pose.orientation.w,
+        ]
+        rotation_matrix = quat2mat(quat)
+        local_x = rotation_matrix[:, 0].copy()
+        local_x[2] = 0.0
+
+        # +joint6 tilts contents in -local_X direction
+        # If -local_X points towards bowl → pour positive
+        if to_bowl_norm > 1e-3 and np.linalg.norm(local_x) > 1e-3:
+            to_bowl_unit = to_bowl / to_bowl_norm
+            local_x_unit = local_x / np.linalg.norm(local_x)
+            dot = np.dot(-local_x_unit, to_bowl_unit)
+            pour_direction = 1.0 if dot >= 0 else -1.0
+            self.get_logger().info(
+                f"Pour direction: {'positive' if pour_direction > 0 else 'negative'} "
+                f"(dot={dot:.3f})"
+            )
+        else:
+            pour_direction = 1.0
+            self.get_logger().warn("Could not determine pour direction, defaulting to positive")
 
         current_joints = get_joint_positions(
             self._get_joints_client,
@@ -239,14 +279,19 @@ class PourMotionServer(Node):
         self.get_logger().info(f"Current joints: {current_joints}")
 
         joint6_val = current_joints["joints"]["joint6"]
-        target = joint6_val + pour_angle
-        if target > joint6_upper_limit:
-            target = joint6_upper_limit
-            self.get_logger().warn(
-                f"Pour angle clamped to joint6 upper limit ({joint6_upper_limit:.2f})"
-            )
-        current_joints["joints"]["joint6"] = target
+        target = joint6_val + pour_direction * pour_angle
+        target = max(joint6_lower_limit, min(joint6_upper_limit, target))
 
+        actual_rotation = abs(target - joint6_val)
+        if actual_rotation < min_pour_angle:
+            self.get_logger().error(
+                f"Cannot pour enough in correct direction "
+                f"(only {actual_rotation:.2f} rad available, need {min_pour_angle}). "
+                f"Joint6 too close to limit."
+            )
+            return False, None
+
+        current_joints["joints"]["joint6"] = target
         self.get_logger().info(f"Current joints after pour angle: {current_joints}")
         action_result = move_joint_positions(
             move_joints_action_client=self._move_joints_action_client,
