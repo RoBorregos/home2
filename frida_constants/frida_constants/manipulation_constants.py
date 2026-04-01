@@ -86,6 +86,15 @@ POUR_ACCELERATION = 0.15
 
 SHELF_POSITION_PREPLACE_POSE = -0.25
 
+# Locker opening
+LOCKER_OPEN_ANGULAR_SPEED = 0.15  # rad/s
+LOCKER_OPEN_ANGLE = 1.2  # radians (~70 degrees)
+LOCKER_EFFORT_THRESHOLD = 10.0  # N - effort delta to detect obstruction
+LOCKER_ARC_TIMEOUT = 15.0  # s - max time for arc motion
+LOCKER_PREGRASP_OFFSET = 0.12  # m - distance in front of handle for pregrasp
+LOCKER_APPROACH_VELOCITY = 0.25  # m/s - velocity for approaching handle
+LOCKER_VELOCITY_UPDATE_RATE = 20  # Hz - rate for velocity command updates during arc
+
 DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
 

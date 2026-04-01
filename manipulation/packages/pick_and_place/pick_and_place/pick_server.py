@@ -27,6 +27,13 @@ from frida_constants.manipulation_constants import (
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
     OPEN_CONTAINER_ACTION_SERVER,
+    LOCKER_OPEN_ANGULAR_SPEED,
+    LOCKER_OPEN_ANGLE,
+    LOCKER_EFFORT_THRESHOLD,
+    LOCKER_ARC_TIMEOUT,
+    LOCKER_PREGRASP_OFFSET,
+    LOCKER_APPROACH_VELOCITY,
+    LOCKER_VELOCITY_UPDATE_RATE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -38,7 +45,6 @@ from frida_interfaces.srv import (
 from frida_interfaces.action import PickMotion, MoveToPose, GoToHand, OpenContainer
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
-from sensor_msgs_py import point_cloud2
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
@@ -47,6 +53,7 @@ from transforms3d.quaternions import quat2mat
 from frida_motion_planning.utils.tf_utils import transform_point
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
+    open_gripper,
 )
 import time
 
@@ -278,95 +285,155 @@ class PickMotionServer(Node):
             return result
 
     async def execute_open_container_callback(self, goal_handle):
-        pregrasp_offset = 0.10
-
-        # Get handle cloud
-        remove_plane_request = RemoveVerticalPlane.Request()
-        remove_plane_request.close_point = goal_handle.request.close_point
-        future = self.remove_vertical_plane_client.call_async(remove_plane_request)
-        self.wait_for_future(future)
+        feedback = OpenContainer.Feedback()
         result = OpenContainer.Result()
         result.success = False
 
-        if future.result() is None or future.result().health_response != 0:
-            self.get_logger().error("Failed to remove vertical plane")
-            goal_handle.succeed()
-            return result
+        handle_point = copy.deepcopy(goal_handle.request.handle_point)
+        radius = float(goal_handle.request.radius)
 
-        cloud = future.result().cloud
-        plane_cloud = future.result().plane_cloud
-
-        add_req = AddPickPrimitives.Request()
-        add_req.cloud = plane_cloud
-        add_req.is_vertical_plane = True
-        future_add = self._add_pick_primitives_client.call_async(add_req)
-        self.wait_for_future(future_add)
-        self.get_logger().info("Vertical plane collision object added")
-
-        # Get centroid
-        pts = list(
-            point_cloud2.read_points(cloud, field_names=("x", "y", "z"), skip_nans=True)
+        self.get_logger().info(
+            f"[Locker] handle=({handle_point.point.x:.3f}, {handle_point.point.y:.3f}, "
+            f"{handle_point.point.z:.3f}) frame='{handle_point.header.frame_id}' radius={radius:.3f}m"
         )
-        if not pts:
-            self.get_logger().error("Empty cluster for handle")
-            return False, None
 
-        pts_np = np.array([[p[0], p[1], p[2]] for p in pts])
-        centroid = np.mean(pts_np, axis=0)
+        # --- Transform handle point to base_link ---
+        if handle_point.header.frame_id != "base_link":
+            success, handle_point = transform_point(
+                handle_point, "base_link", self.tf_buffer
+            )
+            if not success:
+                self.get_logger().error(
+                    "[Locker] Failed to transform handle point to base_link"
+                )
+                goal_handle.succeed()
+                return result
+            self.get_logger().info(
+                f"[Locker] Transformed to base_link: ({handle_point.point.x:.3f}, "
+                f"{handle_point.point.y:.3f}, {handle_point.point.z:.3f})"
+            )
 
-        # quaternion position
+        hp = np.array(
+            [handle_point.point.x, handle_point.point.y, handle_point.point.z]
+        )
+
+        # Hinge position: same X and Z as handle, offset in Y by radius
+        # radius > 0 → hinge to +Y (left), radius < 0 → hinge to -Y (right)
+        hinge = np.array([hp[0], hp[1] + radius, hp[2]])
+        abs_radius = abs(radius)
+
+        self.get_logger().info(
+            f"[Locker] hinge=({hinge[0]:.3f}, {hinge[1]:.3f}, {hinge[2]:.3f}) abs_radius={abs_radius:.3f}m"
+        )
+
+        # --- Gripper orientation: approach from front, grasp vertical handle ---
         qx, qy, qz, qw = quaternion_from_euler(np.pi / 2, -np.pi / 2, 0)
         quat = [qx, qy, qz, qw]
 
+        # Compute tip offset along gripper approach axis
         rotation_matrix = quat2mat([qw, qx, qy, qz])
-        z_axis = rotation_matrix[:, 1]
-        base_point = copy.deepcopy(goal_handle.request.close_point)
-        centroid_with_offset = (
-            np.array([base_point.point.x, base_point.point.y, base_point.point.z])
-            + z_axis * self.ee_tip_offset
+        approach_axis = rotation_matrix[:, 1]
+        tip_offset = approach_axis * self.ee_tip_offset
+
+        # --- 1. Open gripper ---
+        feedback.execution_state = "Opening gripper"
+        goal_handle.publish_feedback(feedback)
+        self.get_logger().info("[Locker] Opening gripper")
+        open_gripper(self._gripper_set_state_client)
+        time.sleep(0.5)
+
+        # --- 2. Clear octomap ---
+        if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+            self._clear_octomap_client.call_async(Empty.Request())
+        time.sleep(0.3)
+
+        # --- 3. Move to pregrasp position ---
+        pregrasp_pose = PoseStamped()
+        pregrasp_pose.header.frame_id = "base_link"
+        pregrasp_pose.header.stamp = self.get_clock().now().to_msg()
+        pregrasp_pose.pose.position.x = float(
+            hp[0] + tip_offset[0] - LOCKER_PREGRASP_OFFSET
         )
+        pregrasp_pose.pose.position.y = float(hp[1] + tip_offset[1])
+        pregrasp_pose.pose.position.z = float(hp[2] + tip_offset[2])
+        pregrasp_pose.pose.orientation.x = quat[0]
+        pregrasp_pose.pose.orientation.y = quat[1]
+        pregrasp_pose.pose.orientation.z = quat[2]
+        pregrasp_pose.pose.orientation.w = quat[3]
 
-        # Move to pregrasp position
-        handle_pose = PoseStamped()
-        handle_pose.header.frame_id = goal_handle.request.close_point.header.frame_id
-        handle_pose.header.stamp = self.get_clock().now().to_msg()
-        handle_pose.pose.position.x = float(centroid_with_offset[0]) - pregrasp_offset
-        handle_pose.pose.position.y = float(centroid_with_offset[1])
-        handle_pose.pose.position.z = float(centroid_with_offset[2])
-        handle_pose.pose.orientation.x = quat[0]
-        handle_pose.pose.orientation.y = quat[1]
-        handle_pose.pose.orientation.z = quat[2]
-        handle_pose.pose.orientation.w = quat[3]
-
+        feedback.execution_state = "Moving to pregrasp"
+        goal_handle.publish_feedback(feedback)
         self.get_logger().info(
-            f"Moving to pregrasp position: {handle_pose.pose.position}"
+            f"[Locker] Pregrasp: ({pregrasp_pose.pose.position.x:.3f}, "
+            f"{pregrasp_pose.pose.position.y:.3f}, {pregrasp_pose.pose.position.z:.3f})"
         )
 
-        move_result, action_result = self.move_to_pose(
-            pose=handle_pose,
-            tolerance_position=0.1,
-            tolerance_orientation=0.2,
+        _, action_result = self.move_to_pose(
+            pregrasp_pose, tolerance_position=0.02, tolerance_orientation=0.1
         )
-
         if not action_result.result.success:
-            self.get_logger().info("Go pregrasp position failed")
-            result.success = False
+            self.get_logger().error("[Locker] Pregrasp failed")
+            goal_handle.succeed()
+            return result
 
-        # Move to grasp position
-        handle_pose.pose.position.x = float(centroid[0])
-        """move_result, action_result = self.move_to_pose(
-            pose=handle_pose,
+        self.get_logger().info("[Locker] Pregrasp reached")
+
+        # --- 4. Approach handle (grasp position) ---
+        grasp_pose = copy.deepcopy(pregrasp_pose)
+        grasp_pose.pose.position.x = float(hp[0] + tip_offset[0])
+
+        feedback.execution_state = "Approaching handle"
+        goal_handle.publish_feedback(feedback)
+        self.get_logger().info(
+            f"[Locker] Grasp approach: x={grasp_pose.pose.position.x:.3f}"
+        )
+
+        _, action_result = self.move_to_pose(
+            grasp_pose,
             tolerance_position=0.01,
             tolerance_orientation=0.1,
-            pick_velocity=PICK_VELOCITY / 2,
-        )"""
-
+            velocity=LOCKER_APPROACH_VELOCITY,
+        )
         if not action_result.result.success:
-            self.get_logger().info("Go grasp position failed")
-            result.success = False
-        else:
-            self.get_logger().info("Go grasp position reached")
+            self.get_logger().error("[Locker] Grasp approach failed")
+            goal_handle.succeed()
+            return result
+
+        self.get_logger().info("[Locker] Handle reached")
+
+        # --- 5. Close gripper on handle ---
+        feedback.execution_state = "Grasping handle"
+        goal_handle.publish_feedback(feedback)
+        self.get_logger().info("[Locker] Closing gripper on handle")
+        close_gripper(self._gripper_set_state_client)
+        time.sleep(1.5)
+
+        # --- 6. Circular arc to open the door ---
+        feedback.execution_state = "Opening door"
+        goal_handle.publish_feedback(feedback)
+        self.get_logger().info("[Locker] Starting circular arc motion")
+        arc_success = self._execute_locker_arc(hp, hinge, abs_radius, radius)
+
+        if arc_success:
+            self.get_logger().info("[Locker] Door opened successfully")
             result.success = True
+        else:
+            self.get_logger().error("[Locker] Arc motion failed")
+
+        # --- 7. Release handle ---
+        feedback.execution_state = "Releasing handle"
+        goal_handle.publish_feedback(feedback)
+        self.get_logger().info("[Locker] Opening gripper to release")
+        open_gripper(self._gripper_set_state_client)
+        time.sleep(0.5)
+
+        # --- 8. Retract to pregrasp ---
+        feedback.execution_state = "Retracting"
+        goal_handle.publish_feedback(feedback)
+        self.move_to_pose(
+            pregrasp_pose, tolerance_position=0.05, tolerance_orientation=0.2
+        )
+
         goal_handle.succeed()
         return result
 
@@ -695,6 +762,164 @@ class PickMotionServer(Node):
         self._restore_mode1()
 
         return contact_detected
+
+    # ==================================================================
+    # Locker Arc Motion
+    # ==================================================================
+
+    def _execute_locker_arc(self, handle_pos, hinge_pos, abs_radius, signed_radius):
+        """
+        Execute a circular arc in the XY plane to open a locker door.
+
+        The arc is centered on hinge_pos. The gripper traces the arc from
+        handle_pos, sweeping LOCKER_OPEN_ANGLE radians while rotating around Z
+        to stay aligned with the handle.
+
+        Uses xArm mode 5 (cartesian velocity control) with continuous velocity
+        updates to follow the curved trajectory.
+
+        Args:
+            handle_pos: np.array [x, y, z] of the handle in base_link
+            hinge_pos: np.array [x, y, z] of the hinge in base_link
+            abs_radius: absolute radius in meters
+            signed_radius: original signed radius (sign determines arc direction)
+        """
+        self.get_logger().info(
+            f"[LockerArc] radius={abs_radius:.3f}m angle={np.degrees(LOCKER_OPEN_ANGLE):.1f}deg "
+            f"speed={LOCKER_OPEN_ANGULAR_SPEED:.2f}rad/s"
+        )
+
+        # Initial angle of handle relative to hinge in XY plane
+        dx = handle_pos[0] - hinge_pos[0]
+        dy = handle_pos[1] - hinge_pos[1]
+        theta_0 = np.arctan2(dy, dx)
+
+        # Angular velocity direction:
+        # radius > 0 (hinge left) → omega < 0 (pull door towards robot)
+        # radius < 0 (hinge right) → omega > 0 (pull door towards robot)
+        omega = -np.sign(signed_radius) * LOCKER_OPEN_ANGULAR_SPEED
+        abs_radius_mm = abs_radius * 1000.0
+
+        self.get_logger().info(
+            f"[LockerArc] theta_0={np.degrees(theta_0):.1f}deg omega={omega:.3f}rad/s "
+            f"({np.degrees(omega):.1f}deg/s)"
+        )
+
+        # --- Effort baseline ---
+        if self._latest_joint_state is None:
+            self.get_logger().error("[LockerArc] No joint_states received")
+            return False
+
+        baselines = []
+        for _ in range(10):
+            if self._latest_joint_state is not None:
+                baselines.append(list(self._latest_joint_state.effort))
+            time.sleep(0.02)
+
+        if len(baselines) < 5:
+            self.get_logger().error("[LockerArc] Not enough baseline readings")
+            return False
+
+        effort_baseline = np.median(baselines, axis=0)
+
+        # --- Mode transition: 1 → 0 → 5 ---
+        self.get_logger().info("[LockerArc] Mode transition 1 → 0 → 5")
+        if not self._set_xarm_mode(0):
+            self.get_logger().error("[LockerArc] Failed to set mode 0")
+            return False
+        time.sleep(0.5)
+
+        if not self._set_xarm_mode(5):
+            self.get_logger().error("[LockerArc] Failed to set mode 5")
+            self._restore_mode1()
+            return False
+
+        time.sleep(MODE_SWITCH_SETTLE_TIME)
+
+        # Re-capture baseline after mode switch
+        baselines_post = []
+        for _ in range(10):
+            if self._latest_joint_state is not None:
+                baselines_post.append(list(self._latest_joint_state.effort))
+            time.sleep(0.02)
+        if len(baselines_post) >= 5:
+            effort_baseline = np.median(baselines_post, axis=0)
+
+        # --- Execute arc with continuous velocity updates ---
+        dt = 1.0 / LOCKER_VELOCITY_UPDATE_RATE
+        start_time = time.time()
+        arc_complete = False
+
+        try:
+            if not self._vc_set_cartesian_velocity_client.wait_for_service(
+                timeout_sec=2.0
+            ):
+                self.get_logger().error(
+                    "[LockerArc] vc_set_cartesian_velocity service not available"
+                )
+                self._restore_mode1()
+                return False
+
+            while True:
+                elapsed = time.time() - start_time
+                current_delta = omega * elapsed
+                theta = theta_0 + current_delta
+
+                # Check completion
+                if abs(current_delta) >= LOCKER_OPEN_ANGLE:
+                    self.get_logger().info(
+                        f"[LockerArc] Target angle reached ({np.degrees(current_delta):.1f}deg)"
+                    )
+                    arc_complete = True
+                    break
+
+                # Timeout
+                if elapsed > LOCKER_ARC_TIMEOUT:
+                    self.get_logger().warn(
+                        f"[LockerArc] Timeout after {elapsed:.1f}s "
+                        f"({np.degrees(current_delta):.1f}deg swept)"
+                    )
+                    break
+
+                # Tangential velocity in base frame (mm/s for linear, rad/s for angular)
+                vx = float(-abs_radius_mm * omega * np.sin(theta))
+                vy = float(abs_radius_mm * omega * np.cos(theta))
+                wz = float(omega)
+
+                vel_req = MoveVelocity.Request()
+                vel_req.speeds = [vx, vy, 0.0, 0.0, 0.0, wz]
+                vel_req.is_tool_coord = False
+                vel_req.duration = 0.0
+
+                self._vc_set_cartesian_velocity_client.call_async(vel_req)
+
+                # Safety: check effort
+                if (
+                    self._latest_joint_state is not None
+                    and elapsed > CUTLERY_EFFORT_GRACE_PERIOD
+                ):
+                    current_effort = np.array(self._latest_joint_state.effort)
+                    effort_delta = np.abs(current_effort - effort_baseline)
+                    max_delta = float(np.max(effort_delta))
+                    if max_delta > LOCKER_EFFORT_THRESHOLD:
+                        max_joint = int(np.argmax(effort_delta))
+                        self.get_logger().warn(
+                            f"[LockerArc] Effort threshold exceeded! Joint {max_joint + 1} "
+                            f"delta={max_delta:.2f}N (threshold={LOCKER_EFFORT_THRESHOLD}N) "
+                            f"after {np.degrees(current_delta):.1f}deg — stopping"
+                        )
+                        break
+
+                time.sleep(dt)
+
+        except Exception as e:
+            self.get_logger().error(f"[LockerArc] Error during arc: {e}")
+
+        # --- Stop and restore ---
+        self._stop_cartesian_velocity()
+        self._restore_mode1()
+
+        return arc_complete
 
     def _set_xarm_mode(self, mode: int) -> bool:
         try:

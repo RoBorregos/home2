@@ -24,6 +24,7 @@ class OpenContainerDebugClient(Node):
         self._callback_group = ReentrantCallbackGroup()
 
         self.declare_parameter("queue_size", 10)
+        self.declare_parameter("radius", 0.20)
 
         point_topic = "/clicked_point"
 
@@ -57,13 +58,17 @@ class OpenContainerDebugClient(Node):
             self.get_logger().warn("OpenContainer action server not ready yet")
             return
 
+        radius = self.get_parameter("radius").value
+
         self.get_logger().info(
             "Sending OpenContainer goal for point "
-            f"[{msg.point.x:.3f}, {msg.point.y:.3f}, {msg.point.z:.3f}]"
+            f"[{msg.point.x:.3f}, {msg.point.y:.3f}, {msg.point.z:.3f}] "
+            f"radius={radius:.3f}m"
         )
 
         goal = OpenContainer.Goal()
-        goal.close_point = msg
+        goal.handle_point = msg
+        goal.radius = float(radius)
 
         send_goal_future = self._action_client.send_goal_async(
             goal,
