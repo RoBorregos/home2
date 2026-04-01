@@ -64,6 +64,7 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "cup",
 ]
 TRASH_SERVICE_CLASSES = "/vision/set_trash_classes"
+TRASHCAN_SERVICE = "vision/trashcan_detect"
 
 CUSTOMER = "/vision/customer"
 GET_CUSTOMER_TOPIC = "/vision/get_customer"
