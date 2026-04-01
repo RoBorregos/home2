@@ -220,11 +220,8 @@ class GPSRTM(Node):
                     f"Interpreted command: {user_command} -> {str(self.commands)}"
                 )
 
-                confirm_status, confirmed = self.subtask_manager.hri.confirm_plan(self.commands)
-                if not confirmed:
-                    self.commands = []
-                    self.current_state = GPSRTM.States.WAIT_BUTTON_COMMAND
-                    return
+                plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
+                self.subtask_manager.hri.say(plan_text, wait=True)
 
                 self.current_state = GPSRTM.States.EXECUTING_COMMAND
         elif self.current_state == GPSRTM.States.EXECUTING_COMMAND:
