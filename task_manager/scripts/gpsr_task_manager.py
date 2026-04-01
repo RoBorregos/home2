@@ -174,7 +174,7 @@ class GPSRTM(Node):
 
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
-                self.current_hear_attempt += 1    
+                self.current_hear_attempt += 1
             elif not self.subtask_manager.hri.check_coherence(user_command):
                 self.subtask_manager.hri.say(
                     "I didn't catch that correctly or the command was incomplete. Please tell me again.",
@@ -191,7 +191,10 @@ class GPSRTM(Node):
                 self.get_logger().info(
                     f"Interpreted command: {user_command} -> {str(self.commands)}"
                 )
-                self.subtask_manager.hri.say("I will now execute your command. My plan is " + str(str(self.commands)), wait=False)
+                self.subtask_manager.hri.say(
+                    "I will now execute your command. My plan is " + str(str(self.commands)),
+                    wait=False,
+                )
                 self.current_state = GPSRTM.States.EXECUTING_COMMAND
         elif self.current_state == GPSRTM.States.EXECUTING_COMMAND:
             self.current_hear_attempt = 0
@@ -202,7 +205,6 @@ class GPSRTM(Node):
 
                 self.get_logger().info(f"Executing command: {str(command)}")
                 self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
-
 
                 try:
                     exec_commad = search_command(

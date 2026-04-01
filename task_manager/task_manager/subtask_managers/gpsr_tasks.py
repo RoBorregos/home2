@@ -9,7 +9,6 @@ from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     DETECTIONS_IMAGE_TOPIC,
     CAMERA_TOPIC,
-    
 )
 from task_manager.utils.baml_client.types import (
     Count,

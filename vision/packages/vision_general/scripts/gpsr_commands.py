@@ -32,7 +32,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
-    YOLO_DETECTION_TOPIC
+    YOLO_DETECTION_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
