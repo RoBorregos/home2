@@ -851,6 +851,108 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, command_list.commands
 
+    def parse_plan_to_text(self, commands: list) -> str:
+        """
+        Converts a list of interpreted commands into a human-readable plan description.
+
+        Args:
+            commands: list of command objects (GoTo, PickObject, etc.)
+
+        Returns:
+            str: A human-readable sentence describing the plan.
+        """
+        steps = []
+        for cmd in commands:
+            action = getattr(cmd, "action", None)
+            if action == "go_to":
+                location = getattr(cmd, "location_to_go", "somewhere")
+                if location == "start_location":
+                    steps.append("return to the start location")
+                else:
+                    steps.append(f"go to the {location}")
+            elif action == "pick_object":
+                obj = getattr(cmd, "object_to_pick", "object")
+                steps.append(f"pick the {obj}")
+            elif action == "find_person_by_name":
+                name = getattr(cmd, "name", "person")
+                steps.append(f"find {name}")
+            elif action == "find_person":
+                attr = getattr(cmd, "attribute_value", "")
+                if attr:
+                    steps.append(f"find a person who is {attr}")
+                else:
+                    steps.append("find a person")
+            elif action == "count":
+                target = getattr(cmd, "target_to_count", "objects")
+                steps.append(f"count the {target}")
+            elif action == "get_person_info":
+                info = getattr(cmd, "info_type", "information")
+                steps.append(f"get the {info} of the person")
+            elif action == "get_visual_info":
+                measure = getattr(cmd, "measure", "")
+                category = getattr(cmd, "object_category", "object")
+                steps.append(f"find the {measure} {category}".strip())
+            elif action == "answer_question":
+                steps.append("answer a question from the person")
+            elif action == "follow_person_until":
+                destination = getattr(cmd, "destination", "cancelled")
+                if destination == "cancelled":
+                    steps.append("follow the person until told to stop")
+                else:
+                    steps.append(f"follow the person to {destination}")
+            elif action == "guide_person_to":
+                destination = getattr(cmd, "destination_room", "destination")
+                steps.append(f"guide the person to {destination}")
+            elif action == "give_object":
+                steps.append("give the object to the person")
+            elif action == "place_object":
+                steps.append("place the object")
+            elif action == "say_with_context":
+                instruction = getattr(cmd, "user_instruction", "")
+                steps.append(f"say: {instruction}")
+            else:
+                steps.append(action.replace("_", " ") if action else "unknown action")
+
+        if not steps:
+            return "I have no steps to execute."
+
+        if len(steps) == 1:
+            return f"My plan is to {steps[0]}."
+
+        plan = ", then ".join(steps[:-1]) + f", and finally {steps[-1]}"
+        return f"My plan is to {plan}."
+
+    def confirm_plan(self, commands: list, retries: int = 2) -> tuple:
+        """
+        Says the interpreted plan out loud and asks the user for confirmation.
+
+        Args:
+            commands: list of command objects to be confirmed
+            retries: number of confirmation attempts
+
+        Returns:
+            tuple: (Status, bool) - Status of the confirmation and whether it was confirmed
+        """
+        plan_text = self.parse_plan_to_text(commands)
+        Logger.info(self.node, f"Parsed plan: {plan_text}")
+
+        for attempt in range(retries):
+            self.say(plan_text, wait=True)
+            s, confirmation = self.confirm(
+                "Should I proceed with this plan? Please say yes or no.",
+                use_hotwords=True,
+                retries=2,
+            )
+            if s == Status.EXECUTION_SUCCESS:
+                if confirmation == "yes":
+                    return Status.EXECUTION_SUCCESS, True
+                else:
+                    self.say("Understood, I will not execute the plan.")
+                    return Status.EXECUTION_SUCCESS, False
+
+        Logger.warn(self.node, "Plan confirmation timed out.")
+        return Status.TIMEOUT, False
+
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
