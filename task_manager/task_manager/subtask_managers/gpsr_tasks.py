@@ -5,6 +5,12 @@ import time
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
+from frida_constants.vision_constants import (
+    FACE_RECOGNITION_IMAGE,
+    DETECTIONS_IMAGE_TOPIC,
+    CAMERA_TOPIC,
+    
+)
 from task_manager.utils.baml_client.types import (
     Count,
     FindPersonByName,
@@ -319,6 +325,7 @@ class GPSRTask(GenericTask):
 
         else:
             # get name
+            self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
             self.subtask_manager.hri.say(
                 "I will check if I know your name.",
             )
@@ -374,6 +381,7 @@ class GPSRTask(GenericTask):
 
     def count_objects(self, object_name: str):
         self.subtask_manager.manipulation.move_to_position("table_stare")
+        self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
         self.subtask_manager.hri.say(
             f"I am going to count {object_name}.",
         )
@@ -386,6 +394,7 @@ class GPSRTask(GenericTask):
             self.subtask_manager.hri.say(
                 f"I didn't find any {object_name}.",
             )
+        self.subtask_manager.hri.publish_display_topic(CAMERA_TOPIC)
         return status, str(result) + f" ({object_name} counted)"
 
     ## Manipulation, Vision

@@ -404,7 +404,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def hear(
         self,
         hotwords="",
-        silence_time=2.0,
+        silence_time=4.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
     ) -> str:
@@ -622,6 +622,7 @@ class HRITasks(metaclass=SubtaskMeta):
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
+        always_confirm: bool = False,
         options: list[str] = None,
         remap: dict = None,
     ):
@@ -652,7 +653,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
-                target_found = False
+                target_found = options is None
                 similarity = 1
                 try:
                     # If no options provided, directly extract the data without looking for matches
@@ -706,7 +707,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 except Exception as e:
                     print("Failed matching result:", e)
 
-                if skip_confirmation:
+                if not always_confirm and skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
 
                 # Determine the confirmation question

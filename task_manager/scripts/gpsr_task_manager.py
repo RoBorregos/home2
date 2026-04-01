@@ -10,6 +10,8 @@ import rclpy
 from rclpy.node import Node
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
+from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
+
 
 # from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from task_manager.utils.baml_client.types import CommandListLLM
@@ -19,8 +21,6 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
-USE_QR = True  # Set to False if you want to use speech recognition instead of QR code reading
-QR_CODE_ATTEMPTS = 20
 
 
 def confirm_command(interpreted_text, target_info):
@@ -56,7 +56,8 @@ class GPSRTM(Node):
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
         self.current_state = (
-            GPSRTM.States.WAITING_FOR_BUTTON
+            GPSRTM.States.START
+            # GPSRTM.States.WAITING_FOR_BUTTON
             # GPSRTM.States.WAITING_FOR_COMMAND
             # GPSRTM.States.EXECUTING_COMMAND
         )
@@ -128,7 +129,7 @@ class GPSRTM(Node):
             self.navigate_to("start_area", "", False)
 
             self.subtask_manager.hri.say(
-                "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
+                "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks. Please tell them to me one by one."
             )
             self.current_state = GPSRTM.States.WAIT_BUTTON_COMMAND
 
@@ -159,57 +160,28 @@ class GPSRTM(Node):
                 named_position="front_stare", velocity=0.5, degrees=True
             )
 
-            global USE_QR
-            if not USE_QR and self.current_hear_attempt >= 3:
-                self.subtask_manager.hri.say(
-                    "I couldn't understand the command via speech. I want to default to a qr code instead.",
-                    wait=True,
-                    speed=1,
-                )
-                USE_QR = True
-
-            if USE_QR:
-                self.subtask_manager.hri.say(
-                    "Please show me the QR code with your command. Point it to my face, please make sure it looks clear and complete in my screen below.",
-                    wait=False,
-                    speed=1,
-                )
-                for _ in range(QR_CODE_ATTEMPTS):
-                    s, result = self.subtask_manager.vision.read_qr()
-                    if s == Status.EXECUTION_SUCCESS and len(result) > 0:
-                        self.subtask_manager.hri.say(
-                            f"I have read the QR code. It says: {result}.", wait=False
-                        )
-                        user_command = result
-                        break
-                    self.timeout(0.3)
-            else:
-                s, user_command = self.subtask_manager.hri.ask_and_confirm(
-                    "What is your command?",
-                    "LLM_command",
-                    context="The user was asked to say a command. We want to infer his complete instruction from the response",
-                    confirm_question=confirm_command,
-                    use_hotwords=False,
-                    retries=ATTEMPT_LIMIT,
-                    min_wait_between_retries=5.0,
-                    skip_extract_data=True,
-                )
+            s, user_command = self.subtask_manager.hri.ask_and_confirm(
+                "What is your command?",
+                "LLM_command",
+                context="The user was asked to say a command. We want to infer his complete instruction from the response",
+                confirm_question=confirm_command,
+                use_hotwords=False,
+                retries=ATTEMPT_LIMIT,
+                min_wait_between_retries=5.0,
+                skip_extract_data=True,
+                always_confirm=True,
+            )
 
             if s != Status.EXECUTION_SUCCESS:
-                if USE_QR:
-                    self.subtask_manager.hri.say(
-                        "I am sorry, I could not read the QR code. Please try again."
-                    )
-                else:
-                    self.subtask_manager.hri.say("I am sorry, I could not understand you.")
-                    self.current_hear_attempt += 1
+                self.subtask_manager.hri.say("I am sorry, I could not understand you.")
+                self.current_hear_attempt += 1    
             elif not self.subtask_manager.hri.check_coherence(user_command):
                 self.subtask_manager.hri.say(
                     "I didn't catch that correctly or the command was incomplete. Please tell me again.",
                     wait=True,
                 )
                 self.current_hear_attempt += 1
-                return  # this should hopefully cause a retry
+                return
             else:
                 self.subtask_manager.hri.say(
                     "I am planning how to perform your command, please wait a moment", wait=False
@@ -219,7 +191,7 @@ class GPSRTM(Node):
                 self.get_logger().info(
                     f"Interpreted command: {user_command} -> {str(self.commands)}"
                 )
-                self.subtask_manager.hri.say("I will now execute your command", wait=False)
+                self.subtask_manager.hri.say("I will now execute your command. My plan is " + str(str(self.commands)), wait=False)
                 self.current_state = GPSRTM.States.EXECUTING_COMMAND
         elif self.current_state == GPSRTM.States.EXECUTING_COMMAND:
             self.current_hear_attempt = 0
@@ -229,6 +201,8 @@ class GPSRTM(Node):
                 command = self.commands.pop(0)
 
                 self.get_logger().info(f"Executing command: {str(command)}")
+                self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+
 
                 try:
                     exec_commad = search_command(
@@ -258,6 +232,7 @@ class GPSRTM(Node):
                 "I have finished executing your command. I will return to the start position to await for new commands.",
                 wait=False,
             )
+            self.navigate_to("start_area", "", False)
             self.executed_commands += 1
             self.current_state = GPSRTM.States.WAIT_BUTTON_COMMAND
             self.subtask_manager.manipulation.move_joint_positions(
