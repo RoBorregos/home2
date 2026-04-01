@@ -40,6 +40,7 @@ class RESTAURANTCommands(Node):
 
         self.image = None
         self.depth_image = []
+        self.depth_stamp = None
         self.imageInfo = None
 
         self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
@@ -96,7 +97,7 @@ class RESTAURANTCommands(Node):
                 self.depth_image,
                 point2d,
                 CAMERA_FRAME,
-                self.get_clock().now().to_msg(),
+                self.depth_stamp,
             )
             table_msg.people = PersonList()
             table_msg.people.list = []
@@ -232,6 +233,7 @@ class RESTAURANTCommands(Node):
     def depth_callback(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+            self.depth_stamp = data.header.stamp
         except Exception as e:
             self.get_logger().error(f"Depth conversion error: {e}")
 
