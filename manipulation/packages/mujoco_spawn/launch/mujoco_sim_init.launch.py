@@ -2,23 +2,24 @@ from launch import LaunchDescription, LaunchContext
 import os
 import yaml
 from ament_index_python import get_package_share_directory
-from launch.launch_description_sources import load_python_launch_file_as_module
+from launch.launch_description_sources import PythonLaunchDescriptionSource, load_python_launch_file_as_module
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.event_handlers import OnProcessExit, OnProcessStart
-from launch.actions import OpaqueFunction, RegisterEventHandler, LogInfo
-
+from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, LogInfo
+from arm_pkg.moveit_configs_builder_sim import MoveItConfigsBuilder
 
 def generate_nodes_for_spawn(context: LaunchContext):
-    ##Arguments for xacro:
+    ##Arguments for xacro and moveit:
     prefix = LaunchConfiguration("prefix", default="")
     hw_ns = LaunchConfiguration("hw_ns", default="xarm")
+    mesh_suffix = LaunchConfiguration("mesh_suffix", default="stl")
     limited = LaunchConfiguration("limited", default=False)
     effort_control = LaunchConfiguration("effort_control", default=False)
     velocity_control = LaunchConfiguration("velocity_control", default=False)
     add_gripper = LaunchConfiguration("add_gripper", default=False)
-    load_zed = LaunchConfiguration("load_zed", default=True)
+    load_zed = LaunchConfiguration("load_zed", default=False)
     add_vacuum_gripper = LaunchConfiguration("add_vacuum_gripper", default=False)
     add_bio_gripper = LaunchConfiguration("add_bio_gripper", default=False)
     dof = LaunchConfiguration("dof", default=6)
@@ -34,6 +35,8 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "custom_gripper_controllers.yaml",
         ),
     )
+    use_sim_time = LaunchConfiguration("use_sim_time", default=True)
+    attach_to = LaunchConfiguration("attach_to", default="xarm_base")
 
     add_realsense_d435i = LaunchConfiguration("add_realsense_d435i", default=False)
     add_d435i_links = LaunchConfiguration("add_d435i_links", default=False)
@@ -66,23 +69,24 @@ def generate_nodes_for_spawn(context: LaunchContext):
     kinematics_suffix = LaunchConfiguration("kinematics_suffix", default="")
 
     load_controller = LaunchConfiguration("load_controller", default=True)
-    # show_rviz = LaunchConfiguration("show_rviz", default=False)
-    # no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
+    show_rviz = LaunchConfiguration("show_rviz", default=True)
+    no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
 
     xarm_type = "{}{}".format(
         robot_type.perform(context),
         dof.perform(context) if robot_type.perform(context) in ("xarm", "lite") else "",
     )
+    print(xarm_type)
 
     ros_namespace = LaunchConfiguration("ros_namespace", default="").perform(context)
 
-    ##place to save the xml generated file:
+        ##place to save the xml generated file:
     save_xml_folder = "/tmp/mujoco"  # Must be absolute path
     os.makedirs(save_xml_folder, exist_ok=True)
     save_xml_file = os.path.join(save_xml_folder, "main.xml")
 
-    # creation of the robot description string
-    # ros2 control params
+    # Start of opperation--
+    # ros2 control params 
     # xarm_controller/launch/lib/robot_controller_lib.py
     mod = load_python_launch_file_as_module(
         os.path.join(
@@ -125,54 +129,67 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "robot_description_lib.py",
         )
     )
-    get_xacro_file_content = getattr(mod, "get_xacro_file_content")
-    robot_description = {
-        "robot_description": get_xacro_file_content(
-            xacro_file=PathJoinSubstitution(
+
+    moveit_config = MoveItConfigsBuilder(
+        context=context,
+        # controllers_name=controllers_name, # Que carajo?
+        dof=dof,    
+        controllers_name = "fake_controllers",
+        robot_type=robot_type,
+        prefix=prefix,
+        hw_ns=hw_ns,
+        limited=limited,
+        effort_control=effort_control,
+        velocity_control=velocity_control,
+        model1300=model1300,
+        robot_sn=robot_sn,
+        attach_to=attach_to,
+        attach_xyz=attach_xyz,
+        attach_rpy=attach_rpy,
+        mesh_suffix=mesh_suffix,
+        kinematics_suffix=kinematics_suffix,
+        ros2_control_plugin=ros2_control_plugin,
+        ros2_control_params="/tmp/final_frida.yaml",
+        add_gripper=add_gripper,
+        add_vacuum_gripper=add_vacuum_gripper,
+        add_bio_gripper=add_bio_gripper,
+        add_realsense_d435i=add_realsense_d435i,
+        add_d435i_links=add_d435i_links,
+        add_other_geometry=add_other_geometry,
+        geometry_type=geometry_type,
+        geometry_mass=geometry_mass,
+        geometry_height=geometry_height,
+        geometry_radius=geometry_radius,
+        geometry_length=geometry_length,
+        geometry_width=geometry_width,
+        geometry_mesh_filename=geometry_mesh_filename,
+        geometry_mesh_origin_xyz=geometry_mesh_origin_xyz,
+        geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
+        geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
+        geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
+    ).to_moveit_configs()
+
+    robot_moveit_common_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
                 [
-                    FindPackageShare("frida_description"),
-                    "urdf",
-                    "TMR2025",
-                    "FRIDA.urdf.xacro",
+                    FindPackageShare("arm_pkg"),
+                    "launch",
+                    "frida_moveit_common.launch.py",
                 ]
-            ),
-            arguments={
-                "prefix": prefix,
-                "dof": dof,
-                "robot_type": robot_type,
-                "add_gripper": add_gripper,
-                "load_zed": load_zed,
-                "mujoco_plugin": mujoco_plugin,
-                "add_vacuum_gripper": add_vacuum_gripper,
-                "add_bio_gripper": add_bio_gripper,
-                "hw_ns": hw_ns.perform(context).strip("/"),
-                "limited": limited,
-                "effort_control": effort_control,
-                "velocity_control": velocity_control,
-                "ros2_control_plugin": ros2_control_plugin,
-                "ros2_control_params": "/tmp/final_frida.yaml",
-                "add_realsense_d435i": add_realsense_d435i,
-                "add_d435i_links": add_d435i_links,
-                "model1300": model1300,
-                "robot_sn": robot_sn,
-                "attach_xyz": attach_xyz,
-                "attach_rpy": attach_rpy,
-                "add_other_geometry": add_other_geometry,
-                "geometry_type": geometry_type,
-                "geometry_mass": geometry_mass,
-                "geometry_height": geometry_height,
-                "geometry_radius": geometry_radius,
-                "geometry_length": geometry_length,
-                "geometry_width": geometry_width,
-                "geometry_mesh_filename": geometry_mesh_filename,
-                "geometry_mesh_origin_xyz": geometry_mesh_origin_xyz,
-                "geometry_mesh_origin_rpy": geometry_mesh_origin_rpy,
-                "geometry_mesh_tcp_xyz": geometry_mesh_tcp_xyz,
-                "geometry_mesh_tcp_rpy": geometry_mesh_tcp_rpy,
-                "kinematics_suffix": kinematics_suffix,
-            },
+            )
         ),
-    }
+        launch_arguments={
+            "prefix": prefix,
+            "attach_xyz": attach_xyz,
+            "attach_rpy": attach_rpy,
+            "no_gui_ctrl": no_gui_ctrl,
+            "show_rviz": show_rviz,
+            "use_sim_time": use_sim_time,
+            "moveit_config_dump": yaml.dump(moveit_config.to_dict())
+        }.items(),
+    )
+
 
     additional_files = []
     additional_files.append(
@@ -188,21 +205,19 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "house.xacro",
         )
     )
-
-    # as this node require a string array
-    robot_description_string = robot_description["robot_description"].perform(context)
-
+    robot_description = moveit_config.robot_description
     # Define the xacro2mjcf node, this translates the xacro urdf into MJFL
+    # print(robot_description['robot_description'])
     xacro2mjcf = Node(
         package="mujoco_ros2_control",
         executable="xacro2mjcf.py",
         parameters=[
             {
-                "robot_descriptions": [robot_description_string]
+                "robot_descriptions": [robot_description['robot_description']]
             },  # Robot descriptions of actuated robots
             {
                 "input_files": additional_files
-            },  # Files that are added to mujoco but not to ros2_control
+            },  
             {"output_file": save_xml_file},  # Mujoco output file
             {"mujoco_files_path": save_xml_folder},  # Mujoco project folder
         ],
@@ -212,7 +227,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="screen",
-        parameters=[{"use_sim_time": True}, robot_description],
+        parameters=[use_sim_time, robot_description],
         remappings=[
             ("/tf", "tf"),
             ("/tf_static", "tf_static"),
@@ -247,44 +262,53 @@ def generate_nodes_for_spawn(context: LaunchContext):
     )
 
     # Load controllers
-    controllers = [
-        "joint_state_broadcaster",
-        "xarm_gripper_traj_controller",
-        "{}{}_traj_controller".format(prefix.perform(context), xarm_type),
-    ]
-    if robot_type.perform(context) != "lite" and add_gripper.perform(context) in (
-        "True",
-        "true",
+
+    joint_state_broadcaster = Node(
+        package="controller_manager",
+        executable="spawner",
+        output="screen",
+        arguments=[
+            "joint_state_broadcaster",
+            "--controller-manager",
+            "{}/controller_manager".format(ros_namespace),
+        ],
+    )
+
+
+    controllers = ["{}{}_traj_controller".format(prefix.perform(context), xarm_type), "xarm_gripper_traj_controller"]
+    if (
+        add_gripper.perform(context) in ("True", "true")
+        and robot_type.perform(context) != "lite"
     ):
         controllers.append(
             "{}{}_gripper_traj_controller".format(
                 prefix.perform(context), robot_type.perform(context)
             )
         )
-    elif robot_type.perform(context) != "lite" and add_bio_gripper.perform(context) in (
-        "True",
-        "true",
+    elif (
+        add_bio_gripper.perform(context) in ("True", "true")
+        and robot_type.perform(context) != "lite"
     ):
         controllers.append(
             "{}bio_gripper_traj_controller".format(prefix.perform(context))
         )
 
+
+    # Load controllers
     controller_nodes = []
-    if load_controller.perform(context) in ("True", "true"):
-        for controller in controllers:
-            controller_nodes.append(
-                Node(
-                    package="controller_manager",
-                    executable="spawner",
-                    output="screen",
-                    arguments=[
-                        controller,
-                        "--controller-manager",
-                        "{}/controller_manager".format(ros_namespace),
-                    ],
-                    parameters=[{"use_sim_time": True}],
-                )
+    for controller in controllers:
+        controller_nodes.append(
+            Node(
+                package="controller_manager",
+                executable="spawner",
+                output="screen",
+                arguments=[
+                    controller,
+                    "--controller-manager",
+                    "{}/controller_manager".format(ros_namespace),
+                ],
             )
+        )
 
     load_gripper_bridge = Node(
         package="mujoco_spawn", executable="Xarm_gripper_mujoco_bridge", output="screen"
@@ -298,11 +322,12 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 LogInfo(msg="Starting controllers..."),
                 *controller_nodes,
                 load_gripper_bridge,
+                joint_state_broadcaster
             ],
         )
     )
 
-    return [robot_state_publisher, xacro2mjcf, start_mujoco, load_controllers]
+    return [robot_state_publisher, xacro2mjcf, start_mujoco, load_controllers, robot_moveit_common_launch]
 
 
 def generate_launch_description():
