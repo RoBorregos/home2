@@ -10,6 +10,7 @@ var xarm6_8py =
     [ "right_camera_frame_name", "xarm6_8py.html#a5b0cec9095cd260e03b3ea69e5262082", null ],
     [ "right_camera_optical_frame_name", "xarm6_8py.html#aef39f200226800ed9c34ac06cd7557c5", null ],
     [ "CLOSED_GRIPPER_JOINT_POSITIONS", "xarm6_8py.html#aa960b173c7f35cafb22229bdfeb1bd0c", null ],
+    [ "JOINT_POSITION_LIMITS", "xarm6_8py.html#a00587301dda23bf4389850792cf5e6df", null ],
     [ "MOVE_GROUP_ARM", "xarm6_8py.html#ab94fb06d3caa0829de11dcdb51e8998b", null ],
     [ "MOVE_GROUP_GRIPPER", "xarm6_8py.html#aed4ae6261a51750df7bfec97817f42ac", null ],
     [ "OPEN_GRIPPER_JOINT_POSITIONS", "xarm6_8py.html#a870c5989a729d42092392e1737069109", null ]

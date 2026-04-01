@@ -5,7 +5,7 @@ var classpick__and__place_1_1pour__server_1_1PourMotionServer =
     [ "get_collision_objects", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a2cfbc812eb0d878aa14cccb7e2098796", null ],
     [ "is_upside_down", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#adf2e07fea3adbdbbccadc3284904eb7f", null ],
     [ "joint_states_callback", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a2b7094125316a4bc9b984bffb819aa53", null ],
-    [ "move_to_pose", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#afc215d5f92b2479e4603e4ef6d6ff483", null ],
+    [ "move_to_pose", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a31823fc8cafb75061f1ecad0962c5c0c", null ],
     [ "pour", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a3d5f23b393c0c9b33f87cd6152818176", null ],
     [ "receive_pose", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a85f13f8c70f448a4c884acfdb609b47a", null ],
     [ "remove_collision_object", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a898185421f3d106dadc051133f19ce5e", null ],

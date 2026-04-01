@@ -361,6 +361,7 @@ var namespaces_dup =
       [ "right_camera_frame_name", "namespacexarm6.html#a5b0cec9095cd260e03b3ea69e5262082", null ],
       [ "right_camera_optical_frame_name", "namespacexarm6.html#aef39f200226800ed9c34ac06cd7557c5", null ],
       [ "CLOSED_GRIPPER_JOINT_POSITIONS", "namespacexarm6.html#aa960b173c7f35cafb22229bdfeb1bd0c", null ],
+      [ "JOINT_POSITION_LIMITS", "namespacexarm6.html#a00587301dda23bf4389850792cf5e6df", null ],
       [ "MOVE_GROUP_ARM", "namespacexarm6.html#ab94fb06d3caa0829de11dcdb51e8998b", null ],
       [ "MOVE_GROUP_GRIPPER", "namespacexarm6.html#aed4ae6261a51750df7bfec97817f42ac", null ],
       [ "OPEN_GRIPPER_JOINT_POSITIONS", "namespacexarm6.html#a870c5989a729d42092392e1737069109", null ]

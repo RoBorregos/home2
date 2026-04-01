@@ -1,5 +1,7 @@
 var NAVTREEINDEX29 =
 {
+"namespacemembers_c.html":[23,1,0,3],
+"namespacemembers_d.html":[23,1,0,4],
 "namespacemembers_e.html":[23,1,0,5],
 "namespacemembers_f.html":[23,1,0,6],
 "namespacemembers_func.html":[23,1,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX29 =
 "namespaceppc__launch.html":[23,0,114],
 "namespaceppc__launch.html#aacd047cb473dc687d72cb32e87ff33fe":[23,0,114,0],
 "namespacereceptionist.html":[23,0,115],
-"namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8":[23,0,115,0],
-"namespacereceptionist__task__manager.html":[23,0,116],
-"namespacereceptionist__task__manager.html#a190fa117b34e8f98afa854494e664047":[23,0,116,3]
+"namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8":[23,0,115,0]
 };

@@ -119,8 +119,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ae4def19da1fafcde56e203a80a0a5104"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf2e07fea3adbdbbccadc3284904eb7f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pour__server_1_1PourMotionServer.html#adf2e07fea3adbdbbccadc3284904eb7f">is_upside_down</a> (self, pose)</td></tr>
 <tr class="separator:adf2e07fea3adbdbbccadc3284904eb7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afc215d5f92b2479e4603e4ef6d6ff483"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pour__server_1_1PourMotionServer.html#afc215d5f92b2479e4603e4ef6d6ff483">move_to_pose</a> (self, pose, bool useConstraint=False, float planning_time=0.5, int planning_attempts=5)</td></tr>
-<tr class="separator:afc215d5f92b2479e4603e4ef6d6ff483"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31823fc8cafb75061f1ecad0962c5c0c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a31823fc8cafb75061f1ecad0962c5c0c">move_to_pose</a> (self, pose, bool useConstraint=False, float planning_time=0.5, int planning_attempts=5, constraint_tolerances=None)</td></tr>
+<tr class="separator:a31823fc8cafb75061f1ecad0962c5c0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6de5d1848510d2f5f799033787268a25"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a6de5d1848510d2f5f799033787268a25">wait_for_future</a> (self, future)</td></tr>
 <tr class="separator:a6de5d1848510d2f5f799033787268a25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cfbc812eb0d878aa14cccb7e2098796"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a2cfbc812eb0d878aa14cccb7e2098796">get_collision_objects</a> (self)</td></tr>
@@ -280,8 +280,8 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="afc215d5f92b2479e4603e4ef6d6ff483" name="afc215d5f92b2479e4603e4ef6d6ff483"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afc215d5f92b2479e4603e4ef6d6ff483">&#9670;&#160;</a></span>move_to_pose()</h2>
+<a id="a31823fc8cafb75061f1ecad0962c5c0c" name="a31823fc8cafb75061f1ecad0962c5c0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31823fc8cafb75061f1ecad0962c5c0c">&#9670;&#160;</a></span>move_to_pose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -314,7 +314,13 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int &#160;</td>
-          <td class="paramname"><em>planning_attempts</em> = <code>5</code>&#160;</td>
+          <td class="paramname"><em>planning_attempts</em> = <code>5</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>constraint_tolerances</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

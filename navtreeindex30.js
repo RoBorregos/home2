@@ -1,5 +1,7 @@
 var NAVTREEINDEX30 =
 {
+"namespacereceptionist__task__manager.html":[23,0,116],
+"namespacereceptionist__task__manager.html#a190fa117b34e8f98afa854494e664047":[23,0,116,3],
 "namespacereceptionist__task__manager.html#ab6e6d47fc4ae90351efa864eacc5c880":[23,0,116,2],
 "namespacerecord__joints__node.html":[23,0,117],
 "namespacerecord__joints__node.html#affacd92dfdac1d2fd31eb665364dfa8e":[23,0,117,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX30 =
 "namespacetest__start__button.html#a3fd1d1efe1e66a95ad7bed4a0864d03c":[23,0,146,1],
 "namespacetest__start__button.html#a4df91e2c705cdee964ae3f5a4f3e3b55":[23,0,146,5],
 "namespacetest__start__button.html#a68e054a82f66e8d16de546e921d01174":[23,0,146,3],
-"namespacetest__start__button.html#a6b332011ffa2907b93e4efa12c1292a7":[23,0,146,2],
-"namespacetest__start__button.html#a9f7d488aeeb4376d987b390ff60aacf7":[23,0,146,8],
-"namespacetest__start__button.html#abb3468630dc31eb3d7172f2fb8790633":[23,0,146,10]
+"namespacetest__start__button.html#a6b332011ffa2907b93e4efa12c1292a7":[23,0,146,2]
 };

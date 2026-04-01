@@ -1,5 +1,7 @@
 var NAVTREEINDEX24 =
 {
+"fix__position__to__plane_8py.html#ad893908b1dedf7dd24269b1a04089551":[25,0,3,0,5,1,4,2],
+"fix__position__to__plane_8py.html#aeaa9b43d281424bcdeda997af6006cbb":[25,0,3,0,5,1,4,4],
 "flat__grasp__estimator_8py.html":[25,0,3,0,4,3,1],
 "flat__grasp__estimator_8py.html#a2198b180d80866ea116fc2307ef7f5ec":[25,0,3,0,4,3,1,3],
 "flat__grasp__estimator_8py.html#a8e8d4b2a05e97a82722e59f7a87e3273":[25,0,3,0,4,3,1,2],
@@ -94,8 +96,8 @@ var NAVTREEINDEX24 =
 "functions_d.html":[24,3,0,4],
 "functions_e.html":[24,3,0,5],
 "functions_f.html":[24,3,0,6],
-"functions_func.html":[24,3,1,0],
 "functions_func.html":[24,3,1],
+"functions_func.html":[24,3,1,0],
 "functions_func_a.html":[24,3,1,1],
 "functions_func_b.html":[24,3,1,2],
 "functions_func_c.html":[24,3,1,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX24 =
 "heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[25,0,3,0,6,1,0,1],
 "help__me__carry_8py.html":[25,0,6,1,0,7],
 "help__me__carry_8py.html#ab5e4a679e827451f1c0776fcf4137ac0":[25,0,6,1,0,7,2],
-"help__me__carry_8py.html#ac88fe056201780c2060003e5b20f4b6e":[25,0,6,1,0,7,1],
-"help__me__carry_8py.html#aeaa16e1397df6dada482cd75156c8788":[25,0,6,1,0,7,3],
-"help__me__carry__launch_8py.html":[25,0,7,0,3,0,2]
+"help__me__carry_8py.html#ac88fe056201780c2060003e5b20f4b6e":[25,0,6,1,0,7,1]
 };
