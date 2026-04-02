@@ -158,7 +158,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
-        config = mocked_hri_config if mock_data else test_hri_config 
+        config = mocked_hri_config if mock_data else test_hri_config
         self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
