@@ -139,7 +139,7 @@ class KeyboardInput(Node):
         )
         self.get_logger().info("Place request sent")
 
-    def send_pour_request(self, object_name, bowl_name):
+    def send_pour_request(self, object_name, bowl_name, object_already_grasped=False):
         self.get_logger().warning(f"Sending pour request for: {object_name}")
 
         if not self._action_client.wait_for_server(timeout_sec=5.0):
@@ -150,9 +150,11 @@ class KeyboardInput(Node):
         goal_msg.task_type = ManipulationTask.POUR
         goal_msg.pour_params.object_name = object_name
         goal_msg.pour_params.bowl_name = bowl_name
+        goal_msg.pour_params.object_already_grasped = object_already_grasped
 
         self.get_logger().info(f"Sending pour request for: {object_name}")
         self.get_logger().info(f"Pouring into: {bowl_name}")
+        self.get_logger().info(f"Object already grasped: {object_already_grasped}")
         self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
@@ -223,6 +225,7 @@ def main(args=None):
             print("-7. Place on clicked point")
             print("-8. Place closeto")
             print("-9. Special Request Place")
+            print("-10. Pour (object already grasped)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -308,6 +311,13 @@ def main(args=None):
                 node.send_place_request(
                     special_request_position=special_request_position,
                     special_request_object=special_request_object,
+                )
+
+            elif choice == "-10":
+                object_name = input("Enter object name (in gripper): ")
+                bowl_name = input("Enter bowl name: ")
+                node.send_pour_request(
+                    object_name, bowl_name, object_already_grasped=True
                 )
 
             elif choice.isdigit():
