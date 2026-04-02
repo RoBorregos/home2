@@ -322,9 +322,10 @@ class SingleTracker(Node):
                             response_clean = response_q.strip()
 
                     if value == "wavingCustomer":
-                        raising = self.pose_detection.is_waving_customer(cropped_image)
+                        pts, kpc = self.pose_detection._get_keypoints(cropped_image)
+                        raising = self.pose_detection.is_waving_from_keypoints(pts, kpc)
                         if raising:
-                            print("IS RAISING HANDDDDDDDDDDDDDDDDDD")
+                            print("Is rising hand")
                             response_clean = value
 
                     if response_clean == value or response_clean == "1":
