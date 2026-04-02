@@ -15,6 +15,8 @@ services:
       - /run/jtop.sock:/run/jtop.sock
       - /usr/local/zed/resources:/usr/local/zed/resources
       - $HOME/.local/share/zed:/home/ros/.local/share/zed
+      - ./zed2.yaml:/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/config/zed2.yaml
+      - ./common_stereo.yaml:/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/config/common_stereo.yaml
     network_mode: host
     ipc: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}

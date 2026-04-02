@@ -113,11 +113,16 @@ add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
 
 # Set environment type and runtime
 add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
+
+if [ "$ENV_TYPE" = "l4t" ]; then
+  add_or_update_variable compose/.env "ENV_SUFFIX" "-l4t"
+fi
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable compose/.env "RUNTIME" "nvidia"
 fi
 if [ "$ENV_TYPE" = "cuda" ]; then
   add_or_update_variable compose/.env "STT_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
+  add_or_update_variable compose/.env "TTS_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
 fi
 # If setup was done before persist it again now that .env has been reset
 if [ "${SETUP_DONE:-}" = "true" ]; then
