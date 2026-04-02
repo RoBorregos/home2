@@ -219,7 +219,10 @@ class GPSRTM(Node):
                 self.get_logger().info(
                     f"Interpreted command: {user_command} -> {str(self.commands)}"
                 )
-                self.subtask_manager.hri.say("I will now execute your command", wait=False)
+
+                plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
+                self.subtask_manager.hri.say(plan_text, wait=True)
+
                 self.current_state = GPSRTM.States.EXECUTING_COMMAND
         elif self.current_state == GPSRTM.States.EXECUTING_COMMAND:
             self.current_hear_attempt = 0

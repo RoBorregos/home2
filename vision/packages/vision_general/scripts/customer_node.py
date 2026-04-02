@@ -8,8 +8,10 @@ re-id them if necessary
 import cv2
 from vision_general.utils.trt_utils import load_yolo_trt
 import tqdm
+from builtin_interfaces.msg import Time
 from vision_general.utils.calculations import (
     get2DCentroid,
+    point2d_to_ros_point_stamped,
     point2d_to_ros_point_stamped,
 )
 
@@ -180,6 +182,9 @@ class CustomerNode(Node):
                 self.customer_image = cropped_image.copy()
 
                 raising = self.pose_detection.is_waving_customer(cropped_image)
+                if not raising:
+                    self.get_logger().info("Customer not raising hand")
+                    continue
                 if not raising:
                     self.get_logger().info("Customer not raising hand")
                     continue

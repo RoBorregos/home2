@@ -26,6 +26,7 @@ from frida_constants.vision_constants import (
 from frida_interfaces.msg import CustomerTable, PersonList
 from frida_interfaces.srv import Customer, CustomerTables, ObjectPoints
 
+from builtin_interfaces.msg import Time
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from vision_general.utils.ros_utils import wait_for_future
 
@@ -96,7 +97,7 @@ class RESTAURANTCommands(Node):
                 self.depth_image,
                 point2d,
                 CAMERA_FRAME,
-                self.get_clock().now().to_msg(),
+                Time(sec=0, nanosec=0),
             )
             table_msg.people = PersonList()
             table_msg.people.list = []

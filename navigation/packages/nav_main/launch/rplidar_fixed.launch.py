@@ -24,7 +24,6 @@ def generate_launch_description():
         Node(
             package='nav_main',
             executable='ignore_laser',
-            #parameters=[{'ignore_array': '-176 ,-160, -129,-119, -85, -67, -56, -46, -15,5'}],
             condition=IfCondition(use_sim)
         ),
         Node(
@@ -32,8 +31,8 @@ def generate_launch_description():
             executable='sllidar_node',
             name='sllidar_node',
             parameters=[{'channel_type':'serial',
-                         'serial_port': '/dev/ttyUSBlidar2', 
-                         'serial_baudrate': 460800, 
+                         'serial_port': '/dev/ttyUSBlidar2',
+                         'serial_baudrate': 460800,
                          'frame_id': 'laser',
                          'inverted': True,
                          'angle_compensate': True,

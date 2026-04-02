@@ -49,7 +49,7 @@ def launch_function(context, *args, **kwargs):
         executable='map_service',
         name='map_service',
         namespace='',
-        parameters=[{'map_name': map_name_str[:-3]}],
+        parameters=[{'map_name': map_name_str[:-3], 'autostart': False}],
         output='screen',
     )
 

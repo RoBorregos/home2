@@ -116,6 +116,9 @@ case $TASK in
     "--hric")
         RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
+    "--ppc")
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
+        ;;
     *)
         RUN="bash"
         ;;

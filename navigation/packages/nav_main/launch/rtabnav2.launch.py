@@ -1,4 +1,5 @@
 from launch import LaunchDescription
+from launch.actions import TimerAction
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from launch.substitutions import LaunchConfiguration
@@ -150,4 +151,10 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([rtabmap_container, nav2_container])
+    # Stagger container launches to avoid iceoryx SHM registration race.
+    # rtabmap starts first (provides map/localization data nav2 needs),
+    # nav2 starts 5s later once rtabmap's subscribers are fully registered.
+    return LaunchDescription([
+        rtabmap_container,
+        TimerAction(period=5.0, actions=[nav2_container]),
+    ])
