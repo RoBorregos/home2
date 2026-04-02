@@ -115,8 +115,17 @@ run_area() {
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi
 
+  # Auto-detect Jetson for SHM default
+  if [ -z "${CYCLONE_SHM:-}" ]; then
+    if [ -f /etc/nv_tegra_release ]; then
+      export CYCLONE_SHM=1
+    else
+      export CYCLONE_SHM=0
+    fi
+  fi
+
   # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
-  if [ "${CYCLONE_SHM:-0}" = "1" ]; then
+  if [ "${CYCLONE_SHM}" = "1" ]; then
     if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
       ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
     fi
