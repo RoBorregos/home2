@@ -248,6 +248,10 @@ class CustomerNode(Node):
         if result is None or not result.success:
             return False
 
+        if future.exception() is not None:
+            self.get_logger().error(f"Service call failed: {future.exception()}")
+            return False
+
         answer = result.result.strip().lower()
         if answer.startswith("yes"):
             return True

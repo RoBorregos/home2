@@ -92,12 +92,18 @@ class PoseDetection:
             return False
 
         left_raised = (
-            points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1]
-            or points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1]
+            conf[LEFT_WRIST] > KP_CONF
+            and points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1]
+        ) or (
+            conf[LEFT_ELBOW] > KP_CONF
+            and points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1]
         )
         right_raised = (
-            points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
-            or points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1]
+            conf[RIGHT_WRIST] > KP_CONF
+            and points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
+        ) or (
+            conf[RIGHT_ELBOW] > KP_CONF
+            and points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1]
         )
         return left_raised or right_raised
 
