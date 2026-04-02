@@ -18,6 +18,7 @@ from frida_constants.vision_constants import (
     DISHWASHER_DEBUG_IMAGE_TOPIC,
 )
 from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
+from ament_index_python.packages import get_package_share_directory
 from frida_interfaces.srv import DishwasherDetection
 from vision_general.utils.calculations import (
     point2d_to_ros_point_stamped,
@@ -34,7 +35,9 @@ class DishwasherNode(Node):
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
         MODELS_PATH = (
-            pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
+            pathlib.Path(get_package_share_directory("vision_general"))
+            / "Utils"
+            / "models"
         )
 
         self.layout_model = load_yolo_trt(str(MODELS_PATH / "dishwasher_layout.pt"))
@@ -146,7 +149,7 @@ class DishwasherNode(Node):
         if self.image is None or self.depth_image is None or self.image_info is None:
             return [], False
 
-        results = model(source=self.image, conf=0.35, verbose=False)
+        results = model(source=self.image, conf=0.65, verbose=False)
         detections = []
 
         for result in results:
@@ -182,20 +185,27 @@ class DishwasherNode(Node):
 
     def _handle_detection(self, response, model):
         detections, success = self._detect(model)
+        if detections:
+            best = max(detections, key=lambda d: d.score)
+            detections = [best]
         response.detection_array = ObjectDetectionArray()
         response.detection_array.detections = detections
         response.success = success
         if success:
+            self.get_logger().info("Detection successful, publishing debug image")
             self.publish_debug_image(detections)
         return response
 
     def dishwasher_layout_callback(self, request, response):
+        self.get_logger().info("Received dishwasher layout detection request")
         return self._handle_detection(response, self.layout_model)
 
     def dishwasher_rack_callback(self, request, response):
+        self.get_logger().info("Received dishwasher rack detection request")
         return self._handle_detection(response, self.rack_model)
 
     def dishwasher_tablet_callback(self, request, response):
+        self.get_logger().info("Received dishwasher tablet detection request")
         return self._handle_detection(response, self.tablet_model)
 
 
