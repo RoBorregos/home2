@@ -4,4 +4,4 @@ noise_cancellation:
     PROCESSED_AUDIO_TOPIC: REPLACE
     ENABLE_ANC: true
     GAIN: 1.0
-    DEBUG: false
+    DEBUG: False
