@@ -68,6 +68,8 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
+from task_manager.config.hri.debug import config as test_hri_config
+from task_manager.config.hri.mocked import config as mocked_hri_config
 from task_manager.subtask_managers.hri_hand import HRIHand
 from task_manager.subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.sync_client import b
@@ -154,8 +156,9 @@ def format_transcription(text: str) -> str:
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
-    def __init__(self, task_manager: Node, config=None, task=Task.HRIC) -> None:
+    def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
+        config = mocked_hri_config if mock_data else test_hri_config 
         self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
