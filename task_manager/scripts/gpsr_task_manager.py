@@ -138,15 +138,8 @@ class GPSRTM(Node):
 
         elif self.current_state == GPSRTM.TaskStates.START:
             self._track_state_change(GPSRTM.TaskStates.START)
-            res = "closed"
-            while res == "closed":
-                time.sleep(1)
-                status, res = self.subtask_manager.nav.check_door()
-                if status == Status.EXECUTION_SUCCESS:
-                    Logger.info(self, f"Door status: {res}")
-                else:
-                    Logger.error(self, "Failed to check door status")
-
+            status = self.subtask_manager.nav.check_door()
+            
             self.navigate_to("start_area", "", False)
 
             self.subtask_manager.hri.say(
@@ -215,8 +208,8 @@ class GPSRTM(Node):
                 plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
                 self.subtask_manager.hri.say(plan_text, wait=True)
 
-                self.current_state = GPSRTM.States.EXECUTING_COMMAND
-        elif self.current_state == GPSRTM.States.EXECUTING_COMMAND:
+                self.current_state = GPSRTM.TaskStates.EXECUTING_COMMAND
+        elif self.current_state == GPSRTM.TaskStates.EXECUTING_COMMAND:
             self.current_hear_attempt = 0
             if len(self.commands) == 0:
                 self.current_state = GPSRTM.TaskStates.FINISHED_COMMAND
