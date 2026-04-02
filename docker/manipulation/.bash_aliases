@@ -1,1 +1,1 @@
-alias build='cd /workspace && source frida_interfaces_cache/install/local_setup.bash && colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces'
+alias build='cd /workspace && source frida_interfaces_cache/install/local_setup.bash && colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces xarm_msgs'

@@ -15,4 +15,4 @@ services:
     tty: true
     user: ${UID}:${GID}
     entrypoint: ["bash", "-il", "-c"]
-    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants"]
+    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants xarm_msgs"]
