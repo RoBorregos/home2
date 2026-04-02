@@ -1,5 +1,9 @@
 var NAVTREEINDEX31 =
 {
+"namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4":[23,0,142,13],
+"namespacetest__hri__manager.html#a9e861d4b310d661b375be460581a088f":[23,0,142,19],
+"namespacetest__hri__manager.html#acba16bc04fcf4b594f5c4335ff8f9239":[23,0,142,10],
+"namespacetest__hri__manager.html#ad6e339590c518dbf7c365f89e90b8be8":[23,0,142,15],
 "namespacetest__hri__manager.html#af084794917df55eb7c98942b498ec083":[23,0,142,11],
 "namespacetest__hri__manager.html#afab82146d21339556bbeec1207843778":[23,0,142,17],
 "namespacetest__manager.html":[23,0,143],
@@ -29,8 +33,13 @@ var NAVTREEINDEX31 =
 "namespacetest__start__button.html#ae9f14cf3ef1e3141e15e57c42bc58ec1":[23,0,147,11],
 "namespacetest__start__button.html#affb178c97d52b530378148864749669c":[23,0,147,4],
 "namespacetest__vision__manager.html":[23,0,148],
+"namespacetest__vision__manager.html#a0ac83c3be8619e480c385351b9f84b6b":[23,0,148,4],
+"namespacetest__vision__manager.html#a4d295f7e9706efb1b5725329cacfa00a":[23,0,148,7],
+"namespacetest__vision__manager.html#a536a3e59f6442113cd05d5249e26084d":[23,0,148,3],
 "namespacetest__vision__manager.html#a5af7fcb61586f0325548838066cec24b":[23,0,148,1],
-"namespacetest__vision__manager.html#ab07fdf87aae798e843e30ddd91760bd0":[23,0,148,2],
+"namespacetest__vision__manager.html#a5f1d20d8476bf2bfc6ca6aa05cd9e64f":[23,0,148,2],
+"namespacetest__vision__manager.html#ad094f13a85560e6fe2de1b8ca7308f93":[23,0,148,5],
+"namespacetest__vision__manager.html#ae2b0ce7c71775a2ca3d5b3adede9eac0":[23,0,148,6],
 "namespacetf__utils.html":[23,0,149],
 "namespacetf__utils.html#a4f980b749ce3eb0c265b8573071bb85b":[23,0,149,1],
 "namespacetf__utils.html#aa53ead24b1e4dc6caefbc64a1de35c75":[23,0,149,2],
@@ -240,14 +249,5 @@ var NAVTREEINDEX31 =
 "publish__handle_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[25,0,3,0,4,4,3,3],
 "publish__pcl_8cpp.html":[25,0,3,0,4,4,4],
 "publish__pcl_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[25,0,3,0,4,4,4,1],
-"read__cluster_8cpp.html":[25,0,3,0,4,4,5],
-"read__cluster_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97":[25,0,3,0,4,4,5,1],
-"receptionist_8launch_8py.html":[25,0,3,0,3,0,3],
-"receptionist_8launch_8py.html#aaead6d431decb57c53f9d7c189fbb0f8":[25,0,3,0,3,0,3,0],
-"receptionist__task__manager_8py.html":[25,0,6,1,0,10],
-"receptionist__task__manager_8py.html#a190fa117b34e8f98afa854494e664047":[25,0,6,1,0,10,4],
-"receptionist__task__manager_8py.html#ab6e6d47fc4ae90351efa864eacc5c880":[25,0,6,1,0,10,3],
-"record__joints__node_8py.html":[25,0,3,0,1,1,0,0],
-"record__joints__node_8py.html#affacd92dfdac1d2fd31eb665364dfa8e":[25,0,3,0,1,1,0,0,1],
-"record__relative__pose_8py.html":[25,0,3,0,4,3,2]
+"read__cluster_8cpp.html":[25,0,3,0,4,4,5]
 };

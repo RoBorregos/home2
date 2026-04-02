@@ -11,7 +11,7 @@ var searchData=
   ['testplanparser_8',['TestPlanParser',['../classtest__plan__parser_1_1TestPlanParser.html',1,'test_plan_parser']]],
   ['testsnode_9',['TestsNode',['../classTestsNode.html',1,'']]],
   ['testtaskmanager_10',['TestTaskManager',['../classnav__test_1_1TestTaskManager.html',1,'nav_test.TestTaskManager'],['../classtest__manager_1_1TestTaskManager.html',1,'test_manager.TestTaskManager']]],
-  ['testvision_11',['TestVision',['../classtest__vision__manager_1_1TestVision.html',1,'test_vision_manager']]],
+  ['testvisionmanager_11',['TestVisionManager',['../classtest__vision__manager_1_1TestVisionManager.html',1,'test_vision_manager']]],
   ['topicconfig_12',['TopicConfig',['../classtask__manager_1_1utils_1_1config_1_1TopicConfig.html',1,'task_manager::utils::config']]],
   ['trashdetectionnode_13',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]],
   ['typeenum_14',['TypeEnum',['../classtask__manager_1_1utils_1_1config_1_1TypeEnum.html',1,'task_manager::utils::config']]]

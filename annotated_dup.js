@@ -413,7 +413,7 @@ var annotated_dup =
       [ "TestHriManager", "classtest__start__button_1_1TestHriManager.html", "classtest__start__button_1_1TestHriManager" ]
     ] ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", [
-      [ "TestVision", "classtest__vision__manager_1_1TestVision.html", "classtest__vision__manager_1_1TestVision" ]
+      [ "TestVisionManager", "classtest__vision__manager_1_1TestVisionManager.html", "classtest__vision__manager_1_1TestVisionManager" ]
     ] ],
     [ "tracker_node", "namespacetracker__node.html", [
       [ "SingleTracker", "classtracker__node_1_1SingleTracker.html", "classtracker__node_1_1SingleTracker" ]

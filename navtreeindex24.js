@@ -1,5 +1,9 @@
 var NAVTREEINDEX24 =
 {
+"exploration__planner_8py.html":[25,0,6,2,2,3],
+"face__recognition__node_8py.html":[25,0,7,0,3,1,3],
+"face__recognition__node_8py.html#a036fbe5f51cfd2209b19a270357d2b35":[25,0,7,0,3,1,3,8],
+"face__recognition__node_8py.html#a166e5b8323737530752db607917e635f":[25,0,7,0,3,1,3,3],
 "face__recognition__node_8py.html#a2cdad657ac233e7e409732e4566479fb":[25,0,7,0,3,1,3,6],
 "face__recognition__node_8py.html#a33dbc1cbcf289e06efcd75671ebea200":[25,0,7,0,3,1,3,7],
 "face__recognition__node_8py.html#a56617f4391f49f52c38a3bdabc308aad":[25,0,7,0,3,1,3,5],
@@ -150,8 +154,8 @@ var NAVTREEINDEX24 =
 "functions_t.html":[24,3,0,20],
 "functions_u.html":[24,3,0,21],
 "functions_v.html":[24,3,0,22],
-"functions_vars.html":[24,3,2,0],
 "functions_vars.html":[24,3,2],
+"functions_vars.html":[24,3,2,0],
 "functions_vars_a.html":[24,3,2,1],
 "functions_vars_b.html":[24,3,2,2],
 "functions_vars_c.html":[24,3,2,3],
@@ -245,9 +249,5 @@ var NAVTREEINDEX24 =
 "gpsr__test__commands_8py.html#af61153ac2e4af84cfaf1fcc0eca7f0e8":[25,0,6,2,1,4,22],
 "gpsr__test__commands_8py.html#afa65779f48b34fbe3d5ee7d4a3646899":[25,0,6,2,1,4,9],
 "gpsr__test__commands_8py.html#afb2081d78235f69ee43ea83db2d954ab":[25,0,6,2,1,4,8],
-"grasp__detection__example_8py.html":[25,0,3,0,0,1,0],
-"grasp__detection__example_8py.html#a40a8024a9f168af4327222571de3ea94":[25,0,3,0,0,1,0,1],
-"grasp__markers_8py.html":[25,0,3,0,0,4,0],
-"grasp__markers_8py.html#a6e921905b580cbab9b3bbfd11f2231af":[25,0,3,0,0,4,0,1],
-"grasp__utils_8py.html":[25,0,3,0,5,1,2,0]
+"grasp__detection__example_8py.html":[25,0,3,0,0,1,0]
 };

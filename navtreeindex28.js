@@ -1,5 +1,9 @@
 var NAVTREEINDEX28 =
 {
+"namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31":[23,0,49,0,12],
+"namespacefrida__constants_1_1hri__constants.html#ae34afe358408d95f63d076478b349b0b":[23,0,49,0,8],
+"namespacefrida__constants_1_1hri__constants.html#ae715c3040df8a138bc6ae9712daa9a93":[23,0,49,0,35],
+"namespacefrida__constants_1_1hri__constants.html#afa75347167cbfc3cf035e80d0f56bacf":[23,0,49,0,19],
 "namespacefrida__constants_1_1integration__constants.html":[23,0,49,1],
 "namespacefrida__constants_1_1integration__constants.html#a11ddde52afff1d42912d1949fd60d27e":[23,0,49,1,0],
 "namespacefrida__constants_1_1integration__constants.html#a6afb4839f1987ec652b6d312adee8407":[23,0,49,1,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX28 =
 "namespaceis__person__inside.html":[23,0,73],
 "namespaceis__person__inside.html#a79f30c58d09282b6365883311dae895c":[23,0,73,1],
 "namespacelocal__camera.html":[23,0,74],
-"namespacelocal__camera.html#a370b7792a1778760c0b396393c1dc169":[23,0,74,3],
-"namespacelocal__camera.html#afff3f00fd586a1308f7b1090b40ec44e":[23,0,74,2],
-"namespacelook__at__example.html":[23,0,75],
-"namespacelook__at__example.html#adc1b4dbd73f98a092d682f946ed57ef3":[23,0,75,1],
-"namespacemap__area__tagger.html":[23,0,76]
+"namespacelocal__camera.html#a370b7792a1778760c0b396393c1dc169":[23,0,74,3]
 };
