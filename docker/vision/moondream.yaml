@@ -73,7 +73,7 @@ services:
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
-      CYCLONE_SHM: "1"
+      CYCLONE_SHM: "${CYCLONE_SHM:-0}"
 
     tty: true
     stdin_open: true
