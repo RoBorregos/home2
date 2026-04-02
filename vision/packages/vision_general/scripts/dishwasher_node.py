@@ -26,6 +26,8 @@ from vision_general.utils.calculations import (
 )
 import cv2
 
+DETECTION_CONFIDENCE = 0.65
+
 
 class DishwasherNode(Node):
     def __init__(self):
@@ -101,38 +103,22 @@ class DishwasherNode(Node):
         debug_image = self.image.copy()
 
         for det in detections:
-            # draw bounding box if x1 != x2 and y1 != y2
-            if int(det.xmin) != int(det.xmax) and int(det.ymin) != int(det.ymax):
-                cv2.rectangle(
-                    debug_image,
-                    (int(det.xmin), int(det.ymin)),
-                    (int(det.xmax), int(det.ymax)),
-                    (0, 255, 0),
-                    2,
-                )
-                cv2.putText(
-                    debug_image,
-                    f"{det.label_text} {det.score:.2f}",
-                    (int(det.xmin), int(det.ymin) - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (0, 255, 0),
-                    2,
-                )
-            else:
-                # it's a point (like the tablet)
-                cv2.circle(
-                    debug_image, (int(det.xmin), int(det.ymin)), 5, (0, 0, 255), -1
-                )
-                cv2.putText(
-                    debug_image,
-                    f"{det.label_text}",
-                    (int(det.xmin) - 20, int(det.ymin) - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (0, 0, 255),
-                    2,
-                )
+            cv2.rectangle(
+                debug_image,
+                (int(det.xmin), int(det.ymin)),
+                (int(det.xmax), int(det.ymax)),
+                (0, 255, 0),
+                2,
+            )
+            cv2.putText(
+                debug_image,
+                f"{det.label_text} {det.score:.2f}",
+                (int(det.xmin), int(det.ymin) - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                2,
+            )
 
         self.debug_publisher.publish(self.bridge.cv2_to_imgmsg(debug_image, "bgr8"))
 
@@ -149,7 +135,7 @@ class DishwasherNode(Node):
         if self.image is None or self.depth_image is None or self.image_info is None:
             return [], False
 
-        results = model(source=self.image, conf=0.65, verbose=False)
+        results = model(source=self.image, conf=DETECTION_CONFIDENCE, verbose=False)
         detections = []
 
         for result in results:
