@@ -13,7 +13,7 @@ from frida_constants.navigation_constants import(
         DOOR_CHECK
         ) 
 from frida_interfaces.srv import (
-        LaserGet
+        CheckDoor
         )
 import tf2_ros
 import time as t
@@ -36,7 +36,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.service_group = MutuallyExclusiveCallbackGroup()
         self.lidar_msg = None
         self.lidar_reciever = None
-        self.check_door_srv = self.create_service(LaserGet, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
+        self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
         self.range_min = DOOR_CHECK.LIDAR_RANGE_MIN.value  
         self.range_max = DOOR_CHECK.LIDAR_RANGE_MAX.value
         self.door_rate = DOOR_CHECK.CHECKING_RATE.value
@@ -102,6 +102,12 @@ class NavDependencyLifecycleManager(LifecycleNode):
                     return response
 
             t.sleep(self.door_rate)
+
+        self.destroy_subscription(self.lidar_reciever)
+        self.lidar_msg = None
+        self.get_logger().error("Check_door: Timeout reached door didnt opened")
+        response.status = False
+        return response
             
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("Configurando: Iniciando monitoreo autónomo de dependencias")

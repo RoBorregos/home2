@@ -12,11 +12,11 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.navigation_constants import( 
     FOLLOWING_SERVICE,
     GOAL_TOPIC, 
-    AREAS_SERVICE
+    AREAS_SERVICE,
     CHECK_DOOR_SERVICE
     )
 from frida_interfaces.srv import (
-    LaserGet,
+    CheckDoor,
     PointTransformation,
     ReturnLocation,
     WaitForControllerInput,
@@ -41,7 +41,6 @@ from task_manager.utils.task import Task
 
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 TIMEOUT = 4
-RETURN_LASER_DATA = "/integration/Laserscan"
 BT_LIFE_CYCLE_SERVICE = "/bt_navigator/change_state"
 BT_PARAM_SERVICE = "/bt_navigator/set_parameters"
 RETURN_LOCATION = "/integration/ReturnLocation"
@@ -75,7 +74,7 @@ class NavigationTasks:
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         self.bt_params = self.node.create_client(SetParameters, BT_PARAM_SERVICE)
         self.bt_lifecycle = self.node.create_client(ChangeState, BT_LIFE_CYCLE_SERVICE)
-        self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
+        self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE)
         self.rtabmap_continue = self.node.create_client(Empty, RTAB_RESUME_SERVICE)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
@@ -92,7 +91,7 @@ class NavigationTasks:
                 "goal_client": {"client": self.goal_client, "type": "action"},
             },
             Task.DEBUG: {
-                # "laser_send": {"client": self.laser_send, "type": "service"},
+                "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}
             },
         }
@@ -471,11 +470,11 @@ class NavigationTasks:
         return future
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
-    @service_check("laser_send", Status.EXECUTION_ERROR, TIMEOUT)
-    def check_door(self) -> int:
+    @service_check("door_checking_srv", Status.EXECUTION_ERROR, TIMEOUT)
+    def check_door(self):
         """Check if the door is open or closed"""
-        request = LaserGet.Request()
-        future = self.laser_send.call_async(request)
+        request = CheckDoor.Request()
+        future = self.door_checking_srv.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         result = future.result()
         if result is not None:
