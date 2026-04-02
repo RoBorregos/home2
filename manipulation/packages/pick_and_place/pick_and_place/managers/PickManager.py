@@ -334,23 +334,22 @@ class PickManager:
                     pick_result_success = True
                     break
                 else:
-                    time.sleep(1.0)
+                    time.sleep(0.2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
             return False, None
 
         # close gripper
-        for i in range(2):
-            gripper_request = SetBool.Request()
-            gripper_request.data = False
-            self.node.get_logger().info("Closing gripper")
-            future = self.node._gripper_set_state_client.call_async(gripper_request)
-            future = wait_for_future(future)
-            result = future.result()
-            self.node.get_logger().info(
-                f"1 Gripper Result: {str(gripper_request.data)}"
-            )
+        gripper_request = SetBool.Request()
+        gripper_request.data = False
+        self.node.get_logger().info("Closing gripper")
+        future = self.node._gripper_set_state_client.call_async(gripper_request)
+        future = wait_for_future(future)
+        result = future.result()
+        self.node.get_logger().info(
+            f"Gripper Result: {str(gripper_request.data)}"
+        )
 
         self.node.get_logger().info("Returning to position")
 
