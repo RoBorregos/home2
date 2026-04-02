@@ -6,7 +6,6 @@ import os
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
 from ultralytics import YOLO
-import mediapipe as mp
 
 # ── YOLO COCO keypoint indices ──
 NOSE = 0
@@ -50,13 +49,91 @@ def load_yolo_pose(model_name="yolo11m-pose.pt"):
 class PoseDetection:
     def __init__(self):
         print("Pose Detection Ready (YOLO TensorRT)")
-        self.yolo_pose = load_yolo_pose("yolo11m-pose.pt")
-        self.mp_pose = mp.solutions.pose.Pose(
-            static_image_mode=False,
-            model_complexity=1,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5,
+        self.yolo_pose = YOLO("yolo11m-pose.pt")
+
+    # ── Full-image detection ──
+
+    def detect_people(self, image, conf=0.4):
+        """Run YOLO pose on full image. Returns list of dicts with
+        'bbox' (x1,y1,x2,y2), 'confidence', 'keypoints' (17,2 normalized), 'kp_conf' (17,)."""
+        results = self.yolo_pose(image, verbose=False, conf=conf)
+        if not results or results[0].boxes is None:
+            return []
+
+        people = []
+        boxes = results[0].boxes
+        kps = results[0].keypoints
+
+        for i in range(len(boxes)):
+            x1, y1, x2, y2 = [int(v) for v in boxes.xyxy[i].tolist()]
+            box_conf = float(boxes.conf[i].item())
+
+            points = kps.xyn[i].cpu().numpy() if kps is not None else None
+            kp_conf = (
+                kps.conf[i].cpu().numpy()
+                if kps is not None and kps.conf is not None
+                else np.ones(17, dtype=np.float32)
+            )
+
+            people.append(
+                {
+                    "bbox": (x1, y1, x2, y2),
+                    "confidence": box_conf,
+                    "keypoints": points,
+                    "kp_conf": kp_conf,
+                }
+            )
+
+        return people
+
+    def is_waving_from_keypoints(self, points, conf):
+        """Check if person has a hand raised using pre-computed keypoints."""
+        if points is None:
+            return False
+
+        left_raised = (
+            conf[LEFT_WRIST] > KP_CONF
+            and points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1]
+        ) or (
+            conf[LEFT_ELBOW] > KP_CONF
+            and points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1]
         )
+        right_raised = (
+            conf[RIGHT_WRIST] > KP_CONF
+            and points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
+        ) or (
+            conf[RIGHT_ELBOW] > KP_CONF
+            and points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1]
+        )
+        return left_raised or right_raised
+
+    def is_sitting_from_keypoints(self, points, scores):
+        """Check sitting pose from pre-computed keypoints."""
+        keypoint_score = 0.2
+        knee_max_angle = 120.0
+        hip_max_angle = 150.0
+        keypoints = {
+            "shoulder_l": 5,
+            "shoulder_r": 6,
+            "hip_l": 11,
+            "hip_r": 12,
+            "knee_l": 13,
+            "knee_r": 14,
+            "ankle_l": 15,
+            "ankle_r": 16,
+        }
+        for side in ("l", "r"):
+            if self._is_sitting_side(
+                points,
+                scores,
+                side,
+                keypoints,
+                keypoint_score,
+                knee_max_angle,
+                hip_max_angle,
+            ):
+                return True
+        return False
 
     # ── Core keypoint extraction ──
 
@@ -150,26 +227,6 @@ class PoseDetection:
             gesture = Gestures.WAVING
 
         return gesture
-
-    def is_waving_customer(self, image):
-        """Check if person has one hand raised (waving) using MediaPipe."""
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self.mp_pose.process(rgb)
-        if not results.pose_landmarks:
-            return False
-        lm = results.pose_landmarks.landmark
-        mp_pose = mp.solutions.pose.PoseLandmark
-
-        l_wrist = lm[mp_pose.LEFT_WRIST]
-        r_wrist = lm[mp_pose.RIGHT_WRIST]
-        l_shoulder = lm[mp_pose.LEFT_SHOULDER]
-        r_shoulder = lm[mp_pose.RIGHT_SHOULDER]
-        l_elbow = lm[mp_pose.LEFT_ELBOW]
-        r_elbow = lm[mp_pose.RIGHT_ELBOW]
-
-        left_raised = l_wrist.y < l_shoulder.y or l_elbow.y < l_shoulder.y
-        right_raised = r_wrist.y < r_shoulder.y or r_elbow.y < r_shoulder.y
-        return left_raised or right_raised
 
     # ── Gesture sub-checks ──
 
@@ -286,56 +343,6 @@ class PoseDetection:
         knee_angle = self._joint_angle_vectors(hip - knee, ankle - knee)
         hip_angle = self._joint_angle_vectors(torso_vec, knee - hip)
         return knee_angle <= knee_max_angle and hip_angle <= hip_max_angle
-
-    def _get_pose_points_scores(self, image):
-        results = self.yolo_pose(image, verbose=False)
-        if (
-            not results
-            or results[0].keypoints is None
-            or results[0].keypoints.xy is None
-        ):
-            return None, None
-        points_batch = results[0].keypoints.xy.cpu().numpy()
-        scores_batch = (
-            results[0].keypoints.conf.cpu().numpy()
-            if results[0].keypoints.conf is not None
-            else np.ones(points_batch.shape[:2], dtype=np.float32)
-        )
-        return points_batch, scores_batch
-
-    def is_sitting_yolo(self, image):
-        """Detect sitting pose using YOLO pose keypoints."""
-        keypoint_score = 0.2
-        knee_max_angle = 120.0
-        hip_max_angle = 150.0
-        keypoints = {
-            "shoulder_l": 5,
-            "shoulder_r": 6,
-            "hip_l": 11,
-            "hip_r": 12,
-            "knee_l": 13,
-            "knee_r": 14,
-            "ankle_l": 15,
-            "ankle_r": 16,
-        }
-
-        points_batch, scores_batch = self._get_pose_points_scores(image)
-        if points_batch is None:
-            return False
-
-        for points, scores in zip(points_batch, scores_batch):
-            for side in ("l", "r"):
-                if self._is_sitting_side(
-                    points,
-                    scores,
-                    side,
-                    keypoints,
-                    keypoint_score,
-                    knee_max_angle,
-                    hip_max_angle,
-                ):
-                    return True
-        return False
 
     # ── Person orientation ──
 
