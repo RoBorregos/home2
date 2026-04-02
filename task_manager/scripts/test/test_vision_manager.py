@@ -11,8 +11,6 @@ from task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.utils.task import Task
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
-from geometry_msgs.msg import PointStamped
-from visualization_msgs.msg import Marker, MarkerArray
 
 # Choose which tests to perform
 TEST_DETECT_OBJECTS = False
@@ -27,10 +25,9 @@ class TestVisionManager(Node):
     def __init__(self):
         super().__init__("test_vision_task_manager")
         self.vision_manager = VisionTasks(self, task=Task.DEBUG)
-        self.marker_pub = self.create_publisher(MarkerArray, "/test/customer_markers", 10)
-        self.last_markers = None
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestVisionManager has started.")
+        self.run()
 
     def run(self):
         if TEST_DETECT_OBJECTS:
@@ -51,7 +48,7 @@ class TestVisionManager(Node):
         if TEST_GET_PERSON_NAME:
             self.test_get_person_name()
 
-        Logger.info(self, "Tests done. Keeping node alive to publish markers (Ctrl+C to stop).")
+        exit(0)
 
     def test_detect_objects(self):
         Logger.info(self, "=== Testing detect_objects ===")
@@ -84,63 +81,16 @@ class TestVisionManager(Node):
             for i, table in enumerate(tables):
                 num_people = len(table.people.list)
                 pt = table.table_point.point
-                st = table.table_point.header.stamp
                 Logger.info(
                     self,
                     f"  Table {i}: {num_people} customer(s), "
-                    f"point=({pt.x:.3f}, {pt.y:.3f}, {pt.z:.3f}), "
-                    f"stamp={st.sec}.{st.nanosec:09d}",
+                    f"point=({pt.x:.3f}, {pt.y:.3f}, {pt.z:.3f})",
                 )
                 for person in table.people.list:
-                    ppt = person.point3d.point
-                    pst = person.point3d.header.stamp
                     Logger.info(
                         self,
-                        f"    Person: name='{person.name}', angle={person.angle:.1f}, "
-                        f"point=({ppt.x:.3f}, {ppt.y:.3f}, {ppt.z:.3f}), "
-                        f"stamp={pst.sec}.{pst.nanosec:09d}",
+                        f"    Person: name='{person.name}', angle={person.angle:.1f}",
                     )
-            # Publish markers for all people and tables
-            marker_array = MarkerArray()
-            marker_id = 0
-            for i, table in enumerate(tables):
-                # Table marker (green cube)
-                tm = Marker()
-                tm.header = table.table_point.header
-                tm.ns = "tables"
-                tm.id = marker_id
-                marker_id += 1
-                tm.type = Marker.CUBE
-                tm.action = Marker.ADD
-                tm.pose.position = table.table_point.point
-                tm.pose.orientation.w = 1.0
-                tm.scale.x = 0.15
-                tm.scale.y = 0.15
-                tm.scale.z = 0.05
-                tm.color.g = 1.0
-                tm.color.a = 0.8
-                marker_array.markers.append(tm)
-
-                # Person markers (red spheres)
-                for person in table.people.list:
-                    pm = Marker()
-                    pm.header = person.point3d.header
-                    pm.ns = "customers"
-                    pm.id = marker_id
-                    marker_id += 1
-                    pm.type = Marker.SPHERE
-                    pm.action = Marker.ADD
-                    pm.pose.position = person.point3d.point
-                    pm.pose.orientation.w = 1.0
-                    pm.scale.x = 0.1
-                    pm.scale.y = 0.1
-                    pm.scale.z = 0.1
-                    pm.color.r = 1.0
-                    pm.color.a = 0.8
-                    marker_array.markers.append(pm)
-
-            self.last_markers = marker_array
-            self.marker_pub.publish(marker_array)
         else:
             Logger.error(self, "customer_tables failed")
 
@@ -177,12 +127,8 @@ class TestVisionManager(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = TestVisionManager()
-    node.run()
     try:
-        while rclpy.ok():
-            rclpy.spin_once(node, timeout_sec=1.0)
-            if node.last_markers:
-                node.marker_pub.publish(node.last_markers)
+        rclpy.spin_once(node)
     except KeyboardInterrupt:
         pass
     finally:
