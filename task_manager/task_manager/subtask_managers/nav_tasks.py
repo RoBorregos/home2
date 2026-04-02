@@ -9,12 +9,12 @@ import os
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import( 
+from frida_constants.navigation_constants import (
     FOLLOWING_SERVICE,
-    GOAL_TOPIC, 
+    GOAL_TOPIC,
     AREAS_SERVICE,
-    CHECK_DOOR_SERVICE
-    )
+    CHECK_DOOR_SERVICE,
+)
 from frida_interfaces.srv import (
     CheckDoor,
     PointTransformation,
@@ -92,7 +92,7 @@ class NavigationTasks:
             },
             Task.DEBUG: {
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
-                "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}
+                "areas_wrapper": {"client": self.areas_wrapper, "type": "service"},
             },
         }
 

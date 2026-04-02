@@ -80,8 +80,8 @@ def launch_function(context, *args, **kwargs):
     return [
         nav_manager_node,
         map_context_node,
-        #wait_for_activation,
-        #on_deactivation
+        wait_for_activation,
+        on_deactivation
     ]
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
