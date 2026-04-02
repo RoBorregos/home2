@@ -347,9 +347,7 @@ class PickManager:
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
         result = future.result()
-        self.node.get_logger().info(
-            f"Gripper Result: {str(gripper_request.data)}"
-        )
+        self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
 
         self.node.get_logger().info("Returning to position")
 
