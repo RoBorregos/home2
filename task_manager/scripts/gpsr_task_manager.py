@@ -139,7 +139,7 @@ class GPSRTM(Node):
         elif self.current_state == GPSRTM.TaskStates.START:
             self._track_state_change(GPSRTM.TaskStates.START)
             status = self.subtask_manager.nav.check_door()
-            
+
             self.navigate_to("start_area", "", False)
 
             self.subtask_manager.hri.say(
