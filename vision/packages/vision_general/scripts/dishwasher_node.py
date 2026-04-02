@@ -7,6 +7,7 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
+from builtin_interfaces.msg import Time
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
     DEPTH_IMAGE_TOPIC,
@@ -153,7 +154,7 @@ class DishwasherNode(Node):
                     self.depth_image,
                     point_2D,
                     CAMERA_FRAME,
-                    self.get_clock().now().to_msg(),
+                    Time(sec=0, nanosec=0),
                 )
 
                 detections.append(
