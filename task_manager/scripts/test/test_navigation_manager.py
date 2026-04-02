@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
+from task_manager.utils.logger import Logger
 from task_manager.subtask_managers.nav_tasks import NavigationTasks
 
 
@@ -12,25 +13,34 @@ class TestNavigationManager(Node):
         super().__init__("NavigationTaskManager")
 
         self.navigation_manager = NavigationTasks(self, task=Task.DEBUG, mock_data=False)
+        
+        self.tests_funcs = {
+                "check_door": "",
+                "retrieve_areas": "" 
+                }
 
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("Test Navigation Manager started.")
         self.run()
-
-    def run(self):
-        result = self.navigation_manager.check_door()
-
-        if result != Status.EXECUTION_ERROR:
-            self.get_logger().info("SUCCESS")
+    
+    def check_functions(self, command):
+        Logger.info(self,f"Testing '{command}' command")
+        if hasattr(self.navigation_manager, command):
+            result = getattr(self.navigation_manager, command)()
+            Logger.info(self,f"Result = {result}")
         else:
-            self.get_logger().error("FAILED")
+            Logger.warn(self,f"Test '{command}' not found")
+             
 
+    def run(self): 
+        for command in self.tests_funcs:
+            self.check_functions(command)
 
 def main(args=None):
     rclpy.init(args=args)
     node = TestNavigationManager()
     try:
-        rclpy.spin(node)
+        rclpy.spin_once(node)
     except KeyboardInterrupt:
         pass
     finally:

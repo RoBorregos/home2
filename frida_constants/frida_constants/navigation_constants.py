@@ -20,6 +20,14 @@ AREAS_SERVICE = "/areas_json"
 
 # ------------------------------------------------------------------
 
+
+# Navigation Subtask Manager
+# ------------------------------------------------------------------
+class SUBTASK_MANAGER(Enum):
+    SERVICE_TIMEOUT = 2.0
+    AREAS_RETRIEVE_TIMEOUT = 2.0
+
+
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
 SCAN_TOPIC = "/scan"
