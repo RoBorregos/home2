@@ -1,7 +1,7 @@
 from math import pi as PI
 
 EEF_LINK_NAME = "link_eef"
-EEF_CONTACT_LINKS = ["link_eef", "link_6"]
+EEF_CONTACT_LINKS = ["link_eef", "link_6", "gripper", "left_finger", "right_finger"]
 
 DEG2RAD = PI / 180.0
 RAD2DEG = 180.0 / PI
