@@ -47,35 +47,33 @@ class NavDependencyLifecycleManager(LifecycleNode):
 
     def lidar_callback(self, msg):
         self.lidar_msg = msg
+
     def check_door(self,request, response):
         self.get_logger().info("Checking for opened door")
         opened = False
-        lidar_last = self.lidar_msg
         while opened == False:
             t.sleep(self.door_rate)
             door_points = []
             inf_count = 0
-            count = 0
-            lidar_last = self.lidar_msg
+            point_count = 0
             for count, r in enumerate(self.lidar_msg.ranges):
-                #print(f"distance={r}, number = {count}")
                 if self.range_min > self.range_max:
                     if (count <= self.range_max and count >= 0 ) or (count >= self.range_min):
                         door_points.append(r)
                         if(math.isinf(r)):
                             inf_count += 1
-                        count += 1
+                        point_count += 1
                 elif self.range_min <= count <= self.range_max:
                     door_points.append(r)
-            if inf_count < count / 3:
-                door_points = [x for x in door_points if not math.isinf(x)] 
+            if inf_count > 0: #Filter only if there is points
+                if inf_count < count / 3: #FIlter noise inf, only if is above 1/3 of the points
+                    door_points = [x for x in door_points if not math.isinf(x)]  
+                avg_points = sum(door_points)/ len(door_points)
+                if(avg_points > self.door_distance):
+                    self.get_logger().info("Door opened")
+                    response.status = True
+                    return response
             
-            avg_points = sum(door_points)/ len(door_points)
-            print(f"Average: {avg_points} infs = {inf_count} count_ttotal= {count}")
-            if(avg_points > self.door_distance):
-                response.status = True
-                return response
-
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("Configurando: Iniciando monitoreo autónomo de dependencias")
         if self.tf_listener is None:
