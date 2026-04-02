@@ -8,7 +8,7 @@ var searchData=
   ['test_5fhri_5fmanager_2epy_5',['test_hri_manager.py',['../test__hri__manager_8py.html',1,'']]],
   ['test_5fmanager_2epy_6',['test_manager.py',['../test__manager_8py.html',1,'']]],
   ['test_5fmanipulation_5fmanager_2epy_7',['test_manipulation_manager.py',['../test__manipulation__manager_8py.html',1,'']]],
-  ['test_5fnav_5fmanager_2epy_8',['test_nav_manager.py',['../test__nav__manager_8py.html',1,'']]],
+  ['test_5fnavigation_5fmanager_2epy_8',['test_navigation_manager.py',['../test__navigation__manager_8py.html',1,'']]],
   ['test_5fplan_5fparser_2epy_9',['test_plan_parser.py',['../test__plan__parser_8py.html',1,'']]],
   ['test_5fstart_5fbutton_2epy_10',['test_start_button.py',['../test__start__button_8py.html',1,'']]],
   ['test_5fvision_5fmanager_2epy_11',['test_vision_manager.py',['../test__vision__manager_8py.html',1,'']]],

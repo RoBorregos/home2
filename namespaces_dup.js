@@ -198,7 +198,6 @@ var namespaces_dup =
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
     ] ],
     [ "nav_lifecycle_manager", "namespacenav__lifecycle__manager.html", "namespacenav__lifecycle__manager" ],
-    [ "nav_test", "namespacenav__test.html", "namespacenav__test" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
     [ "navigation_composition", "namespacenavigation__composition.html", [
       [ "generate_launch_description", "namespacenavigation__composition.html#a80cc34be81f4980454e52c3045744557", null ],
@@ -325,7 +324,7 @@ var namespaces_dup =
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
-    [ "test_nav_manager", "namespacetest__nav__manager.html", "namespacetest__nav__manager" ],
+    [ "test_navigation_manager", "namespacetest__navigation__manager.html", "namespacetest__navigation__manager" ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", "namespacetest__plan__parser" ],
     [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", "namespacetest__vision__manager" ],

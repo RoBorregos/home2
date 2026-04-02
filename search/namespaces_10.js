@@ -28,7 +28,7 @@ var searchData=
   ['test_5fhri_5fmanager_25',['test_hri_manager',['../namespacetest__hri__manager.html',1,'']]],
   ['test_5fmanager_26',['test_manager',['../namespacetest__manager.html',1,'']]],
   ['test_5fmanipulation_5fmanager_27',['test_manipulation_manager',['../namespacetest__manipulation__manager.html',1,'']]],
-  ['test_5fnav_5fmanager_28',['test_nav_manager',['../namespacetest__nav__manager.html',1,'']]],
+  ['test_5fnavigation_5fmanager_28',['test_navigation_manager',['../namespacetest__navigation__manager.html',1,'']]],
   ['test_5fplan_5fparser_29',['test_plan_parser',['../namespacetest__plan__parser.html',1,'']]],
   ['test_5fstart_5fbutton_30',['test_start_button',['../namespacetest__start__button.html',1,'']]],
   ['test_5fvision_5fmanager_31',['test_vision_manager',['../namespacetest__vision__manager.html',1,'']]],

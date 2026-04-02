@@ -97,6 +97,9 @@ var annotated_dup =
         [ "KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
         [ "MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ]
       ] ],
+      [ "navigation_constants", "namespacefrida__constants_1_1navigation__constants.html", [
+        [ "DOOR_CHECK", "classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html", null ]
+      ] ],
       [ "vision_classes", "namespacefrida__constants_1_1vision__classes.html", [
         [ "BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
         [ "ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ]
@@ -202,9 +205,6 @@ var annotated_dup =
     ] ],
     [ "nav_lifecycle_manager", "namespacenav__lifecycle__manager.html", [
       [ "NavDependencyLifecycleManager", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager.html", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager" ]
-    ] ],
-    [ "nav_test", "namespacenav__test.html", [
-      [ "TestTaskManager", "classnav__test_1_1TestTaskManager.html", "classnav__test_1_1TestTaskManager" ]
     ] ],
     [ "nav_ui", "namespacenav__ui.html", [
       [ "NavCanvas", "classnav__ui_1_1NavCanvas.html", "classnav__ui_1_1NavCanvas" ],
@@ -403,8 +403,8 @@ var annotated_dup =
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", [
       [ "TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", "classtest__manipulation__manager_1_1TestManipulationManager" ]
     ] ],
-    [ "test_nav_manager", "namespacetest__nav__manager.html", [
-      [ "TestNavigationManager", "classtest__nav__manager_1_1TestNavigationManager.html", "classtest__nav__manager_1_1TestNavigationManager" ]
+    [ "test_navigation_manager", "namespacetest__navigation__manager.html", [
+      [ "TestNavigationManager", "classtest__navigation__manager_1_1TestNavigationManager.html", "classtest__navigation__manager_1_1TestNavigationManager" ]
     ] ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", [
       [ "TestPlanParser", "classtest__plan__parser_1_1TestPlanParser.html", "classtest__plan__parser_1_1TestPlanParser" ]

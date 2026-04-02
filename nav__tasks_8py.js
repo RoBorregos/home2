@@ -8,7 +8,6 @@ var nav__tasks_8py =
     [ "GOAL_POSE_TOPIC", "nav__tasks_8py.html#ab65cf2bf8bc57a36f21ed56650f7d1ca", null ],
     [ "navigation_tasks", "nav__tasks_8py.html#a93554e13b08f6283b089be3c24d7bfeb", null ],
     [ "node", "nav__tasks_8py.html#a564154d84694edae2c6fd15d69727e26", null ],
-    [ "RETURN_LASER_DATA", "nav__tasks_8py.html#a2ae23fc8dc81f649af27bdea14b8a45d", null ],
     [ "RETURN_LOCATION", "nav__tasks_8py.html#a1afa3f716a9ee1bf2ce216de42088378", null ],
     [ "RTAB_PAUSE_SERVICE", "nav__tasks_8py.html#a655d478ca19b63822cb5bd270c0675e2", null ],
     [ "RTAB_RESUME_SERVICE", "nav__tasks_8py.html#a9e01717fba3473bb3e585665117083be", null ],

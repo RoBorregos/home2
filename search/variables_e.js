@@ -22,7 +22,7 @@ var searchData=
   ['navigate_5fto_5ftable_19',['NAVIGATE_TO_TABLE',['../classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html#ab66b28894a69175b5bc2cd2310439143',1,'clean_table_task_manager::CleanTableTM::TaskStates']]],
   ['navigation_20',['NAVIGATION',['../classstoring__groceries__manager_1_1Retries.html#a559aa04e759c2789301d5fc4a7b57110',1,'storing_groceries_manager.Retries.NAVIGATION()'],['../classsafety__task__manager_1_1Retries.html#adfc9b7274aa31ca1104749b60d2008e1',1,'safety_task_manager.Retries.NAVIGATION()']]],
   ['navigation_5fin_5fprogress_21',['navigation_in_progress',['../classtransform__target_1_1PointTransformer.html#aed71023fecf00309107cbfdb6d14d602',1,'transform_target::PointTransformer']]],
-  ['navigation_5fmanager_22',['navigation_manager',['../classtest__nav__manager_1_1TestNavigationManager.html#a334220294401cfe3904a32045358a12c',1,'test_nav_manager::TestNavigationManager']]],
+  ['navigation_5fmanager_22',['navigation_manager',['../classtest__navigation__manager_1_1TestNavigationManager.html#ac08ce76f7f834ccdfe608ceb805216b4',1,'test_navigation_manager::TestNavigationManager']]],
   ['navigation_5ftasks_23',['navigation_tasks',['../namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#a93554e13b08f6283b089be3c24d7bfeb',1,'task_manager::subtask_managers::nav_tasks']]],
   ['nclasses_24',['nclasses',['../namespacereid__model.html#a89d8ea6aeef570700d95e69bd62b3614',1,'reid_model']]],
   ['net_25',['net',['../namespacemodel.html#a3baae9af564a2bb723d1dbd93d773b81',1,'model']]],
