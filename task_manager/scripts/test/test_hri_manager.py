@@ -85,7 +85,7 @@ TEST_TAKE_ORDER = False
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
+        self.hri_manager = HRITasks(self,task=Task.DEBUG, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")

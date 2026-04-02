@@ -720,7 +720,7 @@ TEST_CASES = [
 class TestPlanParser(Node):
     def __init__(self):
         super().__init__("test_plan_parser")
-        self.hri = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
+        self.hri = HRITasks(self,task=Task.DEBUG, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestPlanParser has started.")
         self.run()
