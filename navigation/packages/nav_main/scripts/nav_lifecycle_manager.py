@@ -39,6 +39,8 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.range_max = 70
         self.door_rate = 0.5
         self.door_distance = 0.6
+        self.sensor_timeout = 5.0 # Timeout in seconds to wait for sensors
+
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
         self.managed_nodes = self.get_parameter('managed_nodes').get_parameter_value().string_array_value
@@ -49,9 +51,18 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.lidar_msg = msg
 
     def check_door(self,request, response):
-        self.get_logger().info("Checking for opened door")
+        self.get_logger().info("Check_door: Service called")
+        last_time = self.get_clock().now()
+        while self.lidar_msg is None and (self.get_clock().now() - last_time) < self.sensor_timeout:
+            self.get_logger().warn("Check_door: Lidar msg not found retrying ...")
+            t.sleep(self.doot_rate)
+        if self.lidar_msg is None:
+            self.get_logger().error("Check_door: Timeout reached lidar failed to retreive")
+            response.status = False
+            return response
         opened = False
         while opened == False:
+            self.get_logger().info("Check_door: Waiting for door to open")
             t.sleep(self.door_rate)
             door_points = []
             inf_count = 0
