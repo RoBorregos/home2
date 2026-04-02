@@ -95,6 +95,8 @@ class DishwasherNode(Node):
         )
 
         self.image = None
+        self.image_info = None
+        self.depth_image = None
 
     def publish_debug_image(self, detections):
         if self.image is None:
@@ -166,7 +168,6 @@ class DishwasherNode(Node):
                         point3d=point_3D,
                     )
                 )
-
         return detections, True
 
     def _handle_detection(self, response, model):
