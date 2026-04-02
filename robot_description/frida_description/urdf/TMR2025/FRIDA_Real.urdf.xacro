@@ -49,14 +49,13 @@
     <mujoco>
       <compiler angle="radian" balanceinertia="true" autolimits="true"/>
     </mujoco>
-    <!-- Important in order to add additional files in the spawn -->
-    <link name="world" />
-    <joint name="world_to_base" type="fixed">
-      <parent link="world" />
-      <child link="base_link" />
-      <origin rpy="0 0 0" xyz="0 0 0.3" />
-    </joint>
   </xacro:if>
+  <link name="world" />
+  <joint name="world_to_base" type="fixed">
+    <parent link="world" />
+    <child link="base_link" />
+    <origin rpy="0 0 0" xyz="0 0 0.3" />
+  </joint>
   <!-- XARM MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/xarm/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 

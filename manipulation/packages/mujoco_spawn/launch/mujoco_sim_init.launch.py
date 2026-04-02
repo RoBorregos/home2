@@ -169,6 +169,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
     ).to_moveit_configs()
 
+
     robot_moveit_common_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -323,11 +324,12 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 *controller_nodes,
                 load_gripper_bridge,
                 joint_state_broadcaster
+                # motion_planning_server
             ],
         )
     )
 
-    return [robot_state_publisher, xacro2mjcf, start_mujoco, load_controllers, robot_moveit_common_launch]
+    return [robot_state_publisher, xacro2mjcf, start_mujoco, load_controllers, joint_state_publisher_node, robot_moveit_common_launch, ros2_control_launch]
 
 
 def generate_launch_description():
