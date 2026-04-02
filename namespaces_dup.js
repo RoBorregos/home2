@@ -292,9 +292,6 @@ var namespaces_dup =
     [ "ros_utils", "namespaceros__utils.html", [
       [ "wait_for_future", "namespaceros__utils.html#a788d5920b4a890dfdb242742b858f948", null ]
     ] ],
-    [ "rplidar_fixed", "namespacerplidar__fixed.html", [
-      [ "generate_launch_description", "namespacerplidar__fixed.html#a34c12a29f8ab4229ce3f1118c9f1c3c2", null ]
-    ] ],
     [ "rtabnav2", "namespacertabnav2.html", [
       [ "generate_launch_description", "namespacertabnav2.html#a0b5741c31c1cac08c5b3158c043374e7", null ]
     ] ],

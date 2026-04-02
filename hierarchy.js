@@ -55,7 +55,6 @@ var hierarchy =
       [ "ClientNode", "classClientNode.html", null ],
       [ "DetectionsHandlerNode", "classDetectionsHandlerNode.html", null ],
       [ "DownSamplePointCloud", "classDownSamplePointCloud.html", null ],
-      [ "IgnoreLaser", "classIgnoreLaser.html", null ],
       [ "PublishHandleA", "classPublishHandleA.html", null ],
       [ "PublishNode", "classPublishNode.html", null ],
       [ "TableSegmentationNode", "classTableSegmentationNode.html", null ],

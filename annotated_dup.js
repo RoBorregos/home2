@@ -481,7 +481,6 @@ var annotated_dup =
     [ "DetectionsHandlerNode", "classDetectionsHandlerNode.html", "classDetectionsHandlerNode" ],
     [ "DownSamplePointCloud", "classDownSamplePointCloud.html", "classDownSamplePointCloud" ],
     [ "HandlerParams", "structHandlerParams.html", "structHandlerParams" ],
-    [ "IgnoreLaser", "classIgnoreLaser.html", "classIgnoreLaser" ],
     [ "PublishHandleA", "classPublishHandleA.html", "classPublishHandleA" ],
     [ "PublishNode", "classPublishNode.html", "classPublishNode" ],
     [ "TableSegmentationNode", "classTableSegmentationNode.html", "classTableSegmentationNode" ],

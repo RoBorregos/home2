@@ -11,7 +11,6 @@ var searchData=
   ['restaurant_5ftask_5fmanager_8',['restaurant_task_manager',['../namespacerestaurant__task__manager.html',1,'']]],
   ['robot_5fsim_9',['robot_sim',['../namespacerobot__sim.html',1,'']]],
   ['ros_5futils_10',['ros_utils',['../namespaceros__utils.html',1,'']]],
-  ['rplidar_5ffixed_11',['rplidar_fixed',['../namespacerplidar__fixed.html',1,'']]],
-  ['rtabnav2_12',['rtabnav2',['../namespacertabnav2.html',1,'']]],
-  ['run_5fwhile_5fhearing_13',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
+  ['rtabnav2_11',['rtabnav2',['../namespacertabnav2.html',1,'']]],
+  ['run_5fwhile_5fhearing_12',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
 ];

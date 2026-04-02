@@ -1,11 +1,5 @@
 var NAVTREEINDEX28 =
 {
-"namespacefollow__person__v2.html#a7fb91f35ad27ea903a93757a83a05e85":[23,0,47,7],
-"namespacefollow__person__v2.html#ac4ba8b37bda1500e4e6c2d1e6135bf78":[23,0,47,1],
-"namespacefollow__person__v2.html#ac92b2ceebc4a358b827d8cdf2703638a":[23,0,47,4],
-"namespacefollow__person__v2.html#ae18fc04cf34a4b66e7bb2a60c4308a89":[23,0,47,3],
-"namespaceformat.html":[23,0,48],
-"namespaceformat.html#a2a29f347a155ccc16cb32c49b561e449":[23,0,48,0],
 "namespaceformat.html#ad68caf3b2ac11c6981af7cda72d732bf":[23,0,48,2],
 "namespaceformat.html#af0893b47c7fbeda9b19ea7006e54f925":[23,0,48,1],
 "namespacefrida__constants.html":[23,0,49],
@@ -249,5 +243,11 @@ var NAVTREEINDEX28 =
 "namespacegpsr__launch.html":[23,0,60],
 "namespacegpsr__launch.html#a51deed0e59e9075f48b613b55394c388":[23,0,60,0],
 "namespacegpsr__task__manager.html":[23,0,61],
-"namespacegpsr__task__manager.html#a23b5ba849244f6bd8e68e40c1d190696":[23,0,61,1]
+"namespacegpsr__task__manager.html#a23b5ba849244f6bd8e68e40c1d190696":[23,0,61,1],
+"namespacegpsr__task__manager.html#a3082b3302b813b3c09b9f0d3da26865a":[23,0,61,4],
+"namespacegpsr__task__manager.html#aa97f56f6506fa0133f9026a56277d8b7":[23,0,61,2],
+"namespacegpsr__task__manager.html#acbd3cc051bcaa0355718e913a0b44e0e":[23,0,61,5],
+"namespacegpsr__task__manager.html#acde48271012efc9388cf1370294e321d":[23,0,61,3],
+"namespacegpsr__task__manager.html#aefc24fa8a7ba799498cc9d238f9dceb1":[23,0,61,7],
+"namespacegpsr__task__manager.html#af90cbd2322b7cf65799b411242b7cd14":[23,0,61,6]
 };
