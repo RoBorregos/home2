@@ -58,7 +58,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         last_time = self.get_clock().now()
         while self.lidar_msg is None and (self.get_clock().now() - last_time) < self.sensor_timeout:
             self.get_logger().warn("Check_door: Lidar msg not found retrying ...")
-            t.sleep(self.doot_rate)
+            t.sleep(self.door_rate)
         if self.lidar_msg is None:
             self.get_logger().error("Check_door: Timeout reached lidar failed to retreive")
             response.status = False
