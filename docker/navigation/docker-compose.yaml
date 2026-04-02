@@ -41,8 +41,9 @@ services:
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
-      CYCLONE_SHM: "1"
+      CYCLONE_SHM: "${CYCLONE_SHM:-0}"
       MAP_NAME: ${MAP_NAME:-}
+      RCUTILS_COLORIZED_OUTPUT: "1"
     tty: true
     stdin_open: true
     working_dir: /workspace
@@ -99,8 +100,9 @@ services:
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
-      CYCLONE_SHM: "1"
+      CYCLONE_SHM: "${CYCLONE_SHM:-0}"
       MAP_NAME: ${MAP_NAME:-}
+      RCUTILS_COLORIZED_OUTPUT: "1"
     tty: true
     stdin_open: true
     working_dir: /workspace
