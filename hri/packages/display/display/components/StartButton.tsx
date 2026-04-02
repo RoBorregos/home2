@@ -5,10 +5,11 @@ import { Flame } from "lucide-react";
 import { Topic } from "roslib";
 import { rosClient } from "../RosClient";
 
-export function StartButton() {
+export function StartButton({ size = "normal" }: { size?: "normal" | "xl" } = {}) {
   const [publisher, setPublisher] = useState<Topic<{}> | null>(null);
   const [isTaskActive, setIsTaskActive] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [hasStartedOptimistic, setHasStartedOptimistic] = useState(false);
 
   useEffect(() => {
     const buttonPublisher = new Topic<{}>({
@@ -29,6 +30,9 @@ export function StartButton() {
       setIsTaskActive(active);
       if (active) {
         setIsMaximized(false);
+        setHasStartedOptimistic(false); 
+      } else {
+        setHasStartedOptimistic(false); 
       }
     });
 
@@ -40,24 +44,29 @@ export function StartButton() {
   const handleClick = () => {
     if (publisher) {
       publisher.publish({});
+      setHasStartedOptimistic(true);
       setIsMaximized(false);
     }
   };
 
-  const isShrunk = isTaskActive && !isMaximized;
+  const isShrunk = (isTaskActive || hasStartedOptimistic) && !isMaximized;
+
+  const containerHeight = size === "xl" ? "h-32" : "h-16";
+  const buttonTextSize = size === "xl" ? "text-4xl" : "text-lg";
+  const iconSize = size === "xl" ? "h-12 w-12" : "h-5 w-5";
 
   return (
-    <div className="w-full h-16 mb-4 relative">
+    <div className={`w-full ${containerHeight} mb-4 relative`}>
       <button
         className={`
-          relative w-full h-full bg-(--blue) hover:bg-(--blue-hover) text-white rounded-lg font-semibold text-lg flex items-center justify-center gap-2 shadow-lg z-10
+          relative w-full h-full bg-(--blue) hover:bg-(--blue-hover) text-white rounded-lg font-bold ${buttonTextSize} flex items-center justify-center gap-4 shadow-lg z-10
           transition-all duration-200 ease-out
           ${isShrunk ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100 pointer-events-auto"}
         `}
         onClick={handleClick}
         aria-label="Start task"
       >
-        <Flame className="h-5 w-5" />
+        <Flame className={iconSize} />
         <span>Start</span>
       </button>
 
