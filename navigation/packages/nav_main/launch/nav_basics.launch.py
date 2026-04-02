@@ -61,12 +61,18 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
                 [
-                    FindPackageShare("nav_main"),
+                    FindPackageShare("sllidar_ros2"),
                     "launch",
-                    "rplidar_fixed.launch.py",
+                    "sllidar_c1_launch.py",
                 ]
             )
         ),
+        launch_arguments={
+            'serial_port': '/dev/ttyUSBlidar2',
+            'inverted': 'true',
+            'ignore_array': '-139.9, -122.4, -86.4, -78.4, -40.8, -30.3, 0, 21.8, 30.8, 40.3, 78.4, 93.9, 120.9, 138.4',
+            'min_range': '0.12',
+        }.items(),
         condition=UnlessCondition(use_sim)
         )
     
