@@ -3,7 +3,7 @@
 
 <xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/Gripper/Commercial/" />
 
-<xacro:macro name="load_zed" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0'">
+<xacro:macro name="load_zed" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' mujoco_plugin:=false" >
     <xacro:unless value="${attach_to == ''}">
       <joint name="zed" type="fixed">
         <parent link="${attach_to}"/>
@@ -35,6 +35,13 @@
       </geometry>
     </collision>
   </link>
+  <xacro:if value="${mujoco_plugin}">
+    <mujoco>
+      <reference name="${attach_to}">
+        <camera name="zed_mujoco_camera_link" mode="fixed" fovy="45" quat="-0.5 -0.5 0.5 0.5 "/>
+        </reference>
+    </mujoco>
+  </xacro:if>
 
 
 </xacro:macro>
