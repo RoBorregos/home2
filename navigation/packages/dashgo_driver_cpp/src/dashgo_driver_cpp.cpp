@@ -14,6 +14,9 @@
 #include <vector>
 #include <mutex>
 #include <cmath>
+#include <sys/mman.h>
+#include <sched.h>
+#include <pthread.h>
 
 using namespace std;
 
@@ -62,13 +65,26 @@ public:
         resetEncoders();
         resetIMU();
 
-        // Timer
+        // Real-time Priority configuration
+        if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+            RCLCPP_WARN(this->get_logger(), "Failed to lock memory for real-time priority: %s", strerror(errno));
+        }
+
+        struct sched_param param;
+        param.sched_priority = 80; // High priority (1-99)
+        if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) != 0) {
+            RCLCPP_WARN(this->get_logger(), "Failed to set real-time priority (SCHED_FIFO). Are you running with root or CAP_SYS_NICE?");
+        } else {
+            RCLCPP_INFO(this->get_logger(), "Real-time priority (SCHED_FIFO) set to 80");
+        }
+
+        // Timer and time variables
         timer_ = this->create_wall_timer(std::chrono::milliseconds(static_cast<int>(1000.0/rate_)), 
                                         std::bind(&DashgoDriverCpp::timerLoop, this));
         
         last_time_ = this->now();
         last_cmd_vel_time_ = this->now();
-        
+
         RCLCPP_INFO(this->get_logger(), "DashgoDriverCpp initialized successfully");
     }
 
