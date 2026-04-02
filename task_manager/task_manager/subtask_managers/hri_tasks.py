@@ -69,6 +69,8 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
+from task_manager.config.hri.debug import config as test_hri_config
+from task_manager.config.hri.mocked import config as mocked_hri_config
 from task_manager.subtask_managers.hri_hand import HRIHand
 from task_manager.subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.sync_client import b
@@ -155,8 +157,9 @@ def format_transcription(text: str) -> str:
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
-    def __init__(self, task_manager: Node, config=None, task=Task.HRIC) -> None:
+    def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
+        config = mocked_hri_config if mock_data else test_hri_config
         self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
@@ -852,6 +855,77 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         return Status.EXECUTION_SUCCESS, command_list.commands
+
+    def parse_plan_to_text(self, commands: list) -> str:
+        """
+        Converts a list of interpreted commands into a human-readable plan description.
+
+        Args:
+            commands: list of command objects (GoTo, PickObject, etc.)
+
+        Returns:
+            str: A human-readable sentence describing the plan.
+        """
+        steps = []
+        for cmd in commands:
+            action = getattr(cmd, "action", None)
+            if action == "go_to":
+                location = getattr(cmd, "location_to_go", "somewhere")
+                if location == "start_location":
+                    steps.append("return to the start location")
+                else:
+                    steps.append(f"go to the {location}")
+            elif action == "pick_object":
+                obj = getattr(cmd, "object_to_pick", "object")
+                steps.append(f"pick the {obj}")
+            elif action == "find_person_by_name":
+                name = getattr(cmd, "name", "person")
+                steps.append(f"find {name}")
+            elif action == "find_person":
+                attr = getattr(cmd, "attribute_value", "")
+                if attr:
+                    steps.append(f"find a person who is {attr}")
+                else:
+                    steps.append("find a person")
+            elif action == "count":
+                target = getattr(cmd, "target_to_count", "objects")
+                steps.append(f"count the {target}")
+            elif action == "get_person_info":
+                info = getattr(cmd, "info_type", "information")
+                steps.append(f"get the {info} of the person")
+            elif action == "get_visual_info":
+                measure = getattr(cmd, "measure", "")
+                category = getattr(cmd, "object_category", "object")
+                steps.append(f"find the {measure} {category}".strip())
+            elif action == "answer_question":
+                steps.append("answer a question from the person")
+            elif action == "follow_person_until":
+                destination = getattr(cmd, "destination", "cancelled")
+                if destination == "cancelled":
+                    steps.append("follow the person until told to stop")
+                else:
+                    steps.append(f"follow the person to {destination}")
+            elif action == "guide_person_to":
+                destination = getattr(cmd, "destination_room", "destination")
+                steps.append(f"guide the person to {destination}")
+            elif action == "give_object":
+                steps.append("give the object to the person")
+            elif action == "place_object":
+                steps.append("place the object")
+            elif action == "say_with_context":
+                instruction = getattr(cmd, "user_instruction", "")
+                steps.append(f"say: {instruction}")
+            else:
+                steps.append(action.replace("_", " ") if action else "unknown action")
+
+        if not steps:
+            return "I have no steps to execute."
+
+        if len(steps) == 1:
+            return f"My plan is to {steps[0]}."
+
+        plan = ", then ".join(steps[:-1]) + f", and finally {steps[-1]}"
+        return f"My plan is to {plan}."
 
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):

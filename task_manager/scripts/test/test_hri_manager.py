@@ -13,7 +13,6 @@ from datetime import datetime
 from typing import Union
 
 import rclpy
-from task_manager.config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from sklearn.metrics.pairwise import cosine_similarity
 from task_manager.subtask_managers.hri_tasks import HRITasks
@@ -85,7 +84,7 @@ TEST_TAKE_ORDER = False
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
+        self.hri_manager = HRITasks(self, task=Task.DEBUG, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
