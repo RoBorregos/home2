@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-import time as t
-import math
-import sys
 import rclpy
-from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
-from rclpy.lifecycle import State
+from rclpy.duration import Duration
+from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn, State
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
-import tf2_ros
 from lifecycle_msgs.srv import ChangeState
 from lifecycle_msgs.msg import Transition as MsgTransition
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType
@@ -18,6 +14,13 @@ from frida_constants.navigation_constants import(
 from frida_interfaces.srv import (
         LaserGet
         )
+import tf2_ros
+import time as t
+import math
+import sys
+
+TIMEOUT_SENSOR = 5.0
+
 class NavDependencyLifecycleManager(LifecycleNode):
     def __init__(self, node_name):
         super().__init__(node_name)
@@ -39,7 +42,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.range_max = 70
         self.door_rate = 0.5
         self.door_distance = 0.6
-        self.sensor_timeout = 5.0 # Timeout in seconds to wait for sensors
+        self.sensor_timeout = Duration(seconds=TIMEOUT_SENSOR) # Timeout in seconds to wait for sensors
 
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
