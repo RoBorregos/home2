@@ -33,7 +33,7 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
                 [
-                    FindPackageShare("dashgo_driver"),
+                    FindPackageShare("dashgo_driver_cpp"),
                     "launch",
                     "ekf.launch.py",
                 ]
