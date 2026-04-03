@@ -7,46 +7,50 @@ from task_manager.utils.task import Task
 from task_manager.utils.logger import Logger
 from task_manager.subtask_managers.nav_tasks import NavigationTasks
 
-
+#TUPLA DE REGRESO DE IDA ARGS
 class TestNavigationManager(Node):
     def __init__(self):
         super().__init__("NavigationTaskManager")
-
-        self.navigation_manager = NavigationTasks(self, task=Task.DEBUG, mock_data=False)
+        self.logs = True
+        print(f"\n{Logger.BOLD}Starting Navigation Subtask \n")
+        
+        self.navigation_manager = NavigationTasks(self, task=Task.DEBUG, mock_data=True)
         
         self.tests_funcs = {
-                "check_door": "",
-                "retrieve_areas": "" 
-                }
+                "Check Door": {'func': self.navigation_manager.check_door},
+                "Retrieve Areas": {'func': self.navigation_manager.retrieve_areas} 
+        }
 
-        rclpy.spin_once(self, timeout_sec=1.0)
-        self.get_logger().info("Test Navigation Manager started.")
+        print(f"\n{Logger.BOLD}Testing {len(self.tests_funcs)} available subtaks..... \n")
         self.run()
-    
-    def check_functions(self, command):
-        Logger.info(self,f"Testing '{command}' command")
-        if hasattr(self.navigation_manager, command):
-            result = getattr(self.navigation_manager, command)()
-            Logger.info(self,f"Result = {result}")
-        else:
-            Logger.warn(self,f"Test '{command}' not found")
-             
+   
+    def check_nav_task(self, func, *args, **kwargs):
+        result = func()
+        #Check for map_service case
+        if result[0] == Status.EXECUTION_ERROR and result[1] == self.navigation_manager.areas_backup:
+            assert False, "Service not started or Service return empty"
 
-    def run(self): 
+        assert result[0] == Status.EXECUTION_SUCCESS, result[1]
+
+    def run(self):
+        passed = 0
+        failed = 0
         for command in self.tests_funcs:
-            self.check_functions(command)
+            if Logger.run_test(f"Test - {command}",self.check_nav_task,**self.tests_funcs[command], clear_logs=self.logs):
+                passed += 1
+            else:
+                failed += 1
+        print()
+        if failed == 0:
+            print(f"  {Logger.GREEN}{Logger.BOLD}All {passed} tests passed!{Logger.RESET}\n")
+        else:
+            print(f"  {Logger.GREEN}{passed} passed{Logger.RESET}, {Logger.RED}{failed} failed{Logger.RESET}\n")
 
 def main(args=None):
     rclpy.init(args=args)
     node = TestNavigationManager()
-    try:
-        rclpy.spin_once(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
-
+    node.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == "__main__":
     main()

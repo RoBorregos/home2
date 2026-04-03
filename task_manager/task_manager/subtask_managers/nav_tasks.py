@@ -82,10 +82,10 @@ class NavigationTasks:
                 ):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    @mockable(return_value=lambda self: self.areas_backup, delay=1)
+    @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, self.areas_backup), delay=1)
     @service_check(
-        "retrieve_areas",
-        lambda self: self.areas_backup,
+        "retrieve_areas_srv",
+        lambda self: (Status.EXECUTION_ERROR, self.areas_backup),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
     def retrieve_areas(self):
@@ -98,15 +98,15 @@ class NavigationTasks:
         )
         if (future.result() is None) or (future.result().areas == ""):
             Logger.error(self.node, "Service return empty data")
-            return self.areas_backup
+            return (Status.EXECUTION_ERROR, self.areas_backup)
 
         else:
             Logger.info(self.node, "Map Areas dumped Succesfully")
-            return json.loads(str(future.result().areas))
+            return (Status.EXECUTION_SUCCESS,json.loads(str(future.result().areas)))
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ''), delay=3)
     @service_check(
-        "door_checking_srv", Status.EXECUTION_ERROR, timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        "door_checking_srv", (Status.EXECUTION_ERROR,' "Service not started'), timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
     )
     def check_door(self):
         """Check if the door is open or closed"""
@@ -118,13 +118,13 @@ class NavigationTasks:
         if result is not None:
             if result.status:
                 Logger.info(self.node, "Door open")
-                return Status.EXECUTION_SUCCESS
+                return (Status.EXECUTION_SUCCESS, '')
             else:
                 Logger.error(self.node, "Error getting state with door")
-                return Status.EXECUTION_ERROR
+                return (Status.EXECUTION_ERROR, 'Error getting door state')
         else:
             Logger.error(self.node, "Error with request")
-            return Status.EXECUTION_ERROR
+            return (Status.EXECUTION_ERROR, 'Request error')
 
 
 if __name__ == "__main__":
