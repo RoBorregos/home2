@@ -115,8 +115,10 @@ class SingleTracker(Node):
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
         )
 
+        self.image_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            Image, CAMERA_TOPIC, self.image_callback, qos,
+            callback_group=self.image_callback_group,
         )
 
         self.depth_subscriber = self.create_subscription(
@@ -491,15 +493,9 @@ class SingleTracker(Node):
 
         # Run YOLO detection + DeepSORT tracking with ReID
         start_time = time.time()
-        yolo_results = self.model.predict(
-            self.frame,
-            classes=0,
-            verbose=False,
-        )
-        self.get_logger().info(
-            f"Det+Tracking took {time.time() - start_time:.2f} seconds"
-        )
+        yolo_results = self.model.predict(self.frame, classes=0, verbose=False)
         tracked_people = self._run_deepsort(self.frame, yolo_results)
+        self.get_logger().info(f"Det+Tracking took {time.time() - start_time:.2f}s | People: {len(tracked_people)}")
 
         if self.person_data["id"] is None:
             self.frame = None
@@ -577,7 +573,9 @@ class SingleTracker(Node):
             )
 
         # Re-identification if person lost
+        reid_start = None
         if not person_in_frame and len(tracked_people) > 0:
+            reid_start = time.time()
             img_list = []
             for person in tracked_people:
                 cropped_image = self.frame[
@@ -647,6 +645,8 @@ class SingleTracker(Node):
                             break
 
         if person_in_frame:
+            if reid_start is not None:
+                self.get_logger().info(f"ReID took {time.time() - reid_start:.2f}s")
             self.is_tracking_result = True
             if len(self.depth_image) > 0 and (
                 (
