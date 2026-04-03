@@ -117,7 +117,10 @@ class SingleTracker(Node):
 
         self.image_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos,
+            Image,
+            CAMERA_TOPIC,
+            self.image_callback,
+            qos,
             callback_group=self.image_callback_group,
         )
 
@@ -495,7 +498,9 @@ class SingleTracker(Node):
         start_time = time.time()
         yolo_results = self.model.predict(self.frame, classes=0, verbose=False)
         tracked_people = self._run_deepsort(self.frame, yolo_results)
-        self.get_logger().info(f"Det+Tracking took {time.time() - start_time:.2f}s | People: {len(tracked_people)}")
+        self.get_logger().info(
+            f"Det+Tracking took {time.time() - start_time:.2f}s | People: {len(tracked_people)}"
+        )
 
         if self.person_data["id"] is None:
             self.frame = None
