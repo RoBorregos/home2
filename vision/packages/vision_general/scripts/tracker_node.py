@@ -56,6 +56,7 @@ import copy
 import rclpy
 from rclpy.node import Node
 from vision_general.utils.ros_utils import wait_for_future
+from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
@@ -693,7 +694,9 @@ def main(args=None):
     node = SingleTracker()
 
     try:
-        rclpy.spin(node)
+        executor = MultiThreadedExecutor(num_threads=4)
+        executor.add_node(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
