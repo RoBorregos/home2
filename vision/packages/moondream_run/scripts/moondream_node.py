@@ -11,6 +11,7 @@ from ultralytics import YOLO
 import cv2
 import sys
 import os
+import time
 
 # from moondream_run.moondream_lib import MoonDreamModel, Position
 from rclpy.node import Node
@@ -120,13 +121,15 @@ class MoondreamNode(Node):
         image_bytes = image_bytes.tobytes()
 
         try:
-            encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            encoded = self.call_with_retry(
+                self.stub.EncodeImage,
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes),
             )
-            query_response = self.stub.Query(
+            query_response = self.call_with_retry(
+                self.stub.Query,
                 moondream_proto_pb2.QueryRequest(
                     encoded_image=encoded.encoded_image, query=request.query
-                )
+                ),
             )
             response.result = query_response.answer
             response.success = True
@@ -179,13 +182,15 @@ class MoondreamNode(Node):
         image_bytes = image_bytes.tobytes()
 
         try:
-            encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            encoded = self.call_with_retry(
+                self.stub.EncodeImage,
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes),
             )
-            bag_description = self.stub.Query(
+            bag_description = self.call_with_retry(
+                self.stub.Query,
                 moondream_proto_pb2.QueryRequest(
                     encoded_image=encoded.encoded_image, query=request.query
-                )
+                ),
             )
 
             print(bag_description.answer)
@@ -214,13 +219,15 @@ class MoondreamNode(Node):
         image_bytes = image_bytes.tobytes()
 
         try:
-            encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            encoded = self.call_with_retry(
+                self.stub.EncodeImage,
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes),
             )
-            beverage_position = self.stub.FindBeverage(
+            beverage_position = self.call_with_retry(
+                self.stub.FindBeverage,
                 moondream_proto_pb2.FindBeverageRequest(
                     encoded_image=encoded.encoded_image, subject=request.beverage
-                )
+                ),
             )
 
             response.location = beverage_position.position
@@ -253,14 +260,16 @@ class MoondreamNode(Node):
         image_bytes = image_bytes.tobytes()
 
         try:
-            encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            encoded = self.call_with_retry(
+                self.stub.EncodeImage,
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes),
             )
-            grpc_response = self.stub.FindObjectPoints(
+            grpc_response = self.call_with_retry(
+                self.stub.FindObjectPoints,
                 moondream_proto_pb2.FindObjectPointsRequest(
                     encoded_image=encoded.encoded_image,
                     subject=request.subject,
-                )
+                ),
             )
 
             if not grpc_response.found or len(grpc_response.points) == 0:
@@ -319,6 +328,22 @@ class MoondreamNode(Node):
             encoded_image, query, stream=False
         )
         return response
+
+    def call_with_retry(self, fn, *args, delay=5.0, **kwargs):
+        """Call a gRPC function, retrying indefinitely on UNAVAILABLE until the server is up."""
+        attempt = 0
+        while True:
+            try:
+                return fn(*args, **kwargs)
+            except grpc.RpcError as e:
+                if e.code() == grpc.StatusCode.UNAVAILABLE:
+                    attempt += 1
+                    self.get_logger().warn(
+                        f"Server unavailable (attempt {attempt}), retrying in {delay}s..."
+                    )
+                    time.sleep(delay)
+                else:
+                    raise
 
     def success(self, message):
         """Log a success message."""
