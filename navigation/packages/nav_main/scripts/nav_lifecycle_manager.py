@@ -1,12 +1,24 @@
 #!/usr/bin/env python3
-import sys
 import rclpy
-from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn
-from rclpy.lifecycle import State
-import tf2_ros
+from rclpy.duration import Duration
+from rclpy.lifecycle import LifecycleNode, TransitionCallbackReturn, State
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from lifecycle_msgs.srv import ChangeState
 from lifecycle_msgs.msg import Transition as MsgTransition
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType
+from sensor_msgs.msg import LaserScan
+from frida_constants.navigation_constants import(
+        SCAN_TOPIC,
+        CHECK_DOOR_SERVICE,
+        DOOR_CHECK
+        ) 
+from frida_interfaces.srv import (
+        CheckDoor
+        )
+import tf2_ros
+import time as t
+import math
+import sys
 
 class NavDependencyLifecycleManager(LifecycleNode):
     def __init__(self, node_name):
@@ -19,13 +31,84 @@ class NavDependencyLifecycleManager(LifecycleNode):
         
         self.ready_to_activate = False
         self.timer = None
-        
+       
+        self.lidar_group = ReentrantCallbackGroup()
+        self.service_group = MutuallyExclusiveCallbackGroup()
+        self.lidar_msg = None
+        self.lidar_reciever = None
+        self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
+        self.range_min = DOOR_CHECK.LIDAR_RANGE_MIN.value  
+        self.range_max = DOOR_CHECK.LIDAR_RANGE_MAX.value
+        self.door_rate = DOOR_CHECK.CHECKING_RATE.value
+        self.door_distance = DOOR_CHECK.DOOR_DISTANCE.value 
+        self.sensor_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_SENSOR.value) # Timeout in seconds to wait for sensors
+        self.door_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value) # Timeout in seconds to wait for sensors
+
         self.declare_parameter('autostart', True)
         self.declare_parameter('managed_nodes', [''])
         self.managed_nodes = self.get_parameter('managed_nodes').get_parameter_value().string_array_value
         if self.managed_nodes == ['']:
             self.managed_nodes = []
 
+    def lidar_callback(self, msg):
+        self.lidar_msg = msg
+
+    def check_door(self,request, response):
+        self.get_logger().info("Check_door: Service called")
+
+        self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10,callback_group=self.lidar_group )
+        self.lidar_msg = None  #Clean for cache msgs
+        t.sleep(self.door_rate) #Wait for suscription to start
+
+        start_time = self.get_clock().now()
+        while self.lidar_msg is None and (self.get_clock().now() - start_time) < self.sensor_timeout:
+            self.get_logger().warn("Check_door: waiting for lidar msg...")
+            t.sleep(self.door_rate)
+
+        if self.lidar_msg is None:
+            self.destroy_subscription(self.lidar_reciever)
+            self.lidar_msg = None
+            self.get_logger().error("Check_door: Timeout reached lidar failed to retreive")
+            response.status = False
+            return response
+
+        start_time = self.get_clock().now()
+        while (self.get_clock().now() - start_time) < self.door_timeout: #Timeout in case of absolute failure 
+            self.get_logger().info("Check_door: Waiting for door to open")
+            door_points = []
+            inf_count = 0
+            point_count = 0
+
+            for count, r in enumerate(self.lidar_msg.ranges):
+                if self.range_min > self.range_max:
+                    if (count <= self.range_max and count >= 0 ) or (count >= self.range_min):
+                        door_points.append(r)
+                        if(math.isinf(r)):
+                            inf_count += 1
+                        point_count += 1
+                elif self.range_min <= count <= self.range_max:
+                    door_points.append(r)
+
+            if inf_count > 0: #Filter only if there is points
+                if inf_count < count / 3: #FIlter noise inf, only if is above 1/3 of the points
+                    door_points = [x for x in door_points if not math.isinf(x)]  
+                avg_points = sum(door_points)/ len(door_points)
+
+                if(avg_points > self.door_distance):
+                    self.get_logger().info("Door opened")
+                    self.destroy_subscription(self.lidar_reciever)
+                    self.lidar_msg = None
+                    response.status = True
+                    return response
+
+            t.sleep(self.door_rate)
+
+        self.destroy_subscription(self.lidar_reciever)
+        self.lidar_msg = None
+        self.get_logger().error("Check_door: Timeout reached door didnt opened")
+        response.status = False
+        return response
+            
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("Configurando: Iniciando monitoreo autónomo de dependencias")
         if self.tf_listener is None:
@@ -33,7 +116,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
         
         if self.timer is not None:
             self.timer.cancel()
-            
+
         self.timer = self.create_timer(2.0, self.monitor_callback)
         return TransitionCallbackReturn.SUCCESS
 
@@ -105,7 +188,7 @@ class NavDependencyLifecycleManager(LifecycleNode):
 
 def main(args=None):
     rclpy.init(args=args)
-    executor = rclpy.executors.SingleThreadedExecutor()
+    executor = rclpy.executors.MultiThreadedExecutor()
     node = NavDependencyLifecycleManager('nav_lifecycle_manager')
     executor.add_node(node)
     

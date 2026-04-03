@@ -1,7 +1,7 @@
 from math import pi as PI
 
 EEF_LINK_NAME = "link_eef"
-EEF_CONTACT_LINKS = ["link_eef", "link_6"]
+EEF_CONTACT_LINKS = ["link_eef", "link_6", "gripper", "left_finger", "right_finger"]
 
 DEG2RAD = PI / 180.0
 RAD2DEG = 180.0 / PI
@@ -50,7 +50,7 @@ GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 SAFETY_HEIGHT = 0.05
-PICK_MIN_HEIGHT = 0.1
+PICK_MIN_HEIGHT = 0.04
 CUTLERY_PICK_MIN_HEIGHT = 0.002
 CUTLERY_NAMES = ["fork", "knife", "spoon", "cutlery"]
 GRASP_LINK_FRAME = "gripper_grasp_frame"
