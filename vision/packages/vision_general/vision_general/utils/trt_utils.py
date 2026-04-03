@@ -16,6 +16,7 @@ from ultralytics import YOLO
 def _is_tensorrt_available() -> bool:
     try:
         import tensorrt  # noqa: F401
+
         return True
     except ImportError:
         return False
