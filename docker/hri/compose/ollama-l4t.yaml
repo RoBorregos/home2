@@ -6,7 +6,7 @@ services:
       context: ..
       dockerfile: dockerfiles/Dockerfile.ollama
       args:
-        BASE_IMAGE: dustynv/ollama:0.6.8-r36.4
+        BASE_IMAGE: roborregos/0.20.0-r36.4
     image: roborregos/home2:hri-ollama-l4t
     runtime: nvidia
     network_mode: host
