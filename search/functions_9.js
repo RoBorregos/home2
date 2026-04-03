@@ -12,11 +12,11 @@ var searchData=
   ['is_5finside_9',['is_inside',['../classperson__in__map_1_1PersonLocation.html#a6f8974ce821a5be7fe6b3981af64f220',1,'person_in_map.PersonLocation.is_inside()'],['../classpoint__transformer_1_1PointTransformer.html#a0f2b7826a3ad32717613e04f62d9d4eb',1,'point_transformer.PointTransformer.is_inside()'],['../classgpsr__commands_1_1GPSRCommands.html#a9a752904ba82ff3a27caa9baa458c397',1,'gpsr_commands.GPSRCommands.is_inside()']]],
   ['is_5fnegative_10',['is_negative',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a2d99faaa11e11c340c4de49deaebb5a0',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['is_5fpositive_11',['is_positive',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a38378e41d20508d10a287f02d3d15adc',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['is_5fsitting_5fmoondream_12',['is_sitting_moondream',['../classcustomer__node_1_1CustomerNode.html#abbd4f02f544ebc705622d00dc610a41c',1,'customer_node::CustomerNode']]],
-  ['is_5fsitting_5fyolo_13',['is_sitting_yolo',['../classpose__detection_1_1PoseDetection.html#af23d3406fc52cbd6ead03f28405e190d',1,'pose_detection::PoseDetection']]],
+  ['is_5fsitting_5ffrom_5fkeypoints_12',['is_sitting_from_keypoints',['../classpose__detection_1_1PoseDetection.html#ad937eb9bcebc72461b431fa11d440c90',1,'pose_detection::PoseDetection']]],
+  ['is_5fsitting_5fmoondream_13',['is_sitting_moondream',['../classcustomer__node_1_1CustomerNode.html#abbd4f02f544ebc705622d00dc610a41c',1,'customer_node::CustomerNode']]],
   ['is_5fupside_5fdown_14',['is_upside_down',['../classpick__and__place_1_1pour__server_1_1PourMotionServer.html#adf2e07fea3adbdbbccadc3284904eb7f',1,'pick_and_place::pour_server::PourMotionServer']]],
   ['is_5fvalue_5fin_5fenum_15',['is_value_in_enum',['../namespacefrida__constants_1_1vision__enums.html#a0332e09d677c452e51fd0d08415fefb5',1,'frida_constants::vision_enums']]],
   ['is_5fwaving_16',['is_waving',['../classtracker__node_1_1SingleTracker.html#aa4f713f2c6309717c7ca252479168851',1,'tracker_node::SingleTracker']]],
-  ['is_5fwaving_5fcustomer_17',['is_waving_customer',['../classpose__detection_1_1PoseDetection.html#ab75bf40ebad014d58bdb33d54f042647',1,'pose_detection::PoseDetection']]],
+  ['is_5fwaving_5ffrom_5fkeypoints_17',['is_waving_from_keypoints',['../classpose__detection_1_1PoseDetection.html#a019e6f720609db7ab290f2c524a0c83b',1,'pose_detection::PoseDetection']]],
   ['isperson_18',['isPerson',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8507dfbfcb889d75f280a11a5fa2d2e',1,'task_manager::subtask_managers::vision_tasks::VisionTasks']]]
 ];

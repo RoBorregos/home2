@@ -110,14 +110,14 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ad8e46526be151f8b9b38ea6b9f91bd1b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecustomer__node.html#ad8e46526be151f8b9b38ea6b9f91bd1b">CONF_THRESHOLD</a> = 0.8</td></tr>
+<tr class="memitem:ad8e46526be151f8b9b38ea6b9f91bd1b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecustomer__node.html#ad8e46526be151f8b9b38ea6b9f91bd1b">CONF_THRESHOLD</a> = 0.4</td></tr>
 <tr class="separator:ad8e46526be151f8b9b38ea6b9f91bd1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ce4ca8d6b955922a67300d09f255376"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecustomer__node.html#a2ce4ca8d6b955922a67300d09f255376">DEPTH_THRESHOLD</a> = 100</td></tr>
-<tr class="separator:a2ce4ca8d6b955922a67300d09f255376"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a321b6b89d1ada8063c02497b986e8472"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecustomer__node.html#a321b6b89d1ada8063c02497b986e8472">CAMERA_FRAME</a> = &quot;zed_left_camera_optical_frame&quot;</td></tr>
+<tr class="separator:a321b6b89d1ada8063c02497b986e8472"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Node to track a single person and
-re-id them if necessary
+<div class="textblock"><pre class="fragment">Node to detect customers who are sitting and raising their hand.
+Uses YOLO pose on the full image for person detection + keypoints in one pass.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="ab7c1993bdcc545b0ed49c72b6a36f73b" name="ab7c1993bdcc545b0ed49c72b6a36f73b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab7c1993bdcc545b0ed49c72b6a36f73b">&#9670;&#160;</a></span>main()</h2>
@@ -138,6 +138,20 @@ re-id them if necessary
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="a321b6b89d1ada8063c02497b986e8472" name="a321b6b89d1ada8063c02497b986e8472"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a321b6b89d1ada8063c02497b986e8472">&#9670;&#160;</a></span>CAMERA_FRAME</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">str customer_node.CAMERA_FRAME = &quot;zed_left_camera_optical_frame&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ad8e46526be151f8b9b38ea6b9f91bd1b" name="ad8e46526be151f8b9b38ea6b9f91bd1b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad8e46526be151f8b9b38ea6b9f91bd1b">&#9670;&#160;</a></span>CONF_THRESHOLD</h2>
 
@@ -145,21 +159,7 @@ re-id them if necessary
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float customer_node.CONF_THRESHOLD = 0.8</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a2ce4ca8d6b955922a67300d09f255376" name="a2ce4ca8d6b955922a67300d09f255376"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ce4ca8d6b955922a67300d09f255376">&#9670;&#160;</a></span>DEPTH_THRESHOLD</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int customer_node.DEPTH_THRESHOLD = 100</td>
+          <td class="memname">float customer_node.CONF_THRESHOLD = 0.4</td>
         </tr>
       </table>
 </div><div class="memdoc">
