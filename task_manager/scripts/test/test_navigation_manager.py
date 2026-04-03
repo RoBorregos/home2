@@ -11,10 +11,13 @@ from task_manager.subtask_managers.nav_tasks import NavigationTasks
 class TestNavigationManager(Node):
     def __init__(self):
         super().__init__("NavigationTaskManager")
-        self.logs = True
+        self.logs = self.declare_parameter('clear_logs', True).value
+        self.mocked = self.declare_parameter('mocked', False).value
+        self.task_to_test = Task[self.declare_parameter('task', 'DEBUG').value]
+
         print(f"\n{Logger.BOLD}Starting Navigation Subtask \n")
-        
-        self.navigation_manager = NavigationTasks(self, task=Task.DEBUG, mock_data=True)
+
+        self.navigation_manager = NavigationTasks(self, task=self.task_to_test, mock_data=self.mocked)
         
         self.tests_funcs = {
                 "Check Door": {'func': self.navigation_manager.check_door},

@@ -106,7 +106,7 @@ class NavigationTasks:
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ''), delay=3)
     @service_check(
-        "door_checking_srv", (Status.EXECUTION_ERROR,' "Service not started'), timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        "door_checking_srv", (Status.EXECUTION_ERROR,' Service not started'), timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
     )
     def check_door(self):
         """Check if the door is open or closed"""
