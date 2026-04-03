@@ -1,5 +1,9 @@
 var NAVTREEINDEX31 =
 {
+"namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#acc2ee6161006865e51a5b980585f620b":[23,0,136,1,10,5],
+"namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#add8920b2469d6bc25ce6aceb7b0fe0b3":[23,0,136,1,10,1],
+"namespacetask__manager_1_1utils.html":[23,0,136,2],
+"namespacetask__manager_1_1utils_1_1config.html":[23,0,136,2,0],
 "namespacetask__manager_1_1utils_1_1decorators.html":[23,0,136,2,1],
 "namespacetask__manager_1_1utils_1_1decorators.html#a026a1029f1cd63d148cea86009000db0":[23,0,136,2,1,0],
 "namespacetask__manager_1_1utils_1_1decorators.html#a71d32900d7390409fe37451aa09c2cf0":[23,0,136,2,1,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX31 =
 "perception__3d_8launch_8py.html#a0e9c55f0d673d8e39208565acad51d8d":[25,0,3,0,4,1,1,0],
 "perception__utils_8py.html":[25,0,3,0,5,1,2,1],
 "perception__utils_8py.html#a31955e78e1302a61392ef9498f4a4511":[25,0,3,0,5,1,2,1,0],
-"perception__utils_8py.html#a906076edfe03facab943fe84636d2f69":[25,0,3,0,5,1,2,1,2],
-"perception__utils_8py.html#adf7d95078b4cecc224d75c0f20109553":[25,0,3,0,5,1,2,1,1],
-"person__in__map_8py.html":[25,0,7,0,3,1,10],
-"person__in__map_8py.html#aa8f7ab459a2edeb67fd9efa74eb0fb33":[25,0,7,0,3,1,10,1],
-"pick__and__place_8launch_8py.html":[25,0,3,0,5,0,0]
+"perception__utils_8py.html#a906076edfe03facab943fe84636d2f69":[25,0,3,0,5,1,2,1,2]
 };

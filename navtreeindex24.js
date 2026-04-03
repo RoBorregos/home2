@@ -1,5 +1,13 @@
 var NAVTREEINDEX24 =
 {
+"downsample__pc_8launch_8py.html":[25,0,3,0,4,1,0],
+"downsample__pc_8launch_8py.html#ac2b4cab7e9652eb5d6142f99b1981c55":[25,0,3,0,4,1,0,0],
+"ds4__demo_8py.html":[25,0,3,0,1,0,3],
+"ds4__demo_8py.html#a4c6991237427da870d97ade2a44fdfec":[25,0,3,0,1,0,3,3],
+"ds4__demo_8py.html#a9537b385d440de90c55689e7d09e9b5d":[25,0,3,0,1,0,3,2],
+"ds4__demo_8py.html#a9ee64277947c3be58860b6df419273bd":[25,0,3,0,1,0,3,1],
+"dualshock__cmd__vel_8launch_8py.html":[25,0,4,0,2,0,1],
+"dualshock__cmd__vel_8launch_8py.html#a432ab17ac92da4fc48450236583614a3":[25,0,4,0,2,0,1,0],
 "egpsr__task__manager_8py.html":[25,0,6,1,4],
 "egpsr__task__manager_8py.html#a127f19f794b41f65a7a9d0aae5fbec99":[25,0,6,1,4,7],
 "egpsr__task__manager_8py.html#a409e19ab5fd511004f98c53b43c58fc4":[25,0,6,1,4,5],
@@ -136,8 +144,8 @@ var NAVTREEINDEX24 =
 "frida__moveit__config_8launch_8py.html#a5e023520268c7fc528bdef585510ea67":[25,0,3,0,0,3,3,1],
 "frida__pymoveit2_2examples_2ex__orientation__path__constraint_8py.html":[25,0,3,0,2,0,2],
 "frida__pymoveit2_2examples_2ex__orientation__path__constraint_8py.html#a57b22356cd49cfb907d3856e0bd4e00f":[25,0,3,0,2,0,2,0],
-"functions.html":[24,3,0,0],
 "functions.html":[24,3,0],
+"functions.html":[24,3,0,0],
 "functions_a.html":[24,3,0,1],
 "functions_b.html":[24,3,0,2],
 "functions_c.html":[24,3,0,3],
@@ -187,8 +195,8 @@ var NAVTREEINDEX24 =
 "functions_t.html":[24,3,0,20],
 "functions_u.html":[24,3,0,21],
 "functions_v.html":[24,3,0,22],
-"functions_vars.html":[24,3,2],
 "functions_vars.html":[24,3,2,0],
+"functions_vars.html":[24,3,2],
 "functions_vars_a.html":[24,3,2,1],
 "functions_vars_b.html":[24,3,2,2],
 "functions_vars_c.html":[24,3,2,3],
@@ -241,13 +249,5 @@ var NAVTREEINDEX24 =
 "gpsr_8launch_8py.html#a757ec7f17f46a7b35bae9fe8fb05a58c":[25,0,3,0,3,0,1,0],
 "gpsr__commands_8py.html":[25,0,7,0,3,1,5],
 "gpsr__commands_8py.html#a2952d9e1982a9616ec9cb2269606703c":[25,0,7,0,3,1,5,3],
-"gpsr__commands_8py.html#a5783abd6bc09633fca3b65604586f3cb":[25,0,7,0,3,1,5,1],
-"gpsr__commands_8py.html#a7dce31766c14809575920f9d6ebe53a2":[25,0,7,0,3,1,5,4],
-"gpsr__commands_8py.html#aee6e17035d2da3b106824c088f5c9e06":[25,0,7,0,3,1,5,2],
-"gpsr__launch_8py.html":[25,0,7,0,3,0,1],
-"gpsr__launch_8py.html#a51deed0e59e9075f48b613b55394c388":[25,0,7,0,3,0,1,0],
-"gpsr__single__tasks_8py.html":[25,0,6,2,1,2],
-"gpsr__single__tasks_8py.html#a342e4af688797931bd908d3bef0200da":[25,0,6,2,1,2,2],
-"gpsr__single__tasks_8py.html#a9c9027b6a23f7c6f110fd538b7de0640":[25,0,6,2,1,2,1],
-"gpsr__task__manager_8py.html":[25,0,6,1,6]
+"gpsr__commands_8py.html#a5783abd6bc09633fca3b65604586f3cb":[25,0,7,0,3,1,5,1]
 };

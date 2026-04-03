@@ -88,13 +88,13 @@ var hierarchy =
     [ "demo_manager.DemoTM.States", "classdemo__manager_1_1DemoTM_1_1States.html", null ],
     [ "egpsr_task_manager.EGPSRTM.States", "classegpsr__task__manager_1_1EGPSRTM_1_1States.html", null ],
     [ "egsr_cut.EGPSRTM.States", "classegsr__cut_1_1EGPSRTM_1_1States.html", null ],
-    [ "gpsr_task_manager.GPSRTM.States", "classgpsr__task__manager_1_1GPSRTM_1_1States.html", null ],
     [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
     [ "str", null, [
       [ "task_manager.utils.config.TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ]
     ] ],
     [ "task_manager.utils.subtask_manager.SubtaskManager", "classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html", null ],
     [ "clean_table_task_manager.CleanTableTM.TaskStates", "classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
+    [ "gpsr_task_manager.GPSRTM.TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "hand_task_manager.HandTM.TaskStates", "classhand__task__manager_1_1HandTM_1_1TaskStates.html", null ],
     [ "hric_task_manager.HRIC_TM.TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],

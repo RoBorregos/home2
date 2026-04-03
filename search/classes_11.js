@@ -10,7 +10,7 @@ var searchData=
   ['simplemapserver_7',['SimpleMapServer',['../classmap__publisher_1_1SimpleMapServer.html',1,'map_publisher']]],
   ['simulateposition_8',['SimulatePosition',['../classsimulate__position_1_1SimulatePosition.html',1,'simulate_position']]],
   ['singletracker_9',['SingleTracker',['../classget__positon__3d_1_1SingleTracker.html',1,'get_positon_3d.SingleTracker'],['../classnew__tracker_1_1SingleTracker.html',1,'new_tracker.SingleTracker'],['../classold__tracker_1_1SingleTracker.html',1,'old_tracker.SingleTracker'],['../classtracker__node_1_1SingleTracker.html',1,'tracker_node.SingleTracker'],['../classtracker__node__fregoso_1_1SingleTracker.html',1,'tracker_node_fregoso.SingleTracker']]],
-  ['states_10',['States',['../classdemo__manager_1_1DemoTM_1_1States.html',1,'demo_manager.DemoTM.States'],['../classegpsr__task__manager_1_1EGPSRTM_1_1States.html',1,'egpsr_task_manager.EGPSRTM.States'],['../classegsr__cut_1_1EGPSRTM_1_1States.html',1,'egsr_cut.EGPSRTM.States'],['../classgpsr__task__manager_1_1GPSRTM_1_1States.html',1,'gpsr_task_manager.GPSRTM.States']]],
+  ['states_10',['States',['../classdemo__manager_1_1DemoTM_1_1States.html',1,'demo_manager.DemoTM.States'],['../classegpsr__task__manager_1_1EGPSRTM_1_1States.html',1,'egpsr_task_manager.EGPSRTM.States'],['../classegsr__cut_1_1EGPSRTM_1_1States.html',1,'egsr_cut.EGPSRTM.States']]],
   ['status_11',['Status',['../classtask__manager_1_1utils_1_1status_1_1Status.html',1,'task_manager::utils::status']]],
   ['stm32_12',['Stm32',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html',1,'dashgo_driver::dashgo_stm32']]],
   ['storinggroceriesmanager_13',['StoringGroceriesManager',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html',1,'storing_groceries_manager']]],

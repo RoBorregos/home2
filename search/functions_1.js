@@ -25,7 +25,7 @@ var searchData=
   ['are_5farms_5fdown_22',['are_arms_down',['../classpose__detection_1_1PoseDetection.html#ae951330caf9fd3dd003344de3d7d7895',1,'pose_detection.PoseDetection.are_arms_down()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a6dfe1aeb1699f956d7d85a63fb51fc3a',1,'vision_general.pose_detection.PoseDetection.are_arms_down()']]],
   ['areas_5fdump_23',['areas_dump',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a484ded4a4977c4f72c1ed2906d3b3c5c',1,'task_manager::subtask_managers::nav_tasks::NavigationTasks']]],
   ['areasservices_24',['AreasServices',['../classAreasServices.html#af485297a0f73498464f0a72fa580048b',1,'AreasServices']]],
-  ['ask_5fand_5fconfirm_25',['ask_and_confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a30e417e105d0f38a30fff6592758cdd6',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['ask_5fand_5fconfirm_25',['ask_and_confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4b003c1bcaa94e51559c4a72940feb16',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['assign_5fname_26',['assign_name',['../classface__recognition__node_1_1FaceRecognition.html#a99480313eff42a75e45bd944be6b9eee',1,'face_recognition_node::FaceRecognition']]],
   ['async_5fllm_5ftest_27',['async_llm_test',['../classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1',1,'test_hri_manager::TestHriManager']]],
   ['attach_5fcollision_5fobject_28',['attach_collision_object',['../classMoveItPlanner_1_1MoveItPlanner.html#a95d23009c5043e0771587c55e1e1e416',1,'MoveItPlanner::MoveItPlanner']]],
