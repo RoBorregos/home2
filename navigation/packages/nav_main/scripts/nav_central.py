@@ -170,7 +170,6 @@ class Nav_Central(Node):
            #Get available tf 
             try:
                 frames_dict = self.tf_buffer.all_frames_as_yaml()
-                print(frames_dict)
                 tf_ready = all(frame in frames_dict for frame in self.required_frames)
             except Exception:
                 tf_ready = False
