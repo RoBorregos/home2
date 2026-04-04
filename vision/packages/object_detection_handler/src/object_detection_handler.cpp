@@ -76,7 +76,7 @@ class DetectionsHandlerNode : public rclcpp::Node
       this->declare_parameter("TARGET_FRAME", "base_link");
       this->declare_parameter("TRANSFORM", false);
       this->declare_parameter("VERBOSE", false);
-      this->declare_parameter("IOU_THRESHOLD", 0.95);
+      this->declare_parameter("IOU_THRESHOLD", 0.7);
       this->declare_parameter("RECORDED_SECONDS", 5.0);
     }
 

@@ -7,10 +7,14 @@ import { rosClient } from "../RosClient";
 
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
-export function VideoFeed() {
-  const [videoTopic, setVideoTopic] = useState<string>(
-    "/zed/zed_node/rgb/image_rect_color"
-  );
+interface VideoFeedProps {
+  defaultTopic?: string;
+}
+
+export function VideoFeed({
+  defaultTopic = "/zed/zed_node/rgb/image_rect_color",
+}: VideoFeedProps) {
+  const [videoTopic, setVideoTopic] = useState<string>(defaultTopic);
 
   useEffect(() => {
     const changeVideoTopic = new Topic<{ data: string }>({

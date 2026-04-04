@@ -32,7 +32,7 @@ def generate_launch_description():
                 name='teleop_twist_joy_node',
                 namespace='',
                 parameters=[{
-                        'hw_type': LaunchConfiguration('hw_type')
+                        'hw_type': LaunchConfiguration('hw_type'),
                 }],
                 remappings=[
                     ('cmd_vel', LaunchConfiguration('topic_name'))

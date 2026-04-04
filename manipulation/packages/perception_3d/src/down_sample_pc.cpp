@@ -44,7 +44,7 @@ private:
   float medium_radius = 2.5f; // 2.5m
   float sqr_small_rad;
   float sqr_med_rad;
-  int simplificator_factor = 3;
+  int simplificator_factor = 1;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {

@@ -161,7 +161,7 @@ local_costmap:
         observation_sources: rgbd1_clear rgbd1_mark
         rgbd1_mark:
           data_type: PointCloud2
-          topic: /point_cloud_nav
+          topic: /point_cloud
           marking: true
           clearing: false
           min_obstacle_height: 0.25
@@ -175,7 +175,7 @@ local_costmap:
         rgbd1_clear:
           enabled: true
           data_type: PointCloud2
-          topic: /point_cloud_nav
+          topic: /point_cloud
           marking: false
           clearing: true
           min_z: 0.1
@@ -236,7 +236,7 @@ global_costmap:
         observation_sources: rgbd1_clear rgbd1_mark
         rgbd1_mark:
           data_type: PointCloud2
-          topic: /point_cloud_nav
+          topic: /point_cloud
           marking: true
           clearing: false
           min_obstacle_height: 0.25
@@ -250,7 +250,7 @@ global_costmap:
         rgbd1_clear:
           enabled: true
           data_type: PointCloud2
-          topic: /point_cloud_nav
+          topic: /point_cloud
           marking: false
           clearing: true
           min_z: 0.1

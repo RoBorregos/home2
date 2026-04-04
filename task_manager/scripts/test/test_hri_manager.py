@@ -13,13 +13,12 @@ from datetime import datetime
 from typing import Union
 
 import rclpy
-from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from sklearn.metrics.pairwise import cosine_similarity
-from subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.types import (
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
     Count,
@@ -35,8 +34,8 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.status import Status
-from utils.task import Task
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -79,12 +78,13 @@ TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
+TEST_TAKE_ORDER = False
 
 
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
+        self.hri_manager = HRITasks(self, task=Task.DEBUG, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
@@ -129,6 +129,9 @@ class TestHriManager(Node):
 
         if TEST_WORD_CONFIDENCES:
             self.test_word_confidences()
+
+        if TEST_TAKE_ORDER:
+            self.test_take_order()
 
         exit(0)
 
@@ -191,6 +194,10 @@ class TestHriManager(Node):
         if word_confidences:
             avg_confidence = sum(word_confidences.values()) / len(word_confidences)
             self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
+
+    def test_take_order(self):
+        self.get_logger().info("Running take_order test")
+        self.hri_manager.take_order(retries=3)
 
     def compound_functions(self):
         s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
@@ -625,7 +632,7 @@ class TestHriManager(Node):
         self.get_logger().info("This may take a minute...")
         result = subprocess.run(
             ["baml-cli", "test"],
-            cwd="/workspace/src/task_manager/scripts/utils/",
+            cwd="/workspace/src/task_manager/task_manager/utils/",
             capture_output=True,
             text=True,
         )

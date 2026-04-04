@@ -31,6 +31,7 @@ install(
     scripts/knowledge_base.py
     scripts/postgres_adapter.py
     scripts/create_sql_dump.py
+    scripts/postgres_service.py
   DESTINATION lib/${PROJECT_NAME}  # Install to the package's lib directory
 )
 
