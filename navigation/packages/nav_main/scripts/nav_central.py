@@ -53,8 +53,7 @@ def params_from_yaml(yaml_path, node_name):
 class Nav_Central(Node):
     def __init__(self, node_name):
         super().__init__(node_name)
-        
-        self.get_logger().info("Starting Nav_Central ... ")
+        self.nav_logger("info", "NAV_CENTRAL STARTED") 
         self.localization = self.declare_parameter('localization', False).value
         self.map_name= self.declare_parameter('map_name', 'rtabmap_map.db').value
         self.mapping_config = self.declare_parameter('rtab_mapping_config', '').value
@@ -224,8 +223,7 @@ class Nav_Central(Node):
             future = rtab_client.call_async(req)
             while not future.done():
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            self.get_logger().info("Loaded rtabmap slam")
-
+            self.nav_logger("info" "Loading Slam -> RtabCore Loaded")
             req = LoadNode.Request()
             req.package_name = 'rtabmap_sync'
             req.plugin_name = 'rtabmap_sync::RGBDSync'
@@ -235,17 +233,19 @@ class Nav_Central(Node):
             future = sync_client.call_async(req)
             while not future.done():
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            self.get_logger().info("Loaded rgbd_sync")
+            self.nav_logger("info", "Loading Slam -> RtabSync Loaded") 
             elapsed = 0.0
             while not self.check_for_topics(rtab_topics) and elapsed < self.rtab_load_timeout:
                 t.sleep(0.5)
                 elapsed += 0.5
-            self.get_logger().info(f"Rtabmap topics ready: {self.check_for_topics(rtab_topics)}")
-
-                
+            if self.check_for_topics(rtab_topics):
+                self.nav_logger("info", "Loading Slam -> Topic Founded")
+            else:
+                self.nav_logger("error","Loading Slam -> Topics not found trying again ...")
             
         self.destroy_client(rtab_client)
         self.destroy_client(sync_client)
+        self.nav_logger("info", "Loading Slam -> Finished Slam Loading")
     
 def main(args=None):
     rclpy.init(args=args)
