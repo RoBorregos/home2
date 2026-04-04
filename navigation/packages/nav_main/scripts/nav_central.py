@@ -90,7 +90,7 @@ class Nav_Central(Node):
         
         #Setup and Configuration
         self._setup_done = False
-        self._setup_timer = self.create_timer(2.0, self._setup)
+        self._setup_timer = self.create_timer(2.0, self._setup, callback_group=ReentrantCallbackGroup())
     
     def _setup(self):
         if self._setup_done:
@@ -202,8 +202,9 @@ class Nav_Central(Node):
 
         rtab_topics = {'/rtabmap/republish_node_data'}
 
-        rtab_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node')                                                                                                        
-        sync_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node')                                                                                                        
+        load_cb_group = ReentrantCallbackGroup()
+        rtab_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node', callback_group=load_cb_group)
+        sync_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node', callback_group=load_cb_group)                                                                                                        
         rtab_client.wait_for_service()
         while not self.check_for_topics(rtab_topics):
             req = LoadNode.Request()                                                                                                                                                                
