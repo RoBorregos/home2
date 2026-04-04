@@ -284,6 +284,14 @@ class PickMotionServer(Node):
                 "No plane found, but object is flat. Bypassing safety check."
             )
 
+        # Remove object collision spheres before planning.
+        # They block the gripper from reaching the object.
+        # The table plane stays to prevent table crashes.
+        if not is_flat:
+            for obj in self.collision_objects:
+                if PICK_OBJECT_NAMESPACE in obj.id:
+                    self.remove_collision_object(obj.id)
+
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
                 ee_link_pose = copy.deepcopy(pose)
@@ -788,6 +796,12 @@ class PickMotionServer(Node):
             if is_flat:
                 return True
             return False
+
+        # For non-cutlery, the ee_link_offset pushes the pose below the plane
+        # for lateral grasps.  The table collision object in MoveIt protects
+        # against actual table crashes, so skip the height check.
+        if not is_flat:
+            return True
 
         pick_height = pose.pose.position.z
         plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2

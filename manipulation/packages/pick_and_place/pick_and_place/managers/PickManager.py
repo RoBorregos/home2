@@ -3,7 +3,14 @@ from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PoseStamped, PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
-from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
+from pick_and_place.utils.perception_utils import (
+    get_object_cluster,
+    get_object_detection,
+    point_in_range,
+)
+from pick_and_place.utils.pointcloud_completion import complete_cluster
+from pick_and_place.utils.dense_cloud import make_dense_cluster
+from sensor_msgs.msg import CameraInfo, Image, PointCloud2
 from frida_interfaces.action import PickMotion
 from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
@@ -12,6 +19,10 @@ from frida_motion_planning.utils.service_utils import (
 from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
+)
+from frida_constants.vision_constants import (
+    DEPTH_IMAGE_TOPIC,
+    CAMERA_INFO_TOPIC,
 )
 from typing import Tuple
 import time
@@ -22,6 +33,8 @@ import numpy as np
 from pick_and_place.utils.perception_utils import get_object_point
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+import rclpy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
 
 CFG_PATHS = [
@@ -69,9 +82,99 @@ class PickManager:
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
+        # Dense cloud: depth image + camera info subscribers
+        self._latest_depth = None
+        self._camera_info = None
+
+        depth_qos = QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+        self.node.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self._depth_cb, depth_qos
+        )
+        self.node.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self._cam_info_cb, depth_qos
+        )
+
+        self._debug_cluster_pub = self.node.create_publisher(
+            PointCloud2, "/manipulation/debug/cluster_raw", 1
+        )
+        self._debug_completed_pub = self.node.create_publisher(
+            PointCloud2, "/manipulation/debug/cluster_completed", 1
+        )
+
         self.node.create_subscription(
             PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
         )
+
+    def _depth_cb(self, msg):
+        self._latest_depth = msg
+
+    def _cam_info_cb(self, msg):
+        self._camera_info = msg
+
+    def _get_tf_matrix(self, source_frame: str, target_frame: str):
+        """Get 4x4 homogeneous transform from source to target frame."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                target_frame, source_frame, rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=1.0)
+            )
+            t = tf.transform.translation
+            q = tf.transform.rotation
+            rot = R.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
+            mat = np.eye(4)
+            mat[:3, :3] = rot
+            mat[:3, 3] = [t.x, t.y, t.z]
+            return mat
+        except Exception as e:
+            self.node.get_logger().warn(f"TF lookup failed: {e}")
+            return None
+
+    def _try_dense_cloud(self, object_name: str):
+        """Try to build a dense cloud from depth image + detection bbox.
+
+        Returns (PointCloud2, min_z, height) or (None, 0, 0) on failure.
+        """
+        if self._latest_depth is None or self._camera_info is None:
+            return None, 0.0, 0.0
+
+        detection = get_object_detection(
+            object_name, self.node.detection_handler_client
+        )
+        if detection is None or detection.xmin >= detection.xmax:
+            return None, 0.0, 0.0
+
+        tf_matrix = self._get_tf_matrix(
+            "zed_left_camera_optical_frame", "base_link"
+        )
+
+        dense_msg = make_dense_cluster(
+            self._latest_depth,
+            self._camera_info,
+            detection.xmin,
+            detection.ymin,
+            detection.xmax,
+            detection.ymax,
+            tf_matrix=tf_matrix,
+        )
+        if dense_msg is None:
+            return None, 0.0, 0.0
+
+        # Read Z from raw bytes directly (all floats, stride=12, Z at offset 8)
+        data = np.frombuffer(dense_msg.data, dtype=np.float32)
+        n_pts = len(data) // 3
+        if n_pts == 0:
+            return None, 0.0, 0.0
+        zs = data[2::3]  # every 3rd float starting at index 2 = Z
+        min_z = float(zs.min())
+        height = float(zs.max()) - min_z
+
+        self.node.get_logger().info(
+            f"Dense cloud: {n_pts} pts (height={height:.2f} m)"
+        )
+        return dense_msg, min_z, height
 
     def flat_grasp_callback(self, msg):
         self.latest_flat_grasp = msg
@@ -163,6 +266,14 @@ class PickManager:
             points = []
 
         else:
+            # --- Dense cloud from depth crop (primary method) ---
+            dense_cloud = None
+            if object_name is not None and object_name != "":
+                dense_cloud, dense_min_z, dense_height = self._try_dense_cloud(
+                    object_name
+                )
+
+            # --- Perception cluster (needed for collision objects + fallback) ---
             for i in range(3):
                 if point is not None and (
                     point.point.x != 0 and point.point.y != 0 and point.point.z != 0
@@ -199,23 +310,45 @@ class PickManager:
                     self.node.get_logger().info("Object cluster detected")
                     break
 
-            if object_cluster is None:
+            if object_cluster is None and dense_cloud is None:
                 self.node.get_logger().error("No object cluster detected")
                 return False, None
 
-            cloud_gen = point_cloud2.read_points(
-                object_cluster, field_names=("x", "y", "z"), skip_nans=True
-            )
-            points = [list(p) for p in cloud_gen]
-            if not points:
-                self.node.get_logger().error("Empty bowl cluster")
-                return False, None
+            # Use dense cloud for GPD if available, otherwise fall back to cluster
+            if dense_cloud is not None:
+                gpd_cloud = dense_cloud
+                min_z = dense_min_z
+                height = dense_height
+                self.node.get_logger().info(
+                    "Using dense depth-crop cloud for GPD"
+                )
+            else:
+                gpd_cloud = object_cluster
+                cloud_gen = point_cloud2.read_points(
+                    object_cluster, field_names=("x", "y", "z"), skip_nans=True
+                )
+                points = [list(p) for p in cloud_gen]
+                if not points:
+                    self.node.get_logger().error("Empty cluster")
+                    return False, None
+                points_np = np.array(points)
+                min_z = np.min(points_np[:, 2])
+                height = points_np[:, 2].max() - min_z
+                self.node.get_logger().info(
+                    "Using perception cluster for GPD (dense cloud unavailable)"
+                )
 
-            points_np = np.array(points)
-            max_z = np.max(points_np[:, 2])
-            min_z = np.min(points_np[:, 2])
-            height = max_z - min_z
             self.node.get_logger().info(f"Object cluster height: {height:.2f} m")
+
+            # Symmetry completion (helps both dense and sparse clouds)
+            self._debug_cluster_pub.publish(gpd_cloud)
+            object_cluster = complete_cluster(
+                gpd_cloud,
+                enable=True,
+                plane_z=min_z,
+                logger=self.node.get_logger(),
+            )
+            self._debug_completed_pub.publish(object_cluster)
 
         # open gripper
         gripper_request = SetBool.Request()
@@ -279,13 +412,9 @@ class PickManager:
                 if len(grasp_poses) == 0:
                     continue
 
-                if len(grasp_poses) > 5:
-                    indices = np.random.choice(len(grasp_poses), size=5, replace=False)
-                    grasp_poses = [grasp_poses[i] for i in indices]
-                    grasp_scores = [grasp_scores[i] for i in indices]
-                else:
-                    grasp_poses = grasp_poses[:5]
-                    grasp_scores = grasp_scores[:5]
+                if len(grasp_poses) > 10:
+                    grasp_poses = grasp_poses[:10]
+                    grasp_scores = grasp_scores[:10]
 
                 new_grasp_poses = []
                 new_grasp_scores = []
@@ -309,8 +438,8 @@ class PickManager:
                         reversed_pose.pose.orientation.w = q_result[3]
                         new_grasp_poses.append(reversed_pose)
                         new_grasp_scores.append(grasp_score)
-                    new_grasp_scores = new_grasp_scores[:5]
-                    new_grasp_poses = new_grasp_poses[:5]
+                    new_grasp_scores = new_grasp_scores[:10]
+                    new_grasp_poses = new_grasp_poses[:10]
                 else:
                     new_grasp_poses = grasp_poses
                     new_grasp_scores = grasp_scores
@@ -334,23 +463,20 @@ class PickManager:
                     pick_result_success = True
                     break
                 else:
-                    time.sleep(1.0)
+                    time.sleep(0.2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
             return False, None
 
         # close gripper
-        for i in range(2):
-            gripper_request = SetBool.Request()
-            gripper_request.data = False
-            self.node.get_logger().info("Closing gripper")
-            future = self.node._gripper_set_state_client.call_async(gripper_request)
-            future = wait_for_future(future)
-            result = future.result()
-            self.node.get_logger().info(
-                f"1 Gripper Result: {str(gripper_request.data)}"
-            )
+        gripper_request = SetBool.Request()
+        gripper_request.data = False
+        self.node.get_logger().info("Closing gripper")
+        future = self.node._gripper_set_state_client.call_async(gripper_request)
+        future = wait_for_future(future)
+        result = future.result()
+        self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
 
         self.node.get_logger().info("Returning to position")
 

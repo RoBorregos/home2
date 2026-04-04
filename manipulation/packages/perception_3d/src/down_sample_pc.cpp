@@ -44,7 +44,9 @@ private:
   float medium_radius = 2.5f; // 2.5m
   float sqr_small_rad;
   float sqr_med_rad;
-  int simplificator_factor = 3;
+  int simplificator_factor = 1;
+  double publish_rate_hz = 5.0;  // Max output rate (Hz) — saves CPU on Orin
+  rclcpp::Time last_publish_time_;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
@@ -62,6 +64,8 @@ public:
     this->sqr_small_rad =  std::pow(small_radius, 2);
     this->sqr_med_rad = std::pow(medium_radius, 2);
     this->simplificator_factor = this->declare_parameter("simplificator_factor", simplificator_factor);
+    this->publish_rate_hz = this->declare_parameter("publish_rate_hz", publish_rate_hz);
+    this->last_publish_time_ = this->now();
     rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
 
@@ -75,6 +79,14 @@ public:
   }
 
   void pointcloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+    // Rate-limit: skip frames to save CPU
+    auto now = this->now();
+    double dt = (now - last_publish_time_).seconds();
+    if (dt < (1.0 / publish_rate_hz)) {
+      return;
+    }
+    last_publish_time_ = now;
+
     PointCloudNS::Ptr in_cloud(new PointCloudNS);
     PointCloudNS::Ptr small_cloud(new PointCloudNS);
     PointCloudNS::Ptr medium_cloud(new PointCloudNS);
