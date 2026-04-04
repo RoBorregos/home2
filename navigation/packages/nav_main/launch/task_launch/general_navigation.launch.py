@@ -51,35 +51,10 @@ def launch_function(context, *args, **kwargs):
         output='screen',
     )
 
-    from launch_ros.event_handlers import OnStateTransition
     
-    wait_for_activation = RegisterEventHandler(
-        OnStateTransition(
-            target_lifecycle_node=nav_manager_node,
-            goal_state='active',
-            entities=[
-                LogInfo(msg="[NavComposition] Dependencias externas listas"),
-                nav_basics,
-                rtabmapnav,
-            ]
-        )
-    )
-
-    on_deactivation = RegisterEventHandler(
-        OnStateTransition(
-            target_lifecycle_node=nav_manager_node,
-            goal_state='deactivating',
-            entities=[
-                LogInfo(msg="[NavComposition] Manager desactivándose - Perdiendo dependencias"),
-            ]
-        )
-    )
-
     return [
         nav_manager_node,
         map_context_node,
-        wait_for_activation,
-        on_deactivation
     ]
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
