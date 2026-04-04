@@ -64,13 +64,21 @@ class Nav_Central(Node):
         self.door_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value) # Timeout in seconds to wait for sensors
         
         #Setup and Configuration
+        self._setup_done = False
+        self._setup_timer = self.create_timer(2.0, self._setup)
+    
+    def _setup(self):
+        if self._setup_done:
+            return
+        self._setup_done = True
+        self.destroy_timer(self._setup_timer)
         self.get_logger().info("Checking Requirements ....")
         self.wait_for_requirements()
         self.get_logger().info("Requirements obtained")
         self.get_logger().info("Loading Rtabmap")
         self.start_slam()
         self.get_logger().info("Finish")
-    
+
     def lidar_callback(self, msg):
         self.lidar_msg = msg
 
