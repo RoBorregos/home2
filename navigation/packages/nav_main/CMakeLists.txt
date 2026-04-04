@@ -27,7 +27,8 @@ install(DIRECTORY launch config bt
   ament_python_install_package(${PROJECT_NAME})
 
   file(GLOB PYTHON_SCRIPTS scripts/*.py)
-
+install(PROGRAMS ${PYTHON_SCRIPTS}
+    DESTINATION lib/${PROJECT_NAME}) 
 
 
 if(BUILD_TESTING)
