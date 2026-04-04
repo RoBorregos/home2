@@ -104,13 +104,13 @@ class Nav_Central(Node):
 
     def nav_logger(self,status, data):
         if status == "info":
-            self.get_logger().info(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().info(f"\033[35\033[1mNav_Control: \033[22m {data}\033[0m")
         elif status == "warn":
-            self.get_logger().warn(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().warn(f"\033[38;5;208m\033[1mNav_Control: \033[22m {data}\033[0m")
         elif status == "error":
-            self.get_logger().error(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().error(f"\033[38;5;167m\033[1mNav_Control: \033[22m {data}\033[0m")
         else:
-            self.get_logger().fatal(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().fatal(f"\033[38;5;88m\033[1mNav_Control: \033[22m {data}\033[0m")
 
     def lidar_callback(self, msg):
         self.lidar_msg = msg
@@ -185,12 +185,10 @@ class Nav_Central(Node):
         while not resources_ready:
             #Get Available Topics
             topics_ready = self.check_for_topics(self.required_topics)
-            if topics_ready: self.nav_logger("info", "Waiting Requirements -> Topics complete")
            #Get available tf 
             try:
                 frames_dict = self.tf_buffer.all_frames_as_yaml()
                 tf_ready = all(frame in frames_dict for frame in self.required_frames)
-                if tf_ready: self.nav_logger("info", "Waiting Requirements -> TF complete")
             except Exception:
                 tf_ready = False
             #Check of two availables
