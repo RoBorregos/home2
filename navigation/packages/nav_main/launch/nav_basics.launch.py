@@ -30,7 +30,6 @@ def launch_setup(context, *args, **kwargs):
         remappings=[('/cmd_vel', LaunchConfiguration('cmd_topic', default='/cmd_vel'))],
         respawn=True,
         respawn_delay=2.0,
-        respawn_max_retries=5,
     )
 
     ekf_launch = Node(
@@ -40,7 +39,6 @@ def launch_setup(context, *args, **kwargs):
         emulate_tty=True,
         respawn=True,
         respawn_delay=2.0,
-        respawn_max_retries=5,
         parameters=[{
             'output_frame': 'odom',
             'frequency': 20.0,
@@ -84,7 +82,6 @@ def launch_setup(context, *args, **kwargs):
         output='screen',
         respawn=True,
         respawn_delay=2.0,
-        respawn_max_retries=5,
     )
 
     dualshock_launch = IncludeLaunchDescription(
