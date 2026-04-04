@@ -27,7 +27,8 @@ def launch_function(context, *args, **kwargs):
         parameters=[{
             'localization': localization,
             'map_name': rtabmap_map_name,
-            'rtabmap_localization_config': rtab_params
+            'rtab_localization_config': rtab_params,
+            'rtab_mapping_config': rtab_params,
             }],
     )
 
