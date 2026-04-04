@@ -96,10 +96,6 @@ class Nav_Central(Node):
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
-        self.nav_logger("info", "Testing info color")
-        self.nav_logger("warn", "Testing warn color")
-        self.nav_logger("error", "Testing error color")
-        self.nav_logger("fatal", "Testing fatal color")
         self.nav_logger("info", "Starting Setup, waiting for requirements ...")
         self.wait_for_requirements()
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
