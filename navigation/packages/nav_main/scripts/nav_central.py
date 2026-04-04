@@ -97,12 +97,21 @@ class Nav_Central(Node):
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
-        self.get_logger().info("Checking Requirements ....")
+        self.nav_logger("info", "Starting Setup, waiting for requirements ...")
         self.wait_for_requirements()
-        self.get_logger().info("Requirements obtained")
-        self.get_logger().info("Loading Rtabmap")
+        self.nav_logger("info", "Requirements Completed, Starting Slam ...")
         self.start_slam()
-        self.get_logger().info("Finish")
+        self.nav_logger("info", "Finish Setup")
+
+    def nav_logger(self,status, data):
+        if status == "info":
+            self.get_logger().info(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
+        elif status == "warn":
+            self.get_logger().warn(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
+        elif status == "error":
+            self.get_logger().error(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
+        else:
+            self.get_logger().fatal(f"\033[35mhi \033[1mNav_Control: \033[22m {data}\033[0m")
 
     def lidar_callback(self, msg):
         self.lidar_msg = msg
@@ -231,7 +240,6 @@ class Nav_Central(Node):
             while not self.check_for_topics(rtab_topics) and elapsed < self.rtab_load_timeout:
                 t.sleep(0.5)
                 elapsed += 0.5
-                self.get_logger().info(f"Waiting for rtabmap topics... {elapsed:.1f}s")
             self.get_logger().info(f"Rtabmap topics ready: {self.check_for_topics(rtab_topics)}")
 
                 
