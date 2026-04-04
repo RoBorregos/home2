@@ -139,7 +139,7 @@ set(srv_files
   "task_manager/srv/FollowFace.srv"
   "task_manager/srv/PointTransformation.srv"
   "task_manager/srv/ReturnLocation.srv"
-  "task_manager/srv/LaserGet.srv"
+  "task_manager/srv/CheckDoor.srv"
   "task_manager/srv/HearMultiThread.srv"
   "task_manager/srv/WaitForControllerInput.srv"
   "vision/srv/BeverageLocation.srv"

@@ -136,8 +136,9 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 # Yolo detection node
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
-CUTLERY_DETECTIONS_TOPIC = "/vision/cutlery_detections"
 
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
+DISHWASHER_TABLET_DETECTION_TOPIC = "/vision/dishwasher/tablet_detection"
+DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"

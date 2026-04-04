@@ -18,6 +18,8 @@ services:
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
       - ../../vision/packages/moondream_run/:/workspace
+      - ./moondream_cache:/home/ros/.cache/huggingface
+
     working_dir: /workspace/moondream_server
     network_mode: host
     privileged: true
@@ -71,7 +73,7 @@ services:
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
-      CYCLONE_SHM: "1"
+      CYCLONE_SHM: "${CYCLONE_SHM:-0}"
 
     tty: true
     stdin_open: true

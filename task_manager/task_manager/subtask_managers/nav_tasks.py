@@ -9,9 +9,14 @@ import os
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC, AREAS_SERVICE
+from frida_constants.navigation_constants import (
+    FOLLOWING_SERVICE,
+    GOAL_TOPIC,
+    AREAS_SERVICE,
+    CHECK_DOOR_SERVICE,
+)
 from frida_interfaces.srv import (
-    LaserGet,
+    CheckDoor,
     PointTransformation,
     ReturnLocation,
     WaitForControllerInput,
@@ -36,7 +41,6 @@ from task_manager.utils.task import Task
 
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 TIMEOUT = 4
-RETURN_LASER_DATA = "/integration/Laserscan"
 BT_LIFE_CYCLE_SERVICE = "/bt_navigator/change_state"
 BT_PARAM_SERVICE = "/bt_navigator/set_parameters"
 RETURN_LOCATION = "/integration/ReturnLocation"
@@ -70,7 +74,7 @@ class NavigationTasks:
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         self.bt_params = self.node.create_client(SetParameters, BT_PARAM_SERVICE)
         self.bt_lifecycle = self.node.create_client(ChangeState, BT_LIFE_CYCLE_SERVICE)
-        self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
+        self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE)
         self.rtabmap_continue = self.node.create_client(Empty, RTAB_RESUME_SERVICE)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
@@ -87,8 +91,8 @@ class NavigationTasks:
                 "goal_client": {"client": self.goal_client, "type": "action"},
             },
             Task.DEBUG: {
-                # "laser_send": {"client": self.laser_send, "type": "service"},
-                "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}
+                "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
+                "areas_wrapper": {"client": self.areas_wrapper, "type": "service"},
             },
         }
 
@@ -465,46 +469,24 @@ class NavigationTasks:
 
         return future
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
-    @service_check("laser_send", (Status.EXECUTION_ERROR, "open"), TIMEOUT)
-    def check_door(self) -> tuple[int, str]:
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
+    @service_check("door_checking_srv", Status.EXECUTION_ERROR, TIMEOUT)
+    def check_door(self):
         """Check if the door is open or closed"""
-
-        request = LaserGet.Request()
-        future = self.laser_send.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        request = CheckDoor.Request()
+        future = self.door_checking_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
         result = future.result()
         if result is not None:
             if result.status:
-                self.laser_sub = result.data
+                Logger.info(self.node, "Door open")
+                return Status.EXECUTION_SUCCESS
             else:
-                Logger.error(self.node, "Error with request")
-                return (Status.EXECUTION_ERROR, "")
+                Logger.error(self.node, "Error getting state with door")
+                return Status.EXECUTION_ERROR
         else:
             Logger.error(self.node, "Error with request")
-            return (Status.EXECUTION_ERROR, "")
-        # print(self.laser_sub.ranges)
-        door_points = []
-        for count, r in enumerate(self.laser_sub.ranges):
-            print(f"distance={r}, number = {count}")
-            if self.range_min <= count <= self.range_max:
-                door_points.append(r)
-
-        # Check if the door is open
-        if len(door_points) > 0:
-            # Calculate the average distance of the door points
-            avg_distance = sum(door_points) / len(door_points)
-            # Check if the average distance is less than a threshold
-            Logger.info(self.node, f"Average distance: {avg_distance}")
-            if avg_distance < self.closed_distance:
-                Logger.info(self.node, "Door closed")
-                return (Status.EXECUTION_SUCCESS, "closed")
-            else:
-                Logger.info(self.node, "Door open")
-                return (Status.EXECUTION_SUCCESS, "open")
-        else:
-            Logger.error(self.node, "No points detected")
-            return (Status.EXECUTION_ERROR, "")
+            return Status.EXECUTION_ERROR
 
     def ReturnLocation_callback(self):
         try:
