@@ -128,6 +128,7 @@ setup_common_env() {
   if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
   fi
+  
   add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
   add_or_update_variable "$env_file" "LOCAL_USER_ID"     "$(id -u)"
   add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"

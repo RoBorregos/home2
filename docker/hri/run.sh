@@ -45,27 +45,14 @@ else
   export SETUP_DONE=true
 fi
 
-[ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
-
 # HRI uses compose/.env instead of .env; env file path is passed as argument
 setup_common_env "hri" "compose/.env"
+
+[ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
 # Create dirs with current user to avoid permission problems
 mkdir -p ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
          ../../hri/packages/speech/assets/downloads/offline_voice/audios/
-
-# Reset .env
-echo "" > compose/.env
-
-# CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable compose/.env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
-# Export user
-add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
 
 # HRI-specific env vars
 add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
