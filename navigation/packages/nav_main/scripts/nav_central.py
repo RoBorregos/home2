@@ -96,6 +96,10 @@ class Nav_Central(Node):
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
+        self.nav_logger("info", "Testing info color")
+        self.nav_logger("warn", "Testing warn color")
+        self.nav_logger("error", "Testing error color")
+        self.nav_logger("fatal", "Testing fatal color")
         self.nav_logger("info", "Starting Setup, waiting for requirements ...")
         self.wait_for_requirements()
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
@@ -104,13 +108,13 @@ class Nav_Central(Node):
 
     def nav_logger(self,status, data):
         if status == "info":
-            self.get_logger().info(f"\033[35\033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().info(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;119m {data}\033[0m")
         elif status == "warn":
-            self.get_logger().warn(f"\033[38;5;208m\033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().warn(f"\033[35m\033[1mNav_Control: \033[22m\033[33m {data}\033[0m")
         elif status == "error":
-            self.get_logger().error(f"\033[38;5;167m\033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().error(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;167m {data}\033[0m")
         else:
-            self.get_logger().fatal(f"\033[38;5;88m\033[1mNav_Control: \033[22m {data}\033[0m")
+            self.get_logger().fatal(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;88m {data}\033[0m")
 
     def lidar_callback(self, msg):
         self.lidar_msg = msg
