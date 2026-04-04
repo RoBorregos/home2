@@ -166,6 +166,7 @@ class Nav_Central(Node):
             except Exception:
                 tf_ready = False
             #Check of two availables
+            print(topics_ready, tf_ready)
             if topics_ready and tf_ready:
                 resources_ready = True
             else:
