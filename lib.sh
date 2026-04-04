@@ -206,8 +206,7 @@ control() {
   local pids=()
   local areas_launched=()
 
-  # Launch each area's run.sh in parallel up to $PARALLEL children.
-  # Each area is started in its directory and passed the control flag + environment type.
+  # Launch each area's run.sh in parallel up to $PARALLEL children. Each area is started in its directory and passed the control flag + environment type.
   for area in ${AREAS:-}; do
     AREA_RUN="docker/${area}/run.sh"
     if [ -f "$AREA_RUN" ]; then
