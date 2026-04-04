@@ -25,7 +25,7 @@ class Nav_Central(Node):
     def __init__(self, node_name):
         super().__init__(node_name)
         
-        self.get_logger.info("Starting Nav_Central ... ")
+        self.get_logger().info("Starting Nav_Central ... ")
         self.localization = self.declare_parameter('localization', False).value
         self.map_name= self.declare_parameter('map_name', 'rtabmap_map.db').value
         self.localization_config = self.declare_parameter('rtab_mapping_config', '').value
@@ -60,12 +60,12 @@ class Nav_Central(Node):
         self.door_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value) # Timeout in seconds to wait for sensors
         
         #Setup and Configuration
-        self.get_logger.info("Checking Requirements ....")
+        self.get_logger().info("Checking Requirements ....")
         self.wait_for_requirements()
-        self.get_logger.info("Requirements obtained")
-        self.get_logger.info("Loading Rtabmap")
+        self.get_logger().info("Requirements obtained")
+        self.get_logger().info("Loading Rtabmap")
         self.start_slam()
-        self.get_logger.info("Finish")
+        self.get_logger().info("Finish")
     
     def lidar_callback(self, msg):
         self.lidar_msg = msg
