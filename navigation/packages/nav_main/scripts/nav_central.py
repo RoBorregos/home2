@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rclpy
+from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
