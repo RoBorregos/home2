@@ -209,6 +209,9 @@ run_task() {
     tmux new-session -d -s "$SESSION_NAME"
     tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
   done
+
+  tmux new-session -d -s "zed"
+  tmux send-keys -t "zed" "bash run.sh zed" C-m
 }
 
 ensure_roudi() {
