@@ -147,7 +147,7 @@ class Nav_Central(Node):
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}
-        topics_ready = self.topics.issubset(active_topics)
+        topics_ready = topics.issubset(active_topics)
         return topics_ready
 
     def wait_for_requirements(self):
