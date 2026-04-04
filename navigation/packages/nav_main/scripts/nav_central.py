@@ -185,18 +185,20 @@ class Nav_Central(Node):
         while not resources_ready:
             #Get Available Topics
             topics_ready = self.check_for_topics(self.required_topics)
-
+            if topics_ready: self.nav_logger("info", "Waiting Requirements -> Topics complete")
            #Get available tf 
             try:
                 frames_dict = self.tf_buffer.all_frames_as_yaml()
                 tf_ready = all(frame in frames_dict for frame in self.required_frames)
+                if tf_ready: self.nav_logger("info", "Waiting Requirements -> TF complete")
             except Exception:
                 tf_ready = False
             #Check of two availables
-            print(topics_ready, tf_ready)
             if topics_ready and tf_ready:
                 resources_ready = True
+                self.nav_logger("info", "Waiting Requirements -> Requirements complete")
             else:
+                self.nav_logger("warn", f"Waiting Requirements -> {'TF not available yet' if not tf_ready else ''}, {'Topics not available yet' if not topics_ready else ''}") 
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=self.requirements_timeout))
 
     def start_slam(self):
@@ -214,6 +216,7 @@ class Nav_Central(Node):
         rtab_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node', callback_group=load_cb_group)
         sync_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node', callback_group=load_cb_group)                                                                                                        
         rtab_client.wait_for_service()
+        self.nav_logger("info", "Loading Slam -> Started loading nodes")
         while not self.check_for_topics(rtab_topics):
             req = LoadNode.Request()                                                                                                                                                                
             req.package_name = 'rtabmap_slam'
