@@ -212,8 +212,10 @@ class Nav_Central(Node):
             req.node_name = 'rtabmap'                                                                                                                                                               
             req.parameters = rtabmap_params  # your params
             future = rtab_client.call_async(req)
-            rclpy.spin_until_future_complete(self,future)
-            print("Sended slam") 
+            while not future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            self.get_logger().info("Loaded rtabmap slam")
+
             req = LoadNode.Request()
             req.package_name = 'rtabmap_sync'
             req.plugin_name = 'rtabmap_sync::RGBDSync'
@@ -221,8 +223,9 @@ class Nav_Central(Node):
             req.parameters = sync_params
             req.remap_rules = self.rtabmap_remapping
             future = sync_client.call_async(req)
-            rclpy.spin_until_future_complete(self,future)
-            print("Sended sync")
+            while not future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            self.get_logger().info("Loaded rgbd_sync")
             service_check = self.create_client(GetMap, 'rtabmap_msgs/srv/GetMap') 
             service_check.wait_for_service(timeout_sec=self.rtab_load_timeout)
             print("Finish waiting")
