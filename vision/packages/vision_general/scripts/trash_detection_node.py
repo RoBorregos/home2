@@ -7,13 +7,16 @@ import cv2
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
+import json
+import os
 
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
+from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DETECTIONS_TOPIC,
-    TRASH_SERVICE_CLASSES,
+    TRASH_SERVICE_CATEGORY,
     DEPTH_IMAGE_TOPIC,
     OBJECT_POINTS_TOPIC,
     CAMERA_INFO_TOPIC,
@@ -21,12 +24,12 @@ from frida_constants.vision_constants import (
     TRASHCAN_SERVICE,
 )
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
-from frida_interfaces.srv import SetTrashCategory, ObjectPoints, TrashcanDetection
+from frida_interfaces.srv import ObjectPoints, TrashcanDetection, SetTrashCategory
 from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from vision_general.utils.ros_utils import wait_for_future
 
 TRASH_DEBUG_IMAGE_TOPIC = "/vision/trash_detection_debug"
-CATEGORIES = {'drinks', 'snacks', 'food', 'fruits': {'pear', 'orange'}, 'toys', 'cleaning supplies'}
+
 
 class TrashDetectionNode(Node):
     def __init__(self) -> None:
@@ -37,6 +40,18 @@ class TrashDetectionNode(Node):
         self.imageInfo = None
         self.category = None
         self.depth_image = None
+
+        # Load object_to_category mapping from objects.json
+        package_share_directory = get_package_share_directory("frida_constants")
+        objects_json_path = os.path.join(package_share_directory, "data/objects.json")
+
+        try:
+            with open(objects_json_path, "r") as f:
+                objects_data = json.load(f)
+                self.object_to_category = objects_data.get("object_to_category", {})
+        except Exception as e:
+            self.get_logger().error(f"Failed to load objects.json: {e}")
+            self.object_to_category = {}
 
         self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
@@ -93,18 +108,17 @@ class TrashDetectionNode(Node):
         except Exception as e:
             self.get_logger().error(f"Depth conversion error: {e}")
 
-    def set_trash_classes(self, req, res):
-        if not req.class_names or len(req.class_names) == 0:
+    def set_trash_category(self, req, res):
+        if not req.category:
             res.success = False
-            self.get_logger().warn("No labels input in request")
+            self.get_logger().warn("No category input in request")
             return res
-        elif req.class_names:
-            requested_labels = [label.strip() for label in req.class_names]
-            allowed_labels = {label.lower() for label in requested_labels}
+        elif req.category:
+            requested_category = req.category.lower()
         else:
-            allowed_labels = {}
+            requested_category = None
 
-        self.category = allowed_labels
+        self.category = requested_category
         res.success = True
         return res
 
@@ -116,8 +130,13 @@ class TrashDetectionNode(Node):
             if not label or label.startswith("trash/"):
                 continue
 
+            # Check the detected object's category 
+            obj_category = self.object_to_category.get(label)
+            if obj_category and obj_category != self.category:
+                continue
+
             detection = ObjectDetection()
-            if self.category and det.label_text.lower() in CATEGORIES[self.category]:
+            if obj_category == self.category:
                 self.get_logger().info(f"Detected TRASH/{det.label_text}")
                 detection.label = det.label
                 detection.label_text = f"trash/{det.label_text}"

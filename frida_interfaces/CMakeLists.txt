@@ -167,6 +167,7 @@ set(srv_files
   "vision/srv/Customer.srv"
   "vision/srv/YoloDetect.srv"
   "vision/srv/TrashcanDetection.srv"
+  "vision/srv/SetTrashCategory.srv"
   "navigation/srv/MapAreas.srv"
 )
 

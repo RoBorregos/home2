@@ -5,6 +5,7 @@ import rclpy.node
 import rclpy.time
 import tf2_ros
 import os
+import json
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point, PoseArray, Pose
 from std_msgs.msg import Bool
@@ -33,7 +34,10 @@ from frida_constants.vision_constants import (
     DETECTIONS_ACTIVE_TOPIC,
     DEBUG_IMAGE_TOPIC,
     CAMERA_FRAME,
+    TRASH_SERVICE_CATEGORY,
 )
+
+from frida_interfaces.srv import SetTrashCategory
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
 
@@ -99,6 +103,27 @@ class object_detector_node(rclpy.node.Node):
         self.detections_frame = []
         self.latest_detections = ObjectDetectionArray()
 
+        # Trash detection logic
+        self.category = None
+        # Load object_to_category mapping from objects.json
+        try:
+            from ament_index_python.packages import get_package_share_directory
+            package_share_directory = get_package_share_directory("frida_constants")
+            objects_json_path = os.path.join(package_share_directory, "data/objects.json")
+            with open(objects_json_path, "r") as f:
+                objects_data = json.load(f)
+                self.object_to_category = objects_data.get("object_to_category", {})
+        except Exception as e:
+            self.get_logger().error(f"Failed to load objects.json: {e}")
+            self.object_to_category = {}
+
+        # Service to set trash category
+        self.create_service(
+            SetTrashCategory,
+            TRASH_SERVICE_CATEGORY,
+            self.set_trash_category,
+        )
+
         # Load cutlery detection model (YOLO TRT)
         cutlery_model_path = os.path.join(
             get_package_share_directory("vision_general"),
@@ -133,6 +158,16 @@ class object_detector_node(rclpy.node.Node):
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
+    
+    def set_trash_category(self, req, res):
+        if not req.category:
+            res.success = False
+            self.get_logger().warn("No category input in request")
+            return res
+        self.category = req.category.lower()
+        res.success = True
+        self.get_logger().info(f"Set trash category to: {self.category}")
+        return res
 
     def compute_iou(self, det1, det2):
         # det1, det2: Detection objects
@@ -352,25 +387,32 @@ class object_detector_node(rclpy.node.Node):
     def visualize_detections(
         self,
         image,
-        detections: List[Detection],
+        detections: List,
         use_normalized_coordinates=True,
         max_boxes_to_draw=200,
         agnostic_mode=False,
     ):
         """Visualize detections on an input image."""
 
-
         # Convert image to BGR format (OpenCV uses BGR instead of RGB)
         image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
 
         for detection in detections:
-            color = (0, 0, 0) if agnostic_mode else (0, 255, 0)
-            ymin, xmin, ymax, xmax = (
-                detection.bbox_.y1,
-                detection.bbox_.x1,
-                detection.bbox_.y2,
-                detection.bbox_.x2,
-            )
+            label_text = detection.label_text
+            confidence = detection.score
+            ymin = detection.ymin
+            xmin = detection.xmin
+            ymax = detection.ymax
+            xmax = detection.xmax
+
+            # Color and label for trash
+            if label_text and label_text.startswith("trash/"):
+                color = (0, 0, 255)  # Red for trash
+                display_label = label_text
+            else:
+                color = (0, 255, 0) if not agnostic_mode else (0, 0, 0)
+                display_label = f"{label_text}: {confidence:.2f}"
+
             if use_normalized_coordinates:
                 (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
             else:
@@ -382,10 +424,10 @@ class object_detector_node(rclpy.node.Node):
                 int(bottom * image.shape[0]),
             )
             cv.rectangle(image, (left, top), (right, bottom), color, 7)
-            # draw label, name and score
+            # draw label and score
             cv.putText(
                 image,
-                f"{detection.class_id_}: {detection.label_}: {detection.confidence_:.2f}",
+                display_label,
                 (left, top - 10),
                 cv.FONT_HERSHEY_SIMPLEX,
                 2,
@@ -502,14 +544,6 @@ class object_detector_node(rclpy.node.Node):
             and d.point_stamped_.point.z <= max_depth
         ]
 
-        self.detections_frame = self.visualize_detections(
-            visual_image,
-            all_detections,
-            use_normalized_coordinates=True,
-            max_boxes_to_draw=200,
-            agnostic_mode=False,
-        )
-
         if self.node_params.VERBOSE:
             for index in range(len(all_detections)):
                 self.get_logger().info(
@@ -538,8 +572,28 @@ class object_detector_node(rclpy.node.Node):
             detection.point3d.header.stamp = self.curr_clock
 
         merged_detections = self.object_detector_2d.getFridaDetections(all_detections)
+
+        # Process trash
+        processed_detections = []
+        for det in merged_detections:
+            label = det.label_text.strip().lower()
+            detection = copy.deepcopy(det)
+            obj_category = self.object_to_category.get(label)
+            if self.category and obj_category and obj_category == self.category:
+                detection.label_text = f"trash/{det.label_text}"
+                self.get_logger().info(f"Detected TRASH/{det.label_text}")
+            processed_detections.append(detection)
+
         self.detections_publisher.publish(
-            ObjectDetectionArray(detections=merged_detections)
+            ObjectDetectionArray(detections=processed_detections)
+        )
+
+        self.detections_frame = self.visualize_detections(
+            visual_image,
+            processed_detections,
+            use_normalized_coordinates=True,
+            max_boxes_to_draw=200,
+            agnostic_mode=False,
         )
 
         self.get_logger().info(f"Objects detected: {len(all_detections)}")

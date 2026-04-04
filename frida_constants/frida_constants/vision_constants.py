@@ -63,7 +63,7 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "orange",
     # "cup",
 ]
-TRASH_SERVICE_CLASSES = "/vision/set_trash_classes"
+TRASH_SERVICE_CATEGORY = "/vision/set_trash_category"
 TRASHCAN_SERVICE = "vision/trashcan_detect"
 
 CUSTOMER = "/vision/customer"
