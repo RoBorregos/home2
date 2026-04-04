@@ -224,7 +224,7 @@ class Nav_Central(Node):
             future = rtab_client.call_async(req)
             while not future.done():
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            self.nav_logger("info" "Loading Slam -> RtabCore Loaded")
+            self.nav_logger("info", "Loading Slam -> RtabCore Loaded")
             req = LoadNode.Request()
             req.package_name = 'rtabmap_sync'
             req.plugin_name = 'rtabmap_sync::RGBDSync'
