@@ -5,6 +5,7 @@ Node to handle GPSR commands.
 """
 
 import rclpy
+import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
@@ -31,6 +32,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    YOLO_DETECTION_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
@@ -51,8 +53,13 @@ class GPSRCommands(Node):
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         # Define services for GPSR commands
@@ -94,7 +101,7 @@ class GPSRCommands(Node):
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.yolo_client = self.create_client(
-            YoloDetect, "yolo_detect", callback_group=self.callback_group
+            YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):

@@ -6,6 +6,7 @@ import threading
 
 import ctranslate2
 from base import ServeClientBase
+from device_utils import detect_device_and_compute_type
 from huggingface_hub import snapshot_download
 from transcriber_faster_whisper import WhisperModel
 
@@ -87,15 +88,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.initial_prompt = initial_prompt
         self.hotwords = hotwords
         self.vad_parameters = None  # vad_parameters or {"onset": 0.5}
-        try:
-            import torch
-
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            major, _ = torch.cuda.get_device_capability(device)
-            self.compute_type = "float16" if major >= 7 else "float32"
-        except ImportError:
-            device = "cpu"
-            self.compute_type = "int8"
+        device, self.compute_type = detect_device_and_compute_type(device)
 
         if self.model_size_or_path is None:
             return

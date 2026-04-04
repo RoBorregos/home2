@@ -194,10 +194,13 @@ class ManipulationCore(Node):
             self.get_logger().error(f"Place exception: {e}")
             return False
 
-    def pour_execute(self, object_name=None, bowl_name=None):
+    def pour_execute(
+        self, object_name=None, bowl_name=None, object_already_grasped=False
+    ):
         # self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info(f"ObjectName: {object_name}")
         self.get_logger().info(f"BowlName: {bowl_name}")
+        self.get_logger().info(f"ObjectAlreadyGrasped: {object_already_grasped}")
         self.get_logger().info("Extracting object cloud")
 
         try:
@@ -205,8 +208,8 @@ class ManipulationCore(Node):
             self.get_logger().info("Executing pour100")
             result, pick_result = self.pour_manager.execute(
                 object_name=object_name,
-                # object_point=object_point,
                 container_object_name=bowl_name,
+                object_already_grasped=object_already_grasped,
             )
             if not result:
                 self.get_logger().error("Pour failed")
@@ -268,7 +271,7 @@ class ManipulationCore(Node):
             result, self.pick_result = self.pour_execute(
                 object_name=object_name,
                 bowl_name=bowl_name,
-                # , object_point=object_point
+                object_already_grasped=goal_handle.request.pour_params.object_already_grasped,
             )
             goal_handle.succeed()
             if result:

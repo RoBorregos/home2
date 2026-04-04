@@ -18,7 +18,8 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import BeverageLocation
-from frida_interfaces.srv import PersonPosture, Query, CropQuery
+from frida_interfaces.srv import PersonPosture, Query, CropQuery, ObjectPoints
+from frida_interfaces.msg import Point2D
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -26,6 +27,7 @@ from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
+    OBJECT_POINTS_TOPIC,
 )
 from enum import Enum
 
@@ -76,6 +78,9 @@ class MoondreamNode(Node):
 
         self.crop_query_service = self.create_service(
             CropQuery, CROP_QUERY_TOPIC, self.crop_query_callback
+        )
+        self.object_points_service = self.create_service(
+            ObjectPoints, OBJECT_POINTS_TOPIC, self.object_points_callback
         )
 
         self.yolo_model = YOLO(YOLO_LOCATION)
@@ -230,6 +235,54 @@ class MoondreamNode(Node):
         except Exception as e:
             self.get_logger().error(f"Error locating beverage: {e}")
             response.location = ""
+            response.success = False
+
+        return response
+
+    def object_points_callback(self, request, response):
+        """Callback to get the points of a subject in the current image."""
+        self.get_logger().info("Executing service Object Points")
+
+        if self.image is None:
+            response.points = []
+            response.success = False
+            self.get_logger().warn("No image received yet.")
+            return response
+
+        _, image_bytes = cv2.imencode(".jpg", self.image)
+        image_bytes = image_bytes.tobytes()
+
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            )
+            grpc_response = self.stub.FindObjectPoints(
+                moondream_proto_pb2.FindObjectPointsRequest(
+                    encoded_image=encoded.encoded_image,
+                    subject=request.subject,
+                )
+            )
+
+            if not grpc_response.found or len(grpc_response.points) == 0:
+                response.points = []
+                response.success = False
+                self.get_logger().warn(f"No points found for {request.subject}")
+                return response
+
+            ros_points = []
+            for pt in grpc_response.points:
+                point = Point2D()
+                point.x = pt.x
+                point.y = pt.y
+                ros_points.append(point)
+
+            response.points = ros_points
+            response.success = True
+            self.success(f"Found {len(ros_points)} points for {request.subject}")
+
+        except Exception as e:
+            self.get_logger().error(f"Error getting object points: {e}")
+            response.points = []
             response.success = False
 
         return response

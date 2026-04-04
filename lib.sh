@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri"
+AREAS="vision manipulation navigation integration hri zed"
 
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
@@ -89,19 +89,10 @@ add_or_update_variable() {
   fi
 }
 
-clean_workspace_directories() {
-  if [ "$CLEAN" == "true" ]; then
-    echo "Cleaning build/log/install directories..."
-    rm -rf build log install
-  fi
-}
-
-clean_frida_interfaces() {
-  echo "Cleaning frida_interfaces_cache build/log/install..."
-  rm -rf "docker/frida_interfaces_cache/build" \
-         "docker/frida_interfaces_cache/log" \
-         "docker/frida_interfaces_cache/install"
-  echo "frida_interfaces_cache cleaned."
+clean_directories() {
+  local target="${1:-.}"
+  echo "Cleaning build/log/install in: $target"
+  rm -rf "$target/build" "$target/log" "$target/install"
 }
 
 run_frida_interfaces() {
@@ -119,9 +110,25 @@ run_frida_interfaces() {
 }
 
 run_area() {
-  if [ ! -d "docker/frida_interfaces_cache/build" ]; then
+  if [ "$INPUT" != "zed" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
     echo "Cache directory missing. Building frida_interfaces_cache first..."
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
+  fi
+
+  # Auto-detect Jetson for SHM default
+  if [ -z "${CYCLONE_SHM:-}" ]; then
+    if [ -f /etc/nv_tegra_release ]; then
+      export CYCLONE_SHM=1
+    else
+      export CYCLONE_SHM=0
+    fi
+  fi
+
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
+  if [ "${CYCLONE_SHM}" = "1" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
+      ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
+    fi
   fi
 
   echo "Running image from $INPUT"
@@ -177,6 +184,20 @@ control() {
     fi
   done
 
+  # Stop RouDi container on --down
+  if [ "$op_flag" = "--down" ]; then
+    if docker ps -a --format '{{.Names}}' | grep -q '^home2-roudi$'; then
+      echo "Stopping RouDi container..."
+      (cd "docker/roudi" && docker compose down)
+    fi
+  fi
+
+  # Clean stale iceoryx artifacts when SHM is disabled
+  if [ "${CYCLONE_SHM:-0}" != "1" ] && [ "$op_flag" = "--down" ]; then
+    rm -f /tmp/iox-unique-roudi.lock /tmp/roudi.lock 2>/dev/null
+    rm -f /dev/shm/iceoryx* 2>/dev/null
+  fi
+
   echo "All ${msg}s attempted."
   return $rc
 }
@@ -188,4 +209,47 @@ run_task() {
     tmux new-session -d -s "$SESSION_NAME"
     tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
   done
+}
+
+ensure_roudi() {
+  local roudi_container="home2-roudi"
+  if docker ps --format '{{.Names}}' | grep -q "^${roudi_container}$"; then
+    echo "[RouDi] Already running."
+    return 0
+  fi
+  echo "[RouDi] Starting dedicated RouDi container..."
+  (cd "docker/roudi" && bash ./run.sh)
+  # Wait for RouDi to be healthy
+  local retries=10
+  while [ $retries -gt 0 ]; do
+    if docker ps --format '{{.Names}}' | grep -q "^${roudi_container}$"; then
+      echo "[RouDi] Container is up."
+      sleep 1
+      return 0
+    fi
+    sleep 1
+    retries=$((retries - 1))
+  done
+  echo "[RouDi] WARNING: RouDi container did not start in time." >&2
+  return 1
+}
+
+update_map(){
+  local map_flag=${2:-}
+  echo "Updating actual map to $map_flag"
+
+  local constant_source_file="$HOME/.bashrc"
+
+  if [ -f "$HOME/.zshrc" ]; then
+    echo "ZSHELL DETECTED"
+    constant_source_file="$HOME/.zshrc"
+  fi
+
+  if grep -q "export MAP_NAME=" "$constant_source_file"; then
+      sed -i "s|export MAP_NAME=.*|export MAP_NAME=\"$map_flag\"|" "$constant_source_file"
+  else
+      echo "export MAP_NAME=\"$map_flag\"" >> "$constant_source_file"
+  fi
+
+  echo "REMEMBER TO SOURCE $constant_source_file TO BE ABLE TO USE MAP" 
 }

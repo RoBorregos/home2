@@ -3,9 +3,12 @@ services:
     profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-stt-${ENV_TYPE:-cpu}
     image: roborregos/home2:hri-stt-${ENV_TYPE:-cpu}
+    runtime: ${RUNTIME:-runc}
     build:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.stt
+      args:
+        BASE_IMAGE: ${STT_BASE_IMAGE:-python:3.10-bookworm}
     volumes:
       - ../../../hri/microservices/stt/:/app
       - ../../../hri/packages/speech/speech/:/app/speech
