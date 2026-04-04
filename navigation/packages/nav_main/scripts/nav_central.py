@@ -23,7 +23,32 @@ from frida_interfaces.srv import (
 import tf2_ros
 import time as t
 import math
-import sys
+import yaml
+
+
+
+def make_param(name, value):
+    """Convert a Python value to a rcl_interfaces Parameter msg."""
+    p = Parameter()
+    p.name = name
+    if isinstance(value, bool):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_BOOL, bool_value=value)
+    elif isinstance(value, int):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_INTEGER, integer_value=value)
+    elif isinstance(value, float):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=value)
+    elif isinstance(value, str):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_STRING, string_value=value)
+    return p
+
+
+def params_from_yaml(yaml_path, node_name):
+    """Load parameters for a specific node from a YAML file."""
+    with open(yaml_path, 'r') as f:
+        data = yaml.safe_load(f)
+    ros_params = data.get(node_name, {}).get('ros__parameters', {})
+    return [make_param(k, v) for k, v in ros_params.items()]
+
 
 class Nav_Central(Node):
     def __init__(self, node_name):
@@ -138,20 +163,6 @@ class Nav_Central(Node):
         response.status = False
         return response
              
-    def make_param(name, value):
-        """Convert a Python value to a rcl_interfaces Parameter msg."""
-        p = Parameter()
-        p.name = name
-        if isinstance(value, bool):
-            p.value = ParameterValue(type=ParameterType.PARAMETER_BOOL, bool_value=value)
-        elif isinstance(value, int):
-            p.value = ParameterValue(type=ParameterType.PARAMETER_INTEGER, integer_value=value)
-        elif isinstance(value, float):
-            p.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=value)
-        elif isinstance(value, str):
-            p.value = ParameterValue(type=ParameterType.PARAMETER_STRING, string_value=value)
-        return p
-
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}
@@ -187,13 +198,13 @@ class Nav_Central(Node):
         rtabmap_params = params_from_yaml(self.config_path, 'rtabmap')
         db_path = f'/workspace/src/navigation/rtabmapdbs/{self.map_name}'
         rtabmap_params.append(make_param('database_path', db_path))
-        sync_params = params_from_yaml(config_path, 'rgbd_sync')
+        sync_params = params_from_yaml(self.config_path, 'rgbd_sync')
 
         rtab_topics = {'/rtabmap/republish_node_data'}
 
         rtab_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node')                                                                                                        
         sync_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node')                                                                                                        
-        self.client.wait_for_service()
+        rtab_client.wait_for_service()
         while not self.check_for_topics(rtab_topics):
             req = LoadNode.Request()                                                                                                                                                                
             req.package_name = 'rtabmap_slam'
