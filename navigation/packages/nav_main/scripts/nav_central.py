@@ -57,8 +57,8 @@ class Nav_Central(Node):
         self.get_logger().info("Starting Nav_Central ... ")
         self.localization = self.declare_parameter('localization', False).value
         self.map_name= self.declare_parameter('map_name', 'rtabmap_map.db').value
-        self.localization_config = self.declare_parameter('rtab_mapping_config', '').value
-        self.mapping_config = self.declare_parameter('rtab_localization_config', '').value
+        self.mapping_config = self.declare_parameter('rtab_mapping_config', '').value
+        self.localization_config = self.declare_parameter('rtab_localization_config', '').value
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = None 
