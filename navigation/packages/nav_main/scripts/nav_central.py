@@ -11,7 +11,10 @@ from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
-        TIMEOUT_REQUIREMENTS
+        TIMEOUT_REQUIREMENTS,
+        CAMERA_RGB_TOPIC,
+        CAMERA_INFO_TOPIC,
+        CAMERA_DEPTH_TOPIC
         ) 
 from frida_interfaces.srv import (
         CheckDoor
