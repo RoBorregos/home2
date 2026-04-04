@@ -59,14 +59,14 @@ def generate_launch_description():
         output='screen',
         composable_node_descriptions=[
             ComposableNode(
-                condition=IfCondition(PythonExpression([load_rtab, " and ", localization])),
+                condition=IfCondition(PythonExpression(["'", load_rtab, "' == 'true' and '", localization, "' == 'true'"])),
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
                 parameters=[localization_params],
             ),
             ComposableNode(
-                condition=IfCondition(PythonExpression([load_rtab, " and not ", localization])),
+                condition=IfCondition(PythonExpression(["'", load_rtab, "' == 'true' and '", localization, "' != 'true'"])),
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
@@ -136,7 +136,7 @@ def generate_launch_description():
                 name='lifecycle_manager_navigation',
                 parameters=[{
                     'use_sim_time': False,
-                    'autostart': autorun_nav2 ,
+                    'autostart': PythonExpression(["'", autorun_nav2, "' == 'true'"]),
                     'node_names': [
                         'controller_server',
                         'smoother_server',
