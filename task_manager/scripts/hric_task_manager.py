@@ -57,7 +57,7 @@ class HRIC_TM(Node):
         super().__init__("hric_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.HRIC, mock_areas=[])
 
-        self.seat_angles = [0, -45, -45, 135, 45]
+        self.seat_angles = [0, -45, -45, 135, 45, 45, 45, 45]
         self.guests = [Guest() for _ in range(2)]
         self.current_guest_idx = 0
         self.current_attempts = 0
@@ -151,14 +151,6 @@ class HRIC_TM(Node):
             Logger.success(
                 self, "Start button pressed, Human Robot Interaction Challenge task will begin now"
             )
-
-            # test
-            self.subtask_manager.manipulation.move_to_position("front_stare")
-            self.timeout(5)
-            for seat_angle in self.seat_angles:
-                self.subtask_manager.manipulation.pan_to(seat_angle)
-                self._logger.info(f"Panning to angle {seat_angle}.")
-                self.timeout(1)
 
             self.current_state = HRIC_TM.TaskStates.START
 
@@ -351,17 +343,14 @@ class HRIC_TM(Node):
             )
             self.subtask_manager.manipulation.follow_face(False)
 
-            # Search for guest 1 by panning in 90 degree steps covering full range
-            # Returns to front_stare before each pan so positioning is absolute
-            self.subtask_manager.vision.follow_by_name(guest_1.name)
+            # Second: look at guest 1 and introduce guest 2
+            self.subtask_manager.manipulation.move_to_position("front_stare")
             guest_1_found = False
             for offset in self.seat_angles:
                 if guest_1_found:
                     break
 
-                self.subtask_manager.manipulation.move_to_position("front_stare")
-                if offset != 0:
-                    self.subtask_manager.manipulation.pan_to(offset)
+                self.subtask_manager.manipulation.pan_to(offset)
                 for _ in range(ATTEMPT_LIMIT):
                     self.timeout(1)
                     if self.subtask_manager.vision.isPerson(guest_1.name):
@@ -369,6 +358,7 @@ class HRIC_TM(Node):
                         break
 
             # Lock onto guest 1 and introduce guest 2
+            self.subtask_manager.vision.follow_by_name(guest_1.name)
             self.subtask_manager.manipulation.follow_face(True)
             self.timeout(2)
             self.subtask_manager.hri.say(
