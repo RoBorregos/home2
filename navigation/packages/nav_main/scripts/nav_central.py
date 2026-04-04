@@ -14,7 +14,8 @@ from frida_constants.navigation_constants import(
         TIMEOUT_REQUIREMENTS,
         CAMERA_RGB_TOPIC,
         CAMERA_INFO_TOPIC,
-        CAMERA_DEPTH_TOPIC
+        CAMERA_DEPTH_TOPIC,
+        TIMEOUT_RTABMAP
         ) 
 from frida_interfaces.srv import (
         CheckDoor
