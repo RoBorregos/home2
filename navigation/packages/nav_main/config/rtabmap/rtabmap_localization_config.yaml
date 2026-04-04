@@ -1,4 +1,4 @@
-# RTAB-Map Configuration File
+# RTAB-Map Configuration File - Localization Mode
 rgbd_sync:
   ros__parameters:
     approx_sync: false
@@ -27,12 +27,15 @@ rtabmap:
     scan_queue_size: 2
 
     # RTABMAP PARAMETERS
-    "Rtabmap/DetectionRate": "2"
+    "Rtabmap/DetectionRate": "0"
     "Rtabmap/TimeThr": "0"
     "Rtabmap/LoopThr": "0.11"
     "Rtabmap/MaxLoopClosureDistance": "5.0"
 
-    # Memory
+    # Memory - Localization mode
+    "Mem/IncrementalMemory": "False"
+    "Mem/InitWMWithAllNodes": "True"
+    "Mem/LocalizationReadOnly": "True"
     "Mem/NotLinkedNodesKept": "false"
     "Mem/ReduceGraph": "false"
 

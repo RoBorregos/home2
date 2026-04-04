@@ -1,4 +1,4 @@
-# RTAB-Map Configuration File
+# RTAB-Map Configuration File - Mapping Mode
 rgbd_sync:
   ros__parameters:
     approx_sync: false
@@ -25,6 +25,7 @@ rtabmap:
     approx_sync_max_interval: 0.05
     queue_size: 2
     scan_queue_size: 2
+    delete_db_on_start: true
 
     # RTABMAP PARAMETERS
     "Rtabmap/DetectionRate": "2"
@@ -33,7 +34,7 @@ rtabmap:
     "Rtabmap/MaxLoopClosureDistance": "5.0"
 
     # Memory
-    "Mem/NotLinkedNodesKept": "false"
+    "Mem/NotLinkedNodesKept": "true"
     "Mem/ReduceGraph": "false"
 
     # Feature detection (GFTT/ORB + GPU)
@@ -44,8 +45,8 @@ rtabmap:
     "ORB/Gpu": "true"
 
     # RGBD
-    "RGBD/LinearUpdate": "0.05"
-    "RGBD/AngularUpdate": "0.05"
+    "RGBD/LinearUpdate": "0.1"
+    "RGBD/AngularUpdate": "0.1"
     "RGBD/ForceOdom3DoF": "true"
     "RGBD/StartAtOrigin": "false"
     "RGBD/ProximityPathMaxNeighbors": "10"

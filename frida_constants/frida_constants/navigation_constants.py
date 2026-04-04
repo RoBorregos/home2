@@ -1,6 +1,6 @@
 from enum import Enum
 
-# Navigation Manager
+# Navigation Central
 # -----------------------------------------------------------------
 ###Check door service
 CHECK_DOOR_SERVICE = "/is_door_open"
@@ -18,6 +18,9 @@ class DOOR_CHECK(Enum):
 ###Map areas service
 AREAS_SERVICE = "/areas_json"
 
+### General Constants
+TIMEOUT_REQUIREMENTS = 0.8 
+TIMEOUT_RTABMAP = 30.0
 # ------------------------------------------------------------------
 
 
@@ -31,7 +34,6 @@ class SUBTASK_MANAGER(Enum):
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
 SCAN_TOPIC = "/scan"
-
-
-# To be changed
-FOLLOWING_SERVICE = "/navigation/activate_following"
+CAMERA_RGB_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+CAMERA_INFO_TOPIC = "/zed/zed_node/rgb/camera_info"
+CAMERA_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered" 

@@ -11,11 +11,9 @@ from launch.conditions import UnlessCondition, IfCondition
 def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
-
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     localization = LaunchConfiguration('localization', default='false')
     nav2_activate = LaunchConfiguration('nav2', default='false')
-    use_sim = LaunchConfiguration('use_sim', default='false')
     rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_map.db')
 
     nav_basics = IncludeLaunchDescription(
@@ -27,7 +25,6 @@ def generate_launch_description():
                     "nav_basics.launch.py",
                 ]
             )),
-        launch_arguments={'use_sim': use_sim}.items()
         )
 
     rtabmapnav = IncludeLaunchDescription(

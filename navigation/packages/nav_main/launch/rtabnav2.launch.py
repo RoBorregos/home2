@@ -1,40 +1,53 @@
 from launch import LaunchDescription
-from launch.actions import TimerAction
 from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode, ParameterFile
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from nav2_common.launch import RewrittenYaml
-from launch.conditions import UnlessCondition, IfCondition
+from launch.conditions import IfCondition
 from ament_index_python.packages import get_package_share_directory
 import os
 
 
 def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
-    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
-    nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
+    mapping_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_mapping_config.yaml')
+    localization_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
+    nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
 
-    rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
-    nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='false')
     nav2_activate = LaunchConfiguration('nav2', default='true')
-    docking = LaunchConfiguration('use_docking', default='false')
+    load_rtab = LaunchConfiguration('load_rtab', default='true')
     rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_map.db')
 
-    nav2_params = ParameterFile(nav2_params_, allow_substs=True)
+    nav2_params = ParameterFile(
+        LaunchConfiguration('nav2_config_file', default=nav2_params_file),
+        allow_substs=True)
+
     map_substitution = {'database_path': ['/workspace/src/navigation/rtabmapdbs/', rtabmap_map_name]}
-    rtab_params = ParameterFile(
+
+    mapping_params = ParameterFile(
         RewrittenYaml(
-            source_file=rtab_params_,
+            source_file=LaunchConfiguration('rtab_mapping_config', default=mapping_params_file),
             root_key='',
             param_rewrites=map_substitution,
             convert_types=True),
         allow_substs=True)
 
+    localization_params = ParameterFile(
+        RewrittenYaml(
+            source_file=LaunchConfiguration('rtab_localization_config', default=localization_params_file),
+            root_key='',
+            param_rewrites=map_substitution,
+            convert_types=True),
+        allow_substs=True)
+
+    from launch.conditions import UnlessCondition
+    from frida_constants.navigation_constants import CAMERA_RGB_TOPIC, CAMERA_INFO_TOPIC, CAMERA_DEPTH_TOPIC
+
     sync_remapping = [
-        ('rgb/image', '/zed/zed_node/rgb/image_rect_color'),
-        ('rgb/camera_info', '/zed/zed_node/rgb/camera_info'),
-        ('depth/image', '/zed/zed_node/depth/depth_registered')]
+        ('rgb/image', CAMERA_RGB_TOPIC),
+        ('rgb/camera_info', CAMERA_INFO_TOPIC),
+        ('depth/image', CAMERA_DEPTH_TOPIC)]
 
     # Container 1: RTAB-Map (heavy SLAM + image sync)
     # Isolated so GPU/CPU-heavy SLAM cycles don't starve Nav2 threads
@@ -46,32 +59,25 @@ def generate_launch_description():
         output='screen',
         composable_node_descriptions=[
             ComposableNode(
-                condition=IfCondition(localization),
+                condition=IfCondition(PythonExpression([load_rtab, " and ", localization])),
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params,
-                    {'Mem/IncrementalMemory': 'False',
-                     'Mem/InitWMWithAllNodes': 'True',
-                     'Mem/LocalizationReadOnly': 'True'}],
+                parameters=[localization_params],
             ),
             ComposableNode(
-                condition=UnlessCondition(localization),
+                condition=IfCondition(PythonExpression([load_rtab, " and not ", localization])),
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params,
-                    {'delete_db_on_start': True,
-                     'RGBD/LinearUpdate': '0.1',
-                     'RGBD/AngularUpdate': '0.1',
-                     'Rtabmap/TimeThr': '0',
-                     'Mem/NotLinkedNodesKept': 'true'}]
+                parameters=[mapping_params],
             ),
             ComposableNode(
+                condition=IfCondition(load_rtab),
                 package='rtabmap_sync',
                 plugin='rtabmap_sync::RGBDSync',
                 name='rgbd_sync',
-                parameters=[rtab_params],
+                parameters=[mapping_params],
                 remappings=sync_remapping
             ),
         ],
@@ -125,13 +131,6 @@ def generate_launch_description():
                 parameters=[nav2_params],
             ),
             ComposableNode(
-                package='opennav_docking',
-                plugin='opennav_docking::DockingServer',
-                name='docking_server',
-                parameters=[nav2_params],
-                condition=IfCondition(docking),
-            ),
-            ComposableNode(
                 package='nav2_lifecycle_manager',
                 plugin='nav2_lifecycle_manager::LifecycleManager',
                 name='lifecycle_manager_navigation',
@@ -151,10 +150,7 @@ def generate_launch_description():
         ],
     )
 
-    # Stagger container launches to avoid iceoryx SHM registration race.
-    # rtabmap starts first (provides map/localization data nav2 needs),
-    # nav2 starts 5s later once rtabmap's subscribers are fully registered.
     return LaunchDescription([
         rtabmap_container,
-        TimerAction(period=5.0, actions=[nav2_container]),
+        nav2_container,
     ])

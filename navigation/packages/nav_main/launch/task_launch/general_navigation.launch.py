@@ -17,7 +17,6 @@ def launch_function(context, *args, **kwargs):
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
-    use_sim = LaunchConfiguration('use_sim', default='false')
 
     nav_manager_node = LifecycleNode(
         package='nav_main',
@@ -33,7 +32,6 @@ def launch_function(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "nav_basics.launch.py"])
         ),
-        launch_arguments={'use_sim': use_sim}.items()
     )
 
     rtabmapnav = IncludeLaunchDescription(
