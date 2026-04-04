@@ -227,7 +227,7 @@ class Nav_Central(Node):
             while not future.done():
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
             self.get_logger().info("Loaded rgbd_sync")
-            service_check = self.create_client(GetMap, '/rtabmap/get_map') 
+            service_check = self.create_client(GetMap, '/rtabmap/get_map', callback_group=load_cb_group) 
             papu = service_check.wait_for_service(timeout_sec=self.rtab_load_timeout)
             print(f"Finish waiting {papu}")
 
