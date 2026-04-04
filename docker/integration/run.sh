@@ -8,13 +8,62 @@ TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
-parse_common_flags "${ARGS[@]}"
+DETACHED=""
+BUILD=""
+BUILD_IMAGE=""
+UPLOAD_IMAGE=""
+CLEAN=""
+
+# Parse arguments
+for arg in "${ARGS[@]}"; do
+    case $arg in
+    "-d")
+        DETACHED="-d"
+        ;;
+    "--build")
+        BUILD="true"
+        ;;
+    "--recreate")
+        docker compose down
+        ;;
+    "--down")
+        docker compose down
+        exit 0
+        ;;
+    "--stop")
+        docker compose stop
+        exit 0
+        ;;
+    "--build-image")
+        BUILD_IMAGE="--build"
+        ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
+        ;;
+    esac
+done
 
 #_________________________SETUP_________________________
 
-setup_common_env "integration"
+# Reset .env
+echo "" > .env
 
-# Integration-specific env vars
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+
+# Export user
+add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
+add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
+
+# Write environment variables to .env file for Docker Compose and build base images
+add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
+add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:integration-${ENV_TYPE}"
 case $ENV_TYPE in
   "cuda")
       add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
@@ -25,10 +74,18 @@ case $ENV_TYPE in
       ;;
 esac
 
+# Clean build artifacts if requested
+if [ "$CLEAN" == "true" ]; then
+  clean_directories .
+fi
+
+# Create dirs with current user to avoid permission problems
+mkdir -p install build log
+
 #_________________________RUN_________________________
 
 # Commands to run inside the container
-GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
