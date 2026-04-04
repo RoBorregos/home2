@@ -101,7 +101,6 @@ parse_common_flags() {
   BUILD=""
   BUILD_IMAGE=""
   UPLOAD_IMAGE=""
-  CLEAN=""
 
   for arg in "$@"; do
     case $arg in
@@ -109,7 +108,7 @@ parse_common_flags() {
       "--build")        BUILD="true" ;;
       "--build-image")  BUILD_IMAGE="--build" ;;
       "--upload-image") UPLOAD_IMAGE="true" ;;
-      "--clean")        CLEAN="true" ;;
+      "--clean")        clean_directories ;;
       "--recreate")     $compose down ;;
       "--down")         $compose down; exit 0 ;;
       "--stop")         $compose stop; exit 0 ;;
@@ -128,14 +127,13 @@ setup_common_env() {
   if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
   fi
-  
+
   add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
   add_or_update_variable "$env_file" "LOCAL_USER_ID"     "$(id -u)"
   add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
   add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
   add_or_update_variable "$env_file" "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
-
-  clean_workspace_directories
+  
   mkdir -p install build log
 }
 
