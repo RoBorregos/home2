@@ -5,6 +5,7 @@ from rclpy.duration import Duration
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
+from nav2_msgs.srv import ManageLifecycleNodes
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from frida_constants.navigation_constants import(
@@ -100,6 +101,8 @@ class Nav_Central(Node):
         self.wait_for_requirements()
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
         self.start_slam()
+        self.nav_logger("info", "Slam completed, Starting nav2 ...")
+        self.load_nav2()
         self.nav_logger("info", "Finish Setup")
 
     def nav_logger(self,status, data):
@@ -247,7 +250,27 @@ class Nav_Central(Node):
         self.destroy_client(rtab_client)
         self.destroy_client(sync_client)
         self.nav_logger("info", "Loading Slam -> Finished Slam Loading")
-    
+
+    def load_nav2(self):
+        """Load nav2 nodes activating lifecycle"""
+
+        self.nav_logger("info", "Loading Nav2 -> Starting nav2 lifecycle activation ...")
+        load_cb_group = ReentrantCallbackGroup()
+        lifecycle_client = self.create_client(                                                                                                                                                  
+              ManageLifecycleNodes,                                                                                                                                                               
+              '/lifecycle_manager_navigation/manage_nodes',
+              callback_group=load_cb_group
+        )
+        lifecycle_client.wait_for_service()
+        req = ManageLifecycleNodes.Request()
+        req.command = ManageLifecycleNodes.Request.STARTUP                                                                                                                                      
+        future = lifecycle_client.call_async(req)
+        while not future.done():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        self.destroy_client(lifecycle_client)
+        self.nav_logger("info", "Loading Nav2 -> Fully loaded nav2 lifecycles") 
+            
+
 def main(args=None):
     rclpy.init(args=args)
     executor = rclpy.executors.MultiThreadedExecutor()
