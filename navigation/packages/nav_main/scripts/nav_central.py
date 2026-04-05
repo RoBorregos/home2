@@ -106,6 +106,7 @@ class Nav_Central(Node):
         self.no_topics_count = 0
         self.no_tf_count = 0
         self.nodes_status = False
+        self.baseline_tf_static_publishers = None
 
     def _setup(self):
         """Setup of all navigation environment"""
@@ -122,6 +123,8 @@ class Nav_Central(Node):
         self.nav_logger("info", "Nav2 completed")
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
         self.nodes_status = True
+        self.baseline_tf_static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
+        self.nav_logger("info", f"Baseline /tf_static publishers: {self.baseline_tf_static_publishers}")
         self._monitor_timer = self.create_timer(MONITOR_RATE, self._monitoring, callback_group=ReentrantCallbackGroup())
         self.nav_logger("info", "Monitor Started")
 
@@ -141,7 +144,6 @@ class Nav_Central(Node):
             frames_yaml = self.tf_buffer.all_frames_as_yaml()
             current_time = self.get_clock().now().nanoseconds / 1e9
             static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
-            self.nav_logger("info", f"Monitoring -> /tf_static publishers: {static_publishers}")
             tf_ready = True
             for frame in self.required_frames:
                 if frame not in frames_yaml:
@@ -153,8 +155,8 @@ class Nav_Central(Node):
                     break
                 last_time = float(match.group(1))
                 if last_time == 0.0:
-                    # Static transform — check the publisher is still alive
-                    if static_publishers == 0:
+                    # Static transform — detect if any publisher dropped since startup
+                    if self.baseline_tf_static_publishers and static_publishers < self.baseline_tf_static_publishers:
                         tf_ready = False
                         break
                 else:
