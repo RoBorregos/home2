@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
 Navigation launcher with switchable log views.
-Press 0-5 to switch views, q to quit.
+
+Interactive mode (tty): Press 0-5 to switch views, q to quit.
+Non-interactive mode (docker compose): prints nav_central to stdout,
+  writes all views to /tmp/nav_views/ — use 'tail -f /tmp/nav_views/nav2.log'
 
   0 = nav_central only (default)
   1 = nav2 container
@@ -15,8 +18,6 @@ import subprocess
 import sys
 import os
 import select
-import termios
-import tty
 import threading
 import glob
 import time
@@ -30,6 +31,8 @@ VIEWS = {
     '4': 'all',
     '5': 'launch',
 }
+
+VIEW_LOG_DIR = '/tmp/nav_views'
 
 # Keywords in log filenames to classify into views
 LOG_FILE_KEYWORDS = {
@@ -52,11 +55,29 @@ STDOUT_VIEWS = {
 HEADER = "\033[36m\033[1m[View {key}: {name}]\033[0m Press 0-5 to switch, q to quit"
 
 current_view = '0'
+interactive = False
 buffer_size = 500
 buffers = {k: deque(maxlen=buffer_size) for k in VIEWS}
 lock = threading.Lock()
 log_dir_found = threading.Event()
 log_dir_path = [None]
+view_files = {}
+
+
+def init_view_logs():
+    """Create per-view log files in /tmp/nav_views/."""
+    os.makedirs(VIEW_LOG_DIR, exist_ok=True)
+    for name in VIEWS.values():
+        path = os.path.join(VIEW_LOG_DIR, f'{name}.log')
+        view_files[name] = open(path, 'w')
+
+
+def write_view_log(view_name, line):
+    """Append a line to the view's log file."""
+    f = view_files.get(view_name)
+    if f:
+        f.write(line + '\n')
+        f.flush()
 
 
 def line_matches_view(line, view_name):
@@ -67,10 +88,11 @@ def line_matches_view(line, view_name):
 
 
 def store_and_print(line, source_view=None):
-    """Store line in matching buffers and print if current view matches."""
+    """Store line in matching buffers, write to view files, and print if current view matches."""
     with lock:
         # Store in 'all'
         buffers['4'].append(line)
+        write_view_log('all', line)
 
         matched = False
         for key, name in VIEWS.items():
@@ -78,14 +100,17 @@ def store_and_print(line, source_view=None):
                 continue
             if source_view and name == source_view:
                 buffers[key].append(line)
+                write_view_log(name, line)
                 matched = True
             elif not source_view and line_matches_view(line, name):
                 buffers[key].append(line)
+                write_view_log(name, line)
                 matched = True
 
         if not matched and not source_view:
             # Unmatched launch output goes to launch view
             buffers['5'].append(line)
+            write_view_log('launch', line)
 
         # Print if matches current view
         cur_name = VIEWS[current_view]
@@ -187,7 +212,9 @@ def start_log_tailers():
 
 
 def main():
-    global current_view
+    global current_view, interactive
+
+    init_view_logs()
 
     args = ['ros2', 'launch', 'nav_main', 'general_navigation.launch.py'] + sys.argv[1:]
 
@@ -199,23 +226,29 @@ def main():
         bufsize=1,
     )
 
-    old_settings = termios.tcgetattr(sys.stdin)
+    interactive = sys.stdin.isatty()
+    old_settings = None
+
     try:
-        tty.setcbreak(sys.stdin.fileno())
+        if interactive:
+            import termios
+            import tty
+            old_settings = termios.tcgetattr(sys.stdin)
+            tty.setcbreak(sys.stdin.fileno())
 
         # Start reading launch stdout
         t = threading.Thread(target=launch_reader, args=(proc,), daemon=True)
         t.start()
 
-        # Print initial header
-        print_buffer('0')
+        if interactive:
+            print_buffer('0')
 
         # Start log file tailers — they wait for log dir to be detected
         log_tailer = threading.Thread(target=start_log_tailers, daemon=True)
         log_tailer.start()
 
         while proc.poll() is None:
-            if select.select([sys.stdin], [], [], 0.2)[0]:
+            if interactive and select.select([sys.stdin], [], [], 0.2)[0]:
                 key = sys.stdin.read(1)
                 if key == 'q':
                     proc.terminate()
@@ -223,11 +256,17 @@ def main():
                 elif key in VIEWS:
                     current_view = key
                     print_buffer(current_view)
+            else:
+                time.sleep(0.2)
 
     except KeyboardInterrupt:
         proc.terminate()
     finally:
-        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+        if interactive and old_settings is not None:
+            import termios
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+        for f in view_files.values():
+            f.close()
         proc.wait()
 
 
