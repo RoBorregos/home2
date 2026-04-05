@@ -39,7 +39,7 @@ def launch_setup(context, *args, **kwargs):
     baud_checkset = LaunchConfiguration("baud_checkset", default=True)
     default_gripper_baud = LaunchConfiguration("default_gripper_baud", default=2000000)
 
-    show_rviz = LaunchConfiguration("show_rviz", default=True)
+    show_rviz = LaunchConfiguration("show_rviz", default=False)
 
     dof = LaunchConfiguration("dof", default=6)
     robot_type = LaunchConfiguration("robot_type", default="xarm")

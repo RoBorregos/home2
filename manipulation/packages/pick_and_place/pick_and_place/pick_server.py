@@ -284,6 +284,17 @@ class PickMotionServer(Node):
                 "No plane found, but object is flat. Bypassing safety check."
             )
 
+        # Remove object collision spheres before planning.
+        # They block the gripper from reaching the object.
+        # The table plane MUST stay to prevent table crashes.
+        if not is_flat:
+            for obj in self.collision_objects:
+                if PICK_OBJECT_NAMESPACE in obj.id:
+                    self.remove_collision_object(obj.id)
+                    self.get_logger().info(
+                        f"Removed object collision: {obj.id}"
+                    )
+
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
                 ee_link_pose = copy.deepcopy(pose)
@@ -313,7 +324,7 @@ class PickMotionServer(Node):
                 ee_link_pose.pose.position.y = new_position[1]
                 ee_link_pose.pose.position.z = new_position[2]
 
-                if not self.check_feasibility(ee_link_pose, is_flat=is_flat):
+                if not self.check_feasibility(pose, is_flat=is_flat):
                     self.get_logger().warn(
                         f"Grasping alternative {j} is not feasible, skipping"
                     )

@@ -166,15 +166,7 @@ class MotionPlanningServer(Node):
             JointTrajectory, "/moveit/joint_trajectory", qos_profile
         )
 
-        self.joint_states_topic = "/joint_states"
-        # create listener
-        self.joint_states_sub = self.create_subscription(
-            JointState,
-            self.joint_states_topic,
-            self.joint_states_callback,
-            qos_profile,
-            callback_group=self.callback_group,
-        )
+        # joint_states is already handled internally by pymoveit2's MoveIt2
 
         self.reset_controller_client = self.create_service(
             Empty,
@@ -687,7 +679,7 @@ class MotionPlanningServer(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    executor = rclpy.executors.MultiThreadedExecutor(5)
+    executor = rclpy.executors.MultiThreadedExecutor(2)
     pick_server = MotionPlanningServer()
     executor.add_node(pick_server)
     executor.spin()

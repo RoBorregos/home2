@@ -68,6 +68,10 @@ private:
 
   double cluster_size = 0.37;
 
+  // Rate-limit the point cloud callback to save CPU
+  rclcpp::Time last_cloud_time_;
+  double cloud_rate_hz_ = 2.0;  // Only process 2 frames/sec (was 30)
+
 public:
   TableSegmentationNode() : Node("table_segmentation_node") {
     RCLCPP_INFO(this->get_logger(), "Starting Table Segmentation Node");
@@ -104,6 +108,7 @@ public:
     RCLCPP_INFO(this->get_logger(), "Subscribed to point cloud topic");
 
     last_ = nullptr;
+    last_cloud_time_ = this->now();
 
     this->test_srv = this->create_service<frida_interfaces::srv::Test>(
         REMOVE_PC_TEST, std::bind(&TableSegmentationNode::test_service, this,
@@ -769,6 +774,13 @@ public:
 
   uint32_t
   pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
+    // Rate-limit: TF-transforming the entire cloud every frame is very heavy
+    auto now = this->now();
+    if ((now - last_cloud_time_).seconds() < (1.0 / cloud_rate_hz_)) {
+      return 0;
+    }
+    last_cloud_time_ = now;
+
     try {
       sensor_msgs::msg::PointCloud2 msg2;
       // tf_listener->waitForTransform("base_link", msg->header.frame_id,

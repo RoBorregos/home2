@@ -33,6 +33,34 @@ def get_object_point(object_name: str, detection_handler_client) -> PointStamped
     return point
 
 
+def get_object_detection(object_name: str, detection_handler_client):
+    """Return the full ObjectDetection message (with bbox + point3d), or None."""
+    request = DetectionHandler.Request()
+    request.label = object_name
+    request.closest_object = False
+    detection_handler_client.wait_for_service()
+    future = detection_handler_client.call_async(request)
+    future = wait_for_future(future, timeout=2.0)
+    if not future:
+        return None
+
+    detections = future.result().detection_array.detections
+    if len(detections) == 0:
+        return None
+    if len(detections) == 1:
+        return detections[0]
+
+    # Pick closest detection
+    closest = None
+    closest_dist = float("inf")
+    for det in detections:
+        d = (det.point3d.point.x**2 + det.point3d.point.y**2 + det.point3d.point.z**2) ** 0.5
+        if d < closest_dist:
+            closest_dist = d
+            closest = det
+    return closest
+
+
 def get_object_cluster(point: PointStamped, perception_3d_client):
     request = PickPerceptionService.Request()
     request.point = point

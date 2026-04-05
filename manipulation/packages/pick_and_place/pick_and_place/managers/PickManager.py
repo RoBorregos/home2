@@ -3,7 +3,15 @@ from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PoseStamped, PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
-from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
+from pick_and_place.utils.perception_utils import (
+    get_object_cluster,
+    get_object_detection,
+    point_in_range,
+)
+from pick_and_place.utils.pointcloud_completion import complete_cluster
+from pick_and_place.utils.dense_cloud import make_dense_cluster
+from pick_and_place.utils.grasp_database import GraspDatabase
+from sensor_msgs.msg import CameraInfo, Image, PointCloud2
 from frida_interfaces.action import PickMotion
 from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
@@ -12,6 +20,10 @@ from frida_motion_planning.utils.service_utils import (
 from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
+)
+from frida_constants.vision_constants import (
+    DEPTH_IMAGE_TOPIC,
+    CAMERA_INFO_TOPIC,
 )
 from typing import Tuple
 import time
@@ -22,6 +34,8 @@ import numpy as np
 from pick_and_place.utils.perception_utils import get_object_point
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+import rclpy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 
 
 CFG_PATHS = [
@@ -66,12 +80,111 @@ class PickManager:
         self.latest_flat_grasp = None
         self._collecting_samples = False
         self._grasp_samples = []
+
+        # Grasp database for pre-computed grasps
+        import os
+        db_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "grasp_database",
+        )
+        self.grasp_db = GraspDatabase(db_path, logger=self.node.get_logger())
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
+
+        # Dense cloud: depth image + camera info subscribers
+        self._latest_depth = None
+        self._camera_info = None
+
+        depth_qos = QoSProfile(
+            depth=1,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+        self.node.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self._depth_cb, depth_qos
+        )
+        self.node.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self._cam_info_cb, depth_qos
+        )
+
+        self._debug_cluster_pub = self.node.create_publisher(
+            PointCloud2, "/manipulation/debug/cluster_raw", 1
+        )
+        self._debug_completed_pub = self.node.create_publisher(
+            PointCloud2, "/manipulation/debug/cluster_completed", 1
+        )
 
         self.node.create_subscription(
             PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
         )
+
+    def _depth_cb(self, msg):
+        self._latest_depth = msg
+
+    def _cam_info_cb(self, msg):
+        self._camera_info = msg
+
+    def _get_tf_matrix(self, source_frame: str, target_frame: str):
+        """Get 4x4 homogeneous transform from source to target frame."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                target_frame, source_frame, rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=1.0)
+            )
+            t = tf.transform.translation
+            q = tf.transform.rotation
+            rot = R.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
+            mat = np.eye(4)
+            mat[:3, :3] = rot
+            mat[:3, 3] = [t.x, t.y, t.z]
+            return mat
+        except Exception as e:
+            self.node.get_logger().warn(f"TF lookup failed: {e}")
+            return None
+
+    def _try_dense_cloud(self, object_name: str, table_z: float | None = None):
+        """Try to build a dense cloud from depth image + detection bbox.
+
+        Returns (PointCloud2, min_z, height) or (None, 0, 0) on failure.
+        """
+        if self._latest_depth is None or self._camera_info is None:
+            return None, 0.0, 0.0
+
+        detection = get_object_detection(
+            object_name, self.node.detection_handler_client
+        )
+        if detection is None or detection.xmin >= detection.xmax:
+            return None, 0.0, 0.0
+
+        tf_matrix = self._get_tf_matrix(
+            "zed_left_camera_optical_frame", "base_link"
+        )
+
+        dense_msg = make_dense_cluster(
+            self._latest_depth,
+            self._camera_info,
+            detection.xmin,
+            detection.ymin,
+            detection.xmax,
+            detection.ymax,
+            tf_matrix=tf_matrix,
+            table_z=table_z,
+        )
+        if dense_msg is None:
+            return None, 0.0, 0.0
+
+        # Read Z from raw bytes directly (all floats, stride=12, Z at offset 8)
+        data = np.frombuffer(dense_msg.data, dtype=np.float32)
+        n_pts = len(data) // 3
+        if n_pts == 0:
+            return None, 0.0, 0.0
+        zs = data[2::3]  # every 3rd float starting at index 2 = Z
+        min_z = float(zs.min())
+        height = float(zs.max()) - min_z
+
+        self.node.get_logger().info(
+            f"Dense cloud: {n_pts} pts (height={height:.2f} m)"
+        )
+        return dense_msg, min_z, height
 
     def flat_grasp_callback(self, msg):
         self.latest_flat_grasp = msg
@@ -163,6 +276,7 @@ class PickManager:
             points = []
 
         else:
+            # --- Perception cluster first (collision objects + table reference) ---
             for i in range(3):
                 if point is not None and (
                     point.point.x != 0 and point.point.y != 0 and point.point.z != 0
@@ -199,23 +313,67 @@ class PickManager:
                     self.node.get_logger().info("Object cluster detected")
                     break
 
-            if object_cluster is None:
+            # Get table_z from cluster (min Z = table surface)
+            cluster_min_z = None
+            if object_cluster is not None:
+                cloud_gen = point_cloud2.read_points(
+                    object_cluster, field_names=("x", "y", "z"), skip_nans=True
+                )
+                pts_list = [list(p) for p in cloud_gen]
+                self.node.get_logger().info(
+                    f"Cluster has {len(pts_list)} points for table ref"
+                )
+                if pts_list:
+                    pts_np = np.array(pts_list)
+                    cluster_min_z = float(np.min(pts_np[:, 2]))
+                    self.node.get_logger().info(
+                        f"Table reference: min_z={cluster_min_z:.4f}, "
+                        f"max_z={float(np.max(pts_np[:, 2])):.4f}"
+                    )
+
+            # --- Dense cloud from depth crop (primary method) ---
+            dense_cloud = None
+            if object_name is not None and object_name != "":
+                dense_cloud, dense_min_z, dense_height = self._try_dense_cloud(
+                    object_name, table_z=cluster_min_z
+                )
+
+            if object_cluster is None and dense_cloud is None:
                 self.node.get_logger().error("No object cluster detected")
                 return False, None
 
-            cloud_gen = point_cloud2.read_points(
-                object_cluster, field_names=("x", "y", "z"), skip_nans=True
-            )
-            points = [list(p) for p in cloud_gen]
-            if not points:
-                self.node.get_logger().error("Empty bowl cluster")
-                return False, None
+            # Use dense cloud for GPD if available, otherwise fall back to cluster
+            if dense_cloud is not None:
+                gpd_cloud = dense_cloud
+                min_z = dense_min_z
+                height = dense_height
+                self.node.get_logger().info(
+                    "Using dense depth-crop cloud for GPD"
+                )
+            else:
+                gpd_cloud = object_cluster
+                min_z = cluster_min_z or 0.0
+                height = float(np.max(pts_np[:, 2])) - min_z if pts_list else 0.0
+                self.node.get_logger().info(
+                    "Using perception cluster for GPD (dense cloud unavailable)"
+                )
 
-            points_np = np.array(points)
-            max_z = np.max(points_np[:, 2])
-            min_z = np.min(points_np[:, 2])
-            height = max_z - min_z
             self.node.get_logger().info(f"Object cluster height: {height:.2f} m")
+
+            # Symmetry completion (helps both dense and sparse clouds)
+            self._debug_cluster_pub.publish(gpd_cloud)
+            tf_cam = self._get_tf_matrix(
+                "zed_left_camera_optical_frame", "base_link"
+            )
+            cam_pos = tf_cam[:3, 3] if tf_cam is not None else None
+            object_cluster = complete_cluster(
+                gpd_cloud,
+                enable=True,
+                plane_z=min_z,
+                camera_position=cam_pos,
+                logger=self.node.get_logger(),
+            )
+            self._debug_completed_pub.publish(object_cluster)
 
         # open gripper
         gripper_request = SetBool.Request()
@@ -264,77 +422,114 @@ class PickManager:
                     pick_result_success = True
 
         else:
-            for CFG_PATH in CFG_PATHS:
-                cfg_path = CFG_PATH[0]
-                is_reversible = CFG_PATH[1]
-                if is_reversible and height < 0.06:
-                    self.node.get_logger().warn(
-                        "Object is too small for reversible grasping, skipping reversible grasps"
-                    )
-                    continue
-
-                grasp_poses, grasp_scores = get_grasps(
-                    self.node.grasp_detection_client, object_cluster, cfg_path
+            # --- Attempt 0: Pre-computed grasps from database ---
+            if object_name and self.grasp_db.has_object(object_name):
+                t0 = time.time()
+                db_grasps, db_scores = self.grasp_db.get_grasps(
+                    object_name, point, min_z
                 )
-                if len(grasp_poses) == 0:
-                    continue
+                db_time = (time.time() - t0) * 1000
+                self.node.get_logger().info(
+                    f"Database grasp attempt: object={object_name}, "
+                    f"grasps_found={len(db_grasps)}, time={db_time:.0f}ms"
+                )
 
-                if len(grasp_poses) > 5:
-                    indices = np.random.choice(len(grasp_poses), size=5, replace=False)
-                    grasp_poses = [grasp_poses[i] for i in indices]
-                    grasp_scores = [grasp_scores[i] for i in indices]
-                else:
-                    grasp_poses = grasp_poses[:5]
-                    grasp_scores = grasp_scores[:5]
+                if db_grasps:
+                    goal_msg = PickMotion.Goal()
+                    goal_msg.grasping_poses = db_grasps[:10]
+                    goal_msg.grasping_scores = db_scores[:10]
 
-                new_grasp_poses = []
-                new_grasp_scores = []
-                if is_reversible:
-                    for pose, grasp_score in zip(grasp_poses, grasp_scores):
-                        new_grasp_poses.append(pose)
-                        new_grasp_scores.append(grasp_score)
-                        reversed_pose = copy.deepcopy(pose)
-                        q_orig = [
-                            pose.pose.orientation.x,
-                            pose.pose.orientation.y,
-                            pose.pose.orientation.z,
-                            pose.pose.orientation.w,
-                        ]
-                        q_orig_rot = R.from_quat(q_orig)
-                        q_z_180_local = R.from_euler("z", 180, degrees=True)
-                        q_result = (q_orig_rot * q_z_180_local).as_quat()
-                        reversed_pose.pose.orientation.x = q_result[0]
-                        reversed_pose.pose.orientation.y = q_result[1]
-                        reversed_pose.pose.orientation.z = q_result[2]
-                        reversed_pose.pose.orientation.w = q_result[3]
-                        new_grasp_poses.append(reversed_pose)
-                        new_grasp_scores.append(grasp_score)
-                    new_grasp_scores = new_grasp_scores[:5]
-                    new_grasp_poses = new_grasp_poses[:5]
-                else:
-                    new_grasp_poses = grasp_poses
-                    new_grasp_scores = grasp_scores
+                    self.node.get_logger().info(
+                        f"Sending {len(db_grasps[:10])} database grasps to pick motion..."
+                    )
+                    future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
+                    future = wait_for_future(future, timeout=30)
+                    if future:
+                        pick_result = future.result().get_result().result
+                        if pick_result.success != 0:
+                            self.node.get_logger().info(
+                                f"Database grasp attempt: object={object_name}, success=True"
+                            )
+                            pick_result_success = True
 
-                if len(new_grasp_poses) == 0:
-                    self.node.get_logger().error("No grasp poses detected")
-                    continue
+                    if pick_result_success:
+                        # Skip GPD fallback — database worked
+                        pass
+                    else:
+                        self.node.get_logger().info(
+                            f"Database grasp attempt: object={object_name}, success=False, "
+                            f"falling back to GPD"
+                        )
 
-                goal_msg = PickMotion.Goal()
-                goal_msg.grasping_poses = new_grasp_poses
-                goal_msg.grasping_scores = new_grasp_scores
+            # --- Fallback: GPD live ---
+            if not pick_result_success:
+                for CFG_PATH in CFG_PATHS:
+                    cfg_path = CFG_PATH[0]
+                    is_reversible = CFG_PATH[1]
+                    if is_reversible and height < 0.06:
+                        self.node.get_logger().warn(
+                            "Object is too small for reversible grasping, skipping reversible grasps"
+                        )
+                        continue
 
-                self.node.get_logger().info("Sending pick motion goal...")
-                future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-                future = wait_for_future(future, timeout=30)
-                if not future:
-                    break
-                pick_result = future.result().get_result().result
-                self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-                if pick_result.success != 0:
-                    pick_result_success = True
-                    break
-                else:
-                    time.sleep(0.2)
+                    grasp_poses, grasp_scores = get_grasps(
+                        self.node.grasp_detection_client, object_cluster, cfg_path
+                    )
+                    if len(grasp_poses) == 0:
+                        continue
+
+                    if len(grasp_poses) > 10:
+                        grasp_poses = grasp_poses[:10]
+                        grasp_scores = grasp_scores[:10]
+
+                    new_grasp_poses = []
+                    new_grasp_scores = []
+                    if is_reversible:
+                        for pose, grasp_score in zip(grasp_poses, grasp_scores):
+                            new_grasp_poses.append(pose)
+                            new_grasp_scores.append(grasp_score)
+                            reversed_pose = copy.deepcopy(pose)
+                            q_orig = [
+                                pose.pose.orientation.x,
+                                pose.pose.orientation.y,
+                                pose.pose.orientation.z,
+                                pose.pose.orientation.w,
+                            ]
+                            q_orig_rot = R.from_quat(q_orig)
+                            q_z_180_local = R.from_euler("z", 180, degrees=True)
+                            q_result = (q_orig_rot * q_z_180_local).as_quat()
+                            reversed_pose.pose.orientation.x = q_result[0]
+                            reversed_pose.pose.orientation.y = q_result[1]
+                            reversed_pose.pose.orientation.z = q_result[2]
+                            reversed_pose.pose.orientation.w = q_result[3]
+                            new_grasp_poses.append(reversed_pose)
+                            new_grasp_scores.append(grasp_score)
+                        new_grasp_scores = new_grasp_scores[:10]
+                        new_grasp_poses = new_grasp_poses[:10]
+                    else:
+                        new_grasp_poses = grasp_poses
+                        new_grasp_scores = grasp_scores
+
+                    if len(new_grasp_poses) == 0:
+                        self.node.get_logger().error("No grasp poses detected")
+                        continue
+
+                    goal_msg = PickMotion.Goal()
+                    goal_msg.grasping_poses = new_grasp_poses
+                    goal_msg.grasping_scores = new_grasp_scores
+
+                    self.node.get_logger().info("Sending pick motion goal...")
+                    future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
+                    future = wait_for_future(future, timeout=30)
+                    if not future:
+                        break
+                    pick_result = future.result().get_result().result
+                    self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
+                    if pick_result.success != 0:
+                        pick_result_success = True
+                        break
+                    else:
+                        time.sleep(0.2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
