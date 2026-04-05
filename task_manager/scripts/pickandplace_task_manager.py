@@ -196,6 +196,7 @@ class PickAndPlaceTM(Node):
 
         # Attempt counter — reset on state change
         self.current_attempts = 0
+        self.current_location: Location = None
         self.running_task = True
 
         # State timing
@@ -238,8 +239,14 @@ class PickAndPlaceTM(Node):
 
     def navigate_to_location(self, location: Location, say: bool = True):
         """Navigate to a PPC location using the nav_locations mapping"""
+        if self.current_location == location:
+            CLog.nav(self, "SKIP", f"Already at {location.value}, skipping navigation.")
+            return Status.EXECUTION_SUCCESS
         room, sublocation = self.nav_locations[location]
-        return self.navigate_to(room, sublocation, say=say)
+        result = self.navigate_to(room, sublocation, say=say)
+        if result == Status.EXECUTION_SUCCESS:
+            self.current_location = location
+        return result
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to a location with retry logic"""
