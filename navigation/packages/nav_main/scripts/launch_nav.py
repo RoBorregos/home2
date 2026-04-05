@@ -174,16 +174,14 @@ def start_log_tailers():
     # Rescan multiple times — nav2 nodes appear late due to TimerAction delay
     for _ in range(4):
         time.sleep(3)
-        for filepath in glob.glob(os.path.join(log_dir, '*.log')):
+        # Only tail stderr logs to avoid duplicates (stdout/stderr often overlap)
+        for filepath in glob.glob(os.path.join(log_dir, '*stderr.log')):
             if filepath in started:
                 continue
             started.add(filepath)
             view = classify_log_file(filepath)
-            if not view:
-                # Unclassified files only tail stderr for the 'all' view
-                if 'stderr' not in filepath:
-                    continue
-                view = 'all'
+            # Classified files: route all lines to that view
+            # Unclassified files (e.g. component_container_mt): use content matching
             t = threading.Thread(target=tail_file, args=(filepath, view), daemon=True)
             t.start()
 
