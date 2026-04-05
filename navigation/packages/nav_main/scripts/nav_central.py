@@ -35,6 +35,7 @@ import tf2_ros
 import time as t
 import math
 import yaml
+import re
 
 
 
@@ -135,10 +136,19 @@ class Nav_Central(Node):
             self.no_topics_count += 1
         else:
             self.no_topics_count = 0
-       #Get available tf 
+        #Get available tf
         try:
-            frames_dict = self.tf_buffer.all_frames_as_yaml()
-            tf_ready = all(frame in frames_dict for frame in self.required_frames)
+            frames_yaml = self.tf_buffer.all_frames_as_yaml()
+            current_time = self.get_clock().now().nanoseconds / 1e9
+            tf_ready = True
+            for frame in self.required_frames:
+                if frame not in frames_yaml:
+                    tf_ready = False
+                    break
+                match = re.search(rf'Frame {frame} exists.*?Most recent transform: ([\d.]+)', frames_yaml, re.DOTALL)
+                if not match or (current_time - float(match.group(1))) > 2.0:
+                    tf_ready = False
+                    break
         except Exception:
             tf_ready = False
             self.nav_logger("error", "Monitoring -> Failed to get tf")
