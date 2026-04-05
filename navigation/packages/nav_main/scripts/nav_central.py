@@ -349,7 +349,7 @@ class Nav_Central(Node):
     def pause_slam(self):
         """Pause Slam function"""
 
-        self.nav_logger("info" "Pausing Slam -> Starting pause slam..")
+        self.nav_logger("info", "Pausing Slam -> Starting pause slam..")
         load_cb_group = ReentrantCallbackGroup()
         rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE, callback_group=load_cb_group)
         rtabmap_pause.wait_for_service()
@@ -363,7 +363,7 @@ class Nav_Central(Node):
     def resume_slam(self):
         """Resuming Slam function"""
 
-        self.nav_logger("info" "Resuming Slam -> Starting pause slam..")
+        self.nav_logger("info", "Resuming Slam -> Starting pause slam..")
         load_cb_group = ReentrantCallbackGroup()
         rtabmap_resume= self.node.create_client(Empty, RTAB_RESUME_SERVICE , callback_group=load_cb_group)
         rtabmap_resume.wait_for_service()
