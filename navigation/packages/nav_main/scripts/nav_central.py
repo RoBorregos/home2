@@ -298,7 +298,8 @@ class Nav_Central(Node):
 
         load_cb_group = ReentrantCallbackGroup()
         rtab_client = self.create_client(LoadNode, RTAB_CONTAINER_NODE, callback_group=load_cb_group)
-        rtab_client.wait_for_service()
+        while not rtab_client.service_is_ready():
+            t.sleep(0.5)
         self.nav_logger("info", "Loading Slam -> Started loading nodes")
         while not self.check_for_topics(rtab_topics):
             req = LoadNode.Request()                                                                                                                                                                
@@ -365,7 +366,8 @@ class Nav_Central(Node):
         self.nav_logger("info", "Pausing Slam -> Starting pause slam..")
         load_cb_group = ReentrantCallbackGroup()
         rtabmap_pause = self.create_client(Empty, RTAB_PAUSE_SERVICE, callback_group=load_cb_group)
-        rtabmap_pause.wait_for_service()
+        while not rtabmap_pause.service_is_ready():
+            t.sleep(0.5)
         req = Empty.Request()
         future = rtabmap_pause.call_async(req)       
         while not future.done():
@@ -379,7 +381,8 @@ class Nav_Central(Node):
         self.nav_logger("info", "Resuming Slam -> Starting pause slam..")
         load_cb_group = ReentrantCallbackGroup()
         rtabmap_resume= self.create_client(Empty, RTAB_RESUME_SERVICE , callback_group=load_cb_group)
-        rtabmap_resume.wait_for_service()
+        while not rtabmap_resume.service_is_ready():
+            t.sleep(0.5)
         req = Empty.Request()
         future = rtabmap_resume.call_async(req)       
         while not future.done():
