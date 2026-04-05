@@ -145,19 +145,17 @@ class Nav_Central(Node):
                 if frame not in frames_yaml:
                     tf_ready = False
                     break
-                match = re.search(rf'Frame {frame} exists.*?Most recent transform: ([\d.]+)', frames_yaml, re.DOTALL)
+                match = re.search(rf'{re.escape(frame)}.*?most_recent_transform:\s*([\d.]+)', frames_yaml, re.DOTALL)
                 if not match:
-                    # Print raw yaml around the frame for debugging
-                    idx = frames_yaml.find(frame)
-                    snippet = frames_yaml[idx:idx+200] if idx != -1 else 'NOT FOUND'
-                    self.nav_logger("warn", f"Monitoring -> No timestamp for '{frame}', raw: {snippet}")
                     tf_ready = False
                     break
-                age = current_time - float(match.group(1))
-                self.nav_logger("info", f"Monitoring -> Frame '{frame}' age: {age:.2f}s, current: {current_time:.2f}, last: {float(match.group(1)):.2f}")
-                if age > 2.0:
-                    tf_ready = False
-                    break
+                last_time = float(match.group(1))
+                # Static transforms always have 0.0 — just check existence
+                if last_time > 0.0:
+                    age = current_time - last_time
+                    if age > 2.0:
+                        tf_ready = False
+                        break
         except Exception:
             tf_ready = False
             self.nav_logger("error", "Monitoring -> Failed to get tf")
