@@ -146,7 +146,13 @@ class Nav_Central(Node):
                     tf_ready = False
                     break
                 match = re.search(rf'Frame {frame} exists.*?Most recent transform: ([\d.]+)', frames_yaml, re.DOTALL)
-                if not match or (current_time - float(match.group(1))) > 2.0:
+                if not match:
+                    self.nav_logger("warn", f"Monitoring -> No timestamp found for frame '{frame}'")
+                    tf_ready = False
+                    break
+                age = current_time - float(match.group(1))
+                self.nav_logger("info", f"Monitoring -> Frame '{frame}' age: {age:.2f}s, current: {current_time:.2f}, last: {float(match.group(1)):.2f}")
+                if age > 2.0:
                     tf_ready = False
                     break
         except Exception:
@@ -162,7 +168,7 @@ class Nav_Central(Node):
         if ((self.no_topics_count >= NO_TOPICS_LIMIT) or (self.no_tf_count >= NO_TF_LIMIT) and self.nodes_status):
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, {'Topics not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, pausing nodes ...") 
             self.nodes_status = False
-        else:
+        elif (self.no_topics_count == 0) and (self.no_tf_count == 0):
             if self.nodes_status == False:
                 self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
         
