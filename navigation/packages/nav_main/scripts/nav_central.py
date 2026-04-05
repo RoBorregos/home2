@@ -342,14 +342,15 @@ class Nav_Central(Node):
               NAV2_LIFECYCLE_SERVICE,
               callback_group=load_cb_group
         )
-        lifecycle_client.wait_for_service()
+        while not lifecycle_client.service_is_ready():
+            t.sleep(0.5)
         req = ManageLifecycleNodes.Request()
-        req.command = ManageLifecycleNodes.Request.STARTUP                                                                                                                                      
+        req.command = ManageLifecycleNodes.Request.STARTUP
         future = lifecycle_client.call_async(req)
         while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            t.sleep(0.1)
         self.destroy_client(lifecycle_client)
-        self.nav_logger("info", "Loading Nav2 -> Fully loaded nav2 lifecycles") 
+        self.nav_logger("info", "Loading Nav2 -> Fully loaded nav2 lifecycles")
             
     def pause_slam(self):
         """Pause Slam function"""
@@ -391,12 +392,13 @@ class Nav_Central(Node):
               NAV2_LIFECYCLE_SERVICE,
               callback_group=load_cb_group
         )
-        lifecycle_client.wait_for_service()
+        while not lifecycle_client.service_is_ready():
+            t.sleep(0.5)
         req = ManageLifecycleNodes.Request()
-        req.command = ManageLifecycleNodes.Request.PAUSE                                                                                                                                      
+        req.command = ManageLifecycleNodes.Request.PAUSE
         future = lifecycle_client.call_async(req)
         while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            t.sleep(0.1)
         self.destroy_client(lifecycle_client)
         self.nav2_paused = True
         self.nav_logger("info", "Pausing Nav2 -> Fully Paused nav2 lifecycles")
@@ -413,12 +415,13 @@ class Nav_Central(Node):
               NAV2_LIFECYCLE_SERVICE,
               callback_group=load_cb_group
         )
-        lifecycle_client.wait_for_service()
+        while not lifecycle_client.service_is_ready():
+            t.sleep(0.5)
         req = ManageLifecycleNodes.Request()
-        req.command = ManageLifecycleNodes.Request.RESUME                                                                                                                                      
+        req.command = ManageLifecycleNodes.Request.RESUME
         future = lifecycle_client.call_async(req)
         while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            t.sleep(0.1)
         self.destroy_client(lifecycle_client)
         self.nav2_paused = False
         self.nav_logger("info", "Resume Nav2 -> Fully resumed nav2 lifecycles")
