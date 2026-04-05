@@ -25,7 +25,8 @@ from frida_constants.navigation_constants import(
         RTAB_MAPS_PATH,
         RTAB_CONTAINER_NODE,
         NO_TF_LIMIT,
-        NO_TOPICS_LIMIT
+        NO_TOPICS_LIMIT,
+        MONITOR_RATE
         ) 
 from frida_interfaces.srv import (
         CheckDoor
