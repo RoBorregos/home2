@@ -19,6 +19,9 @@ class DOOR_CHECK(Enum):
 AREAS_SERVICE = "/areas_json"
 
 ### General Constants
+MONITOR_RATE = 2.0
+NO_TF_LIMIT = 3
+NO_TOPICS_LIMIT = 3
 TIMEOUT_REQUIREMENTS = 0.8 
 TIMEOUT_RTABMAP = 30.0
 RTAB_PAUSE_SERVICE = "/rtabmap/pause"

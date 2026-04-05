@@ -23,7 +23,9 @@ from frida_constants.navigation_constants import(
         NAV2_LIFECYCLE_SERVICE,
         RTAB_CHECK_TOPIC,
         RTAB_MAPS_PATH,
-        RTAB_CONTAINER_NODE
+        RTAB_CONTAINER_NODE,
+        NO_TF_LIMIT,
+        NO_TOPICS_LIMIT
         ) 
 from frida_interfaces.srv import (
         CheckDoor
@@ -98,10 +100,14 @@ class Nav_Central(Node):
         #Setup and Configuration
         self._setup_done = False
         self._setup_timer = self.create_timer(2.0, self._setup, callback_group=ReentrantCallbackGroup())
-    
+        self._montitor_timer = None 
+        self.no_topics_count = 0
+        self.no_tf_count = 0
+        self.nodes_status = False
+
     def _setup(self):
+        """Setup of all navigation environment"""
         if self._setup_done:
-            self.nav_logger("info", "Out of papu ")
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
@@ -113,9 +119,41 @@ class Nav_Central(Node):
         self.load_nav2()
         self.nav_logger("info", "Nav2 completed")
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
-    
-    def monitoring(self):
-       self.nav_logger("info", "Starting monitoring") 
+        self.nodes_status = True
+        self._monitor_timer = self.create_timer(MONITOR_RATE, self._monitoring, callback_group=ReentrantCallbackGroup())
+        self.nav_logger("info", "Monitor Started")
+
+    def _monitoring(self):
+        """General topics and tf monitor """
+        if self.tf_listener is None:
+            self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
+        #Get Available Topics
+        topics_ready = self.check_for_topics(self.required_topics)
+        if not topics_ready:
+            self.no_topics_count += 1
+        else:
+            self.no_topics_count = 0
+
+       #Get available tf 
+        try:
+            frames_dict = self.tf_buffer.all_frames_as_yaml()
+            tf_ready = all(frame in frames_dict for frame in self.required_frames)
+        except Exception:
+            tf_ready = False
+        if not tf_ready:
+            self.no_tf_count += 1
+        else:
+            self.no_tf_count = 0
+
+        #Check count limit
+        if (self.no_topics_count >= NO_TOPICS_LIMIT) or (self.no_tf_count >= NO_TF_LIMIT):
+            self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, {'Topics not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, pausing nodes ...") 
+            self.nodes_status = False
+        else:
+            if self.nodes_status == False:
+                self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
+        
 
     def nav_logger(self,status, data):
         if status == "info":
