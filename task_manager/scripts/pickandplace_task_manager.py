@@ -103,7 +103,9 @@ class PickAndPlaceTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("pickandplace_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.PICK_AND_PLACE, mock_areas=["navigation"]
+        )
 
         # ACTION REQUIRED: Adjust before competition
         self.use_side_table = False  # True = use side table objects (penalty per object)
@@ -126,6 +128,7 @@ class PickAndPlaceTM(Node):
         # Load object->category mapping for shelf matching (e.g. "apple" -> "fruit")
         try:
             from ament_index_python.packages import get_package_share_directory
+
             objects_path = (
                 Path(get_package_share_directory("frida_constants")) / "data" / "objects.json"
             )
@@ -235,7 +238,13 @@ class PickAndPlaceTM(Node):
             total_time = sum(self.state_times.values())
             CLog.fsm(self, "TIMER", f"Total time elapsed: {total_time:.2f}s")
 
-        CLog.fsm(self, "STATE", f"{self.previous_state} → {self.current_state}" if self.previous_state != self.current_state else self.current_state)
+        CLog.fsm(
+            self,
+            "STATE",
+            f"{self.previous_state} → {self.current_state}"
+            if self.previous_state != self.current_state
+            else self.current_state,
+        )
 
     def navigate_to_location(self, location: Location, say: bool = True):
         """Navigate to a PPC location using the nav_locations mapping"""
@@ -302,9 +311,9 @@ class PickAndPlaceTM(Node):
 
     def determine_placement_location(self, obj: ObjectInfo) -> Location:
         """Return the target furniture for an object."""
-        if (
-            self.use_dishwasher
-            and obj.category in (ObjectCategory.CUTLERY, ObjectCategory.TABLEWARE)
+        if self.use_dishwasher and obj.category in (
+            ObjectCategory.CUTLERY,
+            ObjectCategory.TABLEWARE,
         ):
             return Location.DISHWASHER
         elif obj.category == ObjectCategory.TRASH:
@@ -324,14 +333,24 @@ class PickAndPlaceTM(Node):
             desc_lower = description.lower()
             if obj_name in desc_lower:
                 height = self.shelf_level_heights.get(level, self.default_shelf_height)
-                CLog.vision(self, "SHELF", f"Shelf match (name): '{obj_name}' → level {level} ({height}m)")
+                CLog.vision(
+                    self, "SHELF", f"Shelf match (name): '{obj_name}' → level {level} ({height}m)"
+                )
                 return height
             if obj_semantic_cat and obj_semantic_cat in desc_lower:
                 height = self.shelf_level_heights.get(level, self.default_shelf_height)
-                CLog.vision(self, "SHELF", f"Shelf match (category '{obj_semantic_cat}'): '{obj_name}' → level {level} ({height}m)")
+                CLog.vision(
+                    self,
+                    "SHELF",
+                    f"Shelf match (category '{obj_semantic_cat}'): '{obj_name}' → level {level} ({height}m)",
+                )
                 return height
 
-        CLog.vision(self, "SHELF", f"No shelf match for '{obj_name}', using default {self.default_shelf_height}m")
+        CLog.vision(
+            self,
+            "SHELF",
+            f"No shelf match for '{obj_name}', using default {self.default_shelf_height}m",
+        )
         return self.default_shelf_height
 
     # ------------------------------------------------------------------
@@ -349,7 +368,12 @@ class PickAndPlaceTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
 
-            CLog.fsm(self, "STATE", "Start button pressed. Pick and Place Challenge begins.", level="success")
+            CLog.fsm(
+                self,
+                "STATE",
+                "Start button pressed. Pick and Place Challenge begins.",
+                level="success",
+            )
             self.current_state = PickAndPlaceTM.TaskStates.START
 
         # ==================== START ====================
@@ -392,10 +416,17 @@ class PickAndPlaceTM(Node):
                             bbox=bbox,
                         )
                     )
-                CLog.vision(self, "DETECT", f"Detected {len(self.detected_objects)} objects on the table.")
+                CLog.vision(
+                    self, "DETECT", f"Detected {len(self.detected_objects)} objects on the table."
+                )
                 self.current_state = PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS
             else:
-                CLog.vision(self, "DETECT", "No objects detected, skipping to breakfast phase.", level="warn")
+                CLog.vision(
+                    self,
+                    "DETECT",
+                    "No objects detected, skipping to breakfast phase.",
+                    level="warn",
+                )
                 self.current_state = PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP
 
         # ==================== ANNOUNCE OBJECTS ====================
@@ -428,8 +459,7 @@ class PickAndPlaceTM(Node):
             skip_names = ["plate", "dish"]
             before = len(self.detected_objects)
             self.detected_objects = [
-                obj for obj in self.detected_objects
-                if obj.name.lower() not in skip_names
+                obj for obj in self.detected_objects if obj.name.lower() not in skip_names
             ]
             skipped = before - len(self.detected_objects)
             if skipped > 0:
@@ -462,7 +492,12 @@ class PickAndPlaceTM(Node):
                 self.grasped_object = self.detected_objects[self.current_object_index]
                 self.current_state = PickAndPlaceTM.TaskStates.PICK_OBJECT
             else:
-                CLog.fsm(self, "STATE", f"Cleanup done ({placed_count} placed, switching to breakfast).", level="success")
+                CLog.fsm(
+                    self,
+                    "STATE",
+                    f"Cleanup done ({placed_count} placed, switching to breakfast).",
+                    level="success",
+                )
                 self.current_state = PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP
 
         # ==================== PICK OBJECT ====================
@@ -493,9 +528,19 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.DETERMINE_PLACEMENT
             else:
                 self.current_attempts += 1
-                CLog.manip(self, "PICK", f"Failed to pick {self.grasped_object.name} — attempt {self.current_attempts}/{ATTEMPT_LIMIT}", level="error")
+                CLog.manip(
+                    self,
+                    "PICK",
+                    f"Failed to pick {self.grasped_object.name} — attempt {self.current_attempts}/{ATTEMPT_LIMIT}",
+                    level="error",
+                )
                 if self.current_attempts >= ATTEMPT_LIMIT:
-                    CLog.manip(self, "PICK", f"Skipping {self.grasped_object.name} after {ATTEMPT_LIMIT} attempts.", level="warn")
+                    CLog.manip(
+                        self,
+                        "PICK",
+                        f"Skipping {self.grasped_object.name} after {ATTEMPT_LIMIT} attempts.",
+                        level="warn",
+                    )
                     self.current_attempts = 0
                     self.grasped_object.is_picked = True
                     self.current_object_index += 1
@@ -507,7 +552,11 @@ class PickAndPlaceTM(Node):
             self.grasped_object.placement_location = self.determine_placement_location(
                 self.grasped_object
             )
-            CLog.fsm(self, "SORT", f"{self.grasped_object.name} → {self.grasped_object.placement_location.value}")
+            CLog.fsm(
+                self,
+                "SORT",
+                f"{self.grasped_object.name} → {self.grasped_object.placement_location.value}",
+            )
 
             if (
                 self.grasped_object.placement_location == Location.DISHWASHER
@@ -534,7 +583,8 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP:
             self._track_state_change(PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP)
             self.subtask_manager.hri.say(
-                "Could you please open the dishwasher door for me?", wait=True,
+                "Could you please open the dishwasher door for me?",
+                wait=True,
             )
             _, answer = self.subtask_manager.hri.confirm(
                 "Please say yes once the dishwasher door is open.",
@@ -545,7 +595,9 @@ class PickAndPlaceTM(Node):
             if answer == "yes":
                 CLog.hri(self, "CONFIRM", "Referee confirmed dishwasher is open.", level="success")
             else:
-                CLog.hri(self, "CONFIRM", "No confirmation, assuming dishwasher is open.", level="warn")
+                CLog.hri(
+                    self, "CONFIRM", "No confirmation, assuming dishwasher is open.", level="warn"
+                )
             self.dishwasher_open = True
             self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
 
@@ -561,7 +613,12 @@ class PickAndPlaceTM(Node):
                 else:
                     self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
             else:
-                CLog.nav(self, "FAIL", f"Navigation to {placement_loc.value} failed, skipping object.", level="error")
+                CLog.nav(
+                    self,
+                    "FAIL",
+                    f"Navigation to {placement_loc.value} failed, skipping object.",
+                    level="error",
+                )
                 self.grasped_object.is_picked = True
                 self.current_object_index += 1
                 self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
@@ -576,9 +633,7 @@ class PickAndPlaceTM(Node):
             if shelf_status == Status.EXECUTION_SUCCESS and shelf_detections:
                 for shelf in shelf_detections:
                     level = shelf.level
-                    shelf_bbox = BBOX(
-                        x1=shelf.x1, y1=shelf.y1, x2=shelf.x2, y2=shelf.y2
-                    )
+                    shelf_bbox = BBOX(x1=shelf.x1, y1=shelf.y1, x2=shelf.x2, y2=shelf.y2)
                     status_q, description = self.subtask_manager.vision.moondream_crop_query(
                         "What type of objects are on this shelf? Answer in a few words.",
                         shelf_bbox,
@@ -595,7 +650,9 @@ class PickAndPlaceTM(Node):
                         f"Shelf {level} at {height} metres has {cat}.", wait=False
                     )
             else:
-                CLog.vision(self, "SHELF", "Shelf detection failed, using default height.", level="warn")
+                CLog.vision(
+                    self, "SHELF", "Shelf detection failed, using default height.", level="warn"
+                )
 
             self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
 
@@ -623,9 +680,16 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_placed = True
-                CLog.manip(self, "PLACE", f"Placed {self.grasped_object.name} at {placement_loc.value}.", level="success")
+                CLog.manip(
+                    self,
+                    "PLACE",
+                    f"Placed {self.grasped_object.name} at {placement_loc.value}.",
+                    level="success",
+                )
             else:
-                CLog.manip(self, "PLACE", f"Failed to place {self.grasped_object.name}.", level="error")
+                CLog.manip(
+                    self, "PLACE", f"Failed to place {self.grasped_object.name}.", level="error"
+                )
 
             self.current_object_index += 1
             self.grasped_object = None
@@ -647,7 +711,11 @@ class PickAndPlaceTM(Node):
                     break
 
             if self.current_breakfast_item:
-                CLog.fsm(self, "STATE", f"Next breakfast item: {self.current_breakfast_item['name']} from {self.current_breakfast_item['location'].value}")
+                CLog.fsm(
+                    self,
+                    "STATE",
+                    f"Next breakfast item: {self.current_breakfast_item['name']} from {self.current_breakfast_item['location'].value}",
+                )
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE
             else:
                 CLog.fsm(self, "STATE", "All breakfast items collected.", level="success")
@@ -662,7 +730,12 @@ class PickAndPlaceTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 self.current_state = PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM
             else:
-                CLog.nav(self, "FAIL", f"Failed to reach {item_location.value}, skipping {self.current_breakfast_item['name']}.", level="error")
+                CLog.nav(
+                    self,
+                    "FAIL",
+                    f"Failed to reach {item_location.value}, skipping {self.current_breakfast_item['name']}.",
+                    level="error",
+                )
                 self.current_breakfast_item["picked"] = True
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
@@ -690,7 +763,9 @@ class PickAndPlaceTM(Node):
                 self.current_breakfast_item["picked"] = True
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING
             else:
-                CLog.manip(self, "PICK", f"Failed to pick breakfast item: {item_name}.", level="error")
+                CLog.manip(
+                    self, "PICK", f"Failed to pick breakfast item: {item_name}.", level="error"
+                )
                 self.current_breakfast_item["picked"] = True
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
@@ -725,7 +800,12 @@ class PickAndPlaceTM(Node):
             if status == Status.EXECUTION_SUCCESS:
                 CLog.manip(self, "POUR", f"Poured {item_name} into bowl.", level="success")
             else:
-                CLog.manip(self, "POUR", f"Pour failed for {item_name}, will place without pouring.", level="warn")
+                CLog.manip(
+                    self,
+                    "POUR",
+                    f"Pour failed for {item_name}, will place without pouring.",
+                    level="warn",
+                )
 
             self.current_state = PickAndPlaceTM.TaskStates.PLACE_BREAKFAST_ITEM
 
@@ -745,7 +825,9 @@ class PickAndPlaceTM(Node):
                     self.bowl_placed = True
                 CLog.manip(self, "PLACE", f"Placed breakfast item: {item_name}.", level="success")
             else:
-                CLog.manip(self, "PLACE", f"Failed to place breakfast item: {item_name}.", level="error")
+                CLog.manip(
+                    self, "PLACE", f"Failed to place breakfast item: {item_name}.", level="error"
+                )
 
             self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
