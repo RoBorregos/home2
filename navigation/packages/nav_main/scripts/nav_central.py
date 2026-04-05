@@ -8,6 +8,7 @@ from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from nav2_msgs.srv import ManageLifecycleNodes
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
+from std_srvs.srv import Empty
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -16,7 +17,13 @@ from frida_constants.navigation_constants import(
         CAMERA_RGB_TOPIC,
         CAMERA_INFO_TOPIC,
         CAMERA_DEPTH_TOPIC,
-        TIMEOUT_RTABMAP
+        TIMEOUT_RTABMAP,
+        RTAB_PAUSE_SERVICE,
+        RTAB_RESUME_SERVICE,
+        NAV2_LIFECYCLE_SERVICE,
+        RTAB_CHECK_TOPIC,
+        RTAB_MAPS_PATH,
+        RTAB_CONTAINER_NODE
         ) 
 from frida_interfaces.srv import (
         CheckDoor
@@ -94,6 +101,7 @@ class Nav_Central(Node):
     
     def _setup(self):
         if self._setup_done:
+            self.nav_logger("info", "Out of papu ")
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
@@ -103,7 +111,11 @@ class Nav_Central(Node):
         self.start_slam()
         self.nav_logger("info", "Slam completed, Starting nav2 ...")
         self.load_nav2()
-        self.nav_logger("info", "Finish Setup")
+        self.nav_logger("info", "Nav2 completed")
+        self.nav_logger("info", "Finished Setup, Starting monitoring ...")
+    
+    def monitoring(self):
+       self.nav_logger("info", "Starting monitoring") 
 
     def nav_logger(self,status, data):
         if status == "info":
@@ -207,15 +219,14 @@ class Nav_Central(Node):
         # Load a node into the container
 
         rtabmap_params = params_from_yaml(self.config_path, 'rtabmap')
-        db_path = f'/workspace/src/navigation/rtabmapdbs/{self.map_name}'
+        db_path = f'{RTAB_MAPS_PATH}{self.map_name}'
         rtabmap_params.append(make_param('database_path', db_path))
         sync_params = params_from_yaml(self.config_path, 'rgbd_sync')
 
-        rtab_topics = {'/rtabmap/republish_node_data'}
+        rtab_topics = {RTAB_CHECK_TOPIC}
 
         load_cb_group = ReentrantCallbackGroup()
-        rtab_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node', callback_group=load_cb_group)
-        sync_client = self.create_client(LoadNode, '/rtabmap_container/_container/load_node', callback_group=load_cb_group)                                                                                                        
+        rtab_client = self.create_client(LoadNode, RTAB_CONTAINER_NODE, callback_group=load_cb_group)
         rtab_client.wait_for_service()
         self.nav_logger("info", "Loading Slam -> Started loading nodes")
         while not self.check_for_topics(rtab_topics):
@@ -234,7 +245,7 @@ class Nav_Central(Node):
             req.node_name = 'rgbd_sync'
             req.parameters = sync_params
             req.remap_rules = self.rtabmap_remapping
-            future = sync_client.call_async(req)
+            future = rtab_client.call_async(req)
             while not future.done():
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
             self.nav_logger("info", "Loading Slam -> RtabSync Loaded") 
@@ -248,7 +259,6 @@ class Nav_Central(Node):
                 self.nav_logger("error","Loading Slam -> Topics not found trying again ...")
             
         self.destroy_client(rtab_client)
-        self.destroy_client(sync_client)
         self.nav_logger("info", "Loading Slam -> Finished Slam Loading")
 
     def load_nav2(self):
@@ -258,7 +268,7 @@ class Nav_Central(Node):
         load_cb_group = ReentrantCallbackGroup()
         lifecycle_client = self.create_client(                                                                                                                                                  
               ManageLifecycleNodes,                                                                                                                                                               
-              '/lifecycle_manager_navigation/manage_nodes',
+              NAV2_LIFECYCLE_SERVICE,
               callback_group=load_cb_group
         )
         lifecycle_client.wait_for_service()
@@ -270,6 +280,35 @@ class Nav_Central(Node):
         self.destroy_client(lifecycle_client)
         self.nav_logger("info", "Loading Nav2 -> Fully loaded nav2 lifecycles") 
             
+    def pause_slam(self):
+        """Pause Slam function"""
+
+        self.nav_logger("info" "Pausing Slam -> Starting pause slam..")
+        load_cb_group = ReentrantCallbackGroup()
+        rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE, callback_group=load_cb_group)
+        rtabmap_pause.wait_for_service()
+        req = Empty.Request()
+        future = rtabmap_pause.call_async(req)       
+        while not future.done():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        self.destroy_client(rtabmap_pause)
+        self.nav_logger("info", "Pausing Slam -> Finished pausing slam")
+
+    def resume_slam(self):
+        """Resuming Slam function"""
+
+        self.nav_logger("info" "Resuming Slam -> Starting pause slam..")
+        load_cb_group = ReentrantCallbackGroup()
+        rtabmap_resume= self.node.create_client(Empty, RTAB_RESUME_SERVICE , callback_group=load_cb_group)
+        rtabmap_resume.wait_for_service()
+        req = Empty.Request()
+        future = rtabmap_resume.call_async(req)       
+        while not future.done():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        self.destroy_client(rtabmap_resume)
+        self.nav_logger("info", "Resuming Slam -> Finished pausing slam")
+
+    
 
 def main(args=None):
     rclpy.init(args=args)

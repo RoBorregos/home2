@@ -21,6 +21,12 @@ AREAS_SERVICE = "/areas_json"
 ### General Constants
 TIMEOUT_REQUIREMENTS = 0.8 
 TIMEOUT_RTABMAP = 30.0
+RTAB_PAUSE_SERVICE = "/rtabmap/pause"
+RTAB_RESUME_SERVICE = "/rtabmap/resume"
+RTAB_CHECK_TOPIC = "/rtabmap/republish_node_data"
+RTAB_MAPS_PATH = "/workspace/src/navigation/rtabmapdbs/"
+RTAB_CONTAINER_NODE = "/rtabmap_container/_container/load_node"
+NAV2_LIFECYCLE_SERVICE = "/lifecycle_manager_navigation/manage_nodes" 
 # ------------------------------------------------------------------
 
 
