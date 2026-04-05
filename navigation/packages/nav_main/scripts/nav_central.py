@@ -13,6 +13,7 @@ from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
+        AREAS_SERVICE,
         TIMEOUT_REQUIREMENTS,
         CAMERA_RGB_TOPIC,
         CAMERA_INFO_TOPIC,
@@ -27,11 +28,14 @@ from frida_constants.navigation_constants import(
         NO_TF_LIMIT,
         NO_TOPICS_LIMIT,
         MONITOR_RATE
-        ) 
-from frida_interfaces.srv import (
-        CheckDoor
         )
+from frida_interfaces.srv import (
+        CheckDoor,
+        MapAreas
+        )
+from ament_index_python.packages import get_package_share_directory
 import tf2_ros
+import json
 import time as t
 import math
 import yaml
@@ -87,11 +91,15 @@ class Nav_Central(Node):
         self.rtab_load_timeout = TIMEOUT_RTABMAP
 
 
+        self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
+        self.areas_data = None
+
         self.lidar_group = ReentrantCallbackGroup()
         self.service_group = MutuallyExclusiveCallbackGroup()
         self.lidar_msg = None
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
+        self.map_areas_srv = self.create_service(MapAreas, AREAS_SERVICE, self.map_areas_callback, callback_group=self.service_group)
         self.range_min = DOOR_CHECK.LIDAR_RANGE_MIN.value  
         self.range_max = DOOR_CHECK.LIDAR_RANGE_MAX.value
         self.door_rate = DOOR_CHECK.CHECKING_RATE.value
@@ -122,6 +130,7 @@ class Nav_Central(Node):
             NAV2_LIFECYCLE_SERVICE,
             callback_group=self._lifecycle_cb_group
         )
+        self.load_map_areas()
         self.nav_logger("info", "Starting Setup, waiting for requirements ...")
         self.wait_for_requirements()
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
@@ -264,6 +273,27 @@ class Nav_Central(Node):
         response.status = False
         return response
              
+    def load_map_areas(self):
+        try:
+            pkg_share = get_package_share_directory('map_context')
+            file_path = f'{pkg_share}/maps/areas/areas_{self.areas_map_name}.json'
+            with open(file_path, 'r') as f:
+                self.areas_data = json.load(f)
+            self.nav_logger("info", f"Map_areas -> Loaded areas from {file_path}")
+        except FileNotFoundError:
+            self.nav_logger("error", f"Map_areas -> File not found: areas_{self.areas_map_name}.json")
+        except Exception as e:
+            self.nav_logger("error", f"Map_areas -> Error loading map areas: {e}")
+
+    def map_areas_callback(self, request, response):
+        self.nav_logger("info", "Map_areas -> Service called")
+        if self.areas_data is None:
+            self.nav_logger("error", "Map_areas -> No areas data loaded")
+        else:
+            response.areas = json.dumps(self.areas_data)
+            self.nav_logger("info", "Map_areas -> Map Areas Sent")
+        return response
+
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}

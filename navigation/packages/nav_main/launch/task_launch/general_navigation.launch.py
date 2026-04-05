@@ -18,6 +18,8 @@ def launch_function(context, *args, **kwargs):
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
+    areas_map_name = context.perform_substitution(rtabmap_map_name).replace('.db', '')
+
     nav_central_node = Node(
         package='nav_main',
         executable='nav_central.py',
@@ -27,6 +29,7 @@ def launch_function(context, *args, **kwargs):
         parameters=[{
             'localization': localization,
             'map_name': rtabmap_map_name,
+            'areas_map_name': areas_map_name,
             'rtab_localization_config': rtab_params,
             'rtab_mapping_config': rtab_params,
             }],
