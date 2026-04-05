@@ -181,6 +181,8 @@ class Nav_Central(Node):
         elif (self.no_topics_count == 0) and (self.no_tf_count == 0):
             if self.nodes_status == False:
                 self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
+                self.resume_slam()
+                self.nodes_status = True
         
 
     def nav_logger(self,status, data):
