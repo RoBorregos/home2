@@ -342,8 +342,15 @@ class Nav_Central(Node):
               NAV2_LIFECYCLE_SERVICE,
               callback_group=load_cb_group
         )
+        elapsed = 0.0
         while not lifecycle_client.service_is_ready():
             t.sleep(0.5)
+            elapsed += 0.5
+            if int(elapsed) % 5 == 0:
+                services = [s[0] for s in self.get_service_names_and_types()]
+                nav2_services = [s for s in services if 'lifecycle' in s]
+                self.nav_logger("warn", f"Loading Nav2 -> Waiting for service... {elapsed:.0f}s, lifecycle services: {nav2_services}")
+        self.nav_logger("info", "Loading Nav2 -> Service found, sending STARTUP")
         req = ManageLifecycleNodes.Request()
         req.command = ManageLifecycleNodes.Request.STARTUP
         future = lifecycle_client.call_async(req)
