@@ -40,11 +40,6 @@ $IFACE_LINE
       <EnableMulticastLoopback>true</EnableMulticastLoopback>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
-    <Discovery>
-      <SPDPInterval>1s</SPDPInterval>
-      <LeaseDuration>5s</LeaseDuration>
-      <DSGracePeriod>2s</DSGracePeriod>
-    </Discovery>
 $SHM_SECTION
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
