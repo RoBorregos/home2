@@ -53,7 +53,7 @@ var searchData=
   ['classname_50',['classname',['../classfrida__constants_1_1vision__classes_1_1BBOX.html#acb01640f685c24827abc969533c98ec9',1,'frida_constants::vision_classes::BBOX']]],
   ['clean_5ftable_51',['CLEAN_TABLE',['../classtask__manager_1_1utils_1_1task_1_1Task.html#ad97384f48ecf1ee99c718d0f88f8dd45',1,'task_manager::utils::task::Task']]],
   ['cleanup_5ftimer_52',['cleanup_timer',['../classpointing__detection_1_1DetectPointingObjectServer.html#ad884ab96b73bea669260442446ff679d',1,'pointing_detection::DetectPointingObjectServer']]],
-  ['cli_53',['cli',['../classxarm__utils_1_1ir__gripper_1_1IRGripper.html#a6cf3ddb85d02f7c711ed043e24b0f8ad',1,'xarm_utils::ir_gripper::IRGripper']]],
+  ['cli_53',['cli',['../classxarm__utils_1_1grasp__detector_1_1GraspDetector.html#aae3778608229314ff55b0861afc78c72',1,'xarm_utils::grasp_detector::GraspDetector']]],
   ['clicked_5fpoint_54',['clicked_point',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a628e15df859d1b4449eb694b7f657f2e',1,'pick_and_place::keyboard_input::KeyboardInput']]],
   ['clicked_5fpoint_5fsubscription_55',['clicked_point_subscription',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#aef2e351e8adfdaeef220ee1714bb925c',1,'pick_and_place::keyboard_input::KeyboardInput']]],
   ['client_56',['client',['../classgrasp__detection__example_1_1GraspDetectionClient.html#af089b4f4ae04b7a092a3e385a20e45f0',1,'grasp_detection_example::GraspDetectionClient']]],

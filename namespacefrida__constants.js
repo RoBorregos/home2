@@ -30,6 +30,7 @@ var namespacefrida__constants =
       [ "GO_TO_HAND_ACTION_SERVER", "namespacefrida__constants_1_1manipulation__constants.html#afc80b7dd3c844ae6873add3579898cb9", null ],
       [ "GRASP_DETECTION_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a520f33abe220f0f53b58bc4a6087abae", null ],
       [ "GRASP_LINK_FRAME", "namespacefrida__constants_1_1manipulation__constants.html#aaccddbdec7541f9e856c14beed78d764", null ],
+      [ "GRIPPER_GRASP_STATE_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#ac9b41b6e8bcd7906b15352a6e0e24b8e", null ],
       [ "GRIPPER_SET_STATE_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a38b21f89e935776f5580a76d35638040", null ],
       [ "HEATMAP_PLACE_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#aca89e34e29520b81899330de0187b2ec", null ],
       [ "JOINT_VELOCITY_MODE", "namespacefrida__constants_1_1manipulation__constants.html#a2b9fe2eb921dacceca8b4fd08e9eb64f", null ],

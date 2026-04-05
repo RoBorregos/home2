@@ -9,6 +9,7 @@ var searchData=
   ['graspdetection_6',['GraspDetection',['../classgpd__ros2_1_1GraspDetection.html',1,'gpd_ros2']]],
   ['graspdetectionclient_7',['GraspDetectionClient',['../classgrasp__detection__example_1_1GraspDetectionClient.html',1,'grasp_detection_example']]],
   ['graspdetectionservice_8',['GraspDetectionService',['../classgpd__ros2_1_1GraspDetectionService.html',1,'gpd_ros2']]],
-  ['graspvisualizer_9',['GraspVisualizer',['../classgrasp__markers_1_1GraspVisualizer.html',1,'grasp_markers']]],
-  ['guest_10',['Guest',['../classhric__task__manager_1_1Guest.html',1,'hric_task_manager.Guest'],['../classreceptionist__task__manager_1_1Guest.html',1,'receptionist_task_manager.Guest']]]
+  ['graspdetector_9',['GraspDetector',['../classxarm__utils_1_1grasp__detector_1_1GraspDetector.html',1,'xarm_utils::grasp_detector']]],
+  ['graspvisualizer_10',['GraspVisualizer',['../classgrasp__markers_1_1GraspVisualizer.html',1,'grasp_markers']]],
+  ['guest_11',['Guest',['../classhric__task__manager_1_1Guest.html',1,'hric_task_manager.Guest'],['../classreceptionist__task__manager_1_1Guest.html',1,'receptionist_task_manager.Guest']]]
 ];

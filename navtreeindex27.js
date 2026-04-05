@@ -1,5 +1,6 @@
 var NAVTREEINDEX27 =
 {
+"namespaceMoveItPlanner.html":[23,0,89],
 "namespaceMoveItPlanner.html#a1b501fab3333f86670254b88a4b32715":[23,0,89,1],
 "namespaceMoveItServo.html":[23,0,90],
 "namespaceObjectDetector.html":[23,0,100],
@@ -248,6 +249,5 @@ var NAVTREEINDEX27 =
 "namespacefrida__constants_1_1hri__constants.html#a1445a0126f5ffb6f0817906046e5a278":[23,0,49,0,2],
 "namespacefrida__constants_1_1hri__constants.html#a178c823b8cab8a3ba2131d5cb2c3594c":[23,0,49,0,29],
 "namespacefrida__constants_1_1hri__constants.html#a17e6a7edcef87329c3717fc4cd21dbee":[23,0,49,0,41],
-"namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2":[23,0,49,0,6],
-"namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e":[23,0,49,0,38]
+"namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2":[23,0,49,0,6]
 };

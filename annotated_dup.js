@@ -442,8 +442,8 @@ var annotated_dup =
       [ "WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", "classwait__for__controller__input__node_1_1WaitForControllerInputNode" ]
     ] ],
     [ "xarm_utils", "namespacexarm__utils.html", [
-      [ "ir_gripper", "namespacexarm__utils_1_1ir__gripper.html", [
-        [ "IRGripper", "classxarm__utils_1_1ir__gripper_1_1IRGripper.html", "classxarm__utils_1_1ir__gripper_1_1IRGripper" ]
+      [ "grasp_detector", "namespacexarm__utils_1_1grasp__detector.html", [
+        [ "GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", "classxarm__utils_1_1grasp__detector_1_1GraspDetector" ]
       ] ]
     ] ],
     [ "XArmServices", "namespaceXArmServices.html", [

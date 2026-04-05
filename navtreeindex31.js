@@ -1,5 +1,7 @@
 var NAVTREEINDEX31 =
 {
+"namespacetemp__follow.html#a9d7bd7bb4dd8b30fa8c3ee7dbb63ca16":[23,0,137,2],
+"namespacetemp__follow.html#aa2e3d3b8ea13dedf08e552c9beb5868e":[23,0,137,8],
 "namespacetemp__follow.html#ad4d7ef6faa21d32ef936bebad810409f":[23,0,137,3],
 "namespacetest__env.html":[23,0,138],
 "namespacetest__env.html#a0d88c2075e691d0fe1872f8c78bc5bea":[23,0,138,1],
@@ -130,8 +132,8 @@ var NAVTREEINDEX31 =
 "namespacexarm__launch.html#a6120858d912a0dc3d2783725c36b7d04":[23,0,159,0],
 "namespacexarm__utils.html":[23,0,160],
 "namespacexarm__utils.html#a4ae93573b0bb6299d5ca60b8cb50a42b":[23,0,160,1],
-"namespacexarm__utils_1_1ir__gripper.html":[23,0,160,0],
-"namespacexarm__utils_1_1ir__gripper.html#afe660b2729ae849c3990ccd73aefacae":[23,0,160,0,1],
+"namespacexarm__utils_1_1grasp__detector.html":[23,0,160,0],
+"namespacexarm__utils_1_1grasp__detector.html#af45877455c780a848f907d89b783aefc":[23,0,160,0,1],
 "namespaceyolo__node.html":[23,0,162],
 "namespaceyolo__node.html#abcab109d2d9d63430e859669d3c9ff87":[23,0,162,2],
 "namespaceyolo__node.html#aca63d0aad76baf9dc8b32484a283431a":[23,0,162,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX31 =
 "place__server_8py.html":[25,0,3,0,5,1,9],
 "place__server_8py.html#acbfe0e044d3c95d5f9eae1cad1ecec59":[25,0,3,0,5,1,9,1],
 "point__transformer_8py.html":[25,0,6,1,0,8],
-"point__transformer_8py.html#ad6684cbb74264c3e713e59b88cc50a19":[25,0,6,1,0,8,1],
-"pointing__detection_8py.html":[25,0,7,0,3,1,11],
-"pointing__detection_8py.html#a197c3d9ed96b3db5850117c5d78e684a":[25,0,7,0,3,1,11,11]
+"point__transformer_8py.html#ad6684cbb74264c3e713e59b88cc50a19":[25,0,6,1,0,8,1]
 };

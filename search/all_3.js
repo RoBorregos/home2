@@ -108,7 +108,7 @@ var searchData=
   ['clear_105',['clear',['../classface__recognition__node_1_1FaceRecognition.html#abdd9c91ceaea336b4c64cefb996a56cb',1,'face_recognition_node::FaceRecognition']]],
   ['clear_5foctomap_106',['clear_octomap',['../classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ae26b3b1d2227ce950969de8a26fb0877',1,'pick_and_place::manipulation_core::ManipulationCore']]],
   ['clear_5fpolygon_107',['clear_polygon',['../classmap__area__tagger_1_1MapAreaTagger.html#a905ef33585da559e244fc05afef8049d',1,'map_area_tagger::MapAreaTagger']]],
-  ['cli_108',['cli',['../classxarm__utils_1_1ir__gripper_1_1IRGripper.html#a6cf3ddb85d02f7c711ed043e24b0f8ad',1,'xarm_utils::ir_gripper::IRGripper']]],
+  ['cli_108',['cli',['../classxarm__utils_1_1grasp__detector_1_1GraspDetector.html#aae3778608229314ff55b0861afc78c72',1,'xarm_utils::grasp_detector::GraspDetector']]],
   ['clicked_5fpoint_109',['clicked_point',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a628e15df859d1b4449eb694b7f657f2e',1,'pick_and_place::keyboard_input::KeyboardInput']]],
   ['clicked_5fpoint_5fcallback_110',['clicked_point_callback',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a75022e38c85ee43245d167a130093489',1,'pick_and_place::keyboard_input::KeyboardInput']]],
   ['clicked_5fpoint_5fsubscription_111',['clicked_point_subscription',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#aef2e351e8adfdaeef220ee1714bb925c',1,'pick_and_place::keyboard_input::KeyboardInput']]],
