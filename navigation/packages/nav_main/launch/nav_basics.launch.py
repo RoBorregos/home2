@@ -24,7 +24,7 @@ def launch_setup(context, *args, **kwargs):
         package='dashgo_driver',
         executable='dashgo_driver2.py',
         name='DashgoDriver',
-        output='screen',
+        output='log',
         emulate_tty=True,
         parameters=[dashgo_config],
         remappings=[('/cmd_vel', LaunchConfiguration('cmd_topic', default='/cmd_vel'))],
@@ -35,7 +35,7 @@ def launch_setup(context, *args, **kwargs):
     ekf_launch = Node(
         package='robot_localization',
         executable='ekf_node',
-        output='screen',
+        output='log',
         emulate_tty=True,
         respawn=True,
         respawn_delay=2.0,

@@ -56,7 +56,7 @@ def generate_launch_description():
         namespace='',
         package='rclcpp_components',
         executable='component_container_mt',
-        output='screen',
+        output='log',
         composable_node_descriptions=[
             ComposableNode(
                 condition=IfCondition(PythonExpression(["'", load_rtab, "' == 'true' and '", localization, "' == 'true'"])),
@@ -90,7 +90,7 @@ def generate_launch_description():
         namespace='',
         package='rclcpp_components',
         executable='component_container_mt',
-        output='screen',
+        output='log',
         parameters=[nav2_params],
     )
 
