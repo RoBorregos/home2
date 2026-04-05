@@ -13,7 +13,7 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 from frida_constants.vision_constants import (
-    ZERO_SHOT_DETECTIONS_TOPIC,
+    DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
@@ -58,7 +58,7 @@ class FlatGraspEstimator(Node):
         )
         self.create_subscription(
             ObjectDetectionArray,
-            ZERO_SHOT_DETECTIONS_TOPIC,
+            DETECTIONS_TOPIC,
             self.detections_callback,
             10,
         )
