@@ -247,6 +247,12 @@ def main():
         log_tailer = threading.Thread(target=start_log_tailers, daemon=True)
         log_tailer.start()
 
+        # Create control file for non-interactive view switching
+        control_path = os.path.join(VIEW_LOG_DIR, 'control')
+        with open(control_path, 'w') as f:
+            f.write('0')
+        last_control = '0'
+
         while proc.poll() is None:
             if interactive and select.select([sys.stdin], [], [], 0.2)[0]:
                 key = sys.stdin.read(1)
@@ -258,6 +264,22 @@ def main():
                     print_buffer(current_view)
             else:
                 time.sleep(0.2)
+
+            # Poll control file for view changes (works in both modes)
+            try:
+                with open(control_path, 'r') as f:
+                    val = f.read().strip()
+                if val != last_control and val in VIEWS:
+                    last_control = val
+                    current_view = val
+                    name = VIEWS[val]
+                    if interactive:
+                        print_buffer(current_view)
+                    else:
+                        header = f"\n--- Switched to view {val}: {name} ---\n"
+                        os.write(sys.stdout.fileno(), header.encode())
+            except OSError:
+                pass
 
     except KeyboardInterrupt:
         proc.terminate()
