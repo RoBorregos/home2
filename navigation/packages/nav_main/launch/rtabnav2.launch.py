@@ -91,6 +91,7 @@ def generate_launch_description():
         package='rclcpp_components',
         executable='component_container_mt',
         output='screen',
+        parameters=[nav2_params],
     )
 
     # Nav2 composable nodes loaded after container is confirmed running
