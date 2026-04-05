@@ -178,10 +178,12 @@ class Nav_Central(Node):
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, {'Topics not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, pausing nodes ...") 
             self.nodes_status = False
             self.pause_slam()
+            self.pause_nav2()
         elif (self.no_topics_count == 0) and (self.no_tf_count == 0):
             if self.nodes_status == False:
                 self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
                 self.resume_slam()
+                self.resume_nav2()
                 self.nodes_status = True
         
 
@@ -376,7 +378,43 @@ class Nav_Central(Node):
         self.destroy_client(rtabmap_resume)
         self.nav_logger("info", "Resuming Slam -> Finished pausing slam")
 
+    def pause_nav2(self):
+        """Nav2 nodes pausing lifecycle"""
+
+        self.nav_logger("info", "Pausing Nav2 -> Starting nav2 lifecycle pausing ...")
+        load_cb_group = ReentrantCallbackGroup()
+        lifecycle_client = self.create_client(                                                                                                                                                  
+              ManageLifecycleNodes,                                                                                                                                                               
+              NAV2_LIFECYCLE_SERVICE,
+              callback_group=load_cb_group
+        )
+        lifecycle_client.wait_for_service()
+        req = ManageLifecycleNodes.Request()
+        req.command = ManageLifecycleNodes.Request.PAUSE                                                                                                                                      
+        future = lifecycle_client.call_async(req)
+        while not future.done():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        self.destroy_client(lifecycle_client)
+        self.nav_logger("info", "Pausing Nav2 -> Fully Paused nav2 lifecycles") 
     
+    def resume_nav2(self):
+        """Nav2 nodes resume lifecycle"""
+
+        self.nav_logger("info", "Resume Nav2 -> Starting nav2 lifecycle resume ...")
+        load_cb_group = ReentrantCallbackGroup()
+        lifecycle_client = self.create_client(                                                                                                                                                  
+              ManageLifecycleNodes,                                                                                                                                                               
+              NAV2_LIFECYCLE_SERVICE,
+              callback_group=load_cb_group
+        )
+        lifecycle_client.wait_for_service()
+        req = ManageLifecycleNodes.Request()
+        req.command = ManageLifecycleNodes.Request.RESUME                                                                                                                                      
+        future = lifecycle_client.call_async(req)
+        while not future.done():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        self.destroy_client(lifecycle_client)
+        self.nav_logger("info", "Resume Nav2 -> Fully resumed nav2 lifecycles") 
 
 def main(args=None):
     rclpy.init(args=args)
