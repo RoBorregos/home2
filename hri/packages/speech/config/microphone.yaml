@@ -4,4 +4,4 @@ audio_capturer:
     MIC_INPUT_CHANNELS: 32
     MIC_OUT_CHANNELS: 32
     RAW_AUDIO_TOPIC: REPLACE
-    DEBUG: False
+    DEBUG: false
