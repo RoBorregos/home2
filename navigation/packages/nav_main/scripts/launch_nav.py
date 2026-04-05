@@ -139,11 +139,13 @@ def tail_file(filepath, view_name):
     """Tail a log file and feed lines to the appropriate view."""
     try:
         with open(filepath, 'r') as f:
-            f.seek(0, 2)  # seek to end
+            # Read from beginning to catch existing content
             while True:
                 line = f.readline()
                 if line:
-                    store_and_print(line.rstrip('\n'), source_view=view_name)
+                    stripped = line.rstrip('\n')
+                    if stripped:
+                        store_and_print(stripped, source_view=view_name)
                 else:
                     time.sleep(0.1)
     except (FileNotFoundError, OSError):
@@ -168,24 +170,21 @@ def start_log_tailers():
     if not log_dir:
         return
 
-    # Wait for log files to be created
-    time.sleep(3)
-
     started = set()
-    # Classify all stderr log files into views by keyword matching
-    for filepath in glob.glob(os.path.join(log_dir, '*stderr.log')):
-        view = classify_log_file(filepath)
-        if view and filepath not in started:
+    # Rescan multiple times — nav2 nodes appear late due to TimerAction delay
+    for _ in range(4):
+        time.sleep(3)
+        for filepath in glob.glob(os.path.join(log_dir, '*.log')):
+            if filepath in started:
+                continue
             started.add(filepath)
+            view = classify_log_file(filepath)
+            if not view:
+                # Unclassified files only tail stderr for the 'all' view
+                if 'stderr' not in filepath:
+                    continue
+                view = 'all'
             t = threading.Thread(target=tail_file, args=(filepath, view), daemon=True)
-            t.start()
-
-    # Also tail any remaining stderr logs for the 'all' view
-    time.sleep(1)
-    for filepath in glob.glob(os.path.join(log_dir, '*stderr.log')):
-        if filepath not in started:
-            started.add(filepath)
-            t = threading.Thread(target=tail_file, args=(filepath, 'all'), daemon=True)
             t.start()
 
 
