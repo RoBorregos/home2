@@ -59,6 +59,15 @@ if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
 fi
 add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+# Default SHM on for Jetson (l4t), off otherwise
+if [ -z "${CYCLONE_SHM:-}" ]; then
+    if [ -f /etc/nv_tegra_release ]; then
+        CYCLONE_SHM=1
+    else
+        CYCLONE_SHM=0
+    fi
+fi
+add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
 add_or_update_variable .env "MAP_NAME" "${MAP_NAME:-lab_23_march.db}"
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -112,6 +121,9 @@ fi
 case $TASK in
     "--mapping")
         RUN="ros2 launch nav_main mapping.launch.py"
+        ;;
+    "--gpsr")
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
     "--hric")
         RUN="ros2 launch nav_main navigation_composition.launch.py"

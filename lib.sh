@@ -115,9 +115,20 @@ run_area() {
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi
 
+  # Auto-detect Jetson for SHM default
+  if [ -z "${CYCLONE_SHM:-}" ]; then
+    if [ -f /etc/nv_tegra_release ]; then
+      export CYCLONE_SHM=1
+    else
+      export CYCLONE_SHM=0
+    fi
+  fi
+
   # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
-  if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
-    ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
+  if [ "${CYCLONE_SHM}" = "1" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
+      ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
+    fi
   fi
 
   echo "Running image from $INPUT"
@@ -179,6 +190,12 @@ control() {
       echo "Stopping RouDi container..."
       (cd "docker/roudi" && docker compose down)
     fi
+  fi
+
+  # Clean stale iceoryx artifacts when SHM is disabled
+  if [ "${CYCLONE_SHM:-0}" != "1" ] && [ "$op_flag" = "--down" ]; then
+    rm -f /tmp/iox-unique-roudi.lock /tmp/roudi.lock 2>/dev/null
+    rm -f /dev/shm/iceoryx* 2>/dev/null
   fi
 
   echo "All ${msg}s attempted."
