@@ -13,7 +13,7 @@ from geometry_msgs.msg import PoseStamped, PointStamped
 from std_msgs.msg import Header
 
 # Workspace limits (metres from base_link origin)
-MAX_REACH = 0.65
+MAX_REACH = 0.85
 # Approach filter: max angle (radians) from straight-down
 MAX_APPROACH_ANGLE = 1.05  # ~60 degrees
 
@@ -87,6 +87,13 @@ class GraspDatabase:
             detected_position.point.z,
         ])
 
+        if self._logger:
+            self._logger.info(
+                f"Grasp DB lookup: object={name}, "
+                f"detected_pos=({det_pos[0]:.3f},{det_pos[1]:.3f},{det_pos[2]:.3f}), "
+                f"frame={detected_position.header.frame_id}, table_z={table_z:.3f}"
+            )
+
         # Offset: where the object was when captured vs where it is now
         # Stored grasps are relative to the stored centroid.
         # At runtime, we translate them to the detected position.
@@ -100,6 +107,9 @@ class GraspDatabase:
 
         poses = []
         scores = []
+        n_table = 0
+        n_reach = 0
+        n_approach = 0
 
         frame_id = detected_position.header.frame_id or "base_link"
 
@@ -112,22 +122,17 @@ class GraspDatabase:
 
             # Filter: above table
             if abs_pos[2] < table_z + 0.005:
+                n_table += 1
                 continue
 
             # Filter: within workspace
             dist = np.sqrt(abs_pos[0] ** 2 + abs_pos[1] ** 2)
             if dist > MAX_REACH:
+                n_reach += 1
                 continue
 
-            # Filter: approach direction (angle from straight-down)
-            approach = np.array(g.get("approach", [0, 0, -1]), dtype=np.float64)
-            down = np.array([0, 0, -1])
-            cos_angle = np.dot(approach, down) / (
-                np.linalg.norm(approach) * np.linalg.norm(down) + 1e-9
-            )
-            angle = np.arccos(np.clip(cos_angle, -1, 1))
-            if angle > MAX_APPROACH_ANGLE:
-                continue
+            # No approach filter for database grasps — they were already
+            # validated by GPD offline.  Let MoveIt decide reachability.
 
             # Build PoseStamped
             pose = PoseStamped()
@@ -144,6 +149,13 @@ class GraspDatabase:
 
             poses.append(pose)
             scores.append(float(g.get("score", 0.5)))
+
+        if self._logger:
+            self._logger.info(
+                f"Grasp DB filter: total={len(obj['grasps'])}, "
+                f"rejected: table={n_table}, reach={n_reach}, approach={n_approach}, "
+                f"passed={len(poses)}"
+            )
 
         # Sort by score descending
         if poses:

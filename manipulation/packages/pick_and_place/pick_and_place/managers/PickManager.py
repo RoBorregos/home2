@@ -83,10 +83,7 @@ class PickManager:
 
         # Grasp database for pre-computed grasps
         import os
-        db_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-            "grasp_database",
-        )
+        db_path = "/workspace/src/manipulation/packages/pick_and_place/grasp_database"
         self.grasp_db = GraspDatabase(db_path, logger=self.node.get_logger())
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
@@ -424,9 +421,17 @@ class PickManager:
         else:
             # --- Attempt 0: Pre-computed grasps from database ---
             if object_name and self.grasp_db.has_object(object_name):
+                # Transform point to base_link for database lookup
+                from frida_motion_planning.utils.tf_utils import transform_point
+                success_tf, point_base = transform_point(
+                    point, "base_link", self.tf_buffer
+                )
+                if not success_tf:
+                    point_base = point  # fallback
+
                 t0 = time.time()
                 db_grasps, db_scores = self.grasp_db.get_grasps(
-                    object_name, point, min_z
+                    object_name, point_base, min_z
                 )
                 db_time = (time.time() - t0) * 1000
                 self.node.get_logger().info(
