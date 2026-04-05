@@ -147,7 +147,10 @@ class Nav_Central(Node):
                     break
                 match = re.search(rf'Frame {frame} exists.*?Most recent transform: ([\d.]+)', frames_yaml, re.DOTALL)
                 if not match:
-                    self.nav_logger("warn", f"Monitoring -> No timestamp found for frame '{frame}'")
+                    # Print raw yaml around the frame for debugging
+                    idx = frames_yaml.find(frame)
+                    snippet = frames_yaml[idx:idx+200] if idx != -1 else 'NOT FOUND'
+                    self.nav_logger("warn", f"Monitoring -> No timestamp for '{frame}', raw: {snippet}")
                     tf_ready = False
                     break
                 age = current_time - float(match.group(1))
