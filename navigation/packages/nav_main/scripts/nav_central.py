@@ -115,6 +115,8 @@ class Nav_Central(Node):
         self.no_tf_count = 0
         self.nodes_status = False
         self.nav2_paused = False
+        self.rtabmap_loaded = False
+        self.rtabmap_reloading = False
         self.baseline_tf_static_publishers = None
 
     def _setup(self):
@@ -135,6 +137,7 @@ class Nav_Central(Node):
         self.wait_for_requirements()
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
         self.start_slam()
+        self.rtabmap_loaded = True
         self.nav_logger("info", "Slam completed, Starting nav2 ...")
         self.load_nav2()
         self.nav_logger("info", "Nav2 completed")
@@ -149,6 +152,21 @@ class Nav_Central(Node):
         """General topics and tf monitor """
         if self.tf_listener is None:
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
+        # Check if rtabmap crashed (was loaded but topic disappeared)
+        if self.rtabmap_loaded and not self.check_for_topics({RTAB_CHECK_TOPIC}):
+            self.rtabmap_loaded = False
+            self.nav_logger("warn", "Monitor -> Rtabmap container crashed, will reload when requirements are met")
+
+        # Reload rtabmap if it crashed and requirements are available
+        if not self.rtabmap_loaded and not self.rtabmap_reloading:
+            if self.check_for_topics(self.required_topics):
+                self.rtabmap_reloading = True
+                self.nav_logger("info", "Monitor -> Reloading rtabmap into respawned container ...")
+                self.start_slam()
+                self.rtabmap_loaded = True
+                self.rtabmap_reloading = False
+                self.nav_logger("info", "Monitor -> Rtabmap reloaded successfully")
 
         #Get Available Topics
         topics_ready = self.check_for_topics(self.required_topics)
@@ -188,7 +206,7 @@ class Nav_Central(Node):
             self.no_tf_count += 1
         else:
             self.no_tf_count = 0
-        
+
        # self.nav_logger("info", f"Monitoring -> Topics = {topics_ready} TF = {tf_ready}, ntoc = {self.no_topics_count} , ntfc = {self.no_tf_count}")
         #Check count limit
         if ((self.no_topics_count >= NO_TOPICS_LIMIT) or (self.no_tf_count >= NO_TF_LIMIT) and self.nodes_status):
@@ -386,14 +404,22 @@ class Nav_Central(Node):
             
     def pause_slam(self):
         """Pause Slam function"""
-
+        if not self.rtabmap_loaded:
+            self.nav_logger("warn", "Pausing Slam -> Rtabmap not loaded, skipping")
+            return
         self.nav_logger("info", "Pausing Slam -> Starting pause slam..")
         load_cb_group = ReentrantCallbackGroup()
         rtabmap_pause = self.create_client(Empty, RTAB_PAUSE_SERVICE, callback_group=load_cb_group)
-        while not rtabmap_pause.service_is_ready():
+        elapsed = 0.0
+        while not rtabmap_pause.service_is_ready() and elapsed < 5.0:
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
+            elapsed += 0.5
+        if not rtabmap_pause.service_is_ready():
+            self.nav_logger("warn", "Pausing Slam -> Service not available, rtabmap may have crashed")
+            self.destroy_client(rtabmap_pause)
+            return
         req = Empty.Request()
-        future = rtabmap_pause.call_async(req)       
+        future = rtabmap_pause.call_async(req)
         while not future.done():
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
         self.destroy_client(rtabmap_pause)
@@ -401,18 +427,26 @@ class Nav_Central(Node):
 
     def resume_slam(self):
         """Resuming Slam function"""
-
-        self.nav_logger("info", "Resuming Slam -> Starting pause slam..")
+        if not self.rtabmap_loaded:
+            self.nav_logger("warn", "Resuming Slam -> Rtabmap not loaded, skipping")
+            return
+        self.nav_logger("info", "Resuming Slam -> Starting resume slam..")
         load_cb_group = ReentrantCallbackGroup()
-        rtabmap_resume= self.create_client(Empty, RTAB_RESUME_SERVICE , callback_group=load_cb_group)
-        while not rtabmap_resume.service_is_ready():
+        rtabmap_resume = self.create_client(Empty, RTAB_RESUME_SERVICE, callback_group=load_cb_group)
+        elapsed = 0.0
+        while not rtabmap_resume.service_is_ready() and elapsed < 5.0:
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
+            elapsed += 0.5
+        if not rtabmap_resume.service_is_ready():
+            self.nav_logger("warn", "Resuming Slam -> Service not available, rtabmap may have crashed")
+            self.destroy_client(rtabmap_resume)
+            return
         req = Empty.Request()
-        future = rtabmap_resume.call_async(req)       
+        future = rtabmap_resume.call_async(req)
         while not future.done():
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
         self.destroy_client(rtabmap_resume)
-        self.nav_logger("info", "Resuming Slam -> Finished pausing slam")
+        self.nav_logger("info", "Resuming Slam -> Finished resuming slam")
 
     def pause_nav2(self):
         """Nav2 nodes pausing lifecycle"""

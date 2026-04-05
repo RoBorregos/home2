@@ -57,6 +57,8 @@ def generate_launch_description():
         package='rclcpp_components',
         executable='component_container_mt',
         output='own_log',
+        respawn=True,
+        respawn_delay=2.0,
         composable_node_descriptions=[
             ComposableNode(
                 condition=IfCondition(PythonExpression(["'", load_rtab, "' == 'true' and '", localization, "' == 'true'"])),
