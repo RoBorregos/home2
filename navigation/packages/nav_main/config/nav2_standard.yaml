@@ -20,11 +20,11 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 
 controller_server:
   ros__parameters:
-    controller_frequency: 14.0
+    controller_frequency: 15.0
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 36
-      model_dt: 0.07
+      model_dt: 0.066
       batch_size: 800
       vx_std: 0.2
       vy_std: 0.0
