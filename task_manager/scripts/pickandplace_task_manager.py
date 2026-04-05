@@ -103,9 +103,7 @@ class PickAndPlaceTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("pickandplace_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.PICK_AND_PLACE, mock_areas=["navigation"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=[])
 
         # ACTION REQUIRED: Adjust before competition
         self.use_side_table = False  # True = use side table objects (penalty per object)
@@ -628,7 +626,18 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES)
             self.subtask_manager.manipulation.move_to_position("front_stare")
 
-            shelf_status, shelf_detections = self.subtask_manager.vision.detect_shelf()
+            shelf_status, shelf_detections = None, None
+            for attempt in range(2):
+                shelf_status, shelf_detections = self.subtask_manager.vision.detect_shelf()
+                if shelf_status == Status.EXECUTION_SUCCESS and shelf_detections:
+                    break
+                CLog.vision(
+                    self,
+                    "SHELF",
+                    f"Shelf detection attempt {attempt+1} failed, retrying...",
+                    level="warn",
+                )
+                self.timeout(2.0)
 
             if shelf_status == Status.EXECUTION_SUCCESS and shelf_detections:
                 for shelf in shelf_detections:
@@ -670,11 +679,17 @@ class PickAndPlaceTM(Node):
             elif placement_loc == Location.TRASH_BIN:
                 status = self.subtask_manager.manipulation.place()
             elif placement_loc == Location.CABINET:
-                shelf_height = self._find_shelf_height_for_object(self.grasped_object)
-                status = self.subtask_manager.manipulation.place_on_shelf(
-                    plane_height=shelf_height,
-                    tolerance=0.3,
-                )
+                if self.shelf_categories:
+                    shelf_height = self._find_shelf_height_for_object(self.grasped_object)
+                    status = self.subtask_manager.manipulation.place_on_shelf(
+                        plane_height=shelf_height,
+                        tolerance=0.3,
+                    )
+                else:
+                    CLog.manip(
+                        self, "PLACE", "No shelf info, placing on nearest surface.", level="warn"
+                    )
+                    status = self.subtask_manager.manipulation.place()
             else:
                 status = self.subtask_manager.manipulation.place()
 
