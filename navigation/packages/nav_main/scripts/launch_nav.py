@@ -31,11 +31,11 @@ VIEWS = {
     '5': 'launch',
 }
 
-# Which log file patterns belong to which view
-LOG_FILE_VIEWS = {
-    'nav2': ['component_container_mt-*nav2*', 'component_container_mt-7-*'],
-    'rtabmap': ['component_container_mt-*rtabmap*', 'component_container_mt-6-*'],
-    'hardware': ['dashgo*', 'sllidar*', 'ekf*', 'component_container-5-*'],
+# Keywords in log filenames to classify into views
+LOG_FILE_KEYWORDS = {
+    'nav2': ['nav2_container'],
+    'rtabmap': ['rtabmap_container', 'rgbd_sync'],
+    'hardware': ['dashgo', 'sllidar', 'ekf', 'joy_container'],
 }
 
 # Which stdout patterns belong to which view
@@ -55,6 +55,8 @@ current_view = '0'
 buffer_size = 500
 buffers = {k: deque(maxlen=buffer_size) for k in VIEWS}
 lock = threading.Lock()
+log_dir_found = threading.Event()
+log_dir_path = [None]
 
 
 def line_matches_view(line, view_name):
@@ -123,7 +125,14 @@ def launch_reader(proc):
         line = proc.stdout.readline()
         if not line:
             break
-        store_and_print(line.rstrip('\n'))
+        line = line.rstrip('\n')
+        # Detect log directory from launch output
+        if 'All log files can be found below' in line and not log_dir_found.is_set():
+            parts = line.split('below ')
+            if len(parts) > 1:
+                log_dir_path[0] = parts[-1].strip()
+                log_dir_found.set()
+        store_and_print(line)
 
 
 def tail_file(filepath, view_name):
@@ -141,27 +150,35 @@ def tail_file(filepath, view_name):
         pass
 
 
-def start_log_tailers(log_dir):
+def classify_log_file(filepath):
+    """Determine which view a log file belongs to based on its filename."""
+    basename = os.path.basename(filepath).lower()
+    for view_name, keywords in LOG_FILE_KEYWORDS.items():
+        for kw in keywords:
+            if kw.lower() in basename:
+                return view_name
+    return None
+
+
+def start_log_tailers():
     """Find and tail log files for each view."""
-    # Wait for log directory to exist
-    for _ in range(30):
-        if os.path.isdir(log_dir):
-            break
-        time.sleep(0.5)
-    else:
+    # Wait for log directory to be detected from launch output
+    log_dir_found.wait(timeout=30)
+    log_dir = log_dir_path[0]
+    if not log_dir:
         return
 
-    # Wait a bit for log files to be created
+    # Wait for log files to be created
     time.sleep(3)
 
     started = set()
-    for view_name, patterns in LOG_FILE_VIEWS.items():
-        for pattern in patterns:
-            for filepath in glob.glob(os.path.join(log_dir, pattern)):
-                if filepath not in started and 'stderr' in filepath:
-                    started.add(filepath)
-                    t = threading.Thread(target=tail_file, args=(filepath, view_name), daemon=True)
-                    t.start()
+    # Classify all stderr log files into views by keyword matching
+    for filepath in glob.glob(os.path.join(log_dir, '*stderr.log')):
+        view = classify_log_file(filepath)
+        if view and filepath not in started:
+            started.add(filepath)
+            t = threading.Thread(target=tail_file, args=(filepath, view), daemon=True)
+            t.start()
 
     # Also tail any remaining stderr logs for the 'all' view
     time.sleep(1)
@@ -196,9 +213,8 @@ def main():
         # Print initial header
         print_buffer('0')
 
-        # Find log directory from launch output — wait for it
-        log_dir = os.path.expanduser('~/.ros/log/latest')
-        log_tailer = threading.Thread(target=start_log_tailers, args=(log_dir,), daemon=True)
+        # Start log file tailers — they wait for log dir to be detected
+        log_tailer = threading.Thread(target=start_log_tailers, daemon=True)
         log_tailer.start()
 
         while proc.poll() is None:
