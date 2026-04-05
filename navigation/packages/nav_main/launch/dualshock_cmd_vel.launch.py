@@ -19,7 +19,7 @@ def generate_launch_description():
         package='rclcpp_components',
         executable='component_container',
         namespace='',
-        output='log',
+        output='own_log',
         composable_node_descriptions=[
             ComposableNode(
                 package='joy',
