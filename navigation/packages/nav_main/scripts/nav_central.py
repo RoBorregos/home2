@@ -140,6 +140,7 @@ class Nav_Central(Node):
         try:
             frames_yaml = self.tf_buffer.all_frames_as_yaml()
             current_time = self.get_clock().now().nanoseconds / 1e9
+            static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
             tf_ready = True
             for frame in self.required_frames:
                 if frame not in frames_yaml:
@@ -150,10 +151,14 @@ class Nav_Central(Node):
                     tf_ready = False
                     break
                 last_time = float(match.group(1))
-                # Static transforms always have 0.0 — just check existence
-                if last_time > 0.0:
-                    age = current_time - last_time
-                    if age > 2.0:
+                if last_time == 0.0:
+                    # Static transform — check the publisher is still alive
+                    if static_publishers == 0:
+                        tf_ready = False
+                        break
+                else:
+                    # Dynamic transform — check freshness
+                    if (current_time - last_time) > 2.0:
                         tf_ready = False
                         break
         except Exception:
