@@ -16,7 +16,7 @@ ament_python_install_package(xarm_utils)
 set(SCRIPTS_DIR xarm_utils)
   
 install(PROGRAMS
-    ${SCRIPTS_DIR}/ir_gripper.py
+    ${SCRIPTS_DIR}/grasp_detector.py
     DESTINATION lib/${PROJECT_NAME}
 )
 
