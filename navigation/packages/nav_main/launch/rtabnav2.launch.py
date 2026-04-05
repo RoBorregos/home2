@@ -1,7 +1,9 @@
 from launch import LaunchDescription
-from launch_ros.actions import ComposableNodeContainer
+from launch_ros.actions import ComposableNodeContainer, LoadComposableNodes, Node
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.actions import RegisterEventHandler, TimerAction
+from launch.event_handlers import OnProcessStart
 from nav2_common.launch import RewrittenYaml
 from launch.conditions import IfCondition
 from ament_index_python.packages import get_package_share_directory
@@ -49,7 +51,6 @@ def generate_launch_description():
         ('depth/image', CAMERA_DEPTH_TOPIC)]
 
     # Container 1: RTAB-Map (heavy SLAM + image sync)
-    # Isolated so GPU/CPU-heavy SLAM cycles don't starve Nav2 threads
     rtabmap_container = ComposableNodeContainer(
         name='rtabmap_container',
         namespace='',
@@ -82,16 +83,20 @@ def generate_launch_description():
         ],
     )
 
-    # Container 2: Nav2 (time-critical control loop)
-    # Dedicated thread pool ensures controller hits its target rate
-    nav2_container = ComposableNodeContainer(
+    # Container 2: Nav2 — empty container, nodes loaded after startup
+    nav2_container = Node(
         condition=IfCondition(nav2_activate),
         name='nav2_container',
         namespace='',
         package='rclcpp_components',
         executable='component_container_mt',
         output='screen',
-        parameters=[nav2_params],
+    )
+
+    # Nav2 composable nodes loaded after container is confirmed running
+    nav2_nodes = LoadComposableNodes(
+        condition=IfCondition(nav2_activate),
+        target_container='nav2_container',
         composable_node_descriptions=[
             ComposableNode(
                 package='nav2_controller',
@@ -149,7 +154,22 @@ def generate_launch_description():
         ],
     )
 
+    # Delay node loading until container process is running
+    delayed_nav2_load = RegisterEventHandler(
+        condition=IfCondition(nav2_activate),
+        event_handler=OnProcessStart(
+            target_action=nav2_container,
+            on_start=[
+                TimerAction(
+                    period=2.0,
+                    actions=[nav2_nodes]
+                )
+            ]
+        )
+    )
+
     return LaunchDescription([
         rtabmap_container,
         nav2_container,
+        delayed_nav2_load,
     ])
