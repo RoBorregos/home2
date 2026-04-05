@@ -110,6 +110,9 @@ case $TASK in
     "--test-hri")
         RUN="ros2 run task_manager test_hri_manager.py"
         ;;
+    "--ppc")
+        RUN="ros2 run task_manager pickandplace_task_manager.py"
+        ;;
     *)
         RUN="bash"
         ;;

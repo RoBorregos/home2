@@ -100,6 +100,9 @@ case $TASK in
     "--gpsr")
         RUN="ros2 launch manipulation_general gpsr.launch.py"
         ;;
+    "--ppc")
+        RUN="ros2 launch manipulation_general ppc.launch.py"
+        ;;
     *)
         RUN="bash"
         ;;

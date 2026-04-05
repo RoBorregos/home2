@@ -56,15 +56,6 @@ if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
 fi
 add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-# Default SHM on for Jetson (l4t), off otherwise
-if [ -z "${CYCLONE_SHM:-}" ]; then
-    if [ -f /etc/nv_tegra_release ]; then
-        CYCLONE_SHM=1
-    else
-        CYCLONE_SHM=0
-    fi
-fi
-add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
 
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -104,7 +95,6 @@ IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants"
 MOONDREAM_PACKAGES="moondream_run"
 MOONDREAM_COMMAND="ros2 run moondream_run moondream_node.py"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 PROFILES=()
 
 case $TASK in
@@ -116,7 +106,7 @@ case $TASK in
     "--ppc")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general ppc_launch.py"
-        PROFILES=("vision")
+        PROFILES=("vision" "moondream")
         ;;
     "--carry")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
@@ -150,7 +140,7 @@ else
 fi
 
 COMMAND="$SETUP && $RUN"
-COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES && $SOURCE && $CYCLONE_SOURCE && $MOONDREAM_COMMAND"
+COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES && $SOURCE && $MOONDREAM_COMMAND"
 add_or_update_variable .env "COMMAND_MOONDREAM" "$COMMAND_MOONDREAM"
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
