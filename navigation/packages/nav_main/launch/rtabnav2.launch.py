@@ -13,7 +13,6 @@ def generate_launch_description():
     mapping_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_mapping_config.yaml')
     localization_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
-    autorun_nav2 = LaunchConfiguration('load_nav2', default='false')
     localization = LaunchConfiguration('localization', default='false')
     nav2_activate = LaunchConfiguration('nav2', default='true')
     load_rtab = LaunchConfiguration('load_rtab', default='false')
@@ -136,7 +135,7 @@ def generate_launch_description():
                 name='lifecycle_manager_navigation',
                 parameters=[{
                     'use_sim_time': False,
-                    'autostart': PythonExpression(["'", autorun_nav2, "' == 'true'"]),
+                    'autostart': False,
                     'node_names': [
                         'controller_server',
                         'smoother_server',
