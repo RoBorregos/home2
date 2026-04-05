@@ -135,18 +135,19 @@ class Nav_Central(Node):
             self.no_topics_count += 1
         else:
             self.no_topics_count = 0
-
        #Get available tf 
         try:
             frames_dict = self.tf_buffer.all_frames_as_yaml()
             tf_ready = all(frame in frames_dict for frame in self.required_frames)
         except Exception:
             tf_ready = False
+            self.nav_logger("error", "Monitoring -> Failed to get tf")
         if not tf_ready:
             self.no_tf_count += 1
         else:
             self.no_tf_count = 0
-
+        
+        self.nav_logger("info", f"Monitoring -> Topics = {topics_ready} TF = {tf_ready}, ntoc = {self.no_topics_count} , ntfc = {self.no_tf_count}")
         #Check count limit
         if (self.no_topics_count >= NO_TOPICS_LIMIT) or (self.no_tf_count >= NO_TF_LIMIT):
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, {'Topics not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, pausing nodes ...") 
