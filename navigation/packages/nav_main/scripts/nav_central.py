@@ -106,6 +106,7 @@ class Nav_Central(Node):
         self.no_topics_count = 0
         self.no_tf_count = 0
         self.nodes_status = False
+        self.nav2_paused = False
         self.baseline_tf_static_publishers = None
 
     def _setup(self):
@@ -381,6 +382,8 @@ class Nav_Central(Node):
     def pause_nav2(self):
         """Nav2 nodes pausing lifecycle"""
 
+        if self.nav2_paused:
+            return
         self.nav_logger("info", "Pausing Nav2 -> Starting nav2 lifecycle pausing ...")
         load_cb_group = ReentrantCallbackGroup()
         lifecycle_client = self.create_client(                                                                                                                                                  
@@ -395,11 +398,14 @@ class Nav_Central(Node):
         while not future.done():
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
         self.destroy_client(lifecycle_client)
-        self.nav_logger("info", "Pausing Nav2 -> Fully Paused nav2 lifecycles") 
-    
+        self.nav2_paused = True
+        self.nav_logger("info", "Pausing Nav2 -> Fully Paused nav2 lifecycles")
+
     def resume_nav2(self):
         """Nav2 nodes resume lifecycle"""
 
+        if not self.nav2_paused:
+            return
         self.nav_logger("info", "Resume Nav2 -> Starting nav2 lifecycle resume ...")
         load_cb_group = ReentrantCallbackGroup()
         lifecycle_client = self.create_client(                                                                                                                                                  
@@ -414,7 +420,8 @@ class Nav_Central(Node):
         while not future.done():
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
         self.destroy_client(lifecycle_client)
-        self.nav_logger("info", "Resume Nav2 -> Fully resumed nav2 lifecycles") 
+        self.nav2_paused = False
+        self.nav_logger("info", "Resume Nav2 -> Fully resumed nav2 lifecycles")
 
 def main(args=None):
     rclpy.init(args=args)
