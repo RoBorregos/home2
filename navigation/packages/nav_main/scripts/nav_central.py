@@ -209,7 +209,7 @@ class Nav_Central(Node):
         self.lidar_msg = msg
 
     def check_door(self,request, response):
-        self.get_logger().info("Check_door: Service called")
+        self.nav_logger("info","Check_door -> Service called")
 
         self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10,callback_group=self.lidar_group )
         self.lidar_msg = None  #Clean for cache msgs
@@ -217,19 +217,19 @@ class Nav_Central(Node):
 
         start_time = self.get_clock().now()
         while self.lidar_msg is None and (self.get_clock().now() - start_time) < self.sensor_timeout:
-            self.get_logger().warn("Check_door: waiting for lidar msg...")
+            self.nav_logger("warn","Check_door ->  waiting for lidar msg...")
             t.sleep(self.door_rate)
 
         if self.lidar_msg is None:
             self.destroy_subscription(self.lidar_reciever)
             self.lidar_msg = None
-            self.get_logger().error("Check_door: Timeout reached lidar failed to retreive")
+            self.nav_logger("error", "Check_door -> Timeout reached lidar failed to retreive")
             response.status = False
             return response
 
         start_time = self.get_clock().now()
         while (self.get_clock().now() - start_time) < self.door_timeout: #Timeout in case of absolute failure 
-            self.get_logger().info("Check_door: Waiting for door to open")
+            self.nav_logger("info","Check_door -> Waiting for door to open")
             door_points = []
             inf_count = 0
             point_count = 0
@@ -250,7 +250,7 @@ class Nav_Central(Node):
                 avg_points = sum(door_points)/ len(door_points)
 
                 if(avg_points > self.door_distance):
-                    self.get_logger().info("Door opened")
+                    self.nav_logger("info", "Check_door -> Door opened")
                     self.destroy_subscription(self.lidar_reciever)
                     self.lidar_msg = None
                     response.status = True
@@ -260,7 +260,7 @@ class Nav_Central(Node):
 
         self.destroy_subscription(self.lidar_reciever)
         self.lidar_msg = None
-        self.get_logger().error("Check_door: Timeout reached door didnt opened")
+        self.nav_logger("error", "Check_door -> Timeout reached door didnt opened")
         response.status = False
         return response
              
