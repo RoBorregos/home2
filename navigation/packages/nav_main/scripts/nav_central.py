@@ -141,6 +141,7 @@ class Nav_Central(Node):
             frames_yaml = self.tf_buffer.all_frames_as_yaml()
             current_time = self.get_clock().now().nanoseconds / 1e9
             static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
+            self.nav_logger("info", f"Monitoring -> /tf_static publishers: {static_publishers}")
             tf_ready = True
             for frame in self.required_frames:
                 if frame not in frames_yaml:
