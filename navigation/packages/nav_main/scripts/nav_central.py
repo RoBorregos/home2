@@ -6,9 +6,11 @@ from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallb
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from nav2_msgs.srv import ManageLifecycleNodes
+from nav2_msgs.action import NavigateToPose  
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty
+from geometry_msgs.msg import PoseStamped
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -27,7 +29,9 @@ from frida_constants.navigation_constants import(
         RTAB_CONTAINER_NODE,
         NO_TF_LIMIT,
         NO_TOPICS_LIMIT,
-        MONITOR_RATE
+        MONITOR_RATE,
+        MOVE_LOCATION_SERVICE,
+        GOAL_NAV_ACTION_SERVER
         )
 from frida_interfaces.srv import (
         CheckDoor,
@@ -107,6 +111,9 @@ class Nav_Central(Node):
         self.sensor_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_SENSOR.value) # Timeout in seconds to wait for sensors
         self.door_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value) # Timeout in seconds to wait for sensors
         
+        self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group) 
+        self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
+
         #Setup and Configuration
         self._setup_done = False
         self._setup_timer = self.create_timer(2.0, self._setup, callback_group=ReentrantCallbackGroup())
@@ -312,6 +319,70 @@ class Nav_Central(Node):
             self.nav_logger("info", "Map_areas -> Map Areas Sent")
         return response
 
+    def goal_feedback(self, feedback_msg):
+        """Feedback function for nav goals"""
+
+        feedback = feedback_msg.feedback
+        self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
+
+    def send_nav_goal(self, pose, behaivor_tree = None):
+        """Function to send goal to nav2 bt"""
+        
+        goal_msg = NavigateToPose.Goal()
+        goal_msg.pose = pose
+        if behaivor_tree is not None:
+            goal_msg.behaivor_tree = behaivor_tree
+        self.goal_action_client.wait_for_server()
+
+        _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+
+        while not _goal_future.done():
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+
+        goal_handle = _goal_future.result()
+        if goal_handle.accepted:
+              result_future = goal_handle.get_result_async()                                                                                                                                                   
+              while not result_future.done():
+                  self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))                                                                                                                             
+              result = result_future.result()
+              self.nav_logger("info", f"Goal_Handler -> Goal Reached")
+              return (True, "Goal Finished")
+        else:
+            return (False, "Goal Rejected")
+
+    def go_to_area(self,request,response):
+        """Callback for navigate to specific area"""
+        
+        self.nav_logger("info", "Go_To_Area -> Starting navigation to area")
+        if self.areas_data is None:
+            self.nav_logger("error", "Go_To_Area -> Areas not loaded sending error")
+            response.success = False
+            response.error = "Areas not loaded"
+            return response
+
+        fetch_coords = self.areas_data.get(request.location, {}).get(request.sublocation)
+        if fetch_coords is None:
+            self.nav_logger("error", "Go_To_Area -> Area not found")
+            response.success = False
+            response.error = "Area not found"
+            return response
+
+        goal_coord = PoseStamped() 
+        goal_coord.header.frame_id = "map"
+        goal_coord.pose.position.x = fetch_coords[0]
+        goal_coord.pose.position.y = fetch_coords[1]
+        goal_coord.pose.position.z = fetch_coords[2]
+        goal_coord.pose.orientation.x = fetch_coords[3]
+        goal_coord.pose.orientation.y = fetch_coords[4]
+        goal_coord.pose.orientation.z = fetch_coords[5]
+        goal_coord.pose.orientation.w = fetch_coords[6]
+
+        future = self.send_nav_goal(goal_coord) 
+        response.success = future[0]
+        response.error = future[1]
+
+        return response
+        
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}

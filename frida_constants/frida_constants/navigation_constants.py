@@ -3,7 +3,7 @@ from enum import Enum
 # Navigation Central
 # -----------------------------------------------------------------
 ###Check door service
-CHECK_DOOR_SERVICE = "/is_door_open"
+CHECK_DOOR_SERVICE = "/navigation/is_door_open"
 
 
 class DOOR_CHECK(Enum):
@@ -16,7 +16,11 @@ class DOOR_CHECK(Enum):
 
 
 ###Map areas service
-AREAS_SERVICE = "/areas_json"
+AREAS_SERVICE = "/navigation/areas_json"
+
+### Move to location service
+MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
+GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
 ### General Constants
 MONITOR_RATE = 1.0
