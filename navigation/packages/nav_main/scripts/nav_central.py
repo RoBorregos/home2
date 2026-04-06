@@ -35,7 +35,8 @@ from frida_constants.navigation_constants import(
         )
 from frida_interfaces.srv import (
         CheckDoor,
-        MapAreas
+        MapAreas,
+        MoveLocation
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
