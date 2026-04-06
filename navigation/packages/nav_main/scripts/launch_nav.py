@@ -216,6 +216,8 @@ def main():
 
     init_view_logs()
 
+    os.environ['NAV_QUIET'] = '1'
+
     args = ['ros2', 'launch', 'nav_main', 'general_navigation.launch.py'] + sys.argv[1:]
 
     proc = subprocess.Popen(

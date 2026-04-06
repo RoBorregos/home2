@@ -13,6 +13,7 @@ from launch.events import Shutdown
 
 def launch_setup(context, *args, **kwargs):
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
+    log_output = 'own_log' if os.getenv('NAV_QUIET') == '1' else 'screen'
 
     dashgo_config = os.path.join(
         get_package_share_directory('dashgo_driver'),
@@ -24,7 +25,7 @@ def launch_setup(context, *args, **kwargs):
         package='dashgo_driver',
         executable='dashgo_driver2.py',
         name='DashgoDriver',
-        output='own_log',
+        output=log_output,
         emulate_tty=True,
         parameters=[dashgo_config],
         remappings=[('/cmd_vel', LaunchConfiguration('cmd_topic', default='/cmd_vel'))],
@@ -35,7 +36,7 @@ def launch_setup(context, *args, **kwargs):
     ekf_launch = Node(
         package='robot_localization',
         executable='ekf_node',
-        output='own_log',
+        output=log_output,
         emulate_tty=True,
         respawn=True,
         respawn_delay=2.0,
@@ -79,7 +80,7 @@ def launch_setup(context, *args, **kwargs):
             'ignore_array': '-139.9, -122.4, -86.4, -78.4, -40.8, -30.3, 0, 21.8, 30.8, 40.3, 78.4, 93.9, 120.9, 138.4',
             'min_range': 0.12,
         }],
-        output='own_log',
+        output=log_output,
         respawn=True,
         respawn_delay=2.0,
     )

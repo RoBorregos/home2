@@ -45,6 +45,8 @@ def generate_launch_description():
     from launch.conditions import UnlessCondition
     from frida_constants.navigation_constants import CAMERA_RGB_TOPIC, CAMERA_INFO_TOPIC, CAMERA_DEPTH_TOPIC
 
+    log_output = 'own_log' if os.getenv('NAV_QUIET') == '1' else 'screen'
+
     sync_remapping = [
         ('rgb/image', CAMERA_RGB_TOPIC),
         ('rgb/camera_info', CAMERA_INFO_TOPIC),
@@ -56,7 +58,7 @@ def generate_launch_description():
         namespace='',
         package='rclcpp_components',
         executable='component_container_mt',
-        output='own_log',
+        output=log_output,
         respawn=True,
         respawn_delay=2.0,
         composable_node_descriptions=[
@@ -92,7 +94,7 @@ def generate_launch_description():
         namespace='',
         package='rclcpp_components',
         executable='component_container_mt',
-        output='own_log',
+        output=log_output,
         parameters=[nav2_params],
     )
 
