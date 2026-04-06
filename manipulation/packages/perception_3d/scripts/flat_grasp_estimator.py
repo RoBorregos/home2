@@ -184,6 +184,12 @@ class FlatGraspEstimator(Node):
         points_3d_hom = np.hstack((points_3d_cam, np.ones((points_3d_cam.shape[0], 1))))
         points_base = (T_mat @ points_3d_hom.T).T[:, :3]
 
+        # Filter out NaN/Inf points
+        valid_mask = np.isfinite(points_base).all(axis=1)
+        points_base = points_base[valid_mask]
+        if len(points_base) < MIN_POINTS_FOR_PCA:
+            return
+
         # --- GRASP POSITION ---
         centroid_xy = np.mean(points_base[:, :2], axis=0)
 
