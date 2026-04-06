@@ -3,6 +3,7 @@
 ask_for_model() {
     case " $MODELS_TO_DOWNLOAD " in
         *" all "*) return 0 ;;
+        *" a "*) return 0 ;;
         *" $1 "*) return 0 ;;
         *) return 1 ;;
     esac
