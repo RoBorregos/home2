@@ -129,6 +129,7 @@ class DashgoDriver(Node):
     def base_controller(self):
         self.now = self.get_clock().now()
         try:
+            print(self.controller.get_emergency_button())
             stat_, left_enc,right_enc = self.controller.get_encoder_counts()
             self.consecutive_errors = 0  # Reset on success
         except:
