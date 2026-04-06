@@ -16,7 +16,7 @@ from rclpy.node import Node
 from frida_interfaces.msg import AudioData
 import df as DF_MODULE
 
-SAVE_PATH = "/workspace/src/hri/packages/speech/debugs/audios"
+SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
 SAVE_IT = 100
 run_frames = []
 
