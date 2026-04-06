@@ -10,10 +10,11 @@ import os
 import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import AREAS_SERVICE, CHECK_DOOR_SERVICE, SUBTASK_MANAGER
+from frida_constants.navigation_constants import AREAS_SERVICE, CHECK_DOOR_SERVICE,MOVE_LOCATION_SERVICE, SUBTASK_MANAGER
 from frida_interfaces.srv import (
     CheckDoor,
     MapAreas,
+    MoveLocation
 )
 
 from task_manager.utils.decorators import mockable, service_check
@@ -33,12 +34,14 @@ class NavigationTasks:
         # Action clients and services
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
+        self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
 
         # Task Actions and Services check
         self.services = {
             Task.DEBUG: {
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
+                "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
             },
         }
 
@@ -126,6 +129,27 @@ class NavigationTasks:
             Logger.error(self.node, "Error with request")
             return (Status.EXECUTION_ERROR, 'Request error')
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ''), delay=5)
+    @service_check("move_to_location_srv", (Status.EXECUTION_ERROR, 'Service not started'),timeout SUBTASK_MANAGER.SERVICE_TIMEOUT.value)
+    def move_to_location(self, location, sublocation):
+        """Move to areas json location"""
+
+        request = MoveLocation()
+        request.location = location
+        request.sublocation = sublocation
+        future = self.move_to_location_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node,future)
+        result = future.result()
+        if result is not None:
+            if result.success:
+                Logger.info(self.node,"Goal Reached")
+                return (Status.EXECUTION_SUCCESS, '')
+            else:
+                Logger.error(self.node, f"Error with goal: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            Logger.error(self.node, "Error with request")
+            return (Status.EXECUTION_ERROR, 'Error with request')
 
 if __name__ == "__main__":
     rclpy.init()

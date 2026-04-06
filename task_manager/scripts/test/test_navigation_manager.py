@@ -13,22 +13,23 @@ class TestNavigationManager(Node):
         super().__init__("NavigationTaskManager")
         self.logs = self.declare_parameter('clear_logs', True).value
         self.mocked = self.declare_parameter('mocked', False).value
-        self.task_to_test = Task[self.declare_parameter('task', 'DEBUG').value]
+        self.task_to_test = self.declare_parameter('task', Task.DEBUG).value
 
         print(f"\n{Logger.BOLD}Starting Navigation Subtask \n")
-
+        
         self.navigation_manager = NavigationTasks(self, task=self.task_to_test, mock_data=self.mocked)
         
         self.tests_funcs = {
                 "Check Door": {'func': self.navigation_manager.check_door},
-                "Retrieve Areas": {'func': self.navigation_manager.retrieve_areas} 
+                "Retrieve Areas": {'func': self.navigation_manager.retrieve_areas}, 
+                "Move to Location": {'func': self.navigation_manager.move_to_location, 'location': "kitchen", 'sublocation': "cabinet"}
         }
 
         print(f"\n{Logger.BOLD}Testing {len(self.tests_funcs)} available subtaks..... \n")
         self.run()
    
     def check_nav_task(self, func, *args, **kwargs):
-        result = func()
+        result = func(**kwargs)
         #Check for map_service case
         if result[0] == Status.EXECUTION_ERROR and result[1] == self.navigation_manager.areas_backup:
             assert False, "Service not started or Service return empty"
