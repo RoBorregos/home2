@@ -8,5 +8,5 @@
 **/models
 **.pyc
 packages/nlp/test/output/
-**/debugs/audios/
+**/debug/audios/
 ComputeCache/
