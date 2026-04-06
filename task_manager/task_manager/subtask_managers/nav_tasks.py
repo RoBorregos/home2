@@ -130,7 +130,7 @@ class NavigationTasks:
             return (Status.EXECUTION_ERROR, 'Request error')
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ''), delay=5)
-    @service_check("move_to_location_srv", (Status.EXECUTION_ERROR, 'Service not started'),timeout SUBTASK_MANAGER.SERVICE_TIMEOUT.value)
+    @service_check("move_to_location_srv", (Status.EXECUTION_ERROR, 'Service not started'),timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value)
     def move_to_location(self, location, sublocation):
         """Move to areas json location"""
 
