@@ -2,6 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
+from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
