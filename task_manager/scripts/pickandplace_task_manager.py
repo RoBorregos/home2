@@ -763,7 +763,8 @@ class PickAndPlaceTM(Node):
             item_name = self.current_breakfast_item["name"]
             item_location = self.current_breakfast_item["location"]
 
-            if item_location == Location.CABINET:
+            is_cabinet = item_location == Location.CABINET
+            if is_cabinet:
                 self.subtask_manager.manipulation.move_to_position("front_stare")
             else:
                 self.subtask_manager.manipulation.move_to_position("table_stare")
@@ -775,7 +776,9 @@ class PickAndPlaceTM(Node):
             if self.categorize_object(item_name) == ObjectCategory.CUTLERY:
                 status = self.subtask_manager.manipulation.pick_cutlery(yolo_name)
             else:
-                status = self.subtask_manager.manipulation.pick_object(yolo_name)
+                status = self.subtask_manager.manipulation.pick_object(
+                    yolo_name, scan_environment=is_cabinet
+                )
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["picked"] = True
