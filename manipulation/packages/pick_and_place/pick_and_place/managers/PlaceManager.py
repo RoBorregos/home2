@@ -192,7 +192,13 @@ class PlaceManager:
             self.node.get_logger().info("Extracting table cloud")
             request = PlacePerceptionService.Request()
             request.place_params = place_params
-            self.node.place_perception_3d_client.wait_for_service()
+            if not self.node.place_perception_3d_client.wait_for_service(
+                timeout_sec=5.0
+            ):
+                self.node.get_logger().error(
+                    "place_perception_3d service not available"
+                )
+                return False
             future = self.node.place_perception_3d_client.call_async(request)
             wait_for_future(future, timeout=10)
             try:
@@ -216,7 +222,11 @@ class PlaceManager:
             heatmap_request.prefer_closest = True
             if place_params.is_shelf:
                 heatmap_request.prefer_closest = True
-            self.node.place_pose_client.wait_for_service()
+            if not self.node.place_pose_client.wait_for_service(timeout_sec=5.0):
+                self.node.get_logger().error(
+                    "place_pose (heatmap) service not available"
+                )
+                return False
             future = self.node.place_pose_client.call_async(heatmap_request)
             wait_for_future(future)
             point_result = future.result().place_point
@@ -284,7 +294,13 @@ class PlaceManager:
 
                 request = PlacePerceptionService.Request()
                 request.place_params = place_params
-                self.node.place_perception_3d_client.wait_for_service()
+                if not self.node.place_perception_3d_client.wait_for_service(
+                    timeout_sec=5.0
+                ):
+                    self.node.get_logger().error(
+                        "place_perception_3d service not available"
+                    )
+                    return False
                 future = self.node.place_perception_3d_client.call_async(request)
                 wait_for_future(future, timeout=10)
                 try:
@@ -306,7 +322,11 @@ class PlaceManager:
 
                 if place_params.is_shelf:
                     heatmap_request.prefer_closest = True
-                self.node.place_pose_client.wait_for_service()
+                if not self.node.place_pose_client.wait_for_service(timeout_sec=5.0):
+                    self.node.get_logger().error(
+                        "place_pose (heatmap) service not available"
+                    )
+                    return False
                 future = self.node.place_pose_client.call_async(heatmap_request)
                 wait_for_future(future)
                 point_result = future.result().place_point

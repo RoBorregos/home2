@@ -286,7 +286,9 @@ class ManipulationCore(Node):
         request = RemoveCollisionObject.Request()
         request.id = "all"
         request.include_attached = attached
-        self._remove_collision_object_client.wait_for_service()
+        if not self._remove_collision_object_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("remove_collision_object service not available")
+            return False
         future = self._remove_collision_object_client.call_async(request)
         wait_for_future(future)
         return future.result().success
