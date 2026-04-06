@@ -120,8 +120,8 @@ class PickAndPlaceTM(Node):
         self.yolo_to_logical = {v: k for k, v in self.yolo_names.items()}
 
         # Shelf height mapping: shelf level -> height in metres. Adjust to arena.
-        self.shelf_level_heights = {1: 0.30, 2: 0.65, 3: 1.00}
-        self.default_shelf_height = 1.0
+        self.shelf_level_heights = {1: 0.60, 2: 0.95, 3: 1.31}
+        self.default_shelf_height = 0.60
 
         # Load object->category mapping for shelf matching (e.g. "apple" -> "fruit")
         try:
@@ -681,15 +681,18 @@ class PickAndPlaceTM(Node):
             elif placement_loc == Location.CABINET:
                 if self.shelf_categories:
                     shelf_height = self._find_shelf_height_for_object(self.grasped_object)
-                    status = self.subtask_manager.manipulation.place_on_shelf(
-                        plane_height=shelf_height,
-                        tolerance=0.3,
-                    )
                 else:
+                    shelf_height = self.default_shelf_height
                     CLog.manip(
-                        self, "PLACE", "No shelf info, placing on nearest surface.", level="warn"
+                        self,
+                        "PLACE",
+                        f"No shelf info, using default height {shelf_height}m.",
+                        level="warn",
                     )
-                    status = self.subtask_manager.manipulation.place()
+                status = self.subtask_manager.manipulation.place_on_shelf(
+                    plane_height=shelf_height,
+                    tolerance=0.1,
+                )
             else:
                 status = self.subtask_manager.manipulation.place()
 
