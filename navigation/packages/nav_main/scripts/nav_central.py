@@ -361,7 +361,7 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Areas not loaded"
             return response
-
+        self.nav_logger("info", f"data area = {self.areas_data}") 
         fetch_coords = self.areas_data.get(request.location, {}).get(request.sublocation)
         if fetch_coords is None:
             self.nav_logger("error", "Go_To_Area -> Area not found")
