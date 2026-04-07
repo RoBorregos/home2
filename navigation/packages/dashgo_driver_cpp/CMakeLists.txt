@@ -46,4 +46,7 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# Automated Real-Time Priority permission (requires sudo on host or container
+install(CODE "execute_process(COMMAND sudo setcap 'cap_sys_nice=eip' ${CMAKE_INSTALL_PREFIX}/lib/${PROJECT_NAME}/${PROJECT_NAME})")
+
 ament_package()
