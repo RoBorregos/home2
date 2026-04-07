@@ -97,6 +97,8 @@ class NavRosNode(Node):
     def __init__(self, signals):
         super().__init__('nav_ui')
         self.signals = signals
+        # 'navigation' or 'mapping'
+        self.ui_mode = self.declare_parameter('mode', 'navigation').value
 
         # TF
         self.tf_buffer = Buffer()
@@ -594,7 +596,9 @@ class NavUI(QMainWindow):
     def __init__(self, ros_node):
         super().__init__()
         self.ros_node = ros_node
-        self.setWindowTitle("Navigation UI")
+        self.ui_mode = ros_node.ui_mode
+        title = "Mapping UI" if self.ui_mode == 'mapping' else "Navigation UI"
+        self.setWindowTitle(title)
         self.setMinimumSize(640, 400)
         self.setup_ui()
         self.apply_style()
@@ -641,7 +645,6 @@ class NavUI(QMainWindow):
         mode_btn_layout = QHBoxLayout()
         self.btn_goal_mode = QPushButton("Send Goal")
         self.btn_goal_mode.setCheckable(True)
-        self.btn_goal_mode.setChecked(True)
         self.btn_goal_mode.clicked.connect(lambda: self.set_mode('goal'))
         self.btn_initpose_mode = QPushButton("Set Pose")
         self.btn_initpose_mode.setCheckable(True)
@@ -669,6 +672,16 @@ class NavUI(QMainWindow):
         nav_layout.addWidget(self.btn_cancel)
 
         panel_layout.addWidget(nav_group)
+
+        # Mapping mode: hide nav controls, show only view mode
+        if self.ui_mode == 'mapping':
+            nav_group.setVisible(False)
+            self.btn_goal_mode.setVisible(False)
+            self.btn_initpose_mode.setVisible(False)
+            self.btn_view_mode.setChecked(True)
+            self.canvas.mode = 'view'
+        else:
+            self.btn_goal_mode.setChecked(True)
 
         # Robot info
         info_group = QGroupBox("Robot")
@@ -700,6 +713,9 @@ class NavUI(QMainWindow):
         layers_layout.addWidget(self.chk_global_costmap)
         layers_layout.addWidget(self.chk_path)
         panel_layout.addWidget(layers_group)
+
+        if self.ui_mode == 'mapping':
+            layers_group.setVisible(False)
 
         # Map DB
         db_group = QGroupBox("RTAB-Map DB")

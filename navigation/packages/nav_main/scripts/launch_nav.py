@@ -218,7 +218,11 @@ def main():
 
     os.environ['NAV_QUIET'] = '1'
 
-    args = ['ros2', 'launch', 'nav_main', 'general_navigation.launch.py'] + sys.argv[1:]
+    # Select launch file: --mapping flag → mapping session, default → navigation/localization
+    extra_args = [a for a in sys.argv[1:] if a != '--mapping']
+    launch_file = 'mapping.launch.py' if '--mapping' in sys.argv else 'general_navigation.launch.py'
+
+    args = ['ros2', 'launch', 'nav_main', launch_file] + extra_args
 
     proc = subprocess.Popen(
         args,

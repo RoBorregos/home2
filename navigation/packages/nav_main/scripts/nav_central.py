@@ -78,6 +78,7 @@ class Nav_Central(Node):
         super().__init__(node_name)
         self.nav_logger("info", "NAV_CENTRAL STARTED") 
         self.localization = self.declare_parameter('localization', False).value
+        self.mapping = self.declare_parameter('mapping', False).value
         self.map_name= self.declare_parameter('map_name', 'rtabmap_map.db').value
         self.mapping_config = self.declare_parameter('rtab_mapping_config', '').value
         self.localization_config = self.declare_parameter('rtab_localization_config', '').value
@@ -144,24 +145,27 @@ class Nav_Central(Node):
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
-        # Create lifecycle client early so DDS has time to match endpoints
-        self._lifecycle_cb_group = ReentrantCallbackGroup()
-        self.lifecycle_client = self.create_client(
-            ManageLifecycleNodes,
-            NAV2_LIFECYCLE_SERVICE,
-            callback_group=self._lifecycle_cb_group
-        )
+        if not self.mapping:
+            # Create lifecycle client early so DDS has time to match endpoints
+            self._lifecycle_cb_group = ReentrantCallbackGroup()
+            self.lifecycle_client = self.create_client(
+                ManageLifecycleNodes,
+                NAV2_LIFECYCLE_SERVICE,
+                callback_group=self._lifecycle_cb_group
+            )
         self.load_map_areas()
         self.nav_logger("info", "Starting Setup, waiting for requirements ...")
         self.wait_for_requirements()
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
         self.start_slam()
         self.rtabmap_loaded = True
-        self.nav_logger("info", "Slam completed, Starting nav2 ...")
-        self.load_nav2()
-        self.nav_logger("info", "Nav2 completed")
-        if self.localization:
+        if not self.mapping:
+            self.nav_logger("info", "Slam completed, Starting nav2 ...")
+            self.load_nav2()
+            self.nav_logger("info", "Nav2 completed")
             self._wait_for_initial_pose()
+        else:
+            self.nav_logger("info", "Mapping mode: nav2 skipped")
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
         self.nodes_status = True
         self.baseline_tf_static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
@@ -234,13 +238,15 @@ class Nav_Central(Node):
             self.nodes_status = False
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, {'Topics not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, pausing nodes ...")
             self.pause_slam()
-            self.pause_nav2()
+            if not self.mapping:
+                self.pause_nav2()
         elif (self.no_topics_count == 0) and (self.no_tf_count == 0):
             if self.nodes_status == False:
                 self.nodes_status = True
                 self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
                 self.resume_slam()
-                self.resume_nav2()
+                if not self.mapping:
+                    self.resume_nav2()
         
 
     def nav_logger(self,status, data):
