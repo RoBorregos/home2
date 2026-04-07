@@ -54,7 +54,7 @@ services:
     stdin_open: true
     working_dir: /workspace
     command: >
-      bash -c "${COMMAND:-/bin/bash}"
+      capsh --user=ros --inh=cap_sys_nice --addamb=cap_sys_nice -- -c "${COMMAND:-/bin/bash}"
 
 
   navigation_gpu:
@@ -119,6 +119,6 @@ services:
     stdin_open: true
     working_dir: /workspace
     command: >
-      bash -c "${COMMAND:-/bin/bash}"
+      capsh --user=ros --inh=cap_sys_nice --addamb=cap_sys_nice -- -c "${COMMAND:-/bin/bash}"
 
 
