@@ -20,7 +20,10 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         client = None
         try:
             print("Starting transcription...")
-            first_chunk = next(request_iterator)
+            first_chunk = next(request_iterator, None)
+            if first_chunk is None:
+                print("No audio data received, ending transcription.")
+                return
 
             client = ServeClientFasterWhisper(
                 hotwords=first_chunk.hotwords,
