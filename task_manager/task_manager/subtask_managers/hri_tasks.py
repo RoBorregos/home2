@@ -675,7 +675,7 @@ class HRITasks(metaclass=SubtaskMeta):
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
                         if s != Status.EXECUTION_SUCCESS:
-                            self.say("Sorry, I coudn't understand.")
+                            self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
 
