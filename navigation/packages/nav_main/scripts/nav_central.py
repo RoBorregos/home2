@@ -354,7 +354,7 @@ class Nav_Central(Node):
 
     def send_nav_goal(self, pose, behaivor_tree = None):
         """Function to send goal to nav2 bt"""
-        
+
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
         if behaivor_tree is not None:
@@ -379,8 +379,12 @@ class Nav_Central(Node):
 
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
-        
+
         self.nav_logger("info", "Go_To_Area -> Starting navigation to area")
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self.nav_logger("error", "Go_To_Area -> Navigation not initialized")
+            return (False, "Navigation not initialized")
+
         if self.areas_data is None:
             self.nav_logger("error", "Go_To_Area -> Areas not loaded sending error")
             response.success = False
