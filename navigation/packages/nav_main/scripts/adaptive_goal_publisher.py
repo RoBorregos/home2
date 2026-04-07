@@ -53,7 +53,6 @@ class AdaptiveGoalPublisher(Node):
             10,
         )
 
-        # --------------- Publishers ---------------
         self.updated_goal_pub = self.create_publisher(
             PoseStamped, "/goal_update", 10
         )
@@ -61,7 +60,6 @@ class AdaptiveGoalPublisher(Node):
             Bool, "/adaptive_nav/goal_blocked", 10
         )
 
-        # --------------- Timer ---------------
         self.check_timer = self.create_timer(1.0 / check_rate, self.check_goal_validity)
 
         self.get_logger().info(
