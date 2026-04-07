@@ -133,7 +133,7 @@ class NavigationTasks:
     @service_check("move_to_location_srv", (Status.EXECUTION_ERROR, 'Service not started'),timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value)
     def move_to_location(self, location, sublocation):
         """Move to areas json location"""
-
+        Logger.info(self.node, f"Moving to {location} - {sublocation}")
         request = MoveLocation.Request()
         request.location = location
         request.sublocation = sublocation
