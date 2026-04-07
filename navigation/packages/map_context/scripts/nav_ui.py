@@ -24,9 +24,7 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from action_msgs.srv import CancelGoal
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import (
-    RTAB_MAPS_PATH, RTAB_PAUSE_SERVICE, RTAB_RESUME_SERVICE
-)
+from frida_constants.navigation_constants import RTAB_MAPS_PATH
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -148,11 +146,10 @@ class NavRosNode(Node):
         self.cancel_nav_client = self.create_client(
             CancelGoal, '/navigate_to_pose/_action/cancel_goal')
 
-        # Mapping mode: map save service clients
+        # Mapping mode: map save via /rtabmap/backup
         if self.ui_mode == 'mapping':
             self.map_name = self.declare_parameter('map_name', 'rtabmap_map.db').value
-            self._rtab_pause_client = self.create_client(Empty, RTAB_PAUSE_SERVICE)
-            self._rtab_resume_client = self.create_client(Empty, RTAB_RESUME_SERVICE)
+            self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
 
         # Robot pose
         self.robot_x = 0.0
@@ -209,42 +206,45 @@ class NavRosNode(Node):
             pass
 
     def save_map_async(self, name, on_done):
-        """Save RTABMap DB (copy) and 2D map YAML in a background thread."""
+        """Save RTABMap DB and 2D map YAML in a background thread.
+
+        Uses /rtabmap/backup which properly flushes all in-memory state to disk,
+        creates database_path+'.back', then reinitializes. We then copy that
+        .back file to the user's chosen name.
+        Pause+copy is NOT safe: pause does not flush in-memory graph data.
+        """
         import time
 
         def _worker():
             try:
-                # --- Pause RTABMap ---
-                if not self._rtab_pause_client.wait_for_service(timeout_sec=5.0):
-                    on_done(False, "RTABMap pause service not available")
+                # --- Trigger RTABMap backup (flush + .back copy + reinit) ---
+                if not self._rtab_backup_client.wait_for_service(timeout_sec=10.0):
+                    on_done(False, "RTABMap backup service not available")
                     return
-                future = self._rtab_pause_client.call_async(Empty.Request())
+                future = self._rtab_backup_client.call_async(Empty.Request())
+                # Backup does: save2DMap → close(flush) → copy to .back → reinit
+                # This can take 10-30 s on a large database
                 elapsed = 0.0
-                while not future.done() and elapsed < 5.0:
-                    time.sleep(0.1)
-                    elapsed += 0.1
-                time.sleep(0.3)  # let RTABMap flush
+                while not future.done() and elapsed < 60.0:
+                    time.sleep(0.2)
+                    elapsed += 0.2
+                if not future.done():
+                    on_done(False, "Backup service timed out")
+                    return
 
-                # --- Copy database ---
-                db_src = os.path.join(RTAB_MAPS_PATH, self.map_name)
-                db_dst = os.path.join(RTAB_MAPS_PATH, name + '.db')
-                shutil.copy2(db_src, db_dst)
-
-                # --- Resume RTABMap ---
-                if self._rtab_resume_client.wait_for_service(timeout_sec=5.0):
-                    future = self._rtab_resume_client.call_async(Empty.Request())
-                    elapsed = 0.0
-                    while not future.done() and elapsed < 5.0:
-                        time.sleep(0.1)
-                        elapsed += 0.1
+                # --- Copy .back file to user-specified name ---
+                db_back = os.path.join(RTAB_MAPS_PATH, self.map_name + '.back')
+                db_dst  = os.path.join(RTAB_MAPS_PATH, name + '.db')
+                if not os.path.exists(db_back):
+                    on_done(False, f"Backup file not found: {db_back}")
+                    return
+                shutil.copy2(db_back, db_dst)
 
                 # --- Save 2D map via map_saver_cli ---
-                # Derive source path from RTAB_MAPS_PATH so files survive rebuilds.
-                # RTAB_MAPS_PATH = /workspace/src/navigation/rtabmapdbs/
-                nav_src = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))  # .../src/navigation
+                nav_src  = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
                 maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
                 os.makedirs(maps_dir, exist_ok=True)
-                map_out = os.path.join(maps_dir, name)
+                map_out  = os.path.join(maps_dir, name)
                 result = subprocess.run(
                     ['ros2', 'run', 'nav2_map_server', 'map_saver_cli', '-f', map_out],
                     capture_output=True, text=True, timeout=15
@@ -252,7 +252,7 @@ class NavRosNode(Node):
                 if result.returncode == 0:
                     on_done(True, f"{name}.db  |  {name}.yaml + {name}.pgm")
                 else:
-                    on_done(False, f"DB saved OK, 2D map failed: {result.stderr.strip()}")
+                    on_done(False, f"DB saved, 2D map failed: {result.stderr.strip()}")
             except Exception as e:
                 on_done(False, str(e))
 
