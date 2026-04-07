@@ -7,6 +7,8 @@ Provides controls for sending goals, changing maps, and monitoring nav2.
 
 import sys
 import os
+import shutil
+import subprocess
 import math
 import threading
 import numpy as np
@@ -16,10 +18,15 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from nav_msgs.msg import OccupancyGrid, Path
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from std_srvs.srv import Empty
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from action_msgs.srv import CancelGoal
+from ament_index_python.packages import get_package_share_directory
+from frida_constants.navigation_constants import (
+    RTAB_MAPS_PATH, RTAB_PAUSE_SERVICE, RTAB_RESUME_SERVICE
+)
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -104,10 +111,12 @@ class NavRosNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # QoS for map topics (transient local)
+        # QoS for map topics: transient local in navigation (receive cached map on connect),
+        # volatile in mapping (only live messages — avoids showing stale map from a previous session)
+        map_durability = DurabilityPolicy.VOLATILE if self.ui_mode == 'mapping' else DurabilityPolicy.TRANSIENT_LOCAL
         map_qos = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            durability=map_durability,
             depth=1
         )
 
@@ -138,6 +147,12 @@ class NavRosNode(Node):
         # Service client for cancelling navigation goals
         self.cancel_nav_client = self.create_client(
             CancelGoal, '/navigate_to_pose/_action/cancel_goal')
+
+        # Mapping mode: map save service clients
+        if self.ui_mode == 'mapping':
+            self.map_name = self.declare_parameter('map_name', 'rtabmap_map.db').value
+            self._rtab_pause_client = self.create_client(Empty, RTAB_PAUSE_SERVICE)
+            self._rtab_resume_client = self.create_client(Empty, RTAB_RESUME_SERVICE)
 
         # Robot pose
         self.robot_x = 0.0
@@ -192,6 +207,53 @@ class NavRosNode(Node):
                 1.0 - 2.0 * (q2.y * q2.y + q2.z * q2.z))
         except TransformException:
             pass
+
+    def save_map_async(self, name, on_done):
+        """Save RTABMap DB (copy) and 2D map YAML in a background thread."""
+        import time
+
+        def _worker():
+            try:
+                # --- Pause RTABMap ---
+                if not self._rtab_pause_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "RTABMap pause service not available")
+                    return
+                future = self._rtab_pause_client.call_async(Empty.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 5.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                time.sleep(0.3)  # let RTABMap flush
+
+                # --- Copy database ---
+                db_src = os.path.join(RTAB_MAPS_PATH, self.map_name)
+                db_dst = os.path.join(RTAB_MAPS_PATH, name + '.db')
+                shutil.copy2(db_src, db_dst)
+
+                # --- Resume RTABMap ---
+                if self._rtab_resume_client.wait_for_service(timeout_sec=5.0):
+                    future = self._rtab_resume_client.call_async(Empty.Request())
+                    elapsed = 0.0
+                    while not future.done() and elapsed < 5.0:
+                        time.sleep(0.1)
+                        elapsed += 0.1
+
+                # --- Save 2D map via map_saver_cli ---
+                maps_dir = os.path.join(get_package_share_directory('map_context'), 'maps')
+                os.makedirs(maps_dir, exist_ok=True)
+                map_out = os.path.join(maps_dir, name)
+                result = subprocess.run(
+                    ['ros2', 'run', 'nav2_map_server', 'map_saver_cli', '-f', map_out],
+                    capture_output=True, text=True, timeout=15
+                )
+                if result.returncode == 0:
+                    on_done(True, f"{name}.db  |  {name}.yaml + {name}.pgm")
+                else:
+                    on_done(False, f"DB saved OK, 2D map failed: {result.stderr.strip()}")
+            except Exception as e:
+                on_done(False, str(e))
+
+        threading.Thread(target=_worker, daemon=True).start()
 
     def send_goal(self, x, y, yaw):
         msg = PoseStamped()
@@ -717,6 +779,15 @@ class NavUI(QMainWindow):
         if self.ui_mode == 'mapping':
             layers_group.setVisible(False)
 
+        # Mapping controls (save map — only shown in mapping mode)
+        mapping_group = QGroupBox("Mapping")
+        mapping_layout = QVBoxLayout(mapping_group)
+        self.btn_save_map = QPushButton("Save Map")
+        self.btn_save_map.clicked.connect(self._on_save_map)
+        mapping_layout.addWidget(self.btn_save_map)
+        panel_layout.addWidget(mapping_group)
+        mapping_group.setVisible(self.ui_mode == 'mapping')
+
         # Map DB
         db_group = QGroupBox("RTAB-Map DB")
         db_layout = QVBoxLayout(db_group)
@@ -835,6 +906,31 @@ class NavUI(QMainWindow):
         self.canvas.update()
         self.lbl_goal.setText("Goal: cancelled")
         self.status.showMessage("Navigation cancelled")
+
+    def _on_save_map(self):
+        from PyQt5.QtWidgets import QInputDialog
+        name, ok = QInputDialog.getText(self, "Save Map", "Map name:", text="my_map")
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+        self.btn_save_map.setEnabled(False)
+        self.status.showMessage(f"Saving '{name}'...")
+        self._save_result = None
+
+        def on_done(success, msg):
+            self._save_result = (success, msg)
+            QTimer.singleShot(0, self._on_save_done)
+
+        self.ros_node.save_map_async(name, on_done)
+
+    def _on_save_done(self):
+        self.btn_save_map.setEnabled(True)
+        success, msg = self._save_result
+        if success:
+            self.status.showMessage(f"Saved: {msg}")
+        else:
+            self.status.showMessage(f"Save failed: {msg}")
+            QMessageBox.warning(self, "Save Failed", msg)
 
     def check_canvas_actions(self):
         # Check for pending goal send
