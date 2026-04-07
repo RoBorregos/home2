@@ -56,14 +56,8 @@ class HearStreaming(Node):
             .get_parameter_value()
             .string_value
         )
-        self.default_initial_prompt = (
-            self.declare_parameter("DEFAULT_INITIAL_PROMPT", "")
-            .get_parameter_value()
-            .string_value
-        )
-
         self.hotwords = self.default_hotwords
-        self.initial_prompt = self.default_initial_prompt
+        self.initial_prompt = ""
         self.current_transcription = ""
         self.current_words = []
         self.stop_flag = threading.Event()
@@ -207,7 +201,7 @@ class HearStreaming(Node):
             self.initial_prompt = goal_handle.request.initial_prompt
             self.get_logger().info(f"Updated initial prompt: {self.initial_prompt}")
         else:
-            self.initial_prompt = self.default_initial_prompt
+            self.initial_prompt = ""
 
         self.record_subscribed(self.hotwords, self.initial_prompt)
 
