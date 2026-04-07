@@ -141,6 +141,7 @@ XARM_CONFIGURATIONS = {
     "cutlery_stare": CUTLERY_STARE,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
+    "nav_carry_bag_pose": NAV_CARRY_BAG_POSE,
     "carry_pose": CARRY_POSE,
     "place_floor_right": PLACE_FLOOR_RIGHT,
     "place_floor_left": PLACE_FLOOR_LEFT,
