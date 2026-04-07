@@ -5,7 +5,7 @@ USER ros
 SHELL ["/bin/bash", "-c"]
 
 #Install dependencies
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp libboost-iostreams-dev libtbb-dev libblosc-dev\
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp libboost-iostreams-dev libtbb-dev libblosc-dev libcap2-bin\
     && sudo rm -rf /var/lib/apt/lists/*
 
 #Build OPENCV
