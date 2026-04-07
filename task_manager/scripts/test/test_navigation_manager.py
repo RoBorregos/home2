@@ -13,7 +13,7 @@ class TestNavigationManager(Node):
         super().__init__("NavigationTaskManager")
         self.logs = self.declare_parameter('clear_logs', True).value
         self.mocked = self.declare_parameter('mocked', False).value
-        self.task_to_test = self.declare_parameter('task', Task.DEBUG).value
+        self.task_to_test = Task[self.declare_parameter('task', Task.DEBUG.name).value]
 
         print(f"\n{Logger.BOLD}Starting Navigation Subtask \n")
         
