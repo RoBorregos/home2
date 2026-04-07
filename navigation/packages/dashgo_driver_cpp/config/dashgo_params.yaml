@@ -3,7 +3,7 @@ DashgoDriverCpp:
     port: /dev/ttyUSBStm32
     baud: 115200
     timeout: 0.1
-    rate: 20
+    rate: 20.0
     imu_offset: 1.005
     # === Robot Module activation
     #useImu: False
@@ -16,12 +16,12 @@ DashgoDriverCpp:
     # === Robot drivetrain parameters
     #wheel_diameter: 0.1230
     #wheel_track: 0.31
-    #encoder_resolution: 610
+    #encoder_resolution: 610.0
     #gear_reduction: 1.0
 
     wheel_diameter: 0.1280
     wheel_track: 0.341
-    encoder_resolution: 670
+    encoder_resolution: 670.0
     #encoder_resolution: 1200
     gear_reduction: 1.0
     #encoder_max: 32768
