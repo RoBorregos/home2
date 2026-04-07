@@ -421,6 +421,10 @@ class NavigationTasks:
             param_name = "default_nav_to_pose_bt_xml"
             if bt_str == "follow":
                 param_value = "/workspace/src/navigation/packages/nav_main/bt/follow_dynamic.xml"
+            elif bt_str == "adaptive":
+                param_value = (
+                    "/workspace/src/navigation/packages/nav_main/bt/navigate_adaptive_goal.xml"
+                )
             else:
                 param_value = "/workspace/src/navigation/packages/nav_main/bt/navigate_to_pose_w_replanning_and_recovery.xml"
 
