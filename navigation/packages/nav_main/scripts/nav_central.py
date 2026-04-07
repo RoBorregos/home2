@@ -383,7 +383,9 @@ class Nav_Central(Node):
         self.nav_logger("info", "Go_To_Area -> Starting navigation to area")
         if self.nav2_paused or not self.rtabmap_loaded:
             self.nav_logger("error", "Go_To_Area -> Navigation not initialized")
-            return (False, "Navigation not initialized")
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response 
 
         if self.areas_data is None:
             self.nav_logger("error", "Go_To_Area -> Areas not loaded sending error")
