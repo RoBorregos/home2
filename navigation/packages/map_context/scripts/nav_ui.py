@@ -109,11 +109,16 @@ class NavRosNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # QoS for map topics: transient local in navigation (receive cached map on connect),
-        # volatile in mapping (only live messages — avoids showing stale map from a previous session)
+        # QoS for map topics.
+        # Reliability: BEST_EFFORT so we're compatible with RTABMap's composable node
+        # container whether it publishes RELIABLE or BEST_EFFORT (RELIABLE subscriber is
+        # incompatible with BEST_EFFORT publisher — the reverse direction is fine).
+        # Durability: TRANSIENT_LOCAL in navigation so a late-joining nav_ui immediately
+        # receives the cached map; VOLATILE in mapping to avoid showing a stale map from
+        # a previous session.
         map_durability = DurabilityPolicy.VOLATILE if self.ui_mode == 'mapping' else DurabilityPolicy.TRANSIENT_LOCAL
         map_qos = QoSProfile(
-            reliability=ReliabilityPolicy.RELIABLE,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=map_durability,
             depth=1
         )
@@ -132,10 +137,16 @@ class NavRosNode(Node):
             OccupancyGrid, '/local_costmap/costmap',
             self.local_costmap_callback, 10)
 
+        # Global costmap is published by nav2 with RELIABLE + TRANSIENT_LOCAL
+        costmap_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            depth=1
+        )
         self.global_costmap_data = None
         self.global_costmap_sub = self.create_subscription(
             OccupancyGrid, '/global_costmap/costmap',
-            self.global_costmap_callback, map_qos)
+            self.global_costmap_callback, costmap_qos)
 
         # Publishers
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)

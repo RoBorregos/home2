@@ -153,7 +153,8 @@ class Nav_Central(Node):
                 NAV2_LIFECYCLE_SERVICE,
                 callback_group=self._lifecycle_cb_group
             )
-        self.load_map_areas()
+        if not self.mapping:
+            self.load_map_areas()
         self.nav_logger("info", "Starting Setup, waiting for requirements ...")
         self.wait_for_requirements()
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
