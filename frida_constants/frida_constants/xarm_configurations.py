@@ -85,6 +85,18 @@ NAV_POSE = {
     "degrees": True,
 }
 
+NAV_CARRY_BAG_POSE = {
+    "joints": {
+        "joint1": -83.0,
+        "joint2": -55.5,
+        "joint3": -63.1,
+        "joint4": -0.8,
+        "joint5": 118.4,
+        "joint6": 228.6,
+    },
+    "degrees": True,
+}
+
 CARRY_POSE = {
     "joints": {
         "joint1": -90.0,
