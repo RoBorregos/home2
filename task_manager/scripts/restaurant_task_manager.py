@@ -6,6 +6,7 @@ Task Manager for Restaurant task of Robocup @Home 2025
 
 import rclpy
 from rclpy.node import Node
+from geometry_msgs.msg import PoseStamped
 
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
@@ -55,6 +56,10 @@ class RestaurantTaskManager(Node):
         self.gestures = [Gestures.RAISING_LEFT_ARM.value, Gestures.RAISING_RIGHT_ARM.value]
         self.subtask_manager.vision.track_person(False)
         self.point = None
+
+        self.original_goal_pub = self.create_publisher(
+            PoseStamped, "/adaptive_nav/original_goal", 10
+        )
 
         self.subtask_manager
         # self.subtask_manager.manipulation.follow_person(False)
@@ -125,8 +130,20 @@ class RestaurantTaskManager(Node):
 
         if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_CUSTOMER:
             self.subtask_manager.hri.say("I will go towards you")
+            Logger.state(self, "Navigating to customer with adaptive goal")
+
+            self.subtask_manager.nav.change_bt("adaptive")
+            goal_msg = PoseStamped()
+            goal_msg.header.frame_id = "map"
+            goal_msg.header.stamp = self.get_clock().now().to_msg()
+            goal_msg.pose.position.x = float(self.point.point.x)
+            goal_msg.pose.position.y = float(self.point.point.y)
+            goal_msg.pose.position.z = 0.0
+            goal_msg.pose.orientation.w = 1.0
+            self.original_goal_pub.publish(goal_msg)
+
             self.subtask_manager.nav.move_to_point(self.point)
-            Logger.state(self, "Navigating to customer...")
+
             self.subtask_manager.manipulation.follow_person(True)
             self.subtask_manager.nav.follow_person(True)
             if self.order is None:
@@ -152,6 +169,7 @@ class RestaurantTaskManager(Node):
 
         if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_KITCHENBAR:
             Logger.state(self, "Navigating to kitchen/bar...")
+            self.subtask_manager.nav.change_bt("default")
             # self.subtask_manager.nav.navigate_to_origin()
             if self.order is None:
                 self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
