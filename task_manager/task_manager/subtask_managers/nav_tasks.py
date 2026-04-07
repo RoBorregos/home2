@@ -134,7 +134,7 @@ class NavigationTasks:
     def move_to_location(self, location, sublocation):
         """Move to areas json location"""
 
-        request = MoveLocation()
+        request = MoveLocation.Request()
         request.location = location
         request.sublocation = sublocation
         future = self.move_to_location_srv.call_async(request)
