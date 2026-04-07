@@ -408,7 +408,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def hear(
         self,
         hotwords="",
-        silence_time=4.0,
+        silence_time=1.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
     ) -> str:

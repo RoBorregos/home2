@@ -88,8 +88,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.initial_prompt = initial_prompt
         self.hotwords = hotwords
         self.vad_parameters = {
-            "min_silence_duration_ms": 100,
-            "threshold": 0.6,
+            "threshold": 0.8,
         }
         device, self.compute_type = detect_device_and_compute_type(device)
 

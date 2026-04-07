@@ -59,6 +59,8 @@ add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
 
 if [ "$ENV_TYPE" = "l4t" ]; then
   add_or_update_variable compose/.env "ENV_SUFFIX" "-l4t"
+  echo "Attempting to setup speaker on FRIDA"
+  pactl set-default-sink alsa_output.usb-C-Media_Electronics_Inc._USB_PnP_Sound_Device-00.analog-stereo
 fi
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable compose/.env "RUNTIME" "nvidia"

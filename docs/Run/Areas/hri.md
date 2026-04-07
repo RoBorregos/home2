@@ -2,6 +2,17 @@
 
 In order to run and setup this area specific flags were added which abstract the complexity of performing both simple and complex tasks.
 
+## Setup
+
+### Speaker
+
+```bash
+# List connected speakers
+pactl list short sinks
+# Select the ID of the speaker
+pactl set-default-sink <ID_or_Name>
+```
+
 ## Flags
 
 Adding multiple flags in the same command is supported. Remember that to run a specific task the task's flag must be the first one.
