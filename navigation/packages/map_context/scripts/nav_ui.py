@@ -257,8 +257,14 @@ class NavRosNode(Node):
                 os.makedirs(maps_dir, exist_ok=True)
                 map_out  = os.path.join(maps_dir, name)
                 result = subprocess.run(
-                    ['ros2', 'run', 'nav2_map_server', 'map_saver_cli', '-f', map_out],
-                    capture_output=True, text=True, timeout=15
+                    [
+                        'ros2', 'run', 'nav2_map_server', 'map_saver_cli',
+                        '-f', map_out,
+                        '--ros-args',
+                        '-p', 'map_subscribe_transient_local:=true',
+                        '-p', 'save_map_timeout:=10.0',
+                    ],
+                    capture_output=True, text=True, timeout=30
                 )
                 if result.returncode == 0:
                     on_done(True, f"{name}.db  |  {name}.yaml + {name}.pgm")
