@@ -1,5 +1,12 @@
 var NAVTREEINDEX24 =
 {
+"egpsr__task__manager_8py.html#ae6fc79bfcfcdb72a5a6f151c50d90945":[25,0,6,1,4,8],
+"egsr__cut_8py.html":[25,0,6,1,0,2],
+"egsr__cut_8py.html#a0e686aa3fb80c3b83bd276c99727c65e":[25,0,6,1,0,2,5],
+"egsr__cut_8py.html#a1b8f9dabccf41a8d821d7cb2b32afd76":[25,0,6,1,0,2,8],
+"egsr__cut_8py.html#a1ca23f555a40c8aa0974151fc2c06366":[25,0,6,1,0,2,9],
+"egsr__cut_8py.html#a4aeb00c58259adbdc77b491d53265b82":[25,0,6,1,0,2,2],
+"egsr__cut_8py.html#a6c44cb0ee835bfe89fea9b0119ae3175":[25,0,6,1,0,2,6],
 "egsr__cut_8py.html#aa506d34038d8e9edcefb284b24391dd0":[25,0,6,1,0,2,3],
 "egsr__cut_8py.html#aaa1cdd1c1d00bce1477e860c8f1dabe1":[25,0,6,1,0,2,4],
 "egsr__cut_8py.html#afbf5f9721f7db9f36ba82a87768ae541":[25,0,6,1,0,2,7],
@@ -19,7 +26,7 @@ var NAVTREEINDEX24 =
 "example__node_8py.html#a44baeb1e0458c22477d9f58ffadbd9f0":[25,0,7,0,3,1,2,5],
 "example__node_8py.html#a6eae482e85ac51b66ae90ecccdd460d3":[25,0,7,0,3,1,2,3],
 "example__node_8py.html#ae11149e7a1136db5c2ec4e0d11bb199a":[25,0,7,0,3,1,2,4],
-"exploration__planner_8py.html":[25,0,6,2,2,3],
+"exploration__planner_8py.html":[25,0,6,2,2,4],
 "face__recognition__node_8py.html":[25,0,7,0,3,1,3],
 "face__recognition__node_8py.html#a036fbe5f51cfd2209b19a270357d2b35":[25,0,7,0,3,1,3,8],
 "face__recognition__node_8py.html#a166e5b8323737530752db607917e635f":[25,0,7,0,3,1,3,3],
@@ -242,12 +249,5 @@ var NAVTREEINDEX24 =
 "gpsr__task__manager_8py.html#acbd3cc051bcaa0355718e913a0b44e0e":[25,0,6,1,6,6],
 "gpsr__task__manager_8py.html#acde48271012efc9388cf1370294e321d":[25,0,6,1,6,4],
 "gpsr__tasks_8py.html":[25,0,6,2,1,3],
-"gpsr__test__commands_8py.html":[25,0,6,2,1,4],
-"gpsr__test__commands_8py.html#a006ca904dfde847a2b6aa1ba96d44872":[25,0,6,2,1,4,12],
-"gpsr__test__commands_8py.html#a01503f79a75509efd7bbab6252e2d156":[25,0,6,2,1,4,13],
-"gpsr__test__commands_8py.html#a26fc0d654e86e8633cd300845b10d610":[25,0,6,2,1,4,0],
-"gpsr__test__commands_8py.html#a2d8567649052915868aa0097fbd6f7fe":[25,0,6,2,1,4,16],
-"gpsr__test__commands_8py.html#a36cbf4a74d4908d99fa5f604c69ce211":[25,0,6,2,1,4,14],
-"gpsr__test__commands_8py.html#a3c121f73e0ad4f5793fc7db2ba6ad3d8":[25,0,6,2,1,4,19],
-"gpsr__test__commands_8py.html#a4e869321acb5e28d324465adf4a05f55":[25,0,6,2,1,4,18]
+"gpsr__test__commands_8py.html":[25,0,6,2,1,4]
 };

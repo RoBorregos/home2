@@ -362,6 +362,9 @@ var annotated_dup =
         ] ]
       ] ],
       [ "utils", "namespacetask__manager_1_1utils.html", [
+        [ "colored_logger", "namespacetask__manager_1_1utils_1_1colored__logger.html", [
+          [ "CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ]
+        ] ],
         [ "config", "namespacetask__manager_1_1utils_1_1config.html", [
           [ "MockConfig", "classtask__manager_1_1utils_1_1config_1_1MockConfig.html", "classtask__manager_1_1utils_1_1config_1_1MockConfig" ],
           [ "SubtaskConfig", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig.html", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig" ],

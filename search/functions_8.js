@@ -12,5 +12,6 @@ var searchData=
   ['handlesubcriptions_9',['handleSubcriptions',['../classobject__detector__node_1_1object__detector__node.html#a82aac9fa4e1310b8c9f9e52d03e8064f',1,'object_detector_node::object_detector_node']]],
   ['hear_10',['hear',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4a76a77101c47f3536ecbe144b56760f',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['hear_5fmulti_11',['hear_multi',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#af810c9637ba003ed2de3c5e94f9eb0d9',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['hear_5fstreaming_12',['hear_streaming',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a65a2a7e4da29fd0ba1256a08ff3f946d',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]]
+  ['hear_5fstreaming_12',['hear_streaming',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a65a2a7e4da29fd0ba1256a08ff3f946d',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['hri_13',['hri',['../classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html#a954b98b701c5435e8724f24677567724',1,'task_manager::utils::colored_logger::CLog']]]
 ];

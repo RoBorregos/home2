@@ -3,6 +3,7 @@ var hierarchy =
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
     [ "ObjectDetector.BBOX", "classObjectDetector_1_1BBOX.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
+    [ "task_manager.utils.colored_logger.CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
     [ "task_manager.utils.config.MockConfig.Config", "classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html", null ],
     [ "task_manager.utils.config.SubtaskConfig.Config", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
