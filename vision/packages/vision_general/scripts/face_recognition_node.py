@@ -110,7 +110,7 @@ class FaceRecognition(Node):
 
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
-        self.vision_active = False
+        self.vision_active = True
         self.is_processing = False
         self.create_subscription(
             Bool,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Task Manager for testing the subtask managers
+Task Manager for testing the vision subtask manager
 """
 
 import rclpy
@@ -10,77 +10,125 @@ from rclpy.node import Node
 from task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.utils.task import Task
 from task_manager.utils.logger import Logger
-# from frida_constants.vision_enums import DetectBy, Poses
+from task_manager.utils.status import Status
 
-task = Task.HELP_ME_CARRY
+# Choose which tests to perform
+TEST_DETECT_OBJECTS = False
+TEST_DETECT_PERSON = False
+TEST_CUSTOMER_TABLES = True
+TEST_MOONDREAM_QUERY = False
+TEST_FIND_SEAT = False
+TEST_GET_PERSON_NAME = False
 
 
-class TestVision(Node):
+class TestVisionManager(Node):
     def __init__(self):
-        super().__init__("test_task_manager")
-        self.manager = VisionTasks(self, task=task, mock_data=False)
-        self.get_logger().info("TestTaskManager has started.")
-        self.running_task = True
-        self.response = "test"
-        self.done = False
-
-    def setResponse(self, status, response):
-        self.response = response
-        print("RECEIVED RESPONSE")
+        super().__init__("test_vision_task_manager")
+        self.vision_manager = VisionTasks(self, task=Task.DEBUG)
+        rclpy.spin_once(self, timeout_sec=1.0)
+        self.get_logger().info("TestVisionManager has started.")
+        self.run()
 
     def run(self):
-        if task == Task.DEBUG:
-            if not self.done:
-                self.manager.describe_person(self.setResponse)
-                self.done = True
+        if TEST_DETECT_OBJECTS:
+            self.test_detect_objects()
 
-            noasync = self.manager.moondream_query("is there anyone in the image?", False)
-            Logger.info(self, f"Vision task result: {noasync}")
-            # status, description = self.manager.describe_bag([0, 0, 1, 1])
-            # print(description)
+        if TEST_DETECT_PERSON:
+            self.test_detect_person()
 
-            if self.response != "test":
-                self.get_logger().info(f"Vision task result: {self.response}")
-                self.done = True
-                self.running_task = False
-        elif task == Task.HELP_ME_CARRY:
-            s, point = self.manager.get_customer()
-            print(point)
-            # status = self.manager.track_person_by(
-            #     by=DetectBy.POSES.value, value=Poses.SITTING.value
-            # )
-            # print(status)
-            # self.running_task = False
-            # status, bbox, point3d = self.manager.get_pointing_bag(5)
-            # if status:
-            #     self.get_logger().info(f"Vision task result: {bbox}")
-            #     self.get_logger().info(f"Vision task result: {point3d}")
-            #     self.running_task = False
-            # else:
-            #     self.get_logger().info("Vision task failed")
+        if TEST_CUSTOMER_TABLES:
+            self.test_customer_tables()
 
-        elif task == Task.GPSR:
-            name = self.manager.get_person_name()
-            if name:
-                Logger.info(self, f"Vision task result: {name}")
-            else:
-                Logger.warn(self, "No person")
+        if TEST_MOONDREAM_QUERY:
+            self.test_moondream_query()
 
-        elif task == Task.STORING_GROCERIES:
-            results = self.manager.detect_shelf()
-            print(results)
-            self.running_task = False
+        if TEST_FIND_SEAT:
+            self.test_find_seat()
+
+        if TEST_GET_PERSON_NAME:
+            self.test_get_person_name()
+
+        exit(0)
+
+    def test_detect_objects(self):
+        Logger.info(self, "=== Testing detect_objects ===")
+        status, detections = self.vision_manager.detect_objects()
+        if status == Status.EXECUTION_SUCCESS:
+            labels = self.vision_manager.get_labels(detections)
+            Logger.success(self, f"Detected {len(detections)} objects: {labels}")
+            for det in detections:
+                Logger.info(
+                    self,
+                    f"  {det.classname}: distance={det.distance:.2f}m, "
+                    f"point=({det.px:.3f}, {det.py:.3f}, {det.pz:.3f})",
+                )
+        else:
+            Logger.error(self, "detect_objects failed")
+
+    def test_detect_person(self):
+        Logger.info(self, "=== Testing detect_person ===")
+        status = self.vision_manager.detect_person()
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, "Person detected")
+        else:
+            Logger.warn(self, "No person detected")
+
+    def test_customer_tables(self):
+        Logger.info(self, "=== Testing customer_tables ===")
+        status, tables = self.vision_manager.customer_tables()
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Detected {len(tables)} table(s)")
+            for i, table in enumerate(tables):
+                num_people = len(table.people.list)
+                pt = table.table_point.point
+                Logger.info(
+                    self,
+                    f"  Table {i}: {num_people} customer(s), "
+                    f"point=({pt.x:.3f}, {pt.y:.3f}, {pt.z:.3f})",
+                )
+                for person in table.people.list:
+                    Logger.info(
+                        self,
+                        f"    Person: name='{person.name}', angle={person.angle:.1f}",
+                    )
+        else:
+            Logger.error(self, "customer_tables failed")
+
+    def test_moondream_query(self):
+        Logger.info(self, "=== Testing moondream_query ===")
+        status, result = self.vision_manager.moondream_query(
+            "What objects do you see on the table?"
+        )
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Moondream response: {result}")
+        else:
+            Logger.error(self, "moondream_query failed")
+
+    def test_find_seat(self):
+        Logger.info(self, "=== Testing find_seat ===")
+        status, angle = self.vision_manager.find_seat()
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Found seat at angle: {angle:.2f}")
+        else:
+            Logger.warn(self, "No seat found")
+
+    def test_get_person_name(self):
+        Logger.info(self, "=== Testing get_person_name ===")
+        Logger.info(self, "Activating face recognition...")
+        self.vision_manager.activate_face_recognition()
+        name = self.vision_manager.get_person_name()
+        if name:
+            Logger.success(self, f"Person name: {name}")
+        else:
+            Logger.warn(self, "No person name detected")
+        self.vision_manager.deactivate_face_recognition()
 
 
 def main(args=None):
-    """Main function"""
     rclpy.init(args=args)
-    node = TestVision()
-
+    node = TestVisionManager()
     try:
-        while rclpy.ok() and node.running_task:
-            rclpy.spin_once(node, timeout_sec=0.1)
-            node.run()
+        rclpy.spin_once(node)
     except KeyboardInterrupt:
         pass
     finally:
