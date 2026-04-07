@@ -22,6 +22,9 @@ AREAS_SERVICE = "/navigation/areas_json"
 MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
+### Initial pose topic
+INITIAL_POSE_TOPIC = "/initialpose"
+
 ### General Constants
 MONITOR_RATE = 1.0
 NO_TF_LIMIT = 2

@@ -11,7 +11,7 @@ from nav2_msgs.action import NavigateToPose
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -32,7 +32,8 @@ from frida_constants.navigation_constants import(
         NO_TOPICS_LIMIT,
         MONITOR_RATE,
         MOVE_LOCATION_SERVICE,
-        GOAL_NAV_ACTION_SERVER
+        GOAL_NAV_ACTION_SERVER,
+        INITIAL_POSE_TOPIC,
         )
 from frida_interfaces.srv import (
         CheckDoor,
@@ -116,6 +117,15 @@ class Nav_Central(Node):
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group) 
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
 
+        # Initial pose tracking
+        self._initial_pose_set = False
+        self._initial_pose_sub = self.create_subscription(
+            PoseWithCovarianceStamped,
+            INITIAL_POSE_TOPIC,
+            self._initialpose_callback,
+            10
+        )
+
         #Setup and Configuration
         self._setup_done = False
         self._setup_timer = self.create_timer(2.0, self._setup, callback_group=ReentrantCallbackGroup())
@@ -150,6 +160,8 @@ class Nav_Central(Node):
         self.nav_logger("info", "Slam completed, Starting nav2 ...")
         self.load_nav2()
         self.nav_logger("info", "Nav2 completed")
+        if self.localization:
+            self._wait_for_initial_pose()
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
         self.nodes_status = True
         self.baseline_tf_static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
@@ -240,6 +252,19 @@ class Nav_Central(Node):
             self.get_logger().error(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;167m {data}\033[0m")
         else:
             self.get_logger().fatal(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;88m {data}\033[0m")
+
+    def _initialpose_callback(self, msg):
+        if not self._initial_pose_set:
+            self._initial_pose_set = True
+            x = msg.pose.pose.position.x
+            y = msg.pose.pose.position.y
+            self.nav_logger("info", f"Initial pose received at ({x:.2f}, {y:.2f})")
+
+    def _wait_for_initial_pose(self):
+        self.nav_logger("info", "Setup -> Waiting for initial pose to be set via nav_ui ...")
+        while not self._initial_pose_set:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
+        self.nav_logger("info", "Setup -> Initial pose confirmed, continuing setup")
 
     def lidar_callback(self, msg):
         self.lidar_msg = msg

@@ -36,6 +36,13 @@ def launch_function(context, *args, **kwargs):
     )
 
 
+    nav_ui_node = Node(
+        package='map_context',
+        executable='nav_ui.py',
+        name='nav_ui',
+        output='screen',
+    )
+
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "nav_basics.launch.py"])
@@ -52,6 +59,7 @@ def launch_function(context, *args, **kwargs):
     
     return [
         nav_central_node,
+        nav_ui_node,
         nav_basics,
         rtabmapnav
     ]
