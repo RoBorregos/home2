@@ -8,7 +8,6 @@ Provides controls for sending goals, changing maps, and monitoring nav2.
 import sys
 import os
 import shutil
-import subprocess
 import math
 import threading
 import numpy as np
@@ -216,6 +215,47 @@ class NavRosNode(Node):
         except TransformException:
             pass
 
+    def _write_map_files(self, grid_msg, base_path):
+        """Write OccupancyGrid to <base_path>.pgm and <base_path>.yaml."""
+        w = grid_msg.info.width
+        h = grid_msg.info.height
+        resolution = grid_msg.info.resolution
+        origin_x = grid_msg.info.origin.position.x
+        origin_y = grid_msg.info.origin.position.y
+
+        # Build PGM pixel rows (OccupancyGrid is row-major, origin at bottom-left,
+        # so we flip vertically so row 0 in the file is the top of the map).
+        # ROS convention: 0=free→254, 100=lethal→0, -1=unknown→205
+        rows = []
+        for row_idx in range(h):
+            row = bytearray(w)
+            for col in range(w):
+                val = grid_msg.data[row_idx * w + col]
+                if val == 0:
+                    row[col] = 254
+                elif val < 0:
+                    row[col] = 205
+                else:
+                    row[col] = max(0, 255 - int(val * 2.55))
+            rows.append(row)
+        rows.reverse()  # flip: grid origin is bottom-left, PGM top-left
+
+        pgm_path = base_path + '.pgm'
+        with open(pgm_path, 'wb') as f:
+            f.write(f'P5\n{w} {h}\n255\n'.encode())
+            for row in rows:
+                f.write(bytes(row))
+
+        pgm_name = os.path.basename(pgm_path)
+        yaml_path = base_path + '.yaml'
+        with open(yaml_path, 'w') as f:
+            f.write(f'image: {pgm_name}\n')
+            f.write(f'resolution: {resolution}\n')
+            f.write(f'origin: [{origin_x:.6f}, {origin_y:.6f}, 0.0]\n')
+            f.write('negate: 0\n')
+            f.write('occupied_thresh: 0.65\n')
+            f.write('free_thresh: 0.25\n')
+
     def save_map_async(self, name, on_done):
         """Save RTABMap DB and 2D map YAML in a background thread.
 
@@ -225,6 +265,8 @@ class NavRosNode(Node):
         Pause+copy is NOT safe: pause does not flush in-memory graph data.
         """
         import time
+        # Snapshot map_data now (main thread) to avoid race with ROS spin thread
+        map_snapshot = self.map_data
 
         def _worker():
             try:
@@ -251,25 +293,20 @@ class NavRosNode(Node):
                     return
                 shutil.copy2(db_back, db_dst)
 
-                # --- Save 2D map via map_saver_cli ---
+                # --- Save 2D map directly from already-received map_data ---
+                # Avoids map_saver_cli QoS issues — nav_ui already has the data.
+                if map_snapshot is None:
+                    on_done(False, "DB saved, 2D map failed: no map data received yet")
+                    return
                 nav_src  = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
                 maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
                 os.makedirs(maps_dir, exist_ok=True)
                 map_out  = os.path.join(maps_dir, name)
-                result = subprocess.run(
-                    [
-                        'ros2', 'run', 'nav2_map_server', 'map_saver_cli',
-                        '-f', map_out,
-                        '--ros-args',
-                        '-p', 'map_subscribe_transient_local:=true',
-                        '-p', 'save_map_timeout:=10.0',
-                    ],
-                    capture_output=True, text=True, timeout=30
-                )
-                if result.returncode == 0:
+                try:
+                    self._write_map_files(map_snapshot, map_out)
                     on_done(True, f"{name}.db  |  {name}.yaml + {name}.pgm")
-                else:
-                    on_done(False, f"DB saved, 2D map failed: {result.stderr.strip()}")
+                except Exception as e:
+                    on_done(False, f"DB saved, 2D map failed: {e}")
             except Exception as e:
                 on_done(False, str(e))
 
