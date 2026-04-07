@@ -19,9 +19,7 @@ def generate_launch_description():
             name='DashgoDriver',
             output='screen',
             emulate_tty=True,
-            parameters=[
-                config
-            ],
+            parameters=[config],
             remappings=[
                 ('/cmd_vel', cmd_topic),
             ],

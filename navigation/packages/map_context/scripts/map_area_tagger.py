@@ -43,6 +43,11 @@ AREA_COLORS = [
 LOCATION_COLOR = QColor(255, 255, 255, 220)
 POLYGON_VERTEX_COLOR = QColor(255, 200, 50, 200)
 
+# Robot footprint from nav2 config (meters, relative to base_link)
+ROBOT_FOOTPRINT = [
+    [0.32, 0.21], [0.32, -0.21], [-0.17, -0.21], [-0.17, 0.21]
+]
+
 ROBOCUP_TASKS = {
     "General": {
         "living_room": ["entrance_door", "exit_door"],
@@ -216,6 +221,23 @@ class MapCanvas(QWidget):
             self.panning = False
             self.setCursor(QCursor(Qt.ArrowCursor))
 
+    def _draw_footprint(self, painter, px, py, yaw, pen_color, fill_color):
+        """Draw the robot rectangular footprint rotated by yaw at pixel pos (px, py)."""
+        cos_y = math.cos(yaw)
+        sin_y = math.sin(yaw)
+        polygon = QPolygonF()
+        for fx, fy in ROBOT_FOOTPRINT:
+            # Rotate footprint point by yaw
+            rx = fx * cos_y - fy * sin_y
+            ry = fx * sin_y + fy * cos_y
+            # Convert from meters offset to pixel offset
+            fpx = px + rx / self.resolution
+            fpy = py - ry / self.resolution
+            polygon.append(QPointF(fpx, fpy))
+        painter.setPen(QPen(pen_color, 1.5 / self.zoom))
+        painter.setBrush(QBrush(fill_color))
+        painter.drawPolygon(polygon)
+
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -275,10 +297,14 @@ class MapCanvas(QWidget):
                 px, py = self.map_to_pixel(x, y)
                 r = max(3, 5 / self.zoom)
 
-                # Location dot
+                # Robot footprint
+                fp_fill = QColor(color.red(), color.green(), color.blue(), 50)
+                self._draw_footprint(painter, px, py, yaw, border_color, fp_fill)
+
+                # Center dot
                 painter.setPen(QPen(border_color, 1.5 / self.zoom))
                 painter.setBrush(QBrush(LOCATION_COLOR))
-                painter.drawEllipse(QPointF(px, py), r, r)
+                painter.drawEllipse(QPointF(px, py), r * 0.6, r * 0.6)
 
                 # Direction arrow
                 arrow_len = r * 2.5
@@ -306,13 +332,18 @@ class MapCanvas(QWidget):
             smx, smy = self.drag_start_map
             spx, spy = self.map_to_pixel(smx, smy)
             r = max(4, 6 / self.zoom)
+            yaw = self.drag_yaw
+            # Preview footprint
+            self._draw_footprint(
+                painter, spx, spy, yaw,
+                QColor(0, 200, 255, 200), QColor(0, 200, 255, 40)
+            )
             # Preview dot
             painter.setPen(QPen(QColor(0, 200, 255, 200), 2.0 / self.zoom))
             painter.setBrush(QBrush(QColor(0, 200, 255, 100)))
-            painter.drawEllipse(QPointF(spx, spy), r, r)
+            painter.drawEllipse(QPointF(spx, spy), r * 0.6, r * 0.6)
             # Preview arrow
             arrow_len = r * 4
-            yaw = self.drag_yaw
             arx = spx + arrow_len * math.cos(-yaw)
             ary = spy + arrow_len * math.sin(-yaw)
             painter.setPen(QPen(QColor(0, 200, 255, 220), 2.5 / self.zoom))

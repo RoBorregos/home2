@@ -1,17 +1,14 @@
 #!/usr/bin/env python3
 
 """
-Node to track a single person and
-re-id them if necessary
+Node to detect customers who are sitting and raising their hand.
+Uses YOLO pose on the full image for person detection + keypoints in one pass.
 """
 
 import cv2
-from vision_general.utils.trt_utils import load_yolo_trt
-import tqdm
 from vision_general.utils.calculations import (
     get2DCentroid,
-    get_depth,
-    deproject_pixel_to_point,
+    point2d_to_ros_point_stamped,
 )
 
 import rclpy
@@ -19,9 +16,10 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
-
+from builtin_interfaces.msg import Time
 from frida_interfaces.srv import CropQuery, Customer
 from frida_interfaces.msg import PersonList, Person
+from vision_general.utils.ros_utils import wait_for_future
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -35,8 +33,8 @@ from frida_constants.vision_constants import (
     GET_CUSTOMER_TOPIC,
 )
 
-CONF_THRESHOLD = 0.8
-DEPTH_THRESHOLD = 100
+CONF_THRESHOLD = 0.4
+CAMERA_FRAME = "zed_left_camera_optical_frame"
 
 
 class CustomerNode(Node):
@@ -64,62 +62,44 @@ class CustomerNode(Node):
         )
 
         self.get_customer_service = self.create_service(
-            Customer, GET_CUSTOMER_TOPIC, self.get_customer_callback
+            Customer,
+            GET_CUSTOMER_TOPIC,
+            self.get_customer_callback,
+            callback_group=self.callback_group,
         )
 
-        self.is_tracking_result = False
-
         self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
-
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
-
         self.customer_publisher = self.create_publisher(Image, CUSTOMER, 10)
-
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
 
-        self.verbose = self.declare_parameter("verbose", True)
-        self.setup()
-        self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
-
-    def setup(self):
-        """Load models and initial variables"""
-        self.target_set = False
         self.image = None
-        self.image_time = None
-        self.frame_id = "zed_left_camera_optical_frame"
-
+        self.depth_image = None
         self.depth_image_time = None
-        pbar = tqdm.tqdm(total=1, desc="Loading models")
-
-        # Load YOLO with TensorRT for Orin AGX
-        self.model = load_yolo_trt("yolov8n.pt")
-        self.pose_detection = PoseDetection()
-
+        self.imageInfo = None
         self.output_image = []
-        self.depth_image = []
         self.customer_image = []
 
-        pbar.close()
-        self.get_logger().info("Single Tracker Ready")
+        self.pose_detection = PoseDetection()
+
+        self.create_timer(0.1, self.publish_image)
+        self.get_logger().info("Customer Node Ready")
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        self.image_time = data.header.stamp
 
     def depth_callback(self, data):
         """Callback to receive depth image from camera"""
         try:
-            depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-            self.depth_image = depth_image
+            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
             self.depth_image_time = data.header.stamp
         except Exception as e:
-            print(f"Error: {e}")
+            self.get_logger().error(f"Error: {e}")
 
     def image_info_callback(self, data):
         """Callback to receive camera info"""
@@ -134,108 +114,111 @@ class CustomerNode(Node):
 
         if len(self.customer_image) != 0:
             h, w = self.customer_image.shape[:2]
-
             square_size = max(h, w)
-
             square_img = cv2.copyMakeBorder(
                 self.customer_image,
                 top=(square_size - h) // 2,
-                bottom=(square_size - h + 1) // 2,  # Handles odd differences
+                bottom=(square_size - h + 1) // 2,
                 left=(square_size - w) // 2,
                 right=(square_size - w + 1) // 2,
                 borderType=cv2.BORDER_CONSTANT,
-                value=(0, 0, 0),  # Black padding (BGR)
+                value=(0, 0, 0),
             )
             self.customer_publisher.publish(
                 self.bridge.cv2_to_imgmsg(square_img, "bgr8")
             )
 
-    def success(self, message) -> None:
-        """Print success message"""
-        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
-
     def get_customer_callback(self, req, res):
-        """Set the target to track (Default: Largest person in frame)"""
         res.found = False
         res.people = PersonList()
         res.people.list = []
-        print("running")
+
         if self.image is None:
             self.get_logger().warn("No image available")
-
             return res
 
-        self.frame = self.image.copy()
-        self.output_image = self.frame.copy()
+        frame = self.image.copy()
+        self.output_image = frame.copy()
+        image_width = frame.shape[1]
 
-        for out in self.results:
-            for box in out.boxes:
-                if box.conf[0].item() < CONF_THRESHOLD:
-                    continue
+        people = self.pose_detection.detect_people(frame, conf=CONF_THRESHOLD)
+        self.get_logger().info(f"Detected {len(people)} people")
 
-                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        for person_data in people:
+            x1, y1, x2, y2 = person_data["bbox"]
+            points = person_data["keypoints"]
+            kp_conf = person_data["kp_conf"]
 
-                cropped_image = self.frame[y1:y2, x1:x2]
-                self.customer_image = cropped_image.copy()
+            # Expand bbox by 20% for moondream and debug image
+            h, w = frame.shape[:2]
+            bw, bh = x2 - x1, y2 - y1
+            pad_x, pad_y = int(bw * 0.1), int(bh * 0.1)
+            ex1 = max(0, x1 - pad_x)
+            ey1 = max(0, y1 - pad_y)
+            ex2 = min(w, x2 + pad_x)
+            ey2 = min(h, y2 + pad_y)
 
-                raising = self.pose_detection.is_waving_customer(cropped_image)
-                sitting = self.pose_detection.is_sitting_yolo(cropped_image)
+            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            self.pose_detection.draw_landmarks(self.output_image, points, kp_conf)
 
-                if not sitting:
-                    self.get_logger().info("Checking sitting with moondream")
-                    sitting = self.is_sitting_moondream([x1, y1, x2, y2])
+            self.customer_image = frame[ey1:ey2, ex1:ex2].copy()
 
-                if raising and sitting:
-                    self.get_logger().info("Customer raising hand and sitting detected")
-                    cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            raising = self.pose_detection.is_waving_from_keypoints(points, kp_conf)
+            if not raising:
+                self.get_logger().info("Customer not raising hand")
+                continue
 
-                    # 2D Centroid and Depth
-                    point2D = get2DCentroid((x1, y1, x2, y2), self.depth_image)
-                    point_2d_temp = (point2D[1], point2D[0])
-                    depth = get_depth(self.depth_image, point2D)
-                    point3D_raw = deproject_pixel_to_point(
-                        self.imageInfo, point_2d_temp, depth
-                    )
+            sitting = self.pose_detection.is_sitting_from_keypoints(points, kp_conf)
+            if not sitting:
+                self.get_logger().info("Checking sitting with moondream")
+                sitting = self.is_sitting_moondream([ex1, ey1, ex2, ey2])
 
-                    # Transform to ROS frame
-                    coords = PointStamped()
-                    coords.header.frame_id = self.frame_id
-                    coords.header.stamp = self.depth_image_time
-                    coords.point.x = float(point3D_raw[2])
-                    coords.point.y = float(-point3D_raw[0])
-                    coords.point.z = float(-point3D_raw[1])
-                    self.results_publisher.publish(coords)
+            if raising and sitting:
+                self.get_logger().info("Customer raising hand and sitting detected")
+                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-                    # Normalize X coordinate for basic tracking
-                    pt_x_norm = float(point2D[1]) / (self.frame.shape[1] / 2) - 1.0
-                    self.centroid_publisher.publish(Point(x=pt_x_norm, y=0.0, z=0.0))
+                point2D = get2DCentroid((y1, x1, y2, x2), self.depth_image)
+                coords = point2d_to_ros_point_stamped(
+                    self.imageInfo,
+                    self.depth_image,
+                    point2D,
+                    CAMERA_FRAME,
+                    Time(sec=0, nanosec=0),
+                )
+                self.results_publisher.publish(coords)
 
-                    # Append to results
-                    person = Person()
-                    person.x = (x1 + x2) // 2
-                    person.y = (y1 + y2) // 2
-                    person.point3d = coords
-                    res.people.list.append(person)
+                pt_x_norm = float(point2D[1]) / (frame.shape[1] / 2) - 1.0
+                self.centroid_publisher.publish(Point(x=pt_x_norm, y=0.0, z=0.0))
 
-                    res.found = True
-                    self.success("Customer found")
-                    self.get_logger().info(
-                        f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}"
-                    )
+                person = Person()
+                person.x = (x1 + x2) // 2
+                person.y = (y1 + y2) // 2
+                person.point3d = coords
+                diff = person.x - (image_width / 2)
+                max_degree = 50.0
+                angle = diff * max_degree / (image_width / 2)
+                if hasattr(person, "angle"):
+                    person.angle = angle
+                res.people.list.append(person)
+
+                res.found = True
+                self.get_logger().info(
+                    f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}, angle={angle:.1f}"
+                )
 
         self.get_logger().info(f"Customers detected: {len(res.people.list)}")
         return res
 
     def is_sitting_moondream(self, bbox):
-        if self.frame is None or bbox is None:
+        if self.image is None or bbox is None:
             return False
 
         if not self.moondream_client.wait_for_service(timeout_sec=0.1):
             self.get_logger().warn("Moondream crop query service not available")
             return False
 
-        height, width = self.frame.shape[:2]
+        frame = self.image.copy()
+        height, width = frame.shape[:2]
         x1, y1, x2, y2 = bbox
         if width <= 0 or height <= 0:
             return False
@@ -255,18 +238,18 @@ class CustomerNode(Node):
         )
 
         future = self.moondream_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=7)
+        wait_for_future(future)
 
         if not future.done():
             self.get_logger().warn("Service call timed out")
             return False
 
-        if future.exception() is not None:
-            self.get_logger().error(f"Service call failed: {future.exception()}")
-            return False
-
         result = future.result()
         if result is None or not result.success:
+            return False
+
+        if future.exception() is not None:
+            self.get_logger().error(f"Service call failed: {future.exception()}")
             return False
 
         answer = result.result.strip().lower()
@@ -280,50 +263,15 @@ class CustomerNode(Node):
         )
         return False
 
-    def run(self):
-        """Main loop to run the tracker"""
-
-        if True:  # self.target_set:
-            self.frame = self.image
-            # image_time = copy.deepcopy(self.image_time)
-            # depth_image_time = copy.deepcopy(self.depth_image_time)
-            if self.frame is None:
-                self.get_logger().error("No image available")
-                return
-
-            if self.frame is None:
-                return
-
-            self.output_image = self.frame.copy()
-
-            self.results = self.model.track(
-                self.frame,
-                persist=True,
-                tracker="bytetrack.yaml",
-                classes=0,
-                verbose=False,
-            )
-
-            # Check each detection
-            for out in self.results:
-                for box in out.boxes:
-                    x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-
-                    cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-
-                    # Get confidence
-                    prob = round(box.conf[0].item(), 2)
-
-                    if prob < CONF_THRESHOLD:
-                        continue
-
 
 def main(args=None):
     rclpy.init(args=args)
     node = CustomerNode()
 
+    executor = rclpy.executors.MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

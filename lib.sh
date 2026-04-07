@@ -89,6 +89,54 @@ add_or_update_variable() {
   fi
 }
 
+# Parse flags shared by all area run.sh scripts.
+# First arg: compose file path (e.g. "docker-compose.yaml"); remaining args are the script's $@.
+parse_common_flags() {
+  local compose_file="${1:-}"
+  shift
+  local compose="${compose_file:+docker compose -f $compose_file}"
+  compose="${compose:-docker compose}"
+
+  DETACHED=""
+  BUILD=""
+  BUILD_IMAGE=""
+  UPLOAD_IMAGE=""
+
+  for arg in "$@"; do
+    case $arg in
+      "-d")             DETACHED="-d" ;;
+      "--build")        BUILD="true" ;;
+      "--build-image")  BUILD_IMAGE="--build" ;;
+      "--upload-image") UPLOAD_IMAGE="true" ;;
+      "--clean")        clean_directories ;;
+      "--recreate")     $compose down ;;
+      "--down")         $compose down; exit 0 ;;
+      "--stop")         $compose stop; exit 0 ;;
+    esac
+  done
+}
+
+# Write .env variables shared by all areas.
+# First arg: area name. Second arg: env file path (default: .env).
+setup_common_env() {
+  local area="$1"
+  local env_file="${2:-.env}"
+
+  echo "" > "$env_file"
+
+  if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+  fi
+
+  add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+  add_or_update_variable "$env_file" "LOCAL_USER_ID"     "$(id -u)"
+  add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
+  add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
+  add_or_update_variable "$env_file" "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
+  
+  mkdir -p install build log
+}
+
 clean_directories() {
   local target="${1:-.}"
   echo "Cleaning build/log/install in: $target"
@@ -115,9 +163,20 @@ run_area() {
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi
 
-  # Start RouDi container for SHM-enabled areas (zed, vision)
-  if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ]; then
-    ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
+  # Auto-detect Jetson for SHM default
+  if [ -z "${CYCLONE_SHM:-}" ]; then
+    if [ -f /etc/nv_tegra_release ]; then
+      export CYCLONE_SHM=1
+    else
+      export CYCLONE_SHM=0
+    fi
+  fi
+
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
+  if [ "${CYCLONE_SHM}" = "1" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
+      ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
+    fi
   fi
 
   echo "Running image from $INPUT"
@@ -181,6 +240,12 @@ control() {
     fi
   fi
 
+  # Clean stale iceoryx artifacts when SHM is disabled
+  if [ "${CYCLONE_SHM:-0}" != "1" ] && [ "$op_flag" = "--down" ]; then
+    rm -f /tmp/iox-unique-roudi.lock /tmp/roudi.lock 2>/dev/null
+    rm -f /dev/shm/iceoryx* 2>/dev/null
+  fi
+
   echo "All ${msg}s attempted."
   return $rc
 }
@@ -215,4 +280,24 @@ ensure_roudi() {
   done
   echo "[RouDi] WARNING: RouDi container did not start in time." >&2
   return 1
+}
+
+update_map(){
+  local map_flag=${2:-}
+  echo "Updating actual map to $map_flag"
+
+  local constant_source_file="$HOME/.bashrc"
+
+  if [ -f "$HOME/.zshrc" ]; then
+    echo "ZSHELL DETECTED"
+    constant_source_file="$HOME/.zshrc"
+  fi
+
+  if grep -q "export MAP_NAME=" "$constant_source_file"; then
+      sed -i "s|export MAP_NAME=.*|export MAP_NAME=\"$map_flag\"|" "$constant_source_file"
+  else
+      echo "export MAP_NAME=\"$map_flag\"" >> "$constant_source_file"
+  fi
+
+  echo "REMEMBER TO SOURCE $constant_source_file TO BE ABLE TO USE MAP" 
 }

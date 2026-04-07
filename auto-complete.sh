@@ -41,3 +41,25 @@ complete -F _run_sh_autocomplete ./status.sh
 # To use this script:
 # Source this script in your terminal: `source auto-complete.sh` or 
 # add it to your shell's configuration file (e.g., ~/.bashrc or ~/.bash_profile).
+
+_initiate_sh_autocomplete() {
+    local cur words
+    _init_completion || return
+
+    local tasks="--gpsr --hric --ppc --storing-groceries --finals"
+    local flags="--build --recreate --open-display --zed --integration"
+
+    local options
+    case ${COMP_CWORD} in
+        1)
+            options="$tasks"
+            ;;
+        *)
+            options="$flags"
+            ;;
+    esac
+
+    COMPREPLY=( $(compgen -W "$options" -- "$cur") )
+}
+
+complete -F _initiate_sh_autocomplete ./initiate.sh

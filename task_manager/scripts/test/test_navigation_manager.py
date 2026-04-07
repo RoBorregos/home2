@@ -18,7 +18,7 @@ class TestNavigationManager(Node):
         self.run()
 
     def run(self):
-        result = self.navigation_manager.areas_dump()
+        result = self.navigation_manager.check_door()
 
         if result != Status.EXECUTION_ERROR:
             self.get_logger().info("SUCCESS")
