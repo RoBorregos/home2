@@ -213,7 +213,7 @@ class ServeClientFasterWhisper(ServeClientBase):
             vad_filter=self.use_vad,
             vad_parameters=self.vad_parameters if self.use_vad else None,
             word_timestamps=True,
-            hallucination_silence_threshold=0.5,
+            hallucination_silence_threshold=0.3,
         )
 
         if ServeClientFasterWhisper.SINGLE_MODEL:
