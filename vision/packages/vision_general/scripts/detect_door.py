@@ -11,10 +11,13 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
     CAMERA_FRAME,
+    DETECT_DOOR_SERVICE,
+    DOOR_DETECTIONS_IMAGE_TOPIC,
+    DOOR_MARKERS_TOPIC,
 )
 from vision_general.utils.calculations import (
-    get_depth,
-    deproject_pixel_to_point,
+    point2d_to_3d,
+    point3d_to_ros_point_stamped,
 )
 from cv_bridge import CvBridge
 import math
@@ -24,10 +27,18 @@ from tf2_geometry_msgs import do_transform_point
 from geometry_msgs.msg import PointStamped
 from ultralytics import YOLO
 import cv2
-import numpy as np
 import os
 
-DOOR_MODEL_PATH = 'src/vision/packages/vision_general/vision_general/utils/models/door.pt'
+DOOR_MODEL_PATH = os.path.join(
+    os.path.dirname(__file__), "../vision_general/utils/models/door.pt"
+)
+
+LABEL_MAP = {
+    "handle": "handle",
+    "handler": "handle",
+    "axis": "axis",
+    "hinge": "axis",
+}
 
 HANDLE_HISTORY_SIZE = 5
 HANDLE_CONSISTENCY_THRESHOLD = 3
@@ -36,7 +47,7 @@ DETECTION_SCANS = 5
 
 
 def point_distance(p1, p2):
-    return math.sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2 + (p1.z - p2.z)**2)
+    return math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2 + (p1.z - p2.z) ** 2)
 
 
 def average_points(points):
@@ -49,16 +60,14 @@ def average_points(points):
 
 class DoorDetectionService(Node):
     def __init__(self):
-        super().__init__('door_detection_service')
+        super().__init__("door_detection_service")
 
         self.bridge = CvBridge()
         self.rgb_image = None
         self.depth_image = None
         self.camera_info = None
 
-        self.rgb_sub = self.create_subscription(
-            Image, CAMERA_TOPIC, self._rgb_cb, 10
-        )
+        self.rgb_sub = self.create_subscription(Image, CAMERA_TOPIC, self._rgb_cb, 10)
         self.depth_sub = self.create_subscription(
             Image, DEPTH_IMAGE_TOPIC, self._depth_cb, 10
         )
@@ -70,25 +79,27 @@ class DoorDetectionService(Node):
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         model_path = os.path.realpath(DOOR_MODEL_PATH)
-        self.get_logger().info(f'Loading door model from: {model_path}')
+        self.get_logger().info(f"Loading door model from: {model_path}")
         self.model = YOLO(model_path)
 
         self.srv = self.create_service(
-            DetectDoor, '/vision/detect_door', self.detect_door_callback
+            DetectDoor, DETECT_DOOR_SERVICE, self.detect_door_callback
         )
 
-        self.debug_pub = self.create_publisher(Image, '/vision/door_detections', 10)
-        self.marker_pub = self.create_publisher(MarkerArray, '/vision/door_markers', 10)
+        self.debug_pub = self.create_publisher(Image, DOOR_DETECTIONS_IMAGE_TOPIC, 10)
+        self.marker_pub = self.create_publisher(MarkerArray, DOOR_MARKERS_TOPIC, 10)
         self.create_timer(0.5, self._publish_debug_image)
         self.create_timer(1.0, self._republish_markers)
 
-        self.get_logger().info('Door detection service ready at /vision/detect_door')
+        self.get_logger().info("Door detection service ready at /vision/detect_door")
 
     def _rgb_cb(self, msg):
-        self.rgb_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
+        self.rgb_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
 
     def _depth_cb(self, msg):
-        self.depth_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='passthrough')
+        self.depth_image = self.bridge.imgmsg_to_cv2(
+            msg, desired_encoding="passthrough"
+        )
 
     def _info_cb(self, msg):
         self.camera_info = msg
@@ -99,17 +110,17 @@ class DoorDetectionService(Node):
         depth_h, depth_w = self.depth_image.shape[:2]
         depth_cx = int(cx * depth_w / rgb_w)
         depth_cy = int(cy * depth_h / rgb_h)
-        depth = get_depth(self.depth_image, (depth_cy, depth_cx))
-        if math.isnan(depth):
+
+        point_3d = point2d_to_3d(
+            self.camera_info, self.depth_image, (depth_cx, depth_cy)
+        )
+        if math.isnan(point_3d[2]):
             return None
 
-        point_3d = deproject_pixel_to_point(self.camera_info, (depth_cx, depth_cy), depth)
-
-        point = Point()
-        point.x = float(point_3d[2])
-        point.y = float(point_3d[0])
-        point.z = float(-point_3d[1])
-        return point
+        ps = point3d_to_ros_point_stamped(
+            point_3d, CAMERA_FRAME, rclpy.time.Time().to_msg(), is_optical=True
+        )
+        return ps.point
 
     def _pixel_to_base_point(self, cx, cy):
         """Convert pixel coords to 3D point in link_base frame."""
@@ -118,7 +129,10 @@ class DoorDetectionService(Node):
             return None
         try:
             transform = self.tf_buffer.lookup_transform(
-                'link_base', CAMERA_FRAME, rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=2.0)
+                "link_base",
+                CAMERA_FRAME,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
             )
             ps = PointStamped()
             ps.header.frame_id = CAMERA_FRAME
@@ -126,12 +140,16 @@ class DoorDetectionService(Node):
             transformed = do_transform_point(ps, transform)
             return transformed.point
         except Exception as e:
-            self.get_logger().warn(f'TF transform failed: {e}')
+            self.get_logger().warn(f"TF transform failed: {e}")
             return None
 
     def _run_single_detection(self):
         """Run one YOLO inference. Returns (handle_point, axis_point) in base frame."""
-        if self.rgb_image is None or self.depth_image is None or self.camera_info is None:
+        if (
+            self.rgb_image is None
+            or self.depth_image is None
+            or self.camera_info is None
+        ):
             return None, None
 
         results = self.model.predict(self.rgb_image, verbose=False, conf=0.3)
@@ -150,10 +168,11 @@ class DoorDetectionService(Node):
                 label = self.model.names[cls_id].lower()
                 self.get_logger().info(f'Detected "{label}" conf={conf:.2f}')
 
-                if ('handle' in label or 'handler' in label) and conf > handle_conf:
+                canonical = LABEL_MAP.get(label)
+                if canonical == "handle" and conf > handle_conf:
                     handle_conf = conf
                     handle_box = box
-                elif ('axis' in label or 'hinge' in label) and conf > axis_conf:
+                elif canonical == "axis" and conf > axis_conf:
                     axis_conf = conf
                     axis_box = box
 
@@ -166,11 +185,13 @@ class DoorDetectionService(Node):
             cam_pt = self._pixel_to_camera_point(cx, cy)
             if cam_pt is not None:
                 self.get_logger().info(
-                    f'Handle in CAMERA frame: ({cam_pt.x:.3f}, {cam_pt.y:.3f}, {cam_pt.z:.3f}), pixel=({cx}, {cy})')
+                    f"Handle in CAMERA frame: ({cam_pt.x:.3f}, {cam_pt.y:.3f}, {cam_pt.z:.3f}), pixel=({cx}, {cy})"
+                )
             handle_point = self._pixel_to_base_point(cx, cy)
             if handle_point is not None:
                 self.get_logger().info(
-                    f'Handle in BASE frame: ({handle_point.x:.3f}, {handle_point.y:.3f}, {handle_point.z:.3f})')
+                    f"Handle in BASE frame: ({handle_point.x:.3f}, {handle_point.y:.3f}, {handle_point.z:.3f})"
+                )
 
         if axis_box is not None:
             x1, y1, x2, y2 = axis_box.xyxy[0].cpu().numpy()
@@ -195,29 +216,33 @@ class DoorDetectionService(Node):
                 cls_id = int(box.cls[0].item())
                 label = self.model.names[cls_id]
 
-                if 'handle' in label.lower() or 'handler' in label.lower():
-                    color = (0, 255, 0)  # green
-                elif 'axis' in label.lower() or 'hinge' in label.lower():
-                    color = (255, 0, 0)  # blue
-                else:
-                    color = (0, 255, 255)  # yellow
+                canonical = LABEL_MAP.get(label.lower(), label.lower())
+                color_map = {"handle": (0, 255, 0), "axis": (255, 0, 0)}
+                color = color_map.get(canonical, (0, 255, 255))
 
                 cv2.rectangle(debug_img, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(debug_img, f'{label} {conf:.2f}', (x1, y1 - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                cv2.putText(
+                    debug_img,
+                    f"{canonical} {conf:.2f}",
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    color,
+                    2,
+                )
 
-        self.debug_pub.publish(self.bridge.cv2_to_imgmsg(debug_img, 'bgr8'))
+        self.debug_pub.publish(self.bridge.cv2_to_imgmsg(debug_img, "bgr8"))
 
     def _publish_markers(self, handle_pos, _axis_pos=None):
         self._last_handle_pos = handle_pos
         self._build_and_publish_markers()
 
     def _republish_markers(self):
-        if hasattr(self, '_last_handle_pos') and self._last_handle_pos is not None:
+        if hasattr(self, "_last_handle_pos") and self._last_handle_pos is not None:
             self._build_and_publish_markers()
 
     def _build_and_publish_markers(self):
-        handle_pos = getattr(self, '_last_handle_pos', None)
+        handle_pos = getattr(self, "_last_handle_pos", None)
         if handle_pos is None:
             return
 
@@ -225,9 +250,9 @@ class DoorDetectionService(Node):
         stamp = self.get_clock().now().to_msg()
 
         m = Marker()
-        m.header.frame_id = 'link_base'
+        m.header.frame_id = "link_base"
         m.header.stamp = stamp
-        m.ns = 'door'
+        m.ns = "door"
         m.id = 0
         m.type = Marker.SPHERE
         m.action = Marker.ADD
@@ -241,9 +266,9 @@ class DoorDetectionService(Node):
         markers.markers.append(m)
 
         t = Marker()
-        t.header.frame_id = 'link_base'
+        t.header.frame_id = "link_base"
         t.header.stamp = stamp
-        t.ns = 'door'
+        t.ns = "door"
         t.id = 1
         t.type = Marker.TEXT_VIEW_FACING
         t.action = Marker.ADD
@@ -254,16 +279,20 @@ class DoorDetectionService(Node):
         t.color.g = 1.0
         t.color.b = 1.0
         t.color.a = 1.0
-        t.text = f'HANDLE ({handle_pos.x:.2f}, {handle_pos.y:.2f}, {handle_pos.z:.2f})'
+        t.text = f"HANDLE ({handle_pos.x:.2f}, {handle_pos.y:.2f}, {handle_pos.z:.2f})"
         markers.markers.append(t)
 
         self.marker_pub.publish(markers)
 
     def detect_door_callback(self, request, response):
-        self.get_logger().info('Door detection request received')
+        self.get_logger().info("Door detection request received")
 
-        if self.rgb_image is None or self.depth_image is None or self.camera_info is None:
-            self.get_logger().error('No camera data available')
+        if (
+            self.rgb_image is None
+            or self.depth_image is None
+            or self.camera_info is None
+        ):
+            self.get_logger().error("No camera data available")
             response.success = False
             response.handle_detected = False
             response.axis_detected = False
@@ -284,7 +313,7 @@ class DoorDetectionService(Node):
                 axis_pos = axis_pt
                 axis_seen = True
                 self.get_logger().info(
-                    f'Axis detected at ({axis_pos.x:.3f}, {axis_pos.y:.3f}, {axis_pos.z:.3f})'
+                    f"Axis detected at ({axis_pos.x:.3f}, {axis_pos.y:.3f}, {axis_pos.z:.3f})"
                 )
 
             time.sleep(0.2)
@@ -304,12 +333,14 @@ class DoorDetectionService(Node):
             if len(best_cluster) >= HANDLE_CONSISTENCY_THRESHOLD:
                 handle_pos = average_points(best_cluster)
                 self.get_logger().info(
-                    f'Handle CONFIRMED ({len(best_cluster)}/{len(handle_history)} consistent) '
-                    f'at ({handle_pos.x:.3f}, {handle_pos.y:.3f}, {handle_pos.z:.3f})'
+                    f"Handle CONFIRMED ({len(best_cluster)}/{len(handle_history)} consistent) "
+                    f"at ({handle_pos.x:.3f}, {handle_pos.y:.3f}, {handle_pos.z:.3f})"
                 )
             else:
                 handle_pos = average_points(best_cluster)
-                self.get_logger().warn('Handle detected but not fully confirmed — using best estimate.')
+                self.get_logger().warn(
+                    "Handle detected but not fully confirmed — using best estimate."
+                )
 
         response.success = handle_pos is not None
         response.handle_detected = handle_pos is not None
@@ -333,5 +364,5 @@ def main(args=None):
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
