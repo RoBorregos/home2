@@ -10,9 +10,12 @@ from launch_ros.substitutions import FindPackageShare
 
 def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
-    rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_default_config.yaml')
+    rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_mapping_config.yaml')
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
-    rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME', 'rtabmap_map.db'))
+    # Default to a dedicated mapping DB — never reuse the navigation database.
+    # The mapping config sets delete_db_on_start=true so each session starts clean.
+    # Override with: map_name:=mymap.db
+    rtabmap_map_name = LaunchConfiguration('map_name', default='mapping_session.db')
 
     nav_central_node = Node(
         package='nav_main',
