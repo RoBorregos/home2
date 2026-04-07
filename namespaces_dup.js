@@ -159,6 +159,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacehric__launch.html#a5dcfeb834a4cf01df9f2c377d4893dce", null ]
     ] ],
     [ "hric_task_manager", "namespacehric__task__manager.html", "namespacehric__task__manager" ],
+    [ "ikfast", "namespaceikfast.html", "namespaceikfast" ],
     [ "is_person_inside", "namespaceis__person__inside.html", "namespaceis__person__inside" ],
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
@@ -366,6 +367,7 @@ var namespaces_dup =
       [ "MOVE_GROUP_GRIPPER", "namespacexarm6.html#aed4ae6261a51750df7bfec97817f42ac", null ],
       [ "OPEN_GRIPPER_JOINT_POSITIONS", "namespacexarm6.html#a870c5989a729d42092392e1737069109", null ]
     ] ],
+    [ "xarm6_ikfast_plugin", "namespacexarm6__ikfast__plugin.html", "namespacexarm6__ikfast__plugin" ],
     [ "xarm_launch", "namespacexarm__launch.html", [
       [ "generate_launch_description", "namespacexarm__launch.html#a6120858d912a0dc3d2783725c36b7d04", null ],
       [ "launch_setup", "namespacexarm__launch.html#a12ed068b87932217931e30a0ae5d9bb6", null ]

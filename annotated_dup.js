@@ -151,6 +151,14 @@ var annotated_dup =
       [ "Guest", "classhric__task__manager_1_1Guest.html", "classhric__task__manager_1_1Guest" ],
       [ "HRIC_TM", "classhric__task__manager_1_1HRIC__TM.html", "classhric__task__manager_1_1HRIC__TM" ]
     ] ],
+    [ "ikfast", "namespaceikfast.html", [
+      [ "IkFastFunctions", "classikfast_1_1IkFastFunctions.html", "classikfast_1_1IkFastFunctions" ],
+      [ "IkSingleDOFSolutionBase", "classikfast_1_1IkSingleDOFSolutionBase.html", "classikfast_1_1IkSingleDOFSolutionBase" ],
+      [ "IkSolution", "classikfast_1_1IkSolution.html", "classikfast_1_1IkSolution" ],
+      [ "IkSolutionBase", "classikfast_1_1IkSolutionBase.html", "classikfast_1_1IkSolutionBase" ],
+      [ "IkSolutionList", "classikfast_1_1IkSolutionList.html", "classikfast_1_1IkSolutionList" ],
+      [ "IkSolutionListBase", "classikfast_1_1IkSolutionListBase.html", "classikfast_1_1IkSolutionListBase" ]
+    ] ],
     [ "is_person_inside", "namespaceis__person__inside.html", [
       [ "IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", "classis__person__inside_1_1IsPersonInside" ]
     ] ],
@@ -444,6 +452,9 @@ var annotated_dup =
     [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", [
       [ "WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", "classwait__for__controller__input__node_1_1WaitForControllerInputNode" ]
     ] ],
+    [ "xarm6_ikfast_plugin", "namespacexarm6__ikfast__plugin.html", [
+      [ "IKFastKinematicsPlugin", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin" ]
+    ] ],
     [ "xarm_utils", "namespacexarm__utils.html", [
       [ "grasp_detector", "namespacexarm__utils_1_1grasp__detector.html", [
         [ "GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", "classxarm__utils_1_1grasp__detector_1_1GraspDetector" ]
@@ -479,11 +490,13 @@ var annotated_dup =
     [ "AreasServices", "classAreasServices.html", "classAreasServices" ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", "structBoxPrimitiveParams" ],
     [ "CallServicesNode", "classCallServicesNode.html", "classCallServicesNode" ],
+    [ "CheckValue", "structCheckValue.html", "structCheckValue" ],
     [ "ClientNode", "classClientNode.html", "classClientNode" ],
     [ "DetectionRecord", "structDetectionRecord.html", "structDetectionRecord" ],
     [ "DetectionsHandlerNode", "classDetectionsHandlerNode.html", "classDetectionsHandlerNode" ],
     [ "DownSamplePointCloud", "classDownSamplePointCloud.html", "classDownSamplePointCloud" ],
     [ "HandlerParams", "structHandlerParams.html", "structHandlerParams" ],
+    [ "IKSolver", "classIKSolver.html", "classIKSolver" ],
     [ "PublishHandleA", "classPublishHandleA.html", "classPublishHandleA" ],
     [ "PublishNode", "classPublishNode.html", "classPublishNode" ],
     [ "TableSegmentationNode", "classTableSegmentationNode.html", "classTableSegmentationNode" ],

@@ -1,8 +1,8 @@
 var searchData=
 [
   ['h_0',['h',['../namespacereid__model.html#af38d74c51ee6e8a581c116ac98a03817',1,'reid_model.h()'],['../classObjectDetector_1_1BBOX.html#afcd37814eb448512ef6ecdfe6ebd9c9e',1,'ObjectDetector.BBOX.h()'],['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a38d9b91745429d6dd18dcafde08adc15',1,'frida_constants.vision_classes.BBOX.h()']]],
-  ['hand_1',['HAND',['../classtask__manager_1_1utils_1_1task_1_1Task.html#a42178176865995e6f228c612d9aa2ce3',1,'task_manager::utils::task::Task']]],
-  ['hand_2',['hand',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ad34b2a84b6e0c385d10234c72e59754e',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['hand_1',['hand',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ad34b2a84b6e0c385d10234c72e59754e',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['hand_2',['HAND',['../classtask__manager_1_1utils_1_1task_1_1Task.html#a42178176865995e6f228c612d9aa2ce3',1,'task_manager::utils::task::Task']]],
   ['hand_5fitems_3',['hand_items',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a8d569c5fdc0b4cbe9d39359268dab9e9',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['hand_5ftask_5fmanager_4',['hand_task_manager',['../namespacehand__task__manager.html',1,'']]],
   ['hand_5ftask_5fmanager_2epy_5',['hand_task_manager.py',['../hand__task__manager_8py.html',1,'']]],
@@ -43,8 +43,8 @@ var searchData=
   ['help_40',['help',['../namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282',1,'moondream_lib.help()'],['../namespaceserver.html#a692f59b384dd93287c366eb7e7c0608b',1,'server.help()']]],
   ['help_20me_20carry_41',['Help me carry',['../md_docs_Run_Tasks_help_me_carry.html',1,'']]],
   ['help_2dme_2dcarry_2emd_42',['help-me-carry.md',['../help-me-carry_8md.html',1,'']]],
-  ['help_5fme_5fcarry_43',['HELP_ME_CARRY',['../classtask__manager_1_1utils_1_1task_1_1Task.html#aa2b793be19afbc6e78024617637d9ef1',1,'task_manager::utils::task::Task']]],
-  ['help_5fme_5fcarry_44',['help_me_carry',['../namespacehelp__me__carry.html',1,'']]],
+  ['help_5fme_5fcarry_43',['help_me_carry',['../namespacehelp__me__carry.html',1,'']]],
+  ['help_5fme_5fcarry_44',['HELP_ME_CARRY',['../classtask__manager_1_1utils_1_1task_1_1Task.html#aa2b793be19afbc6e78024617637d9ef1',1,'task_manager::utils::task::Task']]],
   ['help_5fme_5fcarry_2epy_45',['help_me_carry.py',['../help__me__carry_8py.html',1,'']]],
   ['help_5fme_5fcarry_5flaunch_46',['help_me_carry_launch',['../namespacehelp__me__carry__launch.html',1,'']]],
   ['help_5fme_5fcarry_5flaunch_2epy_47',['help_me_carry_launch.py',['../help__me__carry__launch_8py.html',1,'']]],
@@ -73,5 +73,11 @@ var searchData=
   ['hriccommands_70',['HRICCommands',['../classhric__commands_1_1HRICCommands.html',1,'hric_commands']]],
   ['hrihand_71',['HRIHand',['../classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html',1,'task_manager::subtask_managers::hri_hand']]],
   ['hritasks_72',['HRITasks',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html',1,'task_manager::subtask_managers::hri_tasks']]],
-  ['hz_73',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
+  ['htj0_73',['htj0',['../classIKSolver.html#af29aefe604a6957a573f5532a0ae0924',1,'IKSolver']]],
+  ['htj1_74',['htj1',['../classIKSolver.html#aa12be6bab85a8ca6c8c74c0cb5e92cf9',1,'IKSolver']]],
+  ['htj2_75',['htj2',['../classIKSolver.html#a33e07730a03291ee56912b371dc8268f',1,'IKSolver']]],
+  ['htj3_76',['htj3',['../classIKSolver.html#ab1194d4acb88c80eb7dd3c75a099dd97',1,'IKSolver']]],
+  ['htj4_77',['htj4',['../classIKSolver.html#a84bea2670b08b33b5a24bb1d5d56d7ca',1,'IKSolver']]],
+  ['htj5_78',['htj5',['../classIKSolver.html#ab8ccb7ca78f4a53de4a520c9a37ccf57',1,'IKSolver']]],
+  ['hz_79',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
 ];

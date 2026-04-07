@@ -3,6 +3,7 @@ var hierarchy =
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
     [ "ObjectDetector.BBOX", "classObjectDetector_1_1BBOX.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
+    [ "CheckValue< T >", "structCheckValue.html", null ],
     [ "task_manager.utils.colored_logger.CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
     [ "task_manager.utils.config.MockConfig.Config", "classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html", null ],
@@ -21,6 +22,18 @@ var hierarchy =
     [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
     [ "HandlerParams", "structHandlerParams.html", null ],
     [ "task_manager.subtask_managers.hri_hand.HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
+    [ "ikfast::IkFastFunctions< T >", "classikfast_1_1IkFastFunctions.html", null ],
+    [ "ikfast::IkSingleDOFSolutionBase< T >", "classikfast_1_1IkSingleDOFSolutionBase.html", null ],
+    [ "ikfast::IkSolutionBase< T >", "classikfast_1_1IkSolutionBase.html", [
+      [ "ikfast::IkSolution< T >", "classikfast_1_1IkSolution.html", null ]
+    ] ],
+    [ "ikfast::IkSolutionListBase< T >", "classikfast_1_1IkSolutionListBase.html", [
+      [ "ikfast::IkSolutionList< T >", "classikfast_1_1IkSolutionList.html", null ]
+    ] ],
+    [ "IKSolver", "classIKSolver.html", null ],
+    [ "kinematics::KinematicsBase", null, [
+      [ "xarm6_ikfast_plugin::IKFastKinematicsPlugin", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html", null ]
+    ] ],
     [ "rclcpp_lifecycle::LifecycleNode", null, [
       [ "AreasServices", "classAreasServices.html", null ]
     ] ],

@@ -6,10 +6,10 @@ var indexSectionsWithContent =
   3: "_abcdefghiklmnopqrstuvwxyz",
   4: "_abcdefghijklmnopqrstuvwz~",
   5: "_abcdefghijklmnopqrstuvwxyz",
-  6: "cps",
+  6: "cgps",
   7: "pu",
   8: "cinopxyz",
-  9: "_a",
+  9: "_ai",
   10: "cdefhimnprsv"
 };
 
