@@ -22,7 +22,7 @@ class TestNavigationManager(Node):
         self.tests_funcs = {
                 "Check Door": {'func': self.navigation_manager.check_door},
                 "Retrieve Areas": {'func': self.navigation_manager.retrieve_areas}, 
-                "Move to Location": {'func': self.navigation_manager.move_to_location, 'location': "kitchen", 'sublocation': "cabinet"}
+                "Move to Location": {'func': self.navigation_manager.move_to_location, 'location': "kitchen", 'sublocation': ""}
         }
 
         print(f"\n{Logger.BOLD}Testing {len(self.tests_funcs)} available subtaks..... \n")
