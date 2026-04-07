@@ -159,7 +159,8 @@ class HearStreaming(Node):
                     self.get_logger().error(f"I/O error({e.errno}): {e.strerror}")
                     break
             # Cancel the grpc request if the stop flag is set
-            call.cancel()
+            if call is not None:
+                call.cancel()
 
         def handle_transcripts(responses):
             try:
