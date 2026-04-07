@@ -14,7 +14,7 @@ def generate_launch_description():
     
     return LaunchDescription([
         Node(
-            package='dashgo_driver',
+            package='dashgo_driver_cpp',
             executable='dashgo_driver_cpp',
             name='DashgoDriverCpp',
             output='screen',
