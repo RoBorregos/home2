@@ -132,7 +132,10 @@ class TestHriManager(Node):
 
         if TEST_TAKE_ORDER:
             self.test_take_order()
-
+        s, user_request, _ = self.hri_manager.hear(
+            initial_prompt="my favorite food is", hotwords="banana"
+        )
+        self.get_logger().info(f"Status: {s}, Heard: {user_request}")
         exit(0)
 
     def individual_functions(self):
