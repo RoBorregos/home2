@@ -239,7 +239,10 @@ class NavRosNode(Node):
                         elapsed += 0.1
 
                 # --- Save 2D map via map_saver_cli ---
-                maps_dir = os.path.join(get_package_share_directory('map_context'), 'maps')
+                # Derive source path from RTAB_MAPS_PATH so files survive rebuilds.
+                # RTAB_MAPS_PATH = /workspace/src/navigation/rtabmapdbs/
+                nav_src = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))  # .../src/navigation
+                maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
                 os.makedirs(maps_dir, exist_ok=True)
                 map_out = os.path.join(maps_dir, name)
                 result = subprocess.run(
