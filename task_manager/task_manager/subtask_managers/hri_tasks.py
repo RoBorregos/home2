@@ -41,7 +41,6 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
-from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
     AddEntry,
     CategorizeShelves,
@@ -57,10 +56,12 @@ from frida_interfaces.srv import (
     QueryEntry,
     Speak,
 )
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+
 from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,
@@ -407,7 +408,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def hear(
         self,
         hotwords="",
-        silence_time=2.0,
+        silence_time=4.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
     ) -> str:
@@ -625,6 +626,7 @@ class HRITasks(metaclass=SubtaskMeta):
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
+        always_confirm: bool = False,
         options: list[str] = None,
         remap: dict = None,
     ):
@@ -655,14 +657,14 @@ class HRITasks(metaclass=SubtaskMeta):
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
-                target_found = False
+                target_found = options is None
                 similarity = 1
                 try:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
                         if s != Status.EXECUTION_SUCCESS:
-                            self.say("Sorry, I coudn't understand.")
+                            self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
 
@@ -709,7 +711,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 except Exception as e:
                     print("Failed matching result:", e)
 
-                if skip_confirmation:
+                if not always_confirm and skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
 
                 # Determine the confirmation question

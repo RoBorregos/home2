@@ -81,7 +81,7 @@ set(msg_files
   "manipulation/msg/PickParams.msg"
   "manipulation/msg/PickResult.msg"
   "manipulation/msg/PlaceParams.msg"
-  "manipulation/msg/GripperDetection.msg"
+  "manipulation/msg/GripperGraspState.msg"
   "manipulation/msg/PourParams.msg"
   "vision/msg/CustomerTable.msg"
   "vision/msg/ObjectDetectionArray.msg"
@@ -167,6 +167,7 @@ set(srv_files
   "vision/srv/Customer.srv"
   "vision/srv/YoloDetect.srv"
   "navigation/srv/MapAreas.srv"
+  "navigation/srv/MoveLocation.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

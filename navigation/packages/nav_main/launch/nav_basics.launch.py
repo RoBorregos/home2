@@ -1,56 +1,74 @@
 
+import os
+from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch.conditions import UnlessCondition, IfCondition
+from launch.conditions import IfCondition
 from launch import LaunchDescription
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
-def launch_setup(context, *args, **kwargs):
-    use_sim = LaunchConfiguration('use_sim', default='false')
-    use_dualshock = LaunchConfiguration('use_dualshock', default='true')
 
-    dashgo_driver = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("dashgo_driver_cpp"),
-                    "launch",
-                    "dashgo_driver_cpp.launch.py",
-                ]
-            )
-            ),
-        condition=UnlessCondition(use_sim),
-        )
-    
-    ekf_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("dashgo_driver_cpp"),
-                    "launch",
-                    "ekf.launch.py",
-                ]
-            )
-        ), 
-        )
-    
-    # Static transforms from URDF (lidar.xacro) — avoids needing xacro/robot_state_publisher
-    # base_link -> laser: xyz="0.16 0 0.002" rpy="0 0 3.14"
-    laser_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='laser_tf_broadcaster',
-        arguments=['0.16', '0', '0.002', '3.14', '0', '0', 'base_link', 'laser'],
+def launch_setup(context, *args, **kwargs):
+    use_dualshock = LaunchConfiguration('use_dualshock', default='true')
+    log_output = 'own_log' if os.getenv('NAV_QUIET') == '1' else 'screen'
+
+    dashgo_config = os.path.join(
+        get_package_share_directory('dashgo_driver_cpp'),
+        'config',
+        'dashgo_params.yaml'
     )
-    # base_link -> imu_base: xyz="0.15026 0 0.002" rpy="3.1416 3.1416 1.57"
-    imu_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='imu_tf_broadcaster',
-        arguments=['0.15026', '0', '0.002', '1.57', '3.1416', '3.1416', 'base_link', 'imu_base'],
+
+    dashgo_driver = Node(
+        package='dashgo_driver',
+        executable='dashgo_driver_cpp',
+        name='DashgoDriver',
+        output=log_output,
+        emulate_tty=True,
+        parameters=[dashgo_config],
+        remappings=[('/cmd_vel', LaunchConfiguration('cmd_topic', default='/cmd_vel'))],
+        respawn=True,
+        respawn_delay=2.0,
+    )
+
+    ekf_launch = Node(
+        package='robot_localization',
+        executable='ekf_node',
+        output=log_output,
+        emulate_tty=True,
+        respawn=True,
+        respawn_delay=2.0,
+        parameters=[{
+                'output_frame': 'odom',
+                'frequency': 50.0,
+                'sensor_timeout': 0.1,
+                'two_d_mode': True,
+                'publish_tf': True,
+                'map_frame': 'map',
+                'base_link_frame': 'base_link',
+                'world_frame': 'odom',
+                'odom0': 'dashgo_odom',
+                'imu0': 'imu',
+                #  x, y, z 
+                # roll, pitch, yaw 
+                #  vx, vy, vz 
+                # vroll, vpitch, vyaw
+                # ax, ay, az
+                'odom0_config': [False, False, False,
+                                False, False, False,
+                                True, False, False,
+                                False, False, True,
+                                False, False, False],
+                'imu0_config': [False, False, False,
+                                 False, False, True,
+                                 False, False, False,
+                                 False, False, True,
+                                 False, False, False],
+                'imu0_differential': False,
+
+             }],
     )
 
     laser_launch = Node(
@@ -68,10 +86,11 @@ def launch_setup(context, *args, **kwargs):
             'ignore_array': '-139.9, -122.4, -86.4, -78.4, -40.8, -30.3, 0, 21.8, 30.8, 40.3, 78.4, 93.9, 120.9, 138.4',
             'min_range': 0.12,
         }],
-        output='screen',
-        condition=UnlessCondition(use_sim)
-        )
-    
+        output=log_output,
+        respawn=True,
+        respawn_delay=2.0,
+    )
+
     dualshock_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -81,27 +100,28 @@ def launch_setup(context, *args, **kwargs):
                     "dualshock_cmd_vel.launch.py",
                 ],
             ),
-            
         ),
         condition=IfCondition(use_dualshock),
-        )
-
-    # Event handler: shut down the entire launch if any node exits with an error
-    shutdown_on_failure = RegisterEventHandler(
-        OnProcessExit(
-            on_exit=[
-                LogInfo(msg="A navigation node has exited. Checking return code..."),
-                EmitEvent(event=Shutdown(reason="A critical navigation node exited unexpectedly.")),
-            ]
-        )
     )
 
+    # Shutdown handler for each critical node — triggers after max respawn retries
+    def make_shutdown_handler(node, name):
+        return RegisterEventHandler(
+            OnProcessExit(
+                target_action=node,
+                on_exit=[
+                    LogInfo(msg=f"{name} exited after max respawn retries. Shutting down."),
+                    EmitEvent(event=Shutdown(reason=f"{name} failed after 5 retries.")),
+                ]
+            )
+        )
+
     return_launch = [
-        shutdown_on_failure,
+        make_shutdown_handler(dashgo_driver, "DashgoDriver"),
+        make_shutdown_handler(ekf_launch, "EKF"),
+        make_shutdown_handler(laser_launch, "Laser"),
         dashgo_driver,
         ekf_launch,
-        laser_tf,
-        imu_tf,
         laser_launch,
         dualshock_launch,
     ]
