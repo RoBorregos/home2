@@ -20,11 +20,14 @@ from pathlib import Path
 
 import rclpy
 from rclpy.node import Node
+from geometry_msgs.msg import PointStamped
+from frida_interfaces.srv import PointTransformation
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
+POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 
 SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
 
@@ -196,6 +199,9 @@ class PickAndPlaceTM(Node):
         self.shelves: dict[int, list[str]] = {}  # shelf_index -> list of object names
         self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
         self.shelf_scanned = False
+        self.shelf_level_threshold = 0.20  # max distance above shelf height
+        self.shelf_level_down_threshold = 0.05  # max distance below shelf height
+        self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
 
         # Attempt counter — reset on state change
         self.current_attempts = 0
@@ -289,6 +295,61 @@ class PickAndPlaceTM(Node):
         start_time = time.time()
         while (time.time() - start_time) < duration:
             rclpy.spin_once(self, timeout_sec=0.1)
+
+    def convert_to_height(self, detection) -> float | None:
+        """Convert a detection's 3D point to height in base_link frame."""
+        try:
+            stamped_point = PointStamped()
+            stamped_point.header.frame_id = "zed_left_camera_optical_frame"
+            stamped_point.header.stamp = self.get_clock().now().to_msg()
+            stamped_point.point.x = detection.px
+            stamped_point.point.y = detection.py
+            stamped_point.point.z = detection.pz
+            request = PointTransformation.Request()
+            request.target_frame = "base_link"
+            request.point = stamped_point
+            future = self.transform_tf.call_async(request)
+            rclpy.spin_until_future_complete(self, future)
+            result = future.result()
+            if not result.success:
+                CLog.vision(self, "TF", f"Transform failed: {result.error_message}", level="error")
+                return None
+            return result.transformed_point.point.z
+        except Exception as e:
+            CLog.vision(self, "TF", f"Error converting to height: {e}", level="error")
+            return None
+
+    def _filter_detections_by_height(self, detections, target_height: float) -> list:
+        """Filter detections to only include objects near the target shelf height."""
+        filtered = []
+        for det in detections:
+            height = self.convert_to_height(det)
+            if height is None:
+                continue
+            distance = height - target_height
+            if (distance < 0 and abs(distance) < self.shelf_level_down_threshold) or (
+                distance >= 0 and distance < self.shelf_level_threshold
+            ):
+                filtered.append(det)
+                CLog.vision(
+                    self,
+                    "SHELF",
+                    f"{det.classname} at height {height:.2f}m matches shelf at {target_height:.2f}m",
+                )
+            else:
+                CLog.vision(
+                    self,
+                    "SHELF",
+                    f"{det.classname} at height {height:.2f}m skipped (target {target_height:.2f}m)",
+                )
+        return filtered
+
+    def _scan_shelf_level(self, height: float) -> None:
+        """Scan a single shelf level: move arm, wait for octomap, detect objects."""
+        self.subtask_manager.manipulation.get_optimal_position_for_plane(
+            height, tolerance=0.1, table_or_shelf=False, approach_plane=True
+        )
+        self.timeout(3.0)
 
     def categorize_object(self, obj_name: str) -> ObjectCategory:
         """Assign an object to a category based on its name"""
@@ -620,7 +681,7 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES)
             self.subtask_manager.hri.say("Scanning cabinet shelves.", wait=False)
 
-            # Scan each shelf level
+            # Scan each shelf level (move arm, build octomap, detect + filter by height)
             shelf_levels = sorted(self.shelf_level_heights.keys())
             self.shelves = {i: [] for i in range(len(shelf_levels))}
 
@@ -629,10 +690,7 @@ class PickAndPlaceTM(Node):
                 CLog.vision(self, "SHELF", f"Scanning shelf level {level} at {height}m")
                 self.subtask_manager.hri.say(f"Scanning shelf number {idx + 1}.", wait=False)
 
-                self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                    height, tolerance=0.1, table_or_shelf=False, approach_plane=True
-                )
-                self.timeout(3.0)
+                self._scan_shelf_level(height)
 
                 status, detections = self.subtask_manager.vision.detect_objects()
                 retry = 0
@@ -648,7 +706,8 @@ class PickAndPlaceTM(Node):
                     retry += 1
 
                 if status == Status.EXECUTION_SUCCESS and detections:
-                    for det in detections:
+                    filtered = self._filter_detections_by_height(detections, height)
+                    for det in filtered:
                         obj_name = det.classname if det.classname else "unknown"
                         self.shelves[idx].append(obj_name)
                     CLog.vision(self, "SHELF", f"Shelf {level}: {self.shelves[idx]}")
@@ -732,7 +791,10 @@ class PickAndPlaceTM(Node):
                     "PLACE",
                     f"Placing {self.grasped_object.name} at shelf height {shelf_height}m.",
                 )
-                # Move arm to optimal position for this shelf before placing
+                # Re-scan the target shelf level for fresh octomap
+                CLog.manip(self, "PLACE", f"Re-scanning shelf at {shelf_height}m before placing.")
+                self._scan_shelf_level(shelf_height)
+                # Move arm to placement position (approach_plane=False for placing)
                 self.subtask_manager.manipulation.get_optimal_position_for_plane(
                     shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
                 )
@@ -812,7 +874,11 @@ class PickAndPlaceTM(Node):
 
             is_cabinet = item_location == Location.CABINET
             if is_cabinet:
-                self.subtask_manager.manipulation.move_to_position("front_stare")
+                # Re-scan all shelf levels to build fresh octomap before picking
+                CLog.manip(self, "PICK", "Re-scanning shelves for octomap before cabinet pick.")
+                shelf_levels = sorted(self.shelf_level_heights.keys())
+                for level in shelf_levels:
+                    self._scan_shelf_level(self.shelf_level_heights[level])
             else:
                 self.subtask_manager.manipulation.move_to_position("table_stare")
 
