@@ -252,16 +252,29 @@ private:
                 imu_msg.orientation.y = q.y();
                 imu_msg.orientation.z = q.z();
                 imu_msg.orientation.w = q.w();
-                
+
+                // Covariance: roll/pitch unknown (large), yaw measured (small)
+                imu_msg.orientation_covariance[0] = 1000000.0;
+                imu_msg.orientation_covariance[4] = 1000000.0;
+                imu_msg.orientation_covariance[8] = 0.000001;
+
                 imu_msg.angular_velocity.z = yaw_vel * M_PI / 180.0;
+                imu_msg.angular_velocity_covariance[0] = 0.01;
+                imu_msg.angular_velocity_covariance[4] = 0.01;
+                imu_msg.angular_velocity_covariance[8] = 0.01;
+
                 imu_msg.linear_acceleration.x = acc_x_raw / 100.0;
                 imu_msg.linear_acceleration.y = acc_y_raw / 100.0;
                 imu_msg.linear_acceleration.z = acc_z_raw / 100.0;
-                
+                imu_msg.linear_acceleration_covariance[0] = 0.1;
+                imu_msg.linear_acceleration_covariance[4] = 0.1;
+                imu_msg.linear_acceleration_covariance[8] = 0.1;
+
                 imu_pub_->publish(imu_msg);
-                
+
                 auto angle_msg = std_msgs::msg::Float32();
-                angle_msg.data = -1.0 * imu_offset_ * yaw * M_PI / 180.0;
+                // Half-angle in radians (matches Python driver convention)
+                angle_msg.data = -1.0 * imu_offset_ * yaw * M_PI / (180.0 * 2.0);
                 imu_angle_pub_->publish(angle_msg);
             }
         }
@@ -333,9 +346,21 @@ private:
         odom.pose.pose.orientation.y = q.y();
         odom.pose.pose.orientation.z = q.z();
         odom.pose.pose.orientation.w = q.w();
+        odom.pose.covariance[0]  = 1e-3;   // x
+        odom.pose.covariance[7]  = 1e-3;   // y
+        odom.pose.covariance[14] = 1e6;    // z (unused)
+        odom.pose.covariance[21] = 1e6;    // roll (unused)
+        odom.pose.covariance[28] = 1e6;    // pitch (unused)
+        odom.pose.covariance[35] = 1e-9;   // yaw
         odom.twist.twist.linear.x = vxy;
         odom.twist.twist.angular.z = vth;
-        
+        odom.twist.covariance[0]  = 1e-9;  // vx
+        odom.twist.covariance[7]  = 1e-3;  // vy (unused)
+        odom.twist.covariance[14] = 1e6;   // vz (unused)
+        odom.twist.covariance[21] = 1e6;   // vroll (unused)
+        odom.twist.covariance[28] = 1e6;   // vpitch (unused)
+        odom.twist.covariance[35] = 1e-9;  // vyaw
+
         odom_pub_->publish(odom);
 
         if (!use_imu_) {
