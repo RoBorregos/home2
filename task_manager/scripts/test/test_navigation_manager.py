@@ -27,7 +27,7 @@ class TestNavigationManager(Node):
             "Retrieve Areas": {"func": self.navigation_manager.retrieve_areas},
             "Move to Location": {
                 "func": self.navigation_manager.move_to_location,
-                "location": "kitchen",
+                "location": "entrance",
                 "sublocation": "",
             },
         }
