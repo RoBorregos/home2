@@ -148,6 +148,7 @@ PLACE_FLOOR_RIGHT = {
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
+    "front_stare_carry_bag": FRONT_STARE_CARRY_BAG,
     "table_stare": TABLE_STARE,
     "receive_object": RECEIVE_OBJECT,
     "cutlery_stare": CUTLERY_STARE,
