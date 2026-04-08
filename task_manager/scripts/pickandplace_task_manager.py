@@ -13,6 +13,7 @@ Strategy: maximize pick+place score in 7 minutes.
 
 import json
 import time
+from collections import defaultdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -22,7 +23,6 @@ from rclpy.node import Node
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
-from frida_constants.vision_classes import BBOX
 
 ATTEMPT_LIMIT = 3
 
@@ -78,6 +78,7 @@ class PickAndPlaceTM(Node):
         # Cleanup Phase
         PERCEIVE_TABLE = "PERCEIVE_TABLE"
         ANNOUNCE_OBJECTS = "ANNOUNCE_OBJECTS"
+        SCAN_CABINET_SHELVES = "SCAN_CABINET_SHELVES"
         SORT_OBJECTS = "SORT_OBJECTS"
         CLEANUP_LOOP = "CLEANUP_LOOP"
         PICK_OBJECT = "PICK_OBJECT"
@@ -85,7 +86,6 @@ class PickAndPlaceTM(Node):
         CHECK_DISHWASHER = "CHECK_DISHWASHER"
         REQUEST_DISHWASHER_HELP = "REQUEST_DISHWASHER_HELP"
         NAVIGATE_TO_PLACEMENT = "NAVIGATE_TO_PLACEMENT"
-        PERCEIVE_CABINET_SHELVES = "PERCEIVE_CABINET_SHELVES"
         PLACE_OBJECT = "PLACE_OBJECT"
 
         # Breakfast Phase
@@ -103,9 +103,7 @@ class PickAndPlaceTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("pickandplace_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.PICK_AND_PLACE, mock_areas=[]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=[])
 
         # ACTION REQUIRED: Adjust before competition
         self.use_side_table = False  # True = use side table objects (penalty per object)
@@ -194,8 +192,10 @@ class PickAndPlaceTM(Node):
         # Dishwasher state (only used when use_dishwasher=True)
         self.dishwasher_open = False
 
-        # Cabinet shelf categories — populated on first cabinet visit via moondream
-        self.shelf_categories: dict = {}
+        # Shelf scanning data
+        self.shelves: dict[int, list[str]] = {}  # shelf_index -> list of object names
+        self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
+        self.shelf_scanned = False
 
         # Attempt counter — reset on state change
         self.current_attempts = 0
@@ -321,28 +321,20 @@ class PickAndPlaceTM(Node):
         else:
             return Location.CABINET
 
-    def _find_shelf_height_for_object(self, obj: ObjectInfo) -> float:
-        """Find the best shelf height by matching object to moondream descriptions."""
-        if not self.shelf_categories:
-            return self.default_shelf_height
-
+    def _get_shelf_height_for_object(self, obj: ObjectInfo) -> float:
+        """Get the shelf height for an object using categorize_objects mapping."""
         obj_name = obj.name.lower()
-        obj_semantic_cat = self._object_to_category.get(obj_name, "")
+        shelf_levels = sorted(self.shelf_level_heights.keys())
 
-        for level, description in self.shelf_categories.items():
-            desc_lower = description.lower()
-            if obj_name in desc_lower:
-                height = self.shelf_level_heights.get(level, self.default_shelf_height)
-                CLog.vision(
-                    self, "SHELF", f"Shelf match (name): '{obj_name}' → level {level} ({height}m)"
-                )
-                return height
-            if obj_semantic_cat and obj_semantic_cat in desc_lower:
+        if obj_name in self.object_to_placing_shelf and self.object_to_placing_shelf[obj_name]:
+            shelf_idx = self.object_to_placing_shelf[obj_name][0]
+            if shelf_idx < len(shelf_levels):
+                level = shelf_levels[shelf_idx]
                 height = self.shelf_level_heights.get(level, self.default_shelf_height)
                 CLog.vision(
                     self,
                     "SHELF",
-                    f"Shelf match (category '{obj_semantic_cat}'): '{obj_name}' → level {level} ({height}m)",
+                    f"Categorized shelf for '{obj_name}' → index {shelf_idx}, level {level} ({height}m)",
                 )
                 return height
 
@@ -608,8 +600,8 @@ class PickAndPlaceTM(Node):
             result = self.navigate_to_location(placement_loc)
 
             if result == Status.EXECUTION_SUCCESS:
-                if placement_loc == Location.CABINET and not self.shelf_categories:
-                    self.current_state = PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES
+                if placement_loc == Location.CABINET and not self.shelf_scanned:
+                    self.current_state = PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES
                 else:
                     self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
             else:
@@ -623,46 +615,99 @@ class PickAndPlaceTM(Node):
                 self.current_object_index += 1
                 self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
-        # ==================== PERCEIVE CABINET SHELVES ====================
-        elif self.current_state == PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES:
-            self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES)
-            self.subtask_manager.manipulation.move_to_position("front_stare")
+        # ==================== SCAN CABINET SHELVES ====================
+        elif self.current_state == PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES:
+            self._track_state_change(PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES)
+            self.subtask_manager.hri.say("Scanning cabinet shelves.", wait=False)
 
-            shelf_status, shelf_detections = None, None
-            for attempt in range(2):
-                shelf_status, shelf_detections = self.subtask_manager.vision.detect_shelf()
-                if shelf_status == Status.EXECUTION_SUCCESS and shelf_detections:
-                    break
+            # Scan each shelf level
+            shelf_levels = sorted(self.shelf_level_heights.keys())
+            self.shelves = {i: [] for i in range(len(shelf_levels))}
+
+            for idx, level in enumerate(shelf_levels):
+                height = self.shelf_level_heights[level]
+                CLog.vision(self, "SHELF", f"Scanning shelf level {level} at {height}m")
+                self.subtask_manager.hri.say(f"Scanning shelf number {idx + 1}.", wait=False)
+
+                self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                    height, tolerance=0.1, table_or_shelf=False, approach_plane=True
+                )
+                self.timeout(3.0)
+
+                status, detections = self.subtask_manager.vision.detect_objects()
+                retry = 0
+                while status != Status.EXECUTION_SUCCESS and retry < 3:
+                    CLog.vision(
+                        self,
+                        "SHELF",
+                        f"Retry {retry + 1} detecting at shelf {level}",
+                        level="warn",
+                    )
+                    self.timeout(1.0)
+                    status, detections = self.subtask_manager.vision.detect_objects()
+                    retry += 1
+
+                if status == Status.EXECUTION_SUCCESS and detections:
+                    for det in detections:
+                        obj_name = det.classname if det.classname else "unknown"
+                        self.shelves[idx].append(obj_name)
+                    CLog.vision(self, "SHELF", f"Shelf {level}: {self.shelves[idx]}")
+                else:
+                    CLog.vision(
+                        self,
+                        "SHELF",
+                        f"No objects detected at shelf level {level}.",
+                        level="warn",
+                    )
+
+            self.shelf_scanned = True
+            CLog.vision(self, "SHELF", f"All shelves scanned: {self.shelves}")
+
+            # Categorize table objects against shelf contents
+            object_names_on_table = [obj.name for obj in self.detected_objects]
+            CLog.vision(
+                self,
+                "CATEGORIZE",
+                f"Categorizing {object_names_on_table} with shelves {self.shelves}",
+            )
+
+            try:
+                cat_status, categorized_shelfs, objects_to_add, _ = (
+                    self.subtask_manager.hri.categorize_objects(object_names_on_table, self.shelves)
+                )
+            except Exception as e:
+                CLog.hri(self, "CATEGORIZE", f"Error categorizing: {e}", level="error")
+                cat_status = Status.EXECUTION_ERROR
+
+            if cat_status == Status.EXECUTION_SUCCESS:
+                self.object_to_placing_shelf = defaultdict(list)
+                for shelf_idx in objects_to_add:
+                    for obj_name in objects_to_add[shelf_idx]:
+                        self.object_to_placing_shelf[obj_name].append(shelf_idx)
+
+                CLog.vision(self, "CATEGORIZE", f"Shelf categories: {categorized_shelfs}")
                 CLog.vision(
                     self,
-                    "SHELF",
-                    f"Shelf detection attempt {attempt+1} failed, retrying...",
-                    level="warn",
+                    "CATEGORIZE",
+                    f"Object placement: {dict(self.object_to_placing_shelf)}",
                 )
-                self.timeout(2.0)
 
-            if shelf_status == Status.EXECUTION_SUCCESS and shelf_detections:
-                for shelf in shelf_detections:
-                    level = shelf.level
-                    shelf_bbox = BBOX(x1=shelf.x1, y1=shelf.y1, x2=shelf.x2, y2=shelf.y2)
-                    status_q, description = self.subtask_manager.vision.moondream_crop_query(
-                        "What type of objects are on this shelf? Answer in a few words.",
-                        shelf_bbox,
-                    )
-                    if status_q == Status.EXECUTION_SUCCESS and description:
-                        self.shelf_categories[level] = description.strip()
-                    else:
-                        self.shelf_categories[level] = ""
-
-                CLog.vision(self, "SHELF", f"Cabinet shelf categories: {self.shelf_categories}")
-                for level, cat in self.shelf_categories.items():
-                    height = self.shelf_level_heights.get(level, self.default_shelf_height)
-                    self.subtask_manager.hri.say(
-                        f"Shelf {level} at {height} metres has {cat}.", wait=False
-                    )
+                for obj_name, shelf_idxs in self.object_to_placing_shelf.items():
+                    if shelf_idxs:
+                        shelf_idx = shelf_idxs[0]
+                        level = shelf_levels[shelf_idx] if shelf_idx < len(shelf_levels) else 1
+                        height = self.shelf_level_heights.get(level, self.default_shelf_height)
+                        self.subtask_manager.hri.say(
+                            f"{obj_name} goes to shelf {level} at {height} metres.",
+                            wait=False,
+                        )
+                        self.timeout(0.5)
             else:
-                CLog.vision(
-                    self, "SHELF", "Shelf detection failed, using default height.", level="warn"
+                CLog.hri(
+                    self,
+                    "CATEGORIZE",
+                    "Categorization failed, will use default shelf heights.",
+                    level="warn",
                 )
 
             self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
@@ -681,16 +726,16 @@ class PickAndPlaceTM(Node):
             elif placement_loc == Location.TRASH_BIN:
                 status = self.subtask_manager.manipulation.place()
             elif placement_loc == Location.CABINET:
-                if self.shelf_categories:
-                    shelf_height = self._find_shelf_height_for_object(self.grasped_object)
-                else:
-                    shelf_height = self.default_shelf_height
-                    CLog.manip(
-                        self,
-                        "PLACE",
-                        f"No shelf info, using default height {shelf_height}m.",
-                        level="warn",
-                    )
+                shelf_height = self._get_shelf_height_for_object(self.grasped_object)
+                CLog.manip(
+                    self,
+                    "PLACE",
+                    f"Placing {self.grasped_object.name} at shelf height {shelf_height}m.",
+                )
+                # Move arm to optimal position for this shelf before placing
+                self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                    shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
+                )
                 status = self.subtask_manager.manipulation.place_on_shelf(
                     plane_height=shelf_height,
                     tolerance=0.1,
