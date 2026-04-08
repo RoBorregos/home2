@@ -27,13 +27,8 @@ install(DIRECTORY launch config bt
   ament_python_install_package(${PROJECT_NAME})
 
   file(GLOB PYTHON_SCRIPTS scripts/*.py)
-
-  #Install python scripts
-  install(PROGRAMS
-    scripts/nav_lifecycle_manager.py
-    ${PYTHON_SCRIPTS}
-    DESTINATION lib/${PROJECT_NAME}
-  )
+install(PROGRAMS ${PYTHON_SCRIPTS}
+    DESTINATION lib/${PROJECT_NAME}) 
 
 
 if(BUILD_TESTING)

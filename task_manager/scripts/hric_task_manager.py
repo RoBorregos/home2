@@ -114,23 +114,13 @@ class HRIC_TM(Node):
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.move_to_position("nav_pose")
-        self.subtask_manager.nav.resume_nav()
         if say:
             Logger.info(self, f"Moving to {location}")
             self.subtask_manager.hri.say(
                 f"I'll guide you to the {location}. Take a step back and please follow me.",
                 wait=False,
             )
-        result = Status.EXECUTION_ERROR
-        retry = 0
-        while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
-            future = self.subtask_manager.nav.move_to_location(location, sublocation)
-            if "navigation" not in self.subtask_manager.get_mocked_areas():
-                rclpy.spin_until_future_complete(self, future)
-                result = future.result()
-
-            retry += 1
-        self.subtask_manager.nav.pause_nav()
+        self.subtask_manager.nav.move_to_location(location, sublocation)
 
     def timeout(self, timeout: int = 2):
         time.sleep(timeout)
