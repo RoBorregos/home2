@@ -19,7 +19,7 @@ def generate_launch_description():
                     'map_frame': 'map',
                     'base_link_frame': 'base_link',
                     'world_frame': 'odom',
-                    'odom0': 'odom',
+                    'odom0': 'dashgo_odom',
                     'imu0': 'imu',
                     #  x, y, z 
                     # roll, pitch, yaw 
