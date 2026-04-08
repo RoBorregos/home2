@@ -12,8 +12,8 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[{
                     'output_frame': 'odom',
-                    'frequency': 30.0,
-                    'sensor_timeout': 0.15,
+                    'frequency': 50.0,
+                    'sensor_timeout': 0.1,
                     'two_d_mode': True,
                     'publish_tf': True,
                     'map_frame': 'map',
