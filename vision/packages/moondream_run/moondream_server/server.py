@@ -55,15 +55,15 @@ def serve(**kwargs):
         ("grpc.max_send_message_length", 200 * 1024 * 1024),
     ]
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
-
-    print("Loading MoonDream model (this may take several minutes on first run)...")
+    print("Loading MoonDream model...")
     md_model = MoonDreamModel(**kwargs)
+
     moondream_proto_pb2_grpc.add_MoonDreamServiceServicer_to_server(
         MoonDreamServicer(md_model), server
     )
     server.add_insecure_port("[::]:50052")
+    print("gRPC server started on port 50052...")
     server.start()
-    print("gRPC server started on port 50052 — ready to serve requests.")
     server.wait_for_termination()
 
 
