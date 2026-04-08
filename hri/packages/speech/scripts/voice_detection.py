@@ -18,6 +18,7 @@ class VoiceDetection(Node):
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("VAD_AUDIO_TOPIC", "/hri/vadAudioChunk")
         self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/hri/voice_activity")
+        self.declare_parameter("ENABLE_VAD", True)
         self.declare_parameter("ENERGY_THRESHOLD", 1500.0)
         self.declare_parameter("CORRELATION_THRESHOLD", 0.5)
         self.declare_parameter("SIMILARITY_THRESHOLD", 0.80)
@@ -57,6 +58,9 @@ class VoiceDetection(Node):
         self.sample_rate = (
             self.get_parameter("SAMPLE_RATE").get_parameter_value().integer_value
         )
+        self.enable_vad = (
+            self.get_parameter("ENABLE_VAD").get_parameter_value().bool_value
+        )
         self.debug = self.get_parameter("DEBUG").get_parameter_value().bool_value
 
         # Pre-compute lag bounds for autocorrelation pitch detection
@@ -73,6 +77,12 @@ class VoiceDetection(Node):
         self._audio_pub = self.create_publisher(AudioData, vad_topic, 10)
         self._activity_pub = self.create_publisher(Bool, activity_topic, 10)
         self.create_subscription(AudioData, processed_topic, self._audio_cb, 10)
+
+        if not self.enable_vad:
+            self._activity_pub.publish(Bool(data=True))
+            self.get_logger().info(
+                "ENABLE_VAD=False. Passing all audio through without filtering."
+            )
 
         self.get_logger().info(
             f"VoiceDetection ready  |  in: {processed_topic}  |  out: {vad_topic}"
@@ -189,6 +199,10 @@ class VoiceDetection(Node):
             self.get_logger().info("Speaker lock released")
 
     def _audio_cb(self, msg: AudioData) -> None:
+        if not self.enable_vad:
+            self._audio_pub.publish(msg)
+            return
+
         audio = np.frombuffer(bytes(msg.data), dtype=np.int16)
         chunk_duration = len(audio) / self.sample_rate
 
