@@ -40,6 +40,7 @@ def launch_setup(context, *args, **kwargs):
         emulate_tty=True,
         respawn=True,
         respawn_delay=2.0,
+        remappings=[('odometry/filtered', '/odom')],
         parameters=[{
                 'output_frame': 'odom',
                 'frequency': 50.0,
@@ -118,7 +119,6 @@ def launch_setup(context, *args, **kwargs):
 
     return_launch = [
         make_shutdown_handler(dashgo_driver, "DashgoDriver"),
-        make_shutdown_handler(ekf_launch, "EKF"),
         make_shutdown_handler(laser_launch, "Laser"),
         dashgo_driver,
         ekf_launch,
