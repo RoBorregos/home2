@@ -105,8 +105,7 @@ def launch_setup(context, *args, **kwargs):
         )
     )
 
-    if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
-        return_launch = [
+    return_launch = [
         shutdown_on_failure,
         dashgo_driver,
         ekf_launch,
@@ -114,16 +113,6 @@ def launch_setup(context, *args, **kwargs):
         joint_state,
         laser_launch,
         dualshock_launch,
-        
-    ]
-    else:
-        return_launch = [
-        shutdown_on_failure,
-        dashgo_driver,
-        ekf_launch,
-        laser_launch,
-        dualshock_launch,
-        
     ]
     return return_launch
 
