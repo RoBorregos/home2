@@ -426,6 +426,58 @@ class SingleTracker(Node):
                     self.get_logger().warn(
                         f"Person detected with {track_by}: {response_clean} but not {value}"
                     )
+                    cropped_image = self.frame[y1:y2, x1:x2]
+
+                    if track_by == DetectBy.GESTURES.value:
+                        self.get_logger().info(f"Detecting gesture {value} ")
+                        pose = self.pose_detection.detectGesture(cropped_image)
+                        response_clean = pose.value
+                        print("POSEEEE", response_clean)
+
+                    elif track_by == DetectBy.POSES.value:
+                        prompt = "Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
+                        status, response_q = self.moondream_crop_query(
+                            prompt, [float(y1), float(x1), float(y2), float(x2)]
+                        )
+
+                        if status:
+                            self.get_logger().info(f"The person is {response_q}.")
+                            response_clean = response_q.replace(" ", "_")
+                            response_clean = response_clean.replace("_", "", 1)
+
+                    elif track_by == DetectBy.COLOR.value:
+                        prompt = f"Reply only with 1 if the person is wearing {value}. Otherwise, reply only with 0."
+                        status, response_q = self.moondream_crop_query(
+                            prompt, [float(y1), float(x1), float(y2), float(x2)]
+                        )
+                        if status:
+                            response_clean = response_q.strip()
+
+                    if value == "wavingCustomer":
+                        pts, kpc = self.pose_detection._get_keypoints(cropped_image)
+                        raising = self.pose_detection.is_waving_from_keypoints(pts, kpc)
+                        if raising:
+                            print("Is rising hand")
+                            response_clean = value
+
+                    if response_clean == value or response_clean == "1":
+                        if pose.value == value:
+                            self.success(f"Target found by {track_by}: {pose.value}")
+                        elif response_clean == value:
+                            self.success(
+                                f"Target found by {track_by}: {response_clean}"
+                            )
+                        elif response_clean == "1":
+                            self.success(f"Target found by {track_by}: {value}")
+                        largest_person["id"] = track_id
+                        largest_person["area"] = area
+                        largest_person["bbox"] = (x1, y1, x2, y2)
+                        # cv2.im(cropped_image)
+                        self.customer_image = copy.deepcopy(cropped_image)
+                    else:
+                        self.get_logger().warn(
+                            f"Person detected with {track_by}: {response_clean} but not {value}"
+                        )
 
         if largest_person["id"] is not None:
             self.person_data["id"] = largest_person["id"]

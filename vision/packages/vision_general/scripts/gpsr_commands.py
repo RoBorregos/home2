@@ -32,6 +32,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    YOLO_DETECTION_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
@@ -100,7 +101,7 @@ class GPSRCommands(Node):
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.yolo_client = self.create_client(
-            YoloDetect, "yolo_detect", callback_group=self.callback_group
+            YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
