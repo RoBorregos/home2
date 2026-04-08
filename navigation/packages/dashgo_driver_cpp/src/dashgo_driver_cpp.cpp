@@ -65,16 +65,12 @@ public:
         resetEncoders();
         resetIMU();
 
-        // Real-time Priority configuration
-        if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
-            RCLCPP_WARN(this->get_logger(), "Failed to lock memory for real-time priority: %s", strerror(errno));
-        }
+        // Real-time Priority configuration (best-effort, requires CAP_SYS_NICE or root)
+        mlockall(MCL_CURRENT | MCL_FUTURE);
 
         struct sched_param param;
         param.sched_priority = 80; // High priority (1-99)
-        if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) != 0) {
-            RCLCPP_WARN(this->get_logger(), "Failed to set real-time priority (SCHED_FIFO). Are you running with root or CAP_SYS_NICE?");
-        } else {
+        if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) == 0) {
             RCLCPP_INFO(this->get_logger(), "Real-time priority (SCHED_FIFO) set to 80");
         }
 
