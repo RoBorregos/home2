@@ -57,7 +57,7 @@ class HRIC_TM(Node):
         super().__init__("hric_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.HRIC, mock_areas=[])
 
-        self.seat_angles = [0, -45, -45, 135, 45, 45, 45, 45]
+        self.seat_angles = [0, -45, -45, -45, 180, 45, 45, 45]
         self.guests = [Guest() for _ in range(2)]
         self.current_guest_idx = 0
         self.current_attempts = 0
@@ -132,10 +132,6 @@ class HRIC_TM(Node):
         """Finite State Machine"""
 
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
-            for offset in self.seat_angles:
-                self._logger.info(f"Pan to angle {offset} degrees")
-                self.subtask_manager.manipulation.pan_to(offset)
-                self.timeout()
             Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.say("Waiting for start button to be pressed.", wait=False)
 
