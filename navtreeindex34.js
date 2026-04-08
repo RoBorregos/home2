@@ -1,5 +1,6 @@
 var NAVTREEINDEX34 =
 {
+"test__vision__manager_8py.html#a0ac83c3be8619e480c385351b9f84b6b":[25,0,6,1,1,7,4],
 "test__vision__manager_8py.html#a4d295f7e9706efb1b5725329cacfa00a":[25,0,6,1,1,7,7],
 "test__vision__manager_8py.html#a536a3e59f6442113cd05d5249e26084d":[25,0,6,1,1,7,3],
 "test__vision__manager_8py.html#a5af7fcb61586f0325548838066cec24b":[25,0,6,1,1,7,1],
@@ -234,20 +235,19 @@ var NAVTREEINDEX34 =
 "xarm6__ikfast__moveit__plugin_8cpp.html#a2acf0f2516ebf5481d4db7f86f4d0da6":[25,0,3,0,7,0,2,2],
 "xarm6__ikfast__moveit__plugin_8cpp.html#aa9b5df21ca9479bf3deaa7da9845cd6c":[25,0,3,0,7,0,2,1],
 "xarm__configurations_8py.html":[25,0,1,1,9],
-"xarm__configurations_8py.html#a1ebb73dff17d4fb86c8530a2eda2fe58":[25,0,1,1,9,9],
+"xarm__configurations_8py.html#a11fb9768bb78ea1ba4ea84e0e587de48":[25,0,1,1,9,4],
+"xarm__configurations_8py.html#a1ebb73dff17d4fb86c8530a2eda2fe58":[25,0,1,1,9,10],
 "xarm__configurations_8py.html#a2f3850b75849b6bc32e08235fe99d81c":[25,0,1,1,9,2],
 "xarm__configurations_8py.html#a3f9c52b155ebdeebba61a6e7b5c195fd":[25,0,1,1,9,3],
 "xarm__configurations_8py.html#a40724ca8949bf6768bc309e32f3b284f":[25,0,1,1,9,0],
 "xarm__configurations_8py.html#a74866c95df18e2f28da7ca969977024f":[25,0,1,1,9,1],
-"xarm__configurations_8py.html#a749105a6a0190f46d91824dc4ba5aad8":[25,0,1,1,9,7],
-"xarm__configurations_8py.html#a849e0344225e88acda565e96c4430eea":[25,0,1,1,9,4],
-"xarm__configurations_8py.html#a9904f63744fd7b0759bfcf87a03f8ff9":[25,0,1,1,9,11],
-"xarm__configurations_8py.html#a9bf638907a515f7a982e0735f1a1d6de":[25,0,1,1,9,8],
-"xarm__configurations_8py.html#a9eb785a1b94b7fb277bc12ed1644044b":[25,0,1,1,9,10],
-"xarm__configurations_8py.html#acd030439b63a120bde3ac743e5bab1f8":[25,0,1,1,9,5],
-"xarm__configurations_8py.html#ad38289acbba239b01fe845ab57a5026b":[25,0,1,1,9,6],
+"xarm__configurations_8py.html#a749105a6a0190f46d91824dc4ba5aad8":[25,0,1,1,9,8],
+"xarm__configurations_8py.html#a849e0344225e88acda565e96c4430eea":[25,0,1,1,9,5],
+"xarm__configurations_8py.html#a9904f63744fd7b0759bfcf87a03f8ff9":[25,0,1,1,9,12],
+"xarm__configurations_8py.html#a9bf638907a515f7a982e0735f1a1d6de":[25,0,1,1,9,9],
+"xarm__configurations_8py.html#a9eb785a1b94b7fb277bc12ed1644044b":[25,0,1,1,9,11],
+"xarm__configurations_8py.html#acd030439b63a120bde3ac743e5bab1f8":[25,0,1,1,9,6],
+"xarm__configurations_8py.html#ad38289acbba239b01fe845ab57a5026b":[25,0,1,1,9,7],
 "xarm__launch_8launch_8py.html":[25,0,5,0,1,9],
-"xarm__launch_8launch_8py.html#a12ed068b87932217931e30a0ae5d9bb6":[25,0,5,0,1,9,1],
-"xarm__launch_8launch_8py.html#a6120858d912a0dc3d2783725c36b7d04":[25,0,5,0,1,9,0],
-"xarm__utils_8launch_8py.html":[25,0,3,0,8,0,0]
+"xarm__launch_8launch_8py.html#a12ed068b87932217931e30a0ae5d9bb6":[25,0,5,0,1,9,1]
 };

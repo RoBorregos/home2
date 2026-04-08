@@ -61,5 +61,6 @@ var searchData=
   ['frida_58',['FRIDA',['../classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html#a878a9f224332bb91f296424028137318',1,'frida_constants::hri_constants::KNOWLEDGE_TYPE']]],
   ['front_5flow_5fstare_59',['FRONT_LOW_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c',1,'frida_constants::xarm_configurations']]],
   ['front_5fstare_60',['FRONT_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd',1,'frida_constants::xarm_configurations']]],
-  ['function_5fname_61',['function_name',['../classtask__manager_1_1utils_1_1config_1_1MockConfig.html#a0c99d5c5244f8fc83f42e93ab4453347',1,'task_manager::utils::config::MockConfig']]]
+  ['front_5fstare_5fcarry_5fbag_61',['FRONT_STARE_CARRY_BAG',['../namespacefrida__constants_1_1xarm__configurations.html#a11fb9768bb78ea1ba4ea84e0e587de48',1,'frida_constants::xarm_configurations']]],
+  ['function_5fname_62',['function_name',['../classtask__manager_1_1utils_1_1config_1_1MockConfig.html#a0c99d5c5244f8fc83f42e93ab4453347',1,'task_manager::utils::config::MockConfig']]]
 ];

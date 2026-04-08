@@ -1,5 +1,6 @@
 var NAVTREEINDEX32 =
 {
+"namespacetemp__follow.html#ad4d7ef6faa21d32ef936bebad810409f":[23,0,138,3],
 "namespacetest__env.html":[23,0,139],
 "namespacetest__env.html#a0d88c2075e691d0fe1872f8c78bc5bea":[23,0,139,1],
 "namespacetest__go__to__hand.html":[23,0,140],
@@ -248,6 +249,5 @@ var NAVTREEINDEX32 =
 "place__server_8py.html#acbfe0e044d3c95d5f9eae1cad1ecec59":[25,0,3,0,5,1,9,1],
 "point__transformer_8py.html":[25,0,6,1,0,8],
 "point__transformer_8py.html#ad6684cbb74264c3e713e59b88cc50a19":[25,0,6,1,0,8,1],
-"pointing__detection_8py.html":[25,0,7,0,3,1,11],
-"pointing__detection_8py.html#a197c3d9ed96b3db5850117c5d78e684a":[25,0,7,0,3,1,11,11]
+"pointing__detection_8py.html":[25,0,7,0,3,1,11]
 };

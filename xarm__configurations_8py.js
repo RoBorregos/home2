@@ -4,6 +4,7 @@ var xarm__configurations_8py =
     [ "CUTLERY_STARE", "xarm__configurations_8py.html#a74866c95df18e2f28da7ca969977024f", null ],
     [ "FRONT_LOW_STARE", "xarm__configurations_8py.html#a2f3850b75849b6bc32e08235fe99d81c", null ],
     [ "FRONT_STARE", "xarm__configurations_8py.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
+    [ "FRONT_STARE_CARRY_BAG", "xarm__configurations_8py.html#a11fb9768bb78ea1ba4ea84e0e587de48", null ],
     [ "NAV_CARRY_BAG_POSE", "xarm__configurations_8py.html#a849e0344225e88acda565e96c4430eea", null ],
     [ "NAV_POSE", "xarm__configurations_8py.html#acd030439b63a120bde3ac743e5bab1f8", null ],
     [ "PICK_STARE_AT_TABLE", "xarm__configurations_8py.html#ad38289acbba239b01fe845ab57a5026b", null ],
