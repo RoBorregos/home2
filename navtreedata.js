@@ -244,12 +244,12 @@ var NAVTREEINDEX =
 "manipulation__constants__cpp_8hpp.html#a56af7b9da0fb3dfb9f8c337970b4dbd2",
 "namespacePickManager.html#afcfec5898dcc59164a20e8562b51f08d",
 "namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8",
-"namespacehric__commands.html#a3ab9b8e783f16ed1b5159856ba0fc831",
-"namespacepoint__transformer.html",
-"namespacetest__env.html#a0d88c2075e691d0fe1872f8c78bc5bea",
-"pointing__detection_8py.html#a297108ef0414c32dbff12ad5a4774199",
-"test__vision__manager_8py.html#a536a3e59f6442113cd05d5249e26084d",
-"yolo__node_8py.html#abcab109d2d9d63430e859669d3c9ff87"
+"namespacehric__commands.html#a2ff6673c8134c479a43231dd19a5b8f1",
+"namespacepick__and__place_1_1pour__server.html#a2f3ae6dd39bc82cdf3f2980b142a462b",
+"namespacetest__env.html",
+"pointing__detection_8py.html#a21dd50ff81edba13f099c5b8fb3f927e",
+"test__vision__manager_8py.html#a4d295f7e9706efb1b5725329cacfa00a",
+"xarm__utils_8launch_8py.html#a4ae93573b0bb6299d5ca60b8cb50a42b"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

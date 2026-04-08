@@ -1,8 +1,8 @@
 var NAVTREEINDEX24 =
 {
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ab2660ef7f1d57db5f7fe6ebcf134fa66":[23,0,169,1,14],
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a":[24,0,109,1,23],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ab2660ef7f1d57db5f7fe6ebcf134fa66":[24,0,109,1,14],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a":[23,0,169,1,23],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a":[24,0,109,1,23],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf":[24,0,109,1,22],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf":[23,0,169,1,22],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae15bf8710d5c4b818a55509a00b49d51":[24,0,109,1,20],

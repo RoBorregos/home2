@@ -158,6 +158,7 @@ var namespacefrida__constants =
       [ "CUTLERY_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a74866c95df18e2f28da7ca969977024f", null ],
       [ "FRONT_LOW_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c", null ],
       [ "FRONT_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
+      [ "NAV_CARRY_BAG_POSE", "namespacefrida__constants_1_1xarm__configurations.html#a849e0344225e88acda565e96c4430eea", null ],
       [ "NAV_POSE", "namespacefrida__constants_1_1xarm__configurations.html#acd030439b63a120bde3ac743e5bab1f8", null ],
       [ "PICK_STARE_AT_TABLE", "namespacefrida__constants_1_1xarm__configurations.html#ad38289acbba239b01fe845ab57a5026b", null ],
       [ "PLACE_FLOOR_LEFT", "namespacefrida__constants_1_1xarm__configurations.html#a749105a6a0190f46d91824dc4ba5aad8", null ],

@@ -1,5 +1,6 @@
 var NAVTREEINDEX33 =
 {
+"pointing__detection_8py.html#a21dd50ff81edba13f099c5b8fb3f927e":[25,0,7,0,3,1,11,3],
 "pointing__detection_8py.html#a297108ef0414c32dbff12ad5a4774199":[25,0,7,0,3,1,11,1],
 "pointing__detection_8py.html#a47c3a80029239887a5bca0e33d3cc442":[25,0,7,0,3,1,11,7],
 "pointing__detection_8py.html#a633acf443f90a05cc1ffb29a58d8266a":[25,0,7,0,3,1,11,5],
@@ -73,12 +74,12 @@ var NAVTREEINDEX33 =
 "remove__person_8py.html#ad50da48b8b7f8f5f2ce3d5768cc46928":[25,0,4,0,2,2,6,1],
 "remove__plane_8cpp.html":[25,0,3,0,4,4,6],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59":[25,0,3,0,4,4,6,1],
-"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[25,0,3,0,4,4,6,1,0],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[25,0,3,0,4,4,6,1,3],
-"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[25,0,3,0,4,4,6,1,2],
+"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[25,0,3,0,4,4,6,1,0],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[25,0,3,0,4,4,6,1,5],
-"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[25,0,3,0,4,4,6,1,1],
+"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[25,0,3,0,4,4,6,1,2],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[25,0,3,0,4,4,6,1,4],
+"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[25,0,3,0,4,4,6,1,1],
 "remove__plane_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[25,0,3,0,4,4,6,2],
 "restaurant__commands_8py.html":[25,0,7,0,3,1,13],
 "restaurant__commands_8py.html#a5ea91af67a635ddf952b6192faae79f9":[25,0,7,0,3,1,13,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX33 =
 "test__start__button_8py.html#ae9f14cf3ef1e3141e15e57c42bc58ec1":[25,0,6,1,1,6,11],
 "test__start__button_8py.html#affb178c97d52b530378148864749669c":[25,0,6,1,1,6,4],
 "test__vision__manager_8py.html":[25,0,6,1,1,7],
-"test__vision__manager_8py.html#a0ac83c3be8619e480c385351b9f84b6b":[25,0,6,1,1,7,4],
-"test__vision__manager_8py.html#a4d295f7e9706efb1b5725329cacfa00a":[25,0,6,1,1,7,7]
+"test__vision__manager_8py.html#a0ac83c3be8619e480c385351b9f84b6b":[25,0,6,1,1,7,4]
 };
