@@ -25,6 +25,9 @@ GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"
 
+### Manual resume service (nav_central exposes this so the UI can unpause nav2+rtabmap)
+RESUME_NAV_SERVICE = "/navigation/resume_nav"
+
 ### General Constants
 MONITOR_RATE = 1.0
 NO_TF_LIMIT = 2

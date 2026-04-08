@@ -34,6 +34,7 @@ from frida_constants.navigation_constants import(
         MOVE_LOCATION_SERVICE,
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
+        RESUME_NAV_SERVICE,
         )
 from frida_interfaces.srv import (
         CheckDoor,
@@ -117,6 +118,11 @@ class Nav_Central(Node):
         
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group) 
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
+
+        # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
+        self.resume_nav_srv = self.create_service(
+            Empty, RESUME_NAV_SERVICE, self._resume_nav_callback,
+            callback_group=self.service_group)
 
         # Initial pose tracking
         self._initial_pose_set = False
@@ -260,6 +266,17 @@ class Nav_Central(Node):
         else:
             self.get_logger().fatal(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;88m {data}\033[0m")
 
+    def _resume_nav_callback(self, request, response):
+        """Service callback: manually resume RTABMap and nav2 from the UI."""
+        self.nav_logger("info", "Resume Nav Service -> Manual resume requested")
+        self.resume_slam()
+        if not self.mapping:
+            self.resume_nav2()
+        self.nodes_status = True
+        self.no_topics_count = 0
+        self.no_tf_count = 0
+        return response
+
     def _initialpose_callback(self, msg):
         if not self._initial_pose_set:
             self._initial_pose_set = True
@@ -388,11 +405,6 @@ class Nav_Central(Node):
         """Callback for navigate to specific area"""
 
         self.nav_logger("info", "Go_To_Area -> Starting navigation to area")
-        if self.nav2_paused or not self.rtabmap_loaded:
-            self.nav_logger("error", "Go_To_Area -> Navigation not initialized")
-            response.success = False
-            response.error = "Navigation not initialized"
-            return response 
 
         if self.areas_data is None:
             self.nav_logger("error", "Go_To_Area -> Areas not loaded sending error")
@@ -408,6 +420,11 @@ class Nav_Central(Node):
         
         self.resume_slam()
         self.resume_nav2()
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self.nav_logger("error", "Go_To_Area -> Navigation not initialized")
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response 
         goal_coord = PoseStamped() 
         goal_coord.header.frame_id = "map"
         goal_coord.pose.position.x = fetch_coords[0]

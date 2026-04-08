@@ -23,7 +23,7 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from action_msgs.srv import CancelGoal
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import RTAB_MAPS_PATH
+from frida_constants.navigation_constants import RTAB_MAPS_PATH, RESUME_NAV_SERVICE
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -156,6 +156,10 @@ class NavRosNode(Node):
         # Service client for cancelling navigation goals
         self.cancel_nav_client = self.create_client(
             CancelGoal, '/navigate_to_pose/_action/cancel_goal')
+
+        # Navigation mode: resume nav service
+        if self.ui_mode == 'navigation':
+            self._resume_nav_client = self.create_client(Empty, RESUME_NAV_SERVICE)
 
         # Mapping mode: map save via /rtabmap/backup
         if self.ui_mode == 'mapping':
@@ -310,6 +314,27 @@ class NavRosNode(Node):
             except Exception as e:
                 on_done(False, str(e))
 
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def resume_nav_async(self, on_done):
+        """Call RESUME_NAV_SERVICE in a background thread."""
+        import time
+        def _worker():
+            try:
+                if not self._resume_nav_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "Resume Nav service not available")
+                    return
+                future = self._resume_nav_client.call_async(Empty.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 10.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                if not future.done():
+                    on_done(False, "Resume Nav service timed out")
+                    return
+                on_done(True, "Nav resumed")
+            except Exception as e:
+                on_done(False, str(e))
         threading.Thread(target=_worker, daemon=True).start()
 
     def send_goal(self, x, y, yaw):
@@ -794,6 +819,11 @@ class NavUI(QMainWindow):
         self.btn_cancel.clicked.connect(self.cancel_navigation)
         nav_layout.addWidget(self.btn_cancel)
 
+        self.btn_resume_nav = QPushButton("Resume Nav")
+        self.btn_resume_nav.setStyleSheet("QPushButton { background: #27ae60; } QPushButton:hover { background: #2ecc71; }")
+        self.btn_resume_nav.clicked.connect(self._on_resume_nav)
+        nav_layout.addWidget(self.btn_resume_nav)
+
         panel_layout.addWidget(nav_group)
 
         # Mapping mode: hide nav controls, show only view mode
@@ -992,6 +1022,26 @@ class NavUI(QMainWindow):
         else:
             self.status.showMessage(f"Save failed: {msg}")
             QMessageBox.warning(self, "Save Failed", msg)
+
+    def _on_resume_nav(self):
+        self.btn_resume_nav.setEnabled(False)
+        self.status.showMessage("Resuming nav...")
+        self._resume_result = None
+
+        def on_done(success, msg):
+            self._resume_result = (success, msg)
+            QTimer.singleShot(0, self._on_resume_nav_done)
+
+        self.ros_node.resume_nav_async(on_done)
+
+    def _on_resume_nav_done(self):
+        self.btn_resume_nav.setEnabled(True)
+        success, msg = self._resume_result
+        if success:
+            self.status.showMessage("Nav resumed")
+        else:
+            self.status.showMessage(f"Resume failed: {msg}")
+            QMessageBox.warning(self, "Resume Failed", msg)
 
     def check_canvas_actions(self):
         # Check for pending goal send
