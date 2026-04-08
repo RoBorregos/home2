@@ -103,7 +103,9 @@ class PickAndPlaceTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("pickandplace_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=[])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.PICK_AND_PLACE, mock_areas=[]
+        )
 
         # ACTION REQUIRED: Adjust before competition
         self.use_side_table = False  # True = use side table objects (penalty per object)
