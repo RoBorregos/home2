@@ -68,12 +68,7 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
     libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
     libxcb-cursor0 libxcb-xkb1 \
-    python3-pip \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get install -y libcap2-bin && rm -rf /var/lib/apt/lists/*
-RUN echo "/opt/ros/humble/lib" > /etc/ld.so.conf.d/ros2.conf && ldconfig
-
+    python3-pip 
 # CycloneDDS (network-only, no SHM — SHM is vision/ZED-only)
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
     ros-humble-rmw-cyclonedds-cpp \
