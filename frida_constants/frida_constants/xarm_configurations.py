@@ -22,6 +22,18 @@ FRONT_LOW_STARE = {
     "degrees": True,
 }
 
+FRONT_STARE_CARRY_BAG = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -42.7,
+        "joint3": -118.6,
+        "joint4": 2.9,
+        "joint5": 122.3,
+        "joint6": 224.1,
+    },
+    "degrees": True,
+}
+
 TABLE_STARE = {
     "joints": {
         "joint1": -90.0,
@@ -136,6 +148,7 @@ PLACE_FLOOR_RIGHT = {
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
+    "front_stare_carry_bag": FRONT_STARE_CARRY_BAG,
     "table_stare": TABLE_STARE,
     "receive_object": RECEIVE_OBJECT,
     "cutlery_stare": CUTLERY_STARE,
