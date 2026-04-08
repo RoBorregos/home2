@@ -120,16 +120,16 @@ fi
 
 case $TASK in
     "--mapping")
-        RUN="ros2 launch nav_main mapping.launch.py"
+        RUN="ros2 run nav_main launch_nav.py"
         ;;
     "--gpsr")
         RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
     "--hric")
-        RUN="ros2 launch nav_main navigation_composition.launch.py"
+        RUN="ros2 run nav_main launch_nav.py"
         ;;
     "--ppc")
-        RUN="ros2 launch nav_main navigation_composition.launch.py"
+        RUN="ros2 run nav_main launch_nav.py"
         ;;
     *)
         RUN="bash"
