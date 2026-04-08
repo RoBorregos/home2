@@ -1,8 +1,9 @@
 var searchData=
 [
-  ['object_5fdetector_5fcombined_0',['object_detector_combined',['../namespaceobject__detector__combined.html',1,'']]],
-  ['object_5fdetector_5fnode_1',['object_detector_node',['../namespaceobject__detector__node.html',1,'']]],
-  ['objectdetectionhandler_2',['objectDetectionHandler',['../namespaceobjectDetectionHandler.html',1,'']]],
-  ['objectdetector_3',['ObjectDetector',['../namespaceObjectDetector.html',1,'']]],
-  ['old_5ftracker_4',['old_tracker',['../namespaceold__tracker.html',1,'']]]
+  ['nav_5fbasics_0',['nav_basics',['../namespacenav__basics.html',1,'']]],
+  ['nav_5fcentral_1',['nav_central',['../namespacenav__central.html',1,'']]],
+  ['nav_5fui_2',['nav_ui',['../namespacenav__ui.html',1,'']]],
+  ['new_5ftracker_3',['new_tracker',['../namespacenew__tracker.html',1,'']]],
+  ['nn_5fmatching_4',['nn_matching',['../namespacenn__matching.html',1,'']]],
+  ['node_5fmonitor_5',['node_monitor',['../namespacenode__monitor.html',1,'']]]
 ];

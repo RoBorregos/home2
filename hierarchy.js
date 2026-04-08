@@ -86,11 +86,16 @@ var hierarchy =
     [ "zero_shot_object_detector_node.NodeParams", "classzero__shot__object__detector__node_1_1NodeParams.html", null ],
     [ "object", null, [
       [ "YoloEObjectDetector.SuppressStream", "classYoloEObjectDetector_1_1SuppressStream.html", null ],
+      [ "detection.Detection", "classdetection_1_1Detection.html", null ],
+      [ "kalman_filter.KalmanFilter", "classkalman__filter_1_1KalmanFilter.html", null ],
       [ "moondream_proto_pb2_grpc.MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
       [ "moondream_proto_pb2_grpc.MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", [
         [ "server.MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", null ]
       ] ],
-      [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ]
+      [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ],
+      [ "nn_matching.NearestNeighborDistanceMetric", "classnn__matching_1_1NearestNeighborDistanceMetric.html", null ],
+      [ "visualization.NoVisualization", "classvisualization_1_1NoVisualization.html", null ],
+      [ "visualization.Visualization", "classvisualization_1_1Visualization.html", null ]
     ] ],
     [ "ObjectDetector.ObjectDectectorParams", "classObjectDetector_1_1ObjectDectectorParams.html", null ],
     [ "PickManager.PickManager", "classPickManager_1_1PickManager.html", null ],
@@ -100,7 +105,6 @@ var hierarchy =
     [ "PourManager.PourManager", "classPourManager_1_1PourManager.html", null ],
     [ "frida_constants.vision_classes.ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ],
     [ "demo_manager.DemoTM.States", "classdemo__manager_1_1DemoTM_1_1States.html", null ],
-    [ "egpsr_task_manager.EGPSRTM.States", "classegpsr__task__manager_1_1EGPSRTM_1_1States.html", null ],
     [ "egsr_cut.EGPSRTM.States", "classegsr__cut_1_1EGPSRTM_1_1States.html", null ],
     [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
     [ "str", null, [
@@ -113,6 +117,9 @@ var hierarchy =
     [ "hric_task_manager.HRIC_TM.TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
+    [ "track.Track", "classtrack_1_1Track.html", null ],
+    [ "tracker.Tracker", "classtracker_1_1Tracker.html", null ],
+    [ "track.TrackState", "classtrack_1_1TrackState.html", null ],
     [ "type", null, [
       [ "task_manager.subtask_managers.subtask_meta.SubtaskMeta", "classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", [
         [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
@@ -165,7 +172,6 @@ var hierarchy =
       [ "dishwasher_node.DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", null ],
       [ "dock_to_handle.DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", null ],
       [ "ds4_demo.ServoDS4", "classds4__demo_1_1ServoDS4.html", null ],
-      [ "egpsr_task_manager.EGPSRTM", "classegpsr__task__manager_1_1EGPSRTM.html", null ],
       [ "egsr_cut.EGPSRTM", "classegsr__cut_1_1EGPSRTM.html", null ],
       [ "ex_orientation_path_constraint.MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", null ],
       [ "example_node.ExampleNode", "classexample__node_1_1ExampleNode.html", null ],

@@ -28,12 +28,13 @@ var searchData=
   ['btn_5fsave_5fmap_25',['btn_save_map',['../classnav__ui_1_1NavUI.html#ab2fed0b64118fb5726c2dbc2e9132d65',1,'nav_ui::NavUI']]],
   ['btn_5fsend_5fgoal_26',['btn_send_goal',['../classnav__ui_1_1NavUI.html#a282c8ac7489dfd40b581c43e971f509f',1,'nav_ui::NavUI']]],
   ['btn_5fview_5fmode_27',['btn_view_mode',['../classnav__ui_1_1NavUI.html#ab867140779b292a4691403031ec6aa4b',1,'nav_ui::NavUI']]],
-  ['buffer_28',['buffer',['../namespacemoondream__lib.html#adb038b52a38e3ae02b1571585802ebb8',1,'moondream_lib']]],
-  ['buffer_5fsize_29',['buffer_size',['../namespacelaunch__nav.html#ae5ed452e73246c6a02445001d416e92e',1,'launch_nav']]],
-  ['buffers_30',['buffers',['../namespacelaunch__nav.html#a39644ed5643c8fc098d8c93b370e3e81',1,'launch_nav']]],
-  ['busy_5fgripper_31',['busy_gripper',['../classds4__demo_1_1ServoDS4.html#a9e067c356378d3c060f4806f6086b651',1,'ds4_demo::ServoDS4']]],
-  ['busy_5fplanner_32',['busy_planner',['../classds4__demo_1_1ServoDS4.html#aed6e9918d1c4a1ca32853ff44202db6d',1,'ds4_demo::ServoDS4']]],
-  ['button_5fmap_33',['BUTTON_MAP',['../namespacewait__for__controller__input__node.html#abe191a8897bb324ceaa8765539c4a73e',1,'wait_for_controller_input_node']]],
-  ['byte_5fcount_5f_34',['byte_count_',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a62ae7ca0f013cd6500a1d41d649efd6d',1,'dashgo_driver::dashgo_stm32::Stm32']]],
-  ['bytetrack_5freid_5fyaml_35',['BYTETRACK_REID_YAML',['../namespacenew__tracker.html#afc7e7bf51cd9f174dd03a8b8a05e2491',1,'new_tracker']]]
+  ['budget_28',['budget',['../classnn__matching_1_1NearestNeighborDistanceMetric.html#a60674cec1b51f9eb07e35581ff4aea1f',1,'nn_matching::NearestNeighborDistanceMetric']]],
+  ['buffer_29',['buffer',['../namespacemoondream__lib.html#adb038b52a38e3ae02b1571585802ebb8',1,'moondream_lib']]],
+  ['buffer_5fsize_30',['buffer_size',['../namespacelaunch__nav.html#ae5ed452e73246c6a02445001d416e92e',1,'launch_nav']]],
+  ['buffers_31',['buffers',['../namespacelaunch__nav.html#a39644ed5643c8fc098d8c93b370e3e81',1,'launch_nav']]],
+  ['busy_5fgripper_32',['busy_gripper',['../classds4__demo_1_1ServoDS4.html#a9e067c356378d3c060f4806f6086b651',1,'ds4_demo::ServoDS4']]],
+  ['busy_5fplanner_33',['busy_planner',['../classds4__demo_1_1ServoDS4.html#aed6e9918d1c4a1ca32853ff44202db6d',1,'ds4_demo::ServoDS4']]],
+  ['button_5fmap_34',['BUTTON_MAP',['../namespacewait__for__controller__input__node.html#abe191a8897bb324ceaa8765539c4a73e',1,'wait_for_controller_input_node']]],
+  ['byte_5fcount_5f_35',['byte_count_',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a62ae7ca0f013cd6500a1d41d649efd6d',1,'dashgo_driver::dashgo_stm32::Stm32']]],
+  ['bytetrack_5freid_5fyaml_36',['BYTETRACK_REID_YAML',['../namespacenew__tracker.html#afc7e7bf51cd9f174dd03a8b8a05e2491',1,'new_tracker']]]
 ];

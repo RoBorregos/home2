@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['visiontasks_0',['VisionTasks',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html',1,'task_manager::subtask_managers::vision_tasks']]]
+  ['visiontasks_0',['VisionTasks',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html',1,'task_manager::subtask_managers::vision_tasks']]],
+  ['visualization_1',['Visualization',['../classvisualization_1_1Visualization.html',1,'visualization']]]
 ];

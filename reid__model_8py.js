@@ -7,6 +7,7 @@ var reid__model_8py =
     [ "fliplr", "reid__model_8py.html#a03dbf938a17f020c33a65cb86f86ce24", null ],
     [ "get_structure", "reid__model_8py.html#ae68f17bec5313be51d1ab808ef2755d0", null ],
     [ "load_network", "reid__model_8py.html#a4a574d476e5b12bd347146b9ae5c1cb0", null ],
+    [ "_models_root", "reid__model_8py.html#ae48f4b9872d8c1b85b4e9852746680b1", null ],
     [ "batch_size", "reid__model_8py.html#aa3618009d6e7524b0bc74f1995eec942", null ],
     [ "classifier", "reid__model_8py.html#adecba37571323573286275a0ae3cf2da", null ],
     [ "config", "reid__model_8py.html#abc26ab485ddf76983b7f06561ebdb8ca", null ],

@@ -130,6 +130,8 @@ Variables</h2></td></tr>
 <tr class="separator:aa3618009d6e7524b0bc74f1995eec942"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c2efdb27dc4bbd61ae50edc9b76ddd4"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a7c2efdb27dc4bbd61ae50edc9b76ddd4">folder_path</a> = str(pathlib.Path(__file__).parent)</td></tr>
 <tr class="separator:a7c2efdb27dc4bbd61ae50edc9b76ddd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae48f4b9872d8c1b85b4e9852746680b1"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#ae48f4b9872d8c1b85b4e9852746680b1">_models_root</a> = str(pathlib.Path(__file__).resolve().parent / &quot;models&quot;)</td></tr>
+<tr class="separator:ae48f4b9872d8c1b85b4e9852746680b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ee43bcfc3791b1ad7ee22fb1c7e7447"><td class="memItemLeft" align="right" valign="top">torch&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a3ee43bcfc3791b1ad7ee22fb1c7e7447">use_gpu</a> = torch.cuda.is_available()</td></tr>
 <tr class="separator:a3ee43bcfc3791b1ad7ee22fb1c7e7447"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a445dafe498912f06097f6c1d72c6665d"><td class="memItemLeft" align="right" valign="top">torch&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a445dafe498912f06097f6c1d72c6665d">use_fp16</a> = 7</td></tr>
@@ -142,7 +144,7 @@ Variables</h2></td></tr>
 <tr class="separator:af38d74c51ee6e8a581c116ac98a03817"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1394a721868a4409d9c82dd84949f2a6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a1394a721868a4409d9c82dd84949f2a6">w</a></td></tr>
 <tr class="separator:a1394a721868a4409d9c82dd84949f2a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73d66ca5d73e46af1ef65bccf347666e"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a73d66ca5d73e46af1ef65bccf347666e">name</a> = &quot;models/swin&quot;</td></tr>
+<tr class="memitem:a73d66ca5d73e46af1ef65bccf347666e"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a73d66ca5d73e46af1ef65bccf347666e">name</a> = &quot;swin&quot;</td></tr>
 <tr class="separator:a73d66ca5d73e46af1ef65bccf347666e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2965c7a90f0a13893ebecee20348435"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#af2965c7a90f0a13893ebecee20348435">else</a> :</td></tr>
 <tr class="separator:af2965c7a90f0a13893ebecee20348435"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -150,7 +152,7 @@ Variables</h2></td></tr>
 <tr class="separator:a1dfc143a6b7397fdc11a65ea189e0697"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a116c89b650065d26026a027f0f2225ce"><td class="memItemLeft" align="right" valign="top">transforms&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a116c89b650065d26026a027f0f2225ce">data_transforms</a></td></tr>
 <tr class="separator:a116c89b650065d26026a027f0f2225ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a239a20382a6ae204ac7c425165d8693c"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a239a20382a6ae204ac7c425165d8693c">config_path</a> = os.path.join(<a class="el" href="namespacereid__model.html#a7c2efdb27dc4bbd61ae50edc9b76ddd4">folder_path</a>, <a class="el" href="namespacereid__model.html#a73d66ca5d73e46af1ef65bccf347666e">name</a>, &quot;opts.yaml&quot;)</td></tr>
+<tr class="memitem:a239a20382a6ae204ac7c425165d8693c"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a239a20382a6ae204ac7c425165d8693c">config_path</a> = os.path.join(<a class="el" href="namespacereid__model.html#ae48f4b9872d8c1b85b4e9852746680b1">_models_root</a>, <a class="el" href="namespacereid__model.html#a73d66ca5d73e46af1ef65bccf347666e">name</a>, &quot;opts.yaml&quot;)</td></tr>
 <tr class="separator:a239a20382a6ae204ac7c425165d8693c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc26ab485ddf76983b7f06561ebdb8ca"><td class="memItemLeft" align="right" valign="top">yaml&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#abc26ab485ddf76983b7f06561ebdb8ca">config</a></td></tr>
 <tr class="separator:abc26ab485ddf76983b7f06561ebdb8ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -368,6 +370,28 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="ae48f4b9872d8c1b85b4e9852746680b1" name="ae48f4b9872d8c1b85b4e9852746680b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae48f4b9872d8c1b85b4e9852746680b1">&#9670;&#160;</a></span>_models_root</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">str reid_model._models_root = str(pathlib.Path(__file__).resolve().parent / &quot;models&quot;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa3618009d6e7524b0bc74f1995eec942" name="aa3618009d6e7524b0bc74f1995eec942"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa3618009d6e7524b0bc74f1995eec942">&#9670;&#160;</a></span>batch_size</h2>
 
@@ -420,7 +444,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">os reid_model.config_path = os.path.join(<a class="el" href="namespacereid__model.html#a7c2efdb27dc4bbd61ae50edc9b76ddd4">folder_path</a>, <a class="el" href="namespacereid__model.html#a73d66ca5d73e46af1ef65bccf347666e">name</a>, &quot;opts.yaml&quot;)</td>
+          <td class="memname">os reid_model.config_path = os.path.join(<a class="el" href="namespacereid__model.html#ae48f4b9872d8c1b85b4e9852746680b1">_models_root</a>, <a class="el" href="namespacereid__model.html#a73d66ca5d73e46af1ef65bccf347666e">name</a>, &quot;opts.yaml&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -679,7 +703,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">str reid_model.name = &quot;models/swin&quot;</td>
+          <td class="memname">str reid_model.name = &quot;swin&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">

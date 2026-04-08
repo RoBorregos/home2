@@ -47,6 +47,9 @@ var annotated_dup =
     [ "demo_manager", "namespacedemo__manager.html", [
       [ "DemoTM", "classdemo__manager_1_1DemoTM.html", "classdemo__manager_1_1DemoTM" ]
     ] ],
+    [ "detection", "namespacedetection.html", [
+      [ "Detection", "classdetection_1_1Detection.html", "classdetection_1_1Detection" ]
+    ] ],
     [ "dishwasher_node", "namespacedishwasher__node.html", [
       [ "DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", "classdishwasher__node_1_1DishwasherNode" ]
     ] ],
@@ -55,9 +58,6 @@ var annotated_dup =
     ] ],
     [ "ds4_demo", "namespaceds4__demo.html", [
       [ "ServoDS4", "classds4__demo_1_1ServoDS4.html", "classds4__demo_1_1ServoDS4" ]
-    ] ],
-    [ "egpsr_task_manager", "namespaceegpsr__task__manager.html", [
-      [ "EGPSRTM", "classegpsr__task__manager_1_1EGPSRTM.html", "classegpsr__task__manager_1_1EGPSRTM" ]
     ] ],
     [ "egsr_cut", "namespaceegsr__cut.html", [
       [ "EGPSRTM", "classegsr__cut_1_1EGPSRTM.html", "classegsr__cut_1_1EGPSRTM" ]
@@ -160,6 +160,9 @@ var annotated_dup =
     [ "is_person_inside", "namespaceis__person__inside.html", [
       [ "IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", "classis__person__inside_1_1IsPersonInside" ]
     ] ],
+    [ "kalman_filter", "namespacekalman__filter.html", [
+      [ "KalmanFilter", "classkalman__filter_1_1KalmanFilter.html", "classkalman__filter_1_1KalmanFilter" ]
+    ] ],
     [ "local_camera", "namespacelocal__camera.html", [
       [ "Camera", "classlocal__camera_1_1Camera.html", "classlocal__camera_1_1Camera" ],
       [ "NodeParams", "classlocal__camera_1_1NodeParams.html", null ]
@@ -214,6 +217,9 @@ var annotated_dup =
     ] ],
     [ "new_tracker", "namespacenew__tracker.html", [
       [ "SingleTracker", "classnew__tracker_1_1SingleTracker.html", "classnew__tracker_1_1SingleTracker" ]
+    ] ],
+    [ "nn_matching", "namespacenn__matching.html", [
+      [ "NearestNeighborDistanceMetric", "classnn__matching_1_1NearestNeighborDistanceMetric.html", "classnn__matching_1_1NearestNeighborDistanceMetric" ]
     ] ],
     [ "node_monitor", "namespacenode__monitor.html", [
       [ "NodeMonitor", "classnode__monitor_1_1NodeMonitor.html", "classnode__monitor_1_1NodeMonitor" ]
@@ -415,6 +421,13 @@ var annotated_dup =
     [ "test_vision_manager", "namespacetest__vision__manager.html", [
       [ "TestVisionManager", "classtest__vision__manager_1_1TestVisionManager.html", "classtest__vision__manager_1_1TestVisionManager" ]
     ] ],
+    [ "track", "namespacetrack.html", [
+      [ "Track", "classtrack_1_1Track.html", "classtrack_1_1Track" ],
+      [ "TrackState", "classtrack_1_1TrackState.html", null ]
+    ] ],
+    [ "tracker", "namespacetracker.html", [
+      [ "Tracker", "classtracker_1_1Tracker.html", "classtracker_1_1Tracker" ]
+    ] ],
     [ "tracker_node", "namespacetracker__node.html", [
       [ "SingleTracker", "classtracker__node_1_1SingleTracker.html", "classtracker__node_1_1SingleTracker" ]
     ] ],
@@ -431,6 +444,10 @@ var annotated_dup =
       [ "pose_detection", "namespacevision__general_1_1pose__detection.html", [
         [ "PoseDetection", "classvision__general_1_1pose__detection_1_1PoseDetection.html", "classvision__general_1_1pose__detection_1_1PoseDetection" ]
       ] ]
+    ] ],
+    [ "visualization", "namespacevisualization.html", [
+      [ "NoVisualization", "classvisualization_1_1NoVisualization.html", "classvisualization_1_1NoVisualization" ],
+      [ "Visualization", "classvisualization_1_1Visualization.html", "classvisualization_1_1Visualization" ]
     ] ],
     [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", [
       [ "WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", "classwait__for__controller__input__node_1_1WaitForControllerInputNode" ]

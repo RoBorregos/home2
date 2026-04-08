@@ -13,6 +13,9 @@ var searchData=
   ['testtaskmanager_10',['TestTaskManager',['../classtest__manager_1_1TestTaskManager.html',1,'test_manager']]],
   ['testvisionmanager_11',['TestVisionManager',['../classtest__vision__manager_1_1TestVisionManager.html',1,'test_vision_manager']]],
   ['topicconfig_12',['TopicConfig',['../classtask__manager_1_1utils_1_1config_1_1TopicConfig.html',1,'task_manager::utils::config']]],
-  ['trashdetectionnode_13',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]],
-  ['typeenum_14',['TypeEnum',['../classtask__manager_1_1utils_1_1config_1_1TypeEnum.html',1,'task_manager::utils::config']]]
+  ['track_13',['Track',['../classtrack_1_1Track.html',1,'track']]],
+  ['tracker_14',['Tracker',['../classtracker_1_1Tracker.html',1,'tracker']]],
+  ['trackstate_15',['TrackState',['../classtrack_1_1TrackState.html',1,'track']]],
+  ['trashdetectionnode_16',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]],
+  ['typeenum_17',['TypeEnum',['../classtask__manager_1_1utils_1_1config_1_1TypeEnum.html',1,'task_manager::utils::config']]]
 ];

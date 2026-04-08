@@ -110,14 +110,58 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a4f09fb58504d2b95f1a827ae612f045b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a4f09fb58504d2b95f1a827ae612f045b">CONF_THRESHOLD</a> = 0.8</td></tr>
+<tr class="memitem:a4f09fb58504d2b95f1a827ae612f045b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a4f09fb58504d2b95f1a827ae612f045b">CONF_THRESHOLD</a> = 0.6</td></tr>
 <tr class="separator:a4f09fb58504d2b95f1a827ae612f045b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92bbfa214a690f290f9c0ef5e891393d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a92bbfa214a690f290f9c0ef5e891393d">DEPTH_THRESHOLD</a> = 100</td></tr>
 <tr class="separator:a92bbfa214a690f290f9c0ef5e891393d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afaa1a3ce7a55d5f70514688ebd3cbec8"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#afaa1a3ce7a55d5f70514688ebd3cbec8">REID_EXTRACT_FREQ</a> = 0.3</td></tr>
+<tr class="separator:afaa1a3ce7a55d5f70514688ebd3cbec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a31ff474623ba03e3fc97d08114c58089"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a31ff474623ba03e3fc97d08114c58089">MAX_EMBEDDINGS</a> = 128</td></tr>
+<tr class="separator:a31ff474623ba03e3fc97d08114c58089"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa34171b8180001c3b26771ff9efd5ed4"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#aa34171b8180001c3b26771ff9efd5ed4">DEEPSORT_MAX_COSINE_DISTANCE</a> = 0.3</td></tr>
+<tr class="separator:aa34171b8180001c3b26771ff9efd5ed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1019ff64cd9459d9a26b3a73dd0ed134"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a1019ff64cd9459d9a26b3a73dd0ed134">DEEPSORT_NN_BUDGET</a> = 100</td></tr>
+<tr class="separator:a1019ff64cd9459d9a26b3a73dd0ed134"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5cd4fdc4c259a30ac947a0d640be9d8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#ae5cd4fdc4c259a30ac947a0d640be9d8">DEEPSORT_MAX_AGE</a> = 100</td></tr>
+<tr class="separator:ae5cd4fdc4c259a30ac947a0d640be9d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38d9efff05ec11f578a18bf6f8e067cf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a38d9efff05ec11f578a18bf6f8e067cf">DEEPSORT_N_INIT</a> = 3</td></tr>
+<tr class="separator:a38d9efff05ec11f578a18bf6f8e067cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Node to track a single person and
-re-id them if necessary
+<div class="textblock"><pre class="fragment">Node to track a single person and re-id them if necessary.
+Requires 2 terminals minimum (3 if using pose/color detection via moondream).
+
+--- Terminal 1: Run the tracker node ---
+    ros2 run vision_general tracker_node
+
+--- Terminal 2: Call a tracking service ---
+
+    Option 1) Track the largest person (default):
+        ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool "{data: true}"
+
+    Option 2) Track by gesture (e.g. waving):
+        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
+            "{track_enabled: true, track_by: 'gestures', value: 'waving'}"
+
+    Option 3) Track by pose (standing, sitting, lying down):
+        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
+            "{track_enabled: true, track_by: 'poses', value: 'standing'}"
+
+    Option 4) Track by clothing color:
+        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
+            "{track_enabled: true, track_by: 'color', value: 'red shirt'}"
+
+    Disable tracking:
+        ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool "{data: false}"
+
+    Check if tracking is active:
+        ros2 service call /vision/is_tracking std_srvs/srv/Trigger
+
+--- Terminal 3 (Orin only): Run the zed initialziation 
+    zed
+
+--- Terminal 3 (optional): Moondream vision model (required for poses/color) ---
+    ros2 run vision_general moondream_node
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="ad68321e5e3401c6b2e69591f3f62aa2a" name="ad68321e5e3401c6b2e69591f3f62aa2a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad68321e5e3401c6b2e69591f3f62aa2a">&#9670;&#160;</a></span>main()</h2>
@@ -145,7 +189,63 @@ re-id them if necessary
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float tracker_node.CONF_THRESHOLD = 0.8</td>
+          <td class="memname">float tracker_node.CONF_THRESHOLD = 0.6</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae5cd4fdc4c259a30ac947a0d640be9d8" name="ae5cd4fdc4c259a30ac947a0d640be9d8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5cd4fdc4c259a30ac947a0d640be9d8">&#9670;&#160;</a></span>DEEPSORT_MAX_AGE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int tracker_node.DEEPSORT_MAX_AGE = 100</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa34171b8180001c3b26771ff9efd5ed4" name="aa34171b8180001c3b26771ff9efd5ed4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa34171b8180001c3b26771ff9efd5ed4">&#9670;&#160;</a></span>DEEPSORT_MAX_COSINE_DISTANCE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float tracker_node.DEEPSORT_MAX_COSINE_DISTANCE = 0.3</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a38d9efff05ec11f578a18bf6f8e067cf" name="a38d9efff05ec11f578a18bf6f8e067cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38d9efff05ec11f578a18bf6f8e067cf">&#9670;&#160;</a></span>DEEPSORT_N_INIT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int tracker_node.DEEPSORT_N_INIT = 3</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1019ff64cd9459d9a26b3a73dd0ed134" name="a1019ff64cd9459d9a26b3a73dd0ed134"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1019ff64cd9459d9a26b3a73dd0ed134">&#9670;&#160;</a></span>DEEPSORT_NN_BUDGET</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int tracker_node.DEEPSORT_NN_BUDGET = 100</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -160,6 +260,34 @@ re-id them if necessary
       <table class="memname">
         <tr>
           <td class="memname">int tracker_node.DEPTH_THRESHOLD = 100</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a31ff474623ba03e3fc97d08114c58089" name="a31ff474623ba03e3fc97d08114c58089"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31ff474623ba03e3fc97d08114c58089">&#9670;&#160;</a></span>MAX_EMBEDDINGS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int tracker_node.MAX_EMBEDDINGS = 128</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afaa1a3ce7a55d5f70514688ebd3cbec8" name="afaa1a3ce7a55d5f70514688ebd3cbec8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afaa1a3ce7a55d5f70514688ebd3cbec8">&#9670;&#160;</a></span>REID_EXTRACT_FREQ</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float tracker_node.REID_EXTRACT_FREQ = 0.3</td>
         </tr>
       </table>
 </div><div class="memdoc">
