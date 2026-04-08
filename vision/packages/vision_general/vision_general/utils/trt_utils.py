@@ -13,6 +13,15 @@ import shutil
 from ultralytics import YOLO
 
 
+def _is_tensorrt_available() -> bool:
+    try:
+        import tensorrt  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
 def _get_engine_path(model_path: str) -> str:
     """Get the engine path, using TENSORRT_CACHE_DIR if set."""
     cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
@@ -41,6 +50,10 @@ def load_yolo_trt(model_path: str, task: str = "detect", imgsz: int = 640) -> YO
         return YOLO(engine_path, task=task)
 
     model = YOLO(model_path)
+
+    if not _is_tensorrt_available():
+        print("[TRT] TensorRT not available, using PyTorch model")
+        return model
 
     try:
         print(f"[TRT] Exporting {model_path} to TensorRT (first run only)...")
