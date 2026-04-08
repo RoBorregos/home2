@@ -22,7 +22,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     dashgo_driver = Node(
-        package='dashgo_driver',
+        package='dashgo_driver_cpp',
         executable='dashgo_driver_cpp',
         name='DashgoDriver',
         output=log_output,
