@@ -1,18 +1,16 @@
 
 from ament_index_python import get_package_share_directory
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
-from launch.substitutions import PythonExpression
 from launch import LaunchDescription
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
 import os
 def launch_setup(context, *args, **kwargs):
-    publish_urdf = LaunchConfiguration('publish_tf', default='false')
     use_sim = LaunchConfiguration('use_sim', default='false')
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
 
@@ -41,20 +39,16 @@ def launch_setup(context, *args, **kwargs):
         ), 
         )
     
-    robot_description_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("urdf_launch"),
-                    "launch",
-                    "description.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={
-            'urdf_package': 'frida_description',
-            'urdf_package_path': PathJoinSubstitution(['urdf','TMR2025','FRIDA_Real.urdf.xacro'])
-        }.items(),
+    urdf_file = os.path.join(
+        get_package_share_directory('frida_description'),
+        'urdf', 'TMR2025', 'FRIDA_Real.urdf.xacro'
+    )
+    robot_description_launch = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        parameters=[{
+            'robot_description': Command(['xacro ', urdf_file])
+        }],
     )
 
     laser_launch = Node(
