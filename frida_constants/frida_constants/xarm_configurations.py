@@ -22,6 +22,18 @@ FRONT_LOW_STARE = {
     "degrees": True,
 }
 
+FRONT_STARE_CARRY_BAG = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -42.7,
+        "joint3": -118.6,
+        "joint4": 2.9,
+        "joint5": 122.3,
+        "joint6": 224.1,
+    },
+    "degrees": True,
+}
+
 TABLE_STARE = {
     "joints": {
         "joint1": -90.0,
