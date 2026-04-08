@@ -1,5 +1,4 @@
 
-from ament_index_python import get_package_share_directory
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -9,8 +8,6 @@ from launch.conditions import UnlessCondition, IfCondition
 from launch import LaunchDescription
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
-import os
-import xacro
 def launch_setup(context, *args, **kwargs):
     use_sim = LaunchConfiguration('use_sim', default='false')
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
@@ -40,15 +37,20 @@ def launch_setup(context, *args, **kwargs):
         ), 
         )
     
-    urdf_file = os.path.join(
-        get_package_share_directory('frida_description'),
-        'urdf', 'TMR2025', 'FRIDA_Real.urdf.xacro'
+    # Static transforms from URDF (lidar.xacro) — avoids needing xacro/robot_state_publisher
+    # base_link -> laser: xyz="0.16 0 0.002" rpy="0 0 3.14"
+    laser_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='laser_tf_broadcaster',
+        arguments=['0.16', '0', '0.002', '3.14', '0', '0', 'base_link', 'laser'],
     )
-    robot_description_content = xacro.process_file(urdf_file).toxml()
-    robot_description_launch = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        parameters=[{'robot_description': robot_description_content}],
+    # base_link -> imu_base: xyz="0.15026 0 0.002" rpy="3.1416 3.1416 1.57"
+    imu_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='imu_tf_broadcaster',
+        arguments=['0.15026', '0', '0.002', '1.57', '3.1416', '3.1416', 'base_link', 'imu_base'],
     )
 
     laser_launch = Node(
@@ -70,11 +72,6 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(use_sim)
         )
     
-    joint_state = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-    )
-
     dualshock_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -103,8 +100,8 @@ def launch_setup(context, *args, **kwargs):
         shutdown_on_failure,
         dashgo_driver,
         ekf_launch,
-        robot_description_launch,
-        joint_state,
+        laser_tf,
+        imu_tf,
         laser_launch,
         dualshock_launch,
     ]
