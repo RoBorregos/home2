@@ -346,14 +346,11 @@ class HRIC_TM(Node):
 
                 self.subtask_manager.manipulation.pan_to(offset)
                 for _ in range(ATTEMPT_LIMIT):
-                    if guest_1_found:
+                    if self.subtask_manager.vision.isPerson(guest_1.name):
+                        guest_1_found = True
                         break
 
-                    for _ in range(5):
-                        self.timeout(0.5)
-                        if self.subtask_manager.vision.isPerson(guest_1.name):
-                            guest_1_found = True
-                            break
+                    self.timeout(1)
 
             # Lock onto guest 1 and introduce guest 2
             self.subtask_manager.vision.follow_by_name(guest_1.name)
