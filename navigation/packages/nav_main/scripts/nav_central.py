@@ -405,7 +405,9 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Area not found"
             return response
-
+        
+        self.resume_slam()
+        self.resume_nav2()
         goal_coord = PoseStamped() 
         goal_coord.header.frame_id = "map"
         goal_coord.pose.position.x = fetch_coords[0]
@@ -419,7 +421,8 @@ class Nav_Central(Node):
         future = self.send_nav_goal(goal_coord) 
         response.success = future[0]
         response.error = future[1]
-
+        self.pause_slam()
+        self.pause_nav2()
         return response
         
     def check_for_topics(self, topics):
