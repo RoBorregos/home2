@@ -200,8 +200,15 @@ public:
                            "Error filtering point cloud with code %d",
                            response->health_response);
 
+    // Pass the expected table Z so extractPlane can fall back to a Z-passthrough
+    // when the object is near a table corner and RANSAC finds too few inliers.
+    float expected_z = (request->close_point.header.frame_id != "")
+                           ? request->close_point.point.z - 0.03f
+                           : -1.0f;
+
     response->health_response =
-        this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
+        this->extractPlane(cloud_out, cloud_out, request->extract_or_remove,
+                           expected_z);
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error extracting plane with code %d",
@@ -880,7 +887,8 @@ public:
 
   uint32_t extractPlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                         _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
-                        bool extract_negative = false) {
+                        bool extract_negative = false,
+                        float expected_plane_z = -1.0f) {
     uint32_t status = OK;
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -900,21 +908,56 @@ public:
     seg.setInputCloud(cloud);
     seg.segment(*inliers, *coefficients);
 
-    if (inliers->indices.size() == 0) {
-      RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model");
-      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    // Minimum inlier count to consider the plane valid. At table corners there
+    // are fewer surface points, so RANSAC may fit a deformed/tilted plane with
+    // very few inliers. Fall back to a Z-passthrough in that case.
+    const size_t min_inliers = 80;
+
+    bool plane_valid = inliers->indices.size() >= min_inliers;
+
+    if (!plane_valid) {
+      RCLCPP_WARN(this->get_logger(),
+                  "Plane has only %zu inliers (< %zu), likely a table corner — "
+                  "falling back to Z passthrough",
+                  inliers->indices.size(), min_inliers);
     }
 
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
-    status = this->copyPointCloud(cloud, cloud_out);
+    if (plane_valid) {
+      pcl::ExtractIndices<pcl::PointXYZ> extract;
+      status = this->copyPointCloud(cloud, cloud_out);
 
-    ASSERT_AND_RETURN_CODE_VALUE(
-        status, OK, "Error copying point cloud with code %d", status);
+      ASSERT_AND_RETURN_CODE_VALUE(
+          status, OK, "Error copying point cloud with code %d", status);
 
-    extract.setInputCloud(cloud_out);
-    extract.setIndices(inliers);
-    extract.setNegative(extract_negative);
-    extract.filter(*cloud_out);
+      extract.setInputCloud(cloud_out);
+      extract.setIndices(inliers);
+      extract.setNegative(extract_negative);
+      extract.filter(*cloud_out);
+    } else if (extract_negative && expected_plane_z > 0.0f) {
+      // Fallback: remove a Z slab around the expected table height and keep
+      // everything above it. This handles corners where RANSAC cannot find
+      // enough horizontal inliers.
+      status = this->copyPointCloud(cloud, cloud_out);
+      ASSERT_AND_RETURN_CODE_VALUE(
+          status, OK, "Error copying point cloud with code %d", status);
+
+      pcl::PassThrough<pcl::PointXYZ> pass;
+      pass.setInputCloud(cloud_out);
+      pass.setFilterFieldName("z");
+      // Keep points strictly above the expected table surface (+ 3 cm margin)
+      pass.setFilterLimits(expected_plane_z + 0.03f, 10.0f);
+      pass.filter(*cloud_out);
+
+      RCLCPP_INFO(this->get_logger(),
+                  "Z-passthrough fallback: keeping points above z=%.3f",
+                  expected_plane_z + 0.03f);
+    } else {
+      RCLCPP_ERROR(this->get_logger(),
+                   "Could not estimate a valid planar model and no fallback "
+                   "available (expected_plane_z=%.3f, extract_negative=%d)",
+                   expected_plane_z, extract_negative);
+      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    }
 
     return status;
   };
