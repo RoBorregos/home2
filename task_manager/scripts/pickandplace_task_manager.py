@@ -266,28 +266,13 @@ class PickAndPlaceTM(Node):
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to a location with retry logic"""
         self.subtask_manager.manipulation.move_to_position("nav_pose")
-        self.subtask_manager.nav.resume_nav()
 
         if say:
             CLog.nav(self, "MOVE", f"Moving to {location}")
             self.subtask_manager.hri.say(f"Moving to {location}.", wait=False)
-
-        result = Status.EXECUTION_ERROR
-        retry = 0
-        while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
-            future = self.subtask_manager.nav.move_to_location(location, sublocation)
-            if "navigation" not in self.subtask_manager.get_mocked_areas():
-                if not hasattr(future, "add_done_callback"):
-                    CLog.nav(self, "FAIL", "Navigation action server not available.", level="error")
-                    retry += 1
-                    continue
-                rclpy.spin_until_future_complete(self, future)
-                result = future.result()
-            else:
-                result = Status.EXECUTION_SUCCESS
-            retry += 1
-
-        self.subtask_manager.nav.pause_nav()
+            
+        result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+      
         return result
 
     def timeout(self, duration: float = 2.0):
