@@ -1,15 +1,16 @@
 
 from ament_index_python import get_package_share_directory
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
+from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
 from launch import LaunchDescription
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
 import os
+import xacro
 def launch_setup(context, *args, **kwargs):
     use_sim = LaunchConfiguration('use_sim', default='false')
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
@@ -43,12 +44,11 @@ def launch_setup(context, *args, **kwargs):
         get_package_share_directory('frida_description'),
         'urdf', 'TMR2025', 'FRIDA_Real.urdf.xacro'
     )
+    robot_description_content = xacro.process_file(urdf_file).toxml()
     robot_description_launch = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        parameters=[{
-            'robot_description': Command(['xacro ', urdf_file])
-        }],
+        parameters=[{'robot_description': robot_description_content}],
     )
 
     laser_launch = Node(
