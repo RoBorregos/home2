@@ -41,6 +41,7 @@ def launch_function(context, *args, **kwargs):
         executable='nav_ui.py',
         name='nav_ui',
         output='screen',
+        parameters=[{'map_name': rtabmap_map_name}],
     )
 
     nav_basics = IncludeLaunchDescription(

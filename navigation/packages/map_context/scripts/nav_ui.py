@@ -103,6 +103,7 @@ class NavRosNode(Node):
         self.signals = signals
         # 'navigation' or 'mapping'
         self.ui_mode = self.declare_parameter('mode', 'navigation').value
+        self.map_name = self.declare_parameter('map_name', '').value
 
         # TF
         self.tf_buffer = Buffer()
@@ -158,7 +159,6 @@ class NavRosNode(Node):
 
         # Mapping mode: map save via /rtabmap/backup
         if self.ui_mode == 'mapping':
-            self.map_name = self.declare_parameter('map_name', 'rtabmap_map.db').value
             self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
 
         # Robot pose
@@ -722,6 +722,10 @@ class NavUI(QMainWindow):
         self.setup_ui()
         self.apply_style()
         self.connect_ros_signals()
+        # Show DB name immediately — strip path, keep just the filename
+        map_name = ros_node.map_name
+        if map_name:
+            self.lbl_current_db.setText(f"Current: {os.path.basename(map_name)}")
 
     def setup_ui(self):
         central = QWidget()
