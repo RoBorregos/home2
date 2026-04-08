@@ -142,6 +142,10 @@ class HRIC_TM(Node):
         """Finite State Machine"""
 
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
+            for offset in self.seat_angles:
+                self._logger.info(f"Pan to angle {offset} degrees")
+                self.subtask_manager.manipulation.pan_to(offset)
+                self.timeout()
             Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.say("Waiting for start button to be pressed.", wait=False)
 
@@ -156,6 +160,7 @@ class HRIC_TM(Node):
 
         elif self.current_state == HRIC_TM.TaskStates.START:
             self._track_state_change(HRIC_TM.TaskStates.START)
+            self.subtask_manager.manipulation.open_gripper()
             self.navigate_to("entrance", say=False)
             self.subtask_manager.hri.say("I am ready.", wait=False)
             self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
@@ -235,9 +240,11 @@ class HRIC_TM(Node):
                     "I see you brought a bag for the host. Let me take care of it for you.",
                 )
 
-            self.subtask_manager.manipulation.move_to_position("carry_pose")
+            self.subtask_manager.manipulation.move_to_position(
+                "carry_pose"
+            )  # TODO: move more to the back
             self.subtask_manager.hri.say(
-                "Please extend your hand holding the bag so I can reach it."
+                "Please extend your hand holding the bag so I can see and reach it."
             )
 
             hand_reached = False
@@ -273,7 +280,6 @@ class HRIC_TM(Node):
                     "I could not reach your hand. Place the bag directly on my gripper."
                 )
 
-            self.subtask_manager.manipulation.open_gripper()
             self.timeout(5)
             s, res = self.subtask_manager.hri.confirm(
                 "Have you placed the bag on my gripper?", use_hotwords=False
@@ -312,6 +318,7 @@ class HRIC_TM(Node):
             angle = 0
 
             for seat_angle in self.seat_angles:
+                self._logger.info(f"Looking for seat at angle {seat_angle} degrees")
                 self.subtask_manager.manipulation.pan_to(seat_angle)
                 self.timeout(1)
                 status, angle = self.subtask_manager.vision.find_seat()
@@ -344,6 +351,7 @@ class HRIC_TM(Node):
             self.subtask_manager.manipulation.follow_face(False)
 
             # Second: look at guest 1 and introduce guest 2
+            self.subtask_manager.hri.say(f"{guest_1.name} please look at me so I can identify you.")
             self.subtask_manager.manipulation.move_to_position("front_stare")
             guest_1_found = False
             for offset in self.seat_angles:
@@ -352,17 +360,22 @@ class HRIC_TM(Node):
 
                 self.subtask_manager.manipulation.pan_to(offset)
                 for _ in range(ATTEMPT_LIMIT):
-                    self.timeout(1)
-                    if self.subtask_manager.vision.isPerson(guest_1.name):
-                        guest_1_found = True
+                    if guest_1_found:
                         break
+
+                    for _ in range(5):
+                        self.timeout(0.5)
+                        if self.subtask_manager.vision.isPerson(guest_1.name):
+                            guest_1_found = True
+                            break
 
             # Lock onto guest 1 and introduce guest 2
             self.subtask_manager.vision.follow_by_name(guest_1.name)
             self.subtask_manager.manipulation.follow_face(True)
             self.timeout(2)
             self.subtask_manager.hri.say(
-                f"Hello {guest_1.name}. This is {guest_2.name} and their favorite drink is {guest_2.drink}"
+                f"Hello {guest_1.name}. This is {guest_2.name} and their favorite drink is {guest_2.drink}",
+                wait=True,
             )
             self.subtask_manager.manipulation.follow_face(False)
 
