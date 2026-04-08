@@ -10,12 +10,13 @@ import os
 import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import AREAS_SERVICE, CHECK_DOOR_SERVICE,MOVE_LOCATION_SERVICE, SUBTASK_MANAGER
-from frida_interfaces.srv import (
-    CheckDoor,
-    MapAreas,
-    MoveLocation
+from frida_constants.navigation_constants import (
+    AREAS_SERVICE,
+    CHECK_DOOR_SERVICE,
+    MOVE_LOCATION_SERVICE,
+    SUBTASK_MANAGER,
 )
+from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
@@ -105,11 +106,13 @@ class NavigationTasks:
 
         else:
             Logger.info(self.node, "Map Areas dumped Succesfully")
-            return (Status.EXECUTION_SUCCESS,json.loads(str(future.result().areas)))
+            return (Status.EXECUTION_SUCCESS, json.loads(str(future.result().areas)))
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ''), delay=3)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     @service_check(
-        "door_checking_srv", (Status.EXECUTION_ERROR,'Service not started'), timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        "door_checking_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
     def check_door(self):
         """Check if the door is open or closed"""
@@ -121,37 +124,42 @@ class NavigationTasks:
         if result is not None:
             if result.status:
                 Logger.info(self.node, "Door open")
-                return (Status.EXECUTION_SUCCESS, '')
+                return (Status.EXECUTION_SUCCESS, "")
             else:
                 Logger.error(self.node, "Error getting state with door")
-                return (Status.EXECUTION_ERROR, 'Error getting door state')
+                return (Status.EXECUTION_ERROR, "Error getting door state")
         else:
             Logger.error(self.node, "Error with request")
-            return (Status.EXECUTION_ERROR, 'Request error')
+            return (Status.EXECUTION_ERROR, "Request error")
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ''), delay=5)
-    @service_check("move_to_location_srv", (Status.EXECUTION_ERROR, 'Service not started'),timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
+    @service_check(
+        "move_to_location_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
     def move_to_location(self, location, sublocation):
         """Move to areas json location"""
-        if sublocation is "":
+        if sublocation == "":
             sublocation = "safe_place"
         Logger.info(self.node, f"Moving to {location} - {sublocation}")
         request = MoveLocation.Request()
         request.location = location
         request.sublocation = sublocation
         future = self.move_to_location_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node,future)
+        rclpy.spin_until_future_complete(self.node, future)
         result = future.result()
         if result is not None:
             if result.success:
-                Logger.info(self.node,"Goal Reached")
-                return (Status.EXECUTION_SUCCESS, '')
+                Logger.info(self.node, "Goal Reached")
+                return (Status.EXECUTION_SUCCESS, "")
             else:
                 Logger.error(self.node, f"Error with goal: {result.error}")
                 return (Status.EXECUTION_ERROR, result.error)
         else:
             Logger.error(self.node, "Error with request")
-            return (Status.EXECUTION_ERROR, 'Error with request')
+            return (Status.EXECUTION_ERROR, "Error with request")
+
 
 if __name__ == "__main__":
     rclpy.init()

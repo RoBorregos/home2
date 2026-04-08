@@ -29,14 +29,14 @@ INITIAL_POSE_TOPIC = "/initialpose"
 MONITOR_RATE = 1.0
 NO_TF_LIMIT = 2
 NO_TOPICS_LIMIT = 2
-TIMEOUT_REQUIREMENTS = 0.8 
+TIMEOUT_REQUIREMENTS = 0.8
 TIMEOUT_RTABMAP = 30.0
 RTAB_PAUSE_SERVICE = "/rtabmap/pause"
 RTAB_RESUME_SERVICE = "/rtabmap/resume"
 RTAB_CHECK_TOPIC = "/rtabmap/republish_node_data"
 RTAB_MAPS_PATH = "/workspace/src/navigation/rtabmapdbs/"
 RTAB_CONTAINER_NODE = "/rtabmap_container/_container/load_node"
-NAV2_LIFECYCLE_SERVICE = "/lifecycle_manager_navigation/manage_nodes" 
+NAV2_LIFECYCLE_SERVICE = "/lifecycle_manager_navigation/manage_nodes"
 # ------------------------------------------------------------------
 
 
@@ -52,4 +52,4 @@ GOAL_TOPIC = "/navigate_to_pose"
 SCAN_TOPIC = "/scan"
 CAMERA_RGB_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 CAMERA_INFO_TOPIC = "/zed/zed_node/rgb/camera_info"
-CAMERA_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered" 
+CAMERA_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered"

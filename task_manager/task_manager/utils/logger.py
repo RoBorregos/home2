@@ -7,6 +7,7 @@ import sys
 import time
 import threading
 
+
 class Logger:
     # ANSI colors
     GREEN = "\033[92m"
@@ -18,6 +19,7 @@ class Logger:
     CHECK = "✓"
     CROSS = "✗"
     SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
     @staticmethod
     def success(node, message) -> None:
         """Print success message"""
@@ -98,5 +100,7 @@ class Logger:
             print(f"\r\033[2K  {Logger.GREEN}{Logger.CHECK} {name} — passed{Logger.RESET}")
             return True
         else:
-            print(f"\r\033[2K  {Logger.RED}{Logger.CROSS} {name} — FAILED: {result['error']}{Logger.RESET}")
+            print(
+                f"\r\033[2K  {Logger.RED}{Logger.CROSS} {name} — FAILED: {result['error']}{Logger.RESET}"
+            )
             return False
