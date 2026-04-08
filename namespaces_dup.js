@@ -36,7 +36,6 @@ var namespaces_dup =
       [ "generate_close_to_heatmap", "namespaceclose__by__generators.html#a028e0770c12f1f056c05d8347126a88c", null ],
       [ "generate_directional_heatmap", "namespaceclose__by__generators.html#a2833aebb91dad17af1c390b31894723e", null ]
     ] ],
-    [ "closed_door_test", "namespaceclosed__door__test.html", "namespaceclosed__door__test" ],
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
@@ -129,6 +128,10 @@ var namespaces_dup =
     [ "gazebo_objects", "namespacegazebo__objects.html", [
       [ "generate_launch_description", "namespacegazebo__objects.html#ae772c64528c2799ae896221ae540da16", null ]
     ] ],
+    [ "general_navigation", "namespacegeneral__navigation.html", [
+      [ "generate_launch_description", "namespacegeneral__navigation.html#af472e117a9a8a68b98c82219ed0d3a14", null ],
+      [ "launch_function", "namespacegeneral__navigation.html#a7ef9e56e1cb54dea09714dcd59926838", null ]
+    ] ],
     [ "get_positon_3d", "namespaceget__positon__3d.html", "namespaceget__positon__3d" ],
     [ "gpd_ros2", "namespacegpd__ros2.html", "namespacegpd__ros2" ],
     [ "gpsr", "namespacegpsr.html", [
@@ -161,12 +164,37 @@ var namespaces_dup =
     [ "hric_task_manager", "namespacehric__task__manager.html", "namespacehric__task__manager" ],
     [ "ikfast", "namespaceikfast.html", "namespaceikfast" ],
     [ "is_person_inside", "namespaceis__person__inside.html", "namespaceis__person__inside" ],
+    [ "launch_nav", "namespacelaunch__nav.html", [
+      [ "classify_log_file", "namespacelaunch__nav.html#a75bd2855dafe96b1a39f361e973d957d", null ],
+      [ "init_view_logs", "namespacelaunch__nav.html#ad8f3f0a83ccae0a1f950b036873acdfd", null ],
+      [ "launch_reader", "namespacelaunch__nav.html#a0d4772d90a1926c0d4403ecac96a8665", null ],
+      [ "line_matches_view", "namespacelaunch__nav.html#abfda763f2a6e7b9caafc056cc9aa1e4f", null ],
+      [ "main", "namespacelaunch__nav.html#af0470fd800e1efdfd2e37f736994e4cc", null ],
+      [ "print_buffer", "namespacelaunch__nav.html#abc760dc1ac36e19482c124398ae7dc45", null ],
+      [ "start_log_tailers", "namespacelaunch__nav.html#a246d97e0bb14d53dccb8a46a0ec8514e", null ],
+      [ "store_and_print", "namespacelaunch__nav.html#a3da170e4ebb2dd5830edfe36bd95d509", null ],
+      [ "tail_file", "namespacelaunch__nav.html#a4c9f86d0f37d390231dea2f12029bc78", null ],
+      [ "write_view_log", "namespacelaunch__nav.html#a57e87166d8c220a27ed62563585c7391", null ],
+      [ "buffer_size", "namespacelaunch__nav.html#ae5ed452e73246c6a02445001d416e92e", null ],
+      [ "buffers", "namespacelaunch__nav.html#a39644ed5643c8fc098d8c93b370e3e81", null ],
+      [ "current_view", "namespacelaunch__nav.html#ad5f0f2a140eea61ec2fce197123a1d64", null ],
+      [ "HEADER", "namespacelaunch__nav.html#ace16b89971ec24d4c2a83bfb2423d2fa", null ],
+      [ "interactive", "namespacelaunch__nav.html#a5adb043eb7a122398ac540c8c0aa36f4", null ],
+      [ "lock", "namespacelaunch__nav.html#a3cdcaa925ed4e9485dc5cd79df94a4aa", null ],
+      [ "log_dir_found", "namespacelaunch__nav.html#a1eca33b263b3ea1e2b87696e1f9e71e3", null ],
+      [ "log_dir_path", "namespacelaunch__nav.html#a030fad57712e00e24720791193679fbc", null ],
+      [ "LOG_FILE_KEYWORDS", "namespacelaunch__nav.html#a0f243d550a43b80aa507f845a9d4cf03", null ],
+      [ "STDOUT_VIEWS", "namespacelaunch__nav.html#a92f282f5c2ee5a69ea877067b626e46c", null ],
+      [ "view_files", "namespacelaunch__nav.html#ae215736aa067f1294af81ef3dcafe6f9", null ],
+      [ "VIEW_LOG_DIR", "namespacelaunch__nav.html#a2df0ee976d79351ff02d519353fc5231", null ],
+      [ "VIEWS", "namespacelaunch__nav.html#a96af342b5bd59dd400aefda6b7532555", null ]
+    ] ],
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
     [ "map_area_tagger", "namespacemap__area__tagger.html", "namespacemap__area__tagger" ],
-    [ "map_publisher", "namespacemap__publisher.html", "namespacemap__publisher" ],
     [ "mapping", "namespacemapping.html", [
-      [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ]
+      [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ],
+      [ "launch_function", "namespacemapping.html#a3a2ccf081850f9ede9e85ed58952fba0", null ]
     ] ],
     [ "model", "namespacemodel.html", "namespacemodel" ],
     [ "monitor", "namespacemonitor.html", [
@@ -187,7 +215,6 @@ var namespaces_dup =
     [ "motion_planning_server", "namespacemotion__planning__server.html", [
       [ "generate_launch_description", "namespacemotion__planning__server.html#a00476858453e5e0a857af18e9d323e0b", null ]
     ] ],
-    [ "move_to_location", "namespacemove__to__location.html", "namespacemove__to__location" ],
     [ "moveit", "namespacemoveit.html", [
       [ "generate_launch_description", "namespacemoveit.html#a552973b0d26e34efef83b8ed1ddd6b19", null ],
       [ "launch_setup", "namespacemoveit.html#acbf7baa79e0c3776c713bd6f15b25ab6", null ]
@@ -198,12 +225,8 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146", null ],
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
     ] ],
-    [ "nav_lifecycle_manager", "namespacenav__lifecycle__manager.html", "namespacenav__lifecycle__manager" ],
+    [ "nav_central", "namespacenav__central.html", "namespacenav__central" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
-    [ "navigation_composition", "namespacenavigation__composition.html", [
-      [ "generate_launch_description", "namespacenavigation__composition.html#a80cc34be81f4980454e52c3045744557", null ],
-      [ "launch_function", "namespacenavigation__composition.html#aac63296331bdd59683a72fbb12db486b", null ]
-    ] ],
     [ "new_tracker", "namespacenew__tracker.html", "namespacenew__tracker" ],
     [ "node_monitor", "namespacenode__monitor.html", "namespacenode__monitor" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
@@ -283,7 +306,6 @@ var namespaces_dup =
     [ "remove_collision_object", "namespaceremove__collision__object.html", [
       [ "main", "namespaceremove__collision__object.html#a86366d327b8fa51f26394d0524fdc193", null ]
     ] ],
-    [ "remove_person", "namespaceremove__person.html", "namespaceremove__person" ],
     [ "restaurant_commands", "namespacerestaurant__commands.html", "namespacerestaurant__commands" ],
     [ "restaurant_task_manager", "namespacerestaurant__task__manager.html", "namespacerestaurant__task__manager" ],
     [ "robot_sim", "namespacerobot__sim.html", [
@@ -334,14 +356,12 @@ var namespaces_dup =
     ] ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
     [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", "namespacetracker__node__fregoso" ],
-    [ "transform_target", "namespacetransform__target.html", "namespacetransform__target" ],
     [ "trash_detection_node", "namespacetrash__detection__node.html", "namespacetrash__detection__node" ],
     [ "trt_utils", "namespacetrt__utils.html", [
       [ "_get_engine_path", "namespacetrt__utils.html#ae28972e2bd9e6ec6460827b6380c7b9a", null ],
       [ "load_yolo_trt", "namespacetrt__utils.html#a60b6f5e8a22c056723d7c0a0ecd88ca3", null ]
     ] ],
     [ "utils", "namespaceutils.html", "namespaceutils" ],
-    [ "virtual_stop_button", "namespacevirtual__stop__button.html", "namespacevirtual__stop__button" ],
     [ "vision_3D_utils", "namespacevision__3D__utils.html", [
       [ "deproject_pixel_to_point", "namespacevision__3D__utils.html#aa21ba9a101d1e05716a26c5420b239cf", null ],
       [ "get2DCentroid", "namespacevision__3D__utils.html#aacc42d41856be0a1a34cfe33498aa9b8", null ],

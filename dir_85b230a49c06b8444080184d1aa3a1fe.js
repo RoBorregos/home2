@@ -1,12 +1,7 @@
 var dir_85b230a49c06b8444080184d1aa3a1fe =
 [
     [ "calibrate_ignore_laser.py", "calibrate__ignore__laser_8py.html", "calibrate__ignore__laser_8py" ],
-    [ "closed_door_test.py", "closed__door__test_8py.html", "closed__door__test_8py" ],
-    [ "map_publisher.py", "map__publisher_8py.html", "map__publisher_8py" ],
-    [ "move_to_location.py", "move__to__location_8py.html", "move__to__location_8py" ],
-    [ "nav_lifecycle_manager.py", "nav__lifecycle__manager_8py.html", "nav__lifecycle__manager_8py" ],
-    [ "node_monitor.py", "node__monitor_8py.html", "node__monitor_8py" ],
-    [ "remove_person.py", "remove__person_8py.html", "remove__person_8py" ],
-    [ "transform_target.py", "transform__target_8py.html", "transform__target_8py" ],
-    [ "virtual_stop_button.py", "virtual__stop__button_8py.html", "virtual__stop__button_8py" ]
+    [ "launch_nav.py", "launch__nav_8py.html", "launch__nav_8py" ],
+    [ "nav_central.py", "nav__central_8py.html", "nav__central_8py" ],
+    [ "node_monitor.py", "node__monitor_8py.html", "node__monitor_8py" ]
 ];

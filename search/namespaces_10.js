@@ -36,9 +36,8 @@ var searchData=
   ['tf_5futils_33',['tf_utils',['../namespacetf__utils.html',1,'']]],
   ['tracker_5fnode_34',['tracker_node',['../namespacetracker__node.html',1,'']]],
   ['tracker_5fnode_5ffregoso_35',['tracker_node_fregoso',['../namespacetracker__node__fregoso.html',1,'']]],
-  ['transform_5ftarget_36',['transform_target',['../namespacetransform__target.html',1,'']]],
-  ['trash_5fdetection_5fnode_37',['trash_detection_node',['../namespacetrash__detection__node.html',1,'']]],
-  ['trt_5futils_38',['trt_utils',['../namespacetrt__utils.html',1,'']]],
-  ['utils_39',['utils',['../namespacetask__manager_1_1utils.html',1,'task_manager']]],
-  ['vision_5ftasks_40',['vision_tasks',['../namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html',1,'task_manager::subtask_managers']]]
+  ['trash_5fdetection_5fnode_36',['trash_detection_node',['../namespacetrash__detection__node.html',1,'']]],
+  ['trt_5futils_37',['trt_utils',['../namespacetrt__utils.html',1,'']]],
+  ['utils_38',['utils',['../namespacetask__manager_1_1utils.html',1,'task_manager']]],
+  ['vision_5ftasks_39',['vision_tasks',['../namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html',1,'task_manager::subtask_managers']]]
 ];

@@ -33,9 +33,6 @@ var annotated_dup =
     [ "clean_table_task_manager", "namespaceclean__table__task__manager.html", [
       [ "CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", "classclean__table__task__manager_1_1CleanTableTM" ]
     ] ],
-    [ "closed_door_test", "namespaceclosed__door__test.html", [
-      [ "VirtualStop", "classclosed__door__test_1_1VirtualStop.html", "classclosed__door__test_1_1VirtualStop" ]
-    ] ],
     [ "customer_node", "namespacecustomer__node.html", [
       [ "CustomerNode", "classcustomer__node_1_1CustomerNode.html", "classcustomer__node_1_1CustomerNode" ]
     ] ],
@@ -98,7 +95,8 @@ var annotated_dup =
         [ "MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ]
       ] ],
       [ "navigation_constants", "namespacefrida__constants_1_1navigation__constants.html", [
-        [ "DOOR_CHECK", "classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html", null ]
+        [ "DOOR_CHECK", "classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html", null ],
+        [ "SUBTASK_MANAGER", "classfrida__constants_1_1navigation__constants_1_1SUBTASK__MANAGER.html", null ]
       ] ],
       [ "vision_classes", "namespacefrida__constants_1_1vision__classes.html", [
         [ "BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
@@ -173,9 +171,6 @@ var annotated_dup =
       [ "MapAreaTagger", "classmap__area__tagger_1_1MapAreaTagger.html", "classmap__area__tagger_1_1MapAreaTagger" ],
       [ "MapCanvas", "classmap__area__tagger_1_1MapCanvas.html", "classmap__area__tagger_1_1MapCanvas" ]
     ] ],
-    [ "map_publisher", "namespacemap__publisher.html", [
-      [ "SimpleMapServer", "classmap__publisher_1_1SimpleMapServer.html", "classmap__publisher_1_1SimpleMapServer" ]
-    ] ],
     [ "model", "namespacemodel.html", [
       [ "ClassBlock", "classmodel_1_1ClassBlock.html", "classmodel_1_1ClassBlock" ],
       [ "ft_net", "classmodel_1_1ft__net.html", "classmodel_1_1ft__net" ],
@@ -202,17 +197,14 @@ var annotated_dup =
       [ "MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer" ],
       [ "MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub" ]
     ] ],
-    [ "move_to_location", "namespacemove__to__location.html", [
-      [ "MoveActionServer", "classmove__to__location_1_1MoveActionServer.html", "classmove__to__location_1_1MoveActionServer" ]
-    ] ],
     [ "MoveItPlanner", "namespaceMoveItPlanner.html", [
       [ "MoveItPlanner", "classMoveItPlanner_1_1MoveItPlanner.html", "classMoveItPlanner_1_1MoveItPlanner" ]
     ] ],
     [ "MoveItServo", "namespaceMoveItServo.html", [
       [ "MoveItServo", "classMoveItServo_1_1MoveItServo.html", "classMoveItServo_1_1MoveItServo" ]
     ] ],
-    [ "nav_lifecycle_manager", "namespacenav__lifecycle__manager.html", [
-      [ "NavDependencyLifecycleManager", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager.html", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager" ]
+    [ "nav_central", "namespacenav__central.html", [
+      [ "Nav_Central", "classnav__central_1_1Nav__Central.html", "classnav__central_1_1Nav__Central" ]
     ] ],
     [ "nav_ui", "namespacenav__ui.html", [
       [ "NavCanvas", "classnav__ui_1_1NavCanvas.html", "classnav__ui_1_1NavCanvas" ],
@@ -296,9 +288,6 @@ var annotated_dup =
     ] ],
     [ "record_relative_pose", "namespacerecord__relative__pose.html", [
       [ "DockingPoseRecorder", "classrecord__relative__pose_1_1DockingPoseRecorder.html", "classrecord__relative__pose_1_1DockingPoseRecorder" ]
-    ] ],
-    [ "remove_person", "namespaceremove__person.html", [
-      [ "RemovePerson", "classremove__person_1_1RemovePerson.html", "classremove__person_1_1RemovePerson" ]
     ] ],
     [ "restaurant_commands", "namespacerestaurant__commands.html", [
       [ "RESTAURANTCommands", "classrestaurant__commands_1_1RESTAURANTCommands.html", "classrestaurant__commands_1_1RESTAURANTCommands" ]
@@ -432,17 +421,11 @@ var annotated_dup =
     [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", [
       [ "SingleTracker", "classtracker__node__fregoso_1_1SingleTracker.html", "classtracker__node__fregoso_1_1SingleTracker" ]
     ] ],
-    [ "transform_target", "namespacetransform__target.html", [
-      [ "PointTransformer", "classtransform__target_1_1PointTransformer.html", "classtransform__target_1_1PointTransformer" ]
-    ] ],
     [ "trash_detection_node", "namespacetrash__detection__node.html", [
       [ "TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", "classtrash__detection__node_1_1TrashDetectionNode" ]
     ] ],
     [ "utils", "namespaceutils.html", [
       [ "CrossEntropyLabelSmooth", "classutils_1_1CrossEntropyLabelSmooth.html", "classutils_1_1CrossEntropyLabelSmooth" ]
-    ] ],
-    [ "virtual_stop_button", "namespacevirtual__stop__button.html", [
-      [ "VirtualStop", "classvirtual__stop__button_1_1VirtualStop.html", "classvirtual__stop__button_1_1VirtualStop" ]
     ] ],
     [ "vision_general", "namespacevision__general.html", [
       [ "pose_detection", "namespacevision__general_1_1pose__detection.html", [

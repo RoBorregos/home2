@@ -24,12 +24,11 @@ var searchData=
   ['apply_5fpenalty_21',['apply_penalty',['../class__storing__groceries_1_1StoringGroceriesTM.html#acac2950b1b19117fa3933d3d24f60c1c',1,'_storing_groceries::StoringGroceriesTM']]],
   ['apply_5fstyle_22',['apply_style',['../classmap__area__tagger_1_1MapAreaTagger.html#a43545652430f848a3573bc2f2afab1e7',1,'map_area_tagger.MapAreaTagger.apply_style()'],['../classnav__ui_1_1NavUI.html#ae4a11b8fc154e4b8545545812def5dd8',1,'nav_ui.NavUI.apply_style()']]],
   ['are_5farms_5fdown_23',['are_arms_down',['../classpose__detection_1_1PoseDetection.html#ae951330caf9fd3dd003344de3d7d7895',1,'pose_detection.PoseDetection.are_arms_down()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a6dfe1aeb1699f956d7d85a63fb51fc3a',1,'vision_general.pose_detection.PoseDetection.are_arms_down()']]],
-  ['areas_5fdump_24',['areas_dump',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a484ded4a4977c4f72c1ed2906d3b3c5c',1,'task_manager::subtask_managers::nav_tasks::NavigationTasks']]],
-  ['areasservices_25',['AreasServices',['../classAreasServices.html#af485297a0f73498464f0a72fa580048b',1,'AreasServices']]],
-  ['ask_5fand_5fconfirm_26',['ask_and_confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4b003c1bcaa94e51559c4a72940feb16',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['assign_5fname_27',['assign_name',['../classface__recognition__node_1_1FaceRecognition.html#a99480313eff42a75e45bd944be6b9eee',1,'face_recognition_node::FaceRecognition']]],
-  ['async_5fllm_5ftest_28',['async_llm_test',['../classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1',1,'test_hri_manager::TestHriManager']]],
-  ['attach_5fcollision_5fobject_29',['attach_collision_object',['../classMoveItPlanner_1_1MoveItPlanner.html#a95d23009c5043e0771587c55e1e1e416',1,'MoveItPlanner::MoveItPlanner']]],
-  ['attach_5fcollision_5fobject_5fcallback_30',['attach_collision_object_callback',['../classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a9288a7e5ffd3fbd01e042143f779d8b3',1,'frida_motion_planning::motion_planning_server::MotionPlanningServer']]],
-  ['attach_5fpick_5fobject_31',['attach_pick_object',['../classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a142083fd5eb70a3722c97774500d6763',1,'pick_and_place::pick_server::PickMotionServer']]]
+  ['areasservices_24',['AreasServices',['../classAreasServices.html#af485297a0f73498464f0a72fa580048b',1,'AreasServices']]],
+  ['ask_5fand_5fconfirm_25',['ask_and_confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4b003c1bcaa94e51559c4a72940feb16',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['assign_5fname_26',['assign_name',['../classface__recognition__node_1_1FaceRecognition.html#a99480313eff42a75e45bd944be6b9eee',1,'face_recognition_node::FaceRecognition']]],
+  ['async_5fllm_5ftest_27',['async_llm_test',['../classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1',1,'test_hri_manager::TestHriManager']]],
+  ['attach_5fcollision_5fobject_28',['attach_collision_object',['../classMoveItPlanner_1_1MoveItPlanner.html#a95d23009c5043e0771587c55e1e1e416',1,'MoveItPlanner::MoveItPlanner']]],
+  ['attach_5fcollision_5fobject_5fcallback_29',['attach_collision_object_callback',['../classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a9288a7e5ffd3fbd01e042143f779d8b3',1,'frida_motion_planning::motion_planning_server::MotionPlanningServer']]],
+  ['attach_5fpick_5fobject_30',['attach_pick_object',['../classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a142083fd5eb70a3722c97774500d6763',1,'pick_and_place::pick_server::PickMotionServer']]]
 ];

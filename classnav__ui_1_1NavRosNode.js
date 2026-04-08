@@ -1,14 +1,19 @@
 var classnav__ui_1_1NavRosNode =
 [
     [ "__init__", "classnav__ui_1_1NavRosNode.html#a9a066dd0d797138a430d036e0b28ebee", null ],
+    [ "_write_map_files", "classnav__ui_1_1NavRosNode.html#ac431fac90ac1a8850a287e2b758f2566", null ],
     [ "cancel_nav", "classnav__ui_1_1NavRosNode.html#a5d647568cda3ff7d291bc53ae02287e9", null ],
     [ "global_costmap_callback", "classnav__ui_1_1NavRosNode.html#a3b677bcfb706fa4eb983e51c00c518be", null ],
     [ "local_costmap_callback", "classnav__ui_1_1NavRosNode.html#a2a35a71f71c1faf977ef5f4d0a8a49e7", null ],
     [ "map_callback", "classnav__ui_1_1NavRosNode.html#aaa2a9f0861e35d2e022c93f7be56094c", null ],
     [ "path_callback", "classnav__ui_1_1NavRosNode.html#ac0e0a80641d8f6e6db57fa5e06823289", null ],
+    [ "resume_nav_async", "classnav__ui_1_1NavRosNode.html#a482e39167d58ea6c572532a284b96045", null ],
+    [ "save_map_async", "classnav__ui_1_1NavRosNode.html#a27e20e9df35215bc41e97a7b1464fdd2", null ],
     [ "send_goal", "classnav__ui_1_1NavRosNode.html#a1805ae88856ac49939e27e432a83630b", null ],
     [ "send_initialpose", "classnav__ui_1_1NavRosNode.html#a81de653336094b56706171b8e751d5bd", null ],
     [ "update_robot_pose", "classnav__ui_1_1NavRosNode.html#ab238869cbf7d263123ae048422e1a546", null ],
+    [ "_resume_nav_client", "classnav__ui_1_1NavRosNode.html#a8c75a5c16896d6c4efa3f8fb7f6c4cbc", null ],
+    [ "_rtab_backup_client", "classnav__ui_1_1NavRosNode.html#abf4a1faf4a5aebde7294aa1cdbad63f6", null ],
     [ "cancel_nav_client", "classnav__ui_1_1NavRosNode.html#a3b9223066786d8c661ce24ea56fc74b7", null ],
     [ "global_costmap_data", "classnav__ui_1_1NavRosNode.html#a705411a4fb5962d7d6a426ace6ebe1d5", null ],
     [ "global_costmap_sub", "classnav__ui_1_1NavRosNode.html#a590a643c84d5218c087c14ba57459880", null ],
@@ -17,6 +22,7 @@ var classnav__ui_1_1NavRosNode =
     [ "local_costmap_data", "classnav__ui_1_1NavRosNode.html#a9a02ac1bacbd06bca542ab2f130df05e", null ],
     [ "local_costmap_sub", "classnav__ui_1_1NavRosNode.html#a28226550c824eb960be8803bf4d2bd9c", null ],
     [ "map_data", "classnav__ui_1_1NavRosNode.html#ac4a02a718d9ce2116b4e9138f6ec2f19", null ],
+    [ "map_name", "classnav__ui_1_1NavRosNode.html#a50f62b02cbbb850ca72e03bc1eee8b23", null ],
     [ "map_sub", "classnav__ui_1_1NavRosNode.html#a9fe881eb29f4494e172defe7ff384718", null ],
     [ "odom_to_map_x", "classnav__ui_1_1NavRosNode.html#a4847bcb88725ea81c38d2b8db97faccc", null ],
     [ "odom_to_map_y", "classnav__ui_1_1NavRosNode.html#ae2f053928c07c4c099da0647b9ab3992", null ],
@@ -28,5 +34,6 @@ var classnav__ui_1_1NavRosNode =
     [ "robot_yaw", "classnav__ui_1_1NavRosNode.html#a5100ac2e79acb6b85db81fee131fe8a9", null ],
     [ "signals", "classnav__ui_1_1NavRosNode.html#a7cb4ca2b5742b2c0b52f4d1198760bf7", null ],
     [ "tf_buffer", "classnav__ui_1_1NavRosNode.html#a2a68ca88f52e18a405f3832acfe071ee", null ],
-    [ "tf_listener", "classnav__ui_1_1NavRosNode.html#a2a8cae7120deef7e089515e4644bac41", null ]
+    [ "tf_listener", "classnav__ui_1_1NavRosNode.html#a2a8cae7120deef7e089515e4644bac41", null ],
+    [ "ui_mode", "classnav__ui_1_1NavRosNode.html#a087d94492466f03f9bc3b43eb9bc9760", null ]
 ];

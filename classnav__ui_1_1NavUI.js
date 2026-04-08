@@ -1,6 +1,10 @@
 var classnav__ui_1_1NavUI =
 [
     [ "__init__", "classnav__ui_1_1NavUI.html#a97c0908fb1a5612bfa606cc985445fa5", null ],
+    [ "_on_resume_nav", "classnav__ui_1_1NavUI.html#a05dd2da2b73c3625f518d47b7cfa279f", null ],
+    [ "_on_resume_nav_done", "classnav__ui_1_1NavUI.html#a49954cc1d30c491b387afd4b7d19ced3", null ],
+    [ "_on_save_done", "classnav__ui_1_1NavUI.html#acebec1d4dae24e1fe87535618a1a09dc", null ],
+    [ "_on_save_map", "classnav__ui_1_1NavUI.html#a32e55956b56cc9180f9251a0a07b7655", null ],
     [ "apply_style", "classnav__ui_1_1NavUI.html#ae4a11b8fc154e4b8545545812def5dd8", null ],
     [ "cancel_navigation", "classnav__ui_1_1NavUI.html#ae5f77d18ba166417948f28eba2a43b7b", null ],
     [ "check_canvas_actions", "classnav__ui_1_1NavUI.html#ac84a0cb810693c74af3b60674138883f", null ],
@@ -13,10 +17,14 @@ var classnav__ui_1_1NavUI =
     [ "send_current_goal", "classnav__ui_1_1NavUI.html#acf9189a020f83ca37c90f397fda598e1", null ],
     [ "set_mode", "classnav__ui_1_1NavUI.html#ad3b4bd7ac0444c748168f63fea07c5dd", null ],
     [ "setup_ui", "classnav__ui_1_1NavUI.html#a9c07447570bee8b743d541c291184f74", null ],
+    [ "_resume_result", "classnav__ui_1_1NavUI.html#a83fe0030ee655d3afb07fb87b2b20a8f", null ],
+    [ "_save_result", "classnav__ui_1_1NavUI.html#a0e2a38719cc33b0c3ccc2d55d637abc0", null ],
     [ "action_timer", "classnav__ui_1_1NavUI.html#a4c2d93873e00382915e39e8cd7e6387b", null ],
     [ "btn_cancel", "classnav__ui_1_1NavUI.html#aa1f59a1810c0a710693e91c18030e184", null ],
     [ "btn_goal_mode", "classnav__ui_1_1NavUI.html#a0b19f4f2b12a747f3ea26f8cb038733c", null ],
     [ "btn_initpose_mode", "classnav__ui_1_1NavUI.html#a4aa1dec7ac06cdd513adddd14d71d795", null ],
+    [ "btn_resume_nav", "classnav__ui_1_1NavUI.html#ac8dcc21689854c240eae1984897fa3fe", null ],
+    [ "btn_save_map", "classnav__ui_1_1NavUI.html#ab2fed0b64118fb5726c2dbc2e9132d65", null ],
     [ "btn_send_goal", "classnav__ui_1_1NavUI.html#a282c8ac7489dfd40b581c43e971f509f", null ],
     [ "btn_view_mode", "classnav__ui_1_1NavUI.html#ab867140779b292a4691403031ec6aa4b", null ],
     [ "canvas", "classnav__ui_1_1NavUI.html#acf583d27efc7a77a9fb6889173449156", null ],
@@ -29,5 +37,6 @@ var classnav__ui_1_1NavUI =
     [ "lbl_robot_pos", "classnav__ui_1_1NavUI.html#a23d9294ed28444500245fb79f63ec120", null ],
     [ "lbl_robot_yaw", "classnav__ui_1_1NavUI.html#adabe75a1a1a73c26926f702bd4a8aa26", null ],
     [ "ros_node", "classnav__ui_1_1NavUI.html#abfbadaf7e053ba7ee5918abc45fb5fd1", null ],
-    [ "status", "classnav__ui_1_1NavUI.html#a322f035786db65802d11a943d3f24faf", null ]
+    [ "status", "classnav__ui_1_1NavUI.html#a322f035786db65802d11a943d3f24faf", null ],
+    [ "ui_mode", "classnav__ui_1_1NavUI.html#a0ac601fab652644225fcfd0e70a28173", null ]
 ];

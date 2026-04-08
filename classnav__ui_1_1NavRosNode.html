@@ -93,6 +93,8 @@ $(document).ready(function(){initNavTree('classnav__ui_1_1NavRosNode.html',''); 
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classnav__ui_1_1NavRosNode-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">nav_ui.NavRosNode Class Reference</div></div>
 </div><!--header-->
@@ -118,6 +120,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3b677bcfb706fa4eb983e51c00c518be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab238869cbf7d263123ae048422e1a546"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#ab238869cbf7d263123ae048422e1a546">update_robot_pose</a> (self)</td></tr>
 <tr class="separator:ab238869cbf7d263123ae048422e1a546"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27e20e9df35215bc41e97a7b1464fdd2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a27e20e9df35215bc41e97a7b1464fdd2">save_map_async</a> (self, name, on_done)</td></tr>
+<tr class="separator:a27e20e9df35215bc41e97a7b1464fdd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a482e39167d58ea6c572532a284b96045"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a482e39167d58ea6c572532a284b96045">resume_nav_async</a> (self, on_done)</td></tr>
+<tr class="separator:a482e39167d58ea6c572532a284b96045"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1805ae88856ac49939e27e432a83630b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a1805ae88856ac49939e27e432a83630b">send_goal</a> (self, x, y, yaw)</td></tr>
 <tr class="separator:a1805ae88856ac49939e27e432a83630b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d647568cda3ff7d291bc53ae02287e9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a5d647568cda3ff7d291bc53ae02287e9">cancel_nav</a> (self)</td></tr>
@@ -129,6 +135,10 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a7cb4ca2b5742b2c0b52f4d1198760bf7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a7cb4ca2b5742b2c0b52f4d1198760bf7">signals</a></td></tr>
 <tr class="separator:a7cb4ca2b5742b2c0b52f4d1198760bf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a087d94492466f03f9bc3b43eb9bc9760"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a087d94492466f03f9bc3b43eb9bc9760">ui_mode</a></td></tr>
+<tr class="separator:a087d94492466f03f9bc3b43eb9bc9760"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50f62b02cbbb850ca72e03bc1eee8b23"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a50f62b02cbbb850ca72e03bc1eee8b23">map_name</a></td></tr>
+<tr class="separator:a50f62b02cbbb850ca72e03bc1eee8b23"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a68ca88f52e18a405f3832acfe071ee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a2a68ca88f52e18a405f3832acfe071ee">tf_buffer</a></td></tr>
 <tr class="separator:a2a68ca88f52e18a405f3832acfe071ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a8cae7120deef7e089515e4644bac41"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a2a8cae7120deef7e089515e4644bac41">tf_listener</a></td></tr>
@@ -167,6 +177,18 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ae2f053928c07c4c099da0647b9ab3992"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a015e96911a900223f68ef763635bf93c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a015e96911a900223f68ef763635bf93c">odom_to_map_yaw</a></td></tr>
 <tr class="separator:a015e96911a900223f68ef763635bf93c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ac431fac90ac1a8850a287e2b758f2566"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#ac431fac90ac1a8850a287e2b758f2566">_write_map_files</a> (self, grid_msg, base_path)</td></tr>
+<tr class="separator:ac431fac90ac1a8850a287e2b758f2566"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:a8c75a5c16896d6c4efa3f8fb7f6c4cbc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#a8c75a5c16896d6c4efa3f8fb7f6c4cbc">_resume_nav_client</a></td></tr>
+<tr class="separator:a8c75a5c16896d6c4efa3f8fb7f6c4cbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abf4a1faf4a5aebde7294aa1cdbad63f6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__ui_1_1NavRosNode.html#abf4a1faf4a5aebde7294aa1cdbad63f6">_rtab_backup_client</a></td></tr>
+<tr class="separator:abf4a1faf4a5aebde7294aa1cdbad63f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a9a066dd0d797138a430d036e0b28ebee" name="a9a066dd0d797138a430d036e0b28ebee"></a>
@@ -198,6 +220,48 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ac431fac90ac1a8850a287e2b758f2566" name="ac431fac90ac1a8850a287e2b758f2566"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac431fac90ac1a8850a287e2b758f2566">&#9670;&#160;</a></span>_write_map_files()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_ui.NavRosNode._write_map_files </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>grid_msg</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>base_path</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Write OccupancyGrid to &lt;base_path&gt;.pgm and &lt;base_path&gt;.yaml.</pre> 
+</div>
+</div>
 <a id="a5d647568cda3ff7d291bc53ae02287e9" name="a5d647568cda3ff7d291bc53ae02287e9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5d647568cda3ff7d291bc53ae02287e9">&#9670;&#160;</a></span>cancel_nav()</h2>
 
@@ -328,6 +392,74 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a482e39167d58ea6c572532a284b96045" name="a482e39167d58ea6c572532a284b96045"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a482e39167d58ea6c572532a284b96045">&#9670;&#160;</a></span>resume_nav_async()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_ui.NavRosNode.resume_nav_async </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>on_done</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Call RESUME_NAV_SERVICE in a background thread.</pre> 
+</div>
+</div>
+<a id="a27e20e9df35215bc41e97a7b1464fdd2" name="a27e20e9df35215bc41e97a7b1464fdd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27e20e9df35215bc41e97a7b1464fdd2">&#9670;&#160;</a></span>save_map_async()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_ui.NavRosNode.save_map_async </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>on_done</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Save RTABMap DB and 2D map YAML in a background thread.
+
+Uses /rtabmap/backup which properly flushes all in-memory state to disk,
+creates database_path+'.back', then reinitializes. We then copy that
+.back file to the user's chosen name.
+Pause+copy is NOT safe: pause does not flush in-memory graph data.
+</pre> 
+</div>
+</div>
 <a id="a1805ae88856ac49939e27e432a83630b" name="a1805ae88856ac49939e27e432a83630b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1805ae88856ac49939e27e432a83630b">&#9670;&#160;</a></span>send_goal()</h2>
 
@@ -427,6 +559,50 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a8c75a5c16896d6c4efa3f8fb7f6c4cbc" name="a8c75a5c16896d6c4efa3f8fb7f6c4cbc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c75a5c16896d6c4efa3f8fb7f6c4cbc">&#9670;&#160;</a></span>_resume_nav_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_ui.NavRosNode._resume_nav_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abf4a1faf4a5aebde7294aa1cdbad63f6" name="abf4a1faf4a5aebde7294aa1cdbad63f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abf4a1faf4a5aebde7294aa1cdbad63f6">&#9670;&#160;</a></span>_rtab_backup_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_ui.NavRosNode._rtab_backup_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a3b9223066786d8c661ce24ea56fc74b7" name="a3b9223066786d8c661ce24ea56fc74b7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3b9223066786d8c661ce24ea56fc74b7">&#9670;&#160;</a></span>cancel_nav_client</h2>
 
@@ -533,6 +709,20 @@ Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">nav_ui.NavRosNode.map_data</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a50f62b02cbbb850ca72e03bc1eee8b23" name="a50f62b02cbbb850ca72e03bc1eee8b23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50f62b02cbbb850ca72e03bc1eee8b23">&#9670;&#160;</a></span>map_name</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_ui.NavRosNode.map_name</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -701,6 +891,20 @@ Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">nav_ui.NavRosNode.tf_listener</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a087d94492466f03f9bc3b43eb9bc9760" name="a087d94492466f03f9bc3b43eb9bc9760"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a087d94492466f03f9bc3b43eb9bc9760">&#9670;&#160;</a></span>ui_mode</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_ui.NavRosNode.ui_mode</td>
         </tr>
       </table>
 </div><div class="memdoc">

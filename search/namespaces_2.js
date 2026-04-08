@@ -11,6 +11,5 @@ var searchData=
   ['clean_5ftable_5ftask_5fmanager_8',['clean_table_task_manager',['../namespaceclean__table__task__manager.html',1,'']]],
   ['client_9',['client',['../namespaceclient.html',1,'']]],
   ['close_5fby_5fgenerators_10',['close_by_generators',['../namespaceclose__by__generators.html',1,'']]],
-  ['closed_5fdoor_5ftest_11',['closed_door_test',['../namespaceclosed__door__test.html',1,'']]],
-  ['customer_5fnode_12',['customer_node',['../namespacecustomer__node.html',1,'']]]
+  ['customer_5fnode_11',['customer_node',['../namespacecustomer__node.html',1,'']]]
 ];
