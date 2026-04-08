@@ -85,6 +85,18 @@ NAV_POSE = {
     "degrees": True,
 }
 
+NAV_CARRY_BAG_POSE = {
+    "joints": {
+        "joint1": -83.0,
+        "joint2": -55.5,
+        "joint3": -63.1,
+        "joint4": -0.8,
+        "joint5": 118.4,
+        "joint6": 228.6,
+    },
+    "degrees": True,
+}
+
 CARRY_POSE = {
     "joints": {
         "joint1": -90.0,
@@ -129,6 +141,7 @@ XARM_CONFIGURATIONS = {
     "cutlery_stare": CUTLERY_STARE,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
+    "nav_carry_bag_pose": NAV_CARRY_BAG_POSE,
     "carry_pose": CARRY_POSE,
     "place_floor_right": PLACE_FLOOR_RIGHT,
     "place_floor_left": PLACE_FLOOR_LEFT,
