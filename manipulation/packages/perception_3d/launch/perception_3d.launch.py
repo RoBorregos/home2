@@ -28,6 +28,14 @@ def generate_launch_description():
             ),
             Node(
                 package="perception_3d",
+                executable="zed_plane_detector.py",
+                name="zed_plane_detector",
+                output="screen",
+                emulate_tty=True,
+                parameters=[],
+            ),
+            Node(
+                package="perception_3d",
                 executable="test_only_orchestrator",
                 name="test_only_orchestrator",
                 output="screen",

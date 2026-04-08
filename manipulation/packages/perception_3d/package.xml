@@ -18,8 +18,10 @@
     <build_type>ament_cmake</build_type>
   </export>
   
-  <depend>rclcpp</depend> 
+  <depend>rclcpp</depend>
   <depend>pcl_ros</depend>
   <depend>std_msgs</depend>
   <depend>tf_transformations</depend>
+  <depend>rclpy</depend>
+  <depend>zed_msgs</depend>
 </package>

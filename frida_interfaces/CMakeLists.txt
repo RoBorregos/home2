@@ -120,6 +120,7 @@ set(srv_files
   "manipulation/srv/AddPickPrimitives.srv"
   "manipulation/srv/AttachCollisionObject.srv"
   "manipulation/srv/ClusterObjectFromPoint.srv"
+  "manipulation/srv/DetectPlane.srv"
   "manipulation/srv/GetCollisionObjects.srv"
   "manipulation/srv/GetJoints.srv"
   "manipulation/srv/GetOptimalPositionForPlane.srv"

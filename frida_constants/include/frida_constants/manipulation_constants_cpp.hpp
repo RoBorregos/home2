@@ -7,6 +7,9 @@ typedef const std::string conststr;
 
 // Existing constants
 conststr ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered";
+conststr ZED_PLANE_TOPIC = "/zed/zed_node/plane";
+conststr ZED_CLICKED_POINT_TOPIC = "/clicked_point";
+conststr DETECT_PLANE_SERVICE = "/manipulation/detect_plane";
 conststr POINT_CLOUD_TOPIC = "/point_cloud";
 conststr REMOVE_PC_TEST = "/manipulation/test_service";
 conststr REMOVE_PLANE_SERVICE = "/manipulation/extract_plane";

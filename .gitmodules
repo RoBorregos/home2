@@ -19,3 +19,6 @@
 	path = manipulation/packages/xarm_ros2
 	url = https://github.com/RoBorregos/xarm_ros2.git
 	branch = xarm_servicios_estable
+[submodule "zed_interfaces"]
+	path = zed_interfaces
+	url = https://github.com/stereolabs/zed-ros2-interfaces.git

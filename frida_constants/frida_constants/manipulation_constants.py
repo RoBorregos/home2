@@ -92,6 +92,9 @@ GET_JOINT_TOPIC = "/manipulation/get_joints"
 TOGGLE_SERVO_TOPIC = "/manipulation/toggle_servo"
 
 ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered"
+ZED_PLANE_TOPIC = "/zed/zed_node/plane"
+ZED_CLICKED_POINT_TOPIC = "/clicked_point"
+DETECT_PLANE_SERVICE = "/manipulation/detect_plane"
 
 # Similar to what you have on stare poses, gripper looking front, camera looking front-down
 AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]

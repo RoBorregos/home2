@@ -19,6 +19,7 @@
 
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
+#include <frida_interfaces/srv/detect_plane.hpp>
 #include <frida_interfaces/srv/pick_perception_service.hpp>
 #include <frida_interfaces/srv/place_perception_service.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
@@ -57,6 +58,8 @@ public:
       remove_plane_client;
   rclcpp::Client<frida_interfaces::srv::ClusterObjectFromPoint>::SharedPtr
       cluster_object_from_point_client;
+  rclcpp::Client<frida_interfaces::srv::DetectPlane>::SharedPtr
+      detect_plane_client;
 
   CallServicesNode() : Node("callservicesnode") {
     this->add_pick_primitives_client =
@@ -71,6 +74,10 @@ public:
         this->create_client<frida_interfaces::srv::ClusterObjectFromPoint>(
             CLUSTER_OBJECT_SERVICE);
 
+    this->detect_plane_client =
+        this->create_client<frida_interfaces::srv::DetectPlane>(
+            DETECT_PLANE_SERVICE);
+
     RCLCPP_INFO(this->get_logger(), "Clients created, waiting for services");
 
     this->add_pick_primitives_client->wait_for_service(
@@ -80,6 +87,9 @@ public:
     RCLCPP_INFO(this->get_logger(), "Service remove_plane ready");
     this->cluster_object_from_point_client->wait_for_service(
         std::chrono::seconds(30));
+    RCLCPP_INFO(this->get_logger(), "Service cluster_object ready");
+    this->detect_plane_client->wait_for_service(std::chrono::seconds(30));
+    RCLCPP_INFO(this->get_logger(), "Service detect_plane ready");
     RCLCPP_INFO(this->get_logger(), "callservicesnode ready");
   }
 };
@@ -206,65 +216,31 @@ public:
 
     *cloud = result->cluster;
 
-    auto req2table =
-        std::make_shared<frida_interfaces::srv::RemovePlane::Request>();
+    // Detect plane using ZED SDK (deterministic, replaces RANSAC + PCA)
+    auto req_plane =
+        std::make_shared<frida_interfaces::srv::DetectPlane::Request>();
+    req_plane->point = point;
 
-    req2table->extract_or_remove = false;
-    req2table->close_point.header.frame_id = point.header.frame_id;
-    req2table->close_point.header.stamp = point.header.stamp;
-    req2table->close_point.point.x = point.point.x;
-    req2table->close_point.point.y = point.point.y;
-    req2table->close_point.point.z = point.point.z;
+    RCLCPP_INFO(this->get_logger(), "Sending request to detect plane (ZED)");
 
-    RCLCPP_INFO(this->get_logger(), "Sending request to remove plane");
+    auto res_plane =
+        this->call_services_node->detect_plane_client->async_send_request(
+            req_plane);
 
-    auto res2table =
-        this->call_services_node->remove_plane_client->async_send_request(
-            req2table);
+    auto status_plane =
+        wait_for_future_with_timeout<frida_interfaces::srv::DetectPlane>(
+            res_plane, this->call_services_node->get_node_base_interface(),
+            5000ms);
 
-    RCLCPP_INFO(this->get_logger(), "Waiting for response");
+    auto result_plane = res_plane.get();
 
-    auto status2 =
-        wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
-            res2table, this->call_services_node->get_node_base_interface(),
-            500ms);
-
-    RCLCPP_INFO(this->get_logger(), "Response received");
-
-    auto result2table = res2table.get();
-
-    RCLCPP_INFO(this->get_logger(), "Response: %d",
-                result2table->health_response);
-
-    if (result2table->health_response == OK) {
-      RCLCPP_INFO(this->get_logger(), "Removed plane");
+    if (result_plane->success) {
+      RCLCPP_INFO(this->get_logger(), "Plane detected and collision added");
     } else {
-      RCLCPP_ERROR(this->get_logger(), "Error removing plane");
-      //   return;
+      RCLCPP_ERROR(this->get_logger(), "Failed to detect plane via ZED");
     }
 
-    auto req3 =
-        std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
-
-    req3->is_plane = true;
-
-    req3->is_object = false;
-
-    req3->cloud = result2table->cloud;
-
-    RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
-
-    auto res3 = this->call_services_node->add_pick_primitives_client
-                    ->async_send_request(req3);
-
-    RCLCPP_INFO(this->get_logger(), "Waiting for response");
-
-    auto status3 =
-        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res3, this->call_services_node->get_node_base_interface(), 500ms);
-
-    RCLCPP_INFO(this->get_logger(), "Response received");
-
+    // Add object collision primitives (unchanged)
     auto req4 =
         std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
 
@@ -333,66 +309,66 @@ public:
                     request,
                 sensor_msgs::msg::PointCloud2::SharedPtr cloud) {
 
+    // Detect plane using ZED SDK (deterministic collision object)
+    auto req_plane =
+        std::make_shared<frida_interfaces::srv::DetectPlane::Request>();
+    // Use a point near the table center for plane detection
+    req_plane->point.header.frame_id = "base_link";
+    req_plane->point.header.stamp = this->now();
+    req_plane->point.point.x = 0.4;
+    req_plane->point.point.y = 0.0;
+    auto place_params = request->place_params;
+    req_plane->point.point.z = place_params.table_height;
+
+    RCLCPP_INFO(this->get_logger(), "Sending request to detect plane (ZED)");
+
+    auto res_plane =
+        this->call_services_node->detect_plane_client->async_send_request(
+            req_plane);
+
+    auto status_plane =
+        wait_for_future_with_timeout<frida_interfaces::srv::DetectPlane>(
+            res_plane, this->call_services_node->get_node_base_interface(),
+            5000ms);
+
+    auto result_plane = res_plane.get();
+
+    if (result_plane->success) {
+      RCLCPP_INFO(this->get_logger(), "Plane detected and collision added");
+    } else {
+      RCLCPP_ERROR(this->get_logger(), "Failed to detect plane via ZED");
+    }
+
+    // Extract plane point cloud for heatmap placement
     auto req_extract_table =
         std::make_shared<frida_interfaces::srv::RemovePlane::Request>();
 
     req_extract_table->extract_or_remove = false;
-    auto place_params = request->place_params;
     req_extract_table->min_height =
         place_params.table_height - place_params.table_height_tolerance;
     req_extract_table->max_height =
         place_params.table_height + place_params.table_height_tolerance;
 
-    RCLCPP_INFO(this->get_logger(), "Sending request to remove plane");
+    RCLCPP_INFO(this->get_logger(), "Extracting plane cloud for placement");
 
     auto res_extract_table =
         this->call_services_node->remove_plane_client->async_send_request(
             req_extract_table);
-
-    RCLCPP_INFO(this->get_logger(), "Waiting for response");
 
     auto status2 =
         wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
             res_extract_table,
             this->call_services_node->get_node_base_interface(), 500ms);
 
-    RCLCPP_INFO(this->get_logger(), "Response received");
-
     auto result_extract_table = res_extract_table.get();
 
-    RCLCPP_INFO(this->get_logger(), "Response: %d",
-                result_extract_table->health_response);
-
     if (result_extract_table->health_response == OK) {
-      RCLCPP_INFO(this->get_logger(), "Removed plane");
+      RCLCPP_INFO(this->get_logger(), "Extracted plane cloud");
     } else {
-      RCLCPP_ERROR(this->get_logger(), "Error removing plane");
-      //   return;
+      RCLCPP_ERROR(this->get_logger(), "Error extracting plane cloud");
     }
 
-    auto req3 =
-        std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
-
-    req3->is_plane = true;
-
-    req3->is_object = false;
-
-    req3->cloud = result_extract_table->cloud;
-
-    RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
-
-    auto res3 = this->call_services_node->add_pick_primitives_client
-                    ->async_send_request(req3);
-
-    RCLCPP_INFO(this->get_logger(), "Waiting for response");
-
-    auto status3 =
-        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res3, this->call_services_node->get_node_base_interface(), 500ms);
-
-    RCLCPP_INFO(this->get_logger(), "Response received");
-
-    // return plane cloud
+    // Return plane cloud for heatmap placement
     *cloud = result_extract_table->cloud;
 
     return OK;

@@ -129,6 +129,8 @@ install(FILES include/perception_3d/macros.hpp DESTINATION include/perception_3d
 
 
 
+install(PROGRAMS scripts/zed_plane_detector.py DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 

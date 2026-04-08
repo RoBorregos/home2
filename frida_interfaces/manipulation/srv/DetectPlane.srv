@@ -1,0 +1,8 @@
+geometry_msgs/PointStamped point
+---
+geometry_msgs/PoseStamped plane_pose
+geometry_msgs/Vector3 normal
+float64 width
+float64 height
+float64[4] coefficients
+bool success
