@@ -25,11 +25,11 @@ FRONT_LOW_STARE = {
 FRONT_STARE_CARRY_BAG = {
     "joints": {
         "joint1": -90.0,
-        "joint2": -42.7,
-        "joint3": -68.2,
-        "joint4": 1.2,
-        "joint5": 115.0,
-        "joint6": -138.1,
+        "joint2": -42.9,
+        "joint3": -118.6,
+        "joint4": 0.0,
+        "joint5": 122.3,
+        "joint6": 225.1,
     },
     "degrees": True,
 }
@@ -99,12 +99,12 @@ NAV_POSE = {
 
 NAV_CARRY_BAG_POSE = {
     "joints": {
-        "joint1": -83.0,
-        "joint2": -55.5,
-        "joint3": -63.1,
-        "joint4": -0.8,
-        "joint5": 118.4,
-        "joint6": 228.6,
+        "joint1": -90.0,
+        "joint2": -42.7,
+        "joint3": -68.2,
+        "joint4": 0.0,
+        "joint5": 115.0,
+        "joint6": -138.1,
     },
     "degrees": True,
 }
