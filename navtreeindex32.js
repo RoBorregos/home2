@@ -1,5 +1,7 @@
 var NAVTREEINDEX32 =
 {
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a3c121f73e0ad4f5793fc7db2ba6ad3d8":[24,0,138,1,3,19],
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a4e869321acb5e28d324465adf4a05f55":[24,0,138,1,3,18],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a63f53589d16057cfeecbf8b8b3a54102":[24,0,138,1,3,15],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a67e55b9623e911800755e618e231f746":[24,0,138,1,3,10],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a6fe40e97a8ff54b64671667b6e26cf95":[24,0,138,1,3,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX32 =
 "nav__ui_8py.html#a81727c4c26971c1c8fe814bf77fad539":[26,0,4,0,1,3,1,13],
 "nav__ui_8py.html#a96c0451b2505bdf41e332ed08eefeb45":[26,0,4,0,1,3,1,8],
 "nav__ui_8py.html#a9c46380b372dee62877d099b65c01599":[26,0,4,0,1,3,1,14],
-"nav__ui_8py.html#a9f04dd826a5a9a56582830cc49df5efb":[26,0,4,0,1,3,1,9],
-"nav__ui_8py.html#ac2d8604148bbc1e3a92e817195c78772":[26,0,4,0,1,3,1,12],
-"nav__ui_8py.html#ae36f22f5cc0a33d7711f93973b541bfe":[26,0,4,0,1,3,1,7]
+"nav__ui_8py.html#a9f04dd826a5a9a56582830cc49df5efb":[26,0,4,0,1,3,1,9]
 };

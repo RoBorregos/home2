@@ -1,5 +1,7 @@
 var NAVTREEINDEX33 =
 {
+"nav__ui_8py.html#ac2d8604148bbc1e3a92e817195c78772":[26,0,4,0,1,3,1,12],
+"nav__ui_8py.html#ae36f22f5cc0a33d7711f93973b541bfe":[26,0,4,0,1,3,1,7],
 "nav__ui_8py.html#af78c57aff04ad7e1b00a22c3f4ab2a7e":[26,0,4,0,1,3,1,4],
 "nav__ui_8py.html#afe7f41c05d51ef045f70fb3faac8d90e":[26,0,4,0,1,3,1,10],
 "navigation_2packages_2dashgo__driver_2dashgo__driver_2____init_____8py.html":[26,0,4,0,0,0,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX33 =
 "storing__groceries__manager_8py.html#ad877050e492d039476b41e8c97e3f49e":[26,0,6,1,10,8],
 "storing__groceries__manager_8py.html#aefba43d88a80d9a35a4c5de13f58c9d7":[26,0,6,1,10,7],
 "structBoxPrimitiveParams.html":[25,0,112],
-"structBoxPrimitiveParams.html#a02ab345fb8c8379430528d691853ee60":[25,0,112,0],
-"structBoxPrimitiveParams.html#a0fb8330765aa15d325fd2e0827d9661d":[25,0,112,7],
-"structBoxPrimitiveParams.html#a2a1c8c02a364b1049cd2a22b1e9295c1":[25,0,112,3]
+"structBoxPrimitiveParams.html#a02ab345fb8c8379430528d691853ee60":[25,0,112,0]
 };

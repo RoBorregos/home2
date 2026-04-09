@@ -1,5 +1,7 @@
 var NAVTREEINDEX35 =
 {
+"vision__tasks_8py.html#a49cfba4f063b64b58df1700773fd7995":[26,0,6,2,1,11,4],
+"vision__tasks_8py.html#a66ff213d20092d5fa520cffdc25d0588":[26,0,6,2,1,11,7],
 "vision__tasks_8py.html#aabac25d44d3bf88f72a6d58600e79b89":[26,0,6,2,1,11,3],
 "vision__tasks_8py.html#ab304cd6fe5f54fe06d682e757d70edb9":[26,0,6,2,1,11,2],
 "vision__tasks_8py.html#acc2ee6161006865e51a5b980585f620b":[26,0,6,2,1,11,5],

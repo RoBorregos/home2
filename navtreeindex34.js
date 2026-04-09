@@ -1,5 +1,7 @@
 var NAVTREEINDEX34 =
 {
+"structBoxPrimitiveParams.html#a0fb8330765aa15d325fd2e0827d9661d":[25,0,112,7],
+"structBoxPrimitiveParams.html#a2a1c8c02a364b1049cd2a22b1e9295c1":[25,0,112,3],
 "structBoxPrimitiveParams.html#a4e4fc8fc74174d5a84269dfbd5f27fef":[25,0,112,5],
 "structBoxPrimitiveParams.html#a992b78620a20b00a3c78e1747871ea61":[25,0,112,1],
 "structBoxPrimitiveParams.html#aa16abf6eefdca9ea3600982e568eebeb":[25,0,112,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX34 =
 "vision__general_2pose__detection_8py.html#abc37ba4faf7754d0deadd15d8b90c1d6":[26,0,7,0,3,3,2,12],
 "vision__general_2pose__detection_8py.html#abf7e257963f2588085b4cbeeb262315c":[26,0,7,0,3,3,2,9],
 "vision__tasks_8py.html":[26,0,6,2,1,11],
-"vision__tasks_8py.html#a487ed937fcdfff5c5bea256543493678":[26,0,6,2,1,11,6],
-"vision__tasks_8py.html#a49cfba4f063b64b58df1700773fd7995":[26,0,6,2,1,11,4],
-"vision__tasks_8py.html#a66ff213d20092d5fa520cffdc25d0588":[26,0,6,2,1,11,7]
+"vision__tasks_8py.html#a487ed937fcdfff5c5bea256543493678":[26,0,6,2,1,11,6]
 };
