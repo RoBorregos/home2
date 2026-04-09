@@ -129,7 +129,7 @@ function StepPill({
   );
 }
 
-// ─── Main page ──────────────────────────────────────────────────────
+// ─── Main page ──
 export default function HRICPage() {
   const [currentStep, setCurrentStep] = useState<string>("wait_for_button");
 
@@ -159,7 +159,7 @@ export default function HRICPage() {
 
   return (
     <div className="flex flex-col h-screen bg-(--bg-dark) text-(--text-light) overflow-hidden">
-      {/* ── HEADER ────────────────────────────────────────────── */}
+      {/* ── HEADER ──*/}
       <div className="p-3 border-b border-(--border-light) flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold flex items-center gap-2">
@@ -173,7 +173,7 @@ export default function HRICPage() {
         </div>
       </div>
 
-      {/* ── STEP PROGRESS BAR ─────────────────────────────────── */}
+      {/* ── STEP PROGRESS BAR ── */}
       <div className="px-3 py-2 border-b border-(--border-light) shrink-0 overflow-x-auto">
         <div className="flex items-center gap-1.5">
           {TASK_STEPS.map((step, i) => (
@@ -192,7 +192,7 @@ export default function HRICPage() {
         </div>
       </div>
 
-      {/* ── MAIN CONTENT ──────────────────────────────────────── */}
+      {/* ── MAIN CONTENT ── */}
       <div className="flex-1 min-h-0 overflow-hidden">
         {/* BUTTON mode: centered start button */}
         {displayMode === "button" && (
@@ -232,7 +232,7 @@ export default function HRICPage() {
         )}
       </div>
 
-      {/* ── MODALS ────────────────────────────────────────────── */}
+      {/* ── MODALS ── */}
       <MapModal />
       <QuestionModal />
     </div>
