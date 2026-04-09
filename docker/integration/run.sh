@@ -63,10 +63,7 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   ensure_and_upload_image "roborregos/home2:integration-${ENV_TYPE}" "docker-compose.yml"
 fi
 
-if [ "$BUILD_IMAGE_CLEAN" == "true" ]; then
-    echo "Removing Docker build cache and rebuilding images..."
-    docker compose build --no-cache
-fi
+run_no_cache_build
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="integration")

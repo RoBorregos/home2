@@ -163,10 +163,7 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   done
 fi
 
-if [ "$BUILD_IMAGE_CLEAN" == "true" ]; then
-    echo "Removing Docker build cache and rebuilding images..."
-    docker compose -f "$COMPOSE" build --no-cache
-fi
+run_no_cache_build "$COMPOSE"
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="hri-ros")

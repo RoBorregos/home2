@@ -58,6 +58,7 @@ Control Commands:
 Additional Flags:
   --build            Builds the ros2 packages inside the container.
   --build-image      Builds the Docker image for the specified area or task.
+  --build-image-clean Builds the Docker image from scratch without using cache.
   --recreate         Forces the recreation of containers (useful for network or .env changes).
   --open-display     Opens the graphical interface (UI/Display) required for HRI or Vision.
   --clean            Deletes the build/, log/, and install/ folders and frida_interfaces_cache/.
