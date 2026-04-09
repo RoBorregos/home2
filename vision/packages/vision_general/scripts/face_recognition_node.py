@@ -29,6 +29,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     FACE_RECOGNITION_IMAGE,
+    FLIP_IMAGE_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
     PERSON_LIST_TOPIC,
@@ -112,10 +113,18 @@ class FaceRecognition(Node):
         self.annotated_frame = []
         self.vision_active = True
         self.is_processing = False
+        self.flip_image = False
         self.create_subscription(
             Bool,
             "/vision/face_recognition/active",
             self._active_callback,
+            10,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            Bool,
+            FLIP_IMAGE_TOPIC,
+            self._flip_callback,
             10,
             callback_group=self.callback_group,
         )
@@ -309,6 +318,11 @@ class FaceRecognition(Node):
         self.vision_active = msg.data
         self.get_logger().info(f"Face recognition active: {self.vision_active}")
 
+    def _flip_callback(self, msg):
+        if msg.data != self.flip_image:
+            self.flip_image = msg.data
+            self.get_logger().info(f"Flip image set to: {self.flip_image}")
+
     def run(self) -> None:
         """Run face recognition algorithm"""
 
@@ -338,6 +352,8 @@ class FaceRecognition(Node):
         self.processing_id = self.id
 
         self.frame = self.image
+        if self.flip_image:
+            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
 
