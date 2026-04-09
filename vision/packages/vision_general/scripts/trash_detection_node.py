@@ -7,14 +7,10 @@ import cv2
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
-import json
-import os
 
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
-from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
     DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
     OBJECT_POINTS_TOPIC,
@@ -38,7 +34,7 @@ class TrashDetectionNode(Node):
         self.image = None
         self.imageInfo = None
         self.depth_image = None
-                    
+
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
@@ -54,7 +50,7 @@ class TrashDetectionNode(Node):
         self.trashcan_pub = self.create_publisher(
             ObjectDetectionArray, DETECTIONS_TOPIC, 10
         )
-        
+
         self.debug_image_pub = self.create_publisher(Image, TRASH_DEBUG_IMAGE_TOPIC, 10)
 
         self.moondream_point_client = self.create_client(
@@ -67,12 +63,14 @@ class TrashDetectionNode(Node):
         try:
             self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
             if self.trash_debug_image is not None:
-                self.debug_image_pub.publish(self.bridge.cv2_to_imgmsg(self.trash_debug_image, "bgr8"))
+                self.debug_image_pub.publish(
+                    self.bridge.cv2_to_imgmsg(self.trash_debug_image, "bgr8")
+                )
         except Exception as e:
             self.get_logger().error(f"Image conversion error: {e}")
 
     def image_info_callback(self, data):
-        self.imageInfo = data        
+        self.imageInfo = data
 
     def depth_callback(self, data):
         try:
@@ -87,7 +85,7 @@ class TrashDetectionNode(Node):
 
         if self.depth_image is None:
             self.get_logger().warn("Cannot detect trashcan without depth image")
-            return 
+            return
 
         trashcan_pts = self.get_moondream_points("black trashcan")
 
@@ -124,7 +122,7 @@ class TrashDetectionNode(Node):
                 cv2.circle(debug_image, (u, v), 20, (255, 255, 255), 2)
                 cv2.putText(
                     debug_image,
-                    f"trashcan",
+                    "trashcan",
                     (u + 10, v - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.7,
@@ -179,6 +177,7 @@ def main(args=None):
     executor.add_node(node)
     executor.spin()
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
