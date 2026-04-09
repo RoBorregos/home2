@@ -61,8 +61,6 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
-<<<<<<< HEAD
-=======
 
 from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
@@ -73,7 +71,6 @@ from task_manager.subtask_managers.hri_dataclasses import (
 )
 from task_manager.config.hri.debug import config as test_hri_config
 from task_manager.config.hri.mocked import config as mocked_hri_config
->>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
 from task_manager.subtask_managers.hri_hand import HRIHand
 from task_manager.subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.sync_client import b

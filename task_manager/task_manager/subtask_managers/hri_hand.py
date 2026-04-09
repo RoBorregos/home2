@@ -2,7 +2,7 @@
 
 from task_manager.utils.status import Status
 
-# from task_manager.subtask_managers.hri_tasks import HRITasks
+# from subtask_managers.hri_tasks import HRITasks
 
 
 class HRIHand:

@@ -2,10 +2,6 @@
 Utility class to log messages with different colors
 """
 
-<<<<<<< HEAD
-
-class Logger:
-=======
 import os
 import sys
 import time
@@ -24,7 +20,6 @@ class Logger:
     CROSS = "✗"
     SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
->>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
     @staticmethod
     def success(node, message) -> None:
         """Print success message"""
@@ -54,8 +49,6 @@ class Logger:
     def warn(node, message):
         """Function to log warning messages"""
         node.get_logger().warn(message)
-<<<<<<< HEAD
-=======
 
     @staticmethod
     def run_test(name: str, task, *args, clear_logs=True, **kwargs):
@@ -111,4 +104,3 @@ class Logger:
                 f"\r\033[2K  {Logger.RED}{Logger.CROSS} {name} — FAILED: {result['error']}{Logger.RESET}"
             )
             return False
->>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a

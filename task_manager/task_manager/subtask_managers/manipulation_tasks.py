@@ -31,7 +31,7 @@ from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
-# from task_manager.utils.decorators import service_check
+# from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
 
 from frida_constants.manipulation_constants import (
