@@ -671,8 +671,13 @@ class HRITasks(metaclass=SubtaskMeta):
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
                         foundExact = False
+                        normalized_target_info = remove_punctuation(target_info)
                         for option in options:
-                            if option.lower() in target_info.lower():
+                            normalized_option = remove_punctuation(option)
+                            if (
+                                normalized_option == normalized_target_info
+                                or normalized_option in normalized_target_info
+                            ):
                                 target_info = option
                                 foundExact = True
                                 target_found = True
@@ -689,9 +694,15 @@ class HRITasks(metaclass=SubtaskMeta):
                                 similarity = similarity_list.similarities[0]
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
-                    target_words = target_info.lower().split()
+                    normalized_confidences = {
+                        remove_punctuation(word): confidence
+                        for word, confidence in word_confidences.items()
+                    }
+                    target_words = remove_punctuation(target_info).split()
                     matched_confidences = [
-                        word_confidences[w] for w in target_words if w in word_confidences
+                        normalized_confidences[w]
+                        for w in target_words
+                        if w in normalized_confidences
                     ]
                     avg_confidence = (
                         sum(matched_confidences) / len(matched_confidences)
@@ -705,8 +716,12 @@ class HRITasks(metaclass=SubtaskMeta):
                         skip_confirmation = True
 
                     # Remap the target_info if a remap dictionary is provided
-                    if remap is not None and target_info in remap:
-                        target_info = remap[target_info]
+                    if remap is not None:
+                        normalized_target_info = remove_punctuation(target_info)
+                        for remap_key, remap_value in remap.items():
+                            if remove_punctuation(remap_key) == normalized_target_info:
+                                target_info = remap_value
+                                break
 
                 except Exception as e:
                     print("Failed matching result:", e)
