@@ -1,5 +1,9 @@
 var NAVTREEINDEX28 =
 {
+"moondream__proto__pb2_8py.html#a0c8c0cd876d97fa191cee4fc98977e35":[26,0,7,0,0,2,2,1],
+"moondream__proto__pb2_8py.html#a1da83ca9e5d8a96c48370dabaa1d7603":[26,0,7,0,0,2,2,0],
+"moondream__proto__pb2_8py.html#a44bda6af6f063528ab8a3c9a3794122c":[26,0,7,0,0,2,2,4],
+"moondream__proto__pb2_8py.html#a97486efd64346f9084f0a3bb7acf3e69":[26,0,7,0,0,2,2,5],
 "moondream__proto__pb2_8py.html#aeef2cc93d63a3042479747f34b2dc602":[26,0,7,0,0,2,2,2],
 "moondream__proto__pb2_8py.html#af44b393f7046597be158d7105696f7f0":[26,0,7,0,0,2,2,3],
 "moondream__proto__pb2__grpc_8py.html":[26,0,7,0,0,2,3],
@@ -245,9 +249,5 @@ var NAVTREEINDEX28 =
 "namespacefollow__person__v2.html#ae18fc04cf34a4b66e7bb2a60c4308a89":[24,0,46,3],
 "namespaceformat.html":[24,0,47],
 "namespaceformat.html#a2a29f347a155ccc16cb32c49b561e449":[24,0,47,0],
-"namespaceformat.html#ad68caf3b2ac11c6981af7cda72d732bf":[24,0,47,2],
-"namespaceformat.html#af0893b47c7fbeda9b19ea7006e54f925":[24,0,47,1],
-"namespacefrida__constants.html":[24,0,48],
-"namespacefrida__constants_1_1hri__constants.html":[24,0,48,0],
-"namespacefrida__constants_1_1hri__constants.html#a030ffe3f2fb1fc6cb72b2f14441d6e97":[24,0,48,0,15]
+"namespaceformat.html#ad68caf3b2ac11c6981af7cda72d732bf":[24,0,47,2]
 };

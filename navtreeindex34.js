@@ -1,5 +1,13 @@
 var NAVTREEINDEX34 =
 {
+"structBoxPrimitiveParams.html#ab9453b36fd733fd48aeb05645467d2bd":[25,0,112,8],
+"structBoxPrimitiveParams.html#abf643b918c4f53e3f552e64cc94e8720":[25,0,112,6],
+"structCheckValue.html":[25,0,114],
+"structCheckValue.html#a3be5a3feb4357bf37b01eef7fd5cc767":[25,0,114,0],
+"structCheckValue.html#a96d0c95abbb5c848c92f09df55d253a1":[25,0,114,1],
+"structDetectionRecord.html":[25,0,116],
+"structDetectionRecord.html#a3610ce5b90d7e202f1e7559e6d266903":[25,0,116,0],
+"structDetectionRecord.html#a54d7af51e305d38c2d9e7c2bd285a433":[25,0,116,2],
 "structDetectionRecord.html#accd0d7ef874715cdf70597c91c3f7742":[25,0,116,1],
 "structHandlerParams.html":[25,0,119],
 "structHandlerParams.html#a1916f9f3b9e6be1ec9d4194957ec494d":[25,0,119,0],
@@ -241,13 +249,5 @@ var NAVTREEINDEX34 =
 "vision__tasks_8py.html#acc2ee6161006865e51a5b980585f620b":[26,0,6,2,1,11,5],
 "vision__tasks_8py.html#add8920b2469d6bc25ce6aceb7b0fe0b3":[26,0,6,2,1,11,1],
 "visualization_8py.html":[26,0,7,0,3,3,0,0,7],
-"visualization_8py.html#a280e5b8773e351969f4514212f0e2d5e":[26,0,7,0,3,3,0,0,7,2],
-"visualization_8py.html#a32199afc7d378eccedbbfc299e588bde":[26,0,7,0,3,3,0,0,7,3],
-"wait__for__controller__input__node_8py.html":[26,0,6,1,2,0],
-"wait__for__controller__input__node_8py.html#abe191a8897bb324ceaa8765539c4a73e":[26,0,6,1,2,0,2],
-"wait__for__controller__input__node_8py.html#acbf56aac299c905ea9db596606231f61":[26,0,6,1,2,0,1],
-"xarm6_8py.html":[26,0,3,0,2,1,0,0],
-"xarm6_8py.html#a00587301dda23bf4389850792cf5e6df":[26,0,3,0,2,1,0,0,10],
-"xarm6_8py.html#a26baf8750ec84dc6d4deea500c98907a":[26,0,3,0,2,1,0,0,0],
-"xarm6_8py.html#a5b0cec9095cd260e03b3ea69e5262082":[26,0,3,0,2,1,0,0,7]
+"visualization_8py.html#a280e5b8773e351969f4514212f0e2d5e":[26,0,7,0,3,3,0,0,7,2]
 };

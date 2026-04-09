@@ -41,5 +41,9 @@ var namespacefrida__constants_1_1hri__constants =
     [ "USE_OWW", "namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e", null ],
     [ "USEFUL_AUDIO_NODE_NAME", "namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a", null ],
     [ "USEFUL_AUDIO_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733", null ],
+    [ "VAD_AUDIO_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a4f57beaa697d3fd2366209c57e9261db", null ],
+    [ "VOICE_ACTIVITY_TOPIC", "namespacefrida__constants_1_1hri__constants.html#aeae565aebb4e2edc79e98eaa9cfdc111", null ],
+    [ "VOWEL_FREQ_HIGH", "namespacefrida__constants_1_1hri__constants.html#aaef590928a116f77d6ac95c25420bc21", null ],
+    [ "VOWEL_FREQ_LOW", "namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7", null ],
     [ "WAKEWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a17e6a7edcef87329c3717fc4cd21dbee", null ]
 ];

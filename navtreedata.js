@@ -247,15 +247,15 @@ var NAVTREEINDEX =
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a",
 "face__recognition__node_8py.html#a2cdad657ac233e7e409732e4566479fb",
 "grasp__detector_8py.html#af45877455c780a848f907d89b783aefc",
-"manipulation__constants_8py.html#ad979818dff7842d3639956f5247fbebc",
-"moondream__proto__pb2_8py.html#aeef2cc93d63a3042479747f34b2dc602",
-"namespacefrida__constants_1_1hri__constants.html#a04fcaea874b8335fbca4fb97bbbf0bb0",
-"namespacegpd__ros2.html",
-"namespacenav__ui.html#a9c46380b372dee62877d099b65c01599",
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#af61153ac2e4af84cfaf1fcc0eca7f0e8",
-"navigation__constants_8py.html#a5ef956b1882b8d05d4119aad17f11c19",
-"structDetectionRecord.html#accd0d7ef874715cdf70597c91c3f7742",
-"xarm6_8py.html#a658ce8043db1fe58f180500b27de9ede"
+"manipulation__constants_8py.html#ac9123d02a104c1579ddaeb0a9cf75238",
+"moondream__proto__pb2_8py.html#a0c8c0cd876d97fa191cee4fc98977e35",
+"namespaceformat.html#af0893b47c7fbeda9b19ea7006e54f925",
+"namespacegazebo__objects.html",
+"namespacenav__central.html#a86af41de54cd576d3ea441a7bdf3cd20",
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a97443d1a7b24253528138833b23e0e0b",
+"navigation__constants_8py.html",
+"structBoxPrimitiveParams.html#ab9453b36fd733fd48aeb05645467d2bd",
+"visualization_8py.html#a32199afc7d378eccedbbfc299e588bde"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
