@@ -26,10 +26,10 @@ FRONT_STARE_CARRY_BAG = {
     "joints": {
         "joint1": -90.0,
         "joint2": -42.7,
-        "joint3": -118.6,
-        "joint4": 2.9,
-        "joint5": 122.3,
-        "joint6": 224.1,
+        "joint3": -68.2,
+        "joint4": 1.2,
+        "joint5": 115.0,
+        "joint6": -138.1,
     },
     "degrees": True,
 }
