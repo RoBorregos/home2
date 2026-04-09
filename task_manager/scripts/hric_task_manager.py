@@ -112,8 +112,11 @@ class HRIC_TM(Node):
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
         self.subtask_manager.vision.deactivate_face_recognition()
-        self.subtask_manager.manipulation.follow_face(False)
-        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        if not self.carrying_bag:
+            self.subtask_manager.manipulation.follow_face(False)
+        self.subtask_manager.manipulation.move_to_position(
+            "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
+        )
         if say:
             Logger.info(self, f"Moving to {location}")
             self.subtask_manager.hri.say(
@@ -227,8 +230,8 @@ class HRIC_TM(Node):
                 )
 
             self.subtask_manager.manipulation.move_to_position(
-                "nav_carry_bag_pose"
-            )  # TODO: move more to the back
+                "hand_bag_pose"
+            )
             self.subtask_manager.hri.say(
                 "Please extend your hand holding the bag so I can see and reach it."
             )
@@ -299,7 +302,9 @@ class HRIC_TM(Node):
             self.subtask_manager.vision.deactivate_face_recognition()
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
             self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_low_stare", velocity=0.5, degrees=True
+                named_position="front_stare_carry_bag" if self.carrying_bag else "front_low_stare",
+                velocity=0.5,
+                degrees=True,
             )
             angle = 0
 
@@ -313,7 +318,8 @@ class HRIC_TM(Node):
 
             self.subtask_manager.manipulation.pan_to(angle)
             self.subtask_manager.hri.say("Please take a seat where my arm points at.", wait=False)
-            self.subtask_manager.manipulation.point(15)
+            if not self.carrying_bag:
+                self.subtask_manager.manipulation.point(15)
             if self.current_guest_idx == FIRST_GUEST_IDX:
                 self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE
             else:
