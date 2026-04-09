@@ -190,23 +190,17 @@ class TestHriManager(Node):
         s, name = self.hri_manager.ask_and_confirm(
             "What is your name?",
             "LLM_name",
-            # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-            # confirm_preference,
-            use_hotwords=False,
-            # 3,
-            # 5,
+            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            confirm_preference,
         )
 
         self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
 
         s, interest1 = self.hri_manager.ask_and_confirm(
-            "What is your favorite main interest?",
+            "What is your main interest?",
             "LLM_interest",
             "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
             confirm_preference,
-            False,
-            3,
-            5,
         )
 
         s, interest2 = self.hri_manager.ask_and_confirm(
@@ -214,9 +208,6 @@ class TestHriManager(Node):
             "LLM_interest",
             "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
             confirm_preference,
-            False,
-            3,
-            5,
         )
 
     def test_categorize_shelves(self):
