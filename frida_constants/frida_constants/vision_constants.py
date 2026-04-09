@@ -1,7 +1,15 @@
-# ZED CAMERA TOPICS
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
-CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
+# Raw ZED camera topics (used by image_rotator_node)
+ZED_RGB_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+ZED_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered"
+ZED_CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
+
+# Vision camera topics (output of image_rotator_node, consumed by all vision nodes)
+CAMERA_TOPIC = "/vision/rgb/image_rect_color"
+DEPTH_IMAGE_TOPIC = "/vision/depth/depth_registered"
+CAMERA_INFO_TOPIC = "/vision/depth/camera_info"
+
+# Image rotation toggle topic (publish Bool to flip 180 degrees)
+FLIP_IMAGE_TOPIC = "/vision/flip_image"
 
 # Activate this if you want to used the image of the ZED in the simulation
 # CAMERA_TOPIC = "/zed/image_raw"

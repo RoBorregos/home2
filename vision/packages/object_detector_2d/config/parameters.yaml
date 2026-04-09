@@ -1,8 +1,8 @@
 object_detector_node:
   ros__parameters:
-    RGB_IMAGE_TOPIC : /zed/zed_node/rgb/image_rect_color
-    DEPTH_IMAGE_TOPIC :  /zed/zed_node/depth/depth_registered
-    CAMERA_INFO_TOPIC :  /zed/zed_node/depth/camera_info
+    RGB_IMAGE_TOPIC : /vision/rgb/image_rect_color
+    DEPTH_IMAGE_TOPIC :  /vision/depth/depth_registered
+    CAMERA_INFO_TOPIC :  /vision/depth/camera_info
     DETECTIONS_TOPIC : /vision/detections
     ZERO_SHOT_DETECTIONS_TOPIC : /vision/zero_shot_detections
     DETECTIONS_IMAGE_TOPIC : //visiondetections_image
