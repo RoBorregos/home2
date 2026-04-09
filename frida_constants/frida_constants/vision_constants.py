@@ -105,6 +105,7 @@ FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
+FLIP_IMAGE_TOPIC = "/vision/face_recognition/flip_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
 # HRIC commands node
@@ -140,3 +141,5 @@ YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
+DISHWASHER_TABLET_DETECTION_TOPIC = "/vision/dishwasher/tablet_detection"
+DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"

@@ -16,7 +16,7 @@ from rclpy.node import Node
 from frida_interfaces.msg import AudioData
 import df as DF_MODULE
 
-SAVE_PATH = "/tmp"
+SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
 SAVE_IT = 100
 run_frames = []
 
@@ -40,12 +40,14 @@ class NoiseCancellation(Node):
         self.declare_parameter("GAIN", 1.0)
         self.declare_parameter("DEBUG", False)
         self.declare_parameter("DF_MODEL_PATH", "assets/downloads")
+        self.declare_parameter("DF_ATTEN_LIM_DB", 12.0)
 
         input_topic = self.get_parameter("RAW_AUDIO_TOPIC").value
         output_topic = self.get_parameter("PROCESSED_AUDIO_TOPIC").value
         self.enable_anc = self.get_parameter("ENABLE_ANC").value
         self.gain = self.get_parameter("GAIN").value
         self.debug = self.get_parameter("DEBUG").value
+        self.df_atten_lim_db = self.get_parameter("DF_ATTEN_LIM_DB").value
 
         # Resolve model path relative to this script's package root
         script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -183,6 +185,7 @@ class NoiseCancellation(Node):
 
     def save_audio(self):
         self.get_logger().info("Saving processed audio stream.")
+        os.makedirs(SAVE_PATH, exist_ok=True)
         output_file = os.path.join(SAVE_PATH, "last_run_noise_cancelled.wav")
         with wave.open(output_file, "wb") as wf:
             wf.setnchannels(1)
@@ -217,7 +220,12 @@ class NoiseCancellation(Node):
 
             # 4. Neural noise suppression
             with torch.no_grad():
-                enhanced_48k_t = DF_MODULE.enhance(self.df_model, self.df_state, tensor)
+                enhanced_48k_t = DF_MODULE.enhance(
+                    self.df_model,
+                    self.df_state,
+                    tensor,
+                    atten_lim_db=self.df_atten_lim_db,
+                )
 
             enhanced_48k = enhanced_48k_t.cpu().numpy().squeeze().astype(np.float32)
 

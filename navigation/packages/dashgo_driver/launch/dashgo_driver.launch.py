@@ -23,5 +23,8 @@ def generate_launch_description():
             remappings=[
                 ('/cmd_vel', cmd_topic),
             ],
+            respawn=True,
+            respawn_delay=2.0,
+            respawn_max_retries=5,
         ),
     ])
