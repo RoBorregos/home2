@@ -1,0 +1,9 @@
+string[] documents
+string query
+int16 top_k
+float64 threshold
+---
+string[] results
+float64[] similarities
+bool success
+string message

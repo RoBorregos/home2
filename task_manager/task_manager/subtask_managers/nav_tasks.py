@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
+<<<<<<< HEAD
 
 """
 Node to move to a place.
+=======
+"""
+
+Navigation Area SubTask Manager
+
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
 """
 
 import json
 import os
+<<<<<<< HEAD
 
 from frida_constants.frida_constants.navigation_constants import AREAS_SERVICE
 import rclpy
@@ -30,11 +38,25 @@ from rclpy.task import Future
 
 # from sensor_msgs.msg import LaserScan
 from std_srvs.srv import Empty, SetBool
+=======
+import rclpy
+from rclpy.node import Node
+from ament_index_python.packages import get_package_share_directory
+from frida_constants.navigation_constants import (
+    AREAS_SERVICE,
+    CHECK_DOOR_SERVICE,
+    MOVE_LOCATION_SERVICE,
+    SUBTASK_MANAGER,
+)
+from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
+
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
+<<<<<<< HEAD
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 TIMEOUT = 4
 RETURN_LASER_DATA = "/integration/Laserscan"
@@ -52,6 +74,8 @@ FOLLOW_BT_PATH = (
 
 GOAL_POSE_TOPIC = "/goal_pose"
 
+=======
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
 
 class NavigationTasks:
     """Class to manage the navigation tasks"""
@@ -60,6 +84,7 @@ class NavigationTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
+<<<<<<< HEAD
         self.goal_state = None
         # Closed door variables
         self.range_max = 260
@@ -109,6 +134,30 @@ class NavigationTasks:
             },
         }
 
+=======
+
+        # Action clients and services
+        self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
+        self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
+        self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+
+        # Task Actions and Services check
+        self.services = {
+            Task.DEBUG: {
+                "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
+                "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
+                "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+            },
+        }
+
+        self.setup_backup_map()
+
+        if not self.mock_data:
+            self.setup_services()
+
+    def setup_backup_map(self):
+        """Load backup map info"""
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
         try:
             package_share_directory = get_package_share_directory("frida_constants")
             file_path = os.path.join(package_share_directory, "map_areas/areas.json")
@@ -123,9 +172,12 @@ class NavigationTasks:
             self.areas_backup = Status.EXECUTION_ERROR
             Logger.warn(self.node, f"Areas Json Backup Failed Error: {e}")
 
+<<<<<<< HEAD
         if not self.mock_data:
             self.setup_services()
 
+=======
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
     def setup_services(self):
         """Initialize services and actions"""
 
@@ -135,6 +187,7 @@ class NavigationTasks:
 
         for key, service in self.services[self.task].items():
             if service["type"] == "service":
+<<<<<<< HEAD
                 if not service["client"].wait_for_service(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
@@ -544,12 +597,102 @@ class NavigationTasks:
         except Exception as e:
             Logger.error(self.node, f"Error getting location: {e}")
             return (Status.EXECUTION_ERROR, None)
+=======
+                if not service["client"].wait_for_service(
+                    timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+                ):
+                    Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
+            elif service["type"] == "action":
+                if not service["client"].wait_for_server(
+                    timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+                ):
+                    Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
+
+    @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, self.areas_backup), delay=1)
+    @service_check(
+        "retrieve_areas_srv",
+        lambda self: (Status.EXECUTION_ERROR, self.areas_backup),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def retrieve_areas(self):
+        """Dump areas.json dynamically from areas service"""
+
+        req = MapAreas.Request()
+        future = self.retrieve_areas_srv.call_async(req)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.AREAS_RETRIEVE_TIMEOUT.value
+        )
+        if (future.result() is None) or (future.result().areas == ""):
+            Logger.error(self.node, "Service return empty data")
+            return (Status.EXECUTION_ERROR, self.areas_backup)
+
+        else:
+            Logger.info(self.node, "Map Areas dumped Succesfully")
+            return (Status.EXECUTION_SUCCESS, json.loads(str(future.result().areas)))
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check(
+        "door_checking_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def check_door(self):
+        """Check if the door is open or closed"""
+
+        request = CheckDoor.Request()
+        future = self.door_checking_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None:
+            if result.status:
+                Logger.info(self.node, "Door open")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                Logger.error(self.node, "Error getting state with door")
+                return (Status.EXECUTION_ERROR, "Error getting door state")
+        else:
+            Logger.error(self.node, "Error with request")
+            return (Status.EXECUTION_ERROR, "Request error")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
+    @service_check(
+        "move_to_location_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_to_location(self, location, sublocation):
+        """Move to areas json location"""
+        if sublocation == "":
+            sublocation = "safe_place"
+        Logger.info(self.node, f"Moving to {location} - {sublocation}")
+        request = MoveLocation.Request()
+        request.location = location
+        request.sublocation = sublocation
+        future = self.move_to_location_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None:
+            if result.success:
+                Logger.info(self.node, "Goal Reached")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                Logger.error(self.node, f"Error with goal: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            Logger.error(self.node, "Error with request")
+            return (Status.EXECUTION_ERROR, "Error with request")
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
 
 
 if __name__ == "__main__":
     rclpy.init()
+<<<<<<< HEAD
     node = Node("navigation_tasks")
     navigation_tasks = NavigationTasks(node)
+=======
+    node = Node("Navigation_Task_Manager")
+    navigationTaskManager = NavigationTasks(node)
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
     try:
         rclpy.spin(node)
     except Exception as e:

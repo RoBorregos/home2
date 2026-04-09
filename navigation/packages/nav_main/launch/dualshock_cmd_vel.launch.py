@@ -1,4 +1,4 @@
-
+import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
@@ -19,6 +19,7 @@ def generate_launch_description():
         package='rclcpp_components',
         executable='component_container',
         namespace='',
+        output='own_log' if os.getenv('NAV_QUIET') == '1' else 'screen',
         composable_node_descriptions=[
             ComposableNode(
                 package='joy',
@@ -32,7 +33,7 @@ def generate_launch_description():
                 name='teleop_twist_joy_node',
                 namespace='',
                 parameters=[{
-                        'hw_type': LaunchConfiguration('hw_type')
+                        'hw_type': LaunchConfiguration('hw_type'),
                 }],
                 remappings=[
                     ('cmd_vel', LaunchConfiguration('topic_name'))

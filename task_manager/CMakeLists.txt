@@ -19,35 +19,41 @@ install(DIRECTORY
 #Python compatability
 ament_python_install_package(${PROJECT_NAME})
 
-file (GLOB TASK_MANAGERS scripts/*.py)
-file (GLOB UTIL_NODES scripts/util_nodes/*.py)
-file (GLOB TEST_SUBTASK_MANAGERS scripts/test/*.py)
-file (GLOB MISC_NODES scripts/misc/*.py)
+file(GLOB TASK_MANAGERS scripts/*.py)
+file(GLOB UTIL_NODES scripts/util_nodes/*.py)
+file(GLOB TEST_SUBTASK_MANAGERS scripts/test/*.py)
+file(GLOB MISC_NODES scripts/misc/*.py)
+file(GLOB CONFIG scripts/config/*.py)
 
+# Make all python scripts executable (needed for --symlink-install)
+foreach(script ${TASK_MANAGERS} ${UTIL_NODES} ${TEST_SUBTASK_MANAGERS} ${MISC_NODES} ${CONFIG})
+  execute_process(COMMAND chmod +x ${script})
+endforeach()
 
 # Install python scripts
-install(PROGRAMS
-${TASK_MANAGERS}
-DESTINATION lib/${PROJECT_NAME}
+install(PROGRAMS ${TASK_MANAGERS}
+  DESTINATION lib/${PROJECT_NAME}
 )
 
-install(PROGRAMS
-${UTIL_NODES}
-DESTINATION lib/${PROJECT_NAME}/util_nodes
+install(PROGRAMS ${UTIL_NODES}
+  DESTINATION lib/${PROJECT_NAME}/util_nodes
 )
 
-install(PROGRAMS
-${TEST_SUBTASK_MANAGERS}
-DESTINATION lib/${PROJECT_NAME}/test
+install(PROGRAMS ${TEST_SUBTASK_MANAGERS}
+  DESTINATION lib/${PROJECT_NAME}/test
 )
 
-install(PROGRAMS
-${MISC_NODES}
-DESTINATION lib/${PROJECT_NAME}/misc
+install(PROGRAMS ${MISC_NODES}
+  DESTINATION lib/${PROJECT_NAME}/misc
 )
 
 install(DIRECTORY launch scripts
- DESTINATION share/${PROJECT_NAME})
+  DESTINATION share/${PROJECT_NAME})
+
+# Install python config
+install(DIRECTORY scripts/config/ DESTINATION lib/${PROJECT_NAME}/config FILES_MATCHING PATTERN "*.py")
+
+
 
 ######################### Testing  #########################
 ##For testing

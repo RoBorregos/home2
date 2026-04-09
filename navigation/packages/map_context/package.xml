@@ -11,7 +11,9 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
   <depend>rclpy</depend>
+  <depend>lifecycle_msgs</depend>
   <depend>navigation2</depend>
   <depend>nav2_bringup</depend>
   <depend>rviz2</depend>

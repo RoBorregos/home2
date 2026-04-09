@@ -7,17 +7,14 @@ HRI Subtask manager
 import json
 import os
 import re
-from dataclasses import dataclass
-from enum import Enum
 
 # from datetime import datetime
 from typing import List, Union
 
-import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
+    ADD_ENTRY_SERVICE,
     ANSWER_PUBLISHER,
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
@@ -25,11 +22,13 @@ from frida_constants.hri_constants import (
     DISPLAY_MAP_TOPIC,
     DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
+    FIND_CLOSEST_SERVICE,
     GRAMMAR_SERVICE,
     IS_COHERENT_SERVICE,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
+    QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
     SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
@@ -42,23 +41,39 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
-from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
+    AddEntry,
     CategorizeShelves,
     CommandInterpreter,
     ExtractInfo,
+    FindClosest,
     Grammar,
     HearMultiThread,
     IsCoherent,
     IsNegative,
     IsPositive,
     LLMWrapper,
+    QueryEntry,
     Speak,
 )
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+<<<<<<< HEAD
+=======
+
+from task_manager.subtask_managers.hri_dataclasses import (
+    AudioStates,
+    CommandHistory,
+    FindClosestResult,
+    HandItem,
+    Location,
+)
+from task_manager.config.hri.debug import config as test_hri_config
+from task_manager.config.hri.mocked import config as mocked_hri_config
+>>>>>>> 297bdd4b3af41d15ae85514039ca5b3f1ed42c3a
 from task_manager.subtask_managers.hri_hand import HRIHand
 from task_manager.subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.sync_client import b
@@ -142,47 +157,18 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
-@dataclass
-class FindClosestResult:
-    """Bundled results and similarity scores from find_closest."""
-
-    results: list[str]
-    similarities: list[float]
-
-
-class AudioStates(Enum):
-    SAYING = "saying"
-    LISTEN = "listening"
-    IDLE = "idle"
-    THINKING = "thinking"
-    LOADING = "loading"
-
-    @classmethod
-    def respeaker_light(cls, state):
-        if state == AudioStates.SAYING:
-            return "speak"
-        elif state == AudioStates.LISTEN:
-            return "listen"
-        elif state == AudioStates.IDLE:
-            return "off"
-        elif state == AudioStates.THINKING:
-            return "think"
-        elif state == AudioStates.LOADING:
-            return "loading"
-        else:
-            raise ValueError(f"Unknown audio state: {state}")
-
-
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
-    def __init__(self, task_manager: Node, config=None, task=Task.HRIC) -> None:
+    def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
+        config = mocked_hri_config if mock_data else test_hri_config
         self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
+        self.initial_prompt = ""
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
@@ -192,7 +178,11 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
-        self.pg = PostgresAdapter(config.mock_db)
+        self.mock_db = config.mock_db if config else False
+        self.add_entry_service = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
+        self.query_entry_service = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
+        self.find_closest_service = self.node.create_client(FindClosest, FIND_CLOSEST_SERVICE)
+        self.items = self.get_items_embeddings()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
@@ -251,6 +241,8 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
+            Task.RESTAURANT: all_services,
+            Task.DEBUG: all_services,
         }
 
         self.hand = HRIHand(self)
@@ -421,9 +413,10 @@ class HRITasks(metaclass=SubtaskMeta):
     def hear(
         self,
         hotwords="",
-        silence_time=2.0,
+        silence_time=4.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
+        initial_prompt="",
     ) -> str:
         Logger.info(
             self.node,
@@ -431,6 +424,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         accepted_future = self.hear_streaming(
+            initial_prompt=initial_prompt or self.initial_prompt,
             hotwords=hotwords,
             silence_time=silence_time,
             start_silence_time=start_silence_time,
@@ -478,6 +472,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self,
         timeout: float = 13.0,
         hotwords: str = "",
+        initial_prompt: str = "",
         silence_time: float = 2.0,
         start_silence_time: float = 4.0,
     ):
@@ -488,6 +483,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
+            initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
@@ -500,6 +496,7 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
+        goal_msg.initial_prompt = initial_prompt
         self.last_hotwords = hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
@@ -639,8 +636,10 @@ class HRITasks(metaclass=SubtaskMeta):
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
+        always_confirm: bool = False,
         options: list[str] = None,
         remap: dict = None,
+        initial_prompt: str = "",
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -653,7 +652,7 @@ class HRITasks(metaclass=SubtaskMeta):
             use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
-
+            initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
         Returns:
             Status: the status of the execution
             str: answer to the question
@@ -665,18 +664,20 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text, word_confidences = self.hear(hotwords=hotwords)
+            hear_status, interpreted_text, word_confidences = self.hear(
+                hotwords=hotwords, initial_prompt=initial_prompt
+            )
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
-                target_found = False
+                target_found = options is None
                 similarity = 1
                 try:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
                         if s != Status.EXECUTION_SUCCESS:
-                            self.say("Sorry, I coudn't understand.")
+                            self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
 
@@ -723,7 +724,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 except Exception as e:
                     print("Failed matching result:", e)
 
-                if skip_confirmation:
+                if not always_confirm and skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
 
                 # Determine the confirmation question
@@ -868,6 +869,77 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, command_list.commands
 
+    def parse_plan_to_text(self, commands: list) -> str:
+        """
+        Converts a list of interpreted commands into a human-readable plan description.
+
+        Args:
+            commands: list of command objects (GoTo, PickObject, etc.)
+
+        Returns:
+            str: A human-readable sentence describing the plan.
+        """
+        steps = []
+        for cmd in commands:
+            action = getattr(cmd, "action", None)
+            if action == "go_to":
+                location = getattr(cmd, "location_to_go", "somewhere")
+                if location == "start_location":
+                    steps.append("return to the start location")
+                else:
+                    steps.append(f"go to the {location}")
+            elif action == "pick_object":
+                obj = getattr(cmd, "object_to_pick", "object")
+                steps.append(f"pick the {obj}")
+            elif action == "find_person_by_name":
+                name = getattr(cmd, "name", "person")
+                steps.append(f"find {name}")
+            elif action == "find_person":
+                attr = getattr(cmd, "attribute_value", "")
+                if attr:
+                    steps.append(f"find a person who is {attr}")
+                else:
+                    steps.append("find a person")
+            elif action == "count":
+                target = getattr(cmd, "target_to_count", "objects")
+                steps.append(f"count the {target}")
+            elif action == "get_person_info":
+                info = getattr(cmd, "info_type", "information")
+                steps.append(f"get the {info} of the person")
+            elif action == "get_visual_info":
+                measure = getattr(cmd, "measure", "")
+                category = getattr(cmd, "object_category", "object")
+                steps.append(f"find the {measure} {category}".strip())
+            elif action == "answer_question":
+                steps.append("answer a question from the person")
+            elif action == "follow_person_until":
+                destination = getattr(cmd, "destination", "cancelled")
+                if destination == "cancelled":
+                    steps.append("follow the person until told to stop")
+                else:
+                    steps.append(f"follow the person to {destination}")
+            elif action == "guide_person_to":
+                destination = getattr(cmd, "destination_room", "destination")
+                steps.append(f"guide the person to {destination}")
+            elif action == "give_object":
+                steps.append("give the object to the person")
+            elif action == "place_object":
+                steps.append("place the object")
+            elif action == "say_with_context":
+                instruction = getattr(cmd, "user_instruction", "")
+                steps.append(f"say: {instruction}")
+            else:
+                steps.append(action.replace("_", " ") if action else "unknown action")
+
+        if not steps:
+            return "I have no steps to execute."
+
+        if len(steps) == 1:
+            return f"My plan is to {steps[0]}."
+
+        plan = ", then ".join(steps[:-1]) + f", and finally {steps[-1]}"
+        return f"My plan is to {plan}."
+
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
@@ -954,91 +1026,207 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, f"RAG service failed: {result.response}")
             return Status.EXECUTION_ERROR, result.response, result.score
 
-    # Embeddings services
+    # Restaurant
+    def take_order(
+        self,
+        retries: int = 3,
+    ) -> tuple[Status, list[str]]:
+        """Ask the customer for their order and return the matched menu items.
+        Flow per attempt:
+        1. Ask for the first item and confirm it.
+        2. Ask for the second item and confirm it.
+        Returns:
+            (Status.EXECUTION_SUCCESS, list[str]) on success, or
+            (Status.TIMEOUT, []) if the customer never confirms.
+        """
+
+        items = list(self.items)
+        context = f"Extract one of these items: {items}"
+
+        s_first, first_item = self.ask_and_confirm(
+            question="What would you like to order first?",
+            query="LLM_ordered_items",
+            context=context,
+            use_hotwords=False,
+            options=items,
+            retries=retries,
+        )
+
+        if s_first != Status.EXECUTION_SUCCESS or not first_item:
+            Logger.warn(self.node, "take_order: max retries reached, giving up")
+            return Status.TIMEOUT, []
+
+        s_second, second_item = self.ask_and_confirm(
+            question="And what would you like as your second item?",
+            query="LLM_ordered_items",
+            context=context,
+            use_hotwords=False,
+            options=items,
+            retries=retries,
+        )
+
+        if s_second != Status.EXECUTION_SUCCESS or not second_item:
+            Logger.warn(self.node, "take_order: max retries reached, giving up")
+            return Status.TIMEOUT, []
+
+        raw_items = [first_item, second_item]
+        Logger.success(self.node, f"take_order confirmed: {raw_items}")
+        return Status.EXECUTION_SUCCESS, raw_items
+
+    # Embeddings services — delegate to HRI postgres_service node via ROS
+
+    def _call_add_entry(self, collection: str, documents: list, metadata: dict = None) -> bool:
+        """Fire-and-forget AddEntry service call."""
+        if self.mock_db:
+            return True
+        req = AddEntry.Request()
+        req.document = documents
+        req.collection = collection
+        req.metadata = json.dumps(metadata) if metadata else ""
+        self.add_entry_service.call_async(req)
+        return True
+
+    def _call_query_entry(
+        self, collection: str, query_texts: list, top_k: int, metadata: dict = None
+    ) -> list[str]:
+        """Synchronous QueryEntry service call. Returns list of JSON strings."""
+        if self.mock_db:
+            return []
+        if not self.query_entry_service.service_is_ready():
+            self.node.get_logger().warn(f"QueryEntry service not ready (collection={collection})")
+            return []
+        req = QueryEntry.Request()
+        req.query = query_texts
+        req.collection = collection
+        req.topk = top_k
+        req.metadata = json.dumps(metadata) if metadata else ""
+        future = self.query_entry_service.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if not result or not result.success:
+            return []
+        return list(result.results)
+
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
-        self.pg.add_command(
-            action=str(command.action),
-            command=str(command),
-            result=result,
-            status=str(status),
-            context=type(command).__name__,
+        self._call_add_entry(
+            collection="command_history",
+            documents=[str(command)],
+            metadata={
+                "action": str(command.action),
+                "result": result,
+                "status": str(status),
+                "context": type(command).__name__,
+            },
         )
         return Status.EXECUTION_SUCCESS
 
-    def add_item(self, document: list, metadata: str) -> list[str]:
+    def add_item(self, document: list, metadata: dict) -> list[str]:
         for doc in document:
-            self.pg.add_item2(
-                document=doc,
-                context=metadata.get("context", ""),
+            self._call_add_entry(
+                collection="items",
+                documents=[doc],
+                metadata={"context": metadata.get("context", "") if metadata else ""},
             )
-        return [doc for doc in document]
+        return list(document)
 
-    def add_location(self, document: list, metadata: str) -> list[str]:
+    def add_location(self, document: list, metadata: dict) -> list[str]:
         for doc in document:
-            self.pg.add_location2(
-                document=doc,
-                context=metadata.get("context", ""),
+            self._call_add_entry(
+                collection="locations",
+                documents=[doc],
+                metadata={"context": metadata.get("context", "") if metadata else ""},
             )
-        return [doc for doc in document]
+        return list(document)
 
-    def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
-        return self.pg.query_location(query, top_k=top_k, use_context=use_context)
+    def query_location(
+        self, query: str, top_k: int = 1, use_context: bool = False
+    ) -> list[Location]:
+        raw = self._call_query_entry(
+            collection="locations",
+            query_texts=[query],
+            top_k=top_k,
+            metadata={"use_context": use_context},
+        )
+        return [Location(**json.loads(r)) for r in raw]
 
     def find_closest(
         self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
     ) -> tuple[Status, FindClosestResult]:
         """
-        Method to find the closest item to the query.
-        Args:
-            documents: the documents to search among
-            query: the query to search for
-            top_k: the number of results to return
-            threshold: the minimum similarity score to include
-        Returns:
-            Status: the status of the execution
-            FindClosestResult: the results and similarity scores of the query
+        Find the closest item to the query using the HRI FindClosest service.
+        documents can be list[str] or list[tuple[str, embedding]] (embeddings are ignored).
         """
-        emb = self.pg.embedding_model.encode(query)
+        if self.mock_db or not documents:
+            return Status.TARGET_NOT_FOUND, FindClosestResult(results=[], similarities=[])
 
-        def cos_sim(x, y):
-            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+        if not self.find_closest_service.service_is_ready():
+            self.node.get_logger().warn("FindClosest service not ready")
+            return Status.SERVICE_CHECK, FindClosestResult(results=[], similarities=[])
 
-        docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
-        docs = [doc for doc in docs if doc[1] >= threshold]
-        sorted_docs = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
-
-        result = FindClosestResult(
-            results=[doc[0] for doc in sorted_docs],
-            similarities=[doc[1] for doc in sorted_docs],
+        doc_texts = (
+            [text for text, _ in documents] if isinstance(documents[0], tuple) else list(documents)
         )
-        s = Status.EXECUTION_SUCCESS if len(result.results) > 0 else Status.TARGET_NOT_FOUND
 
+        req = FindClosest.Request()
+        req.documents = doc_texts
+        req.query = query
+        req.top_k = top_k
+        req.threshold = threshold
+
+        future = self.find_closest_service.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        msg = future.result()
+
+        if not msg or not msg.success:
+            return Status.TARGET_NOT_FOUND, FindClosestResult(results=[], similarities=[])
+
+        result = FindClosestResult(results=list(msg.results), similarities=list(msg.similarities))
+        s = Status.EXECUTION_SUCCESS if result.results else Status.TARGET_NOT_FOUND
         return s, result
 
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
+        """Find the closest items to the query, returning (text, similarity) pairs."""
+        if self.mock_db or not documents:
+            return []
+
+        req = FindClosest.Request()
+        req.documents = list(documents)
+        req.query = query
+        req.top_k = top_k
+        req.threshold = 0.0
+
+        future = self.find_closest_service.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        msg = future.result()
+
+        if not msg or not msg.success:
+            return []
+
+        results = list(zip(msg.results, msg.similarities))
+        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {results}")
+        return results
+
+    def get_items_embeddings(self) -> list[str]:
         """
-        Method to find the closest item to the query.
-        Args:
-            documents: the documents to search among
-            query: the query to search for
+        Fetch all item texts from the postgres service.
         Returns:
-            Status: the status of the execution
-            list[str]: the results of the query
+            list[str]: List of item text strings.
         """
-        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
-        emb = self.pg.embedding_model.encode(query)
+        raw = self._call_query_entry(collection="items", query_texts=[], top_k=10000)
+        return [json.loads(r)["text"] for r in raw]
 
-        def cos_sim(x, y):
-            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
-
-        Results = cos_sim(
-            np.array([doc[1] for doc in docs]), emb
-        )  # Calculate cosine similarity for all documents
-        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)
-        Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
-        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
-
-        return Results
+    def get_hand_items(self, query: str) -> tuple[list[HandItem], list[HandItem]]:
+        """
+        Query hand_items from postgres service.
+        Returns:
+            tuple: (by_name, by_description) lists of HandItem objects.
+        """
+        raw = self._call_query_entry(collection="hand_items", query_texts=[query], top_k=10000)
+        if len(raw) < 2:
+            return [], []
+        by_name = [HandItem(**item) for item in json.loads(raw[0])]
+        by_description = [HandItem(**item) for item in json.loads(raw[1])]
+        return by_name, by_description
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -1060,7 +1248,13 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, future.result().answer
 
     def query_command_history(self, query: str, action: str, top_k: int = 1):
-        results = self.pg.query_command_history(command=query, action=action, top_k=top_k)
+        raw = self._call_query_entry(
+            collection="command_history",
+            query_texts=[query],
+            top_k=top_k,
+            metadata={"action": action},
+        )
+        results = [CommandHistory(**json.loads(r)) for r in raw]
         return Status.EXECUTION_SUCCESS, results
 
     def categorize_objects(

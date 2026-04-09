@@ -7,11 +7,10 @@ Task Manager for testing the subtask managers
 from typing import Union
 
 import rclpy
-from task_manager.config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from task_manager.subtask_managers.hri_tasks import HRITasks
 
-# from task_manager.subtask_managers.subtask_meta import SubtaskMeta
+# from subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
@@ -65,7 +64,7 @@ TEST_OBJECT_LOCATION = True
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=TEST_TASK)
+        self.hri_manager = HRITasks(self, task=TEST_TASK, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()

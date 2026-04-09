@@ -14,7 +14,7 @@
 	branch = humble
 [submodule "navigation/packages/sllidar_ros2"]
 	path = navigation/packages/sllidar_ros2
-	url = https://github.com/Slamtec/sllidar_ros2
+	url = https://github.com/RoBorregos/sllidar_ros2.git
 [submodule "manipulation/packages/xarm_ros2"]
 	path = manipulation/packages/xarm_ros2
 	url = https://github.com/RoBorregos/xarm_ros2.git
