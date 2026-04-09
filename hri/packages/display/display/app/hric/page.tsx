@@ -129,43 +129,6 @@ function StepPill({
   );
 }
 
-function DisplayBadge({ mode }: { mode: DisplayMode }) {
-  const config: Record<
-    DisplayMode,
-    { icon: React.ReactNode; label: string; color: string }
-  > = {
-    button: {
-      icon: <Flame className="h-3 w-3" />,
-      label: "Button",
-      color: "text-(--orange) bg-(--orange-bg)",
-    },
-    camera: {
-      icon: <Camera className="h-3 w-3" />,
-      label: "Camera",
-      color: "text-emerald-400 bg-emerald-500/20",
-    },
-    logs: {
-      icon: <MessageSquare className="h-3 w-3" />,
-      label: "Logs",
-      color: "text-(--purple) bg-(--purple-bg)",
-    },
-    both: {
-      icon: <Columns2 className="h-3 w-3" />,
-      label: "Both",
-      color: "text-(--blue) bg-(--blue-bg)",
-    },
-  };
-  const c = config[mode];
-  return (
-    <div
-      className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${c.color}`}
-    >
-      {c.icon}
-      {c.label}
-    </div>
-  );
-}
-
 // ─── Main page ──────────────────────────────────────────────────────
 export default function HRICPage() {
   const [currentStep, setCurrentStep] = useState<string>("wait_for_button");
@@ -203,7 +166,6 @@ export default function HRICPage() {
             <MessageCircle className="h-5 w-5" />
             HRI Challenge
           </h1>
-          <DisplayBadge mode={displayMode} />
         </div>
         <div className="flex items-center gap-3">
           <AudioStateIndicator />
