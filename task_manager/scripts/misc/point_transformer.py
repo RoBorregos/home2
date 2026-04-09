@@ -12,7 +12,7 @@ import os
 from sensor_msgs.msg import LaserScan
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import TransformStamped
-from utils.status import Status
+from task_manager.utils.status import Status
 from math import sqrt
 
 from frida_constants.integration_constants import (

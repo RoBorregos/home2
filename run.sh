@@ -40,6 +40,7 @@ Available Areas:
   navigation         Spins up the containers for navigation.
   hri                Spins up the containers for human-robot interaction.
   integration        Spins up the complete integration environment.
+  zed                Starts the ZED camera in a container (with CycloneDDS SHM).
   frida_interfaces   Builds and configures FRIDA's custom interfaces/messages.
 
 Competition Tasks:
@@ -59,6 +60,7 @@ Additional Flags:
   --build-image      Builds the Docker image for the specified area or task.
   --recreate         Forces the recreation of containers (useful for network or .env changes).
   --open-display     Opens the graphical interface (UI/Display) required for HRI or Vision.
+  --clean            Deletes the build/, log/, and install/ folders and frida_interfaces_cache/.
 
 Examples:
   ./run.sh hri --receptionist --open-display
@@ -73,14 +75,20 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  --stop|--down)
+  --stop|--down|--clean|--build)
     control "$INPUT"
+    ;;
+  --clean-interfaces)
+    clean_directories docker/frida_interfaces_cache
     ;;
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
     ;;
-  vision|manipulation|navigation|integration|hri)
+  vision|manipulation|navigation|integration|hri|zed)
     run_area "$@"
+    ;;
+  --update-map)
+    update_map "$@"
     ;;
   *)
     ./run.sh --help

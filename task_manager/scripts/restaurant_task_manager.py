@@ -7,10 +7,10 @@ Task Manager for Restaurant task of Robocup @Home 2025
 import rclpy
 from rclpy.node import Node
 
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-from utils.logger import Logger
-from utils.status import Status
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
 from frida_constants.vision_enums import Gestures
 from frida_constants.vision_constants import CUSTOMER
 import time

@@ -10,16 +10,6 @@ from typing import Optional
 import pytz
 import rclpy
 import requests
-from frida_constants.hri_constants import MODEL, CATEGORIZE_IDK_THRESHOLD
-from frida_interfaces.srv import (
-    CategorizeShelves,
-    CommandInterpreter,
-    Grammar,
-    IsCoherent,
-    IsNegative,
-    IsPositive,
-    LLMWrapper,
-)
 from nlp.assets.baml_client.sync_client import b
 from nlp.assets.dialogs import (
     format_response,
@@ -31,6 +21,17 @@ from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
+
+from frida_constants.hri_constants import CATEGORIZE_IDK_THRESHOLD, MODEL
+from frida_interfaces.srv import (
+    CategorizeShelves,
+    CommandInterpreter,
+    Grammar,
+    IsCoherent,
+    IsNegative,
+    IsPositive,
+    LLMWrapper,
+)
 
 CURRENT_CONTEXT = """
 Today is {CURRENT_DATE}.
@@ -214,9 +215,8 @@ class LLMUtils(Node):
             .message.content
         )
         self.logger.info(f"Coherence result: {response}")
-        self.logger.info(f"Coherence result: {response}")
         try:
-            res.is_coherent = json.loads(response)["is_positive"]
+            res.is_coherent = json.loads(response)["is_coherent"]
         except Exception as e:
             self.logger.error(f"Failed to parse coherence response: {e}")
             res.is_coherent = False
@@ -224,9 +224,6 @@ class LLMUtils(Node):
 
     def generic_structured_output(self, messages, response_format):
         self.get_logger().info("Generating structured output")
-        # self.get_logger().info(f"System prompt: {system_prompt}")
-        # self.get_logger().info(f"User prompt: {user_prompt}")
-        # self.get_logger().info(f"Response format: {response_format}")
         response = (
             self.client.beta.chat.completions.parse(
                 model=MODEL.GENERIC_STRUCTURED_OUTPUT.value,

@@ -13,6 +13,7 @@ BUILD=""
 BUILD_IMAGE=""
 BUILD_IMAGE_CLEAN=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -35,7 +36,7 @@ for arg in "${ARGS[@]}"; do
         exit 0
         ;;
     "--build-image")
-        BUILD_IMAGE="--build"
+        BUILD_IMAGE="--build "
         ;;
     "--build-image-clean")
         BUILD_IMAGE="--build"
@@ -43,6 +44,9 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
         ;;
     esac
 done
@@ -57,6 +61,15 @@ if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
 fi
 add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+# Default SHM on for Jetson (l4t), off otherwise
+if [ -z "${CYCLONE_SHM:-}" ]; then
+    if [ -f /etc/nv_tegra_release ]; then
+        CYCLONE_SHM=1
+    else
+        CYCLONE_SHM=0
+    fi
+fi
+add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
 
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -81,16 +94,22 @@ case $ENV_TYPE in
     ;;
 esac
 
+# Clean build artifacts if requested
+if [ "$CLEAN" == "true" ]; then
+  clean_directories .
+fi
+
 mkdir -p install build log moondream/install moondream/build moondream/log
 
 #_________________________RUN_________________________
 
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_ROS="source /opt/ros/humble/setup.bash && source /usr/local/bin/cyclonedds_setup.sh"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants"
 MOONDREAM_PACKAGES="moondream_run"
 MOONDREAM_COMMAND="ros2 run moondream_run moondream_node.py"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 PROFILES=()
 
 case $TASK in
@@ -98,6 +117,11 @@ case $TASK in
         PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general hric_launch.py"
         PROFILES=("vision" "moondream")
+        ;;
+    "--ppc")
+        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        RUN="ros2 launch vision_general ppc_launch.py"
+        PROFILES=("vision")
         ;;
     "--carry")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
@@ -131,7 +155,7 @@ else
 fi
 
 COMMAND="$SETUP && $RUN"
-COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES && $SOURCE && $MOONDREAM_COMMAND"
+COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES && $SOURCE && $CYCLONE_SOURCE && $MOONDREAM_COMMAND"
 add_or_update_variable .env "COMMAND_MOONDREAM" "$COMMAND_MOONDREAM"
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
@@ -150,10 +174,12 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="vision")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose up -d $BUILD_IMAGE
+	docker compose up -d $BUILD_IMAGE
     fi
     docker compose exec vision bash -c "$COMMAND"
 else
     add_or_update_variable .env "COMMAND" "$COMMAND"
+    echo "COmmand = $COMMAND"
+    echo "Running docker compose up $DETACHED $BUILD_IMAGE"
     docker compose up $DETACHED $BUILD_IMAGE
 fi

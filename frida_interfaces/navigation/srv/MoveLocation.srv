@@ -1,0 +1,10 @@
+# Request
+
+string location
+string sublocation
+---
+#Response
+bool success
+string error
+
+

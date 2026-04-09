@@ -12,6 +12,7 @@ BUILD=""
 BUILD_IMAGE=""
 BUILD_IMAGE_CLEAN=""
 UPLOAD_IMAGE=""
+CLEAN=""
 COMPOSE_FILE="docker-compose.yaml"
 for arg in "${ARGS[@]}"; do
     case $arg in
@@ -42,10 +43,18 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--clean")
+        CLEAN="true"
+        ;;
     esac
 done
 
 #_________________________SETUP_________________________
+
+echo "Configuring USB devices for Navigation..."
+if ! bash ./setup-USB.sh; then
+    echo "Error: USB devices setup failed."
+fi
 
 # Reset .env
 echo "" > .env
@@ -55,7 +64,16 @@ if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
 fi
 add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
+# Default SHM on for Jetson (l4t), off otherwise
+if [ -z "${CYCLONE_SHM:-}" ]; then
+    if [ -f /etc/nv_tegra_release ]; then
+        CYCLONE_SHM=1
+    else
+        CYCLONE_SHM=0
+    fi
+fi
+add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
+add_or_update_variable .env "MAP_NAME" "${MAP_NAME:-lab_23_march.db}"
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
@@ -67,17 +85,25 @@ add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYP
 case $ENV_TYPE in
     "cpu")
         add_or_update_variable .env "DOCKER_RUNTIME" "runc"
+        PROFILES=("cpu_l4t")
         ;;
     "gpu")
-        COMPOSE_FILE="docker-compose-gpu.yaml"
-        ;;
-    "l4t")
-        COMPOSE_FILE="docker-compose-l4t.yaml"
+        add_or_update_variable .env "DOCKER_RUNTIME" "runc"
+        PROFILES=("gpu")
         ;;
     *)
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+        PROFILES=("cpu_l4t")
         ;;
 esac
+
+COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
+add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
+
+# Clean build artifacts if requested
+if [ "$CLEAN" == "true" ]; then
+  clean_directories .
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
@@ -89,22 +115,26 @@ SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_RTABMAP="if [ -f /home/ros/ros_packages3/install/setup.bash ]; then source /home/ros/ros_packages3/install/setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $COLCON"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE && $COLCON"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 case $TASK in
-    "--receptionist")
-        RUN="echo 'WORKING IN PROGRESS'"
-        ;;
     "--mapping")
-        RUN="echo 'WORKING IN PROGRESS'"
+        RUN="ros2 run nav_main launch_nav.py"
         ;;
-    "--storing-groceries")
-        RUN="echo 'WORKING IN PROGRESS'"
+    "--gpsr")
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
+        ;;
+    "--hric")
+        RUN="ros2 run nav_main launch_nav.py"
+        ;;
+    "--ppc")
+        RUN="ros2 run nav_main launch_nav.py"
         ;;
     *)
         RUN="bash"
@@ -126,10 +156,10 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="navigation")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose -f $COMPOSE_FILE up -d $BUILD_IMAGE
+        docker compose up -d $BUILD_IMAGE 
     fi
-    docker compose -f $COMPOSE_FILE exec navigation bash -c "$COMMAND"
+    docker compose exec navigation bash -c "$COMMAND"
 else
     add_or_update_variable .env "COMMAND" "$COMMAND"
-    docker compose -f $COMPOSE_FILE up $DETACHED $BUILD_IMAGE
+    docker compose up $DETACHED $BUILD_IMAGE
 fi
