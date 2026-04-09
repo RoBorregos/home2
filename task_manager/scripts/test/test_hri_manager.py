@@ -58,17 +58,6 @@ def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
-def cosine_similarity(vector_a, vector_b):
-    dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
-    norm_a = sum(a * a for a in vector_a) ** 0.5
-    norm_b = sum(b * b for b in vector_b) ** 0.5
-
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-
-    return dot_product / (norm_a * norm_b)
-
-
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 
@@ -562,16 +551,18 @@ class TestHriManager(Node):
                                 self.get_logger().info(f"Command {cmd_idx + 1}: Exact match")
                                 continue
 
-                            # Use cosine similarity if not an exact match
-                            actual_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
-                                str(actual_cmd)
+                            # Use the embeddings service instead of the removed local pg object.
+                            s, closest = self.hri_manager.find_closest(
+                                [str(expected_cmd)], str(actual_cmd), top_k=1
                             )
-                            expected_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
-                                str(expected_cmd)
-                            )
-                            similarity = cosine_similarity(
-                                actual_cmd_embedding, expected_cmd_embedding
-                            )
+                            if s != Status.EXECUTION_SUCCESS or not closest.similarities:
+                                success = False
+                                self.get_logger().error(
+                                    f"Command {cmd_idx + 1} similarity lookup failed: {s}"
+                                )
+                                break
+
+                            similarity = closest.similarities[0]
                             self.get_logger().info(
                                 f"Command {cmd_idx + 1}: Cosine similarity = {similarity:.4f}"
                             )
