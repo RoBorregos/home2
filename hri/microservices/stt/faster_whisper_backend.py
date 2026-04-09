@@ -208,6 +208,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         result, info = self.transcriber.transcribe(
             input_sample,
             hotwords=self.hotwords,
+            initial_prompt=self.initial_prompt,
             language=self.language,
             task=self.task,
             vad_filter=self.use_vad,

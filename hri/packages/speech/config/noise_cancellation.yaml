@@ -3,5 +3,6 @@ noise_cancellation:
     RAW_AUDIO_TOPIC: REPLACE
     PROCESSED_AUDIO_TOPIC: REPLACE
     ENABLE_ANC: true
-    GAIN: 1.0
+    GAIN: 2.0
     DEBUG: false
+    DF_ATTEN_LIM_DB: 12.0
