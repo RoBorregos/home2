@@ -55,6 +55,8 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   ensure_and_upload_image "roborregos/home2:manipulation-${ENV_TYPE}" "$COMPOSE"
 fi
 
+run_no_cache_build "$COMPOSE"
+
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="manipulation")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then

@@ -100,20 +100,37 @@ parse_common_flags() {
   DETACHED=""
   BUILD=""
   BUILD_IMAGE=""
+  BUILD_IMAGE_CLEAN=""
   UPLOAD_IMAGE=""
+
+  CLEAN=""
 
   for arg in "$@"; do
     case $arg in
-      "-d")             DETACHED="-d" ;;
-      "--build")        BUILD="true" ;;
-      "--build-image")  BUILD_IMAGE="--build" ;;
-      "--upload-image") UPLOAD_IMAGE="true" ;;
-      "--clean")        clean_directories ;;
-      "--recreate")     $compose down ;;
-      "--down")         $compose down; exit 0 ;;
-      "--stop")         $compose stop; exit 0 ;;
+      "-d")                  DETACHED="-d" ;;
+      "--build")             BUILD="true" ;;
+      "--build-image")       BUILD_IMAGE="--build" ;;
+      "--build-image-clean") BUILD_IMAGE="--build"; BUILD_IMAGE_CLEAN="true" ;;
+      "--upload-image")      UPLOAD_IMAGE="true" ;;
+      "--clean")             CLEAN="true" ;;
+      "--recreate")          $compose down ;;
+      "--down")              $compose down; exit 0 ;;
+      "--stop")              $compose stop; exit 0 ;;
     esac
   done
+}
+
+# Run no-cache build if --build-image-clean was passed.
+# First arg (optional): compose file path. Uses default docker compose if empty.
+run_no_cache_build() {
+  if [ "$BUILD_IMAGE_CLEAN" != "true" ]; then
+    return 0
+  fi
+  local compose_file="${1:-}"
+  local compose_cmd="${compose_file:+docker compose -f $compose_file}"
+  compose_cmd="${compose_cmd:-docker compose}"
+  echo "Removing Docker build cache and rebuilding images..."
+  $compose_cmd build --no-cache
 }
 
 # Write .env variables shared by all areas.

@@ -163,6 +163,8 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   done
 fi
 
+run_no_cache_build "$COMPOSE"
+
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="hri-ros")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then

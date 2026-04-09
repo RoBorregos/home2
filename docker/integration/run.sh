@@ -63,6 +63,8 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   ensure_and_upload_image "roborregos/home2:integration-${ENV_TYPE}" "docker-compose.yml"
 fi
 
+run_no_cache_build
+
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="integration")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
