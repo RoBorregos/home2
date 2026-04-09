@@ -122,8 +122,8 @@ export function AudioStateIndicator() {
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-15 animate-[pulse_3s_infinite_1s] scale-125" />
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-20 animate-[pulse_3s_infinite_2s] scale-150" />
 
-        <div className="relative z-10 h-20 w-20 md:h-48 md:w-48 rounded-full bg-(--pulse) shadow-lg flex items-center justify-center transition-all duration-300">
-          <Mic className="h-10 w-10 md:h-32 md:w-32 text-white/90 drop-shadow-md transition-all duration-300" />
+        <div className="relative z-10 h-20 w-20 md:h-32 md:w-32 rounded-full bg-(--pulse) shadow-lg flex items-center justify-center transition-all duration-300">
+          <Mic className="h-10 w-10 md:h-16 md:w-16 text-white/90 drop-shadow-md transition-all duration-300" />
         </div>
 
         <div

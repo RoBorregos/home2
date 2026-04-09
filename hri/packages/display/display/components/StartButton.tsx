@@ -9,6 +9,7 @@ export function StartButton({ size = "normal" }: { size?: "normal" | "xl" } = {}
   const [publisher, setPublisher] = useState<Topic<{}> | null>(null);
   const [isTaskActive, setIsTaskActive] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [hasStartedOptimistic, setHasStartedOptimistic] = useState(false);
 
   useEffect(() => {
     const buttonPublisher = new Topic<{}>({
@@ -29,6 +30,9 @@ export function StartButton({ size = "normal" }: { size?: "normal" | "xl" } = {}
       setIsTaskActive(active);
       if (active) {
         setIsMaximized(false);
+        setHasStartedOptimistic(false); 
+      } else {
+        setHasStartedOptimistic(false); 
       }
     });
 
@@ -40,11 +44,16 @@ export function StartButton({ size = "normal" }: { size?: "normal" | "xl" } = {}
   const handleClick = () => {
     if (publisher) {
       publisher.publish({});
+      setHasStartedOptimistic(true);
       setIsMaximized(false);
     }
   };
 
-  const isShrunk = isTaskActive && !isMaximized;
+  const isShrunk = (isTaskActive || hasStartedOptimistic) && !isMaximized;
+
+  const containerHeight = size === "xl" ? "h-32" : "h-16";
+  const buttonTextSize = size === "xl" ? "text-4xl" : "text-lg";
+  const iconSize = size === "xl" ? "h-12 w-12" : "h-5 w-5";
 
   const containerHeight = size === "xl" ? "h-32" : "h-16";
   const buttonTextSize = size === "xl" ? "text-4xl" : "text-lg";
