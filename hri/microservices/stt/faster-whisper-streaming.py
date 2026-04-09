@@ -28,7 +28,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                 clip_audio=False,
                 model=self.model,
                 language="en",
-                task="translate",
+                task="transcribe",
                 same_output_threshold=10,
                 transcriber=self.transcriber,
             )
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model",
         type=str,
-        default="base.en",
+        default="large-v3-turbo",
         help="Model size to use (base.en, large, or small.en)",
     )
     parser.add_argument(
