@@ -73,6 +73,12 @@ class FollowFaceNode(Node):
             SetDigitalIO, "/xarm/set_tgpio_digital", callback_group=callback_group
         )
 
+        # Disable TGPIO reset on mode/state changes so the gripper
+        # stays closed when switching between MoveIt and velocity modes
+        self.config_tgpio_reset_client = self.create_client(
+            SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=callback_group
+        )
+
         # Wait for critical services
         if not self.move_client.wait_for_service(timeout_sec=SERVICE_TIMEOUT):
             Logger.warn(self, "Velocity move service not available")
@@ -80,6 +86,14 @@ class FollowFaceNode(Node):
             Logger.warn(self, "Set state service not available")
         if not self.mode_client.wait_for_service(timeout_sec=SERVICE_TIMEOUT):
             Logger.warn(self, "Set mode service not available")
+        if self.config_tgpio_reset_client.wait_for_service(timeout_sec=SERVICE_TIMEOUT):
+            req = SetInt16.Request()
+            req.data = 0
+            future = self.config_tgpio_reset_client.call_async(req)
+            wait_for_future(future)
+            Logger.info(self, "TGPIO reset on stop disabled")
+        else:
+            Logger.warn(self, "config_tgpio_reset_when_stop service not available")
 
         # Follow face service
         self.service = self.create_service(
