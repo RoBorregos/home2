@@ -170,4 +170,5 @@ XARM_CONFIGURATIONS = {
     "carry_pose": CARRY_POSE,
     "place_floor_right": PLACE_FLOOR_RIGHT,
     "place_floor_left": PLACE_FLOOR_LEFT,
+    "hand_bag_pose": HAND_BAG_POSE,
 }
