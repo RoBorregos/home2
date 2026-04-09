@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+import os
+import time
+import wave
+
 import numpy as np
 import scipy.fft
 from scipy.spatial.distance import cosine as cosine_distance
@@ -62,6 +66,16 @@ class VoiceDetection(Node):
             self.get_parameter("ENABLE_VAD").get_parameter_value().bool_value
         )
         self.debug = self.get_parameter("DEBUG").get_parameter_value().bool_value
+
+        if self.debug:
+            self._debug_dir = "/tmp/vad_debug"
+            os.makedirs(self._debug_dir, exist_ok=True)
+            self._segment_count = 0
+            self._debug_buffer: list[bytes] = []
+            self._speech_start_time: float | None = None
+            self.get_logger().info(
+                f"[VAD DEBUG] Saving per-segment audio to {self._debug_dir}"
+            )
 
         # Pre-compute lag bounds for autocorrelation pitch detection
         self._low_lag = int(self.sample_rate / VOWEL_FREQ_HIGH)
@@ -198,6 +212,24 @@ class VoiceDetection(Node):
         if self.debug:
             self.get_logger().info("Speaker lock released")
 
+    def _save_debug_segment(self) -> None:
+        """Save buffered speech audio as a WAV to /tmp/vad_debug/ for analysis."""
+        if not self._debug_buffer:
+            return
+        self._segment_count += 1
+        ts = time.strftime("%Y%m%d_%H%M%S")
+        filename = os.path.join(
+            self._debug_dir,
+            f"segment_{self._segment_count:03d}_{ts}_processed.wav",
+        )
+        with wave.open(filename, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)  # int16 = 2 bytes
+            wf.setframerate(self.sample_rate)
+            wf.writeframes(b"".join(self._debug_buffer))
+        self.get_logger().info(f"[VAD DEBUG] Saved processed segment: {filename}")
+        self._debug_buffer = []
+
     def _audio_cb(self, msg: AudioData) -> None:
         if not self.enable_vad:
             self._audio_pub.publish(msg)
@@ -212,8 +244,17 @@ class VoiceDetection(Node):
                 self._speech_active = True
                 self._activity_pub.publish(Bool(data=True))
                 if self.debug:
+                    self._speech_start_time = time.time()
+                    self._debug_buffer = []
+                    ts = time.strftime(
+                        "%H:%M:%S", time.localtime(self._speech_start_time)
+                    )
+                    self.get_logger().info(f"[VAD DEBUG] Speech STARTED at {ts}")
+                else:
                     self.get_logger().info("Voice activity: speech started")
             self._audio_pub.publish(msg)
+            if self.debug:
+                self._debug_buffer.append(bytes(msg.data))
 
         else:
             if self._speech_active:
@@ -221,12 +262,27 @@ class VoiceDetection(Node):
                 # process the end of the utterance before we cut off.
                 self._silence_counter += chunk_duration
                 self._audio_pub.publish(msg)
+                if self.debug:
+                    self._debug_buffer.append(bytes(msg.data))
 
                 if self._silence_counter >= self.silence_limit:
                     self._speech_active = False
                     self._silence_counter = 0.0
                     self._activity_pub.publish(Bool(data=False))
                     if self.debug:
+                        end_time = time.time()
+                        duration = (
+                            end_time - self._speech_start_time
+                            if self._speech_start_time
+                            else 0.0
+                        )
+                        ts = time.strftime("%H:%M:%S", time.localtime(end_time))
+                        self.get_logger().info(
+                            f"[VAD DEBUG] Speech ENDED at {ts} "
+                            f"(duration={duration:.2f}s)"
+                        )
+                        self._save_debug_segment()
+                    else:
                         self.get_logger().info("Voice activity: speaker ended talking")
                     self._reset_speaker_lock()
 
