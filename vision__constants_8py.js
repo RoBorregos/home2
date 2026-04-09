@@ -30,6 +30,7 @@ var vision__constants_8py =
     [ "DISHWASHER_TABLET_DETECTION_TOPIC", "vision__constants_8py.html#a9a5e2fe6e0e9ad8d789ad33234493e7a", null ],
     [ "FACE_RECOGNITION_IMAGE", "vision__constants_8py.html#a72b604ba881b2235f65ec47a8ea08f2e", null ],
     [ "FIND_SEAT_TOPIC", "vision__constants_8py.html#a81cbe5d1b77fa24c3b9197d8d0c9748c", null ],
+    [ "FLIP_IMAGE_TOPIC", "vision__constants_8py.html#a3859da28b7fceca2bf44dea75172d83c", null ],
     [ "FOLLOW_BY_TOPIC", "vision__constants_8py.html#aa53ce4ada056e62207854a581ea44737", null ],
     [ "FOLLOW_TOPIC", "vision__constants_8py.html#a72bf909055f1c93f101ff3cbb8bfab66", null ],
     [ "GET_CUSTOMER_TOPIC", "vision__constants_8py.html#a696719d32a071aba044c161643784046", null ],

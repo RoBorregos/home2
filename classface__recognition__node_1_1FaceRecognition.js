@@ -2,6 +2,7 @@ var classface__recognition__node_1_1FaceRecognition =
 [
     [ "__init__", "classface__recognition__node_1_1FaceRecognition.html#ad28edd6c34ca7d3e3f12ab94349910fe", null ],
     [ "_active_callback", "classface__recognition__node_1_1FaceRecognition.html#a32d47b5eb78ec86be1c9cd82590883d7", null ],
+    [ "_flip_callback", "classface__recognition__node_1_1FaceRecognition.html#aaf0b44e84952bfe21bb22f11db44269f", null ],
     [ "_run_inference", "classface__recognition__node_1_1FaceRecognition.html#a4aeeb6dfa547ca599c25040392a3aa0c", null ],
     [ "assign_name", "classface__recognition__node_1_1FaceRecognition.html#a99480313eff42a75e45bd944be6b9eee", null ],
     [ "clear", "classface__recognition__node_1_1FaceRecognition.html#abdd9c91ceaea336b4c64cefb996a56cb", null ],
@@ -28,6 +29,7 @@ var classface__recognition__node_1_1FaceRecognition =
     [ "depth_image", "classface__recognition__node_1_1FaceRecognition.html#a384701a9aba039b5b80b77e3434c0235", null ],
     [ "depth_subscriber", "classface__recognition__node_1_1FaceRecognition.html#af0355df9496c41742af4a3e8ceb127a6", null ],
     [ "face_list", "classface__recognition__node_1_1FaceRecognition.html#aac58adcd59dc5f897576aa706a26109e", null ],
+    [ "flip_image", "classface__recognition__node_1_1FaceRecognition.html#a8a0b39d9f54d97266ad381b411165f7d", null ],
     [ "follow_by_service", "classface__recognition__node_1_1FaceRecognition.html#a49d668ca9fb5c353962b2b740fc72fe9", null ],
     [ "follow_name", "classface__recognition__node_1_1FaceRecognition.html#a8d46ce7421ec2d1fed9d86f9675e0ae0", null ],
     [ "follow_publisher", "classface__recognition__node_1_1FaceRecognition.html#ad7f29e7f2c646cbbe1b641ab330849a9", null ],
