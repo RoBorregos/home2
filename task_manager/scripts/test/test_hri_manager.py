@@ -14,7 +14,6 @@ from typing import Union
 
 import rclpy
 from rclpy.node import Node
-from sklearn.metrics.pairwise import cosine_similarity
 from task_manager.subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
@@ -59,13 +58,24 @@ def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
+def cosine_similarity(vector_a, vector_b):
+    dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
+    norm_a = sum(a * a for a in vector_a) ** 0.5
+    norm_b = sum(b * b for b in vector_b) ** 0.5
+
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+
+    return dot_product / (norm_a * norm_b)
+
+
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 
 COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
 # Choose which tests to perform
-TEST_COMPOUND = False
+TEST_ASK_AND_CONFIRM = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
@@ -91,8 +101,8 @@ class TestHriManager(Node):
         self.run()
 
     def run(self):
-        if TEST_COMPOUND:
-            self.compound_functions()
+        if TEST_ASK_AND_CONFIRM:
+            self.test_ask_and_confirm()
 
         if TEST_INDIVIDUAL_FUNCTIONS:
             self.individual_functions()
@@ -159,18 +169,6 @@ class TestHriManager(Node):
         s, drink = self.hri_manager.extract_data("name", user_request)
         self.get_logger().info(f"Extracted data: {drink}")
 
-        # Test categorize objects
-        s, categorized_shelves = self.hri_manager.get_shelves_categories(
-            {
-                "1": ["milk", "cheese", "yogurt"],
-                "2": ["apple", "banana", "grapes"],
-                "3": [],
-                "4": ["chicken", "beef"],
-            },
-        )
-
-        self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
-
     def test_streaming(self):
         s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
@@ -199,42 +197,38 @@ class TestHriManager(Node):
         self.get_logger().info("Running take_order test")
         self.hri_manager.take_order(retries=3)
 
-    def compound_functions(self):
-        s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
+    def test_ask_and_confirm(self):
+        s, name = self.hri_manager.ask_and_confirm(
+            "What is your name?",
+            "LLM_name",
+            # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            # confirm_preference,
+            use_hotwords=False,
+            # 3,
+            # 5,
+        )
 
-        self.get_logger().info(f"Final result: {loc}, {orientation}")
+        self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
 
-        # s, name = self.hri_manager.ask_and_confirm(
-        #     "What is your name?",
-        #     "LLM_name",
-        #     # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-        #     # confirm_preference,
-        #     use_hotwords=False,
-        #     # 3,
-        #     # 5,
-        # )
+        s, interest1 = self.hri_manager.ask_and_confirm(
+            "What is your favorite main interest?",
+            "LLM_interest",
+            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            confirm_preference,
+            False,
+            3,
+            5,
+        )
 
-        # self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
-
-        # s, interest1 = self.hri_manager.ask_and_confirm(
-        #     "What is your favorite main interest?",
-        #     "LLM_interest",
-        #     "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-        #     confirm_preference,
-        #     False,
-        #     3,
-        #     5,
-        # )
-
-        # s, interest2 = self.hri_manager.ask_and_confirm(
-        #     "What is your favorite second interest?",
-        #     "LLM_interest",
-        #     "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-        #     confirm_preference,
-        #     False,
-        #     3,
-        #     5,
-        # )
+        s, interest2 = self.hri_manager.ask_and_confirm(
+            "What is your favorite second interest?",
+            "LLM_interest",
+            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            confirm_preference,
+            False,
+            3,
+            5,
+        )
 
     def test_categorize_shelves(self):
         test_cases_file = os.path.join(DATA_DIR, "categorize_objects.json")
@@ -576,8 +570,8 @@ class TestHriManager(Node):
                                 str(expected_cmd)
                             )
                             similarity = cosine_similarity(
-                                [actual_cmd_embedding], [expected_cmd_embedding]
-                            )[0][0]
+                                actual_cmd_embedding, expected_cmd_embedding
+                            )
                             self.get_logger().info(
                                 f"Command {cmd_idx + 1}: Cosine similarity = {similarity:.4f}"
                             )
