@@ -189,9 +189,8 @@ class TestHriManager(Node):
     def test_ask_and_confirm(self):
         s, name = self.hri_manager.ask_and_confirm(
             "What is your name?",
-            "LLM_name",
-            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-            confirm_preference,
+            "name",
+            "The question 'What is your name?' was asked, full_text corresponds to the response.",
         )
 
         self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
