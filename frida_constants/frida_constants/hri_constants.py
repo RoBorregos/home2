@@ -6,6 +6,10 @@ HOTWORD_SERVICE_NAME = "/hri/speech/hotword_service"
 KEYWORD_TOPIC = "/hri/speech/kws"
 WAKEWORD_TOPIC = "/hri/speech/oww"
 USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
+RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
+PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"
+VAD_AUDIO_TOPIC = "/hri/vadAudioChunk"
+VOICE_ACTIVITY_TOPIC = "/hri/voice_activity"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
@@ -15,8 +19,10 @@ IS_COHERENT_SERVICE = "/hri/nlp/is_coherent"
 CATEGORIZE_SERVICE = "/hri/nlp/categorize"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
-COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 RAG_SERVICE = "/hri/rag/answer_question"
+ADD_ENTRY_SERVICE = "/hri/embeddings/add_entry"
+QUERY_ENTRY_SERVICE = "/hri/embeddings/query_entry"
+FIND_CLOSEST_SERVICE = "/hri/embeddings/find_closest"
 DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
 DISPLAY_MAP_TOPIC = "/hri/display/map"
 DISPLAY_PUBLISHER = "/hri/display/frida_questions"
@@ -25,6 +31,7 @@ RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
 START_BUTTON_CLIENT = "/hri/display/button_press"
+TASK_STATUS_TOPIC = "/hri/display/task_status"
 
 GPSR_COMMANDS = {
     "go_to",
@@ -48,7 +55,6 @@ GPSR_COMMANDS = {
 class MODEL(Enum):
     GRAMMAR = "qwen3"
     LLM_WRAPPER = "qwen3"
-    COMMON_INTEREST = "qwen3"
     CATEGORIZE_SHELVES = "qwen3"
     IS_POSITIVE = "qwen3"
     IS_NEGATIVE = "qwen3"
@@ -57,7 +63,6 @@ class MODEL(Enum):
     STRUCTURED_RESPONSE = "qwen3"
     EXTRACT_INFO_REQUESTED = "qwen3"
     GET_COMMANDS = "qwen3"
-    CommonInterest = "qwen3"
 
 
 class KNOWLEDGE_TYPE(Enum):
@@ -71,10 +76,17 @@ USE_OWW = True
 SENSITIVITY_THRESHOLD = 0.2
 threshold = 0.6
 
+# Nlp
+CATEGORIZE_IDK_THRESHOLD = 0.01
+
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
+
+# Fundamental frequency range for human voice (Hz)
+VOWEL_FREQ_LOW = 85
+VOWEL_FREQ_HIGH = 255
 
 # HRI Subtask Manager
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.5

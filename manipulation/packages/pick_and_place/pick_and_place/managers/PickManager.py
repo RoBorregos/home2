@@ -1,6 +1,6 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import PickPerceptionService, DetectionHandler
-from geometry_msgs.msg import PointStamped, PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
@@ -9,7 +9,10 @@ from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
-from frida_constants.manipulation_constants import PICK_MAX_DISTANCE
+from frida_constants.manipulation_constants import (
+    PICK_MAX_DISTANCE,
+    CUTLERY_NAMES,
+)
 from typing import Tuple
 import time
 import copy
@@ -18,6 +21,9 @@ from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 import numpy as np
 from pick_and_place.utils.perception_utils import get_object_point
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+
 
 CFG_PATHS = [
     [
@@ -29,6 +35,27 @@ CFG_PATHS = [
         False,
     ],
 ]
+
+
+# FINE HEIGHT ADJUSTMENT FOR CUTLERY
+# If it's floating, use negative values (e.g. -0.02)
+# If it hits too hard, use positive values (e.g. 0.02)
+FLAT_GRASP_Z_TWEAK = 0.076
+
+# Timeout waiting for the flat_grasp_estimator to publish a pose (seconds)
+FLAT_GRASP_TIMEOUT = 5.0
+
+# Number of poses to collect and average for stable Z
+FLAT_GRASP_SAMPLES = 10
+
+# Time to collect samples (seconds)
+FLAT_GRASP_SAMPLE_WINDOW = 3.0
+
+
+def is_cutlery(object_name: str) -> bool:
+    if object_name is None:
+        return False
+    return object_name.lower() in CUTLERY_NAMES
 
 
 class PickManager:
@@ -65,78 +92,174 @@ class PickManager:
         """Callback to receive lift pose published by estimator."""
         self.latest_basket_lift = msg
 
+        self.latest_flat_grasp = None
+        self._collecting_samples = False
+        self._grasp_samples = []
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self.node)
+
+        self.node.create_subscription(
+            PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
+        )
+
+    def flat_grasp_callback(self, msg):
+        self.latest_flat_grasp = msg
+        if self._collecting_samples:
+            self._grasp_samples.append(msg)
+
+        self.latest_flat_grasp = None
+        self._collecting_samples = False
+        self._grasp_samples = []
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self.node)
+
+        self.node.create_subscription(
+            PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
+        )
+
+    def flat_grasp_callback(self, msg):
+        self.latest_flat_grasp = msg
+        if self._collecting_samples:
+            self._grasp_samples.append(msg)
+
     def execute(
         self, object_name: str, point: PointStamped, pick_params
     ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
 
-        # time.sleep(10)
-        # Set initial joint positions
+        is_flat_object = is_cutlery(object_name)
+
         if not pick_params.in_configuration:
+            stare_position = "cutlery_stare" if is_flat_object else "table_stare"
             send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
+                named_position=stare_position,
                 velocity=0.75,
             )
 
-        for i in range(3):
-            if point is not None and (
-                point.point.x != 0 and point.point.y != 0 and point.point.z != 0
-            ):
-                self.node.get_logger().info(f"Going for point: {point}")
-            elif object_name is not None and object_name != "":
-                self.node.get_logger().info(f"Going for object name: {object_name}")
-                point = get_object_point(
-                    object_name, self.node.detection_handler_client
+        object_cluster = None
+        height = 0.0
+
+        if is_flat_object:
+            self.node.get_logger().info(
+                f"Cutlery detected: {object_name}. Waiting for flat_grasp_estimator..."
+            )
+
+            # Collect multiple poses and average for stable Z
+            self._grasp_samples = []
+            self._collecting_samples = True
+            self.latest_flat_grasp = None
+
+            # Wait for first pose (timeout if estimator isn't running)
+            timeout_iterations = int(FLAT_GRASP_TIMEOUT / 0.1)
+            for _ in range(timeout_iterations):
+                if self.latest_flat_grasp is not None:
+                    break
+                time.sleep(0.1)
+
+            if self.latest_flat_grasp is None:
+                self._collecting_samples = False
+                self.node.get_logger().error(
+                    f"Timeout: flat_grasp_pose not received for {object_name}"
                 )
-                min_distance = pick_params.min_distance or 0.0
-                max_distance = pick_params.max_distance or PICK_MAX_DISTANCE
-                if not point_in_range(point, min_distance, max_distance):
-                    self.node.get_logger().error(
-                        f"Object {object_name} is out of range (distance: {(point.point.x**2 + point.point.y**2 + point.point.z**2) ** 0.5:.2f} m, expected range: [{min_distance}, {max_distance}] m)"
-                    )
-                    return False, None
-                if point.header.frame_id == "":
-                    self.node.get_logger().error(
-                        f"Object {object_name} not found, please provide a point"
-                    )
-                    return False, None
-                if point.point.z > 1.0:
-                    self.node.get_logger().error(f"Object {object_name} is too far")
-                    return False, None
-            else:
-                self.node.get_logger().error("No object name or point provided")
                 return False, None
 
-            self.node.get_logger().info(f"Object in point: {point}")
-
-            # Call Perception Service to get object cluster and generate collision objects
-            object_cluster = get_object_cluster(
-                point, self.node.pick_perception_3d_client
+            # Collect more samples over the sample window
+            self.node.get_logger().info(
+                f"First pose received, collecting {FLAT_GRASP_SAMPLES} samples..."
             )
-            if object_cluster is not None:
-                self.node.get_logger().info("Object cluster detected")
-                break
+            sample_iterations = int(FLAT_GRASP_SAMPLE_WINDOW / 0.1)
+            for _ in range(sample_iterations):
+                if len(self._grasp_samples) >= FLAT_GRASP_SAMPLES:
+                    break
+                time.sleep(0.1)
 
-        if object_cluster is None:
-            self.node.get_logger().error("No object cluster detected")
-            return False, None
+            self._collecting_samples = False
+            samples = self._grasp_samples
 
-        # 8. Compute Centroid/Height and Set Pour Pose
-        cloud_gen = point_cloud2.read_points(
-            object_cluster, field_names=("x", "y", "z"), skip_nans=True
-        )
-        points = [list(p) for p in cloud_gen]
-        if not points:
-            self.node.get_logger().error("Empty bowl cluster")
-            return False, None
+            self.node.get_logger().info(f"Collected {len(samples)} grasp samples")
 
-        points_np = np.array(points)
-        max_z = np.max(points_np[:, 2])
-        min_z = np.min(points_np[:, 2])
-        height = max_z - min_z
-        self.node.get_logger().info(f"Object cluster height: {height:.2f} m")
+            if len(samples) == 0:
+                self.node.get_logger().error("No grasp samples collected")
+                return False, None
+
+            # Average XY and Z across all samples for stability
+            avg_x = np.median([s.pose.position.x for s in samples])
+            avg_y = np.median([s.pose.position.y for s in samples])
+            avg_z = np.median([s.pose.position.z for s in samples])
+            z_std = np.std([s.pose.position.z for s in samples])
+
+            self.node.get_logger().info(
+                f"Averaged pose: X={avg_x:.3f}, Y={avg_y:.3f}, "
+                f"Z={avg_z:.4f} (std={z_std:.4f}), +tweak={FLAT_GRASP_Z_TWEAK}"
+            )
+
+            # Use the last sample's orientation (PCA-computed) with averaged position
+            grasp_pose = copy.deepcopy(samples[-1])
+            grasp_pose.pose.position.x = float(avg_x)
+            grasp_pose.pose.position.y = float(avg_y)
+            grasp_pose.pose.position.z = float(avg_z) + FLAT_GRASP_Z_TWEAK
+
+            # Do NOT call get_object_cluster — it adds the table as a
+            # collision object which makes MoveIt reject all near-table paths
+            object_cluster = None
+            points = []
+
+        else:
+            for i in range(3):
+                if point is not None and (
+                    point.point.x != 0 and point.point.y != 0 and point.point.z != 0
+                ):
+                    self.node.get_logger().info(f"Going for point: {point}")
+                elif object_name is not None and object_name != "":
+                    self.node.get_logger().info(f"Going for object name: {object_name}")
+                    point = get_object_point(
+                        object_name, self.node.detection_handler_client
+                    )
+                    min_distance = pick_params.min_distance or 0.0
+                    max_distance = pick_params.max_distance or PICK_MAX_DISTANCE
+                    if not point_in_range(point, min_distance, max_distance):
+                        self.node.get_logger().error(
+                            f"Object {object_name} is out of range (distance: {(point.point.x**2 + point.point.y**2 + point.point.z**2) ** 0.5:.2f} m, expected range: [{min_distance}, {max_distance}] m)"
+                        )
+                        return False, None
+                    if point.header.frame_id == "":
+                        self.node.get_logger().error(f"Object {object_name} not found")
+                        return False, None
+                    if point.point.z > 1.0:
+                        self.node.get_logger().error(f"Object {object_name} is too far")
+                        return False, None
+                else:
+                    self.node.get_logger().error("No object name or point provided")
+                    return False, None
+
+                self.node.get_logger().info(f"Object in point: {point}")
+
+                object_cluster = get_object_cluster(
+                    point, self.node.pick_perception_3d_client
+                )
+                if object_cluster is not None:
+                    self.node.get_logger().info("Object cluster detected")
+                    break
+
+            if object_cluster is None:
+                self.node.get_logger().error("No object cluster detected")
+                return False, None
+
+            cloud_gen = point_cloud2.read_points(
+                object_cluster, field_names=("x", "y", "z"), skip_nans=True
+            )
+            points = [list(p) for p in cloud_gen]
+            if not points:
+                self.node.get_logger().error("Empty bowl cluster")
+                return False, None
+
+            points_np = np.array(points)
+            max_z = np.max(points_np[:, 2])
+            min_z = np.min(points_np[:, 2])
+            height = max_z - min_z
+            self.node.get_logger().info(f"Object cluster height: {height:.2f} m")
 
         # open gripper
         gripper_request = SetBool.Request()
@@ -313,43 +436,36 @@ class PickManager:
                 goal_msg.grasping_poses = new_grasp_poses
                 goal_msg.grasping_scores = new_grasp_scores
 
-                # Send goal
                 self.node.get_logger().info("Sending pick motion goal...")
                 future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
                 future = wait_for_future(future, timeout=30)
                 if not future:
                     break
-                # Check result
                 pick_result = future.result().get_result().result
                 self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
                 if pick_result.success != 0:
                     pick_result_success = True
                     break
                 else:
-                    # give time for new gpd
-                    time.sleep(1.0)
+                    time.sleep(0.2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
             return False, None
 
         # close gripper
-        for i in range(2):
-            gripper_request = SetBool.Request()
-            gripper_request.data = False
-            self.node.get_logger().info("Closing gripper")
-            future = self.node._gripper_set_state_client.call_async(gripper_request)
-            future = wait_for_future(future)
-            result = future.result()
-            self.node.get_logger().info(
-                f"1 Gripper Result: {str(gripper_request.data)}"
-            )
+        gripper_request = SetBool.Request()
+        gripper_request.data = False
+        self.node.get_logger().info("Closing gripper")
+        future = self.node._gripper_set_state_client.call_async(gripper_request)
+        future = wait_for_future(future)
+        result = future.result()
+        self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
 
         self.node.get_logger().info("Returning to position")
 
         self.node.clear_octomap()
         for i in range(5):
-            # return to configured position
             return_result = send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
                 named_position="table_stare",
@@ -357,8 +473,7 @@ class PickManager:
             )
             if return_result:
                 break
-        # self.node.get_logger().info("Waiting for 10 seconds")
-        # time.sleep(10)
+
         self.node.get_logger().info("Pick Task completed successfully")
         result.success = True
         return result.success, pick_result.pick_result

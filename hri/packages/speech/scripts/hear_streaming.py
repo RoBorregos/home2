@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import collections
-import os
-import sys
+import threading
 import time
 
 import grpc
@@ -12,16 +11,15 @@ from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.msg import AudioData
+from proto_interfaces import speech_pb2, speech_pb2_grpc
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
-import threading
-
-import speech_pb2
-import speech_pb2_grpc
+# Minimum buffer length (in chunks) before starting gRPC streaming.
+# With CHUNK_SIZE=512 at 16kHz, 10 chunks ≈ 320ms. Keep small so streaming starts promptly.
+MIN_BUFFER_CHUNKS = 10
 
 
 class HearStreaming(Node):
@@ -36,9 +34,15 @@ class HearStreaming(Node):
         )
 
         audio_topic = (
-            self.declare_parameter("AUDIO_TOPIC", "/rawAudioChunk")
+            self.declare_parameter("VAD_AUDIO_TOPIC", "/hri/vadAudioChunk")
             .get_parameter_value()
             .string_value
+        )
+
+        # Control verbose audio/buffer logging
+        self.declare_parameter("DEBUG_AUDIO_LOGS", False)
+        self.debug_audio_logs = (
+            self.get_parameter("DEBUG_AUDIO_LOGS").get_parameter_value().bool_value
         )
 
         self.action_server_name = (
@@ -53,6 +57,12 @@ class HearStreaming(Node):
             .string_value
         )
 
+        voice_activity_topic = (
+            self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/hri/voice_activity")
+            .get_parameter_value()
+            .string_value
+        )
+
         self.hotwords = self.default_hotwords
         self.current_transcription = ""
         self.current_words = []
@@ -60,12 +70,14 @@ class HearStreaming(Node):
         self.stop_flag.set()
         self.transcript_thread = None
         self.cancel_requested = False
+        self._speaker_stopped = False
 
         # gRPC Stub
         channel = grpc.insecure_channel(server_ip)
         self.stub = speech_pb2_grpc.SpeechStreamStub(channel)
 
-        self.audio_buffer = collections.deque(maxlen=10000)
+        self.audio_buffer = collections.deque(maxlen=50000)  # ~3 seconds at 16kHz
+        self.audio_chunk_count = 0
 
         subscription_group = MutuallyExclusiveCallbackGroup()
         action_group = MutuallyExclusiveCallbackGroup()
@@ -74,6 +86,13 @@ class HearStreaming(Node):
             AudioData,
             audio_topic,
             self.audio_callback,
+            10,
+            callback_group=subscription_group,
+        )
+        self.create_subscription(
+            Bool,
+            voice_activity_topic,
+            self._voice_activity_cb,
             10,
             callback_group=subscription_group,
         )
@@ -98,6 +117,23 @@ class HearStreaming(Node):
         self.cancel_requested = True
         return CancelResponse.ACCEPT
 
+    def _voice_activity_cb(self, msg: Bool) -> None:
+        """React to VAD voice-activity events.
+
+        When the speaker starts talking (msg.data=True) log it.
+        When the speaker stops talking (msg.data=False) during an active
+        transcription, flag it so execute_callback can exit cleanly.
+        """
+        if msg.data:
+            if self.debug_audio_logs:
+                self.get_logger().info("Voice activity: speaker started talking")
+        elif not self.stop_flag.is_set():
+            if self.debug_audio_logs:
+                self.get_logger().info(
+                    "Voice activity: speaker stopped — stopping transcription"
+                )
+            self._speaker_stopped = True
+
     def audio_callback(self, msg):
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
         self.audio_buffer.append(audio_data)
@@ -108,10 +144,26 @@ class HearStreaming(Node):
         call = None
 
         def request_generator():
+            # Buffer length is in chunks, not frames. Use the module-level
+            min_buffer_chunks = MIN_BUFFER_CHUNKS
+            buffer_ready = False
+
             while not self.stop_flag.is_set() and rclpy.ok():
                 try:
+                    # Wait for minimum buffer before sending
+                    if not buffer_ready:
+                        if len(self.audio_buffer) < min_buffer_chunks:
+                            time.sleep(0.05)
+                            continue
+                        else:
+                            buffer_ready = True
+                            if self.debug_audio_logs:
+                                self.get_logger().info(
+                                    f"Buffer ready with {len(self.audio_buffer)} chunks, starting stream..."
+                                )
+
                     if not self.audio_buffer:
-                        time.sleep(0.1)
+                        time.sleep(0.02)
                         continue
                     local_audio = self.audio_buffer.popleft()
 
@@ -161,6 +213,7 @@ class HearStreaming(Node):
         self.current_words = []
         self.prev_transcription = ""
         self.cancel_requested = False
+        self._speaker_stopped = False
 
         start_time = time.time()
         last_word_time = start_time
@@ -177,6 +230,7 @@ class HearStreaming(Node):
             while (
                 not goal_handle.is_cancel_requested
                 and not self.cancel_requested
+                and not self._speaker_stopped
                 and time.time() - start_time < goal_handle.request.timeout
                 and (
                     (
@@ -208,9 +262,12 @@ class HearStreaming(Node):
         except Exception as e:
             self.get_logger().error(f"Execution interrupted: {e}")
 
-        if time.time() - last_word_time >= goal_handle.request.silence_time:
+        if self._speaker_stopped:
+            self.get_logger().info("Speaker stopped talking, stopping transcription.")
+            reason = "silence"
+        elif time.time() - last_word_time >= goal_handle.request.silence_time:
             self.get_logger().info(
-                f"Silence detected for more than {goal_handle.request.silence_time}, stopping transcription."
+                f"Silence detected for more than {goal_handle.request.silence_time}s, stopping transcription."
             )
             reason = "silence"
         elif time.time() - start_time >= goal_handle.request.timeout:

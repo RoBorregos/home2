@@ -1,0 +1,1081 @@
+#!/usr/bin/env python3
+"""
+Navigation UI - Real-time navigation monitor and control panel.
+Displays map, robot position, costmaps, and trajectories.
+Provides controls for sending goals, changing maps, and monitoring nav2.
+"""
+
+import sys
+import os
+import shutil
+import math
+import threading
+import numpy as np
+
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+from nav_msgs.msg import OccupancyGrid, Path
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from std_srvs.srv import Empty
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from action_msgs.srv import CancelGoal
+from ament_index_python.packages import get_package_share_directory
+from frida_constants.navigation_constants import RTAB_MAPS_PATH, RESUME_NAV_SERVICE
+
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+    QPushButton, QLabel, QGroupBox, QSplitter, QToolBar,
+    QStatusBar, QCheckBox, QComboBox, QFileDialog, QMessageBox
+)
+from PyQt5.QtCore import Qt, QPointF, QTimer, QSize, pyqtSignal, QObject
+from PyQt5.QtGui import (
+    QPixmap, QPainter, QColor, QPen, QBrush, QFont,
+    QMouseEvent, QWheelEvent, QPolygonF, QCursor, QImage
+)
+
+
+# Colors
+COLOR_ROBOT = QColor(0, 200, 255, 255)
+COLOR_ROBOT_FILL = QColor(0, 200, 255, 80)
+COLOR_GOAL = QColor(255, 50, 50, 255)
+COLOR_GOAL_FILL = QColor(255, 50, 50, 80)
+COLOR_PATH = QColor(50, 255, 100, 200)
+COLOR_MAP_FREE = QColor(255, 255, 255)
+COLOR_MAP_OCCUPIED = QColor(0, 0, 0)
+COLOR_MAP_UNKNOWN = QColor(128, 128, 128)
+
+# Robot footprint in meters (front-heavy rectangle, wheels in back)
+ROBOT_FOOTPRINT = [
+    (0.32, 0.21), (0.32, -0.21), (-0.17, -0.21), (-0.17, 0.21)
+]
+
+def build_costmap_lut():
+    """Build RViz-style costmap color lookup table (0-100 + special values)."""
+    lut = np.zeros((256, 4), dtype=np.uint8)  # RGBA
+    # 0 = free -> transparent
+    lut[0] = [0, 0, 0, 0]
+    # 1-98: soft gradient blue -> cyan -> green -> yellow -> red
+    for i in range(1, 99):
+        t = i / 98.0
+        if t < 0.25:
+            s = t / 0.25
+            r, g, b = 60, int(120 + 80 * s), 200
+        elif t < 0.5:
+            s = (t - 0.25) / 0.25
+            r, g, b = 60, 200, int(200 * (1 - s))
+        elif t < 0.75:
+            s = (t - 0.5) / 0.25
+            r, g, b = int(60 + 180 * s), 200, 0
+        else:
+            s = (t - 0.75) / 0.25
+            r, g, b = 240, int(200 * (1 - s)), 0
+        alpha = int(40 + 120 * t)
+        lut[i] = [r, g, b, alpha]
+    # 99 = inscribed obstacle
+    lut[99] = [220, 50, 100, 180]
+    # 100 = lethal
+    lut[100] = [160, 0, 200, 200]
+    # -1 (255 in uint8) = unknown -> transparent
+    lut[255] = [0, 0, 0, 0]
+    # Fill 101-254 as lethal
+    for i in range(101, 255):
+        lut[i] = [160, 0, 200, 200]
+    return lut
+
+COSTMAP_LUT = build_costmap_lut()
+
+
+class RosSignals(QObject):
+    """Bridge between ROS callbacks (threads) and Qt signals (main thread)."""
+    map_updated = pyqtSignal()
+    path_updated = pyqtSignal()
+    local_costmap_updated = pyqtSignal()
+    global_costmap_updated = pyqtSignal()
+    robot_pose_updated = pyqtSignal(float, float, float)  # x, y, yaw
+
+
+class NavRosNode(Node):
+    def __init__(self, signals):
+        super().__init__('nav_ui')
+        self.signals = signals
+        # 'navigation' or 'mapping'
+        self.ui_mode = self.declare_parameter('mode', 'navigation').value
+        self.map_name = self.declare_parameter('map_name', '').value
+
+        # TF
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
+        # QoS for map topics.
+        # Reliability: BEST_EFFORT so we're compatible with RTABMap's composable node
+        # container whether it publishes RELIABLE or BEST_EFFORT (RELIABLE subscriber is
+        # incompatible with BEST_EFFORT publisher — the reverse direction is fine).
+        # Durability: TRANSIENT_LOCAL in navigation so a late-joining nav_ui immediately
+        # receives the cached map; VOLATILE in mapping to avoid showing a stale map from
+        # a previous session.
+        map_durability = DurabilityPolicy.VOLATILE if self.ui_mode == 'mapping' else DurabilityPolicy.TRANSIENT_LOCAL
+        map_qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=map_durability,
+            depth=1
+        )
+
+        # Subscriptions
+        self.map_data = None
+        self.map_sub = self.create_subscription(
+            OccupancyGrid, '/map', self.map_callback, map_qos)
+
+        self.path_data = None
+        self.path_sub = self.create_subscription(
+            Path, '/plan', self.path_callback, 10)
+
+        self.local_costmap_data = None
+        self.local_costmap_sub = self.create_subscription(
+            OccupancyGrid, '/local_costmap/costmap',
+            self.local_costmap_callback, 10)
+
+        # Global costmap is published by nav2 with RELIABLE + TRANSIENT_LOCAL
+        costmap_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            depth=1
+        )
+        self.global_costmap_data = None
+        self.global_costmap_sub = self.create_subscription(
+            OccupancyGrid, '/global_costmap/costmap',
+            self.global_costmap_callback, costmap_qos)
+
+        # Publishers
+        self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
+        self.initialpose_pub = self.create_publisher(
+            PoseWithCovarianceStamped, '/initialpose', 10)
+
+        # Service client for cancelling navigation goals
+        self.cancel_nav_client = self.create_client(
+            CancelGoal, '/navigate_to_pose/_action/cancel_goal')
+
+        # Navigation mode: resume nav service
+        if self.ui_mode == 'navigation':
+            self._resume_nav_client = self.create_client(Empty, RESUME_NAV_SERVICE)
+
+        # Mapping mode: map save via /rtabmap/backup
+        if self.ui_mode == 'mapping':
+            self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
+
+        # Robot pose
+        self.robot_x = 0.0
+        self.robot_y = 0.0
+        self.robot_yaw = 0.0
+
+        # odom->map transform (for local costmap positioning)
+        self.odom_to_map_x = 0.0
+        self.odom_to_map_y = 0.0
+        self.odom_to_map_yaw = 0.0
+
+        # TF timer
+        self.create_timer(0.1, self.update_robot_pose)
+
+    def map_callback(self, msg):
+        self.map_data = msg
+        self.signals.map_updated.emit()
+
+    def path_callback(self, msg):
+        self.path_data = msg
+        self.signals.path_updated.emit()
+
+    def local_costmap_callback(self, msg):
+        self.local_costmap_data = msg
+        self.signals.local_costmap_updated.emit()
+
+    def global_costmap_callback(self, msg):
+        self.global_costmap_data = msg
+        self.signals.global_costmap_updated.emit()
+
+    def update_robot_pose(self):
+        try:
+            t = self.tf_buffer.lookup_transform('map', 'base_link', rclpy.time.Time())
+            self.robot_x = t.transform.translation.x
+            self.robot_y = t.transform.translation.y
+            q = t.transform.rotation
+            self.robot_yaw = math.atan2(
+                2.0 * (q.w * q.z + q.x * q.y),
+                1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+            self.signals.robot_pose_updated.emit(
+                self.robot_x, self.robot_y, self.robot_yaw)
+        except TransformException:
+            pass
+        # Lookup odom->map transform for local costmap positioning
+        try:
+            t2 = self.tf_buffer.lookup_transform('map', 'odom', rclpy.time.Time())
+            self.odom_to_map_x = t2.transform.translation.x
+            self.odom_to_map_y = t2.transform.translation.y
+            q2 = t2.transform.rotation
+            self.odom_to_map_yaw = math.atan2(
+                2.0 * (q2.w * q2.z + q2.x * q2.y),
+                1.0 - 2.0 * (q2.y * q2.y + q2.z * q2.z))
+        except TransformException:
+            pass
+
+    def _write_map_files(self, grid_msg, base_path):
+        """Write OccupancyGrid to <base_path>.pgm and <base_path>.yaml."""
+        w = grid_msg.info.width
+        h = grid_msg.info.height
+        resolution = grid_msg.info.resolution
+        origin_x = grid_msg.info.origin.position.x
+        origin_y = grid_msg.info.origin.position.y
+
+        # Build PGM pixel rows (OccupancyGrid is row-major, origin at bottom-left,
+        # so we flip vertically so row 0 in the file is the top of the map).
+        # ROS convention: 0=free→254, 100=lethal→0, -1=unknown→205
+        rows = []
+        for row_idx in range(h):
+            row = bytearray(w)
+            for col in range(w):
+                val = grid_msg.data[row_idx * w + col]
+                if val == 0:
+                    row[col] = 254
+                elif val < 0:
+                    row[col] = 205
+                else:
+                    row[col] = max(0, 255 - int(val * 2.55))
+            rows.append(row)
+        rows.reverse()  # flip: grid origin is bottom-left, PGM top-left
+
+        pgm_path = base_path + '.pgm'
+        with open(pgm_path, 'wb') as f:
+            f.write(f'P5\n{w} {h}\n255\n'.encode())
+            for row in rows:
+                f.write(bytes(row))
+
+        pgm_name = os.path.basename(pgm_path)
+        yaml_path = base_path + '.yaml'
+        with open(yaml_path, 'w') as f:
+            f.write(f'image: {pgm_name}\n')
+            f.write(f'resolution: {resolution}\n')
+            f.write(f'origin: [{origin_x:.6f}, {origin_y:.6f}, 0.0]\n')
+            f.write('negate: 0\n')
+            f.write('occupied_thresh: 0.65\n')
+            f.write('free_thresh: 0.25\n')
+
+    def save_map_async(self, name, on_done):
+        """Save RTABMap DB and 2D map YAML in a background thread.
+
+        Uses /rtabmap/backup which properly flushes all in-memory state to disk,
+        creates database_path+'.back', then reinitializes. We then copy that
+        .back file to the user's chosen name.
+        Pause+copy is NOT safe: pause does not flush in-memory graph data.
+        """
+        import time
+        # Snapshot map_data now (main thread) to avoid race with ROS spin thread
+        map_snapshot = self.map_data
+
+        def _worker():
+            try:
+                # --- Trigger RTABMap backup (flush + .back copy + reinit) ---
+                if not self._rtab_backup_client.wait_for_service(timeout_sec=10.0):
+                    on_done(False, "RTABMap backup service not available")
+                    return
+                future = self._rtab_backup_client.call_async(Empty.Request())
+                # Backup does: save2DMap → close(flush) → copy to .back → reinit
+                # This can take 10-30 s on a large database
+                elapsed = 0.0
+                while not future.done() and elapsed < 60.0:
+                    time.sleep(0.2)
+                    elapsed += 0.2
+                if not future.done():
+                    on_done(False, "Backup service timed out")
+                    return
+
+                # --- Copy .back file to user-specified name ---
+                db_back = os.path.join(RTAB_MAPS_PATH, self.map_name + '.back')
+                db_dst  = os.path.join(RTAB_MAPS_PATH, name + '.db')
+                if not os.path.exists(db_back):
+                    on_done(False, f"Backup file not found: {db_back}")
+                    return
+                shutil.copy2(db_back, db_dst)
+
+                # --- Save 2D map directly from already-received map_data ---
+                # Avoids map_saver_cli QoS issues — nav_ui already has the data.
+                if map_snapshot is None:
+                    on_done(False, "DB saved, 2D map failed: no map data received yet")
+                    return
+                nav_src  = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
+                maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
+                os.makedirs(maps_dir, exist_ok=True)
+                map_out  = os.path.join(maps_dir, name)
+                try:
+                    self._write_map_files(map_snapshot, map_out)
+                    on_done(True, f"{name}.db  |  {name}.yaml + {name}.pgm")
+                except Exception as e:
+                    on_done(False, f"DB saved, 2D map failed: {e}")
+            except Exception as e:
+                on_done(False, str(e))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def resume_nav_async(self, on_done):
+        """Call RESUME_NAV_SERVICE in a background thread."""
+        import time
+        def _worker():
+            try:
+                if not self._resume_nav_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "Resume Nav service not available")
+                    return
+                future = self._resume_nav_client.call_async(Empty.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 10.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                if not future.done():
+                    on_done(False, "Resume Nav service timed out")
+                    return
+                on_done(True, "Nav resumed")
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def send_goal(self, x, y, yaw):
+        msg = PoseStamped()
+        msg.header.frame_id = 'map'
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.position.x = x
+        msg.pose.position.y = y
+        msg.pose.orientation.z = math.sin(yaw / 2.0)
+        msg.pose.orientation.w = math.cos(yaw / 2.0)
+        self.goal_pub.publish(msg)
+
+    def cancel_nav(self):
+        """Cancel all navigation goals."""
+        if not self.cancel_nav_client.service_is_ready():
+            self.get_logger().warn('Cancel service not available')
+            return
+        req = CancelGoal.Request()
+        self.cancel_nav_client.call_async(req)
+        self.get_logger().info('Cancelling all navigation goals')
+
+    def send_initialpose(self, x, y, yaw):
+        msg = PoseWithCovarianceStamped()
+        msg.header.frame_id = 'map'
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.pose.position.x = x
+        msg.pose.pose.position.y = y
+        msg.pose.pose.orientation.z = math.sin(yaw / 2.0)
+        msg.pose.pose.orientation.w = math.cos(yaw / 2.0)
+        self.initialpose_pub.publish(msg)
+
+
+class NavCanvas(QWidget):
+    """Real-time map display with robot, costmaps, and paths."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.map_pixmap = None
+        self.local_costmap_pixmap = None
+        self.global_costmap_pixmap = None
+        self.map_resolution = 0.05
+        self.map_origin_x = 0.0
+        self.map_origin_y = 0.0
+        self.map_width = 0
+        self.map_height = 0
+
+        # Local costmap transform
+        self.lc_origin_x = 0.0
+        self.lc_origin_y = 0.0
+        self.lc_width = 0
+        self.lc_height = 0
+        self.lc_resolution = 0.05
+
+        # Global costmap transform
+        self.gc_origin_x = 0.0
+        self.gc_origin_y = 0.0
+        self.gc_width = 0
+        self.gc_height = 0
+        self.gc_resolution = 0.05
+
+        # odom->map transform (for local costmap frame correction)
+        self.odom_to_map_x = 0.0
+        self.odom_to_map_y = 0.0
+        self.odom_to_map_yaw = 0.0
+
+        # View
+        self.zoom = 1.0
+        self.pan_offset = QPointF(0, 0)
+        self.last_mouse_pos = None
+        self.panning = False
+
+        # Robot
+        self.robot_x = 0.0
+        self.robot_y = 0.0
+        self.robot_yaw = 0.0
+
+        # Goal drag
+        self.dragging_goal = False
+        self.goal_start = None
+        self.goal_yaw = 0.0
+        self.current_goal = None  # (x, y, yaw)
+
+        # Initial pose drag
+        self.dragging_initpose = False
+        self.initpose_start = None
+        self.initpose_yaw = 0.0
+
+        # Path
+        self.path_points = []
+
+        # Visibility
+        self.show_local_costmap = True
+        self.show_global_costmap = True
+        self.show_path = True
+
+        # Mode: 'goal', 'initialpose', 'view'
+        self.mode = 'goal'
+
+        self.setMouseTracking(True)
+        self.setMinimumSize(320, 240)
+        self.setFocusPolicy(Qt.StrongFocus)
+
+    def map_to_pixel(self, mx, my):
+        px = (mx - self.map_origin_x) / self.map_resolution
+        py = self.map_height - (my - self.map_origin_y) / self.map_resolution
+        return px, py
+
+    def pixel_to_map(self, px, py):
+        mx = px * self.map_resolution + self.map_origin_x
+        my = (self.map_height - py) * self.map_resolution + self.map_origin_y
+        return mx, my
+
+    def screen_to_pixel(self, sx, sy):
+        px = (sx - self.pan_offset.x()) / self.zoom
+        py = (sy - self.pan_offset.y()) / self.zoom
+        return px, py
+
+    def fit_to_view(self):
+        if not self.map_pixmap:
+            return
+        w_ratio = self.width() / self.map_pixmap.width()
+        h_ratio = self.height() / self.map_pixmap.height()
+        self.zoom = min(w_ratio, h_ratio) * 0.95
+        self.pan_offset = QPointF(
+            (self.width() - self.map_pixmap.width() * self.zoom) / 2,
+            (self.height() - self.map_pixmap.height() * self.zoom) / 2
+        )
+
+    def update_map(self, grid_msg):
+        w, h = grid_msg.info.width, grid_msg.info.height
+        self.map_resolution = grid_msg.info.resolution
+        self.map_origin_x = grid_msg.info.origin.position.x
+        self.map_origin_y = grid_msg.info.origin.position.y
+        self.map_width = w
+        self.map_height = h
+
+        data = np.array(grid_msg.data, dtype=np.int8).reshape((h, w))
+        # Flip Y axis for display
+        data = data[::-1]
+        # Build RGB image using numpy
+        rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        unknown = data == -1
+        free = data == 0
+        occupied = data > 0
+        rgb[unknown] = [128, 128, 128]
+        rgb[free] = [255, 255, 255]
+        intensity = np.clip(255 - (data.astype(np.int16) * 255 // 100), 0, 255).astype(np.uint8)
+        rgb[occupied, 0] = intensity[occupied]
+        rgb[occupied, 1] = intensity[occupied]
+        rgb[occupied, 2] = intensity[occupied]
+
+        img = QImage(rgb.data, w, h, 3 * w, QImage.Format_RGB888)
+        self.map_pixmap = QPixmap.fromImage(img.copy())
+        if self.zoom == 1.0 and self.pan_offset == QPointF(0, 0):
+            self.fit_to_view()
+        self.update()
+
+    def update_costmap(self, grid_msg, is_local):
+        w, h = grid_msg.info.width, grid_msg.info.height
+        res = grid_msg.info.resolution
+        ox = grid_msg.info.origin.position.x
+        oy = grid_msg.info.origin.position.y
+
+        data = np.array(grid_msg.data, dtype=np.uint8).reshape((h, w))
+        # Flip Y axis
+        data = data[::-1]
+        # Apply RViz-style LUT
+        rgba = COSTMAP_LUT[data]
+        img = QImage(rgba.data, w, h, 4 * w, QImage.Format_RGBA8888)
+        pixmap = QPixmap.fromImage(img.copy())
+
+        if is_local:
+            self.local_costmap_pixmap = pixmap
+            self.lc_origin_x = ox
+            self.lc_origin_y = oy
+            self.lc_width = w
+            self.lc_height = h
+            self.lc_resolution = res
+        else:
+            self.global_costmap_pixmap = pixmap
+            self.gc_origin_x = ox
+            self.gc_origin_y = oy
+            self.gc_width = w
+            self.gc_height = h
+            self.gc_resolution = res
+        self.update()
+
+    def update_path(self, path_msg):
+        self.path_points = []
+        for pose in path_msg.poses:
+            self.path_points.append(
+                (pose.pose.position.x, pose.pose.position.y))
+        self.update()
+
+    def wheelEvent(self, event: QWheelEvent):
+        old_zoom = self.zoom
+        factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
+        self.zoom = max(0.1, min(80.0, self.zoom * factor))
+        mx, my = event.pos().x(), event.pos().y()
+        self.pan_offset.setX(mx - (mx - self.pan_offset.x()) * self.zoom / old_zoom)
+        self.pan_offset.setY(my - (my - self.pan_offset.y()) * self.zoom / old_zoom)
+        self.update()
+
+    def mousePressEvent(self, event: QMouseEvent):
+        if event.button() == Qt.MiddleButton or (event.button() == Qt.LeftButton and event.modifiers() & Qt.ShiftModifier):
+            self.panning = True
+            self.last_mouse_pos = event.pos()
+            self.setCursor(QCursor(Qt.ClosedHandCursor))
+        elif event.button() == Qt.LeftButton and self.map_pixmap:
+            px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
+            if 0 <= px < self.map_width and 0 <= py < self.map_height:
+                mx, my = self.pixel_to_map(px, py)
+                if self.mode == 'goal':
+                    self.dragging_goal = True
+                    self.goal_start = (mx, my)
+                    self.goal_yaw = 0.0
+                elif self.mode == 'initialpose':
+                    self.dragging_initpose = True
+                    self.initpose_start = (mx, my)
+                    self.initpose_yaw = 0.0
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        if self.panning and self.last_mouse_pos:
+            delta = event.pos() - self.last_mouse_pos
+            self.pan_offset += delta
+            self.last_mouse_pos = event.pos()
+            self.update()
+        elif self.dragging_goal and self.goal_start and self.map_pixmap:
+            px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
+            mx, my = self.pixel_to_map(px, py)
+            dx = mx - self.goal_start[0]
+            dy = my - self.goal_start[1]
+            if abs(dx) > 0.01 or abs(dy) > 0.01:
+                self.goal_yaw = math.atan2(dy, dx)
+            self.update()
+        elif self.dragging_initpose and self.initpose_start and self.map_pixmap:
+            px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
+            mx, my = self.pixel_to_map(px, py)
+            dx = mx - self.initpose_start[0]
+            dy = my - self.initpose_start[1]
+            if abs(dx) > 0.01 or abs(dy) > 0.01:
+                self.initpose_yaw = math.atan2(dy, dx)
+            self.update()
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        if self.dragging_goal and self.goal_start:
+            self.current_goal = (self.goal_start[0], self.goal_start[1], self.goal_yaw)
+            self.dragging_goal = False
+            self.goal_start = None
+            self.update()
+            return
+        if self.dragging_initpose and self.initpose_start:
+            x, y, yaw = self.initpose_start[0], self.initpose_start[1], self.initpose_yaw
+            self.dragging_initpose = False
+            self.initpose_start = None
+            self.update()
+            # Store for parent to pick up
+            self._pending_initpose = (x, y, yaw)
+            return
+        if event.button() == Qt.MiddleButton or event.button() == Qt.LeftButton:
+            self.panning = False
+            self.setCursor(QCursor(Qt.ArrowCursor))
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.fillRect(self.rect(), QColor(25, 25, 30))
+
+        if not self.map_pixmap:
+            painter.setPen(QColor(100, 100, 100))
+            painter.setFont(QFont("Segoe UI", 14))
+            painter.drawText(self.rect(), Qt.AlignCenter, "Waiting for /map topic...")
+            return
+
+        painter.save()
+        painter.translate(self.pan_offset)
+        painter.scale(self.zoom, self.zoom)
+
+        # Map
+        painter.drawPixmap(0, 0, self.map_pixmap)
+
+        # Global costmap
+        if self.show_global_costmap and self.global_costmap_pixmap:
+            gc_px = (self.gc_origin_x - self.map_origin_x) / self.map_resolution
+            gc_py = self.map_height - (self.gc_origin_y - self.map_origin_y) / self.map_resolution - self.gc_height * (self.gc_resolution / self.map_resolution)
+            scale_factor = self.gc_resolution / self.map_resolution
+            painter.save()
+            painter.translate(gc_px, gc_py)
+            painter.scale(scale_factor, scale_factor)
+            painter.drawPixmap(0, 0, self.global_costmap_pixmap)
+            painter.restore()
+
+        # Local costmap (rolling window centered on robot, rotated by odom->map yaw)
+        if self.show_local_costmap and self.local_costmap_pixmap:
+            rpx_map, rpy_map = self.map_to_pixel(self.robot_x, self.robot_y)
+            scale_factor = self.lc_resolution / self.map_resolution
+            half_w_px = self.lc_width * scale_factor / 2.0
+            half_h_px = self.lc_height * scale_factor / 2.0
+            painter.save()
+            painter.translate(rpx_map, rpy_map)
+            painter.rotate(-math.degrees(self.odom_to_map_yaw))
+            painter.scale(scale_factor, scale_factor)
+            painter.drawPixmap(
+                int(-self.lc_width / 2), int(-self.lc_height / 2),
+                self.local_costmap_pixmap)
+            painter.restore()
+
+        # Path
+        if self.show_path and len(self.path_points) > 1:
+            painter.setPen(QPen(COLOR_PATH, 2.0 / self.zoom))
+            poly = QPolygonF()
+            for mx, my in self.path_points:
+                px, py = self.map_to_pixel(mx, my)
+                poly.append(QPointF(px, py))
+            painter.drawPolyline(poly)
+
+        # Goal
+        if self.current_goal:
+            gx, gy, gyaw = self.current_goal
+            gpx, gpy = self.map_to_pixel(gx, gy)
+            r = max(4, 7 / self.zoom)
+            painter.setPen(QPen(COLOR_GOAL, 2.0 / self.zoom))
+            painter.setBrush(QBrush(COLOR_GOAL_FILL))
+            painter.drawEllipse(QPointF(gpx, gpy), r, r)
+            arrow_len = r * 3
+            ax = gpx + arrow_len * math.cos(-gyaw)
+            ay = gpy + arrow_len * math.sin(-gyaw)
+            painter.drawLine(QPointF(gpx, gpy), QPointF(ax, ay))
+            font = QFont("Segoe UI", max(5, int(7 / self.zoom)))
+            painter.setFont(font)
+            painter.drawText(QPointF(gpx + r + 2 / self.zoom, gpy - r), "GOAL")
+
+        # Goal drag preview
+        if self.dragging_goal and self.goal_start:
+            gx, gy = self.goal_start
+            gpx, gpy = self.map_to_pixel(gx, gy)
+            r = max(4, 7 / self.zoom)
+            painter.setPen(QPen(COLOR_GOAL.lighter(150), 2.0 / self.zoom))
+            painter.setBrush(QBrush(QColor(255, 50, 50, 40)))
+            painter.drawEllipse(QPointF(gpx, gpy), r, r)
+            arrow_len = r * 3
+            ax = gpx + arrow_len * math.cos(-self.goal_yaw)
+            ay = gpy + arrow_len * math.sin(-self.goal_yaw)
+            painter.drawLine(QPointF(gpx, gpy), QPointF(ax, ay))
+
+        # InitialPose drag preview
+        if self.dragging_initpose and self.initpose_start:
+            ix, iy = self.initpose_start
+            ipx, ipy = self.map_to_pixel(ix, iy)
+            r = max(4, 7 / self.zoom)
+            painter.setPen(QPen(QColor(255, 200, 0, 200), 2.0 / self.zoom))
+            painter.setBrush(QBrush(QColor(255, 200, 0, 40)))
+            painter.drawEllipse(QPointF(ipx, ipy), r, r)
+            arrow_len = r * 3
+            ax = ipx + arrow_len * math.cos(-self.initpose_yaw)
+            ay = ipy + arrow_len * math.sin(-self.initpose_yaw)
+            painter.drawLine(QPointF(ipx, ipy), QPointF(ax, ay))
+
+        # Robot (rectangle footprint)
+        rpx, rpy = self.map_to_pixel(self.robot_x, self.robot_y)
+        painter.save()
+        painter.translate(rpx, rpy)
+        painter.rotate(-math.degrees(self.robot_yaw))
+        # Draw footprint polygon in pixel coords
+        footprint_poly = QPolygonF()
+        for fx, fy in ROBOT_FOOTPRINT:
+            px = fx / self.map_resolution
+            py = -fy / self.map_resolution
+            footprint_poly.append(QPointF(px, py))
+        painter.setPen(QPen(COLOR_ROBOT, 2.0 / self.zoom))
+        painter.setBrush(QBrush(COLOR_ROBOT_FILL))
+        painter.drawPolygon(footprint_poly)
+        # Center dot
+        painter.setBrush(QBrush(COLOR_ROBOT))
+        painter.drawEllipse(QPointF(0, 0), 2.0 / self.zoom, 2.0 / self.zoom)
+        # Direction arrow
+        arrow_len = 0.35 / self.map_resolution
+        painter.setPen(QPen(COLOR_ROBOT, 2.5 / self.zoom))
+        painter.drawLine(QPointF(0, 0), QPointF(arrow_len, 0))
+        # Arrowhead
+        painter.drawLine(QPointF(arrow_len, 0), QPointF(arrow_len - 4/self.zoom, -3/self.zoom))
+        painter.drawLine(QPointF(arrow_len, 0), QPointF(arrow_len - 4/self.zoom, 3/self.zoom))
+        painter.restore()
+
+        painter.restore()
+
+        # HUD - mode indicator
+        painter.setPen(Qt.NoPen)
+        if self.mode == 'goal':
+            painter.setBrush(QBrush(QColor(255, 50, 50, 150)))
+        elif self.mode == 'initialpose':
+            painter.setBrush(QBrush(QColor(255, 200, 0, 150)))
+        else:
+            painter.setBrush(QBrush(QColor(100, 100, 100, 150)))
+        painter.drawRoundedRect(10, 10, 120, 28, 6, 6)
+        painter.setPen(QColor(255, 255, 255))
+        painter.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        mode_text = {"goal": "Send Goal", "initialpose": "Set Pose", "view": "View Only"}
+        painter.drawText(20, 29, mode_text.get(self.mode, ""))
+
+
+class NavUI(QMainWindow):
+    def __init__(self, ros_node):
+        super().__init__()
+        self.ros_node = ros_node
+        self.ui_mode = ros_node.ui_mode
+        title = "Mapping UI" if self.ui_mode == 'mapping' else "Navigation UI"
+        self.setWindowTitle(title)
+        self.setMinimumSize(640, 400)
+        self.setup_ui()
+        self.apply_style()
+        self.connect_ros_signals()
+        # Show DB name immediately — strip path, keep just the filename
+        map_name = ros_node.map_name
+        if map_name:
+            self.lbl_current_db.setText(f"Current: {os.path.basename(map_name)}")
+
+    def setup_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+        main_layout = QHBoxLayout(central)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Toolbar
+        toolbar = QToolBar("Main")
+        toolbar.setMovable(False)
+        toolbar.setIconSize(QSize(20, 20))
+        self.addToolBar(toolbar)
+
+        from PyQt5.QtWidgets import QAction
+        fit_action = QAction("Fit View", self)
+        fit_action.setShortcut("F")
+        fit_action.triggered.connect(lambda: (self.canvas.fit_to_view(), self.canvas.update()))
+        toolbar.addAction(fit_action)
+
+        # Splitter
+        splitter = QSplitter(Qt.Horizontal)
+        main_layout.addWidget(splitter)
+
+        # Canvas
+        self.canvas = NavCanvas()
+        splitter.addWidget(self.canvas)
+
+        # Side panel
+        panel = QWidget()
+        panel.setMaximumWidth(260)
+        panel.setMinimumWidth(200)
+        panel_layout = QVBoxLayout(panel)
+        panel_layout.setContentsMargins(8, 8, 8, 8)
+        panel_layout.setSpacing(6)
+
+        # Mode
+        mode_group = QGroupBox("Mode")
+        mode_layout = QVBoxLayout(mode_group)
+        mode_btn_layout = QHBoxLayout()
+        self.btn_goal_mode = QPushButton("Send Goal")
+        self.btn_goal_mode.setCheckable(True)
+        self.btn_goal_mode.clicked.connect(lambda: self.set_mode('goal'))
+        self.btn_initpose_mode = QPushButton("Set Pose")
+        self.btn_initpose_mode.setCheckable(True)
+        self.btn_initpose_mode.clicked.connect(lambda: self.set_mode('initialpose'))
+        self.btn_view_mode = QPushButton("View")
+        self.btn_view_mode.setCheckable(True)
+        self.btn_view_mode.clicked.connect(lambda: self.set_mode('view'))
+        mode_btn_layout.addWidget(self.btn_goal_mode)
+        mode_btn_layout.addWidget(self.btn_initpose_mode)
+        mode_btn_layout.addWidget(self.btn_view_mode)
+        mode_layout.addLayout(mode_btn_layout)
+        panel_layout.addWidget(mode_group)
+
+        # Navigation controls
+        nav_group = QGroupBox("Navigation")
+        nav_layout = QVBoxLayout(nav_group)
+
+        self.btn_send_goal = QPushButton("Send Goal")
+        self.btn_send_goal.clicked.connect(self.send_current_goal)
+        nav_layout.addWidget(self.btn_send_goal)
+
+        self.btn_cancel = QPushButton("Cancel Navigation")
+        self.btn_cancel.setStyleSheet("QPushButton { background: #c0392b; } QPushButton:hover { background: #e74c3c; }")
+        self.btn_cancel.clicked.connect(self.cancel_navigation)
+        nav_layout.addWidget(self.btn_cancel)
+
+        self.btn_resume_nav = QPushButton("Resume Nav")
+        self.btn_resume_nav.setStyleSheet("QPushButton { background: #27ae60; } QPushButton:hover { background: #2ecc71; }")
+        self.btn_resume_nav.clicked.connect(self._on_resume_nav)
+        nav_layout.addWidget(self.btn_resume_nav)
+
+        panel_layout.addWidget(nav_group)
+
+        # Mapping mode: hide nav controls, show only view mode
+        if self.ui_mode == 'mapping':
+            nav_group.setVisible(False)
+            self.btn_goal_mode.setVisible(False)
+            self.btn_initpose_mode.setVisible(False)
+            self.btn_view_mode.setChecked(True)
+            self.canvas.mode = 'view'
+        else:
+            self.btn_goal_mode.setChecked(True)
+
+        # Robot info
+        info_group = QGroupBox("Robot")
+        info_layout = QVBoxLayout(info_group)
+        self.lbl_robot_pos = QLabel("Position: -- , --")
+        self.lbl_robot_yaw = QLabel("Heading: --")
+        self.lbl_goal = QLabel("Goal: none")
+        info_layout.addWidget(self.lbl_robot_pos)
+        info_layout.addWidget(self.lbl_robot_yaw)
+        info_layout.addWidget(self.lbl_goal)
+        panel_layout.addWidget(info_group)
+
+        # Layers
+        layers_group = QGroupBox("Layers")
+        layers_layout = QVBoxLayout(layers_group)
+        self.chk_local_costmap = QCheckBox("Local Costmap")
+        self.chk_local_costmap.setChecked(True)
+        self.chk_local_costmap.toggled.connect(
+            lambda v: setattr(self.canvas, 'show_local_costmap', v) or self.canvas.update())
+        self.chk_global_costmap = QCheckBox("Global Costmap")
+        self.chk_global_costmap.setChecked(True)
+        self.chk_global_costmap.toggled.connect(
+            lambda v: setattr(self.canvas, 'show_global_costmap', v) or self.canvas.update())
+        self.chk_path = QCheckBox("Path")
+        self.chk_path.setChecked(True)
+        self.chk_path.toggled.connect(
+            lambda v: setattr(self.canvas, 'show_path', v) or self.canvas.update())
+        layers_layout.addWidget(self.chk_local_costmap)
+        layers_layout.addWidget(self.chk_global_costmap)
+        layers_layout.addWidget(self.chk_path)
+        panel_layout.addWidget(layers_group)
+
+        if self.ui_mode == 'mapping':
+            layers_group.setVisible(False)
+
+        # Mapping controls (save map — only shown in mapping mode)
+        mapping_group = QGroupBox("Mapping")
+        mapping_layout = QVBoxLayout(mapping_group)
+        self.btn_save_map = QPushButton("Save Map")
+        self.btn_save_map.clicked.connect(self._on_save_map)
+        mapping_layout.addWidget(self.btn_save_map)
+        panel_layout.addWidget(mapping_group)
+        mapping_group.setVisible(self.ui_mode == 'mapping')
+
+        # Map DB
+        db_group = QGroupBox("RTAB-Map DB")
+        db_layout = QVBoxLayout(db_group)
+        self.lbl_current_db = QLabel("Current: --")
+        db_layout.addWidget(self.lbl_current_db)
+
+        panel_layout.addWidget(db_group)
+
+        panel_layout.addStretch()
+
+        # Connection status
+        self.lbl_connection = QLabel("Waiting for topics...")
+        self.lbl_connection.setStyleSheet("color: #f39c12; font-size: 11px; padding: 4px;")
+        panel_layout.addWidget(self.lbl_connection)
+
+        splitter.addWidget(panel)
+        splitter.setSizes([500, 240])
+
+        # Status bar
+        self.status = QStatusBar()
+        self.setStatusBar(self.status)
+        self.status.showMessage("Ready")
+
+        # Poll for pending actions from canvas
+        self.action_timer = QTimer()
+        self.action_timer.timeout.connect(self.check_canvas_actions)
+        self.action_timer.start(50)
+
+    def apply_style(self):
+        self.setStyleSheet("""
+            QMainWindow { background: #1a1a2e; }
+            QWidget { background: #16213e; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; font-size: 12px; }
+            QGroupBox { border: 1px solid #1a1a4e; border-radius: 5px; margin-top: 8px; padding-top: 14px; font-weight: bold; color: #7f8fa6; }
+            QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 4px; }
+            QPushButton { background: #0f3460; color: white; border: none; border-radius: 4px; padding: 8px 14px; font-size: 12px; }
+            QPushButton:hover { background: #1a4f8a; }
+            QPushButton:pressed { background: #0a2540; }
+            QPushButton:checked { background: #e94560; }
+            QPushButton:disabled { background: #2c2c54; color: #555; }
+            QCheckBox { spacing: 6px; padding: 3px; }
+            QCheckBox::indicator { width: 16px; height: 16px; border-radius: 3px; border: 1px solid #444; background: #1a1a2e; }
+            QCheckBox::indicator:checked { background: #e94560; border-color: #e94560; }
+            QComboBox { background: #1a1a2e; border: 1px solid #333; border-radius: 3px; padding: 4px 8px; color: #ccc; }
+            QToolBar { background: #0f3460; border: none; spacing: 4px; padding: 4px; }
+            QToolBar QToolButton { color: #ccc; padding: 4px 8px; }
+            QToolBar QToolButton:hover { background: #1a4f8a; border-radius: 3px; }
+            QStatusBar { background: #e94560; color: white; font-size: 11px; }
+            QSplitter::handle { background: #1a1a4e; width: 2px; }
+            QLabel { background: transparent; }
+        """)
+
+    def connect_ros_signals(self):
+        signals = self.ros_node.signals
+        signals.map_updated.connect(self.on_map_update)
+        signals.path_updated.connect(self.on_path_update)
+        signals.local_costmap_updated.connect(self.on_local_costmap_update)
+        signals.global_costmap_updated.connect(self.on_global_costmap_update)
+        signals.robot_pose_updated.connect(self.on_robot_pose)
+
+    def on_map_update(self):
+        if self.ros_node.map_data:
+            self.canvas.update_map(self.ros_node.map_data)
+            self.lbl_connection.setText("Connected")
+            self.lbl_connection.setStyleSheet("color: #2ecc71; font-size: 11px; padding: 4px;")
+
+    def on_path_update(self):
+        if self.ros_node.path_data:
+            self.canvas.update_path(self.ros_node.path_data)
+
+    def on_local_costmap_update(self):
+        if self.ros_node.local_costmap_data:
+            self.canvas.update_costmap(self.ros_node.local_costmap_data, is_local=True)
+
+    def on_global_costmap_update(self):
+        if self.ros_node.global_costmap_data:
+            self.canvas.update_costmap(self.ros_node.global_costmap_data, is_local=False)
+
+    def on_robot_pose(self, x, y, yaw):
+        self.canvas.robot_x = x
+        self.canvas.robot_y = y
+        self.canvas.robot_yaw = yaw
+        # Pass odom->map transform for local costmap positioning
+        self.canvas.odom_to_map_x = self.ros_node.odom_to_map_x
+        self.canvas.odom_to_map_y = self.ros_node.odom_to_map_y
+        self.canvas.odom_to_map_yaw = self.ros_node.odom_to_map_yaw
+        self.canvas.update()
+        self.lbl_robot_pos.setText(f"Position: {x:.2f}, {y:.2f}")
+        self.lbl_robot_yaw.setText(f"Heading: {math.degrees(yaw):.1f}")
+
+    def set_mode(self, mode):
+        self.canvas.mode = mode
+        self.btn_goal_mode.setChecked(mode == 'goal')
+        self.btn_initpose_mode.setChecked(mode == 'initialpose')
+        self.btn_view_mode.setChecked(mode == 'view')
+        mode_msgs = {
+            'goal': 'Click and drag on map to set goal',
+            'initialpose': 'Click and drag to set initial pose',
+            'view': 'View only - scroll to zoom, shift+click to pan'
+        }
+        self.status.showMessage(mode_msgs.get(mode, ''))
+
+    def send_current_goal(self):
+        goal = self.canvas.current_goal
+        if not goal:
+            self.status.showMessage("No goal set. Click on the map first.")
+            return
+        x, y, yaw = goal
+        self.ros_node.send_goal(x, y, yaw)
+        self.lbl_goal.setText(f"Goal: ({x:.2f}, {y:.2f})")
+        self.status.showMessage(f"Goal sent: ({x:.2f}, {y:.2f}) yaw={math.degrees(yaw):.0f}")
+
+    def cancel_navigation(self):
+        self.ros_node.cancel_nav()
+        self.canvas.current_goal = None
+        self.canvas.path_points = []
+        self.canvas.update()
+        self.lbl_goal.setText("Goal: cancelled")
+        self.status.showMessage("Navigation cancelled")
+
+    def _on_save_map(self):
+        from PyQt5.QtWidgets import QInputDialog
+        name, ok = QInputDialog.getText(self, "Save Map", "Map name:", text="my_map")
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+        self.btn_save_map.setEnabled(False)
+        self.status.showMessage(f"Saving '{name}'...")
+        self._save_result = None
+
+        def on_done(success, msg):
+            self._save_result = (success, msg)
+            QTimer.singleShot(0, self._on_save_done)
+
+        self.ros_node.save_map_async(name, on_done)
+
+    def _on_save_done(self):
+        self.btn_save_map.setEnabled(True)
+        success, msg = self._save_result
+        if success:
+            self.status.showMessage(f"Saved: {msg}")
+        else:
+            self.status.showMessage(f"Save failed: {msg}")
+            QMessageBox.warning(self, "Save Failed", msg)
+
+    def _on_resume_nav(self):
+        self.btn_resume_nav.setEnabled(False)
+        self.status.showMessage("Resuming nav...")
+        self._resume_result = None
+
+        def on_done(success, msg):
+            self._resume_result = (success, msg)
+            QTimer.singleShot(0, self._on_resume_nav_done)
+
+        self.ros_node.resume_nav_async(on_done)
+
+    def _on_resume_nav_done(self):
+        self.btn_resume_nav.setEnabled(True)
+        success, msg = self._resume_result
+        if success:
+            self.status.showMessage("Nav resumed")
+        else:
+            self.status.showMessage(f"Resume failed: {msg}")
+            QMessageBox.warning(self, "Resume Failed", msg)
+
+    def check_canvas_actions(self):
+        # Check for pending goal send
+        if self.canvas.current_goal and self.canvas.mode == 'goal':
+            goal = self.canvas.current_goal
+            self.lbl_goal.setText(f"Goal: ({goal[0]:.2f}, {goal[1]:.2f})")
+
+        # Check for pending initial pose
+        if hasattr(self.canvas, '_pending_initpose'):
+            x, y, yaw = self.canvas._pending_initpose
+            del self.canvas._pending_initpose
+            self.ros_node.send_initialpose(x, y, yaw)
+            self.status.showMessage(f"Initial pose set: ({x:.2f}, {y:.2f}) yaw={math.degrees(yaw):.0f}")
+
+
+def main():
+    rclpy.init()
+    signals = RosSignals()
+    ros_node = NavRosNode(signals)
+
+    # Spin ROS in background thread
+    spin_thread = threading.Thread(target=rclpy.spin, args=(ros_node,), daemon=True)
+    spin_thread.start()
+
+    app = QApplication(sys.argv)
+    app.setApplicationName("Navigation UI")
+    window = NavUI(ros_node)
+    window.show()
+
+    ret = app.exec_()
+    ros_node.destroy_node()
+    rclpy.shutdown()
+    sys.exit(ret)
+
+
+if __name__ == '__main__':
+    main()

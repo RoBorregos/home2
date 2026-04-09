@@ -2,8 +2,10 @@
 
 import time
 import rclpy
+import rclpy.qos
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from vision_general.utils.ros_utils import wait_for_future
 from cv_bridge import CvBridge
 from frida_interfaces.srv import DetectionHandler, SetDetectorClasses
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -26,15 +28,20 @@ class TrashDetectionNode(Node):
         self.current_image = None
         self.latest_detections = ObjectDetectionArray()
 
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         self.image_sub = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.detections_sub = self.create_subscription(
             ObjectDetectionArray,
             ZERO_SHOT_DETECTIONS_TOPIC,
             self.detections_callback,
-            10,
+            qos,
         )
 
         self.detection_service = self.create_service(
@@ -141,7 +148,7 @@ class TrashDetectionNode(Node):
         request.class_names = classes
 
         future = self.set_classes_client.call_async(request)
-        future = self.wait_for_future(future, 15)
+        future = wait_for_future(future, 15)
 
         if future.result() is not None:
             result = future.result()
@@ -149,18 +156,6 @@ class TrashDetectionNode(Node):
         else:
             self.get_logger().warn("Failed to set classes")
             return False
-
-    def wait_for_future(self, future, timeout=5):
-        start_time = time.time()
-        while future is None and (time.time() - start_time) < timeout:
-            pass
-        if future is None:
-            return False
-        while not future.done() and (time.time() - start_time) < timeout:
-            # print("Waiting for future to complete...")
-            pass
-
-        return future
 
 
 def main():

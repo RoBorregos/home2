@@ -1,0 +1,5 @@
+# Request
+---
+# Response
+geometry_msgs/PointStamped point
+bool success

@@ -7,10 +7,10 @@ Task Manager for Restaurant task of Robocup @Home 2025
 import rclpy
 from rclpy.node import Node
 
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-from utils.logger import Logger
-from utils.status import Status
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
 from frida_constants.vision_enums import Gestures
 from frida_constants.vision_constants import CUSTOMER
 import time
@@ -183,6 +183,7 @@ class RestaurantTaskManager(Node):
             Logger.state(self, "Finishing task...")
             self.subtask_manager.hri.say("I have served all customers. I will rest now.")
             self.get_logger().info("Task completed.")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

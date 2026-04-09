@@ -12,9 +12,8 @@
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
+  <depend>lifecycle_msgs</depend>
   <depend>sensor_msgs</depend>
-  <depend>frida_interfaces</depend>
-  <depend>frida_constants</depend>
   <depend>p9n_node</depend>
   <depend>rclcpp_components</depend>
   <depend>navigation2</depend>
@@ -23,13 +22,18 @@
   <depend>sllidar_ros2</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>dashgo_driver</depend>
   <depend>rtabmap_slam</depend>
   <depend>rtabmap_sync</depend>
   <depend>spatio_temporal_voxel_layer</depend>
-
+  <!-- Local Packages Dependencies -->
+  <depend>frida_interfaces</depend>
+  <depend>frida_constants</depend>
+  <depend>dashgo_driver</depend>
+  <depend>map_context</depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
+  <depend>nav2_msgs</depend>
+  <depend>geometry_msgs</depend>
 
 
   <test_depend>ament_lint_auto</test_depend>

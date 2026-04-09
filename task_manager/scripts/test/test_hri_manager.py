@@ -4,21 +4,21 @@
 Task Manager for testing the subtask managers
 """
 
-import os
-import json
-import time
 import csv
+import json
+import os
+import subprocess
+import time
 from datetime import datetime
 from typing import Union
+
 import rclpy
-from sklearn.metrics.pairwise import cosine_similarity
-from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
-from subtask_managers.hri_tasks import HRITasks
-import subprocess
+from sklearn.metrics.pairwise import cosine_similarity
+from task_manager.subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.types import (
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
     Count,
@@ -34,8 +34,8 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.status import Status
-from utils.task import Task
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -78,12 +78,13 @@ TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
+TEST_TAKE_ORDER = False
 
 
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
+        self.hri_manager = HRITasks(self, task=Task.DEBUG, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
@@ -128,6 +129,9 @@ class TestHriManager(Node):
 
         if TEST_WORD_CONFIDENCES:
             self.test_word_confidences()
+
+        if TEST_TAKE_ORDER:
+            self.test_take_order()
 
         exit(0)
 
@@ -191,6 +195,10 @@ class TestHriManager(Node):
             avg_confidence = sum(word_confidences.values()) / len(word_confidences)
             self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
 
+    def test_take_order(self):
+        self.get_logger().info("Running take_order test")
+        self.hri_manager.take_order(retries=3)
+
     def compound_functions(self):
         s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
 
@@ -227,12 +235,6 @@ class TestHriManager(Node):
         #     3,
         #     5,
         # )
-
-        # s, common_interest = self.hri_manager.common_interest(
-        #     "mike", interest1, "rodrigo", interest2
-        # )
-
-        # self.hri_manager.say(common_interest)
 
     def test_categorize_shelves(self):
         test_cases_file = os.path.join(DATA_DIR, "categorize_objects.json")
@@ -328,19 +330,6 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
-
-        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
-
-        self.get_logger().info(f"Common interest result: {res}")
-
-        # Test async LLM with a timeout
-        f = self.hri_manager.common_interest(
-            "John", "Football", "Gilbert", "Basketball", is_async=True
-        )
-        rclpy.spin_until_future_complete(self, f)
-
-        self.get_logger().info(f"Common interest future: {f}")
-        self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
 
     def test_map(self):
         """
@@ -643,7 +632,7 @@ class TestHriManager(Node):
         self.get_logger().info("This may take a minute...")
         result = subprocess.run(
             ["baml-cli", "test"],
-            cwd="/workspace/src/task_manager/scripts/utils/",
+            cwd="/workspace/src/task_manager/task_manager/utils/",
             capture_output=True,
             text=True,
         )

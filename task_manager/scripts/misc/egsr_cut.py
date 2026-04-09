@@ -11,14 +11,14 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from subtask_managers.gpsr_single_tasks import GPSRSingleTask
-from subtask_managers.gpsr_tasks import GPSRTask
+from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
+from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
 # from subtask_managers.gpsr_test_commands import get_gpsr_comands
-from utils.baml_client.types import CommandListLLM
-from utils.logger import Logger
-from utils.status import Status
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.baml_client.types import CommandListLLM
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 from geometry_msgs.msg import PointStamped
 from frida_interfaces.srv import PointTransformation
 from frida_constants.vision_classes import BBOX
@@ -295,7 +295,7 @@ class EGPSRTM(Node):
     def run(self):
         if self.current_state == EGPSRTM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.publish_display_topic("/vision/detections_image")
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
             while not self.subtask_manager.hri.start_button_clicked:
@@ -539,6 +539,7 @@ class EGPSRTM(Node):
                 "I am done with the task. I will now return to my home position.",
                 wait=False,
             )
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

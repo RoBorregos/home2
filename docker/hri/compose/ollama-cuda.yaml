@@ -1,6 +1,6 @@
 services:
   ollama:
-    profiles: [receptionist, carry, gpsr, storing]
+    profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-ollama-cuda
     build:
       context: ..

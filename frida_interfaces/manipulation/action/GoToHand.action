@@ -1,0 +1,8 @@
+geometry_msgs/PointStamped point
+float32 hand_offset 0.1
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state

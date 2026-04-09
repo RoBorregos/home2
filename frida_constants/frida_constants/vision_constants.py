@@ -40,6 +40,9 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "backpack",
     # "tote_bag",
     "handle",
+    "spoon",
+    "fork",
+    "knife",
     # "whiteBaseball",
     # "apple",
     # "cup",
@@ -64,7 +67,8 @@ TRASH_DETECTION_SERVICE = "/vision/zero_shot_trash_detection"
 
 CUSTOMER = "/vision/customer"
 GET_CUSTOMER_TOPIC = "/vision/get_customer"
-
+CUSTOMER_TABLES_TOPIC = "/vision/customer_tables"
+RESTAURANT_TABLES_TOPIC = "/vision/restaurant_tables"
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
 
 # LOCAL CAMERA TOPICS
@@ -93,6 +97,7 @@ PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 CROP_QUERY_TOPIC = "/vision/crop_query"
+OBJECT_POINTS_TOPIC = "/vision/object_points"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"
@@ -100,12 +105,14 @@ FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
+FLIP_IMAGE_TOPIC = "/vision/face_recognition/flip_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
-# Receptionist commands node
-CHECK_PERSON_TOPIC = "/vision/receptionist/detect_person"
-FIND_SEAT_TOPIC = "/vision/receptionist/find_seat"
-IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
+# HRIC commands node
+CHECK_PERSON_TOPIC = "/vision/hric/detect_person"
+FIND_SEAT_TOPIC = "/vision/hric/find_seat"
+IMAGE_TOPIC_HRIC = "/vision/hric/img_person_detecion"
+DETECT_HAND_SERVICE = "/vision/hric/detect_hand"
 
 # GPSR commands node
 COUNT_BY_COLOR_TOPIC = "/vision/gpsr/count_by_color"
@@ -126,3 +133,13 @@ PERSON_POINT_TOPIC = "/vision/person_inside_point"
 
 # Show detection topic
 SHOW_DETECTION_TOPIC = "/vision/show_detection"
+
+# Yolo detection node
+YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
+YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
+
+# Dishwasher model
+DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
+DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
+DISHWASHER_TABLET_DETECTION_TOPIC = "/vision/dishwasher/tablet_detection"
+DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"

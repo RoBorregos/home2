@@ -10,8 +10,10 @@ def generate_launch_description():
             executable='ekf_node',
             output='screen',
             emulate_tty=True,
-            parameters=[
-                {
+            respawn=True,
+            respawn_delay=2.0,
+            respawn_max_retries=5,
+            parameters=[{
                     'output_frame': 'odom',
                     'frequency': 20.0,
                     'sensor_timeout': 0.2,
@@ -28,17 +30,17 @@ def generate_launch_description():
                     #  vx, vy, vz 
                     # vroll, vpitch, vyaw
                     # ax, ay, az
-                    'odom0_config': [True, True, False,
-                                    False,  False,  True, 
+                    'odom0_config': [False, False, False,
+                                    False, False, False,
                                     True, False, False,
-                                    False,  False,  True, 
-                                    False,  False,  False],
+                                    False, False, True,
+                                    False, False, False],
                     'imu0_config': [False, False, False,
-                                     False,  False,  True, 
-                                     False, False, False, 
-                                     False,  False,  True, 
-                                     #True,  False,  False],
-                                     False,  False,  False],
+                                     False, False, True,
+                                     False, False, False,
+                                     False, False, True,
+                                     False, False, False],
+                    'imu0_differential': False,
 
                  },
                 

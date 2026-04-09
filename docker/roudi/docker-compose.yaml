@@ -1,0 +1,28 @@
+services:
+  roudi:
+    container_name: home2-roudi
+    build:
+      context: ../..
+      dockerfile: docker/roudi/Dockerfile
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:l4t_base}
+    image: ${IMAGE_NAME:-roborregos/home2:roudi-l4t}
+    volumes:
+      - /tmp:/tmp
+      - /dev/shm:/dev/shm
+    network_mode: host
+    ipc: host
+    privileged: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "-x", "iox-roudi"]
+      interval: 2s
+      timeout: 2s
+      retries: 5
+      start_period: 3s
+    tty: true
+    command: >
+      bash -c "
+      rm -f /tmp/iox-unique-roudi.lock /tmp/roudi.lock 2>/dev/null;
+      find /dev/shm -maxdepth 1 -name 'iceoryx*' -delete 2>/dev/null || true;
+      exec su -s /bin/bash ros -c 'source /opt/ros/humble/setup.bash && exec iox-roudi -c /etc/iceoryx/roudi_config.toml'"
