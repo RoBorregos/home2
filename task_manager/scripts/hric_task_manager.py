@@ -227,7 +227,7 @@ class HRIC_TM(Node):
                 )
 
             self.subtask_manager.manipulation.move_to_position(
-                "carry_pose"
+                "nav_carry_bag_pose"
             )  # TODO: move more to the back
             self.subtask_manager.hri.say(
                 "Please extend your hand holding the bag so I can see and reach it."
@@ -326,19 +326,38 @@ class HRIC_TM(Node):
             guest_2 = self.guests[SECOND_GUEST_IDX]
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
 
+            use_follow_face = not self.carrying_bag
+
             # First: look at guest 2 (just seated) and introduce guest 1
-            self.subtask_manager.manipulation.move_to_position("front_stare")
-            self.subtask_manager.vision.follow_by_name(guest_2.name)
-            self.subtask_manager.manipulation.follow_face(True)
+            self.subtask_manager.manipulation.move_to_position(
+                "front_stare_carry_bag" if self.carrying_bag else "front_stare"
+            )
+            if use_follow_face:
+                self.subtask_manager.vision.follow_by_name(guest_2.name)
+                self.subtask_manager.manipulation.follow_face(True)
+            else:
+                # Find guest 2 by scanning
+                for offset in self.seat_angles:
+                    self.subtask_manager.manipulation.pan_to(offset)
+                    for _ in range(ATTEMPT_LIMIT):
+                        if self.subtask_manager.vision.isPerson(guest_2.name):
+                            break
+                        self.timeout(1)
+                    if self.subtask_manager.vision.isPerson(guest_2.name):
+                        break
+
             self.subtask_manager.hri.say(
                 f"Thanks for taking a seat {guest_2.name}. Allow me to introduce you to {guest_1.name}, their favorite drink is {guest_1.drink}.",
                 wait=True,
             )
-            self.subtask_manager.manipulation.follow_face(False)
+            if use_follow_face:
+                self.subtask_manager.manipulation.follow_face(False)
 
             # Second: look at guest 1 and introduce guest 2
             self.subtask_manager.hri.say(f"{guest_1.name} please look at me so I can identify you.")
-            self.subtask_manager.manipulation.move_to_position("front_stare")
+            self.subtask_manager.manipulation.move_to_position(
+                "front_stare_carry_bag" if self.carrying_bag else "front_stare"
+            )
             guest_1_found = False
             for offset in self.seat_angles:
                 if guest_1_found:
@@ -352,15 +371,18 @@ class HRIC_TM(Node):
 
                     self.timeout(1)
 
-            # Lock onto guest 1 and introduce guest 2
-            self.subtask_manager.vision.follow_by_name(guest_1.name)
-            self.subtask_manager.manipulation.follow_face(True)
-            self.timeout(2)
+            if use_follow_face:
+                # Lock onto guest 1 and introduce guest 2
+                self.subtask_manager.vision.follow_by_name(guest_1.name)
+                self.subtask_manager.manipulation.follow_face(True)
+                self.timeout(2)
+
             self.subtask_manager.hri.say(
                 f"Hello {guest_1.name}. This is {guest_2.name} and their favorite drink is {guest_2.drink}",
                 wait=True,
             )
-            self.subtask_manager.manipulation.follow_face(False)
+            if use_follow_face:
+                self.subtask_manager.manipulation.follow_face(False)
 
             self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
 
