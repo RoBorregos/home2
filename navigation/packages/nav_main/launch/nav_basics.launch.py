@@ -43,8 +43,8 @@ def launch_setup(context, *args, **kwargs):
         remappings=[('odometry/filtered', '/odom')],
         parameters=[{
                 'output_frame': 'odom',
-                'frequency': 50.0,
-                'sensor_timeout': 0.1,
+                'frequency': 20.0,
+                'sensor_timeout': 0.2,
                 'two_d_mode': True,
                 'publish_tf': True,
                 'map_frame': 'map',
