@@ -38,10 +38,6 @@ for arg in "${ARGS[@]}"; do
     "--build-image")
         BUILD_IMAGE="--build "
         ;;
-    "--build-image-clean")
-        BUILD_IMAGE="--build"
-        BUILD_IMAGE_CLEAN="true"
-        ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
