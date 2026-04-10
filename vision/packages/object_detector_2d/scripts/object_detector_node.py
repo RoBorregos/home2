@@ -19,7 +19,6 @@ import copy
 import cv2 as cv
 from typing import List
 from vision_general.utils.trt_utils import load_yolo_trt
-from ament_index_python.packages import get_package_share_directory
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
 from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
@@ -108,8 +107,11 @@ class object_detector_node(rclpy.node.Node):
         # Load object_to_category mapping from objects.json
         try:
             from ament_index_python.packages import get_package_share_directory
+
             package_share_directory = get_package_share_directory("frida_constants")
-            objects_json_path = os.path.join(package_share_directory, "data/objects.json")
+            objects_json_path = os.path.join(
+                package_share_directory, "data/objects.json"
+            )
             with open(objects_json_path, "r") as f:
                 objects_data = json.load(f)
                 self.object_to_category = objects_data.get("object_to_category", {})
@@ -158,7 +160,7 @@ class object_detector_node(rclpy.node.Node):
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
-    
+
     def set_trash_category(self, req, res):
         if not req.category:
             res.success = False
@@ -326,10 +328,12 @@ class object_detector_node(rclpy.node.Node):
             )
             if self.node_params.VERBOSE:
                 self.get_logger().info(self.node_params.DETECTIONS_ACTIVE_TOPIC)
-        
+
         self.create_subscription(
-            ObjectDetectionArray, DETECTIONS_TOPIC,
-            self.detections_callback, 10,
+            ObjectDetectionArray,
+            DETECTIONS_TOPIC,
+            self.detections_callback,
+            10,
         )
 
     # Callback for active flag
