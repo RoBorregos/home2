@@ -144,9 +144,9 @@ case $TASK in
 esac
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 COMMAND="$SETUP && $RUN"
