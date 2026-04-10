@@ -117,8 +117,8 @@
             max_mapping_range: 5.0 # maximum depth range while mapping in meters (-1 for automatic)
             fused_pointcloud_freq: 1.0 # frequency of the publishing of the fused colored point cloud
             clicked_point_topic: '/clicked_point' # Topic published by Rviz when a point of the cloud is clicked
-            pd_max_distance_threshold: 0.15 # Plane detection: controls the spread of plane by checking position difference
-            pd_normal_similarity_threshold: 15.0 # Plane detection: controls the spread of plane by checking angle difference
+            pd_max_distance_threshold: 0.3 # Plane detection: controls the spread of plane by checking position difference
+            pd_normal_similarity_threshold: 25.0 # Plane detection: controls the spread of plane by checking angle difference
 
         object_detection:
             od_enabled: false # True to enable Object Detection

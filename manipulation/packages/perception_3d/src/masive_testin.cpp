@@ -1,7 +1,9 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include <future>
+#include <limits>
 #include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <rclcpp/callback_group.hpp>
 #include <rclcpp/client.hpp>
@@ -216,10 +218,32 @@ public:
 
     *cloud = result->cluster;
 
+    // Estimate table height from the lowest point of the object cluster
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_cluster(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::fromROSMsg(result->cluster, *pcl_cluster);
+
+    float min_z = std::numeric_limits<float>::max();
+    for (const auto &pt : pcl_cluster->points) {
+      if (std::isfinite(pt.z) && pt.z < min_z) {
+        min_z = pt.z;
+      }
+    }
+
     // Detect plane using ZED SDK (deterministic, replaces RANSAC + PCA)
     auto req_plane =
         std::make_shared<frida_interfaces::srv::DetectPlane::Request>();
     req_plane->point = point;
+    if (min_z != std::numeric_limits<float>::max()) {
+      // Drop seed point to the base of the cluster so the hit lands on the
+      // table instead of the object surface
+      req_plane->point.point.z = min_z - 0.005;
+      RCLCPP_INFO(this->get_logger(),
+                  "Seed point dropped to table height z=%.3f", min_z - 0.005);
+    } else {
+      RCLCPP_WARN(this->get_logger(),
+                  "Cluster empty, using raw object point as plane seed");
+    }
 
     RCLCPP_INFO(this->get_logger(), "Sending request to detect plane (ZED)");
 
