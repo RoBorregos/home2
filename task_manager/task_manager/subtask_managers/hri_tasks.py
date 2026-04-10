@@ -637,6 +637,7 @@ class HRITasks(metaclass=SubtaskMeta):
         options: list[str] = None,
         remap: dict = None,
         initial_prompt: str = "",
+        silence_time: float = 1.0,
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -650,6 +651,7 @@ class HRITasks(metaclass=SubtaskMeta):
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
+            silence_time: the time to wait for silence before considering the speech complete
         Returns:
             Status: the status of the execution
             str: answer to the question
@@ -662,7 +664,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
             self.say(question)
             hear_status, interpreted_text, word_confidences = self.hear(
-                hotwords=hotwords, initial_prompt=initial_prompt
+                hotwords=hotwords, initial_prompt=initial_prompt, silence_time=silence_time
             )
 
             if hear_status == Status.EXECUTION_SUCCESS:
