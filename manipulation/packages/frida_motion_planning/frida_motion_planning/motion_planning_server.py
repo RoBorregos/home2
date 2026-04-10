@@ -36,8 +36,6 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
 
-import time
-
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
@@ -651,54 +649,30 @@ class MotionPlanningServer(Node):
 
         return response
 
-    def _call_switch_controller(self, req: SwitchController.Request, timeout_sec: float = 5.0):
-        """Send a SwitchController request and wait for the response. Returns the result or None."""
-        future = self.switch_controller_client.call_async(req)
-        start = self.get_clock().now()
-        while not future.done():
-            if (self.get_clock().now() - start).nanoseconds > timeout_sec * 1e9:
-                self.get_logger().error("Timeout waiting for switch_controller")
-                return None
-            time.sleep(0.01)
-        return future.result()
-
     def reset_xarm_controller(self, request, response):
-        """Force-reset xarm6_traj_controller via a deactivate+activate cycle.
-
-        The xArm driver does not update ros2_control's view of the controller
-        when the hardware mode changes (e.g. to velocity mode 4). The controller
-        stays marked 'active' even though its trajectory action server is not
-        running, so a plain activate call is filtered to an empty list by the
-        controller manager ("Empty activate and deactivate list, not requesting
-        switch"). Forcing a deactivate first moves it to 'inactive' so the
-        subsequent activate actually re-initializes it.
-        """
-        self.get_logger().info(
-            "Force-resetting xarm6_traj_controller (deactivate+activate)..."
-        )
+        """Reactivate the xarm6_traj_controller via controller_manager."""
+        self.get_logger().info("Reactivating xarm6_traj_controller...")
 
         if not self.switch_controller_client.wait_for_service(timeout_sec=5.0):
             self.get_logger().error("switch_controller service not available")
             return response
 
-        # Step 1: deactivate (BEST_EFFORT so it's a no-op if already inactive)
-        deact_req = SwitchController.Request()
-        deact_req.activate_controllers = []
-        deact_req.deactivate_controllers = ["xarm6_traj_controller"]
-        deact_req.strictness = SwitchController.Request.BEST_EFFORT
-        self._call_switch_controller(deact_req)
+        switch_req = SwitchController.Request()
+        switch_req.activate_controllers = ["xarm6_traj_controller"]
+        switch_req.deactivate_controllers = []
+        switch_req.strictness = SwitchController.Request.BEST_EFFORT
 
-        # Let ros2_control settle into the inactive state
-        time.sleep(0.15)
+        future = self.switch_controller_client.call_async(switch_req)
 
-        # Step 2: activate (STRICT so we see real failures instead of silent no-ops)
-        act_req = SwitchController.Request()
-        act_req.activate_controllers = ["xarm6_traj_controller"]
-        act_req.deactivate_controllers = []
-        act_req.strictness = SwitchController.Request.STRICT
-        result = self._call_switch_controller(act_req)
+        # Wait for the result
+        start = self.get_clock().now()
+        while not future.done():
+            if (self.get_clock().now() - start).nanoseconds > 5e9:
+                self.get_logger().error("Timeout waiting for switch_controller")
+                return response
 
-        if result is not None and result.ok:
+        result = future.result()
+        if result and result.ok:
             self.get_logger().info("xarm6_traj_controller reactivated successfully")
         else:
             self.get_logger().error("Failed to reactivate xarm6_traj_controller")
