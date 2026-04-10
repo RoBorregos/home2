@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """Idempotent dataset downloader for the openWakeWord training pipeline.
 
+Mirrors the recipe in openWakeWord's ``automatic_model_training.ipynb``.
 Fetches everything train.py needs into ``.data/`` next to this file:
 
-    mit_rirs/                       MIT room impulse responses
-    fma/fma_small/                  Free Music Archive small (background music)
-    audioset_16k/                   AudioSet 16 kHz subset (background speech/noise)
+    mit_rirs/                       MIT room impulse responses (WAV, 16 kHz)
+    fma/                            Free Music Archive small subset (WAV, 16 kHz)
+    audioset_16k/                   AudioSet bal_train09 shard (WAV, 16 kHz)
     negative_features_large.npy     ACAV100M pre-computed OWW features
-    dinner_party_eval_features.npy  False-positive validation features
-    oww_features/melspectrogram.onnx
-    oww_features/embedding_model.onnx
+    validation_set_features.npy     False-positive validation features
+    oww_features/                   OWW feature extractor ONNX files
 
 Any target that already exists on disk is skipped, so re-running ``run.sh``
-after a crash is cheap. Prints a size summary before starting so the user can
-abort on a metered link.
+after a crash is cheap. Prints a size summary before starting so the user
+can abort on a metered link.
 """
 
 from __future__ import annotations
@@ -21,96 +21,38 @@ from __future__ import annotations
 import os
 import shutil
 import sys
+import tarfile
 import urllib.request
-import zipfile
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / ".data"
 
+# Number of hours of FMA music to stream into the background-music pool.
+# The upstream notebook uses 1 hour; bumping this gives more variety at the
+# cost of a longer download.
+FMA_HOURS = 1
 
-@dataclass
-class Asset:
-    name: str
-    url: str
-    # Destination path relative to DATA_DIR. For zips this is the directory
-    # the archive should expand into; for loose files it is the file path.
-    dest: str
-    approx_size_gb: float
-    is_zip: bool = False
-    # Optional post-download hook (takes the extracted/downloaded path).
-    post: Optional[Callable[[Path], None]] = None
-
-    @property
-    def abs_dest(self) -> Path:
-        return DATA_DIR / self.dest
+# Approximate disk footprint for the summary (printed before anything runs).
+APPROX_SIZES_GB = {
+    "mit_rirs": 0.05,
+    "fma": 0.4,
+    "audioset_16k": 3.0,
+    "negative_features_large.npy": 2.0,
+    "validation_set_features.npy": 0.3,
+    "oww_features": 0.05,
+}
 
 
-ASSETS: list[Asset] = [
-    Asset(
-        name="MIT Room Impulse Responses",
-        url="https://huggingface.co/datasets/davidscripka/MIT_environmental_impulse_responses/resolve/main/mit_rirs.zip",
-        dest="mit_rirs",
-        approx_size_gb=0.5,
-        is_zip=True,
-    ),
-    Asset(
-        name="FMA small (background music)",
-        url="https://huggingface.co/datasets/davidscripka/MIT_environmental_impulse_responses/resolve/main/fma_small.zip",
-        dest="fma/fma_small",
-        approx_size_gb=8.0,
-        is_zip=True,
-    ),
-    Asset(
-        name="AudioSet 16 kHz subset (background speech/noise)",
-        url="https://huggingface.co/datasets/davidscripka/MIT_environmental_impulse_responses/resolve/main/audioset_16k.zip",
-        dest="audioset_16k",
-        approx_size_gb=3.0,
-        is_zip=True,
-    ),
-    Asset(
-        name="ACAV100M adversarial negative features",
-        url="https://huggingface.co/datasets/davidscripka/openwakeword_features_ACAV100M_2000_hrs_16bit.npy/resolve/main/openwakeword_features_ACAV100M_2000_hrs_16bit.npy",
-        dest="negative_features_large.npy",
-        approx_size_gb=2.0,
-    ),
-    Asset(
-        name="Dinner-party false-positive validation features",
-        url="https://huggingface.co/datasets/davidscripka/openwakeword_features_dinner_party_eval.npy/resolve/main/openwakeword_features_dinner_party_eval.npy",
-        dest="dinner_party_eval_features.npy",
-        approx_size_gb=0.3,
-    ),
-    Asset(
-        name="OWW feature extractor (melspectrogram.onnx)",
-        url="https://github.com/dscripka/openWakeWord/releases/download/v0.5.1/melspectrogram.onnx",
-        dest="oww_features/melspectrogram.onnx",
-        approx_size_gb=0.01,
-    ),
-    Asset(
-        name="OWW feature extractor (embedding_model.onnx)",
-        url="https://github.com/dscripka/openWakeWord/releases/download/v0.5.1/embedding_model.onnx",
-        dest="oww_features/embedding_model.onnx",
-        approx_size_gb=0.02,
-    ),
-]
-
-
-def _already_have(asset: Asset) -> bool:
-    """Return True if ``asset.abs_dest`` already exists and is non-empty."""
-    p = asset.abs_dest
-    if not p.exists():
+def _nonempty_dir(p: Path) -> bool:
+    if not p.is_dir():
         return False
-    if p.is_dir():
-        # Directory is considered present if it has at least one file inside.
-        for _ in p.rglob("*"):
-            return True
-        return False
-    return p.stat().st_size > 0
+    for _ in p.iterdir():
+        return True
+    return False
 
 
-def _download(url: str, out_path: Path) -> None:
+def _download_file(url: str, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = out_path.with_suffix(out_path.suffix + ".part")
     print(f"  fetching {url}")
@@ -119,48 +61,208 @@ def _download(url: str, out_path: Path) -> None:
     tmp_path.rename(out_path)
 
 
-def _extract_zip(zip_path: Path, extract_to: Path) -> None:
-    extract_to.mkdir(parents=True, exist_ok=True)
-    print(f"  extracting {zip_path.name} -> {extract_to}")
-    with zipfile.ZipFile(zip_path) as zf:
-        zf.extractall(extract_to)
+# --- Individual fetchers -----------------------------------------------------
 
 
-def _fetch_asset(asset: Asset) -> None:
-    if _already_have(asset):
-        print(f"[skip] {asset.name} (already present at {asset.abs_dest})")
+def fetch_mit_rirs() -> None:
+    """Stream the MIT RIR dataset and write 16 kHz WAVs to .data/mit_rirs/."""
+    out_dir = DATA_DIR / "mit_rirs"
+    if _nonempty_dir(out_dir):
+        print(f"[skip] mit_rirs (already present at {out_dir})")
         return
 
-    print(f"[get ] {asset.name}")
-    if asset.is_zip:
-        # Extract into the parent of ``dest``; the zip contents should produce
-        # the directory named by ``dest``. If the archive has a different top
-        # level, the extraction target is simply dest itself.
-        zip_tmp = DATA_DIR / f"_tmp_{asset.abs_dest.name}.zip"
-        _download(asset.url, zip_tmp)
-        _extract_zip(zip_tmp, asset.abs_dest.parent)
-        zip_tmp.unlink(missing_ok=True)
-        # If the expected dest dir still doesn't exist, the archive expanded
-        # into the parent flat; treat the parent as the dataset dir and leave
-        # a README marker so the configs keep pointing at the right place.
-        if not asset.abs_dest.exists():
-            asset.abs_dest.mkdir(parents=True, exist_ok=True)
-    else:
-        _download(asset.url, asset.abs_dest)
+    print("[get ] MIT Room Impulse Responses")
+    import datasets
+    import numpy as np
+    import scipy.io.wavfile
+    from tqdm import tqdm
 
-    if asset.post:
-        asset.post(asset.abs_dest)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rir_dataset = datasets.load_dataset(
+        "davidscripka/MIT_environmental_impulse_responses",
+        split="train",
+        streaming=True,
+    )
+    for row in tqdm(rir_dataset, desc="mit_rirs"):
+        name = row["audio"]["path"].split("/")[-1]
+        if not name.lower().endswith(".wav"):
+            name = os.path.splitext(name)[0] + ".wav"
+        scipy.io.wavfile.write(
+            out_dir / name,
+            16000,
+            (row["audio"]["array"] * 32767).astype(np.int16),
+        )
+
+
+def fetch_fma() -> None:
+    """Stream the FMA small subset and write 16 kHz WAVs to .data/fma/."""
+    out_dir = DATA_DIR / "fma"
+    if _nonempty_dir(out_dir):
+        print(f"[skip] fma (already present at {out_dir})")
+        return
+
+    print(f"[get ] FMA small subset ({FMA_HOURS} hour(s) of music)")
+    import datasets
+    import numpy as np
+    import scipy.io.wavfile
+    from tqdm import tqdm
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fma_dataset = datasets.load_dataset(
+        "rudraml/fma", name="small", split="train", streaming=True
+    )
+    fma_dataset = iter(
+        fma_dataset.cast_column("audio", datasets.Audio(sampling_rate=16000))
+    )
+
+    n_clips = FMA_HOURS * 3600 // 30
+    for _ in tqdm(range(n_clips), desc="fma"):
+        try:
+            row = next(fma_dataset)
+        except StopIteration:
+            break
+        name = row["audio"]["path"].split("/")[-1]
+        name = os.path.splitext(name)[0] + ".wav"
+        scipy.io.wavfile.write(
+            out_dir / name,
+            16000,
+            (row["audio"]["array"] * 32767).astype(np.int16),
+        )
+
+
+def fetch_audioset() -> None:
+    """Download one AudioSet shard and rewrite its FLACs as 16 kHz WAVs."""
+    out_dir = DATA_DIR / "audioset_16k"
+    if _nonempty_dir(out_dir):
+        print(f"[skip] audioset_16k (already present at {out_dir})")
+        return
+
+    print("[get ] AudioSet (bal_train09 shard)")
+    import datasets
+    import numpy as np
+    import scipy.io.wavfile
+    from tqdm import tqdm
+
+    tar_dir = DATA_DIR / "audioset"
+    tar_dir.mkdir(parents=True, exist_ok=True)
+    tar_path = tar_dir / "bal_train09.tar"
+    url = (
+        "https://huggingface.co/datasets/agkphysics/AudioSet/resolve/main/data/"
+        "bal_train09.tar"
+    )
+    if not tar_path.exists():
+        _download_file(url, tar_path)
+
+    print(f"  extracting {tar_path.name}")
+    with tarfile.open(tar_path) as tf:
+        tf.extractall(tar_dir)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    flac_paths = [str(p) for p in (tar_dir / "audio").glob("**/*.flac")]
+    if not flac_paths:
+        print(f"  WARNING: no FLAC files found under {tar_dir / 'audio'}")
+        return
+    audioset_dataset = datasets.Dataset.from_dict({"audio": flac_paths})
+    audioset_dataset = audioset_dataset.cast_column(
+        "audio", datasets.Audio(sampling_rate=16000)
+    )
+    for row in tqdm(audioset_dataset, desc="audioset_16k"):
+        name = row["audio"]["path"].split("/")[-1].replace(".flac", ".wav")
+        scipy.io.wavfile.write(
+            out_dir / name,
+            16000,
+            (row["audio"]["array"] * 32767).astype(np.int16),
+        )
+
+
+def fetch_acav100m_features() -> None:
+    out_path = DATA_DIR / "negative_features_large.npy"
+    if out_path.exists() and out_path.stat().st_size > 0:
+        print(f"[skip] ACAV100M features (already present at {out_path})")
+        return
+    print("[get ] ACAV100M adversarial negative features")
+    _download_file(
+        "https://huggingface.co/datasets/davidscripka/openwakeword_features/"
+        "resolve/main/openwakeword_features_ACAV100M_2000_hrs_16bit.npy",
+        out_path,
+    )
+
+
+def fetch_validation_features() -> None:
+    out_path = DATA_DIR / "validation_set_features.npy"
+    if out_path.exists() and out_path.stat().st_size > 0:
+        print(f"[skip] validation features (already present at {out_path})")
+        return
+    print("[get ] False-positive validation features")
+    _download_file(
+        "https://huggingface.co/datasets/davidscripka/openwakeword_features/"
+        "resolve/main/validation_set_features.npy",
+        out_path,
+    )
+
+
+def fetch_oww_feature_extractors() -> None:
+    """Ensure openwakeword's melspectrogram/embedding ONNX files are cached.
+
+    openwakeword ships a helper that downloads these on first use; calling it
+    here keeps training runs self-contained and avoids a surprise download
+    the first time train.py imports the package.
+    """
+    marker = DATA_DIR / "oww_features" / ".downloaded"
+    if marker.exists():
+        print("[skip] openwakeword feature extractors (already cached)")
+        return
+    print("[get ] openwakeword feature extractors (mel + embedding)")
+    try:
+        import openwakeword.utils as utils
+
+        utils.download_models()
+    except Exception as exc:  # noqa: BLE001
+        print(f"  WARNING: openwakeword.download_models() failed: {exc}")
+        print("  training will attempt to fetch them itself on first run.")
+        return
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.touch()
+
+
+# --- Driver ------------------------------------------------------------------
+
+
+FETCHERS = [
+    ("mit_rirs", fetch_mit_rirs),
+    ("fma", fetch_fma),
+    ("audioset_16k", fetch_audioset),
+    ("negative_features_large.npy", fetch_acav100m_features),
+    ("validation_set_features.npy", fetch_validation_features),
+    ("oww_features", fetch_oww_feature_extractors),
+]
+
+
+def _pending() -> list[str]:
+    pending = []
+    for name, _ in FETCHERS:
+        p = DATA_DIR / name
+        if name.endswith(".npy"):
+            if not (p.exists() and p.stat().st_size > 0):
+                pending.append(name)
+        elif name == "oww_features":
+            if not (DATA_DIR / "oww_features" / ".downloaded").exists():
+                pending.append(name)
+        else:
+            if not _nonempty_dir(p):
+                pending.append(name)
+    return pending
 
 
 def _print_summary() -> None:
-    pending = [a for a in ASSETS if not _already_have(a)]
+    pending = _pending()
     if not pending:
         print("All datasets already present. Nothing to download.")
         return
-    total = sum(a.approx_size_gb for a in pending)
+    total = sum(APPROX_SIZES_GB.get(n, 0.0) for n in pending)
     print("The following assets will be downloaded:")
-    for a in pending:
-        print(f"  - {a.name:<55} ~{a.approx_size_gb:>5.2f} GB")
+    for n in pending:
+        print(f"  - {n:<40} ~{APPROX_SIZES_GB.get(n, 0.0):>5.2f} GB")
     print(f"Estimated total: ~{total:.1f} GB")
     print(f"Target directory: {DATA_DIR}")
     if os.environ.get("OWW_DOWNLOAD_YES") != "1":
@@ -173,11 +275,11 @@ def _print_summary() -> None:
 def main() -> int:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     _print_summary()
-    for asset in ASSETS:
+    for name, fn in FETCHERS:
         try:
-            _fetch_asset(asset)
+            fn()
         except Exception as exc:  # noqa: BLE001 - surface any download error
-            print(f"ERROR while fetching {asset.name}: {exc}", file=sys.stderr)
+            print(f"ERROR while fetching {name}: {exc}", file=sys.stderr)
             return 1
     print("All datasets ready under", DATA_DIR)
     return 0

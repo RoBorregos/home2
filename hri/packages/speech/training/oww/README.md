@@ -34,7 +34,7 @@ disk.
   `/Desktop/home2/venv` runs Python 3.13, which is too new for several
   training deps, so `setup.sh` builds its own venv here under `.venv/`.
 - `git` for cloning `piper-sample-generator`.
-- ~15 GB of free disk under this directory for the datasets (see below).
+- ~10 GB of free disk under this directory for the datasets (see below).
 - Strongly recommended: an NVIDIA GPU. On macOS or another CPU-only host the
   pipeline still runs but takes many hours per word.
 
@@ -43,17 +43,20 @@ disk.
 All of these land under `hri/packages/speech/training/oww/.data/` (ignored
 by git — see `.gitignore` below if you want to add one):
 
-| Asset                                    | Size    | Used as                         |
-| ---------------------------------------- | ------- | ------------------------------- |
-| `mit_rirs/`                              | ~0.5 GB | Room-impulse-response augment.  |
-| `fma/fma_small/`                         | ~8 GB   | Background music augmentation.  |
-| `audioset_16k/`                          | ~3 GB   | Background speech/noise augment |
-| `negative_features_large.npy` (ACAV100M) | ~2 GB   | Adversarial negative features.  |
-| `dinner_party_eval_features.npy`         | ~0.3 GB | False-positive validation set.  |
-| `oww_features/{melspectrogram,embedding_model}.onnx` | <50 MB | OWW feature extractors. |
+| Asset                                    | Size     | Used as                         |
+| ---------------------------------------- | -------- | ------------------------------- |
+| `mit_rirs/`                              | ~0.05 GB | Room-impulse-response augment.  |
+| `fma/`                                   | ~0.4 GB  | Background music augmentation.  |
+| `audioset_16k/`                          | ~3 GB    | Background speech/noise augment |
+| `negative_features_large.npy` (ACAV100M) | ~2 GB    | Adversarial negative features.  |
+| `validation_set_features.npy`            | ~0.3 GB  | False-positive validation set.  |
+| OWW feature extractors (mel + embedding) | <50 MB   | Cached by openwakeword itself.  |
 
-Total: ~15 GB. `download_data.py` prints an estimate and prompts before
-downloading (the prompt is auto-accepted when invoked from `run.sh`).
+Total: ~6 GB. The FMA and MIT RIR datasets are streamed via
+`datasets.load_dataset` (not direct zip downloads), so the footprint is
+smaller than a full FMA small dump. `download_data.py` prints an estimate
+and prompts before downloading (the prompt is auto-accepted when invoked
+from `run.sh`).
 
 ## Iterating on a single word
 
@@ -145,10 +148,9 @@ hri/packages/speech/training/oww/
 │   └── piper-sample-generator/
 └── .data/             # created by setup.sh (gitignored)
     ├── mit_rirs/
-    ├── fma/fma_small/
+    ├── fma/
     ├── audioset_16k/
     ├── negative_features_large.npy
-    ├── dinner_party_eval_features.npy
-    ├── oww_features/{melspectrogram,embedding_model}.onnx
+    ├── validation_set_features.npy
     └── models/<word>.onnx        # training outputs
 ```

@@ -12,7 +12,7 @@
 #     runs on 3.13 which is too new for several training deps, so we build a
 #     dedicated venv here instead).
 #   - git (to clone piper-sample-generator)
-#   - ~15 GB free disk under this directory for the datasets.
+#   - ~10 GB free disk under this directory for the datasets.
 
 set -euo pipefail
 
