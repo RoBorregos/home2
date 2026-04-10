@@ -116,6 +116,10 @@ class MoveItPlanner(Planner):
         start_time = time.time()
         while future is None and time.time() - start_time < PYMOVEIT_FUTURE_TIMEOUT:
             future = self.moveit2.get_execution_future()
+            if future is None:
+                # Throttle the poll so pymoveit2 doesn't spam
+                # "Need active goal for future" thousands of times per second.
+                time.sleep(0.05)
 
         # If we couldn't get the 'future' in time, something went wrong.
         if future is None:
@@ -127,9 +131,10 @@ class MoveItPlanner(Planner):
         # --- 3. Wait for Execution to Complete (if requested) ---
         if wait:
             self.node.get_logger().info("Waiting for execution to complete...")
-            # This loop blocks the code until the action ends (success, failure, or cancellation).
+            # Yield to the executor instead of busy-waiting so callbacks (and
+            # the controller action server) can make progress.
             while not future.done():
-                pass  # Active wait. In a real node, this would be handled more elegantly.
+                time.sleep(0.01)
 
             # --- 4. Check the Final Result ---
             # Once 'future.done()' is True, we can see the result.

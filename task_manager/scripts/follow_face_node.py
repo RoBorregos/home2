@@ -15,6 +15,7 @@ from frida_constants.manipulation_constants import (
     FOLLOW_FACE_TOLERANCE,
     MOVEIT_MODE,
 )
+from controller_manager_msgs.srv import SwitchController
 from frida_interfaces.srv import FollowFace
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from geometry_msgs.msg import Point
@@ -64,6 +65,11 @@ class FollowFaceNode(Node):
         )
         self.reset_controller_client = self.create_client(
             Empty, "/manipulation/reset_xarm_controller", callback_group=callback_group
+        )
+        self.switch_controller_client = self.create_client(
+            SwitchController,
+            "/controller_manager/switch_controller",
+            callback_group=callback_group,
         )
         # TGPIO clients to preserve gripper state across mode switches
         self.get_tgpio_client = self.create_client(
@@ -150,6 +156,29 @@ class FollowFaceNode(Node):
         except Exception as e:
             Logger.warn(self, f"Could not restore TGPIO state: {e}")
 
+    def _deactivate_traj_controller(self) -> None:
+        """Tell ros2_control to deactivate xarm6_traj_controller.
+
+        This is called before switching the xArm to velocity mode so ros2_control's
+        controller state stays in sync with the hardware mode. Without this the
+        trajectory controller stays marked 'active' even though the xArm driver
+        stopped processing its commands, and the later activate call becomes a
+        no-op ("Empty activate and deactivate list, not requesting switch").
+        """
+        if not self.switch_controller_client.wait_for_service(timeout_sec=2.0):
+            Logger.warn(self, "switch_controller service not available")
+            return
+        req = SwitchController.Request()
+        req.activate_controllers = []
+        req.deactivate_controllers = ["xarm6_traj_controller"]
+        req.strictness = SwitchController.Request.BEST_EFFORT
+        try:
+            future = self.switch_controller_client.call_async(req)
+            wait_for_future(future)
+            Logger.info(self, "Deactivated xarm6_traj_controller for velocity mode")
+        except Exception as e:
+            Logger.warn(self, f"Could not deactivate xarm6_traj_controller: {e}")
+
     def _set_xarm_mode(self, mode: int, reset_controller: bool = False) -> bool:
         """Set xArm mode and state. Preserves TGPIO (gripper) state across mode switch."""
         mode_request = SetInt16.Request()
@@ -209,6 +238,9 @@ class FollowFaceNode(Node):
                 response.success = True
                 return response
             Logger.info(self, "Activating face following")
+            # Deactivate trajectory controller first so ros2_control's state
+            # tracks the xArm hardware mode transition.
+            self._deactivate_traj_controller()
             self._set_xarm_mode(VELOCITY_MODE)
             time.sleep(0.5)
             self.arm_ready = True
