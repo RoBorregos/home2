@@ -10,7 +10,6 @@ Run with:
 
 import rclpy
 from rclpy.node import Node
-from task_manager.config.hri.debug import config as test_hri_config
 from task_manager.subtask_managers.hri_tasks import HRITasks
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -720,7 +719,7 @@ TEST_CASES = [
 class TestPlanParser(Node):
     def __init__(self):
         super().__init__("test_plan_parser")
-        self.hri = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
+        self.hri = HRITasks(self, task=Task.DEBUG, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestPlanParser has started.")
         self.run()

@@ -41,7 +41,6 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
-from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
     AddEntry,
     CategorizeShelves,
@@ -57,10 +56,12 @@ from frida_interfaces.srv import (
     QueryEntry,
     Speak,
 )
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+
 from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,
@@ -68,6 +69,8 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
+from task_manager.config.hri.debug import config as test_hri_config
+from task_manager.config.hri.mocked import config as mocked_hri_config
 from task_manager.subtask_managers.hri_hand import HRIHand
 from task_manager.subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.sync_client import b
@@ -154,13 +157,15 @@ def format_transcription(text: str) -> str:
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
-    def __init__(self, task_manager: Node, config=None, task=Task.HRIC) -> None:
+    def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
+        config = mocked_hri_config if mock_data else test_hri_config
         self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
+        self.initial_prompt = ""
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
@@ -234,6 +239,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.DEBUG: all_services,
         }
 
         self.hand = HRIHand(self)
@@ -404,9 +410,10 @@ class HRITasks(metaclass=SubtaskMeta):
     def hear(
         self,
         hotwords="",
-        silence_time=2.0,
+        silence_time=4.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
+        initial_prompt="",
     ) -> str:
         Logger.info(
             self.node,
@@ -414,6 +421,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         accepted_future = self.hear_streaming(
+            initial_prompt=initial_prompt or self.initial_prompt,
             hotwords=hotwords,
             silence_time=silence_time,
             start_silence_time=start_silence_time,
@@ -461,6 +469,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self,
         timeout: float = 13.0,
         hotwords: str = "",
+        initial_prompt: str = "",
         silence_time: float = 2.0,
         start_silence_time: float = 4.0,
     ):
@@ -471,6 +480,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
+            initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
@@ -483,6 +493,7 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
+        goal_msg.initial_prompt = initial_prompt
         self.last_hotwords = hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
@@ -622,8 +633,10 @@ class HRITasks(metaclass=SubtaskMeta):
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
+        always_confirm: bool = False,
         options: list[str] = None,
         remap: dict = None,
+        initial_prompt: str = "",
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -636,7 +649,7 @@ class HRITasks(metaclass=SubtaskMeta):
             use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
-
+            initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
         Returns:
             Status: the status of the execution
             str: answer to the question
@@ -648,18 +661,20 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text, word_confidences = self.hear(hotwords=hotwords)
+            hear_status, interpreted_text, word_confidences = self.hear(
+                hotwords=hotwords, initial_prompt=initial_prompt
+            )
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
-                target_found = False
+                target_found = options is None
                 similarity = 1
                 try:
                     # If no options provided, directly extract the data without looking for matches
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
                         if s != Status.EXECUTION_SUCCESS:
-                            self.say("Sorry, I coudn't understand.")
+                            self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
 
@@ -706,7 +721,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 except Exception as e:
                     print("Failed matching result:", e)
 
-                if skip_confirmation:
+                if not always_confirm and skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
 
                 # Determine the confirmation question

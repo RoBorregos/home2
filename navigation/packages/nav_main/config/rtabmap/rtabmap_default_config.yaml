@@ -5,7 +5,6 @@ rgbd_sync:
     use_sim_time: false
     qos: 1
     qos_camera_info: 1
-    # approx_sync_max_interval: 0.01
 
 rtabmap:
   ros__parameters:
@@ -26,66 +25,72 @@ rtabmap:
     approx_sync_max_interval: 0.05
     queue_size: 2
     scan_queue_size: 2
-    #RTABMAP PARAMETERS
+
+    # RTABMAP PARAMETERS
     "Rtabmap/DetectionRate": "2"
     "Rtabmap/TimeThr": "0"
     "Rtabmap/LoopThr": "0.11"
     "Rtabmap/MaxLoopClosureDistance": "5.0"
+
+    # Memory
     "Mem/NotLinkedNodesKept": "false"
     "Mem/ReduceGraph": "false"
+
+    # Feature detection (GFTT/ORB + GPU)
     "Kp/NNStrategy": "2"
     "Kp/MaxFeatures": "1000"
     "Kp/DetectorStrategy": "8"
-    "SURF/GpuVersion": "true"
-    "SURF/GpuKeypointsRatio": "0.1"
     "GFTT/Gpu": "true"
     "ORB/Gpu": "true"
-    "Stereo/Gpu": "true"
+
+    # RGBD
     "RGBD/LinearUpdate": "0.05"
     "RGBD/AngularUpdate": "0.05"
     "RGBD/ForceOdom3DoF": "true"
     "RGBD/StartAtOrigin": "false"
-    "RGBD/ProximityPathMaxNeighbors" : "10"
-    "RGBD/LocalizationPriorError" : "0.1"
+    "RGBD/ProximityPathMaxNeighbors": "10"
+    "RGBD/LocalizationPriorError": "0.1"
     "RGBD/NeighborLinkRefining": "true"
-    "RGBD/OptimizeMaxError": "3.0"
+    "RGBD/OptimizeMaxError": "0"
     "RGBD/OptimizeFromGraphEnd": "false"
-    #TORO Optimization
+    "RGBD/MaxOdomCacheSize": "30"
+    "RGBD/ProximityBySpace": "true"
+    "RGBD/ProximityGlobalScanMap": "false"
+    "RGBD/LoopClosureReextractFeatures": "true"
+
+    # Optimizer (GTSAM preferred, fallback TORO)
     "Optimizer/Strategy": "2"
     "Optimizer/Robust": "true"
     "Optimizer/Iterations": "20"
     "Optimizer/Epsilon": "0.00001"
     "Optimizer/GravitySigma": "0"
-    #Odom strategy
-    "Odom/Strategy": "1"
-    "Odom/ResetCountdown": "0"
-    "Odom/Holonomic": "false"
-    "Odom/FilteringStrategy": "1"
-    "Odom/ParticleSize": "400"
-    #Strategy visICP - robust with both visual and ICP
+
+    # Registration (visual + ICP)
     "Reg/Strategy": "2"
     "Reg/Force3DoF": "true"
+
+    # Visual matching (GMS)
     "Vis/PnPRefineIterations": "1"
     "Vis/MinInliers": "20"
     "Vis/Iterations": "300"
     "Vis/FeatureType": "8"
     "Vis/MaxFeatures": "1000"
-    "Vis/CorNNType": "4"
+    "Vis/CorNNType": "7"
     "Vis/BundleAdjustment": "0"
+    "Vis/CorGuessWinSize": "80"
+    "Vis/GridRows": "4"
+    "Vis/GridCols": "4"
     "GMS/WithRotation": "true"
     "GMS/WithScale": "true"
     "GMS/ThresholdFactor": "6.0"
+
+    # ICP
     "Icp/Strategy": "1"
     "Icp/MaxCorrespondenceDistance": "0.15"
     "Icp/PointToPlane": "true"
     "Icp/MaxTranslation": "0.5"
-    "Vis/CorGuessWinSize": "80"
-    "RGBD/MaxOdomCacheSize": "30"
-    "Vis/GridRows": "4"
-    "Vis/GridCols": "4"
-    "RGBD/ProximityBySpace": "true"
-    "RGBD/ProximityGlobalScanMap": "false"
-    #grid
+
+    # Grid (lidar-based)
     "Grid/Sensor": "2"
     "Grid/RangeMax": "2.0"
     "Grid/CellSize": "0.05"
@@ -95,4 +100,3 @@ rtabmap:
     "Grid/MaxObstacleHeight": "2.0"
     "Grid/NoiseFilteringRadius": "0.1"
     "Grid/NoiseFilteringMinNeighbors": "3"
-
