@@ -138,6 +138,11 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 
+# Door detection
+DETECT_DOOR_SERVICE = "/vision/detect_door"
+DOOR_DETECTIONS_IMAGE_TOPIC = "/vision/door_detections"
+DOOR_MARKERS_TOPIC = "/vision/door_markers"
+
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
