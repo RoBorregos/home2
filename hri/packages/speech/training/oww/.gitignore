@@ -1,0 +1,5 @@
+# Everything created by setup.sh / train_all.sh is large and reproducible —
+# keep it out of git.
+.venv/
+.third_party/
+.data/

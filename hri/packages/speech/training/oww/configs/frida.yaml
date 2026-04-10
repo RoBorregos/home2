@@ -1,0 +1,45 @@
+model_name: frida
+target_phrase:
+  - "frida"
+  - "freeda"
+  - "freida"
+
+# Synthetic data generation (Piper)
+piper_sample_generator_path: .third_party/piper-sample-generator
+n_samples: 5000
+n_samples_val: 500
+tts_batch_size: 50
+custom_negative_phrases:
+  - "free the"
+  - "freedom"
+  - "fridge"
+  - "afraid"
+  - "freeway"
+  - "friday"
+  - "the cat sat"
+  - "please open the door"
+  - "what time is it"
+
+# Augmentation
+output_dir: .data/models
+rir_paths:
+  - .data/mit_rirs
+background_paths:
+  - .data/fma/fma_small
+  - .data/audioset_16k
+background_paths_duplication_rate: [1, 1]
+augmentation_rounds: 2
+augmentation_batch_size: 16
+
+# Model
+model_type: dnn
+layer_size: 32
+
+# Training
+feature_data_files:
+  ACAV100M: .data/negative_features_large.npy
+false_positive_validation_data_path: .data/dinner_party_eval_features.npy
+batch_n_per_class: 1024
+steps: 10000
+max_negative_weight: 1500
+target_false_positives_per_hour: 0.2

@@ -1,0 +1,36 @@
+# Pinned dependencies for the openWakeWord training pipeline.
+# Installed into a dedicated venv by setup.sh; do NOT install these into the
+# ROS/humble venv at /Desktop/home2/venv (Python 3.13 there is too new for
+# several of the pins below).
+#
+# When nvidia-smi is present, setup.sh installs torch/torchaudio from the
+# CUDA wheel index instead of PyPI. The version pins match in either case.
+
+torch==2.2.*
+torchaudio==2.2.*
+torchinfo
+torchmetrics==1.3.*
+
+openwakeword==0.6.0
+onnx
+onnxruntime
+
+# Piper sample generator runtime deps
+piper-phonemize
+piper-tts
+mutagen
+
+# Core numerics
+numpy<2
+scipy==1.11.*
+pyyaml
+tqdm
+
+# Dataset download / HF mirror
+datasets
+huggingface_hub
+
+# Audio augmentation stack used by openwakeword.data.augment_clips
+speechbrain
+librosa
+audiomentations
