@@ -27,8 +27,11 @@ pyyaml
 tqdm
 
 # Dataset download / HF mirror
-datasets
+# Pin datasets<3.0 so audio columns are decoded by soundfile instead of
+# torchcodec (torchcodec needs a matching FFmpeg install and is fragile).
+datasets<3.0
 huggingface_hub
+soundfile
 
 # Audio augmentation stack used by openwakeword.data.augment_clips
 speechbrain
