@@ -164,7 +164,7 @@ SCAN_FLOOR_CARRY_BAG_POSE = {
         "joint3": -94.0,
         "joint4": -1.5,
         "joint5": 137.0,
-        "joint6": 223.0,
+        "joint6": -137.0,
     },
     "degrees": True,
 }
