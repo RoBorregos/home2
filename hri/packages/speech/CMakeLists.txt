@@ -49,10 +49,12 @@ install(DIRECTORY assets
 # )
 
 file(GLOB PYTHON_SCRIPTS scripts/*.py)
+file(GLOB TRAINING_SCRIPTS training/scripts/*.py)
 
 # Install python scripts
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
+  ${TRAINING_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
 )
 

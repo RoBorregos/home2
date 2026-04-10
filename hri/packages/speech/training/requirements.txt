@@ -1,0 +1,8 @@
+# Extra dependencies for the wakeword training pipeline.
+# Install with:   pip install -r hri/packages/speech/training/requirements.txt
+#
+# Note: onnxruntime and numpy are already pulled in by hri/requirements/speech.txt,
+# so on the Orin you usually only need torch.
+torch>=2.0,<2.6
+onnxruntime>=1.16
+numpy>=1.23

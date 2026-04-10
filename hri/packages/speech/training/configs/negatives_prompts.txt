@@ -1,0 +1,39 @@
+# Prompts to read aloud when recording the "negatives" set.
+# The point is to expose the model to words and phrases that sound close to
+# yes / no / stop / frida but must NOT trigger. Read each line naturally,
+# varying pitch and speed. One line ≈ one clip (2 seconds is plenty).
+#
+# Hard-negative candidates (phonetically close):
+yesterday
+unless
+i know
+you know
+no problem
+no way
+nope
+stopped
+stopping
+don't stop
+free the
+frida kahlo
+freedom
+friday
+afraid
+front of me
+# Normal conversational sentences (so the classifier learns "speech that is
+# not a command" looks like this):
+the robot is moving to the kitchen
+please take the cup from the table
+the weather is nice today
+i am looking for my phone
+can you hand me the book
+thank you very much for your help
+she went to the store this morning
+let me think about it for a second
+i would like some coffee please
+put the box in the corner of the room
+# Long sentences containing the target words in non-command context:
+yesterday i was thinking about the project
+we know that the answer is correct
+there is no reason to worry
+i think we should stop here and take a break

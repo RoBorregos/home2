@@ -1,0 +1,9 @@
+# Don't commit recorded/augmented audio — it's large and user-specific.
+data/raw/**/*.wav
+data/augmented/**/*.wav
+data/backgrounds/*.wav
+
+# Keep the folder structure in git.
+!data/raw/.gitkeep
+!data/augmented/.gitkeep
+!data/backgrounds/.gitkeep

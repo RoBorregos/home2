@@ -1,6 +1,12 @@
 kws_oww:
   ros__parameters:
+    # Default models shipped with the repo.
     model_path: "/workspace/src/hri/packages/speech/assets/oww"
+    # To use the retrained models produced by
+    #   hri/packages/speech/training/scripts/train_word.py
+    # switch model_path to:
+    #   model_path: "/workspace/src/hri/packages/speech/assets/oww_retrained"
+    # (kws_oww.py auto-loads every .onnx found in this folder.)
     inference_framework: "onnx"
     PROCESSED_AUDIO_TOPIC: REPLACE
     WAKEWORD_TOPIC: REPLACE
