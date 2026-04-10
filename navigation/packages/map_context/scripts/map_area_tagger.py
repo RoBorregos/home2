@@ -717,7 +717,7 @@ class MapAreaTagger(QMainWindow):
             self.relocating_location = None
         else:
             items = []
-            if self.current_task in ROBOCUP_TASKS:
+            if getattr(self, 'current_task', None) in ROBOCUP_TASKS:
                 task_dict = ROBOCUP_TASKS[self.current_task]
                 if self.current_area in task_dict:
                     items = task_dict[self.current_area]
