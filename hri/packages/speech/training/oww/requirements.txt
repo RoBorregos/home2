@@ -13,18 +13,25 @@ torchmetrics==1.3.*
 
 openwakeword==0.6.0
 onnx
-onnxruntime
+# onnxruntime is installed from setup.sh: onnxruntime-gpu when nvidia-smi is
+# present, plain onnxruntime otherwise. Do not list it here or pip will fight
+# setup.sh on every rerun.
 
 # Piper sample generator runtime deps
 piper-phonemize
 piper-tts
 mutagen
+# DeepPhonemizer — imported as `dp` by piper-sample-generator v2.0.0
+deep-phonemizer
 
 # Core numerics
 numpy<2
 scipy==1.11.*
 pyyaml
 tqdm
+# pkg_resources (used by several training deps) ships inside setuptools,
+# but setuptools >= 81 (Aug 2024) removed it. Pin below that release.
+setuptools<81
 
 # Dataset download / HF mirror
 # Pin datasets<3.0 so audio columns are decoded by soundfile instead of
@@ -38,3 +45,9 @@ pyarrow
 speechbrain
 librosa
 audiomentations
+torch-audiomentations
+acoustics
+
+# Used by openwakeword.data.generate_adversarial_texts for phoneme-based
+# adversarial negative phrase generation
+pronouncing

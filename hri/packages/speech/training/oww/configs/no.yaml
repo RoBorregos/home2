@@ -42,7 +42,10 @@ layer_size: 32
 feature_data_files:
   ACAV100M: .data/negative_features_large.npy
 false_positive_validation_data_path: .data/validation_set_features.npy
-batch_n_per_class: 1024
+batch_n_per_class:
+  positive: 50
+  adversarial_negative: 50
+  ACAV100M: 1024
 steps: 10000
 # Higher negative weight — "no" is the worst collider of the four words.
 max_negative_weight: 3000
