@@ -65,7 +65,6 @@ class PickManager:
         self.node = node
         # Basket grasp estimator state: store multiple alternatives
         self.basket_grasp_poses = []  # Grasping alternatives for basket
-        self.latest_basket_lift = None
 
         self.node.create_subscription(
             PoseStamped,
@@ -74,11 +73,15 @@ class PickManager:
             10,
         )
 
+        # Cutlery / flat grasp estimator state
+        self.latest_flat_grasp = None
+        self._collecting_samples = False
+        self._grasp_samples = []
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self.node)
+
         self.node.create_subscription(
-            PoseStamped,
-            "/manipulation/basket_lift_pose",
-            self.basket_lift_callback,
-            10,
+            PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
         )
 
     def basket_grasp_callback(self, msg: PoseStamped):
@@ -86,35 +89,6 @@ class PickManager:
         self.basket_grasp_poses.append(msg)
         self.node.get_logger().debug(
             f"Received basket grasp pose #{len(self.basket_grasp_poses)}"
-        )
-
-    def basket_lift_callback(self, msg: PoseStamped):
-        """Callback to receive lift pose published by estimator."""
-        self.latest_basket_lift = msg
-
-        self.latest_flat_grasp = None
-        self._collecting_samples = False
-        self._grasp_samples = []
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self.node)
-
-        self.node.create_subscription(
-            PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
-        )
-
-    def flat_grasp_callback(self, msg):
-        self.latest_flat_grasp = msg
-        if self._collecting_samples:
-            self._grasp_samples.append(msg)
-
-        self.latest_flat_grasp = None
-        self._collecting_samples = False
-        self._grasp_samples = []
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self.node)
-
-        self.node.create_subscription(
-            PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
         )
 
     def flat_grasp_callback(self, msg):
@@ -286,7 +260,6 @@ class PickManager:
             )
             # Reset the list to collect fresh poses for this pick attempt
             self.basket_grasp_poses.clear()
-            self.latest_basket_lift = None
 
             BASKET_GRASP_TIMEOUT = 6.0
             waited = 0.0
@@ -308,7 +281,7 @@ class PickManager:
                 self.node.get_logger().error(
                     "Timeout: no basket grasp poses received from estimator"
                 )
-                is_basket = False  # return False, None
+                return False, None
 
             self.node.get_logger().info(
                 f"Collected {len(self.basket_grasp_poses)} grasp pose alternatives from estimator"
@@ -462,17 +435,18 @@ class PickManager:
         result = future.result()
         self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
 
-        self.node.get_logger().info("Returning to position")
-
         self.node.clear_octomap()
-        for i in range(5):
-            return_result = send_joint_goal(
-                move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
-                velocity=0.5,
-            )
-            if return_result:
-                break
+
+        if not is_basket:
+            self.node.get_logger().info("Returning to position")
+            for i in range(5):
+                return_result = send_joint_goal(
+                    move_joints_action_client=self.node._move_joints_client,
+                    named_position="table_stare",
+                    velocity=0.5,
+                )
+                if return_result:
+                    break
 
         self.node.get_logger().info("Pick Task completed successfully")
         result.success = True
