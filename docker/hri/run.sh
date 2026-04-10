@@ -100,6 +100,7 @@ GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 PACKAGES="speech nlp embeddings display"
 PROFILES=()
 RUN=""
@@ -122,7 +123,7 @@ fi
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
-COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
+COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
 cleanup() {
