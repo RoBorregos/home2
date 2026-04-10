@@ -382,8 +382,10 @@ class HRIC_TM(Node):
             self._track_state_change(HRIC_TM.TaskStates.LEAVE_BAG)
             self.subtask_manager.vision.deactivate_face_recognition()
             self.subtask_manager.hri.say("I will now place your bag on the floor.")
+            self.subtask_manager.manipulation.place_on_floor(
+                named_position="scan_floor_carry_bag_pose"
+            )
             self.carrying_bag = False
-            self.subtask_manager.manipulation.place_on_floor()
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.current_state = HRIC_TM.TaskStates.END
 

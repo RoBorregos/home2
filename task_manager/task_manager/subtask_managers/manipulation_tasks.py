@@ -464,10 +464,10 @@ class ManipulationTasks:
             Logger.warning(self.node, f"Error scanning {direction.value}: {e}")
             return True
 
-    def place_on_floor(self) -> int:
+    def place_on_floor(self, named_position: str = "pick_stare_at_table") -> int:
         try:
-            Logger.info(self.node, "Moving to pick_stare_at_table...")
-            result = self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.2)
+            Logger.info(self.node, f"Moving to {named_position}...")
+            result = self.move_joint_positions(named_position=named_position, velocity=0.2)
 
             if result != Status.EXECUTION_SUCCESS:
                 Logger.error(self.node, "Failed to reach start position")
@@ -475,7 +475,7 @@ class ManipulationTasks:
 
             has_collision_left = self._check_side_blocked(self.Direction.LEFT)
 
-            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
+            self.move_joint_positions(named_position=named_position, velocity=0.3)
 
             if not has_collision_left:
                 for i in range(3):
@@ -490,7 +490,7 @@ class ManipulationTasks:
 
             has_collision_right = self._check_side_blocked(self.Direction.RIGHT)
 
-            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
+            self.move_joint_positions(named_position=named_position, velocity=0.3)
 
             if not has_collision_right:
                 for i in range(3):
