@@ -20,7 +20,6 @@ from __future__ import annotations
 import os
 import shutil
 import sys
-import tarfile
 import urllib.request
 from pathlib import Path
 
@@ -88,48 +87,87 @@ def fetch_mit_rirs() -> None:
 
 
 def fetch_audioset() -> None:
-    """Download one AudioSet shard and rewrite its FLACs as 16 kHz WAVs."""
+    """Download one AudioSet parquet shard and extract 16 kHz WAVs.
+
+    The ``agkphysics/AudioSet`` dataset was converted from per-shard ``.tar``
+    archives to parquet in 2024. We download a single balanced-train parquet
+    file (~680 MB) and decode each embedded audio blob into a 16 kHz WAV in
+    ``.data/audioset_16k/``. One parquet file yields ~1000 clips, which is
+    plenty of background audio for training.
+    """
     out_dir = DATA_DIR / "audioset_16k"
     if _nonempty_dir(out_dir):
         print(f"[skip] audioset_16k (already present at {out_dir})")
         return
 
-    print("[get ] AudioSet (bal_train09 shard)")
-    import datasets
+    print("[get ] AudioSet (bal_train/09.parquet shard)")
+    import io
+
     import numpy as np
+    import pyarrow.parquet as pq
     import scipy.io.wavfile
+    import scipy.signal
+    import soundfile as sf
     from tqdm import tqdm
 
-    tar_dir = DATA_DIR / "audioset"
-    tar_dir.mkdir(parents=True, exist_ok=True)
-    tar_path = tar_dir / "bal_train09.tar"
+    parquet_dir = DATA_DIR / "audioset"
+    parquet_dir.mkdir(parents=True, exist_ok=True)
+    parquet_path = parquet_dir / "bal_train_09.parquet"
     url = (
-        "https://huggingface.co/datasets/agkphysics/AudioSet/resolve/main/data/"
-        "bal_train09.tar"
+        "https://huggingface.co/datasets/agkphysics/AudioSet/"
+        "resolve/main/data/bal_train/09.parquet"
     )
-    if not tar_path.exists():
-        _download_file(url, tar_path)
-
-    print(f"  extracting {tar_path.name}")
-    with tarfile.open(tar_path) as tf:
-        tf.extractall(tar_dir)
+    if not parquet_path.exists():
+        _download_file(url, parquet_path)
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    flac_paths = [str(p) for p in (tar_dir / "audio").glob("**/*.flac")]
-    if not flac_paths:
-        print(f"  WARNING: no FLAC files found under {tar_dir / 'audio'}")
-        return
-    audioset_dataset = datasets.Dataset.from_dict({"audio": flac_paths})
-    audioset_dataset = audioset_dataset.cast_column(
-        "audio", datasets.Audio(sampling_rate=16000)
-    )
-    for row in tqdm(audioset_dataset, desc="audioset_16k"):
-        name = row["audio"]["path"].split("/")[-1].replace(".flac", ".wav")
+    table = pq.read_table(parquet_path)
+    # Figure out which column holds the audio blob. agkphysics/AudioSet stores
+    # it as a struct column named "audio" with "bytes" + "path" fields.
+    if "audio" not in table.column_names:
+        raise RuntimeError(
+            f"Expected an 'audio' column in {parquet_path}, got {table.column_names}"
+        )
+    audio_col = table.column("audio").to_pylist()
+
+    target_sr = 16000
+    written = 0
+    for i, entry in enumerate(tqdm(audio_col, desc="audioset_16k")):
+        if entry is None:
+            continue
+        audio_bytes = entry.get("bytes") if isinstance(entry, dict) else None
+        path = (
+            entry.get("path") if isinstance(entry, dict) else None
+        ) or f"clip_{i:05d}"
+        if not audio_bytes:
+            continue
+        try:
+            data, sr = sf.read(io.BytesIO(audio_bytes), always_2d=False)
+        except Exception:
+            continue
+        if data.ndim > 1:
+            data = data.mean(axis=1)
+        if sr != target_sr:
+            n_out = int(round(len(data) * target_sr / sr))
+            if n_out <= 0:
+                continue
+            data = scipy.signal.resample(data, n_out)
+        name = os.path.basename(path)
+        name = os.path.splitext(name)[0] + ".wav"
+        if not name or name == ".wav":
+            name = f"clip_{i:05d}.wav"
         scipy.io.wavfile.write(
             out_dir / name,
-            16000,
-            (row["audio"]["array"] * 32767).astype(np.int16),
+            target_sr,
+            (np.clip(data, -1.0, 1.0) * 32767).astype(np.int16),
         )
+        written += 1
+
+    if written == 0:
+        raise RuntimeError(
+            f"No audio clips extracted from {parquet_path}; parquet schema may have changed."
+        )
+    print(f"  wrote {written} clips to {out_dir}")
 
 
 def fetch_acav100m_features() -> None:
