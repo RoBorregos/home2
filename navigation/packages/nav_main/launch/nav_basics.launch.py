@@ -12,7 +12,6 @@ from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
 
 def launch_setup(context, *args, **kwargs):
-    use_dualshock = LaunchConfiguration('use_dualshock', default='true')
     log_output = 'own_log' if os.getenv('NAV_QUIET') == '1' else 'screen'
 
     dashgo_config = os.path.join(
@@ -85,31 +84,6 @@ def launch_setup(context, *args, **kwargs):
         respawn_delay=2.0,
     )
 
-    dualshock_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("nav_main"),
-                    "launch",
-                    "dualshock_cmd_vel.launch.py",
-                ],
-            ),
-        ),
-        condition=IfCondition(use_dualshock),
-    )
-
-    # Shutdown handler for each critical node — triggers after max respawn retries
-    def make_shutdown_handler(node, name):
-        return RegisterEventHandler(
-            OnProcessExit(
-                target_action=node,
-                on_exit=[
-                    LogInfo(msg=f"{name} exited after max respawn retries. Shutting down."),
-                    EmitEvent(event=Shutdown(reason=f"{name} failed after 5 retries.")),
-                ]
-            )
-        )
-
     return_launch = [
         make_shutdown_handler(dashgo_driver, "DashgoDriver"),
         make_shutdown_handler(ekf_launch, "EKF"),
@@ -117,7 +91,6 @@ def launch_setup(context, *args, **kwargs):
         dashgo_driver,
         ekf_launch,
         laser_launch,
-        dualshock_launch,
     ]
     return return_launch
 

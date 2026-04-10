@@ -20,7 +20,7 @@ public:
   : Node("controller_dualshock", options),
     rotation_speed_(0.1),
     linear_speed_(0.2),
-    deadzone_(0.8)
+    deadzone_(0.4)
   {
     // Declare parameters so they can be overridden from launch
     this->declare_parameter("rotation_speed", rotation_speed_);
