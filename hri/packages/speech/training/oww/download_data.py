@@ -5,7 +5,6 @@ Mirrors the recipe in openWakeWord's ``automatic_model_training.ipynb``.
 Fetches everything train.py needs into ``.data/`` next to this file:
 
     mit_rirs/                       MIT room impulse responses (WAV, 16 kHz)
-    fma/                            Free Music Archive small subset (WAV, 16 kHz)
     audioset_16k/                   AudioSet bal_train09 shard (WAV, 16 kHz)
     negative_features_large.npy     ACAV100M pre-computed OWW features
     validation_set_features.npy     False-positive validation features
@@ -28,15 +27,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / ".data"
 
-# Number of hours of FMA music to stream into the background-music pool.
-# The upstream notebook uses 1 hour; bumping this gives more variety at the
-# cost of a longer download.
-FMA_HOURS = 1
-
 # Approximate disk footprint for the summary (printed before anything runs).
 APPROX_SIZES_GB = {
     "mit_rirs": 0.05,
-    "fma": 0.4,
     "audioset_16k": 3.0,
     "negative_features_large.npy": 2.0,
     "validation_set_features.npy": 0.3,
@@ -87,42 +80,6 @@ def fetch_mit_rirs() -> None:
         name = row["audio"]["path"].split("/")[-1]
         if not name.lower().endswith(".wav"):
             name = os.path.splitext(name)[0] + ".wav"
-        scipy.io.wavfile.write(
-            out_dir / name,
-            16000,
-            (row["audio"]["array"] * 32767).astype(np.int16),
-        )
-
-
-def fetch_fma() -> None:
-    """Stream the FMA small subset and write 16 kHz WAVs to .data/fma/."""
-    out_dir = DATA_DIR / "fma"
-    if _nonempty_dir(out_dir):
-        print(f"[skip] fma (already present at {out_dir})")
-        return
-
-    print(f"[get ] FMA small subset ({FMA_HOURS} hour(s) of music)")
-    import datasets
-    import numpy as np
-    import scipy.io.wavfile
-    from tqdm import tqdm
-
-    out_dir.mkdir(parents=True, exist_ok=True)
-    fma_dataset = datasets.load_dataset(
-        "rudraml/fma", name="small", split="train", streaming=True
-    )
-    fma_dataset = iter(
-        fma_dataset.cast_column("audio", datasets.Audio(sampling_rate=16000))
-    )
-
-    n_clips = FMA_HOURS * 3600 // 30
-    for _ in tqdm(range(n_clips), desc="fma"):
-        try:
-            row = next(fma_dataset)
-        except StopIteration:
-            break
-        name = row["audio"]["path"].split("/")[-1]
-        name = os.path.splitext(name)[0] + ".wav"
         scipy.io.wavfile.write(
             out_dir / name,
             16000,
@@ -230,7 +187,6 @@ def fetch_oww_feature_extractors() -> None:
 
 FETCHERS = [
     ("mit_rirs", fetch_mit_rirs),
-    ("fma", fetch_fma),
     ("audioset_16k", fetch_audioset),
     ("negative_features_large.npy", fetch_acav100m_features),
     ("validation_set_features.npy", fetch_validation_features),

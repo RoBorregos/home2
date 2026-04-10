@@ -29,9 +29,8 @@ output_dir: .data/models
 rir_paths:
   - .data/mit_rirs
 background_paths:
-  - .data/fma
   - .data/audioset_16k
-background_paths_duplication_rate: [1, 1]
+background_paths_duplication_rate: [1]
 augmentation_rounds: 2
 augmentation_batch_size: 16
 

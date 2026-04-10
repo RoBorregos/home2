@@ -46,17 +46,16 @@ by git — see `.gitignore` below if you want to add one):
 | Asset                                    | Size     | Used as                         |
 | ---------------------------------------- | -------- | ------------------------------- |
 | `mit_rirs/`                              | ~0.05 GB | Room-impulse-response augment.  |
-| `fma/`                                   | ~0.4 GB  | Background music augmentation.  |
-| `audioset_16k/`                          | ~3 GB    | Background speech/noise augment |
+| `audioset_16k/`                          | ~3 GB    | Background music/speech/noise.  |
 | `negative_features_large.npy` (ACAV100M) | ~2 GB    | Adversarial negative features.  |
 | `validation_set_features.npy`            | ~0.3 GB  | False-positive validation set.  |
 | OWW feature extractors (mel + embedding) | <50 MB   | Cached by openwakeword itself.  |
 
-Total: ~6 GB. The FMA and MIT RIR datasets are streamed via
-`datasets.load_dataset` (not direct zip downloads), so the footprint is
-smaller than a full FMA small dump. `download_data.py` prints an estimate
-and prompts before downloading (the prompt is auto-accepted when invoked
-from `run.sh`).
+Total: ~5.5 GB. We rely on AudioSet alone for background audio rather than
+adding FMA — the `rudraml/fma` HuggingFace loader requires `trust_remote_code`
+and can't be streamed, and AudioSet already covers music, speech, and noise.
+`download_data.py` prints an estimate and prompts before downloading (the
+prompt is auto-accepted when invoked from `run.sh`).
 
 ## Iterating on a single word
 
@@ -148,7 +147,6 @@ hri/packages/speech/training/oww/
 │   └── piper-sample-generator/
 └── .data/             # created by setup.sh (gitignored)
     ├── mit_rirs/
-    ├── fma/
     ├── audioset_16k/
     ├── negative_features_large.npy
     ├── validation_set_features.npy
