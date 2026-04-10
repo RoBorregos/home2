@@ -20,14 +20,15 @@ from pathlib import Path
 
 import rclpy
 from rclpy.node import Node
+from rclpy.duration import Duration
 from geometry_msgs.msg import PointStamped
-from frida_interfaces.srv import PointTransformation
+from tf2_ros import Buffer, TransformListener, TransformException
+from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
-POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 
 SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
 
@@ -201,7 +202,9 @@ class PickAndPlaceTM(Node):
         self.shelf_scanned = False
         self.shelf_level_threshold = 0.20  # max distance above shelf height
         self.shelf_level_down_threshold = 0.05  # max distance below shelf height
-        self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
+        # TF buffer for transforming detection points to base_link for height filtering
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         # Attempt counter — reset on state change
         self.current_attempts = 0
@@ -270,9 +273,9 @@ class PickAndPlaceTM(Node):
         if say:
             CLog.nav(self, "MOVE", f"Moving to {location}")
             self.subtask_manager.hri.say(f"Moving to {location}.", wait=False)
-            
+
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
-      
+
         return result
 
     def timeout(self, duration: float = 2.0):
@@ -282,24 +285,28 @@ class PickAndPlaceTM(Node):
             rclpy.spin_once(self, timeout_sec=0.1)
 
     def convert_to_height(self, detection) -> float | None:
-        """Convert a detection's 3D point to height in base_link frame."""
+        """Transform a detection's 3D point to base_link frame via tf2 and return Z.
+
+        Uses tf2 directly (no external service) with a bounded timeout so the
+        task manager never hangs if a transform is temporarily unavailable.
+        """
         try:
             stamped_point = PointStamped()
             stamped_point.header.frame_id = "zed_left_camera_optical_frame"
-            stamped_point.header.stamp = self.get_clock().now().to_msg()
-            stamped_point.point.x = detection.px
-            stamped_point.point.y = detection.py
-            stamped_point.point.z = detection.pz
-            request = PointTransformation.Request()
-            request.target_frame = "base_link"
-            request.point = stamped_point
-            future = self.transform_tf.call_async(request)
-            rclpy.spin_until_future_complete(self, future)
-            result = future.result()
-            if not result.success:
-                CLog.vision(self, "TF", f"Transform failed: {result.error_message}", level="error")
-                return None
-            return result.transformed_point.point.z
+            stamped_point.header.stamp = rclpy.time.Time().to_msg()  # latest available
+            stamped_point.point.x = float(detection.px)
+            stamped_point.point.y = float(detection.py)
+            stamped_point.point.z = float(detection.pz)
+
+            transformed = self.tf_buffer.transform(
+                stamped_point,
+                "base_link",
+                timeout=Duration(seconds=1.0),
+            )
+            return transformed.point.z
+        except TransformException as e:
+            CLog.vision(self, "TF", f"Transform failed: {e}", level="warn")
+            return None
         except Exception as e:
             CLog.vision(self, "TF", f"Error converting to height: {e}", level="error")
             return None
@@ -780,13 +787,15 @@ class PickAndPlaceTM(Node):
                 CLog.manip(self, "PLACE", f"Re-scanning shelf at {shelf_height}m before placing.")
                 self._scan_shelf_level(shelf_height)
                 # Move arm to placement position (approach_plane=False for placing)
-                self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                opt_status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
                     shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
                 )
+                CLog.manip(self, "PLACE", f"get_optimal_position_for_plane → {opt_status}")
                 status = self.subtask_manager.manipulation.place_on_shelf(
                     plane_height=shelf_height,
                     tolerance=0.1,
                 )
+                CLog.manip(self, "PLACE", f"place_on_shelf → {status}")
             else:
                 status = self.subtask_manager.manipulation.place()
 
@@ -798,14 +807,34 @@ class PickAndPlaceTM(Node):
                     f"Placed {self.grasped_object.name} at {placement_loc.value}.",
                     level="success",
                 )
+                self.current_attempts = 0
+                self.current_object_index += 1
+                self.grasped_object = None
+                self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
             else:
+                self.current_attempts += 1
                 CLog.manip(
-                    self, "PLACE", f"Failed to place {self.grasped_object.name}.", level="error"
+                    self,
+                    "PLACE",
+                    f"Failed to place {self.grasped_object.name} — attempt {self.current_attempts}/{ATTEMPT_LIMIT}",
+                    level="error",
                 )
-
-            self.current_object_index += 1
-            self.grasped_object = None
-            self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
+                if self.current_attempts < ATTEMPT_LIMIT:
+                    # Retry the same placement in the same state; don't drop the object.
+                    CLog.manip(self, "PLACE", "Retrying place on the same shelf level...")
+                    self.timeout(1.0)
+                    # Stay in PLACE_OBJECT to retry
+                else:
+                    CLog.manip(
+                        self,
+                        "PLACE",
+                        f"Giving up on {self.grasped_object.name} after {ATTEMPT_LIMIT} attempts.",
+                        level="warn",
+                    )
+                    self.current_attempts = 0
+                    self.current_object_index += 1
+                    self.grasped_object = None
+                    self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
         # ==================== START BREAKFAST PREP ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP:
