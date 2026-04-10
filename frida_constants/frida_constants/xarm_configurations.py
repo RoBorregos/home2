@@ -152,7 +152,7 @@ HAND_BAG_POSE = {
         "joint3": -108.5,
         "joint4": 0.0,
         "joint5": 68.5,
-        "joint6": 45.0,
+        "joint6": -135.0,
     },
     "degrees": True,
 }
