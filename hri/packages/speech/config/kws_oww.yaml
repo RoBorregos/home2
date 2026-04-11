@@ -1,6 +1,6 @@
 kws_oww:
   ros__parameters:
-    model_path: "/workspace/src/hri/packages/speech/assets/oww"
+    model_path: "/workspace/src/hri/packages/speech/assets/oww_rt"
     inference_framework: "onnx"
     PROCESSED_AUDIO_TOPIC: REPLACE
     WAKEWORD_TOPIC: REPLACE
