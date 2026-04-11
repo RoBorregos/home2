@@ -71,7 +71,7 @@ class RestaurantTaskManager(Node):
         # Pan angles per-customer
         self.pan_angles = []
 
-        self.current_state = RestaurantTaskManager.TaskStates.START
+        self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON
 
         self.get_logger().info("RestaurantTaskManager has started.")
 
@@ -176,6 +176,7 @@ class RestaurantTaskManager(Node):
     def run(self):
         """Running main loop"""
         if self.current_state == RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON:
+            self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
             Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.say("Waiting for start button to be pressed.")
             while not self.subtask_manager.hri.start_button_clicked:
@@ -199,6 +200,7 @@ class RestaurantTaskManager(Node):
                 # Get table groups and positions directly from vision task
                 status, customer_tables = self.subtask_manager.vision.customer_tables()
                 self.subtask_manager.hri.publish_display_topic(RESTAURANT_TABLES_TOPIC)
+                print(status, customer_tables)
                 if status != Status.EXECUTION_SUCCESS or not customer_tables:
                     Logger.warn(self, "No tables with customers detected. Waiting and retrying...")
                     self.timeout(2)
