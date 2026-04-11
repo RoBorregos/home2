@@ -792,35 +792,35 @@ if __name__ == "__main__":
         "--generate_clips",
         help="Execute the synthetic data generation process",
         action="store_true",
-        default="False",
+        default=False,
         required=False,
     )
     parser.add_argument(
         "--augment_clips",
         help="Execute the synthetic data augmentation process",
         action="store_true",
-        default="False",
+        default=False,
         required=False,
     )
     parser.add_argument(
         "--overwrite",
         help="Overwrite existing openwakeword features when the --augment_clips flag is used",
         action="store_true",
-        default="False",
+        default=False,
         required=False,
     )
     parser.add_argument(
         "--train_model",
         help="Execute the model training process",
         action="store_true",
-        default="False",
+        default=False,
         required=False,
     )
     parser.add_argument(
         "--convert_to_tflite",
         help="Convert the trained ONNX model to TFLite format",
         action="store_true",
-        default="False",
+        default=False,
         required=False,
     )
 

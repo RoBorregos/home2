@@ -1,4 +1,4 @@
-model_name: no
+model_name: "no"
 target_phrase:
   - "no"
   - "nope"

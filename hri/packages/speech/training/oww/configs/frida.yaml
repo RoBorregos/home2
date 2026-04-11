@@ -1,4 +1,4 @@
-model_name: frida
+model_name: "frida"
 target_phrase:
   - "frida"
   - "freeda"

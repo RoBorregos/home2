@@ -1,4 +1,4 @@
-model_name: stop
+model_name: "stop"
 target_phrase:
   - "stop"
 

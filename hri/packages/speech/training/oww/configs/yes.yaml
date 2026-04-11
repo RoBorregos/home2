@@ -1,4 +1,4 @@
-model_name: yes
+model_name: "yes"
 target_phrase:
   - "yes"
   - "yess"
