@@ -221,7 +221,9 @@ class PlaceManager:
             heatmap_request.pointcloud = pcl_result
             heatmap_request.prefer_closest = True
             if place_params.is_shelf:
-                heatmap_request.prefer_closest = True
+                # For shelves we want the densest center area, not the front
+                # edge (which is "closest" to base_link and causes edge drops).
+                heatmap_request.prefer_closest = False
             if not self.node.place_pose_client.wait_for_service(timeout_sec=5.0):
                 self.node.get_logger().error(
                     "place_pose (heatmap) service not available"
