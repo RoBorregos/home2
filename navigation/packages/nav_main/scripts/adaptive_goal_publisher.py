@@ -33,7 +33,7 @@ class AdaptiveGoalPublisher(Node):
         
         self.declare_parameter("approach_min_dist", 0.5)
         self.declare_parameter("approach_max_dist", 1.2)
-        self.declare_parameter("lock_proximity_threshold", 1.0)  # Distancia máxima a la meta original
+        self.declare_parameter("lock_proximity_threshold", 1.0) 
 
         self.approach_min_dist = self.get_parameter("approach_min_dist").value
         self.approach_max_dist = self.get_parameter("approach_max_dist").value
@@ -103,14 +103,12 @@ class AdaptiveGoalPublisher(Node):
             new_x = transformed.point.x
             new_y = transformed.point.y
 
-            # 1. Chequeo contra la meta original (ancla de la mesa)
             if self.original_goal:
                 gx = self.original_goal.pose.position.x
                 gy = self.original_goal.pose.position.y
                 dist_to_goal = math.sqrt((new_x - gx)**2 + (new_y - gy)**2)
                 
                 if dist_to_goal > self.lock_threshold:
-                    # La persona está muy lejos de la mesa objetivo, ignorar
                     return
 
             # 2. Hysteresis/Lock: Evitar saltar entre personas en la misma mesa
@@ -118,8 +116,6 @@ class AdaptiveGoalPublisher(Node):
                 prev_x, prev_y = self.person_position
                 dist_to_prev = math.sqrt((new_x - prev_x)**2 + (new_y - prev_y)**2)
                 
-                # Si el salto es demasiado grande (> 1m), probablemente es otra persona
-                # y nos quedamos con la que ya teníamos
                 if dist_to_prev > 1.2:
                     return
 
