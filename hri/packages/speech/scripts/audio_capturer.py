@@ -11,7 +11,7 @@ from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from frida_interfaces.msg import AudioData
 
-SAVE_PATH = "/tmp"
+SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
 SAVE_IT = 100
 run_frames = []
 
@@ -103,6 +103,7 @@ class AudioCapturer(Node):
 
     def save_audio(self):
         self.get_logger().info("Saving audio stream.")
+        os.makedirs(SAVE_PATH, exist_ok=True)
         output_file = os.path.join(SAVE_PATH, "last_run_audio.wav")
 
         with wave.open(output_file, "wb") as wf:

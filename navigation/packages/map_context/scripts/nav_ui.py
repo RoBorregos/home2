@@ -7,6 +7,7 @@ Provides controls for sending goals, changing maps, and monitoring nav2.
 
 import sys
 import os
+import shutil
 import math
 import threading
 import numpy as np
@@ -16,10 +17,13 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from nav_msgs.msg import OccupancyGrid, Path
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from std_srvs.srv import Empty
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from action_msgs.srv import CancelGoal
+from ament_index_python.packages import get_package_share_directory
+from frida_constants.navigation_constants import RTAB_MAPS_PATH, RESUME_NAV_SERVICE
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -97,15 +101,25 @@ class NavRosNode(Node):
     def __init__(self, signals):
         super().__init__('nav_ui')
         self.signals = signals
+        # 'navigation' or 'mapping'
+        self.ui_mode = self.declare_parameter('mode', 'navigation').value
+        self.map_name = self.declare_parameter('map_name', '').value
 
         # TF
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # QoS for map topics (transient local)
+        # QoS for map topics.
+        # Reliability: BEST_EFFORT so we're compatible with RTABMap's composable node
+        # container whether it publishes RELIABLE or BEST_EFFORT (RELIABLE subscriber is
+        # incompatible with BEST_EFFORT publisher — the reverse direction is fine).
+        # Durability: TRANSIENT_LOCAL in navigation so a late-joining nav_ui immediately
+        # receives the cached map; VOLATILE in mapping to avoid showing a stale map from
+        # a previous session.
+        map_durability = DurabilityPolicy.VOLATILE if self.ui_mode == 'mapping' else DurabilityPolicy.TRANSIENT_LOCAL
         map_qos = QoSProfile(
-            reliability=ReliabilityPolicy.RELIABLE,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            durability=map_durability,
             depth=1
         )
 
@@ -123,10 +137,16 @@ class NavRosNode(Node):
             OccupancyGrid, '/local_costmap/costmap',
             self.local_costmap_callback, 10)
 
+        # Global costmap is published by nav2 with RELIABLE + TRANSIENT_LOCAL
+        costmap_qos = QoSProfile(
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.TRANSIENT_LOCAL,
+            depth=1
+        )
         self.global_costmap_data = None
         self.global_costmap_sub = self.create_subscription(
             OccupancyGrid, '/global_costmap/costmap',
-            self.global_costmap_callback, map_qos)
+            self.global_costmap_callback, costmap_qos)
 
         # Publishers
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
@@ -136,6 +156,14 @@ class NavRosNode(Node):
         # Service client for cancelling navigation goals
         self.cancel_nav_client = self.create_client(
             CancelGoal, '/navigate_to_pose/_action/cancel_goal')
+
+        # Navigation mode: resume nav service
+        if self.ui_mode == 'navigation':
+            self._resume_nav_client = self.create_client(Empty, RESUME_NAV_SERVICE)
+
+        # Mapping mode: map save via /rtabmap/backup
+        if self.ui_mode == 'mapping':
+            self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
 
         # Robot pose
         self.robot_x = 0.0
@@ -190,6 +218,124 @@ class NavRosNode(Node):
                 1.0 - 2.0 * (q2.y * q2.y + q2.z * q2.z))
         except TransformException:
             pass
+
+    def _write_map_files(self, grid_msg, base_path):
+        """Write OccupancyGrid to <base_path>.pgm and <base_path>.yaml."""
+        w = grid_msg.info.width
+        h = grid_msg.info.height
+        resolution = grid_msg.info.resolution
+        origin_x = grid_msg.info.origin.position.x
+        origin_y = grid_msg.info.origin.position.y
+
+        # Build PGM pixel rows (OccupancyGrid is row-major, origin at bottom-left,
+        # so we flip vertically so row 0 in the file is the top of the map).
+        # ROS convention: 0=free→254, 100=lethal→0, -1=unknown→205
+        rows = []
+        for row_idx in range(h):
+            row = bytearray(w)
+            for col in range(w):
+                val = grid_msg.data[row_idx * w + col]
+                if val == 0:
+                    row[col] = 254
+                elif val < 0:
+                    row[col] = 205
+                else:
+                    row[col] = max(0, 255 - int(val * 2.55))
+            rows.append(row)
+        rows.reverse()  # flip: grid origin is bottom-left, PGM top-left
+
+        pgm_path = base_path + '.pgm'
+        with open(pgm_path, 'wb') as f:
+            f.write(f'P5\n{w} {h}\n255\n'.encode())
+            for row in rows:
+                f.write(bytes(row))
+
+        pgm_name = os.path.basename(pgm_path)
+        yaml_path = base_path + '.yaml'
+        with open(yaml_path, 'w') as f:
+            f.write(f'image: {pgm_name}\n')
+            f.write(f'resolution: {resolution}\n')
+            f.write(f'origin: [{origin_x:.6f}, {origin_y:.6f}, 0.0]\n')
+            f.write('negate: 0\n')
+            f.write('occupied_thresh: 0.65\n')
+            f.write('free_thresh: 0.25\n')
+
+    def save_map_async(self, name, on_done):
+        """Save RTABMap DB and 2D map YAML in a background thread.
+
+        Uses /rtabmap/backup which properly flushes all in-memory state to disk,
+        creates database_path+'.back', then reinitializes. We then copy that
+        .back file to the user's chosen name.
+        Pause+copy is NOT safe: pause does not flush in-memory graph data.
+        """
+        import time
+        # Snapshot map_data now (main thread) to avoid race with ROS spin thread
+        map_snapshot = self.map_data
+
+        def _worker():
+            try:
+                # --- Trigger RTABMap backup (flush + .back copy + reinit) ---
+                if not self._rtab_backup_client.wait_for_service(timeout_sec=10.0):
+                    on_done(False, "RTABMap backup service not available")
+                    return
+                future = self._rtab_backup_client.call_async(Empty.Request())
+                # Backup does: save2DMap → close(flush) → copy to .back → reinit
+                # This can take 10-30 s on a large database
+                elapsed = 0.0
+                while not future.done() and elapsed < 60.0:
+                    time.sleep(0.2)
+                    elapsed += 0.2
+                if not future.done():
+                    on_done(False, "Backup service timed out")
+                    return
+
+                # --- Copy .back file to user-specified name ---
+                db_back = os.path.join(RTAB_MAPS_PATH, self.map_name + '.back')
+                db_dst  = os.path.join(RTAB_MAPS_PATH, name + '.db')
+                if not os.path.exists(db_back):
+                    on_done(False, f"Backup file not found: {db_back}")
+                    return
+                shutil.copy2(db_back, db_dst)
+
+                # --- Save 2D map directly from already-received map_data ---
+                # Avoids map_saver_cli QoS issues — nav_ui already has the data.
+                if map_snapshot is None:
+                    on_done(False, "DB saved, 2D map failed: no map data received yet")
+                    return
+                nav_src  = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
+                maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
+                os.makedirs(maps_dir, exist_ok=True)
+                map_out  = os.path.join(maps_dir, name)
+                try:
+                    self._write_map_files(map_snapshot, map_out)
+                    on_done(True, f"{name}.db  |  {name}.yaml + {name}.pgm")
+                except Exception as e:
+                    on_done(False, f"DB saved, 2D map failed: {e}")
+            except Exception as e:
+                on_done(False, str(e))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def resume_nav_async(self, on_done):
+        """Call RESUME_NAV_SERVICE in a background thread."""
+        import time
+        def _worker():
+            try:
+                if not self._resume_nav_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "Resume Nav service not available")
+                    return
+                future = self._resume_nav_client.call_async(Empty.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 10.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                if not future.done():
+                    on_done(False, "Resume Nav service timed out")
+                    return
+                on_done(True, "Nav resumed")
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
 
     def send_goal(self, x, y, yaw):
         msg = PoseStamped()
@@ -288,7 +434,7 @@ class NavCanvas(QWidget):
         self.mode = 'goal'
 
         self.setMouseTracking(True)
-        self.setMinimumSize(600, 400)
+        self.setMinimumSize(320, 240)
         self.setFocusPolicy(Qt.StrongFocus)
 
     def map_to_pixel(self, mx, my):
@@ -594,11 +740,17 @@ class NavUI(QMainWindow):
     def __init__(self, ros_node):
         super().__init__()
         self.ros_node = ros_node
-        self.setWindowTitle("Navigation UI")
-        self.setMinimumSize(1200, 750)
+        self.ui_mode = ros_node.ui_mode
+        title = "Mapping UI" if self.ui_mode == 'mapping' else "Navigation UI"
+        self.setWindowTitle(title)
+        self.setMinimumSize(640, 400)
         self.setup_ui()
         self.apply_style()
         self.connect_ros_signals()
+        # Show DB name immediately — strip path, keep just the filename
+        map_name = ros_node.map_name
+        if map_name:
+            self.lbl_current_db.setText(f"Current: {os.path.basename(map_name)}")
 
     def setup_ui(self):
         central = QWidget()
@@ -629,8 +781,8 @@ class NavUI(QMainWindow):
 
         # Side panel
         panel = QWidget()
-        panel.setMaximumWidth(300)
-        panel.setMinimumWidth(260)
+        panel.setMaximumWidth(260)
+        panel.setMinimumWidth(200)
         panel_layout = QVBoxLayout(panel)
         panel_layout.setContentsMargins(8, 8, 8, 8)
         panel_layout.setSpacing(6)
@@ -641,7 +793,6 @@ class NavUI(QMainWindow):
         mode_btn_layout = QHBoxLayout()
         self.btn_goal_mode = QPushButton("Send Goal")
         self.btn_goal_mode.setCheckable(True)
-        self.btn_goal_mode.setChecked(True)
         self.btn_goal_mode.clicked.connect(lambda: self.set_mode('goal'))
         self.btn_initpose_mode = QPushButton("Set Pose")
         self.btn_initpose_mode.setCheckable(True)
@@ -668,7 +819,22 @@ class NavUI(QMainWindow):
         self.btn_cancel.clicked.connect(self.cancel_navigation)
         nav_layout.addWidget(self.btn_cancel)
 
+        self.btn_resume_nav = QPushButton("Resume Nav")
+        self.btn_resume_nav.setStyleSheet("QPushButton { background: #27ae60; } QPushButton:hover { background: #2ecc71; }")
+        self.btn_resume_nav.clicked.connect(self._on_resume_nav)
+        nav_layout.addWidget(self.btn_resume_nav)
+
         panel_layout.addWidget(nav_group)
+
+        # Mapping mode: hide nav controls, show only view mode
+        if self.ui_mode == 'mapping':
+            nav_group.setVisible(False)
+            self.btn_goal_mode.setVisible(False)
+            self.btn_initpose_mode.setVisible(False)
+            self.btn_view_mode.setChecked(True)
+            self.canvas.mode = 'view'
+        else:
+            self.btn_goal_mode.setChecked(True)
 
         # Robot info
         info_group = QGroupBox("Robot")
@@ -701,6 +867,18 @@ class NavUI(QMainWindow):
         layers_layout.addWidget(self.chk_path)
         panel_layout.addWidget(layers_group)
 
+        if self.ui_mode == 'mapping':
+            layers_group.setVisible(False)
+
+        # Mapping controls (save map — only shown in mapping mode)
+        mapping_group = QGroupBox("Mapping")
+        mapping_layout = QVBoxLayout(mapping_group)
+        self.btn_save_map = QPushButton("Save Map")
+        self.btn_save_map.clicked.connect(self._on_save_map)
+        mapping_layout.addWidget(self.btn_save_map)
+        panel_layout.addWidget(mapping_group)
+        mapping_group.setVisible(self.ui_mode == 'mapping')
+
         # Map DB
         db_group = QGroupBox("RTAB-Map DB")
         db_layout = QVBoxLayout(db_group)
@@ -717,7 +895,7 @@ class NavUI(QMainWindow):
         panel_layout.addWidget(self.lbl_connection)
 
         splitter.addWidget(panel)
-        splitter.setSizes([900, 300])
+        splitter.setSizes([500, 240])
 
         # Status bar
         self.status = QStatusBar()
@@ -819,6 +997,51 @@ class NavUI(QMainWindow):
         self.canvas.update()
         self.lbl_goal.setText("Goal: cancelled")
         self.status.showMessage("Navigation cancelled")
+
+    def _on_save_map(self):
+        from PyQt5.QtWidgets import QInputDialog
+        name, ok = QInputDialog.getText(self, "Save Map", "Map name:", text="my_map")
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+        self.btn_save_map.setEnabled(False)
+        self.status.showMessage(f"Saving '{name}'...")
+        self._save_result = None
+
+        def on_done(success, msg):
+            self._save_result = (success, msg)
+            QTimer.singleShot(0, self._on_save_done)
+
+        self.ros_node.save_map_async(name, on_done)
+
+    def _on_save_done(self):
+        self.btn_save_map.setEnabled(True)
+        success, msg = self._save_result
+        if success:
+            self.status.showMessage(f"Saved: {msg}")
+        else:
+            self.status.showMessage(f"Save failed: {msg}")
+            QMessageBox.warning(self, "Save Failed", msg)
+
+    def _on_resume_nav(self):
+        self.btn_resume_nav.setEnabled(False)
+        self.status.showMessage("Resuming nav...")
+        self._resume_result = None
+
+        def on_done(success, msg):
+            self._resume_result = (success, msg)
+            QTimer.singleShot(0, self._on_resume_nav_done)
+
+        self.ros_node.resume_nav_async(on_done)
+
+    def _on_resume_nav_done(self):
+        self.btn_resume_nav.setEnabled(True)
+        success, msg = self._resume_result
+        if success:
+            self.status.showMessage("Nav resumed")
+        else:
+            self.status.showMessage(f"Resume failed: {msg}")
+            QMessageBox.warning(self, "Resume Failed", msg)
 
     def check_canvas_actions(self):
         # Check for pending goal send

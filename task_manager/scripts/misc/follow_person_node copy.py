@@ -10,7 +10,7 @@ import rclpy
 from frida_interfaces.srv import FollowFace
 from geometry_msgs.msg import Point, PoseStamped
 from rclpy.node import Node
-from utils.logger import Logger
+from task_manager.utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16, GetFloat32List
 
 # import numpy as np

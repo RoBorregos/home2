@@ -18,12 +18,12 @@ class LidarCalibrator(Node):
         
         self.subscription = self.create_subscription(
             LaserScan,
-            '/scan_input',
+            '/scan',
             self.listener_callback,
             10)
         
         self.get_logger().info(f"LiDAR Calibration Tool started.")
-        self.get_logger().info(f"Waiting for {self.num_scans_to_collect} scans on /scan_input...")
+        self.get_logger().info(f"Waiting for {self.num_scans_to_collect} scans on /scan...")
         self.get_logger().info(f"Max robot radius: {self.max_radius}m, Padding: {self.padding} degrees.")
 
     def listener_callback(self, msg):

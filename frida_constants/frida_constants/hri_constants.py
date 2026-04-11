@@ -8,6 +8,8 @@ WAKEWORD_TOPIC = "/hri/speech/oww"
 USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
 RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
 PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"
+VAD_AUDIO_TOPIC = "/hri/vadAudioChunk"
+VOICE_ACTIVITY_TOPIC = "/hri/voice_activity"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
@@ -18,6 +20,9 @@ CATEGORIZE_SERVICE = "/hri/nlp/categorize"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 RAG_SERVICE = "/hri/rag/answer_question"
+ADD_ENTRY_SERVICE = "/hri/embeddings/add_entry"
+QUERY_ENTRY_SERVICE = "/hri/embeddings/query_entry"
+FIND_CLOSEST_SERVICE = "/hri/embeddings/find_closest"
 DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
 DISPLAY_MAP_TOPIC = "/hri/display/map"
 DISPLAY_PUBLISHER = "/hri/display/frida_questions"
@@ -79,7 +84,11 @@ USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
 
+# Fundamental frequency range for human voice (Hz)
+VOWEL_FREQ_LOW = 85
+VOWEL_FREQ_HIGH = 255
+
 # HRI Subtask Manager
-SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.5
-SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.5
+SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.7
+SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.7
 TIMEOUT = 5.0

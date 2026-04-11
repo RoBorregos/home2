@@ -22,6 +22,18 @@ FRONT_LOW_STARE = {
     "degrees": True,
 }
 
+FRONT_STARE_CARRY_BAG = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -42.7,
+        "joint3": -118.6,
+        "joint4": 2.9,
+        "joint5": 122.3,
+        "joint6": 224.1,
+    },
+    "degrees": True,
+}
+
 TABLE_STARE = {
     "joints": {
         "joint1": -90.0,
@@ -58,6 +70,18 @@ PICK_STARE_AT_TABLE = {
     "degrees": True,
 }
 
+CUTLERY_STARE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -10.0,
+        "joint3": -170.0,
+        "joint4": 0.0,
+        "joint5": 100.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 # Creditos a dominguez
 
 
@@ -69,6 +93,18 @@ NAV_POSE = {
         "joint4": 0,
         "joint5": 10.0,
         "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
+NAV_CARRY_BAG_POSE = {
+    "joints": {
+        "joint1": -83.0,
+        "joint2": -55.5,
+        "joint3": -63.1,
+        "joint4": -0.8,
+        "joint5": 118.4,
+        "joint6": 228.6,
     },
     "degrees": True,
 }
@@ -112,10 +148,13 @@ PLACE_FLOOR_RIGHT = {
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
+    "front_stare_carry_bag": FRONT_STARE_CARRY_BAG,
     "table_stare": TABLE_STARE,
     "receive_object": RECEIVE_OBJECT,
+    "cutlery_stare": CUTLERY_STARE,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
+    "nav_carry_bag_pose": NAV_CARRY_BAG_POSE,
     "carry_pose": CARRY_POSE,
     "place_floor_right": PLACE_FLOOR_RIGHT,
     "place_floor_left": PLACE_FLOOR_LEFT,

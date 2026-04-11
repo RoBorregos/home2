@@ -12,6 +12,7 @@
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
+  <depend>lifecycle_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>p9n_node</depend>
   <depend>rclcpp_components</depend>

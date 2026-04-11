@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# Pre-commit hook: blocks accidental changes to the xarm_ros2 submodule.
+# To intentionally update the submodule, run:
+#   ALLOW_SUBMODULE_CHANGE=1 git commit ...
+#
+
+SUBMODULE_PATH="manipulation/packages/xarm_ros2"
+
+if git diff --cached --name-only | grep -q "^${SUBMODULE_PATH}$"; then
+    if [ "${ALLOW_SUBMODULE_CHANGE}" = "1" ]; then
+        echo "[pre-commit] xarm_ros2 submodule change allowed (ALLOW_SUBMODULE_CHANGE=1)"
+        exit 0
+    fi
+
+    echo ""
+    echo "============================================================"
+    echo " BLOCKED: xarm_ros2 submodule pointer was modified"
+    echo "============================================================"
+    echo ""
+    echo " You are about to commit a change to:"
+    echo "   ${SUBMODULE_PATH}"
+    echo ""
+    echo " This is usually accidental (e.g. running git add -A after"
+    echo " cd-ing into the submodule). Changing the submodule pointer"
+    echo " affects everyone on the team."
+    echo ""
+    echo " If this is intentional, re-run with:"
+    echo "   ALLOW_SUBMODULE_CHANGE=1 git commit ..."
+    echo ""
+    echo " To undo the staged change:"
+    echo "   git restore --staged ${SUBMODULE_PATH}"
+    echo "============================================================"
+    echo ""
+    exit 1
+fi
