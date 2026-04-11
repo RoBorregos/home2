@@ -18,6 +18,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURE_TOPIC,
     COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
+    DETECTIONS_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
     FIND_SEAT_TOPIC,
     FOLLOW_BY_TOPIC,
@@ -37,7 +38,7 @@ from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.msg import ObjectDetection, PersonList
+from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray, PersonList
 from frida_interfaces.srv import (
     BeverageLocation,
     CountByColor,
@@ -58,6 +59,7 @@ from frida_interfaces.srv import (
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
+from rclpy.task import Future
 from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
 from std_msgs.msg import Int16
@@ -126,6 +128,14 @@ class VisionTasks:
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
+        )
+
+        self._latest_detections_future: Future = Future()
+        self.detections_subscriber = self.node.create_subscription(
+            ObjectDetectionArray,
+            DETECTIONS_TOPIC,
+            self._detections_callback,
+            10,
         )
 
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
@@ -448,47 +458,36 @@ class VisionTasks:
         Logger.success(self.node, "Shelf detected")
         return Status.EXECUTION_SUCCESS, detections
 
+    def _detections_callback(self, msg: ObjectDetectionArray) -> None:
+        if not self._latest_detections_future.done():
+            self._latest_detections_future.set_result(msg)
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
     def detect_objects(
         self, timeout: float = TIMEOUT, ignore_labels: list[str] = [], label: str = "all"
     ) -> tuple[Status, list[BBOX]]:
-        """Detect the object in the image"""
+        """Return the latest frame of detections published on /vision/detections."""
         Logger.info(self.node, "Waiting for object detection")
-        request = DetectionHandler.Request()
-        request.closest_object = False
-        request.label = label
         detections: list[BBOX] = []
-        try:
-            future = self.object_detector_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result = future.result()
-            # print(f"result: {result}")
 
-            if not result.success:
+        self._latest_detections_future = Future()
+        try:
+            rclpy.spin_until_future_complete(
+                self.node, self._latest_detections_future, timeout_sec=timeout
+            )
+            msg = self._latest_detections_future.result()
+            if msg is None:
                 Logger.warn(self.node, "No object detected")
                 return Status.TARGET_NOT_FOUND, detections
 
-            results2 = result.detection_array.detections
-            """
-            int32 label
-            string label_text
-            float32 score
-            float32 ymin
-            float32 xmin
-            float32 ymax
-            float32 xmax
-            geometry_msgs/PointStamped point3d
-            """
-            # for each result
-            for detection in results2:
+            for detection in msg.detections:
+                if detection.label_text in ignore_labels:
+                    continue
                 object_detection = BBOX()
                 object_detection.x1 = detection.xmin
                 object_detection.x2 = detection.xmax
                 object_detection.y1 = detection.ymin
                 object_detection.y2 = detection.ymax
-                if detection.label_text in ignore_labels:
-                    continue
                 object_detection.classname = detection.label_text
                 object_detection.h = detection.ymax - detection.ymin
                 object_detection.w = detection.xmax - detection.xmin
@@ -509,6 +508,11 @@ class VisionTasks:
         except Exception as e:
             Logger.error(self.node, f"Error detecting objects: {e}")
             return Status.EXECUTION_ERROR, detections
+
+        if not detections:
+            Logger.warn(self.node, "No object detected")
+            return Status.TARGET_NOT_FOUND, detections
+
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
 
