@@ -104,6 +104,9 @@ case $TASK in
     "--help-me-carry")
         RUN="ros2 run task_manager help_me_carry.py"
         ;;
+    "--laundry")
+        RUN="ros2 run task_manager doing_laundry_task_manager.py"
+        ;;
     "--gpsr")
         RUN="ros2 run task_manager gpsr_task_manager.py"
         ;;

@@ -25,13 +25,14 @@ class DoingLaundryTM(Node):
 
     def __init__(self):
         super().__init__("doing_laundry_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=[])
-        self.current_state = DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON
+        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=["manipulation", "navigation", "hri", "vision"])
+        self.current_state = DoingLaundryTM.TaskStates.START
         self.running_task = True
         self.state_start_time = None
         self.state_times = {}
         self.previous_state = None
         Logger.info(self, "DoingLaundryTM has started.")
+
 
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
@@ -64,22 +65,30 @@ class DoingLaundryTM(Node):
             self.current_state = DoingLaundryTM.TaskStates.DETECT_BASKET
 
         elif self.current_state == DoingLaundryTM.TaskStates.DETECT_BASKET:
-            Logger.info(self, "Detecting laundry basket.")
-            status, basket = self.subtask_manager.vision.get_laundry_basket()
-            if status == Status.EXECUTION_SUCCESS:
-                Logger.info(self, f"Basket found at {basket}")
-                self.basket_centroid = basket
+            Logger.info(self, "Detecting laundry basket from vision detections.")
+            # Use vision detections to find the basket
+            detections = self.subtask_manager.vision.get_detections()
+            basket_detection = None
+            if detections:
+                for det in detections:
+                    if det.get("label", "").lower() == "basket":
+                        basket_detection = det
+                        break
+            if basket_detection:
+                Logger.info(self, f"Basket detected: {basket_detection}")
+                self.basket_detection = basket_detection
                 self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY
             else:
-                Logger.warn(self, "Could not detect basket. Retrying...")
+                Logger.warn(self, "Could not detect basket in vision detections. Retrying...")
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_LAUNDRY:
-            Logger.info(self, "Attempting to pick laundry from basket.")
-            result = self.subtask_manager.manipulation.pick_from_basket(self.basket_centroid)
+            Logger.info(self, "Attempting to pick the basket using pick_object.")
+            # Use pick_object from manipulation to pick the basket
+            result = self.subtask_manager.manipulation.pick_object(self.basket_detection)
             if result == Status.EXECUTION_SUCCESS:
-                Logger.success(self, "Successfully picked laundry item.")
+                Logger.success(self, "Successfully picked the basket.")
             else:
-                Logger.error(self, "Failed to pick laundry item.")
+                Logger.error(self, "Failed to pick the basket.")
             self.current_state = DoingLaundryTM.TaskStates.END
 
         elif self.current_state == DoingLaundryTM.TaskStates.END:
