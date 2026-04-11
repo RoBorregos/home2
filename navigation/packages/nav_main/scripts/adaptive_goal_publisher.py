@@ -33,11 +33,13 @@ class AdaptiveGoalPublisher(Node):
         
         self.declare_parameter("approach_min_dist", 0.5)
         self.declare_parameter("approach_max_dist", 1.2)
+        self.declare_parameter("lock_proximity_threshold", 1.0)  # Distancia máxima a la meta original
+
         self.approach_min_dist = self.get_parameter("approach_min_dist").value
         self.approach_max_dist = self.get_parameter("approach_max_dist").value
+        self.lock_threshold = self.get_parameter("lock_proximity_threshold").value
 
         self.person_position = None
-
         self.original_goal = None
         self.current_costmap = None
         self.costmap_info = None
@@ -92,14 +94,37 @@ class AdaptiveGoalPublisher(Node):
         self.costmap_info = msg.info
 
     def tracking_callback(self, msg: PointStamped):
-        """Update the live person's position in the map frame."""
+        """Update the live person's position in the map frame with proximity gating."""
         try:
-            # We can use lookup_transform without time since we just want the latest
             transform = self.tf_buffer.lookup_transform(
                 "map", msg.header.frame_id, msg.header.stamp, rclpy.duration.Duration(seconds=0.5)
             )
             transformed = do_transform_point(msg, transform)
-            self.person_position = (transformed.point.x, transformed.point.y)
+            new_x = transformed.point.x
+            new_y = transformed.point.y
+
+            # 1. Chequeo contra la meta original (ancla de la mesa)
+            if self.original_goal:
+                gx = self.original_goal.pose.position.x
+                gy = self.original_goal.pose.position.y
+                dist_to_goal = math.sqrt((new_x - gx)**2 + (new_y - gy)**2)
+                
+                if dist_to_goal > self.lock_threshold:
+                    # La persona está muy lejos de la mesa objetivo, ignorar
+                    return
+
+            # 2. Hysteresis/Lock: Evitar saltar entre personas en la misma mesa
+            if self.person_position:
+                prev_x, prev_y = self.person_position
+                dist_to_prev = math.sqrt((new_x - prev_x)**2 + (new_y - prev_y)**2)
+                
+                # Si el salto es demasiado grande (> 1m), probablemente es otra persona
+                # y nos quedamos con la que ya teníamos
+                if dist_to_prev > 1.2:
+                    return
+
+            self.person_position = (new_x, new_y)
+            
         except TransformException as e:
             self.get_logger().warn(f"Could not transform tracking point to map: {e}")
 
@@ -108,8 +133,9 @@ class AdaptiveGoalPublisher(Node):
         self.original_goal = msg
         self.is_goal_blocked = False
         self.last_published_goal = None
+        self.person_position = None  # Reset lock when goal changes
         self.get_logger().info(
-            f"New original goal: ({msg.pose.position.x:.2f}, {msg.pose.position.y:.2f})"
+            f"New original goal (Table Anchor): ({msg.pose.position.x:.2f}, {msg.pose.position.y:.2f})"
         )
 
     def get_robot_position(self):
