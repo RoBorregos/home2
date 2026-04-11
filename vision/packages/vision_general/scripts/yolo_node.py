@@ -6,6 +6,7 @@ Node to initialize and provide a YOLO instance for reuse across other files.
 
 import pathlib
 from vision_general.utils.trt_utils import load_yolo_trt
+from ultralytics import YOLO
 
 import rclpy
 import rclpy.qos
