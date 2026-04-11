@@ -16,7 +16,7 @@ var classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1Manipulati
     [ "get_named_target", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#acbf59eb45c43409ffb363830439484a7", null ],
     [ "get_optimal_pose_for_plane", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ad7caad03143d77a04f5f94a3bd14a253", null ],
     [ "get_optimal_position_for_plane", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a33a7f9898942f918d456f92e591fdaf2", null ],
-    [ "go_to_hand", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a5974d6bb09d5320ec32dadbb7dc9176f", null ],
+    [ "go_to_hand", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#adf06cd3eaa389289b56b8294eefb074c", null ],
     [ "move_joint_positions", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a2240523eee77c44fc5b6b590d68848c8", null ],
     [ "move_to_position", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a6720c65146319e40b1b9b29dc68c9563", null ],
     [ "open_gripper", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3d425f1ee7470428b878096464a00095", null ],
