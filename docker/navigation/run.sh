@@ -128,6 +128,9 @@ case $TASK in
     "--hric")
         RUN="ros2 run nav_main launch_nav.py ${ARGS[@]:1}"
         ;;
+    "--restaurant")
+        RUN="ros2 run nav_main launch_nav.py ${ARGS[@]:1}"
+        ;;
     "--ppc")
         RUN="ros2 run nav_main launch_nav.py ${ARGS[@]:1}"
         ;;
