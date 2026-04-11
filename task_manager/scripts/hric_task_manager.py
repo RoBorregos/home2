@@ -178,7 +178,8 @@ class HRIC_TM(Node):
                 question="What is your name?",
                 query="name",
                 context="The question 'What is your name?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your name?' was asked"
+                initial_prompt="The question 'What is your name?' was asked",
+                retries=5
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -190,7 +191,8 @@ class HRIC_TM(Node):
                 question="What is your favorite drink?",
                 query="LLM_drink",
                 context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your favorite drink??' was asked"
+                initial_prompt="The question 'What is your favorite drink?' was asked",
+                retries=5
             )
 
             if status == Status.EXECUTION_SUCCESS:
