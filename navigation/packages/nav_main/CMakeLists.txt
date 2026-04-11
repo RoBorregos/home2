@@ -11,6 +11,10 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(rtabmap_slam REQUIRED)
 find_package(rtabmap_sync REQUIRED)
@@ -21,8 +25,28 @@ find_package(ament_index_cpp REQUIRED)
 install(DIRECTORY launch config bt
   DESTINATION share/${PROJECT_NAME})
 
+# //// Composable node: ControllerDualshock ////
+add_library(controller_dualshock_component SHARED
+  src/controller_dualshock.cpp
+)
+ament_target_dependencies(controller_dualshock_component
+  rclcpp
+  rclcpp_action
+  rclcpp_components
+  sensor_msgs
+  geometry_msgs
+  nav2_msgs
+)
+rclcpp_components_register_nodes(controller_dualshock_component
+  "nav_main::ControllerDualshock"
+)
 
-
+install(TARGETS
+  controller_dualshock_component
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
   
   ament_python_install_package(${PROJECT_NAME})
 
