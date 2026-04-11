@@ -76,6 +76,7 @@ class HRIC_TM(Node):
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         # Face recognition starts off, activated only when needed
         self.subtask_manager.vision.deactivate_face_recognition()
+        self.subtask_manager.vision.camera_upside_down(False)
         Logger.info(self, "HRICTaskManager has started.")
 
     def get_current_guest(self) -> Guest:
@@ -305,6 +306,8 @@ class HRIC_TM(Node):
                 velocity=0.5,
                 degrees=True,
             )
+            if self.carrying_bag:
+                self.subtask_manager.vision.camera_upside_down(True)
             angle = 0
 
             for seat_angle in self.seat_angles:
