@@ -20,5 +20,6 @@ var searchData=
   ['tracker_5fnode_2epy_17',['tracker_node.py',['../tracker__node_8py.html',1,'']]],
   ['tracker_5fnode_5ffregoso_2epy_18',['tracker_node_fregoso.py',['../tracker__node__fregoso_8py.html',1,'']]],
   ['trash_5fdetection_5fnode_2epy_19',['trash_detection_node.py',['../trash__detection__node_8py.html',1,'']]],
-  ['trt_5futils_2epy_20',['trt_utils.py',['../trt__utils_8py.html',1,'']]]
+  ['trashcandetection_2esrv_20',['TrashcanDetection.srv',['../TrashcanDetection_8srv.html',1,'']]],
+  ['trt_5futils_2epy_21',['trt_utils.py',['../trt__utils_8py.html',1,'']]]
 ];

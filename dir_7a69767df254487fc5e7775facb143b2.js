@@ -22,8 +22,10 @@ var dir_7a69767df254487fc5e7775facb143b2 =
     [ "SaveName.srv", "SaveName_8srv.html", null ],
     [ "SetDetectorClasses.srv", "SetDetectorClasses_8srv.html", null ],
     [ "SetPointingObjectClasses.srv", "SetPointingObjectClasses_8srv.html", null ],
+    [ "SetTrashCategory.srv", "SetTrashCategory_8srv.html", null ],
     [ "ShelfDetectionHandler.srv", "ShelfDetectionHandler_8srv.html", null ],
     [ "ShowDetection.srv", "ShowDetection_8srv.html", null ],
     [ "TrackBy.srv", "TrackBy_8srv.html", null ],
+    [ "TrashcanDetection.srv", "TrashcanDetection_8srv.html", null ],
     [ "YoloDetect.srv", "YoloDetect_8srv.html", null ]
 ];

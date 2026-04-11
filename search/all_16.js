@@ -44,7 +44,7 @@ var searchData=
   ['visualize_41',['VISUALIZE',['../classpointing__detection_1_1DetectPointingObjectServer.html#a9a2d6aa34e568d3b8acfe56c1be9b836',1,'pointing_detection::DetectPointingObjectServer']]],
   ['visualize_42',['visualize',['../classzed__simulator_1_1ZedSimulator.html#a04ace0fe9e0fef80137a5f0cf4b5f963',1,'zed_simulator::ZedSimulator']]],
   ['visualize_5f3d_5fdetections_43',['visualize_3d_detections',['../classobject__detector__node_1_1object__detector__node.html#ac26731677e02c0a1e3b2b043b7452a86',1,'object_detector_node::object_detector_node']]],
-  ['visualize_5fdetections_44',['visualize_detections',['../classobject__detector__node_1_1object__detector__node.html#a1412385c48a267014d883ac12bb9387f',1,'object_detector_node::object_detector_node']]],
+  ['visualize_5fdetections_44',['visualize_detections',['../classobject__detector__node_1_1object__detector__node.html#a1ed674172bfd96bf229393a5c3bd3296',1,'object_detector_node::object_detector_node']]],
   ['visualizer_5fpub_45',['visualizer_pub',['../classpointing__detection_1_1DetectPointingObjectServer.html#ade5a75bb3d159e28d1fe4b2520337bcb',1,'pointing_detection::DetectPointingObjectServer']]],
   ['voice_5factivity_5ftopic_46',['VOICE_ACTIVITY_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#aeae565aebb4e2edc79e98eaa9cfdc111',1,'frida_constants::hri_constants']]],
   ['voltage_5fval_47',['voltage_val',['../classdashgo__driver2_1_1DashgoDriver.html#a39da7423b70a33da7f5babdef848fe3b',1,'dashgo_driver2::DashgoDriver']]],

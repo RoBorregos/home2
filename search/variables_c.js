@@ -15,7 +15,7 @@ var searchData=
   ['last_5fprocess_5fpoint_12',['last_process_point',['../classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html#a17c5ced9ff30f7997590572902602724',1,'pick_and_place::manipulation_client::ManipulationClient']]],
   ['last_5freid_5fextraction_13',['last_reid_extraction',['../classnew__tracker_1_1SingleTracker.html#a3ca2f9f396003e11a8c08526683657d0',1,'new_tracker.SingleTracker.last_reid_extraction()'],['../classtracker__node_1_1SingleTracker.html#a0c72e0bea30d639fb62efee3335f7e07',1,'tracker_node.SingleTracker.last_reid_extraction()']]],
   ['latest_5fdepth_14',['latest_depth',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#a499301d2f65bc31d3a0a625a03bc4714',1,'flat_grasp_estimator::FlatGraspEstimator']]],
-  ['latest_5fdetections_15',['latest_detections',['../classtrash__detection__node_1_1TrashDetectionNode.html#a3bc5abe3485e2fa69e43754d12df284c',1,'trash_detection_node::TrashDetectionNode']]],
+  ['latest_5fdetections_15',['latest_detections',['../classobject__detector__node_1_1object__detector__node.html#ac0ada104d311b96cbba2f5018643d97f',1,'object_detector_node::object_detector_node']]],
   ['latest_5fflat_5fgrasp_16',['latest_flat_grasp',['../classPickManager_1_1PickManager.html#a48bfebc80a081b93b508b8e2920cfde6',1,'PickManager::PickManager']]],
   ['latest_5fframe_17',['latest_frame',['../classyolo__node_1_1YoloNode.html#a897356ca5e18430da8b4d2f8684c810d',1,'yolo_node::YoloNode']]],
   ['latest_5fperson_5fpoint_18',['latest_person_point',['../classperson__in__map_1_1PersonLocation.html#a3d95d28a680964e016292b66e5c2d07b',1,'person_in_map::PersonLocation']]],
