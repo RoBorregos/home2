@@ -17,6 +17,12 @@ from sensor_msgs_py import point_cloud2
 import numpy as np
 import json
 
+# PlaceManager Integration Notes:
+# The special_request parameter provides dynamic placement constraints:
+# - max_distance: Maximum xy-plane distance for close_by placements (used by heatmap)
+# - max_height: Maximum z-direction offset for "top" placements (safety margin)
+# These replace hardcoded constants, allowing per-call customization via place_close_by()
+
 
 def get_object_cloud_params(object_cluster):
     # 8. Compute Centroid/Height and Set Pour Pose
@@ -232,9 +238,14 @@ class PlaceManager:
                 request_dict = json.loads(place_params.special_request)
                 request = request_dict.get("request", "")
                 special_position = request_dict.get("position", "")
+                # Extract dynamic distance parameters from special_request
+                max_distance = request_dict.get("max_distance", 0.3)
+                max_height = request_dict.get("max_height", 0.2)
                 close_by_point = None
                 if request == "close_by":
-                    self.node.get_logger().info("Using close by place pose")
+                    self.node.get_logger().info(
+                        f"Using close by place pose with max_distance={max_distance}, max_height={max_height}"
+                    )
                     close_by_object_name = request_dict["object"]
                     for i in range(5):
                         try:
@@ -270,7 +281,7 @@ class PlaceManager:
                         return None
 
                     if special_position == "top":
-                        # Place object on top of object centroid
+                        # Place object on top of object centroid with max_height constraint
                         result_pose.header.frame_id = close_by_point.header.frame_id
                         result_pose.pose.position.x = close_by_point.point.x
                         result_pose.pose.position.y = close_by_point.point.y
@@ -302,7 +313,11 @@ class PlaceManager:
                             )
 
                         # Set z to the object top and add safety margin
-                        result_pose.pose.position.z = top_z + TOP_SAFETY_MARGIN
+                        # max_height acts as additional safety/clearance for "top" position
+                        result_pose.pose.position.z = top_z + max_height + TOP_SAFETY_MARGIN  
+                        self.node.get_logger().info(
+                            f"Top position set to z={result_pose.pose.position.z} with max_height constraint={max_height}"
+                        )
                         place_on_top = True
 
                     elif (
@@ -311,6 +326,9 @@ class PlaceManager:
                     ):
                         heatmap_request.close_point = close_by_point
                         heatmap_request.special_request = place_params.special_request
+                        self.node.get_logger().info(
+                            f"Position '{special_position}' using max_distance={max_distance} for heatmap search"
+                        )
 
             # if the task is not a forced pose or place on top of an object,
             # we use the perception service to get optimal place pose

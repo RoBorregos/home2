@@ -540,6 +540,89 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    def place_close_by(
+        self,
+        target_object: str,
+        position: str = "close",
+        max_distance: float = 0.3,
+        max_height: float = 0.2,
+    ) -> int:
+        """
+        Place the grasped object close to a target object.
+
+        Args:
+            target_object (str): Name of the reference object (e.g., "trash_bin", "shelf")
+            position (str): Relative position for placement. Options:
+                - "close": Default close placement (uses max_distance)
+                - "top": Place on top of the object (uses max_height)
+                - "front": Place in front of the object
+                - "back": Place behind the object
+                - "left": Place to the left of the object
+                - "right": Place to the right of the object
+            max_distance (float): Maximum distance (in meters) for searching in the plane
+                                 when position is "close", "front", "back", "left", or "right"
+            max_height (float): Maximum height difference (in meters) when position is "top"
+
+        Returns:
+            Status code indicating success or failure
+        """
+        import json
+
+        # Validate position parameter
+        valid_positions = ["close", "top", "front", "back", "left", "right"]
+        if position.lower() not in valid_positions:
+            Logger.error(
+                self.node,
+                f"Invalid position '{position}'. Must be one of: {', '.join(valid_positions)}",
+            )
+            return Status.EXECUTION_ERROR
+
+        Logger.info(
+            self.node,
+            f"Placing close to '{target_object}' at position '{position}' "
+            f"(max_distance={max_distance}m, max_height={max_height}m)",
+        )
+
+        # Build special request JSON
+        special_request_dict = {
+            "request": "close_by",
+            "object": target_object,
+            "position": position.lower(),
+            "max_distance": max_distance,
+            "max_height": max_height,
+        }
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.special_request = json.dumps(special_request_dict)
+
+        self.node.get_logger().info(
+            f"Sending place_close_by request with params: {special_request_dict}"
+        )
+
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place_close_by request")
+            return Status.EXECUTION_ERROR
+
+        Logger.info(self.node, "Place close_by request sent")
+
+        # Wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+
+        Logger.info(self.node, f"Place close_by result: {result}")
+
+        if result.success:
+            Logger.success(self.node, f"Place close to '{target_object}' successful")
+            return Status.EXECUTION_SUCCESS
+        else:
+            Logger.error(self.node, f"Place close to '{target_object}' failed")
+            return Status.EXECUTION_ERROR
+        
     def pour(
         self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False
     ):
