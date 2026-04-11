@@ -19,6 +19,10 @@ def launch_function(context, *args, **kwargs):
     nav2_activate = LaunchConfiguration('nav2', default='true')
     use_sim = LaunchConfiguration('use_sim', default='false')
 
+    # Adaptive Goal Parameters
+    approach_min_dist = LaunchConfiguration('approach_min_dist', default='0.5')
+    approach_max_dist = LaunchConfiguration('approach_max_dist', default='1.2')
+
     nav_manager_node = LifecycleNode(
         package='nav_main',
         executable='nav_lifecycle_manager.py',
@@ -53,6 +57,18 @@ def launch_function(context, *args, **kwargs):
         output='screen',
     )
 
+    adaptive_goal_node = Node(
+        package='nav_main',
+        executable='adaptive_goal_publisher.py',
+        name='adaptive_goal_publisher',
+        output='screen',
+        parameters=[{
+            'approach_min_dist': approach_min_dist,
+            'approach_max_dist': approach_max_dist,
+            'use_sim_time': use_sim
+        }]
+    )
+
     from launch_ros.event_handlers import OnStateTransition
     
     wait_for_activation = RegisterEventHandler(
@@ -63,6 +79,7 @@ def launch_function(context, *args, **kwargs):
                 LogInfo(msg="[NavComposition] Dependencias externas listas"),
                 nav_basics,
                 rtabmapnav,
+                adaptive_goal_node,
             ]
         )
     )

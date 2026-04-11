@@ -741,14 +741,22 @@ class VisionTasks:
 
             if not result.found:
                 Logger.warn(self.node, "No person found")
-                return Status.TARGET_NOT_FOUND, result.point
+                from geometry_msgs.msg import PointStamped
+
+                return Status.TARGET_NOT_FOUND, PointStamped()
 
         except Exception as e:
             Logger.error(self.node, f"Error tracking person: {e}")
-            return Status.EXECUTION_ERROR, result.point
+            from geometry_msgs.msg import PointStamped
+
+            return Status.EXECUTION_ERROR, PointStamped()
 
         Logger.success(self.node, "Person tracking success")
-        return Status.EXECUTION_SUCCESS, result.point
+        from geometry_msgs.msg import PointStamped
+
+        return Status.EXECUTION_SUCCESS, result.people.list[0].point3d if len(
+            result.people.list
+        ) > 0 else PointStamped()
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)

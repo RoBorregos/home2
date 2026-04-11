@@ -132,6 +132,9 @@ class RestaurantTaskManager(Node):
             self.subtask_manager.hri.say("I will go towards you")
             Logger.state(self, "Navigating to customer with adaptive goal")
 
+            # Activate continuous tracking so live coordinates are available
+            self.subtask_manager.vision.track_person_by("gestures", "wavingCustomer")
+
             self.subtask_manager.nav.change_bt("adaptive")
             goal_msg = PoseStamped()
             goal_msg.header.frame_id = "map"
@@ -145,7 +148,7 @@ class RestaurantTaskManager(Node):
             self.subtask_manager.nav.move_to_point(self.point)
 
             self.subtask_manager.manipulation.follow_person(True)
-            self.subtask_manager.nav.follow_person(True)
+            self.subtask_manager.nav.follow_person(False)
             if self.order is None:
                 self.current_state = RestaurantTaskManager.TaskStates.TAKE_ORDER
             else:

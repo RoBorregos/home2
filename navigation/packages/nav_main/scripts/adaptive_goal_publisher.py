@@ -5,11 +5,12 @@ import math
 
 import numpy as np
 import rclpy
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 from nav_msgs.msg import OccupancyGrid
 from rclpy.node import Node
 from std_msgs.msg import Bool
 from tf2_ros import Buffer, TransformListener, TransformException
+from tf2_geometry_msgs import do_transform_point
 
 
 class AdaptiveGoalPublisher(Node):
@@ -29,6 +30,13 @@ class AdaptiveGoalPublisher(Node):
         self.search_radius = self.get_parameter("search_radius").value
         check_rate = self.get_parameter("check_rate").value
         self.safety_margin = self.get_parameter("safety_margin_cells").value
+        
+        self.declare_parameter("approach_min_dist", 0.5)
+        self.declare_parameter("approach_max_dist", 1.2)
+        self.approach_min_dist = self.get_parameter("approach_min_dist").value
+        self.approach_max_dist = self.get_parameter("approach_max_dist").value
+
+        self.person_position = None
 
         self.original_goal = None
         self.current_costmap = None
@@ -50,6 +58,13 @@ class AdaptiveGoalPublisher(Node):
             PoseStamped,
             "/adaptive_nav/original_goal",
             self.goal_callback,
+            10,
+        )
+
+        self.tracking_sub = self.create_subscription(
+            PointStamped,
+            "/vision/tracking_results",
+            self.tracking_callback,
             10,
         )
 
@@ -75,6 +90,18 @@ class AdaptiveGoalPublisher(Node):
             (msg.info.height, msg.info.width)
         )
         self.costmap_info = msg.info
+
+    def tracking_callback(self, msg: PointStamped):
+        """Update the live person's position in the map frame."""
+        try:
+            # We can use lookup_transform without time since we just want the latest
+            transform = self.tf_buffer.lookup_transform(
+                "map", msg.header.frame_id, msg.header.stamp, rclpy.duration.Duration(seconds=0.5)
+            )
+            transformed = do_transform_point(msg, transform)
+            self.person_position = (transformed.point.x, transformed.point.y)
+        except TransformException as e:
+            self.get_logger().warn(f"Could not transform tracking point to map: {e}")
 
     def goal_callback(self, msg: PoseStamped):
         """Receive a new original goal from the task manager."""
@@ -266,9 +293,66 @@ class AdaptiveGoalPublisher(Node):
 
         return None
 
+    def radial_sampling_approach(self, robot_x, robot_y, goal_x, goal_y):
+        """
+        Sample candidate points in a ring around the detected person's live position.
+        Picks the free one closest to the robot.
+        Returns (wx, wy, quaternion) so the robot forces orientation to the person.
+        """
+        center_x = self.person_position[0] if self.person_position is not None else goal_x
+        center_y = self.person_position[1] if self.person_position is not None else goal_y
+
+        N = 36
+        candidates = []
+        for i in range(N):
+            angle = i * (2 * math.pi / N)
+            for dist in np.linspace(self.approach_min_dist, self.approach_max_dist, 5):
+                cand_x = center_x + dist * math.cos(angle)
+                cand_y = center_y + dist * math.sin(angle)
+                
+                mx, my = self.world_to_costmap(cand_x, cand_y)
+                if mx is not None:
+                    cost = self.get_cost_at(mx, my)
+                    if 0 <= cost < self.free_threshold:
+                        rb_dist = math.hypot(robot_x - cand_x, robot_y - cand_y)
+                        candidates.append((rb_dist, cand_x, cand_y))
+        
+        if not candidates:
+            return None
+        
+        # sort by distance from robot
+        candidates.sort(key=lambda x: x[0])
+        best_x = candidates[0][1]
+        best_y = candidates[0][2]
+
+        # calculate quaternion to face the person
+        yaw = math.atan2(center_y - best_y, center_x - best_x)
+        qz = math.sin(yaw / 2.0)
+        qw = math.cos(yaw / 2.0)
+        
+        from geometry_msgs.msg import Quaternion
+        q = Quaternion()
+        q.x = 0.0
+        q.y = 0.0
+        q.z = qz
+        q.w = qw
+        
+        return (best_x, best_y, q)
+
     def find_best_approach_point(self, goal_x, goal_y):
         robot_pos = self.get_robot_position()
         if robot_pos is not None:
+            # 1. Radial Sampling Strategy
+            result = self.radial_sampling_approach(
+                robot_pos[0], robot_pos[1], goal_x, goal_y
+            )
+            if result is not None:
+                self.get_logger().info(
+                    f"Radial sampling found approach point: ({result[0]:.2f}, {result[1]:.2f})"
+                )
+                return result
+
+            # 2. Raycast fallback
             result = self.raycast_find_approach_point(
                 robot_pos[0], robot_pos[1], goal_x, goal_y
             )
@@ -276,18 +360,20 @@ class AdaptiveGoalPublisher(Node):
                 self.get_logger().info(
                     f"Raycast found approach point: ({result[0]:.2f}, {result[1]:.2f})"
                 )
-                return result
+                return (result[0], result[1], None)
             else:
                 self.get_logger().warn(
                     "Raycast failed, trying BFS"
                 )
 
+        # 3. BFS fallback
         result = self.bfs_find_nearest_free(goal_x, goal_y)
         if result is not None:
             self.get_logger().info(
                 f"BFS found nearest free point: ({result[0]:.2f}, {result[1]:.2f})"
             )
-        return result
+            return (result[0], result[1], None)
+        return None
 
     def check_goal_validity(self):
         if self.original_goal is None or self.current_costmap is None:
@@ -313,7 +399,7 @@ class AdaptiveGoalPublisher(Node):
             result = self.find_best_approach_point(goal_x, goal_y)
 
             if result is not None:
-                new_x, new_y = result
+                new_x, new_y, new_q = result
                 dist = math.hypot(new_x - goal_x, new_y - goal_y)
 
                 if self.last_published_goal is None or math.hypot(
@@ -331,7 +417,7 @@ class AdaptiveGoalPublisher(Node):
                     updated.pose.position.x = new_x
                     updated.pose.position.y = new_y
                     updated.pose.position.z = 0.0
-                    updated.pose.orientation = self.original_goal.pose.orientation
+                    updated.pose.orientation = new_q if new_q is not None else self.original_goal.pose.orientation
 
                     self.updated_goal_pub.publish(updated)
                     self.last_published_goal = (new_x, new_y)
