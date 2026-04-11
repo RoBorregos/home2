@@ -130,6 +130,24 @@ class DashgoDriver(Node):
         self.now = self.get_clock().now()
         try:
             stat_, left_enc,right_enc = self.controller.get_encoder_counts()
+            
+            # Check emergency button status intermittently to avoid serial overhead
+            if not hasattr(self, 'em_check_counter'):
+                self.em_check_counter = 0
+            
+            self.em_check_counter += 1
+            if self.em_check_counter >= 10: 
+                self.em_check_counter = 0
+                res, em_state, _ = self.controller.get_embtn_recharge()
+                if res == self.SUCCESS:
+                    is_pressed = (em_state == 1)
+                    if is_pressed != self.stopped:
+                        if is_pressed:
+                            self.get_logger().warn("Emergency Stop Button Pressed: Motors UNLOCKED")
+                        else:
+                            self.get_logger().info("Emergency Stop Button Released: Motors LOCKED")
+                        self.stopped = is_pressed
+
             self.consecutive_errors = 0  # Reset on success
         except:
             self.bad_encoder_count += 1
