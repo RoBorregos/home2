@@ -2,7 +2,6 @@ import json
 import os
 import time
 
-import rclpy
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
 from frida_constants.vision_constants import (
@@ -39,21 +38,17 @@ class GPSRTask(GenericTask):
         self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
         self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket", "jeans"]
 
-    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
+    def navigate_to(self, location, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+
         if say:
-            self.subtask_manager.hri.say(
-                f"I will now guide you to the {location}. Please follow me."
-            )
-            self.subtask_manager.manipulation.follow_face(False)
-        self.subtask_manager.manipulation.move_joint_positions(
-            named_position="nav_pose", velocity=0.5, degrees=True
-        )
-        self.subtask_manager.nav.resume_nav()
-        future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-        self.subtask_manager.nav.pause_nav()
+            target = sublocation if sublocation else location
+            pretty_target = target.replace("_", " ")
+            self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
+
+        result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        return result
 
     ## HRI, Manipulation
     def give_object(self, command: GiveObject):
@@ -175,28 +170,18 @@ class GPSRTask(GenericTask):
         # go to
         self.subtask_manager.hri.node.get_logger().info("arm to move")
 
-        self.subtask_manager.manipulation.move_joint_positions(
-            named_position="nav_pose", velocity=0.5, degrees=True
-        )
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
         location = self.subtask_manager.hri.query_location(loc)
         self.subtask_manager.hri.node.get_logger().info("query location")
 
-        area = self.subtask_manager.hri.get_area(location)
-        if isinstance(area, list):
-            area = area[0]
-
-        self.subtask_manager.hri.node.get_logger().info("query subarea")
-        subarea = self.subtask_manager.hri.get_subarea(location)
-        if isinstance(subarea, list):
-            if len(subarea) == 0:
-                subarea = ""
-            else:
-                subarea = subarea[0]
-
-        self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
-
-        self.navigate_to(area, subarea, say=False)
-        return Status.EXECUTION_SUCCESS, "arrived to " + command.destination
+        if len(location) > 0:
+            area = location[0].area
+            subarea = location[0].subarea
+            self.navigate_to(area, subarea, say=True)
+            return Status.EXECUTION_SUCCESS, "arrived to " + loc
+        else:
+            self.subtask_manager.hri.say(f"I am sorry, I do not know where {loc} is.")
+            return Status.EXECUTION_ERROR, "location not found"
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
