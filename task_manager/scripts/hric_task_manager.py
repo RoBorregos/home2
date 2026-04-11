@@ -114,6 +114,7 @@ class HRIC_TM(Node):
         """Navigate to the location"""
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
+        self.subtask_manager.manipulation.clear_collision_objects()
         self.subtask_manager.manipulation.move_to_position(
             "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
         )
@@ -176,6 +177,8 @@ class HRIC_TM(Node):
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?",
                 query="name",
+                context="The question 'What is your name?' was asked, full_text corresponds to the response.",
+                initial_prompt="The question 'What is your name?' was asked"
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -186,6 +189,8 @@ class HRIC_TM(Node):
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?",
                 query="LLM_drink",
+                context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
+                initial_prompt="The question 'What is your favorite drink??' was asked"
             )
 
             if status == Status.EXECUTION_SUCCESS:

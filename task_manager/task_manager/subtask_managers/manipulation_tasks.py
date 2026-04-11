@@ -21,6 +21,7 @@ from frida_interfaces.srv import (
     FollowFace,
     GetOptimalPositionForPlane,
     GetOptimalPoseForPlane,
+    RemoveCollisionObject,
 )
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
@@ -93,6 +94,9 @@ class ManipulationTasks:
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
         self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
+        self._remove_collision_object_client = self.node.create_client(
+            RemoveCollisionObject, "/manipulation/remove_collision_object"
+        )
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
@@ -565,6 +569,29 @@ class ManipulationTasks:
             Logger.error(self.node, "Pour request failed")
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
+
+    def clear_collision_objects(self, include_attached: bool = True) -> int:
+        """Remove all collision objects from the planning scene.
+        Useful before movements that MoveIt would reject due to stale
+        collision objects left in the scene by perception."""
+        try:
+            if not self._remove_collision_object_client.wait_for_service(timeout_sec=2.0):
+                Logger.warn(self.node, "remove_collision_object service not available")
+                return Status.EXECUTION_ERROR
+            request = RemoveCollisionObject.Request()
+            request.id = "all"
+            request.include_attached = include_attached
+            future = self._remove_collision_object_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+            if result is None or not result.success:
+                Logger.warn(self.node, "Failed to clear collision objects")
+                return Status.EXECUTION_ERROR
+            Logger.info(self.node, "Planning scene collision objects cleared")
+            return Status.EXECUTION_SUCCESS
+        except Exception as e:
+            Logger.error(self.node, f"Error clearing collision objects: {e}")
+            return Status.EXECUTION_ERROR
 
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
