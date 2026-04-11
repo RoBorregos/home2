@@ -31,7 +31,9 @@ augmentation_batch_size: 16
 
 # Model
 model_type: dnn
-layer_size: 32
+# Bumped from 32 -> 128 (the openWakeWord notebook default). 32 was too
+# small to cleanly discriminate short words like "yes"/"no"/"stop".
+layer_size: 128
 
 # Training
 feature_data_files:
@@ -41,6 +43,8 @@ batch_n_per_class:
   positive: 50
   adversarial_negative: 50
   ACAV100M: 1024
-steps: 10000
-max_negative_weight: 1500
+steps: 20000
+# Lowered from 1500 -> 500. Previous runs overshot on negative penalty and
+# the model collapsed to "never fire" (0.024 recall at thr=0.5).
+max_negative_weight: 500
 target_false_positives_per_hour: 0.2

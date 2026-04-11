@@ -36,7 +36,10 @@ augmentation_batch_size: 16
 
 # Model
 model_type: dnn
-layer_size: 32
+# Bumped from 32 -> 128 (the openWakeWord notebook default). 32 was too
+# small to cleanly discriminate a 1-phoneme word like "no" from "know",
+# "now", "note", etc.
+layer_size: 128
 
 # Training
 feature_data_files:
@@ -46,7 +49,9 @@ batch_n_per_class:
   positive: 50
   adversarial_negative: 50
   ACAV100M: 1024
-steps: 10000
-# Higher negative weight — "no" is the worst collider of the four words.
-max_negative_weight: 3000
+steps: 20000
+# Lowered from 3000 -> 800. 3000 was too aggressive: the model collapsed
+# to "never fire" (0% recall at every threshold). 800 keeps "no" as the
+# strictest of the four words without killing recall entirely.
+max_negative_weight: 800
 target_false_positives_per_hour: 0.2
