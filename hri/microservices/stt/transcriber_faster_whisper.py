@@ -504,7 +504,7 @@ class BatchedInferencePipeline:
             max_new_tokens=max_new_tokens,
             hotwords=hotwords,
             word_timestamps=word_timestamps,
-            hallucination_silence_threshold=None,
+            hallucination_silence_threshold=hallucination_silence_threshold,
             condition_on_previous_text=False,
             clip_timestamps=clip_timestamps,
             prompt_reset_on_temperature=0.5,

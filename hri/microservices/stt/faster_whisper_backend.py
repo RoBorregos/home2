@@ -87,7 +87,9 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.task = task
         self.initial_prompt = initial_prompt
         self.hotwords = hotwords
-        self.vad_parameters = None  # vad_parameters or {"onset": 0.5}
+        self.vad_parameters = {
+            "threshold": 0.8,
+        }
         device, self.compute_type = detect_device_and_compute_type(device)
 
         if self.model_size_or_path is None:
@@ -212,6 +214,7 @@ class ServeClientFasterWhisper(ServeClientBase):
             vad_filter=self.use_vad,
             vad_parameters=self.vad_parameters if self.use_vad else None,
             word_timestamps=True,
+            hallucination_silence_threshold=0.3,
         )
 
         if ServeClientFasterWhisper.SINGLE_MODEL:
