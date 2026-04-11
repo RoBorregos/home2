@@ -22,7 +22,6 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
-from visualization_msgs.msg import Marker
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     CAMERA_FRAME,
@@ -97,12 +96,6 @@ class HRICCommands(Node):
         )
         self.image_publisher = self.create_publisher(
             Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
-        )
-        self.hand_debug_image_pub = self.create_publisher(
-            Image, "/debug/hand_point_image", 10, callback_group=self.callback_group
-        )
-        self.hand_debug_marker_pub = self.create_publisher(
-            Marker, "/debug/hand_point_marker", 10, callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -210,64 +203,10 @@ class HRICCommands(Node):
                 CAMERA_FRAME,
                 Time(sec=0, nanosec=0),
             )
-
-            # Publish debug visualizations (cx, cy are in YOLO-image coords)
-            self._publish_hand_debug(cx, cy, stamped, best_conf)
             return stamped
         else:
             self.get_logger().warn("Depth image or camera info not available")
             return None
-
-    def _publish_hand_debug(self, cx, cy, point_stamped, conf):
-        """Publish annotated image and 3D marker for the detected hand."""
-        # Annotated image
-        try:
-            if self.image is not None:
-                dbg = self.image.copy()
-                cv2.drawMarker(dbg, (cx, cy), (0, 0, 255), cv2.MARKER_CROSS, 40, 3)
-                cv2.circle(dbg, (cx, cy), 15, (0, 255, 0), 2)
-                label = (
-                    f"hand conf={conf:.2f} "
-                    f"({point_stamped.point.x:.2f},"
-                    f"{point_stamped.point.y:.2f},"
-                    f"{point_stamped.point.z:.2f}) {CAMERA_FRAME}"
-                )
-                cv2.putText(
-                    dbg,
-                    label,
-                    (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    (0, 255, 0),
-                    2,
-                )
-                img_msg = self.bridge.cv2_to_imgmsg(dbg, encoding="bgr8")
-                img_msg.header.frame_id = CAMERA_FRAME
-                img_msg.header.stamp = self.get_clock().now().to_msg()
-                self.hand_debug_image_pub.publish(img_msg)
-        except Exception as e:
-            self.get_logger().warn(f"Failed to publish hand debug image: {e}")
-
-        # 3D marker
-        try:
-            marker = Marker()
-            marker.header = point_stamped.header
-            marker.ns = "hand_point"
-            marker.id = 0
-            marker.type = Marker.SPHERE
-            marker.action = Marker.ADD
-            marker.pose.position = point_stamped.point
-            marker.pose.orientation.w = 1.0
-            marker.scale.x = 0.08
-            marker.scale.y = 0.08
-            marker.scale.z = 0.08
-            marker.color.r = 1.0
-            marker.color.g = 0.2
-            marker.color.b = 0.2
-            marker.color.a = 0.9
-            self.hand_debug_marker_pub.publish(marker)
-        except Exception as e:
-            self.get_logger().warn(f"Failed to publish hand debug marker: {e}")
 
     def detect_hand_callback(self, request, response):
         hand_point = self.run_hand_inference()
