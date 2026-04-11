@@ -113,12 +113,7 @@ class GPSRTM(Node):
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
-        self.subtask_manager.nav.resume_nav()
-        future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-
-        self.subtask_manager.nav.pause_nav()
+        self.subtask_manager.nav.move_to_location(location, sublocation)
 
     def timeout(self, timeout: int = 2):
         time.sleep(timeout)

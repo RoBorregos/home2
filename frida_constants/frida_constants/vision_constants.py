@@ -105,6 +105,7 @@ FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
+FLIP_IMAGE_TOPIC = "/vision/face_recognition/flip_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
 # HRIC commands node

@@ -45,6 +45,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["kws_oww"]["ros__parameters"]
 
+    voice_detection_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "voice_detection.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["voice_detection"]["ros__parameters"]
+
     nodes = [
         Node(
             package="speech",
@@ -61,6 +68,14 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[noise_cancellation_config],
+        ),
+        Node(
+            package="speech",
+            executable="voice_detection.py",
+            name="voice_detection",
+            output="screen",
+            emulate_tty=True,
+            parameters=[voice_detection_config],
         ),
         Node(
             package="speech",

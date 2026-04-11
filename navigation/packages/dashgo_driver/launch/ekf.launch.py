@@ -10,6 +10,9 @@ def generate_launch_description():
             executable='ekf_node',
             output='screen',
             emulate_tty=True,
+            respawn=True,
+            respawn_delay=2.0,
+            respawn_max_retries=5,
             parameters=[{
                     'output_frame': 'odom',
                     'frequency': 20.0,

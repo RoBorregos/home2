@@ -201,12 +201,14 @@ class PickMotionServer(Node):
         qx, qy, qz, qw = quaternion_from_euler(-np.pi / 2, 0, 0)
         quat = [qx, qy, qz, qw]
 
-        rotation_matrix = quat2mat(quat)
-        z_axis = rotation_matrix[:, 1]
+        # quat2mat expects scalar-first [w, x, y, z]
+        rotation_matrix = quat2mat([qw, qx, qy, qz])
+        # Approach axis is the gripper's local Z (column 2), same convention as pick()
+        approach_axis = rotation_matrix[:, 2]
 
         base_position = (
             np.array([base_point.point.x, base_point.point.y, base_point.point.z])
-            + z_axis * self.ee_tip_offset
+            + approach_axis * self.ee_link_offset
         )
 
         hand_offset = goal_handle.request.hand_offset

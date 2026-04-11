@@ -17,6 +17,10 @@ linear_num = 512
 batch_size = 256
 folder_path = str(pathlib.Path(__file__).parent)
 
+# Resolve model weights from the source tree via the package file location.
+# Works with --symlink-install (symlinks back to source) and direct execution.
+_models_root = str(pathlib.Path(__file__).resolve().parent / "models")
+
 use_gpu = torch.cuda.is_available()
 # Enable FP16 for Orin AGX — halves memory and doubles throughput
 use_fp16 = use_gpu and torch.cuda.get_device_capability()[0] >= 7
@@ -26,7 +30,7 @@ ms.append(math.sqrt(float(1)))
 
 if use_swin:
     h, w = 224, 224
-    name = "models/swin"
+    name = "swin"
 
 else:
     h, w = 256, 128
@@ -43,7 +47,7 @@ data_transforms = transforms.Compose(
 )
 
 
-config_path = os.path.join(folder_path, name, "opts.yaml")
+config_path = os.path.join(_models_root, name, "opts.yaml")
 with open(config_path, "r") as stream:
     config = yaml.load(
         stream, Loader=yaml.FullLoader
@@ -80,7 +84,7 @@ def get_structure():
 
 
 def load_network(network):
-    save_path = os.path.join(folder_path, name, "net_%s.pth" % epoch)
+    save_path = os.path.join(_models_root, name, "net_%s.pth" % epoch)
     try:
         if use_gpu:
             print("Loading model from GPU")

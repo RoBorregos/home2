@@ -1,59 +1,34 @@
 #!/usr/bin/env python3
-
 """
-Node to move to a place.
+Navigation Area SubTask Manager
 """
 
 import json
 import os
-
 import rclpy
+from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.navigation_constants import (
-    FOLLOWING_SERVICE,
-    GOAL_TOPIC,
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
+    MOVE_LOCATION_SERVICE,
+    SUBTASK_MANAGER,
+    RTAB_PAUSE_SERVICE,
+    RTAB_RESUME_SERVICE,
 )
-from frida_interfaces.srv import (
-    CheckDoor,
-    PointTransformation,
-    ReturnLocation,
-    WaitForControllerInput,
-    MapAreas,
-)
-from geometry_msgs.msg import PointStamped, PoseStamped
-from lifecycle_msgs.msg import Transition
-from lifecycle_msgs.srv import ChangeState
-from nav2_msgs.action import NavigateToPose
-from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
+from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
 from rcl_interfaces.srv import SetParameters
-from rclpy.action import ActionClient
-from rclpy.node import Node
-from rclpy.task import Future
-
-# from sensor_msgs.msg import LaserScan
+from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
+from lifecycle_msgs.srv import ChangeState
+from lifecycle_msgs.msg import Transition
 from std_srvs.srv import Empty, SetBool
+
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
-TIMEOUT_WAIT_FOR_SERVICE = 1.0
-TIMEOUT = 4
-BT_LIFE_CYCLE_SERVICE = "/bt_navigator/change_state"
-BT_PARAM_SERVICE = "/bt_navigator/set_parameters"
-RETURN_LOCATION = "/integration/ReturnLocation"
-RTAB_PAUSE_SERVICE = "/rtabmap/pause"
-RTAB_RESUME_SERVICE = "/rtabmap/resume"
-DEFAULT_BT_PATH = (
-    "/workspace/src/navigation/packages/nav_main/bt/navigate_to_pose_w_replanning_and_recovery.xml"
-)
-FOLLOW_BT_PATH = (
-    "/workspace/src/navigation/packages/nav_main/bt/navigate_to_pose_w_replanning_and_recovery.xml"
-)
-
-GOAL_POSE_TOPIC = "/goal_pose"
+TIMEOUT = 10.0
 
 
 class NavigationTasks:
@@ -63,39 +38,40 @@ class NavigationTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
-        self.goal_state = None
-        # Closed door variables
-        self.range_max = 260
-        self.range_min = 225
-        self.closed_distance = 0.7
-        self.laser_sub = None
+
         # Action clients and services
-        self.goal_client = ActionClient(self.node, NavigateToPose, GOAL_TOPIC)
-        self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
-        self.bt_params = self.node.create_client(SetParameters, BT_PARAM_SERVICE)
-        self.bt_lifecycle = self.node.create_client(ChangeState, BT_LIFE_CYCLE_SERVICE)
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
+        self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
+        self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+
+        # Additional clients for legacy/special purposes
         self.rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE)
         self.rtabmap_continue = self.node.create_client(Empty, RTAB_RESUME_SERVICE)
-        self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
-        self.areas_wrapper = self.node.create_client(MapAreas, AREAS_SERVICE)
-        self.convert_point = (
-            self.node.create_client(PointTransformation, "/integration/point_transformer"),
-        )
-        self.zero_publisher = self.node.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
-        self.wait_for_controller_input = self.node.create_client(
-            WaitForControllerInput, "wait_for_controller_input"
-        )
+        self.bt_params = self.node.create_client(SetParameters, "/bt_navigator/set_parameters")
+        self.bt_lifecycle = self.node.create_client(ChangeState, "/bt_navigator/change_state")
+        self.activate_follow = self.node.create_client(SetBool, "/activate_follow")
+
+        # Task Actions and Services check
         self.services = {
-            Task.HRIC: {
-                "goal_client": {"client": self.goal_client, "type": "action"},
-            },
             Task.DEBUG: {
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
-                "areas_wrapper": {"client": self.areas_wrapper, "type": "service"},
+                "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
+                "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+            },
+            Task.RESTAURANT: {
+                "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
+                "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
+                "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
             },
         }
 
+        self.setup_backup_map()
+
+        if not self.mock_data:
+            self.setup_services()
+
+    def setup_backup_map(self):
+        """Load backup map info"""
         try:
             package_share_directory = get_package_share_directory("frida_constants")
             file_path = os.path.join(package_share_directory, "map_areas/areas.json")
@@ -107,316 +83,124 @@ class NavigationTasks:
             else:
                 raise Exception("Data is empty")
         except Exception as e:
-            self.areas_backup = Status.EXECUTION_ERROR
+            self.areas_backup = {}
             Logger.warn(self.node, f"Areas Json Backup Failed Error: {e}")
-
-        if not self.mock_data:
-            self.setup_services()
 
     def setup_services(self):
         """Initialize services and actions"""
-
         if self.task not in self.services:
-            Logger.error(self.node, "Task not available")
+            Logger.warn(
+                self.node,
+                f"Task {self.task} not explicitly configured in nav_tasks services dictionary.",
+            )
             return
 
         for key, service in self.services[self.task].items():
             if service["type"] == "service":
-                if not service["client"].wait_for_service(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
+                if not service["client"].wait_for_service(
+                    timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+                ):
                     Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
-                if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
+                if not service["client"].wait_for_server(
+                    timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+                ):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    def mock_to_location_controller(self, timeout=10):
-        """Mock the controller to move to a location"""
-        if not self.mock_data:
-            Logger.error(self.node, "Mock data is not enabled")
-            return
-
-        try:
-            Logger.info(self.node, "Waiting for controller input...")
-            request = WaitForControllerInput.Request()
-            request.button = "x"
-            request.timeout = timeout
-            future = self.wait_for_controller_input.call_async(request)
-            return future
-        except Exception as e:
-            Logger.error(self.node, f"Error waiting for controller input: {e}")
-            return Future().set_result(Status.EXECUTION_ERROR)
-
-    @mockable(return_value=lambda self: self.areas_backup, delay=1)
-    @service_check("areas_wrapper", lambda self: self.areas_backup, timeout=3)
-    def areas_dump(self):
+    @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, self.areas_backup), delay=1)
+    @service_check(
+        "retrieve_areas_srv",
+        lambda self: (Status.EXECUTION_ERROR, self.areas_backup),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def retrieve_areas(self):
+        """Dump areas.json dynamically from areas service"""
         req = MapAreas.Request()
-        future = self.areas_wrapper.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        future = self.retrieve_areas_srv.call_async(req)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.AREAS_RETRIEVE_TIMEOUT.value
+        )
         if (future.result() is None) or (future.result().areas == ""):
             Logger.error(self.node, "Service return empty data")
-            return self.areas_backup
-
+            return (Status.EXECUTION_ERROR, self.areas_backup)
         else:
             Logger.info(self.node, "Map Areas dumped Succesfully")
-            return json.loads(str(future.result().areas))
+            return (Status.EXECUTION_SUCCESS, json.loads(str(future.result().areas)))
 
-    @mockable(return_value=True, delay=10)
-    @service_check("pause_nav", False, timeout=3)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check("rtabmap_pause", (Status.EXECUTION_ERROR, "Service not started"), timeout=3)
     def pause_nav(self):
         req = Empty.Request()
         future = self.rtabmap_pause.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
             Logger.error(self.node, "pause_nav service call failed (no response)")
-            return Status.EXECUTION_ERROR
-
+            return (Status.EXECUTION_ERROR, "Timeout")
         Logger.info(self.node, "pause_nav successful")
-        return Status.EXECUTION_SUCCESS
+        return (Status.EXECUTION_SUCCESS, "")
 
-    @mockable(return_value=True, delay=10)
-    @service_check("resume_nav", False, timeout=3)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check("rtabmap_continue", (Status.EXECUTION_ERROR, "Service not started"), timeout=3)
     def resume_nav(self):
         req = Empty.Request()
         future = self.rtabmap_continue.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
             Logger.error(self.node, "resume_nav service call failed (no response)")
-            return Status.EXECUTION_ERROR
-
+            return (Status.EXECUTION_ERROR, "Timeout")
         Logger.info(self.node, "resume_nav successful")
-        return Status.EXECUTION_SUCCESS
+        return (Status.EXECUTION_SUCCESS, "")
 
-    @mockable(_mock_callback=mock_to_location_controller)
-    @service_check("goal_client", False, timeout=3)
-    def move_to_location(self, location: str, sublocation: str) -> Future:
-        """Attempts to move to the given location and returns a Future that completes when the action finishes.
-        Call the function on this way
-
-        future = self.subtask_manager["navigation"].move_to_location("living_room", "couches")
-        # Wait for the action result
-        rclpy.spin_until_future_complete(self, future)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
+    @service_check(
+        "move_to_location_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_to_location(self, location, sublocation):
+        """Move to areas json location using MoveLocation service"""
+        if sublocation == "":
+            sublocation = "safe_place"
+        Logger.info(self.node, f"Moving to {location} - {sublocation}")
+        request = MoveLocation.Request()
+        request.location = location
+        request.sublocation = sublocation
+        future = self.move_to_location_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
         result = future.result()
-
-        """
-        future = Future()
-        try:
-            Logger.info(self.node, "CALLING FUNCTION")
-            data = self.areas_dump()
-            Logger.info(self.node, "END FUNCTION")
-            if sublocation != "":
-                coordinates = data[location][sublocation]
+        if result is not None:
+            if result.success:
+                Logger.info(self.node, "Goal Reached")
+                return (Status.EXECUTION_SUCCESS, "")
             else:
-                coordinates = data[location]["safe_place"]
-                sublocation = "safe_place"
-            Logger.info(self.node, f"{coordinates}")
-        except Exception as e:
-            Logger.error(self.node, f"Error fetching coordinates: {e}")
-            future.set_result(Status.EXECUTION_ERROR)
-            return future
+                Logger.error(self.node, f"Error with goal: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            Logger.error(self.node, "Error with request")
+            return (Status.EXECUTION_ERROR, "Error with request")
 
-        try:
-            Logger.info(self.node, f"Sending move request to: {location} {sublocation}")
-            client_goal = NavigateToPose.Goal()
-            goal = PoseStamped()
-            goal.header.frame_id = "map"
-            goal.pose.position.x = coordinates[0]
-            goal.pose.position.y = coordinates[1]
-            goal.pose.position.z = coordinates[2]
-            goal.pose.orientation.x = coordinates[3]
-            goal.pose.orientation.y = coordinates[4]
-            goal.pose.orientation.z = coordinates[5]
-            goal.pose.orientation.w = coordinates[6]
-
-            client_goal.pose = goal
-            self.goal_state = None
-            self._send_goal_future = self.goal_client.send_goal_async(client_goal)
-
-            self._send_goal_future.add_done_callback(
-                lambda future_goal: self.goal_response_callback(future_goal, future)
-            )
-            return future
-        except Exception as e:
-            Logger.error(self.node, f"Error moving to location: {e}")
-            future.set_result(Status.EXECUTION_ERROR)
-            return future  # = self.subtask_manager.nav.move_to_location(location, sublocation)
-
-    def move_to_pose(self, pose: PoseStamped) -> Future:
-        future = Future()
-        client_goal = NavigateToPose.Goal()
-        client_goal.pose = pose
-        self.goal_state = None
-        self._send_goal_future = self.goal_client.send_goal_async(client_goal)
-        self._send_goal_future.add_done_callback(
-            lambda future_goal: self.goal_response_callback(future_goal, future)
-        )
-        return future
-
-    def move_to_point(self, point_s: PointStamped) -> Future:
-        """Attempts to move to the original location and returns a Future that completes when the action finishes.
-        Call the function on this way
-
-        future = self.subtask_manager["navigation"].move_to_zero()
-        # Wait for the action result
-        rclpy.spin_until_future_complete(self, future)
-        result = future.result()
-
-        """
-        # try:
-        #     goal = PoseStamped()
-        #     goal.header.frame_id = "map"
-        #     goal.pose.position.x = 0.0
-        #     goal.pose.position.y = 0.0
-        #     goal.pose.position.z = 0.0
-        #     goal.pose.orientation.x = 0.0
-        #     goal.pose.orientation.y = 0.0
-        #     goal.pose.orientation.z = 0.0
-        #     goal.pose.orientation.w = 0.0
-        #     self.zero_publisher.publish(goal)
-        #     return Status.EXECUTION_SUCCESS
-
-        # except Exception as e:
-        # #     Logger.error(self.node, f"Error moving to location: {e}")
-        # #     future.set_result(Status.EXECUTION_ERROR)
-        #     return Status.EXECUTION_SUCCESS
-
-        future = Future()
-        try:
-            client_goal = NavigateToPose.Goal()
-            request = PointTransformation.Request()
-            request.point = point_s
-            request.frame = "map"
-            future = self.convert_point.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future)
-            results = future.result()
-            goal = PoseStamped()
-            goal.header.frame_id = "map"
-            goal.pose.position.x = results.transformed_point.point.x
-            goal.pose.position.y = results.transformed_point.point.y
-            goal.pose.position.z = 0.0
-            goal.pose.orientation.x = 0.0
-            goal.pose.orientation.y = 0.0
-            goal.pose.orientation.z = 0.0
-            goal.pose.orientation.w = 1.0
-
-            client_goal.pose = goal
-            self.goal_state = None
-            self._send_goal_future = self.goal_client.send_goal_async(client_goal)
-
-            self._send_goal_future.add_done_callback(
-                lambda future_goal: self.goal_response_callback(future_goal, future)
-            )
-            return future
-        except Exception as e:
-            Logger.error(self.node, f"Error moving to location: {e}")
-            future.set_result(Status.EXECUTION_ERROR)
-            return future
-
-    @mockable(return_value=True, delay=10)
-    @service_check("goal_client", False, TIMEOUT)
-    def move_to_zero(self) -> Future:
-        """Attempts to move to the original location and returns a Future that completes when the action finishes.
-        Call the function on this way
-
-        future = self.subtask_manager["navigation"].move_to_zero()
-        # Wait for the action result
-        rclpy.spin_until_future_complete(self, future)
-        result = future.result()
-
-        """
-        # try:
-        #     goal = PoseStamped()
-        #     goal.header.frame_id = "map"
-        #     goal.pose.position.x = 0.0
-        #     goal.pose.position.y = 0.0
-        #     goal.pose.position.z = 0.0
-        #     goal.pose.orientation.x = 0.0
-        #     goal.pose.orientation.y = 0.0
-        #     goal.pose.orientation.z = 0.0
-        #     goal.pose.orientation.w = 0.0
-        #     self.zero_publisher.publish(goal)
-        #     return Status.EXECUTION_SUCCESS
-
-        # except Exception as e:
-        # #     Logger.error(self.node, f"Error moving to location: {e}")
-        # #     future.set_result(Status.EXECUTION_ERROR)
-        #     return Status.EXECUTION_SUCCESS
-
-        future = Future()
-        try:
-            client_goal = NavigateToPose.Goal()
-            goal = PoseStamped()
-            goal.header.frame_id = "map"
-            goal.pose.position.x = 0.0
-            goal.pose.position.y = 0.0
-            goal.pose.position.z = 0.0
-            goal.pose.orientation.x = 0.0
-            goal.pose.orientation.y = 0.0
-            goal.pose.orientation.z = 0.0
-            goal.pose.orientation.w = 1.0
-
-            client_goal.pose = goal
-            self.goal_state = None
-            self._send_goal_future = self.goal_client.send_goal_async(client_goal)
-
-            self._send_goal_future.add_done_callback(
-                lambda future_goal: self.goal_response_callback(future_goal, future)
-            )
-            return future
-        except Exception as e:
-            Logger.error(self.node, f"Error moving to location: {e}")
-            future.set_result(Status.EXECUTION_ERROR)
-            return future
-
-    def goal_response_callback(self, future, result_future):
-        goal_handle = future.result()
-
-        if not goal_handle.accepted:
-            Logger.info(self.node, "Goal rejected.")
-            result_future.set_result(Status.EXECUTION_ERROR)
-            return
-
-        Logger.info(self.node, "Goal accepted! Waiting for result...")
-        self._get_result_future = goal_handle.get_result_async()
-        self._get_result_future.add_done_callback(
-            lambda future_result: self.result_callback(result_future)
-        )
-
-    def result_callback(self, result_future):
-        Logger.info(self.node, "Goal execution completed!")
-        goal_handle = self._get_result_future.result()
-        print(f"Goal handle papu pro: {goal_handle.status}")
-        if goal_handle.status != 4:
-            Logger.info(self.node, "Goal execution failed")
-            result_future.set_result(Status.EXECUTION_ERROR)
-            return
-        result_future.set_result(Status.EXECUTION_SUCCESS)
-
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
-    @service_check("activate_follow", False, TIMEOUT)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check("activate_follow", (Status.EXECUTION_ERROR, "Service not started"), TIMEOUT)
     def follow_person(self, activate: bool):
         """Activate or deactivate the follow person mode"""
         try:
             request = SetBool.Request()
             request.data = activate
-            future = None
+            future = self.activate_follow.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
-            if not result.success:
+            if result is None or not result.success:
                 raise Exception("Service call failed")
         except Exception as e:
             Logger.info(self.node, f"Error sending follow person mode: {e}")
-            return Status.EXECUTION_ERROR
-        if activate:
-            Logger.info(self.node, "Follow person activated")
-        else:
-            Logger.info(self.node, "Follow person deactivated")
-        return Status.EXECUTION_SUCCESS
+            return (Status.EXECUTION_ERROR, str(e))
+        Logger.info(self.node, f"Follow person {'activated' if activate else 'deactivated'}")
+        return (Status.EXECUTION_SUCCESS, "")
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
-    @service_check("bt_params", False, TIMEOUT)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check("bt_params", (Status.EXECUTION_ERROR, "Service not started"), TIMEOUT)
     def change_bt(self, bt_str: str):
-        """Change the behavior tree and return a Future"""
-        future = Future()
-
+        """Change the behavior tree on bt_navigator"""
         try:
             param_name = "default_nav_to_pose_bt_xml"
             if bt_str == "follow":
@@ -436,45 +220,31 @@ class NavigationTasks:
 
             param_request = SetParameters.Request()
             param_request.parameters = [param]
-
-            # Set the parameter
             param_future = self.bt_params.call_async(param_request)
             rclpy.spin_until_future_complete(self.node, param_future)
 
             if param_future.result() is None:
                 raise Exception("Parameter service call failed")
 
-            # Deactivate the bt_navigator
-            deactivate_request = ChangeState.Request()
-            deactivate_request.transition.id = Transition.TRANSITION_DEACTIVATE  # 4
+            # Lifecycle toggle
+            deactivate_req = ChangeState.Request()
+            deactivate_req.transition.id = Transition.TRANSITION_DEACTIVATE
+            f1 = self.bt_lifecycle.call_async(deactivate_req)
+            rclpy.spin_until_future_complete(self.node, f1)
 
-            deactivate_future = self.bt_lifecycle.call_async(deactivate_request)
-            rclpy.spin_until_future_complete(self.node, deactivate_future)
-
-            if deactivate_future.result() is None:
-                raise Exception("Failed to deactivate bt_navigator")
-
-            # Reactivate the bt_navigator
-            activate_request = ChangeState.Request()
-            activate_request.transition.id = Transition.TRANSITION_ACTIVATE  # 3
-
-            activate_future = self.bt_lifecycle.call_async(activate_request)
-            rclpy.spin_until_future_complete(self.node, activate_future)
-
-            if activate_future.result() is None:
-                raise Exception("Failed to reactivate bt_navigator")
+            activate_req = ChangeState.Request()
+            activate_req.transition.id = Transition.TRANSITION_ACTIVATE
+            f2 = self.bt_lifecycle.call_async(activate_req)
+            rclpy.spin_until_future_complete(self.node, f2)
 
             Logger.info(self.node, f"Successfully changed BT to: {bt_str}")
-            future.set_result(Status.EXECUTION_SUCCESS)
-
+            return (Status.EXECUTION_SUCCESS, "")
         except Exception as e:
             Logger.error(self.node, f"Error changing behavior tree: {e}")
-            future.set_result(Status.EXECUTION_ERROR)
+            return (Status.EXECUTION_ERROR, str(e))
 
-        return future
-
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
-    @service_check("door_checking_srv", Status.EXECUTION_ERROR, TIMEOUT)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check("door_checking_srv", (Status.EXECUTION_ERROR, "Service not started"), TIMEOUT)
     def check_door(self):
         """Check if the door is open or closed"""
         request = CheckDoor.Request()
@@ -484,38 +254,18 @@ class NavigationTasks:
         if result is not None:
             if result.status:
                 Logger.info(self.node, "Door open")
-                return Status.EXECUTION_SUCCESS
+                return (Status.EXECUTION_SUCCESS, "")
             else:
                 Logger.error(self.node, "Error getting state with door")
-                return Status.EXECUTION_ERROR
+                return (Status.EXECUTION_ERROR, "Door closed or error")
         else:
             Logger.error(self.node, "Error with request")
-            return Status.EXECUTION_ERROR
-
-    def ReturnLocation_callback(self):
-        try:
-            request = ReturnLocation.Request()
-
-            future = self.ReturnLocation_client.call_async(request)
-
-            rclpy.spin_until_future_complete(self.node, future)
-
-            results = future.result()
-
-            if results is not None:
-                return (Status.EXECUTION_SUCCESS, results)
-            else:
-                Logger.error(self.node, "Error getting location")
-                return (Status.EXECUTION_ERROR, None)
-        except Exception as e:
-            Logger.error(self.node, f"Error getting location: {e}")
-            return (Status.EXECUTION_ERROR, None)
+            return (Status.EXECUTION_ERROR, "Request error")
 
 
 if __name__ == "__main__":
     rclpy.init()
-    node = Node("navigation_tasks")
-    navigation_tasks = NavigationTasks(node)
+    node = Node("Navigation_Task_Manager")
     try:
         rclpy.spin(node)
     except Exception as e:
