@@ -67,7 +67,7 @@ private:
     // --- Velocity command ---
     geometry_msgs::msg::Twist twist;
     twist.linear.x = msg->axes[1] * linear_speed_;
-    twist.angular.z = apply_deadzone(msg->axes[0]) * rotation_speed_;
+    twist.angular.z = apply_deadzone(msg->axes[0]) * rotation_speed_; // Change to [2] when trying it with Omnidireccional base.
     cmd_vel_pub_->publish(twist);
 
     // --- Square button (buttons[3]): cancel navigation goal ---
