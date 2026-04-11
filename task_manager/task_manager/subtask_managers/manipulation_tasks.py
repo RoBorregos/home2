@@ -596,7 +596,7 @@ class ManipulationTasks:
     @service_check(
         client="_go_to_hand_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
-    def go_to_hand(self, point: PointStamped, hand_offset: float = 0.3) -> int:
+    def go_to_hand(self, point: PointStamped, hand_offset: float = 0.1) -> int:
         """Move the arm to a position suitable for handing over an object.
 
         Args:
