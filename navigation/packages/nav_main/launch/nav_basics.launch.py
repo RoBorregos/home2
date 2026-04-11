@@ -117,6 +117,7 @@ def launch_setup(context, *args, **kwargs):
         dashgo_driver,
         ekf_launch,
         laser_launch,
+        dualshock_launch,
     ]
     return return_launch
 

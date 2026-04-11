@@ -33,7 +33,7 @@ def generate_launch_description():
                 parameters=[{
                     'linear_speed': 0.2,
                     'rotation_speed': 0.1,
-                    'deadzone': 0.8,
+                    'deadzone': 0.4,
                 }],
                 remappings=[
                     ('cmd_vel', LaunchConfiguration('topic_name'))
