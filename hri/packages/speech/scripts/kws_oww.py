@@ -27,7 +27,7 @@ class OpenWakeWordNode(Node):
         self.get_logger().info("Initializing OpenWakeWord node.")
 
         self.declare_parameter(
-            "model_path", "/workspace/src/hri/packages/speech/assets/oww_rt"
+            "model_path", "/workspace/src/hri/packages/speech/assets/oww"
         )
         self.declare_parameter("inference_framework", "onnx")
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
