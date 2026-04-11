@@ -274,8 +274,15 @@ class PickAndPlaceTM(Node):
         self.subtask_manager.manipulation.move_to_position("nav_pose")
 
         if say:
-            CLog.nav(self, "MOVE", f"Moving to {location}")
-            self.subtask_manager.hri.say(f"Moving to {location}.", wait=False)
+            # Prefer the specific sublocation for user-facing messages so the
+            # robot announces e.g. "the dining table" instead of the generic
+            # "kitchen" room it happens to be in.
+            target = sublocation if sublocation else location
+            pretty_target = target.replace("_", " ")
+            CLog.nav(self, "MOVE", f"Moving to {target}")
+            self.subtask_manager.hri.say(
+                f"Now I will go to the {pretty_target}.", wait=False
+            )
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
 
