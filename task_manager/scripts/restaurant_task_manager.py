@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
 """
-Task Manager for Restaurant task of Robocup @Home 2025
+Task Manager for Restaurant task of Robocup @Home 2026
 """
 
+from frida_constants.vision_constants import (
+    RESTAURANT_TABLES_TOPIC,
+    DETECTIONS_IMAGE_TOPIC,
+)
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
@@ -12,199 +16,365 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
-from frida_constants.vision_enums import Gestures
-from frida_constants.vision_constants import CUSTOMER
 import time
 
-MOCK_NAV = False
-MOCK_MANIPULATION = False
-MOCK_HRI = False
-MOCK_VISION = False
-
 ATTEMPT_LIMIT = 3
-CUSTOMERS_LIMIT = 2
 
 
 class RestaurantTaskManager(Node):
     """Class to manage the restaurant task"""
 
     class TaskStates:
-        START = "START"
-        DETECT_CUSTOMERS = "DETECT_CUSTOMERS"
-        NAVIGATE_TO_CUSTOMER = "NAVIGATE_TO_CUSTOMER"
-        TAKE_ORDER = "TAKE_ORDER"
-        NAVIGATE_TO_KITCHENBAR = "NAVIGATE_TO_KITCHENBAR"
-        PICK_ITEMS = "PICK_ITEMS"
-        DELIVER_ORDER = "DELIVER_ORDER"
-        DEUX_GUIDE_TO_TABLE = "DEUX_GUIDE_TO_TABLE"
-        END = "END"
         WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
+        START = "START"
+        MOVE_TO_TABLES_AREA = "MOVE_TO_TABLES_AREA"
+        DETECT_CUSTOMERS = "DETECT_CUSTOMERS"
+        NAVIGATE_TO_TABLE = "NAVIGATE_TO_TABLE"
+        TAKE_ORDERS = "TAKE_ORDERS"
+        NAVIGATE_TO_BAR = "NAVIGATE_TO_BAR"
+        PREPARE_DELIVERY = "PREPARE_DELIVERY"
+        DELIVER_TO_TABLE = "DELIVER_TO_TABLE"
+        END = "END"
 
     def __init__(self):
         """Initialize the node"""
         super().__init__("restaurant_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.HELP_ME_CARRY, mock_areas=[])
+        self.subtask_manager = SubtaskManager(self, task=Task.RESTAURANT, mock_areas=["navigation"])
 
         self.running_task = True
-        self.detection_attempts = 0
-        self.customers_served = 0
-        self.pan_direction = 1
-        self.coordinates = None
-        self.order = None
-        self.pan_angles = [-40, 20, 20, 20, 20]
-        self.pick_object = None
-        self.gestures = [Gestures.RAISING_LEFT_ARM.value, Gestures.RAISING_RIGHT_ARM.value]
-        self.subtask_manager.vision.track_person(False)
-        self.point = None
 
         self.original_goal_pub = self.create_publisher(
             PoseStamped, "/adaptive_nav/original_goal", 10
         )
 
-        self.subtask_manager
-        # self.subtask_manager.manipulation.follow_person(False)
-        # self.subtask_manager.nav.follow_person(False)
+        # Table data structure: {table_id: {'customer_points': [PointStamped], 'customer_angles': [float], 'orders': [str], 'coordinates': PointStamped, 'num_customers': int}}
+        self.tables = {}
+        self.tables_sorted_by_customers = []  # descending
+        self.current_table_idx = 0
 
-        self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON
+        # Tracking current operations
+        self.current_customer_index = 0
+        self.current_delivery_item_index = 0
+        self.pick_attempts = 0
+
+        # Pan angles per-customer
+        self.pan_angles = []
+
+        self.current_state = RestaurantTaskManager.TaskStates.START
 
         self.get_logger().info("RestaurantTaskManager has started.")
-        # self.run()
 
     def timeout(self, timeout: int = 2):
         start_time = time.time()
         while (time.time() - start_time) < timeout:
             pass
 
+    def sort_tables_by_customers(self):
+        """Sort tables by number of customers (descending - greedy strategy)."""
+        self.tables_sorted_by_customers = sorted(
+            self.tables.keys(), key=lambda tid: self.tables[tid]["num_customers"], reverse=True
+        )
+        Logger.info(
+            self,
+            f"Tables sorted by customers: {[(tid, self.tables[tid]['num_customers']) for tid in self.tables_sorted_by_customers]}",
+        )
+
+    def deus_pick(self, object_name):
+        """Fallback: ask human to place object in gripper."""
+        Logger.warn(self, f"Requesting human assistance for {object_name}.")
+        self.subtask_manager.manipulation.open_gripper()
+        self.subtask_manager.hri.say(
+            f"I am having trouble picking the {object_name}. Please place it in my gripper and say yes when done."
+        )
+        status, confirmation = self.subtask_manager.hri.confirm(
+            "Have you placed the object in my gripper?",
+            use_hotwords=True,
+            retries=3,
+            wait_between_retries=5,
+        )
+        if confirmation == "yes":
+            self.subtask_manager.manipulation.close_gripper()
+            self.subtask_manager.hri.say("Thank you. I have received the object.")
+            return (Status.EXECUTION_SUCCESS, "")
+        return (Status.EXECUTION_ERROR, "Human assistance failed")
+
+    def pick_object(self, object_name):
+        """Detect objects, find closest match, and pick. Similar to GPSR flow."""
+        self.subtask_manager.hri.say(f"I will pick the {object_name}.", wait=False)
+
+        # Detect objects with retries
+        detections = []
+        for attempt in range(ATTEMPT_LIMIT):
+            status, detections = self.subtask_manager.vision.detect_objects()
+            if status == Status.EXECUTION_SUCCESS and len(detections) > 0:
+                break
+            Logger.warn(self, f"No objects detected, attempt {attempt + 1}/{ATTEMPT_LIMIT}")
+
+        if not detections:
+            self.subtask_manager.hri.say(f"I could not see the {object_name}.")
+            return self.deus_pick(object_name)
+
+        # Find closest match to requested object
+        labels = self.subtask_manager.vision.get_labels(detections)
+        Logger.info(self, f"Detected labels: {labels}")
+        status, closest = self.subtask_manager.hri.find_closest(labels, object_name)
+        if status != Status.EXECUTION_SUCCESS or not closest.results:
+            Logger.warn(self, f"Could not match '{object_name}' in detected labels: {labels}")
+            return self.deus_pick(object_name)
+
+        matched_label = closest.results[0]
+        Logger.info(self, f"Matched '{object_name}' to detection label: '{matched_label}'")
+
+        # Pick with retries
+        for attempt in range(ATTEMPT_LIMIT):
+            Logger.info(self, f"Pick attempt {attempt + 1}/{ATTEMPT_LIMIT} for '{matched_label}'")
+            status = self.subtask_manager.manipulation.pick_object(matched_label)
+            if status == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(f"I have picked the {object_name}.")
+                return (Status.EXECUTION_SUCCESS, "")
+            Logger.warn(self, "Pick failed, retrying...")
+
+        return self.deus_pick(object_name)
+
+    def place_object(self):
+        """Attempt to place object with retries, fallback to deus ex machina."""
+        for attempt in range(ATTEMPT_LIMIT):
+            Logger.info(self, f"Place attempt {attempt + 1}/{ATTEMPT_LIMIT}")
+            status = self.subtask_manager.manipulation.place()
+            if status == Status.EXECUTION_SUCCESS:
+                return (Status.EXECUTION_SUCCESS, "")
+            self.timeout(1)
+
+        # Failed - ask human to take object
+        self.subtask_manager.hri.say(
+            "I couldn't place the object. Please grab it from my gripper and say yes when done."
+        )
+        status, confirmation = self.subtask_manager.hri.confirm(
+            "Have you grabbed the object from my gripper?",
+            use_hotwords=True,
+            retries=3,
+            wait_between_retries=5,
+        )
+        if confirmation == "yes":
+            self.subtask_manager.manipulation.open_gripper()
+            self.subtask_manager.hri.say("Thank you.")
+            return (Status.EXECUTION_SUCCESS, "")
+
+        return (Status.EXECUTION_ERROR, "Human assistance failed")
+
     def run(self):
         """Running main loop"""
         if self.current_state == RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            # time.sleep(20)
             self.subtask_manager.hri.say("Waiting for start button to be pressed.")
-            # Wait for the start button to be pressed
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
-            Logger.success(self, "Start button pressed, receptionist task will begin now")
+            Logger.success(self, "Start button pressed, restaurant task will begin now")
             self.current_state = RestaurantTaskManager.TaskStates.START
 
         if self.current_state == RestaurantTaskManager.TaskStates.START:
-            Logger.state(self, "Starting task...")
-            self.subtask_manager.hri.say("I am ready to start the task.")
-            # self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
-            self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
+            Logger.state(self, "Starting restaurant task...")
+            self.current_state = RestaurantTaskManager.TaskStates.MOVE_TO_TABLES_AREA
 
-        if self.current_state == RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS:
-            Logger.state(self, "Detecting customers...")
-            self.subtask_manager.manipulation.move_to_position("front_stare")
-            person_found = False
-
-            for pan_angle in self.pan_angles:
-                if person_found:
-                    break
-
-                self.subtask_manager.manipulation.pan_to(pan_angle)
-                self.timeout(2)
-                status, self.point = self.subtask_manager.vision.get_customer()
-                # status = self.subtask_manager.vision.track_person_by("gestures", "wavingCustomer")
-                if status == Status.EXECUTION_SUCCESS:
-                    person_found = True
-
-                # for gesture in self.gestures:
-
-            if person_found:
-                self.subtask_manager.hri.say(
-                    "I have detected a customer. You can check my display to see the person."
-                )
-                self.subtask_manager.hri.publish_display_topic(CUSTOMER)
-                self.timeout(5)
-                self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_CUSTOMER
-            # elif (
-            #     status == Status.TARGET_NOT_FOUND
-            #     and self.detection_attempts < ATTEMPT_LIMIT
-            # ):
-            #     self.subtask_manager["manipulation"].pan_camera(self.pan_direction)
-            #     self.pan_direction *= -1
-            # else:
-            # self.current_state = RestaurantTaskManager.TASK_STATES["DEUX_GUIDE_TO_TABLE"]
-            # self.detection_attempts += 1
-
-        if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_CUSTOMER:
-            self.subtask_manager.hri.say("I will go towards you")
-            Logger.state(self, "Navigating to customer with adaptive goal")
-
-            # Activate continuous tracking so live coordinates are available
-            self.subtask_manager.vision.track_person_by("gestures", "wavingCustomer")
-
-            self.subtask_manager.nav.change_bt("adaptive")
-            goal_msg = PoseStamped()
-            goal_msg.header.frame_id = "map"
-            goal_msg.header.stamp = self.get_clock().now().to_msg()
-            goal_msg.pose.position.x = float(self.point.point.x)
-            goal_msg.pose.position.y = float(self.point.point.y)
-            goal_msg.pose.position.z = 0.0
-            goal_msg.pose.orientation.w = 1.0
-            self.original_goal_pub.publish(goal_msg)
-
-            self.subtask_manager.nav.move_to_point(self.point)
-
-            self.subtask_manager.manipulation.follow_person(True)
-            self.subtask_manager.nav.follow_person(False)
-            if self.order is None:
-                self.current_state = RestaurantTaskManager.TaskStates.TAKE_ORDER
-            else:
-                self.current_state = RestaurantTaskManager.TaskStates.DELIVER_ORDER
-
-        if self.current_state == RestaurantTaskManager.TaskStates.TAKE_ORDER:
-            Logger.state(self, "Taking order...")
-            self.subtask_manager.manipulation.follow_person(False)
-            self.subtask_manager.nav.follow_person(False)
-            self.subtask_manager.manipulation.follow_face(True)
-            self.subtask_manager.hri.say("Hello! What would you like to order?")
-            status, self.order = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your order?", use_hotwords=False
-            )
+        if self.current_state == RestaurantTaskManager.TaskStates.MOVE_TO_TABLES_AREA:
+            Logger.state(self, "Moving closer to tables area for better detection...")
+            self.subtask_manager.hri.say("I will move closer to the tables area.")
+            # TODO: move to a point near the tables area
+            status = Status.EXECUTION_SUCCESS
             if status == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(f"I'll bring your order: {self.order}.")
+                Logger.success(self, "Arrived near tables for customer detection.")
+                self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
+                # Get table groups and positions directly from vision task
+                status, customer_tables = self.subtask_manager.vision.customer_tables()
+                self.subtask_manager.hri.publish_display_topic(RESTAURANT_TABLES_TOPIC)
+                if status != Status.EXECUTION_SUCCESS or not customer_tables:
+                    Logger.warn(self, "No tables with customers detected. Waiting and retrying...")
+                    self.timeout(2)
+                    return
+                Logger.info(self, f"Detected {len(customer_tables)} table(s)")
+                table_idx = 0
+                for table_msg in customer_tables:
+                    if len(table_msg.people.list) == 0:
+                        continue
+                    customer_points = []
+                    customer_angles = []
+                    for person in table_msg.people.list:
+                        customer_points.append(person.point3d)
+                        customer_angles.append(person.angle)
+                    self.tables[table_idx] = {
+                        "customer_points": customer_points,
+                        "customer_angles": customer_angles,
+                        "orders": [],
+                        "coordinates": table_msg.table_point,
+                        "num_customers": len(table_msg.people.list),
+                    }
+                    table_idx += 1
+                if not self.tables:
+                    Logger.warn(self, "Tables detected but none have customers. Retrying...")
+                    self.timeout(2)
+                    return
+                # Sort tables by number of customers (greedy strategy)
+                self.sort_tables_by_customers()
+                self.subtask_manager.hri.say(
+                    f"I have detected {len(self.tables)} table(s) with customers. I will start taking orders."
+                )
+                # Start taking orders from first table (index into sorted list)
+                self.current_table_idx = 0
+                self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_TABLE
+
+        if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_TABLE:
+            if self.current_table_idx >= len(self.tables_sorted_by_customers):
+                Logger.info(self, "All tables served. Moving to bar.")
+                self.subtask_manager.hri.say("I have taken all orders. I will now go to the bar.")
+                self.current_table_idx = 0
+                self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR
+                return
+
+            table_id = self.tables_sorted_by_customers[self.current_table_idx]
+            table = self.tables[table_id]
+
+            if self.current_customer_index < table["num_customers"]:
+                # Take order from current customer
+                Logger.state(
+                    self,
+                    f"Taking order from customer {self.current_customer_index} at table {table_id}",
+                )
+                # Get angle for the current customer (if available)
+                customer_angle = table["customer_angles"][self.current_customer_index]
+
+                # OPTIONAL: Here we could add an "Adaptive Navigation" approach to the specific customer
+                # if the robot is too far. For now, we use the pan logic.
+
+                self.subtask_manager.manipulation.pan_to(customer_angle)
+                self.subtask_manager.vision.activate_face_recognition()
+                self.subtask_manager.manipulation.follow_face(True)
+
+                self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
+
+                # Use HRI take_order function
+                status, orders = self.subtask_manager.hri.take_order(retries=3)
+                if status == Status.EXECUTION_SUCCESS and orders:
+                    for order in orders:
+                        table["orders"].append(order)
+                        Logger.success(self, f"Order received: {order}")
+                else:
+                    Logger.warn(self, "Failed to get order from customer.")
+                    self.subtask_manager.hri.say(
+                        "Sorry, I didn't catch that. I'll move to the next customer."
+                    )
                 self.subtask_manager.manipulation.follow_face(False)
-                self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_KITCHENBAR
+                self.current_customer_index += 1
             else:
-                self.subtask_manager.hri.say("I'm sorry, I didn't understand. Can you repeat that?")
+                # Finished taking orders from all customers at this table
+                Logger.info(
+                    self,
+                    f"Finished taking orders from all customers at table {table_id}",
+                )
 
-        if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_KITCHENBAR:
-            Logger.state(self, "Navigating to kitchen/bar...")
-            self.subtask_manager.nav.change_bt("default")
-            # self.subtask_manager.nav.navigate_to_origin()
-            if self.order is None:
-                self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
-            else:
-                self.current_state = RestaurantTaskManager.TaskStates.PICK_ITEMS
+                # Move to next table
+                self.subtask_manager.hri.say("I will take orders from other tables now.")
+                self.current_table_idx += 1
+                self.current_customer_index = 0
 
-        if self.current_state == RestaurantTaskManager.TaskStates.PICK_ITEMS:
-            Logger.state(self, "Picking items...")
-            # TODO: Choose to pick items one by one or attempt using tray
-            self.pick_object = self.order[0]
-            self.subtask_manager.manipulation.pick_object(self.order[0])
+        if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR:
+            Logger.state(self, "Navigating to bar station to get items...")
+            self.subtask_manager.hri.say("I will now go to the bar to get the orders.")
 
-            self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_CUSTOMER
+            self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
+            self.subtask_manager.nav.resume_nav()
+            # Move to bar location (assumed at zero position or specific area)
+            status, error = self.subtask_manager.nav.move_to_location("bar", "")
+            self.subtask_manager.nav.pause_nav()
 
-        if self.current_state == RestaurantTaskManager.TaskStates.DELIVER_ORDER:
-            Logger.state(self, "Delivering order...")
-            self.subtask_manager.hri.say(
-                f"Here is the firsrt item of your order: {self.pick_object}. Please grab the object and I will open my gripper"
-            )
-            self.subtask_manager.manipulation.open_gripper()
-            self.customers_served += 1
-            self.order = None
-            if self.customers_served < CUSTOMERS_LIMIT:
-                self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_KITCHENBAR
-            else:
+            self.current_state = RestaurantTaskManager.TaskStates.PREPARE_DELIVERY
+
+        if self.current_state == RestaurantTaskManager.TaskStates.PREPARE_DELIVERY:
+            if self.current_table_idx >= len(self.tables_sorted_by_customers):
+                # All deliveries complete
+                Logger.success(self, "All orders delivered!")
+                self.subtask_manager.hri.say("I have delivered all orders. Service complete!")
                 self.current_state = RestaurantTaskManager.TaskStates.END
+            else:
+                self.current_delivery_item_index = 0
+                self.current_state = RestaurantTaskManager.TaskStates.DELIVER_TO_TABLE
+
+        if self.current_state == RestaurantTaskManager.TaskStates.DELIVER_TO_TABLE:
+            self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
+            table_id = self.tables_sorted_by_customers[self.current_table_idx]
+            table = self.tables[table_id]
+
+            # Deliver items one by one
+            if self.current_delivery_item_index < len(table["orders"]):
+                item = table["orders"][self.current_delivery_item_index]
+
+                Logger.state(
+                    self,
+                    f"Picking item {self.current_delivery_item_index + 1}/{len(table['orders'])}: {item}",
+                )
+
+                # Move arm to table_stare pose BEFORE detection/pick
+                self.subtask_manager.manipulation.move_to_position("table_stare", velocity=0.5)
+
+                status, error = self.pick_object(item)
+
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.success(self, f"Picked {item}. Delivering to table {table_id}...")
+
+                    # Navigate to the table using ADAPTIVE NAVIGATION
+                    self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
+                    self.subtask_manager.nav.resume_nav()
+
+                    # 1. Activate Adaptive BT
+                    self.subtask_manager.nav.change_bt("adaptive")
+
+                    # 2. Publish Table Center as Anchor/Goal
+                    goal_msg = PoseStamped()
+                    goal_msg.header.frame_id = "map"
+                    goal_msg.header.stamp = self.get_clock().now().to_msg()
+                    goal_msg.pose.position.x = table["coordinates"].point.x
+                    goal_msg.pose.position.y = table["coordinates"].point.y
+                    goal_msg.pose.position.z = 0.0
+                    goal_msg.pose.orientation.w = 1.0
+                    self.original_goal_pub.publish(goal_msg)
+
+                    # 3. Move to table using navigation stack
+                    # Note: We send the table point, but the adaptive_goal_publisher will adjust it
+                    # based on where it sees the people at THAT table.
+                    self.subtask_manager.nav.move_to_point(table["coordinates"])
+                    self.subtask_manager.nav.pause_nav()
+
+                    # Place item on table
+                    self.subtask_manager.hri.say(f"Here is your {item}.")
+                    self.subtask_manager.manipulation.move_to_position("table_stare", velocity=0.5)
+
+                    status, error = self.place_object()
+
+                    if status == Status.EXECUTION_SUCCESS:
+                        Logger.success(self, f"Delivered {item} to table {table_id}")
+                        self.current_delivery_item_index += 1
+
+                        # Return to bar for next item
+                        if self.current_delivery_item_index < len(table["orders"]):
+                            self.subtask_manager.hri.say("I will get your next item.")
+                            self.subtask_manager.nav.resume_nav()
+                            status, error = self.subtask_manager.nav.move_to_location("bar", "")
+                            self.subtask_manager.nav.pause_nav()
+                    else:
+                        Logger.error(self, f"Failed to place {item}: {error}")
+                        self.current_delivery_item_index += 1
+                else:
+                    Logger.error(self, f"Failed to pick {item}: {error}")
+                    self.current_delivery_item_index += 1
+
+            else:
+                # Finished delivering all items to this table
+                self.subtask_manager.hri.say("Enjoy your meal!")
+                self.current_table_idx += 1
+                self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR
 
         if self.current_state == RestaurantTaskManager.TaskStates.END:
-            Logger.state(self, "Finishing task...")
-            self.subtask_manager.hri.say("I have served all customers. I will rest now.")
-            self.get_logger().info("Task completed.")
-            self.subtask_manager.hri.reset_task_status()
+            Logger.state(self, "Restaurant task complete!")
+            self.subtask_manager.hri.say("All customers have been served. Restaurant complete.")
             self.running_task = False
 
 
