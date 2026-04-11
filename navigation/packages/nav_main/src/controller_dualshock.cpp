@@ -67,7 +67,7 @@ private:
     // --- Velocity command ---
     geometry_msgs::msg::Twist twist;
     twist.linear.x = msg->axes[1] * linear_speed_;
-    twist.angular.z = apply_deadzone(msg->axes[0]) * rotation_speed_; // When tryin the new omnibase for FRIDA change it to "[2]""
+    twist.angular.z = apply_deadzone(msg->axes[0]) * rotation_speed_;
     cmd_vel_pub_->publish(twist);
 
     // --- Square button (buttons[3]): cancel navigation goal ---

@@ -154,10 +154,9 @@ $IFACE_LINE
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <Internal>
-      <SocketReceiveBufferSize min="64MB"/>
+      <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>
-        <WhcHigh>64MB</WhcHigh>
-        <WhcLow>1MB</WhcLow>
+        <WhcHigh>500kB</WhcHigh>
       </Watermarks>
     </Internal>
     <Tracing>

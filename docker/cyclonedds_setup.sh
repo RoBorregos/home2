@@ -42,10 +42,9 @@ $IFACE_LINE
     </General>
 $SHM_SECTION
     <Internal>
-      <SocketReceiveBufferSize min="64MB"/>
+      <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>
-        <WhcHigh>64MB</WhcHigh>
-        <WhcLow>1MB</WhcLow>
+        <WhcHigh>500kB</WhcHigh>
       </Watermarks>
     </Internal>
     <Tracing>
