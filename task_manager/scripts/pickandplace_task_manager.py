@@ -123,9 +123,12 @@ class PickAndPlaceTM(Node):
         }
         self.yolo_to_logical = {v: k for k, v in self.yolo_names.items()}
 
-        # Shelf height mapping: shelf level -> height in metres. Adjust to arena.
-        self.shelf_level_heights = {1: 0.60, 2: 0.95, 3: 1.31}
-        self.default_shelf_height = 0.60
+        # Shelf height mapping: shelf level -> Z in base_link frame (NOT floor).
+        # Calibrated via RViz "Publish Point" clicked on each shelf surface.
+        # Physical heights from floor are 59.5, 95.5, 131.7 cm; base_link sits
+        # ~12 cm above floor, so subtract that offset.
+        self.shelf_level_heights = {1: 0.475, 2: 0.827, 3: 1.201}
+        self.default_shelf_height = 0.475
 
         # Load object->category mapping for shelf matching (e.g. "apple" -> "fruit")
         try:
