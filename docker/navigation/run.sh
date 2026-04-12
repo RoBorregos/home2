@@ -131,6 +131,9 @@ case $TASK in
     "--ppc")
         RUN="ros2 run nav_main launch_nav.py"
         ;;
+    "--dlc")
+        RUN="ros2 run nav_main launch_nav.py"
+        ;;
     *)
         RUN="bash"
         ;;

@@ -25,7 +25,9 @@ class DoingLaundryTM(Node):
 
     def __init__(self):
         super().__init__("doing_laundry_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=[])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.DOING_LAUNDRY, mock_areas=["manipulation", "vision"]
+        )
         self.current_state = DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON
         self.running_task = True
         self.state_start_time = None
@@ -63,7 +65,7 @@ class DoingLaundryTM(Node):
             self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
-            Logger.info(self, "Navigating to basket area (using kitchen/dishwasher for testing).")
+            Logger.info(self, "Navigating to basket area")
             status, error = self.navigate_to("kitchen", "dishwasher")
 
             if status == Status.EXECUTION_SUCCESS:
