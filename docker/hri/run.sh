@@ -7,63 +7,22 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-# IMPORTANT: Also edit auto-complete.sh to add new arguments
-DETACHED=""
-BUILD=""
-BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
-UPLOAD_IMAGE=""
-CLEAN=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
+parse_common_flags "$COMPOSE" "${ARGS[@]}"
 
-# Set flags from arguments
+# Parse hri-specific flags
 for arg in "${ARGS[@]}"; do
   case "$arg" in
-    "-d")
-        DETACHED="-d"
-        ;;
-    "--build")
-        BUILD="true"
-        ;;
-    "--recreate")
-        docker compose -f "$COMPOSE" down
-        ;;
-    "--down")
-        docker compose -f "$COMPOSE" down
-        exit 0
-        ;;
-    "--stop")
-        docker compose -f "$COMPOSE" stop
-        exit 0
-        ;;
-    "--build-image")
-        BUILD_IMAGE="--build"
-        ;;
-    "--build-display")
-        BUILD_DISPLAY="true"
-        ;;
-    "--open-display")
-        OPEN_DISPLAY="true"
-        ;;
-    "--download-model")
-        DOWNLOAD_MODEL="true"
-        ;;
-    "--regenerate-db")
-        REGENERATE_DB="true"
-        ;;
-    "--build-proto")
-        BUILD_PROTO="true"
-        ;;
-    "--upload-image")
-        UPLOAD_IMAGE="true"
-        ;;
-    "--clean")
-        CLEAN="true"
-        ;;
+    "--build-display")  BUILD_DISPLAY="true" ;;
+    "--open-display")   OPEN_DISPLAY="true" ;;
+    "--download-model") DOWNLOAD_MODEL="true" ;;
+    "--regenerate-db")  REGENERATE_DB="true" ;;
+    "--build-proto")    BUILD_PROTO="true" ;;
   esac
 done
 
@@ -86,32 +45,16 @@ else
   export SETUP_DONE=true
 fi
 
+# HRI uses compose/.env instead of .env; env file path is passed as argument
+setup_common_env "hri" "compose/.env"
+
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
-# Clean build artifacts if requested
-if [ "$CLEAN" == "true" ]; then
-  clean_directories .
-fi
-
 # Create dirs with current user to avoid permission problems
-mkdir -p install build log \
-  ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
-  ../../hri/packages/speech/assets/downloads/offline_voice/audios/
+mkdir -p ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
+         ../../hri/packages/speech/assets/downloads/offline_voice/audios/
 
-# Reset .env
-echo "" > compose/.env
-
-# CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable compose/.env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
-# Export user
-add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
-
-# Set environment type and runtime
+# HRI-specific env vars
 add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
 
 if [ "$ENV_TYPE" = "l4t" ]; then
@@ -157,6 +100,7 @@ GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 PACKAGES="speech nlp embeddings display"
 PROFILES=()
 RUN=""
@@ -179,7 +123,7 @@ fi
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
-COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
+COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
 cleanup() {

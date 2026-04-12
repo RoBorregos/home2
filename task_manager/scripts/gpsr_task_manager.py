@@ -16,7 +16,7 @@ from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
 # from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from task_manager.utils.baml_client.types import CommandListLLM
-from task_manager.utils.logger import Logger
+from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
@@ -77,7 +77,7 @@ class GPSRTM(Node):
         self.total_start_time = datetime.now()
         self.previous_state = None
 
-        Logger.info(self, "GPSRTMTaskManager has started.")
+        CLog.fsm(self, "STATE", "GPSRTMTaskManager has started.")
 
     def _track_state_change(self, new_state: str):
         """Track state changes and time spent in each state"""
@@ -90,35 +90,36 @@ class GPSRTM(Node):
             else:
                 self.state_times[self.previous_state] = time_spent
 
-            Logger.info(self, f"State '{self.previous_state}' took {time_spent:.2f} seconds")
+            CLog.fsm(self, "TIMER", f"State '{self.previous_state}' took {time_spent:.2f} seconds")
 
         self.previous_state = new_state
         self.state_start_time = current_time
 
         if self.state_times:
             total_time = sum(self.state_times.values())
-            Logger.info(self, f"Total time elapsed: {total_time:.2f} seconds")
-            Logger.info(self, f"State breakdown: {self.state_times}")
+            CLog.fsm(self, "TIMER", f"Total time elapsed: {total_time:.2f} seconds")
+            # Logger.info(self, f"State breakdown: {self.state_times}")
 
-        Logger.state(self, self.current_state)
+        CLog.fsm(
+            self,
+            "STATE",
+            f"{self.previous_state} → {self.current_state}"
+            if self.previous_state != self.current_state
+            else self.current_state,
+        )
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+
         if say:
-            self.subtask_manager.hri.say(
-                f"I will now guide you to the {location}. Please follow me."
-            )
-            self.subtask_manager.manipulation.follow_face(False)
+            target = sublocation if sublocation else location
+            pretty_target = target.replace("_", " ")
+            CLog.nav(self, "MOVE", f"Moving to {target}")
+            self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
-        self.subtask_manager.manipulation.move_joint_positions(
-            named_position="nav_pose", velocity=0.5, degrees=True
-        )
-        self.subtask_manager.nav.resume_nav()
-        future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-
-        self.subtask_manager.nav.pause_nav()
+        result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        return result
 
     def timeout(self, timeout: int = 2):
         time.sleep(timeout)
@@ -127,13 +128,15 @@ class GPSRTM(Node):
         """Finite State Machine"""
 
         if self.current_state == GPSRTM.TaskStates.WAITING_FOR_BUTTON:
-            Logger.state(self, "Waiting for start button...")
+            CLog.fsm(self, "STATE", "Waiting for start button...")
             self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
 
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
-            Logger.success(self, "Start button pressed, receptionist task will begin now")
+            CLog.fsm(
+                self, "STATE", "Start button pressed, GPSR task will begin now.", level="success"
+            )
             self.current_state = GPSRTM.TaskStates.START
 
         elif self.current_state == GPSRTM.TaskStates.START:
@@ -163,15 +166,13 @@ class GPSRTM(Node):
                         speed=1,
                     )
                 rclpy.spin_once(self, timeout_sec=0.1)
-            Logger.success(self, "Start button pressed, receptionist task will begin now")
+            CLog.fsm(self, "STATE", "Start button pressed, hearing command now.", level="success")
             self.current_state = GPSRTM.TaskStates.WAITING_FOR_COMMAND
 
         elif self.current_state == GPSRTM.TaskStates.WAITING_FOR_COMMAND:
             self._track_state_change(GPSRTM.TaskStates.WAITING_FOR_COMMAND)
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            self.subtask_manager.manipulation.move_to_position("front_stare")
 
             s, user_command = self.subtask_manager.hri.ask_and_confirm(
                 "What is your command?",
@@ -251,9 +252,7 @@ class GPSRTM(Node):
             self.navigate_to("start_area", "", False)
             self.executed_commands += 1
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            self.subtask_manager.manipulation.move_to_position("front_stare")
 
         elif self.current_state == GPSRTM.TaskStates.DONE:
             self._track_state_change(GPSRTM.TaskStates.DONE)
@@ -265,15 +264,15 @@ class GPSRTM(Node):
 
             # Generate final timing report
             total_task_time = (datetime.now() - self.total_start_time).total_seconds()
-            Logger.info(self, "=== FINAL TIMING REPORT ===")
-            Logger.info(self, f"Total task time: {total_task_time:.2f} seconds")
+            CLog.fsm(self, "TIMER", "=== FINAL TIMING REPORT ===")
+            CLog.fsm(self, "TIMER", f"Total task time: {total_task_time:.2f} seconds")
 
             sorted_states = sorted(self.state_times.items(), key=lambda x: x[1], reverse=True)
             for state, time_spent in sorted_states:
-                percentage = (time_spent / total_task_time) * 100
-                Logger.info(self, f"{state}: {time_spent:.2f}s ({percentage:.1f}%)")
+                percentage = (time_spent / total_task_time) * 100 if total_task_time > 0 else 0
+                CLog.fsm(self, "TIMER", f"{state}: {time_spent:.2f}s ({percentage:.1f}%)")
 
-            Logger.info(self, "=== END TIMING REPORT ===")
+            CLog.fsm(self, "TIMER", "=== END TIMING REPORT ===")
             self.running_task = False
 
 
