@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 AREAS="vision manipulation navigation integration hri zed"
+ORIN_SERVER_AREAS="hri manipulation"
 
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
@@ -251,10 +252,22 @@ control() {
 }
 
 run_task() {
+  # Load SSH credentials for Orin server
+  if [ -f ".env" ]; then
+    source .env
+  fi
+  local orin_host="192.168.31.228"
+
   for area in ${AREAS}; do
     SESSION_NAME=$area
-    tmux new-session -d -s "$SESSION_NAME"
-    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
+
+    if echo " ${ORIN_SERVER_AREAS} " | grep -q " ${area} "; then
+      sshpass -p "${ORIN_SSH_PASS}" ssh -o StrictHostKeyChecking=no "${ORIN_SSH_USER}@${orin_host}" \
+        "tmux new-session -d -s '${SESSION_NAME}' && tmux send-keys -t '${SESSION_NAME}' 'cd $(pwd) && bash run.sh $area $*' C-m"
+    else
+      tmux new-session -d -s "$SESSION_NAME"
+      tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
+    fi
   done
 }
 
