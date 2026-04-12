@@ -123,8 +123,12 @@ class HRIC_TM(Node):
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.clear_collision_objects()
         self.subtask_manager.manipulation.move_to_position(
-            "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
+            "nav_pose"
         )
+        if self.carrying_bag:
+            self.subtask_manager.manipulation.move_to_position(
+                "nav_carry_bag_pose"
+            )
         if say:
             Logger.info(self, f"Moving to {location}")
             self.subtask_manager.hri.say(
@@ -218,7 +222,7 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.SAVE_FACE:
             self._track_state_change(HRIC_TM.TaskStates.SAVE_FACE)
             self.subtask_manager.hri.say(
-                "Please stand in front of me so I can save your face."
+                "Please stand in front of me and look at me so I can save your face."
                 if self.current_attempts == 0
                 else "Please get closer to me and look at my camera so I can save your face."
             )
