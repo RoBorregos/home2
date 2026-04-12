@@ -238,7 +238,7 @@ class FollowPersonController(Node):
         """Send joint velocity command — only joint1, all others 0."""
         req = MoveVelocity.Request()
         req.is_sync = True
-        req.speeds = [-velocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        req.speeds = [velocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         try:
             future = self.velocity_client.call_async(req)
             future.add_done_callback(self._velocity_done_cb)
