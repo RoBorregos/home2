@@ -12,11 +12,13 @@ from std_msgs.msg import Bool
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker, MarkerArray
 from frida_interfaces.msg import ObjectDetectionArray
+from frida_interfaces.srv import DetectionHandler
 from dataclasses import dataclass
 import pathlib
 import threading
 import copy
 import cv2 as cv
+import math
 from typing import List
 from vision_general.utils.trt_utils import load_yolo_trt
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
@@ -34,6 +36,7 @@ from frida_constants.vision_constants import (
     DEBUG_IMAGE_TOPIC,
     CAMERA_FRAME,
     TRASH_SERVICE_CATEGORY,
+    DETECTION_HANDLER_TOPIC_SRV,
 )
 
 from frida_interfaces.srv import SetTrashCategory
@@ -61,7 +64,7 @@ ARGS = {
     "USE_YOLO26": True,
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
-    "MIN_SCORE_THRESH": 0.3,
+    "MIN_SCORE_THRESH": 0.75,
     "MAX_DEPTH_THRESH": 2.5,
 }
 
@@ -149,6 +152,15 @@ class object_detector_node(rclpy.node.Node):
 
         self.handleSubcriptions()
         self.handlePublishers()
+
+        # Detection handler service
+        self.latest_detections = []
+        self.detection_service = self.create_service(
+            DetectionHandler,
+            DETECTION_HANDLER_TOPIC_SRV,
+            self.detection_handler_callback,
+        )
+
         self.runThread = None
         self._frame_count = 0
         self._skip_frames = 2  # process every 3rd frame to reduce GPU load
@@ -342,6 +354,31 @@ class object_detector_node(rclpy.node.Node):
 
     def _vision_active_cb(self, msg):
         self.active_flag = msg.data
+
+    def detection_handler_callback(self, request, response):
+        """Service callback that returns the latest detections, optionally filtered."""
+        detections = list(self.latest_detections)
+
+        if request.label and request.label != "all":
+            detections = [d for d in detections if d.label_text == request.label]
+
+        if request.closest_object and detections:
+            detections = [
+                min(
+                    detections,
+                    key=lambda d: d.point3d.point.x**2
+                    + d.point3d.point.y**2
+                    + d.point3d.point.z**2,
+                )
+            ]
+
+        response.detection_array.detections = detections
+        response.success = len(detections) > 0
+        self.get_logger().info(
+            f"Detection handler: requested='{request.label}' closest={request.closest_object} "
+            f"returned={len(detections)} detections"
+        )
+        return response
 
     # Function to handle a ROS depthPublishers have been created input.
     def depthImageCallback(self, data):
@@ -545,14 +582,19 @@ class object_detector_node(rclpy.node.Node):
             self.depth_image, self.tfBuffer
         )
 
-        # Filter by depth threshold
+        # Filter by euclidean distance threshold
         max_depth = self.node_params.MAX_DEPTH_THRESH
         all_detections = [
             d
             for d in all_detections
             if hasattr(d, "point_stamped_")
             and hasattr(d.point_stamped_, "point")
-            and d.point_stamped_.point.z <= max_depth
+            and math.sqrt(
+                d.point_stamped_.point.x**2
+                + d.point_stamped_.point.y**2
+                + d.point_stamped_.point.z**2
+            )
+            <= max_depth
         ]
 
         if self.node_params.VERBOSE:
@@ -595,6 +637,7 @@ class object_detector_node(rclpy.node.Node):
                 self.get_logger().info(f"Detected TRASH/{det.label_text}")
             processed_detections.append(detection)
 
+        self.latest_detections = merged_detections
         self.detections_publisher.publish(
             ObjectDetectionArray(detections=processed_detections)
         )
