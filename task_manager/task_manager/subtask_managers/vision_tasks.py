@@ -34,6 +34,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
+    FLIP_IMAGE_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -95,6 +96,7 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
+        self.rotate_camera_publisher = self.node.create_publisher(BoolMsg, FLIP_IMAGE_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
@@ -903,16 +905,9 @@ class VisionTasks:
 
     def describe_person(self, callback):
         """Describe the person in the image"""
-        # TODO: Remove mock when moondream is ready
-        Logger.info(self.node, "Describing person (MOCKED)")
-        callback(
-            Status.EXECUTION_SUCCESS,
-            "They have dark hair, are wearing a casual shirt, appear to be of average height, and are not wearing glasses.",
-        )
-        return
-        # Logger.info(self.node, "Describing person")
-        # prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
-        # self.moondream_query_async(prompt, query_person=True, callback=callback)
+        Logger.info(self.node, "Describing person")
+        prompt = "Briefly describe 4 attributes of the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses, etc."
+        self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
         time.sleep(TIMEOUT)
@@ -1043,6 +1038,11 @@ class VisionTasks:
             location += f"to the left of the {detections[right_pos].classname.lower()}"
 
         return Status.EXECUTION_SUCCESS, location
+
+    def camera_upside_down(self, flip: bool):
+        msg = BoolMsg()
+        msg.data = flip
+        self.rotate_camera_publisher.publish(msg)
 
 
 if __name__ == "__main__":

@@ -123,7 +123,7 @@ case $TASK in
         RUN="ros2 run nav_main launch_nav.py"
         ;;
     "--gpsr")
-        RUN="ros2 launch nav_main navigation_composition.launch.py"
+        RUN="ros2 run nav_main launch_nav.py"
         ;;
     "--hric")
         RUN="ros2 run nav_main launch_nav.py"

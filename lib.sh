@@ -251,11 +251,10 @@ control() {
 }
 
 run_task() {
-  local task=$1
   for area in ${AREAS}; do
     SESSION_NAME=$area
     tmux new-session -d -s "$SESSION_NAME"
-    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
+    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
   done
 }
 

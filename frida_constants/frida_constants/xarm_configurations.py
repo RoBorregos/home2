@@ -25,11 +25,11 @@ FRONT_LOW_STARE = {
 FRONT_STARE_CARRY_BAG = {
     "joints": {
         "joint1": -90.0,
-        "joint2": -42.7,
+        "joint2": -42.9,
         "joint3": -118.6,
-        "joint4": 2.9,
+        "joint4": 0.0,
         "joint5": 122.3,
-        "joint6": 224.1,
+        "joint6": -134.9,
     },
     "degrees": True,
 }
@@ -99,12 +99,12 @@ NAV_POSE = {
 
 NAV_CARRY_BAG_POSE = {
     "joints": {
-        "joint1": -83.0,
-        "joint2": -55.5,
-        "joint3": -63.1,
-        "joint4": -0.8,
-        "joint5": 118.4,
-        "joint6": 228.6,
+        "joint1": -90.0,
+        "joint2": -42.7,
+        "joint3": -68.2,
+        "joint4": 0.0,
+        "joint5": 115.0,
+        "joint6": -138.1,
     },
     "degrees": True,
 }
@@ -145,6 +145,30 @@ PLACE_FLOOR_RIGHT = {
     "degrees": True,
 }
 
+HAND_BAG_POSE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -87.2,
+        "joint3": -108.5,
+        "joint4": 0.0,
+        "joint5": 68.5,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
+SCAN_FLOOR_CARRY_BAG_POSE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -21.0,
+        "joint3": -94.0,
+        "joint4": -1.5,
+        "joint5": 137.0,
+        "joint6": -137.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -158,4 +182,6 @@ XARM_CONFIGURATIONS = {
     "carry_pose": CARRY_POSE,
     "place_floor_right": PLACE_FLOOR_RIGHT,
     "place_floor_left": PLACE_FLOOR_LEFT,
+    "hand_bag_pose": HAND_BAG_POSE,
+    "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
 }

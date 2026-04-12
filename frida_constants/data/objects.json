@@ -13,7 +13,9 @@
             "tangerine",
             "pear",
             "lemon",
-            "apple"
+            "apple",
+            "orange",
+            "banana"
         ],
         "snack": [
             "pringles",
@@ -117,6 +119,8 @@
         "polish": "cleaning_supply",
         "cloth": "cleaning_supply",
         "brush": "cleaning_supply",
-        "sponge": "cleaning_supply"
+        "sponge": "cleaning_supply",
+        "banana": "fruit",
+        "orange": "fruit"
     }
 }
