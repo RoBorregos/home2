@@ -246,8 +246,8 @@ var NAVTREEINDEX29 =
 "namespacefrida__constants_1_1vision__enums.html#a0332e09d677c452e51fd0d08415fefb5":[24,0,48,7,3],
 "namespacefrida__constants_1_1xarm__configurations.html":[24,0,48,8],
 "namespacefrida__constants_1_1xarm__configurations.html#a11fb9768bb78ea1ba4ea84e0e587de48":[24,0,48,8,4],
-"namespacefrida__constants_1_1xarm__configurations.html#a1ebb73dff17d4fb86c8530a2eda2fe58":[24,0,48,8,10],
+"namespacefrida__constants_1_1xarm__configurations.html#a1ebb73dff17d4fb86c8530a2eda2fe58":[24,0,48,8,11],
+"namespacefrida__constants_1_1xarm__configurations.html#a2bb2a5e5161403e9e48a8ed3b652fa54":[24,0,48,8,12],
 "namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c":[24,0,48,8,2],
-"namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd":[24,0,48,8,3],
-"namespacefrida__constants_1_1xarm__configurations.html#a40724ca8949bf6768bc309e32f3b284f":[24,0,48,8,0]
+"namespacefrida__constants_1_1xarm__configurations.html#a3573bdef9b6b808b471943095e5fbaa4":[24,0,48,8,5]
 };

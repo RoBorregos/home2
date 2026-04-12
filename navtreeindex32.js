@@ -1,5 +1,7 @@
 var NAVTREEINDEX32 =
 {
+"namespacetask__manager_1_1config.html":[24,0,138,0],
+"namespacetask__manager_1_1config_1_1hri.html":[24,0,138,0,0],
 "namespacetask__manager_1_1config_1_1hri_1_1debug.html":[24,0,138,0,0,0],
 "namespacetask__manager_1_1config_1_1hri_1_1debug.html#a1ea1f4f28fed6eb7e5b2afe7685cdb8a":[24,0,138,0,0,0,1],
 "namespacetask__manager_1_1config_1_1hri_1_1debug.html#a72f6f5940c4749f5e6bf597ca63a2663":[24,0,138,0,0,0,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX32 =
 "namespacezed__simulator.html#a6d489b3a367f76b4f6c43605f89dbb5f":[24,0,170,1],
 "namespacezero__shot__object__detector__node.html":[24,0,171],
 "namespacezero__shot__object__detector__node.html#a1489f755c75c3eed93e2fe3ab401521f":[24,0,171,3],
-"namespacezero__shot__object__detector__node.html#a869a6d39d4b1ca7f56f1c3c1ee76495c":[24,0,171,4],
-"namespacezero__shot__object__detector__node.html#aba70d0632c70d26521c3901943462bc4":[24,0,171,2],
-"namespacezero__shot__object__detector__node.html#ac32ca7acf55aac956de5fceb8911e9b3":[24,0,171,5]
+"namespacezero__shot__object__detector__node.html#a869a6d39d4b1ca7f56f1c3c1ee76495c":[24,0,171,4]
 };

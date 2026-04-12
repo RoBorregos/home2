@@ -120,10 +120,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ade9dab5fc54bf4908e8eddd16e6bb8ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac76ef041101bb1f26053c804c4c3ba29"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#ac76ef041101bb1f26053c804c4c3ba29">reset_controller_client</a></td></tr>
 <tr class="separator:ac76ef041101bb1f26053c804c4c3ba29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea64c53d479e2b9b193264f530ff3154"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#aea64c53d479e2b9b193264f530ff3154">get_tgpio_client</a></td></tr>
-<tr class="separator:aea64c53d479e2b9b193264f530ff3154"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d852aaba33ea357320df42b3df3a47b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#a4d852aaba33ea357320df42b3df3a47b">set_tgpio_client</a></td></tr>
-<tr class="separator:a4d852aaba33ea357320df42b3df3a47b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff7fd9cd014585c26e08152248557471"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#aff7fd9cd014585c26e08152248557471">config_tgpio_reset_client</a></td></tr>
+<tr class="separator:aff7fd9cd014585c26e08152248557471"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a81e0492c46e4b32ac50a0769ac18be57"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#a81e0492c46e4b32ac50a0769ac18be57">service</a></td></tr>
 <tr class="separator:a81e0492c46e4b32ac50a0769ac18be57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e630d824d21429080d52fa5b280b490"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#a1e630d824d21429080d52fa5b280b490">is_following_face_active</a></td></tr>
@@ -149,10 +147,6 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:ac7bb8dec577b334357c1632fe17de5e0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#ac7bb8dec577b334357c1632fe17de5e0">_read_tgpio_state</a> (self)</td></tr>
-<tr class="separator:ac7bb8dec577b334357c1632fe17de5e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5e20373968beaf1b8ee971c8dadbb516"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#a5e20373968beaf1b8ee971c8dadbb516">_restore_tgpio_state</a> (self, digitals)</td></tr>
-<tr class="separator:a5e20373968beaf1b8ee971c8dadbb516"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9441ae8b65e061238578e5fd7f5c0b94"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#a9441ae8b65e061238578e5fd7f5c0b94">_set_xarm_mode</a> (self, int mode, bool reset_controller=False)</td></tr>
 <tr class="separator:a9441ae8b65e061238578e5fd7f5c0b94"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afae30f8e46450b3b4ee499dd2aab98cf"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfollow__face__node_1_1FollowFaceNode.html#afae30f8e46450b3b4ee499dd2aab98cf">_follow_face_service_callback</a> (self, FollowFace.Request request, FollowFace.Response response)</td></tr>
@@ -294,68 +288,6 @@ Protected Member Functions</h2></td></tr>
 <pre class="fragment">Return face position if fresh data is available, else (None, None).</pre> 
 </div>
 </div>
-<a id="ac7bb8dec577b334357c1632fe17de5e0" name="ac7bb8dec577b334357c1632fe17de5e0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac7bb8dec577b334357c1632fe17de5e0">&#9670;&#160;</a></span>_read_tgpio_state()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">def follow_face_node.FollowFaceNode._read_tgpio_state </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<pre class="fragment">Read current TGPIO digital values before mode switch.</pre> 
-</div>
-</div>
-<a id="a5e20373968beaf1b8ee971c8dadbb516" name="a5e20373968beaf1b8ee971c8dadbb516"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5e20373968beaf1b8ee971c8dadbb516">&#9670;&#160;</a></span>_restore_tgpio_state()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">def follow_face_node.FollowFaceNode._restore_tgpio_state </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>digitals</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<pre class="fragment">Restore TGPIO digital values after mode switch.</pre> 
-</div>
-</div>
 <a id="a624c7218d1c17c0cf312c4995b207c1a" name="a624c7218d1c17c0cf312c4995b207c1a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a624c7218d1c17c0cf312c4995b207c1a">&#9670;&#160;</a></span>_run_loop()</h2>
 
@@ -463,7 +395,11 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<pre class="fragment">Set xArm mode and state. Preserves TGPIO (gripper) state across mode switch.</pre> 
+<pre class="fragment">Set xArm mode and state.
+
+Gripper state is preserved automatically thanks to the
+config_tgpio_reset_when_stop(0) call done at init.
+</pre> 
 </div>
 </div>
 <a id="a15048ff1871d1bab1308082533e82381" name="a15048ff1871d1bab1308082533e82381"></a>
@@ -531,6 +467,20 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="aff7fd9cd014585c26e08152248557471" name="aff7fd9cd014585c26e08152248557471"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff7fd9cd014585c26e08152248557471">&#9670;&#160;</a></span>config_tgpio_reset_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">follow_face_node.FollowFaceNode.config_tgpio_reset_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a6da50aa0e2a97d2073c36ccc83dcb749" name="a6da50aa0e2a97d2073c36ccc83dcb749"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6da50aa0e2a97d2073c36ccc83dcb749">&#9670;&#160;</a></span>face_x</h2>
 
@@ -553,20 +503,6 @@ Protected Member Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">follow_face_node.FollowFaceNode.face_y</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aea64c53d479e2b9b193264f530ff3154" name="aea64c53d479e2b9b193264f530ff3154"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea64c53d479e2b9b193264f530ff3154">&#9670;&#160;</a></span>get_tgpio_client</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">follow_face_node.FollowFaceNode.get_tgpio_client</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -707,20 +643,6 @@ Protected Member Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">follow_face_node.FollowFaceNode.service</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a4d852aaba33ea357320df42b3df3a47b" name="a4d852aaba33ea357320df42b3df3a47b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d852aaba33ea357320df42b3df3a47b">&#9670;&#160;</a></span>set_tgpio_client</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">follow_face_node.FollowFaceNode.set_tgpio_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

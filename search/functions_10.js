@@ -33,7 +33,7 @@ var searchData=
   ['place_5fexecute_30',['place_execute',['../classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a03d597744004f1e7cb25cb11026faa75',1,'pick_and_place::manipulation_core::ManipulationCore']]],
   ['place_5fin_5fpoint_31',['place_in_point',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a4f50ca84fbd994fc7007facf098b8912',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
   ['place_5fobject_32',['place_object',['../classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a3d0893d5ccfc240f9aaa93866bc54949',1,'task_manager::subtask_managers::gpsr_single_tasks::GPSRSingleTask']]],
-  ['place_5fon_5ffloor_33',['place_on_floor',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ac9f4655edac39a6904f2f49cb822eec5',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
+  ['place_5fon_5ffloor_33',['place_on_floor',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ab9a6d9d68759c72e9c82f727bf82a3bf',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
   ['place_5fon_5fshelf_34',['place_on_shelf',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#adda35d1a0ea061e53359e8eaa7d4158a',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
   ['place_5fservice_35',['place_service',['../classTestsNode.html#abc760b8c952159e5d0d4fe630f6fd640',1,'TestsNode']]],
   ['place_5fservice_5fcallback_36',['place_service_callback',['../classTestsNode.html#a4d34e764d9c5dd4fd8601787dbc36cf7',1,'TestsNode']]],
