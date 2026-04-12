@@ -1,6 +1,5 @@
 import time
 
-import rclpy
 from frida_constants.hri_constants import GPSR_COMMANDS
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -58,36 +57,31 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = GoTo(**command)
 
-        self.subtask_manager.hri.say(f"I will go to {command.location_to_go}.", wait=False)
-        self.subtask_manager.manipulation.move_joint_positions(
-            named_position="nav_pose", velocity=0.5, degrees=True
-        )
-        self.subtask_manager.nav.resume_nav()
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
         location = self.subtask_manager.hri.query_location(command.location_to_go)[0]
 
-        self.subtask_manager.hri.node.get_logger().info(
-            f"Moving to {location.subarea} in {location.area}"
-        )
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
-        future = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
-        rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-        self.subtask_manager.nav.pause_nav()
-        return Status.EXECUTION_SUCCESS, "arrived to:" + command.location_to_go
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
+
+        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        return result, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+
         if say:
-            self.subtask_manager.hri.say(
-                f"I will now guide you to the {location}. Please follow me."
-            )
-            self.subtask_manager.manipulation.follow_face(False)
-        self.subtask_manager.manipulation.move_joint_positions(
-            named_position="nav_pose", velocity=0.5, degrees=True
-        )
-        self.subtask_manager.nav.resume_nav()
-        future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-        self.subtask_manager.nav.pause_nav()
+            target = sublocation if sublocation else location
+            pretty_target = target.replace("_", " ")
+            self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
+
+        result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        return result
 
     ## Manipulation
     def pick_object(self, command: PickObject):

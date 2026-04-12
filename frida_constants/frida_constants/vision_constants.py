@@ -63,7 +63,8 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "orange",
     # "cup",
 ]
-TRASH_DETECTION_SERVICE = "/vision/zero_shot_trash_detection"
+TRASH_SERVICE_CATEGORY = "/vision/set_trash_category"
+TRASHCAN_SERVICE = "vision/trashcan_detect"
 
 CUSTOMER = "/vision/customer"
 GET_CUSTOMER_TOPIC = "/vision/get_customer"
@@ -105,6 +106,7 @@ FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
+FLIP_IMAGE_TOPIC = "/vision/face_recognition/flip_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
 # HRIC commands node
