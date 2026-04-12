@@ -323,7 +323,13 @@ class PlaceManager:
                 heatmap_request.pointcloud = pcl_result
 
                 if place_params.is_shelf:
-                    heatmap_request.prefer_closest = True
+                    # Same rationale as the close_to branch above: for shelf
+                    # placements we want the densest center area of the
+                    # filtered plane cluster, not the point physically
+                    # closest to base_link (which is always the front edge
+                    # of the shelf and causes the object to be placed at
+                    # the lip).
+                    heatmap_request.prefer_closest = False
                 if not self.node.place_pose_client.wait_for_service(timeout_sec=5.0):
                     self.node.get_logger().error(
                         "place_pose (heatmap) service not available"
@@ -336,6 +342,26 @@ class PlaceManager:
                 self.node.get_logger().info(
                     f"Place point detected: {point_result.point.x}, {point_result.point.y}, {point_result.point.z}"
                 )
+
+                # Clamp X to the arm's reachable envelope for this shelf height.
+                # The xArm6 horizontal reach (~0.70m) decreases as the target
+                # gets higher.  Without this, the heatmap may return a point
+                # deep inside the shelf that OMPL cannot plan to, especially
+                # on the top shelf (z ≈ 1.20).  The formula is a conservative
+                # linear approximation calibrated from real tests:
+                #   shelf 1 (z=0.475) → max_x ≈ 0.63
+                #   shelf 2 (z=0.827) → max_x ≈ 0.54
+                #   shelf 3 (z=1.201) → max_x ≈ 0.45
+                if place_params.is_shelf:
+                    shelf_z = place_params.table_height
+                    max_reachable_x = max(0.40, 0.75 - 0.25 * shelf_z)
+                    original_x = point_result.point.x
+                    if point_result.point.x > max_reachable_x:
+                        point_result.point.x = max_reachable_x
+                        self.node.get_logger().info(
+                            f"Clamped shelf place X from {original_x:.3f} to "
+                            f"{max_reachable_x:.3f} (shelf_z={shelf_z:.3f})"
+                        )
 
                 result_pose.header = point_result.header
                 result_pose.pose.position = point_result.point
