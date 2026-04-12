@@ -49,6 +49,47 @@ install(DIRECTORY assets
 #   FILES_MATCHING PATTERN "*.json"
 # )
 
+# Edge Impulse
+add_executable(audio_classifier_node src/audio_classifier_node.cpp)
+
+option(BUILD_WITH_EI "Build with Edge Impulse C++ SDK static library" ON)
+
+if(BUILD_WITH_EI)
+  # When building with Edge Impulse inside Docker, use pre-compiled static lib at /opt/ei_sdk
+  set(EI_INSTALL_DIR "/opt/ei_sdk" CACHE PATH "Installation directory of the pre-compiled EI SDK")
+  set(EI_LIBRARY_PATH "${EI_INSTALL_DIR}/lib/libei_sdk.a" CACHE PATH "Path to compiled libei_sdk.a")
+
+  add_library(ei_sdk STATIC IMPORTED)
+  set_target_properties(ei_sdk PROPERTIES IMPORTED_LOCATION "${EI_LIBRARY_PATH}")
+
+  # Link against the static SDK library and the ROS2 interfaces
+  ament_target_dependencies(audio_classifier_node rclcpp frida_interfaces)
+  target_link_libraries(audio_classifier_node ei_sdk)
+
+  # Include directories that expose headers since PUBLIC isn't pulled from IMPORTED in some CMakes
+  target_include_directories(audio_classifier_node PRIVATE
+      "${EI_INSTALL_DIR}/include"
+      "${EI_INSTALL_DIR}/include/model-parameters"
+      "${EI_INSTALL_DIR}/include/tflite-model"
+      "${EI_INSTALL_DIR}/include/edge-impulse-sdk"
+      "${EI_INSTALL_DIR}/include/edge-impulse-sdk/classifier"
+      "${EI_INSTALL_DIR}/include/edge-impulse-sdk/dsp"
+      "${EI_INSTALL_DIR}/include/edge-impulse-sdk/porting"
+      "${EI_DIR}/edge-impulse-sdk/third_party"
+  )
+
+  target_compile_definitions(audio_classifier_node PRIVATE WITH_EI_INFERENCE)
+  target_compile_options(audio_classifier_node PRIVATE -Wno-unused-parameter -Wno-missing-field-initializers)
+else()
+  ament_target_dependencies(audio_classifier_node rclcpp frida_interfaces)
+endif()
+
+# Install executable target
+install(TARGETS
+  audio_classifier_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 file(GLOB PYTHON_SCRIPTS scripts/*.py)
 
 # Install python scripts

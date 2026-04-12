@@ -110,14 +110,6 @@ def generate_launch_description():
         ),
         Node(
             package="speech",
-            executable="sound_classification_node.py",
-            name="sound_classification",
-            output="screen",
-            emulate_tty=True,
-            parameters=[sound_classification_config],
-        ),
-        Node(
-            package="speech",
             executable="audio_feedback.py",
             name="audio_feedback",
         ),

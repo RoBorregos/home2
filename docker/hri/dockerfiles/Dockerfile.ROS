@@ -37,6 +37,22 @@ RUN pip3 install --no-cache-dir --no-build-isolation edge-impulse-linux
 COPY ../../hri/requirements/postgres.txt /workspace/requirements/postgres.txt
 RUN pip install -r requirements/postgres.txt
 
+# Edge impulse sdk 
+COPY docker/edge-impulse-model /tmp/ei_sdk_src
+RUN apt-get update -qq && apt-get install -y cmake g++ gcc && \
+    mkdir -p /tmp/ei_sdk_src/build && \
+    cd /tmp/ei_sdk_src/build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && \
+    mkdir -p /opt/ei_sdk/lib && \
+    mkdir -p /opt/ei_sdk/include && \
+    cp libei_sdk.a /opt/ei_sdk/lib/ && \
+    cp -r ../edge-impulse-sdk /opt/ei_sdk/include/ && \
+    cp -r ../model-parameters /opt/ei_sdk/include/ && \
+    cp -r ../tflite-model /opt/ei_sdk/include/ && \
+    find .. -maxdepth 1 \( -name "*.h" -o -name "*.hpp" \) -exec cp {} /opt/ei_sdk/include/ \; && \
+    rm -rf /tmp/ei_sdk_src
+
 USER ros
 RUN sudo usermod -aG audio ros
 
