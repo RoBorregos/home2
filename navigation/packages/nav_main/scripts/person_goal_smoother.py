@@ -16,15 +16,21 @@ Usage:
 """
 
 import math
+import os
 import time
 
 import numpy as np
+import yaml
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
+from ament_index_python.packages import get_package_share_directory
 
 from geometry_msgs.msg import PoseStamped, PointStamped
 from nav_msgs.msg import OccupancyGrid
+from std_srvs.srv import SetBool
+from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
+from rcl_interfaces.srv import SetParameters
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 
@@ -32,6 +38,87 @@ from tf2_geometry_msgs import do_transform_point
 TRACKER_TOPIC = "/vision/tracking_results"
 GOAL_UPDATE_TOPIC = "/goal_update"
 MAP_TOPIC = "/map"
+FOLLOW_MODE_SERVICE = "/navigation/set_follow_mode"
+
+# Which MPPI controller params to switch (dot-separated keys under controller_server.ros__parameters)
+CONTROLLER_KEYS = [
+    "FollowPath.vx_max",
+    "FollowPath.vx_min",
+    "FollowPath.wz_max",
+    "FollowPath.ax_max",
+    "FollowPath.ax_min",
+    "FollowPath.GoalCritic.cost_weight",
+    "FollowPath.PathFollowCritic.cost_weight",
+    "FollowPath.PathAlignCritic.cost_weight",
+    "FollowPath.PathAngleCritic.cost_weight",
+    "FollowPath.PreferForwardCritic.cost_weight",
+    "FollowPath.CostCritic.cost_weight",
+]
+
+# Inflation params to switch (under local_costmap.local_costmap.ros__parameters)
+COSTMAP_KEYS = [
+    "inflation_layer.inflation_radius",
+    "inflation_layer.cost_scaling_factor",
+]
+
+# Velocity smoother params (under velocity_smoother.ros__parameters)
+SMOOTHER_KEYS = [
+    "max_velocity",
+    "min_velocity",
+    "max_accel",
+    "max_decel",
+]
+
+# Costmap layers to disable in follow mode (depth sees person as obstacle)
+LAYERS_TO_DISABLE_IN_FOLLOW = [
+    "voxel_layer",
+    "rgbd_obstacle_layer",
+]
+
+# Costmap layers to always keep enabled (lidar-based, doesn't see person)
+LAYERS_ALWAYS_ENABLED = [
+    "obstacle_layer",
+]
+
+
+def _resolve_yaml(yaml_data, dotted_key):
+    """Resolve a dot-separated key in a nested dict. Returns None if not found."""
+    keys = dotted_key.split(".")
+    node = yaml_data
+    for k in keys:
+        if isinstance(node, dict) and k in node:
+            node = node[k]
+        else:
+            return None
+    return node
+
+
+def _load_nav_yaml(filename):
+    """Load a nav2 YAML config file from the nav_main package."""
+    config_dir = os.path.join(get_package_share_directory("nav_main"), "config")
+    path = os.path.join(config_dir, filename)
+    with open(path, "r") as f:
+        return yaml.safe_load(f)
+
+
+def _make_param(name, value):
+    """Create a rcl_interfaces Parameter msg from a Python value."""
+    p = Parameter()
+    p.name = name
+    if isinstance(value, bool):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_BOOL, bool_value=value)
+    elif isinstance(value, int):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=float(value))
+    elif isinstance(value, float):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE, double_value=value)
+    elif isinstance(value, str):
+        p.value = ParameterValue(type=ParameterType.PARAMETER_STRING, string_value=value)
+    elif isinstance(value, list):
+        floats = [float(v) for v in value]
+        p.value = ParameterValue(
+            type=ParameterType.PARAMETER_DOUBLE_ARRAY, double_array_value=floats,
+        )
+    return p
 
 
 class PersonGoalSmoother(Node):
@@ -45,7 +132,7 @@ class PersonGoalSmoother(Node):
         self.declare_parameter("follow_distance", 0.8)  # Stay this far behind the person
         self.declare_parameter("timeout", 3.0)           # Seconds without tracker data to stop
         self.declare_parameter("map_frame", "map")
-        self.declare_parameter("snap_radius", 10)        # Grid cells to search for free space
+        self.declare_parameter("snap_radius", 20)        # Grid cells to search for free space
 
         # --- State ---
         self.smooth_x = None
@@ -75,10 +162,130 @@ class PersonGoalSmoother(Node):
         # --- Publisher ---
         self.goal_pub = self.create_publisher(PoseStamped, GOAL_UPDATE_TOPIC, 10)
 
+        # --- Load both YAML configs ---
+        try:
+            self.follow_yaml = _load_nav_yaml("nav2_following.yaml")
+            self.standard_yaml = _load_nav_yaml("nav2_standard.yaml")
+            self.get_logger().info("Loaded nav2_following.yaml and nav2_standard.yaml")
+        except Exception as e:
+            self.get_logger().error(f"Failed to load YAML configs: {e}")
+            self.follow_yaml = {}
+            self.standard_yaml = {}
+
+        # --- Nav2 param switching clients ---
+        self.param_clients = {
+            "controller_server": self.create_client(
+                SetParameters, "/controller_server/set_parameters", callback_group=cb,
+            ),
+            "local_costmap": self.create_client(
+                SetParameters, "/local_costmap/local_costmap/set_parameters", callback_group=cb,
+            ),
+            "global_costmap": self.create_client(
+                SetParameters, "/global_costmap/global_costmap/set_parameters", callback_group=cb,
+            ),
+            "velocity_smoother": self.create_client(
+                SetParameters, "/velocity_smoother/set_parameters", callback_group=cb,
+            ),
+        }
+        self.follow_mode_active = False
+
+        # --- Follow mode service ---
+        self.create_service(
+            SetBool, FOLLOW_MODE_SERVICE, self._follow_mode_cb, callback_group=cb,
+        )
+
         # --- Timer ---
         self.create_timer(0.1, self._update_robot_pose, callback_group=cb)
 
         self.get_logger().info("Person Goal Smoother ready")
+
+    # ── Nav2 param switching ──────────────────────────────────
+
+    def _follow_mode_cb(self, request, response):
+        """Service to switch between follow and standard nav params."""
+        if request.data:
+            self._apply_nav_params(follow=True)
+            self.follow_mode_active = True
+            response.message = "Follow mode activated"
+        else:
+            self._apply_nav_params(follow=False)
+            self.follow_mode_active = False
+            self.smooth_x = None
+            self.smooth_y = None
+            self.last_pub_x = None
+            self.last_pub_y = None
+            response.message = "Standard mode restored"
+        response.success = True
+        self.get_logger().info(response.message)
+        return response
+
+    def _apply_nav_params(self, follow: bool):
+        """Set Nav2 params for follow or standard mode, loaded from YAMLs."""
+        src = self.follow_yaml if follow else self.standard_yaml
+        fallback = self.standard_yaml if follow else self.follow_yaml
+
+        # 1. Controller server (MPPI)
+        params = self._extract_params(src, fallback, "controller_server.ros__parameters", CONTROLLER_KEYS)
+        self._set_params("controller_server", params)
+
+        # 2. Local costmap — inflation + toggle depth layers
+        params = self._extract_params(src, fallback, "local_costmap.local_costmap.ros__parameters", COSTMAP_KEYS)
+        for layer in LAYERS_TO_DISABLE_IN_FOLLOW:
+            params.append(_make_param(f"{layer}.enabled", not follow))
+        for layer in LAYERS_ALWAYS_ENABLED:
+            params.append(_make_param(f"{layer}.enabled", True))
+        self._set_params("local_costmap", params)
+
+        # 3. Global costmap — same
+        params = self._extract_params(src, fallback, "global_costmap.global_costmap.ros__parameters", COSTMAP_KEYS)
+        for layer in LAYERS_TO_DISABLE_IN_FOLLOW:
+            params.append(_make_param(f"{layer}.enabled", not follow))
+        for layer in LAYERS_ALWAYS_ENABLED:
+            params.append(_make_param(f"{layer}.enabled", True))
+        self._set_params("global_costmap", params)
+
+        # 4. Velocity smoother
+        params = self._extract_params(src, fallback, "velocity_smoother.ros__parameters", SMOOTHER_KEYS)
+        self._set_params("velocity_smoother", params)
+
+    def _extract_params(self, primary, fallback, section, keys):
+        """Extract Parameter msgs from YAML data for the given keys."""
+        params = []
+        for key in keys:
+            full_key = f"{section}.{key}"
+            val = _resolve_yaml(primary, full_key)
+            if val is None:
+                val = _resolve_yaml(fallback, full_key)
+            if val is not None:
+                params.append(_make_param(key, val))
+        return params
+
+    def _set_params(self, node_name, params):
+        """Call SetParameters service on a Nav2 node."""
+        if not params:
+            return
+        client = self.param_clients.get(node_name)
+        if client is None or not client.service_is_ready():
+            self.get_logger().warn(f"SetParameters not ready for {node_name}")
+            return
+        req = SetParameters.Request()
+        req.parameters = params
+        future = client.call_async(req)
+        future.add_done_callback(lambda f, n=node_name: self._param_result_cb(f, n))
+
+    def _param_result_cb(self, future, node_name):
+        try:
+            result = future.result()
+            failed = [r for r in result.results if not r.successful]
+            if failed:
+                self.get_logger().warn(
+                    f"Some params failed on {node_name}: "
+                    f"{[r.reason for r in failed]}"
+                )
+            else:
+                self.get_logger().info(f"Params set on {node_name}")
+        except Exception as e:
+            self.get_logger().error(f"SetParameters failed on {node_name}: {e}")
 
     # ── Callbacks ──────────────────────────────────────────────
 
@@ -126,6 +333,7 @@ class PersonGoalSmoother(Node):
         self._publish_goal()
 
     def _map_cb(self, msg: OccupancyGrid):
+        print("MAP OBTAINED")
         self.map_data = np.array(msg.data, dtype=np.int8).reshape(
             (msg.info.height, msg.info.width)
         )
