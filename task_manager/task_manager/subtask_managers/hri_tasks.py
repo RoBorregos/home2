@@ -1397,21 +1397,26 @@ class HRITasks(metaclass=SubtaskMeta):
         self.task_step_publisher.publish(String(data=step))
         Logger.info(self.node, f"Published display step: {step}")
 
-    def deterministic_categorization(self, object_name: str):
+    def deterministic_categorization(self, object_name: str) -> str:
         """
         Note: it seems each object is mapped to a specific category, so no clustering is needed to group the objects.
         See "frida_constants/data/objects.md"
         """
+        # Fast path: direct lookup in object_to_category (works even
+        # without the FindClosest embeddings service).
+        obj_lower = object_name.lower().replace(" ", "_")
+        direct = self.objects_data.get("object_to_category", {})
+        if obj_lower in direct:
+            return direct[obj_lower]
+
+        # Slow path: semantic similarity via embeddings service.
         try:
-            # Get closest embedding word
             s, closest = self.find_closest(self.objects_data["all_objects"], object_name, top_k=1)
             closest = closest.results[0]
-
-            # Return the associated category
             return self.objects_data["object_to_category"][closest]
         except Exception as e:
             self.node.get_logger().error(f"Error finding closest object: {e}")
-            return Status.EXECUTION_ERROR, "unknown"
+            return "unknown"
 
     def show_map(self, name="", clear_map: bool = False):
         """
