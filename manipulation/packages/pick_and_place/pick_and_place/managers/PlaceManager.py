@@ -295,7 +295,7 @@ class PlaceManager:
                                 object_cluster = get_object_cluster(
                                     close_by_point,
                                     self.node.pick_perception_3d_client,
-                                    add_collision_object=False,
+                                    add_collision_objects=False,
                                 )
 
                             # Set maximun point of pointcloud
