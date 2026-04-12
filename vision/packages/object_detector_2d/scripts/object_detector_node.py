@@ -53,7 +53,7 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": "tmr_30classes_v2.pt",
+    "YOLO_MODEL_PATH": "abril9.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
@@ -480,7 +480,9 @@ class object_detector_node(rclpy.node.Node):
 
     def run(self, frame):
         copy_frame = copy.deepcopy(frame)
-        # Run main object detector
+        height, width = copy_frame.shape[:2]
+        # Run main object detector (inference() already calls extract3D, so
+        # detected_objects come back with point_stamped_ populated)
         detected_objects, visual_detections, visual_image = (
             self.object_detector_2d.inference(
                 copy_frame, self.depth_image, self.tfBuffer
@@ -512,10 +514,15 @@ class object_detector_node(rclpy.node.Node):
                 )
                 label_text = SPANISH_TO_ENGLISH.get(label_text.lower(), label_text)
                 det = Detection(label_text, cls_id, conf)
-                det.bbox_.x1 = x1
-                det.bbox_.y1 = y1
-                det.bbox_.x2 = x2
-                det.bbox_.y2 = y2
+                # Store bbox in normalized coords to match the YOLO detector
+                # convention (compute_iou, visualize_detections, extract3D all
+                # assume normalized).
+                det.bbox_.x1 = float(x1) / width
+                det.bbox_.y1 = float(y1) / height
+                det.bbox_.x2 = float(x2) / width
+                det.bbox_.y2 = float(y2) / height
+                det.bbox_.w = width
+                det.bbox_.h = height
                 cutlery_detections.append(det)
 
         # Remove duplicate cutlery detections using IoU
@@ -530,10 +537,10 @@ class object_detector_node(rclpy.node.Node):
             if not duplicate:
                 filtered_cutlery.append(c_det)
 
-        # Merge detections
-        all_detections = detected_objects + filtered_cutlery
-
-        # Ensure all detections have point_stamped_ (extract3D sets this)
+        # Append cutlery into the detector's internal list and re-run extract3D
+        # so cutlery also gets point_stamped_ populated. extract3D iterates
+        # self.detections_, so we need cutlery in there before calling it.
+        self.object_detector_2d.detections_.extend(filtered_cutlery)
         all_detections = self.object_detector_2d.extract3D(
             self.depth_image, self.tfBuffer
         )
