@@ -15,8 +15,8 @@ RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/scri
 RUN chmod 777 install.sh
 RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && sed -i '2i export CMAKE_POLICY_VERSION_MINIMUM=3.5' install.sh && yes yes | sudo -E ./install.sh
 
-# Persist paths so subsequent RUN layers find CUDA OpenCV
-ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+# Persist paths so subsequent RUN layers find CUDA OpenCV and libtorch
+ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/dist-packages/torch/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/:${PYTHONPATH}
 
 #Building rtabmap packages
