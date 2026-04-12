@@ -149,15 +149,21 @@ class FollowPersonController(Node):
         return response
 
     def _set_arm_mode(self, mode: int):
-        """Set xArm mode + state 0."""
+        """Set xArm mode + state 0. Must set mode first, then state."""
         try:
+            # Step 1: clear errors by setting state 0
+            state_req = SetInt16.Request()
+            state_req.data = 0
+            self.state_client.call_async(state_req)
+            time.sleep(0.5)
+
+            # Step 2: set desired mode
             mode_req = SetInt16.Request()
             mode_req.data = mode
             self.mode_client.call_async(mode_req)
             time.sleep(0.5)
 
-            state_req = SetInt16.Request()
-            state_req.data = 0
+            # Step 3: set state 0 again to activate
             self.state_client.call_async(state_req)
             time.sleep(0.5)
 
@@ -248,8 +254,10 @@ class FollowPersonController(Node):
     def _velocity_done_cb(self, future):
         try:
             result = future.result()
-            if result and not result.ret:
-                pass  # success
+            if result is None:
+                self.get_logger().error("Velocity service returned None")
+            elif result.ret != 0:
+                self.get_logger().warn(f"Velocity service ret={result.ret}", throttle_duration_sec=2.0)
         except Exception as e:
             self.get_logger().error(f"Velocity service error: {e}")
 
