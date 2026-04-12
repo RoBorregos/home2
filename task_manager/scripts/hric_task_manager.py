@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# TODO: Test task manager with FRIDA
 
 """
 Task Manager for Human Robot Interaction Challenge task of Robocup @Home 2026
