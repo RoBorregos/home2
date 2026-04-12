@@ -125,6 +125,7 @@ class FollowPersonController(Node):
     def _centroid_cb(self, msg: Point):
         self.centroid_x = msg.x
         self.centroid_time = time.time()
+        self.get_logger().info(f"Centroid: {msg.x:.3f}", once=True)
 
     def _cmd_vel_cb(self, msg: Twist):
         self.base_omega_z = msg.angular.z
@@ -233,6 +234,10 @@ class FollowPersonController(Node):
         new_pos = current_j1 + joint1_vel * self.dt
         new_pos = max(j1_min, min(j1_max, new_pos))
 
+        self.get_logger().debug(
+            f"j1={current_j1:.3f} cx={self.centroid_x:.3f} err={error:.3f} "
+            f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f} -> {new_pos:.3f}"
+        )
         self._publish_joint1(new_pos, joint1_vel)
 
     # ── Trajectory publishing ──────────────────────────────────
