@@ -196,7 +196,7 @@ class FollowPersonController(Node):
             vel = max(-home_speed, min(home_speed, diff / 0.5))
             new_pos = current_j1 + vel * self.dt
             new_pos = max(j1_min, min(j1_max, new_pos))
-            self._publish_joint1(new_pos)
+            self._publish_joint1(new_pos, vel)
             return
 
         # Compute error (negative because positive centroid_x = person right
@@ -230,25 +230,21 @@ class FollowPersonController(Node):
         new_pos = current_j1 + joint1_vel * self.dt
         new_pos = max(j1_min, min(j1_max, new_pos))
 
-        self._publish_joint1(new_pos)
+        self._publish_joint1(new_pos, joint1_vel)
 
     # ── Trajectory publishing ──────────────────────────────────
 
-    def _publish_joint1(self, target_j1: float):
-        """Publish a JointTrajectory moving only joint1, keeping others in place."""
+    def _publish_joint1(self, target_j1: float, velocity: float = 0.0):
+        """Publish a JointTrajectory commanding ONLY joint1 (other joints untouched)."""
         traj = JointTrajectory()
         point = JointTrajectoryPoint()
 
-        for name in xarm6.joint_names():
-            traj.joint_names.append(name)
-            if name == TARGET_JOINT:
-                point.positions.append(target_j1)
-            else:
-                pos = self.joint_positions.get(name, 0.0)
-                point.positions.append(pos)
+        traj.joint_names.append(TARGET_JOINT)
+        point.positions.append(target_j1)
+        point.velocities.append(velocity)
 
-        # Execute in one control period
-        period_ns = int(self.dt * 1e9)
+        # Execute over two control periods for smoother interpolation
+        period_ns = int(self.dt * 2e9)
         point.time_from_start.sec = 0
         point.time_from_start.nanosec = period_ns
 
