@@ -198,6 +198,7 @@ class FollowPersonController(Node):
         if self.centroid_time == 0.0 or age > timeout:
             self.error_integral = 0.0
             self._send_joint_velocity(0.0)
+            self.get_logger().warn("No centroid data — sending zero velocity", throttle_duration_sec=2.0)
             return
 
         # Error: positive centroid_x = person right = positive error
