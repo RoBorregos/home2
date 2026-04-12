@@ -124,9 +124,15 @@ class SingleTracker(Node):
             callback_group=self.image_callback_group,
         )
 
+        depth_qos = rclpy.qos.QoSProfile(
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         self.depth_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos,
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, depth_qos,
             callback_group=self.depth_callback_group,
         )
 
@@ -224,8 +230,9 @@ class SingleTracker(Node):
             depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
             self.depth_image = depth_image
             self.depth_image_time = data.header.stamp
+            self.get_logger().info("Depth image received", once=True)
         except Exception as e:
-            print(f"Error: {e}")
+            self.get_logger().error(f"Depth callback error: {e}")
 
     def get_is_tracking_callback(self, request, response):
         response = Trigger.Response()
@@ -709,7 +716,10 @@ class SingleTracker(Node):
                 self.get_logger().info(f"ReID took {time.time() - reid_start:.2f}s")
             self.is_tracking_result = True
             if self.depth_image_time is None or self.image_time is None:
-                self.get_logger().warn("Depth image not available")
+                self.get_logger().warn(
+                    f"Depth image not available (depth_time={self.depth_image_time is not None}, "
+                    f"image_time={self.image_time is not None})"
+                )
                 self.frame = None
                 return
             depth_stamp_ns = self.depth_image_time.sec * 1_000_000_000 + self.depth_image_time.nanosec
