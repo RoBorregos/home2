@@ -9,7 +9,7 @@ var classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask =
     [ "get_person_info", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a63560fee8c3ef2c8987aaeafd9361495", null ],
     [ "give_object", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#afbf25c9277e9ec01fb030fdfd956d9f6", null ],
     [ "guide_person_to", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a10270c67004fea13c7a3c8db67649a1f", null ],
-    [ "navigate_to", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a2e88dbbaca37f0d6bcac125858af9446", null ],
+    [ "navigate_to", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#add04716761d3a468bcf5408ec6830c0c", null ],
     [ "timeout", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a408090aa59aff05b06989be8c7790a83", null ],
     [ "clothe_list", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a6df8de83010c308a3a5f838858797c83", null ],
     [ "color_list", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a9a879c1176f05c393f7440cd1b583a83", null ],
