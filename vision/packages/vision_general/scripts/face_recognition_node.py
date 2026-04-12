@@ -321,7 +321,9 @@ class FaceRecognition(Node):
     def _flip_callback(self, msg):
         if msg.data != self.flip_image:
             self.flip_image = msg.data
-            self.get_logger().info(f"Flip image set to: {self.flip_image}")
+            self.get_logger().info(
+                f"Flip face recognition image set to: {self.flip_image}"
+            )
 
     def run(self) -> None:
         """Run face recognition algorithm"""

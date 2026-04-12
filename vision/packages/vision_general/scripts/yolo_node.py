@@ -13,8 +13,10 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
+from std_msgs.msg import Bool
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
+    FLIP_IMAGE_TOPIC,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
@@ -51,10 +53,18 @@ class YoloNode(Node):
             Image, CAMERA_TOPIC, self._image_callback, self._img_qos
         )
 
+        self.flip_image = False
+        self.create_subscription(Bool, FLIP_IMAGE_TOPIC, self._flip_callback, 10)
+
         # Publisher for annotated image
         self.detections_image_publisher = self.create_publisher(
             Image, YOLO_DETECTIONS_PUBLISHER_TOPIC, 5
         )
+
+    def _flip_callback(self, msg):
+        if msg.data != self.flip_image:
+            self.flip_image = msg.data
+            self.get_logger().info(f"Flip yolo image set to: {self.flip_image}")
 
     def _image_callback(self, msg: Image):
         """Cache the latest frame."""
@@ -75,13 +85,17 @@ class YoloNode(Node):
             )
             return response
 
+        frame = self.latest_frame
+        if self.flip_image:
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
+
         # If caller provided class IDs, use them; otherwise detect all
         classes = list(request.classes) if request.classes else None
         print(f"Running YOLO detection with classes: {classes if classes else 'all'}")
-        results = self.model(self.latest_frame, verbose=False, classes=classes)
+        results = self.model(frame, verbose=False, classes=classes)
 
         detections = []
-        annotated = self.latest_frame.copy()
+        annotated = frame.copy()
         for out in results:
             for box in out.boxes:
                 conf = box.conf.item()
