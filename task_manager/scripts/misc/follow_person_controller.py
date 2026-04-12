@@ -159,10 +159,13 @@ class FollowPersonController(Node):
             mode_req = SetInt16.Request()
             mode_req.data = SERVO_MODE
             self.mode_client.call_async(mode_req)
+            time.sleep(0.5)
 
             state_req = SetInt16.Request()
             state_req.data = 0
             self.state_client.call_async(state_req)
+            time.sleep(0.5)
+
             self.get_logger().info("Arm set to servo mode")
         except Exception as e:
             self.get_logger().error(f"Failed to set arm mode: {e}")
@@ -234,9 +237,10 @@ class FollowPersonController(Node):
         new_pos = current_j1 + joint1_vel * self.dt
         new_pos = max(j1_min, min(j1_max, new_pos))
 
-        self.get_logger().debug(
+        self.get_logger().info(
             f"j1={current_j1:.3f} cx={self.centroid_x:.3f} err={error:.3f} "
-            f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f} -> {new_pos:.3f}"
+            f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f} -> {new_pos:.3f}",
+            throttle_duration_sec=0.5,
         )
         self._publish_joint1(new_pos, joint1_vel)
 
