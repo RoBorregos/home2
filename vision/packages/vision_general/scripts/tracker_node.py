@@ -702,6 +702,7 @@ class SingleTracker(Node):
                             break
 
         if person_in_frame:
+            print("Entro al frme")
             if reid_start is not None:
                 self.get_logger().info(f"ReID took {time.time() - reid_start:.2f}s")
             self.is_tracking_result = True
@@ -715,6 +716,7 @@ class SingleTracker(Node):
                     < DEPTH_THRESHOLD
                 )
             ):
+                print("Entro al otro papu")
                 coords = PointStamped()
                 coords.header.frame_id = self.frame_id
                 coords.header.stamp = self.depth_image_time
