@@ -203,6 +203,20 @@ class PickAndPlaceTM(Node):
         self.shelves: dict[int, list[str]] = {}  # shelf_index -> list of object names
         self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
         self.shelf_scanned = False
+        # Whether the octomap is already fresh from a scan done during the
+        # current cabinet visit. Set to True after SCAN_CABINET_SHELVES or
+        # after the first _scan_shelf_level of a visit, and reset whenever
+        # the robot actually navigates to a different location. Prevents
+        # re-scanning on every place retry within the same visit.
+        self._cabinet_scan_fresh = False
+        # Ordered list of shelf heights to try for the current grasped
+        # object and the index into it. The first entry is the shelf
+        # categorize_objects picked for the object; subsequent entries are
+        # fallbacks in reachability order (lowest shelf first) so that if
+        # the primary shelf's pre-place pose is unreachable the robot can
+        # still place the object on another shelf instead of dropping it.
+        self._shelf_fallback_heights: list[float] = []
+        self._shelf_fallback_idx: int = 0
         self.shelf_level_threshold = 0.20  # max distance above shelf height
         self.shelf_level_down_threshold = 0.05  # max distance below shelf height
         # TF buffer for transforming detection points to base_link for height filtering
@@ -263,6 +277,12 @@ class PickAndPlaceTM(Node):
         if self.current_location == location:
             CLog.nav(self, "SKIP", f"Already at {location.value}, skipping navigation.")
             return Status.EXECUTION_SUCCESS
+        # A real location change is about to happen. The octomap we may have
+        # had for the cabinet is no longer fresh (navigation can clear it,
+        # the camera is looking elsewhere during transit, and picks between
+        # visits call clear_octomap). Invalidate the cabinet-freshness flag
+        # so the next cabinet place will do exactly one scan at arrival.
+        self._cabinet_scan_fresh = False
         room, sublocation = self.nav_locations[location]
         result = self.navigate_to(room, sublocation, say=say)
         if result == Status.EXECUTION_SUCCESS:
@@ -407,6 +427,25 @@ class PickAndPlaceTM(Node):
             f"No shelf match for '{obj_name}', using default {self.default_shelf_height}m",
         )
         return self.default_shelf_height
+
+    def _build_shelf_fallback_list(self, obj: ObjectInfo) -> list[float]:
+        """Build the ordered list of shelf heights to try for this object.
+
+        - First entry: the shelf picked by categorize_objects for this object.
+        - Remaining entries: the other shelves in ascending height order
+          (lowest first) because lower shelves are easier for the xArm6
+          to reach from the Dashgo base.
+
+        Returns an empty list if no shelves are configured.
+        """
+        if not self.shelf_level_heights:
+            return []
+        primary = self._get_shelf_height_for_object(obj)
+        # All configured heights, lowest first (most reachable first)
+        all_heights = sorted(self.shelf_level_heights.values())
+        # Keep primary at the front, drop it from the tail fallbacks
+        fallbacks = [h for h in all_heights if abs(h - primary) > 1e-6]
+        return [primary] + fallbacks
 
     # ------------------------------------------------------------------
     # Finite State Machine
@@ -722,6 +761,9 @@ class PickAndPlaceTM(Node):
                     )
 
             self.shelf_scanned = True
+            # All 3 levels just got scanned, so the octomap is fresh enough
+            # that the upcoming place does not need its own per-level scan.
+            self._cabinet_scan_fresh = True
             CLog.vision(self, "SHELF", f"All shelves scanned: {self.shelves}")
 
             # Categorize table objects against shelf contents
@@ -787,16 +829,61 @@ class PickAndPlaceTM(Node):
             elif placement_loc == Location.TRASH_BIN:
                 status = self.subtask_manager.manipulation.place()
             elif placement_loc == Location.CABINET:
-                shelf_height = self._get_shelf_height_for_object(self.grasped_object)
+                # Build the ordered fallback list the first time we enter
+                # PLACE_OBJECT for this grasped object. The list has the
+                # categorized shelf first, then the other shelves from
+                # lowest to highest (most reachable first).
+                if not self._shelf_fallback_heights:
+                    self._shelf_fallback_heights = self._build_shelf_fallback_list(
+                        self.grasped_object
+                    )
+                    self._shelf_fallback_idx = 0
+                    CLog.manip(
+                        self,
+                        "PLACE",
+                        f"Shelf attempt order for {self.grasped_object.name}: "
+                        f"{self._shelf_fallback_heights}",
+                    )
+
+                shelf_height = self._shelf_fallback_heights[self._shelf_fallback_idx]
+                is_fallback = self._shelf_fallback_idx > 0
                 CLog.manip(
                     self,
                     "PLACE",
-                    f"Placing {self.grasped_object.name} at shelf height {shelf_height}m.",
+                    f"Placing {self.grasped_object.name} at shelf height {shelf_height}m"
+                    + (" (fallback shelf)." if is_fallback else "."),
                 )
-                # Re-scan the target shelf level for fresh octomap
-                CLog.manip(self, "PLACE", f"Re-scanning shelf at {shelf_height}m before placing.")
-                self._scan_shelf_level(shelf_height)
-                # Move arm to placement position (approach_plane=False for placing)
+                # Only scan the shelf once per cabinet visit. If the octomap
+                # is already fresh (from SCAN_CABINET_SHELVES on first visit,
+                # or from the first attempt on subsequent visits) we skip
+                # the scan entirely — retries and shelf fallbacks reuse the
+                # existing octomap.
+                if not self._cabinet_scan_fresh:
+                    CLog.manip(
+                        self,
+                        "PLACE",
+                        f"Scanning shelf at {shelf_height}m (first place attempt this visit).",
+                    )
+                    self._scan_shelf_level(shelf_height)
+                    self._cabinet_scan_fresh = True
+                else:
+                    CLog.manip(
+                        self,
+                        "PLACE",
+                        "Reusing octomap from current visit (skipping shelf scan).",
+                    )
+                # Move the arm to a known good starting pose before asking
+                # place_on_shelf to plan a trajectory. After the shelf scan
+                # the arm is left at the last observation pose (usually
+                # looking up at shelf 3) — from that configuration MoveIt
+                # fails to find valid IK for the horizontal pre-place pose
+                # (AIM_STRAIGHT_FRONT_QUAT), which surfaces as
+                # "Unable to sample any valid states for goal tree". Jump
+                # back to front_stare so planning starts from a neutral
+                # extended-forward configuration that is close to the
+                # place target's orientation.
+                CLog.manip(self, "PLACE", "Moving arm to front_stare before place planning.")
+                self.subtask_manager.manipulation.move_to_position("front_stare")
                 opt_status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
                     shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
                 )
@@ -818,6 +905,8 @@ class PickAndPlaceTM(Node):
                     level="success",
                 )
                 self.current_attempts = 0
+                self._shelf_fallback_heights = []
+                self._shelf_fallback_idx = 0
                 self.current_object_index += 1
                 self.grasped_object = None
                 self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
@@ -830,18 +919,40 @@ class PickAndPlaceTM(Node):
                     level="error",
                 )
                 if self.current_attempts < ATTEMPT_LIMIT:
-                    # Retry the same placement in the same state; don't drop the object.
+                    # Retry the same placement on the same shelf level.
                     CLog.manip(self, "PLACE", "Retrying place on the same shelf level...")
                     self.timeout(1.0)
                     # Stay in PLACE_OBJECT to retry
+                elif (
+                    placement_loc == Location.CABINET
+                    and self._shelf_fallback_idx + 1 < len(self._shelf_fallback_heights)
+                ):
+                    # Exhausted retries on this shelf but more shelves are
+                    # available — fall through to the next shelf level.
+                    self._shelf_fallback_idx += 1
+                    next_height = self._shelf_fallback_heights[self._shelf_fallback_idx]
+                    CLog.manip(
+                        self,
+                        "PLACE",
+                        f"All {ATTEMPT_LIMIT} attempts on {shelf_height}m failed; "
+                        f"falling back to shelf at {next_height}m.",
+                        level="warn",
+                    )
+                    self.current_attempts = 0
+                    self.timeout(1.0)
+                    # Stay in PLACE_OBJECT to retry on the new shelf
                 else:
                     CLog.manip(
                         self,
                         "PLACE",
-                        f"Giving up on {self.grasped_object.name} after {ATTEMPT_LIMIT} attempts.",
+                        f"Giving up on {self.grasped_object.name} after exhausting "
+                        f"{len(self._shelf_fallback_heights) or 1} shelf level(s) "
+                        f"with {ATTEMPT_LIMIT} attempts each.",
                         level="warn",
                     )
                     self.current_attempts = 0
+                    self._shelf_fallback_heights = []
+                    self._shelf_fallback_idx = 0
                     self.current_object_index += 1
                     self.grasped_object = None
                     self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
