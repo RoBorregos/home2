@@ -217,6 +217,7 @@ control() {
   if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
     tmux kill-server || true
   fi
+  orin_ssh "tmux kill-server" 2>/dev/null || true
 
   PARALLEL=${PARALLEL:-$(detect_cores)}
   local pids=()
