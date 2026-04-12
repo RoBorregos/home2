@@ -2,7 +2,6 @@
 import rclpy
 import rclpy.duration
 import rclpy.node
-import rclpy.time
 import tf2_ros
 import os
 import json
@@ -21,6 +20,7 @@ import cv2 as cv
 import math
 from typing import List
 from vision_general.utils.trt_utils import load_yolo_trt
+from ament_index_python.packages import get_package_share_directory
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
 from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
@@ -101,16 +101,12 @@ class object_detector_node(rclpy.node.Node):
         self.bridge = CvBridge()
         self.depth_image = []
         self.rgb_image = []
-        self.camera_info = CameraInfo()
         self.detections_frame = []
-        self.latest_detections = ObjectDetectionArray()
 
         # Trash detection logic
         self.category = None
         # Load object_to_category mapping from objects.json
         try:
-            from ament_index_python.packages import get_package_share_directory
-
             package_share_directory = get_package_share_directory("frida_constants")
             objects_json_path = os.path.join(
                 package_share_directory, "data/objects.json"
@@ -167,7 +163,7 @@ class object_detector_node(rclpy.node.Node):
 
         # Global vision pause/resume — pauses inference when manipulation needs GPU
         self.create_subscription(
-            Bool, "/vision/object_detector/active", self._vision_active_cb, 10
+            Bool, "/vision/object_detector/active", self._active_flag_cb, 10
         )
 
         self.tfBuffer = tf2_ros.Buffer()
@@ -288,9 +284,6 @@ class object_detector_node(rclpy.node.Node):
         self.detections_image_publisher = self.create_publisher(
             Image, self.node_params.DETECTIONS_IMAGE_TOPIC, 5
         )
-        self.debug_image_publisher = self.create_publisher(
-            Image, self.node_params.DEBUG_IMAGE_TOPIC, 5
-        )
 
         if self.node_params.VERBOSE:
             self.get_logger().info(
@@ -335,24 +328,13 @@ class object_detector_node(rclpy.node.Node):
             self.create_subscription(
                 Bool,
                 self.node_params.DETECTIONS_ACTIVE_TOPIC,
-                self.activeFlagCallback,
+                self._active_flag_cb,
                 5,
             )
             if self.node_params.VERBOSE:
                 self.get_logger().info(self.node_params.DETECTIONS_ACTIVE_TOPIC)
 
-        self.create_subscription(
-            ObjectDetectionArray,
-            DETECTIONS_TOPIC,
-            self.detections_callback,
-            10,
-        )
-
-    # Callback for active flag
-    def activeFlagCallback(self, msg):
-        self.active_flag = msg.data
-
-    def _vision_active_cb(self, msg):
+    def _active_flag_cb(self, msg):
         self.active_flag = msg.data
 
     def detection_handler_callback(self, request, response):
@@ -361,6 +343,9 @@ class object_detector_node(rclpy.node.Node):
 
         if request.label and request.label != "all":
             detections = [d for d in detections if d.label_text == request.label]
+        elif request.labels:
+            labels_set = set(request.labels)
+            detections = [d for d in detections if d.label_text in labels_set]
 
         if request.closest_object and detections:
             detections = [
@@ -375,8 +360,8 @@ class object_detector_node(rclpy.node.Node):
         response.detection_array.detections = detections
         response.success = len(detections) > 0
         self.get_logger().info(
-            f"Detection handler: requested='{request.label}' closest={request.closest_object} "
-            f"returned={len(detections)} detections"
+            f"Detection handler: requested='{request.label}' labels={request.labels} "
+            f"closest={request.closest_object} returned={len(detections)} detections"
         )
         return response
 
@@ -422,17 +407,7 @@ class object_detector_node(rclpy.node.Node):
                 self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8")
             )
 
-    def detections_callback(self, data):
-        self.latest_detections = data
-
-    def visualize_detections(
-        self,
-        image,
-        detections: List,
-        use_normalized_coordinates=True,
-        max_boxes_to_draw=200,
-        agnostic_mode=False,
-    ):
+    def visualize_detections(self, image, detections: List):
         """Visualize detections on an input image."""
 
         # Convert image to BGR format (OpenCV uses BGR instead of RGB)
@@ -451,18 +426,14 @@ class object_detector_node(rclpy.node.Node):
                 color = (0, 0, 255)  # Red for trash
                 display_label = label_text
             else:
-                color = (0, 255, 0) if not agnostic_mode else (0, 0, 0)
+                color = (0, 255, 0)
                 display_label = f"{label_text}: {confidence:.2f}"
 
-            if use_normalized_coordinates:
-                (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
-            else:
-                (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
             (left, right, top, bottom) = (
-                int(left * image.shape[1]),
-                int(right * image.shape[1]),
-                int(top * image.shape[0]),
-                int(bottom * image.shape[0]),
+                int(xmin * image.shape[1]),
+                int(xmax * image.shape[1]),
+                int(ymin * image.shape[0]),
+                int(ymax * image.shape[0]),
             )
             cv.rectangle(image, (left, top), (right, bottom), color, 7)
             # draw label and score
@@ -520,13 +491,11 @@ class object_detector_node(rclpy.node.Node):
         height, width = copy_frame.shape[:2]
         # Run main object detector (inference() already calls extract3D, so
         # detected_objects come back with point_stamped_ populated)
-        detected_objects, visual_detections, visual_image = (
-            self.object_detector_2d.inference(
-                copy_frame, self.depth_image, self.tfBuffer
-            )
+        detected_objects, _, visual_image = self.object_detector_2d.inference(
+            copy_frame, self.depth_image, self.tfBuffer
         )
 
-        # Run cutlery detector (YOLO TRT)
+        # Run cutlery detector
         cutlery_results = self.cutlery_model(
             copy_frame, verbose=False, classes=[0, 1, 3]
         )
@@ -620,11 +589,9 @@ class object_detector_node(rclpy.node.Node):
             )
         )
 
-        # update time
-        for detection in self.object_detector_2d.getFridaDetections(all_detections):
-            detection.point3d.header.stamp = self.curr_clock
-
         merged_detections = self.object_detector_2d.getFridaDetections(all_detections)
+        for detection in merged_detections:
+            detection.point3d.header.stamp = self.curr_clock
 
         # Process trash
         processed_detections = []
@@ -643,11 +610,7 @@ class object_detector_node(rclpy.node.Node):
         )
 
         self.detections_frame = self.visualize_detections(
-            visual_image,
-            processed_detections,
-            use_normalized_coordinates=True,
-            max_boxes_to_draw=200,
-            agnostic_mode=False,
+            visual_image, processed_detections
         )
 
         self.get_logger().info(f"Objects detected: {len(all_detections)}")
