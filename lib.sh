@@ -9,7 +9,22 @@ if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
 fi
 __HOME2_LIB_SOURCED=1
 
+# --- load .env ---
+if [ -f ".env" ]; then
+  source .env
+fi
+
 # --- helpers ---
+
+# Run a command on the remote Orin server via SSH.
+orin_ssh() {
+  sshpass -p "${ORIN_SSH_PASS}" ssh -o StrictHostKeyChecking=no "${ORIN_SSH_USER}@${ORIN_SSH_HOST}" "$@"
+}
+
+# Check if an area should run on the remote Orin server.
+is_orin_area() {
+  echo " ${ORIN_SERVER_AREAS} " | grep -q " $1 "
+}
 
 check_image_exists() {
   local image_name=$1
@@ -214,7 +229,12 @@ control() {
       while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do
         sleep 0.1
       done
-      ( cd "docker/${area}" && bash "./run.sh" "${op_flag}" "${ENV_TYPE}" ) &
+
+      if is_orin_area "${area}"; then
+        orin_ssh "cd $(pwd)/docker/${area} && bash ./run.sh ${op_flag} ${ENV_TYPE}" &
+      else
+        ( cd "docker/${area}" && bash "./run.sh" "${op_flag}" "${ENV_TYPE}" ) &
+      fi
       pids+=($!)
       areas_launched+=("$area")
     fi
@@ -252,18 +272,11 @@ control() {
 }
 
 run_task() {
-  # Load SSH credentials for Orin server
-  if [ -f ".env" ]; then
-    source .env
-  fi
-  local orin_host="192.168.31.228"
-
   for area in ${AREAS}; do
     SESSION_NAME=$area
 
-    if echo " ${ORIN_SERVER_AREAS} " | grep -q " ${area} "; then
-      sshpass -p "${ORIN_SSH_PASS}" ssh -o StrictHostKeyChecking=no "${ORIN_SSH_USER}@${orin_host}" \
-        "tmux new-session -d -s '${SESSION_NAME}' && tmux send-keys -t '${SESSION_NAME}' 'cd $(pwd) && bash run.sh $area $*' C-m"
+    if is_orin_area "${area}"; then
+      orin_ssh "tmux new-session -d -s '${SESSION_NAME}' && tmux send-keys -t '${SESSION_NAME}' 'cd $(pwd) && bash run.sh $area $*' C-m"
     else
       tmux new-session -d -s "$SESSION_NAME"
       tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
