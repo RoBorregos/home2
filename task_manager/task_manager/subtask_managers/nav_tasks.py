@@ -84,7 +84,9 @@ class NavigationTasks:
                 if not service["client"].wait_for_server(
                     timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
                 ):
-                    CLog.nav(self.node, "WARN", f"{key} action server not initialized. ({self.task})")
+                    CLog.nav(
+                        self.node, "WARN", f"{key} action server not initialized. ({self.task})"
+                    )
 
     @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, self.areas_backup), delay=1)
     @service_check(
