@@ -28,6 +28,7 @@ from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from frida_interfaces.srv import FollowFace
 from frida_pymoveit2.robots import xarm6
+from xarm_msgs.srv import SetInt16
 
 
 # Topic names
@@ -36,9 +37,14 @@ CMD_VEL_TOPIC = "/cmd_vel"
 JOINT_STATES_TOPIC = "/joint_states"
 TRAJ_CONTROLLER_TOPIC = "/xarm6_traj_controller/joint_trajectory"
 FOLLOW_SERVICE = "/follow_person"
+XARM_SETMODE_SERVICE = "/xarm/set_mode"
+XARM_SETSTATE_SERVICE = "/xarm/set_state"
 
 # Joint name to control
 TARGET_JOINT = "joint1"
+
+# xArm modes
+SERVO_MODE = 1  # Servo motion mode (for trajectory controller / MoveIt)
 
 
 class FollowPersonController(Node):
@@ -85,10 +91,17 @@ class FollowPersonController(Node):
             callback_group=cb_group,
         )
 
-        # --- Publisher ---
-        qos_traj = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
+        # --- Publisher (RELIABLE to match trajectory controller) ---
         self.traj_pub = self.create_publisher(
-            JointTrajectory, TRAJ_CONTROLLER_TOPIC, qos_traj,
+            JointTrajectory, TRAJ_CONTROLLER_TOPIC, 10,
+        )
+
+        # --- xArm mode/state services ---
+        self.mode_client = self.create_client(
+            SetInt16, XARM_SETMODE_SERVICE, callback_group=cb_group,
+        )
+        self.state_client = self.create_client(
+            SetInt16, XARM_SETSTATE_SERVICE, callback_group=cb_group,
         )
 
         # --- Service ---
@@ -127,12 +140,28 @@ class FollowPersonController(Node):
         self.active = request.follow_face
         if self.active:
             self.error_integral = 0.0
+            self._set_arm_servo_mode()
             self.get_logger().info("Following enabled")
         else:
             self.error_integral = 0.0
+            self._set_arm_servo_mode()
             self.get_logger().info("Following disabled")
         response.success = True
         return response
+
+    def _set_arm_servo_mode(self):
+        """Set xArm to servo mode (mode 1) + state 0 so trajectory controller works."""
+        try:
+            mode_req = SetInt16.Request()
+            mode_req.data = SERVO_MODE
+            self.mode_client.call_async(mode_req)
+
+            state_req = SetInt16.Request()
+            state_req.data = 0
+            self.state_client.call_async(state_req)
+            self.get_logger().info("Arm set to servo mode")
+        except Exception as e:
+            self.get_logger().error(f"Failed to set arm mode: {e}")
 
     # ── Control loop ───────────────────────────────────────────
 
