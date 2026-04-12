@@ -34,7 +34,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
-    FLIP_IMAGE_TOPIC
+    FLIP_IMAGE_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -96,9 +96,7 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
-        self.rotate_camera_publisher = self.node.create_publisher(
-            BoolMsg, FLIP_IMAGE_TOPIC, 10
-        )
+        self.rotate_camera_publisher = self.node.create_publisher(BoolMsg, FLIP_IMAGE_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
@@ -1045,6 +1043,7 @@ class VisionTasks:
         msg = BoolMsg()
         msg.data = flip
         self.rotate_camera_publisher.publish(msg)
+
 
 if __name__ == "__main__":
     rclpy.init()

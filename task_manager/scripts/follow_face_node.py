@@ -87,7 +87,9 @@ class FollowFaceNode(Node):
             req.data = 0
             future = self.config_tgpio_reset_client.call_async(req)
             wait_for_future(future)
-            Logger.info(self, "TGPIO reset on stop disabled (gripper preserved across mode switches)")
+            Logger.info(
+                self, "TGPIO reset on stop disabled (gripper preserved across mode switches)"
+            )
         else:
             Logger.warn(
                 self,

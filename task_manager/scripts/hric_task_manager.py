@@ -179,7 +179,7 @@ class HRIC_TM(Node):
                 query="name",
                 context="The question 'What is your name?' was asked, full_text corresponds to the response.",
                 initial_prompt="The question 'What is your name?' was asked",
-                retries=5
+                retries=5,
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -192,7 +192,7 @@ class HRIC_TM(Node):
                 query="LLM_drink",
                 context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
                 initial_prompt="The question 'What is your favorite drink?' was asked",
-                retries=5
+                retries=5,
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -236,9 +236,7 @@ class HRIC_TM(Node):
                     "I see you brought a bag for the host. Let me take care of it for you.",
                 )
 
-            self.subtask_manager.manipulation.move_to_position(
-                "hand_bag_pose"
-            )
+            self.subtask_manager.manipulation.move_to_position("hand_bag_pose")
             self.subtask_manager.hri.say(
                 "Please extend your hand holding the bag so I can see and reach it."
             )
