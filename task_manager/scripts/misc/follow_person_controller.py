@@ -194,9 +194,9 @@ class FollowPersonController(Node):
             self._send_joint_velocity(0.0)
             return
 
-        # Error: negative because positive centroid_x = person right
-        # = need joint1 to decrease (negative velocity) to pan camera right
-        error = -self.centroid_x
+        # Error: positive centroid_x = person right = positive error
+        # Sign is flipped in _send_joint_velocity (matching temp_follow.py)
+        error = self.centroid_x
 
         # Dead zone
         if abs(error) < dead_zone:
@@ -213,7 +213,7 @@ class FollowPersonController(Node):
         pid_output = kp * error + ki * self.error_integral
 
         # Feedforward: compensate base rotation
-        feedforward = -self.base_omega_z * kff
+        feedforward = self.base_omega_z * kff
 
         # Combined velocity
         joint1_vel = pid_output + feedforward
@@ -238,7 +238,7 @@ class FollowPersonController(Node):
         """Send joint velocity command — only joint1, all others 0."""
         req = MoveVelocity.Request()
         req.is_sync = True
-        req.speeds = [velocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        req.speeds = [-velocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         try:
             future = self.velocity_client.call_async(req)
             future.add_done_callback(self._velocity_done_cb)
