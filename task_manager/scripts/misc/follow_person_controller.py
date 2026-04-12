@@ -21,7 +21,6 @@ import time
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 from geometry_msgs.msg import Point, Twist
 from sensor_msgs.msg import JointState
@@ -85,9 +84,8 @@ class FollowPersonController(Node):
             callback_group=cb_group,
         )
 
-        qos_joint = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
         self.create_subscription(
-            JointState, JOINT_STATES_TOPIC, self._joint_states_cb, qos_joint,
+            JointState, JOINT_STATES_TOPIC, self._joint_states_cb, 10,
             callback_group=cb_group,
         )
 
@@ -135,6 +133,11 @@ class FollowPersonController(Node):
         for name, pos in zip(msg.name, msg.position):
             if name in xarm6.joint_names():
                 self.joint_positions[name] = pos
+        if TARGET_JOINT in self.joint_positions:
+            self.get_logger().info(
+                f"Joint states received (joint1={self.joint_positions[TARGET_JOINT]:.3f})",
+                once=True,
+            )
 
     def _follow_service_cb(self, request, response):
         self.active = request.follow_face
