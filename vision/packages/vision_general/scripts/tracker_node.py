@@ -40,6 +40,7 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
 """
 
 import cv2
+import math
 import time
 import numpy as np
 from PIL import Image as PILImage
@@ -100,6 +101,7 @@ DEEPSORT_MAX_COSINE_DISTANCE = 0.3
 DEEPSORT_NN_BUDGET = 100
 DEEPSORT_MAX_AGE = 100
 DEEPSORT_N_INIT = 3
+EMA_ALPHA = 0.3  # Smoothing factor for 3D point (0 = full smooth, 1 = no smooth)
 
 
 class SingleTracker(Node):
@@ -187,6 +189,7 @@ class SingleTracker(Node):
             "coordinates": [],
         }
         self.depth_image_time = None
+        self.smoothed_point = None
         pbar = tqdm.tqdm(total=4, desc="Loading models")
 
         # Load YOLO with TensorRT acceleration for Orin AGX
@@ -354,6 +357,7 @@ class SingleTracker(Node):
         self.person_data["backward"] = None
         self.person_data["left"] = None
         self.person_data["right"] = None
+        self.smoothed_point = None
 
     def set_target(self, track_by="largest_person", value=""):
         """Set the target to track (Default: Largest person in frame)"""
@@ -748,12 +752,24 @@ class SingleTracker(Node):
                 point2Dpoint.z = 0.0
                 self.centroid_publisher.publish(point2Dpoint)
                 depth = get_depth(self.depth_image, point2D)
+                if not math.isfinite(depth) or depth <= 0.0:
+                    self.frame = None
+                    return
                 point_2d_temp = (point2D[1], point2D[0])
                 point3D = deproject_pixel_to_point(self.imageInfo, point_2d_temp, depth)
-                point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                coords.point.x = point3D[0]
-                coords.point.y = point3D[1]
-                coords.point.z = point3D[2]
+                raw = (float(point3D[0]), float(point3D[1]), float(point3D[2]))
+                if self.smoothed_point is None:
+                    self.smoothed_point = raw
+                else:
+                    a = EMA_ALPHA
+                    self.smoothed_point = (
+                        a * raw[0] + (1 - a) * self.smoothed_point[0],
+                        a * raw[1] + (1 - a) * self.smoothed_point[1],
+                        a * raw[2] + (1 - a) * self.smoothed_point[2],
+                    )
+                coords.point.x = self.smoothed_point[0]
+                coords.point.y = self.smoothed_point[1]
+                coords.point.z = self.smoothed_point[2]
                 self.results_publisher.publish(coords)
             else:
                 self.get_logger().warn("Depth image not available")
