@@ -5,6 +5,7 @@ Follow Person Controller — PI + Base Velocity Feedforward
 
 Rotates xArm6 joint1 to keep a tracked person centered in the camera image.
 Compensates for base rotation via feedforward from /cmd_vel.
+Uses xArm velocity control mode (mode 4) for direct joint velocity commands.
 
 Usage:
     ros2 run task_manager follow_person_controller.py
@@ -24,26 +25,24 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 
 from geometry_msgs.msg import Point, Twist
 from sensor_msgs.msg import JointState
-from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from frida_interfaces.srv import FollowFace
 from frida_pymoveit2.robots import xarm6
-from xarm_msgs.srv import SetInt16
+from xarm_msgs.srv import SetInt16, MoveVelocity
 
-
-# Topic names
+# Topic / service names
 CENTROID_TOPIC = "/vision/tracker_centroid"
 CMD_VEL_TOPIC = "/cmd_vel"
 JOINT_STATES_TOPIC = "/joint_states"
-TRAJ_CONTROLLER_TOPIC = "/xarm6_traj_controller/joint_trajectory"
 FOLLOW_SERVICE = "/follow_person"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
+XARM_VELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 
-# Joint name to control
 TARGET_JOINT = "joint1"
 
 # xArm modes
-SERVO_MODE = 1  # Servo motion mode (for trajectory controller / MoveIt)
+VELOCITY_MODE = 4   # Joint velocity control
+MOVEIT_MODE = 1      # Servo / MoveIt mode
 
 
 class FollowPersonController(Node):
@@ -59,18 +58,16 @@ class FollowPersonController(Node):
         self.declare_parameter("max_velocity", 1.5)
         self.declare_parameter("joint1_min", -2.8)
         self.declare_parameter("joint1_max", -0.3)
-        self.declare_parameter("home_position", -1.57)
         self.declare_parameter("control_rate", 20.0)
         self.declare_parameter("centroid_timeout", 1.5)
         self.declare_parameter("integral_clamp", 0.5)
-        self.declare_parameter("home_return_speed", 0.5)
 
         # --- State ---
         self.active = False
         self.centroid_x = 0.0
         self.centroid_time = 0.0
         self.base_omega_z = 0.0
-        self.joint_positions = {}  # name -> position
+        self.joint_positions = {}
         self.error_integral = 0.0
 
         # --- Subscribers ---
@@ -78,31 +75,27 @@ class FollowPersonController(Node):
             Point, CENTROID_TOPIC, self._centroid_cb, 10,
             callback_group=cb_group,
         )
-
         self.create_subscription(
             Twist, CMD_VEL_TOPIC, self._cmd_vel_cb, 10,
             callback_group=cb_group,
         )
-
         self.create_subscription(
             JointState, JOINT_STATES_TOPIC, self._joint_states_cb, 10,
             callback_group=cb_group,
         )
 
-        # --- Publisher (RELIABLE to match trajectory controller) ---
-        self.traj_pub = self.create_publisher(
-            JointTrajectory, TRAJ_CONTROLLER_TOPIC, 10,
-        )
-
-        # --- xArm mode/state services ---
+        # --- xArm service clients ---
         self.mode_client = self.create_client(
             SetInt16, XARM_SETMODE_SERVICE, callback_group=cb_group,
         )
         self.state_client = self.create_client(
             SetInt16, XARM_SETSTATE_SERVICE, callback_group=cb_group,
         )
+        self.velocity_client = self.create_client(
+            MoveVelocity, XARM_VELOCITY_SERVICE, callback_group=cb_group,
+        )
 
-        # --- Service ---
+        # --- Follow service ---
         self.create_service(
             FollowFace, FOLLOW_SERVICE, self._follow_service_cb,
             callback_group=cb_group,
@@ -144,20 +137,22 @@ class FollowPersonController(Node):
         self.active = request.follow_face
         if self.active:
             self.error_integral = 0.0
-            self._set_arm_servo_mode()
-            self.get_logger().info("Following enabled")
+            self._set_arm_mode(VELOCITY_MODE)
+            self.get_logger().info("Following enabled (velocity mode)")
         else:
+            self._send_joint_velocity(0.0)
+            time.sleep(0.3)
             self.error_integral = 0.0
-            self._set_arm_servo_mode()
-            self.get_logger().info("Following disabled")
+            self._set_arm_mode(MOVEIT_MODE)
+            self.get_logger().info("Following disabled (back to MoveIt mode)")
         response.success = True
         return response
 
-    def _set_arm_servo_mode(self):
-        """Set xArm to servo mode (mode 1) + state 0 so trajectory controller works."""
+    def _set_arm_mode(self, mode: int):
+        """Set xArm mode + state 0."""
         try:
             mode_req = SetInt16.Request()
-            mode_req.data = SERVO_MODE
+            mode_req.data = mode
             self.mode_client.call_async(mode_req)
             time.sleep(0.5)
 
@@ -166,7 +161,7 @@ class FollowPersonController(Node):
             self.state_client.call_async(state_req)
             time.sleep(0.5)
 
-            self.get_logger().info("Arm set to servo mode")
+            self.get_logger().info(f"Arm mode set to {mode}")
         except Exception as e:
             self.get_logger().error(f"Failed to set arm mode: {e}")
 
@@ -181,7 +176,7 @@ class FollowPersonController(Node):
 
         current_j1 = self.joint_positions[TARGET_JOINT]
 
-        # Read parameters (allows live tuning via ros2 param set)
+        # Read parameters
         kp = self.get_parameter("kp").value
         ki = self.get_parameter("ki").value
         kff = self.get_parameter("kff").value
@@ -189,80 +184,74 @@ class FollowPersonController(Node):
         max_vel = self.get_parameter("max_velocity").value
         j1_min = self.get_parameter("joint1_min").value
         j1_max = self.get_parameter("joint1_max").value
-        home_pos = self.get_parameter("home_position").value
         timeout = self.get_parameter("centroid_timeout").value
         integral_clamp = self.get_parameter("integral_clamp").value
-        home_speed = self.get_parameter("home_return_speed").value
 
         age = time.time() - self.centroid_time
 
         if self.centroid_time == 0.0 or age > timeout:
-            # No recent tracker data — return to home
             self.error_integral = 0.0
-            diff = home_pos - current_j1
-            vel = max(-home_speed, min(home_speed, diff / 0.5))
-            new_pos = current_j1 + vel * self.dt
-            new_pos = max(j1_min, min(j1_max, new_pos))
-            self._publish_joint1(new_pos)
+            self._send_joint_velocity(0.0)
             return
 
-        # Compute error (negative because positive centroid_x = person right
-        # = need joint1 to decrease to pan camera right)
+        # Error: negative because positive centroid_x = person right
+        # = need joint1 to decrease (negative velocity) to pan camera right
         error = -self.centroid_x
 
         # Dead zone
         if abs(error) < dead_zone:
             error = 0.0
 
-        # PI
+        # PI controller
         self.error_integral += error * self.dt
         self.error_integral = max(-integral_clamp, min(integral_clamp, self.error_integral))
 
-        # Anti-windup: reset integral if at joint limits
+        # Anti-windup at joint limits
         if current_j1 <= j1_min or current_j1 >= j1_max:
             self.error_integral = 0.0
 
         pid_output = kp * error + ki * self.error_integral
 
         # Feedforward: compensate base rotation
-        # When base rotates at +omega_z (CCW), joint1 must rotate at -omega_z
-        # (CW relative to base) to keep camera pointing the same world direction
         feedforward = -self.base_omega_z * kff
 
         # Combined velocity
         joint1_vel = pid_output + feedforward
         joint1_vel = max(-max_vel, min(max_vel, joint1_vel))
 
-        # Integrate to position
-        new_pos = current_j1 + joint1_vel * self.dt
-        new_pos = max(j1_min, min(j1_max, new_pos))
+        # Soft stop near joint limits
+        if current_j1 <= j1_min and joint1_vel < 0:
+            joint1_vel = 0.0
+        if current_j1 >= j1_max and joint1_vel > 0:
+            joint1_vel = 0.0
 
         self.get_logger().info(
-            f"j1={current_j1:.3f} cx={self.centroid_x:.3f} err={error:.3f} "
-            f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f} -> {new_pos:.3f}",
+            f"j1={current_j1:.3f} cx={self.centroid_x:.3f} "
+            f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f}",
             throttle_duration_sec=0.5,
         )
-        self._publish_joint1(new_pos)
+        self._send_joint_velocity(joint1_vel)
 
-    # ── Trajectory publishing ──────────────────────────────────
+    # ── Velocity command ───────────────────────────────────────
 
-    def _publish_joint1(self, target_j1: float):
-        """Publish a JointTrajectory for all joints, only changing joint1."""
-        traj = JointTrajectory()
-        point = JointTrajectoryPoint()
+    def _send_joint_velocity(self, velocity: float):
+        """Send joint velocity command — only joint1, all others 0."""
+        req = MoveVelocity.Request()
+        req.is_sync = True
+        req.speeds = [-velocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        try:
+            future = self.velocity_client.call_async(req)
+            future.add_done_callback(self._velocity_done_cb)
+        except Exception as e:
+            self.get_logger().error(f"Velocity command failed: {e}")
 
-        for name in xarm6.joint_names():
-            traj.joint_names.append(name)
-            if name == TARGET_JOINT:
-                point.positions.append(target_j1)
-            else:
-                point.positions.append(self.joint_positions.get(name, 0.0))
-
-        point.time_from_start.sec = 0
-        point.time_from_start.nanosec = int(1e8)  # 100ms
-
-        traj.points.append(point)
-        self.traj_pub.publish(traj)
+    def _velocity_done_cb(self, future):
+        try:
+            result = future.result()
+            if result and not result.ret:
+                pass  # success
+        except Exception as e:
+            self.get_logger().error(f"Velocity service error: {e}")
 
 
 def main(args=None):
