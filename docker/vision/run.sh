@@ -116,7 +116,7 @@ case $TASK in
     "--ppc")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general ppc_launch.py"
-        PROFILES=("vision")
+        PROFILES=("vision" "moondream")
         ;;
     "--carry")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
@@ -144,9 +144,9 @@ case $TASK in
 esac
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 COMMAND="$SETUP && $RUN"

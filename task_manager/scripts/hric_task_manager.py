@@ -248,7 +248,7 @@ class HRIC_TM(Node):
                 self.subtask_manager.hri.say("I can see your hand, moving towards it.", wait=False)
                 go_result = self.subtask_manager.manipulation.go_to_hand(
                     point=hand_point,
-                    hand_offset=0.2,
+                    hand_offset=0.1,
                 )
 
                 if go_result == Status.EXECUTION_SUCCESS:

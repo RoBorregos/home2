@@ -165,6 +165,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
+        self.initial_prompt = ""
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
@@ -238,6 +239,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.DEBUG: all_services,
         }
 
         self.hand = HRIHand(self)
@@ -408,9 +410,10 @@ class HRITasks(metaclass=SubtaskMeta):
     def hear(
         self,
         hotwords="",
-        silence_time=4.0,
+        silence_time=1.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
+        initial_prompt="",
     ) -> str:
         Logger.info(
             self.node,
@@ -418,6 +421,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         accepted_future = self.hear_streaming(
+            initial_prompt=initial_prompt or self.initial_prompt,
             hotwords=hotwords,
             silence_time=silence_time,
             start_silence_time=start_silence_time,
@@ -465,6 +469,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self,
         timeout: float = 13.0,
         hotwords: str = "",
+        initial_prompt: str = "",
         silence_time: float = 2.0,
         start_silence_time: float = 4.0,
     ):
@@ -475,6 +480,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
+            initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
@@ -487,6 +493,7 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
+        goal_msg.initial_prompt = initial_prompt
         self.last_hotwords = hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
@@ -629,6 +636,8 @@ class HRITasks(metaclass=SubtaskMeta):
         always_confirm: bool = False,
         options: list[str] = None,
         remap: dict = None,
+        initial_prompt: str = "",
+        silence_time: float = 1.0,
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -641,7 +650,8 @@ class HRITasks(metaclass=SubtaskMeta):
             use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
-
+            initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
+            silence_time: the time to wait for silence before considering the speech complete
         Returns:
             Status: the status of the execution
             str: answer to the question
@@ -653,7 +663,9 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text, word_confidences = self.hear(hotwords=hotwords)
+            hear_status, interpreted_text, word_confidences = self.hear(
+                hotwords=hotwords, initial_prompt=initial_prompt, silence_time=silence_time
+            )
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
@@ -671,8 +683,13 @@ class HRITasks(metaclass=SubtaskMeta):
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
                         foundExact = False
+                        normalized_target_info = remove_punctuation(target_info)
                         for option in options:
-                            if option.lower() in target_info.lower():
+                            normalized_option = remove_punctuation(option)
+                            if (
+                                normalized_option == normalized_target_info
+                                or normalized_option in normalized_target_info
+                            ):
                                 target_info = option
                                 foundExact = True
                                 target_found = True
@@ -689,9 +706,15 @@ class HRITasks(metaclass=SubtaskMeta):
                                 similarity = similarity_list.similarities[0]
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
-                    target_words = target_info.lower().split()
+                    normalized_confidences = {
+                        remove_punctuation(word): confidence
+                        for word, confidence in word_confidences.items()
+                    }
+                    target_words = remove_punctuation(target_info).split()
                     matched_confidences = [
-                        word_confidences[w] for w in target_words if w in word_confidences
+                        normalized_confidences[w]
+                        for w in target_words
+                        if w in normalized_confidences
                     ]
                     avg_confidence = (
                         sum(matched_confidences) / len(matched_confidences)
@@ -705,8 +728,12 @@ class HRITasks(metaclass=SubtaskMeta):
                         skip_confirmation = True
 
                     # Remap the target_info if a remap dictionary is provided
-                    if remap is not None and target_info in remap:
-                        target_info = remap[target_info]
+                    if remap is not None:
+                        normalized_target_info = remove_punctuation(target_info)
+                        for remap_key, remap_value in remap.items():
+                            if remove_punctuation(remap_key) == normalized_target_info:
+                                target_info = remap_value
+                                break
 
                 except Exception as e:
                     print("Failed matching result:", e)
