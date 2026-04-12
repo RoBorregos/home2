@@ -124,8 +124,10 @@ class SingleTracker(Node):
             callback_group=self.image_callback_group,
         )
 
+        self.depth_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos,
+            callback_group=self.depth_callback_group,
         )
 
         self.image_info_subscriber = self.create_subscription(
