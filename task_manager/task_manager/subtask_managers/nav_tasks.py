@@ -60,18 +60,18 @@ class NavigationTasks:
                 data = json.load(file)
             if data is not None:
                 self.areas_backup = data
-                CLog.nav(self, "INFO", "Areas Json BackUp Loaded")
+                CLog.nav(self.node, "INFO", "Areas Json BackUp Loaded")
             else:
                 raise Exception("Data is empty")
         except Exception as e:
             self.areas_backup = Status.EXECUTION_ERROR
-            CLog.nav(self, "WARN", f"Areas Json Backup Failed Error: {e}")
+            CLog.nav(self.node, "WARN", f"Areas Json Backup Failed Error: {e}")
 
     def setup_services(self):
         """Initialize services and actions"""
 
         if self.task not in self.services:
-            CLog.nav(self, "ERROR", "Task not available")
+            CLog.nav(self.node, "ERROR", "Task not available")
             return
 
         for key, service in self.services[self.task].items():
@@ -79,12 +79,12 @@ class NavigationTasks:
                 if not service["client"].wait_for_service(
                     timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
                 ):
-                    CLog.nav(self, "WARN", f"{key} service not initialized. ({self.task})")
+                    CLog.nav(self.node, "WARN", f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
                 if not service["client"].wait_for_server(
                     timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
                 ):
-                    CLog.nav(self, "WARN", f"{key} action server not initialized. ({self.task})")
+                    CLog.nav(self.node, "WARN", f"{key} action server not initialized. ({self.task})")
 
     @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, self.areas_backup), delay=1)
     @service_check(
@@ -101,11 +101,11 @@ class NavigationTasks:
             self.node, future, timeout_sec=SUBTASK_MANAGER.AREAS_RETRIEVE_TIMEOUT.value
         )
         if (future.result() is None) or (future.result().areas == ""):
-            CLog.nav(self, "ERROR", "Service return empty data")
+            CLog.nav(self.node, "ERROR", "Service return empty data")
             return (Status.EXECUTION_ERROR, self.areas_backup)
 
         else:
-            CLog.nav(self, "INFO", "Map Areas dumped Succesfully")
+            CLog.nav(self.node, "INFO", "Map Areas dumped Succesfully")
             return (Status.EXECUTION_SUCCESS, json.loads(str(future.result().areas)))
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
@@ -123,13 +123,13 @@ class NavigationTasks:
         result = future.result()
         if result is not None:
             if result.status:
-                CLog.nav(self, "SUCCESS", "Door open")
+                CLog.nav(self.node, "SUCCESS", "Door open")
                 return (Status.EXECUTION_SUCCESS, "")
             else:
-                CLog.nav(self, "ERROR", "Error getting state with door")
+                CLog.nav(self.node, "ERROR", "Error getting state with door")
                 return (Status.EXECUTION_ERROR, "Error getting door state")
         else:
-            CLog.nav(self, "ERROR", "Error with request")
+            CLog.nav(self.node, "ERROR", "Error with request")
             return (Status.EXECUTION_ERROR, "Request error")
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
@@ -142,7 +142,7 @@ class NavigationTasks:
         """Move to areas json location"""
         if sublocation == "":
             sublocation = "safe_place"
-        CLog.nav(self, "MOVE", f"Requesting navigation to {location} - {sublocation}")
+        CLog.nav(self.node, "MOVE", f"Requesting navigation to {location} - {sublocation}")
         request = MoveLocation.Request()
         request.location = location
         request.sublocation = sublocation
@@ -151,13 +151,13 @@ class NavigationTasks:
         result = future.result()
         if result is not None:
             if result.success:
-                CLog.nav(self, "SUCCESS", f"Goal {location} reached")
+                CLog.nav(self.node, "SUCCESS", f"Goal {location} reached")
                 return (Status.EXECUTION_SUCCESS, "")
             else:
-                CLog.nav(self, "ERROR", f"Goal failed: {result.error}")
+                CLog.nav(self.node, "ERROR", f"Goal failed: {result.error}")
                 return (Status.EXECUTION_ERROR, result.error)
         else:
-            CLog.nav(self, "ERROR", "Service request failed (None result)")
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
 
 
