@@ -213,10 +213,6 @@ class FollowPersonController(Node):
         self.error_integral += error * self.dt
         self.error_integral = max(-integral_clamp, min(integral_clamp, self.error_integral))
 
-        # Anti-windup at joint limits
-        if current_j1 <= j1_min or current_j1 >= j1_max:
-            self.error_integral = 0.0
-
         pid_output = kp * error + ki * self.error_integral
 
         # Feedforward: compensate base rotation
@@ -227,10 +223,13 @@ class FollowPersonController(Node):
         joint1_vel = max(-max_vel, min(max_vel, joint1_vel))
 
         # Soft stop near joint limits
-        if current_j1 <= j1_min and joint1_vel < 0:
+        # Actual joint velocity is -joint1_vel (negated in _send_joint_velocity)
+        if current_j1 <= j1_min and joint1_vel > 0:
             joint1_vel = 0.0
-        if current_j1 >= j1_max and joint1_vel > 0:
+            self.error_integral = 0.0
+        if current_j1 >= j1_max and joint1_vel < 0:
             joint1_vel = 0.0
+            self.error_integral = 0.0
 
         self.get_logger().info(
             f"j1={current_j1:.3f} cx={self.centroid_x:.3f} "
