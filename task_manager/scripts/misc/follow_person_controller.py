@@ -203,7 +203,7 @@ class FollowPersonController(Node):
             vel = max(-home_speed, min(home_speed, diff / 0.5))
             new_pos = current_j1 + vel * self.dt
             new_pos = max(j1_min, min(j1_max, new_pos))
-            self._publish_joint1(new_pos, vel)
+            self._publish_joint1(new_pos)
             return
 
         # Compute error (negative because positive centroid_x = person right
@@ -242,11 +242,11 @@ class FollowPersonController(Node):
             f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f} -> {new_pos:.3f}",
             throttle_duration_sec=0.5,
         )
-        self._publish_joint1(new_pos, joint1_vel)
+        self._publish_joint1(new_pos)
 
     # ── Trajectory publishing ──────────────────────────────────
 
-    def _publish_joint1(self, target_j1: float, velocity: float = 0.0):
+    def _publish_joint1(self, target_j1: float):
         """Publish a JointTrajectory for all joints, only changing joint1."""
         traj = JointTrajectory()
         point = JointTrajectoryPoint()
@@ -255,15 +255,11 @@ class FollowPersonController(Node):
             traj.joint_names.append(name)
             if name == TARGET_JOINT:
                 point.positions.append(target_j1)
-                point.velocities.append(velocity)
             else:
                 point.positions.append(self.joint_positions.get(name, 0.0))
-                point.velocities.append(0.0)
 
-        # Execute over two control periods for smoother interpolation
-        period_ns = int(self.dt * 2e9)
         point.time_from_start.sec = 0
-        point.time_from_start.nanosec = period_ns
+        point.time_from_start.nanosec = int(1e8)  # 100ms
 
         traj.points.append(point)
         self.traj_pub.publish(traj)
