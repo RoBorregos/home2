@@ -27,8 +27,36 @@ RUN git clone --branch ros2 https://github.com/introlab/rtabmap_ros.git src/rtab
 RUN sudo apt update
 RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r -y
 RUN sed -i '/PATTERN "\*.h"/a\    PATTERN "*.hpp"' src/rtabmap_ros/rtabmap_sync/CMakeLists.txt
-RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=/usr/local/lib/cmake/opencv4
+RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DOpenCV_DIR=/usr/local/lib/cmake/opencv4 \
+    -DWITH_TORCH=ON \
+    -DWITH_PYTHON=ON \
+    -DTorch_DIR=$(python3 -c "import torch; print(torch.utils.cmake_prefix_path)")/Torch
 RUN echo "source /home/ros/ros_packages3/install/setup.bash" >> /home/ros/.bashrc
+
+# SuperPoint + SuperGlue models for RTABMap
+RUN git clone --depth 1 https://github.com/magicleap/SuperGluePretrainedNetwork.git /home/ros/SuperGlue
+
+# Copy RTABMap's SuperGlue wrapper script alongside the SuperGlue repo
+RUN cp /home/ros/ros_packages3/src/rtabmap/corelib/src/python/rtabmap_superglue.py /home/ros/SuperGlue/
+
+# Trace SuperPoint model with the installed PyTorch version to avoid version mismatch
+RUN mkdir -p /home/ros/models && \
+    python3 -c "\
+import torch; \
+from pathlib import Path; \
+import sys; sys.path.insert(0, '/home/ros/SuperGlue'); \
+from models.superpoint import SuperPoint; \
+config = {'nms_radius': 4, 'keypoint_threshold': 0.005, 'max_keypoints': -1}; \
+model = SuperPoint(config).eval().cpu(); \
+dummy = torch.randn(1, 1, 480, 640); \
+traced = torch.jit.trace(model, dummy); \
+traced.save('/home/ros/models/superpoint_v1.pt'); \
+print('SuperPoint model traced successfully')"
+
+ENV SUPERGLUE_PATH=/home/ros/SuperGlue
+ENV SUPERPOINT_MODEL=/home/ros/models/superpoint_v1.pt
 
 #Install 
 WORKDIR /home/ros/
