@@ -87,7 +87,6 @@ class DoingLaundryTM(Node):
                 self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY
             else:
                 Logger.warn(self, "Could not detect basket in vision detections. Retrying...")
-                # In a real scenario we might want to pan the camera here
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_LAUNDRY:
             Logger.info(self, "Attempting to pick the basket using pick_object.")
