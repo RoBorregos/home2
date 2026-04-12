@@ -16,14 +16,14 @@ def launch_setup(context, *args, **kwargs):
     log_output = 'own_log' if os.getenv('NAV_QUIET') == '1' else 'screen'
 
     dashgo_config = os.path.join(
-        get_package_share_directory('dashgo_driver'),
+        get_package_share_directory('dashgo_driver_cpp'),
         'config',
         'dashgo_params.yaml'
     )
 
     dashgo_driver = Node(
-        package='dashgo_driver',
-        executable='dashgo_driver2.py',
+        package='dashgo_driver_cpp',
+        executable='dashgo_driver_cpp',
         name='DashgoDriver',
         output=log_output,
         emulate_tty=True,
@@ -40,29 +40,36 @@ def launch_setup(context, *args, **kwargs):
         emulate_tty=True,
         respawn=True,
         respawn_delay=2.0,
+        remappings=[('odometry/filtered', '/odom')],
         parameters=[{
-            'output_frame': 'odom',
-            'frequency': 20.0,
-            'sensor_timeout': 0.2,
-            'two_d_mode': True,
-            'publish_tf': True,
-            'map_frame': 'map',
-            'base_link_frame': 'base_link',
-            'world_frame': 'odom',
-            'odom0': 'dashgo_odom',
-            'imu0': 'imu',
-            'odom0_config': [False, False, False,
-                            False, False, False,
-                            True, False, False,
-                            False, False, True,
-                            False, False, False],
-            'imu0_config': [False, False, False,
-                             False, False, True,
-                             False, False, False,
-                             False, False, True,
-                             False, False, False],
-            'imu0_differential': False,
-        }],
+                'output_frame': 'odom',
+                'frequency': 20.0,
+                'sensor_timeout': 0.2,
+                'two_d_mode': True,
+                'publish_tf': True,
+                'map_frame': 'map',
+                'base_link_frame': 'base_link',
+                'world_frame': 'odom',
+                'odom0': 'dashgo_odom',
+                'imu0': 'imu',
+                #  x, y, z 
+                # roll, pitch, yaw 
+                #  vx, vy, vz 
+                # vroll, vpitch, vyaw
+                # ax, ay, az
+                'odom0_config': [False, False, False,
+                                False, False, False,
+                                True, False, False,
+                                False, False, True,
+                                False, False, False],
+                'imu0_config': [False, False, False,
+                                 False, False, True,
+                                 False, False, False,
+                                 False, False, True,
+                                 False, False, False],
+                'imu0_differential': False,
+
+             }],
     )
 
     laser_launch = Node(
@@ -112,7 +119,6 @@ def launch_setup(context, *args, **kwargs):
 
     return_launch = [
         make_shutdown_handler(dashgo_driver, "DashgoDriver"),
-        make_shutdown_handler(ekf_launch, "EKF"),
         make_shutdown_handler(laser_launch, "Laser"),
         dashgo_driver,
         ekf_launch,

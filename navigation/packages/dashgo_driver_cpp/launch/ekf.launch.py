@@ -15,15 +15,14 @@ def generate_launch_description():
             respawn_max_retries=5,
             parameters=[{
                     'output_frame': 'odom',
-                    'frequency': 20.0,
-                    'sensor_timeout': 0.2,
+                    'frequency': 50.0,
+                    'sensor_timeout': 0.1,
                     'two_d_mode': True,
                     'publish_tf': True,
                     'map_frame': 'map',
                     'base_link_frame': 'base_link',
                     'world_frame': 'odom',
                     'odom0': 'dashgo_odom',
-                    #'odom0': 'odom',
                     'imu0': 'imu',
                     #  x, y, z 
                     # roll, pitch, yaw 
