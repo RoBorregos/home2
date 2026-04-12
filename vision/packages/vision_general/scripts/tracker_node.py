@@ -40,7 +40,6 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
 """
 
 import cv2
-import math
 import time
 import numpy as np
 from PIL import Image as PILImage
