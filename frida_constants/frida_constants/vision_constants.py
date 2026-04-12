@@ -106,13 +106,13 @@ FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
-FLIP_IMAGE_TOPIC = "/vision/face_recognition/flip_image"
+FLIP_IMAGE_TOPIC = "/vision/flip_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
 # HRIC commands node
 CHECK_PERSON_TOPIC = "/vision/hric/detect_person"
 FIND_SEAT_TOPIC = "/vision/hric/find_seat"
-IMAGE_TOPIC_HRIC = "/vision/hric/img_person_detecion"
+IMAGE_TOPIC_HRIC = "/vision/hric/img_person_detection"
 DETECT_HAND_SERVICE = "/vision/hric/detect_hand"
 
 # GPSR commands node
@@ -127,7 +127,7 @@ POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 READ_QR_TOPIC = "/vision/gpsr/read_qr"
 
 # Storing Groceries Commands node
-SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
+SHELF_DETECTION_TOPIC = "/vision/storing_groceries/shelf_detection"
 
 # Person inside a room
 PERSON_POINT_TOPIC = "/vision/person_inside_point"
