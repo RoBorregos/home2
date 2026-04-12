@@ -12,6 +12,7 @@ control and provides a simple interface for the task manager to use.
 
 import rclpy
 from rclpy.node import Node
+from std_srvs.srv import SetBool
 from task_manager.utils.logger import Logger
 
 # from geometry_msgs.msg import PoseStamped
@@ -109,6 +110,9 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        self._flat_grasp_estimator_client = self.node.create_client(
+            SetBool, "/flat_grasp_estimator/enable"
+        )
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -283,7 +287,7 @@ class ManipulationTasks:
 
         # Get result
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future)
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
 
         result = result_future.result().result
         if not result.success:
@@ -325,18 +329,19 @@ class ManipulationTasks:
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
-    def pick_object(self, object_name: str, in_configuration: bool = False):
+    def pick_object(
+        self, object_name: str, in_configuration: bool = False, scan_environment: bool = False
+    ):
         """Pick an object by name
         object_name: name of the object to pick
-        in_configuration: True if the object is in the configuration"""
-        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
-        #     Logger.error(self.node, "Manipulation action server not available")
-        #     return Status.EXECUTION_ERROR
+        in_configuration: True if the object is in the configuration
+        scan_environment: True to scan environment before picking (useful for shelf picks)"""
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
         goal_msg.pick_params.in_configuration = in_configuration
+        goal_msg.scan_environment = scan_environment
 
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
@@ -348,7 +353,10 @@ class ManipulationTasks:
         Logger.info(self.node, f"Pick request for {object_name} sent")
         # wait for result
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future)
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        if not result_future.done():
+            Logger.error(self.node, "Action timed out after 60s")
+            return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Pick result: {result}")
         if result.success:
@@ -363,13 +371,42 @@ class ManipulationTasks:
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
-    def place(self):
-        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
-        #     Logger.error(self.node, "Manipulation action server not available")
-        #     return Status.EXECUTION_ERROR
+    def set_flat_grasp_estimator(self, enable: bool) -> int:
+        """Enable or disable the flat grasp estimator node."""
+        if not self._flat_grasp_estimator_client.wait_for_service(timeout_sec=5.0):
+            Logger.error(self.node, "Flat grasp estimator service not available")
+            return Status.EXECUTION_ERROR
 
+        req = SetBool.Request()
+        req.data = enable
+        future = self._flat_grasp_estimator_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
+
+        if future.result() is not None and future.result().success:
+            state = "enabled" if enable else "disabled"
+            Logger.info(self.node, f"Flat grasp estimator {state}")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "Failed to set flat grasp estimator state")
+        return Status.EXECUTION_ERROR
+
+    def pick_cutlery(self, object_name: str) -> int:
+        """Pick a cutlery object (fork, knife, spoon).
+        Enables the flat grasp estimator, performs the pick, then disables it."""
+        self.set_flat_grasp_estimator(True)
+        try:
+            result = self.pick_object(object_name)
+        finally:
+            self.set_flat_grasp_estimator(False)
+        return result
+
+    def place(self, close_to: str = "", special_request: str = ""):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
+        if close_to:
+            goal_msg.place_params.close_to = close_to
+        if special_request:
+            goal_msg.place_params.special_request = special_request
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
@@ -378,7 +415,10 @@ class ManipulationTasks:
         Logger.info(self.node, "Place request sent")
         # wait for result
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future)
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        if not result_future.done():
+            Logger.error(self.node, "Action timed out after 60s")
+            return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Place result: {result}")
         if result.success:
@@ -532,9 +572,21 @@ class ManipulationTasks:
             Logger.error(self.node, "Failed to send place request")
             return Status.EXECUTION_ERROR
         Logger.info(self.node, "Place in shelf request sent")
-        # wait for result
+        # wait for result — place on shelf can take 60-120s because of multiple
+        # pre-place + full + halfway attempts with OMPL planning. A 60s timeout
+        # here was causing the client to give up while the server was still
+        # executing the place, leaving the FSM in a bad state (object already
+        # dropped in shelf but task_manager thought it failed and retried).
+        SHELF_PLACE_TIMEOUT = 180.0
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future)
+        rclpy.spin_until_future_complete(
+            self.node, result_future, timeout_sec=SHELF_PLACE_TIMEOUT
+        )
+        if not result_future.done():
+            Logger.error(
+                self.node, f"Action timed out after {SHELF_PLACE_TIMEOUT}s"
+            )
+            return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Place in shelf result: {result}")
         if result.success:
@@ -560,7 +612,10 @@ class ManipulationTasks:
         Logger.info(self.node, "Pour request sent")
         # wait for result
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future)
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        if not result_future.done():
+            Logger.error(self.node, "Action timed out after 60s")
+            return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Pour result: {result}")
         if result.success:
@@ -647,7 +702,7 @@ class ManipulationTasks:
 
         Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future)
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
 
         result = result_future.result().result
         if result.success:
@@ -738,7 +793,10 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future)
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        if not result_future.done():
+            Logger.error(self.node, "Action timed out after 60s")
+            return Status.EXECUTION_ERROR
         result = result_future.result().result
         if result.success:
             Logger.success(self.node, "Place in point successful")

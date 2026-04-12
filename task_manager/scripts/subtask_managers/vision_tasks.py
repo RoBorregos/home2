@@ -18,7 +18,6 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURE_TOPIC,
     COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
-    DETECTIONS_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
     FIND_SEAT_TOPIC,
     FOLLOW_BY_TOPIC,
@@ -35,10 +34,9 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
-    FLIP_IMAGE_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray, PersonList
+from frida_interfaces.msg import ObjectDetection, PersonList
 from frida_interfaces.srv import (
     BeverageLocation,
     CountByColor,
@@ -59,14 +57,13 @@ from frida_interfaces.srv import (
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
-from rclpy.task import Future
 from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
 from std_srvs.srv import SetBool, Trigger
-from task_manager.utils.decorators import mockable, service_check
-from task_manager.utils.logger import Logger
-from task_manager.utils.status import Status
-from task_manager.utils.task import Task
+from utils.decorators import mockable, service_check
+from utils.logger import Logger
+from utils.status import Status
+from utils.task import Task
 
 TIMEOUT = 8.0
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
@@ -98,7 +95,6 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
-        self.rotate_camera_publisher = self.node.create_publisher(BoolMsg, FLIP_IMAGE_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
@@ -127,14 +123,6 @@ class VisionTasks:
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
-        )
-
-        self._latest_detections_future: Future = Future()
-        self.detections_subscriber = self.node.create_subscription(
-            ObjectDetectionArray,
-            DETECTIONS_TOPIC,
-            self._detections_callback,
-            10,
         )
 
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
@@ -218,10 +206,6 @@ class VisionTasks:
             Task.PICK_AND_PLACE: {
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
-                "moondream_crop_query": {
-                    "client": self.moondream_crop_query_client,
-                    "type": "service",
-                },
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
             },
             Task.DEBUG: {
@@ -456,36 +440,47 @@ class VisionTasks:
         Logger.success(self.node, "Shelf detected")
         return Status.EXECUTION_SUCCESS, detections
 
-    def _detections_callback(self, msg: ObjectDetectionArray) -> None:
-        if not self._latest_detections_future.done():
-            self._latest_detections_future.set_result(msg)
-
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
+    @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
     def detect_objects(
         self, timeout: float = TIMEOUT, ignore_labels: list[str] = []
     ) -> tuple[Status, list[BBOX]]:
-        """Return the latest frame of detections published on /vision/detections."""
+        """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
+        request = DetectionHandler.Request()
+        request.closest_object = False
+        request.label = "all"
         detections: list[BBOX] = []
-
-        self._latest_detections_future = Future()
         try:
-            rclpy.spin_until_future_complete(
-                self.node, self._latest_detections_future, timeout_sec=timeout
-            )
-            msg = self._latest_detections_future.result()
-            if msg is None:
+            future = self.object_detector_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+            # print(f"result: {result}")
+
+            if not result.success:
                 Logger.warn(self.node, "No object detected")
                 return Status.TARGET_NOT_FOUND, detections
 
-            for detection in msg.detections:
-                if detection.label_text in ignore_labels:
-                    continue
+            results2 = result.detection_array.detections
+            """
+            int32 label
+            string label_text
+            float32 score
+            float32 ymin
+            float32 xmin
+            float32 ymax
+            float32 xmax
+            geometry_msgs/PointStamped point3d
+            """
+            # for each result
+            for detection in results2:
                 object_detection = BBOX()
                 object_detection.x1 = detection.xmin
                 object_detection.x2 = detection.xmax
                 object_detection.y1 = detection.ymin
                 object_detection.y2 = detection.ymax
+                if detection.label_text in ignore_labels:
+                    continue
                 object_detection.classname = detection.label_text
                 object_detection.h = detection.ymax - detection.ymin
                 object_detection.w = detection.xmax - detection.xmin
@@ -506,11 +501,6 @@ class VisionTasks:
         except Exception as e:
             Logger.error(self.node, f"Error detecting objects: {e}")
             return Status.EXECUTION_ERROR, detections
-
-        if not detections:
-            Logger.warn(self.node, "No object detected")
-            return Status.TARGET_NOT_FOUND, detections
-
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
 
@@ -583,7 +573,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.location
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
-    @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    @service_check("moondream_query_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
     def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
@@ -608,7 +598,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.result
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
-    @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    @service_check("moondream_crop_query_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
     def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
@@ -918,9 +908,16 @@ class VisionTasks:
 
     def describe_person(self, callback):
         """Describe the person in the image"""
-        Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses, etc."
-        self.moondream_query_async(prompt, query_person=True, callback=callback)
+        # TODO: Remove mock when moondream is ready
+        Logger.info(self.node, "Describing person (MOCKED)")
+        callback(
+            Status.EXECUTION_SUCCESS,
+            "They have dark hair, are wearing a casual shirt, appear to be of average height, and are not wearing glasses.",
+        )
+        return
+        # Logger.info(self.node, "Describing person")
+        # prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
+        # self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
         time.sleep(TIMEOUT)
@@ -1051,11 +1048,6 @@ class VisionTasks:
             location += f"to the left of the {detections[right_pos].classname.lower()}"
 
         return Status.EXECUTION_SUCCESS, location
-
-    def camera_upside_down(self, flip: bool):
-        msg = BoolMsg()
-        msg.data = flip
-        self.rotate_camera_publisher.publish(msg)
 
 
 if __name__ == "__main__":
