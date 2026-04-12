@@ -101,7 +101,7 @@ DEEPSORT_MAX_COSINE_DISTANCE = 0.3
 DEEPSORT_NN_BUDGET = 100
 DEEPSORT_MAX_AGE = 100
 DEEPSORT_N_INIT = 3
-EMA_ALPHA = 0.3  # Smoothing factor for 2D centroid (0 = full smooth, 1 = no smooth)
+DEPTH_JUMP_THRESHOLD = 0.5  # Max allowed depth change (meters) between frames
 
 
 class SingleTracker(Node):
@@ -189,7 +189,7 @@ class SingleTracker(Node):
             "coordinates": [],
         }
         self.depth_image_time = None
-        self.smoothed_centroid = None
+        self.last_depth = None
         pbar = tqdm.tqdm(total=4, desc="Loading models")
 
         # Load YOLO with TensorRT acceleration for Orin AGX
@@ -357,7 +357,7 @@ class SingleTracker(Node):
         self.person_data["backward"] = None
         self.person_data["left"] = None
         self.person_data["right"] = None
-        self.smoothed_centroid = None
+        self.last_depth = None
 
     def set_target(self, track_by="largest_person", value=""):
         """Set the target to track (Default: Largest person in frame)"""
@@ -739,18 +739,9 @@ class SingleTracker(Node):
                 coords = PointStamped()
                 coords.header.frame_id = self.frame_id
                 coords.header.stamp = self.depth_image_time
-                raw_centroid = get2DCentroid(
+                point2D = get2DCentroid(
                     self.person_data["coordinates"], self.depth_image
                 )
-                if self.smoothed_centroid is None:
-                    self.smoothed_centroid = (float(raw_centroid[0]), float(raw_centroid[1]))
-                else:
-                    a = EMA_ALPHA
-                    self.smoothed_centroid = (
-                        a * raw_centroid[0] + (1 - a) * self.smoothed_centroid[0],
-                        a * raw_centroid[1] + (1 - a) * self.smoothed_centroid[1],
-                    )
-                point2D = (int(self.smoothed_centroid[0]), int(self.smoothed_centroid[1]))
                 point2D_x_coord = float(point2D[1])
                 point2D_x_coord_normalized = (
                     point2D_x_coord / (self.frame.shape[1] / 2)
@@ -760,10 +751,27 @@ class SingleTracker(Node):
                 point2Dpoint.y = 0.0
                 point2Dpoint.z = 0.0
                 self.centroid_publisher.publish(point2Dpoint)
-                depth = get_depth(self.depth_image, point2D)
-                if not math.isfinite(depth) or depth <= 0.0:
+
+                # Robust depth: median from inner 50% of bounding box
+                x1, y1, x2, y2 = self.person_data["coordinates"]
+                bw, bh = x2 - x1, y2 - y1
+                inner_x1 = x1 + bw // 4
+                inner_x2 = x2 - bw // 4
+                inner_y1 = y1 + bh // 4
+                inner_y2 = y2 - bh // 4
+                roi = self.depth_image[inner_y1:inner_y2, inner_x1:inner_x2]
+                valid = roi[np.isfinite(roi) & (roi > 0.0)]
+                if valid.size == 0:
                     self.frame = None
                     return
+                depth = float(np.median(valid))
+
+                # Reject sudden depth jumps
+                if self.last_depth is not None and abs(depth - self.last_depth) > DEPTH_JUMP_THRESHOLD:
+                    self.frame = None
+                    return
+                self.last_depth = depth
+
                 point_2d_temp = (point2D[1], point2D[0])
                 point3D = deproject_pixel_to_point(self.imageInfo, point_2d_temp, depth)
                 coords.point.x = float(point3D[0])
