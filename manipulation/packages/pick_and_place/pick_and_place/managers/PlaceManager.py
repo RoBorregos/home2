@@ -323,13 +323,17 @@ class PlaceManager:
                 heatmap_request.pointcloud = pcl_result
 
                 if place_params.is_shelf:
-                    # Same rationale as the close_to branch above: for shelf
-                    # placements we want the densest center area of the
-                    # filtered plane cluster, not the point physically
-                    # closest to base_link (which is always the front edge
-                    # of the shelf and causes the object to be placed at
-                    # the lip).
-                    heatmap_request.prefer_closest = False
+                    if place_params.table_height > 1.0:
+                        # High shelves (shelf 3): the arm can barely reach
+                        # the center so prefer_closest picks the nearest
+                        # reachable point. The cool_map (10x edge penalty)
+                        # keeps it slightly inside the lip, not at the very
+                        # front edge.
+                        heatmap_request.prefer_closest = True
+                    else:
+                        # Low/mid shelves: prefer the densest center area,
+                        # not the front edge.
+                        heatmap_request.prefer_closest = False
                 if not self.node.place_pose_client.wait_for_service(timeout_sec=5.0):
                     self.node.get_logger().error(
                         "place_pose (heatmap) service not available"
