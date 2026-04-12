@@ -235,13 +235,18 @@ class FollowPersonController(Node):
     # ── Trajectory publishing ──────────────────────────────────
 
     def _publish_joint1(self, target_j1: float, velocity: float = 0.0):
-        """Publish a JointTrajectory commanding ONLY joint1 (other joints untouched)."""
+        """Publish a JointTrajectory for all joints, only changing joint1."""
         traj = JointTrajectory()
         point = JointTrajectoryPoint()
 
-        traj.joint_names.append(TARGET_JOINT)
-        point.positions.append(target_j1)
-        point.velocities.append(velocity)
+        for name in xarm6.joint_names():
+            traj.joint_names.append(name)
+            if name == TARGET_JOINT:
+                point.positions.append(target_j1)
+                point.velocities.append(velocity)
+            else:
+                point.positions.append(self.joint_positions.get(name, 0.0))
+                point.velocities.append(0.0)
 
         # Execute over two control periods for smoother interpolation
         period_ns = int(self.dt * 2e9)
