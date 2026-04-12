@@ -16,7 +16,6 @@ services:
     volumes:
       - ../../../:/workspace/src
       - ~/.config/pulse:/tmp/pulse
-      - /dev:/dev
       - ../build:/workspace/build
       - ../install:/workspace/install
       - ../log:/workspace/log
