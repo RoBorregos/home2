@@ -38,7 +38,7 @@ export function VideoFeed({
         Video feed at {videoTopic}
       </p>
       <MjpegStream
-        streamUrl={`http://localhost:8080/stream?topic=${videoTopic}`}
+        streamUrl={`http://192.168.31.228:8080/stream?topic=${videoTopic}`}
       />
     </div>
   );

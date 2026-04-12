@@ -92,12 +92,12 @@ class DetectionsHandlerNode : public rclcpp::Node
 
   float getIoU(frida_interfaces::msg::ObjectDetection detection1,
                frida_interfaces::msg::ObjectDetection detection2) {
-    float xA = std::max(detection1.xmax, detection2.xmax);
-    float yA = std::max(detection1.ymax, detection2.ymax);
-    float xB = std::min(detection1.xmin, detection2.xmin);
-    float yB = std::min(detection1.ymin, detection2.ymin);
+    float xA = std::max(detection1.xmin, detection2.xmin);
+    float yA = std::max(detection1.ymin, detection2.ymin);
+    float xB = std::min(detection1.xmax, detection2.xmax);
+    float yB = std::min(detection1.ymax, detection2.ymax);
 
-    float interArea = std::max(float(0), xA - xB) * std::max(float(0), yA - yB);
+    float interArea = std::max(float(0), xB - xA) * std::max(float(0), yB - yA);
 
     float box1Area = (detection1.xmax - detection1.xmin) *
                      (detection1.ymax - detection1.ymin);

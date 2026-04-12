@@ -22,7 +22,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from std_srvs.srv import Empty
 from task_manager.utils.logger import Logger
-from xarm_msgs.srv import GetDigitalIO, MoveVelocity, SetDigitalIO, SetInt16
+from xarm_msgs.srv import MoveVelocity, SetInt16
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
@@ -65,12 +65,11 @@ class FollowFaceNode(Node):
         self.reset_controller_client = self.create_client(
             Empty, "/manipulation/reset_xarm_controller", callback_group=callback_group
         )
-        # TGPIO clients to preserve gripper state across mode switches
-        self.get_tgpio_client = self.create_client(
-            GetDigitalIO, "/xarm/get_tgpio_digital", callback_group=callback_group
-        )
-        self.set_tgpio_client = self.create_client(
-            SetDigitalIO, "/xarm/set_tgpio_digital", callback_group=callback_group
+        # Client to configure the xArm driver to NOT reset TGPIO outputs
+        # when the robot state/mode changes. Without this, switching between
+        # MoveIt mode (1) and velocity mode (4) resets the gripper (opens it).
+        self.config_tgpio_reset_client = self.create_client(
+            SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=callback_group
         )
 
         # Wait for critical services
@@ -80,6 +79,20 @@ class FollowFaceNode(Node):
             Logger.warn(self, "Set state service not available")
         if not self.mode_client.wait_for_service(timeout_sec=SERVICE_TIMEOUT):
             Logger.warn(self, "Set mode service not available")
+
+        # Disable TGPIO reset on state changes so the gripper stays closed
+        # across mode switches. Must be called AFTER the driver is up.
+        if self.config_tgpio_reset_client.wait_for_service(timeout_sec=SERVICE_TIMEOUT):
+            req = SetInt16.Request()
+            req.data = 0
+            future = self.config_tgpio_reset_client.call_async(req)
+            wait_for_future(future)
+            Logger.info(self, "TGPIO reset on stop disabled (gripper preserved across mode switches)")
+        else:
+            Logger.warn(
+                self,
+                "config_tgpio_reset_when_stop service not available -- gripper may open during mode switches",
+            )
 
         # Follow face service
         self.service = self.create_service(
@@ -110,41 +123,16 @@ class FollowFaceNode(Node):
 
     # -- Mode switching --
 
-    def _read_tgpio_state(self):
-        """Read current TGPIO digital values before mode switch."""
-        try:
-            future = self.get_tgpio_client.call_async(GetDigitalIO.Request())
-            result = wait_for_future(future)
-            if result and result.digitals:
-                return list(result.digitals)
-        except Exception as e:
-            Logger.warn(self, f"Could not read TGPIO state: {e}")
-        return None
-
-    def _restore_tgpio_state(self, digitals):
-        """Restore TGPIO digital values after mode switch."""
-        if digitals is None:
-            return
-        try:
-            for ionum, value in enumerate(digitals):
-                req = SetDigitalIO.Request()
-                req.ionum = ionum
-                req.value = value
-                future = self.set_tgpio_client.call_async(req)
-                wait_for_future(future)
-            Logger.info(self, f"Restored TGPIO state: {digitals}")
-        except Exception as e:
-            Logger.warn(self, f"Could not restore TGPIO state: {e}")
-
     def _set_xarm_mode(self, mode: int, reset_controller: bool = False) -> bool:
-        """Set xArm mode and state. Preserves TGPIO (gripper) state across mode switch."""
+        """Set xArm mode and state.
+
+        Gripper state is preserved automatically thanks to the
+        config_tgpio_reset_when_stop(0) call done at init.
+        """
         mode_request = SetInt16.Request()
         mode_request.data = mode
         state_request = SetInt16.Request()
         state_request.data = 0
-
-        # Save gripper IO state before mode switch
-        saved_tgpio = self._read_tgpio_state()
 
         for attempt in range(SET_MODE_RETRIES):
             try:
@@ -163,9 +151,6 @@ class FollowFaceNode(Node):
                     Logger.error(self, "Failed to set state")
                     continue
                 Logger.success(self, "State set")
-
-                # Restore gripper IO immediately after mode switch
-                self._restore_tgpio_state(saved_tgpio)
 
                 if reset_controller:
                     Logger.info(self, "Resetting trajectory controller")
