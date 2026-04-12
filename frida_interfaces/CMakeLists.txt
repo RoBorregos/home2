@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
-#if(POLICY CMP0148)
-#  cmake_policy(SET CMP0148 NEW)
-#endif()
+if(POLICY CMP0148)
+  cmake_policy(SET CMP0148 OLD)
+endif()
 project(frida_interfaces)
 
 # Find dependencies
@@ -75,6 +75,7 @@ set(msg_files
   "hri/msg/AudioInfo.msg"
   "hri/msg/CommandList.msg"
   "hri/msg/Command.msg"
+  "hri/msg/SoundEvent.msg"
   "manipulation/msg/CollisionObject.msg"
   "manipulation/msg/ManipulationTask.msg"
   "manipulation/msg/Constraint.msg"
