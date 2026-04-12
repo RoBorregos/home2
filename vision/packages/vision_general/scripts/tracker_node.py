@@ -93,7 +93,7 @@ from frida_constants.vision_constants import (
 from frida_constants.vision_enums import DetectBy
 
 CONF_THRESHOLD = 0.6
-DEPTH_THRESHOLD = 100
+DEPTH_THRESHOLD_NS = 50_000_000  # 50 ms in nanoseconds
 REID_EXTRACT_FREQ = 0.3
 MAX_EMBEDDINGS = 128
 DEEPSORT_MAX_COSINE_DISTANCE = 0.3
@@ -706,16 +706,19 @@ class SingleTracker(Node):
             if reid_start is not None:
                 self.get_logger().info(f"ReID took {time.time() - reid_start:.2f}s")
             self.is_tracking_result = True
-            if len(self.depth_image) > 0 and (
-                (
-                    self.depth_image_time.nanosec - self.image_time.nanosec
-                    > -DEPTH_THRESHOLD
-                )
-                and (
-                    self.depth_image_time.nanosec - self.image_time.nanosec
-                    < DEPTH_THRESHOLD
-                )
-            ):
+            if self.depth_image_time is None or self.image_time is None:
+                self.get_logger().warn("Depth image not available")
+                self.frame = None
+                return
+            depth_stamp_ns = self.depth_image_time.sec * 1_000_000_000 + self.depth_image_time.nanosec
+            image_stamp_ns = self.image_time.sec * 1_000_000_000 + self.image_time.nanosec
+            stamp_diff_ns = abs(depth_stamp_ns - image_stamp_ns)
+            self.get_logger().debug(
+                f"Stamp diff: {stamp_diff_ns / 1e6:.1f} ms "
+                f"(depth={self.depth_image_time.sec}.{self.depth_image_time.nanosec:09d}, "
+                f"rgb={self.image_time.sec}.{self.image_time.nanosec:09d})"
+            )
+            if len(self.depth_image) > 0 and stamp_diff_ns < DEPTH_THRESHOLD_NS:
                 print("Entro al otro papu")
                 coords = PointStamped()
                 coords.header.frame_id = self.frame_id
