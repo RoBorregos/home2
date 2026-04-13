@@ -8,8 +8,10 @@ import time
 from datetime import datetime
 
 import rclpy
+from frida_constants.hri_constants import GPSR_COMMAND_INDEX_TOPIC, GPSR_TASK_STEP_TOPIC
 from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.node import Node
+from std_msgs.msg import Int32
 
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
@@ -55,6 +57,7 @@ class GPSRTM(Node):
         self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
+        self._command_index_pub = self.create_publisher(Int32, GPSR_COMMAND_INDEX_TOPIC, 10)
 
         self.current_state = (
             GPSRTM.TaskStates.START
@@ -108,6 +111,14 @@ class GPSRTM(Node):
             else self.current_state,
         )
 
+        self.subtask_manager.hri.publish_display_step(new_state.lower(), GPSR_TASK_STEP_TOPIC)
+        self._publish_command_index(self.executed_commands)
+
+    def _publish_command_index(self, index: int) -> None:
+        msg = Int32()
+        msg.data = index
+        self._command_index_pub.publish(msg)
+
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
         self.subtask_manager.manipulation.move_to_position("nav_pose")
@@ -128,6 +139,8 @@ class GPSRTM(Node):
         """Finite State Machine"""
 
         if self.current_state == GPSRTM.TaskStates.WAITING_FOR_BUTTON:
+            self.subtask_manager.hri.publish_display_step("waiting_for_button", GPSR_TASK_STEP_TOPIC)
+            self._publish_command_index(self.executed_commands)
             CLog.fsm(self, "STATE", "Waiting for start button...")
             self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
@@ -216,6 +229,11 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.TaskStates.FINISHED_COMMAND
             else:
                 command = self.commands.pop(0)
+
+                self.subtask_manager.hri.publish_display_step(
+                    f"executing:{command.action}", GPSR_TASK_STEP_TOPIC
+                )
+                self._publish_command_index(self.executed_commands)
 
                 self.get_logger().info(f"Executing command: {str(command)}")
                 self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)

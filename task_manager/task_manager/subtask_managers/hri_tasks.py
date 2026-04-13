@@ -1357,6 +1357,14 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
+    def publish_display_step(self, step: str, topic: str) -> None:
+        if not hasattr(self, "_step_publishers"):
+            self._step_publishers: dict = {}
+        if topic not in self._step_publishers:
+            self._step_publishers[topic] = self.node.create_publisher(String, topic, 10)
+        self._step_publishers[topic].publish(String(data=step))
+        Logger.info(self.node, f"Published display step: {step} → {topic}")
+
     def deterministic_categorization(self, object_name: str):
         """
         Note: it seems each object is mapped to a specific category, so no clustering is needed to group the objects.
