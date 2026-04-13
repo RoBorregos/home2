@@ -19,6 +19,7 @@ RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && sed -i '2i export CMAKE_
 ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/dist-packages/torch/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/:${PYTHONPATH}
 
+
 #Building rtabmap packages
 RUN mkdir /home/ros/ros_packages3
 WORKDIR /home/ros/ros_packages3
@@ -109,5 +110,10 @@ RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cycl
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
 RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+
+# Patch: os.add_dll_directory is Windows-only but PyTorch's init calls it.
+# sitecustomize.py runs automatically on every Python interpreter start.
+RUN echo 'import os; os.add_dll_directory = getattr(os, "add_dll_directory", lambda path: None)' \
+    > /usr/local/lib/python3.10/dist-packages/sitecustomize.py
 
 WORKDIR /workspace
