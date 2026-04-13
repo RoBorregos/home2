@@ -30,10 +30,16 @@ class GPSRTask(GenericTask):
         super().__init__(subtask_manager)
         # Angles are relative to current position
         self.pan_angles = [-35, 70]
-        package_share_directory = get_package_share_directory("frida_constants")
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-        with open(file_path, "r") as file:
-            self.locations = json.load(file)
+
+        print("Fetching areas from AREAS_SERVICE...")
+        status, areas = self.subtask_manager.nav.retrieve_areas()
+        if status == Status.EXECUTION_SUCCESS:
+            self.locations = areas
+        else:
+            package_share_directory = get_package_share_directory("frida_constants")
+            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            with open(file_path, "r") as file:
+                self.locations = json.load(file)
 
         self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
         self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket", "jeans"]
