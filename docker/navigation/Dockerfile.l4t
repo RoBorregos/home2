@@ -113,6 +113,8 @@ RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 
 # Patch: os.add_dll_directory is Windows-only but PyTorch's init calls it.
 # sitecustomize.py runs automatically on every Python interpreter start.
-RUN sudo sh -c 'echo "import os; os.add_dll_directory = getattr(os, \"add_dll_directory\", lambda path: None)" > /usr/local/lib/python3.10/dist-packages/sitecustomize.py'
+# Patch: os.add_dll_directory is Windows-only but PyTorch calls it.
+# RTABMap's embedded Python skips sitecustomize.py, so patch os.py directly.
+RUN sudo sed -i '$ a\# Patch for RTABMap embedded Python + PyTorch\ntry:\n    add_dll_directory\nexcept NameError:\n    add_dll_directory = lambda path: None' /usr/lib/python3.10/os.py
 
 WORKDIR /workspace
