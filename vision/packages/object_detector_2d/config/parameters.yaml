@@ -1,24 +1,23 @@
-object_detector_node:
+ObjectDetect2D:
   ros__parameters:
-    RGB_IMAGE_TOPIC : /zed/zed_node/rgb/image_rect_color
-    DEPTH_IMAGE_TOPIC :  /zed/zed_node/depth/depth_registered
-    CAMERA_INFO_TOPIC :  /zed/zed_node/depth/camera_info
-    DETECTIONS_TOPIC : /vision/detections
-    ZERO_SHOT_DETECTIONS_TOPIC : /vision/zero_shot_detections
-    DETECTIONS_IMAGE_TOPIC : //visiondetections_image
-    DETECTIONS_POSES_TOPIC : /vision/detection_poses
-    DETECTIONS_3D_TOPIC : /vision/detections_3d
-    DETECTIONS_ACTIVE_TOPIC : /detections_active
-    DEBUG_IMAGE_TOPIC : /vision/debug_image
-    CAMERA_FRAME :  zed_left_camera_optical_frame
-    TARGET_FRAME :  base_link
-    # YOLO_MODEL_PATH :  yolov5s.pt # FILE MOST BE IN MODEL FOLDER OF THE PACKAGE
+    RGB_IMAGE_TOPIC: /zed/zed_node/rgb/image_rect_color
+    DEPTH_IMAGE_TOPIC: /zed/zed_node/depth/depth_registered
+    CAMERA_INFO_TOPIC: /zed/zed_node/depth/camera_info
+    DETECTIONS_TOPIC: /vision/detections
+    DETECTIONS_IMAGE_TOPIC: /vision/detections_image
+    DETECTIONS_POSES_TOPIC: /vision/detection_poses
+    DETECTIONS_3D_TOPIC: /vision/detections_3d
+    DETECTIONS_ACTIVE_TOPIC: /detections_active
+    DEBUG_IMAGE_TOPIC: /vision/debug_image
+    CAMERA_FRAME: zed_left_camera_optical_frame
+    TARGET_FRAME: base_link
     YOLO_MODEL_PATH: abril9.pt
-    USE_ACTIVE_FLAG :  False
-    DEPTH_ACTIVE :  False
-    VERBOSE :  False
-    USE_YOLO8 :  True
-    FLIP_IMAGE :  False
-    USE_ZED_TRANSFORM : False
-    MIN_SCORE_THRESH :  0.75
-
+    USE_ACTIVE_FLAG: False
+    DEPTH_ACTIVE: True
+    VERBOSE: False
+    USE_YOLO8: False
+    USE_YOLO26: True
+    FLIP_IMAGE: False
+    USE_ZED_TRANSFORM: True
+    MIN_SCORE_THRESH: 0.75
+    MAX_DEPTH_THRESH: 2.0
