@@ -444,13 +444,13 @@ class VisionTasks:
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
     def detect_objects(
-        self, timeout: float = TIMEOUT, ignore_labels: list[str] = []
+        self, timeout: float = TIMEOUT, ignore_labels: list[str] = [], label: str = "all"
     ) -> tuple[Status, list[BBOX]]:
         """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
         request = DetectionHandler.Request()
         request.closest_object = False
-        request.label = "all"
+        request.label = label
         detections: list[BBOX] = []
         try:
             future = self.object_detector_client.call_async(request)
