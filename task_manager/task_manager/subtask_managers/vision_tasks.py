@@ -35,6 +35,7 @@ from frida_constants.vision_constants import (
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
     CUSTOMER_TABLES_TOPIC,
+    FLIP_IMAGE_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
@@ -97,6 +98,7 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
+        self.rotate_camera_publisher = self.node.create_publisher(BoolMsg, FLIP_IMAGE_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
@@ -1071,6 +1073,11 @@ class VisionTasks:
             Logger.warn(self.node, "customer_tables service call failed or returned no tables")
             return Status.EXECUTION_ERROR, []
         return Status.EXECUTION_SUCCESS, result.customer_tables
+
+    def camera_upside_down(self, flip: bool):
+        msg = BoolMsg()
+        msg.data = flip
+        self.rotate_camera_publisher.publish(msg)
 
 
 if __name__ == "__main__":

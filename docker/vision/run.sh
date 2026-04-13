@@ -109,14 +109,14 @@ PROFILES=()
 
 case $TASK in
     "--hric")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d"
         RUN="ros2 launch vision_general hric_launch.py"
         PROFILES=("vision" "moondream")
         ;;
     "--ppc")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d"
         RUN="ros2 launch vision_general ppc_launch.py"
-        PROFILES=("vision")
+        PROFILES=("vision" "moondream")
         ;;
     "--restaurant")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
@@ -124,17 +124,17 @@ case $TASK in
         PROFILES=("vision" "moondream")
         ;;
     "--carry")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d"
         RUN="ros2 launch vision_general help_me_carry_launch.py"
         PROFILES=("vision" "moondream")
         ;;
     "--storing-groceries")
-        PACKAGES="object_detector_2d object_detection_handler"
+        PACKAGES="object_detector_2d"
         RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
         PROFILES=("vision")
         ;;
     "--gpsr")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d"
         RUN="ros2 launch vision_general gpsr_launch.py"
         PROFILES=("vision" "moondream")
         ;;
@@ -142,7 +142,7 @@ case $TASK in
         PROFILES=("moondream")
         ;;
     *)
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d"
         RUN="bash"
         PROFILES=("vision")
         ;;

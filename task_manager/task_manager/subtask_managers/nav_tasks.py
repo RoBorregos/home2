@@ -24,6 +24,7 @@ from lifecycle_msgs.msg import Transition
 from std_srvs.srv import Empty, SetBool
 
 from task_manager.utils.decorators import mockable, service_check
+from task_manager.utils.colored_logger import CLog
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
@@ -79,7 +80,7 @@ class NavigationTasks:
                 data = json.load(file)
             if data is not None:
                 self.areas_backup = data
-                Logger.info(self.node, "Areas Json BackUp Loaded")
+                CLog.nav(self.node, "INFO", "Areas Json BackUp Loaded")
             else:
                 raise Exception("Data is empty")
         except Exception as e:
@@ -89,10 +90,7 @@ class NavigationTasks:
     def setup_services(self):
         """Initialize services and actions"""
         if self.task not in self.services:
-            Logger.warn(
-                self.node,
-                f"Task {self.task} not explicitly configured in nav_tasks services dictionary.",
-            )
+            CLog.nav(self.node, "ERROR", "Task not available")
             return
 
         for key, service in self.services[self.task].items():
@@ -100,12 +98,14 @@ class NavigationTasks:
                 if not service["client"].wait_for_service(
                     timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
                 ):
-                    Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
+                    CLog.nav(self.node, "WARN", f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
                 if not service["client"].wait_for_server(
                     timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
                 ):
-                    Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
+                    CLog.nav(
+                        self.node, "WARN", f"{key} action server not initialized. ({self.task})"
+                    )
 
     @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, self.areas_backup), delay=1)
     @service_check(
@@ -121,10 +121,10 @@ class NavigationTasks:
             self.node, future, timeout_sec=SUBTASK_MANAGER.AREAS_RETRIEVE_TIMEOUT.value
         )
         if (future.result() is None) or (future.result().areas == ""):
-            Logger.error(self.node, "Service return empty data")
+            CLog.nav(self.node, "ERROR", "Service return empty data")
             return (Status.EXECUTION_ERROR, self.areas_backup)
         else:
-            Logger.info(self.node, "Map Areas dumped Succesfully")
+            CLog.nav(self.node, "INFO", "Map Areas dumped Succesfully")
             return (Status.EXECUTION_SUCCESS, json.loads(str(future.result().areas)))
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
@@ -139,17 +139,20 @@ class NavigationTasks:
         Logger.info(self.node, "pause_nav successful")
         return (Status.EXECUTION_SUCCESS, "")
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
-    @service_check("rtabmap_continue", (Status.EXECUTION_ERROR, "Service not started"), timeout=3)
-    def resume_nav(self):
-        req = Empty.Request()
-        future = self.rtabmap_continue.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is None:
-            Logger.error(self.node, "resume_nav service call failed (no response)")
-            return (Status.EXECUTION_ERROR, "Timeout")
-        Logger.info(self.node, "resume_nav successful")
-        return (Status.EXECUTION_SUCCESS, "")
+        request = CheckDoor.Request()
+        future = self.door_checking_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None:
+            if result.status:
+                CLog.nav(self.node, "SUCCESS", "Door open")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                CLog.nav(self.node, "ERROR", "Error getting state with door")
+                return (Status.EXECUTION_ERROR, "Error getting door state")
+        else:
+            CLog.nav(self.node, "ERROR", "Error with request")
+            return (Status.EXECUTION_ERROR, "Request error")
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
     @service_check(
@@ -161,7 +164,7 @@ class NavigationTasks:
         """Move to areas json location using MoveLocation service"""
         if sublocation == "":
             sublocation = "safe_place"
-        Logger.info(self.node, f"Moving to {location} - {sublocation}")
+        CLog.nav(self.node, "MOVE", f"Requesting navigation to {location} - {sublocation}")
         request = MoveLocation.Request()
         request.location = location
         request.sublocation = sublocation
@@ -170,13 +173,13 @@ class NavigationTasks:
         result = future.result()
         if result is not None:
             if result.success:
-                Logger.info(self.node, "Goal Reached")
+                CLog.nav(self.node, "SUCCESS", f"Goal {location} reached")
                 return (Status.EXECUTION_SUCCESS, "")
             else:
-                Logger.error(self.node, f"Error with goal: {result.error}")
+                CLog.nav(self.node, "ERROR", f"Goal failed: {result.error}")
                 return (Status.EXECUTION_ERROR, result.error)
         else:
-            Logger.error(self.node, "Error with request")
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)

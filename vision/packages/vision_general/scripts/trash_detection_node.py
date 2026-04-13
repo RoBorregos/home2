@@ -1,167 +1,178 @@
 #!/usr/bin/env python3
+"""
+Node exposing a service to filter YOLO detections by label_text.
+"""
 
-import time
+import cv2
 import rclpy
-import rclpy.qos
 from rclpy.node import Node
-from sensor_msgs.msg import Image
-from vision_general.utils.ros_utils import wait_for_future
 from cv_bridge import CvBridge
-from frida_interfaces.srv import DetectionHandler, SetDetectorClasses
-from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
+
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import PointStamped
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
-    ZERO_SHOT_DETECTIONS_TOPIC,
-    SET_DETECTOR_CLASSES_SERVICE,
-    TRASH_DETECTION_SERVICE,
+    DETECTIONS_TOPIC,
+    DEPTH_IMAGE_TOPIC,
+    OBJECT_POINTS_TOPIC,
+    CAMERA_INFO_TOPIC,
+    CAMERA_FRAME,
+    TRASHCAN_SERVICE,
 )
+from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
+from frida_interfaces.srv import ObjectPoints, TrashcanDetection
+from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
+from vision_general.utils.ros_utils import wait_for_future
+
+TRASH_DEBUG_IMAGE_TOPIC = "/vision/trash_detection_debug"
 
 
 class TrashDetectionNode(Node):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("trash_detection_node")
-
-        self.callback_group = ReentrantCallbackGroup()
-
         self.bridge = CvBridge()
-        self.current_image = None
-        self.latest_detections = ObjectDetectionArray()
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        self.image = None
+        self.imageInfo = None
+        self.depth_image = None
 
-        qos = rclpy.qos.QoSProfile(
-            depth=1,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-        )
-        self.image_sub = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+        self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
+        self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
         )
 
-        self.detections_sub = self.create_subscription(
-            ObjectDetectionArray,
-            ZERO_SHOT_DETECTIONS_TOPIC,
-            self.detections_callback,
-            qos,
-        )
-
-        self.detection_service = self.create_service(
-            DetectionHandler,
-            TRASH_DETECTION_SERVICE,
-            self.detect_objects_callback,
+        self.create_service(
+            TrashcanDetection,
+            TRASHCAN_SERVICE,
+            self.get_trashcan,
             callback_group=self.callback_group,
         )
 
-        self.set_classes_client = self.create_client(
-            SetDetectorClasses, SET_DETECTOR_CLASSES_SERVICE
+        self.trashcan_pub = self.create_publisher(
+            ObjectDetectionArray, DETECTIONS_TOPIC, 10
         )
 
-        self.get_logger().info("Trash Detection Node initialized.")
+        self.debug_image_pub = self.create_publisher(Image, TRASH_DEBUG_IMAGE_TOPIC, 10)
 
-    def image_callback(self, msg):
-        """
-        Update current image
-        """
-        self.current_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        self.moondream_point_client = self.create_client(
+            ObjectPoints, OBJECT_POINTS_TOPIC
+        )
 
-    def detections_callback(self, msg):
-        """
-        Store latest yolo-e detections
-        """
-        self.latest_detections = msg
+        self.get_logger().info("Trash service ready")
 
-    def detect_objects_callback(self, request, response):
-        """
-        Handle detection request using yolo-e zero-shot detector
-        """
+    def image_callback(self, data):
         try:
-            classes_to_detect = []
-
-            # Handle both single label and multiple labels
-            if hasattr(request, "labels") and request.labels:
-                # Multiple labels passed as list
-                classes_to_detect = request.labels
-            elif hasattr(request, "label") and request.label:
-                # Single label passed
-                classes_to_detect = [request.label.strip()]
-
-            if classes_to_detect:
-                self._set_yoloe_classes(classes_to_detect)
-                time.sleep(1.0)
-
-            if self.current_image is None:
-                self.get_logger().warn("No current image available")
-                response.detection_array = ObjectDetectionArray()
-                response.detection_array.detections = []
-                response.success = False
-                return response
-
-            # DEBUG
-            num_raw_detections = len(self.latest_detections.detections)
-            self.get_logger().info(f"Raw detections from yolo-e: {num_raw_detections}")
-
-            if num_raw_detections > 0:
-                for i, det in enumerate(self.latest_detections.detections):
-                    self.get_logger().info(
-                        f"Detection {i}: label='{det.label}', confidence={det.score:.3f}"
-                    )
-            else:
-                self.get_logger().warn("No raw detections received from yolo-e")
-
-            response.detection_array = ObjectDetectionArray()
-            response.detection_array.detections = []
-
-            if self.current_image is not None:
-                h, w = self.current_image.shape[:2]
-
-                for detection in self.latest_detections.detections:
-                    obj_detection = ObjectDetection()
-                    obj_detection.label_text = detection.label_text
-                    obj_detection.score = detection.score
-                    obj_detection.xmin = detection.xmin
-                    obj_detection.ymin = detection.ymin
-                    obj_detection.xmax = detection.xmax
-                    obj_detection.ymax = detection.ymax
-
-                    response.detection_array.detections.append(obj_detection)
-
-            response.success = True
-
-            num_detections = len(response.detection_array.detections)
-            self.get_logger().info(f"Final detections: {num_detections}")
-
+            self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            if self.trash_debug_image is not None:
+                self.debug_image_pub.publish(
+                    self.bridge.cv2_to_imgmsg(self.trash_debug_image, "bgr8")
+                )
         except Exception as e:
-            self.get_logger().error(f"error: {str(e)}")
-            response.success = False
-            response.detection_array = ObjectDetectionArray()
+            self.get_logger().error(f"Image conversion error: {e}")
 
-        return response
+    def image_info_callback(self, data):
+        self.imageInfo = data
 
-    def _set_yoloe_classes(self, classes):
-        """
-        Set classes for YOLO-E detector
-        """
-        if not self.set_classes_client.wait_for_service(timeout_sec=2.0):
-            self.get_logger().warn("set_classes service not available")
-            return False
+    def depth_callback(self, data):
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+        except Exception as e:
+            self.get_logger().error(f"Depth conversion error: {e}")
 
-        request = SetDetectorClasses.Request()
-        request.class_names = classes
+    def get_trashcan(self, req, res):
+        if self.imageInfo is None:
+            self.get_logger().warn("Cannot detect trashcan without camera info")
+            return []
 
-        future = self.set_classes_client.call_async(request)
+        if self.depth_image is None:
+            self.get_logger().warn("Cannot detect trashcan without depth image")
+            return
+
+        trashcan_pts = self.get_moondream_points("black trashcan")
+
+        if not trashcan_pts:
+            self.get_logger().warn("No trashcan detected")
+            return
+
+        trashcans = ObjectDetectionArray()
+        debug_image = None
+        for pt in trashcan_pts:
+            self.get_logger().info("Detected trashcan")
+            trashcan = ObjectDetection()
+            point2d = (
+                min(
+                    max(int(pt[0] * self.imageInfo.width), 0), self.imageInfo.width - 1
+                ),
+                min(
+                    max(int(pt[1] * self.imageInfo.height), 0),
+                    self.imageInfo.height - 1,
+                ),
+            )
+            depth = get_depth(self.depth_image, point2d)
+            point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
+            ptStamped = self.build_point_stamped(point3d)
+
+            trashcan.label_text = "trashcan"
+            trashcan.point3d = ptStamped
+            trashcans.detections.append(trashcan)
+
+            if self.image is not None and debug_image is None:
+                debug_image = self.image.copy()
+                u, v = point2d
+                cv2.circle(debug_image, (u, v), 12, (255, 0, 0), -1)
+                cv2.circle(debug_image, (u, v), 20, (255, 255, 255), 2)
+                cv2.putText(
+                    debug_image,
+                    "trashcan",
+                    (u + 10, v - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (255, 0, 0),
+                    2,
+                )
+
+        self.trashcan_pub.publish(trashcans)
+        res.detection_array = trashcans
+        res.success = True
+
+        if debug_image is not None:
+            self.trash_debug_image = debug_image
+            self.debug_image_pub.publish(self.bridge.cv2_to_imgmsg(debug_image, "bgr8"))
+
+        return res
+
+    def build_point_stamped(self, xyz):
+        point_stamped = PointStamped()
+        point_stamped.header.stamp = self.get_clock().now().to_msg()
+        point_stamped.header.frame_id = CAMERA_FRAME
+        point_stamped.point.x = float(xyz[2])
+        point_stamped.point.y = float(-xyz[0])
+        point_stamped.point.z = float(-xyz[1])
+        return point_stamped
+
+    def get_moondream_points(self, subject) -> list[tuple[float, float]]:
+        """Get object points from the MoonDream service."""
+        req = ObjectPoints.Request()
+        req.subject = subject
+
+        future = self.moondream_point_client.call_async(req)
         future = wait_for_future(future, 15)
 
-        if future.result() is not None:
-            result = future.result()
-            return result.success
-        else:
-            self.get_logger().warn("Failed to set classes")
-            return False
+        if future is False or not future.done():
+            self.get_logger().error("MoonDream service call timed out or failed")
+            return []
+
+        result = future.result()
+
+        if result is None or not result.success:
+            self.get_logger().error("MoonDream table point detection failed")
+            return []
+
+        return [(p.x, p.y) for p in result.points]
 
 
-def main():
-    rclpy.init()
+def main(args=None):
+    rclpy.init(args=args)
     node = TrashDetectionNode()
-
     executor = rclpy.executors.MultiThreadedExecutor(8)
     executor.add_node(node)
     executor.spin()
