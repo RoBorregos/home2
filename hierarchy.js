@@ -98,7 +98,6 @@ var hierarchy =
     [ "PickManager.PickManager", "classPickManager_1_1PickManager.html", null ],
     [ "PlaceManager.PlaceManager", "classPlaceManager_1_1PlaceManager.html", null ],
     [ "pose_detection.PoseDetection", "classpose__detection_1_1PoseDetection.html", null ],
-    [ "vision_general.pose_detection.PoseDetection", "classvision__general_1_1pose__detection_1_1PoseDetection.html", null ],
     [ "PourManager.PourManager", "classPourManager_1_1PourManager.html", null ],
     [ "frida_constants.vision_classes.ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ],
     [ "demo_manager.DemoTM.States", "classdemo__manager_1_1DemoTM_1_1States.html", null ],

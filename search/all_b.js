@@ -13,5 +13,5 @@ var searchData=
   ['kf_10',['kf',['../classtracker_1_1Tracker.html#a8ca3ea687294dd08273c2803c0146e90',1,'tracker::Tracker']]],
   ['knowledge_5ftype_11',['KNOWLEDGE_TYPE',['../classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html',1,'frida_constants::hri_constants']]],
   ['known_5ffaces_5fpath_12',['KNOWN_FACES_PATH',['../namespaceface__recognition__node.html#a166e5b8323737530752db607917e635f',1,'face_recognition_node']]],
-  ['kp_5fconf_13',['KP_CONF',['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacepose__detection.html#a0fa4657c7964f252abb37457c48c64b9',1,'pose_detection.KP_CONF()'],['../namespacevision__general_1_1pose__detection.html#a724ec7625cfd38b42e38c7c0b987e2b2',1,'vision_general.pose_detection.KP_CONF()']]]
+  ['kp_5fconf_13',['KP_CONF',['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacepose__detection.html#a0fa4657c7964f252abb37457c48c64b9',1,'pose_detection.KP_CONF()']]]
 ];

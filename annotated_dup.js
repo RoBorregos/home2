@@ -440,11 +440,6 @@ var annotated_dup =
     [ "utils", "namespaceutils.html", [
       [ "CrossEntropyLabelSmooth", "classutils_1_1CrossEntropyLabelSmooth.html", "classutils_1_1CrossEntropyLabelSmooth" ]
     ] ],
-    [ "vision_general", "namespacevision__general.html", [
-      [ "pose_detection", "namespacevision__general_1_1pose__detection.html", [
-        [ "PoseDetection", "classvision__general_1_1pose__detection_1_1PoseDetection.html", "classvision__general_1_1pose__detection_1_1PoseDetection" ]
-      ] ]
-    ] ],
     [ "visualization", "namespacevisualization.html", [
       [ "NoVisualization", "classvisualization_1_1NoVisualization.html", "classvisualization_1_1NoVisualization" ],
       [ "Visualization", "classvisualization_1_1Visualization.html", "classvisualization_1_1Visualization" ]

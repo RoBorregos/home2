@@ -86,7 +86,7 @@ var searchData=
   ['nodes_5fstatus_83',['nodes_status',['../classnav__central_1_1Nav__Central.html#ada08586cfface9a449f57659ebd2848f',1,'nav_central::Nav_Central']]],
   ['nodes_5fto_5fmonitor_84',['nodes_to_monitor',['../classnode__monitor_1_1NodeMonitor.html#a6dfcf0ca1d5b0b596987c4aafb219fc8',1,'node_monitor::NodeMonitor']]],
   ['nodestatus_2emsg_85',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]],
-  ['nose_86',['NOSE',['../namespacepose__detection.html#a912bd8f2f687f3a5ff32fa3ef300e82f',1,'pose_detection.NOSE()'],['../namespacevision__general_1_1pose__detection.html#a5da01077d2eab20ff68bd03ad901f916',1,'vision_general.pose_detection.NOSE()']]],
+  ['nose_86',['NOSE',['../namespacepose__detection.html#a912bd8f2f687f3a5ff32fa3ef300e82f',1,'pose_detection']]],
   ['not_5fall_5fobjects_5fpicked_87',['NOT_ALL_OBJECTS_PICKED',['../classstoring__groceries__manager_1_1ExecutionStates.html#aa3c4bdc2f769c7ddfcb587eadddaa165',1,'storing_groceries_manager::ExecutionStates']]],
   ['not_5ffound_88',['NOT_FOUND',['../classmoondream__node_1_1Position.html#aad94fcef34a535fba8ed00410b8646fa',1,'moondream_node.Position.NOT_FOUND()'],['../namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73',1,'moondream_lib.NOT_FOUND()'],['../namespacemoondream__node.html#aa2e1e7b7b490eadcc4fe5414c36631b1',1,'moondream_node.NOT_FOUND()']]],
   ['novisualization_89',['NoVisualization',['../classvisualization_1_1NoVisualization.html',1,'visualization']]],

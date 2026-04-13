@@ -30,7 +30,7 @@ var searchData=
   ['point_5ftransformer_2epy_27',['point_transformer.py',['../point__transformer_8py.html',1,'']]],
   ['pointing_5fdetection_2epy_28',['pointing_detection.py',['../pointing__detection_8py.html',1,'']]],
   ['pointtransformation_2esrv_29',['PointTransformation.srv',['../PointTransformation_8srv.html',1,'']]],
-  ['pose_5fdetection_2epy_30',['pose_detection.py',['../scripts_2pose__detection_8py.html',1,'(Global Namespace)'],['../vision__general_2pose__detection_8py.html',1,'(Global Namespace)']]],
+  ['pose_5fdetection_2epy_30',['pose_detection.py',['../pose__detection_8py.html',1,'']]],
   ['positionget_2esrv_31',['PositionGet.srv',['../PositionGet_8srv.html',1,'']]],
   ['pour_5fserver_2epy_32',['pour_server.py',['../pour__server_8py.html',1,'']]],
   ['pourmanager_2epy_33',['PourManager.py',['../PourManager_8py.html',1,'']]],

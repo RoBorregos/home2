@@ -51,7 +51,7 @@ var searchData=
   ['node_5fprocs_48',['node_procs',['../classnode__monitor_1_1NodeMonitor.html#a444d029422588c7a6bd9c6a53075132d',1,'node_monitor::NodeMonitor']]],
   ['nodes_5fstatus_49',['nodes_status',['../classnav__central_1_1Nav__Central.html#ada08586cfface9a449f57659ebd2848f',1,'nav_central::Nav_Central']]],
   ['nodes_5fto_5fmonitor_50',['nodes_to_monitor',['../classnode__monitor_1_1NodeMonitor.html#a6dfcf0ca1d5b0b596987c4aafb219fc8',1,'node_monitor::NodeMonitor']]],
-  ['nose_51',['NOSE',['../namespacepose__detection.html#a912bd8f2f687f3a5ff32fa3ef300e82f',1,'pose_detection.NOSE()'],['../namespacevision__general_1_1pose__detection.html#a5da01077d2eab20ff68bd03ad901f916',1,'vision_general.pose_detection.NOSE()']]],
+  ['nose_51',['NOSE',['../namespacepose__detection.html#a912bd8f2f687f3a5ff32fa3ef300e82f',1,'pose_detection']]],
   ['not_5fall_5fobjects_5fpicked_52',['NOT_ALL_OBJECTS_PICKED',['../classstoring__groceries__manager_1_1ExecutionStates.html#aa3c4bdc2f769c7ddfcb587eadddaa165',1,'storing_groceries_manager::ExecutionStates']]],
   ['not_5ffound_53',['NOT_FOUND',['../classmoondream__node_1_1Position.html#aad94fcef34a535fba8ed00410b8646fa',1,'moondream_node.Position.NOT_FOUND()'],['../namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73',1,'moondream_lib.NOT_FOUND()'],['../namespacemoondream__node.html#aa2e1e7b7b490eadcc4fe5414c36631b1',1,'moondream_node.NOT_FOUND()']]],
   ['now_54',['now',['../classdashgo__driver2_1_1DashgoDriver.html#aa30de516b59e4de82ba7181b3c4639ef',1,'dashgo_driver2::DashgoDriver']]],

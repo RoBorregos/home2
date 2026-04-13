@@ -151,9 +151,6 @@ var namespaces_dup =
     [ "hand_task_manager", "namespacehand__task__manager.html", "namespacehand__task__manager" ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", "namespaceheatmapPlace__Server" ],
     [ "help_me_carry", "namespacehelp__me__carry.html", "namespacehelp__me__carry" ],
-    [ "help_me_carry_launch", "namespacehelp__me__carry__launch.html", [
-      [ "generate_launch_description", "namespacehelp__me__carry__launch.html#a127c9132b150657886963992c6269da4", null ]
-    ] ],
     [ "hric", "namespacehric.html", [
       [ "generate_launch_description", "namespacehric.html#a6ba4e2587b8b923faea3b8b23fdb037d", null ]
     ] ],
@@ -343,9 +340,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacesimulate__map.html#ad6149f6889b194fc6ef401af9ad4a40b", null ]
     ] ],
     [ "simulate_position", "namespacesimulate__position.html", "namespacesimulate__position" ],
-    [ "storing_groceries_launch", "namespacestoring__groceries__launch.html", [
-      [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]
-    ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
     [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
@@ -382,7 +376,6 @@ var namespaces_dup =
       [ "map", "namespacevision__3D__utils.html#a3d2ba1e9d978b0afd592f74a898ea37e", null ],
       [ "FLT_EPSILON", "namespacevision__3D__utils.html#a98f504ec1d9a17769ad241f28580d805", null ]
     ] ],
-    [ "vision_general", "namespacevision__general.html", "namespacevision__general" ],
     [ "visualization", "namespacevisualization.html", "namespacevisualization" ],
     [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", "namespacewait__for__controller__input__node" ],
     [ "xarm6", "namespacexarm6.html", [

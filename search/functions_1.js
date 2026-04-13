@@ -21,7 +21,7 @@ var searchData=
   ['answer_5fwith_5fcontext_18',['answer_with_context',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#adfaba4266e022be25e92766f7024772f',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['apply_5fpenalty_19',['apply_penalty',['../class__storing__groceries_1_1StoringGroceriesTM.html#acac2950b1b19117fa3933d3d24f60c1c',1,'_storing_groceries::StoringGroceriesTM']]],
   ['apply_5fstyle_20',['apply_style',['../classmap__area__tagger_1_1MapAreaTagger.html#a43545652430f848a3573bc2f2afab1e7',1,'map_area_tagger.MapAreaTagger.apply_style()'],['../classnav__ui_1_1NavUI.html#ae4a11b8fc154e4b8545545812def5dd8',1,'nav_ui.NavUI.apply_style()']]],
-  ['are_5farms_5fdown_21',['are_arms_down',['../classpose__detection_1_1PoseDetection.html#ae951330caf9fd3dd003344de3d7d7895',1,'pose_detection.PoseDetection.are_arms_down()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a6dfe1aeb1699f956d7d85a63fb51fc3a',1,'vision_general.pose_detection.PoseDetection.are_arms_down()']]],
+  ['are_5farms_5fdown_21',['are_arms_down',['../classpose__detection_1_1PoseDetection.html#ae951330caf9fd3dd003344de3d7d7895',1,'pose_detection::PoseDetection']]],
   ['areasservices_22',['AreasServices',['../classAreasServices.html#af485297a0f73498464f0a72fa580048b',1,'AreasServices']]],
   ['ask_5fand_5fconfirm_23',['ask_and_confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a80198d810637e67e87228ecebe0362f7',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['assign_5fname_24',['assign_name',['../classface__recognition__node_1_1FaceRecognition.html#a99480313eff42a75e45bd944be6b9eee',1,'face_recognition_node::FaceRecognition']]],

@@ -244,18 +244,18 @@ var NAVTREEINDEX =
 "classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html",
 "classtest__vision__manager_1_1TestVisionManager.html#a7294d7a920096e0bc3e8a2802e1b9820",
 "classtracker__node__fregoso_1_1SingleTracker.html#ae9b5cb64354a7bb8f27258ac8eab0a22",
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a92638453d10eef1561c912b2c1e3a559",
-"example__node_8py.html#a44baeb1e0458c22477d9f58ffadbd9f0",
-"gpsr__test__commands_8py.html#af61153ac2e4af84cfaf1fcc0eca7f0e8",
-"manipulation__constants_8py.html#ab65c663bc0e5f75a060598e9e0c4a01a",
-"moondream__node_8py.html#a10b02c02e345a65f36ac440ca0b90cc6",
-"namespacefollow__person__v2.html#ac4ba8b37bda1500e4e6c2d1e6135bf78",
-"namespacefrida__motion__planning_1_1motion__planning__server.html#af7e4f543cce624c9891b51d04ce1ee68",
-"namespacemotion__planning__server.html#a00476858453e5e0a857af18e9d323e0b",
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a36cbf4a74d4908d99fa5f604c69ce211",
-"nav__ui_8py.html#a9c46380b372dee62877d099b65c01599",
-"structBoxPrimitiveParams.html#aa16abf6eefdca9ea3600982e568eebeb",
-"xarm6_8py.html#a26baf8750ec84dc6d4deea500c98907a"
+"colored__logger_8py.html#a416192077f1be5e35474b8dbe599de8f",
+"follow__face__node_8py.html",
+"hri__constants_8py.html#a05d8fa1eccd50686fbaff0e84170dcb9",
+"manipulation__constants__cpp_8hpp.html#a23980a0fd626cbc57e5491c24b47a90a",
+"moveit__configs__builder__sim_8py.html#aa6dc324839ee6e9c62942d030fa9e34e",
+"namespacefrida__constants_1_1hri__constants.html#a4f57beaa697d3fd2366209c57e9261db",
+"namespacegpsr__task__manager.html",
+"namespacenew__tracker.html#ac2bec6fa6022496184746730db5af638",
+"namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a18354872259448ef2be580869d23dc72",
+"node__monitor_8py.html",
+"test__hri__manager_8py.html#a914b4542d179c1bd4ffea5b5fd5917b4",
+"xarm6__ikfast61_8cpp.html#ad2da3c414ad57c32c4b7a2ce61cfbfad"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

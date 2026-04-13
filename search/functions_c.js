@@ -17,7 +17,7 @@ var searchData=
   ['load_5fstate_5fdict_5fmute_14',['load_state_dict_mute',['../namespaceutils.html#a43a1e41e013cee2dc8a50743353feba8',1,'utils']]],
   ['load_5ftask_5fareas_15',['load_task_areas',['../classmap__area__tagger_1_1MapAreaTagger.html#a63677a0e8df5a531620ffc141972e09e',1,'map_area_tagger::MapAreaTagger']]],
   ['load_5fyaml_16',['load_yaml',['../namespacefrida__moveit__common.html#a252891207675826136eeb8fd4a7e4a3a',1,'frida_moveit_common']]],
-  ['load_5fyolo_5fpose_17',['load_yolo_pose',['../namespacevision__general_1_1pose__detection.html#a080afe70e0245bb21f5ae1a0548550c6',1,'vision_general.pose_detection.load_yolo_pose()'],['../namespacepose__detection.html#ad520d300288e9f0dfaca335f6623aed3',1,'pose_detection.load_yolo_pose()'],['../namespacepointing__detection.html#a297108ef0414c32dbff12ad5a4774199',1,'pointing_detection.load_yolo_pose()']]],
+  ['load_5fyolo_5fpose_17',['load_yolo_pose',['../namespacepose__detection.html#ad520d300288e9f0dfaca335f6623aed3',1,'pose_detection.load_yolo_pose()'],['../namespacepointing__detection.html#a297108ef0414c32dbff12ad5a4774199',1,'pointing_detection.load_yolo_pose()']]],
   ['load_5fyolo_5ftrt_18',['load_yolo_trt',['../namespacetrt__utils.html#a60b6f5e8a22c056723d7c0a0ecd88ca3',1,'trt_utils']]],
   ['loadmodel_19',['loadModel',['../classYoloV8ObjectDetector_1_1YoloV8ObjectDetector.html#aa6935e1fb2ecc01ca65cc6030dead3b4',1,'YoloV8ObjectDetector::YoloV8ObjectDetector']]],
   ['loadyoloemodel_20',['loadYoloEModel',['../classYoloEObjectDetector_1_1YoloEObjectDetector.html#a6a975467142fa632d24f57d2c38054a5',1,'YoloEObjectDetector::YoloEObjectDetector']]],

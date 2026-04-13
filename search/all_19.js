@@ -17,7 +17,7 @@ var searchData=
   ['yolo_5fmodel_5fpath_14',['YOLO_MODEL_PATH',['../classobject__detector__node_1_1NodeParams.html#acecc91432be2fa01d139a18f80a64997',1,'object_detector_node.NodeParams.YOLO_MODEL_PATH()'],['../classzero__shot__object__detector__node_1_1NodeParams.html#aa11b89761ce36554c156798650c52b2f',1,'zero_shot_object_detector_node.NodeParams.YOLO_MODEL_PATH()']]],
   ['yolo_5fnode_15',['yolo_node',['../namespaceyolo__node.html',1,'']]],
   ['yolo_5fnode_2epy_16',['yolo_node.py',['../yolo__node_8py.html',1,'']]],
-  ['yolo_5fpose_17',['yolo_pose',['../classpose__detection_1_1PoseDetection.html#af9d5c553c3a7877a86ae5551fc2ff2a7',1,'pose_detection.PoseDetection.yolo_pose()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#aa99b252353b421df86bb53565ec4a9a7',1,'vision_general.pose_detection.PoseDetection.yolo_pose()']]],
+  ['yolo_5fpose_17',['yolo_pose',['../classpose__detection_1_1PoseDetection.html#af9d5c553c3a7877a86ae5551fc2ff2a7',1,'pose_detection::PoseDetection']]],
   ['yolodetect_2esrv_18',['YoloDetect.srv',['../YoloDetect_8srv.html',1,'']]],
   ['yoloeobjectdetector_19',['YoloEObjectDetector',['../namespaceYoloEObjectDetector.html',1,'YoloEObjectDetector'],['../classYoloEObjectDetector_1_1YoloEObjectDetector.html',1,'YoloEObjectDetector.YoloEObjectDetector']]],
   ['yoloeobjectdetector_2epy_20',['YoloEObjectDetector.py',['../YoloEObjectDetector_8py.html',1,'']]],
