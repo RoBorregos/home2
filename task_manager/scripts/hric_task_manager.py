@@ -346,9 +346,6 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
 
             # First: look at guest 2 (just seated) and introduce guest 1
-            self.subtask_manager.manipulation.move_to_position(
-                "front_stare_carry_bag" if self.carrying_bag else "front_stare"
-            )
             self.subtask_manager.vision.follow_by_name(guest_2.name)
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say(
