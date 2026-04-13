@@ -6,5 +6,5 @@ ei_audio_classifier:
     SAMPLE_RATE: 16000
     WINDOW_SIZE_S: 1.0
     NOISE_THRESHOLD: 0.8
-    SAVE_DETECTION_AUDIO: True
+    SAVE_DETECTION_AUDIO: False
     AUDIO_SAVE_DIR: /workspace/src/hri/packages/speech/assets/event_detections
