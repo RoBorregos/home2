@@ -626,7 +626,7 @@ class ManipulationTasks:
         else:
             Logger.error(self.node, f"Place close to '{target_object}' failed")
             return Status.EXECUTION_ERROR
-        
+
     def pour(
         self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False
     ):
