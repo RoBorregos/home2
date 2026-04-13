@@ -25,3 +25,24 @@ services:
       - float32
     stdin_open: true
     tty: true
+
+  ei-inference-oww:
+    container_name: home2-hri-edge-impulse-oww
+    image: public.ecr.aws/g7a8t7v6/inference-container-jetson-orin-6-0:v1.92.11
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ports:
+      - "1338:1338"
+    command:
+      - --api-key
+      - ei_5ea56e1b0c8059ba7a4ef59e7abbe02e724b215e11f44dd2
+      - --run-http-server
+      - "1338"
+    stdin_open: true
+    tty: true
