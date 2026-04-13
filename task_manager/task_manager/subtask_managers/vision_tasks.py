@@ -199,6 +199,7 @@ class VisionTasks:
                     "client": self.count_by_color_client,
                     "type": "service",
                 },
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
             Task.STORING_GROCERIES: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -897,11 +898,20 @@ class VisionTasks:
                 response_clean = False
         return status, response_clean
 
-    def count_objects(self, object: str):
+    def count_objects_moondream(self, object: str):
         """Count the number of objects in the image"""
         Logger.info(self.node, "Counting objects")
         prompt = f"How many {object} are in the image? Please return only a number"
         return self.moondream_query(prompt, query_person=False)
+
+    def count_objects(self, object: str) -> tuple[int, list[str]]:
+        """Detect objects and return their labels for counting"""
+        Logger.info(self.node, "Detecting objects for counting")
+        status, detections = self.detect_objects()
+        if status != Status.EXECUTION_SUCCESS:
+            return status, []
+        labels = [det.classname for det in detections]
+        return Status.EXECUTION_SUCCESS, labels
 
     def describe_person(self, callback):
         """Describe the person in the image"""
