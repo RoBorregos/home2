@@ -33,20 +33,11 @@ def generate_launch_description():
                 emulate_tty=True,
             ),
             Node(
-                package="vision_general",
-                executable="image_orienter.py",
-                name="image_orienter",
+                package="moondream_run",
+                executable="moondream_node.py",
+                name="moondream_node",
                 output="screen",
                 emulate_tty=True,
-            ),
-            Node(
-                package="object_detector_2d",
-                executable="object_detector_node.py",
-                name="ObjectDetect2D",
-                respawn=True,
-                output="screen",
-                emulate_tty=True,
-                parameters=[config, {"models": [""]}],
             ),
         ]
     )
