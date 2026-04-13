@@ -22,6 +22,14 @@ def launch_function(context, *args, **kwargs):
     approach_min_dist = LaunchConfiguration('approach_min_dist', default='0.5')
     approach_max_dist = LaunchConfiguration('approach_max_dist', default='1.2')
 
+    # Task flags 
+    hric_arg = DeclareLaunchArgument('hric', default_value='false')
+    gpsr_arg = DeclareLaunchArgument('gpsr', default_value='false')
+    restaurant_arg = DeclareLaunchArgument('restaurant', default_value='false')
+    ppc_arg = DeclareLaunchArgument('ppc', default_value='false')
+    dlc_arg = DeclareLaunchArgument('dlc', default_value='false')
+    finals_arg = DeclareLaunchArgument('finals', default_value='false')
+
     areas_map_name = context.perform_substitution(rtabmap_map_name).replace('.db', '')
 
     nav_central_node = Node(
@@ -73,6 +81,12 @@ def launch_function(context, *args, **kwargs):
     )
 
     return [
+        hric_arg,
+        gpsr_arg,
+        restaurant_arg,
+        ppc_arg,
+        dlc_arg,
+        finals_arg,
         nav_central_node,
         nav_ui_node,
         nav_basics,

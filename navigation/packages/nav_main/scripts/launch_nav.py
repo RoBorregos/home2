@@ -233,6 +233,8 @@ def main():
     )
 
     interactive = sys.stdin.isatty()
+    if not interactive:
+        current_view = '4'
     old_settings = None
 
     try:

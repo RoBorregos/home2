@@ -41,7 +41,7 @@ class RestaurantTaskManager(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("restaurant_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.RESTAURANT, mock_areas=[])
+        self.subtask_manager = SubtaskManager(self, task=Task.RESTAURANT, mock_areas=["manipulation"])
 
         self.running_task = True
 
