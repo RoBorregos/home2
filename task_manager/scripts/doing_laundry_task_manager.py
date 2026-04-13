@@ -75,20 +75,15 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.DETECT_BASKET:
             Logger.info(self, "Detecting laundry basket from vision detections.")
-            # Use detect_objects from vision_tasks.py
-            status, detections = self.subtask_manager.vision.detect_objects()
-            basket_detection = None
-            if status == Status.EXECUTION_SUCCESS and detections:
-                for det in detections:
-                    if det.classname.lower() == "basket":
-                        basket_detection = det
-                        break
-            if basket_detection:
+            # Use detect_laundry_basket from vision_tasks.py
+            status, basket_detection = self.subtask_manager.vision.detect_laundry_basket()
+
+            if status == Status.EXECUTION_SUCCESS and basket_detection:
                 Logger.info(self, f"Basket detected: {basket_detection.classname}")
                 self.basket_detection = basket_detection
                 self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY
             else:
-                Logger.warn(self, "Could not detect basket in vision detections. Retrying...")
+                Logger.warn(self, "Could not detect laundry basket. Retrying...")
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_LAUNDRY:
             Logger.info(self, "Attempting to pick the basket using pick_object.")
