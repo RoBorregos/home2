@@ -40,10 +40,10 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["respeaker"]["ros__parameters"]
 
-    oww_config = parse_ros_config(
-        os.path.join(get_package_share_directory("speech"), "config", "kws_oww.yaml"),
+    eim_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "kws_eim.yaml"),
         [ModuleNames.HRI.value],
-    )["kws_oww"]["ros__parameters"]
+    )["kws_eim"]["ros__parameters"]
 
     voice_detection_config = parse_ros_config(
         os.path.join(
@@ -95,11 +95,11 @@ def generate_launch_description():
         ),
         Node(
             package="speech",
-            executable="kws_oww.py",
-            name="kws_oww",
+            executable="kws_eim.py",
+            name="kws_eim",
             output="screen",
             emulate_tty=True,
-            parameters=[oww_config],
+            parameters=[eim_config],
         ),
         Node(
             package="speech",

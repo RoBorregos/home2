@@ -1,0 +1,9 @@
+kws_eim:
+  ros__parameters:
+    model_path: "/workspace/src/hri/packages/speech/assets/oww-runner-linux-aarch64-jetson-orin-6-0-v3-impulse-1.eim"
+    PROCESSED_AUDIO_TOPIC: REPLACE
+    WAKEWORD_TOPIC: REPLACE
+    detection_cooldown: 1.0
+    SENSITIVITY_THRESHOLD: 0.7
+    sample_rate: 16000
+    noise_label: "noise"
