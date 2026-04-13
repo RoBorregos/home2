@@ -62,16 +62,12 @@ def _load_task_manager_module():
     ]
     for path in candidates:
         if os.path.isfile(path):
-            spec = importlib.util.spec_from_file_location(
-                "pickandplace_task_manager", path
-            )
+            spec = importlib.util.spec_from_file_location("pickandplace_task_manager", path)
             mod = importlib.util.module_from_spec(spec)
             sys.modules["pickandplace_task_manager"] = mod
             spec.loader.exec_module(mod)
             return mod
-    raise RuntimeError(
-        "Could not locate pickandplace_task_manager.py in any known location"
-    )
+    raise RuntimeError("Could not locate pickandplace_task_manager.py in any known location")
 
 
 _tm_mod = _load_task_manager_module()
@@ -129,9 +125,7 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
             from ament_index_python.packages import get_package_share_directory
 
             objects_path = (
-                Path(get_package_share_directory("frida_constants"))
-                / "data"
-                / "objects.json"
+                Path(get_package_share_directory("frida_constants")) / "data" / "objects.json"
             )
             with open(objects_path) as f:
                 self._object_to_category = json.load(f).get("object_to_category", {})
@@ -227,9 +221,7 @@ def main(args=None):
         help="Force placement on this shelf level (skip categorization). "
         "1=0.475m, 2=0.827m, 3=1.201m",
     )
-    parser.add_argument(
-        "--object", type=str, default="coca_cola", help="Object name to place"
-    )
+    parser.add_argument("--object", type=str, default="coca_cola", help="Object name to place")
     parsed, remaining = parser.parse_known_args()
 
     rclpy.init(args=remaining)

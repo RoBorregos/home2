@@ -23,6 +23,10 @@ from pick_and_place.utils.perception_utils import get_object_point
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
+# Objects that must be picked upright (horizontal grasp from the front)
+# so they can be poured without spilling during transport.
+POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
+
 
 CFG_PATHS = [
     [
@@ -55,6 +59,13 @@ def is_cutlery(object_name: str) -> bool:
     if object_name is None:
         return False
     return object_name.lower() in CUTLERY_NAMES
+
+
+def is_pour_object(object_name: str) -> bool:
+    """Objects that must be picked upright for pouring."""
+    if object_name is None:
+        return False
+    return object_name.lower() in POUR_OBJECT_NAMES
 
 
 class PickManager:

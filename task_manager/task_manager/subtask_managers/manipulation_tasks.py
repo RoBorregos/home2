@@ -523,7 +523,7 @@ class ManipulationTasks:
 
             if not has_collision_left:
                 for i in range(3):
-                    Logger.info(self.node, f"Attempt {i+1} to place on left side...")
+                    Logger.info(self.node, f"Attempt {i + 1} to place on left side...")
                     result = self._attempt_place_on_side(self.Direction.LEFT)
                     if result == Status.EXECUTION_SUCCESS:
                         return Status.EXECUTION_SUCCESS
@@ -538,7 +538,7 @@ class ManipulationTasks:
 
             if not has_collision_right:
                 for i in range(3):
-                    Logger.info(self.node, f"Attempt {i+1} to place on right side...")
+                    Logger.info(self.node, f"Attempt {i + 1} to place on right side...")
                     result = self._attempt_place_on_side(self.Direction.RIGHT)
                     if result == Status.EXECUTION_SUCCESS:
                         return Status.EXECUTION_SUCCESS
@@ -579,13 +579,9 @@ class ManipulationTasks:
         # dropped in shelf but task_manager thought it failed and retried).
         SHELF_PLACE_TIMEOUT = 180.0
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(
-            self.node, result_future, timeout_sec=SHELF_PLACE_TIMEOUT
-        )
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=SHELF_PLACE_TIMEOUT)
         if not result_future.done():
-            Logger.error(
-                self.node, f"Action timed out after {SHELF_PLACE_TIMEOUT}s"
-            )
+            Logger.error(self.node, f"Action timed out after {SHELF_PLACE_TIMEOUT}s")
             return Status.EXECUTION_ERROR
         result = result_future.result().result
         Logger.info(self.node, f"Place in shelf result: {result}")

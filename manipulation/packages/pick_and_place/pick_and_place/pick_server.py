@@ -26,6 +26,7 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    SHELF_POSITION_PREPLACE_POSE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -371,7 +372,7 @@ class PickMotionServer(Node):
                     if contact:
                         # Retract slightly to relieve Z pressure so gripper can close fully
                         self.get_logger().info(
-                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT*1000:.1f}mm before closing gripper..."
+                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT * 1000:.1f}mm before closing gripper..."
                         )
                         retract_pose = copy.deepcopy(pre_grasp_pose)
                         retract_pose.pose.position.z = (
@@ -439,6 +440,34 @@ class PickMotionServer(Node):
                             pick_result.object_height = 0.0
                     else:
                         self.get_logger().error("Failed to attach object")
+
+                    # Retract along -Z_local (same approach as place_server
+                    # shelf retraction).  This pulls the arm safely out of a
+                    # shelf or up from a table before PickManager plans the
+                    # return to table_stare.
+                    # -Z_local for downward grasp (table) = UP
+                    # -Z_local for horizontal grasp (shelf) = BACKWARD
+                    pre_pick_pose = copy.deepcopy(ee_link_pose)
+                    retract_distance = SHELF_POSITION_PREPLACE_POSE  # -0.25m
+                    retract_position = (
+                        np.array(
+                            [
+                                pre_pick_pose.pose.position.x,
+                                pre_pick_pose.pose.position.y,
+                                pre_pick_pose.pose.position.z,
+                            ]
+                        )
+                        + z_axis * retract_distance
+                    )
+                    pre_pick_pose.pose.position.x = float(retract_position[0])
+                    pre_pick_pose.pose.position.y = float(retract_position[1])
+                    pre_pick_pose.pose.position.z = float(retract_position[2])
+                    self.get_logger().info(
+                        f"Retracting to pre-pick pose "
+                        f"({retract_position[0]:.3f}, {retract_position[1]:.3f}, "
+                        f"{retract_position[2]:.3f})"
+                    )
+                    self.move_to_pose(pre_pick_pose, velocity=0.3)
 
                     return True, pick_result
 

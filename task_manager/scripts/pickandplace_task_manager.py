@@ -300,9 +300,7 @@ class PickAndPlaceTM(Node):
             target = sublocation if sublocation else location
             pretty_target = target.replace("_", " ")
             CLog.nav(self, "MOVE", f"Moving to {target}")
-            self.subtask_manager.hri.say(
-                f"Now I will go to the {pretty_target}.", wait=False
-            )
+            self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
 
@@ -923,9 +921,8 @@ class PickAndPlaceTM(Node):
                     CLog.manip(self, "PLACE", "Retrying place on the same shelf level...")
                     self.timeout(1.0)
                     # Stay in PLACE_OBJECT to retry
-                elif (
-                    placement_loc == Location.CABINET
-                    and self._shelf_fallback_idx + 1 < len(self._shelf_fallback_heights)
+                elif placement_loc == Location.CABINET and self._shelf_fallback_idx + 1 < len(
+                    self._shelf_fallback_heights
                 ):
                     # Exhausted retries on this shelf but more shelves are
                     # available — fall through to the next shelf level.
