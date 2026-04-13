@@ -28,6 +28,7 @@ RUN pip install -r torch-gpu.txt
 RUN pip install -r face_recognition.txt
 RUN pip install -r models.txt
 RUN pip install -r utils.txt
+RUN pip install -r moondream.txt
 
 WORKDIR /workspace
 RUN git clone https://github.com/ultralytics/yolov5.git

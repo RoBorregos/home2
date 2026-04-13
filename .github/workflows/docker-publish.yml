@@ -366,16 +366,12 @@ jobs:
       fail-fast: false
       matrix:
         env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
-        image: [vision, moondream-server, moondream-node]
+        image: [vision, moondream-server]
         exclude:
           # moondream images are env-independent (single tag), skip duplicates
           - image: moondream-server
             env: cuda
           - image: moondream-server
-            env: l4t
-          - image: moondream-node
-            env: cuda
-          - image: moondream-node
             env: l4t
 
     steps:
@@ -404,10 +400,6 @@ jobs:
             moondream-server)
               echo "name=roborregos/home2:moondream-server" >> $GITHUB_OUTPUT
               echo "dockerfile=docker/vision/Dockerfile.moondream.server" >> $GITHUB_OUTPUT
-              ;;
-            moondream-node)
-              echo "name=roborregos/home2:moondream-node" >> $GITHUB_OUTPUT
-              echo "dockerfile=docker/vision/Dockerfile.moondream" >> $GITHUB_OUTPUT
               ;;
           esac
 
