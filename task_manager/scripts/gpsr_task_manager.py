@@ -139,7 +139,9 @@ class GPSRTM(Node):
         """Finite State Machine"""
 
         if self.current_state == GPSRTM.TaskStates.WAITING_FOR_BUTTON:
-            self.subtask_manager.hri.publish_display_step("waiting_for_button", GPSR_TASK_STEP_TOPIC)
+            self.subtask_manager.hri.publish_display_step(
+                "waiting_for_button", GPSR_TASK_STEP_TOPIC
+            )
             self._publish_command_index(self.executed_commands)
             CLog.fsm(self, "STATE", "Waiting for start button...")
             self.subtask_manager.hri.reset_task_status()
