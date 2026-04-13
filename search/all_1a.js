@@ -12,15 +12,14 @@ var searchData=
   ['zero_5fshot_5fdetections_5factive_5ftopic_9',['ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a6f90a10daccfc0110d2f85790bc5f970',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fdetections_5fimage_5ftopic_10',['ZERO_SHOT_DETECTIONS_IMAGE_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a99bf7fc47980ca830919b21802b1a268',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fdetections_5fposes_5ftopic_11',['ZERO_SHOT_DETECTIONS_POSES_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a1a7dd349184716ff0e10091fae59c7b4',1,'frida_constants::vision_constants']]],
-  ['zero_5fshot_5fdetections_5ftopic_12',['ZERO_SHOT_DETECTIONS_TOPIC',['../structHandlerParams.html#a1f270f1dbdeadeaf66bd3dc801eaa4d7',1,'HandlerParams::ZERO_SHOT_DETECTIONS_TOPIC()'],['../namespacefrida__constants_1_1vision__constants.html#a4f1a9aa60634d84c2d9ed3cc92933a8a',1,'frida_constants.vision_constants.ZERO_SHOT_DETECTIONS_TOPIC()']]],
+  ['zero_5fshot_5fdetections_5ftopic_12',['ZERO_SHOT_DETECTIONS_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a4f1a9aa60634d84c2d9ed3cc92933a8a',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fmodel_13',['ZERO_SHOT_MODEL',['../namespacefrida__constants_1_1vision__constants.html#af37f420f0d40b4c4fe368e24fc0c756e',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fobject_5fdetector_5fnode_14',['zero_shot_object_detector_node',['../namespacezero__shot__object__detector__node.html',1,'zero_shot_object_detector_node'],['../classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html',1,'zero_shot_object_detector_node.zero_shot_object_detector_node']]],
   ['zero_5fshot_5fobject_5fdetector_5fnode_2elaunch_2epy_15',['zero_shot_object_detector_node.launch.py',['../zero__shot__object__detector__node_8launch_8py.html',1,'']]],
   ['zero_5fshot_5fobject_5fdetector_5fnode_2epy_16',['zero_shot_object_detector_node.py',['../zero__shot__object__detector__node_8py.html',1,'']]],
-  ['zero_5fshot_5foda_5fcallback_17',['zero_shot_oda_callback',['../classDetectionsHandlerNode.html#a4d4e6f685b460e377b560af876310525',1,'DetectionsHandlerNode']]],
-  ['zero_5fshot_5fsubscription_18',['zero_shot_subscription',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a081840d8eb3d3858c21ffceda56c8262',1,'pick_and_place::keyboard_input::KeyboardInput']]],
-  ['zeroshotobjectdetector_19',['ZeroShotObjectDetector',['../namespaceZeroShotObjectDetector.html',1,'ZeroShotObjectDetector'],['../classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html',1,'ZeroShotObjectDetector.ZeroShotObjectDetector']]],
-  ['zeroshotobjectdetector_2epy_20',['ZeroShotObjectDetector.py',['../ZeroShotObjectDetector_8py.html',1,'']]],
-  ['zgetrf_5f_21',['zgetrf_',['../xarm6__ikfast61_8cpp.html#a6993bc2ff3751954630153bfd08bdd0b',1,'xarm6_ikfast61.cpp']]],
-  ['zoom_22',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]]
+  ['zero_5fshot_5fsubscription_17',['zero_shot_subscription',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a081840d8eb3d3858c21ffceda56c8262',1,'pick_and_place::keyboard_input::KeyboardInput']]],
+  ['zeroshotobjectdetector_18',['ZeroShotObjectDetector',['../namespaceZeroShotObjectDetector.html',1,'ZeroShotObjectDetector'],['../classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html',1,'ZeroShotObjectDetector.ZeroShotObjectDetector']]],
+  ['zeroshotobjectdetector_2epy_19',['ZeroShotObjectDetector.py',['../ZeroShotObjectDetector_8py.html',1,'']]],
+  ['zgetrf_5f_20',['zgetrf_',['../xarm6__ikfast61_8cpp.html#a6993bc2ff3751954630153bfd08bdd0b',1,'xarm6_ikfast61.cpp']]],
+  ['zoom_21',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]]
 ];

@@ -10,7 +10,6 @@ var hierarchy =
     [ "task_manager.utils.config.SubtaskConfig.Config", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
     [ "task_manager.utils.config.TopicConfig.Config", "classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html", null ],
     [ "ObjectDetector.Detection", "classObjectDetector_1_1Detection.html", null ],
-    [ "DetectionRecord", "structDetectionRecord.html", null ],
     [ "task_manager.utils.exploration_planner.ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
     [ "task_manager.subtask_managers.generic_tasks.GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", [
@@ -20,7 +19,6 @@ var hierarchy =
     [ "hric_task_manager.Guest", "classhric__task__manager_1_1Guest.html", null ],
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
-    [ "HandlerParams", "structHandlerParams.html", null ],
     [ "task_manager.subtask_managers.hri_hand.HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
     [ "ikfast::IkFastFunctions< T >", "classikfast_1_1IkFastFunctions.html", null ],
     [ "ikfast::IkSingleDOFSolutionBase< T >", "classikfast_1_1IkSingleDOFSolutionBase.html", null ],
@@ -67,7 +65,6 @@ var hierarchy =
       [ "AddPrimitivesNode", "classAddPrimitivesNode.html", null ],
       [ "CallServicesNode", "classCallServicesNode.html", null ],
       [ "ClientNode", "classClientNode.html", null ],
-      [ "DetectionsHandlerNode", "classDetectionsHandlerNode.html", null ],
       [ "DownSamplePointCloud", "classDownSamplePointCloud.html", null ],
       [ "PublishHandleA", "classPublishHandleA.html", null ],
       [ "PublishNode", "classPublishNode.html", null ],

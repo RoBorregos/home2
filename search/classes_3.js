@@ -4,14 +4,12 @@ var searchData=
   ['demotm_1',['DemoTM',['../classdemo__manager_1_1DemoTM.html',1,'demo_manager']]],
   ['detectby_2',['DetectBy',['../classfrida__constants_1_1vision__enums_1_1DetectBy.html',1,'frida_constants::vision_enums']]],
   ['detection_3',['Detection',['../classdetection_1_1Detection.html',1,'detection.Detection'],['../classObjectDetector_1_1Detection.html',1,'ObjectDetector.Detection']]],
-  ['detectionrecord_4',['DetectionRecord',['../structDetectionRecord.html',1,'']]],
-  ['detectionshandlernode_5',['DetectionsHandlerNode',['../classDetectionsHandlerNode.html',1,'']]],
-  ['detectpointingobjectserver_6',['DetectPointingObjectServer',['../classpointing__detection_1_1DetectPointingObjectServer.html',1,'pointing_detection']]],
-  ['direction_7',['Direction',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
-  ['dishwashernode_8',['DishwasherNode',['../classdishwasher__node_1_1DishwasherNode.html',1,'dishwasher_node']]],
-  ['dockingposerecorder_9',['DockingPoseRecorder',['../classrecord__relative__pose_1_1DockingPoseRecorder.html',1,'record_relative_pose']]],
-  ['docktohandlenode_10',['DockToHandleNode',['../classdock__to__handle_1_1DockToHandleNode.html',1,'dock_to_handle']]],
-  ['door_5fcheck_11',['DOOR_CHECK',['../classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html',1,'frida_constants::navigation_constants']]],
-  ['downsamplepointcloud_12',['DownSamplePointCloud',['../classDownSamplePointCloud.html',1,'']]],
-  ['dualmoveitconfigsbuilder_13',['DualMoveItConfigsBuilder',['../classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder.DualMoveItConfigsBuilder'],['../classarm__pkg_1_1moveit__configs__builder__sim_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder_sim.DualMoveItConfigsBuilder']]]
+  ['detectpointingobjectserver_4',['DetectPointingObjectServer',['../classpointing__detection_1_1DetectPointingObjectServer.html',1,'pointing_detection']]],
+  ['direction_5',['Direction',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
+  ['dishwashernode_6',['DishwasherNode',['../classdishwasher__node_1_1DishwasherNode.html',1,'dishwasher_node']]],
+  ['dockingposerecorder_7',['DockingPoseRecorder',['../classrecord__relative__pose_1_1DockingPoseRecorder.html',1,'record_relative_pose']]],
+  ['docktohandlenode_8',['DockToHandleNode',['../classdock__to__handle_1_1DockToHandleNode.html',1,'dock_to_handle']]],
+  ['door_5fcheck_9',['DOOR_CHECK',['../classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html',1,'frida_constants::navigation_constants']]],
+  ['downsamplepointcloud_10',['DownSamplePointCloud',['../classDownSamplePointCloud.html',1,'']]],
+  ['dualmoveitconfigsbuilder_11',['DualMoveItConfigsBuilder',['../classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder.DualMoveItConfigsBuilder'],['../classarm__pkg_1_1moveit__configs__builder__sim_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder_sim.DualMoveItConfigsBuilder']]]
 ];

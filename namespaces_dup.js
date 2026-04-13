@@ -245,9 +245,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceobject__detector__combined.html#a89d204316b51e6caf017cd1f6253e538", null ]
     ] ],
     [ "object_detector_node", "namespaceobject__detector__node.html", "namespaceobject__detector__node" ],
-    [ "objectDetectionHandler", "namespaceobjectDetectionHandler.html", [
-      [ "generate_launch_description", "namespaceobjectDetectionHandler.html#a57f57849cc3ad33855b1ebfb1fa9f347", null ]
-    ] ],
     [ "ObjectDetector", "namespaceObjectDetector.html", "namespaceObjectDetector" ],
     [ "old_tracker", "namespaceold__tracker.html", "namespaceold__tracker" ],
     [ "perception_3d", "namespaceperception__3d.html", [
