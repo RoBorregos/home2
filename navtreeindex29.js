@@ -1,7 +1,5 @@
 var NAVTREEINDEX29 =
 {
-"namespacefrida__constants_1_1hri__constants.html#a4f57beaa697d3fd2366209c57e9261db":[24,0,48,0,41],
-"namespacefrida__constants_1_1hri__constants.html#a5122d4a93ffda1e706247ba9f13e538c":[24,0,48,0,26],
 "namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7":[24,0,48,0,44],
 "namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9":[24,0,48,0,16],
 "namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8":[24,0,48,0,36],
@@ -249,5 +247,7 @@ var NAVTREEINDEX29 =
 "namespacegpsr__commands.html#a7dce31766c14809575920f9d6ebe53a2":[24,0,59,4],
 "namespacegpsr__commands.html#aee6e17035d2da3b106824c088f5c9e06":[24,0,59,2],
 "namespacegpsr__launch.html":[24,0,60],
-"namespacegpsr__launch.html#a51deed0e59e9075f48b613b55394c388":[24,0,60,0]
+"namespacegpsr__launch.html#a51deed0e59e9075f48b613b55394c388":[24,0,60,0],
+"namespacegpsr__task__manager.html":[24,0,61],
+"namespacegpsr__task__manager.html#a23b5ba849244f6bd8e68e40c1d190696":[24,0,61,1]
 };

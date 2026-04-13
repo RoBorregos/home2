@@ -208,7 +208,6 @@ var namespaces_dup =
     [ "monitor", "namespacemonitor.html", [
       [ "generate_launch_description", "namespacemonitor.html#a89ffacc2739b9bf0e8a294482eeff9a1", null ]
     ] ],
-    [ "moondream_launch", "namespacemoondream__launch.html", null ],
     [ "moondream_lib", "namespacemoondream__lib.html", "namespacemoondream__lib" ],
     [ "moondream_node", "namespacemoondream__node.html", "namespacemoondream__node" ],
     [ "moondream_proto_pb2", "namespacemoondream__proto__pb2.html", [

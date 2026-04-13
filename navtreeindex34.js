@@ -1,8 +1,5 @@
 var NAVTREEINDEX34 =
 {
-"test__hri__manager_8py.html#a914b4542d179c1bd4ffea5b5fd5917b4":[26,0,6,1,1,1,13],
-"test__hri__manager_8py.html#a9e861d4b310d661b375be460581a088f":[26,0,6,1,1,1,19],
-"test__hri__manager_8py.html#acba16bc04fcf4b594f5c4335ff8f9239":[26,0,6,1,1,1,11],
 "test__hri__manager_8py.html#ad6e339590c518dbf7c365f89e90b8be8":[26,0,6,1,1,1,15],
 "test__hri__manager_8py.html#afab82146d21339556bbeec1207843778":[26,0,6,1,1,1,17],
 "test__manager_8py.html":[26,0,6,1,1,2],
@@ -67,7 +64,7 @@ var NAVTREEINDEX34 =
 "trt__utils_8py.html#a32e507a426c6ab7dcd37eb74888950c9":[26,0,7,0,2,3,0,5,1],
 "trt__utils_8py.html#a60b6f5e8a22c056723d7c0a0ecd88ca3":[26,0,7,0,2,3,0,5,2],
 "trt__utils_8py.html#ae28972e2bd9e6ec6460827b6380c7b9a":[26,0,7,0,2,3,0,5,0],
-"vision_2packages_2moondream__run_2moondream__run_2____init_____8py.html":[26,0,7,0,0,1,0],
+"vision_2packages_2moondream__run_2moondream__run_2____init_____8py.html":[26,0,7,0,0,0,0],
 "vision_2packages_2object__detector__2d_2include_2____init_____8py.html":[26,0,7,0,1,0,0],
 "vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html":[26,0,7,0,1,2,0,0],
 "vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html#a788d5920b4a890dfdb242742b858f948":[26,0,7,0,1,2,0,0,0],
@@ -249,5 +246,8 @@ var NAVTREEINDEX34 =
 "xarm6__ikfast61_8cpp.html#ac5b257dc48deeb1c904d40b5dbf4a5a4":[26,0,3,0,7,0,1,14],
 "xarm6__ikfast61_8cpp.html#ac925942daf5e1b7df0c38f2a7a501ac0":[26,0,3,0,7,0,1,40],
 "xarm6__ikfast61_8cpp.html#acd8f1e5b83501cc42ffef27bd6458f9a":[26,0,3,0,7,0,1,56],
-"xarm6__ikfast61_8cpp.html#ad2361d774d694b5935519a1b3c1075f9":[26,0,3,0,7,0,1,57]
+"xarm6__ikfast61_8cpp.html#ad2361d774d694b5935519a1b3c1075f9":[26,0,3,0,7,0,1,57],
+"xarm6__ikfast61_8cpp.html#ad2da3c414ad57c32c4b7a2ce61cfbfad":[26,0,3,0,7,0,1,39],
+"xarm6__ikfast61_8cpp.html#ad6a7e3ecef3983ec46a211ee00f30364":[26,0,3,0,7,0,1,3],
+"xarm6__ikfast61_8cpp.html#ad6e97fc303efda1a956b9a044f8424fc":[26,0,3,0,7,0,1,15]
 };
