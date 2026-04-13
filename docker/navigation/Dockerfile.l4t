@@ -43,7 +43,7 @@ RUN cp /home/ros/ros_packages3/src/rtabmap/corelib/src/python/rtabmap_superglue.
 
 # Trace SuperPoint model with the installed PyTorch version
 COPY docker/navigation/trace_superpoint.py /tmp/trace_superpoint.py
-RUN mkdir -p /home/ros/models && python3 /tmp/trace_superpoint.py && rm /tmp/trace_superpoint.py
+RUN mkdir -p /home/ros/models && python3 /tmp/trace_superpoint.py
 
 ENV SUPERGLUE_PATH=/home/ros/SuperGlue
 ENV SUPERPOINT_MODEL=/home/ros/models/superpoint_v1.pt
