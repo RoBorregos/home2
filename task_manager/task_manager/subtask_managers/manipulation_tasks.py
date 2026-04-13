@@ -550,6 +550,8 @@ class ManipulationTasks:
         position: str = "close",
         max_distance: float = 0.3,
         max_height: float = 0.2,
+        start_position: str = None,
+        return_position: str = None,
     ) -> int:
         """
         Place the grasped object close to a target object.
@@ -566,6 +568,8 @@ class ManipulationTasks:
             max_distance (float): Maximum distance (in meters) for searching in the plane
                                  when position is "close", "front", "back", "left", or "right"
             max_height (float): Maximum height difference (in meters) when position is "top"
+            start_position (str): Custom initial starting position override
+            return_position (str): Custom final returning position override
 
         Returns:
             Status code indicating success or failure
@@ -594,6 +598,8 @@ class ManipulationTasks:
             "position": position.lower(),
             "max_distance": max_distance,
             "max_height": max_height,
+            "start_position": start_position,
+            "return_position": return_position,
         }
 
         goal_msg = ManipulationAction.Goal()
