@@ -38,9 +38,6 @@ case $TASK in
     "--carry")
         RUN="ros2 launch manipulation_general carry.launch.py"
         ;;
-    "--storing-groceries")
-        RUN="ros2 launch vision_general storing_groceries_launch.py"
-        ;;
     "--gpsr")
         RUN="ros2 launch manipulation_general gpsr.launch.py"
         ;;
