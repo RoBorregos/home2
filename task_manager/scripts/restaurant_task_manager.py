@@ -114,6 +114,10 @@ class RestaurantTaskManager(Node):
         detections = []
         for attempt in range(ATTEMPT_LIMIT):
             status, detections = self.subtask_manager.vision.detect_objects()
+            # Handle tuple return from vision
+            if isinstance(status, tuple):
+                status = status[0]
+
             if status == Status.EXECUTION_SUCCESS and len(detections) > 0:
                 break
             Logger.warn(self, f"No objects detected, attempt {attempt + 1}/{ATTEMPT_LIMIT}")
@@ -126,6 +130,9 @@ class RestaurantTaskManager(Node):
         labels = self.subtask_manager.vision.get_labels(detections)
         Logger.info(self, f"Detected labels: {labels}")
         status, closest = self.subtask_manager.hri.find_closest(labels, object_name)
+        if isinstance(status, tuple):
+            status = status[0]
+
         if status != Status.EXECUTION_SUCCESS or not closest.results:
             Logger.warn(self, f"Could not match '{object_name}' in detected labels: {labels}")
             return self.deus_pick(object_name)
@@ -137,6 +144,9 @@ class RestaurantTaskManager(Node):
         for attempt in range(ATTEMPT_LIMIT):
             Logger.info(self, f"Pick attempt {attempt + 1}/{ATTEMPT_LIMIT} for '{matched_label}'")
             status = self.subtask_manager.manipulation.pick_object(matched_label)
+            if isinstance(status, tuple):
+                status = status[0]
+
             if status == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say(f"I have picked the {object_name}.")
                 return (Status.EXECUTION_SUCCESS, "")
@@ -149,6 +159,9 @@ class RestaurantTaskManager(Node):
         for attempt in range(ATTEMPT_LIMIT):
             Logger.info(self, f"Place attempt {attempt + 1}/{ATTEMPT_LIMIT}")
             status = self.subtask_manager.manipulation.place()
+            if isinstance(status, tuple):
+                status = status[0]
+
             if status == Status.EXECUTION_SUCCESS:
                 return (Status.EXECUTION_SUCCESS, "")
             self.timeout(1)
@@ -217,21 +230,26 @@ class RestaurantTaskManager(Node):
                 goal_msg.pose.orientation.w = 1.0
                 self.original_goal_pub.publish(goal_msg)
 
-                status = self.subtask_manager.nav.move_to_point(self.target_person_point)
+                nav_result = self.subtask_manager.nav.move_to_point(self.target_person_point)
+                status = nav_result[0] if isinstance(nav_result, tuple) else nav_result
+
                 self.subtask_manager.nav.pause_nav()
 
                 if status == Status.EXECUTION_SUCCESS:
                     Logger.success(self, "Arrived near table for detection.")
                     self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
             else:
-                # Should not happen in Competition mode as we only move if we see someone
                 self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
                 return
+
         if self.current_state == RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS:
             Logger.state(self, "Performing full table scan...")
             self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
             # Get table groups and positions directly from vision task
-            status, customer_tables = self.subtask_manager.vision.customer_tables()
+            vision_result = self.subtask_manager.vision.customer_tables()
+            status = vision_result[0] if isinstance(vision_result, tuple) else vision_result
+            customer_tables = vision_result[1] if isinstance(vision_result, tuple) else []
+
             self.subtask_manager.hri.publish_display_topic(RESTAURANT_TABLES_TOPIC)
             if status != Status.EXECUTION_SUCCESS or not customer_tables:
                 Logger.warn(self, "Could not confirm customers at this point. Retrying scan...")
@@ -318,6 +336,9 @@ class RestaurantTaskManager(Node):
 
                 # Use HRI take_order function
                 status, orders = self.subtask_manager.hri.take_order(retries=3)
+                if isinstance(status, tuple):
+                    status = status[0]
+
                 if status == Status.EXECUTION_SUCCESS and orders:
                     for order in orders:
                         table["orders"].append(order)
@@ -349,7 +370,7 @@ class RestaurantTaskManager(Node):
             self.subtask_manager.nav.resume_nav()
             # Return to the saved Bar pose
             Logger.info(self, "Navigating back to the Bar station pose.")
-            status = self.subtask_manager.nav.move_to_pose(self.bar_pose)
+            self.subtask_manager.nav.move_to_pose(self.bar_pose)
             self.subtask_manager.nav.pause_nav()
 
             self.current_state = RestaurantTaskManager.TaskStates.SAY_ORDER_TO_BARMAN
@@ -398,6 +419,8 @@ class RestaurantTaskManager(Node):
                 self.subtask_manager.manipulation.move_to_position("table_stare", velocity=0.5)
 
                 status, error = self.pick_object(item)
+                if isinstance(status, tuple):
+                    status = status[0]
 
                 if status == Status.EXECUTION_SUCCESS:
                     Logger.success(self, f"Picked {item}. Delivering to table {table_id}...")
@@ -420,8 +443,6 @@ class RestaurantTaskManager(Node):
                     self.original_goal_pub.publish(goal_msg)
 
                     # 3. Move to table using navigation stack
-                    # Note: We send the table point, but the adaptive_goal_publisher will adjust it
-                    # based on where it sees the people at THAT table.
                     self.subtask_manager.nav.move_to_point(table["coordinates"])
                     self.subtask_manager.nav.pause_nav()
 
@@ -430,6 +451,8 @@ class RestaurantTaskManager(Node):
                     self.subtask_manager.manipulation.move_to_position("table_stare", velocity=0.5)
 
                     status, error = self.place_object()
+                    if isinstance(status, tuple):
+                        status = status[0]
 
                     if status == Status.EXECUTION_SUCCESS:
                         Logger.success(self, f"Delivered {item} to table {table_id}")
@@ -439,7 +462,6 @@ class RestaurantTaskManager(Node):
                         if self.current_delivery_item_index < len(table["orders"]):
                             self.subtask_manager.hri.say("I will get your next item.")
                             self.subtask_manager.nav.resume_nav()
-                            # Return to bar pose for next item
                             self.subtask_manager.nav.move_to_pose(self.bar_pose)
                             self.subtask_manager.nav.pause_nav()
                     else:
@@ -458,6 +480,7 @@ class RestaurantTaskManager(Node):
         if self.current_state == RestaurantTaskManager.TaskStates.END:
             Logger.state(self, "Restaurant task complete!")
             self.subtask_manager.hri.say("All customers have been served. Restaurant complete.")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 
