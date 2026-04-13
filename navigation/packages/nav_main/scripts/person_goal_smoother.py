@@ -45,8 +45,6 @@ CONTROLLER_KEYS = [
     "FollowPath.vx_max",
     "FollowPath.vx_min",
     "FollowPath.wz_max",
-    "FollowPath.ax_max",
-    "FollowPath.ax_min",
     "FollowPath.GoalCritic.cost_weight",
     "FollowPath.PathFollowCritic.cost_weight",
     "FollowPath.PathAlignCritic.cost_weight",
@@ -69,9 +67,9 @@ SMOOTHER_KEYS = [
     "max_decel",
 ]
 
-# Costmap layers to disable in follow mode (depth sees person as obstacle)
+# Costmap layers to toggle in follow mode (depth sees person as obstacle)
+# Only layers present in BOTH configs' plugins list will succeed — missing ones are silently skipped
 LAYERS_TO_DISABLE_IN_FOLLOW = [
-    "voxel_layer",
     "rgbd_obstacle_layer",
 ]
 

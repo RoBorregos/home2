@@ -49,6 +49,14 @@ def load_yolo_trt(model_path: str, task: str = "detect", imgsz: int = 640) -> YO
         print(f"[TRT] Loading cached engine: {engine_path}")
         return YOLO(engine_path, task=task)
 
+    # If model_path doesn't exist, check TENSORRT_CACHE_DIR for the .pt file
+    if not os.path.exists(model_path):
+        cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
+        if cache_dir:
+            cached_pt = os.path.join(cache_dir, os.path.basename(model_path))
+            if os.path.exists(cached_pt):
+                model_path = cached_pt
+
     model = YOLO(model_path)
 
     if not _is_tensorrt_available():
