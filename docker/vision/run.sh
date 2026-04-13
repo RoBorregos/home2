@@ -116,16 +116,6 @@ case $TASK in
         RUN="ros2 launch vision_general ppc_launch.py"
         PROFILES=("vision" "moondream")
         ;;
-    "--carry")
-        PACKAGES="vision_general object_detector_2d moondream_run"
-        RUN="ros2 launch vision_general help_me_carry_launch.py"
-        PROFILES=("vision" "moondream")
-        ;;
-    "--storing-groceries")
-        PACKAGES="object_detector_2d"
-        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
-        PROFILES=("vision")
-        ;;
     "--gpsr")
         PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="ros2 launch vision_general gpsr_launch.py"
