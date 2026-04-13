@@ -613,8 +613,6 @@ class object_detector_node(rclpy.node.Node):
             visual_image, processed_detections
         )
 
-        self.get_logger().info(f"Objects detected: {len(all_detections)}")
-
 
 def main(args=None):
     rclpy.init(args=args)
