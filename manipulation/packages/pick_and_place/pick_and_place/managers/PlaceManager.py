@@ -80,7 +80,7 @@ class PlaceManager:
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
         self.node.get_logger().info("Executing Place Task")
         self.node.get_logger().info("Setting initial joint positions")
-        
+
         start_position = "table_stare"
         return_position = "table_stare"
         if place_params.special_request != "":
@@ -334,7 +334,9 @@ class PlaceManager:
                                 )
 
                             if object_cluster is not None:
-                                top_params = get_object_top_center(object_cluster, node=self.node)
+                                top_params = get_object_top_center(
+                                    object_cluster, node=self.node
+                                )
                                 if top_params is not None:
                                     center, max_z = top_params
                                     result_pose.pose.position.x = float(center[0])
@@ -348,7 +350,9 @@ class PlaceManager:
                                 f"Could not compute cluster params, using detection point: {e}"
                             )
 
-                        result_pose.pose.position.z = top_z + max_height + TOP_SAFETY_MARGIN
+                        result_pose.pose.position.z = (
+                            top_z + max_height + TOP_SAFETY_MARGIN
+                        )
                         self.node.get_logger().info(
                             f"Top placement z={result_pose.pose.position.z:.3f} (top_z={top_z:.3f} + max_height={max_height} + margin={TOP_SAFETY_MARGIN})"
                         )
