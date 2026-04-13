@@ -34,10 +34,11 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
+    CUSTOMER_TABLES_TOPIC,
     FLIP_IMAGE_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.msg import ObjectDetection, PersonList
+from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
     CountByColor,
@@ -54,6 +55,7 @@ from frida_interfaces.srv import (
     ShelfDetectionHandler,
     TrackBy,
     DetectHand,
+    CustomerTables,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -128,6 +130,8 @@ class VisionTasks:
         )
 
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
+
+        self.customer_table_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
 
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -204,6 +208,13 @@ class VisionTasks:
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
+            },
+            Task.RESTAURANT: {
+                "customer_tables": {
+                    "client": self.customer_table_client,
+                    "type": "service",
+                },
+                "customer": {"client": self.customer_client, "type": "service"},
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -743,14 +754,22 @@ class VisionTasks:
 
             if not result.found:
                 Logger.warn(self.node, "No person found")
-                return Status.TARGET_NOT_FOUND, result.point
+                from geometry_msgs.msg import PointStamped
+
+                return Status.TARGET_NOT_FOUND, PointStamped()
 
         except Exception as e:
             Logger.error(self.node, f"Error tracking person: {e}")
-            return Status.EXECUTION_ERROR, result.point
+            from geometry_msgs.msg import PointStamped
+
+            return Status.EXECUTION_ERROR, PointStamped()
 
         Logger.success(self.node, "Person tracking success")
-        return Status.EXECUTION_SUCCESS, result.point
+        from geometry_msgs.msg import PointStamped
+
+        return Status.EXECUTION_SUCCESS, result.people.list[0].point3d if len(
+            result.people.list
+        ) > 0 else PointStamped()
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
@@ -1038,6 +1057,22 @@ class VisionTasks:
             location += f"to the left of the {detections[right_pos].classname.lower()}"
 
         return Status.EXECUTION_SUCCESS, location
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
+    @service_check("customer_tables", [Status.EXECUTION_ERROR, None], TIMEOUT)
+    def customer_tables(self) -> tuple[int, list[CustomerTable]]:
+        """Detect the tables and the customers associated to them."""
+        req = CustomerTables.Request()
+        future = self.customer_table_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+        if not future.done():
+            Logger.warn(self.node, "customer_tables service call timed out")
+            return Status.EXECUTION_ERROR, []
+        result = future.result()
+        if result is None or not result.success:
+            Logger.warn(self.node, "customer_tables service call failed or returned no tables")
+            return Status.EXECUTION_ERROR, []
+        return Status.EXECUTION_SUCCESS, result.customer_tables
 
     def camera_upside_down(self, flip: bool):
         msg = BoolMsg()
