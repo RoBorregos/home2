@@ -18,7 +18,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "describe_shelf", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a967d58de79536f717cc98de9f796d279", null ],
     [ "detect_guest", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#abe52d45753474d37c9a7f13f08ac8267", null ],
     [ "detect_hand", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a3f7ecd2b17be44b00178eaf9b72d59f7", null ],
-    [ "detect_objects", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a1477e70d6d8eea0f1c1527bb8dc34b6f", null ],
+    [ "detect_objects", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a0008018dacbb657b3d7b82bd45d6059b", null ],
     [ "detect_person", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aca112eb247521208f951741f07700065", null ],
     [ "detect_shelf", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a1ff777a200a69241f78d7e9cfb61ed71", null ],
     [ "detect_trash", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac046c4b85da3703d5474f3748d5fed4a", null ],

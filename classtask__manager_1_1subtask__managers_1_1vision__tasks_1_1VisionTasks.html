@@ -139,8 +139,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3db60877796f1982fb40acc5c7cec3ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ff777a200a69241f78d7e9cfb61ed71"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1ShelfDetection.html">ShelfDetection</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a1ff777a200a69241f78d7e9cfb61ed71">detect_shelf</a> (self, float timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>)</td></tr>
 <tr class="separator:a1ff777a200a69241f78d7e9cfb61ed71"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1477e70d6d8eea0f1c1527bb8dc34b6f"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a1477e70d6d8eea0f1c1527bb8dc34b6f">detect_objects</a> (self, float timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>, list[str] ignore_labels=[])</td></tr>
-<tr class="separator:a1477e70d6d8eea0f1c1527bb8dc34b6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0008018dacbb657b3d7b82bd45d6059b"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a0008018dacbb657b3d7b82bd45d6059b">detect_objects</a> (self, float timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>, list[str] ignore_labels=[], str label=&quot;all&quot;)</td></tr>
+<tr class="separator:a0008018dacbb657b3d7b82bd45d6059b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca112eb247521208f951741f07700065"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aca112eb247521208f951741f07700065">detect_person</a> (self, float timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>)</td></tr>
 <tr class="separator:aca112eb247521208f951741f07700065"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe52d45753474d37c9a7f13f08ac8267"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#abe52d45753474d37c9a7f13f08ac8267">detect_guest</a> (self, str name, float timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>)</td></tr>
@@ -787,8 +787,8 @@ Protected Attributes</h2></td></tr>
 <pre class="fragment">Detect the hand and return its 3D position.</pre> 
 </div>
 </div>
-<a id="a1477e70d6d8eea0f1c1527bb8dc34b6f" name="a1477e70d6d8eea0f1c1527bb8dc34b6f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1477e70d6d8eea0f1c1527bb8dc34b6f">&#9670;&#160;</a></span>detect_objects()</h2>
+<a id="a0008018dacbb657b3d7b82bd45d6059b" name="a0008018dacbb657b3d7b82bd45d6059b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0008018dacbb657b3d7b82bd45d6059b">&#9670;&#160;</a></span>detect_objects()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -809,7 +809,13 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">list[str] &#160;</td>
-          <td class="paramname"><em>ignore_labels</em> = <code>[]</code>&#160;</td>
+          <td class="paramname"><em>ignore_labels</em> = <code>[]</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>label</em> = <code>&quot;all&quot;</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
