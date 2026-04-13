@@ -113,7 +113,6 @@ RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 
 # Patch: os.add_dll_directory is Windows-only but PyTorch's init calls it.
 # sitecustomize.py runs automatically on every Python interpreter start.
-RUN echo 'import os; os.add_dll_directory = getattr(os, "add_dll_directory", lambda path: None)' \
-    > /usr/local/lib/python3.10/dist-packages/sitecustomize.py
+RUN sudo sh -c 'echo "import os; os.add_dll_directory = getattr(os, \"add_dll_directory\", lambda path: None)" > /usr/local/lib/python3.10/dist-packages/sitecustomize.py'
 
 WORKDIR /workspace
