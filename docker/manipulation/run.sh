@@ -22,12 +22,13 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE"
 else
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
 fi
 
 case $TASK in
@@ -36,9 +37,6 @@ case $TASK in
         ;;
     "--carry")
         RUN="ros2 launch manipulation_general carry.launch.py"
-        ;;
-    "--storing-groceries")
-        RUN="ros2 launch vision_general storing_groceries_launch.py"
         ;;
     "--gpsr")
         RUN="ros2 launch manipulation_general gpsr.launch.py"

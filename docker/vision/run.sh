@@ -94,27 +94,25 @@ if [ "$CLEAN" == "true" ]; then
   clean_directories .
 fi
 
-mkdir -p install build log moondream/install moondream/build moondream/log
+mkdir -p install build log
 
 #_________________________RUN_________________________
 
 SOURCE_ROS="source /opt/ros/humble/setup.bash && source /usr/local/bin/cyclonedds_setup.sh"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants"
-MOONDREAM_PACKAGES="moondream_run"
-MOONDREAM_COMMAND="ros2 run moondream_run moondream_node.py"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 PROFILES=()
 
 case $TASK in
     "--hric")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="ros2 launch vision_general hric_launch.py"
         PROFILES=("vision" "moondream")
         ;;
     "--ppc")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="ros2 launch vision_general ppc_launch.py"
         PROFILES=("vision")
         ;;
@@ -123,18 +121,8 @@ case $TASK in
         RUN="ros2 launch vision_general restaurant_launch.py"
         PROFILES=("vision" "moondream")
         ;;
-    "--carry")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
-        RUN="ros2 launch vision_general help_me_carry_launch.py"
-        PROFILES=("vision" "moondream")
-        ;;
-    "--storing-groceries")
-        PACKAGES="object_detector_2d object_detection_handler"
-        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
-        PROFILES=("vision")
-        ;;
     "--gpsr")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="ros2 launch vision_general gpsr_launch.py"
         PROFILES=("vision" "moondream")
         ;;
@@ -142,21 +130,19 @@ case $TASK in
         PROFILES=("moondream")
         ;;
     *)
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="bash"
         PROFILES=("vision")
         ;;
 esac
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 COMMAND="$SETUP && $RUN"
-COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES && $SOURCE && $CYCLONE_SOURCE && $MOONDREAM_COMMAND"
-add_or_update_variable .env "COMMAND_MOONDREAM" "$COMMAND_MOONDREAM"
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"

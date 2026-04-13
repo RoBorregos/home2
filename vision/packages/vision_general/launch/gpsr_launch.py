@@ -55,8 +55,22 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
+            Node(
+                package="vision_general",
+                executable="trash_detection_node.py",
+                name="trash_detection_node",
+                output="screen",
+                emulate_tty=True,
+            ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(detector_launch_file)
+            ),
+            Node(
+                package="moondream_run",
+                executable="moondream_node.py",
+                name="moondream_node",
+                output="screen",
+                emulate_tty=True,
             ),
         ]
     )

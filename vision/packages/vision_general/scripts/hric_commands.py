@@ -15,13 +15,13 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import PointStamped
+from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
-from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
+from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     CAMERA_FRAME,
@@ -189,28 +189,20 @@ class HRICCommands(Node):
             return None
 
         if self.depth_image is not None and self.camera_info is not None:
-            dh, dw = self.depth_image.shape[:2]
-            dpx = int(cx * dw / w)
-            dpy = int(cy * dh / h)
+            # Scale wrist pixel from YOLO image resolution to camera_info resolution,
+            # same convention used in restaurant_commands.py
+            cam_w = self.camera_info.width
+            cam_h = self.camera_info.height
+            px_ci = int(cx * cam_w / w)
+            py_ci = int(cy * cam_h / h)
 
-            if not (0 <= dpx < dw and 0 <= dpy < dh):
-                self.get_logger().warn(f"Wrist outside depth image: ({dpx}, {dpy})")
-                return None
-            try:
-                depth = get_depth(self.depth_image, (dpx, dpy))
-            except IndexError as e:
-                self.get_logger().warn(
-                    f"Depth index out of bounds ({dpx}, {dpy}): {e}. No hand detected."
-                )
-                return None
-
-            point3d = deproject_pixel_to_point(self.camera_info, (cx, cy), depth)
-            stamped = PointStamped()
-            stamped.header.frame_id = CAMERA_FRAME
-            stamped.header.stamp = self.get_clock().now().to_msg()
-            stamped.point.x = float(point3d[0])
-            stamped.point.y = float(point3d[1])
-            stamped.point.z = float(point3d[2])
+            stamped = point2d_to_ros_point_stamped(
+                self.camera_info,
+                self.depth_image,
+                (px_ci, py_ci),
+                CAMERA_FRAME,
+                Time(sec=0, nanosec=0),
+            )
             return stamped
         else:
             self.get_logger().warn("Depth image or camera info not available")

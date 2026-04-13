@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 AREAS="vision manipulation navigation integration hri zed"
+ORIN_SERVER_AREAS="hri manipulation"
 
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
@@ -8,7 +9,22 @@ if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
 fi
 __HOME2_LIB_SOURCED=1
 
+# --- load .env ---
+if [ -f ".env" ]; then
+  source .env
+fi
+
 # --- helpers ---
+
+# Run a command on the remote Orin server via SSH.
+orin_ssh() {
+  sshpass -p "${ORIN_SSH_PASS}" ssh -o StrictHostKeyChecking=no "${ORIN_SSH_USER}@${ORIN_SSH_HOST}" "$@"
+}
+
+# Check if an area should run on the remote Orin server.
+is_orin_area() {
+  echo " ${ORIN_SERVER_AREAS} " | grep -q " $1 "
+}
 
 check_image_exists() {
   local image_name=$1
@@ -201,6 +217,7 @@ control() {
   if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
     tmux kill-server || true
   fi
+  orin_ssh "tmux kill-server" 2>/dev/null || true
 
   PARALLEL=${PARALLEL:-$(detect_cores)}
   local pids=()
@@ -213,7 +230,12 @@ control() {
       while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do
         sleep 0.1
       done
-      ( cd "docker/${area}" && bash "./run.sh" "${op_flag}" "${ENV_TYPE}" ) &
+
+      if is_orin_area "${area}"; then
+        orin_ssh "cd $(pwd)/docker/${area} && bash ./run.sh ${op_flag} ${ENV_TYPE}" &
+      else
+        ( cd "docker/${area}" && bash "./run.sh" "${op_flag}" "${ENV_TYPE}" ) &
+      fi
       pids+=($!)
       areas_launched+=("$area")
     fi
@@ -251,11 +273,15 @@ control() {
 }
 
 run_task() {
-  local task=$1
   for area in ${AREAS}; do
     SESSION_NAME=$area
-    tmux new-session -d -s "$SESSION_NAME"
-    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
+
+    if is_orin_area "${area}"; then
+      orin_ssh "tmux new-session -d -s '${SESSION_NAME}' && tmux send-keys -t '${SESSION_NAME}' 'cd $(pwd) && bash run.sh $area $*' C-m"
+    else
+      tmux new-session -d -s "$SESSION_NAME"
+      tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
+    fi
   done
 }
 
