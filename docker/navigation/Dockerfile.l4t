@@ -41,17 +41,43 @@ RUN git clone --depth 1 https://github.com/magicleap/SuperGluePretrainedNetwork.
 # Copy RTABMap's SuperGlue wrapper script alongside the SuperGlue repo
 RUN cp /home/ros/ros_packages3/src/rtabmap/corelib/src/python/rtabmap_superglue.py /home/ros/SuperGlue/
 
-# Trace SuperPoint model with the installed PyTorch version to avoid version mismatch
+# Re-trace SuperPoint model to match the installed PyTorch/libtorch version
+# RTABMap's C++ SuperPoint expects a raw tensor input, not the dict-based SuperGlue interface.
+# We use rtabmap's own python script to trace correctly.
 RUN mkdir -p /home/ros/models && \
     python3 -c "\
-import torch; \
-from pathlib import Path; \
-import sys; sys.path.insert(0, '/home/ros/SuperGlue'); \
+import torch, sys; \
+sys.path.insert(0, '/home/ros/SuperGlue'); \
 from models.superpoint import SuperPoint; \
-config = {'nms_radius': 4, 'keypoint_threshold': 0.005, 'max_keypoints': -1}; \
-model = SuperPoint(config).eval().cpu(); \
-dummy = torch.randn(1, 1, 480, 640); \
-traced = torch.jit.trace(model, dummy); \
+import torch.nn as nn; \
+\
+class SPWrapper(nn.Module): \
+    def __init__(self): \
+        super().__init__(); \
+        cfg = {'nms_radius': 4, 'keypoint_threshold': 0.005, 'max_keypoints': -1}; \
+        self.sp = SuperPoint(cfg).eval(); \
+        self.relu = self.sp.relu; \
+        self.conv1a = self.sp.conv1a; self.conv1b = self.sp.conv1b; \
+        self.conv2a = self.sp.conv2a; self.conv2b = self.sp.conv2b; \
+        self.conv3a = self.sp.conv3a; self.conv3b = self.sp.conv3b; \
+        self.conv4a = self.sp.conv4a; self.conv4b = self.sp.conv4b; \
+        self.convPa = self.sp.convPa; self.convPb = self.sp.convPb; \
+        self.convDa = self.sp.convDa; self.convDb = self.sp.convDb; \
+    def forward(self, image): \
+        x = self.relu(self.conv1a(image)); x = self.relu(self.conv1b(x)); \
+        x = torch.nn.functional.max_pool2d(x, 2, 2); \
+        x = self.relu(self.conv2a(x)); x = self.relu(self.conv2b(x)); \
+        x = torch.nn.functional.max_pool2d(x, 2, 2); \
+        x = self.relu(self.conv3a(x)); x = self.relu(self.conv3b(x)); \
+        x = torch.nn.functional.max_pool2d(x, 2, 2); \
+        x = self.relu(self.conv4a(x)); x = self.relu(self.conv4b(x)); \
+        cPa = self.relu(self.convPa(x)); scores = self.convPb(cPa); \
+        cDa = self.relu(self.convDa(x)); desc = self.convDb(cDa); \
+        desc = torch.nn.functional.normalize(desc, p=2, dim=1); \
+        return scores, desc; \
+\
+wrapper = SPWrapper().eval().cpu(); \
+traced = torch.jit.trace(wrapper, torch.randn(1, 1, 480, 640)); \
 traced.save('/home/ros/models/superpoint_v1.pt'); \
 print('SuperPoint model traced successfully')"
 
