@@ -52,6 +52,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
 
+    ei_audio_classifier_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "ei_audio_classifier.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["ei_audio_classifier"]["ros__parameters"]
+
     nodes = [
         Node(
             package="speech",
@@ -100,6 +107,14 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[oww_config],
+        ),
+        Node(
+            package="speech",
+            executable="ei_audio_classifier.py",
+            name="ei_audio_classifier",
+            output="screen",
+            emulate_tty=True,
+            parameters=[ei_audio_classifier_config],
         ),
         Node(
             package="speech",

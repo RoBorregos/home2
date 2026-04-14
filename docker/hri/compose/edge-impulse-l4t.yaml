@@ -1,0 +1,27 @@
+services:
+  ei-inference:
+    container_name: home2-hri-edge-impulse-l4t
+    image: public.ecr.aws/g7a8t7v6/inference-container-jetson-orin-6-0:v1.92.11
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ../../../hri/packages/speech/assets/downloads/model.eim:/data/model.eim
+    ports:
+      - "1337:1337"
+    command:
+      - --model-file
+      - /data/model.eim
+      - --run-http-server
+      - "1337"
+      - --force-target
+      - runner-linux-aarch64-jetson-orin-6-0
+      - --force-variant
+      - float32
+    stdin_open: true
+    tty: true
