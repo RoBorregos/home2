@@ -31,6 +31,8 @@ class EdgeImpulseKWSNode(Node):
         self.declare_parameter("SENSITIVITY_THRESHOLD", 0.5)
         self.declare_parameter("sample_rate", 16000)
         self.declare_parameter("window_size_s", 1.0)
+        self.declare_parameter("hop_ratio", 0.25)
+        self.declare_parameter("audio_gain", 1.0)
         self.declare_parameter("noise_label", "noise")
         self.declare_parameter("SAVE_DETECTION_AUDIO", False)
         self.declare_parameter(
@@ -63,6 +65,12 @@ class EdgeImpulseKWSNode(Node):
         window_size_s = (
             self.get_parameter("window_size_s").get_parameter_value().double_value
         )
+        hop_ratio = (
+            self.get_parameter("hop_ratio").get_parameter_value().double_value
+        )
+        self.audio_gain = (
+            self.get_parameter("audio_gain").get_parameter_value().double_value
+        )
         self.noise_label = (
             self.get_parameter("noise_label").get_parameter_value().string_value
         )
@@ -77,23 +85,23 @@ class EdgeImpulseKWSNode(Node):
             os.makedirs(self.audio_save_dir, exist_ok=True)
 
         self.window_size_samples = int(self.sample_rate * window_size_s)
+        self.hop_size_samples = max(1, int(self.window_size_samples * hop_ratio))
 
         self.get_logger().info(
             f"EI server: {self.ei_url} | "
-            f"Window: {self.window_size_samples} samples ({window_size_s}s) | "
-            f"Threshold: {self.sensitivity_threshold}"
+            f"window={self.window_size_samples} samples ({window_size_s:.2f}s) | "
+            f"hop={self.hop_size_samples} samples "
+            f"({self.hop_size_samples / self.sample_rate * 1000:.0f}ms) | "
+            f"threshold={self.sensitivity_threshold}"
         )
 
-        # Audio buffer to accumulate samples
         self.audio_buffer = np.array([], dtype=np.int16)
 
-        # Publisher and subscriber
         self.publisher = self.create_publisher(String, wakeword_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
 
         self.last_detection_time = time.time() - self.detection_cooldown
 
-        # Wait for the EI inference server to be ready before accepting audio
         self._wait_for_server()
         self.get_logger().info("Edge Impulse KWS node initialized and ready.")
 
@@ -119,15 +127,19 @@ class EdgeImpulseKWSNode(Node):
         )
 
     def audio_callback(self, msg):
-        """Process incoming audio data and detect keywords."""
-        audio_data = np.frombuffer(msg.data, dtype=np.int16)
-        self.audio_buffer = np.concatenate([self.audio_buffer, audio_data])
+        """Accumulate audio and classify overlapping windows as they become available."""
+        chunk = np.frombuffer(bytes(msg.data), dtype=np.int16)
+        self.audio_buffer = np.concatenate([self.audio_buffer, chunk])
 
-        # Process when we have enough samples
-        if len(self.audio_buffer) >= self.window_size_samples:
-            window = self.audio_buffer[-self.window_size_samples :]
-            self.audio_buffer = self.audio_buffer[-self.window_size_samples // 2 :]
-
+        while len(self.audio_buffer) >= self.window_size_samples:
+            window = self.audio_buffer[: self.window_size_samples]
+            self.audio_buffer = self.audio_buffer[self.hop_size_samples :]
+            if self.audio_gain != 1.0:
+                window = np.clip(
+                    window.astype(np.float32) * self.audio_gain,
+                    np.iinfo(np.int16).min,
+                    np.iinfo(np.int16).max,
+                ).astype(np.int16)
             self._classify(window)
 
     def _classify(self, window: np.ndarray):
@@ -151,16 +163,13 @@ class EdgeImpulseKWSNode(Node):
         if not classification:
             return
 
-        # Debug: log all classification results
         best_class = max(classification, key=classification.get)
         self.get_logger().debug(
             f"Classification: {best_class}={classification[best_class]:.2f} | {classification}"
         )
 
-        # Find the best keyword (excluding noise)
         best_keyword = None
         best_score = 0.0
-
         for label, score in classification.items():
             if label.lower() == self.noise_label:
                 continue
@@ -168,7 +177,6 @@ class EdgeImpulseKWSNode(Node):
                 best_score = score
                 best_keyword = label
 
-        # Publish if above threshold and cooldown elapsed
         if best_keyword and best_score >= self.sensitivity_threshold:
             current_time = time.time()
             if current_time - self.last_detection_time >= self.detection_cooldown:
