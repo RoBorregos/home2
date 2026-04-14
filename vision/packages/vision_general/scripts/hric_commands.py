@@ -33,6 +33,7 @@ from frida_constants.vision_constants import (
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
 )
+from vision_general.utils.area_check import is_point_in_house
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -424,6 +425,20 @@ class HRICCommands(Node):
                 -1,
             )
 
+            # Convert chair bbox center to PointStamped and check if inside house
+            if self.camera_info is not None and self.depth_image is not None:
+                cx = int((xmin + xmax) / 2)
+                cy = int(y_center_chair)
+                chair_point = point2d_to_ros_point_stamped(
+                    self.camera_info,
+                    self.depth_image,
+                    (cx, cy),
+                    CAMERA_FRAME,
+                    Time(sec=0, nanosec=0),
+                )
+                if not is_point_in_house(chair_point):
+                    continue  # Skip this chair if not inside house
+
             for person in self.people:
                 center_x = (person["bbox"][0] + person["bbox"][2]) / 2
                 person_y = person["bbox"][3]
@@ -461,7 +476,7 @@ class HRICCommands(Node):
                     2,
                 )
 
-        if len(self.chairs) != 0:
+        if chair_queue.qsize() != 0:
             _, output, a, b, c, d = chair_queue.get()
             cv2.rectangle(self.output_image, (a, b), (c, d), (0, 255, 0), 2)
             self.get_logger().info(f"Chair found: {output}")
