@@ -26,23 +26,17 @@ from std_msgs.msg import Bool, String
 
 from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
-    CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     FACE_RECOGNITION_IMAGE,
-    FLIP_IMAGE_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
 )
 from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
-
-# from vision_general.utils.calculations import (
-#     get_depth,
-#     deproject_pixel_to_point,
-# )
 
 
 DEFAULT_NAME = "ale"
@@ -70,7 +64,7 @@ class FaceRecognition(Node):
 
         self.image_subscriber = self.create_subscription(
             Image,
-            CAMERA_TOPIC,
+            IMAGE_ORIENTED_TOPIC,
             self.image_callback,
             self._img_qos,
             callback_group=self.callback_group,
@@ -113,18 +107,10 @@ class FaceRecognition(Node):
         self.annotated_frame = []
         self.vision_active = True
         self.is_processing = False
-        self.flip_image = False
         self.create_subscription(
             Bool,
             "/vision/face_recognition/active",
             self._active_callback,
-            10,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            Bool,
-            FLIP_IMAGE_TOPIC,
-            self._flip_callback,
             10,
             callback_group=self.callback_group,
         )
@@ -294,13 +280,6 @@ class FaceRecognition(Node):
 
         target = Point()
 
-        # if len(self.depth_image) > 0:
-        #     point2D = (xc, yc)
-        #     depth = get_depth(self.depth_image, point2D)
-        #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-        #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-        #     target.z = point3D[2]
-
         target.x = move_x
         target.y = move_y
 
@@ -317,11 +296,6 @@ class FaceRecognition(Node):
             return
         self.vision_active = msg.data
         self.get_logger().info(f"Face recognition active: {self.vision_active}")
-
-    def _flip_callback(self, msg):
-        if msg.data != self.flip_image:
-            self.flip_image = msg.data
-            self.get_logger().info(f"Flip image set to: {self.flip_image}")
 
     def run(self) -> None:
         """Run face recognition algorithm"""
@@ -352,8 +326,6 @@ class FaceRecognition(Node):
         self.processing_id = self.id
 
         self.frame = self.image
-        if self.flip_image:
-            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
 
@@ -507,15 +479,7 @@ class FaceRecognition(Node):
             self.publish_follow_face(xc, yc, largest_face_name)
         else:
             self.name_publisher.publish(String(data=""))
-        # if self.verbose:
-        #    cv2.imshow("Face recognition", self.annotated_frame)
-        # self.image_view = self.annotated_frame
-        # self.view_pub.publish(
-        #     self.bridge.cv2_to_imgmsg(self.self.annotated_frame, "bgr8")
-        # )
 
-        # if cv2.waitKey(1) & 0xFF == ord("q"):
-        #     self.prev_faces = []
         self.publish_image()
 
 
