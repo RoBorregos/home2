@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Republishes the camera image rotated by an Int8 (0/90/180/270) so 2D
+Republishes the camera image rotated by an Int16 (0/90/180/270) so 2D
 detectors consume an upright frame. Depth, camera_info and the TF tree
 are left untouched; detectors that need 3D must use raw depth and pass
 `rotation` to `point2d_to_ros_point_stamped`.
@@ -13,7 +13,7 @@ import rclpy.qos
 from cv_bridge import CvBridge
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from std_msgs.msg import Int8
+from std_msgs.msg import Int16
 
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
@@ -37,13 +37,13 @@ class ImageOrienter(Node):
         )
 
         self.create_subscription(Image, CAMERA_TOPIC, self._image_cb, img_qos)
-        self.create_subscription(Int8, CAMERA_ROTATION_TOPIC, self._rotation_cb, 10)
+        self.create_subscription(Int16, CAMERA_ROTATION_TOPIC, self._rotation_cb, 10)
 
         self.pub = self.create_publisher(Image, IMAGE_ORIENTED_TOPIC, img_qos)
 
         self.get_logger().info("Image orienter ready (rotation=0)")
 
-    def _rotation_cb(self, msg: Int8):
+    def _rotation_cb(self, msg: Int16):
         value = int(msg.data) % 360
         if value not in VALID_ROTATIONS:
             self.get_logger().warn(

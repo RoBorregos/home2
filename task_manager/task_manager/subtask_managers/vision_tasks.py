@@ -60,7 +60,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
-from std_msgs.msg import Int8
+from std_msgs.msg import Int16
 from std_srvs.srv import SetBool, Trigger
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
@@ -97,7 +97,7 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
-        self.rotate_camera_publisher = self.node.create_publisher(Int8, CAMERA_ROTATION_TOPIC, 10)
+        self.rotate_camera_publisher = self.node.create_publisher(Int16, CAMERA_ROTATION_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
@@ -1050,7 +1050,7 @@ class VisionTasks:
             rotation = 180 if flip else 0
         else:
             rotation = int(flip) % 360
-        msg = Int8()
+        msg = Int16()
         msg.data = rotation
         self.rotate_camera_publisher.publish(msg)
 

@@ -18,7 +18,7 @@ from sensor_msgs.msg import Image, CameraInfo
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
-from std_msgs.msg import Int8
+from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
@@ -90,7 +90,7 @@ class HRICCommands(Node):
             callback_group=self.callback_group,
         )
         self.create_subscription(
-            Int8,
+            Int16,
             CAMERA_ROTATION_TOPIC,
             self._rotation_callback,
             10,
