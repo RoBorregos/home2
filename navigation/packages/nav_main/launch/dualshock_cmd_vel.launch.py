@@ -10,7 +10,7 @@ from launch_ros.descriptions import ComposableNode
 def generate_launch_description():
     """Generate launch description."""
     hw_type_arg = DeclareLaunchArgument(
-        'hw_type', default_value=TextSubstitution(text='DualShock4'))
+        'hw_type', default_value=TextSubstitution(text='DualSense'))
     topic_name_arg = DeclareLaunchArgument(
         'topic_name', default_value=TextSubstitution(text='/cmd_vel'))
 
