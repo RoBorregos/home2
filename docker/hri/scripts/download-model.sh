@@ -11,13 +11,12 @@ ask_for_model() {
 }
 
 echo "Which models do you want to download?"
-echo "  1) qwen3-8b         (Qwen3-8B Q4_K_M GGUF, for llama.cpp)"
-echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
-echo "  3) qwen3            (Qwen3 via Ollama)"
-echo "  4) nomic-embed-text (embeddings via Ollama)"
-echo "  5) DeepFilterNet3"
-echo "  6) ei-door          (Door detection)"
-echo "  7) ei-kws           (Keyword detection)"
+echo "  1) qwen3"
+echo "  2) nomic-embed-text"
+echo "  3) rbrgs"
+echo "  4) DeepFilterNet3"
+echo "  5) ei-door (Door detection)"
+echo "  6) ei-kws  (Keyword wakeword)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -158,7 +157,7 @@ download_ei_model() {
     docker rm "$CONTAINER_ID" 2>/dev/null
 }
 
-if ask_for_model ei-door 6; then
+if ask_for_model ei-door 5; then
     if [ -f "$EI_DOWNLOAD_DIR/door/model.eim" ]; then
         echo "Edge Impulse door model already exists. Skipping download."
     else
@@ -166,7 +165,7 @@ if ask_for_model ei-door 6; then
     fi
 fi
 
-if ask_for_model ei-kws 7; then
+if ask_for_model ei-kws 6; then
     if [ -f "$EI_DOWNLOAD_DIR/kws/model.eim" ]; then
         echo "Edge Impulse kws model already exists. Skipping download."
     else
