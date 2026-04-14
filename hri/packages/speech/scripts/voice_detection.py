@@ -250,8 +250,6 @@ class VoiceDetection(Node):
                         "%H:%M:%S", time.localtime(self._speech_start_time)
                     )
                     self.get_logger().info(f"[VAD DEBUG] Speech STARTED at {ts}")
-                else:
-                    self.get_logger().info("Voice activity: speech started")
             self._audio_pub.publish(msg)
             if self.debug:
                 self._debug_buffer.append(bytes(msg.data))
@@ -282,8 +280,6 @@ class VoiceDetection(Node):
                             f"(duration={duration:.2f}s)"
                         )
                         self._save_debug_segment()
-                    else:
-                        self.get_logger().info("Voice activity: speaker ended talking")
                     self._reset_speaker_lock()
 
 

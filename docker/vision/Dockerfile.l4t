@@ -59,6 +59,8 @@ RUN pip install --upgrade pip && \
     onnxslim>=0.1.71 \
     onnxruntime-gpu \
     mediapipe
+    grpcio==1.71.0 \
+    protobuf==5.29.1
 
 # ── YOLOv5 for legacy YoloV5ObjectDetector ──
 WORKDIR /workspace
