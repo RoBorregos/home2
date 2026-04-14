@@ -16,7 +16,7 @@ echo "  2) nomic-embed-text"
 echo "  3) rbrgs"
 echo "  4) DeepFilterNet3"
 echo "  5) ei-door (Door detection)"
-echo "  6) ei-oww  (Keyword wakeword)"
+echo "  6) ei-kws  (Keyword wakeword)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -55,7 +55,7 @@ fi
 # ── Edge Impulse model downloads ──────────────────────────────────────────────
 # Downloads models via the EI inference container using an API key.
 # The container downloads the .eim file, then we copy it out.
-# API keys are read from environment variables: EI_API_KEY_DOOR, EI_API_KEY_OWW
+# API keys are read from environment variables: EI_API_KEY_DOOR, EI_API_KEY_KWS
 # You can also set them in docker/hri/.env
 EI_DOWNLOAD_DIR="../../hri/packages/speech/assets/downloads"
 EI_IMAGE="public.ecr.aws/g7a8t7v6/inference-container-jetson-orin-6-0:v1.92.11"
@@ -144,11 +144,11 @@ if ask_for_model ei-door 5; then
     fi
 fi
 
-if ask_for_model ei-oww 6; then
-    if [ -f "$EI_DOWNLOAD_DIR/oww/model.eim" ]; then
-        echo "Edge Impulse OWW model already exists. Skipping download."
+if ask_for_model ei-kws 6; then
+    if [ -f "$EI_DOWNLOAD_DIR/kws/model.eim" ]; then
+        echo "Edge Impulse kws model already exists. Skipping download."
     else
-        download_ei_model "oww" "${EI_API_KEY_OWW:-}" "1338"
+        download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
     fi
 fi
 
