@@ -34,7 +34,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
-    FLIP_IMAGE_TOPIC,
+    CAMERA_ROTATION_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -60,6 +60,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
+from std_msgs.msg import Int8
 from std_srvs.srv import SetBool, Trigger
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
@@ -96,7 +97,7 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
-        self.rotate_camera_publisher = self.node.create_publisher(BoolMsg, FLIP_IMAGE_TOPIC, 10)
+        self.rotate_camera_publisher = self.node.create_publisher(Int8, CAMERA_ROTATION_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
@@ -1039,9 +1040,18 @@ class VisionTasks:
 
         return Status.EXECUTION_SUCCESS, location
 
-    def camera_upside_down(self, flip: bool):
-        msg = BoolMsg()
-        msg.data = flip
+    def camera_upside_down(self, flip):
+        """Publish the camera rotation on CAMERA_ROTATION_TOPIC.
+
+        Accepts either a bool (True -> 180, False -> 0) for backward
+        compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
+        """
+        if isinstance(flip, bool):
+            rotation = 180 if flip else 0
+        else:
+            rotation = int(flip) % 360
+        msg = Int8()
+        msg.data = rotation
         self.rotate_camera_publisher.publish(msg)
 
 
