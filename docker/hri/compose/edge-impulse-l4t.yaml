@@ -25,6 +25,11 @@ services:
       - float32
     stdin_open: true
     tty: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
 
   ei-inference-oww:
     container_name: home2-hri-edge-impulse-oww
@@ -52,3 +57,8 @@ services:
       - float32
     stdin_open: true
     tty: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
