@@ -65,9 +65,7 @@ class EdgeImpulseKWSNode(Node):
         window_size_s = (
             self.get_parameter("window_size_s").get_parameter_value().double_value
         )
-        hop_ratio = (
-            self.get_parameter("hop_ratio").get_parameter_value().double_value
-        )
+        hop_ratio = self.get_parameter("hop_ratio").get_parameter_value().double_value
         self.audio_gain = (
             self.get_parameter("audio_gain").get_parameter_value().double_value
         )
