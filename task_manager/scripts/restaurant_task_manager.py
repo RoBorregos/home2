@@ -78,6 +78,8 @@ class RestaurantTaskManager(Node):
         # Bar position (saved at START)
         self.bar_pose = None
 
+        self._orders_given = False
+
         self.current_state = RestaurantTaskManager.TaskStates.START
 
         self.get_logger().info("RestaurantTaskManager has started.")
@@ -434,18 +436,22 @@ class RestaurantTaskManager(Node):
             self.current_state = RestaurantTaskManager.TaskStates.SAY_ORDER_TO_BARMAN
 
         if self.current_state == RestaurantTaskManager.TaskStates.SAY_ORDER_TO_BARMAN:
-            Logger.state(self, "Communicating orders to the barman...")
-            all_orders = []
-            for tid in self.tables_sorted_by_customers:
-                all_orders.extend(self.tables[tid]["orders"])
+            if not self._orders_given:
+                Logger.state(self, "Communicating orders to the barman...")
+                all_orders = []
+                for tid in self.tables_sorted_by_customers:
+                    all_orders.extend(self.tables[tid]["orders"])
 
-            if all_orders:
-                order_text = ", ".join(all_orders)
-                self.subtask_manager.hri.say(
-                    f"Hello barman, I have the following orders: {order_text}. Please help me prepare them."
-                )
-            else:
-                self.subtask_manager.hri.say("Hello barman, actually I don't have any orders yet.")
+                if all_orders:
+                    order_text = ", ".join(all_orders)
+                    self.subtask_manager.hri.say(
+                        f"Hello barman, I have the following orders: {order_text}. Please help me prepare them."
+                    )
+                else:
+                    self.subtask_manager.hri.say(
+                        "Hello barman, actually I don't have any orders yet."
+                    )
+                self._orders_given = True
 
             self.current_state = RestaurantTaskManager.TaskStates.PREPARE_DELIVERY
 

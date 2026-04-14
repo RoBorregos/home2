@@ -12,7 +12,6 @@ from launch.substitutions import PathJoinSubstitution
 def generate_launch_description():
     return LaunchDescription(
         [
-            # perception_3d.launch.py
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution(

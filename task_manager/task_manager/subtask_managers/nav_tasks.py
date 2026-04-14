@@ -151,21 +151,6 @@ class NavigationTasks:
         Logger.info(self.node, "pause_nav successful")
         return (Status.EXECUTION_SUCCESS, "")
 
-        request = CheckDoor.Request()
-        future = self.door_checking_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        result = future.result()
-        if result is not None:
-            if result.status:
-                CLog.nav(self.node, "SUCCESS", "Door open")
-                return (Status.EXECUTION_SUCCESS, "")
-            else:
-                CLog.nav(self.node, "ERROR", "Error getting state with door")
-                return (Status.EXECUTION_ERROR, "Error getting door state")
-        else:
-            CLog.nav(self.node, "ERROR", "Error with request")
-            return (Status.EXECUTION_ERROR, "Request error")
-
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
     @service_check(
         "move_to_location_srv",

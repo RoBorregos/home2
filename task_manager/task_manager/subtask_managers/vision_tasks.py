@@ -215,6 +215,7 @@ class VisionTasks:
                     "type": "service",
                 },
                 "customer": {"client": self.customer_client, "type": "service"},
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
