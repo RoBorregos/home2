@@ -1,5 +1,9 @@
 var NAVTREEINDEX24 =
 {
+"close__by__generators_8py.html#a028e0770c12f1f056c05d8347126a88c":[26,0,3,0,6,0,0,0,0],
+"close__by__generators_8py.html#a2833aebb91dad17af1c390b31894723e":[26,0,3,0,6,0,0,0,1],
+"colored__logger_8py.html":[26,0,6,2,2,1],
+"colored__logger_8py.html#a2e9693062dcffe46a119336e7741f3fc":[26,0,6,2,2,1,4],
 "colored__logger_8py.html#a416192077f1be5e35474b8dbe599de8f":[26,0,6,2,2,1,3],
 "colored__logger_8py.html#acf7155779537a3153bce705c38d79b02":[26,0,6,2,2,1,2],
 "colored__logger_8py.html#af39bc6f616ad2b1e6beb51d91fd5539b":[26,0,6,2,2,1,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX24 =
 "fix__position__to__plane_8py.html#aeaa9b43d281424bcdeda997af6006cbb":[26,0,3,0,5,1,4,4],
 "flat__grasp__estimator_8py.html":[26,0,3,0,4,3,1],
 "flat__grasp__estimator_8py.html#a2198b180d80866ea116fc2307ef7f5ec":[26,0,3,0,4,3,1,3],
-"flat__grasp__estimator_8py.html#a8e8d4b2a05e97a82722e59f7a87e3273":[26,0,3,0,4,3,1,2],
-"flat__grasp__estimator_8py.html#a9fb12447fb95e22a2c706b4280a7a008":[26,0,3,0,4,3,1,5],
-"flat__grasp__estimator_8py.html#aaf5c78162382f1db1d6cd84d7aadfe12":[26,0,3,0,4,3,1,1],
-"flat__grasp__estimator_8py.html#ab1e0fa225f7602b2477fb855e7253f2d":[26,0,3,0,4,3,1,4],
-"follow__face__node_8py.html":[26,0,6,1,4]
+"flat__grasp__estimator_8py.html#a8e8d4b2a05e97a82722e59f7a87e3273":[26,0,3,0,4,3,1,2]
 };
