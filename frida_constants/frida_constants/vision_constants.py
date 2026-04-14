@@ -139,6 +139,9 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 
+# Talking detection node
+IS_TALKING_TOPIC = "/vision/is_talking"
+
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
