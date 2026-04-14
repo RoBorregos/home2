@@ -8,9 +8,10 @@ from frida_constants.vision_constants import (
     RESTAURANT_TABLES_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
 )
+import math
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
@@ -19,6 +20,10 @@ from task_manager.utils.status import Status
 import time
 
 ATTEMPT_LIMIT = 3
+
+# Progressive customer search parameters
+SEARCH_STEP_SIZE = 1.0  # meters between each search position
+MAX_SEARCH_STEPS = 5  # total steps before returning to bar (~5 m coverage)
 
 
 class RestaurantTaskManager(Node):
@@ -41,7 +46,9 @@ class RestaurantTaskManager(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("restaurant_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.RESTAURANT, mock_areas=["manipulation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.RESTAURANT, mock_areas=["manipulation"]
+        )
 
         self.running_task = True
 
@@ -64,6 +71,9 @@ class RestaurantTaskManager(Node):
 
         # Target customer detected during WAIT_FOR_CALL
         self.target_person_point = None
+
+        # Progressive search state: index of the current search position (0 = bar)
+        self.search_step = 0
 
         # Bar position (saved at START)
         self.bar_pose = None
@@ -183,6 +193,23 @@ class RestaurantTaskManager(Node):
 
         return (Status.EXECUTION_ERROR, "Human assistance failed")
 
+    def _compute_search_waypoint(self, step: int) -> PointStamped:
+        """Return a PointStamped `step * SEARCH_STEP_SIZE` m ahead of the bar along the robot's initial heading."""
+        if self.bar_pose is None:
+            return None
+        q = self.bar_pose.pose.orientation
+        yaw = math.atan2(
+            2.0 * (q.w * q.z + q.x * q.y),
+            1.0 - 2.0 * (q.y * q.y + q.z * q.z),
+        )
+        wp = PointStamped()
+        wp.header.frame_id = "map"
+        wp.header.stamp = self.get_clock().now().to_msg()
+        wp.point.x = self.bar_pose.pose.position.x + step * SEARCH_STEP_SIZE * math.cos(yaw)
+        wp.point.y = self.bar_pose.pose.position.y + step * SEARCH_STEP_SIZE * math.sin(yaw)
+        wp.point.z = 0.0
+        return wp
+
     def run(self):
         """Running main loop"""
         if self.current_state == RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON:
@@ -204,17 +231,48 @@ class RestaurantTaskManager(Node):
             self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
 
         if self.current_state == RestaurantTaskManager.TaskStates.WAIT_FOR_CALL:
-            Logger.state(self, "Waiting for a customer to call or wave")
+            Logger.state(
+                self,
+                f"Searching for waving customer (step {self.search_step}/{MAX_SEARCH_STEPS})...",
+            )
             status, person_point = self.subtask_manager.vision.get_customer()
 
             if status == Status.EXECUTION_SUCCESS and person_point.header.frame_id != "":
                 Logger.success(self, "Customer detected calling!")
-                self.subtask_manager.hri.say("I am coming to take your order.")
-                # Store the point to navigate directly to it
+                self.subtask_manager.hri.say("I see you! I am coming to take your order.")
                 self.target_person_point = person_point
+                self.search_step = 0  # reset for future searches
                 self.current_state = RestaurantTaskManager.TaskStates.MOVE_TO_TABLES_AREA
+
+            elif self.search_step < MAX_SEARCH_STEPS:
+                # Advance one step toward the dining area and check again next cycle
+                self.search_step += 1
+                waypoint = self._compute_search_waypoint(self.search_step)
+                if waypoint is not None:
+                    Logger.info(
+                        self,
+                        f"No customer detected. Moving to search position {self.search_step} "
+                        f"({waypoint.point.x:.2f}, {waypoint.point.y:.2f}).",
+                    )
+                    self.subtask_manager.nav.resume_nav()
+                    self.subtask_manager.nav.move_to_point(waypoint)
+                    self.subtask_manager.nav.pause_nav()
+                else:
+                    self.timeout(1)
+                return  # vision check happens at new position on next run() call
+
             else:
-                self.timeout(1)
+                # Scanned the full corridor — return to bar and restart
+                Logger.info(self, "Full area scanned with no customer. Returning to bar.")
+                self.subtask_manager.hri.say(
+                    "I did not find any customers calling. I will return to the bar and wait."
+                )
+                self.search_step = 0
+                if self.bar_pose is not None:
+                    self.subtask_manager.nav.resume_nav()
+                    self.subtask_manager.nav.move_to_pose(self.bar_pose)
+                    self.subtask_manager.nav.pause_nav()
+                self.timeout(2)
                 return
 
         if self.current_state == RestaurantTaskManager.TaskStates.MOVE_TO_TABLES_AREA:
