@@ -1061,21 +1061,27 @@ class PickAndPlaceTM(Node):
             CLog.manip(self, "POUR", f"Pouring {item_name} into the bowl.")
             self.subtask_manager.hri.say(f"Pouring {item_name} into the bowl.", wait=False)
 
-            status = self.subtask_manager.manipulation.pour(
-                pour_object_name=self._to_yolo_name(item_name),
-                pour_container_name=self._to_yolo_name("bowl"),
-                object_already_grasped=True,
-            )
-
-            if status == Status.EXECUTION_SUCCESS:
-                CLog.manip(self, "POUR", f"Poured {item_name} into bowl.", level="success")
-            else:
-                CLog.manip(
-                    self,
-                    "POUR",
-                    f"Pour failed for {item_name}, will place without pouring.",
-                    level="warn",
+            pour_attempts = 2
+            for attempt in range(1, pour_attempts + 1):
+                status = self.subtask_manager.manipulation.pour(
+                    pour_object_name=self._to_yolo_name(item_name),
+                    pour_container_name=self._to_yolo_name("bowl"),
+                    object_already_grasped=True,
                 )
+                if status == Status.EXECUTION_SUCCESS:
+                    CLog.manip(self, "POUR", f"Poured {item_name} into bowl.", level="success")
+                    break
+                elif attempt < pour_attempts:
+                    CLog.manip(
+                        self, "POUR", f"Pour attempt {attempt} failed, retrying...", level="warn"
+                    )
+                else:
+                    CLog.manip(
+                        self,
+                        "POUR",
+                        f"Pour failed for {item_name} after {pour_attempts} attempts, placing without pouring.",
+                        level="warn",
+                    )
 
             self.current_state = PickAndPlaceTM.TaskStates.PLACE_BREAKFAST_ITEM
 
