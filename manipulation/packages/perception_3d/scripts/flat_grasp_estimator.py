@@ -2,6 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import qos_profile_sensor_data
 import numpy as np
 from collections import deque
 from cv_bridge import CvBridge
@@ -52,7 +53,9 @@ class FlatGraspEstimator(Node):
         # Rolling buffer for table height stabilization
         self.table_height_buffer = deque(maxlen=TABLE_HEIGHT_BUFFER_SIZE)
 
-        self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
+        self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos_profile_sensor_data
+        )
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, 1
         )
