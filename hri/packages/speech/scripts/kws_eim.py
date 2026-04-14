@@ -26,7 +26,7 @@ class EdgeImpulseKWSNode(Node):
 
         self.declare_parameter("EI_SERVER_URL", "http://localhost:1338")
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
-        self.declare_parameter("WAKEWORD_TOPIC", "/speech/oww")
+        self.declare_parameter("WAKEWORD_TOPIC", "/hri/speech/oww")
         self.declare_parameter("detection_cooldown", 1.0)
         self.declare_parameter("SENSITIVITY_THRESHOLD", 0.5)
         self.declare_parameter("sample_rate", 16000)

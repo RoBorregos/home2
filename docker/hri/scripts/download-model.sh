@@ -79,11 +79,14 @@ download_ei_model() {
     mkdir -p "$output_dir"
 
     echo "Downloading Edge Impulse model: $model_name ..."
-    CONTAINER_ID=$(docker run -d --rm \
+    CONTAINER_ID=$(docker run -d \
+        --runtime=nvidia \
         -p "$port:$port" \
         "$EI_IMAGE" \
         --api-key "$api_key" \
-        --run-http-server "$port")
+        --run-http-server "$port" \
+        --force-target runner-linux-aarch64-jetson-orin-6-0 \
+        --force-variant float32)
 
     # Wait for the model to download and the server to start
     echo "Waiting for EI container to download and build the model (this may take a few minutes)..."
@@ -96,7 +99,9 @@ download_ei_model() {
         fi
         if ! docker ps -q --filter "id=$CONTAINER_ID" | grep -q .; then
             echo "Error: EI container exited unexpectedly for $model_name."
+            echo "Container logs:"
             docker logs "$CONTAINER_ID" 2>&1 | tail -20
+            docker rm "$CONTAINER_ID" 2>/dev/null
             return 1
         fi
         sleep 5
@@ -107,6 +112,7 @@ download_ei_model() {
     if [ $WAITED -ge $MAX_WAIT ]; then
         echo "Error: Timed out waiting for EI model $model_name to download."
         docker stop "$CONTAINER_ID" 2>/dev/null
+        docker rm "$CONTAINER_ID" 2>/dev/null
         return 1
     fi
 
@@ -127,6 +133,7 @@ download_ei_model() {
 
     rm -rf "/tmp/ei-models-$model_name"
     docker stop "$CONTAINER_ID" 2>/dev/null
+    docker rm "$CONTAINER_ID" 2>/dev/null
 }
 
 if ask_for_model ei-door 5; then
