@@ -2,6 +2,7 @@ services:
   ei-inference-door:
     container_name: home2-hri-ei-door-l4t
     image: public.ecr.aws/g7a8t7v6/inference-container-jetson-orin-6-0:v1.92.11
+    attach: false
     runtime: nvidia
     deploy:
       resources:
@@ -34,6 +35,7 @@ services:
   ei-inference-kws:
     container_name: home2-hri-ei-kws-l4t
     image: public.ecr.aws/g7a8t7v6/inference-container-jetson-orin-6-0:v1.92.11
+    attach: false
     runtime: nvidia
     deploy:
       resources:
