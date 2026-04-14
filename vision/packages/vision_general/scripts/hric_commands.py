@@ -18,7 +18,6 @@ from sensor_msgs.msg import Image, CameraInfo
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
-from std_msgs.msg import Bool
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
@@ -33,7 +32,6 @@ from frida_constants.vision_constants import (
     FIND_SEAT_TOPIC,
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
-    FLIP_IMAGE_TOPIC,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -89,13 +87,6 @@ class HRICCommands(Node):
             self._img_qos,
             callback_group=self.callback_group,
         )
-        self.create_subscription(
-            Bool,
-            FLIP_IMAGE_TOPIC,
-            self._flip_callback,
-            10,
-            callback_group=self.callback_group,
-        )
 
         self.find_seat_service = self.create_service(
             FindSeat,
@@ -126,7 +117,6 @@ class HRICCommands(Node):
         self.camera_info = None
         self.output_image = []
         self.check = False
-        self.flip_image = False
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
@@ -141,13 +131,6 @@ class HRICCommands(Node):
         self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
-
-    def _flip_callback(self, msg):
-        if msg.data != self.flip_image:
-            self.flip_image = msg.data
-            self.get_logger().info(
-                f"Flip hric commands image set to: {self.flip_image}"
-            )
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -249,8 +232,6 @@ class HRICCommands(Node):
             return response
 
         frame = self.image
-        if self.flip_image:
-            frame = cv2.rotate(frame, cv2.ROTATE_180)
         self.output_image = frame.copy()
 
         self.people = []
@@ -325,8 +306,6 @@ class HRICCommands(Node):
             return
 
         frame = self.image
-        if self.flip_image:
-            frame = cv2.rotate(frame, cv2.ROTATE_180)
         self.output_image = frame.copy()
         width = frame.shape[1]
 
