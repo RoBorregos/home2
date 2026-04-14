@@ -134,9 +134,7 @@ class TalkingDetectionNode(Node):
 
         if not results.face_landmarks:
             # No face detected — treat as silent, decay debounce toward off
-            self.debounce_counter = max(
-                self.debounce_counter - 1, -DEBOUNCE_OFF_FRAMES
-            )
+            self.debounce_counter = max(self.debounce_counter - 1, -DEBOUNCE_OFF_FRAMES)
             if self.debounce_counter <= -DEBOUNCE_OFF_FRAMES:
                 self.confirmed_talking = False
             return
@@ -148,9 +146,7 @@ class TalkingDetectionNode(Node):
         window = list(self.ratio_buffer)
         direction_changes = count_direction_changes(window, MIN_DELTA)
         mean_ratio = float(np.mean(window))
-        mean_delta = (
-            float(np.mean(np.abs(np.diff(window)))) if len(window) > 1 else 0.0
-        )
+        mean_delta = float(np.mean(np.abs(np.diff(window)))) if len(window) > 1 else 0.0
 
         raw_talking = (
             direction_changes >= DIRECTION_CHANGE_THRESHOLD
@@ -159,20 +155,18 @@ class TalkingDetectionNode(Node):
         )
 
         if raw_talking:
-            self.debounce_counter = min(
-                self.debounce_counter + 1, DEBOUNCE_ON_FRAMES
-            )
+            self.debounce_counter = min(self.debounce_counter + 1, DEBOUNCE_ON_FRAMES)
         else:
-            self.debounce_counter = max(
-                self.debounce_counter - 1, -DEBOUNCE_OFF_FRAMES
-            )
+            self.debounce_counter = max(self.debounce_counter - 1, -DEBOUNCE_OFF_FRAMES)
 
         if self.debounce_counter >= DEBOUNCE_ON_FRAMES:
             self.confirmed_talking = True
         elif self.debounce_counter <= -DEBOUNCE_OFF_FRAMES:
             self.confirmed_talking = False
 
-    def is_talking_callback(self, request, response: Trigger.Response) -> Trigger.Response:
+    def is_talking_callback(
+        self, request, response: Trigger.Response
+    ) -> Trigger.Response:
         response.success = self.confirmed_talking
         response.message = "TALKING" if self.confirmed_talking else "SILENT"
         self.get_logger().info(f"Is talking query: {response.message}")
