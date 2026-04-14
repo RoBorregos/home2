@@ -141,16 +141,21 @@ class SingleTracker(Node):
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
         )
 
+        self.service_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+
         self.set_target_service = self.create_service(
-            SetBool, SET_TARGET_TOPIC, self.set_target_callback
+            SetBool, SET_TARGET_TOPIC, self.set_target_callback,
+            callback_group=self.service_callback_group,
         )
 
         self.set_target_by_service = self.create_service(
-            TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
+            TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback,
+            callback_group=self.service_callback_group,
         )
 
         self.get_is_tracking_service = self.create_service(
-            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
+            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback,
+            callback_group=self.service_callback_group,
         )
 
         self.is_tracking_result = False
@@ -168,8 +173,9 @@ class SingleTracker(Node):
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.last_reid_extraction = time.time()
-        self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        self.create_timer(0.1, self.run, callback_group=self.timer_callback_group)
+        self.create_timer(0.1, self.publish_image, callback_group=self.timer_callback_group)
 
     def setup(self):
         """Load models and initial variables"""
