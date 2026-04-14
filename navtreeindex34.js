@@ -1,5 +1,9 @@
 var NAVTREEINDEX34 =
 {
+"subtask__manager_8py.html":[26,0,6,2,2,7],
+"subtask__meta_8py.html":[26,0,6,2,1,10],
+"task_8py.html":[26,0,6,2,2,8],
+"task__manager_2task__manager_2____init_____8py.html":[26,0,6,2,3],
 "task__manager_2task__manager_2config_2____init_____8py.html":[26,0,6,2,0,1],
 "task__manager_2task__manager_2config_2hri_2____init_____8py.html":[26,0,6,2,0,0,0],
 "task__manager_2task__manager_2subtask__managers_2____init_____8py.html":[26,0,6,2,1,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX34 =
 "xarm6_8py.html#aed4ae6261a51750df7bfec97817f42ac":[26,0,3,0,2,1,0,0,12],
 "xarm6_8py.html#aef39f200226800ed9c34ac06cd7557c5":[26,0,3,0,2,1,0,0,8],
 "xarm6__ikfast61_8cpp.html":[26,0,3,0,7,0,1],
-"xarm6__ikfast61_8cpp.html#a0657832109f0b05edc3d2b70d8ecc5ac":[26,0,3,0,7,0,1,16],
-"xarm6__ikfast61_8cpp.html#a0975daf07554eaa98742b83ae89344e6":[26,0,3,0,7,0,1,12],
-"xarm6__ikfast61_8cpp.html#a0b03d83cf16b77e025d2100621f1f321":[26,0,3,0,7,0,1,6],
-"xarm6__ikfast61_8cpp.html#a10d86f8d485d2f30ce2638cb94b1e20e":[26,0,3,0,7,0,1,31],
-"xarm6__ikfast61_8cpp.html#a1173528e396c678a5482bae5e7f6e43e":[26,0,3,0,7,0,1,19]
+"xarm6__ikfast61_8cpp.html#a0657832109f0b05edc3d2b70d8ecc5ac":[26,0,3,0,7,0,1,16]
 };

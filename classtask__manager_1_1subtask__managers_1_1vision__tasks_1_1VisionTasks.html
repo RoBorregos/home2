@@ -177,8 +177,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa72bad9e29a78ab2ba67eb90d7f5fea7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac046c4b85da3703d5474f3748d5fed4a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac046c4b85da3703d5474f3748d5fed4a">detect_trash</a> (self)</td></tr>
 <tr class="separator:ac046c4b85da3703d5474f3748d5fed4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9b2ccefebb577c287e873abf944e423"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad9b2ccefebb577c287e873abf944e423">count_objects</a> (self, str object)</td></tr>
-<tr class="separator:ad9b2ccefebb577c287e873abf944e423"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f56259b13e7467bdd6360e314efddee"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a3f56259b13e7467bdd6360e314efddee">count_objects_moondream</a> (self, str object)</td></tr>
+<tr class="separator:a3f56259b13e7467bdd6360e314efddee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4bd3add43ce4c8e28d6a4b516f1c947"><td class="memItemLeft" align="right" valign="top">tuple[int, list[str]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af4bd3add43ce4c8e28d6a4b516f1c947">count_objects</a> (self, str object)</td></tr>
+<tr class="separator:af4bd3add43ce4c8e28d6a4b516f1c947"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac8b91583b99f6c7614fcf7f43ca06120"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8b91583b99f6c7614fcf7f43ca06120">describe_person</a> (self, callback)</td></tr>
 <tr class="separator:ac8b91583b99f6c7614fcf7f43ca06120"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4e9e988ee7d81b9f25f2303256a263b"><td class="memItemLeft" align="right" valign="top">tuple[int, ObjectDetection]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad4e9e988ee7d81b9f25f2303256a263b">get_pointing_bag</a> (self, float timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>)</td></tr>
@@ -577,14 +579,42 @@ compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
 <pre class="fragment">Count the number of people with the requested pose or gesture</pre> 
 </div>
 </div>
-<a id="ad9b2ccefebb577c287e873abf944e423" name="ad9b2ccefebb577c287e873abf944e423"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9b2ccefebb577c287e873abf944e423">&#9670;&#160;</a></span>count_objects()</h2>
+<a id="af4bd3add43ce4c8e28d6a4b516f1c947" name="af4bd3add43ce4c8e28d6a4b516f1c947"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4bd3add43ce4c8e28d6a4b516f1c947">&#9670;&#160;</a></span>count_objects()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def task_manager.subtask_managers.vision_tasks.VisionTasks.count_objects </td>
+          <td class="memname"> tuple[int, list[str]] task_manager.subtask_managers.vision_tasks.VisionTasks.count_objects </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>object</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Detect objects and return their labels for counting</pre> 
+</div>
+</div>
+<a id="a3f56259b13e7467bdd6360e314efddee" name="a3f56259b13e7467bdd6360e314efddee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f56259b13e7467bdd6360e314efddee">&#9670;&#160;</a></span>count_objects_moondream()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.vision_tasks.VisionTasks.count_objects_moondream </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>

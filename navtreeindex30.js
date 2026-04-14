@@ -1,5 +1,9 @@
 var NAVTREEINDEX30 =
 {
+"namespacefrida__fake__moveit__config.html#a9630fb34d2013bb4291e09ddaabe69dc":[24,0,50,1],
+"namespacefrida__fake__moveit__config.html#abfd963b35611d317b78a420c0197adeb":[24,0,50,0],
+"namespacefrida__motion__planning.html":[24,0,51],
+"namespacefrida__motion__planning_1_1motion__planning__server.html":[24,0,51,0],
 "namespacefrida__motion__planning_1_1motion__planning__server.html#af7e4f543cce624c9891b51d04ce1ee68":[24,0,51,0,1],
 "namespacefrida__moveit__common.html":[24,0,52],
 "namespacefrida__moveit__common.html#a252891207675826136eeb8fd4a7e4a3a":[24,0,52,4],
@@ -245,9 +249,5 @@ var NAVTREEINDEX30 =
 "namespacemoondream__proto__pb2.html#aeef2cc93d63a3042479747f34b2dc602":[24,0,87,2],
 "namespacemoondream__proto__pb2.html#af44b393f7046597be158d7105696f7f0":[24,0,87,3],
 "namespacemoondream__proto__pb2__grpc.html":[24,0,88],
-"namespacemoondream__proto__pb2__grpc.html#a5290e6e4261f6000cd6fcbadd6984cfd":[24,0,88,3],
-"namespacemoondream__proto__pb2__grpc.html#aa946769636bca376ac4227070567a942":[24,0,88,5],
-"namespacemoondream__proto__pb2__grpc.html#ab74109a22860ed8e9341570644b60c2f":[24,0,88,4],
-"namespacemoondream__proto__pb2__grpc.html#ac878c7ce185e78213b6747ab8f31f5a9":[24,0,88,6],
-"namespacemoondream__proto__pb2__grpc.html#adde178ad4f2aa86806845ca09c73f23f":[24,0,88,7]
+"namespacemoondream__proto__pb2__grpc.html#a5290e6e4261f6000cd6fcbadd6984cfd":[24,0,88,3]
 };

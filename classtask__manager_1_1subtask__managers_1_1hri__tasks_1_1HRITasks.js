@@ -15,6 +15,7 @@ var classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "check_coherence", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a20782dd42cdb74ea1f903692992afa56", null ],
     [ "command_interpreter", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a209bbb22747ca2343e6cd3692e427eaf", null ],
     [ "confirm", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a0c6f0c459e2e4c0f0066f3724575f815", null ],
+    [ "count_from_detections", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a2a583cb9f91ac4c6a17dbbe39c6d29ac", null ],
     [ "deterministic_categorization", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a934820ecedc38294fdbd7d68ed7f7140", null ],
     [ "execute_command", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a7882253cb328b9856c80e650d0b9497c", null ],
     [ "extract_data", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a3645a215289e1cbe97c6196c6a09b216", null ],

@@ -175,6 +175,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adaf4681b6285674f00ec4ff26332c086"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfaba4266e022be25e92766f7024772f"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#adfaba4266e022be25e92766f7024772f">answer_with_context</a> (self, str question, str context)</td></tr>
 <tr class="separator:adfaba4266e022be25e92766f7024772f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a583cb9f91ac4c6a17dbbe39c6d29ac"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a2a583cb9f91ac4c6a17dbbe39c6d29ac">count_from_detections</a> (self, list[str] detected_labels, str target_object)</td></tr>
+<tr class="separator:a2a583cb9f91ac4c6a17dbbe39c6d29ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02d28510f034f3bd5f9340d49524af31"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a02d28510f034f3bd5f9340d49524af31">query_command_history</a> (self, str query, str action, int top_k=1)</td></tr>
 <tr class="separator:a02d28510f034f3bd5f9340d49524af31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ea34eea3815e38848ebbbe2b12e5694"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classtask__manager_1_1utils_1_1status_1_1Status.html">Status</a>, dict[int, list[str]], dict[int, list[str]]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4ea34eea3815e38848ebbbe2b12e5694">categorize_objects</a> (self, list[str] table_objects, dict[int, list[str]] shelves)</td></tr>
@@ -999,6 +1001,49 @@ Args:
 Returns:
     Status: the status of the execution
     str: "yes" (user confirms), "no" (user doesn't confirm), or "" (no response interpreted).
+</pre> 
+</div>
+</div>
+<a id="a2a583cb9f91ac4c6a17dbbe39c6d29ac" name="a2a583cb9f91ac4c6a17dbbe39c6d29ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a583cb9f91ac4c6a17dbbe39c6d29ac">&#9670;&#160;</a></span>count_from_detections()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, int] task_manager.subtask_managers.hri_tasks.HRITasks.count_from_detections </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[str]&#160;</td>
+          <td class="paramname"><em>detected_labels</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str
+    &#160;</td>
+          <td class="paramname"><em>target_object</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Count how many detections match the target object using LLM reasoning.
+
+Args:
+    detected_labels: list of classnames from detect_objects
+    target_object: the type of object to count (e.g., "drinks", "fruits", "cups")
+
+Returns:
+    Status, count (int)
 </pre> 
 </div>
 </div>
