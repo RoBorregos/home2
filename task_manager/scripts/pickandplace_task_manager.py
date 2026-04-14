@@ -1006,11 +1006,16 @@ class PickAndPlaceTM(Node):
 
             is_cabinet = item_location == Location.CABINET
             if is_cabinet:
-                # Re-scan all shelf levels to build fresh octomap before picking
-                CLog.manip(self, "PICK", "Re-scanning shelves for octomap before cabinet pick.")
-                shelf_levels = sorted(self.shelf_level_heights.keys())
-                for level in shelf_levels:
-                    self._scan_shelf_level(self.shelf_level_heights[level])
+                if not self._cabinet_scan_fresh:
+                    CLog.manip(self, "PICK", "Scanning shelves for octomap before cabinet pick.")
+                    shelf_levels = sorted(self.shelf_level_heights.keys())
+                    for level in shelf_levels:
+                        self._scan_shelf_level(self.shelf_level_heights[level])
+                    self._cabinet_scan_fresh = True
+                else:
+                    CLog.manip(
+                        self, "PICK", "Reusing octomap from current visit (skipping shelf scan)."
+                    )
             else:
                 self.subtask_manager.manipulation.move_to_position("table_stare")
 
