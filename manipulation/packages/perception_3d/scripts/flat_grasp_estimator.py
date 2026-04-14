@@ -57,7 +57,10 @@ class FlatGraspEstimator(Node):
             Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos_profile_sensor_data
         )
         self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, 1
+            CameraInfo,
+            CAMERA_INFO_TOPIC,
+            self.camera_info_callback,
+            qos_profile_sensor_data,
         )
         self.create_subscription(
             ObjectDetectionArray,
