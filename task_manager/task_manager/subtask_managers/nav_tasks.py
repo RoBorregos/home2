@@ -7,10 +7,12 @@ import json
 import os
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionClient
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
+    GOAL_NAV_ACTION_SERVER,
     MOVE_LOCATION_SERVICE,
     SUBTASK_MANAGER,
     RTAB_PAUSE_SERVICE,
@@ -22,6 +24,9 @@ from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from lifecycle_msgs.srv import ChangeState
 from lifecycle_msgs.msg import Transition
 from std_srvs.srv import Empty, SetBool
+from geometry_msgs.msg import PoseStamped, PointStamped
+from nav2_msgs.action import NavigateToPose
+import tf2_ros
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -51,6 +56,13 @@ class NavigationTasks:
         self.bt_params = self.node.create_client(SetParameters, "/bt_navigator/set_parameters")
         self.bt_lifecycle = self.node.create_client(ChangeState, "/bt_navigator/change_state")
         self.activate_follow = self.node.create_client(SetBool, "/activate_follow")
+
+        # Action client for navigating to arbitrary poses
+        self.nav_action_client = ActionClient(self.node, NavigateToPose, GOAL_NAV_ACTION_SERVER)
+
+        # TF for current pose lookup
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
 
         # Task Actions and Services check
         self.services = {
@@ -264,6 +276,84 @@ class NavigationTasks:
         else:
             Logger.error(self.node, "Error with request")
             return (Status.EXECUTION_ERROR, "Request error")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check("rtabmap_continue", (Status.EXECUTION_ERROR, "Service not started"), timeout=3)
+    def resume_nav(self):
+        """Resume SLAM (rtabmap) after a pause."""
+        req = Empty.Request()
+        future = self.rtabmap_continue.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "resume_nav service call failed (no response)")
+            return (Status.EXECUTION_ERROR, "Timeout")
+        Logger.info(self.node, "resume_nav successful")
+        return (Status.EXECUTION_SUCCESS, "")
+
+    def get_current_pose(self):
+        """Return the robot's current PoseStamped in the map frame via TF."""
+        try:
+            transform = self.tf_buffer.lookup_transform(
+                "map",
+                "base_footprint",
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            pose = PoseStamped()
+            pose.header.frame_id = "map"
+            pose.header.stamp = self.node.get_clock().now().to_msg()
+            pose.pose.position.x = transform.transform.translation.x
+            pose.pose.position.y = transform.transform.translation.y
+            pose.pose.position.z = 0.0
+            pose.pose.orientation = transform.transform.rotation
+            Logger.info(
+                self.node,
+                f"Current pose: ({pose.pose.position.x:.2f}, {pose.pose.position.y:.2f})",
+            )
+            return pose
+        except Exception as e:
+            Logger.error(self.node, f"Failed to get current pose via TF: {e}")
+            return None
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
+    @service_check(
+        "nav_action_client", (Status.EXECUTION_ERROR, "Action server not started"), timeout=5
+    )
+    def move_to_pose(self, pose: PoseStamped):
+        """Navigate to an arbitrary PoseStamped using the nav2 action server."""
+        try:
+            goal = NavigateToPose.Goal()
+            goal.pose = pose
+
+            send_future = self.nav_action_client.send_goal_async(goal)
+            rclpy.spin_until_future_complete(self.node, send_future, timeout_sec=10.0)
+
+            goal_handle = send_future.result()
+            if goal_handle is None or not goal_handle.accepted:
+                Logger.error(self.node, "NavigateToPose goal was rejected")
+                return (Status.EXECUTION_ERROR, "Goal rejected")
+
+            result_future = goal_handle.get_result_async()
+            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=120.0)
+
+            Logger.info(self.node, "move_to_pose: goal reached")
+            return (Status.EXECUTION_SUCCESS, "")
+        except Exception as e:
+            Logger.error(self.node, f"move_to_pose error: {e}")
+            return (Status.EXECUTION_ERROR, str(e))
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
+    def move_to_point(self, point: PointStamped):
+        """Navigate to an arbitrary PointStamped (robot uses default orientation)."""
+        pose = PoseStamped()
+        pose.header = point.header
+        if pose.header.frame_id == "":
+            pose.header.frame_id = "map"
+        pose.pose.position.x = point.point.x
+        pose.pose.position.y = point.point.y
+        pose.pose.position.z = 0.0
+        pose.pose.orientation.w = 1.0
+        return self.move_to_pose(pose)
 
 
 if __name__ == "__main__":
