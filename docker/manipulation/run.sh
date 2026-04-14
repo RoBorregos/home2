@@ -22,13 +22,15 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON_PACKAGES="manipulation_general xarm6_ikfast_plugin"
+COLCON_ENV_CLEAN="unset PCL_ROOT EIGEN_ROOT FLANN_ROOT BOOST_ROOT"
+COLCON="colcon build --symlink-install --packages-up-to $COLCON_PACKAGES --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces --cmake-args -Wno-dev"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $COLCON_ENV_CLEAN && $COLCON && $SOURCE"
 else
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 case $TASK in
@@ -40,6 +42,9 @@ case $TASK in
         ;;
     "--gpsr")
         RUN="ros2 launch manipulation_general gpsr.launch.py"
+        ;;
+    "--dlc")
+        RUN="ros2 launch manipulation_general dlc.launch.py"
         ;;
     *)
         RUN="bash"

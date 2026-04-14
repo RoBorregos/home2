@@ -241,6 +241,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.DOING_LAUNDRY: all_services,
             Task.DEBUG: all_services,
         }
 
