@@ -33,7 +33,7 @@ from frida_constants.vision_constants import (
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
 )
-from vision_general.utils.area_check import is_point_in_house
+from vision_general.utils.area_check import is_point_in_room
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -436,7 +436,7 @@ class HRICCommands(Node):
                     CAMERA_FRAME,
                     Time(sec=0, nanosec=0),
                 )
-                if not is_point_in_house(chair_point):
+                if not is_point_in_room(chair_point, "living_room"):
                     continue  # Skip this chair if not inside house
 
             for person in self.people:
