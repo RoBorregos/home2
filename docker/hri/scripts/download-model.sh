@@ -15,6 +15,8 @@ echo "  1) qwen3"
 echo "  2) nomic-embed-text"
 echo "  3) rbrgs"
 echo "  4) DeepFilterNet3"
+echo "  5) ei-door (Door detection)"
+echo "  6) ei-kws  (Keyword wakeword)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -47,6 +49,106 @@ if ask_for_model DeepFilterNet3 4; then
         echo "DeepFilterNet3 model downloaded successfully."
     else
         echo "DeepFilterNet3 model already exists. Skipping download."
+    fi
+fi
+
+# ── Edge Impulse model downloads ──────────────────────────────────────────────
+# Downloads models via the EI inference container using an API key.
+# The container downloads the .eim file, then we copy it out.
+# API keys are read from environment variables: EI_API_KEY_DOOR, EI_API_KEY_KWS
+# You can also set them in docker/hri/.env
+EI_DOWNLOAD_DIR="../../hri/packages/speech/assets/downloads"
+EI_IMAGE="public.ecr.aws/g7a8t7v6/inference-container-jetson-orin-6-0:v1.92.11"
+
+download_ei_model() {
+    local model_name="$1"
+    local api_key="$2"
+    local output_dir="$EI_DOWNLOAD_DIR/$model_name"
+    local port="$3"
+
+    if [ -z "$api_key" ]; then
+        printf "Enter Edge Impulse API key for %s: " "$model_name"
+        read -r api_key
+    fi
+
+    if [ -z "$api_key" ]; then
+        echo "Error: No API key provided for $model_name. Skipping."
+        return 1
+    fi
+
+    mkdir -p "$output_dir"
+
+    echo "Downloading Edge Impulse model: $model_name ..."
+    CONTAINER_ID=$(docker run -d \
+        --runtime=nvidia \
+        -p "$port:$port" \
+        "$EI_IMAGE" \
+        --api-key "$api_key" \
+        --run-http-server "$port" \
+        --force-target runner-linux-aarch64-jetson-orin-6-0 \
+        --force-variant float32)
+
+    # Wait for the model to download and the server to start
+    echo "Waiting for EI container to download and build the model (this may take a few minutes)..."
+    MAX_WAIT=300
+    WAITED=0
+    while [ $WAITED -lt $MAX_WAIT ]; do
+        if docker logs "$CONTAINER_ID" 2>&1 | grep -q "HTTP Server now running"; then
+            echo "EI model $model_name downloaded successfully."
+            break
+        fi
+        if ! docker ps -q --filter "id=$CONTAINER_ID" | grep -q .; then
+            echo "Error: EI container exited unexpectedly for $model_name."
+            echo "Container logs:"
+            docker logs "$CONTAINER_ID" 2>&1 | tail -20
+            docker rm "$CONTAINER_ID" 2>/dev/null
+            return 1
+        fi
+        sleep 5
+        WAITED=$((WAITED + 5))
+        echo "  Still waiting... (${WAITED}s / ${MAX_WAIT}s)"
+    done
+
+    if [ $WAITED -ge $MAX_WAIT ]; then
+        echo "Error: Timed out waiting for EI model $model_name to download."
+        docker stop "$CONTAINER_ID" 2>/dev/null
+        docker rm "$CONTAINER_ID" 2>/dev/null
+        return 1
+    fi
+
+    # Copy the model file from the container
+    # EI stores models in /root/.ei-linux-runner/models/
+    echo "Copying model from container..."
+    docker cp "$CONTAINER_ID:/root/.ei-linux-runner/models/" "/tmp/ei-models-$model_name"
+
+    # Find the .eim file and copy it to the output directory
+    EIM_FILE=$(find "/tmp/ei-models-$model_name" -name "model.eim" -type f | head -1)
+    if [ -n "$EIM_FILE" ]; then
+        cp "$EIM_FILE" "$output_dir/model.eim"
+        echo "Model saved to $output_dir/model.eim"
+    else
+        echo "Warning: Could not find model.eim in container. Listing available files:"
+        find "/tmp/ei-models-$model_name" -type f
+    fi
+
+    rm -rf "/tmp/ei-models-$model_name"
+    docker stop "$CONTAINER_ID" 2>/dev/null
+    docker rm "$CONTAINER_ID" 2>/dev/null
+}
+
+if ask_for_model ei-door 5; then
+    if [ -f "$EI_DOWNLOAD_DIR/door/model.eim" ]; then
+        echo "Edge Impulse door model already exists. Skipping download."
+    else
+        download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337"
+    fi
+fi
+
+if ask_for_model ei-kws 6; then
+    if [ -f "$EI_DOWNLOAD_DIR/kws/model.eim" ]; then
+        echo "Edge Impulse kws model already exists. Skipping download."
+    else
+        download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
     fi
 fi
 
