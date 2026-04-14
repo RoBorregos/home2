@@ -116,14 +116,14 @@ export function AudioStateIndicator() {
 
   // For listening state, show the mic centered
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 pointer-events-none -translate-y-8 md:-translate-y-12 transition-transform duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 pointer-events-none -translate-y-16 md:-translate-y-24 transition-transform duration-300">
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-10 animate-[pulse_3s_infinite] scale-110" />
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-15 animate-[pulse_3s_infinite_1s] scale-125" />
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-20 animate-[pulse_3s_infinite_2s] scale-150" />
 
-        <div className="relative z-10 h-40 w-40 rounded-full bg-(--pulse) shadow-lg flex items-center justify-center transition-all duration-300">
-          <Mic className="h-24 w-24 text-white/90 drop-shadow-md transition-all duration-300" />
+        <div className="relative z-10 h-16 w-16 md:h-32 md:w-32 rounded-full bg-(--pulse) shadow-lg flex items-center justify-center transition-all duration-300">
+          <Mic className="h-8 w-8 md:h-20 md:w-20 text-white/90 drop-shadow-md transition-all duration-300" />
         </div>
 
         <div
