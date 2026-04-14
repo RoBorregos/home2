@@ -26,13 +26,18 @@ COLCON_PACKAGES="manipulation_general xarm6_ikfast_plugin"
 if [ "$TASK" = "--dlc" ]; then
     COLCON_PACKAGES="$COLCON_PACKAGES task_manager"
 fi
-COLCON="colcon build --symlink-install --packages-up-to $COLCON_PACKAGES --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON_ENV_CLEAN="unset PCL_ROOT EIGEN_ROOT FLANN_ROOT BOOST_ROOT"
+COLCON="colcon build --symlink-install --packages-up-to $COLCON_PACKAGES --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces --cmake-args -Wno-dev"
+TASK_MANAGER_PY_REQS="true"
+if [ "$TASK" = "--dlc" ]; then
+    TASK_MANAGER_PY_REQS="if [ -f /workspace/src/task_manager/requirements/requirements.txt ]; then python3 -m pip show pydantic >/dev/null 2>&1 && python3 -m pip show baml-py >/dev/null 2>&1 || python3 -m pip install --user -r /workspace/src/task_manager/requirements/requirements.txt; fi"
+fi
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $TASK_MANAGER_PY_REQS && $CYCLONE_SOURCE && $COLCON_ENV_CLEAN && $COLCON && $SOURCE"
 else
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $TASK_MANAGER_PY_REQS && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 case $TASK in
