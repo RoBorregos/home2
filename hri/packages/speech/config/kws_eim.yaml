@@ -4,7 +4,9 @@ kws_eim:
     PROCESSED_AUDIO_TOPIC: REPLACE
     WAKEWORD_TOPIC: REPLACE
     detection_cooldown: 1.0
-    SENSITIVITY_THRESHOLD: 0.7
+    SENSITIVITY_THRESHOLD: 0.5
     sample_rate: 16000
     window_size_s: 1.0
     noise_label: "noise"
+    SAVE_DETECTION_AUDIO: false
+    AUDIO_SAVE_DIR: "/workspace/src/hri/packages/speech/assets/kws_detections"

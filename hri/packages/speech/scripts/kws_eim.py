@@ -5,7 +5,10 @@ Sends audio features to an Edge Impulse inference server and publishes detection
 Classes: yes, no, stop, frida, noise
 """
 
+import os
 import time
+import wave
+from datetime import datetime
 
 import numpy as np
 import requests
@@ -25,10 +28,15 @@ class EdgeImpulseKWSNode(Node):
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("WAKEWORD_TOPIC", "/speech/oww")
         self.declare_parameter("detection_cooldown", 1.0)
-        self.declare_parameter("SENSITIVITY_THRESHOLD", 0.7)
+        self.declare_parameter("SENSITIVITY_THRESHOLD", 0.5)
         self.declare_parameter("sample_rate", 16000)
         self.declare_parameter("window_size_s", 1.0)
         self.declare_parameter("noise_label", "noise")
+        self.declare_parameter("SAVE_DETECTION_AUDIO", False)
+        self.declare_parameter(
+            "AUDIO_SAVE_DIR",
+            "/workspace/src/hri/packages/speech/assets/kws_detections",
+        )
 
         self.ei_url = (
             self.get_parameter("EI_SERVER_URL").get_parameter_value().string_value
@@ -58,6 +66,15 @@ class EdgeImpulseKWSNode(Node):
         self.noise_label = (
             self.get_parameter("noise_label").get_parameter_value().string_value
         )
+        self.save_detection_audio = (
+            self.get_parameter("SAVE_DETECTION_AUDIO").get_parameter_value().bool_value
+        )
+        self.audio_save_dir = (
+            self.get_parameter("AUDIO_SAVE_DIR").get_parameter_value().string_value
+        )
+
+        if self.save_detection_audio:
+            os.makedirs(self.audio_save_dir, exist_ok=True)
 
         self.window_size_samples = int(self.sample_rate * window_size_s)
 
@@ -75,7 +92,31 @@ class EdgeImpulseKWSNode(Node):
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
 
         self.last_detection_time = time.time() - self.detection_cooldown
+
+        # Wait for the EI inference server to be ready before accepting audio
+        self._wait_for_server()
         self.get_logger().info("Edge Impulse KWS node initialized and ready.")
+
+    def _wait_for_server(self, poll_interval: float = 5.0, max_retries: int = 60):
+        """Block until the EI inference server is reachable and responding."""
+        self.get_logger().info(f"Waiting for EI server at {self.ei_url} to be ready...")
+        for attempt in range(1, max_retries + 1):
+            try:
+                resp = requests.get(f"{self.ei_url}/api/info", timeout=3.0)
+                if resp.ok:
+                    self.get_logger().info(f"EI server is ready (attempt {attempt}).")
+                    return
+            except requests.RequestException:
+                pass
+            self.get_logger().info(
+                f"EI server not ready yet (attempt {attempt}/{max_retries}), "
+                f"retrying in {poll_interval}s..."
+            )
+            time.sleep(poll_interval)
+        self.get_logger().warn(
+            "EI server did not become ready in time. "
+            "Proceeding anyway — inference requests may fail initially."
+        )
 
     def audio_callback(self, msg):
         """Process incoming audio data and detect keywords."""
@@ -110,6 +151,12 @@ class EdgeImpulseKWSNode(Node):
         if not classification:
             return
 
+        # Debug: log all classification results
+        best_class = max(classification, key=classification.get)
+        self.get_logger().debug(
+            f"Classification: {best_class}={classification[best_class]:.2f} | {classification}"
+        )
+
         # Find the best keyword (excluding noise)
         best_keyword = None
         best_score = 0.0
@@ -128,9 +175,32 @@ class EdgeImpulseKWSNode(Node):
                 self.get_logger().info(
                     f"Keyword '{best_keyword}' detected with score {best_score:.2f}"
                 )
+                if self.save_detection_audio:
+                    self._save_audio_window(window, best_keyword, best_score)
                 detection_info = {"keyword": best_keyword, "score": best_score}
                 self.publisher.publish(String(data=str(detection_info)))
                 self.last_detection_time = current_time
+
+    def _save_audio_window(self, audio_window: np.ndarray, label: str, score: float):
+        """Save the audio window that triggered a detection as a .wav file."""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        safe_label = "".join(
+            ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in label
+        )
+        filename = f"{timestamp}_{safe_label}_{score:.2f}.wav"
+        file_path = os.path.join(self.audio_save_dir, filename)
+
+        try:
+            with wave.open(file_path, "wb") as wav_file:
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(self.sample_rate)
+                wav_file.writeframes(audio_window.astype(np.int16).tobytes())
+            self.get_logger().info(f"Saved detection audio: {file_path}")
+        except OSError as e:
+            self.get_logger().error(
+                f"Failed to save detection audio to '{file_path}': {e}"
+            )
 
 
 def main(args=None):

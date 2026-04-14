@@ -23,8 +23,6 @@ mobileclip_blt.ts
 !vision/packages/object_detector_2d/models/tmr2025.pt
 *.engine
 *.onnx
-!hri/packages/speech/assets/oww_bak/*.onnx
-!hri/packages/speech/assets/oww/*.onnx
 *.pth
 *.cache
 *.traj

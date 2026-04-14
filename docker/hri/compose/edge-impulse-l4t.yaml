@@ -11,7 +11,7 @@ services:
               count: all
               capabilities: [gpu]
     volumes:
-      - ../../../hri/packages/speech/assets/downloads/model.eim:/data/model.eim
+      - ../../../hri/packages/speech/assets/downloads/door/model.eim:/data/model.eim
     ports:
       - "1337:1337"
     command:
@@ -37,12 +37,18 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    volumes:
+      - ../../../hri/packages/speech/assets/downloads/oww/model.eim:/data/model.eim
     ports:
       - "1338:1338"
     command:
-      - --api-key
-      - ei_5ea56e1b0c8059ba7a4ef59e7abbe02e724b215e11f44dd2
+      - --model-file
+      - /data/model.eim
       - --run-http-server
       - "1338"
+      - --force-target
+      - runner-linux-aarch64-jetson-orin-6-0
+      - --force-variant
+      - float32
     stdin_open: true
     tty: true
