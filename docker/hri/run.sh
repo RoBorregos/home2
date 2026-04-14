@@ -53,8 +53,8 @@ setup_common_env "hri" "compose/.env"
 # Create dirs with current user to avoid permission problems
 mkdir -p ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
          ../../hri/packages/speech/assets/downloads/offline_voice/audios/ \
-          ../../hri/packages/speech/assets/downloads/kws/ \
-          ../../hri/packages/speech/assets/downloads/door/
+         ../../hri/packages/speech/assets/downloads/kws/ \
+         ../../hri/packages/speech/assets/downloads/door/
 
 # HRI-specific env vars
 add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
