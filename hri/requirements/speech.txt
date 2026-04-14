@@ -12,7 +12,6 @@ pygame==2.6.1
 
 # KWS
 openwakeword==0.6.0
-edge-impulse-linux
 
 # Respeaker
 pyusb==1.2.1

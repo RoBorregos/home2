@@ -1,5 +1,3 @@
 
 # Folder to include all the downloaded and asset files
 downloads/*
-!downloads/oww/
-!downloads/door/
