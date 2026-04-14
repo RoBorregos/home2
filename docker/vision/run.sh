@@ -117,7 +117,7 @@ case $TASK in
         PROFILES=("vision")
         ;;
     "--restaurant")
-        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="ros2 launch vision_general restaurant_launch.py"
         PROFILES=("vision" "moondream")
         ;;
