@@ -22,7 +22,11 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON_PACKAGES="manipulation_general xarm6_ikfast_plugin"
+if [ "$TASK" = "--dlc" ]; then
+    COLCON_PACKAGES="$COLCON_PACKAGES task_manager"
+fi
+COLCON="colcon build --symlink-install --packages-up-to $COLCON_PACKAGES --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
@@ -43,6 +47,9 @@ case $TASK in
         ;;
     "--gpsr")
         RUN="ros2 launch manipulation_general gpsr.launch.py"
+        ;;
+    "--dlc")
+        RUN="ros2 run task_manager doing_laundry_task_manager.py"
         ;;
     *)
         RUN="bash"
