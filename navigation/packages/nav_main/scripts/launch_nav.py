@@ -54,7 +54,7 @@ STDOUT_VIEWS = {
 
 HEADER = "\033[36m\033[1m[View {key}: {name}]\033[0m Press 0-5 to switch, q to quit"
 
-current_view = '0'
+current_view = '5'  # Default to launch/error view so crashes are visible
 interactive = False
 buffer_size = 500
 buffers = {k: deque(maxlen=buffer_size) for k in VIEWS}

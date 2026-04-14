@@ -52,6 +52,8 @@ def launch_function(context, *args, **kwargs):
         executable='nav_ui.py',
         name='nav_ui',
         output='screen',
+        respawn=True,
+        respawn_delay=2.0,
         parameters=[{'map_name': rtabmap_map_name}],
     )
 
@@ -73,6 +75,8 @@ def launch_function(context, *args, **kwargs):
         executable='adaptive_goal_publisher.py',
         name='adaptive_goal_publisher',
         output='screen',
+        respawn=True,
+        respawn_delay=2.0,
         parameters=[{
             'approach_min_dist': approach_min_dist,
             'approach_max_dist': approach_max_dist,
