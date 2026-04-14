@@ -113,8 +113,10 @@ Functions</h2></td></tr>
 <tr class="separator:a6026fc3d0ab025701ce2f0253fc6f4f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a181b15f652845f523b8d576fcf2c5b02"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02">point3d_to_ros_point_stamped</a> (tuple[float, float, float] point3d, str frame_id, stamp, bool is_optical=True)</td></tr>
 <tr class="separator:a181b15f652845f523b8d576fcf2c5b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a763bb3c0bc055bdabfbc4812bd75ad4d"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a763bb3c0bc055bdabfbc4812bd75ad4d">point2d_to_ros_point_stamped</a> (image_info, depth_image, tuple[int, int] point2d, str frame_id, stamp, bool is_optical=False)</td></tr>
-<tr class="separator:a763bb3c0bc055bdabfbc4812bd75ad4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2e4d2ec99c4c314a9b80f7ad719ef3c4"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a2e4d2ec99c4c314a9b80f7ad719ef3c4">unrotate_pixel</a> (tuple[int, int] pixel, int rotation, int width, int height)</td></tr>
+<tr class="separator:a2e4d2ec99c4c314a9b80f7ad719ef3c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4c94b2f21df2524b17fb6396980cc58"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#af4c94b2f21df2524b17fb6396980cc58">point2d_to_ros_point_stamped</a> (image_info, depth_image, tuple[int, int] point2d, str frame_id, stamp, bool is_optical=False, int rotation=0)</td></tr>
+<tr class="separator:af4c94b2f21df2524b17fb6396980cc58"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -327,8 +329,8 @@ calculates the proper depth and deprojects it into 3D Optical coordinates.
 </pre> 
 </div>
 </div>
-<a id="a763bb3c0bc055bdabfbc4812bd75ad4d" name="a763bb3c0bc055bdabfbc4812bd75ad4d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a763bb3c0bc055bdabfbc4812bd75ad4d">&#9670;&#160;</a></span>point2d_to_ros_point_stamped()</h2>
+<a id="af4c94b2f21df2524b17fb6396980cc58" name="af4c94b2f21df2524b17fb6396980cc58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4c94b2f21df2524b17fb6396980cc58">&#9670;&#160;</a></span>point2d_to_ros_point_stamped()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -367,7 +369,13 @@ calculates the proper depth and deprojects it into 3D Optical coordinates.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>is_optical</em> = <code>False</code>&#160;</td>
+          <td class="paramname"><em>is_optical</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &#160;</td>
+          <td class="paramname"><em>rotation</em> = <code>0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -380,6 +388,9 @@ calculates the proper depth and deprojects it into 3D Optical coordinates.
 calculates the 3D position and directly returns a standard ROS PointStamped.
 The point is in the camera optical frame by default (is_optical=False means no extra conversion).
 Set is_optical=True only if you want to manually convert from optical to ROS base_link convention.
+
+If `rotation` is nonzero, `point2d` is un-rotated first so it indexes
+the raw depth/camera_info (use for pixels detected on an oriented image).
 </pre> 
 </div>
 </div>
@@ -424,6 +435,47 @@ Set is_optical=True only if you want to manually convert from optical to ROS bas
 If is_optical=True (default), it converts from Camera Optical Frame (Z_forward, X_right, Y_down)
 to standard ROS base_link Frame (X_forward, Y_left, Z_up).
 </pre> 
+</div>
+</div>
+<a id="a2e4d2ec99c4c314a9b80f7ad719ef3c4" name="a2e4d2ec99c4c314a9b80f7ad719ef3c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2e4d2ec99c4c314a9b80f7ad719ef3c4">&#9670;&#160;</a></span>unrotate_pixel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, int] calculations.unrotate_pixel </td>
+          <td>(</td>
+          <td class="paramtype">tuple[int, int]&#160;</td>
+          <td class="paramname"><em>pixel</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>rotation</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>width</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int
+&#160;</td>
+          <td class="paramname"><em>height</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Inverse of cv2.rotate for valid rotations (0/90/180/270 deg).</pre> 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>

@@ -1,6 +1,7 @@
 var classhric__commands_1_1HRICCommands =
 [
     [ "__init__", "classhric__commands_1_1HRICCommands.html#a1029c3464953847fd7025551a18cb312", null ],
+    [ "_rotation_callback", "classhric__commands_1_1HRICCommands.html#a88c15899de6a2bfe806ed7d8ddf62743", null ],
     [ "camera_info_callback", "classhric__commands_1_1HRICCommands.html#abfe666ef29334b1c4aabd7e45b6540cd", null ],
     [ "check_chairs", "classhric__commands_1_1HRICCommands.html#a3465177147b53055bbc4fce2281b1773", null ],
     [ "check_couches", "classhric__commands_1_1HRICCommands.html#a9e86a4b9a69388af6b9b150250d26459", null ],
@@ -34,6 +35,7 @@ var classhric__commands_1_1HRICCommands =
     [ "person_detection_action_server", "classhric__commands_1_1HRICCommands.html#adfdb9f8b2227c089a038022567d02079", null ],
     [ "person_found", "classhric__commands_1_1HRICCommands.html#abcabc9b1833c835cbb0ebf3f1bd1e253", null ],
     [ "pose_model", "classhric__commands_1_1HRICCommands.html#a72378d2331c926b62e8b700636e25969", null ],
+    [ "rotation", "classhric__commands_1_1HRICCommands.html#abd37800aa80cb67ba02cdc734c6754ed", null ],
     [ "start_time", "classhric__commands_1_1HRICCommands.html#a490e5ce877f5e10101f71fdbbbe43d87", null ],
     [ "timer", "classhric__commands_1_1HRICCommands.html#a3d7d6e47e341b3fc30dca371a44b4302", null ],
     [ "yolo_client", "classhric__commands_1_1HRICCommands.html#a0795c21b02da000e923989b32387b5ed", null ]

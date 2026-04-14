@@ -12,8 +12,9 @@ var namespaces_dup =
       [ "get_depth", "namespacecalculations.html#a19db582aa5483cc03e16968a79a25a28", null ],
       [ "map", "namespacecalculations.html#ab20c1a0c376ea6c16cebfb03541d2ee3", null ],
       [ "point2d_to_3d", "namespacecalculations.html#a6026fc3d0ab025701ce2f0253fc6f4f1", null ],
-      [ "point2d_to_ros_point_stamped", "namespacecalculations.html#a763bb3c0bc055bdabfbc4812bd75ad4d", null ],
+      [ "point2d_to_ros_point_stamped", "namespacecalculations.html#af4c94b2f21df2524b17fb6396980cc58", null ],
       [ "point3d_to_ros_point_stamped", "namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02", null ],
+      [ "unrotate_pixel", "namespacecalculations.html#a2e4d2ec99c4c314a9b80f7ad719ef3c4", null ],
       [ "FLT_EPSILON", "namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388", null ]
     ] ],
     [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", "namespacecalibrate__ignore__laser" ],
@@ -160,6 +161,7 @@ var namespaces_dup =
     ] ],
     [ "hric_task_manager", "namespacehric__task__manager.html", "namespacehric__task__manager" ],
     [ "ikfast", "namespaceikfast.html", "namespaceikfast" ],
+    [ "image_orienter", "namespaceimage__orienter.html", "namespaceimage__orienter" ],
     [ "iou_matching", "namespaceiou__matching.html", [
       [ "iou", "namespaceiou__matching.html#a8a1fdfd67c4235dd72f8055807874aff", null ],
       [ "iou_cost", "namespaceiou__matching.html#a169ef7c7d312ff6ad71d6972b531c688", null ]

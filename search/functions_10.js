@@ -45,7 +45,7 @@ var searchData=
   ['play_5ftrayectory_5fcallback_42',['play_trayectory_callback',['../classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a5eaa53d98b53d92f4828527f096fdb72',1,'frida_motion_planning::motion_planning_server::MotionPlanningServer']]],
   ['point_43',['point',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a8e45ef3169470631c840f2e9cf8a4562',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
   ['point2d_5fto_5f3d_44',['point2d_to_3d',['../namespacecalculations.html#a6026fc3d0ab025701ce2f0253fc6f4f1',1,'calculations']]],
-  ['point2d_5fto_5fros_5fpoint_5fstamped_45',['point2d_to_ros_point_stamped',['../namespacecalculations.html#a763bb3c0bc055bdabfbc4812bd75ad4d',1,'calculations']]],
+  ['point2d_5fto_5fros_5fpoint_5fstamped_45',['point2d_to_ros_point_stamped',['../namespacecalculations.html#af4c94b2f21df2524b17fb6396980cc58',1,'calculations']]],
   ['point3d_5fto_5fros_5fpoint_5fstamped_46',['point3d_to_ros_point_stamped',['../namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02',1,'calculations']]],
   ['point_5fcallback_47',['point_callback',['../classTestsNode.html#a1fe037adf8b6c0211aeb06ee613cc3c9',1,'TestsNode::point_callback()'],['../classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html#ab91e8114592e7aee58c08529e6027b4e',1,'pick_and_place.manipulation_client.ManipulationClient.point_callback()'],['../classlook__at__example_1_1LookAt.html#a244c7b359b318907fb696f7e011f1ee7',1,'look_at_example.LookAt.point_callback()']]],
   ['point_5fin_5frange_48',['point_in_range',['../namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69',1,'perception_utils']]],

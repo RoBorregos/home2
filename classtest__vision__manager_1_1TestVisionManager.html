@@ -122,6 +122,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3c60aa8762530785d14a49315ce5ec89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1393941746b3801b803d80ad4649cd3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__vision__manager_1_1TestVisionManager.html#af1393941746b3801b803d80ad4649cd3">test_get_person_name</a> (self)</td></tr>
 <tr class="separator:af1393941746b3801b803d80ad4649cd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5012921dc5f04df523b2040053f50aee"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__vision__manager_1_1TestVisionManager.html#a5012921dc5f04df523b2040053f50aee">test_follow_face</a> (self)</td></tr>
+<tr class="separator:a5012921dc5f04df523b2040053f50aee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1170bbff014294dc1c118e10a11b8f13"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__vision__manager_1_1TestVisionManager.html#a1170bbff014294dc1c118e10a11b8f13">test_hand_marker</a> (self)</td></tr>
+<tr class="separator:a1170bbff014294dc1c118e10a11b8f13"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -238,6 +242,27 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a5012921dc5f04df523b2040053f50aee" name="a5012921dc5f04df523b2040053f50aee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5012921dc5f04df523b2040053f50aee">&#9670;&#160;</a></span>test_follow_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def test_vision_manager.TestVisionManager.test_follow_face </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Subscribe to the follow_face Point and log each incoming angular
+delta while face recognition is active. FOLLOW_FACE_FLIP controls
+whether the camera runs flipped (180°) or normal (0°).
+</pre> 
+</div>
+</div>
 <a id="af1393941746b3801b803d80ad4649cd3" name="af1393941746b3801b803d80ad4649cd3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af1393941746b3801b803d80ad4649cd3">&#9670;&#160;</a></span>test_get_person_name()</h2>
 
@@ -254,6 +279,27 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a1170bbff014294dc1c118e10a11b8f13" name="a1170bbff014294dc1c118e10a11b8f13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1170bbff014294dc1c118e10a11b8f13">&#9670;&#160;</a></span>test_hand_marker()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def test_vision_manager.TestVisionManager.test_hand_marker </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Continuously call detect_hand and publish its 3D point as a Marker
+in CAMERA_FRAME so it can be visualized in rviz. HAND_MARKER_FLIP
+controls whether the camera runs flipped (180°) or normal.
+</pre> 
 </div>
 </div>
 <a id="afbe7b14f20fe8a020f8fea6a8a4776f4" name="afbe7b14f20fe8a020f8fea6a8a4776f4"></a>

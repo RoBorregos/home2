@@ -157,6 +157,9 @@ var annotated_dup =
       [ "IkSolutionList", "classikfast_1_1IkSolutionList.html", "classikfast_1_1IkSolutionList" ],
       [ "IkSolutionListBase", "classikfast_1_1IkSolutionListBase.html", "classikfast_1_1IkSolutionListBase" ]
     ] ],
+    [ "image_orienter", "namespaceimage__orienter.html", [
+      [ "ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", "classimage__orienter_1_1ImageOrienter" ]
+    ] ],
     [ "is_person_inside", "namespaceis__person__inside.html", [
       [ "IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", "classis__person__inside_1_1IsPersonInside" ]
     ] ],

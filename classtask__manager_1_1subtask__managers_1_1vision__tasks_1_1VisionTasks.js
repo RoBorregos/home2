@@ -5,7 +5,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "_set_node_active", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2feee7ffb0e49ff71fe244249cdd63f", null ],
     [ "activate_face_recognition", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae904a386996cab8ca35793fba86a4de0", null ],
     [ "activate_object_detector", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ade52d6b1813d32f5677ffbd6db4511f7", null ],
-    [ "camera_upside_down", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8cc3f6707942b2ad63c88d165e0081a2", null ],
+    [ "camera_upside_down", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8bd86e922871000418c985e1d09a8996", null ],
     [ "count_by_color", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aaaf6264897eb235876f8deedb98dbbdc", null ],
     [ "count_by_gesture", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac5b806d379f12dd981adb733c98df6a4", null ],
     [ "count_by_pose", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8fd6bbd9e18caf416ec9e16212345afe", null ],

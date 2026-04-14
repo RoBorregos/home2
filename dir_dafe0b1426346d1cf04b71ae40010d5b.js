@@ -7,6 +7,7 @@ var dir_dafe0b1426346d1cf04b71ae40010d5b =
     [ "get_positon_3d.py", "get__positon__3d_8py.html", "get__positon__3d_8py" ],
     [ "gpsr_commands.py", "gpsr__commands_8py.html", "gpsr__commands_8py" ],
     [ "hric_commands.py", "hric__commands_8py.html", "hric__commands_8py" ],
+    [ "image_orienter.py", "image__orienter_8py.html", "image__orienter_8py" ],
     [ "is_person_inside.py", "is__person__inside_8py.html", "is__person__inside_8py" ],
     [ "new_tracker.py", "new__tracker_8py.html", "new__tracker_8py" ],
     [ "old_tracker.py", "old__tracker_8py.html", "old__tracker_8py" ],

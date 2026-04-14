@@ -8,5 +8,6 @@ var searchData=
   ['iksolutionlist_5',['IkSolutionList',['../classikfast_1_1IkSolutionList.html',1,'ikfast']]],
   ['iksolutionlistbase_6',['IkSolutionListBase',['../classikfast_1_1IkSolutionListBase.html',1,'ikfast']]],
   ['iksolver_7',['IKSolver',['../classIKSolver.html',1,'']]],
-  ['ispersoninside_8',['IsPersonInside',['../classis__person__inside_1_1IsPersonInside.html',1,'is_person_inside']]]
+  ['imageorienter_8',['ImageOrienter',['../classimage__orienter_1_1ImageOrienter.html',1,'image_orienter']]],
+  ['ispersoninside_9',['IsPersonInside',['../classis__person__inside_1_1IsPersonInside.html',1,'is_person_inside']]]
 ];

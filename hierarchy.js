@@ -189,6 +189,7 @@ var hierarchy =
       [ "help_me_carry.HelpMeCarryTM", "classhelp__me__carry_1_1HelpMeCarryTM.html", null ],
       [ "hric_commands.HRICCommands", "classhric__commands_1_1HRICCommands.html", null ],
       [ "hric_task_manager.HRIC_TM", "classhric__task__manager_1_1HRIC__TM.html", null ],
+      [ "image_orienter.ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", null ],
       [ "is_person_inside.IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", null ],
       [ "local_camera.Camera", "classlocal__camera_1_1Camera.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
