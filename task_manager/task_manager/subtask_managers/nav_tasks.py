@@ -14,9 +14,11 @@ from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
+    FOLLOW_PERSON_NAV_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
+from std_srvs.srv import SetBool
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -36,6 +38,7 @@ class NavigationTasks:
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+        self.follow_person_srv = self.node.create_client(SetBool, FOLLOW_PERSON_NAV_SERVICE)
 
         # Task Actions and Services check
         self.services = {
@@ -43,6 +46,7 @@ class NavigationTasks:
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+                "follow_person_srv": {"client": self.follow_person_srv, "type": "service"},
             },
         }
 
@@ -161,6 +165,32 @@ class NavigationTasks:
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=1)
+    @service_check(
+        "follow_person_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def follow_person(self, follow: bool = True):
+        """Activate/deactivate person-following navigation.
+
+        When True: nav_central sends NavigateToPose with the follow BT using
+        the latest /goal_update pose, and person_goal_smoother switches Nav2
+        to follow-mode params.
+        When False: the active goal is cancelled and nav params are restored.
+        """
+        CLog.nav(self.node, "MOVE", f"Follow person: {follow}")
+        request = SetBool.Request()
+        request.data = follow
+        future = self.follow_person_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", f"Follow person: {result.message}")
+            return (Status.EXECUTION_SUCCESS, result.message)
+        CLog.nav(self.node, "ERROR", "Follow person service failed")
+        return (Status.EXECUTION_ERROR, "Follow person failed")
 
 
 if __name__ == "__main__":

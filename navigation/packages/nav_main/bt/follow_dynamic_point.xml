@@ -9,7 +9,7 @@
             <GoalUpdater input_goal="{goal}" output_goal="{updated_goal}">
               <ComputePathToPose goal="{updated_goal}" path="{path}" planner_id="{selected_planner}"/>
             </GoalUpdater>
-           <TruncatePath distance="0.8" input_path="{path}" output_path="{truncated_path}"/>
+           <TruncatePath distance="0.4" input_path="{path}" output_path="{truncated_path}"/>
           </Sequence>
         </RetryUntilSuccessful>
       </RateController>

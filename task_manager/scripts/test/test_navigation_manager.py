@@ -30,6 +30,14 @@ class TestNavigationManager(Node):
                 "location": "entrance",
                 "sublocation": "",
             },
+            "Follow Person Start": {
+                "func": self.navigation_manager.follow_person,
+                "follow": True,
+            },
+            "Follow Person Stop": {
+                "func": self.navigation_manager.follow_person,
+                "follow": False,
+            },
         }
 
         print(f"\n{Logger.BOLD}Testing {len(self.tests_funcs)} available subtaks..... \n")

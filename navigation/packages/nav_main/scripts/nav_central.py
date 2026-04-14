@@ -35,7 +35,16 @@ from frida_constants.navigation_constants import(
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
+        FOLLOW_MODE_SERVICE,
+        FOLLOW_PERSON_NAV_SERVICE,
+        GOAL_UPDATE_TOPIC,
+        FOLLOW_MODE_SERVICE_TIMEOUT,
+        FOLLOW_GOAL_UPDATE_TIMEOUT,
+        FOLLOW_ACTION_SERVER_TIMEOUT,
         )
+from std_srvs.srv import SetBool
+from ament_index_python.packages import get_package_share_directory
+import os
 from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
@@ -123,6 +132,21 @@ class Nav_Central(Node):
         self.resume_nav_srv = self.create_service(
             Empty, RESUME_NAV_SERVICE, self._resume_nav_callback,
             callback_group=self.service_group)
+
+        # Follow person: orchestrates person_goal_smoother + initial NavigateToPose goal
+        self.follow_person_srv = self.create_service(
+            SetBool, FOLLOW_PERSON_NAV_SERVICE, self._follow_person_callback,
+            callback_group=self.service_group)
+        self.follow_mode_client = self.create_client(
+            SetBool, FOLLOW_MODE_SERVICE, callback_group=self.service_group)
+        self._follow_goal_handle = None  # Track active follow goal for cancellation
+        self._follow_bt_xml = os.path.join(
+            get_package_share_directory("nav_main"), "bt", "follow_dynamic_point.xml"
+        )
+        self._latest_goal_update = None  # Cached latest PoseStamped from person_goal_smoother
+        self._goal_update_sub = self.create_subscription(
+            PoseStamped, GOAL_UPDATE_TOPIC, self._goal_update_cb, 10
+        )
 
         # Initial pose tracking
         self._initial_pose_set = False
@@ -276,6 +300,106 @@ class Nav_Central(Node):
         self.no_topics_count = 0
         self.no_tf_count = 0
         return response
+
+    def _follow_person_callback(self, request, response):
+        """Service callback: activate/deactivate person-following navigation.
+
+        On True:  switches person_goal_smoother to follow mode AND sends a
+                  NavigateToPose goal with the follow BT so Nav2 starts
+                  tracking the moving goal from /goal_update.
+        On False: cancels the active goal AND switches smoother back to
+                  standard mode.
+        """
+        self.nav_logger("info", f"Follow Person Service -> follow={request.data}")
+        if request.data:
+            self._start_follow_person()
+            response.success = True
+            response.message = "Follow person started"
+        else:
+            self._stop_follow_person()
+            response.success = True
+            response.message = "Follow person stopped"
+        return response
+
+    def _goal_update_cb(self, msg):
+        """Cache latest goal from person_goal_smoother for initial-goal seeding."""
+        self._latest_goal_update = msg
+
+    def _start_follow_person(self):
+        """Activate smoother follow mode and send the initial goal."""
+        # 1. Tell person_goal_smoother to switch Nav2 params to follow mode
+        if self.follow_mode_client.wait_for_service(timeout_sec=FOLLOW_MODE_SERVICE_TIMEOUT):
+            req = SetBool.Request()
+            req.data = True
+            self.follow_mode_client.call_async(req)
+            self.nav_logger("info", "Follow Person -> smoother set to follow mode")
+        else:
+            self.nav_logger("warn", "Follow Person -> smoother service not available")
+
+        # 2. Wait briefly for the goal smoother to publish the first goal
+        wait_start = self.get_clock().now()
+        while self._latest_goal_update is None:
+            elapsed = (self.get_clock().now() - wait_start).nanoseconds / 1e9
+            if elapsed > FOLLOW_GOAL_UPDATE_TIMEOUT:
+                self.nav_logger("warn", "Follow Person -> no goal update yet, using dummy pose")
+                break
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+
+        # 3. Build initial goal: use latest smoothed goal if available, else dummy
+        if self._latest_goal_update is not None:
+            initial_pose = self._latest_goal_update
+            self.nav_logger(
+                "info",
+                f"Follow Person -> seeding initial goal "
+                f"({initial_pose.pose.position.x:.2f}, {initial_pose.pose.position.y:.2f})"
+            )
+        else:
+            initial_pose = PoseStamped()
+            initial_pose.header.frame_id = "map"
+            initial_pose.header.stamp = self.get_clock().now().to_msg()
+            initial_pose.pose.orientation.w = 1.0
+
+        goal_msg = NavigateToPose.Goal()
+        goal_msg.pose = initial_pose
+        goal_msg.behavior_tree = self._follow_bt_xml
+
+        if not self.goal_action_client.wait_for_server(timeout_sec=FOLLOW_ACTION_SERVER_TIMEOUT):
+            self.nav_logger("error", "Follow Person -> NavigateToPose action not available")
+            return
+
+        goal_future = self.goal_action_client.send_goal_async(goal_msg)
+        goal_future.add_done_callback(self._follow_goal_response_cb)
+        self.nav_logger("info", "Follow Person -> sent initial goal with follow BT")
+
+    def _follow_goal_response_cb(self, future):
+        """Store goal handle so we can cancel it later."""
+        try:
+            handle = future.result()
+            if handle.accepted:
+                self._follow_goal_handle = handle
+                self.nav_logger("info", "Follow Person -> goal accepted")
+            else:
+                self.nav_logger("warn", "Follow Person -> goal rejected by Nav2")
+        except Exception as e:
+            self.nav_logger("error", f"Follow Person -> goal callback error: {e}")
+
+    def _stop_follow_person(self):
+        """Cancel the active follow goal and restore standard nav params."""
+        # 1. Cancel the running goal (robot stops)
+        if self._follow_goal_handle is not None:
+            try:
+                self._follow_goal_handle.cancel_goal_async()
+                self.nav_logger("info", "Follow Person -> goal cancelled")
+            except Exception as e:
+                self.nav_logger("warn", f"Follow Person -> cancel error: {e}")
+            self._follow_goal_handle = None
+
+        # 2. Restore standard Nav2 params
+        if self.follow_mode_client.wait_for_service(timeout_sec=FOLLOW_MODE_SERVICE_TIMEOUT):
+            req = SetBool.Request()
+            req.data = False
+            self.follow_mode_client.call_async(req)
+            self.nav_logger("info", "Follow Person -> smoother restored to standard mode")
 
     def _initialpose_callback(self, msg):
         if not self._initial_pose_set:

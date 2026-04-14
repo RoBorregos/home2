@@ -33,12 +33,9 @@ from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
+from frida_constants.vision_constants import RESULTS_TOPIC
+from frida_constants.navigation_constants import MAP_TOPIC, GOAL_UPDATE_TOPIC, FOLLOW_MODE_SERVICE
 
-
-TRACKER_TOPIC = "/vision/tracking_results"
-GOAL_UPDATE_TOPIC = "/goal_update"
-MAP_TOPIC = "/map"
-FOLLOW_MODE_SERVICE = "/navigation/set_follow_mode"
 
 # Which MPPI controller params to switch (dot-separated keys under controller_server.ros__parameters)
 CONTROLLER_KEYS = [
@@ -126,8 +123,8 @@ class PersonGoalSmoother(Node):
 
         # --- Parameters ---
         self.declare_parameter("alpha", 0.3)           # EMA smoothing (0=full smooth, 1=no smooth)
-        self.declare_parameter("distance_gate", 0.3)    # Min distance (m) to publish new goal
-        self.declare_parameter("follow_distance", 0.8)  # Stay this far behind the person
+        self.declare_parameter("distance_gate", 0.25)    # Min distance (m) to publish new goal
+        self.declare_parameter("follow_distance", 0.3)  # Stay this far behind the person
         self.declare_parameter("timeout", 3.0)           # Seconds without tracker data to stop
         self.declare_parameter("map_frame", "map")
         self.declare_parameter("snap_radius", 20)        # Grid cells to search for free space
@@ -149,7 +146,7 @@ class PersonGoalSmoother(Node):
 
         # --- Subscribers ---
         self.create_subscription(
-            PointStamped, TRACKER_TOPIC, self._tracker_cb, 10,
+            PointStamped, RESULTS_TOPIC, self._tracker_cb, 10,
             callback_group=cb,
         )
         self.create_subscription(
