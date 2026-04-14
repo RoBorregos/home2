@@ -205,16 +205,10 @@ class HRICCommands(Node):
             return None
 
         if self.depth_image is not None and self.camera_info is not None:
-            # Scale wrist pixel from YOLO image resolution to camera_info resolution.
-            cam_w = self.camera_info.width
-            cam_h = self.camera_info.height
-            px_ci = int(cx * cam_w / w)
-            py_ci = int(cy * cam_h / h)
-
             stamped = point2d_to_ros_point_stamped(
                 self.camera_info,
                 self.depth_image,
-                (px_ci, py_ci),
+                (cx, cy),
                 CAMERA_FRAME,
                 Time(sec=0, nanosec=0),
                 rotation=self.rotation,

@@ -7,8 +7,9 @@ Task Manager for testing the vision subtask manager
 import rclpy
 from geometry_msgs.msg import Point
 from rclpy.node import Node
+from visualization_msgs.msg import Marker
 
-from frida_constants.vision_constants import FOLLOW_TOPIC
+from frida_constants.vision_constants import CAMERA_FRAME, FOLLOW_TOPIC
 from task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -22,8 +23,11 @@ TEST_MOONDREAM_QUERY = False
 TEST_FIND_SEAT = False
 TEST_GET_PERSON_NAME = False
 TEST_FOLLOW_FACE = False
+TEST_HAND_MARKER = False
 
 FOLLOW_FACE_FLIP = False
+HAND_MARKER_FLIP = False
+HAND_MARKER_TOPIC = "/vision/test/hand_marker"
 
 
 class TestVisionManager(Node):
@@ -55,6 +59,9 @@ class TestVisionManager(Node):
 
         if TEST_FOLLOW_FACE:
             self.test_follow_face()
+
+        if TEST_HAND_MARKER:
+            self.test_hand_marker()
 
         exit(0)
 
@@ -159,6 +166,51 @@ class TestVisionManager(Node):
             self.vision_manager.camera_upside_down(False)
             self.vision_manager.deactivate_face_recognition()
             Logger.info(self, f"follow_face test stopped ({count[0]} messages)")
+
+    def test_hand_marker(self):
+        """Continuously call detect_hand and publish its 3D point as a Marker
+        in CAMERA_FRAME so it can be visualized in rviz. HAND_MARKER_FLIP
+        controls whether the camera runs flipped (180°) or normal.
+        """
+        Logger.info(self, "=== Testing hand marker ===")
+
+        marker_pub = self.create_publisher(Marker, HAND_MARKER_TOPIC, 10)
+        self.vision_manager.camera_upside_down(HAND_MARKER_FLIP)
+        Logger.info(
+            self,
+            f"Extend your hand in front of the camera. flip={HAND_MARKER_FLIP}. "
+            f"Marker on '{HAND_MARKER_TOPIC}'. Ctrl+C to stop.",
+        )
+
+        try:
+            while rclpy.ok():
+                rclpy.spin_once(self, timeout_sec=0.05)
+                status, point = self.vision_manager.detect_hand()
+                if status != Status.EXECUTION_SUCCESS or point is None:
+                    continue
+
+                marker = Marker()
+                marker.header.frame_id = CAMERA_FRAME
+                marker.header.stamp = self.get_clock().now().to_msg()
+                marker.ns = "hand_marker_test"
+                marker.id = 0
+                marker.type = Marker.SPHERE
+                marker.action = Marker.ADD
+                marker.pose.position = point.point
+                marker.pose.orientation.w = 1.0
+                marker.scale.x = 0.08
+                marker.scale.y = 0.08
+                marker.scale.z = 0.08
+                marker.color.r = 0.0
+                marker.color.g = 1.0
+                marker.color.b = 0.0
+                marker.color.a = 1.0
+                marker_pub.publish(marker)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.vision_manager.camera_upside_down(False)
+            Logger.info(self, "hand marker test stopped")
 
 
 def main(args=None):
