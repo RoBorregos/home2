@@ -5,20 +5,25 @@ Task Manager for testing the vision subtask manager
 """
 
 import rclpy
+from geometry_msgs.msg import Point
 from rclpy.node import Node
 
+from frida_constants.vision_constants import FOLLOW_TOPIC
 from task_manager.subtask_managers.vision_tasks import VisionTasks
-from task_manager.utils.task import Task
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 # Choose which tests to perform
 TEST_DETECT_OBJECTS = False
 TEST_DETECT_PERSON = False
-TEST_CUSTOMER_TABLES = True
+TEST_CUSTOMER_TABLES = False
 TEST_MOONDREAM_QUERY = False
 TEST_FIND_SEAT = False
 TEST_GET_PERSON_NAME = False
+TEST_FOLLOW_FACE = False
+
+FOLLOW_FACE_FLIP = False
 
 
 class TestVisionManager(Node):
@@ -47,6 +52,9 @@ class TestVisionManager(Node):
 
         if TEST_GET_PERSON_NAME:
             self.test_get_person_name()
+
+        if TEST_FOLLOW_FACE:
+            self.test_follow_face()
 
         exit(0)
 
@@ -122,6 +130,35 @@ class TestVisionManager(Node):
         else:
             Logger.warn(self, "No person name detected")
         self.vision_manager.deactivate_face_recognition()
+
+    def test_follow_face(self):
+        """Subscribe to the follow_face Point and log each incoming angular
+        delta while face recognition is active. FOLLOW_FACE_FLIP controls
+        whether the camera runs flipped (180°) or normal (0°).
+        """
+        Logger.info(self, "=== Testing follow_face ===")
+
+        count = [0]
+
+        def cb(msg: Point):
+            count[0] += 1
+            Logger.info(self, f"follow_face  x={msg.x:+.3f}  y={msg.y:+.3f}  (msg #{count[0]})")
+
+        self.create_subscription(Point, FOLLOW_TOPIC, cb, 10)
+        self.vision_manager.activate_face_recognition()
+        self.vision_manager.follow_by_name("area")
+        self.vision_manager.camera_upside_down(FOLLOW_FACE_FLIP)
+        Logger.info(self, f"Move your face. flip={FOLLOW_FACE_FLIP}. Ctrl+C to stop.")
+
+        try:
+            while rclpy.ok():
+                rclpy.spin_once(self, timeout_sec=0.1)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            self.vision_manager.camera_upside_down(False)
+            self.vision_manager.deactivate_face_recognition()
+            Logger.info(self, f"follow_face test stopped ({count[0]} messages)")
 
 
 def main(args=None):
