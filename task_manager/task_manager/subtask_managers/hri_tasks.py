@@ -37,6 +37,7 @@ from frida_constants.hri_constants import (
     START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
     TASK_STATUS_TOPIC,
+    TASK_STEP_TOPIC,
     TIMEOUT,
     WAKEWORD_TOPIC,
 )
@@ -203,6 +204,7 @@ class HRITasks(metaclass=SubtaskMeta):
             String, RESPEAKER_LIGHT_TOPIC, 10
         )
         self.task_status_publisher = self.node.create_publisher(String, TASK_STATUS_TOPIC, 10)
+        self.task_step_publisher = self.node.create_publisher(String, TASK_STEP_TOPIC, 10)
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
@@ -1356,6 +1358,11 @@ class HRITasks(metaclass=SubtaskMeta):
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
+
+    def publish_display_step(self, step: str):
+        """Publish the current task step to drive the HRIC display layout."""
+        self.task_step_publisher.publish(String(data=step))
+        Logger.info(self.node, f"Published display step: {step}")
 
     def deterministic_categorization(self, object_name: str):
         """

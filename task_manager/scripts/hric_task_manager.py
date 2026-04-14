@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# TODO: Test task manager with FRIDA
 
 """
 Task Manager for Human Robot Interaction Challenge task of Robocup @Home 2026
@@ -85,6 +84,13 @@ class HRIC_TM(Node):
     # TODO: Check current_attempts and determine if we should move to next state
     def _track_state_change(self, new_state: str):
         """Track state changes and time spent in each state"""
+        if self.previous_state != new_state:
+            step_name = new_state.lower()
+            if new_state == HRIC_TM.TaskStates.LEAVE_BAG:
+                step_name = "take_bag_deliver"
+            if new_state not in [HRIC_TM.TaskStates.END, HRIC_TM.TaskStates.DEBUG]:
+                self.subtask_manager.hri.publish_display_step(step_name)
+
         current_time = datetime.now()
 
         # If we have a previous state, calculate time spent
@@ -115,9 +121,9 @@ class HRIC_TM(Node):
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.clear_collision_objects()
-        self.subtask_manager.manipulation.move_to_position(
-            "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
-        )
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        if self.carrying_bag:
+            self.subtask_manager.manipulation.move_to_position("nav_carry_bag_pose")
         if say:
             Logger.info(self, f"Moving to {location}")
             self.subtask_manager.hri.say(
@@ -136,6 +142,7 @@ class HRIC_TM(Node):
         """Finite State Machine"""
 
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
+            self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_BUTTON)
             Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.say("Waiting for start button to be pressed.", wait=False)
 
@@ -210,7 +217,7 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.SAVE_FACE:
             self._track_state_change(HRIC_TM.TaskStates.SAVE_FACE)
             self.subtask_manager.hri.say(
-                "Please stand in front of me so I can save your face."
+                "Please stand in front of me and look at me so I can save your face."
                 if self.current_attempts == 0
                 else "Please get closer to me and look at my camera so I can save your face."
             )
@@ -339,9 +346,6 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
 
             # First: look at guest 2 (just seated) and introduce guest 1
-            self.subtask_manager.manipulation.move_to_position(
-                "front_stare_carry_bag" if self.carrying_bag else "front_stare"
-            )
             self.subtask_manager.vision.follow_by_name(guest_2.name)
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say(
