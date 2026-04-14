@@ -117,7 +117,6 @@ class PickAndPlaceTM(Node):
         # YOLO class name mapping: logical name -> YOLO detection class name.
         # Only names that differ need to be listed.
         self.yolo_names = {
-            "bowl": "spam_tuna_can",
             "cereal": "blue_cereal_box",
             "milk": "chocomilk_box",
         }
