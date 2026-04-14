@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import time
 from datetime import datetime
 import wave
 
@@ -62,9 +63,33 @@ class EIAudioClassifier(Node):
         self.publisher = self.create_publisher(String, detection_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
 
+        # Wait for the EI inference server to be ready before accepting audio
+        self._wait_for_server()
+
         self.get_logger().info(
             f"EIAudioClassifier ready | in: {audio_topic} | out: {detection_topic} | "
             f"window: {self.window_samples} samples ({window_size_s}s)"
+        )
+
+    def _wait_for_server(self, poll_interval: float = 5.0, max_retries: int = 60):
+        """Block until the EI inference server is reachable and responding."""
+        self.get_logger().info(f"Waiting for EI server at {self.ei_url} to be ready...")
+        for attempt in range(1, max_retries + 1):
+            try:
+                resp = requests.get(f"{self.ei_url}/api/info", timeout=3.0)
+                if resp.ok:
+                    self.get_logger().info(f"EI server is ready (attempt {attempt}).")
+                    return
+            except requests.RequestException:
+                pass
+            self.get_logger().info(
+                f"EI server not ready yet (attempt {attempt}/{max_retries}), "
+                f"retrying in {poll_interval}s..."
+            )
+            time.sleep(poll_interval)
+        self.get_logger().warn(
+            "EI server did not become ready in time. "
+            "Proceeding anyway — inference requests may fail initially."
         )
 
     def audio_callback(self, msg):
