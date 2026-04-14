@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 AREAS="vision manipulation navigation integration hri zed"
-ORIN_SERVER_AREAS="hri manipulation"
+ORIN_SERVER_AREAS="hri"
 
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
