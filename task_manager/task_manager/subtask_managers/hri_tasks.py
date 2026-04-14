@@ -1263,6 +1263,39 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
+    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, 0), TIMEOUT)
+    def count_from_detections(
+        self, detected_labels: list[str], target_object: str
+    ) -> tuple[int, int]:
+        """
+        Count how many detections match the target object using LLM reasoning.
+
+        Args:
+            detected_labels: list of classnames from detect_objects
+            target_object: the type of object to count (e.g., "drinks", "fruits", "cups")
+
+        Returns:
+            Status, count (int)
+        """
+        if not detected_labels:
+            return Status.TARGET_NOT_FOUND, 0
+
+        context = f"Detected objects: {', '.join(detected_labels)}"
+        question = (
+            f"From the detected objects listed in the context, how many of them are '{target_object}' "
+            f"or belong to the category '{target_object}'? "
+            f"Consider synonyms and subcategories. Reply with ONLY a number."
+        )
+        status, answer = self.answer_with_context(question, context)
+        if status != Status.EXECUTION_SUCCESS:
+            return status, 0
+
+        try:
+            count = int("".join(filter(str.isdigit, answer)))
+        except ValueError:
+            count = 0
+        return Status.EXECUTION_SUCCESS, count
+
     def query_command_history(self, query: str, action: str, top_k: int = 1):
         raw = self._call_query_entry(
             collection="command_history",
