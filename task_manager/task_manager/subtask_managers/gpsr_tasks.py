@@ -589,7 +589,7 @@ class GPSRTask(GenericTask):
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_hotwords=False,
+                    hotwords=command.name,
                 )
                 self.subtask_manager.vision.save_face_name(new_name)
                 name = new_name
