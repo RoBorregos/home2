@@ -64,10 +64,6 @@ class RestaurantTaskManager(Node):
         # Tracking current operations
         self.current_customer_index = 0
         self.current_delivery_item_index = 0
-        self.pick_attempts = 0
-
-        # Pan angles per-customer
-        self.pan_angles = []
 
         # Target customer detected during WAIT_FOR_CALL
         self.target_person_point = None
@@ -106,7 +102,7 @@ class RestaurantTaskManager(Node):
         self.subtask_manager.hri.say(
             f"I am having trouble picking the {object_name}. Please place it in my gripper and say yes when done."
         )
-        status, confirmation = self.subtask_manager.hri.confirm(
+        _, confirmation = self.subtask_manager.hri.confirm(
             "Have you placed the object in my gripper?",
             use_hotwords=True,
             retries=3,
@@ -298,6 +294,10 @@ class RestaurantTaskManager(Node):
                 if status == Status.EXECUTION_SUCCESS:
                     Logger.success(self, "Arrived near table for detection.")
                     self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
+                else:
+                    Logger.warn(self, "Navigation to customer failed. Returning to WAIT_FOR_CALL.")
+                    self.target_person_point = None
+                    self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
             else:
                 self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
                 return
@@ -426,12 +426,14 @@ class RestaurantTaskManager(Node):
             Logger.state(self, "Navigating to bar station to get items...")
             self.subtask_manager.hri.say("I will now go to the bar to get the orders.")
 
-            self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
-            self.subtask_manager.nav.resume_nav()
-            # Return to the saved Bar pose
-            Logger.info(self, "Navigating back to the Bar station pose.")
-            self.subtask_manager.nav.move_to_pose(self.bar_pose)
-            self.subtask_manager.nav.pause_nav()
+            if self.bar_pose is None:
+                Logger.warn(self, "Bar pose not saved, skipping navigation to bar.")
+            else:
+                self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
+                self.subtask_manager.nav.resume_nav()
+                Logger.info(self, "Navigating back to the Bar station pose.")
+                self.subtask_manager.nav.move_to_pose(self.bar_pose)
+                self.subtask_manager.nav.pause_nav()
 
             self.current_state = RestaurantTaskManager.TaskStates.SAY_ORDER_TO_BARMAN
 
