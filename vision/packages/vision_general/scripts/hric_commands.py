@@ -92,8 +92,6 @@ class HRICCommands(Node):
             self._img_qos,
             callback_group=self.callback_group,
         )
-        self.retrieve_areas_srv = self.create_client(MapAreas, AREAS_SERVICE)
-
         self.create_subscription(
             Int16,
             CAMERA_ROTATION_TOPIC,

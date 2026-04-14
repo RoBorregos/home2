@@ -34,7 +34,6 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
-    CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
@@ -62,6 +61,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
+from std_msgs.msg import Int16
 from std_msgs.msg import Int16
 from std_srvs.srv import SetBool, Trigger
 from task_manager.utils.decorators import mockable, service_check
@@ -99,6 +99,7 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
+        self.rotate_camera_publisher = self.node.create_publisher(Int16, CAMERA_ROTATION_TOPIC, 10)
         self.rotate_camera_publisher = self.node.create_publisher(Int16, CAMERA_ROTATION_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
@@ -1081,22 +1082,6 @@ class VisionTasks:
             location += f"to the left of the {detections[right_pos].classname.lower()}"
 
         return Status.EXECUTION_SUCCESS, location
-
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
-    @service_check("customer_tables", [Status.EXECUTION_ERROR, None], TIMEOUT)
-    def customer_tables(self) -> tuple[int, list[CustomerTable]]:
-        """Detect the tables and the customers associated to them."""
-        req = CustomerTables.Request()
-        future = self.customer_table_client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
-        if not future.done():
-            Logger.warn(self.node, "customer_tables service call timed out")
-            return Status.EXECUTION_ERROR, []
-        result = future.result()
-        if result is None or not result.success:
-            Logger.warn(self.node, "customer_tables service call failed or returned no tables")
-            return Status.EXECUTION_ERROR, []
-        return Status.EXECUTION_SUCCESS, result.customer_tables
 
     def camera_upside_down(self, flip):
         """Publish the camera rotation on CAMERA_ROTATION_TOPIC.
