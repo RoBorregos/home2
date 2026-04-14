@@ -322,6 +322,23 @@ def point3d_to_ros_point_stamped(
     return point_stamped
 
 
+def unrotate_pixel(
+    pixel: tuple[int, int], rotation: int, width: int, height: int
+) -> tuple[int, int]:
+    """Inverse of cv2.rotate for valid rotations (0/90/180/270 deg)."""
+    px, py = pixel
+    rotation = int(rotation) % 360
+    if rotation == 0:
+        return px, py
+    if rotation == 180:
+        return width - 1 - px, height - 1 - py
+    if rotation == 90:
+        return py, height - 1 - px
+    if rotation == 270:
+        return width - 1 - py, px
+    raise ValueError(f"Unsupported rotation {rotation}; expected 0/90/180/270")
+
+
 def point2d_to_ros_point_stamped(
     image_info,
     depth_image,
@@ -329,12 +346,18 @@ def point2d_to_ros_point_stamped(
     frame_id: str,
     stamp,
     is_optical: bool = False,
+    rotation: int = 0,
 ) -> PointStamped:
     """
     Given 2D pixel coordinates (x, y), intrinsic camera info and a depth image,
     calculates the 3D position and directly returns a standard ROS PointStamped.
     The point is in the camera optical frame by default (is_optical=False means no extra conversion).
     Set is_optical=True only if you want to manually convert from optical to ROS base_link convention.
+
+    If `rotation` is nonzero, `point2d` is un-rotated first so it indexes
+    the raw depth/camera_info (use for pixels detected on an oriented image).
     """
+    if rotation:
+        point2d = unrotate_pixel(point2d, rotation, image_info.width, image_info.height)
     point_3d = point2d_to_3d(image_info, depth_image, point2d)
     return point3d_to_ros_point_stamped(point_3d, frame_id, stamp, is_optical)

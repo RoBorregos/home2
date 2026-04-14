@@ -106,8 +106,11 @@ FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
-FLIP_IMAGE_TOPIC = "/vision/face_recognition/flip_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
+
+# Camera orientation (centralized flip/rotation handling)
+IMAGE_ORIENTED_TOPIC = "/vision/camera/image_oriented"
+CAMERA_ROTATION_TOPIC = "/vision/camera/rotation"
 
 # HRIC commands node
 CHECK_PERSON_TOPIC = "/vision/hric/detect_person"
