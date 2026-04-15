@@ -24,6 +24,8 @@ from rclpy.duration import Duration
 from geometry_msgs.msg import PointStamped
 from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
+from frida_interfaces.msg import GripperGraspState
+from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -52,6 +54,7 @@ class Location(Enum):
     CABINET = "cabinet"
     TRASH_BIN = "trash_bin"
     BREAKFAST_SURFACE = "breakfast_surface"
+    BREAKFAST_ITEMS = "breakfast_items"
     KITCHEN = "kitchen"
 
 
@@ -143,13 +146,14 @@ class PickAndPlaceTM(Node):
 
         # Navigation mapping: Location -> (room, sublocation).
         self.nav_locations = {
-            Location.KITCHEN: ("kitchen", ""),
+            Location.KITCHEN: ("kitchen", "safe_place"),
             Location.DINING_TABLE: ("kitchen", "dining_table"),
             Location.SIDE_TABLE: ("kitchen", "side_table"),
             Location.DISHWASHER: ("kitchen", "dishwasher"),
             Location.CABINET: ("kitchen", "cabinet"),
             Location.TRASH_BIN: ("kitchen", "trash_bin"),
-            Location.BREAKFAST_SURFACE: ("kitchen", "breakfast_surface"),
+            Location.BREAKFAST_SURFACE: ("kitchen", "dining_table"),
+            Location.BREAKFAST_ITEMS: ("kitchen", "breakfast_items"),
         }
 
         # Object tracking
@@ -165,7 +169,7 @@ class PickAndPlaceTM(Node):
         self.breakfast_items = [
             {
                 "name": "bowl",
-                "location": Location.BREAKFAST_SURFACE,
+                "location": Location.BREAKFAST_ITEMS,
                 "picked": False,
                 "placed": False,
                 "close_to": "",
@@ -186,7 +190,7 @@ class PickAndPlaceTM(Node):
             },
             {
                 "name": "spoon",
-                "location": Location.BREAKFAST_SURFACE,
+                "location": Location.BREAKFAST_ITEMS,
                 "picked": False,
                 "placed": False,
                 "close_to": "bowl",
@@ -233,6 +237,15 @@ class PickAndPlaceTM(Node):
         self.total_start_time = datetime.now()
         self.previous_state = None
 
+        # Gripper grasp state subscription
+        self._gripper_has_object = False
+        self.create_subscription(
+            GripperGraspState,
+            GRIPPER_GRASP_STATE_TOPIC,
+            self._gripper_grasp_cb,
+            10,
+        )
+
         self.current_state = PickAndPlaceTM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         CLog.fsm(self, "STATE", "PickAndPlaceTaskManager has started.")
@@ -240,6 +253,9 @@ class PickAndPlaceTM(Node):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    def _gripper_grasp_cb(self, msg: GripperGraspState):
+        self._gripper_has_object = msg.object_detected
 
     def _track_state_change(self, new_state: str):
         """Track time spent in each state and reset attempt counter"""
@@ -472,6 +488,10 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.START)
             self.subtask_manager.hri.say("I am ready.", wait=False)
             self.navigate_to_location(Location.KITCHEN, say=False)
+            self.subtask_manager.hri.say(
+                "Please remove the chairs from the dining table.", wait=True
+            )
+            self.timeout(5.0)
 
             if self.use_side_table:
                 CLog.fsm(self, "STATE", "Using side table (common objects).")
@@ -609,6 +629,19 @@ class PickAndPlaceTM(Node):
                 status = self.subtask_manager.manipulation.pick_object(
                     self._to_yolo_name(self.grasped_object.name)
                 )
+
+            # Verify gripper actually has the object
+            if status == Status.EXECUTION_SUCCESS:
+                rclpy.spin_once(self, timeout_sec=0.5)
+                if not self._gripper_has_object:
+                    CLog.manip(
+                        self,
+                        "PICK",
+                        f"Gripper reports no object after picking {self.grasped_object.name}.",
+                        level="warn",
+                    )
+                    self.subtask_manager.hri.say("I did not grasp the object.", wait=False)
+                    status = Status.EXECUTION_ERROR
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_picked = True
@@ -885,12 +918,16 @@ class PickAndPlaceTM(Node):
                     shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
                 )
                 CLog.manip(self, "PLACE", f"get_optimal_position_for_plane → {opt_status}")
+                self.subtask_manager.hri.say(
+                    f"Placing {self.grasped_object.name} on the shelf.", wait=False
+                )
                 status = self.subtask_manager.manipulation.place_on_shelf(
                     plane_height=shelf_height,
                     tolerance=0.1,
                 )
                 CLog.manip(self, "PLACE", f"place_on_shelf → {status}")
             else:
+                self.subtask_manager.hri.say(f"Placing {self.grasped_object.name}.", wait=False)
                 status = self.subtask_manager.manipulation.place()
 
             if status == Status.EXECUTION_SUCCESS:
@@ -1028,6 +1065,19 @@ class PickAndPlaceTM(Node):
                 status = self.subtask_manager.manipulation.pick_object(
                     yolo_name, scan_environment=is_cabinet
                 )
+
+            # Verify gripper actually has the object
+            if status == Status.EXECUTION_SUCCESS:
+                rclpy.spin_once(self, timeout_sec=0.5)
+                if not self._gripper_has_object:
+                    CLog.manip(
+                        self,
+                        "PICK",
+                        f"Gripper reports no object after picking {item_name}.",
+                        level="warn",
+                    )
+                    self.subtask_manager.hri.say("I did not grasp the object.", wait=False)
+                    status = Status.EXECUTION_ERROR
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["picked"] = True
