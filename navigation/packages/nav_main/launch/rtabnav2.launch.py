@@ -123,7 +123,7 @@ def generate_launch_description():
             ),
             ComposableNode(
                 package='nav2_behaviors',
-                plugin='nav2_behaviors::BehaviorServer',
+                plugin='behavior_server::BehaviorServer',
                 name='behavior_server',
                 parameters=[nav2_params],
             ),
