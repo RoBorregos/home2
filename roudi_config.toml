@@ -31,4 +31,4 @@ count = 30
 # Large images (HD1080 full resolution ~6MB)
 [[segment.mempool]]
 size = 8388608
-count = 10
+count = 30
