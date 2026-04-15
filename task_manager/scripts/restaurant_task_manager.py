@@ -227,7 +227,7 @@ class RestaurantTaskManager(Node):
                 self.bar_pose = self.subtask_manager.nav.get_current_pose()
                 if self.bar_pose is None:
                     Logger.warn(self, "TF not ready, retrying bar pose...")
-                    self.timeout(1)
+                    rclpy.spin_once(self, timeout_sec=0.5)
             Logger.info(self, "Bar position saved.")
             self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
 
