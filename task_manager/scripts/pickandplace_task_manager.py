@@ -559,12 +559,16 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.SORT_OBJECTS:
             self._track_state_change(PickAndPlaceTM.TaskStates.SORT_OBJECTS)
 
+            # Priority by expected points: cutlery pick is worth 100 pts
+            # (50 base + 50 bonus) vs 50 for normal objects, and the first
+            # pick awards an extra 100 pts.  OTHER goes to cabinet where
+            # placing next to similar objects earns +20 bonus.
             PRIORITY = {
-                ObjectCategory.TRASH: 0,
-                ObjectCategory.TABLEWARE: 1,
-                ObjectCategory.OTHER: 2,
-                ObjectCategory.COMMON: 3,
-                ObjectCategory.CUTLERY: 4,
+                ObjectCategory.CUTLERY: 0,
+                ObjectCategory.OTHER: 1,
+                ObjectCategory.TRASH: 2,
+                ObjectCategory.TABLEWARE: 3,
+                ObjectCategory.COMMON: 4,
             }
 
             skip_names = ["plate", "dish"]
