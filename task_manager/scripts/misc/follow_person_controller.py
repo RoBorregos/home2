@@ -41,8 +41,8 @@ XARM_VELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 TARGET_JOINT = "joint1"
 
 # xArm modes
-VELOCITY_MODE = 4   # Joint velocity control
-MOVEIT_MODE = 1      # Servo / MoveIt mode
+VELOCITY_MODE = 4  # Joint velocity control
+MOVEIT_MODE = 1  # Servo / MoveIt mode
 
 
 class FollowPersonController(Node):
@@ -72,32 +72,49 @@ class FollowPersonController(Node):
 
         # --- Subscribers ---
         self.create_subscription(
-            Point, CENTROID_TOPIC, self._centroid_cb, 10,
+            Point,
+            CENTROID_TOPIC,
+            self._centroid_cb,
+            10,
             callback_group=cb_group,
         )
         self.create_subscription(
-            Twist, CMD_VEL_TOPIC, self._cmd_vel_cb, 10,
+            Twist,
+            CMD_VEL_TOPIC,
+            self._cmd_vel_cb,
+            10,
             callback_group=cb_group,
         )
         self.create_subscription(
-            JointState, JOINT_STATES_TOPIC, self._joint_states_cb, 10,
+            JointState,
+            JOINT_STATES_TOPIC,
+            self._joint_states_cb,
+            10,
             callback_group=cb_group,
         )
 
         # --- xArm service clients ---
         self.mode_client = self.create_client(
-            SetInt16, XARM_SETMODE_SERVICE, callback_group=cb_group,
+            SetInt16,
+            XARM_SETMODE_SERVICE,
+            callback_group=cb_group,
         )
         self.state_client = self.create_client(
-            SetInt16, XARM_SETSTATE_SERVICE, callback_group=cb_group,
+            SetInt16,
+            XARM_SETSTATE_SERVICE,
+            callback_group=cb_group,
         )
         self.velocity_client = self.create_client(
-            MoveVelocity, XARM_VELOCITY_SERVICE, callback_group=cb_group,
+            MoveVelocity,
+            XARM_VELOCITY_SERVICE,
+            callback_group=cb_group,
         )
 
         # --- Follow service ---
         self.create_service(
-            FollowFace, FOLLOW_SERVICE, self._follow_service_cb,
+            FollowFace,
+            FOLLOW_SERVICE,
+            self._follow_service_cb,
             callback_group=cb_group,
         )
 
@@ -198,7 +215,9 @@ class FollowPersonController(Node):
         if self.centroid_time == 0.0 or age > timeout:
             self.error_integral = 0.0
             self._send_joint_velocity(0.0)
-            self.get_logger().warn("No centroid data — sending zero velocity", throttle_duration_sec=2.0)
+            self.get_logger().warn(
+                "No centroid data — sending zero velocity", throttle_duration_sec=2.0
+            )
             return
 
         # Error: positive centroid_x = person right = positive error
@@ -257,7 +276,9 @@ class FollowPersonController(Node):
             if result is None:
                 self.get_logger().error("Velocity service returned None")
             elif result.ret != 0:
-                self.get_logger().warn(f"Velocity service ret={result.ret}", throttle_duration_sec=2.0)
+                self.get_logger().warn(
+                    f"Velocity service ret={result.ret}", throttle_duration_sec=2.0
+                )
         except Exception as e:
             self.get_logger().error(f"Velocity service error: {e}")
 

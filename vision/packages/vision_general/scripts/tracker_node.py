@@ -48,7 +48,6 @@ import torch.nn as nn
 import torch
 from vision_general.utils.calculations import (
     get2DCentroid,
-    get_depth,
     deproject_pixel_to_point,
 )
 
@@ -133,7 +132,10 @@ class SingleTracker(Node):
         )
         self.depth_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, depth_qos,
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            depth_qos,
             callback_group=self.depth_callback_group,
         )
 
@@ -144,17 +146,23 @@ class SingleTracker(Node):
         self.service_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
         self.set_target_service = self.create_service(
-            SetBool, SET_TARGET_TOPIC, self.set_target_callback,
+            SetBool,
+            SET_TARGET_TOPIC,
+            self.set_target_callback,
             callback_group=self.service_callback_group,
         )
 
         self.set_target_by_service = self.create_service(
-            TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback,
+            TrackBy,
+            SET_TARGET_BY_TOPIC,
+            self.set_target_by_callback,
             callback_group=self.service_callback_group,
         )
 
         self.get_is_tracking_service = self.create_service(
-            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback,
+            Trigger,
+            IS_TRACKING_TOPIC,
+            self.get_is_tracking_callback,
             callback_group=self.service_callback_group,
         )
 
@@ -175,7 +183,9 @@ class SingleTracker(Node):
         self.last_reid_extraction = time.time()
         self.timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.create_timer(0.1, self.run, callback_group=self.timer_callback_group)
-        self.create_timer(0.1, self.publish_image, callback_group=self.timer_callback_group)
+        self.create_timer(
+            0.1, self.publish_image, callback_group=self.timer_callback_group
+        )
 
     def setup(self):
         """Load models and initial variables"""
@@ -731,8 +741,13 @@ class SingleTracker(Node):
                 )
                 self.frame = None
                 return
-            depth_stamp_ns = self.depth_image_time.sec * 1_000_000_000 + self.depth_image_time.nanosec
-            image_stamp_ns = self.image_time.sec * 1_000_000_000 + self.image_time.nanosec
+            depth_stamp_ns = (
+                self.depth_image_time.sec * 1_000_000_000
+                + self.depth_image_time.nanosec
+            )
+            image_stamp_ns = (
+                self.image_time.sec * 1_000_000_000 + self.image_time.nanosec
+            )
             stamp_diff_ns = abs(depth_stamp_ns - image_stamp_ns)
             self.get_logger().debug(
                 f"Stamp diff: {stamp_diff_ns / 1e6:.1f} ms "
@@ -772,7 +787,10 @@ class SingleTracker(Node):
                 depth = float(np.median(valid))
 
                 # Reject sudden depth jumps
-                if self.last_depth is not None and abs(depth - self.last_depth) > DEPTH_JUMP_THRESHOLD:
+                if (
+                    self.last_depth is not None
+                    and abs(depth - self.last_depth) > DEPTH_JUMP_THRESHOLD
+                ):
                     self.frame = None
                     return
                 self.last_depth = depth

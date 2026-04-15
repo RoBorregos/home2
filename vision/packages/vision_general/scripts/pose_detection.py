@@ -51,7 +51,7 @@ def load_yolo_pose(model_name="yolo11m-pose.pt"):
         print(
             "[PoseDetection] Exporting to TensorRT (first run only, may take a few minutes)..."
         )
-        model.export(format="engine", half=True, device=0, imgsz=640)
+        engine_path = model.export(format="engine", half=True, device=0, imgsz=640)
         print(f"[PoseDetection] TensorRT engine saved: {engine_path}")
         return YOLO(engine_path, task="pose")
     except Exception as e:
