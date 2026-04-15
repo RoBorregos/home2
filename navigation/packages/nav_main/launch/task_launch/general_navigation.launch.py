@@ -1,11 +1,12 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction
+from launch_ros.actions import Node, LifecycleNode
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction, ExecuteProcess, RegisterEventHandler, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
+from launch.conditions import UnlessCondition, IfCondition
 
 def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
@@ -16,19 +17,6 @@ def launch_function(context, *args, **kwargs):
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
-    use_sim = LaunchConfiguration('use_sim', default='false')
-
-    # Adaptive Goal Parameters
-    approach_min_dist = LaunchConfiguration('approach_min_dist', default='0.5')
-    approach_max_dist = LaunchConfiguration('approach_max_dist', default='1.2')
-
-    # Task flags 
-    hric_arg = DeclareLaunchArgument('hric', default_value='false')
-    gpsr_arg = DeclareLaunchArgument('gpsr', default_value='false')
-    restaurant_arg = DeclareLaunchArgument('restaurant', default_value='false')
-    ppc_arg = DeclareLaunchArgument('ppc', default_value='false')
-    dlc_arg = DeclareLaunchArgument('dlc', default_value='false')
-    finals_arg = DeclareLaunchArgument('finals', default_value='false')
 
     areas_map_name = context.perform_substitution(rtabmap_map_name).replace('.db', '')
 
@@ -47,13 +35,12 @@ def launch_function(context, *args, **kwargs):
             }],
     )
 
+
     nav_ui_node = Node(
         package='map_context',
         executable='nav_ui.py',
         name='nav_ui',
         output='screen',
-        respawn=True,
-        respawn_delay=2.0,
         parameters=[{'map_name': rtabmap_map_name}],
     )
 
@@ -70,33 +57,12 @@ def launch_function(context, *args, **kwargs):
         launch_arguments={'localization': localization, 'rtab_config_file': rtab_params, 'nav2_config_file': nav2_params, 'nav2': nav2_activate, 'map_name': rtabmap_map_name}.items(),
     )
 
-    adaptive_goal_node = Node(
-        package='nav_main',
-        executable='adaptive_goal_publisher.py',
-        name='adaptive_goal_publisher',
-        output='screen',
-        respawn=True,
-        respawn_delay=2.0,
-        parameters=[{
-            'approach_min_dist': approach_min_dist,
-            'approach_max_dist': approach_max_dist,
-            'use_sim_time': use_sim
-        }]
-    )
-
+    
     return [
-        hric_arg,
-        gpsr_arg,
-        restaurant_arg,
-        ppc_arg,
-        dlc_arg,
-        finals_arg,
         nav_central_node,
         nav_ui_node,
         nav_basics,
-        rtabmapnav,
-        adaptive_goal_node
+        rtabmapnav
     ]
-
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
