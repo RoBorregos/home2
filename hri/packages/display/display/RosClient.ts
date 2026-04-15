@@ -3,7 +3,7 @@
 import { Ros } from "roslib";
 
 const createRosClient = () => {
-  const url = "ws://localhost:9090";
+  const url = "ws://192.168.31.228:9090";
   const ros = new Ros({
     url: url,
   });
