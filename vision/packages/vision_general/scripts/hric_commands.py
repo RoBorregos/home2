@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import queue
 import time
-
+import json
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
@@ -21,7 +21,7 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
+from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect, MapAreas
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
@@ -35,8 +35,9 @@ from frida_constants.vision_constants import (
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
 )
+from tf2_geometry_msgs import do_transform_point
 from vision_general.utils.area_check import is_point_in_room
-
+from frida_constants.navigation_constants import AREAS_SERVICE
 from ament_index_python.packages import get_package_share_directory
 
 package_share_dir = get_package_share_directory("vision_general")
@@ -90,6 +91,8 @@ class HRICCommands(Node):
             self._img_qos,
             callback_group=self.callback_group,
         )
+        self.retrieve_areas_srv = self.create_client(MapAreas, AREAS_SERVICE)
+
         self.create_subscription(
             Int16,
             CAMERA_ROTATION_TOPIC,
@@ -118,6 +121,10 @@ class HRICCommands(Node):
         self.yolo_client = self.create_client(
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
@@ -445,8 +452,31 @@ class HRICCommands(Node):
                     (cx, cy),
                     CAMERA_FRAME,
                     Time(sec=0, nanosec=0),
+                    rotation = self.rotation
                 )
-                if not is_point_in_room(chair_point, "living_room"):
+                
+                
+                req = MapAreas.Request()
+                future = self.retrieve_areas_srv.call_async(req)
+                rclpy.spin_until_future_complete(
+                    self, future, timeout_sec=10.0)
+                if (future.result() is None) or (future.result().areas == ""):
+                    continue
+                else:
+                    areas_json = json.loads(str(future.result().areas))
+
+                try:
+                    transform = self.tf_buffer.lookup_transform(
+                        'map', chair_point.header.frame_id,
+                        rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=0.1),
+                    )
+                    point_map = do_transform_point(msg, transform)
+                except Exception as e:
+                    self.get_logger().warn(f"TF failed: {e}")
+                    continue 
+                
+                if not is_point_in_room(point_map, "living_room", areas_json):
+                    
                     continue  # Skip this chair if not inside house
 
             for person in self.people:

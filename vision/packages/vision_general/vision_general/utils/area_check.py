@@ -6,14 +6,6 @@ from geometry_msgs.msg import PointStamped
 from ament_index_python.packages import get_package_share_directory
 
 
-def load_areas_json():
-    """Load the areas.json file from frida_constants/map_areas/areas.json"""
-    package_share_directory = get_package_share_directory("frida_constants")
-    file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-    with open(file_path, "r") as file:
-        data = json.load(file)
-    return data
-
 
 def point_in_polygon(point, polygon):
     """Check if a 2D point (x, y) is inside a polygon (list of [x, y] points)"""
@@ -34,7 +26,7 @@ def point_in_polygon(point, polygon):
     return inside
 
 
-def is_point_in_room(point_stamped: PointStamped, room_name: str) -> bool:
+def is_point_in_room(point_stamped: PointStamped, room_name: str, areas_json) -> bool:
     """
     Check if a PointStamped is inside a specific room by name.
     Args:
@@ -43,10 +35,9 @@ def is_point_in_room(point_stamped: PointStamped, room_name: str) -> bool:
     Returns:
         bool
     """
-    areas = load_areas_json()
-    if room_name not in areas or "polygon" not in areas[room_name]:
+    if room_name not in areas_json or not areas_json.get(room_name, {}).get("polygon"):
         return False
-    polygon = areas[room_name]["polygon"]
+    polygon = areas_json[room_name]["polygon"]
     point = (point_stamped.point.x, point_stamped.point.y)
     return point_in_polygon(point, polygon)
 
