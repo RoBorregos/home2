@@ -14,7 +14,7 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
@@ -48,7 +48,7 @@ class YoloNode(Node):
         )
 
         self.create_subscription(
-            Image, CAMERA_TOPIC, self._image_callback, self._img_qos
+            Image, IMAGE_ORIENTED_TOPIC, self._image_callback, self._img_qos
         )
 
         # Publisher for annotated image

@@ -18,18 +18,20 @@ from sensor_msgs.msg import Image, CameraInfo
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
+from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    CAMERA_ROTATION_TOPIC,
     CAMERA_FRAME,
     CAMERA_INFO_TOPIC,
     CHECK_PERSON_TOPIC,
     DEPTH_IMAGE_TOPIC,
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
 )
@@ -69,7 +71,7 @@ class HRICCommands(Node):
         )
         self.create_subscription(
             Image,
-            CAMERA_TOPIC,
+            IMAGE_ORIENTED_TOPIC,
             self.image_callback,
             self._img_qos,
             callback_group=self.callback_group,
@@ -86,6 +88,13 @@ class HRICCommands(Node):
             CAMERA_INFO_TOPIC,
             self.camera_info_callback,
             self._img_qos,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            Int16,
+            CAMERA_ROTATION_TOPIC,
+            self._rotation_callback,
+            10,
             callback_group=self.callback_group,
         )
 
@@ -118,6 +127,7 @@ class HRICCommands(Node):
         self.camera_info = None
         self.output_image = []
         self.check = False
+        self.rotation = 0
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
@@ -132,6 +142,12 @@ class HRICCommands(Node):
         self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
+
+    def _rotation_callback(self, msg):
+        value = int(msg.data) % 360
+        if value != self.rotation:
+            self.rotation = value
+            self.get_logger().info(f"Camera rotation set to {self.rotation}")
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -190,19 +206,13 @@ class HRICCommands(Node):
             return None
 
         if self.depth_image is not None and self.camera_info is not None:
-            # Scale wrist pixel from YOLO image resolution to camera_info resolution,
-            # same convention used in restaurant_commands.py
-            cam_w = self.camera_info.width
-            cam_h = self.camera_info.height
-            px_ci = int(cx * cam_w / w)
-            py_ci = int(cy * cam_h / h)
-
             stamped = point2d_to_ros_point_stamped(
                 self.camera_info,
                 self.depth_image,
-                (px_ci, py_ci),
+                (cx, cy),
                 CAMERA_FRAME,
                 Time(sec=0, nanosec=0),
+                rotation=self.rotation,
             )
             return stamped
         else:
