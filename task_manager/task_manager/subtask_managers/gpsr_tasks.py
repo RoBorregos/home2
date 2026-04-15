@@ -360,17 +360,23 @@ class GPSRTask(GenericTask):
         self.subtask_manager.hri.say(
             f"I am going to count {object_name}.",
         )
-        status, result = self.subtask_manager.vision.count_objects(object_name)
+
+        # Get detections from object detector
+        status, labels = self.subtask_manager.vision.count_objects(object_name)
+        if status != Status.EXECUTION_SUCCESS or not labels:
+            self.subtask_manager.hri.say(f"I didn't find any {object_name}.")
+            self.subtask_manager.hri.publish_display_topic(CAMERA_TOPIC)
+            return Status.TARGET_NOT_FOUND, f"0 ({object_name} counted)"
+
+        # Use LLM to count matching objects from detections
+        status, count = self.subtask_manager.hri.count_from_detections(labels, object_name)
         if status == Status.EXECUTION_SUCCESS:
-            self.subtask_manager.hri.say(
-                f"I have counted {result} {object_name}.",
-            )
-        elif status == Status.TARGET_NOT_FOUND:
-            self.subtask_manager.hri.say(
-                f"I didn't find any {object_name}.",
-            )
+            self.subtask_manager.hri.say(f"I have counted {count} {object_name}.")
+        else:
+            self.subtask_manager.hri.say(f"I couldn't determine how many {object_name} there are.")
+
         self.subtask_manager.hri.publish_display_topic(CAMERA_TOPIC)
-        return status, str(result) + f" ({object_name} counted)"
+        return status, str(count) + f" ({object_name} counted)"
 
     ## Manipulation, Vision
     def count(self, command: Count):

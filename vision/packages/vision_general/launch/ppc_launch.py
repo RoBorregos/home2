@@ -17,6 +17,13 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
+                executable="image_orienter.py",
+                name="image_orienter",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
                 executable="yolo_node.py",
                 name="yolo_node",
                 output="screen",
@@ -31,6 +38,13 @@ def generate_launch_description():
             ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(detector_launch_file)
+            ),
+            Node(
+                package="moondream_run",
+                executable="moondream_node.py",
+                name="moondream_node",
+                output="screen",
+                emulate_tty=True,
             ),
         ]
     )

@@ -34,6 +34,7 @@ START_BUTTON_CLIENT = "/hri/display/button_press"
 TASK_STATUS_TOPIC = "/hri/display/task_status"
 GPSR_TASK_STEP_TOPIC = "/gpsr/display/task_step"
 GPSR_COMMAND_INDEX_TOPIC = "/gpsr/display/command_index"
+TASK_STEP_TOPIC = "/hri/display/task_step"
 
 GPSR_COMMANDS = {
     "go_to",

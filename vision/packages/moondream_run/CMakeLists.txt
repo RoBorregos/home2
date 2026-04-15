@@ -12,7 +12,7 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 
 #Install directories
-install(DIRECTORY launch moondream_server
+install(DIRECTORY moondream_server
   DESTINATION share/${PROJECT_NAME})
 
 
