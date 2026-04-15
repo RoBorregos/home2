@@ -185,12 +185,14 @@ class AdaptiveGoalPublisher(Node):
         return -1
 
     def is_position_blocked(self, world_x: float, world_y: float) -> bool:
-        """Check if a world position is blocked."""
+        """Check if a world position is blocked. Unknown cells (-1) are treated as free
+        to allow navigation into unmapped areas during SLAM."""
         mx, my = self.world_to_costmap(world_x, world_y)
         if mx is None:
             return True
         cost = self.get_cost_at(mx, my)
-        return cost < 0 or cost >= self.obstacle_threshold
+        # -1 = unknown (SLAM not yet mapped) → treat as free, not blocked
+        return cost >= self.obstacle_threshold
 
     def raycast_find_approach_point(self, robot_x, robot_y, goal_x, goal_y):
         """
@@ -303,7 +305,7 @@ class AdaptiveGoalPublisher(Node):
                 break
 
             cost = self.get_cost_at(cx, cy)
-            if cost >= 0 and cost < self.free_threshold and dist > 0:
+            if (cost == -1 or (cost >= 0 and cost < self.free_threshold)) and dist > 0:
                 wx, wy = self.costmap_to_world(cx, cy)
                 return (wx, wy)
 
@@ -335,7 +337,7 @@ class AdaptiveGoalPublisher(Node):
                 mx, my = self.world_to_costmap(cand_x, cand_y)
                 if mx is not None:
                     cost = self.get_cost_at(mx, my)
-                    if 0 <= cost < self.free_threshold:
+                    if cost == -1 or 0 <= cost < self.free_threshold:
                         rb_dist = math.hypot(robot_x - cand_x, robot_y - cand_y)
                         candidates.append((rb_dist, cand_x, cand_y))
         
