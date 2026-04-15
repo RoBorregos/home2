@@ -129,7 +129,7 @@ case $TASK in
         RUN="ros2 run nav_main launch_nav.py"
         ;;
     "--restaurant")
-        RUN="ros2 run nav_main launch_nav.py"
+        RUN="ros2 run nav_main launch_nav.py --mapping"
         ;;
     "--ppc")
         RUN="ros2 run nav_main launch_nav.py"
