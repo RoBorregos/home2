@@ -111,7 +111,7 @@ class GPSRTM(Node):
             else self.current_state,
         )
 
-        self.subtask_manager.hri.publish_display_step(new_state.lower(), GPSR_TASK_STEP_TOPIC)
+        self.subtask_manager.hri.publish_display_step_gpsr(new_state.lower(), GPSR_TASK_STEP_TOPIC)
         self._publish_command_index(self.executed_commands)
 
     def _publish_command_index(self, index: int) -> None:
@@ -139,7 +139,7 @@ class GPSRTM(Node):
         """Finite State Machine"""
 
         if self.current_state == GPSRTM.TaskStates.WAITING_FOR_BUTTON:
-            self.subtask_manager.hri.publish_display_step(
+            self.subtask_manager.hri.publish_display_step_gpsr(
                 "waiting_for_button", GPSR_TASK_STEP_TOPIC
             )
             self._publish_command_index(self.executed_commands)
@@ -232,7 +232,7 @@ class GPSRTM(Node):
             else:
                 command = self.commands.pop(0)
 
-                self.subtask_manager.hri.publish_display_step(
+                self.subtask_manager.hri.publish_display_step_gpsr(
                     f"executing:{command.action}", GPSR_TASK_STEP_TOPIC
                 )
                 self._publish_command_index(self.executed_commands)
