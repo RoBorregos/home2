@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
-import os
-import json
 from geometry_msgs.msg import PointStamped
-from ament_index_python.packages import get_package_share_directory
-
 
 
 def point_in_polygon(point, polygon):
@@ -40,19 +36,3 @@ def is_point_in_room(point_stamped: PointStamped, room_name: str, areas_json) ->
     polygon = areas_json[room_name]["polygon"]
     point = (point_stamped.point.x, point_stamped.point.y)
     return point_in_polygon(point, polygon)
-
-
-def is_point_in_house(point_stamped: PointStamped) -> bool:
-    """
-    Check if a PointStamped is inside any room in the house.
-    Args:
-        point_stamped: geometry_msgs.msg.PointStamped
-    Returns:
-        bool
-    """
-    areas = load_areas_json()
-    point = (point_stamped.point.x, point_stamped.point.y)
-    for room, data in areas.items():
-        if "polygon" in data and point_in_polygon(point, data["polygon"]):
-            return True
-    return False

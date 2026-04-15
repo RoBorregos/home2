@@ -126,7 +126,6 @@ class HRICCommands(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
 
@@ -453,14 +452,12 @@ class HRICCommands(Node):
                     (cx, cy),
                     CAMERA_FRAME,
                     Time(sec=0, nanosec=0),
-                    rotation = self.rotation
+                    rotation=self.rotation,
                 )
-                
-                
+
                 req = MapAreas.Request()
                 future = self.retrieve_areas_srv.call_async(req)
-                rclpy.spin_until_future_complete(
-                    self, future, timeout_sec=10.0)
+                rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
                 if (future.result() is None) or (future.result().areas == ""):
                     continue
                 else:
@@ -468,16 +465,17 @@ class HRICCommands(Node):
 
                 try:
                     transform = self.tf_buffer.lookup_transform(
-                        'map', chair_point.header.frame_id,
-                        rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=0.1),
+                        "map",
+                        chair_point.header.frame_id,
+                        rclpy.time.Time(),
+                        timeout=rclpy.duration.Duration(seconds=0.1),
                     )
                     point_map = do_transform_point(chair_point, transform)
                 except Exception as e:
                     self.get_logger().warn(f"TF failed: {e}")
-                    continue 
-                
+                    continue
+
                 if not is_point_in_room(point_map, "living_room", areas_json):
-                    
                     continue  # Skip this chair if not inside house
 
             for person in self.people:
