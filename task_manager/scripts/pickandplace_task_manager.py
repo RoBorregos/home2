@@ -566,8 +566,8 @@ class PickAndPlaceTM(Node):
             PRIORITY = {
                 ObjectCategory.CUTLERY: 0,
                 ObjectCategory.OTHER: 1,
-                ObjectCategory.TRASH: 2,
-                ObjectCategory.TABLEWARE: 3,
+                ObjectCategory.TABLEWARE: 2,
+                ObjectCategory.TRASH: 3,
                 ObjectCategory.COMMON: 4,
             }
 

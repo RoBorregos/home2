@@ -90,7 +90,7 @@ class PickManager:
             self._grasp_samples.append(msg)
 
     def execute(
-        self, object_name: str, point: PointStamped, pick_params
+        self, object_name: str, point: PointStamped, pick_params, is_shelf: bool = False
     ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
@@ -359,6 +359,20 @@ class PickManager:
         future = wait_for_future(future)
         result = future.result()
         self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
+
+        if is_shelf:
+            # For shelf picks, move to front_stare first to safely clear
+            # the shelf structure before going to table_stare. Without
+            # this, the direct path to table_stare can collide with the
+            # shelf ceiling after the octomap is cleared.
+            self.node.get_logger().info(
+                "Shelf pick: moving to front_stare to clear shelf"
+            )
+            send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="front_stare",
+                velocity=0.3,
+            )
 
         self.node.get_logger().info("Returning to position")
 
