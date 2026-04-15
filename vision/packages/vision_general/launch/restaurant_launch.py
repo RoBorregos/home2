@@ -17,8 +17,8 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="face_recognition_node.py",
-                name="face_recognition",
+                executable="image_orienter.py",
+                name="image_orienter",
                 output="screen",
                 emulate_tty=True,
             ),
@@ -40,6 +40,13 @@ def generate_launch_description():
                 package="vision_general",
                 executable="customer_node.py",
                 name="customer_node",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
+                executable="face_recognition_node.py",
+                name="face_recognition",
                 output="screen",
                 emulate_tty=True,
             ),
