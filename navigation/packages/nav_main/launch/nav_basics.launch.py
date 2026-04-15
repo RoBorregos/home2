@@ -2,12 +2,14 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, OpaqueFunction
+from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, EmitEvent, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import IfCondition
 from launch import LaunchDescription
+from launch.event_handlers import OnProcessExit
+from launch.events import Shutdown
 
 def launch_setup(context, *args, **kwargs):
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
@@ -96,7 +98,22 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_dualshock),
     )
 
+    # Shutdown handler for each critical node — triggers after max respawn retries
+    def make_shutdown_handler(node, name):
+        return RegisterEventHandler(
+            OnProcessExit(
+                target_action=node,
+                on_exit=[
+                    LogInfo(msg=f"{name} exited after max respawn retries. Shutting down."),
+                    EmitEvent(event=Shutdown(reason=f"{name} failed after 5 retries.")),
+                ]
+            )
+        )
+
     return_launch = [
+        make_shutdown_handler(dashgo_driver, "DashgoDriver"),
+        make_shutdown_handler(ekf_launch, "EKF"),
+        make_shutdown_handler(laser_launch, "Laser"),
         dashgo_driver,
         ekf_launch,
         laser_launch,
