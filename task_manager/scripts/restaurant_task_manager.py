@@ -73,7 +73,7 @@ class RestaurantTaskManager(Node):
         # Orders already communicated to barman
         self._orders_given = False
 
-        self.current_state = RestaurantTaskManager.TaskStates.START
+        self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON
 
         self.get_logger().info("RestaurantTaskManager has started.")
 
@@ -221,6 +221,7 @@ class RestaurantTaskManager(Node):
 
         if self.current_state == RestaurantTaskManager.TaskStates.START:
             Logger.state(self, "Starting restaurant task...")
+            self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
             self.subtask_manager.hri.say("Starting the restaurant challenge. I am ready to help.")
             while self.bar_pose is None:
                 self.bar_pose = self.subtask_manager.nav.get_current_pose()
