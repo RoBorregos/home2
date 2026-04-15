@@ -755,7 +755,7 @@ class VisionTasks:
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 
-            if not result.found:
+            if result is None or not result.found:
                 Logger.warn(self.node, "No person found")
                 from geometry_msgs.msg import PointStamped
 

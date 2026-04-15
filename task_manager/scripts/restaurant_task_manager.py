@@ -222,7 +222,11 @@ class RestaurantTaskManager(Node):
         if self.current_state == RestaurantTaskManager.TaskStates.START:
             Logger.state(self, "Starting restaurant task...")
             self.subtask_manager.hri.say("Starting the restaurant challenge. I am ready to help.")
-            self.bar_pose = self.subtask_manager.nav.get_current_pose()
+            while self.bar_pose is None:
+                self.bar_pose = self.subtask_manager.nav.get_current_pose()
+                if self.bar_pose is None:
+                    Logger.warn(self, "TF not ready, retrying bar pose...")
+                    self.timeout(1)
             Logger.info(self, "Bar position saved.")
             self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
 
