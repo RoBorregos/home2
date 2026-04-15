@@ -203,7 +203,7 @@ class RestaurantTaskManager(Node):
         if self.bar_pose is None:
             Logger.warn(self, "Bar pose not saved, skipping navigation to bar.")
             return
-        self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
+        self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
         self.subtask_manager.nav.resume_nav()
         self.subtask_manager.nav.move_to_pose(self.bar_pose)
         self.subtask_manager.nav.pause_nav()
@@ -221,7 +221,7 @@ class RestaurantTaskManager(Node):
 
         if self.current_state == RestaurantTaskManager.TaskStates.START:
             Logger.state(self, "Starting restaurant task...")
-            self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
+            self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
             self.subtask_manager.hri.say("Starting the restaurant challenge. I am ready to help.")
             while self.bar_pose is None:
                 self.bar_pose = self.subtask_manager.nav.get_current_pose()
@@ -249,6 +249,9 @@ class RestaurantTaskManager(Node):
                 self.search_step += 1
                 waypoint = self._compute_search_waypoint(self.search_step)
                 if waypoint is not None:
+                    self.subtask_manager.hri.say(
+                        "I didn't find a customer, searching in a new place.", wait=False
+                    )
                     Logger.info(self, f"No customer. Moving to search position {self.search_step}.")
                     self.subtask_manager.nav.resume_nav()
                     self.subtask_manager.nav.move_to_point(waypoint)
@@ -432,7 +435,7 @@ class RestaurantTaskManager(Node):
                 if status == Status.EXECUTION_SUCCESS:
                     Logger.success(self, f"Picked {item}. Delivering to table {table_id}...")
 
-                    self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
+                    self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
                     self.subtask_manager.nav.resume_nav()
                     self.subtask_manager.nav.change_bt("adaptive")
                     self._publish_adaptive_goal(table["coordinates"])
