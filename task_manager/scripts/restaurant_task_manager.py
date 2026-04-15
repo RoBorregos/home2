@@ -103,12 +103,14 @@ class RestaurantTaskManager(Node):
             2.0 * (q.w * q.z + q.x * q.y),
             1.0 - 2.0 * (q.y * q.y + q.z * q.z),
         )
-        wp = PointStamped()
+        wp = PoseStamped()
         wp.header.frame_id = "map"
         wp.header.stamp = self.get_clock().now().to_msg()
-        wp.point.x = self.bar_pose.pose.position.x + step * SEARCH_STEP_SIZE * math.cos(yaw)
-        wp.point.y = self.bar_pose.pose.position.y + step * SEARCH_STEP_SIZE * math.sin(yaw)
-        wp.point.z = 0.0
+        wp.pose.position.x = self.bar_pose.pose.position.x + step * SEARCH_STEP_SIZE * math.cos(yaw)
+        wp.pose.position.y = self.bar_pose.pose.position.y + step * SEARCH_STEP_SIZE * math.sin(yaw)
+        wp.pose.position.z = 0.0
+        wp.pose.orientation.z = math.sin(yaw / 2.0)
+        wp.pose.orientation.w = math.cos(yaw / 2.0)
         return wp
 
     def _publish_adaptive_goal(self, point: PointStamped):
@@ -251,7 +253,7 @@ class RestaurantTaskManager(Node):
                 if waypoint is not None:
                     Logger.info(self, f"No customer. Moving to search position {self.search_step}.")
                     self.subtask_manager.nav.resume_nav()
-                    self.subtask_manager.nav.move_to_point(waypoint)
+                    self.subtask_manager.nav.move_to_pose(waypoint)
                     self.subtask_manager.nav.pause_nav()
                 else:
                     self.timeout(1)
