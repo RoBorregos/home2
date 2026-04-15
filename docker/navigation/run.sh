@@ -126,7 +126,7 @@ case $TASK in
         RUN="ros2 run nav_main launch_nav.py"
         ;;
     "--hric")
-        RUN="ros2 run nav_main launch_nav.py"
+        RUN="ros2 launch nav_main hric.launch.py"
         ;;
     "--ppc")
         RUN="ros2 run nav_main launch_nav.py"
