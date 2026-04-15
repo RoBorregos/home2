@@ -36,6 +36,7 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from tf2_geometry_msgs import do_transform_point
+from tf2_ros import Buffer, TransformListener
 from vision_general.utils.area_check import is_point_in_room
 from frida_constants.navigation_constants import AREAS_SERVICE
 from ament_index_python.packages import get_package_share_directory
@@ -470,7 +471,7 @@ class HRICCommands(Node):
                         'map', chair_point.header.frame_id,
                         rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=0.1),
                     )
-                    point_map = do_transform_point(msg, transform)
+                    point_map = do_transform_point(chair_point, transform)
                 except Exception as e:
                     self.get_logger().warn(f"TF failed: {e}")
                     continue 
