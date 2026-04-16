@@ -219,9 +219,58 @@ class FaceRecognition(Node):
             file_path = os.path.join(KNOWN_FACES_PATH, filename)
             os.remove(file_path)
 
+    def _align_face(self, crop: np.ndarray) -> np.ndarray:
+        """Rotate crop so eyes are horizontal. Input BGR, return RGB rotated."""
+        try:
+            rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+            lm_list = face_recognition.face_landmarks(rgb)
+            if not lm_list:
+                return rgb
+            lm = lm_list[0]
+            if "left_eye" not in lm or "right_eye" not in lm:
+                return rgb
+            left = np.mean(lm["left_eye"], axis=0)
+            right = np.mean(lm["right_eye"], axis=0)
+            dy = right[1] - left[1]
+            dx = right[0] - left[0]
+            angle = np.degrees(np.arctan2(dy, dx))
+            eyes_center = ((left[0] + right[0]) / 2.0, (left[1] + right[1]) / 2.0)
+            M = cv2.getRotationMatrix2D(eyes_center, -angle, 1.0)
+            rotated = cv2.warpAffine(
+                rgb,
+                M,
+                (rgb.shape[1], rgb.shape[0]),
+                flags=cv2.INTER_CUBIC,
+                borderMode=cv2.BORDER_REPLICATE,
+            )
+            return rotated
+        except Exception:
+            return cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+
+    def apply_clahe(self, rgb_img: np.ndarray) -> np.ndarray:
+        """Apply CLAHE on L channel of an RGB image and return RGB."""
+        try:
+            lab = cv2.cvtColor(rgb_img, cv2.COLOR_RGB2LAB)
+            l_img, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=0.5, tileGridSize=(16, 16))
+            l_img = clahe.apply(l_img)
+            lab = cv2.merge((l_img, a, b))
+            return cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+        except Exception:
+            return rgb_img
+
     def process_img(self, filename: str) -> None:
         """Process image, obtain encodings and add to known people"""
         img = face_recognition.load_image_file(f"{KNOWN_FACES_PATH}/{filename}")
+
+        # try:
+        #     # convert to BGR for alignment helper which expects BGR input
+        #     img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        #     aligned_rgb = self._align_face(img_bgr)
+        #     preprocessed = self.apply_clahe(aligned_rgb)
+        # except Exception:
+        #     preprocessed = img
+
         cur_encodings = face_recognition.face_encodings(img)
 
         if len(cur_encodings) == 0:
@@ -251,9 +300,15 @@ class FaceRecognition(Node):
 
         crop = self.frame[top:bottom, left:right]
 
+        try:
+            aligned_rgb = self._align_face(crop)
+            save_bgr = self.apply_clahe(aligned_rgb)
+        except Exception:
+            save_bgr = crop
+
         img_name = f"{self.new_name}.png"
         save_path = f"{KNOWN_FACES_PATH}/{img_name}"
-        cv2.imwrite(save_path, crop)
+        cv2.imwrite(save_path, save_bgr)
         self.process_img(img_name)
 
         # Update prev recognitions for tracker
@@ -329,13 +384,13 @@ class FaceRecognition(Node):
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
 
-        resized_frame = cv2.resize(
-            self.frame, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
-        )
+        # resized_frame = cv2.resize(
+        #     self.frame, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
+        # )
 
         # Find all faces using dlib's CUDA-accelerated CNN model (built with CUDA sm_87)
         # "cnn" uses GPU via dlib CUDA, "hog" would be CPU-only
-        face_locations = face_recognition.face_locations(resized_frame, model="cnn")
+        face_locations = face_recognition.face_locations(self.frame, model="cnn")
         # print("running")
         # return
 
@@ -378,12 +433,29 @@ class FaceRecognition(Node):
 
             # If not a tracked face, then it needs to be processed (compare to known faces)
             if not flag:
-                if face_encodings is None:
-                    face_encodings = face_recognition.face_encodings(
-                        resized_frame, face_locations
-                    )
+                crop = self.frame[
+                    top:bottom, left:right
+                ]  # BGR crop from original resolution
+                if crop.size == 0:
+                    print("crop 0")
+                    continue
 
-                face_encoding = face_encodings[i]
+                aligned_rgb = self._align_face(crop)  # returns RGB
+                preproc_rgb = self.apply_clahe(aligned_rgb)
+                encs = face_recognition.face_encodings(preproc_rgb)
+
+                if len(encs) == 0:
+                    print("no encoding")
+                    # no encoding found for this crop
+                    if face_encodings is None:
+                        face_encodings = face_recognition.face_encodings(
+                            self.frame, face_locations
+                        )
+
+                    face_encoding = face_encodings[i]
+                    # continue
+                else:
+                    face_encoding = encs[0]
 
                 # See if the face is a match for the known face(s)
                 matches = face_recognition.compare_faces(
