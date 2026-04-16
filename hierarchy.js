@@ -157,6 +157,7 @@ var hierarchy =
     ] ],
     [ "Node", null, [
       [ "_storing_groceries.StoringGroceriesTM", "class__storing__groceries_1_1StoringGroceriesTM.html", null ],
+      [ "adaptive_goal_publisher.AdaptiveGoalPublisher", "classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html", null ],
       [ "calibrate_ignore_laser.LidarCalibrator", "classcalibrate__ignore__laser_1_1LidarCalibrator.html", null ],
       [ "call_joint_goal.MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", null ],
       [ "call_pick_action.PickMotionClient", "classcall__pick__action_1_1PickMotionClient.html", null ],

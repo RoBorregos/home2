@@ -8,5 +8,6 @@ var searchData=
   ['weights_5finit_5fclassifier_5',['weights_init_classifier',['../namespacemodel.html#a84912719c72180a694ab967f594736fa',1,'model']]],
   ['weights_5finit_5fkaiming_6',['weights_init_kaiming',['../namespacemodel.html#a38aba7a09e60492141ce52f1a0fcf168',1,'model']]],
   ['wheelevent_7',['wheelEvent',['../classmap__area__tagger_1_1MapCanvas.html#abff48300700155a2e202712daa41f894',1,'map_area_tagger.MapCanvas.wheelEvent()'],['../classnav__ui_1_1NavCanvas.html#a54de06d9f39e1c13ff94729f5f1caa55',1,'nav_ui.NavCanvas.wheelEvent()']]],
-  ['write_5fview_5flog_8',['write_view_log',['../namespacelaunch__nav.html#a57e87166d8c220a27ed62563585c7391',1,'launch_nav']]]
+  ['world_5fto_5fcostmap_8',['world_to_costmap',['../classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html#ad27d8f27ebcd4ebae5ab74f765460043',1,'adaptive_goal_publisher::AdaptiveGoalPublisher']]],
+  ['write_5fview_5flog_9',['write_view_log',['../namespacelaunch__nav.html#a57e87166d8c220a27ed62563585c7391',1,'launch_nav']]]
 ];

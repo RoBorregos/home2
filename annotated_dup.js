@@ -3,6 +3,9 @@ var annotated_dup =
     [ "_storing_groceries", "namespace__storing__groceries.html", [
       [ "StoringGroceriesTM", "class__storing__groceries_1_1StoringGroceriesTM.html", "class__storing__groceries_1_1StoringGroceriesTM" ]
     ] ],
+    [ "adaptive_goal_publisher", "namespaceadaptive__goal__publisher.html", [
+      [ "AdaptiveGoalPublisher", "classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html", "classadaptive__goal__publisher_1_1AdaptiveGoalPublisher" ]
+    ] ],
     [ "arm_pkg", "namespacearm__pkg.html", [
       [ "moveit_configs_builder", "namespacearm__pkg_1_1moveit__configs__builder.html", [
         [ "DualMoveItConfigsBuilder", "classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html", "classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder" ],

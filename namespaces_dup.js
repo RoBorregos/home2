@@ -1,8 +1,13 @@
 var namespaces_dup =
 [
     [ "_storing_groceries", "namespace__storing__groceries.html", "namespace__storing__groceries" ],
+    [ "adaptive_goal_publisher", "namespaceadaptive__goal__publisher.html", "namespaceadaptive__goal__publisher" ],
     [ "add_collision_object", "namespaceadd__collision__object.html", [
       [ "main", "namespaceadd__collision__object.html#a4d453f8d2e963ce0e4c23e30c0f9b0bd", null ]
+    ] ],
+    [ "area_check", "namespacearea__check.html", [
+      [ "is_point_in_room", "namespacearea__check.html#adde7b9820374ec0867e3bcc9888ae56f", null ],
+      [ "point_in_polygon", "namespacearea__check.html#a57f97085ecda9c86f7f750d44a2bf6ec", null ]
     ] ],
     [ "arm_pkg", "namespacearm__pkg.html", "namespacearm__pkg" ],
     [ "calculations", "namespacecalculations.html", [
@@ -314,7 +319,13 @@ var namespaces_dup =
     [ "remove_collision_object", "namespaceremove__collision__object.html", [
       [ "main", "namespaceremove__collision__object.html#a86366d327b8fa51f26394d0524fdc193", null ]
     ] ],
+    [ "restaurant", "namespacerestaurant.html", [
+      [ "generate_launch_description", "namespacerestaurant.html#a5c14e7b4a3dbd8a605257834b3de807d", null ]
+    ] ],
     [ "restaurant_commands", "namespacerestaurant__commands.html", "namespacerestaurant__commands" ],
+    [ "restaurant_launch", "namespacerestaurant__launch.html", [
+      [ "generate_launch_description", "namespacerestaurant__launch.html#a8b652244d943c8e2e5d03bb2e33103e9", null ]
+    ] ],
     [ "restaurant_task_manager", "namespacerestaurant__task__manager.html", "namespacerestaurant__task__manager" ],
     [ "robot_sim", "namespacerobot__sim.html", [
       [ "generate_launch_description", "namespacerobot__sim.html#aa1de369c762aa456d4c9e31388d6f617", null ],

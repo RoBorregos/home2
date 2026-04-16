@@ -35,8 +35,11 @@ var classhric__commands_1_1HRICCommands =
     [ "person_detection_action_server", "classhric__commands_1_1HRICCommands.html#adfdb9f8b2227c089a038022567d02079", null ],
     [ "person_found", "classhric__commands_1_1HRICCommands.html#abcabc9b1833c835cbb0ebf3f1bd1e253", null ],
     [ "pose_model", "classhric__commands_1_1HRICCommands.html#a72378d2331c926b62e8b700636e25969", null ],
+    [ "retrieve_areas_srv", "classhric__commands_1_1HRICCommands.html#a7536921b72f1922d1d581cf7e3867d67", null ],
     [ "rotation", "classhric__commands_1_1HRICCommands.html#abd37800aa80cb67ba02cdc734c6754ed", null ],
     [ "start_time", "classhric__commands_1_1HRICCommands.html#a490e5ce877f5e10101f71fdbbbe43d87", null ],
+    [ "tf_buffer", "classhric__commands_1_1HRICCommands.html#ad7fd98dfaebf0a43dac740eeb4781b17", null ],
+    [ "tf_listener", "classhric__commands_1_1HRICCommands.html#aacc2bd5cd632d11d744804a98e61491c", null ],
     [ "timer", "classhric__commands_1_1HRICCommands.html#a3d7d6e47e341b3fc30dca371a44b4302", null ],
     [ "yolo_client", "classhric__commands_1_1HRICCommands.html#a0795c21b02da000e923989b32387b5ed", null ]
 ];
