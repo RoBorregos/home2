@@ -459,10 +459,20 @@ class PickAndPlaceTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
 
+            CLog.fsm(self, "STATE", "Start button pressed. Waiting for door to open...")
+            self.subtask_manager.hri.say("Waiting for the door to open.", wait=False)
+
+            # Wait until the door is detected open before starting the task
+            while True:
+                status, _ = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    break
+                rclpy.spin_once(self, timeout_sec=0.1)
+
             CLog.fsm(
                 self,
                 "STATE",
-                "Start button pressed. Pick and Place Challenge begins.",
+                "Door open. Pick and Place Challenge begins.",
                 level="success",
             )
             self.current_state = PickAndPlaceTM.TaskStates.START
