@@ -112,27 +112,31 @@ class PickAndPlaceTM(Node):
         super().__init__("pickandplace_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=[])
 
-        # ACTION REQUIRED: Adjust before competition
-        self.use_side_table = False  # True = use side table objects (penalty per object)
-        self.trash_category = "napkin"  # Announced during Setup Days
-        self.use_dishwasher = False  # True = cutlery/tableware go to dishwasher
+        # ==========================================================
+        # COMPETITION CONFIG — adjust before each run
+        # ==========================================================
+        self.trash_category = "napkin"  # announced during Setup Days
+        self.use_dishwasher = False  # cutlery/tableware → dishwasher
+        self.use_side_table = False  # pick from side table (−20 pts/obj)
+        self.max_cleanup_objects = 3  # how many to clean before breakfast
 
-        # YOLO class name mapping: logical name -> YOLO detection class name.
-        # Only names that differ need to be listed.
+        # YOLO name mapping: logical → detection class (only differences)
         self.yolo_names = {
             "cereal": "blue_cereal_box",
             "milk": "chocomilk_box",
         }
-        self.yolo_to_logical = {v: k for k, v in self.yolo_names.items()}
 
-        # Shelf height mapping: shelf level -> Z in base_link frame (NOT floor).
-        # Calibrated via RViz "Publish Point" clicked on each shelf surface.
-        # Physical heights from floor are 59.5, 95.5, 131.7 cm; base_link sits
-        # ~12 cm above floor, so subtract that offset.
+        # Shelf heights in base_link Z (calibrate with RViz Publish Point)
         self.shelf_level_heights = {1: 0.475, 2: 0.827, 3: 1.201}
         self.default_shelf_height = 0.475
 
-        # Load object->category mapping for shelf matching (e.g. "apple" -> "fruit")
+        # ==========================================================
+        # END COMPETITION CONFIG
+        # ==========================================================
+
+        self.yolo_to_logical = {v: k for k, v in self.yolo_names.items()}
+
+        # Object → category mapping from objects.json
         try:
             from ament_index_python.packages import get_package_share_directory
 
@@ -144,7 +148,7 @@ class PickAndPlaceTM(Node):
         except Exception:
             self._object_to_category = {}
 
-        # Navigation mapping: Location -> (room, sublocation).
+        # Navigation mapping
         self.nav_locations = {
             Location.KITCHEN: ("kitchen", "safe_place"),
             Location.DINING_TABLE: ("kitchen", "dining_table"),
@@ -162,10 +166,7 @@ class PickAndPlaceTM(Node):
         self.grasped_object: ObjectInfo = None
         self.first_pick = True
 
-        # Maximum cleanup objects before switching to breakfast (time budget)
-        self.max_cleanup_objects = 3
-
-        # Breakfast items — bowl first, then cereal+milk from cabinet, spoon last.
+        # Breakfast items: bowl first, cereal+milk from cabinet, spoon last
         self.breakfast_items = [
             {
                 "name": "bowl",
@@ -198,46 +199,30 @@ class PickAndPlaceTM(Node):
         ]
         self.current_breakfast_item: dict = None
         self.bowl_placed = False
-
-        # Dishwasher state (only used when use_dishwasher=True)
         self.dishwasher_open = False
 
-        # Shelf scanning data
-        self.shelves: dict[int, list[str]] = {}  # shelf_index -> list of object names
+        # Shelf scanning state
+        self.shelves: dict[int, list[str]] = {}
         self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
         self.shelf_scanned = False
-        # Whether the octomap is already fresh from a scan done during the
-        # current cabinet visit. Set to True after SCAN_CABINET_SHELVES or
-        # after the first _scan_shelf_level of a visit, and reset whenever
-        # the robot actually navigates to a different location. Prevents
-        # re-scanning on every place retry within the same visit.
         self._cabinet_scan_fresh = False
-        # Ordered list of shelf heights to try for the current grasped
-        # object and the index into it. The first entry is the shelf
-        # categorize_objects picked for the object; subsequent entries are
-        # fallbacks in reachability order (lowest shelf first) so that if
-        # the primary shelf's pre-place pose is unreachable the robot can
-        # still place the object on another shelf instead of dropping it.
         self._shelf_fallback_heights: list[float] = []
         self._shelf_fallback_idx: int = 0
-        self.shelf_level_threshold = 0.20  # max distance above shelf height
-        self.shelf_level_down_threshold = 0.05  # max distance below shelf height
-        # TF buffer for transforming detection points to base_link for height filtering
+        self.shelf_level_threshold = 0.20
+        self.shelf_level_down_threshold = 0.05
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        # Attempt counter — reset on state change
+        # Runtime state
         self.current_attempts = 0
         self.current_location: Location = None
         self.running_task = True
-
-        # State timing
         self.state_start_time = None
         self.state_times: dict = {}
         self.total_start_time = datetime.now()
         self.previous_state = None
 
-        # Gripper grasp state subscription
+        # Gripper grasp detection
         self._gripper_has_object = False
         self.create_subscription(
             GripperGraspState,
