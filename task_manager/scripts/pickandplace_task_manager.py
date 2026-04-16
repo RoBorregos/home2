@@ -21,6 +21,7 @@ from pathlib import Path
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
+from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PointStamped
 from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
@@ -138,8 +139,6 @@ class PickAndPlaceTM(Node):
 
         # Object → category mapping from objects.json
         try:
-            from ament_index_python.packages import get_package_share_directory
-
             objects_path = (
                 Path(get_package_share_directory("frida_constants")) / "data" / "objects.json"
             )
