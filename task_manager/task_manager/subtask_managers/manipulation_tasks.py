@@ -597,6 +597,9 @@ class ManipulationTasks:
 
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
+        if not isinstance(joint_positions, dict):
+            Logger.error(self.node, f"Failed to get joint positions in pan_to: {joint_positions}")
+            return Status.EXECUTION_ERROR
         joint_positions["joint1"] = joint_positions["joint1"] - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
