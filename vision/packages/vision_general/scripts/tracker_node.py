@@ -88,8 +88,10 @@ from frida_constants.vision_constants import (
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
     IS_TRACKING_TOPIC,
+    FLIP_TRACKER_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+from std_msgs.msg import Bool
 
 CONF_THRESHOLD = 0.6
 DEPTH_THRESHOLD_NS = 50_000_000  # 50 ms in nanoseconds
@@ -177,9 +179,17 @@ class SingleTracker(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+        self.create_subscription(
+            Bool,
+            FLIP_TRACKER_TOPIC,
+            self._flip_callback,
+            10,
+            callback_group=self.callback_group,
+        )
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
+        self.flip_image = False
         self.last_reid_extraction = time.time()
         self.timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.create_timer(0.1, self.run, callback_group=self.timer_callback_group)
@@ -264,6 +274,11 @@ class SingleTracker(Node):
     def image_info_callback(self, data):
         """Callback to receive camera info"""
         self.imageInfo = data
+
+    def _flip_callback(self, msg):
+        if msg.data != self.flip_image:
+            self.flip_image = msg.data
+            self.get_logger().info(f"Flip image set to: {self.flip_image}")
 
     def set_target_callback(self, request, response):
         """Callback to set the target to track"""
@@ -387,6 +402,10 @@ class SingleTracker(Node):
         self.person_data["num_embeddings"] = 0
 
         self.frame = copy.deepcopy(self.image)
+
+        if self.flip_image:
+            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
+
         self.output_image = self.frame.copy()
 
         # Run YOLO + DeepSORT multiple times to allow track confirmation (n_init frames)
@@ -571,6 +590,9 @@ class SingleTracker(Node):
         if self.frame is None:
             self.get_logger().error("No image available")
             return
+
+        if self.flip_image:
+            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
 
         self.output_image = self.frame.copy()
 
