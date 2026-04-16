@@ -44,6 +44,9 @@ case $TASK in
     "--ppc")
         RUN="ros2 launch manipulation_general ppc.launch.py"
         ;;
+    "--restaurant")
+        RUN="ros2 launch manipulation_general restaurant.launch.py"
+        ;;
     *)
         RUN="bash"
         ;;

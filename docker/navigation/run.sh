@@ -105,7 +105,7 @@ mkdir -p install build log
 
 #_________________________RUN_________________________
 
-COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces frida_constants"
+COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces frida_constants --cmake-args -Wno-dev"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_RTABMAP="if [ -f /home/ros/ros_packages3/install/setup.bash ]; then source /home/ros/ros_packages3/install/setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
@@ -113,7 +113,7 @@ SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE && $COLCON"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $COLCON && $SOURCE"
 else
     SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
@@ -127,6 +127,9 @@ case $TASK in
         ;;
     "--hric")
         RUN="ros2 run nav_main launch_nav.py"
+        ;;
+    "--restaurant")
+        RUN="ros2 run nav_main launch_nav.py localization:=false"
         ;;
     "--ppc")
         RUN="ros2 run nav_main launch_nav.py"
