@@ -68,7 +68,11 @@ if [ -z "${CYCLONE_SHM:-}" ]; then
     fi
 fi
 add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
-add_or_update_variable .env "MAP_NAME" "${MAP_NAME:-lab_23_march.db}"
+RESOLVED_MAP_NAME=$(resolve_map_name "lab_23_march.db")
+if [ -z "${MAP_NAME:-}" ]; then
+    echo "MAP_NAME not exported in this shell; using '$RESOLVED_MAP_NAME' from shell rc file."
+fi
+add_or_update_variable .env "MAP_NAME" "$RESOLVED_MAP_NAME"
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
