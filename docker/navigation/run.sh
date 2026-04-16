@@ -135,9 +135,6 @@ case $TASK in
     "--restaurant")
         RUN="ros2 launch nav_main restaurant.launch.py"
         ;;
-    "--restaurant")
-        RUN="ros2 run nav_main launch_nav.py localization:=false"
-        ;;
     "--ppc")
         RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
