@@ -68,7 +68,11 @@ if [ -z "${CYCLONE_SHM:-}" ]; then
     fi
 fi
 add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
-add_or_update_variable .env "MAP_NAME" "${MAP_NAME:-lab_23_march.db}"
+RESOLVED_MAP_NAME=$(resolve_map_name "lab_23_march.db")
+if [ -z "${MAP_NAME:-}" ]; then
+    echo "MAP_NAME not exported in this shell; using '$RESOLVED_MAP_NAME' from shell rc file."
+fi
+add_or_update_variable .env "MAP_NAME" "$RESOLVED_MAP_NAME"
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
@@ -120,19 +124,25 @@ fi
 
 case $TASK in
     "--mapping")
-        RUN="ros2 run nav_main launch_nav.py"
+        RUN="ros2 launch nav_main mapping.launch.py"
         ;;
     "--gpsr")
-        RUN="ros2 run nav_main launch_nav.py"
+        RUN="ros2 launch nav_main gpsr_hric.launch.py"
         ;;
     "--hric")
-        RUN="ros2 run nav_main launch_nav.py"
+        RUN="ros2 launch nav_main gpsr_hric.launch.py"
         ;;
     "--restaurant")
-        RUN="ros2 run nav_main launch_nav.py localization:=false"
+        RUN="ros2 launch nav_main restaurant.launch.py"
         ;;
     "--ppc")
-        RUN="ros2 run nav_main launch_nav.py"
+        RUN="ros2 launch nav_main general_navigation.launch.py"
+        ;;
+    "--tagger")
+        RUN="ros2 run map_context map_area_tagger.py"
+        ;;
+    "--move")
+        RUN="ros2 launch nav_main nav_basics.launch.py"
         ;;
     *)
         RUN="bash"
