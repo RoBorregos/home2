@@ -34,9 +34,11 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
+    CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
+from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
@@ -135,6 +137,8 @@ class VisionTasks:
 
         self.customer_table_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
 
+        self.customer_table_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
+
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
@@ -211,15 +215,6 @@ class VisionTasks:
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
-            },
-            Task.PICK_AND_PLACE: {
-                "detect_objects": {"client": self.object_detector_client, "type": "service"},
-                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
-                "moondream_crop_query": {
-                    "client": self.moondream_crop_query_client,
-                    "type": "service",
-                },
-                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
             },
             Task.RESTAURANT: {
                 "customer_tables": {
@@ -1082,6 +1077,22 @@ class VisionTasks:
             location += f"to the left of the {detections[right_pos].classname.lower()}"
 
         return Status.EXECUTION_SUCCESS, location
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
+    @service_check("customer_tables", [Status.EXECUTION_ERROR, None], TIMEOUT)
+    def customer_tables(self) -> tuple[int, list[CustomerTable]]:
+        """Detect the tables and the customers associated to them."""
+        req = CustomerTables.Request()
+        future = self.customer_table_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+        if not future.done():
+            Logger.warn(self.node, "customer_tables service call timed out")
+            return Status.EXECUTION_ERROR, []
+        result = future.result()
+        if result is None or not result.success:
+            Logger.warn(self.node, "customer_tables service call failed or returned no tables")
+            return Status.EXECUTION_ERROR, []
+        return Status.EXECUTION_SUCCESS, result.customer_tables
 
     def camera_upside_down(self, flip):
         """Publish the camera rotation on CAMERA_ROTATION_TOPIC.
