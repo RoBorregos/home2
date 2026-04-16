@@ -16,14 +16,14 @@ var searchData=
   ['removecollisionobject_2esrv_13',['RemoveCollisionObject.srv',['../RemoveCollisionObject_8srv.html',1,'']]],
   ['removeplane_2esrv_14',['RemovePlane.srv',['../RemovePlane_8srv.html',1,'']]],
   ['removeverticalplane_2esrv_15',['RemoveVerticalPlane.srv',['../RemoveVerticalPlane_8srv.html',1,'']]],
-  ['restaurant_2elaunch_2epy_16',['restaurant.launch.py',['../restaurant_8launch_8py.html',1,'']]],
+  ['restaurant_2elaunch_2epy_16',['restaurant.launch.py',['../manipulation_2packages_2manipulation__general_2launch_2restaurant_8launch_8py.html',1,'(Global Namespace)'],['../navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html',1,'(Global Namespace)']]],
   ['restaurant_5fcommands_2epy_17',['restaurant_commands.py',['../restaurant__commands_8py.html',1,'']]],
   ['restaurant_5flaunch_2epy_18',['restaurant_launch.py',['../restaurant__launch_8py.html',1,'']]],
   ['restaurant_5ftask_5fmanager_2epy_19',['restaurant_task_manager.py',['../restaurant__task__manager_8py.html',1,'']]],
   ['returnlocation_2esrv_20',['ReturnLocation.srv',['../ReturnLocation_8srv.html',1,'']]],
   ['robot_5fsim_2elaunch_2epy_21',['robot_sim.launch.py',['../robot__sim_8launch_8py.html',1,'']]],
   ['ros2_2emd_22',['ROS2.md',['../ROS2_8md.html',1,'']]],
-  ['ros_5futils_2epy_23',['ros_utils.py',['../vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2vision__general_2vision__general_2utils_2ros__utils_8py.html',1,'(Global Namespace)']]],
+  ['ros_5futils_2epy_23',['ros_utils.py',['../manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2vision__general_2vision__general_2utils_2ros__utils_8py.html',1,'(Global Namespace)']]],
   ['rtabnav2_2elaunch_2epy_24',['rtabnav2.launch.py',['../rtabnav2_8launch_8py.html',1,'']]],
   ['run_5fwhile_5fhearing_2epy_25',['run_while_hearing.py',['../run__while__hearing_8py.html',1,'']]]
 ];

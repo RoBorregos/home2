@@ -1,6 +1,7 @@
 var classnav__central_1_1Nav__Central =
 [
     [ "__init__", "classnav__central_1_1Nav__Central.html#add534391d75a8d5d4702fbc1aa842447", null ],
+    [ "_call_service_with_timeout", "classnav__central_1_1Nav__Central.html#af7654d5b728493a9cd14121e19246839", null ],
     [ "_initialpose_callback", "classnav__central_1_1Nav__Central.html#a362d4ab9fb3c6d8d4c77368bfa18e6e7", null ],
     [ "_monitoring", "classnav__central_1_1Nav__Central.html#a50a3525ad24bb0562d78202df0d7fd4f", null ],
     [ "_resume_nav_callback", "classnav__central_1_1Nav__Central.html#a5905fc0ebb477b88453d272cb944dba6", null ],
@@ -60,9 +61,12 @@ var classnav__central_1_1Nav__Central =
     [ "requirements_timeout", "classnav__central_1_1Nav__Central.html#a009b331aae6c2ee68aeed5bb9be8e74f", null ],
     [ "resume_nav_srv", "classnav__central_1_1Nav__Central.html#ad07f97b435230565935c82aecb06f63e", null ],
     [ "rtab_load_timeout", "classnav__central_1_1Nav__Central.html#a21b3efebdc1d2f8e3b94a9df98921bc3", null ],
+    [ "rtab_service_group", "classnav__central_1_1Nav__Central.html#ac0db4db85f1ce3d1af38cd92a18db1e0", null ],
     [ "rtabmap_loaded", "classnav__central_1_1Nav__Central.html#a0ead88bedb45a1353b1d59aca56dee45", null ],
+    [ "rtabmap_pause_client", "classnav__central_1_1Nav__Central.html#a6887ed9abd3fdab86d811b37816c4638", null ],
     [ "rtabmap_reloading", "classnav__central_1_1Nav__Central.html#a94674be9bb2ef456daf04a8b8c079843", null ],
     [ "rtabmap_remapping", "classnav__central_1_1Nav__Central.html#ad81b08fbc129e69b6caf5625bbb8e7f1", null ],
+    [ "rtabmap_resume_client", "classnav__central_1_1Nav__Central.html#a9561158fe822b185de2680bb1ef7ca84", null ],
     [ "sensor_timeout", "classnav__central_1_1Nav__Central.html#a7e2d25da2d9d9209cc37fac6fb1f6f52", null ],
     [ "service_group", "classnav__central_1_1Nav__Central.html#a2a2b26bc1a63bc9201fef9ab3e05ce44", null ],
     [ "tf_buffer", "classnav__central_1_1Nav__Central.html#ad5c78c9248bd1cc4cd4ec89a1d7ef51d", null ],

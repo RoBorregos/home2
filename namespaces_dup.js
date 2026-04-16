@@ -144,6 +144,10 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacegpsr.html#a757ec7f17f46a7b35bae9fe8fb05a58c", null ]
     ] ],
     [ "gpsr_commands", "namespacegpsr__commands.html", "namespacegpsr__commands" ],
+    [ "gpsr_hric", "namespacegpsr__hric.html", [
+      [ "generate_launch_description", "namespacegpsr__hric.html#a64ac670998564d5d0724b7205fb21eb5", null ],
+      [ "launch_function", "namespacegpsr__hric.html#a5c3734bed2acde025d2bfdf537162a09", null ]
+    ] ],
     [ "gpsr_launch", "namespacegpsr__launch.html", [
       [ "generate_launch_description", "namespacegpsr__launch.html#a51deed0e59e9075f48b613b55394c388", null ]
     ] ],
@@ -320,7 +324,8 @@ var namespaces_dup =
       [ "main", "namespaceremove__collision__object.html#a86366d327b8fa51f26394d0524fdc193", null ]
     ] ],
     [ "restaurant", "namespacerestaurant.html", [
-      [ "generate_launch_description", "namespacerestaurant.html#a5c14e7b4a3dbd8a605257834b3de807d", null ]
+      [ "generate_launch_description", "namespacerestaurant.html#a90267738e600fcd32bced0afc020e437", null ],
+      [ "launch_function", "namespacerestaurant.html#a3a3467e7dd94d1932f122f55c14d21c4", null ]
     ] ],
     [ "restaurant_commands", "namespacerestaurant__commands.html", "namespacerestaurant__commands" ],
     [ "restaurant_launch", "namespacerestaurant__launch.html", [

@@ -179,6 +179,12 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a813ac5dee3cb6d1347165519fdaf6fb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a2b26bc1a63bc9201fef9ab3e05ce44"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a2a2b26bc1a63bc9201fef9ab3e05ce44">service_group</a></td></tr>
 <tr class="separator:a2a2b26bc1a63bc9201fef9ab3e05ce44"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0db4db85f1ce3d1af38cd92a18db1e0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#ac0db4db85f1ce3d1af38cd92a18db1e0">rtab_service_group</a></td></tr>
+<tr class="separator:ac0db4db85f1ce3d1af38cd92a18db1e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6887ed9abd3fdab86d811b37816c4638"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a6887ed9abd3fdab86d811b37816c4638">rtabmap_pause_client</a></td></tr>
+<tr class="separator:a6887ed9abd3fdab86d811b37816c4638"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9561158fe822b185de2680bb1ef7ca84"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a9561158fe822b185de2680bb1ef7ca84">rtabmap_resume_client</a></td></tr>
+<tr class="separator:a9561158fe822b185de2680bb1ef7ca84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85a414c2b373883bef4aa80d150edc1d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a85a414c2b373883bef4aa80d150edc1d">lidar_msg</a></td></tr>
 <tr class="separator:a85a414c2b373883bef4aa80d150edc1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf862a2d597c2f5130a8e01ea7b54fbb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#acf862a2d597c2f5130a8e01ea7b54fbb">lidar_reciever</a></td></tr>
@@ -234,6 +240,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a362d4ab9fb3c6d8d4c77368bfa18e6e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa90cc1f69cd5962ae6a2f229810a8bd1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#aa90cc1f69cd5962ae6a2f229810a8bd1">_wait_for_initial_pose</a> (self)</td></tr>
 <tr class="separator:aa90cc1f69cd5962ae6a2f229810a8bd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7654d5b728493a9cd14121e19246839"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#af7654d5b728493a9cd14121e19246839">_call_service_with_timeout</a> (self, client, request, call_timeout, label)</td></tr>
+<tr class="separator:af7654d5b728493a9cd14121e19246839"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -282,6 +290,61 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="af7654d5b728493a9cd14121e19246839" name="af7654d5b728493a9cd14121e19246839"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7654d5b728493a9cd14121e19246839">&#9670;&#160;</a></span>_call_service_with_timeout()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central._call_service_with_timeout </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>call_timeout</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>label</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Bounded service call — waits up to TIMEOUT_RTAB_SERVICE for readiness and
+call_timeout for the response. Returns True on success, False on timeout.</pre> 
+</div>
+</div>
 <a id="a362d4ab9fb3c6d8d4c77368bfa18e6e7" name="a362d4ab9fb3c6d8d4c77368bfa18e6e7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a362d4ab9fb3c6d8d4c77368bfa18e6e7">&#9670;&#160;</a></span>_initialpose_callback()</h2>
 
@@ -1425,6 +1488,20 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ac0db4db85f1ce3d1af38cd92a18db1e0" name="ac0db4db85f1ce3d1af38cd92a18db1e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0db4db85f1ce3d1af38cd92a18db1e0">&#9670;&#160;</a></span>rtab_service_group</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central.rtab_service_group</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a0ead88bedb45a1353b1d59aca56dee45" name="a0ead88bedb45a1353b1d59aca56dee45"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0ead88bedb45a1353b1d59aca56dee45">&#9670;&#160;</a></span>rtabmap_loaded</h2>
 
@@ -1433,6 +1510,20 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">nav_central.Nav_Central.rtabmap_loaded</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6887ed9abd3fdab86d811b37816c4638" name="a6887ed9abd3fdab86d811b37816c4638"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6887ed9abd3fdab86d811b37816c4638">&#9670;&#160;</a></span>rtabmap_pause_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central.rtabmap_pause_client</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1461,6 +1552,20 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">nav_central.Nav_Central.rtabmap_remapping</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9561158fe822b185de2680bb1ef7ca84" name="a9561158fe822b185de2680bb1ef7ca84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9561158fe822b185de2680bb1ef7ca84">&#9670;&#160;</a></span>rtabmap_resume_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central.rtabmap_resume_client</td>
         </tr>
       </table>
 </div><div class="memdoc">
