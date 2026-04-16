@@ -39,12 +39,16 @@ rtabmap:
     "Mem/NotLinkedNodesKept": "false"
     "Mem/ReduceGraph": "false"
 
-    # Feature detection (GFTT/ORB + GPU)
-    "Kp/NNStrategy": "2"
-    "Kp/MaxFeatures": "1000"
-    "Kp/DetectorStrategy": "8"
-    "GFTT/Gpu": "true"
-    "ORB/Gpu": "true"
+    # Feature detection (SuperPoint + GPU)
+    "Kp/NNStrategy": "1"
+    "Kp/MaxFeatures": "500"
+    "Kp/DetectorStrategy": "11"
+    "Kp/RoiRatios": "0.0 0.0 0.0 0.0"
+    "SuperPoint/ModelPath": "/home/ros/models/superpoint_v1.pt"
+    "SuperPoint/Threshold": "0.010"
+    "SuperPoint/NMS": "true"
+    "SuperPoint/NMSRadius": "4"
+    "SuperPoint/Cuda": "true"
 
     # RGBD
     "RGBD/LinearUpdate": "0.05"
@@ -72,20 +76,24 @@ rtabmap:
     "Reg/Strategy": "2"
     "Reg/Force3DoF": "true"
 
-    # Visual matching (GMS)
+    # Visual matching (SuperGlue)
     "Vis/PnPRefineIterations": "1"
     "Vis/MinInliers": "20"
     "Vis/Iterations": "300"
-    "Vis/FeatureType": "8"
-    "Vis/MaxFeatures": "1000"
-    "Vis/CorNNType": "7"
+    "Vis/FeatureType": "11"
+    "Vis/MaxFeatures": "500"
+    "Vis/CorNNType": "6"
+    "Vis/CorNNDR": "0.6"
     "Vis/BundleAdjustment": "0"
-    "Vis/CorGuessWinSize": "80"
-    "Vis/GridRows": "4"
-    "Vis/GridCols": "4"
-    "GMS/WithRotation": "true"
-    "GMS/WithScale": "true"
-    "GMS/ThresholdFactor": "6.0"
+    "Vis/CorGuessWinSize": "0"
+    "Vis/GridRows": "1"
+    "Vis/GridCols": "1"
+    "Vis/RoiRatios": "0.0 0.0 0.0 0.0"
+    "PyMatcher/Path": "/home/ros/SuperGlue/rtabmap_superglue.py"
+    "PyMatcher/Model": "indoor"
+    "PyMatcher/Iterations": "20"
+    "PyMatcher/Threshold": "0.2"
+    "PyMatcher/Cuda": "true"
 
     # ICP
     "Icp/Strategy": "1"
