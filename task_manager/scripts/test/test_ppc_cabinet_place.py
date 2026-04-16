@@ -1,43 +1,27 @@
 #!/usr/bin/env python3
 
 """
-Test harness for the PPC cabinet place flow.
+Test for PPC cabinet place flow. Mocks navigation, injects a fake grasped
+object, and runs the real scan + place pipeline. Robot must be in front
+of the cabinet with vision + manip containers running.
 
-Mocks navigation so the robot does not actually drive, and jumps the FSM
-directly into NAVIGATE_TO_PLACEMENT with a fake grasped object bound for
-the cabinet. This exercises the real flow:
-
-    NAVIGATE_TO_PLACEMENT (mocked nav, instant success)
-    -> SCAN_CABINET_SHELVES (first visit only, real camera + arm)
-    -> PLACE_OBJECT (real place_on_shelf with retry)
-    -> CLEANUP_LOOP
-
-with the actual cabinet in front of the robot. Use this to validate the
-"scan-once-per-visit" behavior without running the full cleanup phase.
-
-Requirements for running this test:
-- Robot must be physically positioned in front of the cabinet already.
-- vision + manip containers running with real hardware.
-- hri container optional (say calls are fine if mocked or real).
-
-Usage (inside the integration container):
-    ros2 run task_manager test_ppc_cabinet_place.py
-
-Notes:
-- Only navigation is mocked; vision, manipulation and hri run against real
-  services so the scan + place logic is exercised end to end.
-- Fake object name can be overridden via ROS parameter `object_name`
-  (default: "coca_cola"). The name is passed to `pick_object` at place time
-  for reporting only; the actual pick is NOT performed — we inject a fake
-  grasped object that the FSM treats as already picked.
+Usage:
+    python3 test_ppc_cabinet_place.py
+    python3 test_ppc_cabinet_place.py --shelf 2
+    python3 test_ppc_cabinet_place.py --object apple
 """
 
 import importlib.util
+import json
 import os
 import sys
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
 
 import rclpy
 from rclpy.node import Node
+from tf2_ros import Buffer, TransformListener
 
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -118,9 +102,6 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         self.shelf_level_heights = {1: 0.475, 2: 0.827, 3: 1.201}
         self.default_shelf_height = 0.475
 
-        import json
-        from pathlib import Path
-
         try:
             from ament_index_python.packages import get_package_share_directory
 
@@ -153,8 +134,6 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         self.dishwasher_open = False
 
         self.shelves = {}
-        from collections import defaultdict
-
         self.object_to_placing_shelf = defaultdict(list)
         self.shelf_scanned = False
         self._cabinet_scan_fresh = False
@@ -163,16 +142,12 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         self.shelf_level_threshold = 0.20
         self.shelf_level_down_threshold = 0.05
 
-        from tf2_ros import Buffer, TransformListener
-
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.current_attempts = 0
         self.current_location: Location = Location.DINING_TABLE  # pretend we're at the table
         self.running_task = True
-
-        from datetime import datetime
 
         self.state_start_time = None
         self.state_times: dict = {}
