@@ -141,6 +141,9 @@ case $TASK in
     "--tagger")
         RUN="ros2 run map_context map_area_tagger.py"
         ;;
+    "--move")
+        RUN="ros2 launch nav_main nav_basics.launch.py"
+        ;;
     *)
         RUN="bash"
         ;;
