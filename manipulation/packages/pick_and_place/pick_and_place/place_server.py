@@ -115,12 +115,7 @@ class PlaceMotionServer(Node):
                 "################ Placing on shelf ##################"
             )
 
-        # generate several place_poses, so try every time higher from plane.
-        # For shelves we limit the vertical escalation aggressively: each
-        # iteration raises the goal by +poses_dist which combined with the
-        # halfway fallback (~+5cm more) can put the gripper 25+ cm above the
-        # shelf surface, causing the object to be released from too high and
-        # collide with the shelf above. Keep it small and conservative.
+        # Shelf: fewer poses with smaller step to avoid collisions above.
         if is_shelf:
             n_poses = 3
             poses_dist = 0.02
@@ -217,13 +212,7 @@ class PlaceMotionServer(Node):
                 result = True
                 break
             elif is_shelf and i == 0:
-                # Try halfway through ONLY on the first iteration where the
-                # place pose z has not yet been artificially raised. For i>0
-                # the pose is already elevated; accepting a halfway there
-                # would release the object from far too high and far from
-                # the shelf center, colliding with the shelf above. Better
-                # to fail and let the task manager fall back to another
-                # shelf level.
+                # Halfway only on first iteration; elevated poses risk collision.
                 self.get_logger().info("Placing on table, halfway")
                 place_pose_handler, place_pose_result = self.move_to_pose(
                     ee_link_half_pose

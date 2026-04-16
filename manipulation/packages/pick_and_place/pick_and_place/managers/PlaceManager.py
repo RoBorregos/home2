@@ -11,6 +11,11 @@ from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
 from pick_and_place.utils.perception_utils import get_object_point, get_object_cluster
+from frida_constants.manipulation_constants import (
+    SHELF_MIN_REACH,
+    SHELF_REACH_BASE,
+    SHELF_REACH_SLOPE,
+)
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
 import numpy as np
@@ -348,17 +353,12 @@ class PlaceManager:
                 )
 
                 # Clamp X to the arm's reachable envelope for this shelf height.
-                # The xArm6 horizontal reach (~0.70m) decreases as the target
-                # gets higher.  Without this, the heatmap may return a point
-                # deep inside the shelf that OMPL cannot plan to, especially
-                # on the top shelf (z ≈ 1.20).  The formula is a conservative
-                # linear approximation calibrated from real tests:
-                #   shelf 1 (z=0.475) → max_x ≈ 0.63
-                #   shelf 2 (z=0.827) → max_x ≈ 0.54
-                #   shelf 3 (z=1.201) → max_x ≈ 0.45
                 if place_params.is_shelf:
                     shelf_z = place_params.table_height
-                    max_reachable_x = max(0.40, 0.75 - 0.25 * shelf_z)
+                    max_reachable_x = max(
+                        SHELF_MIN_REACH,
+                        SHELF_REACH_BASE - SHELF_REACH_SLOPE * shelf_z,
+                    )
                     original_x = point_result.point.x
                     if point_result.point.x > max_reachable_x:
                         point_result.point.x = max_reachable_x
