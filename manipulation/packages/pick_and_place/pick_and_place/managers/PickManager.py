@@ -12,6 +12,7 @@ from frida_motion_planning.utils.service_utils import (
 from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
+    POUR_OBJECT_NAMES,
 )
 from typing import Tuple
 import time
@@ -57,6 +58,13 @@ def is_cutlery(object_name: str) -> bool:
     return object_name.lower() in CUTLERY_NAMES
 
 
+def is_pour_object(object_name: str) -> bool:
+    """Objects that must be picked upright for pouring."""
+    if object_name is None:
+        return False
+    return object_name.lower() in POUR_OBJECT_NAMES
+
+
 class PickManager:
     node = None
 
@@ -79,7 +87,7 @@ class PickManager:
             self._grasp_samples.append(msg)
 
     def execute(
-        self, object_name: str, point: PointStamped, pick_params
+        self, object_name: str, point: PointStamped, pick_params, is_shelf: bool = False
     ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
@@ -348,6 +356,15 @@ class PickManager:
         future = wait_for_future(future)
         result = future.result()
         self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
+
+        if is_shelf:
+            # Retract to front_stare to avoid shelf ceiling collision.
+            self.node.get_logger().info("Shelf pick: retracting to front_stare")
+            send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="front_stare",
+                velocity=0.3,
+            )
 
         self.node.get_logger().info("Returning to position")
 
