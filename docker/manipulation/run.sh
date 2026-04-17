@@ -47,6 +47,9 @@ case $TASK in
     "--restaurant")
         RUN="ros2 launch manipulation_general restaurant.launch.py"
         ;;
+    "--dlc")
+        RUN="ros2 launch manipulation_general dlc.launch.py"
+        ;;
     *)
         RUN="bash"
         ;;
