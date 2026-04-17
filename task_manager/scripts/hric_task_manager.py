@@ -71,7 +71,7 @@ class HRIC_TM(Node):
 
         self.carrying_bag = False
 
-        self.current_state = HRIC_TM.TaskStates.WAIT_FOR_BUTTON
+        self.current_state = HRIC_TM.TaskStates.TAKE_BAG
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         # Face recognition starts off, activated only when needed
         self.subtask_manager.vision.deactivate_face_recognition()
@@ -121,7 +121,7 @@ class HRIC_TM(Node):
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.clear_collision_objects()
-        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        self.subtask_manager.manipulation.move_to_position("carry_pose")
         if self.carrying_bag:
             self.subtask_manager.manipulation.move_to_position("nav_carry_bag_pose")
         if say:
@@ -140,7 +140,6 @@ class HRIC_TM(Node):
 
     def run(self):
         """Finite State Machine"""
-
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_BUTTON)
             Logger.state(self, "Waiting for start button...")

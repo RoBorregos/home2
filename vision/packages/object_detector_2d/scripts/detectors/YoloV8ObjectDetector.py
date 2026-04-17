@@ -41,7 +41,7 @@ class YoloV8ObjectDetector(ObjectDectector):
         self.loadModel()
 
     def loadModel(self):
-        self.model = _load_yolo_trt(self.model_path_)
+        self.model = YOLO(self.model_path_)
         print("Model loaded: ", self.model_path_)
 
     def _inference(self, frame):

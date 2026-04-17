@@ -56,7 +56,7 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": "abril9.pt",
+    "YOLO_MODEL_PATH": "tmr2026.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
@@ -104,7 +104,7 @@ class object_detector_node(rclpy.node.Node):
         self.detections_frame = []
 
         # Trash detection logic
-        self.category = None
+        self.category = "drink"
         # Load object_to_category mapping from objects.json
         try:
             package_share_directory = get_package_share_directory("frida_constants")
