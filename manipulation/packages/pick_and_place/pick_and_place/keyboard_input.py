@@ -83,7 +83,7 @@ class KeyboardInput(Node):
             ):
                 self.objects.append(detection.label_text)
 
-    def send_pick_request(self, object_name):
+    def send_pick_request(self, object_name, scan_environment=False):
         self.get_logger().warning(f"Sending pick request for: {object_name}")
 
         if not self._action_client.wait_for_server(timeout_sec=5.0):
@@ -95,6 +95,7 @@ class KeyboardInput(Node):
         goal_msg.pick_params.object_name = object_name
         goal_msg.pick_params.min_distance = self.min_distance
         goal_msg.pick_params.max_distance = self.max_distance
+        goal_msg.scan_environment = scan_environment
         self.get_logger().info(f"Sending pick request for: {object_name}")
         future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -226,6 +227,7 @@ def main(args=None):
             print("-8. Place closeto")
             print("-9. Special Request Place")
             print("-10. Pour (object already grasped)")
+            print("-11. Pick from shelf (keep octomap)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -319,6 +321,10 @@ def main(args=None):
                 node.send_pour_request(
                     object_name, bowl_name, object_already_grasped=True
                 )
+
+            elif choice == "-11":
+                object_name = input("Enter object name on shelf: ")
+                node.send_pick_request(object_name, scan_environment=True)
 
             elif choice.isdigit():
                 try:

@@ -355,20 +355,24 @@ private:
       Eigen::MatrixXi camera_source = Eigen::MatrixXi::Zero(1, cloud_rgba->size());
 
       Eigen::Matrix3Xd view_points(3, 1);
+      view_points.setZero();
 
-      // // get view point from transform to cam
-      // auto camera_frame = "camera_depth_optical_frame";
-      // auto base_frame = "link_base";
-      // RCLCPP_INFO(this->get_logger(), "Looking up transform from %s to %s", base_frame, camera_frame);
-      // RCLCPP_INFO(this->get_logger(), "Stamp for view point tf: %d", stamp.sec);
-      // TODO: This is failing due to sim giving me wrong tf timestamps I believe
-      // auto transform = tf_buffer_->lookupTransform(
-      //   base_frame, camera_frame, req->input_cloud.header.stamp, rclcpp::Duration::from_seconds(1.0));
-      // view_points.col(0) = Eigen::Vector3d(
-      //   transform.transform.translation.x,
-      //   transform.transform.translation.y,
-      //   transform.transform.translation.z
-      // );
+      // Get camera viewpoint from TF (eye-in-hand: ZED moves with the arm)
+      try {
+        auto transform = tf_buffer_->lookupTransform(
+          target_frame, "zed_left_camera_frame",
+          rclcpp::Time(0), rclcpp::Duration::from_seconds(2.0));
+        view_points.col(0) = Eigen::Vector3d(
+          transform.transform.translation.x,
+          transform.transform.translation.y,
+          transform.transform.translation.z
+        );
+        RCLCPP_INFO(this->get_logger(), "GPD viewpoint from TF: [%f, %f, %f]",
+                    view_points(0, 0), view_points(1, 0), view_points(2, 0));
+      }
+      catch (const tf2::TransformException &ex) {
+        RCLCPP_WARN(this->get_logger(), "Could not get camera TF for GPD viewpoint: %s. Using (0,0,0)", ex.what());
+      }
 
       auto grasps = get_grasps(cloud_rgba, camera_source, view_points, req->cfg_path);
 
@@ -444,11 +448,13 @@ private:
       }
 
       // normalize scores
-      double max_score = *std::max_element(res->grasp_scores.begin(), res->grasp_scores.end());
-      if (max_score > 0) {
-        for (int i = 0; i < res->grasp_scores.size(); ++i) {
-          res->grasp_scores[i] /= max_score;
-          RCLCPP_INFO(this->get_logger(), "Grasp %d distance: %f score: %f", i, distance_to_centroid(i), res->grasp_scores[i]);
+      if (!res->grasp_scores.empty()) {
+        double max_score = *std::max_element(res->grasp_scores.begin(), res->grasp_scores.end());
+        if (max_score > 0) {
+          for (int i = 0; i < res->grasp_scores.size(); ++i) {
+            res->grasp_scores[i] /= max_score;
+            RCLCPP_INFO(this->get_logger(), "Grasp %d distance: %f score: %f", i, distance_to_centroid(i), res->grasp_scores[i]);
+          }
         }
       }
 
