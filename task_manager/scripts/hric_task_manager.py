@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# TODO: Test task manager with FRIDA
 
 """
 Task Manager for Human Robot Interaction Challenge task of Robocup @Home 2026
@@ -85,6 +84,13 @@ class HRIC_TM(Node):
     # TODO: Check current_attempts and determine if we should move to next state
     def _track_state_change(self, new_state: str):
         """Track state changes and time spent in each state"""
+        if self.previous_state != new_state:
+            step_name = new_state.lower()
+            if new_state == HRIC_TM.TaskStates.LEAVE_BAG:
+                step_name = "take_bag_deliver"
+            if new_state not in [HRIC_TM.TaskStates.END, HRIC_TM.TaskStates.DEBUG]:
+                self.subtask_manager.hri.publish_display_step(step_name)
+
         current_time = datetime.now()
 
         # If we have a previous state, calculate time spent
@@ -115,9 +121,9 @@ class HRIC_TM(Node):
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.clear_collision_objects()
-        self.subtask_manager.manipulation.move_to_position(
-            "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
-        )
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        if self.carrying_bag:
+            self.subtask_manager.manipulation.move_to_position("nav_carry_bag_pose")
         if say:
             Logger.info(self, f"Moving to {location}")
             self.subtask_manager.hri.say(
@@ -136,6 +142,7 @@ class HRIC_TM(Node):
         """Finite State Machine"""
 
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
+            self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_BUTTON)
             Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.say("Waiting for start button to be pressed.", wait=False)
 
@@ -210,7 +217,7 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.SAVE_FACE:
             self._track_state_change(HRIC_TM.TaskStates.SAVE_FACE)
             self.subtask_manager.hri.say(
-                "Please stand in front of me so I can save your face."
+                "Please stand in front of me and look at me so I can save your face."
                 if self.current_attempts == 0
                 else "Please get closer to me and look at my camera so I can save your face."
             )
@@ -231,48 +238,50 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
             self.subtask_manager.vision.deactivate_face_recognition()
-            if self.current_attempts == 0:
-                self.subtask_manager.hri.say(
-                    "I see you brought a bag for the host. Let me take care of it for you.",
-                )
+            # if self.current_attempts == 0:
+            #     self.subtask_manager.hri.say(
+            #         "I see you brought a bag for the host. Let me take care of it for you.",
+            #     )
 
-            self.subtask_manager.manipulation.move_to_position("hand_bag_pose")
-            self.subtask_manager.hri.say(
-                "Please extend your hand holding the bag so I can see and reach it."
-            )
+            # self.subtask_manager.manipulation.move_to_position("hand_bag_pose")
+            # self.subtask_manager.hri.say(
+            #     "Please extend your hand holding the bag so I can see and reach it."
+            # )
 
-            hand_reached = False
-            for attempt in range(ATTEMPT_LIMIT):
-                status, hand_point = self.subtask_manager.vision.detect_hand()
+            # hand_reached = False
+            # for attempt in range(ATTEMPT_LIMIT):
+            #     status, hand_point = self.subtask_manager.vision.detect_hand()
 
-                if status != Status.EXECUTION_SUCCESS:
-                    Logger.warn(self, f"Hand detection attempt {attempt + 1} failed")
-                    if attempt < ATTEMPT_LIMIT - 1:
-                        self.subtask_manager.hri.say(
-                            "I could not detect your hand. Please extend it again."
-                        )
-                    continue
+            #     if status != Status.EXECUTION_SUCCESS:
+            #         Logger.warn(self, f"Hand detection attempt {attempt + 1} failed")
+            #         if attempt < ATTEMPT_LIMIT - 1:
+            #             self.subtask_manager.hri.say(
+            #                 "I could not detect your hand. Please extend it again."
+            #             )
+            #         continue
 
-                self.subtask_manager.hri.say("I can see your hand, moving towards it.", wait=False)
-                go_result = self.subtask_manager.manipulation.go_to_hand(
-                    point=hand_point,
-                    hand_offset=0.1,
-                )
+            #     self.subtask_manager.hri.say("I can see your hand, moving towards it.", wait=False)
+            #     go_result = self.subtask_manager.manipulation.go_to_hand(
+            #         point=hand_point,
+            #         hand_offset=0.1,
+            #     )
 
-                if go_result == Status.EXECUTION_SUCCESS:
-                    hand_reached = True
-                    break
-                else:
-                    Logger.warn(self, f"go_to_hand attempt {attempt + 1} failed")
-                    if attempt < ATTEMPT_LIMIT - 1:
-                        self.subtask_manager.hri.say(
-                            "I could not reach your hand. Reposition it and try again."
-                        )
+            #     if go_result == Status.EXECUTION_SUCCESS:
+            #         hand_reached = True
+            #         break
+            #     else:
+            #         Logger.warn(self, f"go_to_hand attempt {attempt + 1} failed")
+            #         if attempt < ATTEMPT_LIMIT - 1:
+            #             self.subtask_manager.hri.say(
+            #                 "I could not reach your hand. Reposition it and try again."
+            #             )
 
-            if not hand_reached:
-                self.subtask_manager.hri.say(
-                    "I could not reach your hand. Place the bag directly on my gripper."
-                )
+            # if not hand_reached:
+            #     self.subtask_manager.hri.say(
+            #         "I could not reach your hand. Place the bag directly on my gripper."
+            #     )
+
+            self.subtask_manager.hri.say("Please place the bag directly on my gripper.")
 
             self.timeout(5)
             s, res = self.subtask_manager.hri.confirm(
@@ -339,9 +348,6 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
 
             # First: look at guest 2 (just seated) and introduce guest 1
-            self.subtask_manager.manipulation.move_to_position(
-                "front_stare_carry_bag" if self.carrying_bag else "front_stare"
-            )
             self.subtask_manager.vision.follow_by_name(guest_2.name)
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say(

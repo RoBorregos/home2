@@ -37,6 +37,7 @@ from frida_constants.hri_constants import (
     START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
     TASK_STATUS_TOPIC,
+    TASK_STEP_TOPIC,
     TIMEOUT,
     WAKEWORD_TOPIC,
 )
@@ -203,6 +204,7 @@ class HRITasks(metaclass=SubtaskMeta):
             String, RESPEAKER_LIGHT_TOPIC, 10
         )
         self.task_status_publisher = self.node.create_publisher(String, TASK_STATUS_TOPIC, 10)
+        self.task_step_publisher = self.node.create_publisher(String, TASK_STEP_TOPIC, 10)
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
@@ -1261,6 +1263,39 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
+    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, 0), TIMEOUT)
+    def count_from_detections(
+        self, detected_labels: list[str], target_object: str
+    ) -> tuple[int, int]:
+        """
+        Count how many detections match the target object using LLM reasoning.
+
+        Args:
+            detected_labels: list of classnames from detect_objects
+            target_object: the type of object to count (e.g., "drinks", "fruits", "cups")
+
+        Returns:
+            Status, count (int)
+        """
+        if not detected_labels:
+            return Status.TARGET_NOT_FOUND, 0
+
+        context = f"Detected objects: {', '.join(detected_labels)}"
+        question = (
+            f"From the detected objects listed in the context, how many of them are '{target_object}' "
+            f"or belong to the category '{target_object}'? "
+            f"Consider synonyms and subcategories. Reply with ONLY a number."
+        )
+        status, answer = self.answer_with_context(question, context)
+        if status != Status.EXECUTION_SUCCESS:
+            return status, 0
+
+        try:
+            count = int("".join(filter(str.isdigit, answer)))
+        except ValueError:
+            count = 0
+        return Status.EXECUTION_SUCCESS, count
+
     def query_command_history(self, query: str, action: str, top_k: int = 1):
         raw = self._call_query_entry(
             collection="command_history",
@@ -1357,21 +1392,31 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def deterministic_categorization(self, object_name: str):
+    def publish_display_step(self, step: str):
+        """Publish the current task step to drive the HRIC display layout."""
+        self.task_step_publisher.publish(String(data=step))
+        Logger.info(self.node, f"Published display step: {step}")
+
+    def deterministic_categorization(self, object_name: str) -> str:
         """
         Note: it seems each object is mapped to a specific category, so no clustering is needed to group the objects.
         See "frida_constants/data/objects.md"
         """
+        # Fast path: direct lookup in object_to_category (works even
+        # without the FindClosest embeddings service).
+        obj_lower = object_name.lower().replace(" ", "_")
+        direct = self.objects_data.get("object_to_category", {})
+        if obj_lower in direct:
+            return direct[obj_lower]
+
+        # Slow path: semantic similarity via embeddings service.
         try:
-            # Get closest embedding word
             s, closest = self.find_closest(self.objects_data["all_objects"], object_name, top_k=1)
             closest = closest.results[0]
-
-            # Return the associated category
             return self.objects_data["object_to_category"][closest]
         except Exception as e:
             self.node.get_logger().error(f"Error finding closest object: {e}")
-            return Status.EXECUTION_ERROR, "unknown"
+            return "unknown"
 
     def show_map(self, name="", clear_map: bool = False):
         """

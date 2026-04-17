@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 import queue
 import time
-
+import json
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
@@ -18,22 +18,27 @@ from sensor_msgs.msg import Image, CameraInfo
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
+from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
+from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect, MapAreas
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    CAMERA_ROTATION_TOPIC,
     CAMERA_FRAME,
     CAMERA_INFO_TOPIC,
     CHECK_PERSON_TOPIC,
     DEPTH_IMAGE_TOPIC,
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
 )
-
+from tf2_geometry_msgs import do_transform_point
+from tf2_ros import Buffer, TransformListener
+from vision_general.utils.area_check import is_point_in_room
+from frida_constants.navigation_constants import AREAS_SERVICE
 from ament_index_python.packages import get_package_share_directory
 
 package_share_dir = get_package_share_directory("vision_general")
@@ -68,7 +73,7 @@ class HRICCommands(Node):
         )
         self.create_subscription(
             Image,
-            CAMERA_TOPIC,
+            IMAGE_ORIENTED_TOPIC,
             self.image_callback,
             self._img_qos,
             callback_group=self.callback_group,
@@ -85,6 +90,15 @@ class HRICCommands(Node):
             CAMERA_INFO_TOPIC,
             self.camera_info_callback,
             self._img_qos,
+            callback_group=self.callback_group,
+        )
+        self.retrieve_areas_srv = self.create_client(MapAreas, AREAS_SERVICE)
+
+        self.create_subscription(
+            Int16,
+            CAMERA_ROTATION_TOPIC,
+            self._rotation_callback,
+            10,
             callback_group=self.callback_group,
         )
 
@@ -109,6 +123,9 @@ class HRICCommands(Node):
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
 
@@ -117,6 +134,7 @@ class HRICCommands(Node):
         self.camera_info = None
         self.output_image = []
         self.check = False
+        self.rotation = 0
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
@@ -131,6 +149,12 @@ class HRICCommands(Node):
         self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
+
+    def _rotation_callback(self, msg):
+        value = int(msg.data) % 360
+        if value != self.rotation:
+            self.rotation = value
+            self.get_logger().info(f"Camera rotation set to {self.rotation}")
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -189,19 +213,13 @@ class HRICCommands(Node):
             return None
 
         if self.depth_image is not None and self.camera_info is not None:
-            # Scale wrist pixel from YOLO image resolution to camera_info resolution,
-            # same convention used in restaurant_commands.py
-            cam_w = self.camera_info.width
-            cam_h = self.camera_info.height
-            px_ci = int(cx * cam_w / w)
-            py_ci = int(cy * cam_h / h)
-
             stamped = point2d_to_ros_point_stamped(
                 self.camera_info,
                 self.depth_image,
-                (px_ci, py_ci),
+                (cx, cy),
                 CAMERA_FRAME,
                 Time(sec=0, nanosec=0),
+                rotation=self.rotation,
             )
             return stamped
         else:
@@ -424,6 +442,42 @@ class HRICCommands(Node):
                 -1,
             )
 
+            # Convert chair bbox center to PointStamped and check if inside house
+            if self.camera_info is not None and self.depth_image is not None:
+                cx = int((xmin + xmax) / 2)
+                cy = int(y_center_chair)
+                chair_point = point2d_to_ros_point_stamped(
+                    self.camera_info,
+                    self.depth_image,
+                    (cx, cy),
+                    CAMERA_FRAME,
+                    Time(sec=0, nanosec=0),
+                    rotation=self.rotation,
+                )
+
+                req = MapAreas.Request()
+                future = self.retrieve_areas_srv.call_async(req)
+                rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
+                if (future.result() is None) or (future.result().areas == ""):
+                    continue
+                else:
+                    areas_json = json.loads(str(future.result().areas))
+
+                try:
+                    transform = self.tf_buffer.lookup_transform(
+                        "map",
+                        chair_point.header.frame_id,
+                        rclpy.time.Time(),
+                        timeout=rclpy.duration.Duration(seconds=0.1),
+                    )
+                    point_map = do_transform_point(chair_point, transform)
+                except Exception as e:
+                    self.get_logger().warn(f"TF failed: {e}")
+                    continue
+
+                if not is_point_in_room(point_map, "living_room", areas_json):
+                    continue  # Skip this chair if not inside house
+
             for person in self.people:
                 center_x = (person["bbox"][0] + person["bbox"][2]) / 2
                 person_y = person["bbox"][3]
@@ -461,7 +515,7 @@ class HRICCommands(Node):
                     2,
                 )
 
-        if len(self.chairs) != 0:
+        if chair_queue.qsize() != 0:
             _, output, a, b, c, d = chair_queue.get()
             cv2.rectangle(self.output_image, (a, b), (c, d), (0, 255, 0), 2)
             self.get_logger().info(f"Chair found: {output}")

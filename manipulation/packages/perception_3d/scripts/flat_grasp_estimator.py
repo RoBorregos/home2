@@ -8,12 +8,13 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
+from std_srvs.srv import SetBool
 
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 from frida_constants.vision_constants import (
-    ZERO_SHOT_DETECTIONS_TOPIC,
+    DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
@@ -49,6 +50,10 @@ class FlatGraspEstimator(Node):
 
         self.target_classes = ["spoon", "fork", "knife"]
 
+        # Start disabled — only enabled explicitly before a cutlery pick.
+        # Saves CPU/network when no manipulation is in progress.
+        self.enabled = False
+
         # Rolling buffer for table height stabilization
         self.table_height_buffer = deque(maxlen=TABLE_HEIGHT_BUFFER_SIZE)
 
@@ -58,7 +63,7 @@ class FlatGraspEstimator(Node):
         )
         self.create_subscription(
             ObjectDetectionArray,
-            ZERO_SHOT_DETECTIONS_TOPIC,
+            DETECTIONS_TOPIC,
             self.detections_callback,
             10,
         )
@@ -67,11 +72,29 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/flat_grasp_pose", 10
         )
 
-        self.get_logger().info(
-            f"Flat Grasp Estimator initialized. Mapping to: {self.target_frame}"
+        self.enable_srv = self.create_service(
+            SetBool, "/flat_grasp_estimator/enable", self.enable_callback
         )
 
+        self.get_logger().info(
+            f"Flat Grasp Estimator initialized (disabled). Mapping to: {self.target_frame}"
+        )
+
+    def enable_callback(self, request, response):
+        """Enable/disable detection processing. When disabled the node stays
+        alive and keeps its subscriptions but skips all work in the hot path."""
+        self.enabled = bool(request.data)
+        # Clear stale buffers when toggling so the next enable starts clean.
+        if not self.enabled:
+            self.table_height_buffer.clear()
+        response.success = True
+        response.message = "enabled" if self.enabled else "disabled"
+        self.get_logger().info(f"Flat Grasp Estimator {response.message}")
+        return response
+
     def depth_callback(self, msg):
+        if not self.enabled:
+            return
         self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
         self.depth_frame_id = msg.header.frame_id
 
@@ -85,6 +108,8 @@ class FlatGraspEstimator(Node):
             }
 
     def detections_callback(self, msg):
+        if not self.enabled:
+            return
         if self.latest_depth is None or self.intrinsics is None:
             return
         for det in msg.detections:
@@ -183,6 +208,12 @@ class FlatGraspEstimator(Node):
 
         points_3d_hom = np.hstack((points_3d_cam, np.ones((points_3d_cam.shape[0], 1))))
         points_base = (T_mat @ points_3d_hom.T).T[:, :3]
+
+        # Filter out NaN/Inf points
+        valid_mask = np.isfinite(points_base).all(axis=1)
+        points_base = points_base[valid_mask]
+        if len(points_base) < MIN_POINTS_FOR_PCA:
+            return
 
         # --- GRASP POSITION ---
         centroid_xy = np.mean(points_base[:, :2], axis=0)

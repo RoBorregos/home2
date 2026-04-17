@@ -50,34 +50,30 @@ ROBOT_FOOTPRINT = [
 
 ROBOCUP_TASKS = {
     "General": {
-        "living_room": ["entrance_door", "exit_door"],
-        "kitchen": ["dining_table", "trash_bin"]
+        "start_location": ["safe_place"],
+        "start_area": ["safe_place"],
+        "inspection_point": ["safe_place"],
+        "exit": ["safe_place"],
+        "living_room": [ "safe_place", "couches"],
+        "kitchen": ["safe_place","dining_table", "trash_bin", "side_table","cabinet","dishwasher","breakfast_surface", "breakfast_items"],
+        "entrance": ["safe_place"],
+        "bedroom": ["safe_place", "bed"],
+        "office": ["safe_place"], 
+        "laundry": ["safe_place", "laundry_basket", "washing_machine", "folding_surface"]
     },
     "1. Pick and Place": {
-        "start_area": ["safe_place"],
-        "kitchen": ["dining_table", "side_table", "cabinet", "dishwasher", "trash_bin", "breakfast_surface"],
+        "kitchen": ["safe_place","dining_table", "trash_bin", "side_table","cabinet","dishwasher","breakfast_surface", "breakfast_items"]
     },
     "2. Human Robot Interaction": {
-        "living_room": ["couches"],
-        "entrance": ["safe_area"]
+        "living_room": [ "safe_place", "couches"],
+        "entrance": ["safe_place"]
     },
-    "3. General Purpose Service Robot": {
-        "living_room": ["table"],
-        "kitchen": ["table"],
-        "entrance": ["safe_area"]
+    "3.Doing Laundry": {
+        "start_location": ["safe_place"],
+        "laundry": ["safe_place", "laundry_basket", "washing_machine", "folding_surface"]
+
     },
-    "4. Doing Laundry": {
-        "laundry_area": ["washing_machine", "folding_table", "laundry_basket"]
-    },
-    "5. Restaurant": {
-        "restaurant": ["kitchen_bar", "customer_table_1", "customer_table_2", "customer_table_3", "barman"]
-    },
-    "6. Carry My Luggage": {
-        "arena": ["operator", "car"]
-    },
-    "7. Finals": {
-        "apartment": ["entrance_door", "exit_door", "dishwasher", "trash_bin", "waiting_person"]
-    }
+
 }
 
 class MapCanvas(QWidget):
@@ -372,6 +368,7 @@ class MapAreaTagger(QMainWindow):
         self.setMinimumSize(640, 400)
         self.areas = {}
         self.current_area = None
+        self.current_task = next(iter(ROBOCUP_TASKS), None)
         self.mode = 'location'
         self.temp_polygon = []
         self.map_yaml_path = None
@@ -647,7 +644,7 @@ class MapAreaTagger(QMainWindow):
             self.refresh_area_list()
             # Select the new area
             for i in range(self.area_list.count()):
-                if self.area_list.item(i).text() == name:
+                if self.area_list.item(i).data(Qt.UserRole) == name:
                     self.area_list.setCurrentRow(i)
                     break
             self.status.showMessage(f"Created area: {name}")
@@ -669,6 +666,8 @@ class MapAreaTagger(QMainWindow):
 
     def on_task_changed(self, text):
         self.current_task = text
+        self.refresh_area_list()
+        self.refresh_tree()
 
     def load_task_areas(self):
         if self.current_task not in ROBOCUP_TASKS:
@@ -700,7 +699,7 @@ class MapAreaTagger(QMainWindow):
 
     def on_area_selected(self, current, previous):
         if current:
-            self.current_area = current.text()
+            self.current_area = current.data(Qt.UserRole) or current.text()
             self.canvas.current_area = self.current_area
         else:
             self.current_area = None
@@ -724,12 +723,17 @@ class MapAreaTagger(QMainWindow):
             
             existing = set(self.areas[self.current_area].keys())
             suggested = [it for it in items if it not in existing]
-            all_items = suggested + [it for it in items if it in existing]
-            
-            if not all_items:
-                all_items = ["location_1", "location_2"]
-                
-            name, ok = QInputDialog.getItem(self, "Location Name", "Select or type name for this location:", all_items, 0, True)
+
+            if items and not suggested:
+                name, ok = QInputDialog.getText(
+                    self, "Location Name",
+                    f"All preset locations for '{self.current_area}' are tagged.\nType a custom name:")
+            else:
+                list_items = suggested if suggested else ["location_1", "location_2"]
+                name, ok = QInputDialog.getItem(
+                    self, "Location Name",
+                    "Select or type name for this location:",
+                    list_items, 0, True)
             if not ok or not name:
                 return
             name = name.strip().lower().replace(' ', '_')
@@ -741,6 +745,7 @@ class MapAreaTagger(QMainWindow):
         self.areas[self.current_area][name] = [mx, my, 0.0, 0.0, 0.0, qz, qw]
         self.canvas.areas = self.areas
         self.refresh_tree()
+        self.refresh_area_list()
         self.canvas.update()
         self.status.showMessage(f"Added/Updated '{name}' at ({mx:.2f}, {my:.2f}) yaw={math.degrees(yaw):.0f}")
 
@@ -782,9 +787,33 @@ class MapAreaTagger(QMainWindow):
         self.coord_label.setText(f"x: {mx:.3f}  y: {my:.3f}")
 
     def refresh_area_list(self):
+        preserved = self.current_area
+        self.area_list.blockSignals(True)
         self.area_list.clear()
-        for name in self.areas:
-            self.area_list.addItem(name)
+        preset = ROBOCUP_TASKS.get(self.current_task, {}) if self.current_task else {}
+        selected_row = -1
+        for row, name in enumerate(self.areas):
+            area_data = self.areas[name]
+            locations = [k for k in area_data.keys() if k != 'polygon']
+            complete = False
+            if name in preset:
+                expected = preset[name]
+                done = sum(1 for loc in expected if loc in locations)
+                total = len(expected)
+                display = f"{name}  ({done}/{total})"
+                complete = total > 0 and done == total
+            else:
+                display = f"{name}  ({len(locations)})"
+            item = QListWidgetItem(display)
+            item.setData(Qt.UserRole, name)
+            if complete:
+                item.setForeground(QBrush(QColor(100, 200, 100)))
+            self.area_list.addItem(item)
+            if name == preserved:
+                selected_row = row
+        self.area_list.blockSignals(False)
+        if selected_row >= 0:
+            self.area_list.setCurrentRow(selected_row)
 
     def refresh_tree(self):
         self.tree.clear()
@@ -818,6 +847,21 @@ class MapAreaTagger(QMainWindow):
             self.tree.addTopLevelItem(poly_item)
             poly_item.setExpanded(True)
 
+        # Pending preset locations (not yet tagged for this area)
+        preset = ROBOCUP_TASKS.get(self.current_task, {}) if self.current_task else {}
+        if self.current_area in preset:
+            existing_names = set(area.keys())
+            pending = [loc for loc in preset[self.current_area] if loc not in existing_names]
+            if pending:
+                pending_item = QTreeWidgetItem([f"pending ({len(pending)})", "", "", ""])
+                pending_item.setForeground(0, QBrush(QColor(255, 165, 80)))
+                for loc in pending:
+                    child = QTreeWidgetItem([loc, "—", "—", "—"])
+                    child.setForeground(0, QBrush(QColor(180, 180, 180)))
+                    pending_item.addChild(child)
+                self.tree.addTopLevelItem(pending_item)
+                pending_item.setExpanded(True)
+
     def tree_context_menu(self, pos):
         item = self.tree.itemAt(pos)
         if not item or not self.current_area:
@@ -845,6 +889,7 @@ class MapAreaTagger(QMainWindow):
             del self.areas[self.current_area][name]
             self.canvas.areas = self.areas
             self.refresh_tree()
+            self.refresh_area_list()
             self.canvas.update()
 
     def rename_tree_item(self, item):
@@ -858,6 +903,7 @@ class MapAreaTagger(QMainWindow):
             self.areas[self.current_area][new_name] = data
             self.canvas.areas = self.areas
             self.refresh_tree()
+            self.refresh_area_list()
             self.canvas.update()
 
     def delete_selected_item(self):

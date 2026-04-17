@@ -17,8 +17,8 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="face_recognition_node.py",
-                name="face_recognition",
+                executable="image_orienter.py",
+                name="image_orienter",
                 output="screen",
                 emulate_tty=True,
             ),
@@ -43,15 +43,15 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(detector_launch_file)
-            ),
             Node(
-                package="moondream_run",
-                executable="moondream_node.py",
-                name="moondream_node",
+                package="vision_general",
+                executable="face_recognition_node.py",
+                name="face_recognition",
                 output="screen",
                 emulate_tty=True,
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(detector_launch_file)
             ),
         ]
     )
