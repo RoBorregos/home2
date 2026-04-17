@@ -17,9 +17,10 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     CAMERA_FRAME,
     TRASHCAN_SERVICE,
+    MOONDREAM_POINT_3D_TOPIC,
 )
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
-from frida_interfaces.srv import ObjectPoints, TrashcanDetection
+from frida_interfaces.srv import ObjectPoints, TrashcanDetection, MoondreamPoint3D
 from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from vision_general.utils.ros_utils import wait_for_future
 
@@ -55,6 +56,13 @@ class TrashDetectionNode(Node):
 
         self.moondream_point_client = self.create_client(
             ObjectPoints, OBJECT_POINTS_TOPIC
+        )
+
+        self.create_service(
+            MoondreamPoint3D,
+            MOONDREAM_POINT_3D_TOPIC,
+            self.get_moondream_point_3d,
+            callback_group=self.callback_group,
         )
 
         self.get_logger().info("Trash service ready")
@@ -148,6 +156,44 @@ class TrashDetectionNode(Node):
         point_stamped.point.y = float(-xyz[0])
         point_stamped.point.z = float(-xyz[1])
         return point_stamped
+
+    def get_moondream_point_3d(self, req, res):
+        """Service to return the 3D PointStamped at the center of a subject
+        detected by moondream point (e.g. 'washing machine door opening').
+        Points returned by moondream are averaged to recover the center of
+        a circular/concentrated object.
+        """
+        res.success = False
+
+        if self.imageInfo is None:
+            self.get_logger().warn("Cannot compute 3D point without camera info")
+            return res
+        if self.depth_image is None:
+            self.get_logger().warn("Cannot compute 3D point without depth image")
+            return res
+
+        pts = self.get_moondream_points(req.subject)
+        if not pts:
+            self.get_logger().warn(f"No moondream points for subject '{req.subject}'")
+            return res
+
+        cx = sum(p[0] for p in pts) / len(pts)
+        cy = sum(p[1] for p in pts) / len(pts)
+
+        point2d = (
+            min(max(int(cx * self.imageInfo.width), 0), self.imageInfo.width - 1),
+            min(max(int(cy * self.imageInfo.height), 0), self.imageInfo.height - 1),
+        )
+        depth = get_depth(self.depth_image, point2d)
+        point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
+
+        res.point = self.build_point_stamped(point3d)
+        res.success = True
+        self.get_logger().info(
+            f"Moondream 3D point for '{req.subject}': "
+            f"({res.point.point.x:.3f}, {res.point.point.y:.3f}, {res.point.point.z:.3f})"
+        )
+        return res
 
     def get_moondream_points(self, subject) -> list[tuple[float, float]]:
         """Get object points from the MoonDream service."""
