@@ -510,9 +510,19 @@ class Nav_Central(Node):
         # Flatten to 2D navigation (z=0)
         target_pose.pose.position.z = 0.0
 
-        # In mapping mode, the map grows incrementally — clamp far goals
-        # to a reachable distance and approach in steps
-        MAX_GOAL_DISTANCE = 2.0  # meters — stay within mapped area
+        # Parse standoff distance from behavior_tree field (format: "bt_path|standoff=X.X")
+        bt_raw = request.behavior_tree if request.behavior_tree else ""
+        standoff = 0.0
+        if "|standoff=" in bt_raw:
+            parts = bt_raw.split("|standoff=")
+            bt_raw = parts[0]
+            try:
+                standoff = float(parts[1])
+            except ValueError:
+                pass
+
+        # Get robot position for standoff and clamping calculations
+        MAX_GOAL_DISTANCE = 2.5  # meters — stay within mapped area
         try:
             robot_tf = self.tf_buffer.lookup_transform(
                 'map', 'base_link', rclpy.time.Time(), timeout=Duration(seconds=1.0)
@@ -522,17 +532,43 @@ class Nav_Central(Node):
             dx = target_pose.pose.position.x - rx
             dy = target_pose.pose.position.y - ry
             dist = math.sqrt(dx * dx + dy * dy)
-            if dist > MAX_GOAL_DISTANCE:
-                scale = MAX_GOAL_DISTANCE / dist
+
+            # Apply standoff: move goal back toward robot
+            if standoff > 0.0 and dist > standoff:
+                scale = (dist - standoff) / dist
                 target_pose.pose.position.x = rx + dx * scale
                 target_pose.pose.position.y = ry + dy * scale
+                # Orient robot to face the original target point
+                yaw = math.atan2(dy, dx)
+                target_pose.pose.orientation.x = 0.0
+                target_pose.pose.orientation.y = 0.0
+                target_pose.pose.orientation.z = math.sin(yaw / 2.0)
+                target_pose.pose.orientation.w = math.cos(yaw / 2.0)
+                new_dist = dist - standoff
                 self.nav_logger("info",
-                    f"GoToPose -> Clamped goal from {dist:.2f}m to {MAX_GOAL_DISTANCE}m: "
+                    f"GoToPose -> Standoff {standoff:.1f}m applied: goal at "
+                    f"({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f}), "
+                    f"{new_dist:.2f}m from robot, facing target")
+                dist = new_dist
+            elif standoff > 0.0 and dist <= standoff:
+                self.nav_logger("info",
+                    f"GoToPose -> Already within standoff ({dist:.2f}m <= {standoff:.1f}m), skipping nav")
+                response.success = True
+                response.error = ""
+                return response
+
+            # Clamp to max distance for mapping mode
+            if dist > MAX_GOAL_DISTANCE:
+                clamp_scale = MAX_GOAL_DISTANCE / dist
+                target_pose.pose.position.x = rx + (target_pose.pose.position.x - rx) * clamp_scale
+                target_pose.pose.position.y = ry + (target_pose.pose.position.y - ry) * clamp_scale
+                self.nav_logger("info",
+                    f"GoToPose -> Clamped to {MAX_GOAL_DISTANCE}m: "
                     f"({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f})")
         except Exception as e:
-            self.nav_logger("warn", f"GoToPose -> Could not clamp distance: {e}")
+            self.nav_logger("warn", f"GoToPose -> Could not compute standoff/clamp: {e}")
 
-        bt = request.behavior_tree if request.behavior_tree else None
+        bt = bt_raw if bt_raw else None
         result = self.send_nav_goal(target_pose, bt)
         response.success = result[0]
         response.error = result[1]
