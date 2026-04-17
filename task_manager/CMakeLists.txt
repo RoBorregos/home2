@@ -44,7 +44,7 @@ install(PROGRAMS ${TEST_SUBTASK_MANAGERS}
 )
 
 install(PROGRAMS ${MISC_NODES}
-  DESTINATION lib/${PROJECT_NAME}/misc
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY launch scripts

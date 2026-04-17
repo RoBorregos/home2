@@ -27,10 +27,23 @@ KP_CONF = 0.3
 
 def load_yolo_pose(model_name="yolo11m-pose.pt"):
     """Load YOLO pose model with automatic TensorRT export for Orin AGX."""
-    engine_path = model_name.replace(".pt", ".engine")
-    if os.path.exists(engine_path):
-        print(f"[PoseDetection] Loading TensorRT engine: {engine_path}")
-        return YOLO(engine_path, task="pose")
+    cache_dir = os.environ.get("TENSORRT_CACHE_DIR", "")
+    engine_name = model_name.replace(".pt", ".engine")
+
+    # Check for cached engine: cache dir first, then CWD
+    for candidate in [
+        os.path.join(cache_dir, engine_name) if cache_dir else "",
+        engine_name,
+    ]:
+        if candidate and os.path.exists(candidate):
+            print(f"[PoseDetection] Loading TensorRT engine: {candidate}")
+            return YOLO(candidate, task="pose")
+
+    # Find .pt: cache dir first, then CWD
+    if not os.path.exists(model_name) and cache_dir:
+        cached_pt = os.path.join(cache_dir, model_name)
+        if os.path.exists(cached_pt):
+            model_name = cached_pt
 
     print(f"[PoseDetection] Loading YOLO pose model: {model_name}")
     model = YOLO(model_name)
@@ -38,7 +51,7 @@ def load_yolo_pose(model_name="yolo11m-pose.pt"):
         print(
             "[PoseDetection] Exporting to TensorRT (first run only, may take a few minutes)..."
         )
-        model.export(format="engine", half=True, device=0, imgsz=640)
+        engine_path = model.export(format="engine", half=True, device=0, imgsz=640)
         print(f"[PoseDetection] TensorRT engine saved: {engine_path}")
         return YOLO(engine_path, task="pose")
     except Exception as e:

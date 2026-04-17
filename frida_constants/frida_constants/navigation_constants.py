@@ -52,9 +52,23 @@ class SUBTASK_MANAGER(Enum):
     AREAS_RETRIEVE_TIMEOUT = 2.0
 
 
+# Follow person node constants
+# -------------------------------------------------------------------
+GOAL_UPDATE_TOPIC = "/goal_update"
+FOLLOW_MODE_SERVICE = "/navigation/set_follow_mode"
+FOLLOW_PERSON_NAV_SERVICE = "/navigation/follow_person"
+
+# Timeouts for the follow-person orchestration
+FOLLOW_MODE_SERVICE_TIMEOUT = 2.0  # Wait for /navigation/set_follow_mode
+FOLLOW_GOAL_UPDATE_TIMEOUT = (
+    2.0  # Wait for first /goal_update before seeding initial goal
+)
+FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
+
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
 SCAN_TOPIC = "/scan"
 CAMERA_RGB_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 CAMERA_INFO_TOPIC = "/zed/zed_node/rgb/camera_info"
 CAMERA_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered"
+MAP_TOPIC = "/map"

@@ -122,13 +122,15 @@ class ManipulationTasks:
         """Closes the gripper"""
         return self._set_gripper_state("close")
 
-    def follow_person(self, follow: bool) -> int:
-        """Save the name of the person detected"""
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=1)
+    @service_check("follow_person_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def follow_person(self, follow: bool = True) -> int:
+        """Enable/disable arm tracking of a person via follow_person_controller.
 
-        if follow:
-            Logger.info(self.node, "Following face")
-        else:
-            Logger.info(self.node, "Stopping following face")
+        When True, the xArm joint1 rotates to keep the tracked person
+        centered in the camera image (PI + base-velocity feedforward).
+        """
+        Logger.info(self.node, f"Follow person (arm): {follow}")
         request = FollowFace.Request()
         request.follow_face = follow
 
@@ -145,7 +147,7 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error following person: {e}")
             return Status.EXECUTION_ERROR
 
-        Logger.success(self.node, "Following person request successful")
+        Logger.success(self.node, f"Follow person request successful: {follow}")
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)

@@ -48,7 +48,6 @@ import torch.nn as nn
 import torch
 from vision_general.utils.calculations import (
     get2DCentroid,
-    get_depth,
     deproject_pixel_to_point,
 )
 
@@ -89,17 +88,20 @@ from frida_constants.vision_constants import (
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
     IS_TRACKING_TOPIC,
+    FLIP_TRACKER_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+from std_msgs.msg import Bool
 
 CONF_THRESHOLD = 0.6
-DEPTH_THRESHOLD = 100
+DEPTH_THRESHOLD_NS = 50_000_000  # 50 ms in nanoseconds
 REID_EXTRACT_FREQ = 0.3
 MAX_EMBEDDINGS = 128
 DEEPSORT_MAX_COSINE_DISTANCE = 0.3
 DEEPSORT_NN_BUDGET = 100
 DEEPSORT_MAX_AGE = 100
 DEEPSORT_N_INIT = 3
+DEPTH_JUMP_THRESHOLD = 0.5  # Max allowed depth change (meters) between frames
 
 
 class SingleTracker(Node):
@@ -124,24 +126,46 @@ class SingleTracker(Node):
             callback_group=self.image_callback_group,
         )
 
+        depth_qos = rclpy.qos.QoSProfile(
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
+        self.depth_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            depth_qos,
+            callback_group=self.depth_callback_group,
         )
 
         self.image_info_subscriber = self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
         )
 
+        self.service_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+
         self.set_target_service = self.create_service(
-            SetBool, SET_TARGET_TOPIC, self.set_target_callback
+            SetBool,
+            SET_TARGET_TOPIC,
+            self.set_target_callback,
+            callback_group=self.service_callback_group,
         )
 
         self.set_target_by_service = self.create_service(
-            TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
+            TrackBy,
+            SET_TARGET_BY_TOPIC,
+            self.set_target_by_callback,
+            callback_group=self.service_callback_group,
         )
 
         self.get_is_tracking_service = self.create_service(
-            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
+            Trigger,
+            IS_TRACKING_TOPIC,
+            self.get_is_tracking_callback,
+            callback_group=self.service_callback_group,
         )
 
         self.is_tracking_result = False
@@ -155,12 +179,23 @@ class SingleTracker(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+        self.create_subscription(
+            Bool,
+            FLIP_TRACKER_TOPIC,
+            self._flip_callback,
+            10,
+            callback_group=self.callback_group,
+        )
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
+        self.flip_image = False
         self.last_reid_extraction = time.time()
-        self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        self.create_timer(0.1, self.run, callback_group=self.timer_callback_group)
+        self.create_timer(
+            0.1, self.publish_image, callback_group=self.timer_callback_group
+        )
 
     def setup(self):
         """Load models and initial variables"""
@@ -179,6 +214,7 @@ class SingleTracker(Node):
             "coordinates": [],
         }
         self.depth_image_time = None
+        self.last_depth = None
         pbar = tqdm.tqdm(total=4, desc="Loading models")
 
         # Load YOLO with TensorRT acceleration for Orin AGX
@@ -222,8 +258,9 @@ class SingleTracker(Node):
             depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
             self.depth_image = depth_image
             self.depth_image_time = data.header.stamp
+            self.get_logger().info("Depth image received", once=True)
         except Exception as e:
-            print(f"Error: {e}")
+            self.get_logger().error(f"Depth callback error: {e}")
 
     def get_is_tracking_callback(self, request, response):
         response = Trigger.Response()
@@ -237,6 +274,11 @@ class SingleTracker(Node):
     def image_info_callback(self, data):
         """Callback to receive camera info"""
         self.imageInfo = data
+
+    def _flip_callback(self, msg):
+        if msg.data != self.flip_image:
+            self.flip_image = msg.data
+            self.get_logger().info(f"Flip image set to: {self.flip_image}")
 
     def set_target_callback(self, request, response):
         """Callback to set the target to track"""
@@ -345,6 +387,7 @@ class SingleTracker(Node):
         self.person_data["backward"] = None
         self.person_data["left"] = None
         self.person_data["right"] = None
+        self.last_depth = None
 
     def set_target(self, track_by="largest_person", value=""):
         """Set the target to track (Default: Largest person in frame)"""
@@ -359,6 +402,10 @@ class SingleTracker(Node):
         self.person_data["num_embeddings"] = 0
 
         self.frame = copy.deepcopy(self.image)
+
+        if self.flip_image:
+            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
+
         self.output_image = self.frame.copy()
 
         # Run YOLO + DeepSORT multiple times to allow track confirmation (n_init frames)
@@ -544,6 +591,9 @@ class SingleTracker(Node):
             self.get_logger().error("No image available")
             return
 
+        if self.flip_image:
+            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
+
         self.output_image = self.frame.copy()
 
         # Run YOLO detection + DeepSORT tracking with ReID
@@ -702,19 +752,32 @@ class SingleTracker(Node):
                             break
 
         if person_in_frame:
+            print("Entro al frme")
             if reid_start is not None:
                 self.get_logger().info(f"ReID took {time.time() - reid_start:.2f}s")
             self.is_tracking_result = True
-            if len(self.depth_image) > 0 and (
-                (
-                    self.depth_image_time.nanosec - self.image_time.nanosec
-                    > -DEPTH_THRESHOLD
+            if self.depth_image_time is None or self.image_time is None:
+                self.get_logger().warn(
+                    f"Depth image not available (depth_time={self.depth_image_time is not None}, "
+                    f"image_time={self.image_time is not None})"
                 )
-                and (
-                    self.depth_image_time.nanosec - self.image_time.nanosec
-                    < DEPTH_THRESHOLD
-                )
-            ):
+                self.frame = None
+                return
+            depth_stamp_ns = (
+                self.depth_image_time.sec * 1_000_000_000
+                + self.depth_image_time.nanosec
+            )
+            image_stamp_ns = (
+                self.image_time.sec * 1_000_000_000 + self.image_time.nanosec
+            )
+            stamp_diff_ns = abs(depth_stamp_ns - image_stamp_ns)
+            self.get_logger().debug(
+                f"Stamp diff: {stamp_diff_ns / 1e6:.1f} ms "
+                f"(depth={self.depth_image_time.sec}.{self.depth_image_time.nanosec:09d}, "
+                f"rgb={self.image_time.sec}.{self.image_time.nanosec:09d})"
+            )
+            if len(self.depth_image) > 0 and stamp_diff_ns < DEPTH_THRESHOLD_NS:
+                print("Entro al otro papu")
                 coords = PointStamped()
                 coords.header.frame_id = self.frame_id
                 coords.header.stamp = self.depth_image_time
@@ -730,13 +793,35 @@ class SingleTracker(Node):
                 point2Dpoint.y = 0.0
                 point2Dpoint.z = 0.0
                 self.centroid_publisher.publish(point2Dpoint)
-                depth = get_depth(self.depth_image, point2D)
+
+                # Robust depth: median from inner 50% of bounding box
+                x1, y1, x2, y2 = self.person_data["coordinates"]
+                bw, bh = x2 - x1, y2 - y1
+                inner_x1 = x1 + bw // 4
+                inner_x2 = x2 - bw // 4
+                inner_y1 = y1 + bh // 4
+                inner_y2 = y2 - bh // 4
+                roi = self.depth_image[inner_y1:inner_y2, inner_x1:inner_x2]
+                valid = roi[np.isfinite(roi) & (roi > 0.0)]
+                if valid.size == 0:
+                    self.frame = None
+                    return
+                depth = float(np.median(valid))
+
+                # Reject sudden depth jumps
+                if (
+                    self.last_depth is not None
+                    and abs(depth - self.last_depth) > DEPTH_JUMP_THRESHOLD
+                ):
+                    self.frame = None
+                    return
+                self.last_depth = depth
+
                 point_2d_temp = (point2D[1], point2D[0])
                 point3D = deproject_pixel_to_point(self.imageInfo, point_2d_temp, depth)
-                point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                coords.point.x = point3D[0]
-                coords.point.y = point3D[1]
-                coords.point.z = point3D[2]
+                coords.point.x = float(point3D[0])
+                coords.point.y = float(point3D[1])
+                coords.point.z = float(point3D[2])
                 self.results_publisher.publish(coords)
             else:
                 self.get_logger().warn("Depth image not available")

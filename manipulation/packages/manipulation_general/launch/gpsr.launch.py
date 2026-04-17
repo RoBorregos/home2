@@ -42,5 +42,12 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="task_manager",
+                executable="follow_person_controller.py",
+                name="follow_person_controller",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )
