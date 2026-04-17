@@ -293,7 +293,7 @@ class RestaurantTaskManager(Node):
                 # Navigate to table on first customer only
                 if self.current_customer_index == 0:
                     self.subtask_manager.hri.say("Navigating to your table.")
-                    status, _ = self.subtask_manager.nav.move_to_point(point=table["coordinates"])
+                    status, _ = self.subtask_manager.nav.move_to_point(point=table["coordinates"], standoff_distance=1.0)
                     if status == Status.EXECUTION_SUCCESS:
                         # Save the actual arrived pose for delivery trips later
                         _, arrived_pose = self.subtask_manager.nav.get_current_pose()

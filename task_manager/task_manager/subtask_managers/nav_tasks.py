@@ -245,33 +245,51 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def move_to_point(self, point):
-        """Navigate to a PointStamped using the adaptive behavior tree.
+    def move_to_point(self, point, standoff_distance=2.0):
+        """Navigate near a PointStamped, stopping `standoff_distance` meters away.
 
-        Converts the point to a PoseStamped with orientation facing the point
-        from the current robot pose. Uses the adaptive BT for goals that may
-        be inside obstacle cells (e.g., table centers).
+        The goal is offset back toward the robot so it stops short of the target
+        (e.g., 2m from a customer/table) while facing it. Uses the adaptive BT
+        for goals that may be inside obstacle cells.
+
+        Args:
+            point: Target PointStamped (may be in camera or map frame).
+            standoff_distance: How far from the target to stop (meters).
         """
         CLog.nav(
             self.node, "MOVE",
-            f"Requesting navigation to point ({point.point.x:.2f}, {point.point.y:.2f})",
+            f"Requesting navigation to point ({point.point.x:.2f}, {point.point.y:.2f}), "
+            f"standoff={standoff_distance}m",
         )
 
-        # Compute orientation: face the target point from current position
+        # Compute direction and offset goal back toward robot
         status, current_pose = self.get_current_pose()
         if status == Status.EXECUTION_SUCCESS and current_pose is not None:
             dx = point.point.x - current_pose.pose.position.x
             dy = point.point.y - current_pose.pose.position.y
+            dist = math.sqrt(dx * dx + dy * dy)
             yaw = math.atan2(dy, dx)
+
+            if dist > standoff_distance:
+                # Place goal standoff_distance meters before the target
+                scale = (dist - standoff_distance) / dist
+                goal_x = current_pose.pose.position.x + dx * scale
+                goal_y = current_pose.pose.position.y + dy * scale
+            else:
+                # Already within standoff range — don't move closer
+                goal_x = current_pose.pose.position.x
+                goal_y = current_pose.pose.position.y
         else:
+            goal_x = point.point.x
+            goal_y = point.point.y
             yaw = 0.0
 
         goal = PoseStamped()
         goal.header.frame_id = point.header.frame_id if point.header.frame_id else "map"
         goal.header.stamp = self.node.get_clock().now().to_msg()
-        goal.pose.position.x = point.point.x
-        goal.pose.position.y = point.point.y
-        goal.pose.position.z = point.point.z
+        goal.pose.position.x = goal_x
+        goal.pose.position.y = goal_y
+        goal.pose.position.z = 0.0
         goal.pose.orientation.z = math.sin(yaw / 2.0)
         goal.pose.orientation.w = math.cos(yaw / 2.0)
 
