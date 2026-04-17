@@ -181,6 +181,18 @@ PICK_FROM_BACK_POSE = {
     "degrees": True,
 }
 
+WASHER_EXTENDED_POSE = {
+    "joints": {
+        "joint1": -94.8,
+        "joint2": 90.9,
+        "joint3": -145.6,
+        "joint4": 0.0,
+        "joint5": -32.3,
+        "joint6": 44.9,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -196,5 +208,6 @@ XARM_CONFIGURATIONS = {
     "place_floor_left": PLACE_FLOOR_LEFT,
     "hand_bag_pose": HAND_BAG_POSE,
     "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
-    "pick_from_back_pose": PICK_FROM_BACK_POSE
+    "pick_from_back_pose": PICK_FROM_BACK_POSE,
+    "washer_extended_pose": WASHER_EXTENDED_POSE,
 }
