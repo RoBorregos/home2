@@ -399,13 +399,13 @@ class Nav_Central(Node):
         feedback = feedback_msg.feedback
         self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
 
-    def send_nav_goal(self, pose, behaivor_tree = None):
+    def send_nav_goal(self, pose, behavior_tree=None):
         """Function to send goal to nav2 bt"""
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
-        if behaivor_tree is not None:
-            goal_msg.behaivor_tree = behaivor_tree
+        if behavior_tree is not None:
+            goal_msg.behavior_tree = behavior_tree
         self.goal_action_client.wait_for_server()
 
         _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
