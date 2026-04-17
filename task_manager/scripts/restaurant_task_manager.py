@@ -3,10 +3,8 @@
 """
 Task Manager for Restaurant task of Robocup @Home 2026
 """
-import math
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PointStamped, PoseStamped
 
 from frida_constants.vision_constants import (
     RESTAURANT_TABLES_TOPIC,
@@ -49,10 +47,6 @@ class RestaurantTaskManager(Node):
 
         self.running_task = True
 
-        self.original_goal_pub = self.create_publisher(
-            PoseStamped, "/adaptive_nav/original_goal", 10
-        )
-
         # Table data: {table_id: {'customer_points', 'customer_angles', 'orders', 'coordinates', 'num_customers'}}
         self.tables = {}
         self.tables_sorted_by_customers = []
@@ -91,33 +85,6 @@ class RestaurantTaskManager(Node):
             self,
             f"Tables sorted by customers: {[(tid, self.tables[tid]['num_customers']) for tid in self.tables_sorted_by_customers]}",
         )
-
-    def _compute_search_waypoint(self, step: int) -> PointStamped:
-        """Return a PointStamped `step * SEARCH_STEP_SIZE` m ahead of the bar."""
-        if self.bar_pose is None:
-            return None
-        q = self.bar_pose.pose.orientation
-        yaw = math.atan2(
-            2.0 * (q.w * q.z + q.x * q.y),
-            1.0 - 2.0 * (q.y * q.y + q.z * q.z),
-        )
-        wp = PoseStamped()
-        wp.header.frame_id = "map"
-        wp.header.stamp = self.get_clock().now().to_msg()
-        wp.pose.position.x = self.bar_pose.pose.position.x + step * SEARCH_STEP_SIZE * math.cos(yaw)
-        wp.pose.position.y = self.bar_pose.pose.position.y + step * SEARCH_STEP_SIZE * math.sin(yaw)
-        wp.pose.position.z = 0.0
-        wp.pose.orientation.z = math.sin(yaw / 2.0)
-        wp.pose.orientation.w = math.cos(yaw / 2.0)
-        return wp
-
-    def _publish_adaptive_goal(self, point: PointStamped):
-        """Publish original goal for adaptive BT radial sampling."""
-        goal_msg = PoseStamped()
-        goal_msg.header = point.header
-        goal_msg.pose.position = point.point
-        goal_msg.pose.orientation.w = 1.0
-        self.original_goal_pub.publish(goal_msg)
 
     def deus_pick(self, object_name):
         """Fallback: ask human to place object in gripper."""
@@ -196,16 +163,6 @@ class RestaurantTaskManager(Node):
 
         return Status.EXECUTION_ERROR
 
-    def _nav_to_bar(self):
-        """Navigate back to the saved bar pose."""
-        if self.bar_pose is None:
-            Logger.warn(self, "Bar pose not saved, skipping navigation to bar.")
-            return
-        self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
-        self.subtask_manager.nav.resume_nav()
-        self.subtask_manager.nav.move_to_pose(self.bar_pose)
-        self.subtask_manager.nav.pause_nav()
-
     def run(self):
         """Running main loop"""
 
@@ -223,8 +180,8 @@ class RestaurantTaskManager(Node):
             self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
             self.subtask_manager.hri.say("Starting the restaurant challenge. I am ready to help.")
             while self.bar_pose is None:
-                self.bar_pose = self.subtask_manager.nav.get_current_pose()
-                if self.bar_pose is None:
+                status, self.bar_pose = self.subtask_manager.nav.get_current_pose()
+                if status != Status.EXECUTION_SUCCESS or self.bar_pose is None:
                     Logger.warn(self, "TF not ready, retrying bar pose...")
                     rclpy.spin_once(self, timeout_sec=0.5)
             Logger.info(self, "Bar position saved.")
@@ -246,27 +203,17 @@ class RestaurantTaskManager(Node):
 
             elif self.search_step < MAX_SEARCH_STEPS:
                 self.search_step += 1
-                waypoint = self._compute_search_waypoint(self.search_step)
-                if waypoint is not None:
-                    self.subtask_manager.hri.say(
-                        "I didn't find a customer, searching in a new place.", wait=False
-                    )
-                    Logger.info(self, f"No customer. Moving to search position {self.search_step}.")
-                    self.subtask_manager.nav.resume_nav()
-                    self.subtask_manager.nav.move_to_pose(waypoint)
-                    self.subtask_manager.nav.pause_nav()
-                else:
-                    self.timeout(1)
-                return
-
+                status, _ = self.subtask_manager.nav.explore_zone(SEARCH_STEP_SIZE)
+                self.subtask_manager.hri.say(
+                    "I will try to find a customer again.", wait=False
+                )
             else:
                 Logger.info(self, "Full area scanned, no customer. Returning to bar.")
                 self.subtask_manager.hri.say(
                     "I did not find any customers calling. I will return to the bar and wait."
                 )
                 self.search_step = 0
-                self._nav_to_bar()
-                self.timeout(2)
+                self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
                 return
 
         if self.current_state == RestaurantTaskManager.TaskStates.MOVE_TO_TABLES_AREA:
@@ -275,12 +222,7 @@ class RestaurantTaskManager(Node):
                 return
 
             Logger.state(self, "Navigating to detected customer position...")
-            self.subtask_manager.nav.resume_nav()
-            self.subtask_manager.nav.change_bt("adaptive")
-            self._publish_adaptive_goal(self.target_person_point)
-            status = self.subtask_manager.nav.move_to_point(self.target_person_point)
-            self.subtask_manager.nav.pause_nav()
-
+            status, _ = self.subtask_manager.nav.move_to_point(point=self.target_person_point)
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Arrived near tables for detection.")
                 self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
@@ -351,11 +293,12 @@ class RestaurantTaskManager(Node):
                 # Navigate to table on first customer only
                 if self.current_customer_index == 0:
                     self.subtask_manager.hri.say("Navigating to your table.")
-                    self.subtask_manager.nav.resume_nav()
-                    self.subtask_manager.nav.change_bt("adaptive")
-                    self._publish_adaptive_goal(table["coordinates"])
-                    self.subtask_manager.nav.move_to_point(table["coordinates"])
-                    self.subtask_manager.nav.pause_nav()
+                    status, _ = self.subtask_manager.nav.move_to_point(point=table["coordinates"])
+                    if status == Status.EXECUTION_SUCCESS:
+                        # Save the actual arrived pose for delivery trips later
+                        _, arrived_pose = self.subtask_manager.nav.get_current_pose()
+                        if arrived_pose is not None:
+                            table["approach_pose"] = arrived_pose
 
                 customer_angle = table["customer_angles"][self.current_customer_index]
                 self.subtask_manager.manipulation.pan_to(customer_angle)
@@ -386,7 +329,8 @@ class RestaurantTaskManager(Node):
         if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR:
             Logger.state(self, "Navigating to bar...")
             self.subtask_manager.hri.say("I will now go to the bar to get the orders.")
-            self._nav_to_bar()
+            self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
+            self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
             self.current_state = RestaurantTaskManager.TaskStates.SAY_ORDER_TO_BARMAN
 
         if self.current_state == RestaurantTaskManager.TaskStates.SAY_ORDER_TO_BARMAN:
@@ -435,12 +379,10 @@ class RestaurantTaskManager(Node):
                     Logger.success(self, f"Picked {item}. Delivering to table {table_id}...")
 
                     self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
-                    self.subtask_manager.nav.resume_nav()
-                    self.subtask_manager.nav.change_bt("adaptive")
-                    self._publish_adaptive_goal(table["coordinates"])
-                    self.subtask_manager.nav.move_to_point(table["coordinates"])
-                    self.subtask_manager.nav.pause_nav()
-
+                    if "approach_pose" in table:
+                        self.subtask_manager.nav.move_to_pose(table["approach_pose"])
+                    else:
+                        self.subtask_manager.nav.move_to_point(point=table["coordinates"])
                     self.subtask_manager.hri.say(f"Here is your {item}.")
                     self.subtask_manager.manipulation.move_to_position("table_stare", velocity=0.5)
                     status = self.place_object()
@@ -452,7 +394,8 @@ class RestaurantTaskManager(Node):
                         # Return to bar for next item
                         if self.current_delivery_item_index < len(table["orders"]):
                             self.subtask_manager.hri.say("I will get your next item.")
-                            self._nav_to_bar()
+                            self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
+                            self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
                     else:
                         Logger.error(self, f"Failed to place {item}")
                         self.current_delivery_item_index += 1

@@ -1,0 +1,7 @@
+# Request — navigate to a specific pose in the map frame
+geometry_msgs/PoseStamped target_pose
+string behavior_tree
+---
+# Response
+bool success
+string error
