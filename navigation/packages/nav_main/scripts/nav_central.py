@@ -486,8 +486,32 @@ class Nav_Central(Node):
             response.error = "Nav2 is paused"
             return response
 
+        # Transform goal to map frame if it's in a different frame
+        target_pose = request.target_pose
+        if target_pose.header.frame_id and target_pose.header.frame_id != "map":
+            try:
+                if self.tf_listener is None:
+                    self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+                transform = self.tf_buffer.lookup_transform(
+                    'map', target_pose.header.frame_id,
+                    rclpy.time.Time(), timeout=Duration(seconds=2.0)
+                )
+                # Transform the position
+                from tf2_geometry_msgs import do_transform_pose_stamped
+                target_pose = do_transform_pose_stamped(target_pose, transform)
+                self.nav_logger("info",
+                    f"GoToPose -> Transformed to map frame: ({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f})")
+            except Exception as e:
+                self.nav_logger("error", f"GoToPose -> TF transform failed: {e}")
+                response.success = False
+                response.error = f"TF transform failed: {e}"
+                return response
+
+        # Flatten to 2D navigation (z=0)
+        target_pose.pose.position.z = 0.0
+
         bt = request.behavior_tree if request.behavior_tree else None
-        result = self.send_nav_goal(request.target_pose, bt)
+        result = self.send_nav_goal(target_pose, bt)
         response.success = result[0]
         response.error = result[1]
 

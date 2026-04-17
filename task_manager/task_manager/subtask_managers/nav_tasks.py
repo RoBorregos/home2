@@ -267,11 +267,11 @@ class NavigationTasks:
             yaw = 0.0
 
         goal = PoseStamped()
-        goal.header.frame_id = "map"
+        goal.header.frame_id = point.header.frame_id if point.header.frame_id else "map"
         goal.header.stamp = self.node.get_clock().now().to_msg()
         goal.pose.position.x = point.point.x
         goal.pose.position.y = point.point.y
-        goal.pose.position.z = 0.0
+        goal.pose.position.z = point.point.z
         goal.pose.orientation.z = math.sin(yaw / 2.0)
         goal.pose.orientation.w = math.cos(yaw / 2.0)
 
