@@ -8,6 +8,7 @@ var dir_796ddb26d3f951020bd008472cdfdae1 =
     [ "gpsr_task_manager.py", "gpsr__task__manager_8py.html", "gpsr__task__manager_8py" ],
     [ "hand_task_manager.py", "hand__task__manager_8py.html", "hand__task__manager_8py" ],
     [ "hric_task_manager.py", "hric__task__manager_8py.html", "hric__task__manager_8py" ],
+    [ "pickandplace_task_manager.py", "pickandplace__task__manager_8py.html", "pickandplace__task__manager_8py" ],
     [ "restaurant_task_manager.py", "restaurant__task__manager_8py.html", "restaurant__task__manager_8py" ],
     [ "safety_task_manager.py", "safety__task__manager_8py.html", "safety__task__manager_8py" ],
     [ "storing_groceries_manager.py", "storing__groceries__manager_8py.html", "storing__groceries__manager_8py" ]

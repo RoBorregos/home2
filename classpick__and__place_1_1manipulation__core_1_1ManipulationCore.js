@@ -3,7 +3,7 @@ var classpick__and__place_1_1manipulation__core_1_1ManipulationCore =
     [ "__init__", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a18e789ff3a3a526c50bea73c04d3aca5", null ],
     [ "clear_octomap", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ae26b3b1d2227ce950969de8a26fb0877", null ],
     [ "manipulation_server_callback", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#adcd5d52f5b2a4743c98ec5c63bcb5403", null ],
-    [ "pick_execute", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a78cba9a09f1a1650f1672de40ae894e1", null ],
+    [ "pick_execute", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a4b4d2ad6f6c39246e0be00407ab574d8", null ],
     [ "place_execute", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a03d597744004f1e7cb25cb11026faa75", null ],
     [ "pour_execute", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#af5aad8543903909e86461c832f10343e", null ],
     [ "remove_all_collision_object", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac2452bc48f6fa9aa009ee7de0e7eb44f", null ],

@@ -270,6 +270,12 @@ var annotated_dup =
         [ "PourMotionServer", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html", "classpick__and__place_1_1pour__server_1_1PourMotionServer" ]
       ] ]
     ] ],
+    [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", [
+      [ "Location", "classpickandplace__task__manager_1_1Location.html", null ],
+      [ "ObjectCategory", "classpickandplace__task__manager_1_1ObjectCategory.html", null ],
+      [ "ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", "classpickandplace__task__manager_1_1ObjectInfo" ],
+      [ "PickAndPlaceTM", "classpickandplace__task__manager_1_1PickAndPlaceTM.html", "classpickandplace__task__manager_1_1PickAndPlaceTM" ]
+    ] ],
     [ "PickManager", "namespacePickManager.html", [
       [ "PickManager", "classPickManager_1_1PickManager.html", "classPickManager_1_1PickManager" ]
     ] ],
@@ -420,6 +426,9 @@ var annotated_dup =
     ] ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", [
       [ "TestPlanParser", "classtest__plan__parser_1_1TestPlanParser.html", "classtest__plan__parser_1_1TestPlanParser" ]
+    ] ],
+    [ "test_ppc_cabinet_place", "namespacetest__ppc__cabinet__place.html", [
+      [ "PPCTestCabinetPlace", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace" ]
     ] ],
     [ "test_start_button", "namespacetest__start__button.html", [
       [ "TestHriManager", "classtest__start__button_1_1TestHriManager.html", "classtest__start__button_1_1TestHriManager" ]

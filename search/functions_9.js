@@ -42,11 +42,12 @@ var searchData=
   ['is_5fpoint_5fin_5froom_39',['is_point_in_room',['../namespacearea__check.html#adde7b9820374ec0867e3bcc9888ae56f',1,'area_check']]],
   ['is_5fposition_5fblocked_40',['is_position_blocked',['../classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html#aafeb4a4d7916d7043f37c6baf4e75185',1,'adaptive_goal_publisher::AdaptiveGoalPublisher']]],
   ['is_5fpositive_41',['is_positive',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a38378e41d20508d10a287f02d3d15adc',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['is_5fsitting_5ffrom_5fkeypoints_42',['is_sitting_from_keypoints',['../classpose__detection_1_1PoseDetection.html#ad937eb9bcebc72461b431fa11d440c90',1,'pose_detection::PoseDetection']]],
-  ['is_5fsitting_5fmoondream_43',['is_sitting_moondream',['../classcustomer__node_1_1CustomerNode.html#abbd4f02f544ebc705622d00dc610a41c',1,'customer_node::CustomerNode']]],
-  ['is_5ftentative_44',['is_tentative',['../classtrack_1_1Track.html#ad7f1d96bc90d441bf3605179b85d975a',1,'track::Track']]],
-  ['is_5fupside_5fdown_45',['is_upside_down',['../classpick__and__place_1_1pour__server_1_1PourMotionServer.html#adf2e07fea3adbdbbccadc3284904eb7f',1,'pick_and_place::pour_server::PourMotionServer']]],
-  ['is_5fvalue_5fin_5fenum_46',['is_value_in_enum',['../namespacefrida__constants_1_1vision__enums.html#a0332e09d677c452e51fd0d08415fefb5',1,'frida_constants::vision_enums']]],
-  ['is_5fwaving_5ffrom_5fkeypoints_47',['is_waving_from_keypoints',['../classpose__detection_1_1PoseDetection.html#a019e6f720609db7ab290f2c524a0c83b',1,'pose_detection::PoseDetection']]],
-  ['isperson_48',['isPerson',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8507dfbfcb889d75f280a11a5fa2d2e',1,'task_manager::subtask_managers::vision_tasks::VisionTasks']]]
+  ['is_5fpour_5fobject_42',['is_pour_object',['../namespacePickManager.html#a6c7e5eb22b70e41142e616127270e24e',1,'PickManager']]],
+  ['is_5fsitting_5ffrom_5fkeypoints_43',['is_sitting_from_keypoints',['../classpose__detection_1_1PoseDetection.html#ad937eb9bcebc72461b431fa11d440c90',1,'pose_detection::PoseDetection']]],
+  ['is_5fsitting_5fmoondream_44',['is_sitting_moondream',['../classcustomer__node_1_1CustomerNode.html#abbd4f02f544ebc705622d00dc610a41c',1,'customer_node::CustomerNode']]],
+  ['is_5ftentative_45',['is_tentative',['../classtrack_1_1Track.html#ad7f1d96bc90d441bf3605179b85d975a',1,'track::Track']]],
+  ['is_5fupside_5fdown_46',['is_upside_down',['../classpick__and__place_1_1pour__server_1_1PourMotionServer.html#adf2e07fea3adbdbbccadc3284904eb7f',1,'pick_and_place::pour_server::PourMotionServer']]],
+  ['is_5fvalue_5fin_5fenum_47',['is_value_in_enum',['../namespacefrida__constants_1_1vision__enums.html#a0332e09d677c452e51fd0d08415fefb5',1,'frida_constants::vision_enums']]],
+  ['is_5fwaving_5ffrom_5fkeypoints_48',['is_waving_from_keypoints',['../classpose__detection_1_1PoseDetection.html#a019e6f720609db7ab290f2c524a0c83b',1,'pose_detection::PoseDetection']]],
+  ['isperson_49',['isPerson',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8507dfbfcb889d75f280a11a5fa2d2e',1,'task_manager::subtask_managers::vision_tasks::VisionTasks']]]
 ];

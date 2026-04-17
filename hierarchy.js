@@ -95,6 +95,10 @@ var hierarchy =
       [ "visualization.Visualization", "classvisualization_1_1Visualization.html", null ]
     ] ],
     [ "ObjectDetector.ObjectDectectorParams", "classObjectDetector_1_1ObjectDectectorParams.html", null ],
+    [ "pickandplace_task_manager.ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", null ],
+    [ "PickAndPlaceTM", null, [
+      [ "test_ppc_cabinet_place.PPCTestCabinetPlace", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html", null ]
+    ] ],
     [ "PickManager.PickManager", "classPickManager_1_1PickManager.html", null ],
     [ "PlaceManager.PlaceManager", "classPlaceManager_1_1PlaceManager.html", null ],
     [ "pose_detection.PoseDetection", "classpose__detection_1_1PoseDetection.html", null ],
@@ -111,6 +115,7 @@ var hierarchy =
     [ "gpsr_task_manager.GPSRTM.TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "hand_task_manager.HandTM.TaskStates", "classhand__task__manager_1_1HandTM_1_1TaskStates.html", null ],
     [ "hric_task_manager.HRIC_TM.TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
+    [ "pickandplace_task_manager.PickAndPlaceTM.TaskStates", "classpickandplace__task__manager_1_1PickAndPlaceTM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
     [ "track.Track", "classtrack_1_1Track.html", null ],
@@ -145,6 +150,8 @@ var hierarchy =
       [ "frida_constants.vision_enums.Gestures", "classfrida__constants_1_1vision__enums_1_1Gestures.html", null ],
       [ "frida_constants.vision_enums.Poses", "classfrida__constants_1_1vision__enums_1_1Poses.html", null ],
       [ "moondream_node.Position", "classmoondream__node_1_1Position.html", null ],
+      [ "pickandplace_task_manager.Location", "classpickandplace__task__manager_1_1Location.html", null ],
+      [ "pickandplace_task_manager.ObjectCategory", "classpickandplace__task__manager_1_1ObjectCategory.html", null ],
       [ "safety_task_manager.ExecutionStates", "classsafety__task__manager_1_1ExecutionStates.html", null ],
       [ "safety_task_manager.Retries", "classsafety__task__manager_1_1Retries.html", null ],
       [ "storing_groceries_manager.ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],
@@ -208,6 +215,7 @@ var hierarchy =
       [ "pick_and_place.pick_server.PickMotionServer", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html", null ],
       [ "pick_and_place.place_server.PlaceMotionServer", "classpick__and__place_1_1place__server_1_1PlaceMotionServer.html", null ],
       [ "pick_and_place.pour_server.PourMotionServer", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html", null ],
+      [ "pickandplace_task_manager.PickAndPlaceTM", "classpickandplace__task__manager_1_1PickAndPlaceTM.html", null ],
       [ "point_transformer.PointTransformer", "classpoint__transformer_1_1PointTransformer.html", null ],
       [ "pointing_detection.DetectPointingObjectServer", "classpointing__detection_1_1DetectPointingObjectServer.html", null ],
       [ "receptionist_task_manager.ReceptionistTM", "classreceptionist__task__manager_1_1ReceptionistTM.html", null ],

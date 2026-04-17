@@ -6,7 +6,7 @@ var classpick__and__place_1_1keyboard__input_1_1KeyboardInput =
     [ "goal_response_callback", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a8531103cdef28ba2bd8f8bab6e2c1ec7", null ],
     [ "objects_callback", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a820801842f2c5e529b5672e18233d0f3", null ],
     [ "refresh_objects", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a93351229f47b2b1a6db71ba105b33811", null ],
-    [ "send_pick_request", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#ac80894cf47fc43e9af204ffa3c74985b", null ],
+    [ "send_pick_request", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#ab91cc3d5eca6290023572f17daaaef15", null ],
     [ "send_place_on_clicked_point_request", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a896603480a0198ee5a16d04c05e6e9df", null ],
     [ "send_place_request", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a884647348f69f0954cab9d4cfe645c43", null ],
     [ "send_pour_request", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a24a3edb39aae5187e6f2ff478ff877e1", null ],

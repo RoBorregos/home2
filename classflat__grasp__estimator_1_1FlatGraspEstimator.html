@@ -108,6 +108,8 @@ Inheritance diagram for flat_grasp_estimator.FlatGraspEstimator:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a15b88d8392684d09493f45ef6506feaf"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a15b88d8392684d09493f45ef6506feaf">__init__</a> (self)</td></tr>
 <tr class="separator:a15b88d8392684d09493f45ef6506feaf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3aca076e52b9e7a1bea208c490063087"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a3aca076e52b9e7a1bea208c490063087">enable_callback</a> (self, request, response)</td></tr>
+<tr class="separator:a3aca076e52b9e7a1bea208c490063087"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1fdb86db9f4518893e6d9dbf681568a6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a1fdb86db9f4518893e6d9dbf681568a6">depth_callback</a> (self, msg)</td></tr>
 <tr class="separator:a1fdb86db9f4518893e6d9dbf681568a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5829898fbbf3dc6517124e4d5bd581d3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a5829898fbbf3dc6517124e4d5bd581d3">camera_info_callback</a> (self, msg)</td></tr>
@@ -137,10 +139,14 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a021248ae6ecb3f84491719617b90a5ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f99dc251c2187f11249f37466eb8337"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a7f99dc251c2187f11249f37466eb8337">target_classes</a></td></tr>
 <tr class="separator:a7f99dc251c2187f11249f37466eb8337"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5bfa30fd41448db630204209c8848c6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#ad5bfa30fd41448db630204209c8848c6">enabled</a></td></tr>
+<tr class="separator:ad5bfa30fd41448db630204209c8848c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3de316a1c39165c2cb0da44625b4e782"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a3de316a1c39165c2cb0da44625b4e782">table_height_buffer</a></td></tr>
 <tr class="separator:a3de316a1c39165c2cb0da44625b4e782"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab19c5c90e2822f3f720ff5f3abb916d3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#ab19c5c90e2822f3f720ff5f3abb916d3">pose_pub</a></td></tr>
 <tr class="separator:ab19c5c90e2822f3f720ff5f3abb916d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d8a9b7e3c427c3dac68d0d2d8e08449"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a4d8a9b7e3c427c3dac68d0d2d8e08449">enable_srv</a></td></tr>
+<tr class="separator:a4d8a9b7e3c427c3dac68d0d2d8e08449"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a15b88d8392684d09493f45ef6506feaf" name="a15b88d8392684d09493f45ef6506feaf"></a>
@@ -246,6 +252,41 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a3aca076e52b9e7a1bea208c490063087" name="a3aca076e52b9e7a1bea208c490063087"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3aca076e52b9e7a1bea208c490063087">&#9670;&#160;</a></span>enable_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def flat_grasp_estimator.FlatGraspEstimator.enable_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>response</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Enable/disable detection processing. When disabled the node stays
+alive and keeps its subscriptions but skips all work in the hot path.</pre> 
+</div>
+</div>
 <a id="a6cb0c31383d813f327ebb52d0a1f2f25" name="a6cb0c31383d813f327ebb52d0a1f2f25"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6cb0c31383d813f327ebb52d0a1f2f25">&#9670;&#160;</a></span>get_stable_table_height()</h2>
 
@@ -326,6 +367,34 @@ Rejects outliers that deviate too much from the running median.</pre>
       <table class="memname">
         <tr>
           <td class="memname">flat_grasp_estimator.FlatGraspEstimator.depth_frame_id</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4d8a9b7e3c427c3dac68d0d2d8e08449" name="a4d8a9b7e3c427c3dac68d0d2d8e08449"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4d8a9b7e3c427c3dac68d0d2d8e08449">&#9670;&#160;</a></span>enable_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">flat_grasp_estimator.FlatGraspEstimator.enable_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad5bfa30fd41448db630204209c8848c6" name="ad5bfa30fd41448db630204209c8848c6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5bfa30fd41448db630204209c8848c6">&#9670;&#160;</a></span>enabled</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">flat_grasp_estimator.FlatGraspEstimator.enabled</td>
         </tr>
       </table>
 </div><div class="memdoc">

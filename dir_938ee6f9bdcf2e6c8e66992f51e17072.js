@@ -6,6 +6,7 @@ var dir_938ee6f9bdcf2e6c8e66992f51e17072 =
     [ "test_manipulation_manager.py", "test__manipulation__manager_8py.html", "test__manipulation__manager_8py" ],
     [ "test_navigation_manager.py", "test__navigation__manager_8py.html", "test__navigation__manager_8py" ],
     [ "test_plan_parser.py", "test__plan__parser_8py.html", "test__plan__parser_8py" ],
+    [ "test_ppc_cabinet_place.py", "test__ppc__cabinet__place_8py.html", "test__ppc__cabinet__place_8py" ],
     [ "test_start_button.py", "test__start__button_8py.html", "test__start__button_8py" ],
     [ "test_vision_manager.py", "test__vision__manager_8py.html", "test__vision__manager_8py" ]
 ];

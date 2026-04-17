@@ -258,12 +258,13 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
     [ "perception_utils", "namespaceperception__utils.html", [
-      [ "get_object_cluster", "namespaceperception__utils.html#a31955e78e1302a61392ef9498f4a4511", null ],
+      [ "get_object_cluster", "namespaceperception__utils.html#a5d48369d8bd74a65c9f23aa7f318173d", null ],
       [ "get_object_point", "namespaceperception__utils.html#adf7d95078b4cecc224d75c0f20109553", null ],
       [ "point_in_range", "namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69", null ]
     ] ],
     [ "person_in_map", "namespaceperson__in__map.html", "namespaceperson__in__map" ],
     [ "pick_and_place", "namespacepick__and__place.html", "namespacepick__and__place" ],
+    [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", "namespacepickandplace__task__manager" ],
     [ "PickManager", "namespacePickManager.html", "namespacePickManager" ],
     [ "PlaceManager", "namespacePlaceManager.html", "namespacePlaceManager" ],
     [ "Planner", "namespacePlanner.html", "namespacePlanner" ],
@@ -271,6 +272,9 @@ var namespaces_dup =
     [ "pointing_detection", "namespacepointing__detection.html", "namespacepointing__detection" ],
     [ "pose_detection", "namespacepose__detection.html", "namespacepose__detection" ],
     [ "PourManager", "namespacePourManager.html", "namespacePourManager" ],
+    [ "ppc", "namespaceppc.html", [
+      [ "generate_launch_description", "namespaceppc.html#aa3727ca5bcd22835536315a39ed75071", null ]
+    ] ],
     [ "ppc_launch", "namespaceppc__launch.html", [
       [ "generate_launch_description", "namespaceppc__launch.html#aacd047cb473dc687d72cb32e87ff33fe", null ]
     ] ],
@@ -367,6 +371,7 @@ var namespaces_dup =
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
     [ "test_navigation_manager", "namespacetest__navigation__manager.html", "namespacetest__navigation__manager" ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", "namespacetest__plan__parser" ],
+    [ "test_ppc_cabinet_place", "namespacetest__ppc__cabinet__place.html", "namespacetest__ppc__cabinet__place" ],
     [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", "namespacetest__vision__manager" ],
     [ "tf_utils", "namespacetf__utils.html", [

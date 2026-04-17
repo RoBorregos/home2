@@ -106,8 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af11bed753b23e5394ba41226ae7036b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83dbb132d65ed3effd05e127c061dbaa"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a83dbb132d65ed3effd05e127c061dbaa">flat_grasp_callback</a> (self, msg)</td></tr>
 <tr class="separator:a83dbb132d65ed3effd05e127c061dbaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac21e4a8c0a97e2c597c1aacbc8aa26c1"><td class="memItemLeft" align="right" valign="top">Tuple[bool, PickResult]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#ac21e4a8c0a97e2c597c1aacbc8aa26c1">execute</a> (self, str object_name, PointStamped point, pick_params)</td></tr>
-<tr class="separator:ac21e4a8c0a97e2c597c1aacbc8aa26c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9d341ad79f3a64b44b263633b108f1d"><td class="memItemLeft" align="right" valign="top">Tuple[bool, PickResult]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#ae9d341ad79f3a64b44b263633b108f1d">execute</a> (self, str object_name, PointStamped point, pick_params, bool is_shelf=False)</td></tr>
+<tr class="separator:ae9d341ad79f3a64b44b263633b108f1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6d93cceb18c8420798b5d67531e66d3"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#af6d93cceb18c8420798b5d67531e66d3">get_object_point</a> (self, str object_name)</td></tr>
 <tr class="separator:af6d93cceb18c8420798b5d67531e66d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a004bcef224e1767d29136e723050f998"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a004bcef224e1767d29136e723050f998">get_object_cluster</a> (self, PointStamped point)</td></tr>
@@ -166,8 +166,8 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ac21e4a8c0a97e2c597c1aacbc8aa26c1" name="ac21e4a8c0a97e2c597c1aacbc8aa26c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac21e4a8c0a97e2c597c1aacbc8aa26c1">&#9670;&#160;</a></span>execute()</h2>
+<a id="ae9d341ad79f3a64b44b263633b108f1d" name="ae9d341ad79f3a64b44b263633b108f1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9d341ad79f3a64b44b263633b108f1d">&#9670;&#160;</a></span>execute()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -194,7 +194,13 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>pick_params</em>&#160;</td>
+          <td class="paramname"><em>pick_params</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>is_shelf</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
