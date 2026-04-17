@@ -170,6 +170,9 @@ set(srv_files
   "vision/srv/SetTrashCategory.srv"
   "navigation/srv/MapAreas.srv"
   "navigation/srv/MoveLocation.srv"
+  "navigation/srv/MoveDistance.srv"
+  "navigation/srv/MoveUntilObject.srv"
+  "navigation/srv/MoveLocationIgnoreObstacles.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

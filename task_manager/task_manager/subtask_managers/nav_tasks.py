@@ -14,9 +14,19 @@ from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
+    MOVE_DISTANCE_SERVICE,
+    MOVE_UNTIL_OBJECT_SERVICE,
+    MOVE_LOCATION_IGNORE_OBSTACLES_SERVICE,
     SUBTASK_MANAGER,
 )
-from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
+from frida_interfaces.srv import (
+    CheckDoor,
+    MapAreas,
+    MoveLocation,
+    MoveDistance,
+    MoveUntilObject,
+    MoveLocationIgnoreObstacles,
+)
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -36,6 +46,13 @@ class NavigationTasks:
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+        self.move_distance_srv = self.node.create_client(MoveDistance, MOVE_DISTANCE_SERVICE)
+        self.move_until_object_srv = self.node.create_client(
+            MoveUntilObject, MOVE_UNTIL_OBJECT_SERVICE
+        )
+        self.move_location_ignore_obstacles_srv = self.node.create_client(
+            MoveLocationIgnoreObstacles, MOVE_LOCATION_IGNORE_OBSTACLES_SERVICE
+        )
 
         # Task Actions and Services check
         self.services = {
@@ -43,6 +60,12 @@ class NavigationTasks:
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+                "move_distance_srv": {"client": self.move_distance_srv, "type": "service"},
+                "move_until_object_srv": {"client": self.move_until_object_srv, "type": "service"},
+                "move_location_ignore_obstacles_srv": {
+                    "client": self.move_location_ignore_obstacles_srv,
+                    "type": "service",
+                },
             },
         }
 
@@ -154,6 +177,171 @@ class NavigationTasks:
         if result is not None:
             if result.success:
                 CLog.nav(self.node, "SUCCESS", f"Goal {location} reached")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                CLog.nav(self.node, "ERROR", f"Goal failed: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+
+    # -----------------------------------------------------------------
+    #  Open-loop base motion (bypass Nav2, ignores obstacles)
+    # -----------------------------------------------------------------
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=2)
+    @service_check(
+        "move_distance_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_forward(self, distance: float):
+        """Move the base a fixed distance forward (meters).
+
+        Positive = forward, negative = backward.  Uses /cmd_vel directly;
+        Nav2 is *not* involved so obstacles are ignored.
+        """
+        CLog.nav(self.node, "MOVE", f"Requesting move_forward of {distance:.3f} m")
+        request = MoveDistance.Request()
+        request.distance = float(distance)
+        future = self.move_distance_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.MOVE_DISTANCE_TIMEOUT.value
+        )
+        result = future.result()
+        if result is not None:
+            if result.success:
+                CLog.nav(self.node, "SUCCESS", f"Move of {distance:.3f} m completed")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                CLog.nav(self.node, "ERROR", f"Move failed: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=2)
+    @service_check(
+        "move_distance_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_backwards(self, distance: float):
+        """Move the base backward by `distance` metres (positive value).
+
+        Internally sends a negative distance to the MoveDistance service.
+        Uses /cmd_vel directly; Nav2 is *not* involved so obstacles are ignored.
+        """
+        dist = -abs(distance)
+        CLog.nav(self.node, "MOVE", f"Requesting move_backwards of {abs(distance):.3f} m")
+        request = MoveDistance.Request()
+        request.distance = float(dist)
+        future = self.move_distance_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.MOVE_DISTANCE_TIMEOUT.value
+        )
+        result = future.result()
+        if result is not None:
+            if result.success:
+                CLog.nav(self.node, "SUCCESS", f"Move backwards {abs(distance):.3f} m completed")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                CLog.nav(self.node, "ERROR", f"Move backwards failed: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+
+    # -----------------------------------------------------------------
+    #  Drive until lidar detects an obstacle within stop_distance
+    # -----------------------------------------------------------------
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check(
+        "move_until_object_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_backwards_until_object(self, stop_distance: float = 0.30):
+        """Drive backward at low speed until the rear lidar sector detects an
+        obstacle within *stop_distance* metres. The robot stops immediately
+        once the threshold is reached.
+
+        Uses /cmd_vel directly; Nav2 is *not* involved so the costmap obstacle
+        layers are bypassed.
+        """
+        CLog.nav(
+            self.node,
+            "MOVE",
+            f"Requesting move_backwards_until_object (stop_dist={stop_distance:.2f} m)",
+        )
+        request = MoveUntilObject.Request()
+        request.stop_distance = float(stop_distance)
+        request.forward = False
+        future = self.move_until_object_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.MOVE_UNTIL_OBJECT_TIMEOUT.value
+        )
+        result = future.result()
+        if result is not None:
+            if result.success:
+                CLog.nav(
+                    self.node,
+                    "SUCCESS",
+                    f"Stopped near object (measured {result.measured_distance:.3f} m)",
+                )
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                CLog.nav(self.node, "ERROR", f"Move until object failed: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+
+    # -----------------------------------------------------------------
+    #  Nav2 goal with rear-lidar & camera obstacles ignored
+    # -----------------------------------------------------------------
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=5)
+    @service_check(
+        "move_location_ignore_obstacles_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_to_location_ignore_obstacles(
+        self,
+        location: str,
+        sublocation: str = "",
+        ignore_camera: bool = True,
+        ignore_rear_lidar: bool = True,
+    ):
+        """Navigate to a map area using Nav2 but with the camera obstacle
+        layer and / or the rear sector of the lidar temporarily disabled.
+
+        Front-of-robot lidar detection and the static map are still active,
+        so the robot will avoid frontal collisions but can back into tight
+        spaces that the camera or rear-lidar would otherwise block.
+        """
+        if sublocation == "":
+            sublocation = "safe_place"
+        CLog.nav(
+            self.node,
+            "MOVE",
+            f"Requesting move_to_location_ignore_obstacles -> {location}/{sublocation} "
+            f"(cam={ignore_camera}, rear_lidar={ignore_rear_lidar})",
+        )
+        request = MoveLocationIgnoreObstacles.Request()
+        request.location = location
+        request.sublocation = sublocation
+        request.ignore_camera = ignore_camera
+        request.ignore_rear_lidar = ignore_rear_lidar
+        future = self.move_location_ignore_obstacles_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node,
+            future,
+            timeout_sec=SUBTASK_MANAGER.MOVE_LOCATION_IGNORE_OBSTACLES_TIMEOUT.value,
+        )
+        result = future.result()
+        if result is not None:
+            if result.success:
+                CLog.nav(self.node, "SUCCESS", f"Goal {location} reached (obstacles ignored)")
                 return (Status.EXECUTION_SUCCESS, "")
             else:
                 CLog.nav(self.node, "ERROR", f"Goal failed: {result.error}")

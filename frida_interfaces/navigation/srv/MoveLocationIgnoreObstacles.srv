@@ -1,0 +1,13 @@
+# Request
+# Sends a Nav2 goal to (location, sublocation) while temporarily ignoring
+# selected obstacle sources. After the goal finishes (success or failure) the
+# obstacle sources are restored to their previous state.
+
+string location
+string sublocation
+bool ignore_camera
+bool ignore_rear_lidar
+---
+# Response
+bool success
+string error

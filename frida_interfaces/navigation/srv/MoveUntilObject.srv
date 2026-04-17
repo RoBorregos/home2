@@ -1,0 +1,12 @@
+# Request
+# Moves the base at low speed until the lidar sector of interest detects an
+# object within `stop_distance` meters, or a safety deadline expires.
+# `forward=false` means the robot moves backward and watches the rear sector.
+
+float64 stop_distance
+bool forward
+---
+# Response
+bool success
+float64 measured_distance
+string error

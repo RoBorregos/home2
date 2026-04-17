@@ -1,0 +1,8 @@
+# Request
+# Signed distance in meters. Positive = forward, negative = backward.
+
+float64 distance
+---
+# Response
+bool success
+string error

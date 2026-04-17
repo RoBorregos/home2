@@ -11,7 +11,7 @@ from nav2_msgs.action import NavigateToPose
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, Twist
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -34,6 +34,21 @@ from frida_constants.navigation_constants import(
         NO_TOPICS_LIMIT,
         MONITOR_RATE,
         MOVE_LOCATION_SERVICE,
+        MOVE_DISTANCE_SERVICE,
+        MOVE_UNTIL_OBJECT_SERVICE,
+        MOVE_LOCATION_IGNORE_OBSTACLES_SERVICE,
+        CMD_VEL_TOPIC,
+        BASE_FRAME,
+        ODOM_FRAME,
+        MAP_FRAME,
+        TIMEOUT_MOVE_DISTANCE_TF,
+        MOVE_DISTANCE,
+        MOVE_UNTIL_OBJECT,
+        SCAN_MASKED_TOPIC,
+        SCAN_MASK,
+        LOCAL_COSTMAP_NODE,
+        GLOBAL_COSTMAP_NODE,
+        CAMERA_OBSTACLE_LAYER,
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
@@ -41,8 +56,15 @@ from frida_constants.navigation_constants import(
 from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
-        MoveLocation
+        MoveLocation,
+        MoveDistance,
+        MoveUntilObject,
+        MoveLocationIgnoreObstacles,
         )
+from rcl_interfaces.srv import SetParameters, GetParameters
+from rcl_interfaces.msg import Parameter as RclParameter
+from rcl_interfaces.msg import ParameterValue as RclParameterValue
+from rcl_interfaces.msg import ParameterType as RclParameterType
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
 import json
@@ -123,7 +145,26 @@ class Nav_Central(Node):
         self.sensor_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_SENSOR.value) # Timeout in seconds to wait for sensors
         self.door_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value) # Timeout in seconds to wait for sensors
         
-        self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group) 
+        self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
+        self.move_distance_srv = self.create_service(MoveDistance, MOVE_DISTANCE_SERVICE, self.move_distance, callback_group=self.service_group)
+        self.move_until_object_srv = self.create_service(MoveUntilObject, MOVE_UNTIL_OBJECT_SERVICE, self.move_until_object, callback_group=self.service_group)
+        self.move_location_ignore_obstacles_srv = self.create_service(MoveLocationIgnoreObstacles, MOVE_LOCATION_IGNORE_OBSTACLES_SERVICE, self.move_location_ignore_obstacles, callback_group=self.service_group)
+
+        # Cmd vel publisher for open-loop motion
+        self.cmd_vel_pub = self.create_publisher(Twist, CMD_VEL_TOPIC, 10)
+
+        # Persistent scan masker: subscribes /scan, publishes /scan_masked.
+        # When _scan_mask_active is False it is a pure pass-through.
+        self._scan_mask_active = False
+        self._latest_scan = None
+        self._scan_sub = self.create_subscription(
+            LaserScan, SCAN_TOPIC, self._scan_callback, 10, callback_group=self.lidar_group)
+        self._scan_masked_pub = self.create_publisher(LaserScan, SCAN_MASKED_TOPIC, 10)
+
+        # Nav2 costmap param clients (created lazily before first use)
+        self._local_costmap_param_client = None
+        self._global_costmap_param_client = None
+
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
@@ -442,13 +483,394 @@ class Nav_Central(Node):
         goal_coord.pose.orientation.z = fetch_coords[5]
         goal_coord.pose.orientation.w = fetch_coords[6]
 
-        future = self.send_nav_goal(goal_coord) 
+        future = self.send_nav_goal(goal_coord)
         response.success = future[0]
         response.error = future[1]
         self.pause_slam()
         self.pause_nav2()
         return response
-        
+
+    # ------------------------------------------------------------------
+    #   Scan masker helpers (publishes /scan_masked from /scan)
+    # ------------------------------------------------------------------
+    def _scan_callback(self, msg):
+        """Cache latest scan and republish (optionally masked) on /scan_masked."""
+        self._latest_scan = msg
+
+        if not self._scan_mask_active:
+            # Passthrough. Cheap because LaserScan is a shallow struct.
+            self._scan_masked_pub.publish(msg)
+            return
+
+        # Build a masked copy: any ray whose angle falls inside the rear
+        # window gets its range set to infinity (ignored by costmap).
+        center = math.radians(SCAN_MASK.REAR_CENTER_DEG.value)
+        half = math.radians(SCAN_MASK.REAR_HALFWIDTH_DEG.value)
+        low = center - half
+        high = center + half
+
+        masked = LaserScan()
+        masked.header = msg.header
+        masked.angle_min = msg.angle_min
+        masked.angle_max = msg.angle_max
+        masked.angle_increment = msg.angle_increment
+        masked.time_increment = msg.time_increment
+        masked.scan_time = msg.scan_time
+        masked.range_min = msg.range_min
+        masked.range_max = msg.range_max
+        masked.intensities = msg.intensities
+
+        def _wrap(a):
+            # Wrap to [-pi, pi]
+            return math.atan2(math.sin(a), math.cos(a))
+
+        new_ranges = list(msg.ranges)
+        wrapped_low = _wrap(low)
+        wrapped_high = _wrap(high)
+        for i in range(len(new_ranges)):
+            ang = _wrap(msg.angle_min + i * msg.angle_increment)
+            if wrapped_low <= wrapped_high:
+                in_window = wrapped_low <= ang <= wrapped_high
+            else:
+                # window wraps around -pi/pi
+                in_window = ang >= wrapped_low or ang <= wrapped_high
+            if in_window:
+                new_ranges[i] = float("inf")
+        masked.ranges = new_ranges
+        self._scan_masked_pub.publish(masked)
+
+    # ------------------------------------------------------------------
+    #   Open-loop base motion helpers
+    # ------------------------------------------------------------------
+    def _lookup_base_in_odom(self):
+        """Return (x, y) of base_link in odom frame, or None on failure."""
+        if self.tf_listener is None:
+            self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+        start_time = self.get_clock().now()
+        while (self.get_clock().now() - start_time) < Duration(seconds=TIMEOUT_MOVE_DISTANCE_TF):
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    ODOM_FRAME, BASE_FRAME, rclpy.time.Time())
+                return (tf.transform.translation.x, tf.transform.translation.y)
+            except Exception:
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        return None
+
+    def _wait_for_scan(self, timeout_sec):
+        """Block until at least one LaserScan has been received."""
+        start = self.get_clock().now()
+        while self._latest_scan is None and (
+            (self.get_clock().now() - start) < Duration(seconds=timeout_sec)):
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        return self._latest_scan is not None
+
+    def _min_range_in_window(self, scan, center_deg, halfwidth_deg):
+        """Return min finite range in [center-half, center+half] degrees.
+
+        Angle 0 is assumed to be the robot's forward direction. Wrapping
+        around ±pi is handled.
+        """
+        if scan is None or len(scan.ranges) == 0:
+            return float("inf")
+        low = math.radians(center_deg - halfwidth_deg)
+        high = math.radians(center_deg + halfwidth_deg)
+        # Wrap to [-pi, pi]
+        def _wrap(a):
+            return math.atan2(math.sin(a), math.cos(a))
+        wl, wh = _wrap(low), _wrap(high)
+        best = float("inf")
+        for i, r in enumerate(scan.ranges):
+            if not math.isfinite(r):
+                continue
+            if r < scan.range_min:
+                continue
+            ang = _wrap(scan.angle_min + i * scan.angle_increment)
+            if wl <= wh:
+                in_window = wl <= ang <= wh
+            else:
+                in_window = ang >= wl or ang <= wh
+            if in_window and r < best:
+                best = r
+        return best
+
+    # ------------------------------------------------------------------
+    #   Service: move a fixed distance (open-loop, no obstacle checks)
+    # ------------------------------------------------------------------
+    def move_distance(self, request, response):
+        """Publishes /cmd_vel and integrates distance from odom TF. Ignores
+        obstacles entirely — the caller is responsible for path clearance."""
+
+        distance = float(request.distance)
+        self.nav_logger("info", f"Move_Distance -> Moving {distance:.3f} m (open-loop)")
+
+        start_xy = self._lookup_base_in_odom()
+        if start_xy is None:
+            self.nav_logger("error", "Move_Distance -> odom->base_link TF not available")
+            response.success = False
+            response.error = "TF odom->base_link not available"
+            return response
+
+        target = abs(distance)
+        if target < MOVE_DISTANCE.DISTANCE_TOLERANCE.value:
+            response.success = True
+            response.error = ""
+            return response
+
+        direction = 1.0 if distance >= 0.0 else -1.0
+        speed = MOVE_DISTANCE.LINEAR_SPEED.value
+        period = 1.0 / MOVE_DISTANCE.CONTROL_RATE.value
+        tolerance = MOVE_DISTANCE.DISTANCE_TOLERANCE.value
+        deadline = Duration(seconds=(target / speed) + MOVE_DISTANCE.MAX_EXTRA_TIME.value)
+
+        twist = Twist()
+        twist.linear.x = direction * speed
+
+        loop_start = self.get_clock().now()
+        travelled = 0.0
+        while (self.get_clock().now() - loop_start) < deadline:
+            cur = self._lookup_base_in_odom()
+            if cur is None:
+                self.nav_logger("warn", "Move_Distance -> Lost odom TF during motion")
+                break
+            travelled = math.hypot(cur[0] - start_xy[0], cur[1] - start_xy[1])
+            if (target - travelled) <= tolerance:
+                break
+            self.cmd_vel_pub.publish(twist)
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=period))
+
+        # Stop
+        self.cmd_vel_pub.publish(Twist())
+
+        if (target - travelled) > tolerance:
+            msg = f"Timed out after {travelled:.3f} m of {target:.3f} m"
+            self.nav_logger("error", f"Move_Distance -> {msg}")
+            response.success = False
+            response.error = msg
+            return response
+
+        self.nav_logger("info", f"Move_Distance -> Completed, travelled {travelled:.3f} m")
+        response.success = True
+        response.error = ""
+        return response
+
+    # ------------------------------------------------------------------
+    #   Service: drive until an obstacle is detected by the lidar
+    # ------------------------------------------------------------------
+    def move_until_object(self, request, response):
+        """Drive open-loop at low speed until the lidar sector of interest
+        reports a range <= stop_distance. Ignores camera and any other sensors.
+        """
+        forward = bool(request.forward)
+        stop_distance = float(request.stop_distance)
+        if stop_distance <= 0.0:
+            stop_distance = MOVE_UNTIL_OBJECT.DEFAULT_STOP_DISTANCE.value
+
+        self.nav_logger(
+            "info",
+            f"Move_Until_Object -> {'forward' if forward else 'backward'} until "
+            f"object within {stop_distance:.2f} m")
+
+        if not self._wait_for_scan(MOVE_UNTIL_OBJECT.LIDAR_TIMEOUT.value):
+            self.nav_logger("error", "Move_Until_Object -> No lidar data available")
+            response.success = False
+            response.measured_distance = 0.0
+            response.error = "No lidar data"
+            return response
+
+        start_xy = self._lookup_base_in_odom()
+        if start_xy is None:
+            self.nav_logger("error", "Move_Until_Object -> odom->base_link TF missing")
+            response.success = False
+            response.measured_distance = 0.0
+            response.error = "TF odom->base_link not available"
+            return response
+
+        if forward:
+            center = MOVE_UNTIL_OBJECT.FRONT_ANGLE_CENTER_DEG.value
+            half = MOVE_UNTIL_OBJECT.FRONT_ANGLE_HALFWIDTH_DEG.value
+            direction = 1.0
+        else:
+            center = MOVE_UNTIL_OBJECT.REAR_ANGLE_CENTER_DEG.value
+            half = MOVE_UNTIL_OBJECT.REAR_ANGLE_HALFWIDTH_DEG.value
+            direction = -1.0
+
+        speed = MOVE_UNTIL_OBJECT.LINEAR_SPEED.value
+        period = 1.0 / MOVE_UNTIL_OBJECT.CONTROL_RATE.value
+        deadline = Duration(seconds=MOVE_UNTIL_OBJECT.MAX_TRAVEL_TIME.value)
+
+        twist = Twist()
+        twist.linear.x = direction * speed
+
+        loop_start = self.get_clock().now()
+        travelled = 0.0
+        last_min = float("inf")
+
+        while (self.get_clock().now() - loop_start) < deadline:
+            scan = self._latest_scan
+            last_min = self._min_range_in_window(scan, center, half)
+            if last_min <= stop_distance:
+                break
+
+            cur = self._lookup_base_in_odom()
+            if cur is not None:
+                travelled = math.hypot(cur[0] - start_xy[0], cur[1] - start_xy[1])
+            self.cmd_vel_pub.publish(twist)
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=period))
+
+        self.cmd_vel_pub.publish(Twist())
+
+        if last_min > stop_distance:
+            msg = f"Timed out. Nearest: {last_min:.3f} m; travelled {travelled:.3f} m"
+            self.nav_logger("error", f"Move_Until_Object -> {msg}")
+            response.success = False
+            response.measured_distance = travelled
+            response.error = msg
+            return response
+
+        self.nav_logger(
+            "info",
+            f"Move_Until_Object -> Stopped. Object at {last_min:.3f} m, "
+            f"travelled {travelled:.3f} m")
+        response.success = True
+        response.measured_distance = travelled
+        response.error = ""
+        return response
+
+    # ------------------------------------------------------------------
+    #   Nav2 costmap parameter helpers
+    # ------------------------------------------------------------------
+    def _ensure_costmap_param_clients(self):
+        if self._local_costmap_param_client is None:
+            self._local_costmap_param_client = self.create_client(
+                SetParameters,
+                f"{LOCAL_COSTMAP_NODE}/set_parameters",
+                callback_group=self.service_group)
+        if self._global_costmap_param_client is None:
+            self._global_costmap_param_client = self.create_client(
+                SetParameters,
+                f"{GLOBAL_COSTMAP_NODE}/set_parameters",
+                callback_group=self.service_group)
+
+    def _set_layer_enabled(self, client, layer_name, enabled, label):
+        """Set {layer_name}.enabled on the given costmap's parameter server."""
+        if not client.wait_for_service(timeout_sec=TIMEOUT_RTAB_SERVICE):
+            self.nav_logger("warn", f"{label} -> param service not ready for {layer_name}")
+            return False
+        req = SetParameters.Request()
+        p = RclParameter()
+        p.name = f"{layer_name}.enabled"
+        p.value = RclParameterValue(
+            type=RclParameterType.PARAMETER_BOOL, bool_value=bool(enabled))
+        req.parameters = [p]
+        future = client.call_async(req)
+        elapsed = 0.0
+        while not future.done() and elapsed < TIMEOUT_RTAB_SERVICE:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not future.done():
+            self.nav_logger("error", f"{label} -> SetParameters timed out")
+            return False
+        try:
+            result = future.result()
+            ok = result is not None and all(r.successful for r in result.results)
+        except Exception:
+            ok = False
+        if not ok:
+            self.nav_logger("error", f"{label} -> failed to set {layer_name}.enabled={enabled}")
+        return ok
+
+    # ------------------------------------------------------------------
+    #   Service: go to a map area with obstacle sources temporarily muted
+    # ------------------------------------------------------------------
+    def move_location_ignore_obstacles(self, request, response):
+        """Sends a Nav2 goal with the camera obstacle layer and / or the rear
+        sector of the lidar temporarily suppressed. Previous values are
+        always restored, even on failure."""
+
+        self.nav_logger(
+            "info",
+            f"Move_Location_Ignore -> {request.location}/{request.sublocation} "
+            f"(ignore_camera={request.ignore_camera}, "
+            f"ignore_rear_lidar={request.ignore_rear_lidar})")
+
+        if self.areas_data is None:
+            response.success = False
+            response.error = "Areas not loaded"
+            return response
+
+        fetch_coords = self.areas_data.get(
+            request.location, {}).get(
+                request.sublocation or "safe_place")
+        if fetch_coords is None:
+            response.success = False
+            response.error = "Area not found"
+            return response
+
+        # --- apply overrides ---------------------------------------------
+        self._ensure_costmap_param_clients()
+        camera_changed = False
+        rear_mask_changed = False
+
+        if request.ignore_camera:
+            a = self._set_layer_enabled(
+                self._local_costmap_param_client,
+                CAMERA_OBSTACLE_LAYER, False, "Ignore_Obstacles(local_cam)")
+            b = self._set_layer_enabled(
+                self._global_costmap_param_client,
+                CAMERA_OBSTACLE_LAYER, False, "Ignore_Obstacles(global_cam)")
+            camera_changed = a and b
+            if not camera_changed:
+                self.nav_logger("warn", "Move_Location_Ignore -> camera disable partially failed")
+
+        if request.ignore_rear_lidar:
+            self._scan_mask_active = True
+            rear_mask_changed = True
+            self.nav_logger("info", "Move_Location_Ignore -> rear scan mask ON")
+
+        # --- build & send goal -------------------------------------------
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self._restore_obstacle_sources(camera_changed, rear_mask_changed)
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response
+
+        goal_coord = PoseStamped()
+        goal_coord.header.frame_id = MAP_FRAME
+        goal_coord.header.stamp = self.get_clock().now().to_msg()
+        goal_coord.pose.position.x = fetch_coords[0]
+        goal_coord.pose.position.y = fetch_coords[1]
+        goal_coord.pose.position.z = fetch_coords[2]
+        goal_coord.pose.orientation.x = fetch_coords[3]
+        goal_coord.pose.orientation.y = fetch_coords[4]
+        goal_coord.pose.orientation.z = fetch_coords[5]
+        goal_coord.pose.orientation.w = fetch_coords[6]
+
+        try:
+            result = self.send_nav_goal(goal_coord)
+            response.success = result[0]
+            response.error = result[1]
+        finally:
+            self._restore_obstacle_sources(camera_changed, rear_mask_changed)
+            self.pause_slam()
+            self.pause_nav2()
+
+        return response
+
+    def _restore_obstacle_sources(self, camera_changed, rear_mask_changed):
+        """Undo any obstacle-source overrides applied during the goal."""
+        if rear_mask_changed:
+            self._scan_mask_active = False
+            self.nav_logger("info", "Move_Location_Ignore -> rear scan mask OFF")
+        if camera_changed:
+            self._set_layer_enabled(
+                self._local_costmap_param_client,
+                CAMERA_OBSTACLE_LAYER, True, "Ignore_Obstacles(local_cam_restore)")
+            self._set_layer_enabled(
+                self._global_costmap_param_client,
+                CAMERA_OBSTACLE_LAYER, True, "Ignore_Obstacles(global_cam_restore)")
+
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}
