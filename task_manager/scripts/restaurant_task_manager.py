@@ -321,7 +321,7 @@ class RestaurantTaskManager(Node):
                 # Navigate to table on first customer only
                 if self.current_customer_index == 0:
                     self.subtask_manager.hri.say("Navigating to your table.")
-                    status, _ = self.subtask_manager.nav.move_to_point(point=table["coordinates"], standoff_distance=1.0)
+                    status, _ = self.subtask_manager.nav.move_to_point(point=table["coordinates"], standoff_distance=0.5)
                     if status == Status.EXECUTION_SUCCESS:
                         # Save the actual arrived pose for delivery trips later
                         _, arrived_pose = self.subtask_manager.nav.get_current_pose()
@@ -334,15 +334,26 @@ class RestaurantTaskManager(Node):
                 self.subtask_manager.manipulation.follow_face(True)
                 self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
 
-                status, orders = self.subtask_manager.hri.take_order(retries=3)
-                if status == Status.EXECUTION_SUCCESS and orders:
-                    for order in orders:
-                        table["orders"].append(order)
-                        Logger.success(self, f"Order received: {order}")
-                else:
-                    Logger.warn(self, "Failed to get order from customer.")
+                order_received = False
+                for order_attempt in range(ATTEMPT_LIMIT):
+                    Logger.info(self, f"Order attempt {order_attempt + 1}/{ATTEMPT_LIMIT}")
+                    status, orders = self.subtask_manager.hri.take_order(retries=3)
+                    if status == Status.EXECUTION_SUCCESS and orders:
+                        for order in orders:
+                            table["orders"].append(order)
+                            Logger.success(self, f"Order received: {order}")
+                        order_received = True
+                        break
+                    else:
+                        Logger.warn(self, f"Order attempt {order_attempt + 1} failed.")
+                        if order_attempt < ATTEMPT_LIMIT - 1:
+                            self.subtask_manager.hri.say(
+                                "Sorry, I didn't catch that. Could you please repeat your order?"
+                            )
+                if not order_received:
+                    Logger.warn(self, "Failed to get order after all attempts.")
                     self.subtask_manager.hri.say(
-                        "Sorry, I didn't catch that. I'll move to the next customer."
+                        "Sorry, I couldn't get your order. I'll move to the next customer."
                     )
 
                 self.subtask_manager.manipulation.follow_face(False)
