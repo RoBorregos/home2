@@ -557,7 +557,10 @@ class VisionTasks:
         pass
 
     def isPerson(self, name: str = ""):
-        return self.person_name == name
+        for person in self.person_list:
+            if name == person.name:
+                return True
+        return False
 
     @mockable(return_value=True, delay=2)
     @service_check("beverage_location_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
