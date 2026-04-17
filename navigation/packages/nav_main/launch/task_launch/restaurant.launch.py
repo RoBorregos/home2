@@ -15,7 +15,7 @@ def launch_function(context, *args, **kwargs):
     rtab_params_file = os.path.join(
         pkg_file_route, 'config', 'rtabmap', 'rtabmap_mapping_config.yaml'
     )
-    nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
+    nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_restaurant.yaml')
 
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)

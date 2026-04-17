@@ -19,8 +19,8 @@ import time
 ATTEMPT_LIMIT = 3
 
 # Progressive customer search parameters
-SEARCH_STEP_SIZE = 1.0  # meters between each search position
-MAX_SEARCH_STEPS = 5  # total steps before returning to bar (~5 m coverage)
+SEARCH_STEP_SIZE = 0.5  # meters between each search position
+MAX_SEARCH_STEPS = 10  # total steps before returning to bar (~5 m coverage)
 
 
 class RestaurantTaskManager(Node):
