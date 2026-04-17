@@ -16,8 +16,10 @@ from frida_constants.vision_constants import (
     OBJECT_POINTS_TOPIC,
     CAMERA_INFO_TOPIC,
     CAMERA_FRAME,
+    CAMERA_TOPIC,
     TRASHCAN_SERVICE,
     MOONDREAM_POINT_3D_TOPIC,
+    MOONDREAM_POINT_3D_DEBUG_TOPIC,
 )
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
 from frida_interfaces.srv import ObjectPoints, TrashcanDetection, MoondreamPoint3D
@@ -35,8 +37,10 @@ class TrashDetectionNode(Node):
         self.image = None
         self.imageInfo = None
         self.depth_image = None
+        self.trash_debug_image = None
 
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
+        self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
         )
@@ -53,6 +57,10 @@ class TrashDetectionNode(Node):
         )
 
         self.debug_image_pub = self.create_publisher(Image, TRASH_DEBUG_IMAGE_TOPIC, 10)
+
+        self.moondream_point_3d_debug_pub = self.create_publisher(
+            Image, MOONDREAM_POINT_3D_DEBUG_TOPIC, 10
+        )
 
         self.moondream_point_client = self.create_client(
             ObjectPoints, OBJECT_POINTS_TOPIC
@@ -193,7 +201,47 @@ class TrashDetectionNode(Node):
             f"Moondream 3D point for '{req.subject}': "
             f"({res.point.point.x:.3f}, {res.point.point.y:.3f}, {res.point.point.z:.3f})"
         )
+
+        self.publish_moondream_point_3d_debug(req.subject, point2d, res.point, pts)
         return res
+
+    def publish_moondream_point_3d_debug(
+        self, subject, center_px, point_stamped, raw_pts
+    ):
+        """Publish a debug image overlaying the averaged center, raw moondream
+        points and the resulting 3D coordinates.
+        """
+        if self.image is None:
+            return
+
+        debug = self.image.copy()
+        h, w = debug.shape[:2]
+
+        for p in raw_pts:
+            u = min(max(int(p[0] * w), 0), w - 1)
+            v = min(max(int(p[1] * h), 0), h - 1)
+            cv2.circle(debug, (u, v), 5, (0, 165, 255), -1)
+
+        u, v = center_px
+        cv2.drawMarker(debug, (u, v), (0, 255, 0), cv2.MARKER_CROSS, 24, 2)
+        cv2.circle(debug, (u, v), 14, (0, 255, 0), 2)
+
+        label = (
+            f"{subject[:40]}  "
+            f"xyz=({point_stamped.point.x:.2f},{point_stamped.point.y:.2f},"
+            f"{point_stamped.point.z:.2f})"
+        )
+        cv2.putText(debug, label, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 3)
+        cv2.putText(
+            debug, label, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1
+        )
+
+        try:
+            self.moondream_point_3d_debug_pub.publish(
+                self.bridge.cv2_to_imgmsg(debug, "bgr8")
+            )
+        except Exception as e:
+            self.get_logger().error(f"Debug image publish error: {e}")
 
     def get_moondream_points(self, subject) -> list[tuple[float, float]]:
         """Get object points from the MoonDream service."""
