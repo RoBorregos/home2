@@ -31,7 +31,7 @@ from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-ATTEMPT_LIMIT = 2
+ATTEMPT_LIMIT = 3
 
 SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
 
@@ -116,10 +116,7 @@ class PickAndPlaceTM(Node):
         # ==========================================================
         # COMPETITION CONFIG — adjust before each run
         # ==========================================================
-        # Trash rule: category from objects.json or a specific object name.
-        # trash_exceptions excludes logical names from the match.
-        self.trash_category = "drink"
-        self.trash_exceptions: list[str] = ["milk"]
+        self.trash_category = "napkin"  # announced during Setup Days
         self.use_dishwasher = False  # cutlery/tableware → dishwasher
         self.use_side_table = False  # pick from side table (−20 pts/obj)
         self.max_cleanup_objects = 3  # how many to clean before breakfast
@@ -127,7 +124,7 @@ class PickAndPlaceTM(Node):
         # YOLO name mapping: logical → detection class (only differences)
         self.yolo_names = {
             "cereal": "blue_cereal_box",
-            "milk": "yogurt",
+            "milk": "chocomilk_box",
         }
 
         # Shelf heights in base_link Z (calibrate with RViz Publish Point)
@@ -376,29 +373,17 @@ class PickAndPlaceTM(Node):
     def categorize_object(self, obj_name: str) -> ObjectCategory:
         """Assign an object to a category based on its name"""
         cutlery = ["fork", "knife", "spoon"]
-        tableware = ["red_plate", "cup", "mug", "bowl"]
+        tableware = ["plate", "cup", "mug", "bowl"]
 
         name = obj_name.lower()
         if name in cutlery:
             return ObjectCategory.CUTLERY
-        if name in tableware:
+        elif name in tableware:
             return ObjectCategory.TABLEWARE
-        if self._is_trash(name):
+        elif name == self.trash_category.lower():
             return ObjectCategory.TRASH
-        return ObjectCategory.OTHER
-
-    def _is_trash(self, logical_name: str) -> bool:
-        """True if object matches trash_category (as object name or as objects.json category)."""
-        if not self.trash_category:
-            return False
-        trash_key = self.trash_category.lower()
-        exceptions = {x.lower() for x in self.trash_exceptions}
-        if logical_name in exceptions:
-            return False
-        if logical_name == trash_key:
-            return True
-        yolo_name = self._to_yolo_name(logical_name).lower()
-        return self._object_to_category.get(yolo_name, "").lower() == trash_key
+        else:
+            return ObjectCategory.OTHER
 
     def _to_yolo_name(self, logical_name: str) -> str:
         """Translate a logical object name to the YOLO class name."""
@@ -523,9 +508,6 @@ class PickAndPlaceTM(Node):
                 self.detected_objects = []
                 for bbox in detections:
                     raw_name = bbox.classname if bbox.classname else "unknown"
-                    # Vision may publish trash-category detections as "trash/<name>"
-                    if raw_name.lower().startswith("trash/"):
-                        raw_name = raw_name.split("/", 1)[1]
                     obj_name = self.yolo_to_logical.get(raw_name, raw_name)
                     category = (
                         ObjectCategory.COMMON
@@ -583,7 +565,7 @@ class PickAndPlaceTM(Node):
                 ObjectCategory.COMMON: 4,
             }
 
-            skip_names = ["red_plate", "dish"]
+            skip_names = ["plate", "dish"]
             before = len(self.detected_objects)
             self.detected_objects = [
                 obj for obj in self.detected_objects if obj.name.lower() not in skip_names
@@ -728,7 +710,7 @@ class PickAndPlaceTM(Node):
             )
             _, answer = self.subtask_manager.hri.confirm(
                 "Please say yes once the dishwasher door is open.",
-                use_keyword=True,
+                use_hotwords=True,
                 retries=5,
                 wait_between_retries=10.0,
             )
