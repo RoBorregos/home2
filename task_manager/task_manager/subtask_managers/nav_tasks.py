@@ -12,12 +12,15 @@ import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, PointStamped
+from std_srvs.srv import Empty
 from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
+    RTAB_PAUSE_SERVICE,
+    RTAB_RESUME_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation, GoToPose, GetRobotPose
@@ -57,6 +60,8 @@ class NavigationTasks:
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
+        self.rtabmap_pause_srv = self.node.create_client(Empty, RTAB_PAUSE_SERVICE)
+        self.rtabmap_resume_srv = self.node.create_client(Empty, RTAB_RESUME_SERVICE)
 
         # Task Actions and Services check
         self.services = {
@@ -374,6 +379,28 @@ class NavigationTasks:
                 return (Status.EXECUTION_ERROR, result.error)
         CLog.nav(self.node, "ERROR", "GoToPose service returned None")
         return (Status.EXECUTION_ERROR, "Service timeout")
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=0)
+    def pause_slam(self):
+        """Pause RTAB-Map SLAM."""
+        if not self.rtabmap_pause_srv.wait_for_service(timeout_sec=1.0):
+            CLog.nav(self.node, "WARN", "RTAB-Map pause service not available")
+            return Status.EXECUTION_ERROR
+        future = self.rtabmap_pause_srv.call_async(Empty.Request())
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
+        CLog.nav(self.node, "INFO", "SLAM paused")
+        return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=0)
+    def resume_slam(self):
+        """Resume RTAB-Map SLAM."""
+        if not self.rtabmap_resume_srv.wait_for_service(timeout_sec=1.0):
+            CLog.nav(self.node, "WARN", "RTAB-Map resume service not available")
+            return Status.EXECUTION_ERROR
+        future = self.rtabmap_resume_srv.call_async(Empty.Request())
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
+        CLog.nav(self.node, "INFO", "SLAM resumed")
+        return Status.EXECUTION_SUCCESS
 
 
 if __name__ == "__main__":
