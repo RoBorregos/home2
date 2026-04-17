@@ -67,7 +67,7 @@ class RestaurantTaskManager(Node):
         # Orders already communicated to barman
         self._orders_given = False
 
-        self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON
+        self.current_state = RestaurantTaskManager.TaskStates.START
 
         self.get_logger().info("RestaurantTaskManager has started.")
 
