@@ -173,11 +173,11 @@ class DoingLaundryTM(Node):
                 if self.pick_attempts >= ATTEMPT_LIMIT:
                     Logger.error(self, "Max pick attempts — asking for help")
                     self.subtask_manager.hri.say(
-                        "I could not reach the laundry. " "Could you please place it on my gripper?"
+                        "I could not open the laundry machine. Could you please open it?"
                     )
                     self.subtask_manager.manipulation.open_gripper()
                     _, answer = self.subtask_manager.hri.confirm(
-                        "Have you placed the laundry on my gripper?",
+                        "Have you opened it?",
                         use_hotwords=True,
                     )
                     if answer == "yes":
