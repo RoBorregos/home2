@@ -17,6 +17,10 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
 
 
 custom_command = [
+    # {"action": "follow_person_until", "destination": "living room"},
+    # {"action": "follow_person_until", "destination": "canceled"},
+    {"action": "get_visual_info", "measure": "lightest", "object_category": "object"},
+    # {"action": "count", "target_to_count": "fruits"},
     # {"action": "find_person", "attribute_value": ""},
     # {"action": "get_person_info", "info_type": "pose"},
     # {
@@ -27,10 +31,11 @@ custom_command = [
     # {"action": "count", "target_to_count": "people wearing blue t shirts"},
     # {"action": "count", "target_to_count": "persons pointing to the left"},
     # {"action": "count", "target_to_count": "lying persons"},
+    # {"action": "count", "target_to_count": "standing person"},
     # {"action": "find_person_by_name", "name": "Adel"},
-    {"action": "find_person", "attribute_value": "person raising their right arm"},
-    {"action": "find_person", "attribute_value": "standing person"},
-    {"action": "find_person", "attribute_value": "black shirt"},
+    # {"action": "find_person", "attribute_value": "person raising their right arm"},
+    # {"action": "find_person", "attribute_value": "standing person"},
+    # {"action": "find_person", "attribute_value": "black shirt"},
     # {
     #     "action": "say_with_context",
     #     "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",

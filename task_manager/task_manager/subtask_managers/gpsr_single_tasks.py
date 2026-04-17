@@ -1,6 +1,7 @@
 import time
 
 from frida_constants.hri_constants import GPSR_COMMANDS
+from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     GetVisualInfo,
@@ -64,10 +65,6 @@ class GPSRSingleTask(GenericTask):
         pretty_target = target.replace("_", " ")
         self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
-        target = location.subarea if location.subarea else location.area
-        pretty_target = target.replace("_", " ")
-        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
-
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         return result, "arrived to:" + command.location_to_go
 
@@ -110,6 +107,7 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = PickObject(**command)
 
+        self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
         self.subtask_manager.manipulation.move_to_position("table_stare")
         self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
 
@@ -281,7 +279,7 @@ class GPSRSingleTask(GenericTask):
             last_command = history[0]
             s, answer = self.subtask_manager.hri.answer_with_context(
                 command.user_instruction,
-                f"Result of executing {context} function on the context provided: {last_command.result}. Status: {last_command.status}",
+                f"Result of executing {context} function on the context provided: {last_command.result}.",
             )
             self.subtask_manager.hri.say(answer, wait=True)
             return Status.EXECUTION_SUCCESS, "success"
@@ -377,4 +375,10 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = GetVisualInfo(**command)
 
-        return self.subtask_manager.vision.visual_info(command.measure, command.object_category)
+        status, result = self.subtask_manager.vision.visual_info(
+            command.measure, command.object_category
+        )
+
+        self.subtask_manager.hri.say(f"{result}", wait=False)
+
+        return status, result
