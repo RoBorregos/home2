@@ -28,7 +28,19 @@ from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
 NAV_GOAL_TIMEOUT = 90.0
-ADAPTIVE_BT = "navigate_adaptive_goal.xml"
+
+def _get_adaptive_bt_path():
+    """Get the full installed path for the adaptive behavior tree."""
+    try:
+        from ament_index_python.packages import get_package_share_directory
+        import os
+        return os.path.join(
+            get_package_share_directory('nav_main'), 'bt', 'navigate_adaptive_goal.xml'
+        )
+    except Exception:
+        return ""
+
+ADAPTIVE_BT = _get_adaptive_bt_path()
 
 
 class NavigationTasks:
