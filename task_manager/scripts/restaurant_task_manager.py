@@ -3,6 +3,7 @@
 """
 Task Manager for Restaurant task of Robocup @Home 2026
 """
+import math
 import rclpy
 from rclpy.node import Node
 
@@ -21,6 +22,8 @@ ATTEMPT_LIMIT = 3
 # Progressive customer search parameters
 SEARCH_STEP_SIZE = 0.5  # meters between each search position
 MAX_SEARCH_STEPS = 10  # total steps before returning to bar (~5 m coverage)
+CUSTOMER_CLOSE_DISTANCE = 3.0  # meters — re-approach if customer is farther than this
+MAX_APPROACH_RETRIES = 3  # max re-detection + approach attempts
 
 
 class RestaurantTaskManager(Node):
@@ -60,6 +63,7 @@ class RestaurantTaskManager(Node):
 
         # Progressive search state
         self.search_step = 0
+        self.approach_attempts = 0
 
         # Bar position saved at START via TF
         self.bar_pose = None
@@ -221,19 +225,43 @@ class RestaurantTaskManager(Node):
                 self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
                 return
 
-            Logger.state(self, "Navigating to detected customer position...")
+            Logger.state(self, f"Navigating to customer (attempt {self.approach_attempts + 1}/{MAX_APPROACH_RETRIES})...")
             status, _ = self.subtask_manager.nav.move_to_point(point=self.target_person_point)
+
             if status == Status.EXECUTION_SUCCESS:
-                Logger.success(self, "Arrived near tables for detection.")
+                # Re-detect customer to check if we're actually close enough
+                Logger.info(self, "Arrived at goal. Re-checking customer distance...")
+                re_status, re_point = self.subtask_manager.vision.get_customer()
+
+                if re_status == Status.EXECUTION_SUCCESS and re_point.header.frame_id != "":
+                    # Camera frame: z = depth (forward distance)
+                    camera_dist = math.sqrt(
+                        re_point.point.x ** 2 + re_point.point.y ** 2 + re_point.point.z ** 2
+                    )
+                    Logger.info(self, f"Customer re-detected at {camera_dist:.2f}m from camera")
+
+                    if camera_dist > CUSTOMER_CLOSE_DISTANCE and self.approach_attempts < MAX_APPROACH_RETRIES:
+                        # Still too far — update target and approach again
+                        self.approach_attempts += 1
+                        self.target_person_point = re_point
+                        Logger.info(self, f"Customer still {camera_dist:.2f}m away, approaching again...")
+                        return  # re-enter MOVE_TO_TABLES_AREA on next loop
+                    else:
+                        Logger.success(self, "Close enough for table detection.")
+                else:
+                    Logger.info(self, "Customer not re-detected, proceeding to table scan.")
+
+                self.approach_attempts = 0
                 self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
             else:
                 Logger.warn(self, "Navigation to customer failed. Returning to WAIT_FOR_CALL.")
+                self.approach_attempts = 0
                 self.target_person_point = None
                 self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
 
         if self.current_state == RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS:
             Logger.state(self, "Performing full table scan...")
-            self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
+            self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
             status, customer_tables = self.subtask_manager.vision.customer_tables()
             self.subtask_manager.hri.publish_display_topic(RESTAURANT_TABLES_TOPIC)
 

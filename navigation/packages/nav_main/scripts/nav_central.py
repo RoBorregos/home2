@@ -475,9 +475,9 @@ class Nav_Central(Node):
             response.error = "Navigation not ready"
             return response
 
-        # In mapping mode: keep SLAM and Nav2 active to continue building the map
-        if not self.mapping:
-            self.resume_slam()
+        # Resume SLAM and Nav2 for navigation (paused between goals to save CPU)
+        self.resume_slam()
+        if self.use_nav2:
             self.resume_nav2()
 
         if self.nav2_paused:
@@ -573,9 +573,8 @@ class Nav_Central(Node):
         response.success = result[0]
         response.error = result[1]
 
-        if not self.mapping:
-            self.pause_slam()
-            self.pause_nav2()
+        # Pause SLAM after navigation to reduce CPU and improve map quality
+        self.pause_slam()
 
         return response
 
