@@ -1,0 +1,6 @@
+image: lobby map.pgm
+resolution: 0.05000000074505806
+origin: [-3.576772, -6.884186, 0.0]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.25
