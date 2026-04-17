@@ -510,6 +510,28 @@ class Nav_Central(Node):
         # Flatten to 2D navigation (z=0)
         target_pose.pose.position.z = 0.0
 
+        # In mapping mode, the map grows incrementally — clamp far goals
+        # to a reachable distance and approach in steps
+        MAX_GOAL_DISTANCE = 2.0  # meters — stay within mapped area
+        try:
+            robot_tf = self.tf_buffer.lookup_transform(
+                'map', 'base_link', rclpy.time.Time(), timeout=Duration(seconds=1.0)
+            )
+            rx = robot_tf.transform.translation.x
+            ry = robot_tf.transform.translation.y
+            dx = target_pose.pose.position.x - rx
+            dy = target_pose.pose.position.y - ry
+            dist = math.sqrt(dx * dx + dy * dy)
+            if dist > MAX_GOAL_DISTANCE:
+                scale = MAX_GOAL_DISTANCE / dist
+                target_pose.pose.position.x = rx + dx * scale
+                target_pose.pose.position.y = ry + dy * scale
+                self.nav_logger("info",
+                    f"GoToPose -> Clamped goal from {dist:.2f}m to {MAX_GOAL_DISTANCE}m: "
+                    f"({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f})")
+        except Exception as e:
+            self.nav_logger("warn", f"GoToPose -> Could not clamp distance: {e}")
+
         bt = request.behavior_tree if request.behavior_tree else None
         result = self.send_nav_goal(target_pose, bt)
         response.success = result[0]
