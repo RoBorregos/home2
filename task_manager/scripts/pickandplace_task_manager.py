@@ -116,7 +116,7 @@ class PickAndPlaceTM(Node):
         # ==========================================================
         # COMPETITION CONFIG — adjust before each run
         # ==========================================================
-        self.trash_category = "trash/*"  # announced during Setup Days   (TOCOO  bebidas)
+        self.trash_category = "napkin"  # announced during Setup Days
         self.use_dishwasher = False  # cutlery/tableware → dishwasher
         self.use_side_table = False  # pick from side table (−20 pts/obj)
         self.max_cleanup_objects = 3  # how many to clean before breakfast
