@@ -212,6 +212,14 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "house.xacro",
         )
     )
+    additional_files.append(
+        os.path.join(
+            get_package_share_directory("frida_description"),
+            "urdf",
+            "TMR2025",
+            "table_and_object.xacro",
+        )
+    )
     robot_description = moveit_config.robot_description
     # Define the xacro2mjcf node, this translates the xacro urdf into MJFL
     # print(robot_description['robot_description'])
@@ -239,12 +247,42 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ],
     )
 
+    # Remap MuJoCo camera topics to match the real ZED wrapper namespace so
+    # perception nodes (object_detector_2d, etc.) work on sim without any
+    # topic rewrites.
+    zed_topic_remappings = [
+        (
+            "/zed_mujoco_camera_link/color/image_raw",
+            "/zed/zed_node/rgb/image_rect_color",
+        ),
+        (
+            "/zed_mujoco_camera_link/color/camera_info",
+            "/zed/zed_node/rgb/camera_info",
+        ),
+        (
+            "/zed_mujoco_camera_link/depth/image_rect_raw",
+            "/zed/zed_node/depth/depth_registered",
+        ),
+        (
+            "/zed_mujoco_camera_link/depth/camera_info",
+            "/zed/zed_node/depth/camera_info",
+        ),
+        (
+            "/zed_mujoco_camera_link/depth/points",
+            "/zed/zed_node/point_cloud/cloud_registered",
+        ),
+    ]
+
     mujoco = Node(
         package="mujoco_ros2_control",
         executable="mujoco_ros2_control",
         parameters=[
             robot_description,
             "/tmp/final_frida.yaml",
+            # Sim ZED sizing + rate (HD720 @ 15 Hz). The params live on the
+            # zed_mujoco_camera_link subnode created by the plugin, so they
+            # are applied via a file targeted at that exact node name.
+            "/workspace/src/docker/manipulation/zed_sim_camera.yaml",
             {"simulation_frequency": 500.0},
             {"realtime_factor": 1.0},
             {"robot_model_path": save_xml_file},
@@ -252,7 +290,37 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ],
         remappings=[
             ("/controller_manager/robot_description", "/robot_description"),
+        ]
+        + zed_topic_remappings,
+    )
+
+    # Alias the MuJoCo camera body frame as zed_left_camera_optical_frame so the
+    # TF lookups the perception nodes do on the real robot also resolve in sim.
+    zed_optical_frame_tf = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="zed_optical_frame_tf",
+        arguments=[
+            "--x",
+            "0",
+            "--y",
+            "0",
+            "--z",
+            "0",
+            "--qx",
+            "0",
+            "--qy",
+            "0",
+            "--qz",
+            "0",
+            "--qw",
+            "1",
+            "--frame-id",
+            "zed",
+            "--child-frame-id",
+            "zed_left_camera_optical_frame",
         ],
+        parameters=[{"use_sim_time": use_sim_time}],
     )
 
     ##Start simulation after xacro2mjcf has had time to write the xml.
@@ -338,6 +406,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         start_mujoco,
         load_controllers,
         robot_moveit_common_launch,
+        zed_optical_frame_tf,
     ]
 
 

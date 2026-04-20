@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="table_and_object">
+
+  <!-- =====================================================================
+       Standalone test fixture for manipulation sim:
+         - static brown table centered 0.55 m in front of FRIDA's base_link
+         - dynamic green 5 cm cube sitting on top of the table
+       Both are independent of the house scene and easy to tweak.
+       ===================================================================== -->
+
+  <link name="world"/>
+
+  <!-- ============ TABLE ============ -->
+  <!-- 60 cm x 60 cm top, 70 cm tall, centered at (0.55, 0, 0.35).
+       Mass only matters for inertia consistency — fixed joint makes it static. -->
+  <link name="table_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.6 0.6 0.7"/>
+      </geometry>
+      <material name="table_wood">
+        <color rgba="0.55 0.35 0.18 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.6 0.6 0.7"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="10.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.45" ixy="0" ixz="0" iyy="0.45" iyz="0" izz="0.6"/>
+    </inertial>
+  </link>
+
+  <joint name="world_to_table" type="fixed">
+    <parent link="world"/>
+    <child link="table_link"/>
+    <!-- 0.55 m forward of world origin. Table top at z = 0.35 + 0.35 = 0.7 m. -->
+    <origin xyz="0.55 0 0.35" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ============ CUBE (pickable) ============ -->
+  <!-- 5 cm side, 100 g, sitting on the table.
+       Floating joint -> MuJoCo free joint, so it falls/moves with physics. -->
+  <link name="cube_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+      <material name="cube_green">
+        <color rgba="0.2 0.8 0.2 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.1"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <!-- Solid cube inertia: (1/12)*m*(a^2 + b^2) = (1/12)*0.1*0.005 = 4.17e-5 -->
+      <inertia ixx="4.17e-5" ixy="0" ixz="0" iyy="4.17e-5" iyz="0" izz="4.17e-5"/>
+    </inertial>
+  </link>
+
+  <joint name="world_to_cube" type="floating">
+    <parent link="world"/>
+    <child link="cube_link"/>
+    <!-- Start sitting on the table top (0.7 m) + half the cube (0.025 m).
+         Tiny forward bias so the cube isn't exactly at the table center. -->
+    <origin xyz="0.55 0 0.73" rpy="0 0 0"/>
+  </joint>
+
+</robot>
