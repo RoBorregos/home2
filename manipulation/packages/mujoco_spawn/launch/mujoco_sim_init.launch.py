@@ -2,13 +2,23 @@ from launch import LaunchDescription, LaunchContext
 import os
 import yaml
 from ament_index_python import get_package_share_directory
-from launch.launch_description_sources import PythonLaunchDescriptionSource, load_python_launch_file_as_module
+from launch.launch_description_sources import (
+    PythonLaunchDescriptionSource,
+    load_python_launch_file_as_module,
+)
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from launch.event_handlers import OnProcessExit, OnProcessStart
-from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, LogInfo, TimerAction
+from launch.event_handlers import OnProcessStart
+from launch.actions import (
+    IncludeLaunchDescription,
+    OpaqueFunction,
+    RegisterEventHandler,
+    LogInfo,
+    TimerAction,
+)
 from arm_pkg.moveit_configs_builder_sim import MoveItConfigsBuilder
+
 
 def generate_nodes_for_spawn(context: LaunchContext):
     ##Arguments for xacro and moveit:
@@ -19,7 +29,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
     effort_control = LaunchConfiguration("effort_control", default=False)
     velocity_control = LaunchConfiguration("velocity_control", default=False)
     add_gripper = LaunchConfiguration("add_gripper", default=False)
-    load_zed = LaunchConfiguration("load_zed", default=False)
     add_vacuum_gripper = LaunchConfiguration("add_vacuum_gripper", default=False)
     add_bio_gripper = LaunchConfiguration("add_bio_gripper", default=False)
     dof = LaunchConfiguration("dof", default=6)
@@ -44,7 +53,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
     robot_sn = LaunchConfiguration("robot_sn", default="")
     attach_xyz = LaunchConfiguration("attach_xyz", default='"0 0 0"')
     attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 0"')
-    mujoco_plugin = LaunchConfiguration("mujoco_plugin", default=True)
 
     add_other_geometry = LaunchConfiguration("add_other_geometry", default=False)
     geometry_type = LaunchConfiguration("geometry_type", default="box")
@@ -68,7 +76,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
     )
     kinematics_suffix = LaunchConfiguration("kinematics_suffix", default="")
 
-    load_controller = LaunchConfiguration("load_controller", default=True)
     show_rviz = LaunchConfiguration("show_rviz", default=True)
     no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
 
@@ -80,13 +87,13 @@ def generate_nodes_for_spawn(context: LaunchContext):
 
     ros_namespace = LaunchConfiguration("ros_namespace", default="").perform(context)
 
-        ##place to save the xml generated file:
+    ##place to save the xml generated file:
     save_xml_folder = "/tmp/mujoco"  # Must be absolute path
     os.makedirs(save_xml_folder, exist_ok=True)
     save_xml_file = os.path.join(save_xml_folder, "main.xml")
 
     # Start of opperation--
-    # ros2 control params 
+    # ros2 control params
     # xarm_controller/launch/lib/robot_controller_lib.py
     mod = load_python_launch_file_as_module(
         os.path.join(
@@ -133,8 +140,8 @@ def generate_nodes_for_spawn(context: LaunchContext):
     moveit_config = MoveItConfigsBuilder(
         context=context,
         # controllers_name=controllers_name, # Que carajo?
-        dof=dof,    
-        controllers_name = "fake_controllers",
+        dof=dof,
+        controllers_name="fake_controllers",
         robot_type=robot_type,
         prefix=prefix,
         hw_ns=hw_ns,
@@ -169,7 +176,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
         geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
     ).to_moveit_configs()
 
-
     robot_moveit_common_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -188,10 +194,9 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "no_gui_ctrl": no_gui_ctrl,
             "show_rviz": show_rviz,
             "use_sim_time": use_sim_time,
-            "moveit_config_dump": yaml.dump(moveit_config.to_dict())
+            "moveit_config_dump": yaml.dump(moveit_config.to_dict()),
         }.items(),
     )
-
 
     additional_files = []
     additional_files.append(
@@ -215,11 +220,9 @@ def generate_nodes_for_spawn(context: LaunchContext):
         executable="xacro2mjcf.py",
         parameters=[
             {
-                "robot_descriptions": [robot_description['robot_description']]
+                "robot_descriptions": [robot_description["robot_description"]]
             },  # Robot descriptions of actuated robots
-            {
-                "input_files": additional_files
-            },  
+            {"input_files": additional_files},
             {"output_file": save_xml_file},  # Mujoco output file
             {"mujoco_files_path": save_xml_folder},  # Mujoco project folder
         ],
@@ -277,7 +280,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ],
     )
 
-
     # Custom gripper (xarm_gripper_traj_controller) comes from custom_gripper_controllers.yaml
     # and is always loaded alongside the mujoco bridge. bio_gripper is the only real alternative.
     controllers = [
@@ -291,7 +293,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
         controllers.append(
             "{}bio_gripper_traj_controller".format(prefix.perform(context))
         )
-
 
     # Load controllers
     controller_nodes = []
