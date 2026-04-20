@@ -296,6 +296,11 @@ def generate_nodes_for_spawn(context: LaunchContext):
 
     # Alias the MuJoCo camera body frame as zed_left_camera_optical_frame so the
     # TF lookups the perception nodes do on the real robot also resolve in sim.
+    # The quaternion (-0.5, 0.5, -0.5, 0.5) is the ROS-standard rotation that
+    # maps a camera body frame (x-forward, y-left, z-up) into the optical frame
+    # convention used by image pipelines (x-right, y-down, z-forward). Without
+    # it the 3D points the detector emits in 'zed_left_camera_optical_frame'
+    # land ~1.3 m off when transformed to base_link.
     zed_optical_frame_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -308,13 +313,13 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "--z",
             "0",
             "--qx",
-            "0",
+            "-0.5",
             "--qy",
-            "0",
+            "0.5",
             "--qz",
-            "0",
+            "-0.5",
             "--qw",
-            "1",
+            "0.5",
             "--frame-id",
             "zed",
             "--child-frame-id",
