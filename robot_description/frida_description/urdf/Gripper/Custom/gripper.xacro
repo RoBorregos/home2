@@ -107,7 +107,10 @@
         <joint name="gripper_mimic_joint" joint1= "leftfinger" joint2="rightfinger" polycoef="0 1 0 0"/>
       </equality>
       <actuator>
-        <position name="finger_actuator_position" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kp ="50"/>
+        <!-- kv adds velocity damping to the position actuator so the finger
+             does not bounce/oscillate around the target (the equality
+             constraint that mimics leftfinger is also underdamped without it). -->
+        <position name="finger_actuator_position" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kp ="50" kv="5"/>
         <!-- <velocity name="finger_actuator_velocity" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kv ="8"/> -->
       </actuator>
     </mujoco>
