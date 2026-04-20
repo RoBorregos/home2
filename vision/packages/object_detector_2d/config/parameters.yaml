@@ -21,4 +21,7 @@
     FLIP_IMAGE :  False
     USE_ZED_TRANSFORM : False
     MIN_SCORE_THRESH :  0.3
+    # Zero-shot text prompts. Used by zero_shot_object_detector_node.py.
+    # Keep "cube" + generic RoboCup objects so the sim fixture is detected.
+    CLASSES : ["green cube", "cube", "box", "bowl", "cup", "bottle"]
 

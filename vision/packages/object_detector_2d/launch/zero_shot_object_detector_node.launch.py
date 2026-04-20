@@ -8,7 +8,9 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     config = os.path.join(
-        get_package_share_directory("object_detector_2d"), "config", "parameters.yaml"
+        get_package_share_directory("object_detector_2d"),
+        "config",
+        "parameters_zero_shot.yaml",
     )
     handler_launch_file = os.path.join(
         get_package_share_directory("object_detection_handler"),

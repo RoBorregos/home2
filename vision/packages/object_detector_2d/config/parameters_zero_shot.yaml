@@ -1,0 +1,27 @@
+/**:
+  ros__parameters:
+    RGB_IMAGE_TOPIC : /zed/zed_node/rgb/image_rect_color
+    DEPTH_IMAGE_TOPIC :  /zed/zed_node/depth/depth_registered
+    CAMERA_INFO_TOPIC :  /zed/zed_node/depth/camera_info
+    DETECTIONS_TOPIC : /vision/zero_shot_detections
+    ZERO_SHOT_DETECTIONS_TOPIC : /vision/zero_shot_detections
+    DETECTIONS_IMAGE_TOPIC : /vision/zero_shot_detections_image
+    DETECTIONS_POSES_TOPIC : /vision/zero_shot_detection_poses
+    DETECTIONS_3D_TOPIC : /vision/zero_shot_detections_3d
+    DETECTIONS_ACTIVE_TOPIC : /vision/zero_shot_detections_active
+    DEBUG_IMAGE_TOPIC : /vision/zero_shot_debug_image
+    CAMERA_FRAME :  zed_left_camera_optical_frame
+    TARGET_FRAME :  base_link
+    # YOLOe (text-prompt) model; ultralytics auto-downloads on first load.
+    YOLO_MODEL_PATH : yoloe-11l-seg.pt
+    USE_ACTIVE_FLAG : False
+    DEPTH_ACTIVE : True
+    VERBOSE : False
+    USE_YOLO8 : False
+    FLIP_IMAGE : False
+    USE_ZED_TRANSFORM : False
+    MIN_SCORE_THRESH : 0.05
+    # Text prompts for what to detect. Keep the sim cube class at the top
+    # so it's detected by default in the manipulation fixture.
+    CLASSES : ["green cube", "green block", "cube", "block", "box", "object on table"]
+    SET_DETECTOR_CLASSES_SERVICE : /vision/set_detector_classes

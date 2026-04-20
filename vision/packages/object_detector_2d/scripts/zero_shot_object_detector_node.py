@@ -102,6 +102,11 @@ class zero_shot_object_detector_node(object_detector_node):
         self.handlePublishers()
         self.handleServices()
         self.runThread = None
+        # Bypass super().__init__ (parent is the regular detector), so the
+        # frame-skip bookkeeping fields that rgbImageCallback reads are never
+        # created. Mirror them here so the shared callback doesn't crash.
+        self._frame_count = 0
+        self._skip_frames = 2
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
