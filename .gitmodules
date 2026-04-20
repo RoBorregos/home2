@@ -22,4 +22,5 @@
 [submodule "manipulation/packages/mujoco_ros2_control"]
 	path = manipulation/packages/mujoco_ros2_control
 	url = https://github.com/RoBorregos/mujoco_ros2_control
+	branch = mujoco_servicios_estable
 
