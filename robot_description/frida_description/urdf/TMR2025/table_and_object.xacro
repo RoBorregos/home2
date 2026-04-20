@@ -50,7 +50,7 @@
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.05 0.05 0.05"/>
+        <box size="0.10 0.10 0.10"/>
       </geometry>
       <material name="cube_green">
         <color rgba="0.2 0.8 0.2 1"/>
@@ -59,23 +59,22 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.05 0.05 0.05"/>
+        <box size="0.10 0.10 0.10"/>
       </geometry>
     </collision>
     <inertial>
       <mass value="0.1"/>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <!-- Solid cube inertia: (1/12)*m*(a^2 + b^2) = (1/12)*0.1*0.005 = 4.17e-5 -->
-      <inertia ixx="4.17e-5" ixy="0" ixz="0" iyy="4.17e-5" iyz="0" izz="4.17e-5"/>
+      <!-- Solid cube inertia: (1/12)*m*(a^2 + b^2) = (1/12)*0.1*0.02 = 1.67e-4 -->
+      <inertia ixx="1.67e-4" ixy="0" ixz="0" iyy="1.67e-4" iyz="0" izz="1.67e-4"/>
     </inertial>
   </link>
 
   <joint name="world_to_cube" type="floating">
     <parent link="world"/>
     <child link="cube_link"/>
-    <!-- Start sitting on the table top (0.7 m) + half the cube (0.025 m).
-         Tiny forward bias so the cube isn't exactly at the table center. -->
-    <origin xyz="0.55 0 0.73" rpy="0 0 0"/>
+    <!-- Start sitting on the table top (0.7 m) + half the cube (0.05 m). -->
+    <origin xyz="0.55 0 0.75" rpy="0 0 0"/>
   </joint>
 
 </robot>
