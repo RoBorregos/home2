@@ -82,7 +82,7 @@ GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
-SIMULATION_BUILD="colcon build --packages-select mujoco_spawn mujoco_ros2_control"
+SIMULATION_BUILD="colcon build --packages-select mujoco_ros2_control && colcon build --symlink-install --packages-select mujoco_spawn"
 
 
 if [ "$BUILD" == "true" ]; then

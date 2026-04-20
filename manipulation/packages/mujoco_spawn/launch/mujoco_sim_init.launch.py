@@ -7,7 +7,7 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.event_handlers import OnProcessExit, OnProcessStart
-from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, LogInfo
+from launch.actions import IncludeLaunchDescription, OpaqueFunction, RegisterEventHandler, LogInfo, TimerAction
 from arm_pkg.moveit_configs_builder_sim import MoveItConfigsBuilder
 
 def generate_nodes_for_spawn(context: LaunchContext):
@@ -228,7 +228,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         package="robot_state_publisher",
         executable="robot_state_publisher",
         output="screen",
-        parameters=[use_sim_time, robot_description],
+        parameters=[{"use_sim_time": use_sim_time}, robot_description],
         remappings=[
             ("/tf", "tf"),
             ("/tf_static", "tf_static"),
@@ -251,15 +251,16 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ],
     )
 
-    ##Start simulation only after the creation of the xacrofile
-    start_mujoco = RegisterEventHandler(
-        OnProcessExit(
-            target_action=xacro2mjcf,
-            on_exit=[
-                LogInfo(msg="Created mujoco xml, starting mujoco node..."),
-                mujoco,
-            ],
-        )
+    ##Start simulation after xacro2mjcf has had time to write the xml.
+    ##We can't rely on OnProcessExit: xacro2mjcf.py calls exit(0) without a full
+    ##rclpy.shutdown(), so rclpy background threads keep the OS process alive
+    ##and the exit signal never reaches launch.
+    start_mujoco = TimerAction(
+        period=5.0,
+        actions=[
+            LogInfo(msg="Starting mujoco node..."),
+            mujoco,
+        ],
     )
 
     # Load controllers
@@ -276,17 +277,13 @@ def generate_nodes_for_spawn(context: LaunchContext):
     )
 
 
-    controllers = ["{}{}_traj_controller".format(prefix.perform(context), xarm_type), "xarm_gripper_traj_controller"]
+    # Custom gripper (xarm_gripper_traj_controller) comes from custom_gripper_controllers.yaml
+    # and is always loaded alongside the mujoco bridge. bio_gripper is the only real alternative.
+    controllers = [
+        "{}{}_traj_controller".format(prefix.perform(context), xarm_type),
+        "xarm_gripper_traj_controller",
+    ]
     if (
-        add_gripper.perform(context) in ("True", "true")
-        and robot_type.perform(context) != "lite"
-    ):
-        controllers.append(
-            "{}{}_gripper_traj_controller".format(
-                prefix.perform(context), robot_type.perform(context)
-            )
-        )
-    elif (
         add_bio_gripper.perform(context) in ("True", "true")
         and robot_type.perform(context) != "lite"
     ):
@@ -315,21 +312,31 @@ def generate_nodes_for_spawn(context: LaunchContext):
         package="mujoco_spawn", executable="Xarm_gripper_mujoco_bridge", output="screen"
     )
 
-    ##load after mujoco start
+    ##load after mujoco start, with a short delay so the controller_manager
+    ##has time to register the MujocoSystem hardware interface before spawners hit it.
+    delayed_controllers = TimerAction(
+        period=2.0,
+        actions=[
+            LogInfo(msg="Starting controllers..."),
+            joint_state_broadcaster,
+            *controller_nodes,
+            load_gripper_bridge,
+        ],
+    )
     load_controllers = RegisterEventHandler(
         OnProcessStart(
             target_action=mujoco,
-            on_start=[
-                LogInfo(msg="Starting controllers..."),
-                *controller_nodes,
-                load_gripper_bridge,
-                joint_state_broadcaster
-                # motion_planning_server
-            ],
+            on_start=[delayed_controllers],
         )
     )
 
-    return [robot_state_publisher, xacro2mjcf, start_mujoco, load_controllers, joint_state_publisher_node, robot_moveit_common_launch, ros2_control_launch]
+    return [
+        robot_state_publisher,
+        xacro2mjcf,
+        start_mujoco,
+        load_controllers,
+        robot_moveit_common_launch,
+    ]
 
 
 def generate_launch_description():

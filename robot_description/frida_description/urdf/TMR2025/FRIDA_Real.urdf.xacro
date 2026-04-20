@@ -45,9 +45,24 @@
   <!-- ROBOT COMPONENTS -->
   <xacro:include filename="robot_real.xacro"/>
   <!-- MUJOCO PARAMS -->
+  <!-- gravcomp mirrors the xarm6 firmware's internal gravity compensation:
+       the real servos hold pose against gravity on their own, so the sim does the same.
+       Applied only on arm+gripper bodies so world objects still fall realistically. -->
   <xacro:if value="$(arg mujoco_plugin)">
     <mujoco>
       <compiler angle="radian" balanceinertia="true" autolimits="true"/>
+      <reference name="link1"><body gravcomp="1"/></reference>
+      <reference name="link2"><body gravcomp="1"/></reference>
+      <reference name="link3"><body gravcomp="1"/></reference>
+      <reference name="link4"><body gravcomp="1"/></reference>
+      <reference name="link5"><body gravcomp="1"/></reference>
+      <reference name="link6"><body gravcomp="1"/></reference>
+      <reference name="link_eef"><body gravcomp="1"/></reference>
+      <reference name="gripper"><body gravcomp="1"/></reference>
+      <reference name="right_finger"><body gravcomp="1"/></reference>
+      <reference name="left_finger"><body gravcomp="1"/></reference>
+      <reference name="zed"><body gravcomp="1"/></reference>
+      <reference name="zed_camera_link"><body gravcomp="1"/></reference>
     </mujoco>
   </xacro:if>
   <link name="world" />
