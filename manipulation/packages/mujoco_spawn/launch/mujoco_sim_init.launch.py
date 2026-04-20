@@ -182,6 +182,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ),
         launch_arguments={
             "prefix": prefix,
+            "attach_to": attach_to,
             "attach_xyz": attach_xyz,
             "attach_rpy": attach_rpy,
             "no_gui_ctrl": no_gui_ctrl,
