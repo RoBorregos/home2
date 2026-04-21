@@ -166,22 +166,14 @@ class GPSRTask(GenericTask):
                 f"I'm sorry, I can't follow you, but I'll go to the {command.destination}",
             )
 
-        # infer location from the response
-        # go to
-        self.subtask_manager.hri.node.get_logger().info("arm to move")
+        location = self.subtask_manager.hri.query_location(loc)[0]
 
-        self.subtask_manager.manipulation.move_to_position("nav_pose")
-        location = self.subtask_manager.hri.query_location(loc)
-        self.subtask_manager.hri.node.get_logger().info("query location")
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
-        if len(location) > 0:
-            area = location[0].area
-            subarea = location[0].subarea
-            self.navigate_to(area, subarea, say=True)
-            return Status.EXECUTION_SUCCESS, "arrived to " + loc
-        else:
-            self.subtask_manager.hri.say(f"I am sorry, I do not know where {loc} is.")
-            return Status.EXECUTION_ERROR, "location not found"
+        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        return result, "arrived to:" + command.destination
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
@@ -216,22 +208,12 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = GuidePersonTo(**command)
 
-        location = self.subtask_manager.hri.query_location(command.destination_room)
-        area = self.subtask_manager.hri.get_area(location)
-        self.subtask_manager.hri.node.get_logger().info(f"Initial area: {area}.")
-
-        if isinstance(area, list):
-            area = area[0]
-
-        subarea = self.subtask_manager.hri.get_subarea(location)
-
-        if isinstance(subarea, list):
-            if len(subarea) == 0:
-                subarea = ""
-            else:
-                subarea = subarea[0]
-
-        self.navigate_to(area, subarea)
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        location = self.subtask_manager.hri.query_location(command.destination_room)[0]
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now we will go to the {pretty_target}.", wait=False)
+        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
 
         self.subtask_manager.hri.say(f"We have arrived to {command.destination_room}!", wait=True)
         return Status.EXECUTION_SUCCESS, "arrived to " + command.destination_room
@@ -484,7 +466,7 @@ class GPSRTask(GenericTask):
 
     def find_person(self, command: FindPersonByName):
         if isinstance(command, dict):
-            command = Count(**command)
+            command = FindPersonByName(**command)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
@@ -605,11 +587,13 @@ class GPSRTask(GenericTask):
                     question="Can you please tell me your name?",
                     query="name",
                     use_hotwords=False,
+                    hotwords=command.name,
                 )
+                new_name = self.subtask_manager.hri.remove_punctuation(new_name)
                 self.subtask_manager.vision.save_face_name(new_name)
                 name = new_name
 
-            if name == command.name:
+            if name == self.subtask_manager.hri.remove_punctuation(command.name):
                 self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
                 return Status.EXECUTION_SUCCESS, f"found {name}"
             else:

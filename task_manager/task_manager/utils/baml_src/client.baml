@@ -29,7 +29,7 @@ client<llm> QWEN3_0_6B {
 client<llm> LOCAL_FINETUNED_NEW { 
   provider "openai-generic"
   options {
-    base_url "http://localhost:11434/v1"
+    base_url "http://192.168.31.228:11434/v1"
     model "rbrgs:latest"
     max_tokens 4096
   }

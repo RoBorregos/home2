@@ -14,7 +14,7 @@ from rclpy.node import Node
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
-# from subtask_managers.gpsr_test_commands import get_gpsr_comands
+# from task_manager.subtask_managers.gpsr_test_commands import get_gpsr_comands
 from task_manager.utils.baml_client.types import CommandListLLM
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
@@ -155,7 +155,7 @@ class GPSRTM(Node):
             if self.executed_commands >= MAX_COMMANDS:
                 self.current_state = GPSRTM.TaskStates.DONE
                 return
-            say_time = 5
+            say_time = 15
             start_time = time.time()
             self.subtask_manager.hri.reset_task_status()
             while not self.subtask_manager.hri.start_button_clicked:
