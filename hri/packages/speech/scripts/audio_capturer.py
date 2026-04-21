@@ -11,7 +11,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from frida_interfaces.msg import AudioData
-from frida_constants.hri_constants import DOA_TOPIC, DOA_TIMER
+from frida_constants.hri_constants import DOA_TOPIC, DOA_TIMER, DOA_OFFSET
 from std_msgs.msg import Int16
 
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
@@ -79,10 +79,18 @@ class AudioCapturer(Node):
         self.get_logger().info("AudioCapturer node initialized.")
 
     def _publish_doa(self):
+        """Read raw DOA, remap to robot frame, and publish.
+
+        Raw ReSpeaker: 0°=MIC1 (right side), clockwise 0-359.
+        After offset: 0°=front, negative=left, positive=right (-180 to +180).
+        """
         if self.tuning:
             try:
-                angle = self.tuning.direction
-                self.doa_publisher.publish(Int16(data=int(angle)))
+                raw = self.tuning.direction
+                remapped = (raw - DOA_OFFSET) % 360
+                if remapped > 180:
+                    remapped -= 360
+                self.doa_publisher.publish(Int16(data=int(remapped)))
             except Exception as e:
                 self.get_logger().warn(f"DOA read error: {e}")
 

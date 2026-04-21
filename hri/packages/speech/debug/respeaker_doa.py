@@ -126,6 +126,11 @@ PARAMETERS = {
 RESPEAKER_VID = 0x2886
 RESPEAKER_PID = 0x0018
 
+# Offset so that "front of robot" = 0°. Adjust this if the ReSpeaker is mounted differently.
+# Raw ReSpeaker: 0° = MIC1 (right side of robot), clockwise.
+# After offset: 0° = front, negative = left, positive = right.
+DOA_OFFSET = 90
+
 
 # ── Minimal Tuning class (self-contained, no external import) ─────────
 
@@ -246,28 +251,61 @@ def dump_params(tuning):
             print(f"{name:<26} {'ERROR':>10}  {e}")
 
 
+def remap_angle(raw_angle):
+    """Remap raw ReSpeaker angle to robot frame.
+
+    Returns angle in -180..+180 where 0=front, negative=left, positive=right.
+    """
+    remapped = (raw_angle - DOA_OFFSET) % 360
+    if remapped > 180:
+        remapped -= 360
+    return remapped
+
+
+def robot_direction(remapped):
+    """Return a human label for the remapped robot-frame angle."""
+    if abs(remapped) <= 15:
+        return "FRONT"
+    elif remapped < -15 and remapped >= -75:
+        return "F-LEFT"
+    elif remapped < -75 and remapped >= -120:
+        return "LEFT"
+    elif remapped < -120:
+        return "BEHIND-L"
+    elif remapped > 15 and remapped <= 75:
+        return "F-RIGHT"
+    elif remapped > 75 and remapped <= 120:
+        return "RIGHT"
+    else:
+        return "BEHIND-R"
+
+
 def live_doa(tuning, rate):
-    print("Listening for direction of arrival  (Ctrl+C to stop)\n")
+    print("Listening for direction of arrival  (Ctrl+C to stop)")
+    print(f"DOA_OFFSET = {DOA_OFFSET}° (raw MIC1=0° -> front=0°)\n")
     print(
-        f"{'Time':>8}  {'Angle':>5}  {'Dir':>3}  {'Mic':>4}  {'Voice':>5}  {'Speech':>6}  Compass"
+        f"{'Time':>8}  {'Raw':>5}  {'Robot':>6}  {'Where':<9}  {'Mic':>4}  "
+        f"{'Voice':>5}  {'Speech':>6}  Compass"
     )
-    print("-" * 75)
+    print("-" * 85)
 
     try:
         while True:
-            angle = tuning.direction
+            raw_angle = tuning.direction
+            remapped = remap_angle(raw_angle)
             voice = tuning.is_voice()
             speech = tuning.read("SPEECHDETECTED")
-            mic = closest_mic(angle)
-            direction = compass_arrow(angle)
-            bar = angle_bar(angle)
+            mic = closest_mic(raw_angle)
+            bar = angle_bar(raw_angle)
             ts = time.strftime("%H:%M:%S")
+            where = robot_direction(remapped)
 
             voice_str = "YES" if voice else "no"
             speech_str = "YES" if speech else "no"
+            sign = "+" if remapped >= 0 else ""
 
             print(
-                f"{ts:>8}  {angle:>5}°  {direction:>3}  "
+                f"{ts:>8}  {raw_angle:>4}°  {sign}{remapped:>4}°  {where:<9}  "
                 f"MIC{mic}  {voice_str:>5}  {speech_str:>6}  "
                 f"[{bar}]",
                 flush=True,
@@ -295,7 +333,16 @@ def main():
         default=0.3,
         help="Polling interval in seconds (default: 0.3).",
     )
+    parser.add_argument(
+        "--offset",
+        type=int,
+        default=DOA_OFFSET,
+        help=f"Degrees to subtract so front=0 (default: {DOA_OFFSET}).",
+    )
     args = parser.parse_args()
+
+    global DOA_OFFSET
+    DOA_OFFSET = args.offset
 
     tuning = find_respeaker()
     if tuning is None:

@@ -73,8 +73,10 @@ class KNOWLEDGE_TYPE(Enum):
     ROBORREGOS = "roborregos_knowledge"
 
 
-# Microphone
+# Microphone / DOA
 DOA_TIMER = 0.5  # seconds between DOA publishes
+DOA_OFFSET = 90  # degrees to subtract so that "front of robot" = 0°
+# ReSpeaker raw: 0° is MIC1 (right side). Subtract 90 so front = 0°, left = -90°, right = +90°
 
 # OpenWakeWord
 USE_OWW = True
