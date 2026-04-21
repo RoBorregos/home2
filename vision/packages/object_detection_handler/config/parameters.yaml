@@ -5,4 +5,8 @@ object_detection_handler:
     DETECTIONS_TOPIC : /vision/detections
     TRAGET_FRAME : BASE_LINK
     IOU_THRESHOLD : 0.95
-    RECORDED_SECONDS : 0.5
+    # Keep cached detections for 5 s. Zero-shot detector runs at ~1.6 Hz
+    # so the previous 0.5 s cache was purged between frames and made the
+    # service return 'No object detection array received yet' every time
+    # the most recent frame happened to be empty.
+    RECORDED_SECONDS : 5.0

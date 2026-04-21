@@ -259,7 +259,10 @@ class DetectionsHandlerNode : public rclcpp::Node
                                      const std::shared_ptr<frida_interfaces::srv::DetectionHandler::Response> response){
         RCLCPP_INFO(this->get_logger(), "Detection handler request received label: %s", request->label.c_str());
         if (request->label == "all" || request->label.empty()) {
-        } else if ((object_detection_vector_.empty() || umm_.empty()) && request->label != "all"){
+        } else if (umm_.empty() && request->label != "all"){
+          // The history map is the source of truth. object_detection_vector_
+          // is the latest frame's snapshot and legitimately becomes empty
+          // between detections (~0.6 s at 1.6 Hz), so don't fail on that.
           RCLCPP_INFO(this->get_logger(), "No object detection array received yet");
           response->success = false;
           return;
