@@ -49,8 +49,14 @@ case $TASK in
     "--gpsr")
         RUN="ros2 run task_manager gpsr_task_manager.py"
         ;;
+    "--restaurant")
+        RUN="ros2 run task_manager restaurant_task_manager.py"
+        ;;
     "--test-hri")
         RUN="ros2 run task_manager test_hri_manager.py"
+        ;;
+    "--ppc")
+        RUN="ros2 run task_manager pickandplace_task_manager.py"
         ;;
     *)
         RUN="bash"

@@ -1,39 +1,38 @@
-import os
-from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-# from launch.actions import IncludeLaunchDescription
-# from launch.launch_description_sources import PythonLaunchDescriptionSource
+
+import os
+from ament_index_python.packages import get_package_share_directory
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
     detector_launch_file = os.path.join(
         get_package_share_directory("object_detector_2d"),
         "launch",
-        "zero_shot_object_detector_node.launch.py",
+        "object_detector_combined.launch.py",
     )
-    print(detector_launch_file)
     return LaunchDescription(
         [
             Node(
                 package="vision_general",
-                executable="tracker_node.py",
-                name="tracker_node",
-                output="screen",
-                emulate_tty=True,
-                # parameters=[config],
-            ),
-            Node(
-                package="vision_general",
-                executable="receptionist_commands.py",
-                name="receptionist_commands",
+                executable="image_orienter.py",
+                name="image_orienter",
                 output="screen",
                 emulate_tty=True,
             ),
             Node(
                 package="vision_general",
-                executable="pointing_detection.py",
-                name="detect_pointing_object_server",
+                executable="yolo_node.py",
+                name="yolo_node",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
+                executable="restaurant_commands.py",
+                name="restaurant_commands",
                 output="screen",
                 emulate_tty=True,
             ),
@@ -44,8 +43,15 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
-            # IncludeLaunchDescription(
-            #     PythonLaunchDescriptionSource(detector_launch_file)
-            # ),
+            Node(
+                package="vision_general",
+                executable="face_recognition_node.py",
+                name="face_recognition",
+                output="screen",
+                emulate_tty=True,
+            ),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(detector_launch_file)
+            ),
         ]
     )

@@ -34,10 +34,11 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
-    FLIP_IMAGE_TOPIC,
+    CUSTOMER_TABLES_TOPIC,
+    CAMERA_ROTATION_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.msg import ObjectDetection, PersonList
+from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
     CountByColor,
@@ -54,12 +55,14 @@ from frida_interfaces.srv import (
     ShelfDetectionHandler,
     TrackBy,
     DetectHand,
+    CustomerTables,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
+from std_msgs.msg import Int16
 from std_srvs.srv import SetBool, Trigger
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
@@ -96,7 +99,7 @@ class VisionTasks:
         self.person_list = []
         self.person_name = ""
 
-        self.rotate_camera_publisher = self.node.create_publisher(BoolMsg, FLIP_IMAGE_TOPIC, 10)
+        self.rotate_camera_publisher = self.node.create_publisher(Int16, CAMERA_ROTATION_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
@@ -128,6 +131,8 @@ class VisionTasks:
         )
 
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
+
+        self.customer_table_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
 
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -199,10 +204,28 @@ class VisionTasks:
                     "client": self.count_by_color_client,
                     "type": "service",
                 },
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
             Task.STORING_GROCERIES: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
+            },
+            Task.PICK_AND_PLACE: {
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
+                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
+            },
+            Task.RESTAURANT: {
+                "customer_tables": {
+                    "client": self.customer_table_client,
+                    "type": "service",
+                },
+                "customer": {"client": self.customer_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
             Task.DEBUG: {
@@ -440,13 +463,13 @@ class VisionTasks:
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
     def detect_objects(
-        self, timeout: float = TIMEOUT, ignore_labels: list[str] = []
+        self, timeout: float = TIMEOUT, ignore_labels: list[str] = [], label: str = "all"
     ) -> tuple[Status, list[BBOX]]:
         """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
         request = DetectionHandler.Request()
         request.closest_object = False
-        request.label = "all"
+        request.label = label
         detections: list[BBOX] = []
         try:
             future = self.object_detector_client.call_async(request)
@@ -543,7 +566,10 @@ class VisionTasks:
         pass
 
     def isPerson(self, name: str = ""):
-        return self.person_name == name
+        for person in self.person_list:
+            if name == person.name:
+                return True
+        return False
 
     @mockable(return_value=True, delay=2)
     @service_check("beverage_location_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
@@ -741,16 +767,24 @@ class VisionTasks:
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 
-            if not result.found:
+            if result is None or not result.found:
                 Logger.warn(self.node, "No person found")
-                return Status.TARGET_NOT_FOUND, result.point
+                from geometry_msgs.msg import PointStamped
+
+                return Status.TARGET_NOT_FOUND, PointStamped()
 
         except Exception as e:
             Logger.error(self.node, f"Error tracking person: {e}")
-            return Status.EXECUTION_ERROR, result.point
+            from geometry_msgs.msg import PointStamped
+
+            return Status.EXECUTION_ERROR, PointStamped()
 
         Logger.success(self.node, "Person tracking success")
-        return Status.EXECUTION_SUCCESS, result.point
+        from geometry_msgs.msg import PointStamped
+
+        return Status.EXECUTION_SUCCESS, result.people.list[0].point3d if len(
+            result.people.list
+        ) > 0 else PointStamped()
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
@@ -897,16 +931,25 @@ class VisionTasks:
                 response_clean = False
         return status, response_clean
 
-    def count_objects(self, object: str):
+    def count_objects_moondream(self, object: str):
         """Count the number of objects in the image"""
         Logger.info(self.node, "Counting objects")
         prompt = f"How many {object} are in the image? Please return only a number"
         return self.moondream_query(prompt, query_person=False)
 
+    def count_objects(self, object: str) -> tuple[int, list[str]]:
+        """Detect objects and return their labels for counting"""
+        Logger.info(self.node, "Detecting objects for counting")
+        status, detections = self.detect_objects()
+        if status != Status.EXECUTION_SUCCESS:
+            return status, []
+        labels = [det.classname for det in detections]
+        return Status.EXECUTION_SUCCESS, labels
+
     def describe_person(self, callback):
         """Describe the person in the image"""
         Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses, etc."
+        prompt = "Briefly describe 4 attributes of the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses, etc. Don't mention if the person is looking directly at the camera."
         self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
@@ -1039,9 +1082,34 @@ class VisionTasks:
 
         return Status.EXECUTION_SUCCESS, location
 
-    def camera_upside_down(self, flip: bool):
-        msg = BoolMsg()
-        msg.data = flip
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
+    @service_check("customer_tables", [Status.EXECUTION_ERROR, None], TIMEOUT)
+    def customer_tables(self) -> tuple[int, list[CustomerTable]]:
+        """Detect the tables and the customers associated to them."""
+        req = CustomerTables.Request()
+        future = self.customer_table_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+        if not future.done():
+            Logger.warn(self.node, "customer_tables service call timed out")
+            return Status.EXECUTION_ERROR, []
+        result = future.result()
+        if result is None or not result.success:
+            Logger.warn(self.node, "customer_tables service call failed or returned no tables")
+            return Status.EXECUTION_ERROR, []
+        return Status.EXECUTION_SUCCESS, result.customer_tables
+
+    def camera_upside_down(self, flip):
+        """Publish the camera rotation on CAMERA_ROTATION_TOPIC.
+
+        Accepts either a bool (True -> 180, False -> 0) for backward
+        compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
+        """
+        if isinstance(flip, bool):
+            rotation = 180 if flip else 0
+        else:
+            rotation = int(flip) % 360
+        msg = Int16()
+        msg.data = rotation
         self.rotate_camera_publisher.publish(msg)
 
 
