@@ -405,6 +405,50 @@ def generate_nodes_for_spawn(context: LaunchContext):
         )
     )
 
+    # Pull in the perception + manipulation stacks with use_sim_time=true so
+    # the same launches work verbatim on the real robot (where the user runs
+    # them without the sim arg) and under /clock inside MuJoCo. Only the
+    # choice of detector (zero-shot for sim vs tmr2025 for the real robot) is
+    # sim-specific and lives here.
+    downsample_pc_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("perception_3d"),
+                    "launch",
+                    "downsample_pc.launch.py",
+                ]
+            )
+        ),
+        launch_arguments={"use_sim_time": "true"}.items(),
+    )
+
+    zero_shot_detector_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("object_detector_2d"),
+                    "launch",
+                    "zero_shot_object_detector_node.launch.py",
+                ]
+            )
+        ),
+        launch_arguments={"use_sim_time": "true"}.items(),
+    )
+
+    pick_and_place_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("pick_and_place"),
+                    "launch",
+                    "pick_and_place.launch.py",
+                ]
+            )
+        ),
+        launch_arguments={"use_sim_time": "true"}.items(),
+    )
+
     return [
         robot_state_publisher,
         xacro2mjcf,
@@ -412,6 +456,9 @@ def generate_nodes_for_spawn(context: LaunchContext):
         load_controllers,
         robot_moveit_common_launch,
         zed_optical_frame_tf,
+        downsample_pc_launch,
+        zero_shot_detector_launch,
+        pick_and_place_launch,
     ]
 
 

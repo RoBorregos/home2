@@ -2,12 +2,22 @@
 
 
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    use_sim_time = LaunchConfiguration("use_sim_time", default="false")
+    sim_time_param = {"use_sim_time": use_sim_time}
+
     return LaunchDescription(
         [
+            DeclareLaunchArgument(
+                "use_sim_time",
+                default_value="false",
+                description="Use /clock (true) for the MuJoCo sim, wall time (false) for real robot.",
+            ),
             Node(
                 package="perception_3d",
                 executable="pick_primitives",
@@ -15,7 +25,7 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 respawn=True,
-                parameters=[],
+                parameters=[sim_time_param],
             ),
             Node(
                 package="perception_3d",
@@ -24,7 +34,7 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 respawn=True,
-                parameters=[],
+                parameters=[sim_time_param],
             ),
             Node(
                 package="perception_3d",
@@ -33,7 +43,7 @@ def generate_launch_description():
                 output="screen",
                 respawn=True,
                 emulate_tty=True,
-                parameters=[{"testing": False}],
+                parameters=[{"testing": False}, sim_time_param],
             ),
         ]
     )

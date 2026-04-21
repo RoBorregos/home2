@@ -1,6 +1,5 @@
 /**:
   ros__parameters:
-    use_sim_time: true
     target_frame: "base_link"
     pcd_default_frame: "base_link"
     transform_timeout: 1.0
