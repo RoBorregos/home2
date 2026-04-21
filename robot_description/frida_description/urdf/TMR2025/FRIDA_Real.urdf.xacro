@@ -51,6 +51,21 @@
   <xacro:if value="$(arg mujoco_plugin)">
     <mujoco>
       <compiler angle="radian" balanceinertia="true" autolimits="true"/>
+      <!-- Sim-only solver tuning for reliable physics-based grasping.
+           The combination below keeps the cheap defaults where they work
+           (PGS is fine for articulated dynamics) but adds the two knobs
+           that matter for grasping stability:
+             impratio=10: tightens the friction cone so the tangential
+                friction ceiling stays proportional to normal force under
+                rapid normal-force changes.
+             noslip_iterations=5: post-solve pass that explicitly enforces
+                no-tangential-slip at each contact point.
+           The more aggressive integrator=implicit + solver=Newton +
+           cone=elliptic combo was tested but tripled the physics cost
+           and stalled the sim well below realtime so ros2_control timed
+           out, which looks externally like the pick freezing in place. -->
+      <option impratio="10"
+              noslip_iterations="5"/>
       <reference name="link1"><body gravcomp="1"/></reference>
       <reference name="link2"><body gravcomp="1"/></reference>
       <reference name="link3"><body gravcomp="1"/></reference>
@@ -65,12 +80,29 @@
       <reference name="zed_camera_link"><body gravcomp="1"/></reference>
     </mujoco>
   </xacro:if>
+  <!-- The world<->base_link offset matters for MoveIt because "world" is the
+       planning frame: the plane-collision-object added by perception_3d in
+       "base_link" gets stored by MoveIt in "world", and pick_server.check_
+       feasibility compares its z against the grasp pose (in "base_link").
+       Any non-zero offset becomes a silent frame mismatch that fails every
+       pick.  On the real robot the 0.3 m pedestal is the physical mounting;
+       in MuJoCo the arm is attached directly to world and there is no
+       pedestal, so pin world<->base_link at identity for sim only. -->
   <link name="world" />
-  <joint name="world_to_base" type="fixed">
-    <parent link="world" />
-    <child link="base_link" />
-    <origin rpy="0 0 0" xyz="0 0 0.3" />
-  </joint>
+  <xacro:if value="$(arg mujoco_plugin)">
+    <joint name="world_to_base" type="fixed">
+      <parent link="world" />
+      <child link="base_link" />
+      <origin rpy="0 0 0" xyz="0 0 0" />
+    </joint>
+  </xacro:if>
+  <xacro:unless value="$(arg mujoco_plugin)">
+    <joint name="world_to_base" type="fixed">
+      <parent link="world" />
+      <child link="base_link" />
+      <origin rpy="0 0 0" xyz="0 0 0.3" />
+    </joint>
+  </xacro:unless>
   <!-- XARM MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/xarm/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 

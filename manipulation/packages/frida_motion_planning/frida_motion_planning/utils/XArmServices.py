@@ -16,12 +16,22 @@ class XArmServices:
         self.node = node
         self.mode_client = mode_client
         self.state_client = state_client
+        self.move_velocity_client = None
+        # The gripper IO client must be created regardless of whether the
+        # xarm low-level services are available: in sim the bridge exposes
+        # /xarm/set_tgpio_digital (the real-robot gripper service name) so
+        # open/close commands can still reach MuJoCo.  Creating it only
+        # inside the xarm-available branch meant sim init skipped it and
+        # every close_gripper() silently returned False with a "Cannot set
+        # gripper state" warning while pick_server logged "Gripper closed".
+        self.gripper_io_client = self.node.create_client(
+            SetDigitalIO, XARM_SET_DIGITAL_TGPIO_SERVICE
+        )
         if self.mode_client is None or self.state_client is None:
             self.node.get_logger().warn(
-                "Cannot initialize XArmServices as no xArm services are available"
+                "XArmServices: no xArm mode/state services; xarm low-level "
+                "path disabled, gripper IO path still active"
             )
-            self.move_velocity_client = None
-            self.gripper_io_client = None
             return
         self.move_velocity_client = self.node.create_client(
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE
@@ -35,11 +45,6 @@ class XArmServices:
                 "XArmServices: move_velocity service not available, disabling xarm low-level path"
             )
             self.move_velocity_client = None
-            self.gripper_io_client = None
-            return
-        self.gripper_io_client = self.node.create_client(
-            SetDigitalIO, XARM_SET_DIGITAL_TGPIO_SERVICE
-        )
 
     def set_joint_velocity(
         self, velocities: List[float], set_mode: bool = True

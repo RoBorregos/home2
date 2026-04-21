@@ -9,6 +9,9 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
+    point_cloud_topic = LaunchConfiguration(
+        "point_cloud_topic", default="/point_cloud"
+    )
     sim_time_param = {"use_sim_time": use_sim_time}
 
     return LaunchDescription(
@@ -17,6 +20,11 @@ def generate_launch_description():
                 "use_sim_time",
                 default_value="false",
                 description="Use /clock (true) for the MuJoCo sim, wall time (false) for real robot.",
+            ),
+            DeclareLaunchArgument(
+                "point_cloud_topic",
+                default_value="/point_cloud",
+                description="Point cloud topic consumed by the cluster extraction. Real robot uses /point_cloud; sim overrides to /filtered_cloud (MoveIt self-filtered) so robot meshes don't pollute the cluster.",
             ),
             Node(
                 package="perception_3d",
@@ -34,7 +42,10 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 respawn=True,
-                parameters=[sim_time_param],
+                parameters=[
+                    {"point_cloud_topic": point_cloud_topic},
+                    sim_time_param,
+                ],
             ),
             Node(
                 package="perception_3d",
@@ -43,7 +54,10 @@ def generate_launch_description():
                 output="screen",
                 respawn=True,
                 emulate_tty=True,
-                parameters=[{"testing": False}, sim_time_param],
+                parameters=[
+                    {"testing": False, "point_cloud_topic": point_cloud_topic},
+                    sim_time_param,
+                ],
             ),
         ]
     )

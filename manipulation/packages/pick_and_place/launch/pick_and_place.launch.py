@@ -89,7 +89,12 @@ def generate_launch_description():
                         ]
                     )
                 ),
-                launch_arguments={"use_sim_time": use_sim_time}.items(),
+                launch_arguments={
+                    "use_sim_time": use_sim_time,
+                    "point_cloud_topic": LaunchConfiguration(
+                        "point_cloud_topic", default="/point_cloud"
+                    ),
+                }.items(),
             ),
             Node(
                 package="place",

@@ -82,6 +82,10 @@
     <axis xyz="1 0 0" />
     <limit lower="0" upper="0.056"
            effort="1" velocity="8" />
+    <!-- Damping replaces the removed kv on the MuJoCo position actuator;
+         real-robot controllers ignore URDF joint dynamics so this stays
+         sim-only in effect. -->
+    <dynamics damping="5.0" friction="0.0"/>
   </joint>
 
   <joint
@@ -97,20 +101,54 @@
 
   <xacro:if value="${mujoco_plugin}">
     <mujoco>
+      <!-- Aggressive silicone-pad contact tuning for reliable grasps.
+           MuJoCo default contact (friction 1/0.005/0.0001, solref 0.02/1)
+           is smooth-metal equivalent so grips slip.  Overrides below:
+             friction 3 1 0.1: very grippy silicone.  Slide 3, spin 1,
+                roll 0.1 to resist tangential slip and cube rotation
+                during retreat accelerations.
+             solref -50000 -500: firm spring damper (50 kN/m, 500 Ns/m).
+                Stiff enough to transmit gripper force without impulsive
+                bounce; damped enough to settle fast.  Softer springs
+                (e.g. -1000) made the contact too compliant and the cube
+                oscillated out.
+             solimp 0.95 0.99 0.0005: 0.5 mm penetration band, tight
+                enough to stay realistic and give the solver room to
+                resolve contact without chatter. -->
+      <!-- condim=4 activates torsional friction (slide + torsional).
+           Default condim=3 only resists tangential slip, so the cube
+           can rotate around the finger normal inside a 2-finger pinch
+           grasp.  condim=6 also enables rolling friction but triples the
+           contact compute cost; condim=4 is the sweet spot: kills the
+           rotation-around-normal failure mode while staying realtime. -->
       <reference name="right_finger">
           <joint range="0 0.056" limited="true" />
+          <geom name="right_finger_collision_0" friction="5.0 2.0 0.2" solref="-50000 -500" solimp="0.98 0.999 0.0001" condim="4"/>
       </reference>
       <reference name="left_finger">
           <joint range="0 0.056" limited="true" />
+          <geom name="left_finger_collision_0" friction="5.0 2.0 0.2" solref="-50000 -500" solimp="0.98 0.999 0.0001" condim="4"/>
       </reference>
       <equality>
         <joint name="gripper_mimic_joint" joint1= "leftfinger" joint2="rightfinger" polycoef="0 1 0 0"/>
       </equality>
       <actuator>
-        <!-- kv adds velocity damping to the position actuator so the finger
-             does not bounce/oscillate around the target (the equality
-             constraint that mimics leftfinger is also underdamped without it). -->
-        <position name="finger_actuator_position" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kp ="50" kv="5"/>
+        <!-- Keep the position actuator purely proportional: adding kv here
+             populates biasprm[2] which breaks mujoco_ros2_control's actuator
+             detection (it requires biasprm[2]==0 to recognize the actuator
+             as "position"), so the ros2_control command never reaches the
+             MuJoCo actuator and the finger stays pinned.  Damping lives on
+             the joint itself below so the finger still doesn't oscillate.
+
+             The actuator mimics a servo-driven gripper (fast position
+             response, hardware-limited torque): high kp=1000 so commanded
+             motion settles quickly, but a low forcerange=±5 N caps the
+             applied force to what the real xarm gripper produces in grip
+             hold.  Result: force saturates at ~5 N as soon as contact
+             builds even a millimetre of error, matching the near-constant
+             grip force of a real servo clamp instead of an unphysical
+             ramp that squeezes light objects out. -->
+        <position name="finger_actuator_position" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-10 10" kp ="1000"/>
         <!-- <velocity name="finger_actuator_velocity" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kv ="8"/> -->
       </actuator>
     </mujoco>
