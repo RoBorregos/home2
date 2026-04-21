@@ -179,7 +179,7 @@ ros2 topic echo /example/publisher_topic
 A service is a node that provides a service to other nodes. This means that it receives a request and should return a response.
 For this, it should have a callback function that will be called when the service is requested.
 
-In this example, we are using a srv file called `SetBool` that has the following structure:
+In this example, we are using a srv file called `SetBoolcount_by_pose` that has the following structure:
 
 ``` yaml
 bool data

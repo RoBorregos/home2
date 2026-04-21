@@ -369,7 +369,7 @@ class HRITasks(metaclass=SubtaskMeta):
             return Status.EXECUTION_SUCCESS
         elif command == "clarification":
             self.say("Sorry, I don't undestand your command.")
-            self.say(command.complement)
+            self.say(complement)
             return Status.EXECUTION_SUCCESS
         else:
             self.say(f"Sorry, I don't know how to {command}")
