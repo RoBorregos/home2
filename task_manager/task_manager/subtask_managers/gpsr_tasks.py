@@ -158,7 +158,14 @@ class GPSRTask(GenericTask):
             )
 
         location = self.subtask_manager.hri.query_location(loc)[0]
+        location = self.subtask_manager.hri.query_location(loc)[0]
 
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
+
+        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        return result, "arrived to:" + command.destination
         target = location.subarea if location.subarea else location.area
         pretty_target = target.replace("_", " ")
         self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
@@ -199,6 +206,12 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = GuidePersonTo(**command)
 
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        location = self.subtask_manager.hri.query_location(command.destination_room)[0]
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now we will go to the {pretty_target}.", wait=False)
+        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         location = self.subtask_manager.hri.query_location(command.destination_room)[0]
         target = location.subarea if location.subarea else location.area
@@ -458,6 +471,7 @@ class GPSRTask(GenericTask):
     def find_person(self, command: FindPersonByName):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
+            command = FindPersonByName(**command)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
@@ -577,13 +591,15 @@ class GPSRTask(GenericTask):
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_keyword=False,
+                    use_hotwords=False,
                     hotwords=command.name,
                 )
+                new_name = self.subtask_manager.hri.remove_punctuation(new_name)
                 new_name = self.subtask_manager.hri.remove_punctuation(new_name)
                 self.subtask_manager.vision.save_face_name(new_name)
                 name = new_name
 
+            if name == self.subtask_manager.hri.remove_punctuation(command.name):
             if name == self.subtask_manager.hri.remove_punctuation(command.name):
                 self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
                 return Status.EXECUTION_SUCCESS, f"found {name}"
