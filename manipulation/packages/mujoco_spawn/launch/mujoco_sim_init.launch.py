@@ -204,14 +204,11 @@ def generate_nodes_for_spawn(context: LaunchContext):
             get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"
         )
     )
-    additional_files.append(
-        os.path.join(
-            get_package_share_directory("frida_description"),
-            "urdf",
-            "TMR2025",
-            "house.xacro",
-        )
-    )
+    # Skip loading the house mesh for the manipulation sim: its walls/floor
+    # dominate the ZED pointcloud and the perception_3d plane segmenter
+    # latches onto one of them instead of the test table, which makes
+    # check_feasibility reject every valid grasp. Keep the pick_server and
+    # gpd params identical to the real robot by simplifying the scene.
     additional_files.append(
         os.path.join(
             get_package_share_directory("frida_description"),
@@ -446,13 +443,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 ]
             )
         ),
-        # The plane segmenter in the sim locks onto a house-mesh wall instead
-        # of our 70-cm table, so disable the strict 10 cm above-plane feasibility
-        # margin here. Real launches keep the safety default.
-        launch_arguments={
-            "use_sim_time": "true",
-            "pick_min_height": "-10.0",
-        }.items(),
+        launch_arguments={"use_sim_time": "true"}.items(),
     )
 
     return [
