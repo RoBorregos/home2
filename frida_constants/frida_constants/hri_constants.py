@@ -29,6 +29,7 @@ DISPLAY_PUBLISHER = "/hri/display/frida_questions"
 ANSWER_PUBLISHER = "/hri/display/answers"
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
+DOA_TOPIC = "/hri/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
 START_BUTTON_CLIENT = "/hri/display/button_press"
 TASK_STATUS_TOPIC = "/hri/display/task_status"
@@ -71,6 +72,9 @@ class KNOWLEDGE_TYPE(Enum):
     FRIDA = "frida_knowledge"
     ROBORREGOS = "roborregos_knowledge"
 
+
+# Microphone
+DOA_TIMER = 0.5  # seconds between DOA publishes
 
 # OpenWakeWord
 USE_OWW = True

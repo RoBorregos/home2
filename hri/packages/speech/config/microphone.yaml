@@ -5,3 +5,5 @@ audio_capturer:
     MIC_OUT_CHANNELS: 32
     RAW_AUDIO_TOPIC: REPLACE
     DEBUG: false
+    DOA_TOPIC: REPLACE
+    DOA_TIMER: REPLACE
