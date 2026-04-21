@@ -9,9 +9,12 @@ if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
 fi
 __HOME2_LIB_SOURCED=1
 
-# --- load .env ---
-if [ -f ".env" ]; then
-  source .env
+# --- load repo-root .env (for ORIN SSH creds, etc.) ---
+# Anchor to lib.sh's own directory so re-sourcing from a subdirectory does
+# not accidentally pull a stale per-area .env into the current shell.
+__HOME2_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$__HOME2_LIB_DIR/.env" ]; then
+  source "$__HOME2_LIB_DIR/.env"
 fi
 
 # --- helpers ---
@@ -325,5 +328,38 @@ update_map(){
       echo "export MAP_NAME=\"$map_flag\"" >> "$constant_source_file"
   fi
 
-  echo "REMEMBER TO SOURCE $constant_source_file TO BE ABLE TO USE MAP" 
+  echo "REMEMBER TO SOURCE $constant_source_file TO BE ABLE TO USE MAP"
+}
+
+# Resolve MAP_NAME, falling back to the user's shell rc file if the env var is
+# unset in the current shell (the common case when ./run.sh --update-map was
+# run in the same terminal without sourcing the rc file afterwards).
+resolve_map_name() {
+  local default_value="${1:-lab_23_march.db}"
+
+  if [ -n "${MAP_NAME:-}" ]; then
+    echo "$MAP_NAME"
+    return 0
+  fi
+
+  local rc_file="$HOME/.bashrc"
+  if [ -f "$HOME/.zshrc" ]; then
+    rc_file="$HOME/.zshrc"
+  fi
+
+  if [ -f "$rc_file" ]; then
+    local line
+    line=$(grep -E '^[[:space:]]*export[[:space:]]+MAP_NAME=' "$rc_file" | tail -n 1)
+    if [ -n "$line" ]; then
+      local value="${line#*=}"
+      value="${value%\"}"; value="${value#\"}"
+      value="${value%\'}"; value="${value#\'}"
+      if [ -n "$value" ]; then
+        echo "$value"
+        return 0
+      fi
+    fi
+  fi
+
+  echo "$default_value"
 }

@@ -355,11 +355,10 @@ class PourManager:
         request = DetectionHandler.Request()
         request.label = object_name
         request.closest_object = False
-        print("Request:", request)
-        print("waiting for service")
-        self.node.detection_handler_client.wait_for_service()
+        if not self.node.detection_handler_client.wait_for_service(timeout_sec=5.0):
+            self.node.get_logger().error("detection_handler service not available")
+            return None
         future = self.node.detection_handler_client.call_async(request)
-        print("waiting for future on detection_handler")
         future = wait_for_future(future)
 
         point = PointStamped()
@@ -393,7 +392,9 @@ class PourManager:
         request = PickPerceptionService.Request()
         request.point = point
         request.add_collision_objects = add_primitives
-        self.node.pick_perception_3d_client.wait_for_service()
+        if not self.node.pick_perception_3d_client.wait_for_service(timeout_sec=5.0):
+            self.node.get_logger().error("pick_perception_3d service not available")
+            return None, None
         future = self.node.pick_perception_3d_client.call_async(request)
         future = wait_for_future(future, timeout=10)
 

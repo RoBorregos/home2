@@ -65,7 +65,7 @@ CUTLERY_PRE_GRASP_HEIGHT = (
     0.15  # m - pre-grasp height above target (MoveIt uses meters)
 )
 CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
-CUTLERY_POST_CONTACT_RETRACT = 0.011  # m - retract upward after contact to relieve Z pressure before closing gripper
+CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
@@ -371,7 +371,7 @@ class PickMotionServer(Node):
                     if contact:
                         # Retract slightly to relieve Z pressure so gripper can close fully
                         self.get_logger().info(
-                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT*1000:.1f}mm before closing gripper..."
+                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT * 1000:.1f}mm before closing gripper..."
                         )
                         retract_pose = copy.deepcopy(pre_grasp_pose)
                         retract_pose.pose.position.z = (
