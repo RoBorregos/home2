@@ -446,7 +446,13 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 ]
             )
         ),
-        launch_arguments={"use_sim_time": "true"}.items(),
+        # The plane segmenter in the sim locks onto a house-mesh wall instead
+        # of our 70-cm table, so disable the strict 10 cm above-plane feasibility
+        # margin here. Real launches keep the safety default.
+        launch_arguments={
+            "use_sim_time": "true",
+            "pick_min_height": "-10.0",
+        }.items(),
     )
 
     return [

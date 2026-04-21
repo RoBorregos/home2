@@ -59,6 +59,15 @@ class PickMotionServer(Node):
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
+        # How high above the detected support plane a grasp position has to
+        # be to be considered feasible. Default keeps the real-robot safety
+        # margin; the sim launch overrides to a tiny value because the plane
+        # segmenter tends to lock onto a house wall instead of the table so
+        # the strict 0.1 m threshold rejects every valid grasp.
+        self.declare_parameter("pick_min_height", PICK_MIN_HEIGHT)
+        self.pick_min_height = self.get_parameter("pick_min_height").value
+        self.get_logger().info(f"Pick min height above plane: {self.pick_min_height} m")
+
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -436,7 +445,7 @@ class PickMotionServer(Node):
         """Check if the pose is feasible."""
         pick_height = pose.pose.position.z
         plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
-        if pick_height < plane_height + PICK_MIN_HEIGHT:
+        if pick_height < plane_height + self.pick_min_height:
             self.get_logger().warn(
                 f"Pick height {pick_height} is below acceptable height, plane height is {plane_height}"
             )
