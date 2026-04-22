@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri zed"
+AREAS="vision manipulation navigation integration hri zed display"
 ORIN_SERVER_AREAS="hri"
 
 # --- guard against multiple sourcing ---
@@ -191,9 +191,9 @@ run_area() {
     fi
   fi
 
-  # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation, display)
   if [ "${CYCLONE_SHM}" = "1" ]; then
-    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ] || [ "$INPUT" = "display" ]; then
       ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
     fi
   fi

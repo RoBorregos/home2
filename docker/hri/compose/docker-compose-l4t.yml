@@ -1,7 +1,7 @@
 include:
   - path: hri-ros.yaml
-  # - path: stt-l4t.yaml
-  # - path: ollama-l4t.yaml
-  # - path: postgresql.yaml
-  # - path: tts.yaml
-  # - path: edge-impulse-l4t.yaml
+  - path: stt-l4t.yaml
+  - path: ollama-l4t.yaml
+  - path: postgresql.yaml
+  - path: tts.yaml
+  - path: edge-impulse-l4t.yaml
