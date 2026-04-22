@@ -361,7 +361,7 @@ class HRIC_TM(Node):
 
         elif self.current_state == HRIC_TM.TaskStates.INTRODUCTION:
             self._track_state_change(HRIC_TM.TaskStates.INTRODUCTION)
-            #            self.subtask_manager.vision.activate_face_recognition()
+            # self.subtask_manager.vision.activate_face_recognition()
             guest_1 = self.guests[FIRST_GUEST_IDX]
             guest_2 = self.guests[SECOND_GUEST_IDX]
             self.timeout(1)
