@@ -9,9 +9,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
-    point_cloud_topic = LaunchConfiguration(
-        "point_cloud_topic", default="/point_cloud"
-    )
+    point_cloud_topic = LaunchConfiguration("point_cloud_topic", default="/point_cloud")
     sim_time_param = {"use_sim_time": use_sim_time}
 
     return LaunchDescription(
