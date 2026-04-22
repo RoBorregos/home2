@@ -9,6 +9,7 @@ and switches the arm between velocity mode (4) and MoveIt mode (1) accordingly.
 import time
 
 import rclpy
+from frida_constants.hri_constants import DOA_OFFSET, RESPEAKER_DOA_TOPIC
 from frida_constants.manipulation_constants import (
     FACE_RECOGNITION_LIFETIME,
     FOLLOW_FACE_SPEED,
@@ -17,11 +18,13 @@ from frida_constants.manipulation_constants import (
 )
 from frida_interfaces.srv import FollowFace
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, TransformStamped
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from std_msgs.msg import Int16
 from std_srvs.srv import Empty
 from task_manager.utils.logger import Logger
+from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from xarm_msgs.srv import MoveVelocity, SetInt16
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
@@ -34,6 +37,16 @@ STOP_TIMEOUT = 1.0
 SERVICE_TIMEOUT = 5.0
 SET_MODE_RETRIES = 2
 RUN_LOOP_PERIOD = 0.1
+
+# DOA-based fallback: when vision loses the face, use the DOA angle to rotate toward the speaker
+DOA_FALLBACK_TIMEOUT = 0.5  # seconds after losing vision before using DOA
+DOA_LIFETIME = 1.0  # max age of a DOA reading to consider it valid
+DOA_SPEED_FACTOR = 0.5  # slower than vision-based tracking
+DOA_DEAD_ZONE = 15.0  # degrees — don't move if speaker is roughly in front
+
+# Offset between respeaker and xarm base (meters).
+# The respeaker sits ~0.5m to the right of the xarm base (negative Y in link_base frame).
+RESPEAKER_OFFSET_Y = -0.5
 
 
 class FollowFaceNode(Node):
@@ -51,6 +64,18 @@ class FollowFaceNode(Node):
             2,
             callback_group=callback_group,
         )
+
+        # DOA subscription (raw respeaker topic) — used as fallback when vision loses the face
+        self.create_subscription(
+            Int16,
+            RESPEAKER_DOA_TOPIC,
+            self._doa_callback,
+            10,
+            callback_group=callback_group,
+        )
+
+        # Publish static TF: link_base -> respeaker_link
+        self._publish_respeaker_tf()
 
         # Service clients
         self.mode_client = self.create_client(
@@ -115,6 +140,10 @@ class FollowFaceNode(Node):
         self.last_face_detection_time = 0.0
         self.has_new_face_data = False
 
+        # DOA tracking data (fallback when no vision)
+        self.doa_angle = 0.0  # remapped angle: 0=front, negative=left, positive=right
+        self.last_doa_time = 0.0
+
         # Previous velocities for stop detection
         self.prev_x = 0.0
         self.prev_y = 0.0
@@ -122,6 +151,29 @@ class FollowFaceNode(Node):
 
         self.create_timer(RUN_LOOP_PERIOD, self._run_loop, callback_group=callback_group)
         self.get_logger().info("FollowFaceNode has started.")
+
+    # -- Static TF --
+
+    def _publish_respeaker_tf(self):
+        """Publish a static transform from link_base to respeaker_link.
+
+        This lets any node look up the spatial relationship between the xarm
+        base and the respeaker microphone array via TF2.
+        """
+        self.tf_static_broadcaster = StaticTransformBroadcaster(self)
+        t = TransformStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "link_base"
+        t.child_frame_id = "respeaker_link"
+        t.transform.translation.x = 0.0
+        t.transform.translation.y = RESPEAKER_OFFSET_Y
+        t.transform.translation.z = 0.0
+        t.transform.rotation.w = 1.0
+        self.tf_static_broadcaster.sendTransform(t)
+        Logger.info(
+            self,
+            f"Published static TF: link_base -> respeaker_link (offset y={RESPEAKER_OFFSET_Y}m)",
+        )
 
     # -- Mode switching --
 
@@ -233,6 +285,37 @@ class FollowFaceNode(Node):
 
         return self.face_x, self.face_y
 
+    # -- DOA (Direction of Arrival) --
+
+    def _doa_callback(self, msg: Int16):
+        """Receive raw DOA angle from respeaker and remap to robot frame.
+
+        Raw ReSpeaker: 0°=MIC1 (right side), clockwise 0-359.
+        After DOA_OFFSET: 0°=front, negative=left, positive=right (-180 to +180).
+        """
+        raw = msg.data
+        remapped = (raw - DOA_OFFSET) % 360
+        if remapped > 180:
+            remapped -= 360
+        self.doa_angle = remapped
+        self.last_doa_time = time.time()
+
+    def _get_doa_velocity(self):
+        """Convert DOA angle to an x velocity for joint1 rotation.
+
+        Returns x_vel or None if DOA data is stale or speaker is in the dead zone.
+        """
+        if time.time() - self.last_doa_time > DOA_LIFETIME:
+            return None
+
+        if abs(self.doa_angle) < DOA_DEAD_ZONE:
+            return None  # speaker is roughly in front, no need to rotate
+
+        # Normalize angle to [-1, 1] range (180° = full speed)
+        x_vel = self.doa_angle / 180.0
+        x_vel = max(-1.0, min(1.0, x_vel)) * DOA_SPEED_FACTOR
+        return x_vel
+
     # -- Movement --
 
     def _send_velocity(self, x_vel: float, y_vel: float):
@@ -269,32 +352,48 @@ class FollowFaceNode(Node):
     # -- Main loop --
 
     def _run_loop(self):
-        """Timer callback: send velocity commands to track the face."""
+        """Timer callback: send velocity commands to track the face.
+
+        Priority: vision (face position) > DOA (speaker direction).
+        When vision is available, use it directly.
+        When vision is lost for DOA_FALLBACK_TIMEOUT seconds, rotate toward the
+        speaker's DOA angle so the camera can reacquire the face.
+        """
         if not self.is_following_face_active or not self.arm_ready:
             return
 
         x, y = self._get_face_position()
 
-        if x is None or y is None:
-            # No fresh face data — stop arm if it was previously moving
-            if (self.prev_x != 0.0 or self.prev_y != 0.0) and (
-                time.time() - self.last_move_time
-            ) >= STOP_TIMEOUT:
+        if x is not None and y is not None:
+            # Vision available — use it
+            y = -y
+            if abs(x) > FOLLOW_FACE_TOLERANCE or abs(y) > FOLLOW_FACE_TOLERANCE:
+                self._send_velocity(x, y)
+            else:
                 self._send_velocity(0.0, 0.0)
-                self.prev_x = 0.0
-                self.prev_y = 0.0
+            self.prev_x = x
+            self.prev_y = y
+            self.last_move_time = time.time()
             return
 
-        y = -y
+        # No vision — check if we should fall back to DOA
+        time_since_last_face = time.time() - self.last_face_detection_time
+        if time_since_last_face > DOA_FALLBACK_TIMEOUT:
+            doa_vel = self._get_doa_velocity()
+            if doa_vel is not None:
+                self._send_velocity(doa_vel, 0.0)
+                self.prev_x = doa_vel
+                self.prev_y = 0.0
+                self.last_move_time = time.time()
+                return
 
-        if abs(x) > FOLLOW_FACE_TOLERANCE or abs(y) > FOLLOW_FACE_TOLERANCE:
-            self._send_velocity(x, y)
-        else:
+        # Neither vision nor DOA — stop if previously moving
+        if (self.prev_x != 0.0 or self.prev_y != 0.0) and (
+            time.time() - self.last_move_time
+        ) >= STOP_TIMEOUT:
             self._send_velocity(0.0, 0.0)
-
-        self.prev_x = x
-        self.prev_y = y
-        self.last_move_time = time.time()
+            self.prev_x = 0.0
+            self.prev_y = 0.0
 
 
 def main(args=None):

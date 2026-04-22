@@ -11,8 +11,6 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from frida_interfaces.msg import AudioData
-from frida_constants.hri_constants import DOA_TOPIC, DOA_TIMER, DOA_OFFSET
-from std_msgs.msg import Int16
 
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
 SAVE_IT = 100
@@ -29,8 +27,6 @@ class AudioCapturer(Node):
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
         self.declare_parameter("CHUNK_SIZE", 1024)
         self.declare_parameter("DEBUG", False)
-        self.declare_parameter("DOA_TOPIC", DOA_TOPIC)
-        self.declare_parameter("DOA_TIMER", DOA_TIMER)
 
         self.chunk_size = self.get_parameter("CHUNK_SIZE").value
         self.debug = self.get_parameter("DEBUG").value
@@ -41,27 +37,6 @@ class AudioCapturer(Node):
         self.publisher_ = self.create_publisher(
             AudioData, self.get_parameter("RAW_AUDIO_TOPIC").value, 20
         )
-
-        # DOA publisher — only active when ReSpeaker is connected
-        if self.use_respeaker:
-            from speech.tuning import Tuning
-            import usb.core
-
-            dev = usb.core.find(idVendor=0x2886, idProduct=0x0018)
-            if dev:
-                self.tuning = Tuning(dev)
-                doa_topic = self.get_parameter("DOA_TOPIC").value
-                doa_timer = self.get_parameter("DOA_TIMER").value
-                self.doa_publisher = self.create_publisher(Int16, doa_topic, 20)
-                self.create_timer(doa_timer, self._publish_doa)
-                self.get_logger().info(
-                    f"DOA publishing on '{doa_topic}' every {doa_timer}s"
-                )
-            else:
-                self.tuning = None
-                self.get_logger().warn("ReSpeaker USB device not found for DOA.")
-        else:
-            self.tuning = None
 
         mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
         mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
@@ -77,22 +52,6 @@ class AudioCapturer(Node):
             )
 
         self.get_logger().info("AudioCapturer node initialized.")
-
-    def _publish_doa(self):
-        """Read raw DOA, remap to robot frame, and publish.
-
-        Raw ReSpeaker: 0°=MIC1 (right side), clockwise 0-359.
-        After offset: 0°=front, negative=left, positive=right (-180 to +180).
-        """
-        if self.tuning:
-            try:
-                raw = self.tuning.direction
-                remapped = (raw - DOA_OFFSET) % 360
-                if remapped > 180:
-                    remapped -= 360
-                self.doa_publisher.publish(Int16(data=int(remapped)))
-            except Exception as e:
-                self.get_logger().warn(f"DOA read error: {e}")
 
     def record(self):
         self.p = pyaudio.PyAudio()
@@ -159,7 +118,6 @@ def main(args=None):
     rclpy.init(args=args)
     node = AudioCapturer()
     try:
-        # Spin in background thread so timers (DOA publisher) fire
         spin_thread = threading.Thread(target=rclpy.spin, args=(node,), daemon=True)
         spin_thread.start()
         node.record()
