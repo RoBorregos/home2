@@ -1,16 +1,30 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
-  <xacro:macro name="create_xarm_mujoco_position_actuator" params="arm_id joint_name lower upper velocity effort">
+  <!-- Per-joint MuJoCo override: adds reflected rotor inertia (armature)
+       and extra damping.  MuJoCo treats URDF joints as massless rotors by
+       default, but the real xarm6 uses harmonic-drive servos whose
+       reflected rotor inertia is non-trivial.  Without armature the arm
+       accelerates like a skeletal chain and wobbles under dynamic load
+       ("spaghetti" behaviour).  Damping keeps the response near critically
+       damped once kp is raised (d_critical ~= 2*sqrt(kp*armature), minus
+       the URDF damping=1 and the parallel velocity actuator's kv=10 which
+       already contribute). -->
+  <xacro:macro name="create_xarm_mujoco_joint_reference" params="joint_name armature damping">
+    <reference name="${joint_name}">
+      <joint armature="${armature}" damping="${damping}"/>
+    </reference>
+  </xacro:macro>
+
+  <xacro:macro name="create_xarm_mujoco_position_actuator" params="arm_id joint_name lower upper velocity effort kp">
     <xacro:property name="ctrlrange" value="${str(lower) + ' ' + str(upper)}" />
     <xacro:property name="forcerange" value="${str(-effort) + ' ' + str(effort)}" />
-    <xacro:property name="kp" value="${effort}" />
 
     <position
       name="pos_actuator_${joint_name}"
       joint="${joint_name}"
       ctrlrange="${ctrlrange}"
       forcerange="${forcerange}"
-      kp="${effort}"/>
+      kp="${kp}"/>
     <velocity
       name="vel_actuator_${joint_name}"
       joint="${joint_name}"
@@ -20,79 +34,117 @@
   </xacro:macro>
 
   <xacro:macro name="create_xarm_mujoco_actuators" params="arm_id:='' add_gripper:=false">
+    <!-- joint1 (shoulder pan).  Proximal, carries the whole arm + gripper
+         + ZED under gravity; needs the most stiffness and rotor inertia. -->
     <xacro:property name="joint1_lower" value="${-2.0*pi}" />
     <xacro:property name="joint1_upper" value="${2.0*pi}" />
     <xacro:property name="joint1_velocity" value="3.14" />
     <xacro:property name="joint1_effort" value="50.0" />
+    <xacro:property name="joint1_kp" value="150" />
+    <xacro:property name="joint1_armature" value="0.10" />
+    <xacro:property name="joint1_damping" value="2.0" />
 
+    <!-- joint2 (shoulder lift).  Same duty as joint1. -->
     <xacro:property name="joint2_lower" value="${-2.059}" />
     <xacro:property name="joint2_upper" value="${2.0944}" />
     <xacro:property name="joint2_velocity" value="3.14" />
     <xacro:property name="joint2_effort" value="50.0" />
+    <xacro:property name="joint2_kp" value="150" />
+    <xacro:property name="joint2_armature" value="0.10" />
+    <xacro:property name="joint2_damping" value="2.0" />
 
+    <!-- joint3 (elbow).  Medium load. -->
     <xacro:property name="joint3_lower" value="${-3.927}" />
     <xacro:property name="joint3_upper" value="${0.19198}" />
     <xacro:property name="joint3_velocity" value="3.14" />
     <xacro:property name="joint3_effort" value="32.0" />
+    <xacro:property name="joint3_kp" value="96" />
+    <xacro:property name="joint3_armature" value="0.05" />
+    <xacro:property name="joint3_damping" value="1.5" />
 
+    <!-- joint4 (wrist roll).  Same class as joint3. -->
     <xacro:property name="joint4_lower" value="${-2.0*pi}" />
     <xacro:property name="joint4_upper" value="${2.0*pi}" />
     <xacro:property name="joint4_velocity" value="3.14" />
     <xacro:property name="joint4_effort" value="32.0" />
+    <xacro:property name="joint4_kp" value="96" />
+    <xacro:property name="joint4_armature" value="0.05" />
+    <xacro:property name="joint4_damping" value="1.5" />
 
+    <!-- joint5 (wrist pitch).  Smaller servo; lighter rotor. -->
     <xacro:property name="joint5_lower" value="${-1.69297}" />
     <xacro:property name="joint5_upper" value="${pi}" />
     <xacro:property name="joint5_velocity" value="3.14" />
     <xacro:property name="joint5_effort" value="32.0" />
+    <xacro:property name="joint5_kp" value="96" />
+    <xacro:property name="joint5_armature" value="0.02" />
+    <xacro:property name="joint5_damping" value="1.0" />
 
+    <!-- joint6 (wrist yaw / tool flange).  Smallest servo. -->
     <xacro:property name="joint6_lower" value="${-2.0*pi}" />
     <xacro:property name="joint6_upper" value="${2.0*pi}" />
     <xacro:property name="joint6_velocity" value="3.14" />
     <xacro:property name="joint6_effort" value="20.0" />
+    <xacro:property name="joint6_kp" value="60" />
+    <xacro:property name="joint6_armature" value="0.02" />
+    <xacro:property name="joint6_damping" value="1.0" />
+
+    <xacro:create_xarm_mujoco_joint_reference joint_name="joint1" armature="${joint1_armature}" damping="${joint1_damping}"/>
+    <xacro:create_xarm_mujoco_joint_reference joint_name="joint2" armature="${joint2_armature}" damping="${joint2_damping}"/>
+    <xacro:create_xarm_mujoco_joint_reference joint_name="joint3" armature="${joint3_armature}" damping="${joint3_damping}"/>
+    <xacro:create_xarm_mujoco_joint_reference joint_name="joint4" armature="${joint4_armature}" damping="${joint4_damping}"/>
+    <xacro:create_xarm_mujoco_joint_reference joint_name="joint5" armature="${joint5_armature}" damping="${joint5_damping}"/>
+    <xacro:create_xarm_mujoco_joint_reference joint_name="joint6" armature="${joint6_armature}" damping="${joint6_damping}"/>
 
     <actuator>
-      <xacro:create_xarm_mujoco_position_actuator 
-        arm_id="${arm_id}" 
-        joint_name="joint1" 
-        lower="${joint1_lower}" 
-        upper="${joint1_upper}" 
-        velocity="${joint1_velocity}" 
-        effort="${joint1_effort}" />
-      <xacro:create_xarm_mujoco_position_actuator 
-        arm_id="${arm_id}" 
-        joint_name="joint2" 
-        lower="${joint2_lower}" 
-        upper="${joint2_upper}" 
-        velocity="${joint2_velocity}" 
-        effort="${joint2_effort}" />
-      <xacro:create_xarm_mujoco_position_actuator 
-        arm_id="${arm_id}" 
-        joint_name="joint3" 
-        lower="${joint3_lower}" 
-        upper="${joint3_upper}" 
-        velocity="${joint3_velocity}" 
-        effort="${joint3_effort}" />
-      <xacro:create_xarm_mujoco_position_actuator 
-        arm_id="${arm_id}" 
-        joint_name="joint4" 
-        lower="${joint4_lower}" 
-        upper="${joint4_upper}" 
-        velocity="${joint4_velocity}" 
-        effort="${joint4_effort}" />
-      <xacro:create_xarm_mujoco_position_actuator 
-        arm_id="${arm_id}" 
-        joint_name="joint5" 
-        lower="${joint5_lower}" 
-        upper="${joint5_upper}" 
-        velocity="${joint5_velocity}" 
-        effort="${joint5_effort}" />
-      <xacro:create_xarm_mujoco_position_actuator 
-        arm_id="${arm_id}" 
-        joint_name="joint6" 
-        lower="${joint6_lower}" 
-        upper="${joint6_upper}" 
-        velocity="${joint6_velocity}" 
-        effort="${joint6_effort}" />
+      <xacro:create_xarm_mujoco_position_actuator
+        arm_id="${arm_id}"
+        joint_name="joint1"
+        lower="${joint1_lower}"
+        upper="${joint1_upper}"
+        velocity="${joint1_velocity}"
+        effort="${joint1_effort}"
+        kp="${joint1_kp}" />
+      <xacro:create_xarm_mujoco_position_actuator
+        arm_id="${arm_id}"
+        joint_name="joint2"
+        lower="${joint2_lower}"
+        upper="${joint2_upper}"
+        velocity="${joint2_velocity}"
+        effort="${joint2_effort}"
+        kp="${joint2_kp}" />
+      <xacro:create_xarm_mujoco_position_actuator
+        arm_id="${arm_id}"
+        joint_name="joint3"
+        lower="${joint3_lower}"
+        upper="${joint3_upper}"
+        velocity="${joint3_velocity}"
+        effort="${joint3_effort}"
+        kp="${joint3_kp}" />
+      <xacro:create_xarm_mujoco_position_actuator
+        arm_id="${arm_id}"
+        joint_name="joint4"
+        lower="${joint4_lower}"
+        upper="${joint4_upper}"
+        velocity="${joint4_velocity}"
+        effort="${joint4_effort}"
+        kp="${joint4_kp}" />
+      <xacro:create_xarm_mujoco_position_actuator
+        arm_id="${arm_id}"
+        joint_name="joint5"
+        lower="${joint5_lower}"
+        upper="${joint5_upper}"
+        velocity="${joint5_velocity}"
+        effort="${joint5_effort}"
+        kp="${joint5_kp}" />
+      <xacro:create_xarm_mujoco_position_actuator
+        arm_id="${arm_id}"
+        joint_name="joint6"
+        lower="${joint6_lower}"
+        upper="${joint6_upper}"
+        velocity="${joint6_velocity}"
+        effort="${joint6_effort}"
+        kp="${joint6_kp}" />
     </actuator>
   </xacro:macro>
 </robot>
