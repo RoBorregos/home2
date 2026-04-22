@@ -1,0 +1,113 @@
+# RTAB-Map Configuration File - Localization Mode
+rgbd_sync:
+  ros__parameters:
+    approx_sync: false
+    use_sim_time: false
+    qos: 1
+    qos_camera_info: 1
+
+rtabmap:
+  ros__parameters:
+    qos: 1
+    qos_camera_info: 1
+  # Basic ROS parameters
+    subscribe_rgbd: true
+    subscribe_rgb: false
+    subscribe_depth: false
+    subscribe_scan: true
+    use_sim_time: false
+    odom_sensor_sync: true
+    frame_id: "base_link"
+    odom_frame_id: "odom"
+    map_frame_id: "map"
+    database_path: "/workspace/rtabmap2.db"
+    approx_sync: true
+    approx_sync_max_interval: 0.05
+    queue_size: 2
+    scan_queue_size: 2
+
+    # RTABMAP PARAMETERS
+    "Rtabmap/DetectionRate": "0"
+    "Rtabmap/TimeThr": "0"
+    "Rtabmap/LoopThr": "0.11"
+    "Rtabmap/MaxLoopClosureDistance": "5.0"
+
+    # Memory - Localization mode
+    "Mem/IncrementalMemory": "False"
+    "Mem/InitWMWithAllNodes": "True"
+    "Mem/LocalizationReadOnly": "True"
+    "Mem/NotLinkedNodesKept": "false"
+    "Mem/ReduceGraph": "false"
+
+    # Feature detection (SuperPoint + GPU)
+    "Kp/NNStrategy": "1"
+    "Kp/MaxFeatures": "500"
+    "Kp/DetectorStrategy": "11"
+    "Kp/RoiRatios": "0.0 0.0 0.0 0.0"
+    "SuperPoint/ModelPath": "/home/ros/models/superpoint_v1.pt"
+    "SuperPoint/Threshold": "0.010"
+    "SuperPoint/NMS": "true"
+    "SuperPoint/NMSRadius": "4"
+    "SuperPoint/Cuda": "true"
+
+    # RGBD
+    "RGBD/LinearUpdate": "0.05"
+    "RGBD/AngularUpdate": "0.05"
+    "RGBD/ForceOdom3DoF": "true"
+    "RGBD/StartAtOrigin": "false"
+    "RGBD/ProximityPathMaxNeighbors": "10"
+    "RGBD/LocalizationPriorError": "0.1"
+    "RGBD/NeighborLinkRefining": "true"
+    "RGBD/OptimizeMaxError": "0"
+    "RGBD/OptimizeFromGraphEnd": "false"
+    "RGBD/MaxOdomCacheSize": "30"
+    "RGBD/ProximityBySpace": "true"
+    "RGBD/ProximityGlobalScanMap": "false"
+    "RGBD/LoopClosureReextractFeatures": "true"
+
+    # Optimizer (GTSAM preferred, fallback TORO)
+    "Optimizer/Strategy": "2"
+    "Optimizer/Robust": "true"
+    "Optimizer/Iterations": "20"
+    "Optimizer/Epsilon": "0.00001"
+    "Optimizer/GravitySigma": "0"
+
+    # Registration (visual + ICP)
+    "Reg/Strategy": "2"
+    "Reg/Force3DoF": "true"
+
+    # Visual matching (SuperGlue)
+    "Vis/PnPRefineIterations": "1"
+    "Vis/MinInliers": "20"
+    "Vis/Iterations": "300"
+    "Vis/FeatureType": "11"
+    "Vis/MaxFeatures": "500"
+    "Vis/CorNNType": "6"
+    "Vis/CorNNDR": "0.6"
+    "Vis/BundleAdjustment": "0"
+    "Vis/CorGuessWinSize": "0"
+    "Vis/GridRows": "1"
+    "Vis/GridCols": "1"
+    "Vis/RoiRatios": "0.0 0.0 0.0 0.0"
+    "PyMatcher/Path": "/home/ros/SuperGlue/rtabmap_superglue.py"
+    "PyMatcher/Model": "indoor"
+    "PyMatcher/Iterations": "20"
+    "PyMatcher/Threshold": "0.2"
+    "PyMatcher/Cuda": "true"
+
+    # ICP
+    "Icp/Strategy": "1"
+    "Icp/MaxCorrespondenceDistance": "0.15"
+    "Icp/PointToPlane": "true"
+    "Icp/MaxTranslation": "0.5"
+
+    # Grid (lidar-based)
+    "Grid/Sensor": "2"
+    "Grid/RangeMax": "2.0"
+    "Grid/CellSize": "0.05"
+    "Grid/3D": "false"
+    "Grid/RayTracing": "false"
+    "Grid/MaxGroundHeight": "0.1"
+    "Grid/MaxObstacleHeight": "2.0"
+    "Grid/NoiseFilteringRadius": "0.1"
+    "Grid/NoiseFilteringMinNeighbors": "3"

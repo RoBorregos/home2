@@ -234,11 +234,19 @@ jobs:
       - name: Set base image arg
         id: base
         run: |
-          case "${{ matrix.env }}" in
-            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
-            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
-            l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
-          esac
+          if [[ "${{ matrix.service }}" == "stt" || "${{ matrix.service }}" == "tts" ]]; then
+            case "${{ matrix.env }}" in
+              cpu)  echo "image=python:3.10-bookworm" >> $GITHUB_OUTPUT ;;
+              cuda) echo "image=nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04" >> $GITHUB_OUTPUT ;;
+              l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+            esac
+          else
+            case "${{ matrix.env }}" in
+              cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+              cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+              l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+            esac
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v5
@@ -358,16 +366,12 @@ jobs:
       fail-fast: false
       matrix:
         env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
-        image: [vision, moondream-server, moondream-node]
+        image: [vision, moondream-server]
         exclude:
           # moondream images are env-independent (single tag), skip duplicates
           - image: moondream-server
             env: cuda
           - image: moondream-server
-            env: l4t
-          - image: moondream-node
-            env: cuda
-          - image: moondream-node
             env: l4t
 
     steps:
@@ -396,10 +400,6 @@ jobs:
             moondream-server)
               echo "name=roborregos/home2:moondream-server" >> $GITHUB_OUTPUT
               echo "dockerfile=docker/vision/Dockerfile.moondream.server" >> $GITHUB_OUTPUT
-              ;;
-            moondream-node)
-              echo "name=roborregos/home2:moondream-node" >> $GITHUB_OUTPUT
-              echo "dockerfile=docker/vision/Dockerfile.moondream" >> $GITHUB_OUTPUT
               ;;
           esac
 

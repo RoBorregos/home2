@@ -17,7 +17,9 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
-      - /vision/packages/moondream_run/:/workspace
+      - ../../vision/packages/moondream_run/:/workspace
+      - ./moondream_cache:/home/ros/.cache/huggingface
+
     working_dir: /workspace/moondream_server
     network_mode: host
     privileged: true
@@ -30,50 +32,7 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
+      HF_HUB_OFFLINE: 1
     tty: true
     stdin_open: true
     command: ["bash", "-c", "python3 -u server.py"]
-
-  moondream-node:
-    container_name: home2-moondream-node
-    build:
-      context: ../..
-      dockerfile: docker/vision/Dockerfile.moondream
-      args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
-    image: roborregos/home2:moondream-node
-    profiles: ["moondream"]
-    volumes:
-      - ../../:/workspace/src
-      - /dev:/dev
-      - /dev/video0:/dev/video0
-      - /tmp:/tmp
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
-      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
-      - /run/jtop.sock:/run/jtop.sock
-      - ./trt_cache:/workspace/trt_cache
-      - ./moondream/build:/workspace/build
-      - ./moondream/install:/workspace/install
-      - ./moondream/log:/workspace/log
-
-    network_mode: host
-    ipc: host
-    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
-    privileged: true
-    runtime: ${DOCKER_RUNTIME:-nvidia}
-    group_add:
-      - video
-    environment:
-      DISPLAY: ${DISPLAY}
-      TERM: xterm-256color
-      QT_X11_NO_MITSHM: 1
-      QT_DEBUG_PLUGINS: 1
-      CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
-      CYCLONE_SHM: "1"
-
-    tty: true
-    stdin_open: true
-    working_dir: /workspace
-    command: >
-      bash -c "${COMMAND_MOONDREAM:-source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py}"

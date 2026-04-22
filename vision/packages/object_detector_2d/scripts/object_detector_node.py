@@ -2,20 +2,25 @@
 import rclpy
 import rclpy.duration
 import rclpy.node
-import rclpy.time
 import tf2_ros
+import os
+import json
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point, PoseArray, Pose
 from std_msgs.msg import Bool
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker, MarkerArray
 from frida_interfaces.msg import ObjectDetectionArray
+from frida_interfaces.srv import DetectionHandler
 from dataclasses import dataclass
 import pathlib
 import threading
 import copy
-from typing import List
 import cv2 as cv
+import math
+from typing import List
+from vision_general.utils.trt_utils import load_yolo_trt
+from ament_index_python.packages import get_package_share_directory
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
 from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
@@ -30,7 +35,11 @@ from frida_constants.vision_constants import (
     DETECTIONS_ACTIVE_TOPIC,
     DEBUG_IMAGE_TOPIC,
     CAMERA_FRAME,
+    TRASH_SERVICE_CATEGORY,
+    DETECTION_HANDLER_TOPIC_SRV,
 )
+
+from frida_interfaces.srv import SetTrashCategory
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
 
@@ -47,7 +56,7 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": "tmr_30classes_v2.pt",
+    "YOLO_MODEL_PATH": "abril9.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
@@ -55,7 +64,8 @@ ARGS = {
     "USE_YOLO26": True,
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
-    "MIN_SCORE_THRESH": 0.3,
+    "MIN_SCORE_THRESH": 0.75,
+    "MAX_DEPTH_THRESH": 2.0,
 }
 
 
@@ -75,6 +85,7 @@ class NodeParams:
     VERBOSE: bool = None
     USE_YOLO8: bool = None
     USE_YOLO26: bool = None
+    MAX_DEPTH_THRESH: float = None
 
 
 # TODO DEFINE HOW TO GET params
@@ -90,8 +101,38 @@ class object_detector_node(rclpy.node.Node):
         self.bridge = CvBridge()
         self.depth_image = []
         self.rgb_image = []
-        self.camera_info = CameraInfo()
         self.detections_frame = []
+
+        # Trash detection logic
+        self.category = None
+        # Load object_to_category mapping from objects.json
+        try:
+            package_share_directory = get_package_share_directory("frida_constants")
+            objects_json_path = os.path.join(
+                package_share_directory, "data/objects.json"
+            )
+            with open(objects_json_path, "r") as f:
+                objects_data = json.load(f)
+                self.object_to_category = objects_data.get("object_to_category", {})
+        except Exception as e:
+            self.get_logger().error(f"Failed to load objects.json: {e}")
+            self.object_to_category = {}
+
+        # Service to set trash category
+        self.create_service(
+            SetTrashCategory,
+            TRASH_SERVICE_CATEGORY,
+            self.set_trash_category,
+        )
+
+        # Load cutlery detection model (YOLO TRT)
+        cutlery_model_path = os.path.join(
+            get_package_share_directory("vision_general"),
+            "Utils",
+            "models",
+            "cutlery.pt",
+        )
+        self.cutlery_model = load_yolo_trt(cutlery_model_path)
 
         self.set_parameters()
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
@@ -107,22 +148,50 @@ class object_detector_node(rclpy.node.Node):
 
         self.handleSubcriptions()
         self.handlePublishers()
+
+        # Detection handler service
+        self.latest_detections = []
+        self.detection_service = self.create_service(
+            DetectionHandler,
+            DETECTION_HANDLER_TOPIC_SRV,
+            self.detection_handler_callback,
+        )
+
         self.runThread = None
         self._frame_count = 0
         self._skip_frames = 2  # process every 3rd frame to reduce GPU load
 
         # Global vision pause/resume — pauses inference when manipulation needs GPU
         self.create_subscription(
-            Bool, "/vision/object_detector/active", self._vision_active_cb, 10
+            Bool, "/vision/object_detector/active", self._active_flag_cb, 10
         )
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
 
-        # Frames per second throughput estimator
-        self.curr_clock = 0
+    def set_trash_category(self, req, res):
+        if not req.category:
+            res.success = False
+            self.get_logger().warn("No category input in request")
+            return res
+        self.category = req.category.lower()
+        res.success = True
+        self.get_logger().info(f"Set trash category to: {self.category}")
+        return res
 
-        self.get_logger().info("Object Detector 2D Node has been started")
+    def compute_iou(self, det1, det2):
+        # det1, det2: Detection objects
+        xA = max(det1.bbox_.x1, det2.bbox_.x1)
+        yA = max(det1.bbox_.y1, det2.bbox_.y1)
+        xB = min(det1.bbox_.x2, det2.bbox_.x2)
+        yB = min(det1.bbox_.y2, det2.bbox_.y2)
+        interW = max(0, xB - xA)
+        interH = max(0, yB - yA)
+        interArea = interW * interH
+        boxAArea = (det1.bbox_.x2 - det1.bbox_.x1) * (det1.bbox_.y2 - det1.bbox_.y1)
+        boxBArea = (det2.bbox_.x2 - det2.bbox_.x1) * (det2.bbox_.y2 - det2.bbox_.y1)
+        iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
+        return iou
 
     def set_parameters(self):
         self.object_detector_parameters = ObjectDectectorParams()
@@ -195,6 +264,9 @@ class object_detector_node(rclpy.node.Node):
         self.node_params.USE_YOLO26 = (
             self.get_parameter("USE_YOLO26").get_parameter_value().bool_value
         )
+        self.node_params.MAX_DEPTH_THRESH = (
+            self.get_parameter("MAX_DEPTH_THRESH").get_parameter_value().double_value
+        )
         self.get_logger().info(
             "Listening to image on topic: " + self.node_params.RGB_IMAGE_TOPIC
         )
@@ -211,9 +283,6 @@ class object_detector_node(rclpy.node.Node):
         )
         self.detections_image_publisher = self.create_publisher(
             Image, self.node_params.DETECTIONS_IMAGE_TOPIC, 5
-        )
-        self.debug_image_publisher = self.create_publisher(
-            Image, self.node_params.DEBUG_IMAGE_TOPIC, 5
         )
 
         if self.node_params.VERBOSE:
@@ -259,18 +328,42 @@ class object_detector_node(rclpy.node.Node):
             self.create_subscription(
                 Bool,
                 self.node_params.DETECTIONS_ACTIVE_TOPIC,
-                self.activeFlagCallback,
+                self._active_flag_cb,
                 5,
             )
             if self.node_params.VERBOSE:
                 self.get_logger().info(self.node_params.DETECTIONS_ACTIVE_TOPIC)
 
-    # Callback for active flag
-    def activeFlagCallback(self, msg):
+    def _active_flag_cb(self, msg):
         self.active_flag = msg.data
 
-    def _vision_active_cb(self, msg):
-        self.active_flag = msg.data
+    def detection_handler_callback(self, request, response):
+        """Service callback that returns the latest detections, optionally filtered."""
+        detections = list(self.latest_detections)
+
+        if request.label and request.label != "all":
+            detections = [d for d in detections if d.label_text == request.label]
+        elif request.labels:
+            labels_set = set(request.labels)
+            detections = [d for d in detections if d.label_text in labels_set]
+
+        if request.closest_object and detections:
+            detections = [
+                min(
+                    detections,
+                    key=lambda d: d.point3d.point.x**2
+                    + d.point3d.point.y**2
+                    + d.point3d.point.z**2,
+                )
+            ]
+
+        response.detection_array.detections = detections
+        response.success = len(detections) > 0
+        self.get_logger().info(
+            f"Detection handler: requested='{request.label}' labels={request.labels} "
+            f"closest={request.closest_object} returned={len(detections)} detections"
+        )
+        return response
 
     # Function to handle a ROS depthPublishers have been created input.
     def depthImageCallback(self, data):
@@ -314,42 +407,39 @@ class object_detector_node(rclpy.node.Node):
                 self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8")
             )
 
-    def visualize_detections(
-        self,
-        image,
-        detections: List[Detection],
-        use_normalized_coordinates=True,
-        max_boxes_to_draw=200,
-        agnostic_mode=False,
-    ):
+    def visualize_detections(self, image, detections: List):
         """Visualize detections on an input image."""
 
         # Convert image to BGR format (OpenCV uses BGR instead of RGB)
         image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
 
         for detection in detections:
-            color = (0, 0, 0) if agnostic_mode else (0, 255, 0)
-            ymin, xmin, ymax, xmax = (
-                detection.bbox_.y1,
-                detection.bbox_.x1,
-                detection.bbox_.y2,
-                detection.bbox_.x2,
-            )
-            if use_normalized_coordinates:
-                (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
+            label_text = detection.label_text
+            confidence = detection.score
+            ymin = detection.ymin
+            xmin = detection.xmin
+            ymax = detection.ymax
+            xmax = detection.xmax
+
+            # Color and label for trash
+            if label_text and label_text.startswith("trash/"):
+                color = (0, 0, 255)  # Red for trash
+                display_label = label_text
             else:
-                (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
+                color = (0, 255, 0)
+                display_label = f"{label_text}: {confidence:.2f}"
+
             (left, right, top, bottom) = (
-                int(left * image.shape[1]),
-                int(right * image.shape[1]),
-                int(top * image.shape[0]),
-                int(bottom * image.shape[0]),
+                int(xmin * image.shape[1]),
+                int(xmax * image.shape[1]),
+                int(ymin * image.shape[0]),
+                int(ymax * image.shape[0]),
             )
             cv.rectangle(image, (left, top), (right, bottom), color, 7)
-            # draw label, name and score
+            # draw label and score
             cv.putText(
                 image,
-                f"{detection.class_id_}: {detection.label_}: {detection.confidence_}",
+                display_label,
                 (left, top - 10),
                 cv.FONT_HERSHEY_SIMPLEX,
                 2,
@@ -398,27 +488,91 @@ class object_detector_node(rclpy.node.Node):
 
     def run(self, frame):
         copy_frame = copy.deepcopy(frame)
-        detected_objects, visual_detections, visual_image = (
-            self.object_detector_2d.inference(
-                copy_frame, self.depth_image, self.tfBuffer
-            )
+        height, width = copy_frame.shape[:2]
+        # Run main object detector (inference() already calls extract3D, so
+        # detected_objects come back with point_stamped_ populated)
+        detected_objects, _, visual_image = self.object_detector_2d.inference(
+            copy_frame, self.depth_image, self.tfBuffer
         )
 
-        self.detections_frame = self.visualize_detections(
-            visual_image,
-            visual_detections,
-            use_normalized_coordinates=True,
-            max_boxes_to_draw=200,
-            agnostic_mode=False,
+        # Run cutlery detector
+        cutlery_results = self.cutlery_model(
+            copy_frame, verbose=False, classes=[0, 1, 3]
         )
+        cutlery_detections = []
+        SPANISH_TO_ENGLISH = {
+            "cuchara": "spoon",
+            "tenedor": "fork",
+            "cuchillo": "knife",
+        }
+        CONF_THRESHOLD = 0.3
+        for res in cutlery_results:
+            for box in res.boxes:
+                conf = box.conf.item()
+                if conf < CONF_THRESHOLD:
+                    continue
+                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
+                cls_id = int(box.cls.item())
+                label_text = (
+                    self.cutlery_model.names[cls_id]
+                    if hasattr(self.cutlery_model, "names")
+                    else str(cls_id)
+                )
+                label_text = SPANISH_TO_ENGLISH.get(label_text.lower(), label_text)
+                det = Detection(label_text, cls_id, conf)
+                # Store bbox in normalized coords to match the YOLO detector
+                # convention (compute_iou, visualize_detections, extract3D all
+                # assume normalized).
+                det.bbox_.x1 = float(x1) / width
+                det.bbox_.y1 = float(y1) / height
+                det.bbox_.x2 = float(x2) / width
+                det.bbox_.y2 = float(y2) / height
+                det.bbox_.w = width
+                det.bbox_.h = height
+                cutlery_detections.append(det)
+
+        # Remove duplicate cutlery detections using IoU
+        IOU_THRESHOLD = 0.6
+        filtered_cutlery = []
+        for c_det in cutlery_detections:
+            duplicate = False
+            for m_det in detected_objects:
+                if self.compute_iou(c_det, m_det) > IOU_THRESHOLD:
+                    duplicate = True
+                    break
+            if not duplicate:
+                filtered_cutlery.append(c_det)
+
+        # Append cutlery into the detector's internal list and re-run extract3D
+        # so cutlery also gets point_stamped_ populated. extract3D iterates
+        # self.detections_, so we need cutlery in there before calling it.
+        self.object_detector_2d.detections_.extend(filtered_cutlery)
+        all_detections = self.object_detector_2d.extract3D(
+            self.depth_image, self.tfBuffer
+        )
+
+        # Filter by euclidean distance threshold
+        max_depth = self.node_params.MAX_DEPTH_THRESH
+        all_detections = [
+            d
+            for d in all_detections
+            if hasattr(d, "point_stamped_")
+            and hasattr(d.point_stamped_, "point")
+            and math.sqrt(
+                d.point_stamped_.point.x**2
+                + d.point_stamped_.point.y**2
+                + d.point_stamped_.point.z**2
+            )
+            <= max_depth
+        ]
 
         if self.node_params.VERBOSE:
-            for index in range(len(detected_objects)):
+            for index in range(len(all_detections)):
                 self.get_logger().info(
-                    f"Detection #{str(index)}:   {detected_objects[index].__str__()}"
+                    f"Detection #{str(index)}:   {all_detections[index].__str__()}"
                 )
 
-        self.visualize_3d_detections(detected_objects)
+        self.visualize_3d_detections(all_detections)
 
         self.detections_pose_publisher.publish(
             PoseArray(
@@ -430,18 +584,33 @@ class object_detector_node(rclpy.node.Node):
                             z=detection.point_stamped_.point.z,
                         )
                     )
-                    for detection in detected_objects
+                    for detection in all_detections
                 ]
             )
         )
 
-        # update time
-        for detection in self.object_detector_2d.getFridaDetections(detected_objects):
+        merged_detections = self.object_detector_2d.getFridaDetections(all_detections)
+        for detection in merged_detections:
             detection.point3d.header.stamp = self.curr_clock
+
+        # Process trash
+        processed_detections = []
+        for det in merged_detections:
+            label = det.label_text.strip().lower()
+            detection = copy.deepcopy(det)
+            obj_category = self.object_to_category.get(label)
+            if self.category and obj_category and obj_category == self.category:
+                detection.label_text = f"trash/{det.label_text}"
+                self.get_logger().info(f"Detected TRASH/{det.label_text}")
+            processed_detections.append(detection)
+
+        self.latest_detections = merged_detections
         self.detections_publisher.publish(
-            ObjectDetectionArray(
-                detections=self.object_detector_2d.getFridaDetections(detected_objects)
-            )
+            ObjectDetectionArray(detections=processed_detections)
+        )
+
+        self.detections_frame = self.visualize_detections(
+            visual_image, processed_detections
         )
 
 

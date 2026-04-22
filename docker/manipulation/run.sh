@@ -7,71 +7,21 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-# IMPORTANT: Also edit auto-complete.sh to add new arguments
-DETACHED=""
-BUILD=""
-BUILD_IMAGE=""
-UPLOAD_IMAGE=""
-DOWNLOAD_SIMULATION=""
-CLEAN=""
-
 COMPOSE="docker-compose-${ENV_TYPE}.yaml"
+parse_common_flags "$COMPOSE" "${ARGS[@]}"
 
-# Parse arguments
+# Sim-only flag: build mujoco_ros2_control + mujoco_spawn on top of the
+# normal manipulation build.  parse_common_flags doesn't know about it.
+DOWNLOAD_SIMULATION=""
 for arg in "${ARGS[@]}"; do
     case $arg in
-    "-d")
-        DETACHED="-d"
-        ;;
-    "--build")
-        BUILD="true"
-        ;;
-    "--recreate")
-        docker compose -f "$COMPOSE" down
-        ;;
-    "--down")
-        docker compose -f "$COMPOSE" down
-        exit 0
-        ;;
-    "--stop")
-        docker compose -f "$COMPOSE" stop
-        exit 0
-        ;;
-    "--build-image")
-        BUILD_IMAGE="--build"
-        ;;
-    "--upload-image")
-        UPLOAD_IMAGE="true"
-        ;;
-    "--simulation-compile")
-        DOWNLOAD_SIMULATION="true"
-        ;;
-    "--clean")
-        CLEAN="true"
-        ;;
+    "--simulation-compile") DOWNLOAD_SIMULATION="true" ;;
     esac
 done
 
 #_________________________SETUP_________________________
 
-# Reset .env
-echo "" > .env
-
-# CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
-# Export user
-add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
-
-# Clean build artifacts if requested
-clean_workspace_directories
-
-# Create dirs with current user to avoid permission problems
-mkdir -p install build log
+setup_common_env "manipulation"
 
 #_________________________RUN_________________________
 
@@ -81,14 +31,14 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
 SIMULATION_BUILD="colcon build --packages-select mujoco_ros2_control && colcon build --symlink-install --packages-select mujoco_spawn"
-
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE"
 else
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
 fi
 
 if [[ "$DOWNLOAD_SIMULATION" == "true" ]]; then
@@ -102,11 +52,14 @@ case $TASK in
     "--carry")
         RUN="ros2 launch manipulation_general carry.launch.py"
         ;;
-    "--storing-groceries")
-        RUN="ros2 launch vision_general storing_groceries_launch.py"
-        ;;
     "--gpsr")
         RUN="ros2 launch manipulation_general gpsr.launch.py"
+        ;;
+    "--ppc")
+        RUN="ros2 launch manipulation_general ppc.launch.py"
+        ;;
+    "--restaurant")
+        RUN="ros2 launch manipulation_general restaurant.launch.py"
         ;;
     *)
         RUN="bash"

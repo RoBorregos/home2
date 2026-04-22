@@ -1,0 +1,15 @@
+from enum import Enum
+
+
+class Task(Enum):
+    DEMO = 0
+    HRIC = 1
+    HELP_ME_CARRY = 2
+    GPSR = 3
+    STORING_GROCERIES = 4
+    CLEAN_TABLE = 5
+    EGPSR = 6
+    HAND = 7
+    RESTAURANT = 8
+    PICK_AND_PLACE = 9
+    DEBUG = 100

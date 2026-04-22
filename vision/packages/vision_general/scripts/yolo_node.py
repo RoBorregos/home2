@@ -5,7 +5,7 @@ Node to initialize and provide a YOLO instance for reuse across other files.
 """
 
 import pathlib
-from vision_general.utils.trt_utils import load_yolo_trt
+from ultralytics import YOLO
 
 import rclpy
 import rclpy.qos
@@ -14,7 +14,7 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
@@ -34,7 +34,7 @@ class YoloNode(Node):
         self.latest_frame = None
 
         # Load YOLO with TensorRT acceleration for Orin AGX
-        self.model = load_yolo_trt(YOLO_LOCATION)
+        self.model = YOLO(YOLO_LOCATION)
         self.get_logger().info("YOLO model loaded successfully")
 
         self.detect_service = self.create_service(
@@ -48,7 +48,7 @@ class YoloNode(Node):
         )
 
         self.create_subscription(
-            Image, CAMERA_TOPIC, self._image_callback, self._img_qos
+            Image, IMAGE_ORIENTED_TOPIC, self._image_callback, self._img_qos
         )
 
         # Publisher for annotated image

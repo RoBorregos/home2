@@ -1,7 +1,7 @@
 from math import pi as PI
 
 EEF_LINK_NAME = "link_eef"
-EEF_CONTACT_LINKS = ["link_eef", "link_6"]
+EEF_CONTACT_LINKS = ["link_eef", "link_6", "gripper", "left_finger", "right_finger"]
 
 DEG2RAD = PI / 180.0
 RAD2DEG = 180.0 / PI
@@ -49,8 +49,12 @@ PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
+GRIPPER_GRASP_STATE_TOPIC = "/gripper/grasp_state"
 SAFETY_HEIGHT = 0.05
-PICK_MIN_HEIGHT = 0.1
+PICK_MIN_HEIGHT = 0.04
+CUTLERY_PICK_MIN_HEIGHT = 0.002
+CUTLERY_NAMES = ["fork", "knife", "spoon", "cutlery"]
+POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Place
@@ -92,3 +96,8 @@ ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered"
 
 # Similar to what you have on stare poses, gripper looking front, camera looking front-down
 AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]
+
+# Shelf reachability clamp: max_x = max(SHELF_MIN_REACH, SHELF_REACH_BASE - SHELF_REACH_SLOPE * z)
+SHELF_MIN_REACH = 0.40
+SHELF_REACH_BASE = 0.75
+SHELF_REACH_SLOPE = 0.25

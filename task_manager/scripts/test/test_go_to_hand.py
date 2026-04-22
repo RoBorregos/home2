@@ -8,10 +8,10 @@ Run: ros2 run task_manager test_go_to_hand
 
 import rclpy
 from rclpy.node import Node
-from utils.status import Status
-from utils.task import Task
-from subtask_managers.manipulation_tasks import ManipulationTasks
-from subtask_managers.vision_tasks import VisionTasks
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
+from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
+from task_manager.subtask_managers.vision_tasks import VisionTasks
 
 ATTEMPT_LIMIT = 5
 
@@ -68,7 +68,7 @@ class TestGoToHand(Node):
             self.get_logger().info("Step 4: Sending GoToHand...")
             go_result = self.manipulation.go_to_hand(
                 point=hand_point,
-                hand_offset=0.2,
+                hand_offset=0.1,
             )
 
             if go_result == Status.EXECUTION_SUCCESS:

@@ -28,8 +28,8 @@ order_labels = [
 class MoonDreamModel:
     def __init__(
         self,
-        model_name="moondream/moondream3-preview",
-        revision=None,
+        model_name="vikhyatk/moondream2",
+        revision="2025-01-09",
         device_map={"": 0},
         **kwargs,
     ):
@@ -138,19 +138,37 @@ class MoonDreamModel:
         answer = self.model.query(encoded_image, query)["answer"]
         return answer
 
+    def find_object_points(self, encoded_image_data, subject):
+        encoded_image = pickle.loads(encoded_image_data)
+        result = self.model.point(encoded_image, subject)
+
+        if not result["points"]:
+            return []
+
+        points_out = []
+        for pt in result["points"]:
+            points_out.append(
+                {
+                    "x": pt["x"],
+                    "y": pt["y"],
+                }
+            )
+
+        return points_out
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MoonDream Server")
     parser.add_argument(
         "--model_name",
         type=str,
-        default="moondream/moondream3-preview",
+        default="vikhyatk/moondream2",
         help="Name of the MoonDream model to load from Hugging Face Hub",
     )
     parser.add_argument(
         "--revision",
         type=str,
-        default=None,
+        default="2025-01-09",
         help="Revision of the MoonDream model to load from Hugging Face Hub",
     )
 

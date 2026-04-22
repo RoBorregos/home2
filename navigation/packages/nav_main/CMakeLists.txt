@@ -21,25 +21,14 @@ find_package(ament_index_cpp REQUIRED)
 install(DIRECTORY launch config bt
   DESTINATION share/${PROJECT_NAME})
 
-add_executable(ignore_laser src/ignore_laser.cpp)
-
-ament_target_dependencies(ignore_laser rclcpp sensor_msgs)
 
 
-install(TARGETS
-  ignore_laser
-  DESTINATION lib/${PROJECT_NAME})
   
   ament_python_install_package(${PROJECT_NAME})
 
   file(GLOB PYTHON_SCRIPTS scripts/*.py)
-
-  #Install python scripts
-  install(PROGRAMS
-    scripts/nav_lifecycle_manager.py
-    ${PYTHON_SCRIPTS}
-    DESTINATION lib/${PROJECT_NAME}
-  )
+install(PROGRAMS ${PYTHON_SCRIPTS}
+    DESTINATION lib/${PROJECT_NAME}) 
 
 
 if(BUILD_TESTING)

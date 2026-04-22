@@ -33,10 +33,12 @@ def get_object_point(object_name: str, detection_handler_client) -> PointStamped
     return point
 
 
-def get_object_cluster(point: PointStamped, perception_3d_client):
+def get_object_cluster(
+    point: PointStamped, perception_3d_client, add_collision_objects=True
+):
     request = PickPerceptionService.Request()
     request.point = point
-    request.add_collision_objects = True
+    request.add_collision_objects = add_collision_objects
     perception_3d_client.wait_for_service()
     future = perception_3d_client.call_async(request)
     future = wait_for_future(future)

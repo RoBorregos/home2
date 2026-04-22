@@ -40,6 +40,9 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "backpack",
     # "tote_bag",
     "handle",
+    "spoon",
+    "fork",
+    "knife",
     # "whiteBaseball",
     # "apple",
     # "cup",
@@ -60,11 +63,13 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "orange",
     # "cup",
 ]
-TRASH_DETECTION_SERVICE = "/vision/zero_shot_trash_detection"
+TRASH_SERVICE_CATEGORY = "/vision/set_trash_category"
+TRASHCAN_SERVICE = "vision/trashcan_detect"
 
 CUSTOMER = "/vision/customer"
 GET_CUSTOMER_TOPIC = "/vision/get_customer"
-
+CUSTOMER_TABLES_TOPIC = "/vision/customer_tables"
+RESTAURANT_TABLES_TOPIC = "/vision/restaurant_tables"
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
 
 # LOCAL CAMERA TOPICS
@@ -93,6 +98,7 @@ PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 CROP_QUERY_TOPIC = "/vision/crop_query"
+OBJECT_POINTS_TOPIC = "/vision/object_points"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"
@@ -101,6 +107,10 @@ PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
+
+# Camera orientation (centralized flip/rotation handling)
+IMAGE_ORIENTED_TOPIC = "/vision/camera/image_oriented"
+CAMERA_ROTATION_TOPIC = "/vision/camera/rotation"
 
 # HRIC commands node
 CHECK_PERSON_TOPIC = "/vision/hric/detect_person"
@@ -135,3 +145,5 @@ YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
+DISHWASHER_TABLET_DETECTION_TOPIC = "/vision/dishwasher/tablet_detection"
+DISHWASHER_DEBUG_IMAGE_TOPIC = "/vision/dishwasher/debug_image"

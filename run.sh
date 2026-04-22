@@ -76,17 +76,20 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  --stop|--down)
+  --stop|--down|--clean|--build)
     control "$INPUT"
     ;;
-  --clean)
-    clean_frida_interfaces
+  --clean-interfaces)
+    clean_directories docker/frida_interfaces_cache
     ;;
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
     ;;
   vision|manipulation|navigation|integration|hri|zed)
     run_area "$@"
+    ;;
+  --update-map)
+    update_map "$@"
     ;;
   *)
     ./run.sh --help

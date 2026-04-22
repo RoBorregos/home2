@@ -11,6 +11,7 @@ from frida_interfaces.msg import ObjectDetectionArray
 from pick_and_place.utils.perception_utils import point_in_range
 from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
+    ZERO_SHOT_DETECTIONS_TOPIC,
 )
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
@@ -51,6 +52,14 @@ class KeyboardInput(Node):
             callback_group=callback_group,
         )
 
+        self.zero_shot_subscription = self.create_subscription(
+            ObjectDetectionArray,
+            ZERO_SHOT_DETECTIONS_TOPIC,
+            self.objects_callback,
+            qos,
+            callback_group=callback_group,
+        )
+
         self.clicked_point = None
         self.clicked_point_subscription = self.create_subscription(
             PointStamped,
@@ -68,14 +77,13 @@ class KeyboardInput(Node):
 
     def objects_callback(self, msg):
         # Assuming msg contains a list of object names
-        self.objects = []
         for detection in msg.detections:
             if detection.label_text not in self.objects and point_in_range(
                 detection.point3d, self.min_distance, self.max_distance
             ):
                 self.objects.append(detection.label_text)
 
-    def send_pick_request(self, object_name):
+    def send_pick_request(self, object_name, scan_environment=False):
         self.get_logger().warning(f"Sending pick request for: {object_name}")
 
         if not self._action_client.wait_for_server(timeout_sec=5.0):
@@ -87,6 +95,7 @@ class KeyboardInput(Node):
         goal_msg.pick_params.object_name = object_name
         goal_msg.pick_params.min_distance = self.min_distance
         goal_msg.pick_params.max_distance = self.max_distance
+        goal_msg.scan_environment = scan_environment
         self.get_logger().info(f"Sending pick request for: {object_name}")
         future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -131,7 +140,7 @@ class KeyboardInput(Node):
         )
         self.get_logger().info("Place request sent")
 
-    def send_pour_request(self, object_name, bowl_name):
+    def send_pour_request(self, object_name, bowl_name, object_already_grasped=False):
         self.get_logger().warning(f"Sending pour request for: {object_name}")
 
         if not self._action_client.wait_for_server(timeout_sec=5.0):
@@ -142,9 +151,11 @@ class KeyboardInput(Node):
         goal_msg.task_type = ManipulationTask.POUR
         goal_msg.pour_params.object_name = object_name
         goal_msg.pour_params.bowl_name = bowl_name
+        goal_msg.pour_params.object_already_grasped = object_already_grasped
 
         self.get_logger().info(f"Sending pour request for: {object_name}")
         self.get_logger().info(f"Pouring into: {bowl_name}")
+        self.get_logger().info(f"Object already grasped: {object_already_grasped}")
         self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
@@ -179,6 +190,7 @@ class KeyboardInput(Node):
 
     def refresh_objects(self):
         self.get_logger().info("Refreshing objects list...")
+        self.objects = []
         # Spin for 1 second to receive messages
         start_time = time.time()
         while time.time() - start_time < 1.0:
@@ -214,6 +226,8 @@ def main(args=None):
             print("-7. Place on clicked point")
             print("-8. Place closeto")
             print("-9. Special Request Place")
+            print("-10. Pour (object already grasped)")
+            print("-11. Pick from shelf (keep octomap)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -300,6 +314,17 @@ def main(args=None):
                     special_request_position=special_request_position,
                     special_request_object=special_request_object,
                 )
+
+            elif choice == "-10":
+                object_name = input("Enter object name (in gripper): ")
+                bowl_name = input("Enter bowl name: ")
+                node.send_pour_request(
+                    object_name, bowl_name, object_already_grasped=True
+                )
+
+            elif choice == "-11":
+                object_name = input("Enter object name on shelf: ")
+                node.send_pick_request(object_name, scan_environment=True)
 
             elif choice.isdigit():
                 try:

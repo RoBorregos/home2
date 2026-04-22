@@ -13,13 +13,11 @@ from datetime import datetime
 from typing import Union
 
 import rclpy
-from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
-from sklearn.metrics.pairwise import cosine_similarity
-from subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.types import (
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
     Count,
@@ -35,8 +33,8 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.status import Status
-from utils.task import Task
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -66,7 +64,7 @@ OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
 # Choose which tests to perform
-TEST_COMPOUND = False
+TEST_ASK_AND_CONFIRM = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
@@ -85,15 +83,15 @@ TEST_TAKE_ORDER = False
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
+        self.hri_manager = HRITasks(self, task=Task.DEBUG, mock_data=False)
         rclpy.spin_once(self, timeout_sec=1.0)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
 
     def run(self):
-        if TEST_COMPOUND:
-            self.compound_functions()
+        if TEST_ASK_AND_CONFIRM:
+            self.test_ask_and_confirm()
 
         if TEST_INDIVIDUAL_FUNCTIONS:
             self.individual_functions()
@@ -160,18 +158,6 @@ class TestHriManager(Node):
         s, drink = self.hri_manager.extract_data("name", user_request)
         self.get_logger().info(f"Extracted data: {drink}")
 
-        # Test categorize objects
-        s, categorized_shelves = self.hri_manager.get_shelves_categories(
-            {
-                "1": ["milk", "cheese", "yogurt"],
-                "2": ["apple", "banana", "grapes"],
-                "3": [],
-                "4": ["chicken", "beef"],
-            },
-        )
-
-        self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
-
     def test_streaming(self):
         s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
@@ -200,42 +186,28 @@ class TestHriManager(Node):
         self.get_logger().info("Running take_order test")
         self.hri_manager.take_order(retries=3)
 
-    def compound_functions(self):
-        s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
+    def test_ask_and_confirm(self):
+        s, name = self.hri_manager.ask_and_confirm(
+            "What is your name?",
+            "name",
+            "The question 'What is your name?' was asked, full_text corresponds to the response.",
+        )
 
-        self.get_logger().info(f"Final result: {loc}, {orientation}")
+        self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
 
-        # s, name = self.hri_manager.ask_and_confirm(
-        #     "What is your name?",
-        #     "LLM_name",
-        #     # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-        #     # confirm_preference,
-        #     use_hotwords=False,
-        #     # 3,
-        #     # 5,
-        # )
+        s, interest1 = self.hri_manager.ask_and_confirm(
+            "What is your main interest?",
+            "LLM_interest",
+            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            confirm_preference,
+        )
 
-        # self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
-
-        # s, interest1 = self.hri_manager.ask_and_confirm(
-        #     "What is your favorite main interest?",
-        #     "LLM_interest",
-        #     "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-        #     confirm_preference,
-        #     False,
-        #     3,
-        #     5,
-        # )
-
-        # s, interest2 = self.hri_manager.ask_and_confirm(
-        #     "What is your favorite second interest?",
-        #     "LLM_interest",
-        #     "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-        #     confirm_preference,
-        #     False,
-        #     3,
-        #     5,
-        # )
+        s, interest2 = self.hri_manager.ask_and_confirm(
+            "What is your favorite second interest?",
+            "LLM_interest",
+            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            confirm_preference,
+        )
 
     def test_categorize_shelves(self):
         test_cases_file = os.path.join(DATA_DIR, "categorize_objects.json")
@@ -569,16 +541,18 @@ class TestHriManager(Node):
                                 self.get_logger().info(f"Command {cmd_idx + 1}: Exact match")
                                 continue
 
-                            # Use cosine similarity if not an exact match
-                            actual_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
-                                str(actual_cmd)
+                            # Use the embeddings service instead of the removed local pg object.
+                            s, closest = self.hri_manager.find_closest(
+                                [str(expected_cmd)], str(actual_cmd), top_k=1
                             )
-                            expected_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
-                                str(expected_cmd)
-                            )
-                            similarity = cosine_similarity(
-                                [actual_cmd_embedding], [expected_cmd_embedding]
-                            )[0][0]
+                            if s != Status.EXECUTION_SUCCESS or not closest.similarities:
+                                success = False
+                                self.get_logger().error(
+                                    f"Command {cmd_idx + 1} similarity lookup failed: {s}"
+                                )
+                                break
+
+                            similarity = closest.similarities[0]
                             self.get_logger().info(
                                 f"Command {cmd_idx + 1}: Cosine similarity = {similarity:.4f}"
                             )
@@ -633,7 +607,7 @@ class TestHriManager(Node):
         self.get_logger().info("This may take a minute...")
         result = subprocess.run(
             ["baml-cli", "test"],
-            cwd="/workspace/src/task_manager/scripts/utils/",
+            cwd="/workspace/src/task_manager/task_manager/utils/",
             capture_output=True,
             text=True,
         )
