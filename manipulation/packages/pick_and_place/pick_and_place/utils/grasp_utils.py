@@ -4,16 +4,16 @@ from frida_interfaces.srv import GraspDetection
 from frida_motion_planning.utils.ros_utils import wait_for_future
 
 
-def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
+def get_grasps(grasp_detection_client, object_cloud, cfg_path: str = ""):
     # wait for the service to be available
     if not grasp_detection_client.wait_for_service(timeout_sec=5.0):
         raise RuntimeError("Service not available")
     request = GraspDetection.Request()
     request.input_cloud = object_cloud
-    request.cfg_path = cgf_path
-    grasp_detection_client.wait_for_service()
+    # cfg_path is kept for interface compatibility but ignored by AnyGrasp service
+    request.cfg_path = cfg_path
     future = grasp_detection_client.call_async(request)
-    future = wait_for_future(future, timeout=10)
+    future = wait_for_future(future, timeout=30)
 
     if not future:
         return [], []

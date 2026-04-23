@@ -12,14 +12,13 @@ from launch.substitutions import PathJoinSubstitution
 def generate_launch_description():
     return LaunchDescription(
         [
-            # gpd
+            # GraspNet grasp detection service
             Node(
                 package="arm_pkg",
-                executable="gpd_service",
-                name="gpd_service",
+                executable="graspnet_service.py",
+                name="grasp_detection_service",
                 output="screen",
                 emulate_tty=True,
-                respawn=True,
                 parameters=[],
             ),
             Node(

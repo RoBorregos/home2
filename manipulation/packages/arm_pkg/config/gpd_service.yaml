@@ -2,3 +2,10 @@ ros__parameters:
   target_frame: "link_base"
   pcd_default_frame: "link_base"
   transform_timeout: 1.0
+  # GraspNet-baseline checkpoint path (download from graspnet-baseline repo)
+  # Recommended: checkpoint-rs.tar (RealSense) or checkpoint-kn.tar (Kinect)
+  checkpoint_path: "/workspace/src/manipulation/packages/arm_pkg/graspnet_checkpoint/checkpoint-rs.tar"
+  num_view: 300
+  # Set collision_thresh: 0 to skip collision filtering (faster)
+  collision_thresh: 0.01
+  voxel_size: 0.01
