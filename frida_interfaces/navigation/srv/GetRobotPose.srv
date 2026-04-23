@@ -1,0 +1,6 @@
+# Request — query current robot pose via TF (map → base_link)
+---
+# Response
+bool success
+geometry_msgs/PoseStamped pose
+string error
