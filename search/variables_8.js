@@ -21,7 +21,7 @@ var searchData=
   ['hear_5fservice_18',['hear_service',['../classrun__while__hearing_1_1ServiceClientServerNode.html#a1f62abe9367980742af3c5b57d42d294',1,'run_while_hearing::ServiceClientServerNode']]],
   ['heatmap_5fplace_5fservice_19',['HEATMAP_PLACE_SERVICE',['../namespacefrida__constants_1_1manipulation__constants.html#aca89e34e29520b81899330de0187b2ec',1,'frida_constants::manipulation_constants']]],
   ['height_20',['height',['../structBoxPrimitiveParams.html#aa16abf6eefdca9ea3600982e568eebeb',1,'BoxPrimitiveParams']]],
-  ['help_21',['help',['../namespaceserver.html#a692f59b384dd93287c366eb7e7c0608b',1,'server.help()'],['../namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282',1,'moondream_lib.help()']]],
+  ['help_21',['help',['../namespaceserver.html#a692f59b384dd93287c366eb7e7c0608b',1,'server.help()'],['../namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282',1,'moondream_lib.help()'],['../namespacescripts_1_1run__coacd.html#aa534d03be4953c2575c2da54f108d8bb',1,'scripts.run_coacd.help()']]],
   ['help_5fme_5fcarry_22',['HELP_ME_CARRY',['../classtask__manager_1_1utils_1_1task_1_1Task.html#aa2b793be19afbc6e78024617637d9ef1',1,'task_manager::utils::task::Task']]],
   ['hits_23',['hits',['../classtrack_1_1Track.html#a913ded41e8b6f3939f691fedd715cc2f',1,'track::Track']]],
   ['hotword_5fservice_5fname_24',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],

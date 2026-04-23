@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('md_docs_cyclonedds_setup.html',''); in
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>Optimized CycloneDDS configuration for ROS 2 with optional iceoryx shared memory (SHM) for zero-copy transport.</p>
-<h1><a class="anchor" id="autotoc_md24"></a>
+<h1><a class="anchor" id="autotoc_md70"></a>
 Architecture</h1>
 <div class="fragment"><div class="line">Host PC                              Docker Container</div>
 <div class="line">┌─────────────────────┐              ┌──────────────────────────┐</div>
@@ -140,7 +140,7 @@ Architecture</h1>
 <div class="line">│  started by lib.sh        │</div>
 <div class="line">│  before zed/vision/nav    │</div>
 <div class="line">└──────────────────────────┘</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md25"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md71"></a>
 Shared Memory (SHM) vs UDP</h1>
 <p>CycloneDDS supports two transport modes:</p>
 <table class="markdownTable">
@@ -156,7 +156,7 @@ Shared Memory (SHM) vs UDP</h1>
 <td class="markdownTableBodyNone"><b>Env var</b>   </td><td class="markdownTableBodyNone"><code>CYCLONE_SHM=1</code>   </td><td class="markdownTableBodyNone"><code>CYCLONE_SHM=0</code> (default)   </td></tr>
 </table>
 <p><b>Default is SHM off.</b> All docker-compose files read <code>CYCLONE_SHM</code> from the environment, defaulting to <code>0</code>. On resource-constrained machines (&lt; 16 GB RAM), SHM will fail because RouDi needs ~3.2 GB of <code>/dev/shm</code> for the management segment alone.</p>
-<h2><a class="anchor" id="autotoc_md26"></a>
+<h2><a class="anchor" id="autotoc_md72"></a>
 SHM Memory Breakdown (when enabled)</h2>
 <p>RouDi reserves shared memory in two segments:</p>
 <p>**<code>iceoryx_mgmt</code> (~3 GB)** — management overhead driven by compile-time limits:</p><ul>
@@ -182,7 +182,7 @@ SHM Memory Breakdown (when enabled)</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">8 MB   </td><td class="markdownTableBodyNone">10   </td><td class="markdownTableBodyNone">~80 MB   </td><td class="markdownTableBodyNone">HD1080 full resolution (~6 MB)   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md73"></a>
 ZED SHM Workarounds</h2>
 <p>When SHM is enabled, the ZED camera node requires special handling to avoid <code>TOO_MANY_CHUNKS_HELD_IN_PARALLEL</code> errors during its startup burst (30+ topics advertised in milliseconds):</p>
 <ul>
@@ -190,7 +190,7 @@ ZED SHM Workarounds</h2>
 <li><code>zed_shm_launch.py</code> — patches the ZED launch file to inject <code>--ros-args -p start_parameter_event_publisher:=false</code> into the composable node container</li>
 <li><code>robot_state_publisher</code> runs with a separate no-SHM CycloneDDS config (<code>cyclonedds_noshm.xml</code>)</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md28"></a>
+<h1><a class="anchor" id="autotoc_md74"></a>
 Files</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -220,9 +220,9 @@ Files</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>lib.sh</code>   </td><td class="markdownTableBodyNone"><code>ensure_roudi()</code> starts RouDi; <code>run_area()</code> conditionally calls it when <code>CYCLONE_SHM=1</code>   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md29"></a>
+<h1><a class="anchor" id="autotoc_md75"></a>
 Usage</h1>
-<h2><a class="anchor" id="autotoc_md30"></a>
+<h2><a class="anchor" id="autotoc_md76"></a>
 Local Development (no SHM, default)</h2>
 <p>No extra setup needed for shared memory. Just configure the network interface:</p>
 <p><b>Step 1 — Host (run once):</b></p>
@@ -230,7 +230,7 @@ Local Development (no SHM, default)</h2>
 </div><!-- fragment --><p><b>Step 2 — Run your area normally:</b></p>
 <div class="fragment"><div class="line">bash run.sh navigation cpu</div>
 </div><!-- fragment --><p>CycloneDDS uses UDP loopback. No RouDi container is started.</p>
-<h2><a class="anchor" id="autotoc_md31"></a>
+<h2><a class="anchor" id="autotoc_md77"></a>
 Orin AGX / High-Memory Machine (with SHM)</h2>
 <p><b>Step 1 — Host (run once):</b></p>
 <div class="fragment"><div class="line">sudo bash setup_cyclonedds.sh --host-only eno1</div>
@@ -242,21 +242,21 @@ Orin AGX / High-Memory Machine (with SHM)</h2>
 <li>Generate CycloneDDS XML with <code>&lt;SharedMemory&gt;&lt;Enable&gt;true&lt;/Enable&gt;&lt;/SharedMemory&gt;</code></li>
 <li>All inter-container communication for large topics uses zero-copy via <code>/dev/shm</code></li>
 </ol>
-<h2><a class="anchor" id="autotoc_md32"></a>
+<h2><a class="anchor" id="autotoc_md78"></a>
 Bare Metal (Orin, direct install)</h2>
 <div class="fragment"><div class="line">sudo bash setup_cyclonedds.sh eno1</div>
 <div class="line">source ~/.bashrc</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md33"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md79"></a>
 Revert to FastDDS</h2>
 <div class="fragment"><div class="line">sudo bash setup_cyclonedds.sh --revert</div>
 <div class="line">source ~/.bashrc</div>
 <div class="line">unset RMW_IMPLEMENTATION CYCLONEDDS_URI</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md34"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md80"></a>
 Override Interface at Runtime</h2>
 <div class="fragment"><div class="line">CYCLONE_INTERFACE=wlan0 bash run.sh navigation cpu</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md35"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md81"></a>
 What It Configures</h1>
-<h2><a class="anchor" id="autotoc_md36"></a>
+<h2><a class="anchor" id="autotoc_md82"></a>
 CycloneDDS XML (&lt;tt&gt;/etc/cyclonedds.xml&lt;/tt&gt;)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -274,7 +274,7 @@ CycloneDDS XML (&lt;tt&gt;/etc/cyclonedds.xml&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>SharedMemory.Enable</code>   </td><td class="markdownTableBodyNone">true/false   </td><td class="markdownTableBodyNone">Controlled by <code>CYCLONE_SHM</code> env var   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md37"></a>
+<h2><a class="anchor" id="autotoc_md83"></a>
 Kernel Tuning (&lt;tt&gt;/etc/sysctl.d/60-cyclonedds-buffers.conf&lt;/tt&gt;)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -286,7 +286,7 @@ Kernel Tuning (&lt;tt&gt;/etc/sysctl.d/60-cyclonedds-buffers.conf&lt;/tt&gt;)</h
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>net.ipv4.ipfrag_high_thresh</code>   </td><td class="markdownTableBodyNone">128 MB   </td><td class="markdownTableBodyNone">4 MB   </td><td class="markdownTableBodyNone">Fragment reassembly memory   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md38"></a>
+<h2><a class="anchor" id="autotoc_md84"></a>
 Iceoryx / RouDi (when &lt;tt&gt;CYCLONE_SHM=1&lt;/tt&gt;)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -306,7 +306,7 @@ Iceoryx / RouDi (when &lt;tt&gt;CYCLONE_SHM=1&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Config file   </td><td class="markdownTableBodyNone"><code>roudi_config.toml</code>   </td><td class="markdownTableBodyNone">6 memory pools (128 B to 8 MB)   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md39"></a>
+<h1><a class="anchor" id="autotoc_md85"></a>
 Finding Your Network Interface</h1>
 <div class="fragment"><div class="line"># On host</div>
 <div class="line">ip -br link show</div>
@@ -314,20 +314,20 @@ Finding Your Network Interface</h1>
 <div class="line"># Inside Docker</div>
 <div class="line">ls /sys/class/net/</div>
 </div><!-- fragment --><p>Common interfaces: <code>eno1</code>, <code>eth0</code> (wired), <code>wlan0</code> (wifi), <code>lo</code> (loopback)</p>
-<h1><a class="anchor" id="autotoc_md40"></a>
+<h1><a class="anchor" id="autotoc_md86"></a>
 Troubleshooting</h1>
-<h2><a class="anchor" id="autotoc_md41"></a>
+<h2><a class="anchor" id="autotoc_md87"></a>
 RouDi SIGBUS / fails to start</h2>
 <p>RouDi needs ~3.2 GB in <code>/dev/shm</code>. Check available space:</p>
 <div class="fragment"><div class="line">df -h /dev/shm</div>
 </div><!-- fragment --><p>If insufficient, either increase it (<code>sudo mount -o remount,size=4G /dev/shm</code>) or disable SHM by unsetting <code>CYCLONE_SHM</code> (defaults to <code>0</code>).</p>
-<h2><a class="anchor" id="autotoc_md42"></a>
+<h2><a class="anchor" id="autotoc_md88"></a>
 Stale iceoryx artifacts</h2>
 <p>If RouDi crashes, stale lock files may prevent restart:</p>
 <div class="fragment"><div class="line">rm -f /tmp/iox-unique-roudi.lock /tmp/roudi.lock</div>
 <div class="line">rm -f /dev/shm/iceoryx*</div>
 </div><!-- fragment --><p>The RouDi container command already cleans these on startup. Running <code>--down</code> with <code>CYCLONE_SHM=0</code> also cleans them via <code>lib.sh</code>.</p>
-<h1><a class="anchor" id="autotoc_md43"></a>
+<h1><a class="anchor" id="autotoc_md89"></a>
 Reference</h1>
 <p>Based on <a href="https://www.stereolabs.com/docs/ros2/dds-and-network-tuning">Stereolabs DDS and Network Tuning</a>. </p>
 </div></div><!-- contents -->

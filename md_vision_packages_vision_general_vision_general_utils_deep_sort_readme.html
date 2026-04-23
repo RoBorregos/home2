@@ -94,14 +94,14 @@ $(document).ready(function(){initNavTree('md_vision_packages_vision_general_visi
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>Core tracking files extracted from <a href="https://github.com/nwojke/deep_sort">nwojke/deep_sort</a> (<code>deep_sort/</code> directory of that repository).</p>
-<h1><a class="anchor" id="autotoc_md10"></a>
+<h1><a class="anchor" id="autotoc_md56"></a>
 Origin</h1>
 <p>The original repository implements the paper:</p>
 <blockquote class="doxtable">
 <p>&zwj;N. Wojke, A. Bewley, D. Paschke, *"Simple Online and Realtime Tracking with a Deep Association Metric"*, ICIP 2017. </p>
 </blockquote>
 <p>Only the <b>library modules</b> needed at runtime were copied. Application-level scripts (<code>deep_sort_app.py</code>, <code>generate_detections.py</code>, etc.) and the CNN feature-extraction model were <b>not</b> included — feature vectors are supplied externally by our pipeline.</p>
-<h1><a class="anchor" id="autotoc_md11"></a>
+<h1><a class="anchor" id="autotoc_md57"></a>
 Files</h1>
 <p>All files below come from the original <code>deep_sort/</code> package unless noted otherwise.</p>
 <table class="markdownTable">
@@ -126,7 +126,7 @@ Files</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code><a class="el" href="visualization_8py.html">visualization.py</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="visualization_8py.html">deep_sort/visualization.py</a></code>   </td><td class="markdownTableBodyNone"><code>Visualization</code> / <code>NoVisualization</code> — OpenCV viewer helpers for debugging. <b>Not used in production</b>; kept for reference.   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md12"></a>
+<h1><a class="anchor" id="autotoc_md58"></a>
 Files NOT included from the original repo</h1>
 <ul>
 <li><code>deep_sort_app.py</code> — standalone demo application</li>
@@ -134,7 +134,7 @@ Files NOT included from the original repo</h1>
 <li><code>tools/</code> — evaluation and dataset utilities</li>
 <li>CNN model weights (<code>resources/networks/</code>) — we use our own feature extractor</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md13"></a>
+<h1><a class="anchor" id="autotoc_md59"></a>
 How tracking works (high-level)</h1>
 <div class="fragment"><div class="line">detections ──► Tracker.predict()  (Kalman predict for every track)</div>
 <div class="line">           ──► Tracker.update()</div>

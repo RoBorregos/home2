@@ -1,8 +1,8 @@
 var searchData=
 [
   ['read_5fcluster_2ecpp_0',['read_cluster.cpp',['../read__cluster_8cpp.html',1,'']]],
-  ['readme_2emd_1',['readme.md',['../readme_8md.html',1,'']]],
-  ['readme_2emd_2',['README.md',['../vision_2README_8md.html',1,'(Global Namespace)'],['../robot__description_2frida__description_2README_8md.html',1,'(Global Namespace)'],['../navigation_2README_8md.html',1,'(Global Namespace)'],['../navigation_2packages_2map__context_2config_2rosbag_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2README_8md.html',1,'(Global Namespace)']]],
+  ['readme_2emd_1',['README.md',['../navigation_2packages_2map__context_2config_2rosbag_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2packages_2mujoco__ros2__control_2examples_2franka__mujoco_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2packages_2mujoco__ros2__control_2examples_2task__table__mujoco_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2packages_2mujoco__ros2__control_2examples_2unitree__h1__mujoco_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2packages_2mujoco__ros2__control_2mujoco__ros2__control_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2packages_2mujoco__ros2__control_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2README_8md.html',1,'(Global Namespace)'],['../navigation_2README_8md.html',1,'(Global Namespace)'],['../robot__description_2frida__description_2README_8md.html',1,'(Global Namespace)'],['../vision_2README_8md.html',1,'(Global Namespace)']]],
+  ['readme_2emd_2',['readme.md',['../readme_8md.html',1,'']]],
   ['readpcdfile_2esrv_3',['ReadPcdFile.srv',['../ReadPcdFile_8srv.html',1,'']]],
   ['readqr_2esrv_4',['ReadQr.srv',['../ReadQr_8srv.html',1,'']]],
   ['receptionist_2elaunch_2epy_5',['receptionist.launch.py',['../receptionist_8launch_8py.html',1,'']]],
@@ -16,7 +16,7 @@ var searchData=
   ['removecollisionobject_2esrv_13',['RemoveCollisionObject.srv',['../RemoveCollisionObject_8srv.html',1,'']]],
   ['removeplane_2esrv_14',['RemovePlane.srv',['../RemovePlane_8srv.html',1,'']]],
   ['removeverticalplane_2esrv_15',['RemoveVerticalPlane.srv',['../RemoveVerticalPlane_8srv.html',1,'']]],
-  ['restaurant_2elaunch_2epy_16',['restaurant.launch.py',['../manipulation_2packages_2manipulation__general_2launch_2restaurant_8launch_8py.html',1,'(Global Namespace)'],['../navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html',1,'(Global Namespace)']]],
+  ['restaurant_2elaunch_2epy_16',['restaurant.launch.py',['../navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2manipulation__general_2launch_2restaurant_8launch_8py.html',1,'(Global Namespace)']]],
   ['restaurant_5fcommands_2epy_17',['restaurant_commands.py',['../restaurant__commands_8py.html',1,'']]],
   ['restaurant_5flaunch_2epy_18',['restaurant_launch.py',['../restaurant__launch_8py.html',1,'']]],
   ['restaurant_5ftask_5fmanager_2epy_19',['restaurant_task_manager.py',['../restaurant__task__manager_8py.html',1,'']]],
@@ -25,5 +25,6 @@ var searchData=
   ['ros2_2emd_22',['ROS2.md',['../ROS2_8md.html',1,'']]],
   ['ros_5futils_2epy_23',['ros_utils.py',['../manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2vision__general_2vision__general_2utils_2ros__utils_8py.html',1,'(Global Namespace)']]],
   ['rtabnav2_2elaunch_2epy_24',['rtabnav2.launch.py',['../rtabnav2_8launch_8py.html',1,'']]],
-  ['run_5fwhile_5fhearing_2epy_25',['run_while_hearing.py',['../run__while__hearing_8py.html',1,'']]]
+  ['run_5fcoacd_2epy_25',['run_coacd.py',['../run__coacd_8py.html',1,'']]],
+  ['run_5fwhile_5fhearing_2epy_26',['run_while_hearing.py',['../run__while__hearing_8py.html',1,'']]]
 ];
