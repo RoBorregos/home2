@@ -54,7 +54,9 @@ class DemoBecas(Node):
     def __init__(self):
         super().__init__("demo_becas")
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-        self.create_subscription(Joy, "/joy", self.joy_callback, 1)
+        self.create_subscription(
+            Joy, "/joy", self.joy_callback, 1, callback_group=self.callback_group
+        )
         self.get_logger().info("Demo Becas node starting...")
 
         self.gripper_client = self.create_client(
@@ -68,7 +70,9 @@ class DemoBecas(Node):
             "/manipulation/move_joints_action_server",
             callback_group=self.callback_group,
         )
-        self.speak_service = self.create_client(Speak, SPEAK_SERVICE)
+        self.speak_service = self.create_client(
+            Speak, SPEAK_SERVICE, callback_group=self.callback_group
+        )
 
         self.busy_planner = False
         self.busy_gripper = False
