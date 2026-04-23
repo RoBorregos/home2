@@ -60,6 +60,7 @@ Additional Flags:
   --build-image      Builds the Docker image for the specified area or task.
   --recreate         Forces the recreation of containers (useful for network or .env changes).
   --open-display     Opens the graphical interface (UI/Display) required for HRI or Vision.
+  --simulation-compile Compiles and downloads the mujoco simulation. 
   --clean            Deletes the build/, log/, and install/ folders and frida_interfaces_cache/.
 
 Examples:

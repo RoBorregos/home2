@@ -1,4 +1,5 @@
-ros__parameters:
-  target_frame: "link_base"
-  pcd_default_frame: "link_base"
-  transform_timeout: 1.0
+/**:
+  ros__parameters:
+    target_frame: "base_link"
+    pcd_default_frame: "base_link"
+    transform_timeout: 1.0

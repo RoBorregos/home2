@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  CycloneDDS config for running the MuJoCo simulation inside the manipulation
+  container. Uses explicit localhost unicast peers instead of the default
+  multicast/wlp0s20f3 setup, because WiFi interfaces typically drop multicast
+  loopback, which breaks DDS discovery between processes on the same machine.
+  Not suitable for real-robot/multi-host runs (no WiFi/wired interface).
+-->
+<CycloneDDS xmlns="https://cdds.io/config" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://cdds.io/config https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclonedds.xsd">
+  <Domain>
+    <General>
+      <Interfaces>
+        <NetworkInterface name="lo" priority="default" multicast="true" autodetermine="false"/>
+      </Interfaces>
+      <AllowMulticast>false</AllowMulticast>
+      <MaxMessageSize>65500B</MaxMessageSize>
+    </General>
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>120</MaxAutoParticipantIndex>
+      <Peers>
+        <Peer Address="localhost"/>
+      </Peers>
+    </Discovery>
+    <Internal>
+      <SocketReceiveBufferSize min="10MB"/>
+    </Internal>
+    <Tracing>
+      <Verbosity>warning</Verbosity>
+    </Tracing>
+  </Domain>
+</CycloneDDS>
