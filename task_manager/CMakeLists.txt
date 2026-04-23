@@ -47,6 +47,10 @@ install(PROGRAMS ${MISC_NODES}
   DESTINATION lib/${PROJECT_NAME}/misc
 )
 
+install(PROGRAMS scripts/misc/demo_becas.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(DIRECTORY launch scripts
   DESTINATION share/${PROJECT_NAME})
 
