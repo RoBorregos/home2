@@ -59,7 +59,7 @@ case $TASK in
         RUN="ros2 run task_manager pickandplace_task_manager.py"
         ;;
     "--demo-becas")
-        RUN="ros2 run task_manager demo_becas.py"
+        RUN="ros2 run task_manager misc/demo_becas.py"
         ;;
     *)
         RUN="bash"
