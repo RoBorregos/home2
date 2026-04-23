@@ -23,15 +23,54 @@ from base_detector_node import BaseDetectorNode
 class ZeroShotDetectorNode(BaseDetectorNode):
     MARKER_COLOR = (0.0, 0.0, 1.0)  # blue
 
-    def __init__(self):
-        super().__init__(
-            "zero_shot_object_detector_2D_node",
-            default_det_topic=ZERO_SHOT_DETECTIONS_TOPIC,
-            default_det_img_topic=ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,
-            default_det_poses_topic=ZERO_SHOT_DETECTIONS_POSES_TOPIC,
-            default_det_3d_topic=ZERO_SHOT_DETECTIONS_3D_TOPIC,
-            default_active_topic=ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC,
-            fixed_active_topic="/vision/zero_shot_detector/active",
+
+# TODO DEFINE HOW TO GET params
+
+
+class zero_shot_object_detector_node(object_detector_node):
+    def __init__(self, node_name: str = "zero_shot_object_detector_2D_node"):
+        super(object_detector_node, self).__init__(node_name)
+
+        for key, value in ARGS.items():
+            self.declare_parameter(key, value)
+
+        self.bridge = CvBridge()
+        self.depth_image = []
+        self.rgb_image = []
+        self.camera_info = CameraInfo()
+        self.detections_frame = []
+
+        self.set_parameters()
+        self.active_flag = not self.node_params.USE_ACTIVE_FLAG
+
+        self.object_detector_2d = YoloEObjectDetector(
+            self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
+        )
+        self.object_detector_2d.set_classes(self.active_classes)
+
+        self.handleSubcriptions()
+        self.handlePublishers()
+        self.handleServices()
+        self.runThread = None
+        # Bypass super().__init__ (parent is the regular detector), so the
+        # frame-skip bookkeeping fields that rgbImageCallback reads are never
+        # created. Mirror them here so the shared callback doesn't crash.
+        self._frame_count = 0
+        self._skip_frames = 2
+
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
+
+        # Frames per second throughput estimator
+        self.curr_clock = 0
+        self._frame_count = 0
+        self._skip_frames = 2
+
+        self.get_logger().info("Object Detector 2D Node has been started")
+
+    def set_parameters(self):
+        self.active_classes = (
+            self.get_parameter("CLASSES").get_parameter_value().string_array_value
         )
 
         initial_classes = self.declare_param(

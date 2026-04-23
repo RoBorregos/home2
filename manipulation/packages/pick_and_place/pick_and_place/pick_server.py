@@ -83,6 +83,15 @@ class PickMotionServer(Node):
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
+        # How high above the detected support plane a grasp position has to
+        # be to be considered feasible. Default keeps the real-robot safety
+        # margin; the sim launch overrides to a tiny value because the plane
+        # segmenter tends to lock onto a house wall instead of the table so
+        # the strict 0.1 m threshold rejects every valid grasp.
+        self.declare_parameter("pick_min_height", PICK_MIN_HEIGHT)
+        self.pick_min_height = self.get_parameter("pick_min_height").value
+        self.get_logger().info(f"Pick min height above plane: {self.pick_min_height} m")
+
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -747,6 +756,28 @@ class PickMotionServer(Node):
         height = (obj_highest_z + obj_radius) - (obj_lowest_z - obj_radius)
         self.get_logger().info(f"Object height: {height}")
         return height
+
+    def check_feasibility(self, pose, is_flat=False):
+        if self.plane is None:
+            if is_flat:
+                return True
+            return False
+
+        pick_height = pose.pose.position.z
+        plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
+
+        # Cutlery keeps its own constant (flatter objects need tighter tolerance);
+        # non-flat picks use the pick_min_height parameter so sim and real can
+        # share the same launch without a per-environment override.
+        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else self.pick_min_height
+
+        if pick_height < plane_height + min_height:
+            self.get_logger().warn(
+                f"Pick height {pick_height:.4f} is below acceptable height "
+                f"(plane={plane_height:.4f}, min={min_height:.4f})"
+            )
+            return False
+        return True
 
 
 def main(args=None):

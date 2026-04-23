@@ -11,14 +11,13 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.event_handlers import OnProcessStart
 from launch.actions import (
-    DeclareLaunchArgument,
+    ExecuteProcess,
     IncludeLaunchDescription,
     OpaqueFunction,
     RegisterEventHandler,
     LogInfo,
     TimerAction,
 )
-from launch.conditions import IfCondition
 from arm_pkg.moveit_configs_builder_sim import MoveItConfigsBuilder
 
 
@@ -31,7 +30,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
     effort_control = LaunchConfiguration("effort_control", default=False)
     velocity_control = LaunchConfiguration("velocity_control", default=False)
     add_gripper = LaunchConfiguration("add_gripper", default=False)
-    load_zed = LaunchConfiguration("load_zed", default=True)
     add_vacuum_gripper = LaunchConfiguration("add_vacuum_gripper", default=False)
     add_bio_gripper = LaunchConfiguration("add_bio_gripper", default=False)
     dof = LaunchConfiguration("dof", default=6)
@@ -79,17 +77,14 @@ def generate_nodes_for_spawn(context: LaunchContext):
     )
     kinematics_suffix = LaunchConfiguration("kinematics_suffix", default="")
 
-    show_rviz = LaunchConfiguration("show_rviz", default="false")
-    no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default="false")
-
-    # Flags for modularity - Controls if Brain/Vision nodes start here
-    launch_moveit = LaunchConfiguration("launch_moveit", default="false")
-    launch_perception = LaunchConfiguration("launch_perception", default="false")
+    show_rviz = LaunchConfiguration("show_rviz", default=True)
+    no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
 
     xarm_type = "{}{}".format(
         robot_type.perform(context),
         dof.perform(context) if robot_type.perform(context) in ("xarm", "lite") else "",
     )
+    print(xarm_type)
 
     ros_namespace = LaunchConfiguration("ros_namespace", default="").perform(context)
 
@@ -132,8 +127,20 @@ def generate_nodes_for_spawn(context: LaunchContext):
     ros2_control_raw_params = deep_update(xarm_params, gripper_params)
     yaml_dump("/tmp/final_frida.yaml", ros2_control_raw_params)
 
+    # robot_description
+    # xarm_description/launch/lib/robot_description_lib.py
+    mod = load_python_launch_file_as_module(
+        os.path.join(
+            get_package_share_directory("xarm_description"),
+            "launch",
+            "lib",
+            "robot_description_lib.py",
+        )
+    )
+
     moveit_config = MoveItConfigsBuilder(
         context=context,
+        # controllers_name=controllers_name, # Que carajo?
         dof=dof,
         controllers_name="fake_controllers",
         robot_type=robot_type,
@@ -152,7 +159,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ros2_control_plugin=ros2_control_plugin,
         ros2_control_params="/tmp/final_frida.yaml",
         add_gripper=add_gripper,
-        load_zed=load_zed,
         add_vacuum_gripper=add_vacuum_gripper,
         add_bio_gripper=add_bio_gripper,
         add_realsense_d435i=add_realsense_d435i,
@@ -199,24 +205,22 @@ def generate_nodes_for_spawn(context: LaunchContext):
             get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"
         )
     )
+    # Skip loading the house mesh for the manipulation sim: its walls/floor
+    # dominate the ZED pointcloud and the perception_3d plane segmenter
+    # latches onto one of them instead of the test table, which makes
+    # check_feasibility reject every valid grasp. Keep the pick_server and
+    # gpd params identical to the real robot by simplifying the scene.
     additional_files.append(
         os.path.join(
             get_package_share_directory("frida_description"),
             "urdf",
             "TMR2025",
-            "house.xacro",
-        )
-    )
-    additional_files.append(
-        os.path.join(
-            get_package_share_directory("frida_description"),
-            "urdf",
-            "TMR2025",
-            "object_pool.xacro",
+            "table_and_object.xacro",
         )
     )
     robot_description = moveit_config.robot_description
-
+    # Define the xacro2mjcf node, this translates the xacro urdf into MJFL
+    # print(robot_description['robot_description'])
     xacro2mjcf = Node(
         package="mujoco_ros2_control",
         executable="xacro2mjcf.py",
@@ -241,6 +245,9 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ],
     )
 
+    # Remap MuJoCo camera topics to match the real ZED wrapper namespace so
+    # perception nodes (object_detector_2d, etc.) work on sim without any
+    # topic rewrites.
     zed_topic_remappings = [
         (
             "/zed_mujoco_camera_link/color/image_raw",
@@ -270,7 +277,10 @@ def generate_nodes_for_spawn(context: LaunchContext):
         parameters=[
             robot_description,
             "/tmp/final_frida.yaml",
-            "/workspace/src/docker/simulation/zed_sim_camera.yaml",
+            # Sim ZED sizing + rate (HD720 @ 15 Hz). The params live on the
+            # zed_mujoco_camera_link subnode created by the plugin, so they
+            # are applied via a file targeted at that exact node name.
+            "/workspace/src/docker/manipulation/zed_sim_camera.yaml",
             {"simulation_frequency": 500.0},
             {"realtime_factor": 1.0},
             {"robot_model_path": save_xml_file},
@@ -282,6 +292,13 @@ def generate_nodes_for_spawn(context: LaunchContext):
         + zed_topic_remappings,
     )
 
+    # Alias the MuJoCo camera body frame as zed_left_camera_optical_frame so the
+    # TF lookups the perception nodes do on the real robot also resolve in sim.
+    # The quaternion (-0.5, 0.5, -0.5, 0.5) is the ROS-standard rotation that
+    # maps a camera body frame (x-forward, y-left, z-up) into the optical frame
+    # convention used by image pipelines (x-right, y-down, z-forward). Without
+    # it the 3D points the detector emits in 'zed_left_camera_optical_frame'
+    # land ~1.3 m off when transformed to base_link.
     zed_optical_frame_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -309,6 +326,10 @@ def generate_nodes_for_spawn(context: LaunchContext):
         parameters=[{"use_sim_time": use_sim_time}],
     )
 
+    ##Start simulation after xacro2mjcf has had time to write the xml.
+    ##We can't rely on OnProcessExit: xacro2mjcf.py calls exit(0) without a full
+    ##rclpy.shutdown(), so rclpy background threads keep the OS process alive
+    ##and the exit signal never reaches launch.
     start_mujoco = TimerAction(
         period=5.0,
         actions=[
@@ -316,6 +337,8 @@ def generate_nodes_for_spawn(context: LaunchContext):
             mujoco,
         ],
     )
+
+    # Load controllers
 
     joint_state_broadcaster = Node(
         package="controller_manager",
@@ -328,6 +351,8 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ],
     )
 
+    # Custom gripper (xarm_gripper_traj_controller) comes from custom_gripper_controllers.yaml
+    # and is always loaded alongside the mujoco bridge. bio_gripper is the only real alternative.
     controllers = [
         "{}{}_traj_controller".format(prefix.perform(context), xarm_type),
         "xarm_gripper_traj_controller",
@@ -340,6 +365,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "{}bio_gripper_traj_controller".format(prefix.perform(context))
         )
 
+    # Load controllers
     controller_nodes = []
     for controller in controllers:
         controller_nodes.append(
@@ -359,6 +385,8 @@ def generate_nodes_for_spawn(context: LaunchContext):
         package="mujoco_spawn", executable="Xarm_gripper_mujoco_bridge", output="screen"
     )
 
+    ##load after mujoco start, with a short delay so the controller_manager
+    ##has time to register the MujocoSystem hardware interface before spawners hit it.
     delayed_controllers = TimerAction(
         period=2.0,
         actions=[
@@ -375,6 +403,11 @@ def generate_nodes_for_spawn(context: LaunchContext):
         )
     )
 
+    # Pull in the perception + manipulation stacks with use_sim_time=true so
+    # the same launches work verbatim on the real robot (where the user runs
+    # them without the sim arg) and under /clock inside MuJoCo. Only the
+    # choice of detector (zero-shot for sim vs tmr2025 for the real robot) is
+    # sim-specific and lives here.
     downsample_pc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -388,43 +421,75 @@ def generate_nodes_for_spawn(context: LaunchContext):
         launch_arguments={"use_sim_time": "true"}.items(),
     )
 
-    # Cleanup Return: MoveIt and Perception are now conditional
+    zero_shot_detector_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("object_detector_2d"),
+                    "launch",
+                    "zero_shot_object_detector_node.launch.py",
+                ]
+            )
+        ),
+        launch_arguments={"use_sim_time": "true"}.items(),
+    )
+
+    # Bridge zero-shot detections onto /vision/detections so downstream
+    # consumers like keyboard_input.py and the pick_server's detection
+    # handler see them under the same topic name they use on the real
+    # robot (where the pretrained detector fills /vision/detections).
+    # topic_tools isn't in the manipulation image, so inline a tiny rclpy
+    # relay instead of adding a new package dependency.
+    detections_relay = ExecuteProcess(
+        cmd=[
+            "python3",
+            "-c",
+            (
+                "import rclpy\n"
+                "from rclpy.node import Node\n"
+                "from frida_interfaces.msg import ObjectDetectionArray\n"
+                "rclpy.init()\n"
+                "n = Node('zero_shot_to_detections_relay')\n"
+                "pub = n.create_publisher(ObjectDetectionArray, '/vision/detections', 10)\n"
+                "n.create_subscription(ObjectDetectionArray, '/vision/zero_shot_detections', lambda m: pub.publish(m), 10)\n"
+                "n.get_logger().info('zero_shot -> /vision/detections relay up')\n"
+                "rclpy.spin(n)\n"
+            ),
+        ],
+        output="screen",
+    )
+
+    # Sim launch mirrors the scope of arm_pkg/frida_moveit_config.launch.py on
+    # the real robot: bring up the arm, MoveIt and the sensor pipeline (ZED +
+    # downsample + self-filtered cloud + zero-shot detector). The pick stack
+    # and keyboard UI are launched separately by the user, so the workflow is
+    # identical on both:
+    #   Terminal 1 (real):  ros2 launch arm_pkg frida_moveit_config.launch.py
+    #   Terminal 1 (sim):   ros2 launch mujoco_spawn mujoco_sim_init.launch.py
+    #   Terminal 2 (both):  ros2 launch pick_and_place pick_and_place.launch.py \
+    #                              use_sim_time:=<true|false> \
+    #                              point_cloud_topic:=<point_cloud|filtered_cloud>
+    #   Terminal 3 (both):  ros2 run pick_and_place keyboard_input.py
+
     return [
         robot_state_publisher,
         xacro2mjcf,
         start_mujoco,
         load_controllers,
-        # Brain (MoveIt) - Optional
-        RegisterEventHandler(
-            OnProcessStart(
-                target_action=mujoco,
-                on_start=[
-                    robot_moveit_common_launch,
-                ],
-            ),
-            condition=IfCondition(launch_moveit),
-        ),
-        # Vision (Optical TF and PC processing) - Optional
+        robot_moveit_common_launch,
         zed_optical_frame_tf,
-        RegisterEventHandler(
-            OnProcessStart(
-                target_action=mujoco,
-                on_start=[
-                    downsample_pc_launch,
-                ],
-            ),
-            condition=IfCondition(launch_perception),
-        ),
+        downsample_pc_launch,
+        zero_shot_detector_launch,
+        detections_relay,
     ]
 
 
 def generate_launch_description():
     return LaunchDescription(
         [
-            DeclareLaunchArgument("launch_moveit", default_value="false"),
-            DeclareLaunchArgument("launch_perception", default_value="false"),
-            DeclareLaunchArgument("load_zed", default_value="true"),
-            OpaqueFunction(function=generate_nodes_for_spawn),
+            OpaqueFunction(
+                function=generate_nodes_for_spawn
+            )  # Use OpaqueFunction for node creation. For more information refere to the mujoco_ros2_controll package
         ]
     )
 

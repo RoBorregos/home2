@@ -12,15 +12,7 @@ def generate_launch_description():
         "config",
         "parameters_zero_shot.yaml",
     )
-
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
-
-    # Native ROS 2 Remapping:
-    # Instead of an expensive Python relay, we tell the node to publish
-    # directly to /vision/detections. This has ZERO overhead and latency.
-    remappings = [
-        ("/vision/zero_shot_detections", "/vision/detections"),
-    ]
 
     return LaunchDescription(
         [
@@ -30,21 +22,13 @@ def generate_launch_description():
                 description="Use /clock (true) for the MuJoCo sim, wall time (false) for real robot.",
             ),
             Node(
-                package="vision_general",
-                executable="image_orienter.py",
-                name="image_orienter",
-                output="screen",
-                emulate_tty=True,
-            ),
-            Node(
                 package="object_detector_2d",
                 executable="zero_shot_object_detector_node.py",
                 name="ZeroShotDetect2D",
                 respawn=True,
                 output="screen",
-                emulate_tty=True,
+                emulate_tty=False,
                 parameters=[config, {"use_sim_time": use_sim_time}],
-                remappings=remappings,
             ),
         ]
     )
