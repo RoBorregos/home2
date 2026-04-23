@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="object_pool">
+
+  <!-- =====================================================================
+       Pool of dynamic objects that MuJoCo can grab with mouse drag.
+       Each object has a floating joint -> MuJoCo free joint.
+
+       In the MuJoCo viewer:
+         Ctrl+Shift+Right-click-drag : translate object in 3D
+         Ctrl+Shift+Left-click-drag  : rotate object
+         Double-click                : select body (click again to deselect)
+
+       To add an object: one macro call below.  Objects are "parked" in a
+       line at y = -1.0 (behind FRIDA) so they don't overlap anything.
+       Drag them onto any table in the house from the viewer.
+       ===================================================================== -->
+
+  <link name="world"/>
+
+  <!-- Grippable cube.  Friction matches the gripper silicone tuning from
+       gripper.xacro so the grasp is reliable.  Default mass = 50 g; override
+       with the `mass` arg if you need a heavier object. -->
+  <xacro:macro name="spawn_cube" params="name x y z sx sy sz r g b mass:=0.05">
+    <link name="${name}_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${sx} ${sy} ${sz}"/>
+        </geometry>
+        <material name="${name}_color">
+          <color rgba="${r} ${g} ${b} 1"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${sx} ${sy} ${sz}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="${mass}"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="${(1.0/12.0)*mass*(sy*sy + sz*sz)}" ixy="0" ixz="0"
+                 iyy="${(1.0/12.0)*mass*(sx*sx + sz*sz)}" iyz="0"
+                 izz="${(1.0/12.0)*mass*(sx*sx + sy*sy)}"/>
+      </inertial>
+    </link>
+
+    <joint name="world_to_${name}" type="floating">
+      <parent link="world"/>
+      <child link="${name}_link"/>
+      <origin xyz="${x} ${y} ${z}" rpy="0 0 0"/>
+    </joint>
+
+    <mujoco>
+      <reference name="${name}_link">
+        <geom name="${name}_link_collision_0"
+              friction="5.0 2.0 0.2"
+              solref="-50000 -500"
+              solimp="0.98 0.999 0.0001"
+              condim="4"/>
+      </reference>
+    </mujoco>
+  </xacro:macro>
+
+  <!-- ====================== OBJECTS ====================== -->
+  <!-- Add / remove / move objects by editing this block.       -->
+  <!-- x y z is the spawn pose (world frame); put z = half the  -->
+  <!-- sz so the object rests on the floor.                     -->
+
+  <xacro:spawn_cube name="cube_green" x="-0.5" y="-1.0" z="0.02"
+                    sx="0.04" sy="0.04" sz="0.04"
+                    r="0.2" g="0.8" b="0.2"/>
+
+  <xacro:spawn_cube name="cube_red"   x="-0.6" y="-1.0" z="0.02"
+                    sx="0.04" sy="0.04" sz="0.04"
+                    r="0.9" g="0.1" b="0.1"/>
+
+  <xacro:spawn_cube name="cube_blue"  x="-0.7" y="-1.0" z="0.02"
+                    sx="0.04" sy="0.04" sz="0.04"
+                    r="0.1" g="0.3" b="0.9"/>
+
+</robot>

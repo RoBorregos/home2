@@ -205,17 +205,20 @@ def generate_nodes_for_spawn(context: LaunchContext):
             get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"
         )
     )
-    # Skip loading the house mesh for the manipulation sim: its walls/floor
-    # dominate the ZED pointcloud and the perception_3d plane segmenter
-    # latches onto one of them instead of the test table, which makes
-    # check_feasibility reject every valid grasp. Keep the pick_server and
-    # gpd params identical to the real robot by simplifying the scene.
     additional_files.append(
         os.path.join(
             get_package_share_directory("frida_description"),
             "urdf",
             "TMR2025",
-            "table_and_object.xacro",
+            "house.xacro",
+        )
+    )
+    additional_files.append(
+        os.path.join(
+            get_package_share_directory("frida_description"),
+            "urdf",
+            "TMR2025",
+            "object_pool.xacro",
         )
     )
     robot_description = moveit_config.robot_description
