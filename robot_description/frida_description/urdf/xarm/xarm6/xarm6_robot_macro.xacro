@@ -15,7 +15,8 @@
     model_num:=0
     inertial_params_filename:=''
     kinematics_params_filename:=''
-    hard_interface:='PositionJointInterface' "
+    hard_interface:='PositionJointInterface' 
+    mujoco_plugin:=false "
     >
 
     <!-- include xarm6 relative macros: -->
@@ -70,6 +71,15 @@
     <xacro:xarm6_transmission prefix="${prefix}" hard_interface="${hard_interface}" />
     
     <xacro:xarm6_gazebo prefix="${prefix}" />
+
+    <xacro:if value="${mujoco_plugin}">    
+      <xacro:include filename="$(find frida_description)/urdf/xarm/xarm6/xarm6.mujoco_actuators.xacro"/>
+      <mujoco>
+        <xacro:create_xarm_mujoco_actuators/>
+      </mujoco>
+    </xacro:if>
+
+
 
   </xacro:macro>
 
