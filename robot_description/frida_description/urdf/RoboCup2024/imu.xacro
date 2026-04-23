@@ -12,12 +12,14 @@
   <inertial>
     <mass value="0.01"/> <!-- Adjust mass -->
     <inertia ixx="0.00001" ixy="0.0" ixz="0.0" iyy="0.00001" iyz="0.0" izz="0.00001"/>
+    <origin xyz="0 0 0" rpy="0 0 0"></origin>
   </inertial>
 </link>
 <joint name="imu_joint" type="fixed">
   <parent link="base_link"/>
   <child link="imu_link"/>
-  <origin xyz="0 0 0.0" rpy="0 0 0"/> <!-- Adjust position and orientation -->
+  <origin xyz="0 0 0.0" rpy="0 0 0"/>
+  <axis xyz="0 0 1"/>
 </joint>
 
   <gazebo reference="imu_link">

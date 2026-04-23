@@ -10,6 +10,15 @@ ENV_TYPE="${*: -1}"
 COMPOSE="docker-compose-${ENV_TYPE}.yaml"
 parse_common_flags "$COMPOSE" "${ARGS[@]}"
 
+# Sim-only flag: build mujoco_ros2_control + mujoco_spawn on top of the
+# normal manipulation build.  parse_common_flags doesn't know about it.
+DOWNLOAD_SIMULATION=""
+for arg in "${ARGS[@]}"; do
+    case $arg in
+    "--simulation-compile") DOWNLOAD_SIMULATION="true" ;;
+    esac
+done
+
 #_________________________SETUP_________________________
 
 setup_common_env "manipulation"
@@ -23,12 +32,17 @@ GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+SIMULATION_BUILD="colcon build --packages-select mujoco_ros2_control && colcon build --symlink-install --packages-select mujoco_spawn"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
     SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE"
 else
     SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
+fi
+
+if [[ "$DOWNLOAD_SIMULATION" == "true" ]]; then
+    SETUP+=" && $SIMULATION_BUILD"
 fi
 
 case $TASK in

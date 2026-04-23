@@ -16,20 +16,35 @@ class XArmServices:
         self.node = node
         self.mode_client = mode_client
         self.state_client = state_client
+        self.move_velocity_client = None
+        # The gripper IO client must be created regardless of whether the
+        # xarm low-level services are available: in sim the bridge exposes
+        # /xarm/set_tgpio_digital (the real-robot gripper service name) so
+        # open/close commands can still reach MuJoCo.  Creating it only
+        # inside the xarm-available branch meant sim init skipped it and
+        # every close_gripper() silently returned False with a "Cannot set
+        # gripper state" warning while pick_server logged "Gripper closed".
+        self.gripper_io_client = self.node.create_client(
+            SetDigitalIO, XARM_SET_DIGITAL_TGPIO_SERVICE
+        )
         if self.mode_client is None or self.state_client is None:
             self.node.get_logger().warn(
-                "Cannot initialize XArmServices as no xArm services are available"
+                "XArmServices: no xArm mode/state services; xarm low-level "
+                "path disabled, gripper IO path still active"
             )
-            self.move_velocity_client = None
-            self.gripper_io_client = None
             return
         self.move_velocity_client = self.node.create_client(
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE
         )
-        self.move_velocity_client.wait_for_service()
-        self.gripper_io_client = self.node.create_client(
-            SetDigitalIO, XARM_SET_DIGITAL_TGPIO_SERVICE
-        )
+        # In simulation the xarm low-level services never come up. Without a
+        # timeout this blocks the node init forever, so the action server is
+        # registered in DDS but the executor never starts spinning (which is
+        # why goal handshakes silently time out).
+        if not self.move_velocity_client.wait_for_service(timeout_sec=3.0):
+            self.node.get_logger().warn(
+                "XArmServices: move_velocity service not available, disabling xarm low-level path"
+            )
+            self.move_velocity_client = None
 
     def set_joint_velocity(
         self, velocities: List[float], set_mode: bool = True
@@ -56,12 +71,16 @@ class XArmServices:
         return False
 
     def set_mode(self, mode: int = 0) -> bool:
-        self.mode_client.wait_for_service()
+        if not self.mode_client.wait_for_service(timeout_sec=3.0):
+            self.node.get_logger().error("Set mode service not available")
+            return False
         request = SetInt16.Request()
         request.data = mode
         future = self.mode_client.call_async(request)
+        import time
+
         while rclpy.ok() and not future.done():
-            pass
+            time.sleep(0.001)
         if future.result() is not None:
             self.node.get_logger().info(
                 f"Set mode service response: {future.result().message}"
@@ -70,12 +89,14 @@ class XArmServices:
             self.node.get_logger().error("Failed to call set mode service")
             return False
 
-        self.state_client.wait_for_service()
+        if not self.state_client.wait_for_service(timeout_sec=3.0):
+            self.node.get_logger().error("Set state service not available")
+            return False
         request = SetInt16.Request()
         request.data = 0
         future = self.state_client.call_async(request)
         while rclpy.ok() and not future.done():
-            pass
+            time.sleep(0.001)
         if future.result() is not None:
             self.node.get_logger().info(
                 f"Set state service response: {future.result().message}"
@@ -117,7 +138,9 @@ class XArmServices:
         self.node.get_logger().info(
             f"Setting gripper state to {state} using SetDigitalIO service"
         )
-        self.gripper_io_client.wait_for_service()
+        if not self.gripper_io_client.wait_for_service(timeout_sec=3.0):
+            self.node.get_logger().warn("Gripper IO service not available; skipping")
+            return False
         self.node.get_logger().info("Gripper IO service is available")
         request = SetDigitalIO.Request()
         request.ionum = 1

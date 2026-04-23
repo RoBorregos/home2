@@ -1,0 +1,13 @@
+# MuJoCo ZED camera config for sim-to-real parity with ZED2 HD720.
+# The mujoco_ros2_control plugin creates a subnode named after the MJCF
+# camera (zed_mujoco_camera_link in zed.xacro), and the ParamListener
+# reads width/height/frequency directly on that subnode -- not under a
+# mujoco_rgbd_camera.* prefix and not on the main mujoco_ros2_control node.
+/zed_mujoco_camera_link:
+  ros__parameters:
+    width: 1280
+    height: 720
+    frequency: 15.0
+    color_image: true
+    depth_image: true
+    point_cloud: true

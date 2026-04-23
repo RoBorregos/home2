@@ -1,0 +1,111 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="table_and_object">
+
+  <!-- =====================================================================
+       Standalone test fixture for manipulation sim:
+         - static brown table centered 0.55 m in front of FRIDA's base_link
+         - dynamic green 5 cm cube sitting on top of the table
+       Both are independent of the house scene and easy to tweak.
+       ===================================================================== -->
+
+  <link name="world"/>
+
+  <!-- ============ TABLE ============ -->
+  <!-- 60 cm x 60 cm top, 70 cm tall, centered at (0.55, 0, 0.35).
+       Mass only matters for inertia consistency — fixed joint makes it static. -->
+  <link name="table_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.6 0.6 0.7"/>
+      </geometry>
+      <material name="table_wood">
+        <color rgba="0.55 0.35 0.18 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.6 0.6 0.7"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="10.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.45" ixy="0" ixz="0" iyy="0.45" iyz="0" izz="0.6"/>
+    </inertial>
+  </link>
+
+  <joint name="world_to_table" type="fixed">
+    <parent link="world"/>
+    <child link="table_link"/>
+    <!-- 0.55 m forward of world origin. Table top at z = 0.35 + 0.35 = 0.7 m. -->
+    <origin xyz="0.55 0 0.35" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ============ CUBE (pickable) ============ -->
+  <!-- 4x4 cm x 18 cm tall, 50 g, sitting on the table.
+       Narrow enough (4 cm) for the custom gripper's ~5.6 cm opening.
+       The 18 cm height is deliberate: pick_server.check_feasibility
+       rejects any grasp whose z is below plane.z + pick_min_height, and
+       pick_min_height defaults to 0.10 m (the real-robot safety margin
+       that prevents the gripper from colliding with the table during
+       approach).  A 12 cm cube only gave grasps at 4-8 cm above the
+       table top, mostly below that threshold; 18 cm puts the cube top
+       at 18 cm above the table so top-grasps clear the margin with
+       room to spare.  Sim matches real: no per-environment pick args.
+       50 g mass (not 100 g) so the ~5 N grip force the servo applies at
+       contact holds the cube through arm retreats without slipping.
+       Floating joint -> MuJoCo free joint, so it falls/moves with
+       physics. -->
+  <link name="cube_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.18"/>
+      </geometry>
+      <material name="cube_green">
+        <color rgba="0.2 0.8 0.2 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.04 0.04 0.18"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <!-- Cuboid inertia for 4 x 4 x 18 cm, 50 g.
+           Ixx = Iyy = (1/12)*m*(a^2 + c^2) = (1/12)*0.05*(0.0016 + 0.0324) = 1.42e-4
+           Izz = (1/12)*m*(a^2 + b^2)       = (1/12)*0.05*(0.0016 + 0.0016) = 1.33e-5 -->
+      <inertia ixx="1.42e-4" ixy="0" ixz="0" iyy="1.42e-4" iyz="0" izz="1.33e-5"/>
+    </inertial>
+  </link>
+
+  <joint name="world_to_cube" type="floating">
+    <parent link="world"/>
+    <child link="cube_link"/>
+    <!-- Start sitting on the table top (0.7 m) + half the cube height (0.09 m). -->
+    <origin xyz="0.55 0 0.79" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Match the gripper finger contact tuning for consistent behaviour
+       (MuJoCo takes the softer/less-grippy of the two contacting geoms).
+       Aggressive silicone-on-plastic friction (3/1/0.1) plus a firmer
+       solref/solimp so the grasp doesn't bounce the cube out. -->
+  <mujoco>
+    <reference name="cube_link">
+      <geom name="cube_link_collision_0" friction="5.0 2.0 0.2" solref="-50000 -500" solimp="0.98 0.999 0.0001" condim="4"/>
+    </reference>
+
+    <!-- No weld equality: we use MuJoCo's native adhesion actuators on
+         the finger bodies instead (declared in gripper.xacro).  Adhesion
+         is force-based rather than rigid-constraint-based, so the cube
+         stays in whatever grip pose the physics settles into, and the
+         grip releases naturally when the gripper opens.  Same mechanism
+         used in MetaWorld and similar MuJoCo manipulation benchmarks. -->
+  </mujoco>
+
+</robot>

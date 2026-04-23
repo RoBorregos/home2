@@ -2,3 +2,12 @@ ultralytics
 numpy==1.26.0
 imutils
 transforms3d
+# YOLOE (zero-shot detector) uses text prompts via OpenAI CLIP.  Without
+# this the first run of the detector tries to pip-install on-the-fly from
+# git+https://github.com/ultralytics/CLIP.git which registers itself as
+# "UNKNOWN" in dist-packages and still fails to import `clip`.  Install
+# CLIP and its text-processing deps at image build time instead.
+ftfy
+regex
+tqdm
+clip @ git+https://github.com/openai/CLIP.git
