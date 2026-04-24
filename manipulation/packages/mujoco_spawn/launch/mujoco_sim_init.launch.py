@@ -11,7 +11,6 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.event_handlers import OnProcessStart
 from launch.actions import (
-    ExecuteProcess,
     IncludeLaunchDescription,
     OpaqueFunction,
     RegisterEventHandler,
@@ -406,11 +405,9 @@ def generate_nodes_for_spawn(context: LaunchContext):
         )
     )
 
-    # Pull in the perception + manipulation stacks with use_sim_time=true so
-    # the same launches work verbatim on the real robot (where the user runs
-    # them without the sim arg) and under /clock inside MuJoCo. Only the
-    # choice of detector (zero-shot for sim vs tmr2025 for the real robot) is
-    # sim-specific and lives here.
+    # Perception pointcloud downsampling lives in the manipulation container
+    # because perception_3d is a direct dependency of pick_and_place and is
+    # already built here on both real and sim.
     downsample_pc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -424,55 +421,19 @@ def generate_nodes_for_spawn(context: LaunchContext):
         launch_arguments={"use_sim_time": "true"}.items(),
     )
 
-    zero_shot_detector_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("object_detector_2d"),
-                    "launch",
-                    "zero_shot_object_detector_node.launch.py",
-                ]
-            )
-        ),
-        launch_arguments={"use_sim_time": "true"}.items(),
-    )
-
-    # Bridge zero-shot detections onto /vision/detections so downstream
-    # consumers like keyboard_input.py and the pick_server's detection
-    # handler see them under the same topic name they use on the real
-    # robot (where the pretrained detector fills /vision/detections).
-    # topic_tools isn't in the manipulation image, so inline a tiny rclpy
-    # relay instead of adding a new package dependency.
-    detections_relay = ExecuteProcess(
-        cmd=[
-            "python3",
-            "-c",
-            (
-                "import rclpy\n"
-                "from rclpy.node import Node\n"
-                "from frida_interfaces.msg import ObjectDetectionArray\n"
-                "rclpy.init()\n"
-                "n = Node('zero_shot_to_detections_relay')\n"
-                "pub = n.create_publisher(ObjectDetectionArray, '/vision/detections', 10)\n"
-                "n.create_subscription(ObjectDetectionArray, '/vision/zero_shot_detections', lambda m: pub.publish(m), 10)\n"
-                "n.get_logger().info('zero_shot -> /vision/detections relay up')\n"
-                "rclpy.spin(n)\n"
-            ),
-        ],
-        output="screen",
-    )
-
-    # Sim launch mirrors the scope of arm_pkg/frida_moveit_config.launch.py on
-    # the real robot: bring up the arm, MoveIt and the sensor pipeline (ZED +
-    # downsample + self-filtered cloud + zero-shot detector). The pick stack
-    # and keyboard UI are launched separately by the user, so the workflow is
-    # identical on both:
+    # Scope of this launch: arm + MoveIt + MuJoCo physics + self-filtered
+    # cloud. Vision (object detector, detections relay) runs in the vision
+    # container on both real and sim; do NOT start it from here or the
+    # manipulation container fails to resolve object_detector_2d.
+    #
     #   Terminal 1 (real):  ros2 launch arm_pkg frida_moveit_config.launch.py
     #   Terminal 1 (sim):   ros2 launch mujoco_spawn mujoco_sim_init.launch.py
     #   Terminal 2 (both):  ros2 launch pick_and_place pick_and_place.launch.py \
     #                              use_sim_time:=<true|false> \
     #                              point_cloud_topic:=<point_cloud|filtered_cloud>
     #   Terminal 3 (both):  ros2 run pick_and_place keyboard_input.py
+    #   Vision container:   ros2 launch object_detector_2d zero_shot_object_detector_node.launch.py use_sim_time:=true
+    #                       (plus the zero_shot -> /vision/detections relay)
 
     return [
         robot_state_publisher,
@@ -482,8 +443,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
         robot_moveit_common_launch,
         zed_optical_frame_tf,
         downsample_pc_launch,
-        zero_shot_detector_launch,
-        detections_relay,
     ]
 
 
