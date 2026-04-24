@@ -113,6 +113,22 @@ InterpreterAvailableCommands = Union[
 ]
 
 
+def _unique_preserve_order(items: list[str]) -> list[str]:
+    """Return unique non-empty items preserving insertion order."""
+    seen = set()
+    unique_items = []
+    for item in items:
+        normalized = item.strip()
+        if not normalized:
+            continue
+        key = normalized.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_items.append(normalized)
+    return unique_items
+
+
 def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
 
@@ -406,6 +422,30 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"Error: {e}")
             self.keyword = ""
 
+    def compose_hotwords(self, *groups) -> str:
+        """Compose a comma-separated hotword string from strings/lists/tuples."""
+        flattened = []
+
+        for group in groups:
+            if not group:
+                continue
+
+            if isinstance(group, str):
+                # Accept either comma-separated phrases or plain text.
+                parts = [part.strip() for part in group.split(",")]
+                flattened.extend(part for part in parts if part)
+                continue
+
+            if isinstance(group, (list, tuple, set)):
+                for item in group:
+                    if item is None:
+                        continue
+                    text = str(item).strip()
+                    if text:
+                        flattened.append(text)
+
+        return ", ".join(_unique_preserve_order(flattened))
+
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
     def hear(
         self,
@@ -490,11 +530,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.current_transcription = ""
 
+        normalized_hotwords = self.compose_hotwords(hotwords)
+
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
-        goal_msg.hotwords = hotwords
+        goal_msg.hotwords = normalized_hotwords
         goal_msg.initial_prompt = initial_prompt
-        self.last_hotwords = hotwords
+        self.last_hotwords = normalized_hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 

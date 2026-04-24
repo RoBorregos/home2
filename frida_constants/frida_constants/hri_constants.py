@@ -83,6 +83,29 @@ CATEGORIZE_IDK_THRESHOLD = 0.01
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
+HRIC_NAME_HOTWORDS = [
+    "Alex",
+    "Daniel",
+    "David",
+    "Emma",
+    "Emily",
+    "John",
+    "Luis",
+    "Maria",
+    "Sofia",
+]
+
+HRIC_DRINK_HOTWORDS = [
+    "water",
+    "coke",
+    "cola",
+    "coffee",
+    "tea",
+    "milk",
+    "orange juice",
+    "apple juice",
+]
+
 
 # Fundamental frequency range for human voice (Hz)
 VOWEL_FREQ_LOW = 85
