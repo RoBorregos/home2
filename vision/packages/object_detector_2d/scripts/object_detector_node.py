@@ -103,8 +103,8 @@ class object_detector_node(rclpy.node.Node):
         self.rgb_image = []
         self.detections_frame = []
 
-        # Trash detection logic
-        self.category = "drink"
+        # Trash detection logic — set via /vision/set_trash_category service
+        self.category = None
         # Load object_to_category mapping from objects.json
         try:
             package_share_directory = get_package_share_directory("frida_constants")
@@ -604,7 +604,7 @@ class object_detector_node(rclpy.node.Node):
                 self.get_logger().info(f"Detected TRASH/{det.label_text}")
             processed_detections.append(detection)
 
-        self.latest_detections = merged_detections
+        self.latest_detections = merged_detections # CHECK IF IS THIS OR processed_detectionssou
         self.detections_publisher.publish(
             ObjectDetectionArray(detections=processed_detections)
         )

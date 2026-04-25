@@ -43,6 +43,7 @@ from transforms3d.quaternions import quat2mat
 from frida_motion_planning.utils.tf_utils import transform_point
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
+    open_gripper,
 )
 import time
 
@@ -328,10 +329,8 @@ class PickMotionServer(Node):
 
                     # Open gripper
                     self.get_logger().info("[Cutlery] Opening gripper...")
-                    open_req = SetBool.Request()
-                    open_req.data = False
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
-                    self._gripper_set_state_client.call_async(open_req)
+                    open_gripper(self._gripper_set_state_client)
                     time.sleep(0.5)
 
                     # Pre-grasp: 15cm above

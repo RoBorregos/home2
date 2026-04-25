@@ -116,7 +116,10 @@ class PickAndPlaceTM(Node):
         # ==========================================================
         # COMPETITION CONFIG — adjust before each run
         # ==========================================================
-        self.trash_category = "napkin"  # announced during Setup Days
+        # Trash rule: category from objects.json or a specific object name.
+        # trash_exceptions excludes logical names from the match.
+        self.trash_category = "drink"
+        self.trash_exceptions: list[str] = ["milk"]
         self.use_dishwasher = False  # cutlery/tableware → dishwasher
         self.use_side_table = False  # pick from side table (−20 pts/obj)
         self.max_cleanup_objects = 3  # how many to clean before breakfast
@@ -378,12 +381,24 @@ class PickAndPlaceTM(Node):
         name = obj_name.lower()
         if name in cutlery:
             return ObjectCategory.CUTLERY
-        elif name in tableware:
+        if name in tableware:
             return ObjectCategory.TABLEWARE
-        elif name == self.trash_category.lower():
+        if self._is_trash(name):
             return ObjectCategory.TRASH
-        else:
-            return ObjectCategory.OTHER
+        return ObjectCategory.OTHER
+
+    def _is_trash(self, logical_name: str) -> bool:
+        """True if object matches trash_category (as object name or as objects.json category)."""
+        if not self.trash_category:
+            return False
+        trash_key = self.trash_category.lower()
+        exceptions = {x.lower() for x in self.trash_exceptions}
+        if logical_name in exceptions:
+            return False
+        if logical_name == trash_key:
+            return True
+        yolo_name = self._to_yolo_name(logical_name).lower()
+        return self._object_to_category.get(yolo_name, "").lower() == trash_key
 
     def _to_yolo_name(self, logical_name: str) -> str:
         """Translate a logical object name to the YOLO class name."""
@@ -508,6 +523,9 @@ class PickAndPlaceTM(Node):
                 self.detected_objects = []
                 for bbox in detections:
                     raw_name = bbox.classname if bbox.classname else "unknown"
+                    # Vision may publish trash-category detections as "trash/<name>"
+                    if raw_name.lower().startswith("trash/"):
+                        raw_name = raw_name.split("/", 1)[1]
                     obj_name = self.yolo_to_logical.get(raw_name, raw_name)
                     category = (
                         ObjectCategory.COMMON
