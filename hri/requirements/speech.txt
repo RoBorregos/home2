@@ -27,3 +27,6 @@ deepfilternet>=0.5.6
 
 # Noise cancellation
 torchaudio<=2.5.0
+
+# Echo cancellation (SpeexDSP AEC)
+pyaec

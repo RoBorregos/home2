@@ -21,6 +21,7 @@ class AudioCapturer(Node):
         super().__init__("audio_capturer")
 
         self.declare_parameter("RAW_AUDIO_TOPIC", "/hri/rawAudioChunk")
+        self.declare_parameter("REFERENCE_AUDIO_TOPIC", "/hri/referenceAudioChunk")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
@@ -36,6 +37,17 @@ class AudioCapturer(Node):
         self.publisher_ = self.create_publisher(
             AudioData, self.get_parameter("RAW_AUDIO_TOPIC").value, 20
         )
+
+        # Publish ReSpeaker channel 5 (speaker loopback) for software AEC
+        if self.use_respeaker:
+            self.ref_publisher_ = self.create_publisher(
+                AudioData,
+                self.get_parameter("REFERENCE_AUDIO_TOPIC").value,
+                20,
+            )
+            self.get_logger().info(
+                "Publishing speaker reference on REFERENCE_AUDIO_TOPIC for AEC."
+            )
 
         mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
         mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
@@ -77,9 +89,13 @@ class AudioCapturer(Node):
                 if not data:
                     continue
 
-                # If ReSpeaker, extract channel 0 (main microphone), otherwise publish raw bytes
+                # If ReSpeaker, extract channel 0 (main microphone) and
+                # channel 5 (speaker loopback reference for AEC)
                 if self.use_respeaker:
-                    data = np.frombuffer(data, dtype=np.int16)[0::6].tobytes()
+                    samples = np.frombuffer(data, dtype=np.int16)
+                    data = samples[0::6].tobytes()
+                    ref_data = samples[5::6].tobytes()
+                    self.ref_publisher_.publish(AudioData(data=ref_data))
 
                 self.publisher_.publish(AudioData(data=data))
 

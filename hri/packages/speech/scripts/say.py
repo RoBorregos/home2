@@ -2,8 +2,12 @@
 
 import json
 import os
+import threading
+import time
+import wave
 from collections import OrderedDict
 
+import numpy as np
 import grpc
 import rclpy
 from gtts import gTTS
@@ -14,8 +18,12 @@ from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
+from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import Speak
 from proto_interfaces import tts_pb2, tts_pb2_grpc
+
+AEC_SAMPLE_RATE = 16000
+AEC_CHUNK_SIZE = 1024
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
@@ -57,6 +65,7 @@ class Say(Node):
         self.declare_parameter("SPEAKER_DEVICE_NAME", "default")
         self.declare_parameter("SPEAKER_INPUT_CHANNELS", 32)
         self.declare_parameter("SPEAKER_OUT_CHANNELS", 32)
+        self.declare_parameter("REFERENCE_AUDIO_TOPIC", "/hri/referenceAudioChunk")
 
         speaker_device_name = (
             self.get_parameter("SPEAKER_DEVICE_NAME").get_parameter_value().string_value
@@ -99,6 +108,14 @@ class Say(Node):
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
+
+        # Publish audio being played as AEC reference (software loopback)
+        ref_topic = (
+            self.get_parameter("REFERENCE_AUDIO_TOPIC")
+            .get_parameter_value()
+            .string_value
+        )
+        self.ref_publisher_ = self.create_publisher(AudioData, ref_topic, 20)
 
         self.get_logger().info("Say node initialized.")
 
@@ -256,18 +273,84 @@ class Say(Node):
         self.play_audio(save_path)
 
     def play_audio(self, file_path):
+        # Load reference samples for AEC before playback
+        ref_samples = self._load_reference(file_path)
+
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
         while mixer.music.get_busy():
             pass
+
+        # Start publishing reference in a background thread, synced with playback
+        if ref_samples is not None:
+            ref_thread = threading.Thread(
+                target=self._stream_reference, args=(ref_samples,), daemon=True
+            )
+
         mixer.music.load(file_path)
         mixer.music.play()
-        # Wait for audio to finish playing before returning
+
+        # Start reference streaming right after playback starts
+        if ref_samples is not None:
+            ref_thread.start()
+
         try:
             while mixer.music.get_busy():
                 pass
         except Exception as e:
             self.get_logger().error(f"Error while waiting for audio: {e}")
+
+    def _load_reference(self, file_path):
+        """Load audio file as 16kHz mono int16 samples for AEC reference."""
+        try:
+            if not file_path.endswith(".wav"):
+                return None
+
+            with wave.open(file_path, "rb") as wf:
+                raw = wf.readframes(wf.getnframes())
+                n_ch = wf.getnchannels()
+                rate = wf.getframerate()
+
+            samples = np.frombuffer(raw, dtype=np.int16)
+            if n_ch > 1:
+                samples = samples[::n_ch]
+
+            if rate != AEC_SAMPLE_RATE:
+                # Simple linear interpolation resample (no scipy dependency)
+                original_len = len(samples)
+                target_len = int(original_len * AEC_SAMPLE_RATE / rate)
+                indices = np.linspace(0, original_len - 1, target_len)
+                samples = np.interp(
+                    indices, np.arange(original_len), samples.astype(np.float64)
+                ).astype(np.int16)
+
+            return samples
+        except Exception as e:
+            self.get_logger().warn(f"Could not load AEC reference: {e}")
+            return None
+
+    def _stream_reference(self, samples):
+        """
+        Publish reference samples chunk-by-chunk at real-time pace.
+
+        This runs in a background thread synchronized with mixer playback.
+        Each chunk is published at the same rate the audio plays back,
+        so noise_cancellation receives the reference aligned with the mic input.
+        """
+        t_start = time.monotonic()
+
+        for i in range(0, len(samples), AEC_CHUNK_SIZE):
+            chunk = samples[i : i + AEC_CHUNK_SIZE]
+            if len(chunk) < AEC_CHUNK_SIZE:
+                chunk = np.pad(chunk, (0, AEC_CHUNK_SIZE - len(chunk)))
+
+            self.ref_publisher_.publish(AudioData(data=chunk.tobytes()))
+
+            # Sleep to match real-time playback rate
+            expected_time = t_start + (i + AEC_CHUNK_SIZE) / AEC_SAMPLE_RATE
+            sleep_time = expected_time - time.monotonic()
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):
