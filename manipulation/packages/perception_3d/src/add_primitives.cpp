@@ -39,7 +39,7 @@
 #include <pcl_ros/transforms.hpp>
 #include <perception_3d/macros.hpp>
 
-#include <frida_interfaces/msg/collision_object.h>
+#include <frida_interfaces/msg/collision_object.hpp>
 #include <frida_interfaces/srv/add_collision_objects.hpp>
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 #include <frida_interfaces/srv/get_plane_bbox.hpp>
@@ -109,6 +109,8 @@ private:
       get_plane_bbox_srv;
   rclcpp::Client<frida_interfaces::srv::AddCollisionObjects>::SharedPtr
       add_collision_object_client;
+  rclcpp::Publisher<frida_interfaces::msg::CollisionObject>::SharedPtr
+      plane_publisher;
 
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
@@ -149,6 +151,11 @@ public:
     this->add_collision_object_client =
         this->create_client<frida_interfaces::srv::AddCollisionObjects>(
             ADD_COLLISION_SERVICE);
+
+    this->plane_publisher =
+        this->create_publisher<frida_interfaces::msg::CollisionObject>(
+            DETECTED_PLANE_TOPIC, 10);
+
     this->client_node = client_node;
     // this->remove_plane_client =
     //     this->create_client<frida_interfaces::srv::RemovePlane>(
@@ -587,7 +594,7 @@ public:
     }
 
     if (request->is_plane) {
-      RCLCPP_INFO(this->get_logger(), "Adding plane primitive");
+      RCLCPP_INFO(this->get_logger(), "Detecting plane primitive");
 
       BoxPrimitiveParams box_params;
 
@@ -596,39 +603,28 @@ public:
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);
 
-      std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
-          req2 = std::make_shared<
-              frida_interfaces::srv::AddCollisionObjects::Request>();
+      // Publish the detected plane as data — it is consumed by pick_server
+      // for semantic filtering (e.g. rejecting object clusters below the table
+      // surface). It is intentionally NOT injected into the MoveIt planning
+      // scene: Octomap already represents the table for collision checking,
+      // and inflated PCA bounding boxes were spuriously blocking valid grasps.
+      frida_interfaces::msg::CollisionObject plane_msg;
+      plane_msg.id = "plane";
+      plane_msg.type = "box";
+      plane_msg.pose.header.frame_id = "base_link";
+      plane_msg.pose.header.stamp = this->now();
+      plane_msg.pose.pose.position.x = box_params.centroid.x;
+      plane_msg.pose.pose.position.y = box_params.centroid.y;
+      plane_msg.pose.pose.position.z = box_params.centroid.z;
+      plane_msg.pose.pose.orientation = box_params.orientation;
+      plane_msg.dimensions.x = box_params.width;
+      plane_msg.dimensions.y = box_params.depth;
+      plane_msg.dimensions.z = 0.025;
 
-      req2->collision_objects.resize(1);
-      req2->collision_objects[0].id = "plane";
-      req2->collision_objects[0].type = "box";
+      this->plane_publisher->publish(plane_msg);
 
-      req2->collision_objects[0].pose.header.frame_id = "base_link";
-
-      req2->collision_objects[0].pose.header.stamp = this->now();
-
-      req2->collision_objects[0].pose.pose.position.x = box_params.centroid.x;
-      req2->collision_objects[0].pose.pose.position.y = box_params.centroid.y;
-      req2->collision_objects[0].pose.pose.position.z = box_params.centroid.z;
-
-      req2->collision_objects[0].pose.pose.orientation = box_params.orientation;
-
-      req2->collision_objects[0].dimensions.x = box_params.width;
-      req2->collision_objects[0].dimensions.y = box_params.depth;
-      req2->collision_objects[0].dimensions.z = 0.025;
-
-      auto res = this->add_collision_object_client->async_send_request(
-          req2,
-          [this](rclcpp::Client<frida_interfaces::srv::AddCollisionObjects>::
-                     SharedFuture future) {
-            RCLCPP_INFO(this->get_logger(), "add_collision_object");
-          });
-
-      RCLCPP_INFO(this->get_logger(), "Plane primitive added");
-      // res.wait();e
-
-      RCLCPP_INFO(this->get_logger(), "Plane primitive added");
+      RCLCPP_INFO(this->get_logger(), "Detected plane published on %s",
+                  DETECTED_PLANE_TOPIC.c_str());
     } else {
       RCLCPP_INFO(this->get_logger(), "Adding object primitive");
 

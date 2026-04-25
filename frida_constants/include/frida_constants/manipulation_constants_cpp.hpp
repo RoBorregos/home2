@@ -15,6 +15,7 @@ conststr CLUSTER_OBJECT_SERVICE =
 conststr REMOVE_VERTICAL_PLANE_SERVICE = "/manipulation/remove_vertical_plane";
 conststr ADD_PICK_PRIMITIVES_SERVICE = "/manipulation/add_pick_primitives";
 conststr ADD_COLLISION_SERVICE = "/manipulation/add_collision_objects";
+conststr DETECTED_PLANE_TOPIC = "/manipulation/detected_plane";
 conststr PICK_PERCEPTION_SERVICE =
     "/manipulation/pick_perception_service"; // Kept original
 conststr PLACE_PERCEPTION_SERVICE =
