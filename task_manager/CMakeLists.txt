@@ -23,6 +23,7 @@ file(GLOB TASK_MANAGERS scripts/*.py)
 file(GLOB UTIL_NODES scripts/util_nodes/*.py)
 file(GLOB TEST_SUBTASK_MANAGERS scripts/test/*.py)
 file(GLOB MISC_NODES scripts/misc/*.py)
+list(REMOVE_ITEM MISC_NODES ${CMAKE_CURRENT_SOURCE_DIR}/scripts/misc/demo_becas.py)
 file(GLOB CONFIG scripts/config/*.py)
 
 # Make all python scripts executable (needed for --symlink-install)
@@ -45,6 +46,10 @@ install(PROGRAMS ${TEST_SUBTASK_MANAGERS}
 
 install(PROGRAMS ${MISC_NODES}
   DESTINATION lib/${PROJECT_NAME}/misc
+)
+
+install(PROGRAMS scripts/misc/demo_becas.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY launch scripts
