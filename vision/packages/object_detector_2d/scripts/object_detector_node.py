@@ -604,7 +604,9 @@ class object_detector_node(rclpy.node.Node):
                 self.get_logger().info(f"Detected TRASH/{det.label_text}")
             processed_detections.append(detection)
 
-        self.latest_detections = merged_detections # CHECK IF IS THIS OR processed_detectionssou
+        self.latest_detections = (
+            merged_detections  # CHECK IF IS THIS OR processed_detectionssou
+        )
         self.detections_publisher.publish(
             ObjectDetectionArray(detections=processed_detections)
         )
