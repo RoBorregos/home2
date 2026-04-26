@@ -20,8 +20,8 @@ class TestManipulationManager(Node):
     def run(self):
         # self.get_logger().info("--- STARTING PLACE ON FLOOR TEST ---")
 
-        result = self.manipulation_manager.place_on_floor()
-        # result = self.manipulation_manager.move_to_position("front_stare",velocity=0.1)
+        # result = self.manipulation_manager.place_on_floor()
+        result = self.manipulation_manager.move_to_position("standing_pose", velocity=0.1)
         # result = self.manipulation_manager.move_to_position("place_floor_right", velocity=0.1)
         # result = self.manipulation_manager.move_to_position("place_floor_left", velocity=0.1)
 

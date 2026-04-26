@@ -56,7 +56,7 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": "abril9.pt",
+    "YOLO_MODEL_PATH": "tmr2026.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
@@ -103,7 +103,7 @@ class object_detector_node(rclpy.node.Node):
         self.rgb_image = []
         self.detections_frame = []
 
-        # Trash detection logic
+        # Trash detection logic — set via /vision/set_trash_category service
         self.category = None
         # Load object_to_category mapping from objects.json
         try:
@@ -604,7 +604,9 @@ class object_detector_node(rclpy.node.Node):
                 self.get_logger().info(f"Detected TRASH/{det.label_text}")
             processed_detections.append(detection)
 
-        self.latest_detections = merged_detections
+        self.latest_detections = (
+            merged_detections  # check if this or processed_detections
+        )
         self.detections_publisher.publish(
             ObjectDetectionArray(detections=processed_detections)
         )

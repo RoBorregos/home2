@@ -288,7 +288,14 @@ class RestaurantTaskManager(Node):
                 Logger.success(self, "Arrived near tables for detection.")
                 self.current_state = RestaurantTaskManager.TaskStates.DETECT_CUSTOMERS
             else:
-                Logger.warn(self, "Navigation to customer failed. Returning to WAIT_FOR_CALL.")
+                Logger.warn(
+                    self, "Navigation to customer failed. Showing detection for partial credit."
+                )
+                self.subtask_manager.hri.say(
+                    "I detected you calling but could not reach your table. Showing what I see."
+                )
+                self.subtask_manager.hri.publish_display_topic(RESTAURANT_TABLES_TOPIC)
+                self.timeout(3)
                 self.target_person_point = None
                 self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
 
@@ -361,13 +368,32 @@ class RestaurantTaskManager(Node):
                     self.subtask_manager.nav.pause_nav()
 
                 customer_angle = table["customer_angles"][self.current_customer_index]
+                self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
                 self.subtask_manager.manipulation.pan_to(customer_angle)
                 self.subtask_manager.vision.activate_face_recognition()
                 self.subtask_manager.manipulation.follow_face(True)
-                self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
 
                 status, orders = self.subtask_manager.hri.take_order(retries=3)
                 if status == Status.EXECUTION_SUCCESS and orders:
+                    order_recap = " and ".join(orders)
+                    _, confirmation = self.subtask_manager.hri.confirm(
+                        f"So your order is {order_recap}. Is that correct?",
+                        use_hotwords=True,
+                        retries=2,
+                        wait_between_retries=3,
+                    )
+                    if confirmation == "no":
+                        Logger.warn(self, "Customer rejected order recap, retrying.")
+                        status, retry_orders = self.subtask_manager.hri.take_order(retries=2)
+                        if status == Status.EXECUTION_SUCCESS and retry_orders:
+                            orders = retry_orders
+                            order_recap = " and ".join(orders)
+                            self.subtask_manager.hri.say(f"Understood, I'll get you {order_recap}.")
+                    else:
+                        self.subtask_manager.hri.say(
+                            f"Thank you, I'll be right back with your {order_recap}."
+                        )
+
                     for order in orders:
                         table["orders"].append(order)
                         Logger.success(self, f"Order received: {order}")
@@ -400,10 +426,13 @@ class RestaurantTaskManager(Node):
                     all_orders.extend(self.tables[tid]["orders"])
 
                 if all_orders:
-                    order_text = ", ".join(all_orders)
                     self.subtask_manager.hri.say(
-                        f"Hello barman, I have the following orders: {order_text}. Please help me prepare them."
+                        f"Hello barman, I have {len(all_orders)} items to prepare."
                     )
+                    for idx, item in enumerate(all_orders, start=1):
+                        self.subtask_manager.hri.say(f"Order {idx}: one {item}.")
+                        self.timeout(1)
+                    self.subtask_manager.hri.say("Please help me prepare them.")
                 else:
                     self.subtask_manager.hri.say("Hello barman, I don't have any orders yet.")
                 self._orders_given = True
