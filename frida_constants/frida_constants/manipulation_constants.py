@@ -79,7 +79,6 @@ PLANE_NAMESPACE = "plane"
 PLANE_OBJECT_COLLISION_TOLERANCE = (
     0.025  # Tolerance to delete collision objects if they are too close to the plane
 )
-DETECTED_PLANE_TOPIC = "/manipulation/detected_plane"
 
 # Pour
 POUR_MOTION_ACTION_SERVER = "/manipulation/pour_motion_action_server"

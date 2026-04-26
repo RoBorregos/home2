@@ -14,6 +14,7 @@ from frida_constants.manipulation_constants import (
     REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
     PICK_OBJECT_NAMESPACE,
+    PLANE_NAMESPACE,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
@@ -25,9 +26,7 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
-    DETECTED_PLANE_TOPIC,
 )
-from frida_interfaces.msg import CollisionObject
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
@@ -148,15 +147,6 @@ class PickMotionServer(Node):
             "/clear_octomap",
         )
 
-        # Support plane detected by perception_3d. Not injected into the
-        # MoveIt planning scene (Octomap already covers collision); only
-        # used for the semantic checks in attach_pick_object() and
-        # check_feasibility().
-        self.plane = None
-        self._plane_sub = self.create_subscription(
-            CollisionObject, DETECTED_PLANE_TOPIC, self._plane_cb, 10
-        )
-
         # --- Force-guarded descent service clients ---
         self._vc_set_cartesian_velocity_client = self.create_client(
             MoveVelocity, "/xarm/vc_set_cartesian_velocity"
@@ -175,9 +165,6 @@ class PickMotionServer(Node):
 
     def _joint_state_cb(self, msg: JointState):
         self._latest_joint_state = msg
-
-    def _plane_cb(self, msg: CollisionObject):
-        self.plane = msg
 
     async def execute_callback(self, goal_handle):
         self.get_logger().info("Executing pick goal...")
@@ -298,6 +285,7 @@ class PickMotionServer(Node):
             grasping_alternative_distance = -0.025
 
         self.save_collision_objects()
+        self.find_plane()
 
         if self.plane is None and not is_flat:
             self.get_logger().error("No plane found, cannot pick object")
@@ -723,6 +711,13 @@ class PickMotionServer(Node):
 
     def save_collision_objects(self):
         self.collision_objects = self.get_collision_objects()
+
+    def find_plane(self):
+        self.plane = None
+        for obj in self.collision_objects:
+            if PLANE_NAMESPACE in obj.id:
+                self.get_logger().info(f"Plane object found: {obj.id}")
+                self.plane = obj
 
     def attach_pick_object(self):
         obj_lowest = None
