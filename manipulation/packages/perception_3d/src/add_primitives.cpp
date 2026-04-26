@@ -39,7 +39,7 @@
 #include <pcl_ros/transforms.hpp>
 #include <perception_3d/macros.hpp>
 
-#include <frida_interfaces/msg/collision_object.hpp>
+#include <frida_interfaces/msg/collision_object.h>
 #include <frida_interfaces/srv/add_collision_objects.hpp>
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 #include <frida_interfaces/srv/get_plane_bbox.hpp>
@@ -149,7 +149,6 @@ public:
     this->add_collision_object_client =
         this->create_client<frida_interfaces::srv::AddCollisionObjects>(
             ADD_COLLISION_SERVICE);
-
     this->client_node = client_node;
     // this->remove_plane_client =
     //     this->create_client<frida_interfaces::srv::RemovePlane>(
@@ -588,7 +587,7 @@ public:
     }
 
     if (request->is_plane) {
-      RCLCPP_INFO(this->get_logger(), "Detecting plane primitive");
+      RCLCPP_INFO(this->get_logger(), "Adding plane primitive");
 
       BoxPrimitiveParams box_params;
 
@@ -597,50 +596,44 @@ public:
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);
 
-      // Footprint clamped to roughly the radius of the Octomap self-filter
-      // halo (sensors_3d.yaml: padding_offset 0.1 + 5%) around the gripper.
-      // Larger PCA boxes were rejecting valid lateral grasps; smaller ones
-      // leave table voxels exposed where the self-filter erases them.
-      constexpr double kMaxFootprint = 0.40;    // m
-      constexpr double kPlaneThickness = 0.02;  // m
-      const double dim_x =
-          std::min(static_cast<double>(box_params.width), kMaxFootprint);
-      const double dim_y =
-          std::min(static_cast<double>(box_params.depth), kMaxFootprint);
+      std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
+          req2 = std::make_shared<
+              frida_interfaces::srv::AddCollisionObjects::Request>();
 
-      frida_interfaces::msg::CollisionObject plane_msg;
-      plane_msg.id = "plane";
-      plane_msg.type = "box";
-      plane_msg.pose.header.frame_id = "base_link";
-      plane_msg.pose.header.stamp = this->now();
-      plane_msg.pose.pose.position.x = box_params.centroid.x;
-      plane_msg.pose.pose.position.y = box_params.centroid.y;
-      // Top of the box at the detected plane height so top-down grasps
-      // reaching the surface don't penetrate the collision shape.
-      plane_msg.pose.pose.position.z =
-          box_params.centroid.z - kPlaneThickness / 2.0;
-      // Axis-aligned to base_link — drop the PCA orientation so corners
-      // don't tilt into lateral approach corridors.
-      plane_msg.pose.pose.orientation.x = 0.0;
-      plane_msg.pose.pose.orientation.y = 0.0;
-      plane_msg.pose.pose.orientation.z = 0.0;
-      plane_msg.pose.pose.orientation.w = 1.0;
-      plane_msg.dimensions.x = dim_x;
-      plane_msg.dimensions.y = dim_y;
-      plane_msg.dimensions.z = kPlaneThickness;
+      req2->collision_objects.resize(1);
+      req2->collision_objects[0].id = "plane";
+      req2->collision_objects[0].type = "box";
 
-      // Inject into the MoveIt planning scene to plug the hole the Octomap
-      // self-filter padding opens around the gripper during descent/lift.
-      auto req2 = std::make_shared<
-          frida_interfaces::srv::AddCollisionObjects::Request>();
-      req2->collision_objects.push_back(plane_msg);
-      this->add_collision_object_client->async_send_request(
+      req2->collision_objects[0].pose.header.frame_id = "base_link";
+
+      req2->collision_objects[0].pose.header.stamp = this->now();
+
+      req2->collision_objects[0].pose.pose.position.x = box_params.centroid.x;
+      req2->collision_objects[0].pose.pose.position.y = box_params.centroid.y;
+      req2->collision_objects[0].pose.pose.position.z = box_params.centroid.z;
+
+      req2->collision_objects[0].pose.pose.orientation = box_params.orientation;
+
+      // Clamp footprint to ~self-filter halo (sensors_3d.yaml padding_offset
+      // 0.1 + 5%) so the box covers the Octomap hole around the gripper
+      // without bleeding into lateral grasp corridors.
+      req2->collision_objects[0].dimensions.x =
+          std::min<long double>(box_params.width, 0.40L);
+      req2->collision_objects[0].dimensions.y =
+          std::min<long double>(box_params.depth, 0.40L);
+      req2->collision_objects[0].dimensions.z = 0.025;
+
+      auto res = this->add_collision_object_client->async_send_request(
           req2,
           [this](rclcpp::Client<frida_interfaces::srv::AddCollisionObjects>::
                      SharedFuture future) {
-            (void)future;
-            RCLCPP_INFO(this->get_logger(), "Plane primitive added");
+            RCLCPP_INFO(this->get_logger(), "add_collision_object");
           });
+
+      RCLCPP_INFO(this->get_logger(), "Plane primitive added");
+      // res.wait();e
+
+      RCLCPP_INFO(this->get_logger(), "Plane primitive added");
     } else {
       RCLCPP_INFO(this->get_logger(), "Adding object primitive");
 
