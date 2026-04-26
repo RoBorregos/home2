@@ -605,7 +605,7 @@ class object_detector_node(rclpy.node.Node):
             processed_detections.append(detection)
 
         self.latest_detections = (
-            merged_detections  # CHECK IF IS THIS OR processed_detectionssou
+            merged_detections  # check if this or processed_detections
         )
         self.detections_publisher.publish(
             ObjectDetectionArray(detections=processed_detections)
