@@ -292,7 +292,7 @@ def main(args=None):
                     print("Invalid input.")
             elif choice == "-9":
                 print("Special Request Place")
-                print("Options: close, front, back, left, right")
+                print("Options: close, front, back, left, right, top")
                 special_request_position = (
                     input("Enter your special request: ").strip().lower()
                 )
@@ -302,6 +302,7 @@ def main(args=None):
                     "back",
                     "left",
                     "right",
+                    "top",
                 ]:
                     print("Invalid special request. Please try again.")
                     return

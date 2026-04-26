@@ -70,6 +70,18 @@ PICK_STARE_AT_TABLE = {
     "degrees": True,
 }
 
+PLACE_IN_TRASH_POSE = {
+    "joints": {
+        "joint1": -90.1,
+        "joint2": -90.8,
+        "joint3": -52.1,
+        "joint4": 0.0,
+        "joint5": 67.9,
+        "joint6": 44.9,
+    },
+    "degrees": True,
+}
+
 CUTLERY_STARE = {
     "joints": {
         "joint1": -90.0,
@@ -178,6 +190,7 @@ XARM_CONFIGURATIONS = {
     "cutlery_stare": CUTLERY_STARE,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
+    "place_in_trash_pose": PLACE_IN_TRASH_POSE,
     "nav_carry_bag_pose": NAV_CARRY_BAG_POSE,
     "carry_pose": CARRY_POSE,
     "place_floor_right": PLACE_FLOOR_RIGHT,
