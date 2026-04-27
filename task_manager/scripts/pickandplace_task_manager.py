@@ -131,8 +131,8 @@ class PickAndPlaceTM(Node):
         }
 
         # Shelf heights in base_link Z (calibrate with RViz Publish Point)
-        self.shelf_level_heights = {1: 0.3263, 2: 0.6535, 3: 1.002}
-        self.default_shelf_height = 0.6535
+        self.shelf_level_heights = {1: 0.475, 2: 0.827, 3: 1.201}
+        self.default_shelf_height = 0.475
 
         # ==========================================================
         # END COMPETITION CONFIG
