@@ -100,7 +100,6 @@ class PPCTestCabinetPlace(PickAndPlaceTM):
         self.yolo_to_logical = {v: k for k, v in self.yolo_names.items()}
 
         self.shelf_level_heights = {1: 0.475, 2: 0.827, 3: 1.201}
-
         self.default_shelf_height = 0.475
 
         try:
