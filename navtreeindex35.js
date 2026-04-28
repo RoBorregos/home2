@@ -1,5 +1,7 @@
 var NAVTREEINDEX35 =
 {
+"namespacetest__hri__manager.html#a0badb875d731e79a361252aae7631ac1":[30,0,155,14],
+"namespacetest__hri__manager.html#a10ad79e1fb8596318d88a288b07d9741":[30,0,155,5],
 "namespacetest__hri__manager.html#a1d345e1c23e0096c46baaa89be53f927":[30,0,155,2],
 "namespacetest__hri__manager.html#a246a2a82635f931d92365e0a218576a3":[30,0,155,4],
 "namespacetest__hri__manager.html#a413f9c068afedd81078d3f34c44b4ab2":[30,0,155,8],
@@ -247,7 +249,5 @@ var NAVTREEINDEX35 =
 "pick__and__place_8launch_8py.html#a6b3d9b146aacd6741a658c1c291a3ab5":[32,0,3,0,7,0,0,0],
 "pick__server_8py.html":[32,0,3,0,7,1,8],
 "pick__server_8py.html#a2777c53383a35615a465c854f7227640":[32,0,3,0,7,1,8,3],
-"pick__server_8py.html#a50574aad2920dbb5c32c8b4cd96ac272":[32,0,3,0,7,1,8,4],
-"pick__server_8py.html#acaa40eda93eac1002f77d6f2a7be6552":[32,0,3,0,7,1,8,9],
-"pick__server_8py.html#ad04afc6dca8e786059ec3c0934f88fcd":[32,0,3,0,7,1,8,10]
+"pick__server_8py.html#a50574aad2920dbb5c32c8b4cd96ac272":[32,0,3,0,7,1,8,4]
 };

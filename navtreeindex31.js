@@ -1,5 +1,7 @@
 var NAVTREEINDEX31 =
 {
+"namespacedock__to__handle.html#a59f9e6aafea864ead0f0351ff90215b6":[30,0,30,1],
+"namespacedownsample__pc.html":[30,0,31],
 "namespacedownsample__pc.html#ac2b4cab7e9652eb5d6142f99b1981c55":[30,0,31,0],
 "namespaceds4__demo.html":[30,0,32],
 "namespaceds4__demo.html#a4c6991237427da870d97ade2a44fdfec":[30,0,32,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX31 =
 "namespacefrida__constants_1_1navigation__constants.html#a8676b1a33a6980ee01f2d048705ca0df":[30,0,51,3,11],
 "namespacefrida__constants_1_1navigation__constants.html#a8b92de2f769fb1a6b93b0c409f9dd4c0":[30,0,51,3,16],
 "namespacefrida__constants_1_1navigation__constants.html#aa5380c3fb996f841252cbac5e5841746":[30,0,51,3,15],
-"namespacefrida__constants_1_1navigation__constants.html#ab949a4f98b0a3cbde3de8a4180b43464":[30,0,51,3,4],
-"namespacefrida__constants_1_1navigation__constants.html#abb289ecb150b14190f9c6286100e82a2":[30,0,51,3,10],
-"namespacefrida__constants_1_1navigation__constants.html#abfbdfe106233efbee78b6fbf06e6ecf2":[30,0,51,3,21]
+"namespacefrida__constants_1_1navigation__constants.html#ab949a4f98b0a3cbde3de8a4180b43464":[30,0,51,3,4]
 };

@@ -208,6 +208,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:aea0bfa8140434f4dda1b22d942f89ccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e6a44eb17dec7afd4a1a061c96c6cad"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a2e6a44eb17dec7afd4a1a061c96c6cad">_scan_shelf_level</a> (self, float height)</td></tr>
 <tr class="separator:a2e6a44eb17dec7afd4a1a061c96c6cad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a090153dbfce1e79be494faffa754edd3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a090153dbfce1e79be494faffa754edd3">_is_trash</a> (self, str logical_name)</td></tr>
+<tr class="separator:a090153dbfce1e79be494faffa754edd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93cc0aef2abbe99e28964d9972d02f1c"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a93cc0aef2abbe99e28964d9972d02f1c">_to_yolo_name</a> (self, str logical_name)</td></tr>
 <tr class="separator:a93cc0aef2abbe99e28964d9972d02f1c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42e0aeda72c2ec32cff5609ece74eeea"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a42e0aeda72c2ec32cff5609ece74eeea">_get_shelf_height_for_object</a> (self, <a class="el" href="classpickandplace__task__manager_1_1ObjectInfo.html">ObjectInfo</a> obj)</td></tr>
@@ -405,6 +407,42 @@ Returns an empty list if no shelves are configured.
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a090153dbfce1e79be494faffa754edd3" name="a090153dbfce1e79be494faffa754edd3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a090153dbfce1e79be494faffa754edd3">&#9670;&#160;</a></span>_is_trash()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool pickandplace_task_manager.PickAndPlaceTM._is_trash </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>logical_name</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">True if object matches trash_category (as object name or as objects.json category).</pre> 
 </div>
 </div>
 <a id="a2e6a44eb17dec7afd4a1a061c96c6cad" name="a2e6a44eb17dec7afd4a1a061c96c6cad"></a>

@@ -1,5 +1,7 @@
 var NAVTREEINDEX36 =
 {
+"pick__server_8py.html#acaa40eda93eac1002f77d6f2a7be6552":[32,0,3,0,7,1,8,9],
+"pick__server_8py.html#ad04afc6dca8e786059ec3c0934f88fcd":[32,0,3,0,7,1,8,10],
 "pick__server_8py.html#ad498f621ea4c9c7412617652b9490b5a":[32,0,3,0,7,1,8,5],
 "pick__server_8py.html#ade4091c8c73568e8e0b5935f5b669677":[32,0,3,0,7,1,8,1],
 "pick__server_8py.html#ae59ed606e8f34b17ceb6741ced19afee":[32,0,3,0,7,1,8,7],
@@ -247,7 +249,5 @@ var NAVTREEINDEX36 =
 "structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a1176ab9537a5fb253ab9dc9ef4cd7744":[31,0,55,4,3],
 "structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a1176ab9537a5fb253ab9dc9ef4cd7744":[30,0,99,4,3],
 "structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a2bfa1d959b89b34406838d00c1e80339":[31,0,55,4,5],
-"structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a2bfa1d959b89b34406838d00c1e80339":[30,0,99,4,5],
-"structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a5d017942dcee9f10d7d57df3fcc5efa9":[30,0,99,4,1],
-"structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a5d017942dcee9f10d7d57df3fcc5efa9":[31,0,55,4,1]
+"structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a2bfa1d959b89b34406838d00c1e80339":[30,0,99,4,5]
 };
