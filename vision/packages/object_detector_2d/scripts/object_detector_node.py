@@ -19,34 +19,72 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
     YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
-from frida_interfaces.msg import Detection, ObjectDetectionArray
-from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
-from sensor_msgs.msg import Image
-from detectors.registry import ModelRegistry
-from detectors.utils import iou_deduplicate
-from base_detector_node import BaseDetectorNode
+
+from frida_interfaces.srv import SetTrashCategory
+
+MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
+
+print("PATH   ", MODELS_PATH)
+ARGS = {
+    "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
+    "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
+    "CAMERA_INFO_TOPIC": CAMERA_INFO_TOPIC,
+    "DETECTIONS_TOPIC": DETECTIONS_TOPIC,
+    "DETECTIONS_IMAGE_TOPIC": DETECTIONS_IMAGE_TOPIC,
+    "DETECTIONS_POSES_TOPIC": DETECTIONS_POSES_TOPIC,
+    "DETECTIONS_3D_TOPIC": DETECTIONS_3D_TOPIC,
+    "DETECTIONS_ACTIVE_TOPIC": DETECTIONS_ACTIVE_TOPIC,
+    "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
+    "CAMERA_FRAME": CAMERA_FRAME,
+    "TARGET_FRAME": "base_link",
+    "YOLO_MODEL_PATH": "tmr2026.pt",
+    "USE_ACTIVE_FLAG": False,
+    "DEPTH_ACTIVE": True,
+    "VERBOSE": False,
+    "USE_YOLO8": False,
+    "USE_YOLO26": True,
+    "FLIP_IMAGE": False,
+    "USE_ZED_TRANSFORM": True,
+    "MIN_SCORE_THRESH": 0.75,
+    "MAX_DEPTH_THRESH": 2.0,
+}
 
 
-class ObjectDetectorNode(BaseDetectorNode):
-    def __init__(self):
-        super().__init__(
-            "object_detector_2D_node",
-            default_det_topic=DETECTIONS_TOPIC,
-            default_det_img_topic=DETECTIONS_IMAGE_TOPIC,
-            default_det_poses_topic=DETECTIONS_POSES_TOPIC,
-            default_det_3d_topic=DETECTIONS_3D_TOPIC,
-            default_active_topic=DETECTIONS_ACTIVE_TOPIC,
-            fixed_active_topic="/vision/object_detector/active",
-        )
+@dataclass
+class NodeParams:
+    RGB_IMAGE_TOPIC: str = None
+    DEPTH_IMAGE_TOPIC: str = None
+    CAMERA_INFO_TOPIC: str = None
+    DETECTIONS_TOPIC: str = None
+    DETECTIONS_POSES_TOPIC: str = None
+    DETECTIONS_3D_TOPIC: str = None
+    DETECTIONS_ACTIVE_TOPIC: str = None
+    DETECTIONS_IMAGE_TOPIC: str = None
+    DEBUG_IMAGE_TOPIC: str = None
+    YOLO_MODEL_PATH: str = None
+    USE_ACTIVE_FLAG: bool = None
+    VERBOSE: bool = None
+    USE_YOLO8: bool = None
+    USE_YOLO26: bool = None
+    MAX_DEPTH_THRESH: float = None
 
-        model_names = self.declare_param(
-            "models", ["yolo_v26_finetuned"]
-        ).string_array_value
 
-        self.models = [ModelRegistry.get(name) for name in model_names]
-        self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
-        self.yolo_service_model = ModelRegistry.get("yolo_generic")
+# TODO DEFINE HOW TO GET params
 
+
+class object_detector_node(rclpy.node.Node):
+    def __init__(self, node_name: str = "object_detector_2D_node"):
+        super().__init__(node_name)
+
+        for key, value in ARGS.items():
+            self.declare_parameter(key, value)
+
+        self.bridge = CvBridge()
+        self.depth_image = []
+        self.rgb_image = []
+        self.detections_frame = []
+
+        # Trash detection logic — set via /vision/set_trash_category service
         self.category = None
         try:
             objects_path = os.path.join(
@@ -195,8 +233,49 @@ class ObjectDetectorNode(BaseDetectorNode):
         if self.verbose:
             for i, d in enumerate(published):
                 self.get_logger().info(
-                    f"Detection #{i}: {d.label_text} ({d.score:.2f})"
+                    f"Detection #{str(index)}:   {all_detections[index].__str__()}"
                 )
+
+        self.visualize_3d_detections(all_detections)
+
+        self.detections_pose_publisher.publish(
+            PoseArray(
+                poses=[
+                    Pose(
+                        position=Point(
+                            x=detection.point_stamped_.point.x,
+                            y=detection.point_stamped_.point.y,
+                            z=detection.point_stamped_.point.z,
+                        )
+                    )
+                    for detection in all_detections
+                ]
+            )
+        )
+
+        merged_detections = self.object_detector_2d.getFridaDetections(all_detections)
+        for detection in merged_detections:
+            detection.point3d.header.stamp = self.curr_clock
+
+        # Process trash
+        processed_detections = []
+        for det in merged_detections:
+            label = det.label_text.strip().lower()
+            detection = copy.deepcopy(det)
+            obj_category = self.object_to_category.get(label)
+            if self.category and obj_category and obj_category == self.category:
+                detection.label_text = f"trash/{det.label_text}"
+                self.get_logger().info(f"Detected TRASH/{det.label_text}")
+            processed_detections.append(detection)
+
+        self.latest_detections = processed_detections
+        self.detections_publisher.publish(
+            ObjectDetectionArray(detections=processed_detections)
+        )
+
+        self.detections_frame = self.visualize_detections(
+            visual_image, processed_detections
+        )
 
 
 def main(args=None):
