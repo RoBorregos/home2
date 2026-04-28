@@ -24,3 +24,6 @@
 	url = https://github.com/RoBorregos/mujoco_ros2_control
 	branch = mujoco_servicios_estable
 
+[submodule "manipulation/packages/contact_graspnet"]
+	path = manipulation/packages/contact_graspnet
+	url = https://github.com/elchun/contact_graspnet_pytorch.git
