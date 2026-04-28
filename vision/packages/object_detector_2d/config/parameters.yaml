@@ -11,7 +11,7 @@ ObjectDetect2D:
     DEBUG_IMAGE_TOPIC: /vision/debug_image
     CAMERA_FRAME: zed_left_camera_optical_frame
     TARGET_FRAME: base_link
-    YOLO_MODEL_PATH: abril9.pt
+    YOLO_MODEL_PATH: tmr2026.pt
     USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False
