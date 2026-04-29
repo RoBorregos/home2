@@ -3,20 +3,25 @@
   <Domain>
     <General>
       <Interfaces>
+        <!-- Loopback ensures containers on the same host can always talk without interference -->
         <NetworkInterface name="lo" priority="default" multicast="true" autodetermine="false"/>
       </Interfaces>
-      <AllowMulticast>false</AllowMulticast>
+      <AllowMulticast>true</AllowMulticast>
+      <EnableMulticastLoopback>true</EnableMulticastLoopback>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <Discovery>
       <ParticipantIndex>auto</ParticipantIndex>
-      <MaxAutoParticipantIndex>120</MaxAutoParticipantIndex>
-      <Peers>
-        <Peer Address="localhost"/>
-      </Peers>
     </Discovery>
+    <SharedMemory>
+      <Enable>true</Enable>
+      <LogLevel>warn</LogLevel>
+    </SharedMemory>
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
+      <Watermarks>
+        <WhcHigh>500kB</WhcHigh>
+      </Watermarks>
     </Internal>
     <Tracing>
       <Verbosity>warning</Verbosity>
