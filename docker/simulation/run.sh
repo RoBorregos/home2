@@ -18,7 +18,7 @@ parse_common_flags "$COMPOSE" "${ARGS[@]}"
 #_________________________SETUP_________________________
 
 setup_common_env "simulation"
-add_or_update_variable .env "CYCLONE_INTERFACE" ""
+add_or_update_variable .env "CYCLONE_INTERFACE" "lo"
 add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
 add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:simulation-${ENV_TYPE}"
 
