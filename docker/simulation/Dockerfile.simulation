@@ -28,19 +28,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-robot-state-publisher \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up ROS 2 workspace for MuJoCo packages
-WORKDIR /workspace/sim_ws/src
-
-# Clone mujoco_ros2_control and mujoco_spawn
-RUN git clone https://github.com/dfki-ric/mujoco_ros2_control.git && \
-    git clone https://github.com/dfki-ric/mujoco_spawn.git
-
-# Build the workspace
-WORKDIR /workspace/sim_ws
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
-    colcon build --packages-select mujoco_ros2_control mujoco_spawn --symlink-install"
-
-# Add setup to bashrc
-RUN echo "source /workspace/sim_ws/install/setup.bash" >> ~/.bashrc
-
+# The workspace packages (mujoco_spawn, mujoco_ros2_control, etc.) 
+# are mounted via volumes and built by the run.sh script.
 WORKDIR /workspace
