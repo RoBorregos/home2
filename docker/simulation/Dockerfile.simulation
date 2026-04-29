@@ -2,46 +2,45 @@
 ARG BASE_IMAGE=roborregos/home2:cpu_base
 FROM $BASE_IMAGE
 
-# Install MuJoCo dependencies (might already be in base image, but good to be explicit)
-RUN apt-get update && apt-get install -y --no-install-recommends 
-    libgl1-mesa-glx 
-    libosmesa6 
-    libglew-dev 
-    libglfw3-dev 
-    libxrandr-dev 
-    libxinerama-dev 
-    libxcursor-dev 
-    libxi-dev 
-    build-essential 
-    git 
-    python3-pip 
-    python3-colcon-common-extensions 
-    python3-rosdep 
-    ros-${ROS_DISTRO}-ros2-control 
-    ros-${ROS_DISTRO}-ros2-controllers 
-    ros-${ROS_DISTRO}-xarm-ros 
-    ros-${ROS_DISTRO}-xarm-msgs 
-    ros-${ROS_DISTRO}-xarm-description 
-    ros-${ROS_DISTRO}-xarm-moveit-config 
-    ros-${ROS_DISTRO}-controller-manager 
-    ros-${ROS_DISTRO}-joint-state-publisher-gui 
-    ros-${ROS_DISTRO}-rviz2 
-    ros-${ROS_DISTRO}-tf2-tools 
-    ros-${ROS_DISTRO}-rqt-graph 
-    ros-${ROS_DISTRO}-joint-state-broadcaster 
-    ros-${ROS_DISTRO}-robot-state-publisher 
+# Install MuJoCo and ROS 2 dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-glx \
+    libosmesa6 \
+    libglew-dev \
+    libglfw3-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxcursor-dev \
+    libxi-dev \
+    build-essential \
+    git \
+    python3-pip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    ros-${ROS_DISTRO}-ros2-control \
+    ros-${ROS_DISTRO}-ros2-controllers \
+    ros-${ROS_DISTRO}-controller-manager \
+    ros-${ROS_DISTRO}-joint-state-publisher-gui \
+    ros-${ROS_DISTRO}-rviz2 \
+    ros-${ROS_DISTRO}-tf2-tools \
+    ros-${ROS_DISTRO}-rqt-graph \
+    ros-${ROS_DISTRO}-joint-state-broadcaster \
+    ros-${ROS_DISTRO}-robot-state-publisher \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up ROS 2 workspace
-WORKDIR /workspace/src
+# Set up ROS 2 workspace for MuJoCo packages
+WORKDIR /workspace/sim_ws/src
 
 # Clone mujoco_ros2_control and mujoco_spawn
-RUN git clone https://github.com/dfki-ric/mujoco_ros2_control.git 
-    && git clone https://github.com/dfki-ric/mujoco_spawn.git
+RUN git clone https://github.com/dfki-ric/mujoco_ros2_control.git && \
+    git clone https://github.com/dfki-ric/mujoco_spawn.git
 
 # Build the workspace
-RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && 
+WORKDIR /workspace/sim_ws
+RUN /bin/bash -c "source /opt/ros/${ROS_DISTRO}/setup.bash && \
     colcon build --packages-select mujoco_ros2_control mujoco_spawn --symlink-install"
 
-# Source the workspace
-RUN echo "source /workspace/install/setup.bash" >> ~/.bashrc
+# Add setup to bashrc
+RUN echo "source /workspace/sim_ws/install/setup.bash" >> ~/.bashrc
+
+WORKDIR /workspace
