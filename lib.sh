@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri zed"
+AREAS="vision manipulation navigation integration hri zed simulation"
 ORIN_SERVER_AREAS="hri"
 
 # --- guard against multiple sourcing ---
