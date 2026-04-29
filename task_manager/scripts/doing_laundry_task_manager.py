@@ -21,13 +21,13 @@ class DoingLaundryTM(Node):
         NAVIGATE_TO_BASKET = "NAVIGATE_TO_BASKET"
         DETECT_BASKET = "DETECT_BASKET"
         PICK_LAUNDRY = "PICK_LAUNDRY"
+        NAVIGATE_TO_LAUNDRY_TABLE = "NAVIGATE_TO_LAUNDRY_TABLE"
+        UNLOAD_LAUNDRY = "UNLOAD_LAUNDRY"
         END = "END"
 
     def __init__(self):
         super().__init__("doing_laundry_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.DOING_LAUNDRY, mock_areas=["manipulation", "vision"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=[])
         self.current_state = DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON
         self.running_task = True
         self.state_start_time = None
@@ -66,7 +66,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
             Logger.info(self, "Navigating to basket area")
-            status, error = self.navigate_to("kitchen", "dishwasher")
+            status, error = self.navigate_to("laundry", "dishwasher")
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_state = DoingLaundryTM.TaskStates.DETECT_BASKET
@@ -86,13 +86,37 @@ class DoingLaundryTM(Node):
                 Logger.warn(self, "Could not detect laundry basket. Retrying...")
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_LAUNDRY:
+            Logger.info(self, "Opening gripper before picking.")
+            self.subtask_manager.manipulation.open_gripper()
+
             Logger.info(self, "Attempting to pick the basket using pick_object.")
             # Use pick_object from manipulation
             result = self.subtask_manager.manipulation.pick_object("laundry_basket")
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Successfully picked the basket.")
+                self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE
             else:
                 Logger.error(self, "Failed to pick the basket.")
+                self.current_state = DoingLaundryTM.TaskStates.END
+
+        elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE:
+            Logger.info(self, "Navigating to laundry table")
+            status, error = self.navigate_to("laundry", "laundry_table")
+
+            if status == Status.EXECUTION_SUCCESS:
+                Logger.info(self, "Reached laundry table. Opening gripper.")
+                self.subtask_manager.manipulation.open_gripper()
+                self.current_state = DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY
+            else:
+                Logger.error(self, f"Navigation failed: {error}. Retrying...")
+
+        elif self.current_state == DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY:
+            Logger.info(self, "Starting to unload clothes from the basket.")
+
+            # TODO: Add logic to pick clothes from the basket and put them on the table
+            # START PICKING FROM BASKET AND PUTTING ON TABLE
+
+            Logger.info(self, "Laundry unloading logic should go here.")
             self.current_state = DoingLaundryTM.TaskStates.END
 
         elif self.current_state == DoingLaundryTM.TaskStates.END:
