@@ -3,7 +3,6 @@
   <Domain>
     <General>
       <Interfaces>
-        <!-- Loopback ensures containers on the same host can always talk without interference -->
         <NetworkInterface name="lo" priority="default" multicast="true" autodetermine="false"/>
       </Interfaces>
       <AllowMulticast>true</AllowMulticast>
@@ -14,17 +13,11 @@
       <ParticipantIndex>auto</ParticipantIndex>
     </Discovery>
     <SharedMemory>
-      <Enable>true</Enable>
-      <LogLevel>warn</LogLevel>
+      <!-- Disabled for now to avoid dependency on a running RouDi container -->
+      <Enable>false</Enable>
     </SharedMemory>
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
-      <Watermarks>
-        <WhcHigh>500kB</WhcHigh>
-      </Watermarks>
     </Internal>
-    <Tracing>
-      <Verbosity>warning</Verbosity>
-    </Tracing>
   </Domain>
 </CycloneDDS>

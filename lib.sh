@@ -191,9 +191,9 @@ run_area() {
     fi
   fi
 
-  # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation, simulation)
   if [ "${CYCLONE_SHM}" = "1" ]; then
-    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ] || [ "$INPUT" = "simulation" ]; then
       ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
     fi
   fi
