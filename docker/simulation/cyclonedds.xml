@@ -5,19 +5,21 @@
       <Interfaces>
         <NetworkInterface name="lo" priority="default" multicast="true" autodetermine="false"/>
       </Interfaces>
-      <AllowMulticast>true</AllowMulticast>
-      <EnableMulticastLoopback>true</EnableMulticastLoopback>
+      <AllowMulticast>false</AllowMulticast>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <Discovery>
       <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>120</MaxAutoParticipantIndex>
+      <Peers>
+        <Peer Address="localhost"/>
+      </Peers>
     </Discovery>
-    <SharedMemory>
-      <!-- Disabled for now to avoid dependency on a running RouDi container -->
-      <Enable>false</Enable>
-    </SharedMemory>
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
     </Internal>
+    <Tracing>
+      <Verbosity>warning</Verbosity>
+    </Tracing>
   </Domain>
 </CycloneDDS>
