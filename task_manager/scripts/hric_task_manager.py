@@ -9,7 +9,9 @@ import time
 from datetime import datetime
 
 import rclpy
-from frida_constants.hri_constants import HRIC_DRINK_HOTWORDS, HRIC_NAME_HOTWORDS
+import json
+import os
+from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_HRIC
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
@@ -56,17 +58,6 @@ class HRIC_TM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("hric_task_manager")
-
-        self.declare_parameter("name_hotwords", HRIC_NAME_HOTWORDS)
-        self.declare_parameter("drink_hotwords", HRIC_DRINK_HOTWORDS)
-
-        self.name_hotwords = list(
-            self.get_parameter("name_hotwords").get_parameter_value().string_array_value
-        )
-        self.drink_hotwords = list(
-            self.get_parameter("drink_hotwords").get_parameter_value().string_array_value
-        )
-
         self.subtask_manager = SubtaskManager(self, task=Task.HRIC, mock_areas=[])
 
         self.seat_angles = [0, -45, -45, -45, 180, 45, 45, 45]
@@ -75,6 +66,30 @@ class HRIC_TM(Node):
         self.current_attempts = 0
         self.running_task = True
         self.message = ""
+
+        self.drink_options = ["water", "coke", "coffee", "tea"]
+        try:
+            objects_path = os.path.join(
+                get_package_share_directory("frida_constants"), "data", "objects.json"
+            )
+            with open(objects_path, "r") as f:
+                data = json.load(f)
+                if "drink" in data.get("categories", {}):
+                    self.drink_options = data["categories"]["drink"]
+        except Exception:
+            pass
+
+        self.name_options = [
+            "Alex",
+            "Daniel",
+            "David",
+            "Emma",
+            "Emily",
+            "John",
+            "Luis",
+            "Maria",
+            "Sofia",
+        ]
 
         # State timing variables
         self.state_start_time = None
@@ -186,17 +201,11 @@ class HRIC_TM(Node):
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
             current_guest = self.get_current_guest()
-
-            name_hotwords = self.subtask_manager.hri.compose_hotwords(
-                self.name_hotwords,
-                [guest.name for guest in self.guests if guest.name],
-            )
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?",
                 query="name",
                 context="The question 'What is your name?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your name?' was asked",
-                hotwords=name_hotwords,
+                options=self.name_options,
                 retries=5,
             )
 
@@ -205,17 +214,11 @@ class HRIC_TM(Node):
             else:
                 current_guest.name = f"Guest {self.current_guest_idx + 1}"
 
-            drink_hotwords = self.subtask_manager.hri.compose_hotwords(
-                self.drink_hotwords,
-                [guest.drink for guest in self.guests if guest.drink],
-            )
-
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?",
                 query="LLM_drink",
                 context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your favorite drink?' was asked",
-                hotwords=drink_hotwords,
+                options=self.drink_options,
                 retries=5,
             )
 
