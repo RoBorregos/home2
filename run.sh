@@ -85,7 +85,7 @@ case $INPUT in
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
     ;;
-  vision|manipulation|navigation|integration|hri|zed)
+  vision|manipulation|navigation|integration|hri|zed|simulation)
     run_area "$@"
     ;;
   --update-map)
