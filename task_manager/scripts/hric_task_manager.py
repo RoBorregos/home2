@@ -8,9 +8,7 @@ import time
 from datetime import datetime
 
 import rclpy
-import json
-import os
-from ament_index_python.packages import get_package_share_directory
+from frida_constants.hri_constants import HRIC_DRINK_HOTWORDS, HRIC_NAME_HOTWORDS
 from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_HRIC
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
@@ -70,29 +68,8 @@ class HRIC_TM(Node):
         self.running_task = True
         self.message = ""
 
-        self.drink_options = ["water", "coke", "coffee", "tea"]
-        try:
-            objects_path = os.path.join(
-                get_package_share_directory("frida_constants"), "data", "objects.json"
-            )
-            with open(objects_path, "r") as f:
-                data = json.load(f)
-                if "drink" in data.get("categories", {}):
-                    self.drink_options = data["categories"]["drink"]
-        except Exception:
-            pass
-
-        self.name_options = [
-            "Alex",
-            "Daniel",
-            "David",
-            "Emma",
-            "Emily",
-            "John",
-            "Luis",
-            "Maria",
-            "Sofia",
-        ]
+        self.drink_options = HRIC_DRINK_HOTWORDS
+        self.name_options = HRIC_NAME_HOTWORDS
 
         # State timing variables
         self.state_start_time = None
