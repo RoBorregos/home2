@@ -16,7 +16,7 @@
       </Peers>
     </Discovery>
     <Internal>
-      <SocketReceiveBufferSize min="10MB"/>
+      <!-- Removed hard minimum buffer size to allow startup on systems with lower kernel limits -->
     </Internal>
     <Tracing>
       <Verbosity>warning</Verbosity>
