@@ -26,6 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-rqt-graph \
     ros-${ROS_DISTRO}-joint-state-broadcaster \
     ros-${ROS_DISTRO}-robot-state-publisher \
+    ros-${ROS_DISTRO}-launch-param-builder \
+    ros-${ROS_DISTRO}-urdfdom-py \
     && rm -rf /var/lib/apt/lists/*
 
 # The workspace packages (mujoco_spawn, mujoco_ros2_control, etc.) 
