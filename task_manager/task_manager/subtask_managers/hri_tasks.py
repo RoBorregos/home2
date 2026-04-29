@@ -239,6 +239,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.GPSR: all_services | gpsr_services,
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
+            Task.DOING_LAUNDRY: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
             Task.DEBUG: all_services,

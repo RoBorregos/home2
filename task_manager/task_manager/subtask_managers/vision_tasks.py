@@ -220,6 +220,10 @@ class VisionTasks:
                 },
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
             },
+            Task.DOING_LAUNDRY: {
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+            },
             Task.RESTAURANT: {
                 "customer_tables": {
                     "client": self.customer_table_client,
@@ -523,6 +527,14 @@ class VisionTasks:
             return Status.EXECUTION_ERROR, detections
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, BBOX(classname="laundry_basket")))
+    def detect_laundry_basket(self, timeout: float = TIMEOUT) -> tuple[Status, BBOX]:
+        """Detect the laundry basket"""
+        status, detections = self.detect_objects(label="laundry_basket", timeout=timeout)
+        if status == Status.EXECUTION_SUCCESS and detections:
+            return Status.EXECUTION_SUCCESS, detections[0]
+        return Status.TARGET_NOT_FOUND, None
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
     @service_check("detect_person_action_client", Status.EXECUTION_ERROR, TIMEOUT)
