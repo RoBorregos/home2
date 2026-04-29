@@ -17,7 +17,8 @@ services:
       - ./install:/workspace/install
       - ./log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
-      - ${HOME}/.Xauthority:/home/ros/.Xauthority:rw # For GUI applications
+      - ${HOME}/.Xauthority:/home/ros/.Xauthority:rw
+      - ../../cyclonedds.xml:/etc/cyclonedds.xml # Mount DDS config
     network_mode: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
@@ -25,6 +26,9 @@ services:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      CYCLONEDDS_URI: file:///etc/cyclonedds.xml
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      NVIDIA_DRIVER_CAPABILITIES: all
     tty: true
     stdin_open: true    
     working_dir: /workspace
