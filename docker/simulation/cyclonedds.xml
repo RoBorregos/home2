@@ -14,7 +14,7 @@
       <MaxAutoParticipantIndex>120</MaxAutoParticipantIndex>
       <Peers>
         <Peer Address="localhost"/>
-      </Peers> discover
+      </Peers>
     </Discovery>
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
