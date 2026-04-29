@@ -5,18 +5,16 @@
       <Interfaces>
         <NetworkInterface name="lo" priority="default" multicast="true" autodetermine="false"/>
       </Interfaces>
-      <AllowMulticast>false</AllowMulticast>
+      <AllowMulticast>true</AllowMulticast>
+      <EnableMulticastLoopback>true</EnableMulticastLoopback>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <Discovery>
       <ParticipantIndex>auto</ParticipantIndex>
       <MaxAutoParticipantIndex>120</MaxAutoParticipantIndex>
-      <Peers>
-        <Peer Address="localhost"/>
-      </Peers>
     </Discovery>
     <Internal>
-      <!-- Removed hard minimum buffer size to allow startup on systems with lower kernel limits -->
+      <!-- Removed hard minimum buffer size -->
     </Internal>
     <Tracing>
       <Verbosity>warning</Verbosity>
