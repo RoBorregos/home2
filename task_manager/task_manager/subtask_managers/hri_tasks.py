@@ -697,6 +697,19 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             str: answer to the question
         """
+        # Auto-configure STT context using options
+        if options is not None:
+            options_str = f"Expected answers: {', '.join(str(opt) for opt in options)}."
+            if not initial_prompt:
+                initial_prompt = options_str
+            else:
+                initial_prompt += " " + options_str
+
+            if not context:
+                context = options_str
+            else:
+                context += " " + options_str
+
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
@@ -713,10 +726,12 @@ class HRITasks(metaclass=SubtaskMeta):
                 target_found = options is None
                 similarity = 1
                 try:
-                    # If no options provided, directly extract the data without looking for matches
-                    if not skip_extract_data and not options:
-                        s, target_info = self.extract_data(query, interpreted_text, context)
-                        if s != Status.EXECUTION_SUCCESS:
+                    # Always extract the data using LLM if not skipped
+                    if not skip_extract_data:
+                        s, extracted_info = self.extract_data(query, interpreted_text, context)
+                        if s == Status.EXECUTION_SUCCESS:
+                            target_info = extracted_info
+                        elif not options:
                             self.say("Sorry, I couldn't understand.")
                             continue
                         target_found = True
