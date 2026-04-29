@@ -47,5 +47,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy CycloneDDS setup from host if possible, or create a default one
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 RUN chmod +x /usr/local/bin/cyclonedds_setup.sh
+RUN ldconfig
 
 WORKDIR /workspace

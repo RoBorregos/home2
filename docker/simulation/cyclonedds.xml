@@ -3,7 +3,6 @@
   <Domain>
     <General>
       <Interfaces>
-        <!-- Use loopback for intra-host communication between containers -->
         <NetworkInterface name="lo" priority="default" multicast="true" autodetermine="false"/>
       </Interfaces>
       <AllowMulticast>false</AllowMulticast>

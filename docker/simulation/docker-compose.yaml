@@ -20,8 +20,13 @@ services:
       - ${HOME}/.Xauthority:/home/ros/.Xauthority:rw
       - ./cyclonedds.xml:/etc/cyclonedds.xml # Mount local DDS config
     network_mode: host
+    ipc: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
+    ulimits:
+      nofile:
+        soft: 1024
+        hard: 524288
     environment:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color
