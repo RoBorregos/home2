@@ -259,7 +259,7 @@ class HRIC_TM(Node):
 
         elif self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
-            self.subtask_manager.vision.deactivate_face_recognition()
+            # self.subtask_manager.vision.deactivate_face_recognition()
             # if self.current_attempts == 0:
             #     self.subtask_manager.hri.say(
             #         "I see you brought a bag for the host. Let me take care of it for you.",
