@@ -728,7 +728,7 @@ class PickAndPlaceTM(Node):
             )
             _, answer = self.subtask_manager.hri.confirm(
                 "Please say yes once the dishwasher door is open.",
-                use_hotwords=True,
+                use_wakewords=True,
                 retries=5,
                 wait_between_retries=10.0,
             )

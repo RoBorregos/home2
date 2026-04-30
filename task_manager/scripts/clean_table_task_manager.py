@@ -106,7 +106,7 @@ class CleanTableTM(Node):
                 )
                 return Status.TARGET_NOT_FOUND, ""
             s, res = self.subtask_manager.hri.confirm(
-                f"Have you placed the {object} on my gripper?", use_hotwords=False
+                f"Have you placed the {object} on my gripper?", use_wakewords=False
             )
             s, detections = self.subtask_manager.vision.detect_objects(timeout=10)
             if res == "yes":

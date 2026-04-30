@@ -543,7 +543,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def confirm(
         self,
         question: str,
-        use_hotwords: bool = True,
+        use_wakewords: bool = True,
         retries: int = 3,
         wait_between_retries: float = 5,
     ):
@@ -552,7 +552,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Args:
             question: the inquiry to confirm
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_wakewords: deprecated flag kept for compatibility; confirmation always uses wakewords via `interpret_keyword`.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
         Returns:
@@ -570,52 +570,16 @@ class HRITasks(metaclass=SubtaskMeta):
             # Say the question
             self.say(question)
 
-            if use_hotwords:
-                # self.say("Please confirm by saying yes or no")
-
-                s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
-                if s == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS, keyword
-            else:
-                accepted_future = self.hear_streaming(timeout=wait_between_retries)
-
-                rclpy.spin_until_future_complete(
-                    self.node, accepted_future, timeout_sec=wait_between_retries + 1
+            if not use_wakewords:
+                Logger.warn(
+                    self.node,
+                    "confirm: use_wakewords=False ignored; always using wakeword detection",
                 )
-                goal_future = accepted_future.result().get_result_async()
 
-                while not goal_future.done():
-                    if contains_any(
-                        format_transcription(self.current_transcription), self.positive
-                    ):
-                        self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "yes"
-                    if "no" in format_transcription(self.current_transcription):
-                        self.cancel_hear_action()
-                        return Status.EXECUTION_SUCCESS, "no"
-                    rclpy.spin_once(self.node, timeout_sec=0.1)
-
-                # Add an extra second to ensure the action server has enough time to process the request
-                rclpy.spin_until_future_complete(
-                    self.node, goal_future, timeout_sec=wait_between_retries + 1
-                )
-                self.cancel_hear_action()
-
-                # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
-                if (
-                    len(goal_future.result().result.transcription.strip()) > 0
-                    and goal_future.result().result.transcription != self.last_hotwords
-                ):
-                    if (
-                        contains_any(
-                            format_transcription(self.current_transcription),
-                            self.positive,
-                        )
-                        or self.is_positive(self.current_transcription)[1]
-                    ):
-                        return Status.EXECUTION_SUCCESS, "yes"
-
-                    return Status.EXECUTION_SUCCESS, "no"
+            # self.say("Please confirm by saying yes or no")
+            s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
+            if s == Status.EXECUTION_SUCCESS:
+                return Status.EXECUTION_SUCCESS, keyword
 
         Logger.info(
             self.node,
@@ -629,7 +593,7 @@ class HRITasks(metaclass=SubtaskMeta):
         query: str,
         context: str = "",
         confirm_question: Union[str, callable] = confirm_query,
-        use_hotwords: bool = True,
+        use_wakewords: bool = True,
         hotwords="",
         retries: int = 3,
         min_wait_between_retries: float = 5,
@@ -649,7 +613,7 @@ class HRITasks(metaclass=SubtaskMeta):
             query: the data to extract from the interpreted text
             context: the context of the question. It could be used to help the extraction.
             confirm_question: a string or a callable function that returns a string used confirm the answer
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_wakewords: deprecated flag kept for compatibility; confirmation always uses wakewords via `interpret_keyword`.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
@@ -751,7 +715,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # Ask for confirmation
                 if target_info != "" and target_found:
-                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                    s, confirmation = self.confirm(confirmation_text, use_wakewords, 3)
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                         return Status.EXECUTION_SUCCESS, target_info
 
@@ -1063,7 +1027,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="What would you like to order first?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_wakewords=False,
             options=items,
             retries=retries,
         )
@@ -1076,7 +1040,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="And what would you like as your second item?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_wakewords=False,
             options=items,
             retries=retries,
         )

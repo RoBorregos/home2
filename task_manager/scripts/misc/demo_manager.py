@@ -108,7 +108,7 @@ class DemoTM(Node):
                 "LLM_command",
                 context="The user was asked to say a command. We want to infer his complete instruction from the response",
                 confirm_question=confirm_command,
-                use_hotwords=False,
+                use_wakewords=False,
                 retries=ATTEMPT_LIMIT,
                 min_wait_between_retries=5.0,
                 skip_extract_data=True,
