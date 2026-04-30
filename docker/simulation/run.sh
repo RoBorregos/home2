@@ -41,7 +41,7 @@ RUN_SIMULATION="ros2 launch mujoco_spawn mujoco_sim_init.launch.py"
 # Default command to run if no specific task is provided
 DEFAULT_COMMAND="bash"
 
-COLCON="colcon build --symlink-install --packages-up-to mujoco_spawn mujoco_ros2_control arm_pkg perception_3d xarm_controller xarm_description frida_description xarm_msgs --packages-ignore xarm_gazebo"
+COLCON="colcon build --symlink-install --packages-up-to mujoco_spawn mujoco_ros2_control xarm_description frida_description xarm_msgs --packages-ignore xarm_gazebo"
 
 if [ "$BUILD" == "true" ]; then
     PRE_COMMAND="$COLCON && source /workspace/install/setup.bash && "

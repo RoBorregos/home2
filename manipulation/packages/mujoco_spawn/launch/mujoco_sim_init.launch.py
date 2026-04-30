@@ -268,7 +268,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         parameters=[
             robot_description,
             "/tmp/final_frida.yaml",
-            "/workspace/src/docker/manipulation/zed_sim_camera.yaml",
+            "/workspace/src/docker/simulation/zed_sim_camera.yaml",
             {"simulation_frequency": 500.0},
             {"realtime_factor": 1.0},
             {"robot_model_path": save_xml_file},
