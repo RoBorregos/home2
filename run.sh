@@ -39,6 +39,8 @@ Available Areas:
   manipulation       Spins up the containers for manipulation.
   navigation         Spins up the containers for navigation.
   hri                Spins up the containers for human-robot interaction.
+  display            Spins up the display (Next.js + rosbridge + web_video_server).
+  simulation         Spins up the dedicated MuJoCo simulation container.
   integration        Spins up the complete integration environment.
   zed                Starts the ZED camera in a container (with CycloneDDS SHM).
   frida_interfaces   Builds and configures FRIDA's custom interfaces/messages.
@@ -84,7 +86,7 @@ case $INPUT in
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
     ;;
-  vision|manipulation|navigation|integration|hri|zed|simulation)
+  vision|manipulation|navigation|integration|hri|zed|display|roudi|simulation)
     run_area "$@"
     ;;
   --update-map)
