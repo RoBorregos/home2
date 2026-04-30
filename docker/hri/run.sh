@@ -7,8 +7,6 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-BUILD_DISPLAY=""
-OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
 
@@ -18,8 +16,6 @@ parse_common_flags "$COMPOSE" "${ARGS[@]}"
 # Parse hri-specific flags
 for arg in "${ARGS[@]}"; do
   case "$arg" in
-    "--build-display")  BUILD_DISPLAY="true" ;;
-    "--open-display")   OPEN_DISPLAY="true" ;;
     "--download-model") DOWNLOAD_MODEL="true" ;;
     "--regenerate-db")  REGENERATE_DB="true" ;;
     "--build-proto")    BUILD_PROTO="true" ;;
@@ -74,13 +70,6 @@ if [ "${SETUP_DONE:-}" = "true" ]; then
   add_or_update_variable .env "SETUP_DONE" "true"
 fi
 
-# Check if display setup is needed
-DISPLAY_DIR="../../hri/packages/display/display"
-if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
-  echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f compose/hri-ros.yaml run $BUILD_IMAGE --rm --entrypoint "" hri-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
-fi
-
 # Regenerate database if requested
 if [ "$REGENERATE_DB" == "true" ]; then
   echo "Regenerating database..."
@@ -103,7 +92,7 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
-PACKAGES="speech nlp embeddings display"
+PACKAGES="speech nlp embeddings"
 PROFILES=()
 RUN=""
 
@@ -127,27 +116,6 @@ add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
-
-cleanup() {
-  # Ensure the process is not left running
-  [ -n "$wait_for_display_pid" ] && kill "$wait_for_display_pid" 2>/dev/null || true
-}
-trap cleanup SIGINT SIGTERM
-
-# Function to wait for service and launch display
-wait_and_launch_display() {
-  until curl --output /dev/null --silent --head --fail http://localhost:3000; do
-    sleep 1
-  done
-  chmod +x scripts/open-display.bash
-  local task_route="${TASK#--}"
-  bash scripts/open-display.bash "$task_route"
-}
-
-if [ -n "$OPEN_DISPLAY" ]; then
-  wait_and_launch_display &
-  wait_for_display_pid=$!
-fi
 
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."

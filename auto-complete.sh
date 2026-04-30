@@ -4,7 +4,7 @@ _run_sh_autocomplete() {
     local cur words
     _init_completion || return
 
-    local areas="manipulation navigation hri vision integration frida_interfaces"
+    local areas="manipulation navigation hri vision integration frida_interfaces display roudi"
     local inputs="--stop --down"
     local tasks="--hric --ppc --gpsr --dlc --restaurant --finals"
     local flags="--build --build-image --recreate --down --stop --help -h -d --upload-image --clean --clean-interfaces"
