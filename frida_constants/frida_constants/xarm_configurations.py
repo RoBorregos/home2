@@ -171,12 +171,12 @@ SCAN_FLOOR_CARRY_BAG_POSE = {
 
 PICK_BASKET_POSE = {
     "joints": {
-        "joint1": 182.9,
-        "joint2": 97.6,
-        "joint3": -103.3,
-        "joint4": -171,
-        "joint5": 4.8,
-        "joint6": 43.4,
+        "joint1": 96.8,
+        "joint2": 89.3,
+        "joint3": -95.3,
+        "joint4": 95.9,
+        "joint5": -0.4,
+        "joint6": 44.8,
     },
     "degrees": True,
 }
