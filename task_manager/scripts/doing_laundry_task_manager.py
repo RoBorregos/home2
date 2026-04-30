@@ -91,7 +91,13 @@ class DoingLaundryTM(Node):
 
             Logger.info(self, "Attempting to pick the basket using pick_object.")
             # Use pick_object from manipulation
-            result = self.subtask_manager.manipulation.pick_object("laundry_basket")
+            # result = self.subtask_manager.manipulation.pick_object("laundry_basket")
+            try:
+                result = self.subtask_manager.manipulation.move_to_position("pick_basket_pose")
+            except Exception as e:
+                Logger.error(self, f"Error occurred while moving to pick position: {e}")
+                result = self.subtask_manager.manipulation.pick_object("place_floor_right")
+
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Successfully picked the basket.")
                 self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE
