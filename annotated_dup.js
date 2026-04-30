@@ -441,6 +441,9 @@ var annotated_dup =
     [ "test_env", "namespacetest__env.html", [
       [ "TestNode", "classtest__env_1_1TestNode.html", "classtest__env_1_1TestNode" ]
     ] ],
+    [ "test_face_rec", "namespacetest__face__rec.html", [
+      [ "TestHRICFaceSave", "classtest__face__rec_1_1TestHRICFaceSave.html", "classtest__face__rec_1_1TestHRICFaceSave" ]
+    ] ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", [
       [ "TestGoToHand", "classtest__go__to__hand_1_1TestGoToHand.html", "classtest__go__to__hand_1_1TestGoToHand" ]
     ] ],

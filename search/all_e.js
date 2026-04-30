@@ -41,7 +41,7 @@ var searchData=
   ['navigate_5fto_5flocation_38',['navigate_to_location',['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a80f2b9057e4a5e741064ab5cd7ff9e7e',1,'pickandplace_task_manager::PickAndPlaceTM']]],
   ['navigate_5fto_5fplacement_39',['NAVIGATE_TO_PLACEMENT',['../classpickandplace__task__manager_1_1PickAndPlaceTM_1_1TaskStates.html#acc93388323dac39f4b9871bd261da730',1,'pickandplace_task_manager::PickAndPlaceTM::TaskStates']]],
   ['navigate_5fto_5froom_40',['NAVIGATE_TO_ROOM',['../classhand__task__manager_1_1HandTM_1_1TaskStates.html#ac2706792a1de8c8c0239754ff33459e4',1,'hand_task_manager::HandTM::TaskStates']]],
-  ['navigate_5fto_5ftable_41',['NAVIGATE_TO_TABLE',['../classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html#ab66b28894a69175b5bc2cd2310439143',1,'clean_table_task_manager.CleanTableTM.TaskStates.NAVIGATE_TO_TABLE()'],['../classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html#a98b4c6816596bd3fa75690d0e811d048',1,'restaurant_task_manager.RestaurantTaskManager.TaskStates.NAVIGATE_TO_TABLE()']]],
+  ['navigate_5fto_5ftable_41',['NAVIGATE_TO_TABLE',['../classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html#a98b4c6816596bd3fa75690d0e811d048',1,'restaurant_task_manager.RestaurantTaskManager.TaskStates.NAVIGATE_TO_TABLE()'],['../classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html#ab66b28894a69175b5bc2cd2310439143',1,'clean_table_task_manager.CleanTableTM.TaskStates.NAVIGATE_TO_TABLE()']]],
   ['navigation_42',['NAVIGATION',['../classstoring__groceries__manager_1_1Retries.html#a559aa04e759c2789301d5fc4a7b57110',1,'storing_groceries_manager.Retries.NAVIGATION()'],['../classsafety__task__manager_1_1Retries.html#adfc9b7274aa31ca1104749b60d2008e1',1,'safety_task_manager.Retries.NAVIGATION()']]],
   ['navigation_20docs_43',['Navigation Docs',['../md_docs_Run_Areas_nav.html',1,'']]],
   ['navigation_5fconstants_2epy_44',['navigation_constants.py',['../navigation__constants_8py.html',1,'']]],
@@ -99,5 +99,6 @@ var searchData=
   ['npx_96',['npx',['../classIKSolver.html#a42126eca3b2110aff8451060bce76c9f',1,'IKSolver']]],
   ['npy_97',['npy',['../classIKSolver.html#ab79bcd5d003ba38f5c1926e35446d123',1,'IKSolver']]],
   ['npz_98',['npz',['../classIKSolver.html#ac5ba601bbc95efd9881f70ebf871c5c1',1,'IKSolver']]],
-  ['num_5fscans_5fto_5fcollect_99',['num_scans_to_collect',['../classcalibrate__ignore__laser_1_1LidarCalibrator.html#ae1957112179d6433fe8d0d823351772d',1,'calibrate_ignore_laser::LidarCalibrator']]]
+  ['num_5fguests_99',['NUM_GUESTS',['../namespacetest__face__rec.html#a1c5ad2dbe7780f42aa1fea4be45222ca',1,'test_face_rec']]],
+  ['num_5fscans_5fto_5fcollect_100',['num_scans_to_collect',['../classcalibrate__ignore__laser_1_1LidarCalibrator.html#ae1957112179d6433fe8d0d823351772d',1,'calibrate_ignore_laser::LidarCalibrator']]]
 ];

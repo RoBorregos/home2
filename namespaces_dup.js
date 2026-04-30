@@ -383,6 +383,7 @@ var namespaces_dup =
     [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
+    [ "test_face_rec", "namespacetest__face__rec.html", "namespacetest__face__rec" ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", "namespacetest__go__to__hand" ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
