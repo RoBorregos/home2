@@ -29,10 +29,10 @@ fi
 
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INSTALL="if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi"
+SOURCE_CYCLONE="source /usr/local/bin/cyclonedds_setup.sh"
 
-export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
-# export CYCLONEDDS_URI=""
-# export CYCLONE_INTERFACE=""
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export CYCLONEDDS_URI="file:///etc/cyclonedds.xml"
 
 # Launch the MuJoCo simulation with the robot model
 # Assuming a launch file exists in mujoco_spawn or mujoco_ros2_control
@@ -51,10 +51,10 @@ fi
 
 case $TASK in
     "--sim")
-        COMMAND="$SOURCE_ROS && $SOURCE_INSTALL && $PRE_COMMAND$RUN_SIMULATION"
+        COMMAND="$SOURCE_ROS && $SOURCE_CYCLONE && $SOURCE_INSTALL && $PRE_COMMAND$RUN_SIMULATION"
         ;;
     *)
-        COMMAND="$SOURCE_ROS && $SOURCE_INSTALL && $PRE_COMMAND$DEFAULT_COMMAND"
+        COMMAND="$SOURCE_ROS && $SOURCE_CYCLONE && $SOURCE_INSTALL && $PRE_COMMAND$DEFAULT_COMMAND"
         ;;
 esac
 
