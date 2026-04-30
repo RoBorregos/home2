@@ -80,7 +80,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
 
     show_rviz = LaunchConfiguration("show_rviz", default="false")
     no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default="false")
-    
+
     # Flags for modularity - Controls if Brain/Vision nodes start here
     launch_moveit = LaunchConfiguration("launch_moveit", default="false")
     launch_perception = LaunchConfiguration("launch_perception", default="false")
@@ -285,9 +285,24 @@ def generate_nodes_for_spawn(context: LaunchContext):
         executable="static_transform_publisher",
         name="zed_optical_frame_tf",
         arguments=[
-            "--x", "0", "--y", "0", "--z", "0",
-            "--qx", "-0.5", "--qy", "0.5", "--qz", "-0.5", "--qw", "0.5",
-            "--frame-id", "zed", "--child-frame-id", "zed_left_camera_optical_frame",
+            "--x",
+            "0",
+            "--y",
+            "0",
+            "--z",
+            "0",
+            "--qx",
+            "-0.5",
+            "--qy",
+            "0.5",
+            "--qz",
+            "-0.5",
+            "--qw",
+            "0.5",
+            "--frame-id",
+            "zed",
+            "--child-frame-id",
+            "zed_left_camera_optical_frame",
         ],
         parameters=[{"use_sim_time": use_sim_time}],
     )
@@ -406,9 +421,7 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("launch_moveit", default_value="false"),
             DeclareLaunchArgument("launch_perception", default_value="false"),
-            OpaqueFunction(
-                function=generate_nodes_for_spawn
-            )
+            OpaqueFunction(function=generate_nodes_for_spawn),
         ]
     )
 

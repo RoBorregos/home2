@@ -12,11 +12,11 @@ def generate_launch_description():
         "config",
         "parameters_zero_shot.yaml",
     )
-    
+
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
 
     # Native ROS 2 Remapping:
-    # Instead of an expensive Python relay, we tell the node to publish 
+    # Instead of an expensive Python relay, we tell the node to publish
     # directly to /vision/detections. This has ZERO overhead and latency.
     remappings = [
         ("/vision/zero_shot_detections", "/vision/detections"),
