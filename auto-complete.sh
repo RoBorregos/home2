@@ -16,7 +16,7 @@ _run_sh_autocomplete() {
             ;;
         integration)
             # TODO: add other important scripts
-            flags="$flags --test-hri"
+            flags="$flags --test-hri --demo-becas"
     esac
 
     local options
