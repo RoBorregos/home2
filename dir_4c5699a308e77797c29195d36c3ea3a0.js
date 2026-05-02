@@ -1,6 +1,7 @@
 var dir_4c5699a308e77797c29195d36c3ea3a0 =
 [
     [ "_storing_groceries.py", "__storing__groceries_8py.html", "__storing__groceries_8py" ],
+    [ "demo_becas.py", "demo__becas_8py.html", "demo__becas_8py" ],
     [ "demo_manager.py", "demo__manager_8py.html", "demo__manager_8py" ],
     [ "egsr_cut.py", "egsr__cut_8py.html", "egsr__cut_8py" ],
     [ "follow_face_node_copt.py", "follow__face__node__copt_8py.html", "follow__face__node__copt_8py" ],

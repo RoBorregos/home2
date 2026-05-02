@@ -194,6 +194,7 @@ var hierarchy =
       [ "clean_table_task_manager.CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", null ],
       [ "customer_node.CustomerNode", "classcustomer__node_1_1CustomerNode.html", null ],
       [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
+      [ "demo_becas.DemoBecas", "classdemo__becas_1_1DemoBecas.html", null ],
       [ "demo_manager.DemoTM", "classdemo__manager_1_1DemoTM.html", null ],
       [ "dishwasher_node.DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", null ],
       [ "dock_to_handle.DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", null ],

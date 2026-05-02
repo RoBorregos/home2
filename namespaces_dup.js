@@ -45,6 +45,7 @@ var namespaces_dup =
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
+    [ "demo_becas", "namespacedemo__becas.html", "namespacedemo__becas" ],
     [ "demo_ds4", "namespacedemo__ds4.html", [
       [ "generate_launch_description", "namespacedemo__ds4.html#a3b92a5a114f0a71450f4b47c440d3352", null ]
     ] ],

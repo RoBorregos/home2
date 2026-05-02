@@ -47,6 +47,9 @@ var annotated_dup =
     [ "dashgo_driver2", "namespacedashgo__driver2.html", [
       [ "DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", "classdashgo__driver2_1_1DashgoDriver" ]
     ] ],
+    [ "demo_becas", "namespacedemo__becas.html", [
+      [ "DemoBecas", "classdemo__becas_1_1DemoBecas.html", "classdemo__becas_1_1DemoBecas" ]
+    ] ],
     [ "demo_manager", "namespacedemo__manager.html", [
       [ "DemoTM", "classdemo__manager_1_1DemoTM.html", "classdemo__manager_1_1DemoTM" ]
     ] ],
