@@ -41,14 +41,12 @@ POS_DELIVER = {
 class DemoBecas(Node):
     def __init__(self):
         super().__init__("demo_becas")
-        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.subtask_manager = SubtaskManager(self, task=Task.DEMO)
 
-        self.create_subscription(
-            Joy, "/joy", self.joy_callback, 1, callback_group=self.callback_group
-        )
+        self.create_subscription(Joy, "/joy", self.joy_callback, 1)
 
-        self.busy = False
+        self.last_command = None
+        self.running_task = True
 
         Logger.info(self, "Demo Becas node starting...")
         Logger.info(self, "Demo Becas ready! Use PlayStation controller buttons.")
@@ -59,47 +57,55 @@ class DemoBecas(Node):
         Logger.info(self, "  L1:       Say Congratulations")
 
     def joy_callback(self, msg):
-        if self.busy:
+        """Store the latest button press to be processed by the run loop"""
+        if msg.buttons[0]:  # Square
+            self.last_command = "open_gripper"
+        elif msg.buttons[2]:  # Circle
+            self.last_command = "close_gripper"
+        elif msg.buttons[1]:  # X
+            self.last_command = "move_receive"
+        elif msg.buttons[3]:  # Triangle
+            self.last_command = "move_deliver"
+        elif msg.buttons[4]:  # L1
+            self.last_command = "say_congrats"
+
+    def run(self):
+        """Main loop processing commands one at a time"""
+        if self.last_command is None:
             return
 
-        if msg.buttons[0]:  # Square
-            self.busy = True
+        command = self.last_command
+        self.last_command = None  # Clear command before executing
+
+        if command == "open_gripper":
             Logger.info(self, "Opening gripper")
             self.subtask_manager.manipulation.open_gripper()
-            self.busy = False
-        elif msg.buttons[2]:  # Circle
-            self.busy = True
+        elif command == "close_gripper":
             Logger.info(self, "Closing gripper")
             self.subtask_manager.manipulation.close_gripper()
-            self.busy = False
-        elif msg.buttons[1]:  # X
-            self.busy = True
+        elif command == "move_receive":
             Logger.info(self, "Moving to RECEIVE position")
             self.subtask_manager.manipulation.move_joint_positions(
                 joint_positions=POS_RECEIVE, velocity=0.3, degrees=True
             )
-            self.busy = False
-        elif msg.buttons[3]:  # Triangle
-            self.busy = True
+        elif command == "move_deliver":
             Logger.info(self, "Moving to DELIVER position")
             self.subtask_manager.manipulation.move_joint_positions(
                 joint_positions=POS_DELIVER, velocity=0.3, degrees=True
             )
-            self.busy = False
-        elif msg.buttons[4]:  # L1
-            self.busy = True
+        elif command == "say_congrats":
             Logger.info(self, "Saying Congratulations")
             self.subtask_manager.hri.say("Congratulations! You did an amazing job!")
-            self.busy = False
 
 
 def main(args=None):
     rclpy.init(args=args)
-    executor = rclpy.executors.MultiThreadedExecutor(5)
     node = DemoBecas()
-    executor.add_node(node)
+
     try:
-        executor.spin()
+        while rclpy.ok() and node.running_task:
+            rclpy.spin_once(node, timeout_sec=0.1)
+            node.run()
     except KeyboardInterrupt:
         pass
     finally:
