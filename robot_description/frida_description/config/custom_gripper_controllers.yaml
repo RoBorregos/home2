@@ -1,0 +1,32 @@
+controller_manager:
+  ros__parameters:
+    xarm_gripper_traj_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+xarm_gripper_traj_controller:
+  ros__parameters:
+    command_interfaces:
+      - position
+    state_interfaces:
+      - velocity
+      - position
+    joints:
+      - rightfinger
+    interface_name: position
+
+# Relax xarm6_traj_controller goal tolerance for the MuJoCo sim.
+# deep_update in mujoco_sim_init.launch.py merges this on top of the
+# upstream xarm6_controllers.yaml, so the real-robot config is not
+# affected. The real xarm easily hits 0.01 rad thanks to its internal
+# high-stiffness PID; in sim the MuJoCo position_actuator with kp=effort
+# cannot close the last ~0.02 rad inside the goal_time window. 0.05 rad
+# (~2.8 deg) is more than precise enough for manipulation tasks.
+xarm6_traj_controller:
+  ros__parameters:
+    constraints:
+      goal_time: 1.0
+      joint1: {trajectory: 1.0, goal: 0.05}
+      joint2: {trajectory: 1.0, goal: 0.05}
+      joint3: {trajectory: 1.0, goal: 0.05}
+      joint4: {trajectory: 1.0, goal: 0.05}
+      joint5: {trajectory: 1.0, goal: 0.05}
+      joint6: {trajectory: 1.0, goal: 0.05}

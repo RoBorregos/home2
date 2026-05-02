@@ -211,6 +211,15 @@ class VisionTasks:
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
+            Task.PICK_AND_PLACE: {
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
+                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
+            },
             Task.RESTAURANT: {
                 "customer_tables": {
                     "client": self.customer_table_client,
@@ -557,7 +566,10 @@ class VisionTasks:
         pass
 
     def isPerson(self, name: str = ""):
-        return self.person_name == name
+        for person in self.person_list:
+            if name == person.name:
+                return True
+        return False
 
     @mockable(return_value=True, delay=2)
     @service_check("beverage_location_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
