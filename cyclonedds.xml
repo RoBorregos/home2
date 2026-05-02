@@ -10,7 +10,6 @@
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <Internal>
-      <SocketReceiveBufferSize/>
       <Watermarks>
         <WhcHigh>500kB</WhcHigh>
       </Watermarks>
