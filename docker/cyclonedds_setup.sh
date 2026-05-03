@@ -15,7 +15,7 @@ else
     if [ -f "$CYCLONE_XML" ]; then
         return 0 2>/dev/null || exit 0
     fi
-    # Improved autodetermine: allow best interface choice by the system
+    
     IFACE_LINE='        <NetworkInterface autodetermine="true" priority="default" multicast="default" />'
 fi
 
