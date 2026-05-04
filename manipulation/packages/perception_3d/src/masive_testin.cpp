@@ -118,8 +118,18 @@ public:
     qos.durability(rclcpp::DurabilityPolicy::Volatile);
     qos.keep_last(1);
 
+    // Allow overriding the input point cloud topic. Real robot keeps the
+    // raw /point_cloud default, sim passes /filtered_cloud (the
+    // robot-self-filtered output of MoveIt's octomap updater) so the
+    // cluster extraction doesn't fold the gripper/ZED meshes into the
+    // object cluster and fool the plane segmenter.
+    std::string point_cloud_topic =
+        this->declare_parameter<std::string>("point_cloud_topic", POINT_CLOUD_TOPIC);
+    RCLCPP_INFO(this->get_logger(), "Subscribing to point cloud on %s",
+                point_cloud_topic.c_str());
+
     this->cloud_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        POINT_CLOUD_TOPIC, qos,
+        point_cloud_topic, qos,
         std::bind(&TestsNode::cloud_callback, this, std::placeholders::_1));
 
     this->place_cloud_publisher =

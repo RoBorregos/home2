@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri zed"
+AREAS="vision manipulation navigation integration hri zed display"
 ORIN_SERVER_AREAS="hri"
 
 # --- guard against multiple sourcing ---
@@ -191,9 +191,9 @@ run_area() {
     fi
   fi
 
-  # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation, display)
   if [ "${CYCLONE_SHM}" = "1" ]; then
-    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ] || [ "$INPUT" = "display" ]; then
       ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
     fi
   fi
@@ -216,11 +216,12 @@ control() {
   local op_flag=${1:-}
   local msg="${op_flag#--}"
 
-  # TODO: instead of killing the whole tmux server, only kill home-related sessions.
-  if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
-    tmux kill-server || true
+  # --- Cleanup screen sessions ---
+  if command -v screen >/dev/null 2>&1; then
+    # Kill local screen sessions named 'frida' or matching areas
+    screen -ls | grep -E "\.frida|\.$(echo $AREAS | sed 's/ /|/g')" | cut -d. -f1 | awk '{print $1}' | xargs -I{} screen -X -S {} quit || true
   fi
-  orin_ssh "tmux kill-server" 2>/dev/null || true
+  orin_ssh "pkill screen" 2>/dev/null || true
 
   PARALLEL=${PARALLEL:-$(detect_cores)}
   local pids=()
@@ -276,16 +277,36 @@ control() {
 }
 
 run_task() {
-  for area in ${AREAS}; do
-    SESSION_NAME=$area
+  SESSION_NAME="frida"
 
+  # Kill existing sessions to start fresh
+  screen -S "$SESSION_NAME" -X quit 2>/dev/null || true
+  orin_ssh "screen -S $SESSION_NAME -X quit" 2>/dev/null || true
+
+  local local_first=true
+  local remote_first=true
+
+  for area in ${AREAS}; do
+    CMD="bash run.sh $area $*"
     if is_orin_area "${area}"; then
-      orin_ssh "tmux new-session -d -s '${SESSION_NAME}' && tmux send-keys -t '${SESSION_NAME}' 'cd $(pwd) && bash run.sh $area $*' C-m"
+      if [ "$remote_first" = true ]; then
+        orin_ssh "screen -dmS ${SESSION_NAME} -t ${area} bash -c 'cd $(pwd) && ${CMD}; exec bash'"
+        remote_first=false
+      else
+        orin_ssh "screen -S ${SESSION_NAME} -X screen -t ${area} bash -c 'cd $(pwd) && ${CMD}; exec bash'"
+      fi
     else
-      tmux new-session -d -s "$SESSION_NAME"
-      tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
+      if [ "$local_first" = true ]; then
+        screen -dmS "$SESSION_NAME" -t "$area" bash -c "$CMD; exec bash"
+        local_first=false
+      else
+        screen -S "$SESSION_NAME" -X screen -t "$area" bash -c "$CMD; exec bash"
+      fi
     fi
   done
+
+  echo "Tasks started in screen session '$SESSION_NAME'."
+  echo "To view, run: screen -r $SESSION_NAME"
 }
 
 ensure_roudi() {
