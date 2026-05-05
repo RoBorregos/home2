@@ -29,7 +29,7 @@ CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 if [ "$BUILD" == "true" ]; then
     SETUP="$GPD_SETUP && $CGN_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE"
 else
-    SETUP="$GPD_SETUP && $CGN_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
 fi
 
 case $TASK in
