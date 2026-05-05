@@ -1,3 +1,5 @@
+"""YOLO detector (v8/v11/v26) with automatic TensorRT export on first run."""
+
 import os
 import shutil
 

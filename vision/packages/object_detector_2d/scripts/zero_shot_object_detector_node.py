@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+"""Runs YOLOE zero-shot detector with dynamically settable classes via SetDetectorClasses service."""
+
 import copy
 
 import cv2 as cv

@@ -1,3 +1,5 @@
+"""MODEL_CONFIGS catalog and ModelRegistry: maps model names to loaded singleton instances."""
+
 import pathlib
 
 # .pt files live in scripts/models/ alongside this file

@@ -1,3 +1,5 @@
+"""Defines BBOX, Detection, and DetectorModel ABC — the shared types for all model implementations."""
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 

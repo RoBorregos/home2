@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services."""
+
 import copy
 import json
 import os

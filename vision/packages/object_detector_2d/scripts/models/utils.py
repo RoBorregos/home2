@@ -1,3 +1,6 @@
+"""IoU-based deduplication for merging detections from multiple models."""
+
+
 def _iou(det1, det2) -> float:
     xA = max(det1.bbox_.x1, det2.bbox_.x1)
     yA = max(det1.bbox_.y1, det2.bbox_.y1)

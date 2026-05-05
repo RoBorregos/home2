@@ -1,3 +1,5 @@
+"""YOLOE zero-shot segmentation detector with dynamic class setting."""
+
 import os
 import sys
 import warnings

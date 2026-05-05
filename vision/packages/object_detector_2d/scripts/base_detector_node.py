@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+"""Base class for detector nodes: shared params, subscriptions, publishers, 3D projection, and visualization."""
+
 import copy
 import math
 import threading
