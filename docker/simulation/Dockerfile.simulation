@@ -1,0 +1,53 @@
+
+ARG BASE_IMAGE=roborregos/home2:cpu_base
+ARG ROS_DISTRO=humble
+FROM $BASE_IMAGE
+
+# 1. Install all system dependencies and ROS 2 packages in a single optimized layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-desktop \
+    ros-${ROS_DISTRO}-ros2-control \
+    ros-${ROS_DISTRO}-ros2-controllers \
+    ros-${ROS_DISTRO}-controller-manager \
+    ros-${ROS_DISTRO}-joint-state-broadcaster \
+    ros-${ROS_DISTRO}-robot-state-publisher \
+    ros-${ROS_DISTRO}-joint-state-publisher-gui \
+    ros-${ROS_DISTRO}-tf2-tools \
+    ros-${ROS_DISTRO}-rqt-graph \
+    ros-${ROS_DISTRO}-pcl-conversions \
+    ros-${ROS_DISTRO}-pcl-ros \
+    ros-${ROS_DISTRO}-pcl-msgs \
+    ros-${ROS_DISTRO}-cv-bridge \
+    ros-${ROS_DISTRO}-vision-opencv \
+    ros-${ROS_DISTRO}-image-transport \
+    ros-${ROS_DISTRO}-generate-parameter-library \
+    ros-${ROS_DISTRO}-moveit \
+    ros-${ROS_DISTRO}-moveit-msgs \
+    ros-${ROS_DISTRO}-launch-param-builder \
+    ros-${ROS_DISTRO}-urdfdom-py \
+    ros-${ROS_DISTRO}-realtime-tools \
+    ros-${ROS_DISTRO}-urdf-launch \
+    ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+    libgl1-mesa-glx \
+    libosmesa6 \
+    libglew-dev \
+    libglfw3-dev \
+    libxrandr-dev \
+    libxinerama-dev \
+    libxcursor-dev \
+    libxi-dev \
+    build-essential \
+    git \
+    python3-pip \
+    python3-scipy \
+    python3-numpy \
+    libopencv-dev \
+    libpcl-dev \
+    libeigen3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Refresh library cache
+RUN ldconfig
+
+# Workspace Packages are mounted via volumes and built by run.sh
+WORKDIR /workspace
