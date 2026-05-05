@@ -17,20 +17,6 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="image_orienter.py",
-                name="image_orienter",
-                output="screen",
-                emulate_tty=True,
-            ),
-            Node(
-                package="vision_general",
-                executable="yolo_node.py",
-                name="yolo_node",
-                output="screen",
-                emulate_tty=True,
-            ),
-            Node(
-                package="vision_general",
                 executable="restaurant_commands.py",
                 name="restaurant_commands",
                 output="screen",

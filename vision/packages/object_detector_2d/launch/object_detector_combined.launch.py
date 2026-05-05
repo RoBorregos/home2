@@ -11,6 +11,13 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
+                package="vision_general",
+                executable="image_orienter.py",
+                name="image_orienter",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
                 package="object_detector_2d",
                 executable="object_detector_node.py",
                 name="ObjectDetect2D",

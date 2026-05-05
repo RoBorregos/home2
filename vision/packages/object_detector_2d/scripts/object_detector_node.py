@@ -16,7 +16,6 @@ from cv_bridge import CvBridge, CvBridgeError
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
     CAMERA_INFO_TOPIC,
-    CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
     DETECTIONS_3D_TOPIC,
@@ -24,10 +23,12 @@ from frida_constants.vision_constants import (
     DETECTIONS_IMAGE_TOPIC,
     DETECTIONS_POSES_TOPIC,
     DETECTIONS_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     TRASH_SERVICE_CATEGORY,
+    YOLO_DETECTION_TOPIC,
 )
-from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
-from frida_interfaces.srv import DetectionHandler, SetTrashCategory
+from frida_interfaces.msg import Detection, ObjectDetection, ObjectDetectionArray
+from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
 from geometry_msgs.msg import Point, PointStamped, Pose, PoseArray
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import Bool, Header
@@ -57,7 +58,7 @@ class ObjectDetectorNode(rclpy.node.Node):
         use_active_flag = _p("USE_ACTIVE_FLAG", False).bool_value
         self.active_flag = not use_active_flag
 
-        rgb_topic = _p("RGB_IMAGE_TOPIC", CAMERA_TOPIC).string_value
+        rgb_topic = _p("RGB_IMAGE_TOPIC", IMAGE_ORIENTED_TOPIC).string_value
         depth_topic = _p("DEPTH_IMAGE_TOPIC", DEPTH_IMAGE_TOPIC).string_value
         info_topic = _p("CAMERA_INFO_TOPIC", CAMERA_INFO_TOPIC).string_value
         det_topic = _p("DETECTIONS_TOPIC", DETECTIONS_TOPIC).string_value
@@ -75,9 +76,12 @@ class ObjectDetectorNode(rclpy.node.Node):
         # --- models ---
         self.models = [ModelRegistry.get(name) for name in model_names]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
+        self.yolo_service_model = ModelRegistry.get("yolo_generic")
+        self.get_logger().info(f"YOLO service model: {self.yolo_service_model.name}")
 
         # --- state ---
         self.bridge = CvBridge()
+        self.latest_frame = None
         self.depth_image = []
         self.camera_info = None
         self.curr_clock = None
@@ -131,6 +135,7 @@ class ObjectDetectorNode(rclpy.node.Node):
         self.create_service(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self._detection_handler
         )
+        self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self._yolo_detect)
 
     # ------------------------------------------------------------------ callbacks
 
@@ -152,6 +157,7 @@ class ObjectDetectorNode(rclpy.node.Node):
             rgb = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError:
             return
+        self.latest_frame = rgb
         self.curr_clock = data.header.stamp
         self._frame_count += 1
 
@@ -204,6 +210,34 @@ class ObjectDetectorNode(rclpy.node.Node):
         self.get_logger().info(
             f"DetectionHandler: label='{request.label}' returned={len(detections)}"
         )
+        return response
+
+    def _yolo_detect(self, request, response):
+        if self.latest_frame is None:
+            self.get_logger().warn("YoloDetect called but no frame received yet")
+            response.success = False
+            response.detections = []
+            return response
+
+        classes = list(request.classes) if request.classes else None
+        raw = self.yolo_service_model.detect(self.latest_frame)
+        if classes is not None:
+            raw = [d for d in raw if d.class_id_ in classes]
+
+        h, w = self.latest_frame.shape[:2]
+        ros_dets = []
+        for d in raw:
+            det = Detection()
+            det.x1 = int(d.bbox_.x1 * w)
+            det.y1 = int(d.bbox_.y1 * h)
+            det.x2 = int(d.bbox_.x2 * w)
+            det.y2 = int(d.bbox_.y2 * h)
+            det.confidence = d.confidence_
+            det.class_id = d.class_id_
+            ros_dets.append(det)
+
+        response.success = True
+        response.detections = ros_dets
         return response
 
     # ------------------------------------------------------------------ inference

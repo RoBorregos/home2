@@ -2,7 +2,7 @@
 # Used by: object_detector_node.launch.py, object_detector_combined.launch.py
 ObjectDetect2D:
   ros__parameters:
-    RGB_IMAGE_TOPIC: /zed/zed_node/rgb/image_rect_color
+    RGB_IMAGE_TOPIC: /vision/camera/image_oriented
     DEPTH_IMAGE_TOPIC: /zed/zed_node/depth/depth_registered
     CAMERA_INFO_TOPIC: /zed/zed_node/depth/camera_info
     DETECTIONS_TOPIC: /vision/detections
@@ -13,7 +13,9 @@ ObjectDetect2D:
     CAMERA_FRAME: zed_left_camera_optical_frame
     TARGET_FRAME: base_link
     models:
-      - yolo_v26_finetuned
+      - tmr2026
+      - cutlery
+
     USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False

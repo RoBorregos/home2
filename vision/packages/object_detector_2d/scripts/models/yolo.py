@@ -38,13 +38,13 @@ def _load_yolo_trt(model_path: str):
         return model
 
 
-@ModelRegistry.register("yolo_v8")
-class YoloV8Model(DetectorModel):
+@ModelRegistry.register("yolo")
+class YoloModel(DetectorModel):
     def load(self, config: dict):
         model_path = MODELS_PATH + config["filename"]
         self.model = _load_yolo_trt(model_path)
         self.conf = config.get("conf", 0.6)
-        print(f"[YoloV8Model:{self.name}] loaded from {model_path}")
+        print(f"[YoloModel:{self.name}] loaded from {model_path}")
 
     def detect(self, image) -> list[Detection]:
         results = self.model.predict(image, verbose=False)
