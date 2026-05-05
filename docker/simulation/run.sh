@@ -21,6 +21,16 @@ setup_common_env "simulation"
 add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
 add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:simulation-${ENV_TYPE}"
 
+# Pre-flight check: Increase network buffers on host if possible
+# This prevents the 'failed to create domain' error in CycloneDDS
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    CURR_MAX=$(cat /proc/sys/net/core/rmem_max)
+    if [ "$CURR_MAX" -lt 10485760 ]; then
+        echo "[Network] Host rmem_max is low ($CURR_MAX). Attempting to increase to 10MB..."
+        sudo sysctl -w net.core.rmem_max=10485760 || echo "[Network] Warning: Could not increase buffer. Simulation might crash."
+    fi
+fi
+
 if [ "$ENV_TYPE" != "cpu" ]; then
     add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
 fi
@@ -35,7 +45,6 @@ export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export CYCLONEDDS_URI="file:///etc/cyclonedds.xml"
 
 # Launch the MuJoCo simulation with the robot model
-# Assuming a launch file exists in mujoco_spawn or mujoco_ros2_control
 RUN_SIMULATION="ros2 launch mujoco_spawn mujoco_sim_init.launch.py"
 
 # Default command to run if no specific task is provided
@@ -49,12 +58,14 @@ else
     PRE_COMMAND=""
 fi
 
+PREFIX_CMD="$SOURCE_ROS && $SOURCE_CYCLONE && $SOURCE_INSTALL && $PRE_COMMAND"
+
 case $TASK in
     "--sim")
-        COMMAND="$SOURCE_ROS && $SOURCE_CYCLONE && $SOURCE_INSTALL && $PRE_COMMAND$RUN_SIMULATION"
+        COMMAND="$PREFIX_CMD$RUN_SIMULATION"
         ;;
     *)
-        COMMAND="$SOURCE_ROS && $SOURCE_CYCLONE && $SOURCE_INSTALL && $PRE_COMMAND$DEFAULT_COMMAND"
+        COMMAND="$PREFIX_CMD$DEFAULT_COMMAND"
         ;;
 esac
 
