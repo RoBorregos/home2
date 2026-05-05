@@ -1,5 +1,3 @@
-# Robot configuration — ZED camera on Frida
-# Used by: object_detector_node.launch.py, object_detector_combined.launch.py
 ObjectDetect2D:
   ros__parameters:
     RGB_IMAGE_TOPIC: /vision/camera/image_oriented
