@@ -1,17 +1,16 @@
 services:
-  ollama:
+  llm:
     profiles: [hric, carry, gpsr, storing]
-    container_name: home2-hri-ollama-cuda
+    container_name: home2-hri-llamacpp-cuda
     build:
       context: ..
-      dockerfile: dockerfiles/Dockerfile.ollama
-    image: roborregos/home2:hri-ollama-cuda
+      dockerfile: dockerfiles/Dockerfile.llamacpp
+    image: roborregos/home2:hri-llamacpp-cuda
     runtime: nvidia
     network_mode: host
     volumes:
-      - ../../../hri/packages/nlp/assets:/ollama
+      - ../../../hri/packages/nlp/assets:/models
     environment:
-      OLLAMA_MODELS: /ollama
       ROLE: ${ROLE}
     stdin_open: true
     tty: true

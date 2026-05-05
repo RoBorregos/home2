@@ -1,20 +1,19 @@
 services:
-  ollama:
+  llm:
     profiles: [hric, carry, gpsr, storing]
-    container_name: home2-hri-ollama-l4t
+    container_name: home2-hri-llamacpp-l4t
     build:
       context: ..
-      dockerfile: dockerfiles/Dockerfile.ollama
+      dockerfile: dockerfiles/Dockerfile.llamacpp
       args:
-        BASE_IMAGE: dustynv/ollama:0.6.8-r36.4
+        BASE_IMAGE: dustynv/llama_cpp:gguf-r36.4.0
 
-    image: roborregos/home2:hri-ollama-l4t
+    image: roborregos/home2:hri-llamacpp-l4t
     runtime: nvidia
     network_mode: host
     volumes:
-      - ../../../hri/packages/nlp/assets:/ollama
+      - ../../../hri/packages/nlp/assets:/models
     environment:
-      OLLAMA_MODELS: /ollama
       ROLE: ${ROLE}
     stdin_open: true
     tty: true

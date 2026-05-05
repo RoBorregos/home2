@@ -3,30 +3,30 @@ client<llm> R1 {
   provider "openai-generic"
   options {
     base_url "http://localhost:11434/v1"
-    model "deepseek-r1:32b"
+    model "qwen3"
     max_tokens 4096
   }
 }
 
-client<llm> QWEN3_14B { 
+client<llm> QWEN3_14B {
   provider "openai-generic"
   options {
     base_url "http://localhost:11434/v1"
-    model "qwen3:14b"
+    model "qwen3"
     max_tokens 4096
   }
 }
 
-client<llm> QWEN3_0_6B { 
+client<llm> QWEN3_0_6B {
   provider "openai-generic"
   options {
     base_url "http://localhost:11434/v1"
-    model "qwen3:0.6b"
+    model "qwen3"
     max_tokens 4096
   }
 }
 
-client<llm> LOCAL_FINETUNED_NEW { 
+client<llm> LOCAL_FINETUNED_NEW {
   provider "openai-generic"
   options {
     base_url "http://192.168.31.228:11434/v1"
