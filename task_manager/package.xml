@@ -19,6 +19,8 @@
   <!-- Workspace dependencies -->
   <depend>frida_constants</depend>
   <depend>frida_interfaces</depend>
+  <exec_depend>python3-py-trees</exec_depend>
+  <exec_depend>py-trees-ros</exec_depend>
 
 
   <test_depend>ament_lint_auto</test_depend>

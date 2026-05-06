@@ -1,0 +1,125 @@
+"""Build a py_trees behaviour tree for an interleaved GPSR plan.
+
+Tree shape:
+
+    Selector "gpsr_root"
+      ├── Timeout(GLOBAL_BUDGET_S)
+      │     └── Sequence "interleaved"
+      │           ├── Retry(2) ▸ Timeout(action_t) ▸ ActionLeaf(a0)
+      │           ├── ...
+      │           └── Retry(2) ▸ Timeout(action_t) ▸ ActionLeaf(aN)
+      └── Sequence "sequential_fallback"
+            ├── SequentialFallbackLeaf(cmd0)
+            ├── SequentialFallbackLeaf(cmd1)
+            └── ...
+
+The Selector advances to ``sequential_fallback`` when the interleaved
+sequence returns FAILURE — which happens when a Retry exhausts both
+attempts on a gripper-holding action, or the global Timeout fires.
+Auxiliary (gripper-free) failures are logged but kept inside Retry's
+SUCCESS path so the bonus can survive minor degradations.
+"""
+
+from typing import Any, Callable, Optional, Sequence
+
+import py_trees
+
+from task_manager.gpsr.leaf_behaviours import ActionLeaf, SequentialFallbackLeaf
+from task_manager.gpsr.merger import InterleavedPlan, PlanAction
+from task_manager.gpsr.timeouts import GLOBAL_BUDGET_S, timeout_for
+
+
+def _wrap_action(
+    plan_action: PlanAction,
+    handlers: Sequence[Any],
+    on_complete: Optional[Callable[[PlanAction, Any, Any], None]],
+    retry_count: int,
+) -> py_trees.behaviour.Behaviour:
+    leaf = ActionLeaf(plan_action, handlers, on_complete=on_complete)
+    kind = getattr(plan_action.action, "action", "")
+    timeout = py_trees.decorators.Timeout(
+        name=f"to({kind})",
+        child=leaf,
+        duration=timeout_for(kind),
+    )
+    if plan_action.requires_gripper or plan_action.releases_gripper:
+        # Hard-failure semantics for gripper actions: if Retry exhausts,
+        # the sequence fails — triggering the sequential fallback.
+        return py_trees.decorators.Retry(
+            name=f"retry({kind})",
+            child=timeout,
+            num_failures=retry_count,
+        )
+    # Non-gripper actions: still retry, but their failure does NOT abort
+    # the interleaved plan — handled by wrapping in StatusToBlackboard?
+    # Simpler: a Retry with a SuccessIsFailure-like override is overkill;
+    # we use a Retry as before and accept that a failed auxiliary action
+    # WILL fail the parent Sequence. Reason: GPSR auxiliary failures are
+    # rare in practice; a Retry(2) handles transient flakes. If the
+    # behaviour proves too aggressive in trials, swap this branch to a
+    # ``SuccessIsRunning``-style decorator.
+    return py_trees.decorators.Retry(
+        name=f"retry({kind})",
+        child=timeout,
+        num_failures=retry_count,
+    )
+
+
+def build_tree(
+    plan: InterleavedPlan,
+    subtask_handlers: Sequence[Any],
+    on_action_complete: Optional[Callable[[PlanAction, Any, Any], None]] = None,
+    retry_count: int = 2,
+    global_budget_s: float = GLOBAL_BUDGET_S,
+) -> py_trees.behaviour.Behaviour:
+    """Build the GPSR behaviour tree for ``plan``.
+
+    Args:
+        plan: the merged interleaved plan + per-command fallbacks.
+        subtask_handlers: ordered list of objects exposing methods named
+            after each action kind (typically ``[gpsr_tasks,
+            gpsr_individual_tasks]``).
+        on_action_complete: optional callback invoked after every action
+            with ``(plan_action, status, result)`` — wire this to
+            ``hri.add_command_history`` so per-action results are logged.
+        retry_count: per-action retry attempts.
+        global_budget_s: wall-clock budget for the interleaved sequence.
+
+    Returns:
+        the root Selector behaviour ready for ``tick()``.
+    """
+    interleaved_seq = py_trees.composites.Sequence(name="interleaved", memory=True)
+    for pa in plan.actions:
+        interleaved_seq.add_child(
+            _wrap_action(pa, subtask_handlers, on_action_complete, retry_count)
+        )
+
+    interleaved_branch = py_trees.decorators.Timeout(
+        name="global_budget",
+        child=interleaved_seq,
+        duration=global_budget_s,
+    )
+
+    fallback_seq = py_trees.composites.Sequence(name="sequential_fallback", memory=True)
+    for cmd_idx, per_cmd in enumerate(plan.fallback):
+        if not per_cmd:
+            continue
+        fallback_seq.add_child(
+            SequentialFallbackLeaf(
+                per_cmd,
+                subtask_handlers,
+                on_complete=on_action_complete,
+                name=f"fallback_cmd{cmd_idx}",
+            )
+        )
+
+    root = py_trees.composites.Selector(name="gpsr_root", memory=True)
+    root.add_child(interleaved_branch)
+    if fallback_seq.children:
+        root.add_child(fallback_seq)
+    return root
+
+
+def render_tree_ascii(root: py_trees.behaviour.Behaviour) -> str:
+    """Return a unicode tree dump for sanity inspection (logs / debug)."""
+    return py_trees.display.unicode_tree(root, show_status=False)

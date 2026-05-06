@@ -11,6 +11,9 @@ import rclpy
 from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.node import Node
 
+from task_manager.gpsr.bt_builder import build_tree, render_tree_ascii
+from task_manager.gpsr.merger import merge
+from task_manager.gpsr.timeouts import GLOBAL_BUDGET_S
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
@@ -20,8 +23,14 @@ from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
+try:
+    import py_trees
+except ImportError:  # pragma: no cover — py_trees is in package.xml runtime deps
+    py_trees = None
+
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
+BATCH_SIZE = 3
 
 
 def confirm_command(interpreted_text, target_info):
@@ -46,6 +55,7 @@ class GPSRTM(Node):
         WAITING_FOR_COMMAND = "WAITING_FOR_COMMAND"
         EXECUTING_COMMAND = "EXECUTING_COMMAND"
         FINISHED_COMMAND = "FINISHED_COMMAND"
+        PLAN_AND_EXECUTE_BATCH = "PLAN_AND_EXECUTE_BATCH"
         DONE = "DONE"
         WAIT_BUTTON_COMMAND = "WAIT_BUTTON_COMMAND"
 
@@ -70,6 +80,18 @@ class GPSRTM(Node):
 
         if isinstance(self.commands, dict):
             self.commands = CommandListLLM(**self.commands).commands
+
+        # Batch-mode state for the +200 pt interleaved-execution bonus.
+        self.declare_parameter("interleave_enabled", True)
+        self.declare_parameter("batch_size", BATCH_SIZE)
+        self.interleave_enabled = bool(
+            self.get_parameter("interleave_enabled").get_parameter_value().bool_value
+        )
+        self.batch_size = int(
+            self.get_parameter("batch_size").get_parameter_value().integer_value or BATCH_SIZE
+        )
+        self.batched_commands: list = []
+        self._location_cache: dict[str, tuple[float, float] | None] = {}
 
         # State timing variables
         self.state_start_time = None
@@ -107,6 +129,102 @@ class GPSRTM(Node):
             if self.previous_state != self.current_state
             else self.current_state,
         )
+
+    def _resolve_xy(self, location_name: str):
+        """Resolve a free-text location to (x, y) using query_location +
+        nav.areas_backup. Memoized per planning session."""
+        if not location_name:
+            return None
+        if location_name in self._location_cache:
+            return self._location_cache[location_name]
+        xy = None
+        try:
+            hits = self.subtask_manager.hri.query_location(location_name, top_k=1)
+            if hits:
+                hit = hits[0]
+                areas = getattr(self.subtask_manager.nav, "areas_backup", None)
+                if isinstance(areas, dict):
+                    pose = areas.get(hit.area, {}).get(hit.subarea or "safe_place")
+                    if pose and len(pose) >= 2:
+                        xy = (float(pose[0]), float(pose[1]))
+        except Exception as e:  # noqa: BLE001
+            self.get_logger().warning(f"Location resolve failed for '{location_name}': {e}")
+        self._location_cache[location_name] = xy
+        return xy
+
+    def _on_action_complete(self, plan_action, status, result):
+        try:
+            self.subtask_manager.hri.add_command_history(plan_action.action, result, status)
+        except Exception as e:  # noqa: BLE001
+            self.get_logger().warning(f"add_command_history failed: {e}")
+        self.get_logger().info(
+            f"action={getattr(plan_action.action, 'action', '?')}"
+            f" cmd={plan_action.source_cmd} idx={plan_action.source_idx}"
+            f" status={status}"
+        )
+
+    def _execute_interleaved_batch(self):
+        """Plan + tick the py_trees tree for the current batch."""
+        if py_trees is None:
+            self.get_logger().error(
+                "py_trees not installed — falling back to sequential execution."
+            )
+            self._execute_sequential_fallback(self.batched_commands)
+            return
+
+        plan = merge(self.batched_commands, locator=self._resolve_xy)
+        self.get_logger().info(
+            f"Merged {len(self.batched_commands)} commands → "
+            f"{len(plan.actions)} interleaved actions"
+        )
+        spoken = self.subtask_manager.hri.parse_plan_to_text([pa.action for pa in plan.actions])
+        self.subtask_manager.hri.say(f"I will now execute the merged plan: {spoken}", wait=False)
+
+        root = build_tree(
+            plan,
+            subtask_handlers=[self.gpsr_tasks, self.gpsr_individual_tasks],
+            on_action_complete=self._on_action_complete,
+            retry_count=2,
+            global_budget_s=GLOBAL_BUDGET_S,
+        )
+        self.get_logger().info("Behaviour tree:\n" + render_tree_ascii(root))
+
+        tree = py_trees.trees.BehaviourTree(root)
+        try:
+            tree.setup(timeout=15.0)
+        except Exception as e:  # noqa: BLE001
+            self.get_logger().warning(f"tree setup raised: {e}")
+
+        terminal = (
+            py_trees.common.Status.SUCCESS,
+            py_trees.common.Status.FAILURE,
+            py_trees.common.Status.INVALID,
+        )
+        while rclpy.ok():
+            tree.tick()
+            if root.status in terminal:
+                break
+            rclpy.spin_once(self, timeout_sec=0.0)
+            time.sleep(0.1)
+
+        self.get_logger().info(f"Batch tree finished with status={root.status}")
+        self._location_cache.clear()
+
+    def _execute_sequential_fallback(self, batched_commands):
+        """Last-ditch path when py_trees is unavailable."""
+        for cmd_list in batched_commands:
+            for command in getattr(cmd_list, "commands", []):
+                handler = search_command(
+                    command.action, [self.gpsr_tasks, self.gpsr_individual_tasks]
+                )
+                if handler is None:
+                    self.get_logger().error(f"No handler for action '{command.action}'")
+                    continue
+                try:
+                    status, res = handler(command)
+                    self.subtask_manager.hri.add_command_history(command, res, status)
+                except Exception as e:  # noqa: BLE001
+                    self.get_logger().warning(f"Sequential fallback error on {command}: {e}")
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
@@ -205,11 +323,31 @@ class GPSRTM(Node):
                     f"Interpreted command: {user_command} -> {str(self.commands)}"
                 )
 
-                self.subtask_manager.hri.say("I will now execute your command.", wait=False)
-                plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
-                self.subtask_manager.hri.say(plan_text, wait=True)
+                if self.interleave_enabled:
+                    self.batched_commands.append(self.commands)
+                    self.executed_commands += 1
+                    plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
+                    self.subtask_manager.hri.say(f"Got it. I will plan: {plan_text}.", wait=False)
+                    if (
+                        len(self.batched_commands) >= self.batch_size
+                        or self.executed_commands >= MAX_COMMANDS
+                    ):
+                        self.current_state = GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH
+                    else:
+                        self.subtask_manager.hri.say("Please give me the next command.", wait=False)
+                        self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
+                else:
+                    self.subtask_manager.hri.say("I will now execute your command.", wait=False)
+                    plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
+                    self.subtask_manager.hri.say(plan_text, wait=True)
+                    self.current_state = GPSRTM.TaskStates.EXECUTING_COMMAND
 
-                self.current_state = GPSRTM.TaskStates.EXECUTING_COMMAND
+        elif self.current_state == GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH:
+            self._track_state_change(GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH)
+            self._execute_interleaved_batch()
+            self.batched_commands = []
+            self.current_state = GPSRTM.TaskStates.FINISHED_COMMAND
+
         elif self.current_state == GPSRTM.TaskStates.EXECUTING_COMMAND:
             self.current_hear_attempt = 0
             if len(self.commands) == 0:

@@ -10,10 +10,16 @@ import os
 import subprocess
 import time
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Union
 
 import rclpy
 from rclpy.node import Node
+from task_manager.gpsr.merger import (
+    gripper_invariant_holds,
+    merge,
+    per_command_order_preserved,
+)
 from task_manager.subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
@@ -78,6 +84,7 @@ TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
+TEST_MERGER = False
 
 
 class TestHriManager(Node):
@@ -131,6 +138,9 @@ class TestHriManager(Node):
 
         if TEST_TAKE_ORDER:
             self.test_take_order()
+
+        if TEST_MERGER:
+            self.test_merger()
 
         exit(0)
 
@@ -597,6 +607,263 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_merger(self):
+        """Unit-test task_manager.gpsr.merger against several interleaving
+        scenarios. Pure-Python — does not depend on any ROS service. Mirrors
+        the in-tree convention: per-scenario PASS/FAIL log + CSV output."""
+
+        def _act(kind, **fields):
+            return SimpleNamespace(action=kind, **fields)
+
+        def _cmd(*actions):
+            return SimpleNamespace(commands=list(actions))
+
+        def _make_locator(coords):
+            def locator(name):
+                return coords.get(name)
+
+            return locator
+
+        def _gripper_walk(plan_actions):
+            """Stricter than gripper_invariant_holds: also asserts that
+            pick→drop is not crossed by another command's gripper action."""
+            held_by = None
+            for pa in plan_actions:
+                if pa.requires_gripper:
+                    if held_by is not None:
+                        return False
+                    held_by = pa.source_cmd
+                if pa.releases_gripper:
+                    if held_by is None or held_by != pa.source_cmd:
+                        return False
+                    held_by = None
+            return True
+
+        scenarios = []
+
+        # 1. Single command identity
+        def s_single():
+            cmd = _cmd(
+                _act("go_to", location_to_go="kitchen"),
+                _act("pick_object", object_to_pick="cup"),
+                _act("go_to", location_to_go="living_room"),
+                _act("find_person_by_name", name="Angel"),
+                _act("give_object"),
+            )
+            plan = merge([cmd], locator=_make_locator({}))
+            ok = (
+                [pa.source_idx for pa in plan.actions] == [0, 1, 2, 3, 4]
+                and all(pa.source_cmd == 0 for pa in plan.actions)
+                and gripper_invariant_holds(plan.actions)
+                and per_command_order_preserved(plan.actions, n_cmds=1)
+            )
+            return ok, plan
+
+        scenarios.append(("single_command_identity", s_single))
+
+        # 2. Two pick-deliver pairs — atomic blocks preserved
+        def s_two_blocks():
+            cmd_a = _cmd(
+                _act("go_to", location_to_go="kitchen"),
+                _act("pick_object", object_to_pick="cup"),
+                _act("go_to", location_to_go="bathroom"),
+                _act("find_person_by_name", name="Angel"),
+                _act("give_object"),
+            )
+            cmd_b = _cmd(
+                _act("go_to", location_to_go="bedroom"),
+                _act("pick_object", object_to_pick="book"),
+                _act("go_to", location_to_go="office"),
+                _act("find_person_by_name", name="Bob"),
+                _act("give_object"),
+            )
+            coords = {
+                "kitchen": (0.0, 0.0),
+                "bathroom": (1.0, 0.0),
+                "bedroom": (10.0, 0.0),
+                "office": (11.0, 0.0),
+            }
+            plan = merge([cmd_a, cmd_b], locator=_make_locator(coords))
+            delivers = [pa for pa in plan.actions if pa.action.action == "give_object"]
+            ok = (
+                _gripper_walk(plan.actions)
+                and per_command_order_preserved(plan.actions, n_cmds=2)
+                and len(delivers) == 2
+                and {pa.source_cmd for pa in delivers} == {0, 1}
+            )
+            return ok, plan
+
+        scenarios.append(("two_pick_deliver_blocks_atomic", s_two_blocks))
+
+        # 3. Shared waypoint visited efficiently
+        def s_shared_waypoint():
+            cmd_a = _cmd(
+                _act("go_to", location_to_go="kitchen"),
+                _act("count", target_to_count="apples"),
+            )
+            cmd_b = _cmd(
+                _act("go_to", location_to_go="kitchen"),
+                _act("count", target_to_count="oranges"),
+            )
+            cmd_c = _cmd(
+                _act("go_to", location_to_go="garage"),
+                _act("count", target_to_count="cars"),
+            )
+            coords = {"kitchen": (5.0, 5.0), "garage": (-5.0, -5.0)}
+            plan = merge([cmd_a, cmd_b, cmd_c], locator=_make_locator(coords))
+            kitchen_positions = [
+                i
+                for i, pa in enumerate(plan.actions)
+                if pa.action.action == "go_to" and pa.action.location_to_go == "kitchen"
+            ]
+            adjacent = len(kitchen_positions) == 2 and all(
+                pa.action.action != "go_to" or pa.action.location_to_go == "kitchen"
+                for pa in plan.actions[kitchen_positions[0] + 1 : kitchen_positions[1]]
+            )
+            return adjacent, plan
+
+        scenarios.append(("shared_waypoint_visited_efficiently", s_shared_waypoint))
+
+        # 4. find→get_info precedence preserved
+        def s_find_then_info():
+            cmd_a = _cmd(
+                _act("go_to", location_to_go="couch"),
+                _act("find_person", attribute_value="standing"),
+                _act("get_person_info", info_type="pose"),
+            )
+            cmd_b = _cmd(
+                _act("go_to", location_to_go="kitchen"),
+                _act("find_person_by_name", name="Bob"),
+                _act("get_person_info", info_type="name"),
+            )
+            coords = {"couch": (0.0, 0.0), "kitchen": (10.0, 10.0)}
+            plan = merge([cmd_a, cmd_b], locator=_make_locator(coords))
+            ok = True
+            for cmd_idx in (0, 1):
+                cmd_actions = [pa for pa in plan.actions if pa.source_cmd == cmd_idx]
+                find_pos = next(
+                    (
+                        i
+                        for i, pa in enumerate(cmd_actions)
+                        if pa.action.action.startswith("find_person")
+                    ),
+                    None,
+                )
+                info_pos = next(
+                    (
+                        i
+                        for i, pa in enumerate(cmd_actions)
+                        if pa.action.action == "get_person_info"
+                    ),
+                    None,
+                )
+                if find_pos is None or info_pos is None or find_pos >= info_pos:
+                    ok = False
+                    break
+            return ok, plan
+
+        scenarios.append(("find_then_get_info_precedence", s_find_then_info))
+
+        # 5. Pure-find commands interleave by NN
+        def s_no_gripper_interleave():
+            cmd_a = _cmd(
+                _act("go_to", location_to_go="A"),
+                _act("count", target_to_count="x"),
+            )
+            cmd_b = _cmd(
+                _act("go_to", location_to_go="B"),
+                _act("count", target_to_count="y"),
+            )
+            cmd_c = _cmd(
+                _act("go_to", location_to_go="C"),
+                _act("count", target_to_count="z"),
+            )
+            coords = {"A": (3.0, 0.0), "B": (1.0, 0.0), "C": (5.0, 0.0)}
+            plan = merge([cmd_a, cmd_b, cmd_c], locator=_make_locator(coords))
+            go_tos = [
+                pa.action.location_to_go for pa in plan.actions if pa.action.action == "go_to"
+            ]
+            ok = go_tos == ["B", "A", "C"] and per_command_order_preserved(plan.actions, n_cmds=3)
+            return ok, plan
+
+        scenarios.append(("no_gripper_commands_interleave_freely", s_no_gripper_interleave))
+
+        # 6. Auxiliary say-with-context command does not split a gripper block
+        def s_aux_say_does_not_split():
+            cmd_a = _cmd(
+                _act("go_to", location_to_go="kitchen"),
+                _act("pick_object", object_to_pick="snack"),
+                _act("go_to", location_to_go="lobby"),
+                _act("place_object"),
+            )
+            cmd_say = _cmd(
+                _act("go_to", location_to_go="start"),
+                _act("say_with_context", user_instruction="hello", previous_command_info=[]),
+            )
+            coords = {"kitchen": (0, 0), "lobby": (1, 0), "start": (0, 5)}
+            plan = merge([cmd_a, cmd_say], locator=_make_locator(coords))
+            cmd_a_positions = [i for i, pa in enumerate(plan.actions) if pa.source_cmd == 0]
+            contiguous = cmd_a_positions == list(
+                range(min(cmd_a_positions), max(cmd_a_positions) + 1)
+            )
+            return _gripper_walk(plan.actions) and contiguous, plan
+
+        scenarios.append(("say_with_context_does_not_split_block", s_aux_say_does_not_split))
+
+        # 7. Empty input → empty plan
+        def s_empty():
+            plan = merge([])
+            return plan.actions == [] and plan.fallback == [], plan
+
+        scenarios.append(("empty_commands", s_empty))
+
+        # 8. Fallback preserves original sequences
+        def s_fallback():
+            cmd_a = _cmd(
+                _act("go_to", location_to_go="kitchen"),
+                _act("count", target_to_count="apples"),
+            )
+            cmd_b = _cmd(_act("answer_question"))
+            plan = merge([cmd_a, cmd_b])
+            ok = (
+                len(plan.fallback) == 2
+                and [pa.source_idx for pa in plan.fallback[0]] == [0, 1]
+                and [pa.source_idx for pa in plan.fallback[1]] == [0]
+                and plan.fallback[0][0].action.action == "go_to"
+                and plan.fallback[1][0].action.action == "answer_question"
+            )
+            return ok, plan
+
+        scenarios.append(("fallback_preserves_original_sequences", s_fallback))
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"merger_{date_str}.csv")
+
+        results = []
+        passed = 0
+        for name, fn in scenarios:
+            self.get_logger().info(f"Merger scenario: {name}")
+            try:
+                ok, plan = fn()
+                if ok:
+                    passed += 1
+                    self.get_logger().info(f"  PASS ({len(plan.actions)} actions)")
+                else:
+                    self.get_logger().error(f"  FAIL — plan had {len(plan.actions)} actions")
+                results.append([name, ok, len(plan.actions)])
+            except Exception as exc:
+                self.get_logger().error(f"  EXCEPTION: {exc}")
+                results.append([name, False, f"EXCEPTION: {exc}"])
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["scenario", "passed", "plan_size_or_error"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Merger results: {passed}/{len(scenarios)} passed")
+        self.get_logger().info(f"Saved to {output_file}")
 
     def test_command_interpreter_baml(self):
         # Prepare output file
