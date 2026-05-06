@@ -10,6 +10,7 @@ from rclpy.node import Node
 from frida_constants.vision_constants import (
     RESTAURANT_TABLES_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
+    CUSTOMER_TABLES_TOPIC
 )
 
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -20,7 +21,7 @@ import time
 ATTEMPT_LIMIT = 3
 
 # Progressive customer search parameters
-SEARCH_STEP_SIZE = 0.5  # meters between each search position
+SEARCH_STEP_SIZE = 0.9  # meters between each search position
 MAX_SEARCH_STEPS = 10  # total steps before returning to bar (~5 m coverage)
 CUSTOMER_CLOSE_DISTANCE = 3.0  # meters — re-approach if customer is farther than this
 MAX_APPROACH_RETRIES = 3  # max re-detection + approach attempts
