@@ -3,7 +3,23 @@ set -e
 
 echo "Starting with ROLE=$ROLE"
 
-llama-server --port 11434 --models-preset /scripts/llama-models-preset.ini &
+cat > /tmp/llama-models-preset.ini << 'EOF'
+version = 1
+
+[*]
+n-gpu-layers = 99
+c = 8192
+
+[qwen3.6]
+hf = unsloth/Qwen3.6-27B-GGUF
+load-on-startup = false
+
+[rbrgs]
+model = /root/.cache/huggingface/ollama/rbrgs.F16.gguf
+load-on-startup = false
+EOF
+
+llama-server --port 11434 --models-preset /tmp/llama-models-preset.ini &
 LLAMA_PID=$!
 
 max_attempts=30
@@ -23,11 +39,11 @@ done
 echo "llama-server is up and running."
 
 if [ "$ROLE" = "hric" ]; then
-  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3"}'
+  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.6"}'
 elif [ "$ROLE" = "carry" ]; then
   echo "Carry role: embeddings model skipped, no models loaded."
 elif [ "$ROLE" = "gpsr" ]; then
-  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3"}'
+  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.6"}'
   curl -sf -X POST http://localhost:11434/models/load -d '{"model": "rbrgs"}'
 elif [ "$ROLE" = "storing" ]; then
   echo "Storing role detected, not loading any models..."

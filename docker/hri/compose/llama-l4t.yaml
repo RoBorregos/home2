@@ -8,7 +8,6 @@ services:
     volumes:
       - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
       - ../scripts/llama-entrypoint.sh:/scripts/llama-entrypoint.sh
-      - ../scripts/llama-models-preset.ini:/scripts/llama-models-preset.ini
     environment:
       ROLE: ${ROLE}
     stdin_open: true
