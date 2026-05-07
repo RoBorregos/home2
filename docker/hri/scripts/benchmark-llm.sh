@@ -15,11 +15,74 @@
 set -euo pipefail
 
 RUNS=5
-PROMPT="You are a helpful assistant. In exactly two sentences, describe what a service robot does in a domestic environment."
+PROMPT=""
 MODEL_OVERRIDE=""  # Leave empty to let the server pick its loaded model
+USECASE=""
 
 ENDPOINTS=()
 LABELS=()
+
+# ---------------------------------------------------------------------------
+# Real use-case payloads (system + user, matching dialogs.py exactly)
+# ---------------------------------------------------------------------------
+usecase_payload() {
+    local uc="$1"
+    local model="$2"
+    case "$uc" in
+        extract_data)
+            jq -n --arg model "$model" '{
+                model: $model,
+                stream: true,
+                max_tokens: 60,
+                temperature: 0.5,
+                messages: [
+                    {role:"system", content:"You will receive a text (`full_text`) and a specific target (`extract_data`). Your task is to extract and return the closest relevant word or phrase that directly answers the target.\nReturn JSON: {\"data\": \"<value or empty string>\"}"},
+                    {role:"user",   content:"<full_text>My name is Carlos and I would like a glass of water.</full_text>\n<extract_data>drink</extract_data>"}
+                ]
+            }'
+            ;;
+        is_coherent)
+            jq -n --arg model "$model" '{
+                model: $model,
+                stream: true,
+                max_tokens: 30,
+                temperature: 0.0,
+                messages: [
+                    {role:"system", content:"Determine if a command is complete and executable by a robot. Output JSON: {\"is_coherent\": true/false}"},
+                    {role:"user",   content:"Command: Go to the kitchen and pick up the apple /no_think"}
+                ]
+            }'
+            ;;
+        llm_wrapper)
+            jq -n --arg model "$model" '{
+                model: $model,
+                stream: true,
+                max_tokens: 80,
+                temperature: 0.5,
+                messages: [
+                    {role:"system", content:"You are an intelligent assistant. Answer clearly and concisely using the provided context.\n\nContext: The robot picked up a red apple from the kitchen table."},
+                    {role:"user",   content:"What object did the robot pick up? /no_think"}
+                ]
+            }'
+            ;;
+        categorize_shelves)
+            jq -n --arg model "$model" '{
+                model: $model,
+                stream: true,
+                max_tokens: 40,
+                temperature: 0.5,
+                messages: [
+                    {role:"system", content:"Assign a unique category to each shelf. Return only JSON: {\"categories\": [\"cat1\",\"cat2\",...]}. Number of categories must match number of shelves."},
+                    {role:"user",   content:"Shelves: [[\"apple\",\"banana\"],[\"water\",\"cup\"],[\"chips\"]], table_objects: [\"soda\"]"}
+                ]
+            }'
+            ;;
+        *)
+            echo "Unknown usecase: $uc" >&2
+            exit 1
+            ;;
+    esac
+}
 
 # Parse args
 while [[ $# -gt 0 ]]; do
@@ -27,6 +90,7 @@ while [[ $# -gt 0 ]]; do
         --runs) RUNS="$2"; shift 2 ;;
         --prompt) PROMPT="$2"; shift 2 ;;
         --model) MODEL_OVERRIDE="$2"; shift 2 ;;
+        --usecase) USECASE="$2"; shift 2 ;;
         *)
             ENDPOINTS+=("$1")
             LABELS+=("${2:-$1}")
@@ -34,6 +98,11 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Default prompt if none set and no usecase
+if [[ -z "$PROMPT" && -z "$USECASE" ]]; then
+    PROMPT="You are a helpful assistant. In exactly two sentences, describe what a service robot does in a domestic environment."
+fi
 
 # Default endpoint if none provided
 if [[ ${#ENDPOINTS[@]} -eq 0 ]]; then
@@ -90,10 +159,14 @@ run_single() {
         printf "    run %d/%d ... " "$run" "$RUNS"
 
         local payload
-        payload=$(jq -n \
-            --arg model "$model" \
-            --arg content "$PROMPT" \
-            '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 200}')
+        if [[ -n "$USECASE" ]]; then
+            payload=$(usecase_payload "$USECASE" "$model")
+        else
+            payload=$(jq -n \
+                --arg model "$model" \
+                --arg content "$PROMPT" \
+                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 200}')
+        fi
 
         # Capture streaming response with timestamps
         local tmpfile
@@ -162,7 +235,11 @@ run_single() {
 }
 
 echo "LLM Backend Benchmark"
-echo "Prompt: $PROMPT"
+if [[ -n "$USECASE" ]]; then
+    echo "Use case: $USECASE"
+else
+    echo "Prompt: $PROMPT"
+fi
 echo "Runs per endpoint: $RUNS"
 
 for i in "${!ENDPOINTS[@]}"; do
