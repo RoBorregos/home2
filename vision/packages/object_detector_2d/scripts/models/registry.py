@@ -26,7 +26,7 @@ class ModelRegistry:
 
     @classmethod
     def register(cls, type_name: str):
-        """Decorator: @ModelRegistry.register("yolo_v8")"""
+        """Decorator: @ModelRegistry.register()"""
 
         def decorator(model_cls):
             cls._type_registry[type_name] = model_cls
