@@ -29,7 +29,7 @@ from vision_3D_utils import deproject_pixel_to_point, get2DCentroid, get_depth
 
 
 class BaseDetectorNode(rclpy.node.Node, ABC):
-    _MARKER_COLOR = (0.0, 1.0, 0.0)  # (r, g, b) — subclasses can override
+    MARKER_COLOR = (0.0, 1.0, 0.0)  # (r, g, b) — subclasses can override
 
     def __init__(
         self,
@@ -44,29 +44,29 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
     ):
         super().__init__(node_name)
 
-        def _p(name, default):
+        def p(name, default):
             return self.declare_parameter(name, default).get_parameter_value()
 
-        self.depth_active = _p("DEPTH_ACTIVE", True).bool_value
-        self.camera_frame = _p("CAMERA_FRAME", CAMERA_FRAME).string_value
-        self.target_frame = _p("TARGET_FRAME", "base_link").string_value
-        self.max_depth = _p("MAX_DEPTH_THRESH", 2.0).double_value
-        self.use_zed_transform = _p("USE_ZED_TRANSFORM", True).bool_value
-        self.flip_image = _p("FLIP_IMAGE", False).bool_value
-        self.verbose = _p("VERBOSE", False).bool_value
-        use_active_flag = _p("USE_ACTIVE_FLAG", False).bool_value
+        self.depth_active = p("DEPTH_ACTIVE", True).bool_value
+        self.camera_frame = p("CAMERA_FRAME", CAMERA_FRAME).string_value
+        self.target_frame = p("TARGET_FRAME", "base_link").string_value
+        self.max_depth = p("MAX_DEPTH_THRESH", 2.0).double_value
+        self.use_zed_transform = p("USE_ZED_TRANSFORM", True).bool_value
+        self.flip_image = p("FLIP_IMAGE", False).bool_value
+        self.verbose = p("VERBOSE", False).bool_value
+        use_active_flag = p("USE_ACTIVE_FLAG", False).bool_value
         self.active_flag = not use_active_flag
 
-        rgb_topic = _p("RGB_IMAGE_TOPIC", IMAGE_ORIENTED_TOPIC).string_value
-        depth_topic = _p("DEPTH_IMAGE_TOPIC", DEPTH_IMAGE_TOPIC).string_value
-        info_topic = _p("CAMERA_INFO_TOPIC", CAMERA_INFO_TOPIC).string_value
-        det_topic = _p("DETECTIONS_TOPIC", default_det_topic).string_value
-        det_img_topic = _p("DETECTIONS_IMAGE_TOPIC", default_det_img_topic).string_value
-        det_poses_topic = _p(
+        rgb_topic = p("RGB_IMAGE_TOPIC", IMAGE_ORIENTED_TOPIC).string_value
+        depth_topic = p("DEPTH_IMAGE_TOPIC", DEPTH_IMAGE_TOPIC).string_value
+        info_topic = p("CAMERA_INFO_TOPIC", CAMERA_INFO_TOPIC).string_value
+        det_topic = p("DETECTIONS_TOPIC", default_det_topic).string_value
+        det_img_topic = p("DETECTIONS_IMAGE_TOPIC", default_det_img_topic).string_value
+        det_poses_topic = p(
             "DETECTIONS_POSES_TOPIC", default_det_poses_topic
         ).string_value
-        det_3d_topic = _p("DETECTIONS_3D_TOPIC", default_det_3d_topic).string_value
-        active_topic = _p("DETECTIONS_ACTIVE_TOPIC", default_active_topic).string_value
+        det_3d_topic = p("DETECTIONS_3D_TOPIC", default_det_3d_topic).string_value
+        active_topic = p("DETECTIONS_ACTIVE_TOPIC", default_active_topic).string_value
 
         # --- state ---
         self.bridge = CvBridge()
@@ -76,9 +76,9 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         self.curr_clock = None
         self.detections_frame = []
         self.latest_detections = []
-        self._run_thread = None
-        self._frame_count = 0
-        self._skip_frames = 2
+        self.run_thread = None
+        self.frame_count = 0
+        self.skip_frames = 2
 
         # TF
         self.tfBuffer = tf2_ros.Buffer()
@@ -94,48 +94,48 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         qos = rclpy.qos.QoSProfile(
             depth=5, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT
         )
-        self.create_subscription(Image, rgb_topic, self._rgb_cb, qos)
+        self.create_subscription(Image, rgb_topic, self.rgb_cb, qos)
         if self.depth_active:
-            self.create_subscription(Image, depth_topic, self._depth_cb, qos)
-            self.create_subscription(CameraInfo, info_topic, self._info_cb, qos)
-        self.create_subscription(Bool, fixed_active_topic, self._active_cb, 10)
+            self.create_subscription(Image, depth_topic, self.depth_cb, qos)
+            self.create_subscription(CameraInfo, info_topic, self.info_cb, qos)
+        self.create_subscription(Bool, fixed_active_topic, self.active_cb, 10)
         if use_active_flag:
-            self.create_subscription(Bool, active_topic, self._active_cb, 5)
+            self.create_subscription(Bool, active_topic, self.active_cb, 5)
 
     # ------------------------------------------------------------------ callbacks
 
-    def _active_cb(self, msg):
+    def active_cb(self, msg):
         self.active_flag = msg.data
 
-    def _depth_cb(self, data):
+    def depth_cb(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
         except CvBridgeError:
             pass
 
-    def _info_cb(self, data):
+    def info_cb(self, data):
         if self.camera_info is None:
             self.camera_info = data
 
-    def _rgb_cb(self, data):
+    def rgb_cb(self, data):
         try:
             rgb = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError:
             return
         self.latest_frame = rgb
         self.curr_clock = data.header.stamp
-        self._frame_count += 1
+        self.frame_count += 1
 
         if not self.active_flag:
             self.detections_frame = rgb
-        elif self._frame_count % (self._skip_frames + 1) == 0 and (
-            self._run_thread is None or not self._run_thread.is_alive()
+        elif self.frame_count % (self.skip_frames + 1) == 0 and (
+            self.run_thread is None or not self.run_thread.is_alive()
         ):
             frame = copy.deepcopy(rgb)
-            self._run_thread = threading.Thread(
-                target=self._run, args=(frame,), daemon=True
+            self.run_thread = threading.Thread(
+                target=self.run, args=(frame,), daemon=True
             )
-            self._run_thread.start()
+            self.run_thread.start()
 
         if len(self.detections_frame) > 0:
             self.pub_image.publish(
@@ -145,11 +145,11 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
     # ------------------------------------------------------------------ inference
 
     @abstractmethod
-    def _run(self, frame): ...
+    def run(self, frame): ...
 
     # ------------------------------------------------------------------ helpers
 
-    def _extract_3d(self, detections):
+    def extract_3d(self, detections):
         has_depth = (
             self.depth_active
             and len(self.depth_image) > 0
@@ -177,7 +177,7 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             det.point_stamped_ = pt
         return detections
 
-    def _filter_by_distance(self, detections):
+    def filter_by_distance(self, detections):
         return [
             d
             for d in detections
@@ -189,8 +189,8 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             <= self.max_depth
         ]
 
-    def _publish_3d_markers(self, detections):
-        r, g, b = self._MARKER_COLOR
+    def publish_3d_markers(self, detections):
+        r, g, b = self.MARKER_COLOR
         markers = MarkerArray()
         for i, det in enumerate(detections):
             m = Marker()
@@ -210,7 +210,7 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             markers.markers.append(m)
         self.pub_3d.publish(markers)
 
-    def _publish_poses(self, detections):
+    def publish_poses(self, detections):
         self.pub_poses.publish(
             PoseArray(
                 poses=[
@@ -226,7 +226,7 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             )
         )
 
-    def _to_ros(self, detections) -> list:
+    def to_ros(self, detections) -> list:
         return [
             ObjectDetection(
                 label=det.class_id_,
@@ -241,15 +241,15 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             for det in detections
         ]
 
-    def _box_color(self, det):
+    def box_color(self, det):
         return (0, 255, 0)
 
-    def _visualize(self, image, detections):
+    def visualize(self, image, detections):
         for det in detections:
             h, w = image.shape[:2]
             left, right = int(det.xmin * w), int(det.xmax * w)
             top, bottom = int(det.ymin * h), int(det.ymax * h)
-            color = self._box_color(det)
+            color = self.box_color(det)
             cv.rectangle(image, (left, top), (right, bottom), color, 7)
             cv.putText(
                 image,

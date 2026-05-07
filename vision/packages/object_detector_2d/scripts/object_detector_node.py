@@ -37,10 +37,10 @@ class ObjectDetectorNode(BaseDetectorNode):
             fixed_active_topic="/vision/object_detector/active",
         )
 
-        def _p(name, default):
+        def p(name, default):
             return self.declare_parameter(name, default).get_parameter_value()
 
-        model_names = _p("models", ["yolo_v26_finetuned"]).string_array_value
+        model_names = p("models", ["yolo_v26_finetuned"]).string_array_value
 
         self.models = [ModelRegistry.get(name) for name in model_names]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
@@ -58,19 +58,19 @@ class ObjectDetectorNode(BaseDetectorNode):
             self.object_to_category = {}
 
         self.create_service(
-            SetTrashCategory, TRASH_SERVICE_CATEGORY, self._set_trash_category
+            SetTrashCategory, TRASH_SERVICE_CATEGORY, self.set_trash_category
         )
         self.create_service(
-            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self._detection_handler
+            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self.detection_handler
         )
-        self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self._yolo_detect)
+        self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self.yolo_detect)
 
-    def _box_color(self, det):
+    def box_color(self, det):
         return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
 
     # ------------------------------------------------------------------ services
 
-    def _set_trash_category(self, req, res):
+    def set_trash_category(self, req, res):
         if not req.category:
             res.success = False
             self.get_logger().warn("No category in SetTrashCategory request")
@@ -80,7 +80,7 @@ class ObjectDetectorNode(BaseDetectorNode):
         self.get_logger().info(f"Trash category set to: {self.category}")
         return res
 
-    def _detection_handler(self, request, response):
+    def detection_handler(self, request, response):
         detections = list(self.latest_detections)
         if request.label and request.label != "all":
             detections = [d for d in detections if d.label_text == request.label]
@@ -103,7 +103,7 @@ class ObjectDetectorNode(BaseDetectorNode):
         )
         return response
 
-    def _yolo_detect(self, request, response):
+    def yolo_detect(self, request, response):
         if self.latest_frame is None:
             self.get_logger().warn("YoloDetect called but no frame received yet")
             response.success = False
@@ -133,7 +133,7 @@ class ObjectDetectorNode(BaseDetectorNode):
 
     # ------------------------------------------------------------------ inference
 
-    def _run(self, frame):
+    def run(self, frame):
         if self.flip_image:
             frame = cv.rotate(frame, cv.ROTATE_180)
         visual = copy.deepcopy(frame)
@@ -152,13 +152,13 @@ class ObjectDetectorNode(BaseDetectorNode):
                     1 - det.bbox_.x2,
                 )
 
-        all_detections = self._extract_3d(merged)
-        all_detections = self._filter_by_distance(all_detections)
+        all_detections = self.extract_3d(merged)
+        all_detections = self.filter_by_distance(all_detections)
 
-        self._publish_3d_markers(all_detections)
-        self._publish_poses(all_detections)
+        self.publish_3d_markers(all_detections)
+        self.publish_poses(all_detections)
 
-        ros_detections = self._to_ros(all_detections)
+        ros_detections = self.to_ros(all_detections)
         for det in ros_detections:
             det.point3d.header.stamp = self.curr_clock
 
@@ -173,7 +173,7 @@ class ObjectDetectorNode(BaseDetectorNode):
             published.append(d)
 
         self.pub_detections.publish(ObjectDetectionArray(detections=published))
-        self.detections_frame = self._visualize(visual, published)
+        self.detections_frame = self.visualize(visual, published)
 
         if self.verbose:
             for i, d in enumerate(published):

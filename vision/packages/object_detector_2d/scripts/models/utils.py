@@ -1,7 +1,7 @@
 """IoU-based deduplication for merging detections from multiple models."""
 
 
-def _iou(det1, det2) -> float:
+def iou(det1, det2) -> float:
     xA = max(det1.bbox_.x1, det2.bbox_.x1)
     yA = max(det1.bbox_.y1, det2.bbox_.y1)
     xB = min(det1.bbox_.x2, det2.bbox_.x2)
@@ -16,6 +16,6 @@ def iou_deduplicate(detections: list, threshold: float = 0.6) -> list:
     """Remove detections that overlap an already-kept detection above `threshold`."""
     kept = []
     for det in detections:
-        if not any(_iou(det, k) > threshold for k in kept):
+        if not any(iou(det, k) > threshold for k in kept):
             kept.append(det)
     return kept
