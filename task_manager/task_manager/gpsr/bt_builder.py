@@ -42,22 +42,6 @@ def _wrap_action(
         child=leaf,
         duration=timeout_for(kind),
     )
-    if plan_action.requires_gripper or plan_action.releases_gripper:
-        # Hard-failure semantics for gripper actions: if Retry exhausts,
-        # the sequence fails — triggering the sequential fallback.
-        return py_trees.decorators.Retry(
-            name=f"retry({kind})",
-            child=timeout,
-            num_failures=retry_count,
-        )
-    # Non-gripper actions: still retry, but their failure does NOT abort
-    # the interleaved plan — handled by wrapping in StatusToBlackboard?
-    # Simpler: a Retry with a SuccessIsFailure-like override is overkill;
-    # we use a Retry as before and accept that a failed auxiliary action
-    # WILL fail the parent Sequence. Reason: GPSR auxiliary failures are
-    # rare in practice; a Retry(2) handles transient flakes. If the
-    # behaviour proves too aggressive in trials, swap this branch to a
-    # ``SuccessIsRunning``-style decorator.
     return py_trees.decorators.Retry(
         name=f"retry({kind})",
         child=timeout,
