@@ -12,7 +12,7 @@ lives inside the subtask managers themselves; the decorators are a
 between-tick safety net.
 """
 
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import py_trees
 
@@ -26,6 +26,56 @@ def _resolve_method(action_name: str, handlers: Sequence[Any]) -> Optional[Calla
         if callable(method):
             return method
     return None
+
+
+def _handler_names(handlers: Sequence[Any]) -> str:
+    return ", ".join(type(h).__name__ for h in handlers) or "<none>"
+
+
+def _unpack_outcome(outcome: Any) -> Tuple[Optional[Status], Any]:
+    """Return ``(status, result)`` from a handler return value.
+
+    Subtask methods canonically return ``(Status, result)``; we also
+    tolerate methods that return a bare ``Status``. Anything else (wrong
+    type, empty tuple, non-Status first element) yields ``(None, raw)``
+    so the caller can warn instead of silently mapping to FAILURE.
+    """
+    if isinstance(outcome, tuple):
+        status = outcome[0] if outcome else None
+        result = outcome[1] if len(outcome) > 1 else None
+    else:
+        status, result = outcome, None
+    if not isinstance(status, Status):
+        return None, outcome
+    return status, result
+
+
+def _dispatch(
+    plan_action: PlanAction,
+    method: Callable,
+    on_complete: Optional[Callable[[PlanAction, Any, Any], None]],
+    logger: Any,
+) -> Optional[Status]:
+    """Call ``method(plan_action.action)``, fire ``on_complete``, return Status.
+
+    Returns ``None`` if the handler raised or returned a non-Status value.
+    """
+    action = plan_action.action
+    kind = getattr(action, "action", "")
+    try:
+        outcome = method(action)
+    except Exception:  # noqa: BLE001 — we want the BT to handle it
+        logger.exception(f"{kind} raised")
+        return None
+    status, result = _unpack_outcome(outcome)
+    if status is None:
+        logger.warning(f"{kind} returned non-Status outcome {outcome!r}; treating as failure")
+    if on_complete is not None:
+        try:
+            on_complete(plan_action, status, result)
+        except Exception:  # noqa: BLE001
+            logger.exception("on_complete hook raised")
+    return status
 
 
 class ActionLeaf(py_trees.behaviour.Behaviour):
@@ -42,34 +92,17 @@ class ActionLeaf(py_trees.behaviour.Behaviour):
         super().__init__(name=name or f"{kind}#{plan_action.source_cmd}.{plan_action.source_idx}")
         self._plan_action = plan_action
         self._handlers = subtask_handlers
+        self._method = _resolve_method(kind, subtask_handlers)
         self._on_complete = on_complete
 
     def update(self) -> py_trees.common.Status:
-        action = self._plan_action.action
-        kind = getattr(action, "action", "")
-        method = _resolve_method(kind, self._handlers)
-        if method is None:
-            self.logger.error(f"No handler for action '{kind}'")
+        if self._method is None:
+            kind = getattr(self._plan_action.action, "action", "")
+            self.logger.error(
+                f"No handler for action '{kind}' in [{_handler_names(self._handlers)}]"
+            )
             return py_trees.common.Status.FAILURE
-        try:
-            outcome = method(action)
-        except Exception as exc:  # noqa: BLE001 — we want the BT to handle it
-            self.logger.error(f"{kind} raised: {exc}")
-            return py_trees.common.Status.FAILURE
-
-        # Subtask methods canonically return (status, result). Tolerate
-        # methods that return only a status.
-        if isinstance(outcome, tuple) and len(outcome) >= 1:
-            status, result = outcome[0], outcome[1] if len(outcome) > 1 else None
-        else:
-            status, result = outcome, None
-
-        if self._on_complete is not None:
-            try:
-                self._on_complete(self._plan_action, status, result)
-            except Exception as exc:  # noqa: BLE001
-                self.logger.warning(f"on_complete hook raised: {exc}")
-
+        status = _dispatch(self._plan_action, self._method, self._on_complete, self.logger)
         if status == Status.EXECUTION_SUCCESS:
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
@@ -91,33 +124,27 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
         on_complete: Optional[Callable[[PlanAction, Any, Any], None]] = None,
         name: Optional[str] = None,
     ):
+        if not per_command_actions:
+            raise ValueError("SequentialFallbackLeaf requires at least one action")
         super().__init__(name=name or f"fallback_cmd#{per_command_actions[0].source_cmd}")
-        self._actions = list(per_command_actions)
         self._handlers = subtask_handlers
         self._on_complete = on_complete
+        # Resolve handlers once so a missing-method misconfiguration
+        # surfaces here, in tree construction, rather than mid-tick.
+        self._resolved: List[Tuple[PlanAction, Optional[Callable]]] = [
+            (pa, _resolve_method(getattr(pa.action, "action", ""), subtask_handlers))
+            for pa in per_command_actions
+        ]
 
     def update(self) -> py_trees.common.Status:
-        for pa in self._actions:
-            kind = getattr(pa.action, "action", "")
-            method = _resolve_method(kind, self._handlers)
+        for pa, method in self._resolved:
             if method is None:
-                self.logger.error(f"No handler for action '{kind}'")
+                kind = getattr(pa.action, "action", "")
+                self.logger.error(
+                    f"No handler for action '{kind}' in [{_handler_names(self._handlers)}]"
+                )
                 continue
-            try:
-                outcome = method(pa.action)
-            except Exception as exc:  # noqa: BLE001
-                self.logger.error(f"{kind} raised: {exc}")
-                continue
-            if isinstance(outcome, tuple) and len(outcome) >= 1:
-                status = outcome[0]
-                result = outcome[1] if len(outcome) > 1 else None
-            else:
-                status, result = outcome, None
-            if self._on_complete is not None:
-                try:
-                    self._on_complete(pa, status, result)
-                except Exception as exc:  # noqa: BLE001
-                    self.logger.warning(f"on_complete hook raised: {exc}")
+            _dispatch(pa, method, self._on_complete, self.logger)
         # The fallback branch always reports SUCCESS — its job is to give
         # every command its chance, not to gate on per-action outcomes.
         return py_trees.common.Status.SUCCESS
