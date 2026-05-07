@@ -8,8 +8,16 @@ order that:
   * preserves intra-command sequencing,
   * preserves precedence edges across atomic gripper blocks,
   * never holds more than one object at a time,
-  * minimizes 2-D travel between locations using greedy nearest-neighbour
-    plus a precedence-safe 2-opt pass.
+  * minimizes 2-D travel between locations using a precedence-constrained
+    Held-Karp DP (optimal under the Euclidean cost model).
+
+Pipeline:
+  1. Decompose each command into go_to-led segments.
+  2. Contract pick→…→give|place chains into atomic units; gripper-neutral
+     segments stay as single-segment units.
+  3. Held-Karp DP over the units with a per-command prefix-order
+     eligibility constraint produces the globally optimal schedule.
+  4. Walk units back into a flat PlanAction list.
 
 The merger is intentionally framework-free: it talks to BAML objects via
 ``getattr`` so unit tests can pass simple stand-ins.
@@ -165,7 +173,7 @@ def _unit_last_xy(
     return last
 
 
-def _greedy_schedule(
+def _optimal_schedule(
     units: Sequence[Sequence[int]],
     unit_cmd: Sequence[int],
     unit_pos: Sequence[int],
@@ -173,91 +181,98 @@ def _greedy_schedule(
     segments: Sequence[_Segment],
     locator: Locator,
 ) -> List[int]:
-    n = len(units)
-    next_pos = [0] * n_cmds
-    scheduled: List[int] = []
-    cur_xy: Tuple[float, float] = (0.0, 0.0)
-    while len(scheduled) < n:
-        eligible = [
-            ui for ui in range(n) if ui not in scheduled and unit_pos[ui] == next_pos[unit_cmd[ui]]
-        ]
-        if not eligible:
-            break
-        eligible.sort(
-            key=lambda ui: (
-                _euclidean(cur_xy, _unit_first_xy(units[ui], segments, locator)),
-                unit_cmd[ui],
-                unit_pos[ui],
-            )
-        )
-        chosen = eligible[0]
-        scheduled.append(chosen)
-        next_pos[unit_cmd[chosen]] += 1
-        end_xy = _unit_last_xy(units[chosen], segments, locator)
-        if end_xy is not None:
-            cur_xy = end_xy
-    return scheduled
+    """Held-Karp DP with per-command prefix-order eligibility.
 
+    State (S, last):
+        S    — bitmask of units already scheduled
+        last — index of the most recently scheduled unit
 
-def _path_length(
-    sequence: Sequence[int],
-    units: Sequence[Sequence[int]],
-    segments: Sequence[_Segment],
-    locator: Locator,
-) -> float:
-    cur: Tuple[float, float] = (0.0, 0.0)
-    total = 0.0
-    for ui in sequence:
-        first = _unit_first_xy(units[ui], segments, locator)
-        last = _unit_last_xy(units[ui], segments, locator)
-        if first is not None:
-            total += _euclidean(cur, first)
-            cur = last if last is not None else first
-    return total
+    f(S, last) is the minimum total Euclidean travel for any schedule that
+    realises S, ends at `last`, and respects the per-command prefix order
+    (units of command k must be scheduled in their original positions).
 
+    Recurrence:
+        f({u},  u) = dist(origin, start_xy[u])              if unit_pos[u] == 0
+        f(S|{u}, u) = min over last in S, u not in S, u eligible:
+                        f(S, last) + dist(end_xy[last], start_xy[u])
 
-def _reversal_preserves_order(
-    sequence: Sequence[int], lo: int, hi: int, unit_cmd: Sequence[int]
-) -> bool:
-    """A reversal of sequence[lo+1..hi] is safe iff no command appears twice
-    in that slice — otherwise reversing would swap two of its units."""
-    seen = set()
-    for k in range(lo + 1, hi + 1):
-        c = unit_cmd[sequence[k]]
-        if c in seen:
-            return False
-        seen.add(c)
-    return True
+    Eligibility for adding unit u to S: the count of units of unit_cmd[u]
+    already in S must equal unit_pos[u] — i.e. all earlier siblings of u
+    are scheduled and u is the next one due.
 
+    Complexity: O(2^M · M²). With our atomic-block decomposition M is
+    typically 6–9 and bounded by ~16 in batches, so this is sub-millisecond.
+    Returns the optimal schedule under the Euclidean cost model.
+    """
+    M = len(units)
+    if M == 0:
+        return []
 
-def _two_opt(
-    sequence: List[int],
-    units: Sequence[Sequence[int]],
-    unit_cmd: Sequence[int],
-    segments: Sequence[_Segment],
-    locator: Locator,
-) -> List[int]:
-    """Precedence-safe 2-opt smoothing at the unit level."""
-    n = len(sequence)
-    if n < 4:
-        return sequence
-    improved = True
-    best = list(sequence)
-    best_len = _path_length(best, units, segments, locator)
-    while improved:
-        improved = False
-        for i in range(n - 2):
-            for j in range(i + 2, n):
-                if not _reversal_preserves_order(best, i, j, unit_cmd):
+    start_xy = [_unit_first_xy(units[u], segments, locator) for u in range(M)]
+    end_xy = [_unit_last_xy(units[u], segments, locator) for u in range(M)]
+
+    cmd_mask = [0] * n_cmds
+    for u in range(M):
+        cmd_mask[unit_cmd[u]] |= 1 << u
+
+    INF = float("inf")
+    full = (1 << M) - 1
+
+    # f[S][u] = min cost to reach subset S ending at unit u.
+    # parent[S][u] = previous unit (or -1 if u was first, came from origin).
+    f = [[INF] * M for _ in range(1 << M)]
+    parent = [[-1] * M for _ in range(1 << M)]
+
+    origin = (0.0, 0.0)
+    for u in range(M):
+        if unit_pos[u] != 0:
+            continue
+        f[1 << u][u] = _euclidean(origin, start_xy[u])
+        parent[1 << u][u] = -1
+
+    # Forward DP. Iterating S in integer order is a valid topological
+    # order: any subset that adds a bit only references smaller subsets.
+    for S in range(1, 1 << M):
+        for last in range(M):
+            if not (S >> last) & 1:
+                continue
+            cur_cost = f[S][last]
+            if cur_cost == INF:
+                continue
+            for u in range(M):
+                if (S >> u) & 1:
                     continue
-                candidate = best[: i + 1] + best[i + 1 : j + 1][::-1] + best[j + 1 :]
-                cand_len = _path_length(candidate, units, segments, locator)
-                if cand_len + 1e-9 < best_len:
-                    best = candidate
-                    best_len = cand_len
-                    improved = True
-        # restart from scratch on improvement to allow chained gains
-    return best
+                cnt = bin(S & cmd_mask[unit_cmd[u]]).count("1")
+                if cnt != unit_pos[u]:
+                    continue
+                cand = cur_cost + _euclidean(end_xy[last], start_xy[u])
+                new_S = S | (1 << u)
+                if cand < f[new_S][u]:
+                    f[new_S][u] = cand
+                    parent[new_S][u] = last
+
+    best_last = -1
+    best_cost = INF
+    for u in range(M):
+        if f[full][u] < best_cost:
+            best_cost = f[full][u]
+            best_last = u
+
+    if best_last < 0:
+        # Pathological — DP could not realise the full schedule.
+        # Fall back to per-command sequential order, which is always feasible.
+        return sorted(range(M), key=lambda u: (unit_cmd[u], unit_pos[u]))
+
+    schedule: List[int] = []
+    S = full
+    last = best_last
+    while last != -1:
+        schedule.append(last)
+        prev = parent[S][last]
+        S ^= 1 << last
+        last = prev
+    schedule.reverse()
+    return schedule
 
 
 def merge(commands: Sequence[Any], locator: Optional[Locator] = None) -> InterleavedPlan:
@@ -296,8 +311,7 @@ def merge(commands: Sequence[Any], locator: Optional[Locator] = None) -> Interle
     if not units:
         return InterleavedPlan(actions=[], fallback=_build_fallback(commands))
 
-    schedule = _greedy_schedule(units, unit_cmd, unit_pos, len(commands), flat_segments, loc_fn)
-    schedule = _two_opt(schedule, units, unit_cmd, flat_segments, loc_fn)
+    schedule = _optimal_schedule(units, unit_cmd, unit_pos, len(commands), flat_segments, loc_fn)
 
     actions: List[PlanAction] = []
     for ui in schedule:

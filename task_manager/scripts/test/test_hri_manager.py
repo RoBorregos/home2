@@ -640,6 +640,27 @@ class TestHriManager(Node):
                     held_by = None
             return True
 
+        def _describe(pa):
+            kind = getattr(pa.action, "action", "?")
+            for arg in (
+                "location_to_go",
+                "object_to_pick",
+                "name",
+                "attribute_value",
+                "destination",
+                "destination_room",
+                "info_type",
+                "target_to_count",
+                "object_category",
+            ):
+                v = getattr(pa.action, arg, None)
+                if v:
+                    return f"[c{pa.source_cmd}] {kind}({v})"
+            return f"[c{pa.source_cmd}] {kind}"
+
+        def _describe_plan(plan_actions):
+            return " -> ".join(_describe(pa) for pa in plan_actions)
+
         scenarios = []
 
         # 1. Single command identity
@@ -846,20 +867,22 @@ class TestHriManager(Node):
             self.get_logger().info(f"Merger scenario: {name}")
             try:
                 ok, plan = fn()
+                ordering = _describe_plan(plan.actions) if plan.actions else "(empty)"
+                self.get_logger().info(f"  ordering: {ordering}")
                 if ok:
                     passed += 1
                     self.get_logger().info(f"  PASS ({len(plan.actions)} actions)")
                 else:
-                    self.get_logger().error(f"  FAIL — plan had {len(plan.actions)} actions")
-                results.append([name, ok, len(plan.actions)])
+                    self.get_logger().error(f"  FAIL ({len(plan.actions)} actions)")
+                results.append([name, ok, len(plan.actions), ordering])
             except Exception as exc:
                 self.get_logger().error(f"  EXCEPTION: {exc}")
-                results.append([name, False, f"EXCEPTION: {exc}"])
+                results.append([name, False, "EXCEPTION", str(exc)])
 
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         with open(output_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["scenario", "passed", "plan_size_or_error"])
+            writer.writerow(["scenario", "passed", "plan_size", "ordering_or_error"])
             writer.writerows(results)
 
         self.get_logger().info(f"Merger results: {passed}/{len(scenarios)} passed")
