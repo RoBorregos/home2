@@ -472,34 +472,43 @@ class TestHriManager(Node):
 
         results = []
         passed_tests = 0
+        latencies_ms = []
 
         for i, (input_text, query, context, expected_output) in enumerate(test_cases, 1):
             self.get_logger().info(f"Test case {i}")
 
             actual_output = None
             success = False
+            elapsed_ms = -1
 
             try:
+                t0 = time.perf_counter()
                 s, extracted_data = self.hri_manager.extract_data(query, input_text, context)
+                elapsed_ms = int((time.perf_counter() - t0) * 1000)
 
                 if s == Status.EXECUTION_SUCCESS:
                     actual_output = extracted_data
                     success = extracted_data == expected_output
                     if success:
                         passed_tests += 1
-                        self.get_logger().info("Test passed!")
+                        self.get_logger().info(f"Test passed!  ({elapsed_ms} ms)")
                     else:
-                        self.get_logger().error("Test failed.")
+                        self.get_logger().error(f"Test failed.  ({elapsed_ms} ms)")
 
                 else:
-                    self.get_logger().error(f"FAILED: {s}")
+                    self.get_logger().error(f"FAILED: {s}  ({elapsed_ms} ms)")
                     actual_output = f"ERROR: {s}"
 
             except Exception as e:
                 self.get_logger().error(f"EXCEPTION: {str(e)}")
                 actual_output = f"EXCEPTION: {str(e)}"
 
-            results.append([i, input_text, query, context, expected_output, actual_output, success])
+            if elapsed_ms >= 0:
+                latencies_ms.append(elapsed_ms)
+
+            results.append(
+                [i, input_text, query, context, expected_output, actual_output, success, elapsed_ms]
+            )
             self.get_logger().info("-" * 50)
 
         # Write results to CSV
@@ -514,12 +523,19 @@ class TestHriManager(Node):
                     "expected_output",
                     "actual_output",
                     "success",
+                    "latency_ms",
                 ]
             )
             writer.writerows(results)
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+        if latencies_ms:
+            avg_ms = sum(latencies_ms) / len(latencies_ms)
+            self.get_logger().info(
+                f"Latency (ms) — min={min(latencies_ms)}  mean={avg_ms:.0f}  max={max(latencies_ms)}  (n={len(latencies_ms)})"
+            )
 
     def test_command_interpreter(self):
         test_cases_file = os.path.join(DATA_DIR, "command_interpreter.json")
