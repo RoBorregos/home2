@@ -6,7 +6,10 @@ services:
       context: ..
       dockerfile: dockerfiles/Dockerfile.llamacpp
       args:
-        BASE_IMAGE: dustynv/llama_cpp:gguf-r36.4.0
+        # Latest Jetson-compatible llama.cpp image (L4T r36.4, CUDA 12.8, Ubuntu 24.04)
+        # Supports Qwen3, Gemma 4, and other recent architectures.
+        # To upgrade: check https://hub.docker.com/r/dustynv/llama_cpp/tags
+        BASE_IMAGE: dustynv/llama_cpp:b5283-r36.4-cu128-24.04
 
     image: roborregos/home2:hri-llamacpp-l4t
     runtime: nvidia
