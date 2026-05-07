@@ -24,7 +24,7 @@ from geometry_msgs.msg import Point, PointStamped, Pose, PoseArray
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import Bool, Header
 from visualization_msgs.msg import Marker, MarkerArray
-import models  # noqa: F401
+import detectors  # noqa: F401
 from vision_3D_utils import deproject_pixel_to_point, get2DCentroid, get_depth
 
 

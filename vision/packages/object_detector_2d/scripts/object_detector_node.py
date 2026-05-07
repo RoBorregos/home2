@@ -20,8 +20,8 @@ from frida_constants.vision_constants import (
 )
 from frida_interfaces.msg import Detection, ObjectDetectionArray
 from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
-from models.registry import ModelRegistry
-from models.utils import iou_deduplicate
+from detectors.registry import ModelRegistry
+from detectors.utils import iou_deduplicate
 from base_detector_node import BaseDetectorNode
 
 

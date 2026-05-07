@@ -44,15 +44,15 @@ install(PROGRAMS ${PYTHON_SCRIPTS}
 )
 
 # Model classes (yolo_v8.py, cutlery.py, …) + registry/base/utils
-file(GLOB SCRIPTS_MODELS scripts/models/*.py)
-install(PROGRAMS ${SCRIPTS_MODELS}
-  DESTINATION lib/${PROJECT_NAME}/models
+file(GLOB SCRIPTS_DETECTORS scripts/detectors/*.py)
+install(PROGRAMS ${SCRIPTS_DETECTORS}
+  DESTINATION lib/${PROJECT_NAME}/detectors
 )
 
 # .pt weight files — installed alongside Python model modules
 file(GLOB MODEL_WEIGHTS models/*.pt)
 install(PROGRAMS ${MODEL_WEIGHTS}
-  DESTINATION lib/${PROJECT_NAME}/models
+  DESTINATION lib/${PROJECT_NAME}/detectors
 )
 
 ######################### Testing  #########################

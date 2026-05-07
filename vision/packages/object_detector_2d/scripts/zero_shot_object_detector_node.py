@@ -16,7 +16,7 @@ from frida_constants.vision_constants import (
 )
 from frida_interfaces.msg import ObjectDetectionArray
 from frida_interfaces.srv import SetDetectorClasses
-from models.registry import ModelRegistry
+from detectors.registry import ModelRegistry
 from base_detector_node import BaseDetectorNode
 
 
