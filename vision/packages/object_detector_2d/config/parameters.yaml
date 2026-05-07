@@ -11,9 +11,8 @@ ObjectDetect2D:
     CAMERA_FRAME: zed_left_camera_optical_frame
     TARGET_FRAME: base_link
     models:
-      - tmr2026
+      - yolo_finetuned
       - cutlery
-
     USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False
