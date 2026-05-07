@@ -169,6 +169,18 @@ SCAN_FLOOR_CARRY_BAG_POSE = {
     "degrees": True,
 }
 
+LOOK_AT_FLOOR_BACK = {
+    "joints": {
+        "joint1": 90.0,
+        "joint2": -10.0,
+        "joint3": -170.0,
+        "joint4": 0.0,
+        "joint5": 100.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -184,4 +196,5 @@ XARM_CONFIGURATIONS = {
     "place_floor_left": PLACE_FLOOR_LEFT,
     "hand_bag_pose": HAND_BAG_POSE,
     "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
+    "look_at_floor_back": LOOK_AT_FLOOR_BACK,
 }

@@ -16,7 +16,7 @@ from std_srvs.srv import SetBool
 from task_manager.utils.logger import Logger
 
 # from geometry_msgs.msg import PoseStamped
-from frida_interfaces.action import MoveJoints
+from frida_interfaces.action import MoveJoints, MoveToPose
 from frida_interfaces.srv import (
     GetJoints,
     FollowFace,
@@ -39,6 +39,10 @@ from xarm_msgs.srv import SetDigitalIO
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    MOVE_TO_POSE_ACTION_SERVER,
+    PICK_VELOCITY,
+    PICK_ACCELERATION,
+    PICK_PLANNER,
 )
 import time as t
 
@@ -110,6 +114,9 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        self._move_to_pose_action_client = ActionClient(
+            self.node, MoveToPose, MOVE_TO_POSE_ACTION_SERVER
+        )
         self._flat_grasp_estimator_client = self.node.create_client(
             SetBool, "/flat_grasp_estimator/enable"
         )
@@ -802,6 +809,94 @@ class ManipulationTasks:
             return Status.EXECUTION_SUCCESS
         Logger.error(self.node, "Place in point failed")
         return Status.EXECUTION_ERROR
+
+    def _move_to_pose(
+        self,
+        pose: PoseStamped,
+        velocity: float = PICK_VELOCITY,
+        tolerance_position: float = 0.01,
+        tolerance_orientation: float = 0.1,
+    ) -> bool:
+        """Send a MoveToPose goal and wait for the result.
+
+        Returns True on success, False on failure or timeout.
+        """
+        if not self._move_to_pose_action_client.wait_for_server(timeout_sec=TIMEOUT):
+            Logger.error(self.node, "MoveToPose action server not available")
+            return False
+
+        goal = MoveToPose.Goal()
+        goal.pose = pose
+        goal.velocity = float(velocity)
+        goal.acceleration = float(PICK_ACCELERATION)
+        goal.planner_id = PICK_PLANNER
+        goal.tolerance_position = tolerance_position
+        goal.tolerance_orientation = tolerance_orientation
+
+        future = self._move_to_pose_action_client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None or not future.result().accepted:
+            Logger.error(self.node, "_move_to_pose: goal rejected")
+            return False
+
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+
+        if not result_future.done():
+            Logger.error(self.node, "_move_to_pose: timed out waiting for result")
+            return False
+
+        return bool(result_future.result().result.success)
+
+    def pick_basket(self, point: PointStamped, velocity: float = 0.3) -> int:
+        """Move the gripper to the basket's 3D point, close, then open (test).
+
+        Builds a PoseStamped from *point* using a downward-facing gripper
+        orientation (same quaternion as go_to_hand: roll=-π/2) and calls
+        MoveToPose directly — no intermediary action server.
+
+        Sequence:
+        1. Open gripper.
+        2. Call MoveToPose to the basket point.
+        3. Close gripper.
+        4. Open gripper (release — test mode).
+        """
+        Logger.info(
+            self.node,
+            f"pick_basket → ({point.point.x:.3f}, {point.point.y:.3f}, {point.point.z:.3f}) "
+            f"frame='{point.header.frame_id}'",
+        )
+
+        Logger.info(self.node, "Opening gripper (pre-grasp)")
+        self.open_gripper()
+
+        # Build target pose — orientation: roll=-π/2, pitch=0, yaw=0
+        # quaternion_from_euler(-π/2, 0, 0) → x=-0.7071, y=0, z=0, w=0.7071
+        pose = PoseStamped()
+        pose.header.frame_id = point.header.frame_id
+        pose.pose.position.x = point.point.x
+        pose.pose.position.y = point.point.y
+        pose.pose.position.z = point.point.z
+        pose.pose.orientation.x = -0.7071
+        pose.pose.orientation.y = 0.0
+        pose.pose.orientation.z = 0.0
+        pose.pose.orientation.w = 0.7071
+
+        Logger.info(self.node, "Moving to basket point via MoveToPose")
+        if not self._move_to_pose(pose, velocity=velocity):
+            Logger.error(self.node, "pick_basket: failed to reach basket point")
+            return Status.EXECUTION_ERROR
+
+        Logger.info(self.node, "Closing gripper")
+        result = self.close_gripper()
+        if result != Status.EXECUTION_SUCCESS:
+            Logger.error(self.node, "pick_basket: failed to close gripper")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Basket grasped — opening gripper to release (test mode)")
+        self.open_gripper()
+        return Status.EXECUTION_SUCCESS
 
 
 if __name__ == "__main__":

@@ -234,6 +234,7 @@ class VisionTasks:
                     "client": self.moondream_crop_query_client,
                     "type": "service",
                 },
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
         }
 
@@ -523,6 +524,44 @@ class VisionTasks:
             return Status.EXECUTION_ERROR, detections
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
+
+    def detect_basket(self, timeout: float = 15.0) -> tuple:
+        """Detect a laundry basket on the floor and return the nearest bounding box.
+
+        The 'nearest' bbox is the one whose bottom edge (y2) is highest in the
+        image, meaning it is closest to the robot when the camera looks down.
+
+        Returns:
+            (Status, BBOX | None) — the selected bbox or None if not found.
+        """
+        BASKET_LABELS = ["basket", "laundry basket", "hamper", "bin", "container"]
+
+        Logger.info(self.node, "Searching for basket...")
+        status, detections = self.detect_objects(timeout=timeout, label="all")
+
+        if status not in (Status.EXECUTION_SUCCESS, Status.TARGET_NOT_FOUND):
+            Logger.error(self.node, "Object detection failed")
+            return Status.EXECUTION_ERROR, None
+
+        basket_detections = [
+            d for d in detections if any(lbl in d.classname.lower() for lbl in BASKET_LABELS)
+        ]
+
+        if not basket_detections:
+            found_labels = [d.classname for d in detections]
+            Logger.warn(self.node, f"No basket in detections: {found_labels}")
+            return Status.TARGET_NOT_FOUND, None
+
+        # Pick the detection whose bottom edge is lowest in the image (highest y2)
+        # — this is the side of the basket nearest to the robot.
+        nearest = max(basket_detections, key=lambda b: b.y2)
+        Logger.success(
+            self.node,
+            f"Basket detected: '{nearest.classname}' "
+            f"bottom_y={nearest.y2:.3f} "
+            f"3d=({nearest.px:.3f}, {nearest.py:.3f}, {nearest.pz:.3f})",
+        )
+        return Status.EXECUTION_SUCCESS, nearest
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
     @service_check("detect_person_action_client", Status.EXECUTION_ERROR, TIMEOUT)
