@@ -6,29 +6,47 @@ Single-item, drop-before-pick model. Takes a list of parsed BAML
 order that:
 
   * preserves intra-command sequencing,
-  * preserves precedence edges across atomic gripper blocks,
-  * never holds more than one object at a time,
+  * keeps the gripper invariant (one item at a time, drop before pick),
   * minimizes 2-D travel between locations using a precedence-constrained
-    Held-Karp DP (optimal under the Euclidean cost model).
+    Held-Karp DP at the *segment* granularity, allowing gripper-neutral
+    segments of any command to interleave inside another command's atomic
+    block,
+  * dedups back-to-back same-location ``go_to`` actions in the final plan.
 
 Pipeline:
   1. Decompose each command into go_to-led segments.
-  2. Contract pick→…→give|place chains into atomic units; gripper-neutral
-     segments stay as single-segment units.
-  3. Held-Karp DP over the units with a per-command prefix-order
-     eligibility constraint produces the globally optimal schedule.
-  4. Walk units back into a flat PlanAction list.
+  2. Held-Karp DP over the segments with two-part eligibility:
+       - per-command prefix order (cmd k's segments scheduled in their
+         original positions),
+       - gripper-state check (only neutral segments may interleave while
+         another command is mid-block).
+  3. Walk the schedule back into a flat PlanAction list, then collapse
+     consecutive same-location go_tos.
 
 The merger is intentionally framework-free: it talks to BAML objects via
 ``getattr`` so unit tests can pass simple stand-ins.
 """
 
 from dataclasses import dataclass
-from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 # Action-kind classifications.
 _GRIPPER_ACQUIRES = frozenset({"pick_object"})
 _GRIPPER_RELEASES = frozenset({"give_object", "place_object"})
+
+# Sentinel cost for any edge touching an unresolved (None) coordinate. Well
+# above any realistic indoor navigation distance, so the DP avoids unknown
+# locations unless the per-command prefix forces them into a slot.
+LARGE_M = 1000.0
+
+# Cap on the number of segments before we fall back to per-command
+# sequential. Held-Karp is O(2^M * M^2); 16 keeps the worst case sub-second.
+_M_CAP = 16
+
+# Tiebreaker weight: tiny per-cross-command-switch penalty so equal-cost
+# schedules prefer per-command sequential order. Must stay well below any
+# real distance difference.
+_TIEBREAK_EPSILON = 1e-6
 
 
 @dataclass
@@ -106,133 +124,122 @@ def _decompose(cmd_idx: int, command: Any) -> List[_Segment]:
     return segments
 
 
-def _build_units(segments: Sequence[_Segment]) -> List[List[int]]:
-    """Group consecutive segments of one command into atomic units.
-
-    A unit is either a single free segment (gripper-neutral) or a contiguous
-    pick → … → give|place block.  Units are ordered as they appear in the
-    source command, so per-command precedence is preserved by construction.
-    Segment indices are global into ``segments``.
-    """
-    units: List[List[int]] = []
-    in_block = False
-    cur_block: List[int] = []
-    for gi, seg in enumerate(segments):
-        if not in_block:
-            if seg.acquires and seg.releases:
-                units.append([gi])  # pick + drop in one segment
-            elif seg.acquires:
-                in_block = True
-                cur_block = [gi]
-            else:
-                units.append([gi])
-        else:
-            cur_block.append(gi)
-            if seg.releases:
-                units.append(list(cur_block))
-                in_block = False
-                cur_block = []
-    if cur_block:
-        # Unmatched pick (parser anomaly): treat trailing tail as one unit
-        # to preserve correctness — gripper invariant won't be enforceable
-        # but we don't lose actions.
-        units.append(list(cur_block))
-    return units
-
-
 def _euclidean(a: Optional[Tuple[float, float]], b: Optional[Tuple[float, float]]) -> float:
     if a is None or b is None:
-        return 0.0
+        return LARGE_M
     dx = a[0] - b[0]
     dy = a[1] - b[1]
     return (dx * dx + dy * dy) ** 0.5
 
 
-def _unit_first_xy(
-    unit: Sequence[int], segments: Sequence[_Segment], locator: Locator
-) -> Optional[Tuple[float, float]]:
-    for gi in unit:
-        loc = segments[gi].location
-        if loc:
-            xy = locator(loc)
-            if xy is not None:
-                return xy
+def _segment_xy(seg: _Segment, locator: Locator) -> Optional[Tuple[float, float]]:
+    if seg.location is None:
+        return None
+    return locator(seg.location)
+
+
+def _seg_kind(seg: _Segment) -> str:
+    if seg.acquires:
+        return "acquires"
+    if seg.releases:
+        return "releases"
+    return "neutral"
+
+
+def _build_holding_after(
+    segments_per_cmd: Sequence[Sequence[_Segment]],
+) -> List[List[bool]]:
+    """For each command c, ``holding_after[c][p]`` is True iff scheduling
+    ``p`` segments of cmd c (in source order) leaves the gripper held.
+
+    p ranges 0..len(segments_per_cmd[c]).
+    """
+    result: List[List[bool]] = []
+    for segs in segments_per_cmd:
+        held = False
+        ha = [False]
+        for seg in segs:
+            if seg.acquires:
+                held = True
+            if seg.releases:
+                held = False
+            ha.append(held)
+        result.append(ha)
+    return result
+
+
+def _gripper_holder(
+    S: int,
+    n_cmds: int,
+    cmd_seg_mask: Sequence[int],
+    holding_after: Sequence[Sequence[bool]],
+) -> Optional[int]:
+    """Return the cmd currently holding the gripper given subset S, or None.
+
+    By the single-item invariant, at most one command can be the holder at
+    any time, so we return the first match.
+    """
+    for c in range(n_cmds):
+        p = bin(S & cmd_seg_mask[c]).count("1")
+        if holding_after[c][p]:
+            return c
     return None
 
 
-def _unit_last_xy(
-    unit: Sequence[int], segments: Sequence[_Segment], locator: Locator
-) -> Optional[Tuple[float, float]]:
-    last: Optional[Tuple[float, float]] = None
-    for gi in unit:
-        loc = segments[gi].location
-        if loc:
-            xy = locator(loc)
-            if xy is not None:
-                last = xy
-    return last
-
-
 def _optimal_schedule(
-    units: Sequence[Sequence[int]],
-    unit_cmd: Sequence[int],
-    unit_pos: Sequence[int],
-    n_cmds: int,
     segments: Sequence[_Segment],
+    seg_cmd: Sequence[int],
+    seg_pos: Sequence[int],
+    cmd_seg_mask: Sequence[int],
+    holding_after: Sequence[Sequence[bool]],
+    seg_kinds: Sequence[str],
+    n_cmds: int,
     locator: Locator,
+    origin: Optional[Tuple[float, float]],
 ) -> List[int]:
-    """Held-Karp DP with per-command prefix-order eligibility.
+    """Held-Karp DP at segment granularity.
 
     State (S, last):
-        S    — bitmask of units already scheduled
-        last — index of the most recently scheduled unit
+        S    — bitmask of segments already scheduled
+        last — index of the most recently scheduled segment
 
-    f(S, last) is the minimum total Euclidean travel for any schedule that
-    realises S, ends at `last`, and respects the per-command prefix order
-    (units of command k must be scheduled in their original positions).
+    Eligibility for adding segment u to S:
+      1. Per-command prefix: bin(S & cmd_seg_mask[seg_cmd[u]]).count("1")
+         must equal seg_pos[u].
+      2. Gripper-state: if some command c' currently holds the gripper and
+         c' != seg_cmd[u], then seg_kinds[u] must be "neutral".
 
-    Recurrence:
-        f({u},  u) = dist(origin, start_xy[u])              if unit_pos[u] == 0
-        f(S|{u}, u) = min over last in S, u not in S, u eligible:
-                        f(S, last) + dist(end_xy[last], start_xy[u])
+    Cost: f(S|{u}, u) = f(S, last) + dist(seg_xy[last], seg_xy[u])
+                       + epsilon * (seg_cmd[u] != seg_cmd[last]).
+    Seed: f({u}, u) = dist(origin, seg_xy[u]) + epsilon * seg_cmd[u].
 
-    Eligibility for adding unit u to S: the count of units of unit_cmd[u]
-    already in S must equal unit_pos[u] — i.e. all earlier siblings of u
-    are scheduled and u is the next one due.
+    The epsilon term breaks ties (e.g. all-unknown locations where every
+    edge costs LARGE_M) toward per-command sequential order. It is small
+    enough to never override a real distance difference.
 
-    Complexity: O(2^M · M²). With our atomic-block decomposition M is
-    typically 6–9 and bounded by ~16 in batches, so this is sub-millisecond.
-    Returns the optimal schedule under the Euclidean cost model.
+    Complexity: O(2^M · M²). M is capped at _M_CAP by the caller.
     """
-    M = len(units)
+    M = len(segments)
     if M == 0:
         return []
 
-    start_xy = [_unit_first_xy(units[u], segments, locator) for u in range(M)]
-    end_xy = [_unit_last_xy(units[u], segments, locator) for u in range(M)]
-
-    cmd_mask = [0] * n_cmds
-    for u in range(M):
-        cmd_mask[unit_cmd[u]] |= 1 << u
+    seg_xy = [_segment_xy(segments[u], locator) for u in range(M)]
 
     INF = float("inf")
     full = (1 << M) - 1
 
-    # f[S][u] = min cost to reach subset S ending at unit u.
-    # parent[S][u] = previous unit (or -1 if u was first, came from origin).
     f = [[INF] * M for _ in range(1 << M)]
     parent = [[-1] * M for _ in range(1 << M)]
 
-    origin = (0.0, 0.0)
     for u in range(M):
-        if unit_pos[u] != 0:
+        if seg_pos[u] != 0:
             continue
-        f[1 << u][u] = _euclidean(origin, start_xy[u])
+        seed = 0.0 if origin is None else _euclidean(origin, seg_xy[u])
+        f[1 << u][u] = seed + _TIEBREAK_EPSILON * seg_cmd[u]
         parent[1 << u][u] = -1
 
-    # Forward DP. Iterating S in integer order is a valid topological
-    # order: any subset that adds a bit only references smaller subsets.
     for S in range(1, 1 << M):
+        holder = _gripper_holder(S, n_cmds, cmd_seg_mask, holding_after)
         for last in range(M):
             if not (S >> last) & 1:
                 continue
@@ -242,10 +249,17 @@ def _optimal_schedule(
             for u in range(M):
                 if (S >> u) & 1:
                     continue
-                cnt = bin(S & cmd_mask[unit_cmd[u]]).count("1")
-                if cnt != unit_pos[u]:
+                cnt = bin(S & cmd_seg_mask[seg_cmd[u]]).count("1")
+                if cnt != seg_pos[u]:
                     continue
-                cand = cur_cost + _euclidean(end_xy[last], start_xy[u])
+                if holder is not None and holder != seg_cmd[u]:
+                    if seg_kinds[u] != "neutral":
+                        continue
+                cand = (
+                    cur_cost
+                    + _euclidean(seg_xy[last], seg_xy[u])
+                    + (_TIEBREAK_EPSILON if seg_cmd[u] != seg_cmd[last] else 0.0)
+                )
                 new_S = S | (1 << u)
                 if cand < f[new_S][u]:
                     f[new_S][u] = cand
@@ -260,8 +274,8 @@ def _optimal_schedule(
 
     if best_last < 0:
         # Pathological — DP could not realise the full schedule.
-        # Fall back to per-command sequential order, which is always feasible.
-        return sorted(range(M), key=lambda u: (unit_cmd[u], unit_pos[u]))
+        # Per-command sequential order is always feasible.
+        return _sequential_schedule(seg_cmd, seg_pos)
 
     schedule: List[int] = []
     S = full
@@ -275,53 +289,83 @@ def _optimal_schedule(
     return schedule
 
 
-def merge(commands: Sequence[Any], locator: Optional[Locator] = None) -> InterleavedPlan:
+def _sequential_schedule(seg_cmd: Sequence[int], seg_pos: Sequence[int]) -> List[int]:
+    """Per-command sequential order — feasible by construction (preserves
+    each command's prefix and never interleaves across atomic blocks)."""
+    return sorted(range(len(seg_cmd)), key=lambda u: (seg_cmd[u], seg_pos[u]))
+
+
+def merge(
+    commands: Sequence[Any],
+    locator: Optional[Locator] = None,
+    origin: Optional[Tuple[float, float]] = None,
+) -> InterleavedPlan:
     """Merge N parsed commands into one interleaved plan.
 
     ``commands`` is a sequence of BAML ``CommandListLLM`` objects.
     ``locator`` resolves a free-text location string to ``(x, y)``; pass
     ``None`` to disable distance-based ordering (useful in tests).
+    ``origin`` is the robot's current ``(x, y)`` at planning time; pass
+    ``None`` to seed the DP with no origin edge (avoids the misleading
+    bias toward the SLAM map origin when the real pose is unavailable).
     """
     loc_fn: Locator = locator if locator is not None else (lambda _: None)
 
     if not commands:
         return InterleavedPlan(actions=[], fallback=[])
 
-    # Decompose each command into segments and assemble a flat segment list.
     flat_segments: List[_Segment] = []
-    cmd_seg_offsets: List[int] = []
+    segments_per_cmd: List[List[_Segment]] = []
     for cmd_idx, command in enumerate(commands):
-        cmd_seg_offsets.append(len(flat_segments))
-        flat_segments.extend(_decompose(cmd_idx, command))
+        per_cmd = _decompose(cmd_idx, command)
+        segments_per_cmd.append(per_cmd)
+        flat_segments.extend(per_cmd)
 
-    # Build per-command units (lists of global segment indices).
-    units: List[List[int]] = []
-    unit_cmd: List[int] = []
-    unit_pos: List[int] = []
-    for cmd_idx in range(len(commands)):
-        start = cmd_seg_offsets[cmd_idx]
-        end = cmd_seg_offsets[cmd_idx + 1] if cmd_idx + 1 < len(commands) else len(flat_segments)
-        local = flat_segments[start:end]
-        local_units = _build_units(local)
-        for pos, u in enumerate(local_units):
-            units.append([li + start for li in u])
-            unit_cmd.append(cmd_idx)
-            unit_pos.append(pos)
-
-    if not units:
+    n_cmds = len(commands)
+    M = len(flat_segments)
+    if M == 0:
         return InterleavedPlan(actions=[], fallback=_build_fallback(commands))
 
-    schedule = _optimal_schedule(units, unit_cmd, unit_pos, len(commands), flat_segments, loc_fn)
+    seg_cmd: List[int] = []
+    seg_pos: List[int] = []
+    cmd_seg_mask: List[int] = [0] * n_cmds
+    gi = 0
+    for c, per_cmd in enumerate(segments_per_cmd):
+        for p in range(len(per_cmd)):
+            seg_cmd.append(c)
+            seg_pos.append(p)
+            cmd_seg_mask[c] |= 1 << gi
+            gi += 1
+
+    seg_kinds = [_seg_kind(seg) for seg in flat_segments]
+    holding_after = _build_holding_after(segments_per_cmd)
+
+    if M > _M_CAP:
+        schedule = _sequential_schedule(seg_cmd, seg_pos)
+    else:
+        schedule = _optimal_schedule(
+            flat_segments,
+            seg_cmd,
+            seg_pos,
+            cmd_seg_mask,
+            holding_after,
+            seg_kinds,
+            n_cmds,
+            loc_fn,
+            origin,
+        )
 
     actions: List[PlanAction] = []
-    for ui in schedule:
-        for gi in units[ui]:
-            seg = flat_segments[gi]
-            for ai in seg.indices:
-                action = commands[seg.cmd].commands[ai]
-                actions.append(_to_plan_action(action, seg.cmd, ai))
+    for si in schedule:
+        seg = flat_segments[si]
+        for ai in seg.indices:
+            action = commands[seg.cmd].commands[ai]
+            actions.append(_to_plan_action(action, seg.cmd, ai))
 
-    return InterleavedPlan(actions=actions, fallback=_build_fallback(commands))
+    actions = _collapse_redundant_go_tos(actions)
+    fallback = [_collapse_redundant_go_tos(per) for per in _build_fallback(commands)]
+
+    return InterleavedPlan(actions=actions, fallback=fallback)
 
 
 def _to_plan_action(action: Any, cmd_idx: int, action_idx: int) -> PlanAction:
@@ -346,24 +390,18 @@ def _build_fallback(commands: Sequence[Any]) -> List[List[PlanAction]]:
     return out
 
 
-def gripper_invariant_holds(plan: Iterable[PlanAction]) -> bool:
-    held = False
-    for pa in plan:
-        if pa.requires_gripper:
-            if held:
-                return False
-            held = True
-        if pa.releases_gripper:
-            if not held:
-                return False
-            held = False
-    return True
-
-
-def per_command_order_preserved(plan: Iterable[PlanAction], n_cmds: int) -> bool:
-    last_seen = [-1] * n_cmds
-    for pa in plan:
-        if pa.source_idx < last_seen[pa.source_cmd]:
-            return False
-        last_seen[pa.source_cmd] = pa.source_idx
-    return True
+def _collapse_redundant_go_tos(
+    actions: Sequence[PlanAction],
+) -> List[PlanAction]:
+    """Drop a leading ``go_to X`` whenever the previous action ended at X."""
+    last_loc: Optional[str] = None
+    out: List[PlanAction] = []
+    for pa in actions:
+        if _kind(pa.action) == "go_to":
+            tgt = getattr(pa.action, "location_to_go", None)
+            if tgt is not None and tgt == last_loc:
+                continue
+            if tgt is not None:
+                last_loc = tgt
+        out.append(pa)
+    return out

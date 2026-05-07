@@ -15,9 +15,10 @@ from typing import Union
 
 import rclpy
 from rclpy.node import Node
-from task_manager.gpsr.merger import (
+from task_manager.gpsr.merger import merge
+
+from _merger_helpers import (
     gripper_invariant_holds,
-    merge,
     per_command_order_preserved,
 )
 from task_manager.subtask_managers.hri_tasks import HRITasks
@@ -717,7 +718,8 @@ class TestHriManager(Node):
 
         scenarios.append(("two_pick_deliver_blocks_atomic", s_two_blocks))
 
-        # 3. Shared waypoint visited efficiently
+        # 3. Shared waypoint visited efficiently — collapse pass dedups the
+        # redundant second go_to kitchen, leaving exactly one visit.
         def s_shared_waypoint():
             cmd_a = _cmd(
                 _act("go_to", location_to_go="kitchen"),
@@ -733,16 +735,29 @@ class TestHriManager(Node):
             )
             coords = {"kitchen": (5.0, 5.0), "garage": (-5.0, -5.0)}
             plan = merge([cmd_a, cmd_b, cmd_c], locator=_make_locator(coords))
-            kitchen_positions = [
-                i
-                for i, pa in enumerate(plan.actions)
+            kitchen_gotos = [
+                pa
+                for pa in plan.actions
                 if pa.action.action == "go_to" and pa.action.location_to_go == "kitchen"
             ]
-            adjacent = len(kitchen_positions) == 2 and all(
-                pa.action.action != "go_to" or pa.action.location_to_go == "kitchen"
-                for pa in plan.actions[kitchen_positions[0] + 1 : kitchen_positions[1]]
-            )
-            return adjacent, plan
+            # Both counts (cmd0 apples + cmd1 oranges) should appear before
+            # the garage go_to, i.e. on the same kitchen trip.
+            try:
+                garage_idx = next(
+                    i
+                    for i, pa in enumerate(plan.actions)
+                    if pa.action.action == "go_to" and pa.action.location_to_go == "garage"
+                )
+            except StopIteration:
+                return False, plan
+            counts_before_garage = [
+                pa for pa in plan.actions[:garage_idx] if pa.action.action == "count"
+            ]
+            return (
+                len(kitchen_gotos) == 1
+                and len(counts_before_garage) == 2
+                and {pa.source_cmd for pa in counts_before_garage} == {0, 1}
+            ), plan
 
         scenarios.append(("shared_waypoint_visited_efficiently", s_shared_waypoint))
 
@@ -857,6 +872,146 @@ class TestHriManager(Node):
             return ok, plan
 
         scenarios.append(("fallback_preserves_original_sequences", s_fallback))
+
+        # 9. Option B: a neutral segment from another command interleaves
+        # inside an atomic block when geometry favors it.
+        def s_neutral_interleaves_atomic_block():
+            cmd_pick = _cmd(
+                _act("go_to", location_to_go="A"),
+                _act("pick_object", object_to_pick="cup"),
+                _act("go_to", location_to_go="B"),
+                _act("give_object"),
+            )
+            cmd_neutral = _cmd(
+                _act("go_to", location_to_go="C"),
+                _act("count", target_to_count="x"),
+            )
+            # C between A and B → A→C→B (10) cheaper than not-interleaving.
+            coords = {"A": (0.0, 0.0), "B": (10.0, 0.0), "C": (5.0, 0.0)}
+            plan = merge([cmd_pick, cmd_neutral], locator=_make_locator(coords))
+            kinds = [pa.action.action for pa in plan.actions]
+            # Expect: go_to A, pick, go_to C, count, go_to B, give_object.
+            ok = (
+                kinds
+                == [
+                    "go_to",
+                    "pick_object",
+                    "go_to",
+                    "count",
+                    "go_to",
+                    "give_object",
+                ]
+                and gripper_invariant_holds(plan.actions)
+                and per_command_order_preserved(plan.actions, n_cmds=2)
+            )
+            return ok, plan
+
+        scenarios.append(
+            ("option_b_neutral_interleaves_atomic_block", s_neutral_interleaves_atomic_block)
+        )
+
+        # 10. Collapse: redundant back-to-back go_to to the same location is
+        # dropped from the flat plan.
+        def s_collapse_redundant_go_to():
+            cmd_find = _cmd(
+                _act("go_to", location_to_go="A"),
+                _act("find_person", attribute_value="standing"),
+            )
+            cmd_pick = _cmd(
+                _act("go_to", location_to_go="A"),
+                _act("pick_object", object_to_pick="cup"),
+                _act("go_to", location_to_go="B"),
+                _act("give_object"),
+            )
+            coords = {"A": (0.0, 0.0), "B": (10.0, 0.0)}
+            plan = merge([cmd_find, cmd_pick], locator=_make_locator(coords))
+            go_to_a = [
+                pa
+                for pa in plan.actions
+                if pa.action.action == "go_to" and pa.action.location_to_go == "A"
+            ]
+            return len(go_to_a) == 1, plan
+
+        scenarios.append(("collapse_redundant_back_to_back_go_to", s_collapse_redundant_go_to))
+
+        # 11. Origin: with origin near A, A is scheduled first.
+        def s_origin_biases_first():
+            cmd_a = _cmd(_act("go_to", location_to_go="A"), _act("count", target_to_count="x"))
+            cmd_b = _cmd(_act("go_to", location_to_go="B"), _act("count", target_to_count="y"))
+            coords = {"A": (4.0, 0.0), "B": (20.0, 0.0)}
+            plan_near_a = merge([cmd_a, cmd_b], locator=_make_locator(coords), origin=(5.0, 0.0))
+            plan_near_b = merge([cmd_a, cmd_b], locator=_make_locator(coords), origin=(19.0, 0.0))
+            first_a = plan_near_a.actions[0].action.location_to_go
+            first_b = plan_near_b.actions[0].action.location_to_go
+            return first_a == "A" and first_b == "B", plan_near_a
+
+        scenarios.append(("origin_biases_first_segment", s_origin_biases_first))
+
+        # 12. origin=None: no origin bias; tiebreaker keeps cmd0 first when
+        # all real distances are equal.
+        def s_origin_none_no_bias():
+            cmd_a = _cmd(_act("go_to", location_to_go="A"), _act("count", target_to_count="x"))
+            cmd_b = _cmd(_act("go_to", location_to_go="B"), _act("count", target_to_count="y"))
+            # Mirror-image positions across the (hypothetical) (0,0); under
+            # origin=None the DP should not favour either based on map origin.
+            coords = {"A": (-5.0, 0.0), "B": (5.0, 0.0)}
+            plan = merge([cmd_a, cmd_b], locator=_make_locator(coords), origin=None)
+            return plan.actions[0].action.location_to_go == "A", plan
+
+        scenarios.append(("origin_none_no_map_origin_bias", s_origin_none_no_bias))
+
+        # 13. All-unknown locations → per-command sequential by tiebreaker.
+        def s_all_unknown_sequential():
+            cmd_a = _cmd(
+                _act("go_to", location_to_go="ghost1"),
+                _act("count", target_to_count="x"),
+            )
+            cmd_b = _cmd(
+                _act("go_to", location_to_go="ghost2"),
+                _act("count", target_to_count="y"),
+            )
+            plan = merge([cmd_a, cmd_b], locator=_make_locator({}))
+            order = [pa.source_cmd for pa in plan.actions if pa.action.action == "go_to"]
+            return order == [0, 1] and per_command_order_preserved(plan.actions, n_cmds=2), plan
+
+        scenarios.append(("all_unknown_locations_sequential", s_all_unknown_sequential))
+
+        # 14. LARGE_M penalty: known segments are not pushed behind unknowns.
+        def s_known_before_unknown():
+            cmd_known = _cmd(
+                _act("go_to", location_to_go="A"),
+                _act("count", target_to_count="x"),
+            )
+            cmd_unknown = _cmd(
+                _act("go_to", location_to_go="ghost"),
+                _act("count", target_to_count="y"),
+            )
+            coords = {"A": (0.0, 0.0)}  # ghost unresolved
+            plan = merge(
+                [cmd_known, cmd_unknown],
+                locator=_make_locator(coords),
+                origin=(0.0, 0.0),
+            )
+            first_loc = plan.actions[0].action.location_to_go
+            return first_loc == "A", plan
+
+        scenarios.append(("large_m_keeps_known_first", s_known_before_unknown))
+
+        # 15. M > 16 → fallback to per-command sequential without raising.
+        def s_m_cap_fallback():
+            cmds = [
+                _cmd(
+                    _act("go_to", location_to_go=f"loc{i}"),
+                    _act("count", target_to_count="x"),
+                )
+                for i in range(17)
+            ]
+            coords = {f"loc{i}": (float(i), 0.0) for i in range(17)}
+            plan = merge(cmds, locator=_make_locator(coords))
+            order = [pa.source_cmd for pa in plan.actions if pa.action.action == "go_to"]
+            return order == list(range(17)) and len(plan.actions) == 34, plan
+
+        scenarios.append(("m_cap_fallback_to_sequential", s_m_cap_fallback))
 
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_file = os.path.join(OUTPUT_DIR, f"merger_{date_str}.csv")

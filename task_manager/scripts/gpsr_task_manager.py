@@ -9,7 +9,9 @@ from datetime import datetime
 
 import rclpy
 from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
+from rclpy.duration import Duration
 from rclpy.node import Node
+from tf2_ros import Buffer, TransformListener
 
 from task_manager.gpsr.bt_builder import build_tree, render_tree_ascii
 from task_manager.gpsr.merger import merge
@@ -93,6 +95,12 @@ class GPSRTM(Node):
         self.batched_commands: list = []
         self._location_cache: dict[str, tuple[float, float] | None] = {}
 
+        # TF for resolving robot pose at batch start (used as the planning
+        # origin so the merger optimises travel relative to where the robot
+        # actually is, not the SLAM map origin (0,0)).
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         # State timing variables
         self.state_start_time = None
         self.state_times = {}
@@ -152,6 +160,17 @@ class GPSRTM(Node):
         self._location_cache[location_name] = xy
         return xy
 
+    def _current_robot_xy(self):
+        """Look up the robot's (x, y) in the map frame, or None on failure."""
+        try:
+            t = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=0.5)
+            )
+            return (t.transform.translation.x, t.transform.translation.y)
+        except Exception as e:  # noqa: BLE001
+            self.get_logger().warning(f"current pose lookup failed: {e}")
+            return None
+
     def _on_action_complete(self, plan_action, status, result):
         try:
             self.subtask_manager.hri.add_command_history(plan_action.action, result, status)
@@ -172,7 +191,11 @@ class GPSRTM(Node):
             self._execute_sequential_fallback(self.batched_commands)
             return
 
-        plan = merge(self.batched_commands, locator=self._resolve_xy)
+        plan = merge(
+            self.batched_commands,
+            locator=self._resolve_xy,
+            origin=self._current_robot_xy(),
+        )
         self.get_logger().info(
             f"Merged {len(self.batched_commands)} commands → "
             f"{len(plan.actions)} interleaved actions"
