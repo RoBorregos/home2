@@ -47,14 +47,14 @@ command -v python3 >/dev/null 2>&1 || { echo "ERROR: python3 is required for sta
 
 # Stats helper: min mean max from newline-separated floats
 stats() {
-    python3 - "$@" <<'EOF'
+    python3 -c '
 import sys, statistics
-vals = [float(l) for l in sys.stdin.read().strip().split('\n') if l.strip()]
+vals = [float(l) for l in sys.stdin.read().strip().split("\n") if l.strip()]
 if not vals:
     print("  no data")
     sys.exit(0)
 print(f"  min={min(vals):.3f}  mean={statistics.mean(vals):.3f}  max={max(vals):.3f}  (n={len(vals)})")
-EOF
+'
 }
 
 run_single() {
