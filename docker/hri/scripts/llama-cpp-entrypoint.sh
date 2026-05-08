@@ -11,7 +11,7 @@ n-gpu-layers = 99
 c = 8192
 
 [qwen3.6]
-hf = unsloth/Qwen3.6-27B-GGUF
+model = /root/.cache/huggingface/qwen3.6.Q4_K_M.gguf
 load-on-startup = false
 
 [rbrgs]

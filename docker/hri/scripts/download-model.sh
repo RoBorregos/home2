@@ -27,28 +27,9 @@ fi
 
 # Download model and Modelfile to the directory where this script is located
 SCRIPT_DIR="../../hri/packages/nlp/assets"
-SCRIPT_DIR_ABS="$(cd "$SCRIPT_DIR" && pwd)"
 
 if ask_for_model qwen3.6 1; then
-    QWEN_CACHE="$SCRIPT_DIR/hub/models--unsloth--Qwen3.6-27B-GGUF"
-    if [ ! -d "$QWEN_CACHE" ]; then
-        echo "Downloading unsloth/Qwen3.6-27B-GGUF into HF cache (this may take a while)..."
-        mkdir -p "$SCRIPT_DIR/hub"
-        pip3 install -q huggingface_hub 2>/dev/null || true
-        python3 - <<PYEOF
-import os, sys
-os.environ["HF_HUB_CACHE"] = "$SCRIPT_DIR_ABS/hub"
-try:
-    from huggingface_hub import snapshot_download
-    snapshot_download("unsloth/Qwen3.6-27B-GGUF", ignore_patterns=["*.md", "*.txt"])
-    print("qwen3.6 download complete.")
-except Exception as e:
-    print(f"ERROR: {e}", file=sys.stderr)
-    sys.exit(1)
-PYEOF
-    else
-        echo "qwen3.6 already cached. Skipping."
-    fi
+    [ ! -f "$SCRIPT_DIR/qwen3.6.Q4_K_M.gguf" ] && curl -L https://huggingface.co/unsloth/Qwen3.6-27B-GGUF/resolve/main/Qwen3.6-27B-Q4_K_M.gguf -o "$SCRIPT_DIR/qwen3.6.Q4_K_M.gguf"
 fi
 
 if ask_for_model rbrgs 2; then
