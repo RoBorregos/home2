@@ -1,8 +1,27 @@
 #!/bin/sh
 
-# Download model and Modelfile to the directory where this script is located
-SCRIPT_DIR="../../hri/packages/nlp/assets" 
+SCRIPT_DIR="../../hri/packages/nlp/assets"
+mkdir -p "$SCRIPT_DIR"
+SCRIPT_DIR_ABS="$(cd "$SCRIPT_DIR" && pwd)"
+
+# Download rbrgs fine-tuned model
 [ ! -f "$SCRIPT_DIR/rbrgs.F16.gguf" ] && curl -L https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf -o "$SCRIPT_DIR/rbrgs.F16.gguf"
+
+# Download Qwen3.6-27B GGUF for llama.cpp (saves into HF hub cache used by the llama container)
+QWEN_CACHE="$SCRIPT_DIR/hub/models--unsloth--Qwen3.6-27B-GGUF"
+if [ ! -d "$QWEN_CACHE" ]; then
+    echo "Downloading unsloth/Qwen3.6-27B-GGUF from HuggingFace..."
+    docker run --rm \
+        -v "$SCRIPT_DIR_ABS:/root/.cache/huggingface" \
+        python:3.10-slim bash -c "
+            pip install -q 'huggingface_hub[cli]' &&
+            huggingface-cli download unsloth/Qwen3.6-27B-GGUF \
+                --include '*.gguf'
+        "
+    echo "Qwen3.6-27B-GGUF download complete."
+else
+    echo "Qwen3.6-27B-GGUF already cached. Skipping."
+fi
 
 # Download and unzip DeepFilterNet model
 DF_MODEL_DIR="../../hri/packages/speech/assets/downloads"

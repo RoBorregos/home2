@@ -156,7 +156,7 @@ resolve_model() {
         return
     fi
     local m
-    m=$(curl -sf "$base_url/models" 2>/dev/null | jq -r '.data[0].id // empty')
+    m=$(curl -sf "$base_url/models" 2>/dev/null | jq -r '[.data[] | select(.id != "default")] | .[0].id // empty')
     echo "${m:-placeholder}"
 }
 
