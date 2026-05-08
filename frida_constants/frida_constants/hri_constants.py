@@ -54,16 +54,16 @@ GPSR_COMMANDS = {
 
 
 class MODEL(Enum):
-    GRAMMAR = "qwen3"
-    LLM_WRAPPER = "qwen3"
-    CATEGORIZE_SHELVES = "qwen3"
-    IS_POSITIVE = "qwen3"
-    IS_NEGATIVE = "qwen3"
-    GENERIC_STRUCTURED_OUTPUT = "qwen3"
-    GENERATE_RESPONSE = "qwen3"
-    STRUCTURED_RESPONSE = "qwen3"
-    EXTRACT_INFO_REQUESTED = "qwen3"
-    GET_COMMANDS = "qwen3"
+    GRAMMAR = "qwen3.6"
+    LLM_WRAPPER = "qwen3.6"
+    CATEGORIZE_SHELVES = "qwen3.6"
+    IS_POSITIVE = "qwen3.6"
+    IS_NEGATIVE = "qwen3.6"
+    GENERIC_STRUCTURED_OUTPUT = "qwen3.6"
+    GENERATE_RESPONSE = "qwen3.6"
+    STRUCTURED_RESPONSE = "qwen3.6"
+    EXTRACT_INFO_REQUESTED = "qwen3.6"
+    GET_COMMANDS = "qwen3.6"
 
 
 class KNOWLEDGE_TYPE(Enum):

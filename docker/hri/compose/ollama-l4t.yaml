@@ -1,22 +1,20 @@
 services:
-  llm:
+  ollama:
     profiles: [hric, carry, gpsr, storing]
-    container_name: home2-hri-llamacpp-l4t
+    container_name: home2-hri-ollama-l4t
     build:
       context: ..
-      dockerfile: dockerfiles/Dockerfile.llamacpp
+      dockerfile: dockerfiles/Dockerfile.ollama
       args:
-        # Latest Jetson-compatible llama.cpp image (L4T r36.4, CUDA 12.8, Ubuntu 24.04)
-        # Supports Qwen3, Gemma 4, and other recent architectures.
-        # To upgrade: check https://hub.docker.com/r/dustynv/llama_cpp/tags
-        BASE_IMAGE: dustynv/llama_cpp:b5283-r36.4-cu128-24.04
+        BASE_IMAGE: dustynv/ollama:0.6.8-r36.4
 
-    image: roborregos/home2:hri-llamacpp-l4t
+    image: roborregos/home2:hri-ollama-l4t
     runtime: nvidia
     network_mode: host
     volumes:
-      - ../../../hri/packages/nlp/assets:/models
+      - ../../../hri/packages/nlp/assets:/ollama
     environment:
+      OLLAMA_MODELS: /ollama
       ROLE: ${ROLE}
     stdin_open: true
     tty: true

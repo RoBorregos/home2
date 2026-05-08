@@ -1,0 +1,15 @@
+services:
+  llama:
+    container_name: home2-hri-llama-l4t
+    image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
+    pull_policy: always
+    runtime: nvidia
+    network_mode: host
+    volumes:
+      - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
+      - ../scripts/llama-cpp-entrypoint.sh:/scripts/llama-cpp-entrypoint.sh
+    environment:
+      ROLE: ${ROLE}
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "/scripts/llama-cpp-entrypoint.sh"]
