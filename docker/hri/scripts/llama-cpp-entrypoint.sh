@@ -8,10 +8,12 @@ version = 1
 
 [*]
 n-gpu-layers = 99
-c = 8192
+c = 4096
+parallel = 1
 
 [qwen3.5]
 model = /root/.cache/huggingface/qwen3.5.Q4_K_M.gguf
+n-gpu-layers = 99
 load-on-startup = false
 
 [rbrgs]
