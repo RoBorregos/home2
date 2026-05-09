@@ -9,6 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# libcuda.so.1 stub for link-time — real driver is provided by host at runtime
+RUN ln -sf /usr/local/cuda/lib64/stubs/libcuda.so \
+           /usr/local/cuda/lib64/stubs/libcuda.so.1
+
 WORKDIR /build
 RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git \
     && cmake -S llama.cpp -B llama.cpp/build -G Ninja \
@@ -18,6 +22,8 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git \
         -DGGML_CUDA_F16=ON \
         -DLLAMA_CURL=ON \
         -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs \
+        "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,/usr/local/cuda/lib64/stubs" \
     && cmake --build llama.cpp/build -j$(nproc) --target llama-server \
     && cp llama.cpp/build/bin/llama-server /usr/local/bin/ \
     && rm -rf /build
