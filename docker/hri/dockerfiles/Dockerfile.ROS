@@ -1,10 +1,11 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     python3-pyaudio \
     alsa-base \
     alsa-utils \
+    gstreamer-1.0 \
     libasound-dev \
     portaudio19-dev \
     libportaudio2 \
@@ -17,13 +18,13 @@ RUN mkdir -p /workspace/requirements
 
 # Python modules
 COPY hri/requirements/nlp.txt /workspace/requirements/nlp.txt
-RUN pip install --no-cache-dir -r requirements/nlp.txt
+RUN pip install -r requirements/nlp.txt
 
 COPY hri/requirements/speech.txt /workspace/requirements/speech.txt
-RUN pip install --no-cache-dir -r requirements/speech.txt
+RUN pip install -r requirements/speech.txt
 
 COPY hri/requirements/postgres.txt /workspace/requirements/postgres.txt
-RUN pip install --no-cache-dir -r requirements/postgres.txt
+RUN pip install -r requirements/postgres.txt
 
 USER ros
 RUN sudo usermod -aG audio ros
