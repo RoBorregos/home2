@@ -6,7 +6,14 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     config = os.path.join(
-        get_package_share_directory("object_detector_2d"), "config", "parameters.yaml"
+        get_package_share_directory("object_detector_2d"),
+        "config",
+        "parameters.yaml",
+    )
+    config_zero_shot = os.path.join(
+        get_package_share_directory("object_detector_2d"),
+        "config",
+        "parameters_zero_shot.yaml",
     )
     return LaunchDescription(
         [
@@ -26,14 +33,14 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[config],
             ),
-            # Node(
-            #     package="object_detector_2d",
-            #     executable="zero_shot_object_detector_node.py",
-            #     name="ObjectDetect2D",
-            #     respawn=True,
-            #     output="screen",
-            #     emulate_tty=True,
-            #     parameters=[config],
-            # ),
+            Node(
+                package="object_detector_2d",
+                executable="zero_shot_object_detector_node.py",
+                name="ZeroShotDetect2D",
+                respawn=True,
+                output="screen",
+                emulate_tty=True,
+                parameters=[config_zero_shot],
+            ),
         ]
     )
