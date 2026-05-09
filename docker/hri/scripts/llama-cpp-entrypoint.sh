@@ -3,55 +3,61 @@ set -e
 
 echo "Starting with ROLE=$ROLE"
 
-cat > /tmp/llama-models-preset.ini << 'EOF'
-version = 1
+MODELS_DIR=/root/.cache/huggingface
 
-[*]
-n-gpu-layers = 99
-c = 4096
-parallel = 1
+wait_for_server() {
+    local port=$1
+    local max_attempts=30
+    local attempt=0
+    echo "Waiting for llama-server on port $port..."
+    while ! curl -sf "http://localhost:$port/health" >/dev/null 2>&1; do
+        attempt=$((attempt + 1))
+        if [ $attempt -ge $max_attempts ]; then
+            echo "ERROR: server on port $port did not start after $max_attempts attempts"
+            exit 1
+        fi
+        echo "  attempt $attempt/$max_attempts..."
+        sleep 2
+    done
+    echo "Server on port $port is ready."
+}
 
-[qwen3.5]
-model = /root/.cache/huggingface/qwen3.5.Q4_K_M.gguf
-n-gpu-layers = 99
-load-on-startup = false
-
-[rbrgs]
-model = /root/.cache/huggingface/ollama/rbrgs.F16.gguf
-load-on-startup = false
-EOF
-
-llama-server --port 11434 --models-preset /tmp/llama-models-preset.ini &
-LLAMA_PID=$!
-
-max_attempts=30
-attempt=0
-
-echo "Waiting for llama-server to start..."
-while ! curl -sf http://localhost:11434/health &>/dev/null; do
-  attempt=$((attempt + 1))
-  if [ $attempt -ge $max_attempts ]; then
-    echo "Failed to connect to llama-server after $max_attempts attempts. Exiting."
-    exit 1
-  fi
-  echo "Waiting for llama-server (attempt $attempt/$max_attempts)..."
-  sleep 2
-done
-
-echo "llama-server is up and running."
-
-if [ "$ROLE" = "hric" ]; then
-  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.5"}'
-elif [ "$ROLE" = "carry" ]; then
-  echo "Carry role: embeddings model skipped, no models loaded."
-elif [ "$ROLE" = "gpsr" ]; then
-  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.5"}'
-  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "rbrgs"}'
-elif [ "$ROLE" = "storing" ]; then
-  echo "Storing role detected, not loading any models..."
-else
-  echo "Unknown ROLE: $ROLE"
+if [ "$ROLE" = "storing" ]; then
+    echo "Storing role: no models to load."
+    tail -f /dev/null
 fi
 
-echo "llama-server models loaded. Container will continue to run..."
-wait $LLAMA_PID
+# qwen3.5 on port 11434 — hric, carry, gpsr
+if [ "$ROLE" = "hric" ] || [ "$ROLE" = "carry" ] || [ "$ROLE" = "gpsr" ]; then
+    echo "Starting qwen3.5 on port 11434..."
+    llama-server \
+        --model "$MODELS_DIR/qwen3.5.Q4_K_M.gguf" \
+        --host 0.0.0.0 \
+        --port 11434 \
+        --ctx-size 4096 \
+        -ngl 99 \
+        --parallel 1 \
+        --alias qwen3.5 \
+        &
+    wait_for_server 11434
+fi
+
+# rbrgs on port 11435 — gpsr only
+if [ "$ROLE" = "gpsr" ]; then
+    echo "Starting rbrgs on port 11435..."
+    llama-server \
+        --model "$MODELS_DIR/rbrgs.F16.gguf" \
+        --host 0.0.0.0 \
+        --port 11435 \
+        --ctx-size 4096 \
+        -ngl 99 \
+        --parallel 1 \
+        --alias rbrgs \
+        --temp 1.5 \
+        --min-p 0.1 \
+        &
+    wait_for_server 11435
+fi
+
+echo "All servers ready. Container running..."
+wait
