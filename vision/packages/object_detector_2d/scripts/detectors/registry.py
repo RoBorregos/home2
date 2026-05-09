@@ -16,7 +16,7 @@ MODEL_CONFIGS: dict[str, dict] = {
     "yolo_generic": {"filename": "yolo26n.pt", "type": "yolo", "conf": 0.5},
     "cutlery": {"filename": "cutlery.pt", "type": "yolo", "conf": 0.3},
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
-    # "dishwasher": {"filename": "dishwasher.pt", "type": "yolo", "conf": 0.5},
+    "dishwasher": {"filename": "dishwasher.pt", "type": "yolo", "conf": 0.5},
 }
 
 
