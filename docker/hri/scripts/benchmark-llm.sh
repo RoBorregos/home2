@@ -163,8 +163,8 @@ run_single() {
         else
             payload=$(jq -n \
                 --arg model "$model" \
-                --arg content "$PROMPT" \
-                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 200}')
+                --arg content "$PROMPT /no_think" \
+                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512}')
         fi
 
         # Capture streaming response with timestamps
@@ -183,7 +183,7 @@ run_single() {
             [[ -z "$line" || "$line" == "data: [DONE]" ]] && continue
             local data="${line#data: }"
             local delta
-            delta=$(echo "$data" | jq -r '.choices[0].delta.content // empty' 2>/dev/null)
+            delta=$(echo "$data" | jq -r '(.choices[0].delta.content // "") + (.choices[0].delta.reasoning_content // "")' 2>/dev/null)
             if [[ -n "$delta" && "$t_first" -eq 0 ]]; then
                 t_first=$now
             fi
