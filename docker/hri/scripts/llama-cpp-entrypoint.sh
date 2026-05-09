@@ -10,8 +10,8 @@ version = 1
 n-gpu-layers = 99
 c = 8192
 
-[qwen3.6]
-model = /root/.cache/huggingface/qwen3.6.Q4_K_M.gguf
+[qwen3.5]
+model = /root/.cache/huggingface/qwen3.5.Q4_K_M.gguf
 load-on-startup = false
 
 [rbrgs]
@@ -39,11 +39,11 @@ done
 echo "llama-server is up and running."
 
 if [ "$ROLE" = "hric" ]; then
-  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.6"}'
+  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.5"}'
 elif [ "$ROLE" = "carry" ]; then
   echo "Carry role: embeddings model skipped, no models loaded."
 elif [ "$ROLE" = "gpsr" ]; then
-  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.6"}'
+  curl -sf -X POST http://localhost:11434/models/load -d '{"model": "qwen3.5"}'
   curl -sf -X POST http://localhost:11434/models/load -d '{"model": "rbrgs"}'
 elif [ "$ROLE" = "storing" ]; then
   echo "Storing role detected, not loading any models..."

@@ -11,7 +11,7 @@ ask_for_model() {
 }
 
 echo "Which models do you want to download?"
-echo "  1) qwen3.6      (unsloth/Qwen3.6-27B-GGUF, cached for llama.cpp)"
+echo "  1) qwen3.5      (Qwen3.5-9B Q4_K_M ~5.5GB, llama.cpp)"
 echo "  2) rbrgs        (fine-tuned command interpreter GGUF)"
 echo "  3) DeepFilterNet3"
 echo "  4) ei-door      (Door detection)"
@@ -28,8 +28,8 @@ fi
 # Download model and Modelfile to the directory where this script is located
 SCRIPT_DIR="../../hri/packages/nlp/assets"
 
-if ask_for_model qwen3.6 1; then
-    [ ! -f "$SCRIPT_DIR/qwen3.6.Q4_K_M.gguf" ] && curl -L https://huggingface.co/unsloth/Qwen3.6-27B-GGUF/resolve/main/Qwen3.6-27B-Q4_K_M.gguf -o "$SCRIPT_DIR/qwen3.6.Q4_K_M.gguf"
+if ask_for_model qwen3.5 1; then
+    [ ! -f "$SCRIPT_DIR/qwen3.5.Q4_K_M.gguf" ] && curl -L https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/main/Qwen3.5-9B-Q4_K_M.gguf -o "$SCRIPT_DIR/qwen3.5.Q4_K_M.gguf"
 fi
 
 if ask_for_model rbrgs 2; then
