@@ -106,8 +106,8 @@ fi
 
 # Default endpoint if none provided
 if [[ ${#ENDPOINTS[@]} -eq 0 ]]; then
-    ENDPOINTS=("http://localhost:11434/v1")
-    LABELS=("llama.cpp-qwen3")
+    ENDPOINTS=("http://localhost:11434/v1" "http://localhost:11435/v1")
+    LABELS=("qwen3.6" "rbrgs")
 fi
 
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required. Install with: apt-get install -y jq"; exit 1; }
@@ -138,18 +138,17 @@ run_single() {
 
     # Check server is reachable
     local health_url="${base_url%/v1}/health"
-    if curl -sf "$health_url" >/dev/null 2>&1; then
-        echo "    Health: OK ($health_url)"
-    else
-        # llama.cpp also responds at /v1/models
-        if curl -sf "$base_url/models" >/dev/null 2>&1; then
-            actual_model=$(curl -sf "$base_url/models" | jq -r '.data[0].id // "unknown"')
-            echo "    Health: OK (model: $actual_model)"
-            [[ -z "$MODEL_OVERRIDE" ]] && model="$actual_model"
-        else
-            echo "    Health: UNREACHABLE — skipping"
-            return
+    if curl -sf "$health_url" >/dev/null 2>&1 || curl -sf "$base_url/models" >/dev/null 2>&1; then
+        # Always resolve the loaded model name (skip "default" which is the [*] wildcard preset)
+        if [[ -z "$MODEL_OVERRIDE" ]]; then
+            model=$(curl -sf "$base_url/models" 2>/dev/null \
+                | jq -r '[.data[] | select(.id != "default")] | .[0].id // empty')
+            model="${model:-placeholder}"
         fi
+        echo "    Health: OK (model: $model)"
+    else
+        echo "    Health: UNREACHABLE — skipping"
+        return
     fi
 
     local ttft_vals=""
