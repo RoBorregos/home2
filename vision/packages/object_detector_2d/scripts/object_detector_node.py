@@ -17,9 +17,11 @@ from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
     TRASH_SERVICE_CATEGORY,
     YOLO_DETECTION_TOPIC,
+    YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
 from frida_interfaces.msg import Detection, ObjectDetectionArray
 from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
+from sensor_msgs.msg import Image
 from detectors.registry import ModelRegistry
 from detectors.utils import iou_deduplicate
 from base_detector_node import BaseDetectorNode
@@ -56,6 +58,10 @@ class ObjectDetectorNode(BaseDetectorNode):
         except Exception as e:
             self.get_logger().error(f"Failed to load objects.json: {e}")
             self.object_to_category = {}
+
+        self.pub_yolo_image = self.create_publisher(
+            Image, YOLO_DETECTIONS_PUBLISHER_TOPIC, 5
+        )
 
         self.create_service(
             SetTrashCategory, TRASH_SERVICE_CATEGORY, self.set_trash_category
@@ -116,6 +122,7 @@ class ObjectDetectorNode(BaseDetectorNode):
             raw = [d for d in raw if d.class_id_ in classes]
 
         h, w = self.latest_frame.shape[:2]
+        annotated = self.latest_frame.copy()
         ros_dets = []
         for d in raw:
             det = Detection()
@@ -126,7 +133,18 @@ class ObjectDetectorNode(BaseDetectorNode):
             det.confidence = d.confidence_
             det.class_id = d.class_id_
             ros_dets.append(det)
+            cv.rectangle(annotated, (det.x1, det.y1), (det.x2, det.y2), (0, 255, 0), 2)
+            cv.putText(
+                annotated,
+                f"{d.label_}: {d.confidence_:.2f}",
+                (det.x1, det.y1 - 10),
+                cv.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2,
+            )
 
+        self.pub_yolo_image.publish(self.bridge.cv2_to_imgmsg(annotated, "bgr8"))
         response.success = True
         response.detections = ros_dets
         return response
