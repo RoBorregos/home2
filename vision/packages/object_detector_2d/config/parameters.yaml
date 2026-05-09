@@ -17,5 +17,4 @@ ObjectDetect2D:
     DEPTH_ACTIVE: True
     VERBOSE: False
     FLIP_IMAGE: False
-    USE_ZED_TRANSFORM: True
     MAX_DEPTH_THRESH: 2.0

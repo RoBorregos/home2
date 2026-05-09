@@ -14,6 +14,5 @@ ZeroShotDetect2D:
     DEPTH_ACTIVE : True
     VERBOSE : False
     FLIP_IMAGE : False
-    USE_ZED_TRANSFORM : False
     CLASSES : ["green cube", "green block", "cube", "block", "box", "object on table"]
     SET_DETECTOR_CLASSES_SERVICE : /vision/set_detector_classes

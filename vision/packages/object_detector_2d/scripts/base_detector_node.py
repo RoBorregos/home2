@@ -51,7 +51,6 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         self.camera_frame = p("CAMERA_FRAME", CAMERA_FRAME).string_value
         self.target_frame = p("TARGET_FRAME", "base_link").string_value
         self.max_depth = p("MAX_DEPTH_THRESH", 2.0).double_value
-        self.use_zed_transform = p("USE_ZED_TRANSFORM", True).bool_value
         self.flip_image = p("FLIP_IMAGE", False).bool_value
         self.verbose = p("VERBOSE", False).bool_value
         use_active_flag = p("USE_ACTIVE_FLAG", False).bool_value
@@ -155,11 +154,6 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             and len(self.depth_image) > 0
             and self.camera_info is not None
         )
-        if has_depth and not self.use_zed_transform:
-            while not self.tfBuffer.can_transform(
-                self.camera_frame, self.target_frame, rclpy.time.Time().to_msg()
-            ):
-                pass
         for det in detections:
             pt = PointStamped(header=Header(frame_id=self.camera_frame), point=Point())
             if has_depth:
