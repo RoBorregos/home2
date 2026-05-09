@@ -1,15 +1,17 @@
 services:
   llama:
+    profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-llama-l4t
-    image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
-    pull_policy: always
+    build:
+      context: ..
+      dockerfile: dockerfiles/Dockerfile.llamacpp
+    image: roborregos/home2:hri-llama-l4t
     runtime: nvidia
     network_mode: host
     volumes:
       - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
-      - ../scripts/llama-cpp-entrypoint.sh:/scripts/llama-cpp-entrypoint.sh
     environment:
       ROLE: ${ROLE}
     stdin_open: true
     tty: true
-    entrypoint: ["/bin/bash", "/scripts/llama-cpp-entrypoint.sh"]
+    entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]

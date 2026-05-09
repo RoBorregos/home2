@@ -1,10 +1,26 @@
-ARG BASE_IMAGE=ghcr.io/ggerganov/llama.cpp:server-cuda
-FROM ${BASE_IMAGE}
+FROM nvcr.io/nvidia/l4t-jetpack:r36.4.0
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
-    && apt-get clean \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        cmake \
+        ninja-build \
+        git \
+        curl \
+        libcurl4-openssl-dev \
+        build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git \
+    && cmake -S llama.cpp -B llama.cpp/build -G Ninja \
+        -DGGML_CUDA=ON \
+        -DCMAKE_CUDA_ARCHITECTURES=87 \
+        -DGGML_CUDA_FA_ALL_QUANTS=ON \
+        -DGGML_CUDA_F16=ON \
+        -DLLAMA_CURL=ON \
+        -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build llama.cpp/build -j$(nproc) --target llama-server \
+    && cp llama.cpp/build/bin/llama-server /usr/local/bin/ \
+    && rm -rf /build
 
 COPY scripts/llama-cpp-entrypoint.sh /scripts/entrypoint.sh
 RUN chmod +x /scripts/entrypoint.sh

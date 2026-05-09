@@ -155,4 +155,59 @@ if ask_for_model ei-kws 5; then
     fi
 fi
 
+# ── Ollama model import ──────────────────────────────────────────────────────
+# Imports downloaded GGUFs into Ollama's model store using a temporary container.
+# The assets dir is mounted as /ollama (matching OLLAMA_MODELS in ollama-l4t.yaml).
+OLLAMA_IMAGE="dustynv/ollama:0.6.8-r36.4"
+ABSOLUTE_SCRIPT_DIR="$(cd "$SCRIPT_DIR" && pwd)"
+
+needs_ollama_import=false
+if ask_for_model qwen3.5 1 && [ -f "$SCRIPT_DIR/qwen3.5.Q4_K_M.gguf" ] && \
+   [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/qwen3.5" ]; then
+    needs_ollama_import=true
+fi
+if ask_for_model rbrgs 2 && [ -f "$SCRIPT_DIR/rbrgs.F16.gguf" ] && \
+   [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/rbrgs" ]; then
+    needs_ollama_import=true
+fi
+
+if $needs_ollama_import; then
+    echo "Starting temporary Ollama container to import models..."
+    OLLAMA_CONTAINER=$(docker run -d \
+        --runtime=nvidia \
+        -e OLLAMA_MODELS=/ollama \
+        -v "$ABSOLUTE_SCRIPT_DIR:/ollama" \
+        "$OLLAMA_IMAGE" \
+        bash -c "ollama serve & sleep infinity")
+
+    echo "Waiting for Ollama to start..."
+    MAX_WAIT=60; WAITED=0
+    while [ $WAITED -lt $MAX_WAIT ]; do
+        if docker exec "$OLLAMA_CONTAINER" curl -sf http://localhost:11434/api/version >/dev/null 2>&1; then
+            echo "Ollama ready."
+            break
+        fi
+        sleep 2; WAITED=$((WAITED + 2))
+    done
+
+    if ask_for_model qwen3.5 1 && [ -f "$SCRIPT_DIR/qwen3.5.Q4_K_M.gguf" ] && \
+       [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/qwen3.5" ]; then
+        printf 'FROM /ollama/qwen3.5.Q4_K_M.gguf\n' > "$SCRIPT_DIR/Modelfile.qwen3.5"
+        echo "Importing qwen3.5 into Ollama..."
+        docker exec "$OLLAMA_CONTAINER" ollama create -f /ollama/Modelfile.qwen3.5 qwen3.5
+        echo "qwen3.5 imported."
+    fi
+
+    if ask_for_model rbrgs 2 && [ -f "$SCRIPT_DIR/rbrgs.F16.gguf" ] && \
+       [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/rbrgs" ]; then
+        printf 'FROM /ollama/rbrgs.F16.gguf\n' > "$SCRIPT_DIR/Modelfile.rbrgs"
+        echo "Importing rbrgs into Ollama..."
+        docker exec "$OLLAMA_CONTAINER" ollama create -f /ollama/Modelfile.rbrgs rbrgs
+        echo "rbrgs imported."
+    fi
+
+    docker stop "$OLLAMA_CONTAINER" >/dev/null && docker rm "$OLLAMA_CONTAINER" >/dev/null
+    echo "Ollama models imported."
+fi
+
 echo "All selected models downloaded."
