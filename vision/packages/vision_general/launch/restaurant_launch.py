@@ -11,7 +11,7 @@ def generate_launch_description():
     detector_launch_file = os.path.join(
         get_package_share_directory("object_detector_2d"),
         "launch",
-        "object_detector_combined.launch.py",
+        "object_detector_node.launch.py",
     )
     return LaunchDescription(
         [
