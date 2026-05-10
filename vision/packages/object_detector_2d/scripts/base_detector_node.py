@@ -44,28 +44,41 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
     ):
         super().__init__(node_name)
 
-        def p(name, default):
-            return self.declare_parameter(name, default).get_parameter_value()
-
-        self.depth_active = p("DEPTH_ACTIVE", True).bool_value
-        self.camera_frame = p("CAMERA_FRAME", CAMERA_FRAME).string_value
-        self.target_frame = p("TARGET_FRAME", "base_link").string_value
-        self.max_depth = p("MAX_DEPTH_THRESH", 2.0).double_value
-        self.flip_image = p("FLIP_IMAGE", False).bool_value
-        self.verbose = p("VERBOSE", False).bool_value
-        use_active_flag = p("USE_ACTIVE_FLAG", False).bool_value
+        self.depth_active = self.declare_param("DEPTH_ACTIVE", True).bool_value
+        self.camera_frame = self.declare_param(
+            "CAMERA_FRAME", CAMERA_FRAME
+        ).string_value
+        self.target_frame = self.declare_param("TARGET_FRAME", "base_link").string_value
+        self.max_depth = self.declare_param("MAX_DEPTH_THRESH", 2.0).double_value
+        self.flip_image = self.declare_param("FLIP_IMAGE", False).bool_value
+        self.verbose = self.declare_param("VERBOSE", False).bool_value
+        use_active_flag = self.declare_param("USE_ACTIVE_FLAG", False).bool_value
         self.active_flag = not use_active_flag
 
-        rgb_topic = p("RGB_IMAGE_TOPIC", IMAGE_ORIENTED_TOPIC).string_value
-        depth_topic = p("DEPTH_IMAGE_TOPIC", DEPTH_IMAGE_TOPIC).string_value
-        info_topic = p("CAMERA_INFO_TOPIC", CAMERA_INFO_TOPIC).string_value
-        det_topic = p("DETECTIONS_TOPIC", default_det_topic).string_value
-        det_img_topic = p("DETECTIONS_IMAGE_TOPIC", default_det_img_topic).string_value
-        det_poses_topic = p(
+        rgb_topic = self.declare_param(
+            "RGB_IMAGE_TOPIC", IMAGE_ORIENTED_TOPIC
+        ).string_value
+        depth_topic = self.declare_param(
+            "DEPTH_IMAGE_TOPIC", DEPTH_IMAGE_TOPIC
+        ).string_value
+        info_topic = self.declare_param(
+            "CAMERA_INFO_TOPIC", CAMERA_INFO_TOPIC
+        ).string_value
+        det_topic = self.declare_param(
+            "DETECTIONS_TOPIC", default_det_topic
+        ).string_value
+        det_img_topic = self.declare_param(
+            "DETECTIONS_IMAGE_TOPIC", default_det_img_topic
+        ).string_value
+        det_poses_topic = self.declare_param(
             "DETECTIONS_POSES_TOPIC", default_det_poses_topic
         ).string_value
-        det_3d_topic = p("DETECTIONS_3D_TOPIC", default_det_3d_topic).string_value
-        active_topic = p("DETECTIONS_ACTIVE_TOPIC", default_active_topic).string_value
+        det_3d_topic = self.declare_param(
+            "DETECTIONS_3D_TOPIC", default_det_3d_topic
+        ).string_value
+        active_topic = self.declare_param(
+            "DETECTIONS_ACTIVE_TOPIC", default_active_topic
+        ).string_value
 
         # --- state ---
         self.bridge = CvBridge()
@@ -100,6 +113,9 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         self.create_subscription(Bool, fixed_active_topic, self.active_cb, 10)
         if use_active_flag:
             self.create_subscription(Bool, active_topic, self.active_cb, 5)
+
+    def declare_param(self, name, default):
+        return self.declare_parameter(name, default).get_parameter_value()
 
     # ------------------------------------------------------------------ callbacks
 

@@ -39,10 +39,9 @@ class ObjectDetectorNode(BaseDetectorNode):
             fixed_active_topic="/vision/object_detector/active",
         )
 
-        def p(name, default):
-            return self.declare_parameter(name, default).get_parameter_value()
-
-        model_names = p("models", ["yolo_v26_finetuned"]).string_array_value
+        model_names = self.declare_param(
+            "models", ["yolo_v26_finetuned"]
+        ).string_array_value
 
         self.models = [ModelRegistry.get(name) for name in model_names]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")

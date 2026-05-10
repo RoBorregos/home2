@@ -34,11 +34,10 @@ class ZeroShotDetectorNode(BaseDetectorNode):
             fixed_active_topic="/vision/zero_shot_detector/active",
         )
 
-        def p(name, default):
-            return self.declare_parameter(name, default).get_parameter_value()
-
-        initial_classes = p("CLASSES", ZERO_SHOT_DEFAULT_CLASSES).string_array_value
-        classes_srv = p(
+        initial_classes = self.declare_param(
+            "CLASSES", ZERO_SHOT_DEFAULT_CLASSES
+        ).string_array_value
+        classes_srv = self.declare_param(
             "SET_DETECTOR_CLASSES_SERVICE", SET_DETECTOR_CLASSES_SERVICE
         ).string_value
 
