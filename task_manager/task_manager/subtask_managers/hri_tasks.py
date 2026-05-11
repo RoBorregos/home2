@@ -1393,6 +1393,11 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"Published display topic: {topic}")
 
     def publish_display_step(self, step: str, topic: str = TASK_STEP_TOPIC) -> None:
+        if topic == TASK_STEP_TOPIC:
+            self.task_step_publisher.publish(String(data=step))
+            Logger.info(self.node, f"Published display step: {step} → {topic}")
+            return
+
         if not hasattr(self, "_step_publishers"):
             self._step_publishers: dict = {}
         if topic not in self._step_publishers:
