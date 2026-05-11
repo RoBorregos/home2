@@ -10,8 +10,11 @@ services:
     network_mode: host
     volumes:
       - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
+      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
     environment:
       ROLE: ${ROLE}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
     stdin_open: true
     tty: true
     entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]

@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# On Jetson, the real libcuda.so.1 is mounted by nvidia-container-runtime at this path.
+# Without this, llama.cpp finds the stub in /usr/local/cuda/lib64/stubs/ and falls back to CPU.
+export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/tegra:${LD_LIBRARY_PATH:-}
+
 echo "Starting with ROLE=$ROLE"
 
 MODELS_DIR=/root/.cache/huggingface
@@ -36,6 +40,7 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "carry" ] || [ "$ROLE" = "gpsr" ]; then
         --port 11434 \
         --ctx-size 4096 \
         -ngl 99 \
+        --flash-attn on \
         --parallel 1 \
         --alias qwen3.5 \
         &
@@ -51,6 +56,7 @@ if [ "$ROLE" = "gpsr" ]; then
         --port 11435 \
         --ctx-size 4096 \
         -ngl 99 \
+        --flash-attn on \
         --parallel 1 \
         --alias rbrgs \
         --temp 1.5 \

@@ -1,16 +1,23 @@
 #!/bin/bash
 # Benchmark LLM backends: measures time-to-first-token (TTFT) and tokens/second.
+#
 # Usage:
-#   ./benchmark-llm.sh [--runs N] [endpoint1 label1] [endpoint2 label2] ...
+#   ./benchmark-llm.sh [--runs N] [--usecase CASE] [--list-usecases] [endpoint1 label1] ...
+#
+# Default (no args): compares llama.cpp (port 11434) vs Ollama (port 11436)
+#
+# Use cases (--usecase <name>):
+#   extract_data       — extracts a specific piece of info from free text
+#                        (e.g. "what drink does the person want?")
+#   is_coherent        — decides if a robot command is complete and executable
+#                        (e.g. "Go to the kitchen and pick up the apple")
+#   llm_wrapper        — general Q&A using a provided context paragraph
+#   categorize_shelves — assigns categories to shelves given their contents
 #
 # Examples:
-#   # Compare llama.cpp vs Ollama (both on this machine, different ports)
-#   ./benchmark-llm.sh \
-#     "http://localhost:11434/v1" "llama.cpp-qwen3" \
-#     "http://localhost:11435/v1" "llama.cpp-rbrgs"
-#
-#   # Default: just test llama.cpp on port 11434
-#   ./benchmark-llm.sh
+#   ./benchmark-llm.sh --usecase is_coherent
+#   ./benchmark-llm.sh --runs 3 --usecase extract_data
+#   ./benchmark-llm.sh "http://localhost:11434/v1" "llama.cpp" "http://localhost:11436/v1" "ollama"
 
 set -euo pipefail
 
@@ -33,6 +40,7 @@ usecase_payload() {
             jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
+                stream_options: {include_usage: true},
                 max_tokens: 60,
                 temperature: 0.5,
                 messages: [
@@ -45,6 +53,7 @@ usecase_payload() {
             jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
+                stream_options: {include_usage: true},
                 max_tokens: 30,
                 temperature: 0.0,
                 messages: [
@@ -57,6 +66,7 @@ usecase_payload() {
             jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
+                stream_options: {include_usage: true},
                 max_tokens: 80,
                 temperature: 0.5,
                 messages: [
@@ -69,6 +79,7 @@ usecase_payload() {
             jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
+                stream_options: {include_usage: true},
                 max_tokens: 40,
                 temperature: 0.5,
                 messages: [
@@ -91,6 +102,14 @@ while [[ $# -gt 0 ]]; do
         --prompt) PROMPT="$2"; shift 2 ;;
         --model) MODEL_OVERRIDE="$2"; shift 2 ;;
         --usecase) USECASE="$2"; shift 2 ;;
+        --list-usecases)
+            echo "Available use cases:"
+            echo "  extract_data       — extract a specific piece of info from free text"
+            echo "  is_coherent        — check if a robot command is complete and executable"
+            echo "  llm_wrapper        — general Q&A with a provided context paragraph"
+            echo "  categorize_shelves — assign categories to shelves given their contents"
+            exit 0
+            ;;
         *)
             ENDPOINTS+=("$1")
             LABELS+=("${2:-$1}")
@@ -101,13 +120,13 @@ done
 
 # Default prompt if none set and no usecase
 if [[ -z "$PROMPT" && -z "$USECASE" ]]; then
-    PROMPT="You are a helpful assistant. In exactly two sentences, describe what a service robot does in a domestic environment."
+    USECASE="is_coherent"
 fi
 
-# Default endpoint if none provided
+# Default: compare llama.cpp (11434) vs Ollama (11436)
 if [[ ${#ENDPOINTS[@]} -eq 0 ]]; then
-    ENDPOINTS=("http://localhost:11434/v1" "http://localhost:11435/v1")
-    LABELS=("qwen3.6" "rbrgs")
+    ENDPOINTS=("http://localhost:11434/v1" "http://localhost:11436/v1")
+    LABELS=("llama.cpp (qwen3.5)" "ollama (qwen3.5)")
 fi
 
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required. Install with: apt-get install -y jq"; exit 1; }
@@ -164,7 +183,7 @@ run_single() {
             payload=$(jq -n \
                 --arg model "$model" \
                 --arg content "$PROMPT /no_think" \
-                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512}')
+                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512, stream_options: {include_usage: true}}')
         fi
 
         # Capture streaming response with timestamps
@@ -233,9 +252,16 @@ run_single() {
     echo "$tps_vals" | stats
 }
 
+declare -A USECASE_DESC=(
+    [extract_data]="extract a specific piece of info from free text"
+    [is_coherent]="check if a robot command is complete and executable"
+    [llm_wrapper]="general Q&A with a provided context paragraph"
+    [categorize_shelves]="assign categories to shelves given their contents"
+)
+
 echo "LLM Backend Benchmark"
 if [[ -n "$USECASE" ]]; then
-    echo "Use case: $USECASE"
+    echo "Use case: $USECASE — ${USECASE_DESC[$USECASE]:-}"
 else
     echo "Prompt: $PROMPT"
 fi

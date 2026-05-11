@@ -21,9 +21,10 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git \
         -DGGML_CUDA_FA_ALL_QUANTS=ON \
         -DGGML_CUDA_F16=ON \
         -DLLAMA_CURL=ON \
+        -DBUILD_SHARED_LIBS=OFF \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_LIBRARY_PATH=/usr/local/cuda/lib64/stubs \
-        "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,/usr/local/cuda/lib64/stubs" \
+        "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath,/usr/lib/aarch64-linux-gnu/tegra:/usr/local/cuda/lib64 -Wl,-rpath-link,/usr/local/cuda/lib64/stubs" \
     && cmake --build llama.cpp/build -j$(nproc) --target llama-server \
     && cp llama.cpp/build/bin/llama-server /usr/local/bin/ \
     && rm -rf /build
