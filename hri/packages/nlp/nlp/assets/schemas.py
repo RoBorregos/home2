@@ -38,7 +38,3 @@ class CommandListShape(BaseModel):
 class Shelf(BaseModel):
     objects_to_add: list[str] = []
     classification_tag: str
-
-
-class CategorizeShelvesResult(BaseModel):
-    categories: list[str]

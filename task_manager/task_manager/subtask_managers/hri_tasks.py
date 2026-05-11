@@ -16,7 +16,6 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     ANSWER_PUBLISHER,
-    CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
@@ -44,7 +43,6 @@ from frida_constants.hri_constants import (
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
     AddEntry,
-    CategorizeShelves,
     CommandInterpreter,
     ExtractInfo,
     FindClosest,
@@ -182,7 +180,6 @@ class HRITasks(metaclass=SubtaskMeta):
         self.find_closest_service = self.node.create_client(FindClosest, FIND_CLOSEST_SERVICE)
         self.items = self.get_items_embeddings()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
-        self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -1308,7 +1305,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
-    ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
+    ) -> tuple[Status, dict[int, str], dict[int, list[str]], dict[int, list[str]]]:
         """
         Categorize objects based on their shelf levels.
 
@@ -1317,74 +1314,72 @@ class HRITasks(metaclass=SubtaskMeta):
             shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
 
         Returns:
+            Status: Execution status.
+            dict[int, str]: Dictionary mapping shelf levels to categories (space separated).
+            dict[int, list[str]]: Dictionary mapping shelf levels to objects to add.
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
         Logger.info(self.node, "Categorizing objects...")
 
         try:
             categorized_shelves = {}
+            category_to_level = {}
+            empty_levels = []
 
-            category_shelve = {}
-
-            # Use this as miscellaneous category for empty shelves
-            empty_shelve_index = 0
-            miscellaneous_category = False
-
+            # Step 1: Analyze existing shelf contents
             for level in shelves:
-                if level not in categorized_shelves:
-                    categorized_shelves[level] = []
+                categorized_shelves[level] = []
+                shelf_objects = shelves[level]
 
-                for object_name in shelves[level]:
-                    category = self.deterministic_categorization(object_name)
-                    categorized_shelves[level].append(category)
-                    category_shelve[category] = level
+                if not shelf_objects:
+                    empty_levels.append(level)
+                else:
+                    for object_name in shelf_objects:
+                        category = self.deterministic_categorization(object_name)
+                        if category not in categorized_shelves[level]:
+                            categorized_shelves[level].append(category)
+                        # Keep track of which category is on which shelf
+                        category_to_level[category] = level
 
-                if len(categorized_shelves[level]) < 1:
-                    categorized_shelves[level] = ["empty"]
-                    empty_shelve_index = level
+            objects_to_add = {level: [] for level in shelves}
 
-            objects_to_add = {level: [] for level in shelves.keys()}
-
+            # Step 2: Assign table objects to shelves
             for table_object in table_objects:
                 category = self.deterministic_categorization(table_object)
 
-                if category in category_shelve.keys():
-                    objects_to_add[category_shelve[category]].append(table_object)
+                if category in category_to_level:
+                    # Case 1: Category already exists on a shelf
+                    target_level = category_to_level[category]
+                    objects_to_add[target_level].append(table_object)
+                elif empty_levels:
+                    # Case 2: Category is new, but there's an empty shelf
+                    target_level = empty_levels.pop(0)
+                    categorized_shelves[target_level].append(category)
+                    category_to_level[category] = target_level
+                    objects_to_add[target_level].append(table_object)
                 else:
-                    placed_object = False
-                    for key in categorized_shelves.keys():
-                        if categorized_shelves[key] == "empty":
-                            categorized_shelves[key] = category
-                            objects_to_add[key].append(table_object)
-                            placed_object = True
-                            break
+                    # Case 3: Category is new and no empty shelves, use first available shelf as fallback
+                    fallback_level = list(shelves.keys())[0] if shelves else 0
+                    if "miscellaneous" not in categorized_shelves.get(fallback_level, []):
+                        if fallback_level not in categorized_shelves:
+                            categorized_shelves[fallback_level] = []
+                        categorized_shelves[fallback_level].append("miscellaneous")
 
-                    if not placed_object:
-                        categorized_shelves[empty_shelve_index] = ["miscellaneous"]
-                        miscellaneous_category = True
-                        objects_to_add[empty_shelve_index].append(table_object)
-
-            if miscellaneous_category:
-                categorized_shelves[empty_shelve_index] = ["miscellaneous"]
+                    if fallback_level in objects_to_add:
+                        objects_to_add[fallback_level].append(table_object)
 
         except Exception as e:
-            self.node.get_logger().error(f"Error: {e}")
-            return Status.EXECUTION_ERROR, {}, {}
+            self.node.get_logger().error(f"Error in categorize_objects: {e}")
+            return Status.EXECUTION_ERROR, {}, {}, {}
 
-        # Remove duplicated categories
+        # Remove duplicated categories (should already be unique, but for safety)
         for level in categorized_shelves:
-            unique = set()
-
-            for cat in categorized_shelves[level]:
-                unique.add(cat)
-
-            categorized_shelves[level] = list(unique)
+            categorized_shelves[level] = list(set(categorized_shelves[level]))
 
         Logger.info(self.node, "Finished executing categorize_objects")
 
-        old_api = {}
-        for key in categorized_shelves:
-            old_api[key] = " ".join(categorized_shelves[key])
+        # Old API compatibility: space-separated categories string
+        old_api = {level: " ".join(cats) for level, cats in categorized_shelves.items()}
 
         return Status.EXECUTION_SUCCESS, old_api, objects_to_add, categorized_shelves
 
