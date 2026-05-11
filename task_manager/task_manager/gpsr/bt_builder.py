@@ -13,11 +13,14 @@ Tree shape:
             ├── SequentialFallbackLeaf(cmd1)
             └── ...
 
-The Selector advances to ``sequential_fallback`` when the interleaved
-sequence returns FAILURE — which happens when a Retry exhausts both
-attempts on a gripper-holding action, or the global Timeout fires.
-Auxiliary (gripper-free) failures are logged but kept inside Retry's
-SUCCESS path so the bonus can survive minor degradations.
+Failure is absolute in the interleaved branch: any leaf — gripper or
+gripper-neutral — that exhausts its Retry attempts (or the global
+Timeout firing) causes the inner Sequence to return FAILURE, and the
+Selector advances to ``sequential_fallback``. The fallback then runs
+each source command's actions in original order (within-command
+failures are logged but ignored so every command still gets a chance).
+Per-action results are forwarded via ``on_action_complete`` so the
+HRI command-history reflects partial progress regardless of branch.
 """
 
 from typing import Any, Callable, Optional, Sequence

@@ -347,13 +347,12 @@ class GPSRTM(Node):
                 )
 
                 if self.interleave_enabled:
-                    self.batched_commands.append(self.commands)
-                    self.executed_commands += 1
+                    self.batched_commands.append(CommandListLLM(commands=self.commands))
                     plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
                     self.subtask_manager.hri.say(f"Got it. I will plan: {plan_text}.", wait=False)
                     if (
                         len(self.batched_commands) >= self.batch_size
-                        or self.executed_commands >= MAX_COMMANDS
+                        or (self.executed_commands + len(self.batched_commands)) >= MAX_COMMANDS
                     ):
                         self.current_state = GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH
                     else:
@@ -367,9 +366,17 @@ class GPSRTM(Node):
 
         elif self.current_state == GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH:
             self._track_state_change(GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH)
+            batch_count = len(self.batched_commands)
             self._execute_interleaved_batch()
+            self.executed_commands += batch_count
             self.batched_commands = []
-            self.current_state = GPSRTM.TaskStates.FINISHED_COMMAND
+            self.subtask_manager.hri.say(
+                "I have finished executing your commands. I will return to the start position.",
+                wait=False,
+            )
+            self.navigate_to("start_area", "", False)
+            self.subtask_manager.manipulation.move_to_position("front_stare")
+            self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
 
         elif self.current_state == GPSRTM.TaskStates.EXECUTING_COMMAND:
             self.current_hear_attempt = 0
