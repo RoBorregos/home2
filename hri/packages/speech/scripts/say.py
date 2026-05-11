@@ -96,6 +96,10 @@ class Say(Node):
         if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
 
+        # Initialize pygame mixer
+        mixer.pre_init(frequency=48000, buffer=2048)
+        mixer.init()
+
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
@@ -182,38 +186,46 @@ class Say(Node):
                 msg = String()
                 msg.data = req.text
                 self.text_publisher_.publish(msg)
-                self.say(req.text, req.speed)
-                res.success = True
+                success, duration = self.say(req.text, req.speed, req.wait)
+                res.success = success
+                res.duration = float(duration)
             else:
                 res.success = False
+                res.duration = 0.0
                 self.get_logger().info("[Service] Nothing to say.")
         except Exception as e:
             self.get_logger().error(f"[Service] Error in speak_service: {e}")
+            res.success = False
+            res.duration = 0.0
         finally:
             return res
 
-    def say(self, text, speed):
+    def say(self, text, speed, wait=True):
         self.publisher_.publish(Bool(data=True))
         success = False
+        duration = 0.0
 
         try:
             if self.offline or not self.connected:
-                self.offline_voice(text, speed)
+                duration = self.offline_voice(text, speed, wait)
             else:
-                self.connectedVoice(text)
+                duration = self.connectedVoice(text, wait)
             success = True
         except Exception as e:
             self.get_logger().error(e)
             if not self.offline:
                 self.get_logger().warn("Retrying with offline mode")
-                self.offline_voice(text, speed)
+                duration = self.offline_voice(text, speed, wait)
+                success = True
 
-        self.publisher_.publish(Bool(data=False))
-        return success
+        if wait:
+            self.publisher_.publish(Bool(data=False))
+        return success, duration
 
-    def offline_voice(self, text, speed=1):
+    def offline_voice(self, text, speed=1, wait=True):
         text_chunks = self.split_text(text, 4000)
         audio_files = []
+        total_duration = 0.0
 
         # Check cache or generate new files for each chunk
         for i, chunk in enumerate(text_chunks, 1):
@@ -221,12 +233,6 @@ class Say(Node):
             if cached_path and os.path.exists(cached_path):
                 self.get_logger().debug(f"Using cached audio for chunk {i}")
                 audio_files.append(cached_path)
-
-                self.get_logger().debug(f"Playing {len(audio_files)} audio files")
-
-                # Play all audio files
-                for filepath in audio_files:
-                    self.play_audio(filepath)
             else:
                 output_path = os.path.join(
                     VOICE_DIRECTORY, f"audios/{hash((chunk, speed))}.wav"
@@ -235,39 +241,60 @@ class Say(Node):
                     f"{hash((chunk, speed))}.wav", chunk, speed
                 )
                 self._add_to_cache(chunk, output_path, speed)
-                mixer.pre_init(frequency=48000, buffer=2048)
-                mixer.init()
-                while mixer.music.get_busy():
-                    pass
+                audio_files.append(output_path)
 
-    def connectedVoice(self, text):
+        self.get_logger().debug(f"Playing {len(audio_files)} audio files")
+
+        # Play all audio files
+        for i, filepath in enumerate(audio_files):
+            # Only wait on the last file if wait=True, or wait on all if wait=True?
+            # Actually, if we want to return the duration and start playing,
+            # we should play all of them.
+            # For simplicity, if wait is True, we block on each.
+            # If wait is False, we might have an issue with multiple chunks.
+            # But usually it's one chunk.
+            is_last = i == len(audio_files) - 1
+            chunk_duration = self.play_audio(filepath, wait=(wait and is_last))
+            total_duration += chunk_duration
+
+        return total_duration
+
+    def connectedVoice(self, text, wait=True):
         # For connected voice, speed is not applicable, so we use default speed=1.0
         cached_path = self._get_cached_audio(text, 1.0)
-        if cached_path and os.path.exists(cached_path):
-            self.get_logger().info("Using cached audio")
-            self.play_audio(cached_path)
-            return
+        if not (cached_path and os.path.exists(cached_path)):
+            cached_path = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.mp3")
+            tts = gTTS(text=text, lang="es")
+            tts.save(cached_path)
+            self._add_to_cache(text, cached_path, 1.0)
 
-        save_path = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.mp3")
-        tts = gTTS(text=text, lang="es")
-        tts.save(save_path)
-        self._add_to_cache(text, save_path, 1.0)
         self.get_logger().info("Saying...")
-        self.play_audio(save_path)
+        return self.play_audio(cached_path, wait=wait)
 
-    def play_audio(self, file_path):
-        mixer.pre_init(frequency=48000, buffer=2048)
-        mixer.init()
+    def play_audio(self, file_path, wait=True):
         while mixer.music.get_busy():
             pass
         mixer.music.load(file_path)
-        mixer.music.play()
-        # Wait for audio to finish playing before returning
+
+        # Get duration
         try:
-            while mixer.music.get_busy():
-                pass
-        except Exception as e:
-            self.get_logger().error(f"Error while waiting for audio: {e}")
+            sound = mixer.Sound(file_path)
+            duration = sound.get_length()
+        except Exception:
+            # Fallback for MP3 or if Sound() fails
+            duration = len(file_path) / 10.0  # Very rough fallback
+
+        mixer.music.play()
+
+        if wait:
+            # Wait for audio to finish playing before returning
+            try:
+                while mixer.music.get_busy():
+                    pass
+            except Exception as e:
+                self.get_logger().error(f"Error while waiting for audio: {e}")
+
+        return duration
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):

@@ -40,6 +40,7 @@ from frida_constants.hri_constants import (
     TASK_STEP_TOPIC,
     TIMEOUT,
     WAKEWORD_TOPIC,
+    START_HEAR_EARLY_SECONDS,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
@@ -281,21 +282,24 @@ class HRITasks(metaclass=SubtaskMeta):
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
+    @service_check("speak_service", (Status.SERVICE_CHECK, 0.0), TIMEOUT)
+    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> tuple[Status, float]:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
         self.set_light_state(AudioStates.SAYING)
 
-        request = Speak.Request(text=text, speed=float(speed))
+        request = Speak.Request(text=text, speed=float(speed), wait=wait)
         future = self.speak_service.call_async(request)
 
-        if wait:
-            rclpy.spin_until_future_complete(self.node, future)
-            return Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
+        rclpy.spin_until_future_complete(self.node, future)
 
-        Logger.info(self.node, "Saying service finished executing")
-        return Status.EXECUTION_SUCCESS
+        if future.result() is not None:
+            return (
+                Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR,
+                future.result().duration,
+            )
+
+        return Status.EXECUTION_ERROR, 0.0
 
     @service_check("is_coherent_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def check_coherence(self, text: str) -> bool:
@@ -640,6 +644,7 @@ class HRITasks(metaclass=SubtaskMeta):
         remap: dict = None,
         initial_prompt: str = "",
         silence_time: float = 1.0,
+        start_hear_early: bool = True,
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -654,17 +659,32 @@ class HRITasks(metaclass=SubtaskMeta):
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
             silence_time: the time to wait for silence before considering the speech complete
+            start_hear_early: if True, the robot will start hearing a few seconds before finishing the speech.
         Returns:
             Status: the status of the execution
             str: answer to the question
         """
+
+        # Force start_hear_early to False if not in L4T environment
+        if os.environ.get("ENV_TYPE", "cpu") != "l4t":
+            start_hear_early = False
+
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
 
             start_time = self.node.get_clock().now()
 
-            self.say(question)
+            if start_hear_early:
+                status, duration = self.say(question, wait=False)
+                # Wait for duration - 2 seconds
+                wait_time = max(0.0, duration - START_HEAR_EARLY_SECONDS)
+                start_wait = self.node.get_clock().now()
+                while (self.node.get_clock().now() - start_wait).nanoseconds / 1e9 < wait_time:
+                    rclpy.spin_once(self.node, timeout_sec=0.1)
+            else:
+                self.say(question)
+
             hear_status, interpreted_text, word_confidences = self.hear(
                 hotwords=hotwords, initial_prompt=initial_prompt, silence_time=silence_time
             )
