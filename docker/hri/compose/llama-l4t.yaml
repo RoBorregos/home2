@@ -2,15 +2,14 @@ services:
   llama:
     profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-llama-l4t
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.llamacpp
-    image: roborregos/home2:hri-llama-l4t
+    image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
+    pull_policy: missing
     runtime: nvidia
     network_mode: host
     volumes:
       - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
       - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
+      - ../scripts/llama-cpp-entrypoint.sh:/scripts/entrypoint.sh
     environment:
       ROLE: ${ROLE}
       NVIDIA_VISIBLE_DEVICES: all
