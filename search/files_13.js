@@ -20,8 +20,7 @@ var searchData=
   ['trackby_2esrv_17',['TrackBy.srv',['../TrackBy_8srv.html',1,'']]],
   ['tracker_2epy_18',['tracker.py',['../tracker_8py.html',1,'']]],
   ['tracker_5fnode_2epy_19',['tracker_node.py',['../tracker__node_8py.html',1,'']]],
-  ['tracker_5fnode_5ffregoso_2epy_20',['tracker_node_fregoso.py',['../tracker__node__fregoso_8py.html',1,'']]],
-  ['trash_5fdetection_5fnode_2epy_21',['trash_detection_node.py',['../trash__detection__node_8py.html',1,'']]],
-  ['trashcandetection_2esrv_22',['TrashcanDetection.srv',['../TrashcanDetection_8srv.html',1,'']]],
-  ['trt_5futils_2epy_23',['trt_utils.py',['../trt__utils_8py.html',1,'']]]
+  ['trash_5fdetection_5fnode_2epy_20',['trash_detection_node.py',['../trash__detection__node_8py.html',1,'']]],
+  ['trashcandetection_2esrv_21',['TrashcanDetection.srv',['../TrashcanDetection_8srv.html',1,'']]],
+  ['trt_5futils_2epy_22',['trt_utils.py',['../trt__utils_8py.html',1,'']]]
 ];

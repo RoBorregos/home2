@@ -120,9 +120,6 @@ var annotated_dup =
         [ "MotionPlanningServer", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer" ]
       ] ]
     ] ],
-    [ "get_positon_3d", "namespaceget__positon__3d.html", [
-      [ "SingleTracker", "classget__positon__3d_1_1SingleTracker.html", "classget__positon__3d_1_1SingleTracker" ]
-    ] ],
     [ "gpd_ros2", "namespacegpd__ros2.html", [
       [ "GraspDetection", "classgpd__ros2_1_1GraspDetection.html", "classgpd__ros2_1_1GraspDetection" ],
       [ "GraspDetectionService", "classgpd__ros2_1_1GraspDetectionService.html", "classgpd__ros2_1_1GraspDetectionService" ]
@@ -247,9 +244,6 @@ var annotated_dup =
       [ "NavUI", "classnav__ui_1_1NavUI.html", "classnav__ui_1_1NavUI" ],
       [ "RosSignals", "classnav__ui_1_1RosSignals.html", null ]
     ] ],
-    [ "new_tracker", "namespacenew__tracker.html", [
-      [ "SingleTracker", "classnew__tracker_1_1SingleTracker.html", "classnew__tracker_1_1SingleTracker" ]
-    ] ],
     [ "nn_matching", "namespacenn__matching.html", [
       [ "NearestNeighborDistanceMetric", "classnn__matching_1_1NearestNeighborDistanceMetric.html", "classnn__matching_1_1NearestNeighborDistanceMetric" ]
     ] ],
@@ -265,9 +259,6 @@ var annotated_dup =
       [ "Detection", "classObjectDetector_1_1Detection.html", "classObjectDetector_1_1Detection" ],
       [ "ObjectDectector", "classObjectDetector_1_1ObjectDectector.html", "classObjectDetector_1_1ObjectDectector" ],
       [ "ObjectDectectorParams", "classObjectDetector_1_1ObjectDectectorParams.html", "classObjectDetector_1_1ObjectDectectorParams" ]
-    ] ],
-    [ "old_tracker", "namespaceold__tracker.html", [
-      [ "SingleTracker", "classold__tracker_1_1SingleTracker.html", "classold__tracker_1_1SingleTracker" ]
     ] ],
     [ "person_in_map", "namespaceperson__in__map.html", [
       [ "PersonLocation", "classperson__in__map_1_1PersonLocation.html", "classperson__in__map_1_1PersonLocation" ]
@@ -483,9 +474,6 @@ var annotated_dup =
     ] ],
     [ "tracker_node", "namespacetracker__node.html", [
       [ "SingleTracker", "classtracker__node_1_1SingleTracker.html", "classtracker__node_1_1SingleTracker" ]
-    ] ],
-    [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", [
-      [ "SingleTracker", "classtracker__node__fregoso_1_1SingleTracker.html", "classtracker__node__fregoso_1_1SingleTracker" ]
     ] ],
     [ "trash_detection_node", "namespacetrash__detection__node.html", [
       [ "TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", "classtrash__detection__node_1_1TrashDetectionNode" ]

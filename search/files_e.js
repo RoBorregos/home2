@@ -8,6 +8,5 @@ var searchData=
   ['objectdetectionarray_2emsg_5',['ObjectDetectionArray.msg',['../ObjectDetectionArray_8msg.html',1,'']]],
   ['objectdetector_2epy_6',['ObjectDetector.py',['../ObjectDetector_8py.html',1,'']]],
   ['objectpoints_2esrv_7',['ObjectPoints.srv',['../ObjectPoints_8srv.html',1,'']]],
-  ['objects_2emd_8',['objects.md',['../objects_8md.html',1,'']]],
-  ['old_5ftracker_2epy_9',['old_tracker.py',['../old__tracker_8py.html',1,'']]]
+  ['objects_2emd_8',['objects.md',['../objects_8md.html',1,'']]]
 ];

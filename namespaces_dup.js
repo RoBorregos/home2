@@ -143,7 +143,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacegeneral__navigation.html#af472e117a9a8a68b98c82219ed0d3a14", null ],
       [ "launch_function", "namespacegeneral__navigation.html#a7ef9e56e1cb54dea09714dcd59926838", null ]
     ] ],
-    [ "get_positon_3d", "namespaceget__positon__3d.html", "namespaceget__positon__3d" ],
     [ "gpd_ros2", "namespacegpd__ros2.html", "namespacegpd__ros2" ],
     [ "gpsr", "namespacegpsr.html", [
       [ "generate_launch_description", "namespacegpsr.html#a757ec7f17f46a7b35bae9fe8fb05a58c", null ]
@@ -262,7 +261,6 @@ var namespaces_dup =
     ] ],
     [ "nav_central", "namespacenav__central.html", "namespacenav__central" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
-    [ "new_tracker", "namespacenew__tracker.html", "namespacenew__tracker" ],
     [ "nn_matching", "namespacenn__matching.html", "namespacenn__matching" ],
     [ "node_monitor", "namespacenode__monitor.html", "namespacenode__monitor" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
@@ -270,7 +268,6 @@ var namespaces_dup =
     ] ],
     [ "object_detector_node", "namespaceobject__detector__node.html", "namespaceobject__detector__node" ],
     [ "ObjectDetector", "namespaceObjectDetector.html", "namespaceObjectDetector" ],
-    [ "old_tracker", "namespaceold__tracker.html", "namespaceold__tracker" ],
     [ "perception_3d", "namespaceperception__3d.html", [
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
@@ -403,7 +400,6 @@ var namespaces_dup =
     [ "track", "namespacetrack.html", "namespacetrack" ],
     [ "tracker", "namespacetracker.html", "namespacetracker" ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
-    [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", "namespacetracker__node__fregoso" ],
     [ "trash_detection_node", "namespacetrash__detection__node.html", "namespacetrash__detection__node" ],
     [ "trt_utils", "namespacetrt__utils.html", [
       [ "_get_engine_path", "namespacetrt__utils.html#ae28972e2bd9e6ec6460827b6380c7b9a", null ],
