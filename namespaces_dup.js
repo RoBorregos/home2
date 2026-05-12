@@ -10,6 +10,7 @@ var namespaces_dup =
       [ "point_in_polygon", "namespacearea__check.html#a57f97085ecda9c86f7f750d44a2bf6ec", null ]
     ] ],
     [ "arm_pkg", "namespacearm__pkg.html", "namespacearm__pkg" ],
+    [ "base_detector_node", "namespacebase__detector__node.html", "namespacebase__detector__node" ],
     [ "calculations", "namespacecalculations.html", [
       [ "deproject_pixel_to_point", "namespacecalculations.html#af8d8159051ab90fd57ec31e9221579f5", null ],
       [ "get2DCentroid", "namespacecalculations.html#a9b5eb19cdc3b480d8b741b2a394bd49a", null ],
@@ -54,6 +55,7 @@ var namespaces_dup =
     ] ],
     [ "demo_manager", "namespacedemo__manager.html", "namespacedemo__manager" ],
     [ "detection", "namespacedetection.html", "namespacedetection" ],
+    [ "detectors", "namespacedetectors.html", "namespacedetectors" ],
     [ "dishwasher_node", "namespacedishwasher__node.html", "namespacedishwasher__node" ],
     [ "display_gz", "namespacedisplay__gz.html", [
       [ "generate_launch_description", "namespacedisplay__gz.html#a4f95fbbb9f34a1fd59c2387ed4123947", null ]
@@ -212,7 +214,6 @@ var namespaces_dup =
       [ "min_cost_matching", "namespacelinear__assignment.html#af726e8ac9333bb98f165bf49c0c7a991", null ],
       [ "INFTY_COST", "namespacelinear__assignment.html#a4dc5d6dd36ab525c7eec56cb41e458e1", null ]
     ] ],
-    [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
     [ "map_area_tagger", "namespacemap__area__tagger.html", "namespacemap__area__tagger" ],
     [ "mapping", "namespacemapping.html", [
@@ -267,7 +268,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceobject__detector__combined.html#a89d204316b51e6caf017cd1f6253e538", null ]
     ] ],
     [ "object_detector_node", "namespaceobject__detector__node.html", "namespaceobject__detector__node" ],
-    [ "ObjectDetector", "namespaceObjectDetector.html", "namespaceObjectDetector" ],
     [ "perception_3d", "namespaceperception__3d.html", [
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
@@ -371,7 +371,6 @@ var namespaces_dup =
       [ "open_gripper", "namespaceservice__utils.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8", null ]
     ] ],
     [ "Servo", "namespaceServo.html", "namespaceServo" ],
-    [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
     [ "simple_launch", "namespacesimple__launch.html", "namespacesimple__launch" ],
     [ "simulate_map", "namespacesimulate__map.html", [
       [ "generate_launch_description", "namespacesimulate__map.html#ad6149f6889b194fc6ef401af9ad4a40b", null ]
@@ -443,11 +442,6 @@ var namespaces_dup =
     ] ],
     [ "xarm_utils", "namespacexarm__utils.html", "namespacexarm__utils" ],
     [ "XArmServices", "namespaceXArmServices.html", "namespaceXArmServices" ],
-    [ "yolo_node", "namespaceyolo__node.html", "namespaceyolo__node" ],
-    [ "YoloEObjectDetector", "namespaceYoloEObjectDetector.html", "namespaceYoloEObjectDetector" ],
-    [ "YoloV5ObjectDetector", "namespaceYoloV5ObjectDetector.html", "namespaceYoloV5ObjectDetector" ],
-    [ "YoloV8ObjectDetector", "namespaceYoloV8ObjectDetector.html", "namespaceYoloV8ObjectDetector" ],
     [ "zed_simulator", "namespacezed__simulator.html", "namespacezed__simulator" ],
-    [ "zero_shot_object_detector_node", "namespacezero__shot__object__detector__node.html", "namespacezero__shot__object__detector__node" ],
-    [ "ZeroShotObjectDetector", "namespaceZeroShotObjectDetector.html", "namespaceZeroShotObjectDetector" ]
+    [ "zero_shot_object_detector_node", "namespacezero__shot__object__detector__node.html", "namespacezero__shot__object__detector__node" ]
 ];

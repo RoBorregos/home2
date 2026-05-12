@@ -18,6 +18,9 @@ var annotated_dup =
         [ "MoveItConfigsBuilder", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigsBuilder.html", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigsBuilder" ]
       ] ]
     ] ],
+    [ "base_detector_node", "namespacebase__detector__node.html", [
+      [ "BaseDetectorNode", "classbase__detector__node_1_1BaseDetectorNode.html", "classbase__detector__node_1_1BaseDetectorNode" ]
+    ] ],
     [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", [
       [ "LidarCalibrator", "classcalibrate__ignore__laser_1_1LidarCalibrator.html", "classcalibrate__ignore__laser_1_1LidarCalibrator" ]
     ] ],
@@ -55,6 +58,23 @@ var annotated_dup =
     ] ],
     [ "detection", "namespacedetection.html", [
       [ "Detection", "classdetection_1_1Detection.html", "classdetection_1_1Detection" ]
+    ] ],
+    [ "detectors", "namespacedetectors.html", [
+      [ "base", "namespacedetectors_1_1base.html", [
+        [ "BBOX", "classdetectors_1_1base_1_1BBOX.html", null ],
+        [ "Detection", "classdetectors_1_1base_1_1Detection.html", "classdetectors_1_1base_1_1Detection" ],
+        [ "DetectorModel", "classdetectors_1_1base_1_1DetectorModel.html", "classdetectors_1_1base_1_1DetectorModel" ]
+      ] ],
+      [ "registry", "namespacedetectors_1_1registry.html", [
+        [ "ModelRegistry", "classdetectors_1_1registry_1_1ModelRegistry.html", "classdetectors_1_1registry_1_1ModelRegistry" ]
+      ] ],
+      [ "yolo", "namespacedetectors_1_1yolo.html", [
+        [ "YoloModel", "classdetectors_1_1yolo_1_1YoloModel.html", "classdetectors_1_1yolo_1_1YoloModel" ]
+      ] ],
+      [ "yolo_e", "namespacedetectors_1_1yolo__e.html", [
+        [ "_SuppressStderr", "classdetectors_1_1yolo__e_1_1__SuppressStderr.html", "classdetectors_1_1yolo__e_1_1__SuppressStderr" ],
+        [ "YoloEModel", "classdetectors_1_1yolo__e_1_1YoloEModel.html", "classdetectors_1_1yolo__e_1_1YoloEModel" ]
+      ] ]
     ] ],
     [ "dishwasher_node", "namespacedishwasher__node.html", [
       [ "DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", "classdishwasher__node_1_1DishwasherNode" ]
@@ -169,10 +189,6 @@ var annotated_dup =
     [ "kalman_filter", "namespacekalman__filter.html", [
       [ "KalmanFilter", "classkalman__filter_1_1KalmanFilter.html", "classkalman__filter_1_1KalmanFilter" ]
     ] ],
-    [ "local_camera", "namespacelocal__camera.html", [
-      [ "Camera", "classlocal__camera_1_1Camera.html", "classlocal__camera_1_1Camera" ],
-      [ "NodeParams", "classlocal__camera_1_1NodeParams.html", null ]
-    ] ],
     [ "look_at_example", "namespacelook__at__example.html", [
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],
@@ -251,14 +267,7 @@ var annotated_dup =
       [ "NodeMonitor", "classnode__monitor_1_1NodeMonitor.html", "classnode__monitor_1_1NodeMonitor" ]
     ] ],
     [ "object_detector_node", "namespaceobject__detector__node.html", [
-      [ "NodeParams", "classobject__detector__node_1_1NodeParams.html", null ],
-      [ "object_detector_node", "classobject__detector__node_1_1object__detector__node.html", "classobject__detector__node_1_1object__detector__node" ]
-    ] ],
-    [ "ObjectDetector", "namespaceObjectDetector.html", [
-      [ "BBOX", "classObjectDetector_1_1BBOX.html", null ],
-      [ "Detection", "classObjectDetector_1_1Detection.html", "classObjectDetector_1_1Detection" ],
-      [ "ObjectDectector", "classObjectDetector_1_1ObjectDectector.html", "classObjectDetector_1_1ObjectDectector" ],
-      [ "ObjectDectectorParams", "classObjectDetector_1_1ObjectDectectorParams.html", "classObjectDetector_1_1ObjectDectectorParams" ]
+      [ "ObjectDetectorNode", "classobject__detector__node_1_1ObjectDetectorNode.html", "classobject__detector__node_1_1ObjectDetectorNode" ]
     ] ],
     [ "person_in_map", "namespaceperson__in__map.html", [
       [ "PersonLocation", "classperson__in__map_1_1PersonLocation.html", "classperson__in__map_1_1PersonLocation" ]
@@ -348,9 +357,6 @@ var annotated_dup =
     ] ],
     [ "Servo", "namespaceServo.html", [
       [ "Servo", "classServo_1_1Servo.html", "classServo_1_1Servo" ]
-    ] ],
-    [ "show_object_detection", "namespaceshow__object__detection.html", [
-      [ "ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", "classshow__object__detection_1_1ShowDetectionNode" ]
     ] ],
     [ "simple_launch", "namespacesimple__launch.html", [
       [ "TestBringup", "classsimple__launch_1_1TestBringup.html", "classsimple__launch_1_1TestBringup" ],
@@ -499,28 +505,11 @@ var annotated_dup =
     [ "XArmServices", "namespaceXArmServices.html", [
       [ "XArmServices", "classXArmServices_1_1XArmServices.html", "classXArmServices_1_1XArmServices" ]
     ] ],
-    [ "yolo_node", "namespaceyolo__node.html", [
-      [ "YoloNode", "classyolo__node_1_1YoloNode.html", "classyolo__node_1_1YoloNode" ]
-    ] ],
-    [ "YoloEObjectDetector", "namespaceYoloEObjectDetector.html", [
-      [ "SuppressStream", "classYoloEObjectDetector_1_1SuppressStream.html", "classYoloEObjectDetector_1_1SuppressStream" ],
-      [ "YoloEObjectDetector", "classYoloEObjectDetector_1_1YoloEObjectDetector.html", "classYoloEObjectDetector_1_1YoloEObjectDetector" ]
-    ] ],
-    [ "YoloV5ObjectDetector", "namespaceYoloV5ObjectDetector.html", [
-      [ "YoloV5ObjectDetector", "classYoloV5ObjectDetector_1_1YoloV5ObjectDetector.html", "classYoloV5ObjectDetector_1_1YoloV5ObjectDetector" ]
-    ] ],
-    [ "YoloV8ObjectDetector", "namespaceYoloV8ObjectDetector.html", [
-      [ "YoloV8ObjectDetector", "classYoloV8ObjectDetector_1_1YoloV8ObjectDetector.html", "classYoloV8ObjectDetector_1_1YoloV8ObjectDetector" ]
-    ] ],
     [ "zed_simulator", "namespacezed__simulator.html", [
       [ "ZedSimulator", "classzed__simulator_1_1ZedSimulator.html", "classzed__simulator_1_1ZedSimulator" ]
     ] ],
     [ "zero_shot_object_detector_node", "namespacezero__shot__object__detector__node.html", [
-      [ "NodeParams", "classzero__shot__object__detector__node_1_1NodeParams.html", null ],
-      [ "zero_shot_object_detector_node", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node" ]
-    ] ],
-    [ "ZeroShotObjectDetector", "namespaceZeroShotObjectDetector.html", [
-      [ "ZeroShotObjectDetector", "classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html", "classZeroShotObjectDetector_1_1ZeroShotObjectDetector" ]
+      [ "ZeroShotDetectorNode", "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html", "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode" ]
     ] ],
     [ "AddPrimitivesNode", "classAddPrimitivesNode.html", "classAddPrimitivesNode" ],
     [ "AreasServices", "classAreasServices.html", "classAreasServices" ],

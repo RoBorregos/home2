@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['object_5fdetector_5fcombined_0',['object_detector_combined',['../namespaceobject__detector__combined.html',1,'']]],
-  ['object_5fdetector_5fnode_1',['object_detector_node',['../namespaceobject__detector__node.html',1,'']]],
-  ['objectdetector_2',['ObjectDetector',['../namespaceObjectDetector.html',1,'']]]
+  ['nav_5fbasics_0',['nav_basics',['../namespacenav__basics.html',1,'']]],
+  ['nav_5fcentral_1',['nav_central',['../namespacenav__central.html',1,'']]],
+  ['nav_5fui_2',['nav_ui',['../namespacenav__ui.html',1,'']]],
+  ['nn_5fmatching_3',['nn_matching',['../namespacenn__matching.html',1,'']]],
+  ['node_5fmonitor_4',['node_monitor',['../namespacenode__monitor.html',1,'']]]
 ];

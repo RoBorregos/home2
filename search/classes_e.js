@@ -1,8 +1,11 @@
 var searchData=
 [
-  ['object_5fdetector_5fnode_0',['object_detector_node',['../classobject__detector__node_1_1object__detector__node.html',1,'object_detector_node']]],
-  ['objectcategory_1',['ObjectCategory',['../classpickandplace__task__manager_1_1ObjectCategory.html',1,'pickandplace_task_manager']]],
-  ['objectdectector_2',['ObjectDectector',['../classObjectDetector_1_1ObjectDectector.html',1,'ObjectDetector']]],
-  ['objectdectectorparams_3',['ObjectDectectorParams',['../classObjectDetector_1_1ObjectDectectorParams.html',1,'ObjectDetector']]],
-  ['objectinfo_4',['ObjectInfo',['../classpickandplace__task__manager_1_1ObjectInfo.html',1,'pickandplace_task_manager']]]
+  ['nav_5fcentral_0',['Nav_Central',['../classnav__central_1_1Nav__Central.html',1,'nav_central']]],
+  ['navcanvas_1',['NavCanvas',['../classnav__ui_1_1NavCanvas.html',1,'nav_ui']]],
+  ['navigationtasks_2',['NavigationTasks',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html',1,'task_manager::subtask_managers::nav_tasks']]],
+  ['navrosnode_3',['NavRosNode',['../classnav__ui_1_1NavRosNode.html',1,'nav_ui']]],
+  ['navui_4',['NavUI',['../classnav__ui_1_1NavUI.html',1,'nav_ui']]],
+  ['nearestneighbordistancemetric_5',['NearestNeighborDistanceMetric',['../classnn__matching_1_1NearestNeighborDistanceMetric.html',1,'nn_matching']]],
+  ['nodemonitor_6',['NodeMonitor',['../classnode__monitor_1_1NodeMonitor.html',1,'node_monitor']]],
+  ['novisualization_7',['NoVisualization',['../classvisualization_1_1NoVisualization.html',1,'visualization']]]
 ];

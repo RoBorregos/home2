@@ -1,7 +1,8 @@
 var hierarchy =
 [
+    [ "detectors.yolo_e._SuppressStderr", "classdetectors_1_1yolo__e_1_1__SuppressStderr.html", null ],
+    [ "detectors.base.BBOX", "classdetectors_1_1base_1_1BBOX.html", null ],
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
-    [ "ObjectDetector.BBOX", "classObjectDetector_1_1BBOX.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
     [ "CheckValue< T >", "structCheckValue.html", null ],
     [ "task_manager.utils.colored_logger.CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ],
@@ -9,7 +10,7 @@ var hierarchy =
     [ "task_manager.utils.config.MockConfig.Config", "classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html", null ],
     [ "task_manager.utils.config.SubtaskConfig.Config", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
     [ "task_manager.utils.config.TopicConfig.Config", "classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html", null ],
-    [ "ObjectDetector.Detection", "classObjectDetector_1_1Detection.html", null ],
+    [ "detectors.base.Detection", "classdetectors_1_1base_1_1Detection.html", null ],
     [ "task_manager.utils.exploration_planner.ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
     [ "task_manager.subtask_managers.generic_tasks.GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", [
@@ -43,6 +44,7 @@ var hierarchy =
     [ "metaclass", null, [
       [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
     ] ],
+    [ "detectors.registry.ModelRegistry", "classdetectors_1_1registry_1_1ModelRegistry.html", null ],
     [ "nn.Module", null, [
       [ "model.ClassBlock", "classmodel_1_1ClassBlock.html", null ],
       [ "model.PCB", "classmodel_1_1PCB.html", null ],
@@ -82,16 +84,13 @@ var hierarchy =
       [ "gpd_ros2::GraspDetectionService", "classgpd__ros2_1_1GraspDetectionService.html", null ]
     ] ],
     [ "rclpy.node.Node", null, [
-      [ "object_detector_node.object_detector_node", "classobject__detector__node_1_1object__detector__node.html", [
-        [ "zero_shot_object_detector_node.zero_shot_object_detector_node", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html", null ]
+      [ "base_detector_node.BaseDetectorNode", "classbase__detector__node_1_1BaseDetectorNode.html", [
+        [ "object_detector_node.ObjectDetectorNode", "classobject__detector__node_1_1ObjectDetectorNode.html", null ],
+        [ "zero_shot_object_detector_node.ZeroShotDetectorNode", "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html", null ]
       ] ],
       [ "simple_launch.TestNode", "classsimple__launch_1_1TestNode.html", null ]
     ] ],
-    [ "local_camera.NodeParams", "classlocal__camera_1_1NodeParams.html", null ],
-    [ "object_detector_node.NodeParams", "classobject__detector__node_1_1NodeParams.html", null ],
-    [ "zero_shot_object_detector_node.NodeParams", "classzero__shot__object__detector__node_1_1NodeParams.html", null ],
     [ "object", null, [
-      [ "YoloEObjectDetector.SuppressStream", "classYoloEObjectDetector_1_1SuppressStream.html", null ],
       [ "detection.Detection", "classdetection_1_1Detection.html", null ],
       [ "kalman_filter.KalmanFilter", "classkalman__filter_1_1KalmanFilter.html", null ],
       [ "moondream_proto_pb2_grpc.MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
@@ -103,7 +102,6 @@ var hierarchy =
       [ "visualization.NoVisualization", "classvisualization_1_1NoVisualization.html", null ],
       [ "visualization.Visualization", "classvisualization_1_1Visualization.html", null ]
     ] ],
-    [ "ObjectDetector.ObjectDectectorParams", "classObjectDetector_1_1ObjectDectectorParams.html", null ],
     [ "pickandplace_task_manager.ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", null ],
     [ "PickAndPlaceTM", null, [
       [ "test_ppc_cabinet_place.PPCTestCabinetPlace", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html", null ]
@@ -152,9 +150,13 @@ var hierarchy =
     [ "XArmServices.XArmServices", "classXArmServices_1_1XArmServices.html", null ],
     [ "camera_test.ZedSimulator", "classcamera__test_1_1ZedSimulator.html", null ],
     [ "ABC", null, [
-      [ "ObjectDetector.ObjectDectector", "classObjectDetector_1_1ObjectDectector.html", null ],
       [ "Planner.Planner", "classPlanner_1_1Planner.html", null ],
-      [ "Servo.Servo", "classServo_1_1Servo.html", null ]
+      [ "Servo.Servo", "classServo_1_1Servo.html", null ],
+      [ "base_detector_node.BaseDetectorNode", "classbase__detector__node_1_1BaseDetectorNode.html", null ],
+      [ "detectors.base.DetectorModel", "classdetectors_1_1base_1_1DetectorModel.html", [
+        [ "detectors.yolo.YoloModel", "classdetectors_1_1yolo_1_1YoloModel.html", null ],
+        [ "detectors.yolo_e.YoloEModel", "classdetectors_1_1yolo__e_1_1YoloEModel.html", null ]
+      ] ]
     ] ],
     [ "BaseModel", null, [
       [ "storing_groceries_manager.Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ],
@@ -221,7 +223,6 @@ var hierarchy =
       [ "hric_task_manager.HRIC_TM", "classhric__task__manager_1_1HRIC__TM.html", null ],
       [ "image_orienter.ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", null ],
       [ "is_person_inside.IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", null ],
-      [ "local_camera.Camera", "classlocal__camera_1_1Camera.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
       [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
       [ "nav_central.Nav_Central", "classnav__central_1_1Nav__Central.html", null ],
@@ -246,7 +247,6 @@ var hierarchy =
       [ "run_while_hearing.ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", null ],
       [ "safety_task_manager.SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", null ],
       [ "scripts.xacro2mjcf.Xacro2Mjcf", "classscripts_1_1xacro2mjcf_1_1Xacro2Mjcf.html", null ],
-      [ "show_object_detection.ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", null ],
       [ "simulate_position.SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
@@ -264,13 +264,7 @@ var hierarchy =
       [ "trash_detection_node.TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", null ],
       [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "xarm_utils.grasp_detector.GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", null ],
-      [ "yolo_node.YoloNode", "classyolo__node_1_1YoloNode.html", null ],
       [ "zed_simulator.ZedSimulator", "classzed__simulator_1_1ZedSimulator.html", null ]
-    ] ],
-    [ "ObjectDectector", null, [
-      [ "YoloV5ObjectDetector.YoloV5ObjectDetector", "classYoloV5ObjectDetector_1_1YoloV5ObjectDetector.html", null ],
-      [ "YoloV8ObjectDetector.YoloV8ObjectDetector", "classYoloV8ObjectDetector_1_1YoloV8ObjectDetector.html", null ],
-      [ "ZeroShotObjectDetector.ZeroShotObjectDetector", "classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html", null ]
     ] ],
     [ "ParameterBuilder", null, [
       [ "arm_pkg.moveit_configs_builder.DualMoveItConfigsBuilder", "classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html", null ],
@@ -294,8 +288,5 @@ var hierarchy =
     ] ],
     [ "Servo", null, [
       [ "MoveItServo.MoveItServo", "classMoveItServo_1_1MoveItServo.html", null ]
-    ] ],
-    [ "ZeroShotObjectDetector", null, [
-      [ "YoloEObjectDetector.YoloEObjectDetector", "classYoloEObjectDetector_1_1YoloEObjectDetector.html", null ]
     ] ]
 ];

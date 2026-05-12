@@ -1,21 +1,6 @@
 var searchData=
 [
-  ['map_5farea_5ftagger_0',['map_area_tagger',['../namespacemap__area__tagger.html',1,'']]],
-  ['mapping_1',['mapping',['../namespacemapping.html',1,'']]],
-  ['model_2',['model',['../namespacemodel.html',1,'']]],
-  ['monitor_3',['monitor',['../namespacemonitor.html',1,'']]],
-  ['moondream_5flib_4',['moondream_lib',['../namespacemoondream__lib.html',1,'']]],
-  ['moondream_5fnode_5',['moondream_node',['../namespacemoondream__node.html',1,'']]],
-  ['moondream_5fproto_5fpb2_6',['moondream_proto_pb2',['../namespacemoondream__proto__pb2.html',1,'']]],
-  ['moondream_5fproto_5fpb2_5fgrpc_7',['moondream_proto_pb2_grpc',['../namespacemoondream__proto__pb2__grpc.html',1,'']]],
-  ['motion_5fplanning_5fserver_8',['motion_planning_server',['../namespacemotion__planning__server.html',1,'']]],
-  ['moveit_9',['moveit',['../namespacemoveit.html',1,'']]],
-  ['moveitplanner_10',['MoveItPlanner',['../namespaceMoveItPlanner.html',1,'']]],
-  ['moveitservo_11',['MoveItServo',['../namespaceMoveItServo.html',1,'']]],
-  ['mujoco_5frgbd_5fcamera_12',['mujoco_rgbd_camera',['../namespacemujoco__rgbd__camera.html',1,'']]],
-  ['mujoco_5fros2_5fcontrol_13',['mujoco_ros2_control',['../namespacemujoco__ros2__control.html',1,'']]],
-  ['mujoco_5fros2_5fsensors_14',['mujoco_ros2_sensors',['../namespacemujoco__ros2__sensors.html',1,'']]],
-  ['mujoco_5fsim_5finit_15',['mujoco_sim_init',['../namespacemujoco__sim__init.html',1,'']]],
-  ['mujoco_5fsimulate_5fgui_16',['mujoco_simulate_gui',['../namespacemujoco__simulate__gui.html',1,'']]],
-  ['mujoco_5fvisualization_17',['mujoco_visualization',['../namespacemujoco__visualization.html',1,'']]]
+  ['launch_5fnav_0',['launch_nav',['../namespacelaunch__nav.html',1,'']]],
+  ['linear_5fassignment_1',['linear_assignment',['../namespacelinear__assignment.html',1,'']]],
+  ['look_5fat_5fexample_2',['look_at_example',['../namespacelook__at__example.html',1,'']]]
 ];

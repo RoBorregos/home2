@@ -1,8 +1,9 @@
 var dir_9bb14cb5732342718fbdf6789400b486 =
 [
-    [ "ObjectDetector.py", "ObjectDetector_8py.html", "ObjectDetector_8py" ],
-    [ "YoloEObjectDetector.py", "YoloEObjectDetector_8py.html", "YoloEObjectDetector_8py" ],
-    [ "YoloV5ObjectDetector.py", "YoloV5ObjectDetector_8py.html", "YoloV5ObjectDetector_8py" ],
-    [ "YoloV8ObjectDetector.py", "YoloV8ObjectDetector_8py.html", "YoloV8ObjectDetector_8py" ],
-    [ "ZeroShotObjectDetector.py", "ZeroShotObjectDetector_8py.html", "ZeroShotObjectDetector_8py" ]
+    [ "__init__.py", "vision_2packages_2object__detector__2d_2scripts_2detectors_2____init_____8py.html", null ],
+    [ "base.py", "base_8py.html", "base_8py" ],
+    [ "registry.py", "registry_8py.html", "registry_8py" ],
+    [ "utils.py", "vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html", "vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py" ],
+    [ "yolo.py", "yolo_8py.html", "yolo_8py" ],
+    [ "yolo_e.py", "yolo__e_8py.html", "yolo__e_8py" ]
 ];

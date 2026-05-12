@@ -92,17 +92,14 @@ $(document).ready(function(){initNavTree('namespacezero__shot__object__detector_
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">zero_shot_object_detector_node Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Classes</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classzero__shot__object__detector__node_1_1NodeParams.html">NodeParams</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html">zero_shot_object_detector_node</a></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html">ZeroShotDetectorNode</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
@@ -111,15 +108,9 @@ Functions</h2></td></tr>
 <tr class="separator:aba70d0632c70d26521c3901943462bc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1489f755c75c3eed93e2fe3ab401521f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacezero__shot__object__detector__node.html#a1489f755c75c3eed93e2fe3ab401521f">main</a> (args=None)</td></tr>
 <tr class="separator:a1489f755c75c3eed93e2fe3ab401521f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:ac32ca7acf55aac956de5fceb8911e9b3"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacezero__shot__object__detector__node.html#ac32ca7acf55aac956de5fceb8911e9b3">MODELS_PATH</a> = str(pathlib.Path(__file__).parent) + &quot;/models/&quot;</td></tr>
-<tr class="separator:ac32ca7acf55aac956de5fceb8911e9b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a869a6d39d4b1ca7f56f1c3c1ee76495c"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacezero__shot__object__detector__node.html#a869a6d39d4b1ca7f56f1c3c1ee76495c">ARGS</a></td></tr>
-<tr class="separator:a869a6d39d4b1ca7f56f1c3c1ee76495c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><pre class="fragment">Runs YOLOE zero-shot detector with dynamically settable classes via SetDetectorClasses service.</pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="aba70d0632c70d26521c3901943462bc4" name="aba70d0632c70d26521c3901943462bc4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aba70d0632c70d26521c3901943462bc4">&#9670;&#160;</a></span>generate_launch_description()</h2>
 
@@ -149,57 +140,6 @@ Variables</h2></td></tr>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>args</em> = <code>None</code></td><td>)</td>
           <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a869a6d39d4b1ca7f56f1c3c1ee76495c" name="a869a6d39d4b1ca7f56f1c3c1ee76495c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a869a6d39d4b1ca7f56f1c3c1ee76495c">&#9670;&#160;</a></span>ARGS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">dict zero_shot_object_detector_node.ARGS</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
-<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;RGB_IMAGE_TOPIC&quot;</span>: CAMERA_TOPIC,</div>
-<div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;DEPTH_IMAGE_TOPIC&quot;</span>: DEPTH_IMAGE_TOPIC,</div>
-<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;CAMERA_INFO_TOPIC&quot;</span>: CAMERA_INFO_TOPIC,</div>
-<div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;DETECTIONS_TOPIC&quot;</span>: ZERO_SHOT_DETECTIONS_TOPIC,</div>
-<div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&quot;DETECTIONS_IMAGE_TOPIC&quot;</span>: ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,</div>
-<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&quot;DETECTIONS_POSES_TOPIC&quot;</span>: ZERO_SHOT_DETECTIONS_POSES_TOPIC,</div>
-<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;DETECTIONS_3D_TOPIC&quot;</span>: ZERO_SHOT_DETECTIONS_3D_TOPIC,</div>
-<div class="line"><span class="lineno">    9</span>    <span class="stringliteral">&quot;DETECTIONS_ACTIVE_TOPIC&quot;</span>: ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC,</div>
-<div class="line"><span class="lineno">   10</span>    <span class="stringliteral">&quot;SET_DETECTOR_CLASSES_SERVICE&quot;</span>: SET_DETECTOR_CLASSES_SERVICE,</div>
-<div class="line"><span class="lineno">   11</span>    <span class="stringliteral">&quot;CAMERA_FRAME&quot;</span>: CAMERA_FRAME,</div>
-<div class="line"><span class="lineno">   12</span>    <span class="stringliteral">&quot;TARGET_FRAME&quot;</span>: <span class="stringliteral">&quot;base_link&quot;</span>,</div>
-<div class="line"><span class="lineno">   13</span>    <span class="stringliteral">&quot;YOLO_MODEL_PATH&quot;</span>: ZERO_SHOT_MODEL,</div>
-<div class="line"><span class="lineno">   14</span>    <span class="stringliteral">&quot;USE_ACTIVE_FLAG&quot;</span>: <span class="keyword">False</span>,</div>
-<div class="line"><span class="lineno">   15</span>    <span class="stringliteral">&quot;DEPTH_ACTIVE&quot;</span>: <span class="keyword">True</span>,</div>
-<div class="line"><span class="lineno">   16</span>    <span class="stringliteral">&quot;VERBOSE&quot;</span>: <span class="keyword">False</span>,</div>
-<div class="line"><span class="lineno">   17</span>    <span class="stringliteral">&quot;USE_YOLO8&quot;</span>: <span class="keyword">False</span>,</div>
-<div class="line"><span class="lineno">   18</span>    <span class="stringliteral">&quot;FLIP_IMAGE&quot;</span>: <span class="keyword">False</span>,</div>
-<div class="line"><span class="lineno">   19</span>    <span class="stringliteral">&quot;USE_ZED_TRANSFORM&quot;</span>: <span class="keyword">True</span>,</div>
-<div class="line"><span class="lineno">   20</span>    <span class="stringliteral">&quot;MIN_SCORE_THRESH&quot;</span>: 0.25,</div>
-<div class="line"><span class="lineno">   21</span>    <span class="stringliteral">&quot;CLASSES&quot;</span>: ZERO_SHOT_DEFAULT_CLASSES,</div>
-<div class="line"><span class="lineno">   22</span>}</div>
-</div><!-- fragment -->
-</div>
-</div>
-<a id="ac32ca7acf55aac956de5fceb8911e9b3" name="ac32ca7acf55aac956de5fceb8911e9b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac32ca7acf55aac956de5fceb8911e9b3">&#9670;&#160;</a></span>MODELS_PATH</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">str zero_shot_object_detector_node.MODELS_PATH = str(pathlib.Path(__file__).parent) + &quot;/models/&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">

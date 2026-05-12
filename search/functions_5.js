@@ -16,7 +16,7 @@ var searchData=
   ['execute_5ftrajectory_13',['execute_trajectory',['../classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a5caded65b309f80f5596a14c8dd31586',1,'frida_motion_planning::motion_planning_server::MotionPlanningServer']]],
   ['export_5fcommand_5finterfaces_14',['export_command_interfaces',['../classmujoco__ros2__control_1_1MujocoSystem.html#af1395d02283b2c620ff4747e37256e6b',1,'mujoco_ros2_control::MujocoSystem']]],
   ['export_5fstate_5finterfaces_15',['export_state_interfaces',['../classmujoco__ros2__control_1_1MujocoSystem.html#a2a54f868db4f5152c0924553a18142b3',1,'mujoco_ros2_control::MujocoSystem']]],
-  ['extract3d_16',['extract3D',['../classObjectDetector_1_1ObjectDectector.html#a27d0fa07c0c29137b6c34c9312860095',1,'ObjectDetector::ObjectDectector']]],
+  ['extract_5f3d_16',['extract_3d',['../classbase__detector__node_1_1BaseDetectorNode.html#a75bd2b91ada346b08645a8699da043c0',1,'base_detector_node::BaseDetectorNode']]],
   ['extract_5fdata_17',['extract_data',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a3645a215289e1cbe97c6196c6a09b216',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['extract_5ffeature_5ffrom_5fimg_18',['extract_feature_from_img',['../namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2',1,'reid_model']]],
   ['extract_5ffeature_5ffrom_5fimg_5fbatch_19',['extract_feature_from_img_batch',['../namespacereid__model.html#a9d2fa5cd96d1d77a54412fa812689833',1,'reid_model']]],

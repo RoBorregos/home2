@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['waitforcontrollerinputnode_0',['WaitForControllerInputNode',['../classwait__for__controller__input__node_1_1WaitForControllerInputNode.html',1,'wait_for_controller_input_node']]],
-  ['wrenchsensor_1',['WrenchSensor',['../classmujoco__ros2__sensors_1_1WrenchSensor.html',1,'mujoco_ros2_sensors']]],
-  ['wrenchsensorstruct_2',['WrenchSensorStruct',['../structmujoco__ros2__sensors_1_1WrenchSensorStruct.html',1,'mujoco_ros2_sensors']]]
+  ['visiontasks_0',['VisionTasks',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html',1,'task_manager::subtask_managers::vision_tasks']]],
+  ['visualization_1',['Visualization',['../classvisualization_1_1Visualization.html',1,'visualization']]]
 ];
