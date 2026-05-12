@@ -2,7 +2,7 @@
 
 [submodule "manipulation/packages/gpd"]
 	path = manipulation/packages/gpd
-	url = https://github.com/RoBorregos/gpd.git
+	url = https://github.com/Deivideich/gpd
 	
 [submodule "manipulation/packages/pymoveit2"]
 	path = manipulation/packages/pymoveit2
