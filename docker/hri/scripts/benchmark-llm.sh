@@ -105,6 +105,8 @@ while [[ $# -gt 0 ]]; do
         --prompt) PROMPT="$2"; shift 2 ;;
         --model) MODEL_OVERRIDE="$2"; shift 2 ;;
         --usecase) USECASE="$2"; shift 2 ;;
+        --all) USECASE="all"; shift 1 ;;
+        --thinking) NO_THINK="" ; shift 1 ;;
         --list-usecases)
             echo "Available use cases:"
             echo "  extract_data       — extract a specific piece of info from free text"
@@ -262,17 +264,34 @@ declare -A USECASE_DESC=(
     [categorize_shelves]="assign categories to shelves given their contents"
 )
 
+ALL_USECASES=(is_coherent extract_data llm_wrapper categorize_shelves)
+
 echo "LLM Backend Benchmark"
-if [[ -n "$USECASE" ]]; then
+if [[ "$USECASE" == "all" ]]; then
+    echo "Use cases: all (${ALL_USECASES[*]})"
+elif [[ -n "$USECASE" ]]; then
     echo "Use case: $USECASE — ${USECASE_DESC[$USECASE]:-}"
 else
     echo "Prompt: $PROMPT"
 fi
 echo "Runs per endpoint: $RUNS"
 
-for i in "${!ENDPOINTS[@]}"; do
-    run_single "${ENDPOINTS[$i]}" "${LABELS[$i]}"
-done
+if [[ "$USECASE" == "all" ]]; then
+    for uc in "${ALL_USECASES[@]}"; do
+        echo
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "USE CASE: $uc — ${USECASE_DESC[$uc]}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        USECASE="$uc"
+        for i in "${!ENDPOINTS[@]}"; do
+            run_single "${ENDPOINTS[$i]}" "${LABELS[$i]}"
+        done
+    done
+else
+    for i in "${!ENDPOINTS[@]}"; do
+        run_single "${ENDPOINTS[$i]}" "${LABELS[$i]}"
+    done
+fi
 
 echo
 echo "Done."
