@@ -2,7 +2,11 @@
 
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    IncludeLaunchDescription,
+    OpaqueFunction,
+)
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -17,14 +21,30 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
     sim_time_param = {"use_sim_time": use_sim_time}
 
-    return LaunchDescription(
-        [
-            DeclareLaunchArgument(
-                "use_sim_time",
-                default_value="false",
-                description="Use /clock (true) for the MuJoCo sim, wall time (false) for real robot.",
-            ),
-            # gpd
+    def grasp_detector_node(context, *args, **kwargs):
+        grasp_backend = LaunchConfiguration("grasp_backend").perform(context)
+        if grasp_backend == "contact_graspnet":
+            return [
+                Node(
+                    package="contact_graspnet_ros",
+                    executable="contact_graspnet_node",
+                    name="contact_graspnet_node",
+                    output="screen",
+                    emulate_tty=True,
+                    respawn=True,
+                    parameters=[
+                        {
+                            "ckpt_dir": LaunchConfiguration("ckpt_dir").perform(
+                                context
+                            ),
+                            "forward_passes": 1,
+                            "z_range": [0.2, 1.8],
+                        }
+                    ],
+                )
+            ]
+        # default: gpd
+        return [
             Node(
                 package="arm_pkg",
                 executable="gpd_service",
@@ -33,7 +53,27 @@ def generate_launch_description():
                 emulate_tty=True,
                 respawn=True,
                 parameters=[sim_time_param],
+            )
+        ]
+
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument(
+                "use_sim_time",
+                default_value="false",
+                description="Use /clock (true) for the MuJoCo sim, wall time (false) for real robot.",
             ),
+            DeclareLaunchArgument(
+                "grasp_backend",
+                default_value="gpd",
+                description="Grasp detection backend: 'gpd' (default) or 'contact_graspnet'.",
+            ),
+            DeclareLaunchArgument(
+                "ckpt_dir",
+                default_value="checkpoints/contact_graspnet",
+                description="Path to Contact-GraspNet checkpoint dir (used only when grasp_backend=contact_graspnet).",
+            ),
+            OpaqueFunction(function=grasp_detector_node),
             Node(
                 package="pick_and_place",
                 executable="manipulation_core.py",
