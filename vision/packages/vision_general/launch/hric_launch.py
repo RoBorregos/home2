@@ -13,13 +13,6 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="image_orienter.py",
-                name="image_orienter",
-                output="screen",
-                emulate_tty=True,
-            ),
-            Node(
-                package="vision_general",
                 executable="face_recognition_node.py",
                 name="face_recognition",
                 output="screen",
@@ -40,11 +33,20 @@ def generate_launch_description():
                 emulate_tty=True,
             ),
             Node(
-                package="moondream_run",
-                executable="moondream_node.py",
-                name="moondream_node",
+                package="vision_general",
+                executable="image_orienter.py",
+                name="image_orienter",
                 output="screen",
                 emulate_tty=True,
+            ),
+            Node(
+                package="object_detector_2d",
+                executable="object_detector_node.py",
+                name="ObjectDetect2D",
+                respawn=True,
+                output="screen",
+                emulate_tty=True,
+                parameters=[config, {"models": []}],
             ),
         ]
     )

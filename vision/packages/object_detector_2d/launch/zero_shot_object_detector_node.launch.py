@@ -30,6 +30,13 @@ def generate_launch_description():
                 description="Use /clock (true) for the MuJoCo sim, wall time (false) for real robot.",
             ),
             Node(
+                package="vision_general",
+                executable="image_orienter.py",
+                name="image_orienter",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
                 package="object_detector_2d",
                 executable="zero_shot_object_detector_node.py",
                 name="ZeroShotDetect2D",
