@@ -31,18 +31,20 @@ if [ "$ROLE" = "storing" ]; then
     tail -f /dev/null
 fi
 
-# qwen3.5 on port 11434 — hric, carry, gpsr
+# qwen3-8b on port 11434 — hric, carry, gpsr
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "carry" ] || [ "$ROLE" = "gpsr" ]; then
-    echo "Starting qwen3.5 on port 11434..."
+    echo "Starting qwen3-8b on port 11434..."
     llama-server \
-        --model "$MODELS_DIR/qwen3.5.Q4_K_M.gguf" \
+        --model "$MODELS_DIR/qwen3-8b.Q4_K_M.gguf" \
         --host 0.0.0.0 \
         --port 11434 \
-        --ctx-size 4096 \
+        --ctx-size 2048 \
         -ngl 99 \
         --flash-attn on \
+        --cache-type-k q8_0 \
+        --cache-type-v q8_0 \
         --parallel 1 \
-        --alias qwen3.5 \
+        --alias qwen3 \
         &
     wait_for_server 11434
 fi
