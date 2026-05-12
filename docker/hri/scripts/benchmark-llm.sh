@@ -1,23 +1,26 @@
 #!/bin/bash
-# Benchmark LLM backends: measures time-to-first-token (TTFT) and tokens/second.
+# Benchmark LLM backend: measures time-to-first-token (TTFT) and tokens/second.
+#
+# Runs against whichever service is currently on port 11434.
+# To compare llama.cpp vs Ollama: run with one service, then swap and run again.
 #
 # Usage:
-#   ./benchmark-llm.sh [--runs N] [--usecase CASE] [--list-usecases] [endpoint1 label1] ...
-#
-# Default (no args): compares llama.cpp (port 11434) vs Ollama (port 11436)
+#   ./benchmark-llm.sh [--runs N] [--usecase CASE] [--thinking] [--list-usecases]
+#   ./benchmark-llm.sh [endpoint label]   # custom endpoint
 #
 # Use cases (--usecase <name>):
 #   extract_data       — extracts a specific piece of info from free text
-#                        (e.g. "what drink does the person want?")
 #   is_coherent        — decides if a robot command is complete and executable
-#                        (e.g. "Go to the kitchen and pick up the apple")
 #   llm_wrapper        — general Q&A using a provided context paragraph
 #   categorize_shelves — assigns categories to shelves given their contents
 #
+# Flags:
+#   --thinking         — enable thinking mode (removes /no_think from prompts)
+#
 # Examples:
 #   ./benchmark-llm.sh --usecase is_coherent
-#   ./benchmark-llm.sh --runs 3 --usecase extract_data
-#   ./benchmark-llm.sh "http://localhost:11434/v1" "llama.cpp" "http://localhost:11436/v1" "ollama"
+#   ./benchmark-llm.sh --usecase extract_data --thinking
+#   ./benchmark-llm.sh --runs 3 --usecase is_coherent
 
 set -euo pipefail
 
@@ -123,10 +126,10 @@ if [[ -z "$PROMPT" && -z "$USECASE" ]]; then
     USECASE="is_coherent"
 fi
 
-# Default: compare llama.cpp (11434) vs Ollama (11436)
+# Default: benchmark whichever service is running on port 11434
 if [[ ${#ENDPOINTS[@]} -eq 0 ]]; then
-    ENDPOINTS=("http://localhost:11434/v1" "http://localhost:11436/v1")
-    LABELS=("llama.cpp (qwen3.5)" "ollama (qwen3.5)")
+    ENDPOINTS=("http://localhost:11434/v1")
+    LABELS=("llm (port 11434)")
 fi
 
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required. Install with: apt-get install -y jq"; exit 1; }

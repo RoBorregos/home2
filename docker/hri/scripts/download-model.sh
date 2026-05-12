@@ -11,14 +11,13 @@ ask_for_model() {
 }
 
 echo "Which models do you want to download?"
-echo "  1) qwen3-1.7b       (Qwen3-1.7B Q4_K_M ~1GB GGUF, for llama.cpp — fast NLP tasks)"
-echo "  2) qwen3-8b         (Qwen3-8B Q4_K_M ~5.2GB GGUF, for llama.cpp — same model as Ollama)"
-echo "  3) qwen3            (Qwen3 latest via Ollama pull, for Ollama comparison)"
-echo "  4) nomic-embed-text (embeddings model, for Ollama)"
-echo "  5) rbrgs            (fine-tuned command interpreter GGUF)"
-echo "  6) DeepFilterNet3"
-echo "  7) ei-door          (Door detection)"
-echo "  8) ei-kws           (Keyword wakeword)"
+echo "  1) qwen3-8b         (Qwen3-8B Q4_K_M GGUF, for llama.cpp)"
+echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
+echo "  3) qwen3            (Qwen3 via Ollama pull — backup)"
+echo "  4) nomic-embed-text (embeddings via Ollama pull — backup)"
+echo "  5) DeepFilterNet3"
+echo "  6) ei-door          (Door detection)"
+echo "  7) ei-kws           (Keyword wakeword)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -30,19 +29,8 @@ fi
 
 SCRIPT_DIR="../../hri/packages/nlp/assets"
 
-# ── qwen3-1.7b GGUF for llama.cpp (fast NLP tasks) ───────────────────────────
-if ask_for_model qwen3-1.7b 1; then
-    if [ ! -f "$SCRIPT_DIR/qwen3-1.7b.Q4_K_M.gguf" ]; then
-        echo "Downloading qwen3-1.7b GGUF for llama.cpp..."
-        curl -L https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q4_K_M.gguf \
-             -o "$SCRIPT_DIR/qwen3-1.7b.Q4_K_M.gguf"
-    else
-        echo "qwen3-1.7b GGUF already exists. Skipping."
-    fi
-fi
-
-# ── qwen3-8b GGUF for llama.cpp (same model as Ollama default) ───────────────
-if ask_for_model qwen3-8b 2; then
+# ── qwen3-8b GGUF for llama.cpp ───────────────────────────────────────────────
+if ask_for_model qwen3-8b 1; then
     if [ ! -f "$SCRIPT_DIR/qwen3-8b.Q4_K_M.gguf" ]; then
         echo "Downloading qwen3-8b GGUF for llama.cpp..."
         curl -L https://huggingface.co/unsloth/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf \
@@ -53,7 +41,7 @@ if ask_for_model qwen3-8b 2; then
 fi
 
 # ── rbrgs GGUF for llama.cpp ──────────────────────────────────────────────────
-if ask_for_model rbrgs 5; then
+if ask_for_model rbrgs 2; then
     if [ ! -f "$SCRIPT_DIR/rbrgs.F16.gguf" ]; then
         echo "Downloading rbrgs GGUF..."
         curl -L https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf \
@@ -68,7 +56,7 @@ DF_MODEL_DIR="../../hri/packages/speech/assets/downloads"
 DF_MODEL_URL="https://github.com/Rikorose/DeepFilterNet/raw/main/models/DeepFilterNet3.zip"
 ZIP_FILE="$DF_MODEL_DIR/DeepFilterNet3.zip"
 
-if ask_for_model DeepFilterNet3 6; then
+if ask_for_model DeepFilterNet3 5; then
     if [ ! -d "$DF_MODEL_DIR/DeepFilterNet3" ]; then
         echo "Downloading DeepFilterNet3 model..."
         mkdir -p "$DF_MODEL_DIR"
@@ -156,7 +144,7 @@ download_ei_model() {
     docker rm "$CONTAINER_ID" 2>/dev/null
 }
 
-if ask_for_model ei-door 7; then
+if ask_for_model ei-door 6; then
     if [ -f "$EI_DOWNLOAD_DIR/door/model.eim" ]; then
         echo "Edge Impulse door model already exists. Skipping."
     else
@@ -164,7 +152,7 @@ if ask_for_model ei-door 7; then
     fi
 fi
 
-if ask_for_model ei-kws 8; then
+if ask_for_model ei-kws 7; then
     if [ -f "$EI_DOWNLOAD_DIR/kws/model.eim" ]; then
         echo "Edge Impulse kws model already exists. Skipping."
     else
@@ -172,20 +160,23 @@ if ask_for_model ei-kws 8; then
     fi
 fi
 
-# ── Ollama models (qwen3 + nomic-embed-text + rbrgs) ─────────────────────────
-# qwen3 is pulled via Ollama (Ollama 0.6.8 compatible).
-# rbrgs is imported from its GGUF using a Modelfile.
-OLLAMA_IMAGE="dustynv/ollama:0.6.8-r36.4"
+# ── Ollama models (qwen3 + nomic-embed-text) — backup ─────────────────────────
 ABSOLUTE_SCRIPT_DIR="$(cd "$SCRIPT_DIR" && pwd)"
 
 needs_ollama=false
 ask_for_model qwen3 3            && [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/qwen3" ]           && needs_ollama=true
 ask_for_model nomic-embed-text 4 && [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/nomic-embed-text" ] && needs_ollama=true
-ask_for_model rbrgs 5 && [ -f "$SCRIPT_DIR/rbrgs.F16.gguf" ] && \
-    [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/rbrgs" ]                                       && needs_ollama=true
 
 if $needs_ollama; then
-    echo "Starting temporary Ollama container to pull/import models..."
+    if docker images | grep -q "dustynv/ollama"; then
+        OLLAMA_IMAGE="dustynv/ollama:0.6.8-r36.4"
+        OLLAMA_CMD="bash -c \"ollama serve & sleep infinity\""
+    else
+        OLLAMA_IMAGE="ollama/ollama"
+        OLLAMA_CMD=""
+    fi
+
+    echo "Starting temporary Ollama container to pull models..."
     OLLAMA_CONTAINER=$(docker run -d \
         --runtime=nvidia \
         -e OLLAMA_MODELS=/ollama \
@@ -215,14 +206,6 @@ if $needs_ollama; then
         echo "Pulling nomic-embed-text via Ollama..."
         docker exec "$OLLAMA_CONTAINER" ollama pull nomic-embed-text
         echo "nomic-embed-text pulled."
-    fi
-
-    if ask_for_model rbrgs 5 && [ -f "$SCRIPT_DIR/rbrgs.F16.gguf" ] && \
-       [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/rbrgs" ]; then
-        printf 'FROM /ollama/rbrgs.F16.gguf\n' > "$SCRIPT_DIR/Modelfile.rbrgs"
-        echo "Importing rbrgs into Ollama..."
-        docker exec "$OLLAMA_CONTAINER" ollama create -f /ollama/Modelfile.rbrgs rbrgs
-        echo "rbrgs imported."
     fi
 
     docker stop "$OLLAMA_CONTAINER" >/dev/null && docker rm "$OLLAMA_CONTAINER" >/dev/null
