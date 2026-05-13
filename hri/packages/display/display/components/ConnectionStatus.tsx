@@ -31,8 +31,8 @@ export function ConnectionStatus() {
     <div
       className={
         connected
-          ? "px-4 py-2 rounded-full text-xl font-medium bg-(--blue-bg) text-(--blue)"
-          : "px-4 py-2 rounded-full text-xl font-medium bg-(--orange-bg) text-(--orange)"
+          ? "px-2 py-1 rounded-full text-sm font-medium bg-(--blue-bg) text-(--blue)"
+          : "px-2 py-1 rounded-full text-sm font-medium bg-(--orange-bg) text-(--orange)"
       }
     >
       {connected ? "Connected" : "Disconnected"}

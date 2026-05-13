@@ -61,18 +61,18 @@ export function AudioStateIndicator() {
 
   if (state === "idle") {
     return (
-      <div className="flex items-center gap-3 px-4 py-2 rounded-full">
-        <VolumeX className="h-8 w-8 text-(--text-gray)" />
-        <span className="text-xl font-medium text-(--text-gray)">Idle</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full">
+        <VolumeX className="h-4 w-4 text-(--text-gray)" />
+        <span className="text-sm font-medium text-(--text-gray)">Idle</span>
       </div>
     );
   }
 
   if (state === "saying") {
     return (
-      <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-(--purple-bg)">
-        <Speaker className="h-8 w-8 text-(--purple) animate-pulse" />
-        <span className="text-xl font-medium text-(--purple)">Speaking</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-(--purple-bg)">
+        <Speaker className="h-4 w-4 text-(--purple) animate-pulse" />
+        <span className="text-sm font-medium text-(--purple)">Speaking</span>
       </div>
     );
   }
