@@ -39,7 +39,7 @@ from frida_constants.hri_constants import (
     TASK_STATUS_TOPIC,
     TASK_STEP_TOPIC,
     TIMEOUT,
-    WAKEWORD_TOPIC,
+    KEYWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
@@ -184,7 +184,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
-            String, WAKEWORD_TOPIC, self._get_keyword, 10
+            String, KEYWORD_TOPIC, self._get_keyword, 10
         )
 
         self.current_transcription = ""

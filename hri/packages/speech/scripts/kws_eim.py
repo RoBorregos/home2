@@ -26,7 +26,7 @@ class EdgeImpulseKWSNode(Node):
 
         self.declare_parameter("EI_SERVER_URL", "http://localhost:1338")
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
-        self.declare_parameter("WAKEWORD_TOPIC", "/hri/speech/oww")
+        self.declare_parameter("KEYWORD_TOPIC", "/hri/speech/kws")
         self.declare_parameter("detection_cooldown", 1.0)
         self.declare_parameter("SENSITIVITY_THRESHOLD", 0.5)
         self.declare_parameter("sample_rate", 16000)
@@ -48,8 +48,8 @@ class EdgeImpulseKWSNode(Node):
             .get_parameter_value()
             .string_value
         )
-        wakeword_topic = (
-            self.get_parameter("WAKEWORD_TOPIC").get_parameter_value().string_value
+        keyword_topic = (
+            self.get_parameter("KEYWORD_TOPIC").get_parameter_value().string_value
         )
         self.detection_cooldown = (
             self.get_parameter("detection_cooldown").get_parameter_value().double_value
@@ -95,7 +95,7 @@ class EdgeImpulseKWSNode(Node):
 
         self.audio_buffer = np.array([], dtype=np.int16)
 
-        self.publisher = self.create_publisher(String, wakeword_topic, 10)
+        self.publisher = self.create_publisher(String, keyword_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
 
         self.last_detection_time = time.time() - self.detection_cooldown
