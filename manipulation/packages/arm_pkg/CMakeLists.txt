@@ -50,6 +50,7 @@ endif()
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${PCL_INCLUDE_DIRS}
+  $ENV{GPD_INSTALL_DIR}/include
 )
 
 # Create executable
