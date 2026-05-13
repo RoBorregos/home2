@@ -12,9 +12,9 @@ import { StartButton } from "../components/StartButton";
 export default function Home() {
   return (
     <div className="flex flex-col h-screen bg-(--bg-dark) text-(--text-light) overflow-y-hidden">
-      <div className="p-4 border-b border-(--border-light) flex items-center justify-between">
-        <h1 className="text-xl font-bold flex items-center">
-          <MessageCircle className="mr-2 h-5 w-5" />
+      <div className="p-6 border-b border-(--border-light) flex items-center justify-between">
+        <h1 className="text-3xl font-bold flex items-center">
+          <MessageCircle className="mr-3 h-9 w-9" />
           ROS2 Messages
         </h1>
         <div className="flex items-center gap-3">
