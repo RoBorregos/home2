@@ -15,4 +15,4 @@ services:
     tty: true
     user: ${UID}:${GID}
     entrypoint: ["bash", "-il", "-c"]
-    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces && colcon build --symlink-install --packages-select frida_constants"]
+    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces"]

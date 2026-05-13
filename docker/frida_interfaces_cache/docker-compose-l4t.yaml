@@ -33,4 +33,4 @@ services:
     user: ${UID}:${GID}
     privileged: true
     command: >
-      bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces xarm_msgs && colcon build --symlink-install --packages-select frida_constants"
+      bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces xarm_msgs"
