@@ -62,7 +62,7 @@ export function MessageItem({ message, isLatest }: MessageItemProps) {
               {message.timestamp.toLocaleTimeString()}
             </span>
           </div>
-          <p className="text-2xl text-(--text-light) wrap-break-word leading-relaxed">
+          <p className="text-[1.4rem] text-(--text-light) wrap-break-word leading-relaxed">
             {message.content}
           </p>
         </div>
