@@ -1,9 +1,5 @@
 @import "tailwindcss";
 
-html {
-  zoom: 1.7;
-}
-
 :root {
   font-size: 16px;
   --background: #ffffff;
