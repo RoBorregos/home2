@@ -7,11 +7,11 @@ from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 import time
 from geometry_msgs.msg import PointStamped, PoseStamped
-from frida_interfaces.msg import ObjectDetectionArray
+from frida_interfaces.srv import DetectionHandler
 from pick_and_place.utils.perception_utils import point_in_range
 from frida_constants.vision_constants import (
-    DETECTIONS_TOPIC,
-    ZERO_SHOT_DETECTIONS_TOPIC,
+    DETECTION_HANDLER_TOPIC_SRV,
+    ZERO_SHOT_DETECTION_HANDLER_SRV,
 )
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
@@ -37,26 +37,20 @@ class KeyboardInput(Node):
             MANIPULATION_ACTION_SERVER,
             callback_group=callback_group,
         )
-        self.objects = []  # Example list of objects
+        self.objects = []
 
         qos = rclpy.qos.QoSProfile(
             depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT
         )
 
-        # Add subscriber for objects
-        self.objects_subscription = self.create_subscription(
-            ObjectDetectionArray,
-            DETECTIONS_TOPIC,
-            self.objects_callback,
-            qos,
+        self.detection_client = self.create_client(
+            DetectionHandler,
+            DETECTION_HANDLER_TOPIC_SRV,
             callback_group=callback_group,
         )
-
-        self.zero_shot_subscription = self.create_subscription(
-            ObjectDetectionArray,
-            ZERO_SHOT_DETECTIONS_TOPIC,
-            self.objects_callback,
-            qos,
+        self.zero_shot_client = self.create_client(
+            DetectionHandler,
+            ZERO_SHOT_DETECTION_HANDLER_SRV,
             callback_group=callback_group,
         )
 
@@ -74,14 +68,6 @@ class KeyboardInput(Node):
         self.get_logger().info(
             f"Clicked point received: x={msg.point.x}, y={msg.point.y}, z={msg.point.z}"
         )
-
-    def objects_callback(self, msg):
-        # Assuming msg contains a list of object names
-        for detection in msg.detections:
-            if detection.label_text not in self.objects and point_in_range(
-                detection.point3d, self.min_distance, self.max_distance
-            ):
-                self.objects.append(detection.label_text)
 
     def send_pick_request(self, object_name, scan_environment=False):
         self.get_logger().warning(f"Sending pick request for: {object_name}")
@@ -191,10 +177,17 @@ class KeyboardInput(Node):
     def refresh_objects(self):
         self.get_logger().info("Refreshing objects list...")
         self.objects = []
-        # Spin for 1 second to receive messages
-        start_time = time.time()
-        while time.time() - start_time < 1.0:
-            rclpy.spin_once(self, timeout_sec=0.1)
+        for client in (self.detection_client, self.zero_shot_client):
+            if not client.wait_for_service(timeout_sec=2.0):
+                continue
+            future = client.call_async(DetectionHandler.Request())
+            rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+            if future.done() and future.result():
+                for d in future.result().detection_array.detections:
+                    if d.label_text not in self.objects and point_in_range(
+                        d.point3d, self.min_distance, self.max_distance
+                    ):
+                        self.objects.append(d.label_text)
         self.get_logger().info("Objects list refreshed.")
 
     def goal_response_callback(self, future, object_name):

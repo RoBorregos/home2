@@ -11,7 +11,6 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
     DETECTIONS_3D_TOPIC,
-    DETECTIONS_ACTIVE_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
     DETECTIONS_POSES_TOPIC,
     DETECTIONS_TOPIC,
@@ -35,7 +34,6 @@ class ObjectDetectorNode(BaseDetectorNode):
             default_det_img_topic=DETECTIONS_IMAGE_TOPIC,
             default_det_poses_topic=DETECTIONS_POSES_TOPIC,
             default_det_3d_topic=DETECTIONS_3D_TOPIC,
-            default_active_topic=DETECTIONS_ACTIVE_TOPIC,
             fixed_active_topic="/vision/object_detector/active",
         )
 

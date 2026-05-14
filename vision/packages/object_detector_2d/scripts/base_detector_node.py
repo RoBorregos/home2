@@ -39,7 +39,6 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         default_det_img_topic: str,
         default_det_poses_topic: str,
         default_det_3d_topic: str,
-        default_active_topic: str,
         fixed_active_topic: str,
     ):
         super().__init__(node_name)
@@ -52,8 +51,7 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         self.max_depth = self.declare_param("MAX_DEPTH_THRESH", 2.0).double_value
         self.flip_image = self.declare_param("FLIP_IMAGE", False).bool_value
         self.verbose = self.declare_param("VERBOSE", False).bool_value
-        use_active_flag = self.declare_param("USE_ACTIVE_FLAG", False).bool_value
-        self.active_flag = not use_active_flag
+        self.active_flag = self.declare_param("USE_ACTIVE_FLAG", False).bool_value
 
         rgb_topic = self.declare_param(
             "RGB_IMAGE_TOPIC", IMAGE_ORIENTED_TOPIC
@@ -76,10 +74,6 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         det_3d_topic = self.declare_param(
             "DETECTIONS_3D_TOPIC", default_det_3d_topic
         ).string_value
-        active_topic = self.declare_param(
-            "DETECTIONS_ACTIVE_TOPIC", default_active_topic
-        ).string_value
-
         # --- state ---
         self.bridge = CvBridge()
         self.latest_frame = None
@@ -111,8 +105,6 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             self.create_subscription(Image, depth_topic, self.depth_cb, qos)
             self.create_subscription(CameraInfo, info_topic, self.info_cb, qos)
         self.create_subscription(Bool, fixed_active_topic, self.active_cb, 10)
-        if use_active_flag:
-            self.create_subscription(Bool, active_topic, self.active_cb, 5)
 
     def declare_param(self, name, default):
         return self.declare_parameter(name, default).get_parameter_value()

@@ -8,14 +8,14 @@ import rclpy
 from frida_constants.vision_constants import (
     SET_DETECTOR_CLASSES_SERVICE,
     ZERO_SHOT_DEFAULT_CLASSES,
+    ZERO_SHOT_DETECTION_HANDLER_SRV,
     ZERO_SHOT_DETECTIONS_3D_TOPIC,
-    ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC,
     ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,
     ZERO_SHOT_DETECTIONS_POSES_TOPIC,
     ZERO_SHOT_DETECTIONS_TOPIC,
 )
 from frida_interfaces.msg import ObjectDetectionArray
-from frida_interfaces.srv import SetDetectorClasses
+from frida_interfaces.srv import DetectionHandler, SetDetectorClasses
 from detectors.registry import ModelRegistry
 from base_detector_node import BaseDetectorNode
 
@@ -30,7 +30,6 @@ class ZeroShotDetectorNode(BaseDetectorNode):
             default_det_img_topic=ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,
             default_det_poses_topic=ZERO_SHOT_DETECTIONS_POSES_TOPIC,
             default_det_3d_topic=ZERO_SHOT_DETECTIONS_3D_TOPIC,
-            default_active_topic=ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC,
             fixed_active_topic="/vision/zero_shot_detector/active",
         )
 
@@ -50,10 +49,37 @@ class ZeroShotDetectorNode(BaseDetectorNode):
 
         self.create_service(SetDetectorClasses, classes_srv, self.set_classes)
 
+        self.create_service(
+            DetectionHandler, ZERO_SHOT_DETECTION_HANDLER_SRV, self.detection_handler
+        )
+
     def box_color(self, det):
         return (255, 0, 0)  # blue in BGR
 
     # ------------------------------------------------------------------ services
+
+    def detection_handler(self, request, response):
+        detections = list(self.latest_detections)
+        if request.label and request.label != "all":
+            detections = [d for d in detections if d.label_text == request.label]
+        elif request.labels:
+            labels_set = set(request.labels)
+            detections = [d for d in detections if d.label_text in labels_set]
+        if request.closest_object and detections:
+            detections = [
+                min(
+                    detections,
+                    key=lambda d: d.point3d.point.x**2
+                    + d.point3d.point.y**2
+                    + d.point3d.point.z**2,
+                )
+            ]
+        response.detection_array.detections = detections
+        response.success = len(detections) > 0
+        self.get_logger().info(
+            f"ZeroShotDetectionHandler: label='{request.label}' returned={len(detections)}"
+        )
+        return response
 
     def set_classes(self, request, response):
         self.model.set_classes(list(request.class_names))

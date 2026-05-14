@@ -77,6 +77,7 @@ LOCAL_CAMERA_TOPIC = "/vision/local_rbg_image"
 
 # OBJECT DETECTION HANDLER TOPICS
 DETECTION_HANDLER_TOPIC_SRV = "/vision/detection_handler"
+ZERO_SHOT_DETECTION_HANDLER_SRV = "/vision/zero_shot_detection_handler"
 
 # Tracker node
 SET_TARGET_TOPIC = "/vision/set_tracking_target"

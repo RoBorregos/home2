@@ -11,7 +11,6 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
 from frida_constants.vision_constants import (
-    DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
     OBJECT_POINTS_TOPIC,
     CAMERA_INFO_TOPIC,
@@ -45,10 +44,6 @@ class TrashDetectionNode(Node):
             TRASHCAN_SERVICE,
             self.get_trashcan,
             callback_group=self.callback_group,
-        )
-
-        self.trashcan_pub = self.create_publisher(
-            ObjectDetectionArray, DETECTIONS_TOPIC, 10
         )
 
         self.debug_image_pub = self.create_publisher(Image, TRASH_DEBUG_IMAGE_TOPIC, 10)
@@ -130,7 +125,6 @@ class TrashDetectionNode(Node):
                     2,
                 )
 
-        self.trashcan_pub.publish(trashcans)
         res.detection_array = trashcans
         res.success = True
 
