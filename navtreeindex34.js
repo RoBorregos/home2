@@ -1,5 +1,11 @@
 var NAVTREEINDEX34 =
 {
+"namespacezero__shot__object__detector__node.html":[30,0,178],
+"namespacezero__shot__object__detector__node.html#a1489f755c75c3eed93e2fe3ab401521f":[30,0,178,2],
+"namespacezero__shot__object__detector__node.html#aba70d0632c70d26521c3901943462bc4":[30,0,178,1],
+"nav__basics_8launch_8py.html":[32,0,4,0,2,0,3],
+"nav__basics_8launch_8py.html#a0ad8a434cdfa5b959bd6a1d5df652146":[32,0,4,0,2,0,3,0],
+"nav__basics_8launch_8py.html#ac5d23aeb26e79af148252a849c2905ca":[32,0,4,0,2,0,3,1],
 "nav__central_8py.html":[32,0,4,0,2,2,3],
 "nav__central_8py.html#a03a4b9afc936746d5950dc3dd6443176":[32,0,4,0,2,2,3,2],
 "nav__central_8py.html#a2b76521918c13d0a97e1ad8c5b97c1f4":[32,0,4,0,2,2,3,1],
@@ -243,11 +249,5 @@ var NAVTREEINDEX34 =
 "run__while__hearing_8py.html#aebdd0761631fc7404d7fddc38cde38a6":[32,0,6,1,0,11,1],
 "safety__task__manager_8py.html":[32,0,6,1,10],
 "safety__task__manager_8py.html#a207642360aafef76971e5142db35e75c":[32,0,6,1,10,3],
-"server_8py.html":[32,0,7,0,0,1,4],
-"server_8py.html#a3c8df1657c541fd80fbb8ffef44e8451":[32,0,7,0,0,1,4,8],
-"server_8py.html#a469f094fa099c5fafa3f1dc6960381fc":[32,0,7,0,0,1,4,1],
-"server_8py.html#a692f59b384dd93287c366eb7e7c0608b":[32,0,7,0,0,1,4,5],
-"server_8py.html#a70ecbc33459e4c393ccddd6f1d1bcc04":[32,0,7,0,0,1,4,3],
-"server_8py.html#a72aa2cd67bf6ea46a0eea394a62534a2":[32,0,7,0,0,1,4,9],
-"server_8py.html#a73d24dac725bd753dcbd09029b347665":[32,0,7,0,0,1,4,4]
+"server_8py.html":[32,0,7,0,0,1,4]
 };

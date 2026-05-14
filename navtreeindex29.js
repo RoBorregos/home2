@@ -1,5 +1,9 @@
 var NAVTREEINDEX29 =
 {
+"namespacePickManager.html#a6ebf5ef225508aaa23d867b6e5644785":[30,0,116,7],
+"namespacePickManager.html#a99b7b6f851b3ea9aa14340cda1585052":[30,0,116,3],
+"namespacePickManager.html#afcfec5898dcc59164a20e8562b51f08d":[30,0,116,6],
+"namespacePlaceManager.html":[30,0,117],
 "namespacePlaceManager.html#a0affa04e052ee79ba7a68cfd77e8e8d7":[30,0,117,1],
 "namespacePlanner.html":[30,0,118],
 "namespacePourManager.html":[30,0,122],
@@ -236,18 +240,14 @@ var NAVTREEINDEX29 =
 "namespacefranka.html#a7d5bcadff61381ca683226e468f3469d":[30,0,53,1],
 "namespacefrida__constants.html":[30,0,54],
 "namespacefrida__constants_1_1hri__constants.html":[30,0,54,0],
-"namespacefrida__constants_1_1hri__constants.html#a030ffe3f2fb1fc6cb72b2f14441d6e97":[30,0,54,0,15],
+"namespacefrida__constants_1_1hri__constants.html#a030ffe3f2fb1fc6cb72b2f14441d6e97":[30,0,54,0,17],
 "namespacefrida__constants_1_1hri__constants.html#a04fcaea874b8335fbca4fb97bbbf0bb0":[30,0,54,0,3],
-"namespacefrida__constants_1_1hri__constants.html#a05d8fa1eccd50686fbaff0e84170dcb9":[30,0,54,0,34],
+"namespacefrida__constants_1_1hri__constants.html#a05d8fa1eccd50686fbaff0e84170dcb9":[30,0,54,0,36],
 "namespacefrida__constants_1_1hri__constants.html#a0795f01b17671ccc4a7411b5e9faf4c9":[30,0,54,0,13],
 "namespacefrida__constants_1_1hri__constants.html#a0dea1a972213b590aaf0c24edf6bba9e":[30,0,54,0,7],
 "namespacefrida__constants_1_1hri__constants.html#a1390ba9a5cabebe5bec26fd43de484c3":[30,0,54,0,4],
-"namespacefrida__constants_1_1hri__constants.html#a1405902be9440099af248e891e6a796d":[30,0,54,0,31],
+"namespacefrida__constants_1_1hri__constants.html#a1405902be9440099af248e891e6a796d":[30,0,54,0,33],
 "namespacefrida__constants_1_1hri__constants.html#a1445a0126f5ffb6f0817906046e5a278":[30,0,54,0,2],
-"namespacefrida__constants_1_1hri__constants.html#a178c823b8cab8a3ba2131d5cb2c3594c":[30,0,54,0,29],
-"namespacefrida__constants_1_1hri__constants.html#a17e6a7edcef87329c3717fc4cd21dbee":[30,0,54,0,46],
-"namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2":[30,0,54,0,6],
-"namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e":[30,0,54,0,39],
-"namespacefrida__constants_1_1hri__constants.html#a36ae4fa83223f615cf521d31bd5c899e":[30,0,54,0,24],
-"namespacefrida__constants_1_1hri__constants.html#a39e864d623eccc650625e054a9236911":[30,0,54,0,25]
+"namespacefrida__constants_1_1hri__constants.html#a178c823b8cab8a3ba2131d5cb2c3594c":[30,0,54,0,31],
+"namespacefrida__constants_1_1hri__constants.html#a17e6a7edcef87329c3717fc4cd21dbee":[30,0,54,0,48]
 };

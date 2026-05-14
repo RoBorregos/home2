@@ -17,7 +17,7 @@ var searchData=
   ['removecollisionobject_2esrv_14',['RemoveCollisionObject.srv',['../RemoveCollisionObject_8srv.html',1,'']]],
   ['removeplane_2esrv_15',['RemovePlane.srv',['../RemovePlane_8srv.html',1,'']]],
   ['removeverticalplane_2esrv_16',['RemoveVerticalPlane.srv',['../RemoveVerticalPlane_8srv.html',1,'']]],
-  ['restaurant_2elaunch_2epy_17',['restaurant.launch.py',['../manipulation_2packages_2manipulation__general_2launch_2restaurant_8launch_8py.html',1,'(Global Namespace)'],['../navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html',1,'(Global Namespace)']]],
+  ['restaurant_2elaunch_2epy_17',['restaurant.launch.py',['../navigation_2packages_2nav__main_2launch_2task__launch_2restaurant_8launch_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2manipulation__general_2launch_2restaurant_8launch_8py.html',1,'(Global Namespace)']]],
   ['restaurant_5fcommands_2epy_18',['restaurant_commands.py',['../restaurant__commands_8py.html',1,'']]],
   ['restaurant_5flaunch_2epy_19',['restaurant_launch.py',['../restaurant__launch_8py.html',1,'']]],
   ['restaurant_5ftask_5fmanager_2epy_20',['restaurant_task_manager.py',['../restaurant__task__manager_8py.html',1,'']]],

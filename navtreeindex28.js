@@ -1,5 +1,9 @@
 var NAVTREEINDEX28 =
 {
+"masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[32,0,3,0,6,4,2,3],
+"md_docs_Run_Areas_Manipulation_manipulation.html":[20],
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md116":[20,0],
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md117":[20,1],
 "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md126":[20,1,0],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html":[21],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md128":[21,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX28 =
 "namespacePickManager.html#a0be975bbeb13f0d6e97a74cf31c87ac4":[30,0,116,4],
 "namespacePickManager.html#a38889fce0778444ca2278c1767b44b7d":[30,0,116,5],
 "namespacePickManager.html#a68a22a9f3907767840a047f2fb9e855b":[30,0,116,1],
-"namespacePickManager.html#a6c7e5eb22b70e41142e616127270e24e":[30,0,116,2],
-"namespacePickManager.html#a6ebf5ef225508aaa23d867b6e5644785":[30,0,116,7],
-"namespacePickManager.html#a99b7b6f851b3ea9aa14340cda1585052":[30,0,116,3],
-"namespacePickManager.html#afcfec5898dcc59164a20e8562b51f08d":[30,0,116,6],
-"namespacePlaceManager.html":[30,0,117]
+"namespacePickManager.html#a6c7e5eb22b70e41142e616127270e24e":[30,0,116,2]
 };

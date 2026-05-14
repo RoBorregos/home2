@@ -2,10 +2,12 @@ var classgpsr__task__manager_1_1GPSRTM =
 [
     [ "TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "__init__", "classgpsr__task__manager_1_1GPSRTM.html#a832d99db6d49331ce7301823d3c32d69", null ],
+    [ "_publish_command_index", "classgpsr__task__manager_1_1GPSRTM.html#aa13116b088076bf52cf212f7d95d5799", null ],
     [ "_track_state_change", "classgpsr__task__manager_1_1GPSRTM.html#a07ab2e2b3988fb097bba3b52f18c556e", null ],
     [ "navigate_to", "classgpsr__task__manager_1_1GPSRTM.html#a09e8b727fb274ed853d6a26cb6b5abf0", null ],
     [ "run", "classgpsr__task__manager_1_1GPSRTM.html#a4b53e2251f2eb169b1460844ebd1c0ee", null ],
     [ "timeout", "classgpsr__task__manager_1_1GPSRTM.html#abbbff00204c124650a9cbe5abe4060e6", null ],
+    [ "_command_index_pub", "classgpsr__task__manager_1_1GPSRTM.html#ad30e63900a84e4d2773d36f7fb9294dd", null ],
     [ "commands", "classgpsr__task__manager_1_1GPSRTM.html#a83babc261c626a2c785fd2d42fd07efb", null ],
     [ "current_hear_attempt", "classgpsr__task__manager_1_1GPSRTM.html#a4a1c173cdc273ca2723971420ba028b0", null ],
     [ "current_state", "classgpsr__task__manager_1_1GPSRTM.html#a0424791f63c86368d5bb69a24d86a981", null ],

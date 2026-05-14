@@ -1,5 +1,11 @@
 var NAVTREEINDEX33 =
 {
+"namespacestoring__groceries__manager.html#ad877050e492d039476b41e8c97e3f49e":[30,0,147,8],
+"namespacestoring__groceries__manager.html#aefba43d88a80d9a35a4c5de13f58c9d7":[30,0,147,7],
+"namespacetask__manager.html":[30,0,148],
+"namespacetask__manager_1_1config.html":[30,0,148,0],
+"namespacetask__manager_1_1config_1_1hri.html":[30,0,148,0,0],
+"namespacetask__manager_1_1config_1_1hri_1_1debug.html":[30,0,148,0,0,0],
 "namespacetask__manager_1_1config_1_1hri_1_1debug.html#a1ea1f4f28fed6eb7e5b2afe7685cdb8a":[30,0,148,0,0,0,1],
 "namespacetask__manager_1_1config_1_1hri_1_1debug.html#a72f6f5940c4749f5e6bf597ca63a2663":[30,0,148,0,0,0,0],
 "namespacetask__manager_1_1config_1_1hri_1_1mocked.html":[30,0,148,0,0,1],
@@ -243,11 +249,5 @@ var NAVTREEINDEX33 =
 "namespacexarm__utils_1_1grasp__detector.html":[30,0,175,0],
 "namespacexarm__utils_1_1grasp__detector.html#af45877455c780a848f907d89b783aefc":[30,0,175,0,1],
 "namespacezed__simulator.html":[30,0,177],
-"namespacezed__simulator.html#a6d489b3a367f76b4f6c43605f89dbb5f":[30,0,177,1],
-"namespacezero__shot__object__detector__node.html":[30,0,178],
-"namespacezero__shot__object__detector__node.html#a1489f755c75c3eed93e2fe3ab401521f":[30,0,178,2],
-"namespacezero__shot__object__detector__node.html#aba70d0632c70d26521c3901943462bc4":[30,0,178,1],
-"nav__basics_8launch_8py.html":[32,0,4,0,2,0,3],
-"nav__basics_8launch_8py.html#a0ad8a434cdfa5b959bd6a1d5df652146":[32,0,4,0,2,0,3,0],
-"nav__basics_8launch_8py.html#ac5d23aeb26e79af148252a849c2905ca":[32,0,4,0,2,0,3,1]
+"namespacezed__simulator.html#a6d489b3a367f76b4f6c43605f89dbb5f":[30,0,177,1]
 };

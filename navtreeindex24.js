@@ -1,5 +1,7 @@
 var NAVTREEINDEX24 =
 {
+"classutils_1_1CrossEntropyLabelSmooth.html#a986e36cf01db77cfb562757382145172":[31,0,104,0,1],
+"classutils_1_1CrossEntropyLabelSmooth.html#a986e36cf01db77cfb562757382145172":[30,0,168,0,1],
 "classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109":[30,0,168,0,3],
 "classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109":[31,0,104,0,3],
 "classutils_1_1CrossEntropyLabelSmooth.html#af5f494562463ad4636f548f54f558da9":[30,0,168,0,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX24 =
 "dir_6e20de4aad35deff8256a7948fae18bb.html":[32,0,2,3],
 "dir_6e29189be07fed53b6d47f78282706b9.html":[32,0,7,0,0,2],
 "dir_7215e7d4ca5abd0d381885e7ed1f0844.html":[32,0,5],
-"dir_72c7c684349a2d4ede4eff8a946bb57c.html":[32,0,4,0,0,1],
-"dir_741861650a25b095d61223a99fe0e875.html":[32,0,7,0,2],
-"dir_754e601155db7125c8d3457f0f90c1ef.html":[32,0,4,0,1,2]
+"dir_72c7c684349a2d4ede4eff8a946bb57c.html":[32,0,4,0,0,1]
 };

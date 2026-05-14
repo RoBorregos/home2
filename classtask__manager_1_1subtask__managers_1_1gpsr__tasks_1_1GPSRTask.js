@@ -13,6 +13,5 @@ var classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask =
     [ "timeout", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a408090aa59aff05b06989be8c7790a83", null ],
     [ "clothe_list", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a6df8de83010c308a3a5f838858797c83", null ],
     [ "color_list", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a9a879c1176f05c393f7440cd1b583a83", null ],
-    [ "locations", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a6526404d657b439ed4cd61b67e07235c", null ],
     [ "pan_angles", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a7fe418400b4fc8c7796e53b9fe6488b6", null ]
 ];
