@@ -142,7 +142,7 @@
   <link name="gripper_grasp_frame"> </link>
   <!-- NEW GRIPPER MACRO   -->
   <!-- Gripper -->
-  <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro" />
+  <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper_assem.xacro" />
   <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 3.926" fixed_joints="false" mujoco_plugin="$(arg mujoco_plugin)"/>
    <!-- ZED MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/zed/zed.xacro" />
