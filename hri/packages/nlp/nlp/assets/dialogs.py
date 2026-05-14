@@ -97,7 +97,7 @@ Ensure that the extracted data is always **the most contextually relevant** answ
             },
             {
                 "role": "user",
-                "content": user_content,
+                "content": user_content + " /no_think",
             },
         ],
         ExtractedData,
@@ -149,7 +149,7 @@ def get_is_answer_positive_args(interpreted_text):
             },
             {
                 "role": "user",
-                "content": interpreted_text,
+                "content": interpreted_text + " /no_think",
             },
         ],
         IsAnswerPositive,
@@ -212,7 +212,7 @@ But does **not** include:
             },
             {
                 "role": "user",
-                "content": interpreted_text,
+                "content": interpreted_text + " /no_think",
             },
         ],
         IsAnswerNegative,
@@ -261,7 +261,7 @@ ONLY Output the number of categories that match the number of shelves, there are
             },
             {
                 "role": "user",
-                "content": f"Shelves: {shelves}, table_objects: {table_objects}",
+                "content": f"Shelves: {shelves}, table_objects: {table_objects} /no_think",
             },
         ],
         CategorizeShelvesResult,
@@ -276,7 +276,7 @@ def format_response(response):
         },
         {
             "role": "user",
-            "content": response,
+            "content": response + " /no_think",
         },
     ]
 
@@ -292,7 +292,7 @@ def clean_question_rag(question):
         },
         {
             "role": "user",
-            "content": question,
+            "content": question + " /no_think",
         },
     ]
 
@@ -364,7 +364,7 @@ def get_previous_command_answer(context, question):
         },
         {
             "role": "user",
-            "content": question,
+            "content": question + " /no_think",
         },
     ]
 

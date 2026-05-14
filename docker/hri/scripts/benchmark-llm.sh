@@ -128,10 +128,10 @@ if [[ -z "$PROMPT" && -z "$USECASE" ]]; then
     USECASE="is_coherent"
 fi
 
-# Default: benchmark whichever service is running on port 11434
+# Default: benchmark both backends simultaneously
 if [[ ${#ENDPOINTS[@]} -eq 0 ]]; then
-    ENDPOINTS=("http://localhost:11434/v1")
-    LABELS=("llm (port 11434)")
+    ENDPOINTS=("http://localhost:11434/v1" "http://localhost:11437/v1")
+    LABELS=("llama.cpp (11434)" "ollama (11437)")
 fi
 
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required. Install with: apt-get install -y jq"; exit 1; }
@@ -165,8 +165,11 @@ run_single() {
     if curl -sf "$health_url" >/dev/null 2>&1 || curl -sf "$base_url/models" >/dev/null 2>&1; then
         # Always resolve the loaded model name (skip "default" which is the [*] wildcard preset)
         if [[ -z "$MODEL_OVERRIDE" ]]; then
+            # Prefer qwen* models; fall back to first non-default otherwise
             model=$(curl -sf "$base_url/models" 2>/dev/null \
-                | jq -r '[.data[] | select(.id != "default")] | .[0].id // empty')
+                | jq -r '[.data[] | select(.id != "default")] |
+                  (map(select(.id | test("qwen";"i"))) + map(select(.id | test("qwen";"i") | not))) |
+                  .[0].id // empty')
             model="${model:-placeholder}"
         fi
         echo "    Health: OK (model: $model)"
