@@ -676,12 +676,18 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             if start_hear_early:
+                # Capture start time before calling say() to account for synthesis time
+                start_audio_call = self.node.get_clock().now()
                 status, duration = self.say(question, wait=False)
-                # Wait for duration - 2 seconds
-                wait_time = max(0.0, duration - START_HEAR_EARLY_SECONDS)
-                start_wait = self.node.get_clock().now()
-                while (self.node.get_clock().now() - start_wait).nanoseconds / 1e9 < wait_time:
-                    rclpy.spin_once(self.node, timeout_sec=0.1)
+
+                # Wait for duration - 2 seconds relative to when audio started (approximately)
+                # Note: say() returns when the last chunk starts playing.
+                # So if there's only one chunk, it returns immediately after starting.
+                target_wait = max(0.0, duration - START_HEAR_EARLY_SECONDS)
+                while (
+                    self.node.get_clock().now() - start_audio_call
+                ).nanoseconds / 1e9 < target_wait:
+                    rclpy.spin_once(self.node, timeout_sec=0.01)
             else:
                 self.say(question)
 

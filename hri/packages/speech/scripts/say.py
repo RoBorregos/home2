@@ -2,6 +2,10 @@
 
 import json
 import os
+import subprocess
+import threading
+import time
+import wave
 from collections import OrderedDict
 
 import grpc
@@ -220,6 +224,11 @@ class Say(Node):
 
         if wait:
             self.publisher_.publish(Bool(data=False))
+        else:
+            # Reset the saying topic after the duration of the speech
+            threading.Timer(
+                duration, lambda: self.publisher_.publish(Bool(data=False))
+            ).start()
         return success, duration
 
     def offline_voice(self, text, speed=1, wait=True):
@@ -247,12 +256,6 @@ class Say(Node):
 
         # Play all audio files
         for i, filepath in enumerate(audio_files):
-            # Only wait on the last file if wait=True, or wait on all if wait=True?
-            # Actually, if we want to return the duration and start playing,
-            # we should play all of them.
-            # For simplicity, if wait is True, we block on each.
-            # If wait is False, we might have an issue with multiple chunks.
-            # But usually it's one chunk.
             is_last = i == len(audio_files) - 1
             chunk_duration = self.play_audio(filepath, wait=(wait and is_last))
             total_duration += chunk_duration
@@ -263,9 +266,25 @@ class Say(Node):
         # For connected voice, speed is not applicable, so we use default speed=1.0
         cached_path = self._get_cached_audio(text, 1.0)
         if not (cached_path and os.path.exists(cached_path)):
-            cached_path = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.mp3")
+            temp_mp3 = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.mp3")
+            cached_path = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.wav")
             tts = gTTS(text=text, lang="es")
-            tts.save(cached_path)
+            tts.save(temp_mp3)
+            # Convert to wav
+            try:
+                subprocess.run(
+                    ["ffmpeg", "-i", temp_mp3, cached_path, "-y"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=True,
+                )
+                os.remove(temp_mp3)
+            except Exception as e:
+                self.get_logger().error(f"Failed to convert gTTS to wav: {e}")
+                # If conversion fails, we might still have the mp3, but play_audio expects wav now.
+                # So we'll let it fail or handle it. For now, we expect ffmpeg to be there.
+                return 0.0
+
             self._add_to_cache(text, cached_path, 1.0)
 
         self.get_logger().info("Saying...")
@@ -273,16 +292,24 @@ class Say(Node):
 
     def play_audio(self, file_path, wait=True):
         while mixer.music.get_busy():
-            pass
+            time.sleep(0.01)
         mixer.music.load(file_path)
 
         # Get duration
+        duration = 0.0
         try:
-            sound = mixer.Sound(file_path)
-            duration = sound.get_length()
-        except Exception:
-            # Fallback for MP3 or if Sound() fails
-            duration = len(file_path) / 10.0  # Very rough fallback
+            with wave.open(file_path, "rb") as wf:
+                frames = wf.getnframes()
+                rate = wf.getframerate()
+                duration = frames / float(rate)
+        except Exception as e:
+            self.get_logger().error(f"Error reading WAV duration for {file_path}: {e}")
+            # Fallback to pygame Sound as a secondary measure if wave.open fails
+            try:
+                sound = mixer.Sound(file_path)
+                duration = sound.get_length()
+            except Exception:
+                duration = 2.0  # Safe default
 
         mixer.music.play()
 
@@ -290,7 +317,7 @@ class Say(Node):
             # Wait for audio to finish playing before returning
             try:
                 while mixer.music.get_busy():
-                    pass
+                    time.sleep(0.01)
             except Exception as e:
                 self.get_logger().error(f"Error while waiting for audio: {e}")
 
