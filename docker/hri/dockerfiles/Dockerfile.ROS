@@ -1,8 +1,7 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-RUN apt-get update
-RUN apt-get install -y \
+RUN apt-get update && apt-get install -y \
     python3-pyaudio \
     alsa-base \
     alsa-utils \
@@ -13,35 +12,19 @@ RUN apt-get install -y \
     libportaudiocpp0 \
     pulseaudio \
     curl \
-    ros-humble-web-video-server \
-    ros-humble-rosbridge-server
-
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt-get install -y nodejs
+    && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /workspace/requirements
 
 # Python modules
-COPY ../../hri/requirements/nlp.txt /workspace/requirements/nlp.txt
+COPY hri/requirements/nlp.txt /workspace/requirements/nlp.txt
 RUN pip install -r requirements/nlp.txt
 
-COPY ../../hri/requirements/speech.txt /workspace/requirements/speech.txt
+COPY hri/requirements/speech.txt /workspace/requirements/speech.txt
 RUN pip install -r requirements/speech.txt
 
-COPY ../../hri/requirements/postgres.txt /workspace/requirements/postgres.txt
+COPY hri/requirements/postgres.txt /workspace/requirements/postgres.txt
 RUN pip install -r requirements/postgres.txt
 
 USER ros
 RUN sudo usermod -aG audio ros
-
-RUN sudo chown -R ros /usr/lib/python3.10/
-RUN sudo chown -R ros /usr/local/lib/python3.10/
-
-# CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
-    && sudo rm -rf /var/lib/apt/lists/*
-COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
-RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
-RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc

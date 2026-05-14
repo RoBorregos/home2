@@ -82,10 +82,6 @@ class EIAudioClassifier(Node):
                     return
             except requests.RequestException:
                 pass
-            self.get_logger().info(
-                f"EI server not ready yet (attempt {attempt}/{max_retries}), "
-                f"retrying in {poll_interval}s..."
-            )
             time.sleep(poll_interval)
         self.get_logger().warn(
             "EI server did not become ready in time. "

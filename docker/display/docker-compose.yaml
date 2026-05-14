@@ -1,0 +1,33 @@
+services:
+  display-ros:
+    container_name: home2-display-${ENV_TYPE:-cpu}
+    build:
+      context: ../..
+      dockerfile: docker/display/Dockerfile
+      args:
+        BASE_IMAGE: roborregos/home2:${ENV_TYPE:-cpu}_base
+        ENV_TYPE: ${ENV_TYPE:-cpu}
+    image: roborregos/home2:display-${ENV_TYPE:-cpu}
+    runtime: ${RUNTIME:-runc}
+    volumes:
+      - ../../:/workspace/src
+      - /tmp:/tmp
+      - /dev/shm:/dev/shm
+      - ./build:/workspace/build
+      - ./install:/workspace/install
+      - ./log:/workspace/log
+      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+    network_mode: host
+    ipc: host
+    user: ${LOCAL_USER_ID:-1000}:${LOCAL_GROUP_ID:-1000}
+    privileged: true
+    environment:
+      DISPLAY: ${DISPLAY:-:0}
+      TERM: xterm-256color
+      CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      CYCLONE_SHM: "${CYCLONE_SHM:-1}"
+    env_file:
+      - .env
+    tty: true
+    entrypoint: ["bash", "-il", "-c"]
+    command: ["${COMMAND:-/bin/bash}"]

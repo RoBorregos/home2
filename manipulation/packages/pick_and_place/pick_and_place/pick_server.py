@@ -43,6 +43,7 @@ from transforms3d.quaternions import quat2mat
 from frida_motion_planning.utils.tf_utils import transform_point
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
+    open_gripper,
 )
 import time
 
@@ -85,6 +86,15 @@ class PickMotionServer(Node):
         self.declare_parameter("ee_tip_offset", -0.17)
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
+
+        # How high above the detected support plane a grasp position has to
+        # be to be considered feasible. Default keeps the real-robot safety
+        # margin; the sim launch overrides to a tiny value because the plane
+        # segmenter tends to lock onto a house wall instead of the table so
+        # the strict 0.1 m threshold rejects every valid grasp.
+        self.declare_parameter("pick_min_height", PICK_MIN_HEIGHT)
+        self.pick_min_height = self.get_parameter("pick_min_height").value
+        self.get_logger().info(f"Pick min height above plane: {self.pick_min_height} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
@@ -328,10 +338,8 @@ class PickMotionServer(Node):
 
                     # Open gripper
                     self.get_logger().info("[Cutlery] Opening gripper...")
-                    open_req = SetBool.Request()
-                    open_req.data = False
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
-                    self._gripper_set_state_client.call_async(open_req)
+                    open_gripper(self._gripper_set_state_client)
                     time.sleep(0.5)
 
                     # Pre-grasp: 15cm above
@@ -794,7 +802,10 @@ class PickMotionServer(Node):
         pick_height = pose.pose.position.z
         plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
 
-        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else PICK_MIN_HEIGHT
+        # Cutlery keeps its own constant (flatter objects need tighter tolerance);
+        # non-flat picks use the pick_min_height parameter so sim and real can
+        # share the same launch without a per-environment override.
+        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else self.pick_min_height
 
         if pick_height < plane_height + min_height:
             self.get_logger().warn(

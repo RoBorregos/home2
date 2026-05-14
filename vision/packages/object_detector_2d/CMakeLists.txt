@@ -30,44 +30,29 @@ find_package(frida_constants REQUIRED)
 install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME})
 
-######################### CPP #########################
-# Include Cpp "include" directory
-include_directories(include)
-
 ######################### Message Generation #########################
 # Generate message and service interfaces
 # )
 
 ######################### Python  #########################
-#Python compatability
 ament_python_install_package(${PROJECT_NAME})
 
-
-file (GLOB PYTHON_SCRIPTS scripts/*.py)
-
-install(PROGRAMS
-  ${PYTHON_SCRIPTS}
+# Node entry-points (object_detector_node.py, zero_shot_object_detector_node.py, etc.)
+file(GLOB PYTHON_SCRIPTS scripts/*.py)
+install(PROGRAMS ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-file (GLOB SCRIPTS_DETECTORS scripts/detectors/*.py)
-
-install(PROGRAMS
-  ${SCRIPTS_DETECTORS}
+# Model classes (yolo_v8.py, cutlery.py, …) + registry/base/utils
+file(GLOB SCRIPTS_DETECTORS scripts/detectors/*.py)
+install(PROGRAMS ${SCRIPTS_DETECTORS}
   DESTINATION lib/${PROJECT_NAME}/detectors
 )
 
-file (GLOB SCRIPTS_INCLUDE scripts/include/*.py)
-
-install(PROGRAMS
-  ${SCRIPTS_INCLUDE}
-  DESTINATION lib/${PROJECT_NAME}/include
-)
-
-file (GLOB MODELS models/*.pt)
-install(PROGRAMS
-  ${MODELS}
-  DESTINATION lib/${PROJECT_NAME}/models
+# .pt weight files — installed alongside Python model modules
+file(GLOB MODEL_WEIGHTS models/*.pt)
+install(PROGRAMS ${MODEL_WEIGHTS}
+  DESTINATION lib/${PROJECT_NAME}/detectors
 )
 
 ######################### Testing  #########################
