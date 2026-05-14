@@ -14,12 +14,13 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 from frida_constants.vision_constants import (
-    DETECTIONS_TOPIC,
+    DETECTION_HANDLER_TOPIC_SRV,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
 
-from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
+from frida_interfaces.msg import ObjectDetection
+from frida_interfaces.srv import DetectionHandler
 
 # Fixed offset above table surface for grasp contact point (meters)
 GRASP_SURFACE_OFFSET = 0.003
@@ -61,11 +62,9 @@ class FlatGraspEstimator(Node):
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, 1
         )
-        self.create_subscription(
-            ObjectDetectionArray,
-            DETECTIONS_TOPIC,
-            self.detections_callback,
-            10,
+
+        self.detection_client = self.create_client(
+            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
 
         self.pose_pub = self.create_publisher(
@@ -81,16 +80,27 @@ class FlatGraspEstimator(Node):
         )
 
     def enable_callback(self, request, response):
-        """Enable/disable detection processing. When disabled the node stays
-        alive and keeps its subscriptions but skips all work in the hot path."""
         self.enabled = bool(request.data)
-        # Clear stale buffers when toggling so the next enable starts clean.
         if not self.enabled:
             self.table_height_buffer.clear()
+        else:
+            future = self.detection_client.call_async(DetectionHandler.Request())
+            future.add_done_callback(self._on_detections)
         response.success = True
         response.message = "enabled" if self.enabled else "disabled"
         self.get_logger().info(f"Flat Grasp Estimator {response.message}")
         return response
+
+    def _on_detections(self, future):
+        try:
+            result = future.result()
+        except Exception:
+            return
+        if self.latest_depth is None or self.intrinsics is None:
+            return
+        for det in result.detection_array.detections:
+            if det.label_text.lower() in self.target_classes:
+                self.process_flat_object(det)
 
     def depth_callback(self, msg):
         if not self.enabled:
@@ -106,15 +116,6 @@ class FlatGraspEstimator(Node):
                 "cx": msg.k[2],
                 "cy": msg.k[5],
             }
-
-    def detections_callback(self, msg):
-        if not self.enabled:
-            return
-        if self.latest_depth is None or self.intrinsics is None:
-            return
-        for det in msg.detections:
-            if det.label_text.lower() in self.target_classes:
-                self.process_flat_object(det)
 
     def get_stable_table_height(self, new_reading):
         """Add a new table height reading and return a stable averaged value.
