@@ -2,6 +2,10 @@
 
 import json
 import os
+import subprocess
+import threading
+import time
+import wave
 from collections import OrderedDict
 
 import grpc
@@ -96,6 +100,10 @@ class Say(Node):
         if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
 
+        # Initialize pygame mixer
+        mixer.pre_init(frequency=48000, buffer=2048)
+        mixer.init()
+
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
@@ -182,38 +190,51 @@ class Say(Node):
                 msg = String()
                 msg.data = req.text
                 self.text_publisher_.publish(msg)
-                self.say(req.text, req.speed)
-                res.success = True
+                success, duration = self.say(req.text, req.speed, req.wait)
+                res.success = success
+                res.duration = float(duration)
             else:
                 res.success = False
+                res.duration = 0.0
                 self.get_logger().info("[Service] Nothing to say.")
         except Exception as e:
             self.get_logger().error(f"[Service] Error in speak_service: {e}")
+            res.success = False
+            res.duration = 0.0
         finally:
             return res
 
-    def say(self, text, speed):
+    def say(self, text, speed, wait=True):
         self.publisher_.publish(Bool(data=True))
         success = False
+        duration = 0.0
 
         try:
             if self.offline or not self.connected:
-                self.offline_voice(text, speed)
+                duration = self.offline_voice(text, speed, wait)
             else:
-                self.connectedVoice(text)
+                duration = self.connectedVoice(text, wait)
             success = True
         except Exception as e:
             self.get_logger().error(e)
             if not self.offline:
                 self.get_logger().warn("Retrying with offline mode")
-                self.offline_voice(text, speed)
+                duration = self.offline_voice(text, speed, wait)
+                success = True
 
-        self.publisher_.publish(Bool(data=False))
-        return success
+        if wait:
+            self.publisher_.publish(Bool(data=False))
+        else:
+            # Reset the saying topic after the duration of the speech
+            threading.Timer(
+                duration, lambda: self.publisher_.publish(Bool(data=False))
+            ).start()
+        return success, duration
 
-    def offline_voice(self, text, speed=1):
+    def offline_voice(self, text, speed=1, wait=True):
         text_chunks = self.split_text(text, 4000)
         audio_files = []
+        total_duration = 0.0
 
         # Check cache or generate new files for each chunk
         for i, chunk in enumerate(text_chunks, 1):
@@ -221,12 +242,6 @@ class Say(Node):
             if cached_path and os.path.exists(cached_path):
                 self.get_logger().debug(f"Using cached audio for chunk {i}")
                 audio_files.append(cached_path)
-
-                self.get_logger().debug(f"Playing {len(audio_files)} audio files")
-
-                # Play all audio files
-                for filepath in audio_files:
-                    self.play_audio(filepath)
             else:
                 output_path = os.path.join(
                     VOICE_DIRECTORY, f"audios/{hash((chunk, speed))}.wav"
@@ -235,39 +250,78 @@ class Say(Node):
                     f"{hash((chunk, speed))}.wav", chunk, speed
                 )
                 self._add_to_cache(chunk, output_path, speed)
-                mixer.pre_init(frequency=48000, buffer=2048)
-                mixer.init()
-                while mixer.music.get_busy():
-                    pass
+                audio_files.append(output_path)
 
-    def connectedVoice(self, text):
+        self.get_logger().debug(f"Playing {len(audio_files)} audio files")
+
+        # Play all audio files
+        for i, filepath in enumerate(audio_files):
+            is_last = i == len(audio_files) - 1
+            chunk_duration = self.play_audio(filepath, wait=(wait and is_last))
+            total_duration += chunk_duration
+
+        return total_duration
+
+    def connectedVoice(self, text, wait=True):
         # For connected voice, speed is not applicable, so we use default speed=1.0
         cached_path = self._get_cached_audio(text, 1.0)
-        if cached_path and os.path.exists(cached_path):
-            self.get_logger().info("Using cached audio")
-            self.play_audio(cached_path)
-            return
+        if not (cached_path and os.path.exists(cached_path)):
+            temp_mp3 = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.mp3")
+            cached_path = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.wav")
+            tts = gTTS(text=text, lang="es")
+            tts.save(temp_mp3)
+            # Convert to wav
+            try:
+                subprocess.run(
+                    ["ffmpeg", "-i", temp_mp3, cached_path, "-y"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=True,
+                )
+                os.remove(temp_mp3)
+            except Exception as e:
+                self.get_logger().error(f"Failed to convert gTTS to wav: {e}")
+                # If conversion fails, we might still have the mp3, but play_audio expects wav now.
+                # So we'll let it fail or handle it. For now, we expect ffmpeg to be there.
+                return 0.0
 
-        save_path = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.mp3")
-        tts = gTTS(text=text, lang="es")
-        tts.save(save_path)
-        self._add_to_cache(text, save_path, 1.0)
+            self._add_to_cache(text, cached_path, 1.0)
+
         self.get_logger().info("Saying...")
-        self.play_audio(save_path)
+        return self.play_audio(cached_path, wait=wait)
 
-    def play_audio(self, file_path):
-        mixer.pre_init(frequency=48000, buffer=2048)
-        mixer.init()
+    def play_audio(self, file_path, wait=True):
         while mixer.music.get_busy():
-            pass
+            time.sleep(0.01)
         mixer.music.load(file_path)
-        mixer.music.play()
-        # Wait for audio to finish playing before returning
+
+        # Get duration
+        duration = 0.0
         try:
-            while mixer.music.get_busy():
-                pass
+            with wave.open(file_path, "rb") as wf:
+                frames = wf.getnframes()
+                rate = wf.getframerate()
+                duration = frames / float(rate)
         except Exception as e:
-            self.get_logger().error(f"Error while waiting for audio: {e}")
+            self.get_logger().error(f"Error reading WAV duration for {file_path}: {e}")
+            # Fallback to pygame Sound as a secondary measure if wave.open fails
+            try:
+                sound = mixer.Sound(file_path)
+                duration = sound.get_length()
+            except Exception:
+                duration = 2.0  # Safe default
+
+        mixer.music.play()
+
+        if wait:
+            # Wait for audio to finish playing before returning
+            try:
+                while mixer.music.get_busy():
+                    time.sleep(0.01)
+            except Exception as e:
+                self.get_logger().error(f"Error while waiting for audio: {e}")
+
+        return duration
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):

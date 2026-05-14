@@ -1,4 +1,6 @@
 string text
 float64 speed
+bool wait
 ---
 bool success
+float64 duration

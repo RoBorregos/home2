@@ -1,7 +1,5 @@
 import argparse
-import io
 import os
-import time
 import wave
 from concurrent import futures
 
@@ -9,7 +7,6 @@ import grpc
 import numpy as np
 from proto_interfaces import tts_pb2, tts_pb2_grpc
 from kokoro import KPipeline
-from pygame import mixer
 from scipy import signal
 
 
@@ -30,10 +27,6 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
         self.pipeline = KPipeline(lang_code="a", device=device)
         self.original_sample_rate = 24000
         self.target_sample_rate = 48000
-
-        # Initialize pygame mixer
-        mixer.pre_init(frequency=self.target_sample_rate, buffer=2048)
-        mixer.init()
 
         # Warm up the model
         try:
@@ -64,7 +57,7 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
             # Create a list to collect all audio samples
             all_audio = []
 
-            # Stream and play each audio chunk
+            # Stream each audio chunk
             for i, (gs, ps, audio) in enumerate(generator):
                 print(f"Chunk {i}: {gs}, {ps}")
 
@@ -85,9 +78,6 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
                 # Add to complete audio collection
                 all_audio.append(audio_chunk)
 
-                # Play the audio chunk with pygame mixer
-                self._play_audio_chunk(audio_chunk)
-
             # Concatenate all audio chunks
             complete_audio = np.concatenate(all_audio)
 
@@ -101,34 +91,6 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
         except Exception as e:
             print(f"Error during kokoro TTS synthesis: {e}")
             return tts_pb2.SynthesizeResponse(success=False, error_message=str(e))
-
-    def _play_audio_chunk(self, audio_data):
-        """Play audio chunk using pygame mixer."""
-        # Normalize audio to int16
-        audio_int16 = np.int16(audio_data * 32767)
-
-        # Create a WAV file in memory
-        buffer = io.BytesIO()
-        with wave.open(buffer, "wb") as wf:
-            wf.setnchannels(1)  # Mono
-            wf.setsampwidth(2)  # 16 bits per sample
-            wf.setframerate(self.target_sample_rate)
-            wf.writeframes(audio_int16.tobytes())
-
-        # Reset buffer position
-        buffer.seek(0)
-
-        # Wait until mixer is available
-        while mixer.music.get_busy():
-            time.sleep(0.05)
-
-        # Load and play from memory buffer
-        mixer.music.load(buffer)
-        mixer.music.play()
-
-        # Wait until this chunk finishes playing
-        while mixer.music.get_busy():
-            time.sleep(0.05)
 
     def _save_audio_to_wav(self, audio_data, output_path, sample_rate):
         """Save audio data to WAV file for caching."""
