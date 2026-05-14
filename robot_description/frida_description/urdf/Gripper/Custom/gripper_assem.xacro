@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="gripper_assem">
+  <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper_mujoco_ros2_control.xacro" />
+
+  <xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/Gripper/Custom/" />
+
+
+  <xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' fixed_joints:='false' mujoco_plugin:=false">
+    
+  
+    <xacro:unless value="${attach_to == ''}">
+      <joint name="gripper_fix" type="fixed">
+        <parent link="${attach_to}"/>
+        <child link="base_gripper"/>
+        <origin xyz="${xyz}" rpy="${rpy}"/>
+        <axis xyz="0 0 1"/>
+      </joint>
+    </xacro:unless>
+
+   
+    <link name="base_gripper">
+      <inertial>
+        <origin xyz="0.00205414900975706 -0.0079289387691708 0.00496447520561954" rpy="0 0 0" />
+        <mass value="0.444319303531384" />
+        <inertia ixx="0.000295574227522536" ixy="-1.49850882624763E-06" ixz="-2.29923053023561E-06"
+                 iyy="0.00169223001729264" iyz="-7.97996067404252E-06" izz="0.00155157253823899" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}base_gripper.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="1 1 1 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}base_gripper.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+<!-- Fingers -->
+    <xacro:macro name="finger" params="prefix inertial_origin ixx ixy ixz iyy iyz izz">
+      <link name="${prefix}Finger">
+        <inertial>
+          <origin xyz="${inertial_origin}" rpy="0 0 0" />
+          <mass value="0.138810477440489" />
+          <inertia ixx="${ixx}" ixy="${ixy}" ixz="${ixz}"
+                   iyy="${iyy}" iyz="${iyz}" izz="${izz}" />
+        </inertial>
+        <visual>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <geometry>
+     
+            <mesh filename="${mesh_path}${prefix}Finger.STL" />
+          </geometry>
+          <material name="">
+            <color rgba="1 1 1 1" />
+          </material>
+        </visual>
+        <collision>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <geometry>
+            <mesh filename="${mesh_path}${prefix}Finger.STL" />
+          </geometry>
+        </collision>
+      </link>
+    </xacro:macro>
+
+   
+    <xacro:finger prefix="left" inertial_origin="-0.000511766984078593 4.1493423609954E-05 0.0515314829258657" ixx="0.000120276146687505" ixy="4.02712663600966E-08" ixz="-2.14547539538801E-06" iyy="9.36545782406352E-05" iyz="2.33669704723738E-07" izz="3.75231834005883E-05" />
+    <xacro:finger prefix="right" inertial_origin="0.000511766984078663 -4.14934236087643E-05 0.0515314829258686" ixx="0.000120276146687862" ixy="4.02712663620318E-08" ixz="2.14547540464629E-06" iyy="9.3654578245929E-05" iyz="-2.33669704724484E-07" izz="3.75231834055258E-05"/>
+
+
+    <xacro:if value="${fixed_joints}">
+      <xacro:property name="finger_joint_type" value="fixed" />
+    </xacro:if>
+    <xacro:unless value="${fixed_joints}"> 
+      <xacro:property name="finger_joint_type" value="prismatic" />
+    </xacro:unless>
+
+    <joint name="rightFinger" type="${finger_joint_type}">
+      <origin xyz="-0.069000000004341 0 0.017" rpy="0 0 0" />
+      <parent link="base_gripper" />
+      <child link="rightFinger" />
+      <axis xyz="1 0 0" />
+      <limit lower="0.0" upper="0.056" effort="1" velocity="8" />
+      <dynamics damping="5.0" friction="0.0"/>
+    </joint>
+
+    <joint name="leftFinger" type="${finger_joint_type}">
+      <origin xyz="0.0690000021983313 0 0.0170000000000032" rpy="0 0 0" />
+      <parent link="base_gripper" />
+      <child link="leftFinger" />
+      <axis xyz="-1 0 0" />
+      <limit lower="0.0" upper="0.056" effort="1" velocity="8" />
+      <dynamics damping="5.0" friction="0.0"/>
+      <mimic joint="rightFinger" multiplier="1" offset="0" />
+    </joint>
+
+    <!--ZED -->
+    <link name="zed">
+      <inertial>
+        <origin xyz="0.000222376856394309 -2.74471445363746E-06 1.14434720434944E-05" rpy="0 0 0" />
+        <mass value="0.155442370460899" />
+        <inertia ixx="0.000380530852034194" ixy="2.41879255711523E-09" ixz="-1.76211524951641E-09"
+                 iyy="2.32584072829081E-05" iyz="6.55482290032201E-09" izz="0.000382969903392614" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}zed.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="0.109803921568627 0.109803921568627 0.109803921568627 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}zed.STL" />
+        </geometry>
+      </collision>
+    </link>
+
+    <joint name="ZED" type="fixed">
+      <origin xyz="0 -0.0594045903873689 -0.0136964999847231" rpy="1.57079632679489 -1.5707963267949 0" />
+      <parent link="base_gripper" />
+      <child link="zed" />
+      <axis xyz="0 0 0" />
+    </joint>
+
+   
+    <xacro:if value="${mujoco_plugin}">
+      <mujoco>
+      <!-- Aggressive silicone-pad contact tuning for reliable grasps.
+           MuJoCo default contact (friction 1/0.005/0.0001, solref 0.02/1)
+           is smooth-metal equivalent so grips slip.  Overrides below:
+             friction 3 1 0.1: very grippy silicone.  Slide 3, spin 1,
+                roll 0.1 to resist tangential slip and cube rotation
+                during retreat accelerations.
+             solref -50000 -500: firm spring damper (50 kN/m, 500 Ns/m).
+                Stiff enough to transmit gripper force without impulsive
+                bounce; damped enough to settle fast.  Softer springs
+                (e.g. -1000) made the contact too compliant and the cube
+                oscillated out.
+             solimp 0.95 0.99 0.0005: 0.5 mm penetration band, tight
+                enough to stay realistic and give the solver room to
+                resolve contact without chatter. -->
+      <!-- condim=4 activates torsional friction (slide + torsional).
+           Default condim=3 only resists tangential slip, so the cube
+           can rotate around the finger normal inside a 2-finger pinch
+           grasp.  condim=6 also enables rolling friction but triples the
+           contact compute cost; condim=4 is the sweet spot: kills the
+           rotation-around-normal failure mode while staying realtime. -->
+        <reference name="rightFinger">
+            <joint range="0.0 0.056" limited="true" />
+            <geom name="right_finger_collision_0" friction="5.0 2.0 0.2" solref="-50000 -500" solimp="0.98 0.999 0.0001" condim="4"/>
+        </reference>
+        <reference name="leftFinger">
+            <joint range="0.0 0.056" limited="true" />
+            <geom name="left_finger_collision_0" friction="5.0 2.0 0.2" solref="-50000 -500" solimp="0.98 0.999 0.0001" condim="4"/>
+        </reference>
+        
+        <equality>
+          <joint name="gripper_mimic_joint" joint1="leftFinger" joint2="rightFinger" polycoef="0 1 0 0"/>
+        </equality>
+        
+        <actuator>
+          <position name="finger_actuator_position" joint="rightFinger" ctrlrange="0.0 0.056" forcerange="-10 10" kp="1000"/>
+          <!-- <velocity name="finger_actuator_velocity" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kv ="8"/> -->
+
+        <!-- Adhesion actuators on each finger.  MuJoCo native "adhesion"
+             applies an attractive force between the named body and every
+             body currently in contact with it (force = gain * ctrl, acts
+             only while contact exists).  When pick_server closes the
+             gripper on an object, both fingers contact the object; the
+             plugin sets adhesion ctrl to 1 on attach and 0 on detach,
+             turning each finger into a silicone+magnet pad.  This is the
+             standard mechanism used by MetaWorld and other MuJoCo
+             manipulation benchmarks: deterministic grasp without the
+             rigid-body weld's timing/orientation issues, because the
+             force is only applied through natural contact. -->
+        <!-- gain=200 N per contact.  Single-finger-only contacts
+             (common when GPD's grasp is slightly off-center) still
+             resist gravity's torque on a 50 g cube with this pull
+             force.  Also cover the gripper body itself so a cube that
+             slides against the palm gets attracted to it as well. -->
+          <adhesion name="right_finger_adhesion" body="rightFinger" ctrlrange="0 1" gain="200"/>
+          <adhesion name="left_finger_adhesion"  body="leftFinger"  ctrlrange="0 1" gain="200"/>
+          <adhesion name="gripper_adhesion"      body="base_gripper" ctrlrange="0 1" gain="200"/>
+        </actuator>
+      </mujoco>
+      
+      <xacro:gripper_mujoco_control/>
+    </xacro:if>
+
+  </xacro:macro>
+
+</robot>
