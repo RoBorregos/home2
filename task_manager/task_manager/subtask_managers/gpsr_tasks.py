@@ -591,7 +591,7 @@ class GPSRTask(GenericTask):
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_hotwords=False,
+                    use_keyword=False,
                     hotwords=command.name,
                 )
                 new_name = self.subtask_manager.hri.remove_punctuation(new_name)
