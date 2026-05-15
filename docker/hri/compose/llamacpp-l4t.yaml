@@ -1,7 +1,7 @@
 services:
   llama:
-    profiles: [hric, carry, gpsr, storing]
-    container_name: home2-hri-llama-l4t
+    profiles: [hric, carry, gpsr]
+    container_name: home2-hri-llamacpp-l4t
     image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
     pull_policy: missing
     runtime: nvidia
@@ -14,6 +14,7 @@ services:
       ROLE: ${ROLE}
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu/tegra
     stdin_open: true
     tty: true
     entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]

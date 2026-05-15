@@ -160,56 +160,33 @@ if ask_for_model ei-kws 7; then
     fi
 fi
 
-# ── Ollama models (qwen3 + nomic-embed-text) — backup ─────────────────────────
-ABSOLUTE_SCRIPT_DIR="$(cd "$SCRIPT_DIR" && pwd)"
-
-needs_ollama=false
-ask_for_model qwen3 3            && [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/qwen3" ]           && needs_ollama=true
-ask_for_model nomic-embed-text 4 && [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/nomic-embed-text" ] && needs_ollama=true
-
-if $needs_ollama; then
-    if docker images | grep -q "dustynv/ollama"; then
-        OLLAMA_IMAGE="dustynv/ollama:0.6.8-r36.4"
-        OLLAMA_CMD="bash -c \"ollama serve & sleep infinity\""
-    else
-        OLLAMA_IMAGE="ollama/ollama"
-        OLLAMA_CMD=""
-    fi
-
-    echo "Starting temporary Ollama container to pull models..."
-    OLLAMA_CONTAINER=$(docker run -d \
-        --runtime=nvidia \
-        -e OLLAMA_MODELS=/ollama \
-        -v "$ABSOLUTE_SCRIPT_DIR:/ollama" \
-        "$OLLAMA_IMAGE" \
-        bash -c "ollama serve & sleep infinity")
-
-    echo "Waiting for Ollama to start..."
-    MAX_WAIT=60; WAITED=0
-    while [ $WAITED -lt $MAX_WAIT ]; do
-        if docker exec "$OLLAMA_CONTAINER" curl -sf http://localhost:11434/api/version >/dev/null 2>&1; then
-            echo "Ollama ready."
-            break
-        fi
-        sleep 2; WAITED=$((WAITED + 2))
-    done
-
-    if ask_for_model qwen3 3 && \
-       [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/qwen3" ]; then
-        echo "Pulling qwen3 via Ollama..."
-        docker exec "$OLLAMA_CONTAINER" ollama pull qwen3
-        echo "qwen3 pulled."
-    fi
-
-    if ask_for_model nomic-embed-text 4 && \
-       [ ! -d "$SCRIPT_DIR/manifests/registry.ollama.ai/library/nomic-embed-text" ]; then
-        echo "Pulling nomic-embed-text via Ollama..."
-        docker exec "$OLLAMA_CONTAINER" ollama pull nomic-embed-text
-        echo "nomic-embed-text pulled."
-    fi
-
-    docker stop "$OLLAMA_CONTAINER" >/dev/null && docker rm "$OLLAMA_CONTAINER" >/dev/null
-    echo "Ollama models ready."
+# ── Ollama models ─────────────────────────────────────────────────────────────
+if docker images | grep -q "dustynv/ollama"; then
+    IMAGE="dustynv/ollama:0.6.8-r36.4"
+    COMMAND="ollama serve"
+elif docker images | grep -q "ollama/ollama"; then
+    IMAGE="ollama/ollama"
+    COMMAND=""
+else
+    echo "Error: No compatible Ollama image found. Pulling the default image..."
+    docker pull ollama/ollama:latest
+    IMAGE="ollama/ollama"
+    COMMAND=""
 fi
+
+echo "Running: docker run -d --rm --runtime=nvidia -v \"$SCRIPT_DIR\":/ollama -e OLLAMA_MODELS=/ollama $IMAGE $COMMAND"
+
+# Don't quote $COMMAND to allow for multiple word commands
+CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$SCRIPT_DIR":/ollama -e OLLAMA_MODELS=/ollama "$IMAGE" $COMMAND)
+
+if ask_for_model qwen3 3; then
+    docker exec "$CONTAINER_ID" ollama pull qwen3
+fi
+
+if ask_for_model nomic-embed-text 4; then
+    docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
+fi
+
+docker stop "$CONTAINER_ID"
 
 echo "All selected models downloaded."

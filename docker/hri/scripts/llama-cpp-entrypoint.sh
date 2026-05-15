@@ -1,10 +1,6 @@
 #!/bin/bash
 set -e
 
-# On Jetson, the real libcuda.so.1 is mounted by nvidia-container-runtime at this path.
-# Without this, llama.cpp finds the stub in /usr/local/cuda/lib64/stubs/ and falls back to CPU.
-export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/tegra:${LD_LIBRARY_PATH:-}
-
 echo "Starting with ROLE=$ROLE"
 
 MODELS_DIR=/root/.cache/huggingface
@@ -25,11 +21,6 @@ wait_for_server() {
     done
     echo "Server on port $port is ready."
 }
-
-if [ "$ROLE" = "storing" ]; then
-    echo "Storing role: no models to load."
-    tail -f /dev/null
-fi
 
 # qwen3-8b on port 11434 — hric, carry, gpsr
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "carry" ] || [ "$ROLE" = "gpsr" ]; then
@@ -68,4 +59,3 @@ if [ "$ROLE" = "gpsr" ]; then
 fi
 
 echo "All servers ready. Container running..."
-wait
