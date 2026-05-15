@@ -31,7 +31,7 @@ class OpenWakeWordNode(Node):
         )
         self.declare_parameter("inference_framework", "onnx")
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
-        self.declare_parameter("WAKEWORD_TOPIC", "/hri/speech/oww")
+        self.declare_parameter("KEYWORD_TOPIC", "/hri/speech/kws")
         self.declare_parameter("chunk_size", 1280)
         self.declare_parameter("detection_cooldown", 1.0)
         self.declare_parameter("SENSITIVITY_THRESHOLD", 0.5)
@@ -45,8 +45,8 @@ class OpenWakeWordNode(Node):
             .get_parameter_value()
             .string_value
         )
-        wakeword_topic = (
-            self.get_parameter("WAKEWORD_TOPIC").get_parameter_value().string_value
+        keyword_topic = (
+            self.get_parameter("KEYWORD_TOPIC").get_parameter_value().string_value
         )
         self.chunk_size = (
             self.get_parameter("chunk_size").get_parameter_value().integer_value
@@ -79,7 +79,7 @@ class OpenWakeWordNode(Node):
         self.get_logger().info("OpenWakeWord model loaded successfully.")
         self.keywords = list(self.oww_model.models.keys())
 
-        self.publisher = self.create_publisher(String, wakeword_topic, 10)
+        self.publisher = self.create_publisher(String, keyword_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
 
         # Flag to prevent rapid repeated publishing
@@ -87,13 +87,13 @@ class OpenWakeWordNode(Node):
         self.get_logger().info("OpenWakeWord node initialized and ready.")
 
     def audio_callback(self, msg):
-        """Process incoming audio data and detect wakewords."""
+        """Process incoming audio data and detect keywords."""
         # Convert audio data from ROS to NumPy array (to obtain directly from microphone)
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
         # Perform prediction using OpenWakeWord (returns numerical value)
         self.oww_model.predict(audio_data)
 
-        # Check for wakeword detection
+        # Check for keyword detection
         for keyword, buffer in self.oww_model.prediction_buffer.items():
             scores = list(buffer)
             if scores[-1] > self.sensitivity_threshold:
@@ -101,7 +101,7 @@ class OpenWakeWordNode(Node):
                 current_time = time.time()
                 if current_time - self.last_detection_time >= self.detection_cooldown:
                     self.get_logger().info(
-                        f"Wakeword '{keyword}' detected with score {scores[-1]:.2f}"
+                        f"Keyword '{keyword}' detected with score {scores[-1]:.2f}"
                     )
                     detection_info = {"keyword": keyword, "score": scores[-1]}
                     self.publisher.publish(String(data=str(detection_info)))

@@ -39,7 +39,7 @@ from frida_constants.hri_constants import (
     TASK_STATUS_TOPIC,
     TASK_STEP_TOPIC,
     TIMEOUT,
-    WAKEWORD_TOPIC,
+    KEYWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
@@ -184,7 +184,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
-            String, WAKEWORD_TOPIC, self._get_keyword, 10
+            String, KEYWORD_TOPIC, self._get_keyword, 10
         )
 
         self.current_transcription = ""
@@ -481,7 +481,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Args:
             timeout (float): The maximum time to stop the transcription.
-            hotwords (str): Hotwords to improve the transcription accuracy.
+            hotwords (str): Hotwords passed to faster-whisper to improve transcription accuracy.
             initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
@@ -543,7 +543,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def confirm(
         self,
         question: str,
-        use_hotwords: bool = True,
+        use_keyword: bool = True,
         retries: int = 3,
         wait_between_retries: float = 5,
     ):
@@ -552,7 +552,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Args:
             question: the inquiry to confirm
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
         Returns:
@@ -570,7 +570,7 @@ class HRITasks(metaclass=SubtaskMeta):
             # Say the question
             self.say(question)
 
-            if use_hotwords:
+            if use_keyword:
                 # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
@@ -629,7 +629,7 @@ class HRITasks(metaclass=SubtaskMeta):
         query: str,
         context: str = "",
         confirm_question: Union[str, callable] = confirm_query,
-        use_hotwords: bool = True,
+        use_keyword: bool = True,
         hotwords="",
         retries: int = 3,
         min_wait_between_retries: float = 5,
@@ -649,7 +649,7 @@ class HRITasks(metaclass=SubtaskMeta):
             query: the data to extract from the interpreted text
             context: the context of the question. It could be used to help the extraction.
             confirm_question: a string or a callable function that returns a string used confirm the answer
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_keyword: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
@@ -766,7 +766,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # Ask for confirmation
                 if target_info != "" and target_found:
-                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                    s, confirmation = self.confirm(confirmation_text, use_keyword, 3)
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                         return Status.EXECUTION_SUCCESS, target_info
 
@@ -1078,7 +1078,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="What would you like to order first?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_keyword=False,
             options=items,
             retries=retries,
         )
@@ -1091,7 +1091,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="And what would you like as your second item?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_keyword=False,
             options=items,
             retries=retries,
         )

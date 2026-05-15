@@ -307,7 +307,7 @@ class HRIC_TM(Node):
 
             self.timeout(5)
             s, res = self.subtask_manager.hri.confirm(
-                "Have you placed the bag on my gripper?", use_hotwords=False
+                "Have you placed the bag on my gripper?", use_keyword=False
             )
             if s == Status.EXECUTION_SUCCESS and res == "yes":
                 self.subtask_manager.hri.say(
