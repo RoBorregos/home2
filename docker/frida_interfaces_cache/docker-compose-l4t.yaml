@@ -13,8 +13,8 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./build:/workspace/build
-      - ./install:/workspace/install
+      - ./build:/workspace/frida_interfaces_cache/build
+      - ./install:/workspace/frida_interfaces_cache/install
       - ./log:/workspace/log
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
 
@@ -33,4 +33,4 @@ services:
     user: ${UID}:${GID}
     privileged: true
     command: >
-      bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces xarm_msgs"
+      bash -c "source /opt/ros/humble/setup.bash && colcon build --build-base /workspace/frida_interfaces_cache/build --install-base /workspace/frida_interfaces_cache/install --packages-select frida_interfaces xarm_msgs && colcon build --symlink-install --build-base /workspace/frida_interfaces_cache/build --install-base /workspace/frida_interfaces_cache/install --packages-select frida_constants"

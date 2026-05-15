@@ -89,10 +89,10 @@ fi
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
-IGNORE_PACKAGES="--packages-ignore frida_interfaces xarm_msgs"
+IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
-PACKAGES="speech nlp embeddings frida_constants"
+PACKAGES="speech nlp embeddings"
 PROFILES=()
 RUN=""
 
