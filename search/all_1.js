@@ -82,7 +82,7 @@ var searchData=
   ['arm_5fmoving_79',['arm_moving',['../classfollow__face__node_1_1FollowFaceNode.html#addb2abd0b6ab1b6b85718c0b0b98bea4',1,'follow_face_node::FollowFaceNode']]],
   ['arm_5fpkg_80',['arm_pkg',['../namespacearm__pkg.html',1,'']]],
   ['arm_5fready_81',['arm_ready',['../classfollow__face__node_1_1FollowFaceNode.html#aa498b5b702cd3acff08460a9258d7156',1,'follow_face_node::FollowFaceNode']]],
-  ['ask_5fand_5fconfirm_82',['ask_and_confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a80198d810637e67e87228ecebe0362f7',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['ask_5fand_5fconfirm_82',['ask_and_confirm',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a9f416171c408457399815c3706f6d614',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['ask_5ffor_5fdrink_83',['ASK_FOR_DRINK',['../classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html#acd7293871aa15607a19595a5b9b58220',1,'receptionist_task_manager::ReceptionistTM::TaskStates']]],
   ['ask_5ffor_5finterest_84',['ASK_FOR_INTEREST',['../classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html#a8cc915beb0f792605a4ab2410fa4b108',1,'receptionist_task_manager::ReceptionistTM::TaskStates']]],
   ['ask_5fobject_85',['ASK_OBJECT',['../classhand__task__manager_1_1HandTM_1_1TaskStates.html#a513a6caed2f5691ca43da6c74961e19b',1,'hand_task_manager::HandTM::TaskStates']]],

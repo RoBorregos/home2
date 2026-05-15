@@ -133,10 +133,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad31537c8a7a75d5f328f7ac43ffbdbd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a17e9d054478bb517b10f5c9b0c53a646"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a17e9d054478bb517b10f5c9b0c53a646">set_light_state</a> (self, <a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html">AudioStates</a> state)</td></tr>
 <tr class="separator:a17e9d054478bb517b10f5c9b0c53a646"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c6f0c459e2e4c0f0066f3724575f815"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a0c6f0c459e2e4c0f0066f3724575f815">confirm</a> (self, str question, bool use_hotwords=True, int retries=3, float wait_between_retries=5)</td></tr>
-<tr class="separator:a0c6f0c459e2e4c0f0066f3724575f815"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80198d810637e67e87228ecebe0362f7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a80198d810637e67e87228ecebe0362f7">ask_and_confirm</a> (self, str question, str query, str context=&quot;&quot;, Union[str, callable] confirm_question=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1">confirm_query</a>, bool use_hotwords=True, hotwords=&quot;&quot;, int retries=3, float min_wait_between_retries=5, bool skip_extract_data=False, bool skip_confirmation=False, bool always_confirm=False, list[str] options=None, dict remap=None, str <a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a254e622abfcc0b799388add32b2ead19">initial_prompt</a>=&quot;&quot;, float silence_time=1.0)</td></tr>
-<tr class="separator:a80198d810637e67e87228ecebe0362f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf3af43816f6588d91ab4df64026ab26"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aaf3af43816f6588d91ab4df64026ab26">confirm</a> (self, str question, bool use_keyword=True, int retries=3, float wait_between_retries=5)</td></tr>
+<tr class="separator:aaf3af43816f6588d91ab4df64026ab26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f416171c408457399815c3706f6d614"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a9f416171c408457399815c3706f6d614">ask_and_confirm</a> (self, str question, str query, str context=&quot;&quot;, Union[str, callable] confirm_question=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1">confirm_query</a>, bool use_keyword=True, hotwords=&quot;&quot;, int retries=3, float min_wait_between_retries=5, bool skip_extract_data=False, bool skip_confirmation=False, bool always_confirm=False, list[str] options=None, dict remap=None, str <a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a254e622abfcc0b799388add32b2ead19">initial_prompt</a>=&quot;&quot;, float silence_time=1.0)</td></tr>
+<tr class="separator:a9f416171c408457399815c3706f6d614"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb4cabdbc9ca826675a0e51657b8b225"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#acb4cabdbc9ca826675a0e51657b8b225">interpret_keyword</a> (self, list[str] keywords, float timeout)</td></tr>
 <tr class="separator:acb4cabdbc9ca826675a0e51657b8b225"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0cf67e4e5aa418a73274640f7d75ec4e"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a0cf67e4e5aa418a73274640f7d75ec4e">refactor_text</a> (self, str text)</td></tr>
@@ -688,8 +688,8 @@ Returns:
 </pre> 
 </div>
 </div>
-<a id="a80198d810637e67e87228ecebe0362f7" name="a80198d810637e67e87228ecebe0362f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80198d810637e67e87228ecebe0362f7">&#9670;&#160;</a></span>ask_and_confirm()</h2>
+<a id="a9f416171c408457399815c3706f6d614" name="a9f416171c408457399815c3706f6d614"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f416171c408457399815c3706f6d614">&#9670;&#160;</a></span>ask_and_confirm()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -728,7 +728,7 @@ Returns:
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>use_hotwords</em> = <code>True</code>, </td>
+          <td class="paramname"><em>use_keyword</em> = <code>True</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -804,7 +804,7 @@ Args:
     query: the data to extract from the interpreted text
     context: the context of the question. It could be used to help the extraction.
     confirm_question: a string or a callable function that returns a string used confirm the answer
-    use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
+    use_keyword: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
     retries: the amount of times to try before returning false
     min_wait_between_retries: the minimum amount of time to wait between retries
     initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
@@ -948,8 +948,8 @@ If is_async is True, returns a Future object that can be used to get the result 
 </pre> 
 </div>
 </div>
-<a id="a0c6f0c459e2e4c0f0066f3724575f815" name="a0c6f0c459e2e4c0f0066f3724575f815"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c6f0c459e2e4c0f0066f3724575f815">&#9670;&#160;</a></span>confirm()</h2>
+<a id="aaf3af43816f6588d91ab4df64026ab26" name="aaf3af43816f6588d91ab4df64026ab26"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf3af43816f6588d91ab4df64026ab26">&#9670;&#160;</a></span>confirm()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -970,7 +970,7 @@ If is_async is True, returns a Future object that can be used to get the result 
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>use_hotwords</em> = <code>True</code>, </td>
+          <td class="paramname"><em>use_keyword</em> = <code>True</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -995,7 +995,7 @@ If is_async is True, returns a Future object that can be used to get the result 
 
 Args:
     question: the inquiry to confirm
-    use_hotwords: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
+    use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
     retries: the amount of times to try before returning false
     wait_between_retries: the amount of time to wait between retries
 Returns:
@@ -1507,7 +1507,7 @@ Note: the caller must also call `self.cancel_hear_action()` or `self.set_light_s
 
 Args:
     timeout (float): The maximum time to stop the transcription.
-    hotwords (str): Hotwords to improve the transcription accuracy.
+    hotwords (str): Hotwords passed to faster-whisper to improve transcription accuracy.
     initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
     silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
     start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.

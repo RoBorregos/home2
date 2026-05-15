@@ -1,6 +1,5 @@
 var NAVTREEINDEX28 =
 {
-"masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[32,0,3,0,6,4,2,3],
 "md_docs_Run_Areas_Manipulation_manipulation.html":[20],
 "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md116":[20,0],
 "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md117":[20,1],
@@ -249,5 +248,6 @@ var NAVTREEINDEX28 =
 "namespacePickManager.html#a0be975bbeb13f0d6e97a74cf31c87ac4":[30,0,116,4],
 "namespacePickManager.html#a38889fce0778444ca2278c1767b44b7d":[30,0,116,5],
 "namespacePickManager.html#a68a22a9f3907767840a047f2fb9e855b":[30,0,116,1],
-"namespacePickManager.html#a6c7e5eb22b70e41142e616127270e24e":[30,0,116,2]
+"namespacePickManager.html#a6c7e5eb22b70e41142e616127270e24e":[30,0,116,2],
+"namespacePickManager.html#a6ebf5ef225508aaa23d867b6e5644785":[30,0,116,7]
 };

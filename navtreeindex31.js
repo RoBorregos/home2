@@ -1,7 +1,5 @@
 var NAVTREEINDEX31 =
 {
-"namespacefrida__moveit__config.html#a5e023520268c7fc528bdef585510ea67":[30,0,59,1],
-"namespacegazebo__objects.html":[30,0,60],
 "namespacegazebo__objects.html#ae772c64528c2799ae896221ae540da16":[30,0,60,0],
 "namespacegeneral__navigation.html":[30,0,61],
 "namespacegeneral__navigation.html#a7ef9e56e1cb54dea09714dcd59926838":[30,0,61,1],
@@ -249,5 +247,7 @@ var NAVTREEINDEX31 =
 "namespacemoveit.html#acbf7baa79e0c3776c713bd6f15b25ab6":[30,0,95,1],
 "namespacemujoco__rgbd__camera.html":[30,0,98],
 "namespacemujoco__ros2__control.html":[30,0,99],
-"namespacemujoco__ros2__control.html#ad61493c4f5cf48aee2654e4c3a7bd2fc":[30,0,99,3]
+"namespacemujoco__ros2__control.html#ad61493c4f5cf48aee2654e4c3a7bd2fc":[30,0,99,3],
+"namespacemujoco__ros2__sensors.html":[30,0,100],
+"namespacemujoco__sim__init.html":[30,0,101]
 };

@@ -1,6 +1,5 @@
 var NAVTREEINDEX29 =
 {
-"namespacePickManager.html#a6ebf5ef225508aaa23d867b6e5644785":[30,0,116,7],
 "namespacePickManager.html#a99b7b6f851b3ea9aa14340cda1585052":[30,0,116,3],
 "namespacePickManager.html#afcfec5898dcc59164a20e8562b51f08d":[30,0,116,6],
 "namespacePlaceManager.html":[30,0,117],
@@ -249,5 +248,6 @@ var NAVTREEINDEX29 =
 "namespacefrida__constants_1_1hri__constants.html#a1405902be9440099af248e891e6a796d":[30,0,54,0,33],
 "namespacefrida__constants_1_1hri__constants.html#a1445a0126f5ffb6f0817906046e5a278":[30,0,54,0,2],
 "namespacefrida__constants_1_1hri__constants.html#a178c823b8cab8a3ba2131d5cb2c3594c":[30,0,54,0,31],
-"namespacefrida__constants_1_1hri__constants.html#a17e6a7edcef87329c3717fc4cd21dbee":[30,0,54,0,48]
+"namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2":[30,0,54,0,6],
+"namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e":[30,0,54,0,41]
 };

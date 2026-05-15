@@ -47,6 +47,5 @@ var hri__constants_8py =
     [ "VAD_AUDIO_TOPIC", "hri__constants_8py.html#a4f57beaa697d3fd2366209c57e9261db", null ],
     [ "VOICE_ACTIVITY_TOPIC", "hri__constants_8py.html#aeae565aebb4e2edc79e98eaa9cfdc111", null ],
     [ "VOWEL_FREQ_HIGH", "hri__constants_8py.html#aaef590928a116f77d6ac95c25420bc21", null ],
-    [ "VOWEL_FREQ_LOW", "hri__constants_8py.html#a56bf361bc52f5478274dc6f3eb125cc7", null ],
-    [ "WAKEWORD_TOPIC", "hri__constants_8py.html#a17e6a7edcef87329c3717fc4cd21dbee", null ]
+    [ "VOWEL_FREQ_LOW", "hri__constants_8py.html#a56bf361bc52f5478274dc6f3eb125cc7", null ]
 ];

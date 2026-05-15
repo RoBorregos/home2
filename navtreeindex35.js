@@ -1,7 +1,5 @@
 var NAVTREEINDEX35 =
 {
-"server_8py.html#a3c8df1657c541fd80fbb8ffef44e8451":[32,0,7,0,0,1,4,8],
-"server_8py.html#a469f094fa099c5fafa3f1dc6960381fc":[32,0,7,0,0,1,4,1],
 "server_8py.html#a692f59b384dd93287c366eb7e7c0608b":[32,0,7,0,0,1,4,5],
 "server_8py.html#a70ecbc33459e4c393ccddd6f1d1bcc04":[32,0,7,0,0,1,4,3],
 "server_8py.html#a72aa2cd67bf6ea46a0eea394a62534a2":[32,0,7,0,0,1,4,9],
@@ -249,5 +247,7 @@ var NAVTREEINDEX35 =
 "vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html#a518bb5f2252ac2f0372fdbb596bee6bf":[32,0,7,0,1,2,0,3,1],
 "vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html#af7cdecddcac99f7c329b866f5ed79ed9":[32,0,7,0,1,2,0,3,0],
 "vision_2packages_2vision__general_2vision__general_2____init_____8py.html":[32,0,7,0,2,3,1],
-"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html":[32,0,7,0,2,3,0,1,0,1]
+"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html":[32,0,7,0,2,3,0,1,0,1],
+"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html#a4244883723c690b3712f5500eae7dfdc":[32,0,7,0,2,3,0,1,0,1,1],
+"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html#a43a1e41e013cee2dc8a50743353feba8":[32,0,7,0,2,3,0,1,0,1,2]
 };

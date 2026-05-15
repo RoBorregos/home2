@@ -1,7 +1,5 @@
 var NAVTREEINDEX32 =
 {
-"namespacemujoco__ros2__sensors.html":[30,0,100],
-"namespacemujoco__sim__init.html":[30,0,101],
 "namespacemujoco__sim__init.html#a5114034a67e258ad767a1476be8b2827":[30,0,101,1],
 "namespacemujoco__sim__init.html#a7adaab4e1670a4e3f3996523f471f673":[30,0,101,3],
 "namespacemujoco__sim__init.html#a9aaa62c4a0851323a1c3f9b92242e1f5":[30,0,101,2],
@@ -249,5 +247,7 @@ var NAVTREEINDEX32 =
 "namespacestoring__groceries__manager.html#a2fd3c5a7b46f6bb755f0abf70ca3120e":[30,0,147,9],
 "namespacestoring__groceries__manager.html#a5c5fb5ca9955697c9096cbed47fe0bd4":[30,0,147,4],
 "namespacestoring__groceries__manager.html#a6c6879c42f9db08122407e746f9f1743":[30,0,147,10],
-"namespacestoring__groceries__manager.html#a8b63e1cdbdbefa642e6a43a0aa606632":[30,0,147,6]
+"namespacestoring__groceries__manager.html#a8b63e1cdbdbefa642e6a43a0aa606632":[30,0,147,6],
+"namespacestoring__groceries__manager.html#ad877050e492d039476b41e8c97e3f49e":[30,0,147,8],
+"namespacestoring__groceries__manager.html#aefba43d88a80d9a35a4c5de13f58c9d7":[30,0,147,7]
 };
