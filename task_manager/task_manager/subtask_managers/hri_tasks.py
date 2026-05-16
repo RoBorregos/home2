@@ -1046,11 +1046,12 @@ class HRITasks(metaclass=SubtaskMeta):
     def take_order(
         self,
         retries: int = 3,
+        n: int = 2,
     ) -> tuple[Status, list[str]]:
         """Ask the customer for their order and return the matched menu items.
-        Flow per attempt:
-        1. Ask for the first item and confirm it.
-        2. Ask for the second item and confirm it.
+        Args:
+            retries: number of attempts per item before giving up.
+            n: number of items to order (default 2).
         Returns:
             (Status.EXECUTION_SUCCESS, list[str]) on success, or
             (Status.TIMEOUT, []) if the customer never confirms.
@@ -1058,36 +1059,31 @@ class HRITasks(metaclass=SubtaskMeta):
 
         items = list(self.items)
         context = f"Extract one of these items: {items}"
+        ordered = []
 
-        s_first, first_item = self.ask_and_confirm(
-            question="What would you like to order first?",
-            query="LLM_ordered_items",
-            context=context,
-            use_keyword=False,
-            options=items,
-            retries=retries,
-        )
+        for i in range(n):
+            if i == 0:
+                question = "What would you like to order?"
+            else:
+                question = f"And what would you like as your item number {i + 1}?"
 
-        if s_first != Status.EXECUTION_SUCCESS or not first_item:
-            Logger.warn(self.node, "take_order: max retries reached, giving up")
-            return Status.TIMEOUT, []
+            s, item = self.ask_and_confirm(
+                question=question,
+                query="LLM_ordered_items",
+                context=context,
+                use_keyword=False,
+                options=items,
+                retries=retries,
+            )
 
-        s_second, second_item = self.ask_and_confirm(
-            question="And what would you like as your second item?",
-            query="LLM_ordered_items",
-            context=context,
-            use_keyword=False,
-            options=items,
-            retries=retries,
-        )
+            if s != Status.EXECUTION_SUCCESS or not item:
+                Logger.warn(self.node, "take_order: max retries reached, giving up")
+                return Status.TIMEOUT, []
 
-        if s_second != Status.EXECUTION_SUCCESS or not second_item:
-            Logger.warn(self.node, "take_order: max retries reached, giving up")
-            return Status.TIMEOUT, []
+            ordered.append(item)
 
-        raw_items = [first_item, second_item]
-        Logger.success(self.node, f"take_order confirmed: {raw_items}")
-        return Status.EXECUTION_SUCCESS, raw_items
+        Logger.success(self.node, f"take_order confirmed: {ordered}")
+        return Status.EXECUTION_SUCCESS, ordered
 
     # Embeddings services — delegate to HRI postgres_service node via ROS
 
