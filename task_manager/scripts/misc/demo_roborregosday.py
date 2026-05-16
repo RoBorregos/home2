@@ -185,7 +185,6 @@ class DemoRoborregosDay(Node):
                 question="What would you like to order?",
                 query="LLM_ordered_items",
                 context=context,
-                use_hotwords=False,
                 options=list(MENU_ITEMS),
                 retries=3,
             )
