@@ -88,21 +88,14 @@
        pick.  On the real robot the 0.3 m pedestal is the physical mounting;
        in MuJoCo the arm is attached directly to world and there is no
        pedestal, so pin world<->base_link at identity for sim only. -->
-  <link name="world" />
   <xacro:if value="$(arg mujoco_plugin)">
+    <link name="world" />
     <joint name="world_to_base" type="fixed">
       <parent link="world" />
       <child link="base_link" />
       <origin rpy="0 0 0" xyz="0 0 0" />
     </joint>
   </xacro:if>
-  <xacro:unless value="$(arg mujoco_plugin)">
-    <joint name="world_to_base" type="fixed">
-      <parent link="world" />
-      <child link="base_link" />
-      <origin rpy="0 0 0" xyz="0 0 0.3" />
-    </joint>
-  </xacro:unless>
   <!-- XARM MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/xarm/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 

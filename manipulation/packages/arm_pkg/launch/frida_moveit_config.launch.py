@@ -251,6 +251,13 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    map_to_world_node = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="map_to_world_static_tf",
+        arguments=["0", "0", "0", "0", "0", "0", "map", "world"],
+    )
+
     return [
         SetEnvironmentVariable(
             name="ROS_LOG_LEVEL",
@@ -268,6 +275,7 @@ def launch_setup(context, *args, **kwargs):
         ros2_control_launch,
         control_node,
         downsample_pcd,
+        map_to_world_node,
         # robot_driver_launch,
     ]
 
