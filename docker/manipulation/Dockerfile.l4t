@@ -4,8 +4,10 @@ FROM ${BASE_IMAGE}
 RUN mkdir -p /workspace
 
 # Python Requirements
+# On l4t/Jetson, PyTorch comes pre-built from JetPack — skip pip torch to avoid overwriting it.
 COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
-RUN pip3 install -r /workspace/requirements/requirements.txt
+RUN grep -vE "^torch(vision|audio)?$" /workspace/requirements/requirements.txt \
+    > /tmp/requirements_l4t.txt && pip3 install -r /tmp/requirements_l4t.txt
 RUN rm -r /workspace/requirements/
 
 RUN chown -R ros:ros /workspace

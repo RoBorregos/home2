@@ -5,14 +5,23 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.actions import IncludeLaunchDescription
-from launch.substitutions import PathJoinSubstitution
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 
 def generate_launch_description():
     return LaunchDescription(
         [
-            # perception_3d.launch.py
+            DeclareLaunchArgument(
+                "grasp_backend",
+                default_value="gpd",
+                description="Grasp detection backend: 'gpd' or 'contact_graspnet'.",
+            ),
+            DeclareLaunchArgument(
+                "ckpt_dir",
+                default_value="checkpoints/contact_graspnet",
+                description="Contact-GraspNet checkpoint dir (used when grasp_backend=contact_graspnet).",
+            ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution(
@@ -34,6 +43,10 @@ def generate_launch_description():
                         ]
                     )
                 ),
+                launch_arguments={
+                    "grasp_backend": LaunchConfiguration("grasp_backend"),
+                    "ckpt_dir": LaunchConfiguration("ckpt_dir"),
+                }.items(),
             ),
             Node(
                 package="task_manager",

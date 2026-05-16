@@ -6,28 +6,33 @@ CGN_DIR="$WORKSPACE_DIR/manipulation/packages/contact_graspnet"
 
 # Check if Contact-GraspNet is in workspace
 if [ ! -d "$CGN_DIR" ]; then
-    echo "Contact-GraspNet submodule not found in $CGN_DIR"
+    echo "[CGN] Contact-GraspNet submodule not found in $CGN_DIR"
+    echo "[CGN] Run: git submodule update --init manipulation/packages/contact_graspnet"
     exit 1
 fi
 
 # Check for checkpoints/weights
+# Expected path: contact_graspnet/checkpoints/contact_graspnet/checkpoints/model.pt
 CHECKPOINT_DIR="$CGN_DIR/checkpoints/contact_graspnet"
-if [ ! -d "$CHECKPOINT_DIR" ]; then
-    echo "Contact-GraspNet weights not found. You may need to download them."
-    # Optional: Add download logic here if there is a public link
+if [ ! -f "$CHECKPOINT_DIR/checkpoints/model.pt" ]; then
+    echo "[CGN] WARNING: model checkpoint not found at $CHECKPOINT_DIR/checkpoints/model.pt"
+    echo "[CGN] Download from: https://github.com/elchun/contact_graspnet_pytorch (Releases)"
+    echo "[CGN] and place it at: $CHECKPOINT_DIR/checkpoints/model.pt"
 fi
 
-# PointNet++ compilation (if needed)
-# The elchun implementation uses some CUDA extensions that might need building
+# Install Contact-GraspNet as a Python package.
+# Skip torch/torchvision/torchaudio on Jetson — JetPack provides the correct ARM CUDA build.
 cd "$CGN_DIR"
 if [ -f "requirements.txt" ]; then
-    echo "Installing missing dependencies from submodule..."
-    pip3 install -r requirements.txt
+    echo "[CGN] Installing Contact-GraspNet dependencies..."
+    grep -vE "^torch(vision|audio)?$" requirements.txt > /tmp/cgn_reqs.txt
+    pip3 install -q -r /tmp/cgn_reqs.txt
 fi
 
 if [ -f "setup.py" ]; then
-    echo "Installing Contact-GraspNet python package and compiling extensions..."
-    pip3 install -e .
+    echo "[CGN] Installing Contact-GraspNet python package..."
+    pip3 install -q -e .
 fi
 
+echo "[CGN] Setup complete."
 cd "$INITIAL_FOLDER"
