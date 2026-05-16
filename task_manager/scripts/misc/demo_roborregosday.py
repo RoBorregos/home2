@@ -95,7 +95,6 @@ class DemoRoborregosDay(Node):
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you placed the object in my gripper?",
-            use_hotwords=True,
             retries=3,
             wait_between_retries=5,
         )
@@ -129,7 +128,6 @@ class DemoRoborregosDay(Node):
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you taken the item from my gripper?",
-            use_hotwords=True,
             retries=3,
             wait_between_retries=5,
         )
@@ -171,6 +169,7 @@ class DemoRoborregosDay(Node):
 
         # ──────────────────────── GREET ────────────────────────────────
         if self.current_state == DemoRoborregosDay.States.GREET:
+            self.subtask_manager.manipulation.move_to_position("front_stare")
             menu_str = ", ".join(MENU_ITEMS)
             self.subtask_manager.hri.say(
                 "Hello! My name is Frida and I will be your waiter today. "
@@ -181,14 +180,20 @@ class DemoRoborregosDay(Node):
 
         # ─────────────────────── TAKE_ORDER ────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.TAKE_ORDER:
-            status, items = self.subtask_manager.hri.take_order(retries=3)
-            if status == Status.EXECUTION_SUCCESS and items:
-                self.ordered_items = items
-                self.current_item = items[0]
-                order_str = " and ".join(items)
-                Logger.success(self, f"Order received: {order_str}")
+            context = f"Extract one of these items: {list(MENU_ITEMS)}"
+            status, item = self.subtask_manager.hri.ask_and_confirm(
+                question="What would you like to order?",
+                query="LLM_ordered_items",
+                context=context,
+                use_hotwords=False,
+                options=list(MENU_ITEMS),
+                retries=3,
+            )
+            if status == Status.EXECUTION_SUCCESS and item:
+                self.current_item = item
+                Logger.success(self, f"Order received: {item}")
                 self.subtask_manager.hri.say(
-                    f"Perfect! You ordered {order_str}. " "Please wait while I go fetch your items."
+                    f"Perfect! You ordered {item}. Please wait while I go fetch it."
                 )
             else:
                 Logger.warn(self, "Could not take order; using first menu item as fallback.")
