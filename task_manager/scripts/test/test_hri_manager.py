@@ -15,7 +15,6 @@ from typing import Union
 
 import rclpy
 from rclpy.node import Node
-from task_manager.gpsr.merger import merge
 
 from _merger_helpers import (
     gripper_invariant_holds,
@@ -614,17 +613,33 @@ class TestHriManager(Node):
         scenarios. Pure-Python — does not depend on any ROS service. Mirrors
         the in-tree convention: per-scenario PASS/FAIL log + CSV output."""
 
+        # Per-scenario capture of the inputs the closures build internally, so
+        # the run loop can report the commands / theoretical positions without
+        # every scenario having to return them explicitly.
+        from task_manager.gpsr.merger import merge as _real_merge
+
+        cap = {"cmds": [], "coords": {}, "origins": []}
+
         def _act(kind, **fields):
             return SimpleNamespace(action=kind, **fields)
 
         def _cmd(*actions):
-            return SimpleNamespace(commands=list(actions))
+            c = SimpleNamespace(commands=list(actions))
+            cap["cmds"].append(c)
+            return c
 
         def _make_locator(coords):
+            cap["coords"] = coords
+
             def locator(name):
                 return coords.get(name)
 
             return locator
+
+        def merge(commands, *args, **kwargs):
+            if "origin" in kwargs:
+                cap["origins"].append(kwargs["origin"])
+            return _real_merge(commands, *args, **kwargs)
 
         def _gripper_walk(plan_actions):
             """Stricter than gripper_invariant_holds: also asserts that
@@ -641,26 +656,34 @@ class TestHriManager(Node):
                     held_by = None
             return True
 
-        def _describe(pa):
-            kind = getattr(pa.action, "action", "?")
-            for arg in (
-                "location_to_go",
-                "object_to_pick",
-                "name",
-                "attribute_value",
-                "destination",
-                "destination_room",
-                "info_type",
-                "target_to_count",
-                "object_category",
-            ):
-                v = getattr(pa.action, arg, None)
+        _ARG_FIELDS = (
+            "location_to_go",
+            "object_to_pick",
+            "name",
+            "attribute_value",
+            "destination",
+            "destination_room",
+            "info_type",
+            "target_to_count",
+            "object_category",
+        )
+
+        def _label(action):
+            kind = getattr(action, "action", "?")
+            for arg in _ARG_FIELDS:
+                v = getattr(action, arg, None)
                 if v:
-                    return f"[c{pa.source_cmd}] {kind}({v})"
-            return f"[c{pa.source_cmd}] {kind}"
+                    return f"{kind}({v})"
+            return kind
+
+        def _describe(pa):
+            return f"[c{pa.source_cmd}] {_label(pa.action)}"
 
         def _describe_plan(plan_actions):
             return " -> ".join(_describe(pa) for pa in plan_actions)
+
+        def _describe_cmd(cmd):
+            return " -> ".join(_label(a) for a in cmd.commands)
 
         scenarios = []
 
@@ -1019,25 +1042,59 @@ class TestHriManager(Node):
         results = []
         passed = 0
         for name, fn in scenarios:
+            cap["cmds"] = []
+            cap["coords"] = {}
+            cap["origins"] = []
             self.get_logger().info(f"Merger scenario: {name}")
+
+            plan = None
+            exc = None
             try:
                 ok, plan = fn()
-                ordering = _describe_plan(plan.actions) if plan.actions else "(empty)"
-                self.get_logger().info(f"  ordering: {ordering}")
-                if ok:
-                    passed += 1
-                    self.get_logger().info(f"  PASS ({len(plan.actions)} actions)")
-                else:
-                    self.get_logger().error(f"  FAIL ({len(plan.actions)} actions)")
-                results.append([name, ok, len(plan.actions), ordering])
-            except Exception as exc:
+            except Exception as e:
+                ok = False
+                exc = e
+
+            if cap["cmds"]:
+                self.get_logger().info("  commands:")
+                for i, c in enumerate(cap["cmds"]):
+                    self.get_logger().info(f"    c{i}: {_describe_cmd(c)}")
+                cmds_str = " | ".join(
+                    f"c{i}: {_describe_cmd(c)}" for i, c in enumerate(cap["cmds"])
+                )
+            else:
+                self.get_logger().info("  commands: (none)")
+                cmds_str = "(none)"
+
+            if cap["coords"]:
+                pos_str = ", ".join(f"{k}={v}" for k, v in cap["coords"].items())
+            else:
+                pos_str = "(no resolvable positions)"
+            if cap["origins"]:
+                origins = cap["origins"]
+                pos_str += f" | origin={origins[0] if len(origins) == 1 else origins}"
+            self.get_logger().info(f"  positions: {pos_str}")
+
+            if exc is not None:
                 self.get_logger().error(f"  EXCEPTION: {exc}")
-                results.append([name, False, "EXCEPTION", str(exc)])
+                results.append([name, False, "EXCEPTION", cmds_str, pos_str, str(exc)])
+                continue
+
+            ordering = _describe_plan(plan.actions) if plan and plan.actions else "(empty)"
+            self.get_logger().info(f"  ordering: {ordering}")
+            if ok:
+                passed += 1
+                self.get_logger().info(f"  PASS ({len(plan.actions)} actions)")
+            else:
+                self.get_logger().error(f"  FAIL ({len(plan.actions)} actions)")
+            results.append([name, ok, len(plan.actions), cmds_str, pos_str, ordering])
 
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         with open(output_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(["scenario", "passed", "plan_size", "ordering_or_error"])
+            writer.writerow(
+                ["scenario", "passed", "plan_size", "commands", "positions", "ordering_or_error"]
+            )
             writer.writerows(results)
 
         self.get_logger().info(f"Merger results: {passed}/{len(scenarios)} passed")
