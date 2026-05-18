@@ -168,6 +168,7 @@ def _build_holding_after(
     return result
 
 
+# Dont really understand
 def _gripper_holder(
     S: int,
     n_cmds: int,
@@ -180,7 +181,7 @@ def _gripper_holder(
     any time, so we return the first match.
     """
     for c in range(n_cmds):
-        p = bin(S & cmd_seg_mask[c]).count("1")
+        p = (S & cmd_seg_mask[c]).bit_count()
         if holding_after[c][p]:
             return c
     return None
@@ -249,7 +250,7 @@ def _optimal_schedule(
             for u in range(M):
                 if (S >> u) & 1:
                     continue
-                cnt = bin(S & cmd_seg_mask[seg_cmd[u]]).count("1")
+                cnt = (S & cmd_seg_mask[seg_cmd[u]]).bit_count()
                 if cnt != seg_pos[u]:
                     continue
                 if holder is not None and holder != seg_cmd[u]:
