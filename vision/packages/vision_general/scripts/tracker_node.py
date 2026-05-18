@@ -79,7 +79,7 @@ from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    COMPRESSED_CAMERA_TOPIC,
     SET_TARGET_TOPIC,
     SET_TARGET_BY_TOPIC,
     TRACKER_IMAGE_TOPIC,
@@ -117,8 +117,8 @@ class SingleTracker(Node):
 
         self.image_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.image_subscriber = self.create_subscription(
-            Image,
-            CAMERA_TOPIC,
+            CompressedImage,
+            COMPRESSED_CAMERA_TOPIC,
             self.image_callback,
             qos,
             callback_group=self.image_callback_group,
@@ -213,7 +213,7 @@ class SingleTracker(Node):
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
         self.image_time = data.header.stamp
 
     def depth_callback(self, data):

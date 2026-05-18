@@ -12,13 +12,13 @@ import rclpy
 import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from geometry_msgs.msg import PointStamped, Point
 from std_msgs.msg import Header
 
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    COMPRESSED_CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
     PERSON_POINT_TOPIC,
@@ -37,7 +37,7 @@ class IsPersonInside(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.depth_subscriber = self.create_subscription(
@@ -62,7 +62,7 @@ class IsPersonInside(Node):
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
         """Callback to receive depth image from camera"""

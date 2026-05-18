@@ -6,13 +6,13 @@ import rclpy.qos
 from vision_general.utils.trt_utils import load_yolo_trt
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from builtin_interfaces.msg import Time
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
-    CAMERA_TOPIC,
+    COMPRESSED_CAMERA_TOPIC,
     DISHWASHER_LAYOUT_DETECTION_TOPIC,
     DISHWASHER_RACK_DETECTION_TOPIC,
     DISHWASHER_TABLET_DETECTION_TOPIC,
@@ -59,7 +59,7 @@ class DishwasherNode(Node):
         )
 
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.image_info_subscriber = self.create_subscription(

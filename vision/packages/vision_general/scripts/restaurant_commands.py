@@ -11,11 +11,11 @@ import rclpy
 from cv_bridge import CvBridge
 
 from rclpy.node import Node
-from sensor_msgs.msg import CameraInfo, Image
+from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 
 from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
-    CAMERA_TOPIC,
+    COMPRESSED_CAMERA_TOPIC,
     CUSTOMER_TABLES_TOPIC,
     DEPTH_IMAGE_TOPIC,
     GET_CUSTOMER_TOPIC,
@@ -43,7 +43,9 @@ class RESTAURANTCommands(Node):
         self.depth_image = []
         self.imageInfo = None
 
-        self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
+        self.create_subscription(
+            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, 10
+        )
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
@@ -223,7 +225,7 @@ class RESTAURANTCommands(Node):
 
     def image_callback(self, data):
         try:
-            self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            self.image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
         except Exception as e:
             self.get_logger().error(f"Image conversion error: {e}")
 

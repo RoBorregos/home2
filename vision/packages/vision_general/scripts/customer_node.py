@@ -14,7 +14,7 @@ from vision_general.utils.calculations import (
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 from geometry_msgs.msg import Point, PointStamped
 from builtin_interfaces.msg import Time
 from frida_interfaces.srv import CropQuery, Customer
@@ -22,7 +22,7 @@ from frida_interfaces.msg import PersonList, Person
 from vision_general.utils.ros_utils import wait_for_future
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    COMPRESSED_CAMERA_TOPIC,
     TRACKER_IMAGE_TOPIC,
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
@@ -50,7 +50,7 @@ class CustomerNode(Node):
         )
 
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.depth_subscriber = self.create_subscription(
@@ -91,7 +91,7 @@ class CustomerNode(Node):
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
         """Callback to receive depth image from camera"""

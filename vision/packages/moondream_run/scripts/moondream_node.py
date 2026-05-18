@@ -15,14 +15,14 @@ import os
 # from moondream_run.moondream_lib import MoonDreamModel, Position
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 
 from frida_interfaces.srv import BeverageLocation
 from frida_interfaces.srv import PersonPosture, Query, CropQuery, ObjectPoints
 from frida_interfaces.msg import Point2D
 
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    COMPRESSED_CAMERA_TOPIC,
     PERSON_POSTURE_TOPIC,
     BEVERAGE_TOPIC,
     QUERY_TOPIC,
@@ -62,7 +62,7 @@ class MoondreamNode(Node):
         self.image = None
 
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, 10
         )
 
         self.beverage_location_service = self.create_service(

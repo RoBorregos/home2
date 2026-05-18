@@ -8,7 +8,7 @@ import rclpy
 import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 from vision_general.utils.ros_utils import wait_for_future
 import os
 import json
@@ -24,7 +24,7 @@ from frida_interfaces.srv import (
 from ament_index_python.packages import get_package_share_directory
 
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    COMPRESSED_CAMERA_TOPIC,
     COUNT_BY_PERSON_TOPIC,
     IMAGE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
@@ -59,7 +59,7 @@ class GPSRCommands(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
         )
 
         # Define services for GPSR commands
@@ -126,7 +126,7 @@ class GPSRCommands(Node):
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
         try:
-            self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            self.image = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
             if self.image is None:
                 return
 
