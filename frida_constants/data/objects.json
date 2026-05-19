@@ -1,11 +1,11 @@
 {
   "categories": {
-    "drink": ["coca_cola", "sprite_can", "mundred_can", "fanta", "coffee", "coke", "milk", "orange_juice"],
-    "fruit": ["grapes", "apple", "lime", "pear", "mango", "orange", "lemon", "tangerine"],
-    "snack": ["pringles", "blue_cereal_box", "crisps", "chocolate_bar", "gum_balls", "cornflakes"],
-    "food": ["flan_box", "spam_can", "soup_can", "yogurt", "ketchup"],
-    "dish": ["red_plate", "bowl", "cup", "fork", "spoon", "plate"],
-    "cleaning_supply": ["valero", "sponge", "cloth"],
+    "drink": ["coca_cola", "sprite_can", "mundred_can"],
+    "fruit": ["grapes", "apple", "lime", "pear", "mango", "orange"],
+    "snack": ["pringles", "blue_cereal_box"],
+    "food": ["flan_box", "spam_can", "soup_can", "yogurt"],
+    "dish": ["red_plate", "bowl", "cup"],
+    "cleaning_supply": ["valero"],
     "sport": ["baseball", "tennis_ball"]
   },
   "all_objects": [
@@ -29,24 +29,7 @@
     "pringles",
     "blue_cereal_box",
     "orange",
-    "yogurt",
-    "fanta",
-    "coffee",
-    "coke",
-    "milk",
-    "orange_juice",
-    "lemon",
-    "tangerine",
-    "crisps",
-    "chocolate_bar",
-    "gum_balls",
-    "cornflakes",
-    "ketchup",
-    "fork",
-    "spoon",
-    "plate",
-    "sponge",
-    "cloth"
+    "yogurt"
   ],
   "object_to_category": {
     "red_plate": "dish",
@@ -69,23 +52,6 @@
     "pringles": "snack",
     "blue_cereal_box": "snack",
     "orange": "fruit",
-    "yogurt": "food",
-    "fanta": "drink",
-    "coffee": "drink",
-    "coke": "drink",
-    "milk": "drink",
-    "orange_juice": "drink",
-    "lemon": "fruit",
-    "tangerine": "fruit",
-    "crisps": "snack",
-    "chocolate_bar": "snack",
-    "gum_balls": "snack",
-    "cornflakes": "snack",
-    "ketchup": "food",
-    "fork": "dish",
-    "spoon": "dish",
-    "plate": "dish",
-    "sponge": "cleaning_supply",
-    "cloth": "cleaning_supply"
+    "yogurt": "food"
   }
 }
