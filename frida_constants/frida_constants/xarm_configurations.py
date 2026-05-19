@@ -12,7 +12,7 @@ FRONT_STARE = {
 
 FRONT_LOW_STARE = {
     "joints": {
-        "joint1": -90.0,
+        "joint1": 0.0,
         "joint2": -45.0,
         "joint3": -90.0,
         "joint4": 0.0,
@@ -96,7 +96,7 @@ PICK_STARE_AT_TABLE = {
 
 CUTLERY_STARE = {
     "joints": {
-        "joint1": -90.0,
+        "joint1": 0.0,
         "joint2": -10.0,
         "joint3": -170.0,
         "joint4": 0.0,

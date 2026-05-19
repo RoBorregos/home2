@@ -30,7 +30,7 @@ from task_manager.utils.status import Status
 
 ATTEMPT_LIMIT = 3
 
-MENU_ITEMS = ["apple", "pear", "orange", "sprite"]
+MENU_ITEMS = ["apple", "orange", "snack"]
 
 
 class DemoRoborregosDay(Node):
@@ -146,9 +146,12 @@ class DemoRoborregosDay(Node):
             Logger.info(self, f"Pick attempt {attempt + 1}/{ATTEMPT_LIMIT} for '{pick_label}'")
             # in_configuration=True → pick from the current (turned 180°) pose;
             # otherwise PickManager would move the arm back to table_stare.
-            status = self.subtask_manager.manipulation.pick_object(
-                pick_label, in_configuration=True
-            )
+            if pick_label == "spoon":
+                status = self.subtask_manager.manipulation.pick_cutlery(pick_label)
+            else:
+                status = self.subtask_manager.manipulation.pick_object(
+                    pick_label, in_configuration=True
+                )
             if status == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say(f"I picked the {object_name}!")
                 return Status.EXECUTION_SUCCESS
@@ -225,13 +228,16 @@ class DemoRoborregosDay(Node):
                 question="What would you like to order?",
                 query="LLM_ordered_items",
                 context=context,
+                always_confirm=True,
                 hotwords=menu_hotwords,
                 initial_prompt=f"The customer is ordering from a menu: {menu_hotwords}.",
                 options=list(MENU_ITEMS),
                 # use_hotwords=True,
-                retries=2,
+                retries=3,
             )
             if status == Status.EXECUTION_SUCCESS and item and item in MENU_ITEMS:
+                if item == "snack":
+                    item = "blue_cereal_box"
                 self.current_item = item
                 Logger.success(self, f"Order received: {item}")
                 self.subtask_manager.hri.say(

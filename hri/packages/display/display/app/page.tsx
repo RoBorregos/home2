@@ -31,7 +31,7 @@ export default function Home() {
         <div className="sticky top-0 self-start h-[inherit] border-l border-(--border-light) bg-(--bg-dark)">
           <div className="h-full flex flex-col items-center justify-center p-4">
             <StartButton />
-            <VideoFeed />
+            <VideoFeed defaultTopic="/vision/detections_image"/>
           </div>
         </div>
       </div>
