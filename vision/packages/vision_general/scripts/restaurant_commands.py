@@ -15,7 +15,7 @@ from sensor_msgs.msg import CameraInfo, CompressedImage, Image
 
 from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
-    COMPRESSED_CAMERA_TOPIC,
+    CAMERA_TOPIC,
     CUSTOMER_TABLES_TOPIC,
     DEPTH_IMAGE_TOPIC,
     GET_CUSTOMER_TOPIC,
@@ -44,7 +44,7 @@ class RESTAURANTCommands(Node):
         self.imageInfo = None
 
         self.create_subscription(
-            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, 10
+            CompressedImage, CAMERA_TOPIC, self.image_callback, 10
         )
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
         self.create_subscription(

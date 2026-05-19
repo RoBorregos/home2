@@ -12,7 +12,7 @@ import cv2
 import numpy as np
 from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import (
-    COMPRESSED_CAMERA_TOPIC,
+    CAMERA_TOPIC,
     ZERO_SHOT_DETECTIONS_TOPIC,
     POINTING_OBJECT_SERVICE,
     POINTING_DETECTION_IMAGE_TOPIC,

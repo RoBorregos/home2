@@ -22,7 +22,7 @@ from frida_interfaces.msg import PersonList, Person
 from vision_general.utils.ros_utils import wait_for_future
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
-    COMPRESSED_CAMERA_TOPIC,
+    CAMERA_TOPIC,
     TRACKER_IMAGE_TOPIC,
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
@@ -50,7 +50,7 @@ class CustomerNode(Node):
         )
 
         self.image_subscriber = self.create_subscription(
-            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.depth_subscriber = self.create_subscription(

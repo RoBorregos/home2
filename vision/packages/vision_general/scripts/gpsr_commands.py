@@ -24,7 +24,7 @@ from frida_interfaces.srv import (
 from ament_index_python.packages import get_package_share_directory
 
 from frida_constants.vision_constants import (
-    COMPRESSED_CAMERA_TOPIC,
+    CAMERA_TOPIC,
     COUNT_BY_PERSON_TOPIC,
     IMAGE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
@@ -59,7 +59,7 @@ class GPSRCommands(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         self.image_subscriber = self.create_subscription(
-            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, CAMERA_TOPIC, self.image_callback, qos
         )
 
         # Define services for GPSR commands

@@ -17,7 +17,7 @@ from std_msgs.msg import Int16
 
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
-    COMPRESSED_CAMERA_TOPIC,
+    CAMERA_TOPIC,
     IMAGE_ORIENTED_TOPIC,
 )
 
@@ -37,7 +37,7 @@ class ImageOrienter(Node):
         )
 
         self.create_subscription(
-            CompressedImage, COMPRESSED_CAMERA_TOPIC, self._image_cb, img_qos
+            CompressedImage, CAMERA_TOPIC, self._image_cb, img_qos
         )
         self.create_subscription(Int16, CAMERA_ROTATION_TOPIC, self._rotation_cb, 10)
 

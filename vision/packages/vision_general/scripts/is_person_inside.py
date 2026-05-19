@@ -18,7 +18,7 @@ from std_msgs.msg import Header
 
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
-    COMPRESSED_CAMERA_TOPIC,
+    CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
     PERSON_POINT_TOPIC,
@@ -37,7 +37,7 @@ class IsPersonInside(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         self.image_subscriber = self.create_subscription(
-            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.depth_subscriber = self.create_subscription(

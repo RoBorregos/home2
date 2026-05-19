@@ -118,7 +118,7 @@ class SingleTracker(Node):
         self.image_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.image_subscriber = self.create_subscription(
             CompressedImage,
-            COMPRESSED_CAMERA_TOPIC,
+            CAMERA_TOPIC,
             self.image_callback,
             qos,
             callback_group=self.image_callback_group,
