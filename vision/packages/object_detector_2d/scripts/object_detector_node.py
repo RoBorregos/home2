@@ -21,7 +21,7 @@ from frida_constants.vision_constants import (
 )
 from frida_interfaces.msg import Detection, ObjectDetectionArray
 from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 from detectors.registry import ModelRegistry
 from detectors.utils import iou_deduplicate
 from base_detector_node import BaseDetectorNode
@@ -60,6 +60,12 @@ class ObjectDetectorNode(BaseDetectorNode):
 
         self.pub_yolo_image = self.create_publisher(
             Image, YOLO_DETECTIONS_PUBLISHER_TOPIC, 5
+        )
+        self.pub_yolo_image_compressed = self.create_publisher(
+            CompressedImage, YOLO_DETECTIONS_PUBLISHER_TOPIC + "/compressed", 5
+        )
+        self.pub_det_img_compressed = self.create_publisher(
+            CompressedImage, DETECTIONS_IMAGE_TOPIC + "/compressed", 5
         )
 
         self.create_service(
@@ -144,6 +150,11 @@ class ObjectDetectorNode(BaseDetectorNode):
             )
 
         self.pub_yolo_image.publish(self.bridge.cv2_to_imgmsg(annotated, "bgr8"))
+        
+        if self.pub_yolo_image_compressed.get_subscription_count() > 0:
+            msg_compressed = self.bridge.cv2_to_compressed_imgmsg(annotated, dst_format='jpeg')
+            self.pub_yolo_image_compressed.publish(msg_compressed)
+
         response.success = True
         response.detections = ros_dets
         return response
@@ -191,6 +202,10 @@ class ObjectDetectorNode(BaseDetectorNode):
 
         self.pub_detections.publish(ObjectDetectionArray(detections=published))
         self.detections_frame = self.visualize(visual, published)
+        
+        if self.pub_det_img_compressed.get_subscription_count() > 0:
+            msg_compressed = self.bridge.cv2_to_compressed_imgmsg(self.detections_frame, dst_format='jpeg')
+            self.pub_det_img_compressed.publish(msg_compressed)
 
         if self.verbose:
             for i, d in enumerate(published):

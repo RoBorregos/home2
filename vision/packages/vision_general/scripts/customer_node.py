@@ -14,7 +14,7 @@ from vision_general.utils.calculations import (
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image, CameraInfo, CompressedImage
 from geometry_msgs.msg import Point, PointStamped
 from builtin_interfaces.msg import Time
 from frida_interfaces.srv import CropQuery, Customer
@@ -111,6 +111,9 @@ class CustomerNode(Node):
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
+            if self.image_publisher_compressed.get_subscription_count() > 0:
+                msg_compressed = self.bridge.cv2_to_compressed_imgmsg(self.output_image, dst_format='jpeg')
+                self.image_publisher_compressed.publish(msg_compressed)
 
         if len(self.customer_image) != 0:
             h, w = self.customer_image.shape[:2]

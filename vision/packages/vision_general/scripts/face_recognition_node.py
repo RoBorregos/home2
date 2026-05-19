@@ -21,7 +21,7 @@ from ament_index_python.packages import get_package_share_directory
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
 from rclpy.node import Node
-from sensor_msgs.msg import CameraInfo, Image
+from sensor_msgs.msg import CameraInfo, Image, CompressedImage
 from std_msgs.msg import Bool, String
 
 from frida_constants.vision_constants import (
@@ -98,6 +98,9 @@ class FaceRecognition(Node):
         )
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
         self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
+        self.view_pub_compressed = self.create_publisher(
+            CompressedImage, FACE_RECOGNITION_IMAGE + "/compressed", 10
+        )
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
@@ -196,6 +199,9 @@ class FaceRecognition(Node):
             self.view_pub.publish(
                 self.bridge.cv2_to_imgmsg(self.annotated_frame, "bgr8")
             )
+            if self.view_pub_compressed.get_subscription_count() > 0:
+                msg_compressed = self.bridge.cv2_to_compressed_imgmsg(self.annotated_frame, dst_format='jpeg')
+                self.view_pub_compressed.publish(msg_compressed)
 
     def process_imgs(self) -> None:
         """Make encodings of known people images"""

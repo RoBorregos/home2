@@ -8,7 +8,7 @@ import rclpy
 import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CompressedImage
 from vision_general.utils.ros_utils import wait_for_future
 import os
 import json
@@ -99,6 +99,9 @@ class GPSRCommands(Node):
         )
 
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
+        self.image_publisher_compressed = self.create_publisher(
+            CompressedImage, IMAGE_TOPIC + "/compressed", 10
+        )
 
         self.yolo_client = self.create_client(
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group

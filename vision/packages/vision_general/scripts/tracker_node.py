@@ -58,7 +58,7 @@ from rclpy.node import Node
 from vision_general.utils.ros_utils import wait_for_future
 from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image, CameraInfo, CompressedImage
 from geometry_msgs.msg import Point, PointStamped
 
 from vision_general.utils.reid_model import (
@@ -149,6 +149,9 @@ class SingleTracker(Node):
         self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
+        self.image_publisher_compressed = self.create_publisher(
+            CompressedImage, TRACKER_IMAGE_TOPIC + "/compressed", 10
+        )
 
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
@@ -268,6 +271,9 @@ class SingleTracker(Node):
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
+            if self.image_publisher_compressed.get_subscription_count() > 0:
+                msg_compressed = self.bridge.cv2_to_compressed_imgmsg(self.output_image, dst_format='jpeg')
+                self.image_publisher_compressed.publish(msg_compressed)
 
     def success(self, message) -> None:
         """Print success message"""

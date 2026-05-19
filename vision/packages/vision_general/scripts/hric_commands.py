@@ -14,7 +14,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image, CameraInfo, CompressedImage
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
@@ -110,6 +110,9 @@ class HRICCommands(Node):
         )
         self.image_publisher = self.create_publisher(
             Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
+        )
+        self.image_publisher_compressed = self.create_publisher(
+            CompressedImage, IMAGE_TOPIC_HRIC + "/compressed", 10, callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -310,6 +313,9 @@ class HRICCommands(Node):
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
+            if self.image_publisher_compressed.get_subscription_count() > 0:
+                msg_compressed = self.bridge.cv2_to_compressed_imgmsg(self.output_image, dst_format='jpeg')
+                self.image_publisher_compressed.publish(msg_compressed)
 
     def getAngle(self, x, width):
         """Get the angle for the robot to point at the available seat."""
