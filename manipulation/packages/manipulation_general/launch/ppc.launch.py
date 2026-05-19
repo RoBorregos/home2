@@ -21,6 +21,7 @@ def generate_launch_description():
                         ]
                     )
                 ),
+                launch_arguments={"use_nav": "true"}.items(),
             ),
             # Pick and place stack (includes GPD, manipulation_core, pick/place/pour servers,
             # perception_3d, heatmap, motion planning, fix_position_to_plane, flat_grasp_estimator)

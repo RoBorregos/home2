@@ -53,6 +53,7 @@ def launch_setup(context, *args, **kwargs):
     attach_to = LaunchConfiguration("attach_to", default="xarm_base")
     attach_xyz = LaunchConfiguration("attach_xyz", default='"0 0 0"')
     attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 0"')
+    use_nav = LaunchConfiguration("use_nav", default="false")
     mesh_suffix = LaunchConfiguration("mesh_suffix", default="stl")
     kinematics_suffix = LaunchConfiguration("kinematics_suffix", default="")
 
@@ -124,6 +125,7 @@ def launch_setup(context, *args, **kwargs):
         attach_to=attach_to,
         attach_xyz=attach_xyz,
         attach_rpy=attach_rpy,
+        use_nav=use_nav,
         mesh_suffix=mesh_suffix,
         kinematics_suffix=kinematics_suffix,
         ros2_control_plugin=ros2_control_plugin,

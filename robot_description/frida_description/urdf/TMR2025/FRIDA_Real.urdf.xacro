@@ -36,6 +36,7 @@
   <xacro:arg name="baud_checkset" default="true"/>
   <xacro:arg name="mujoco_plugin" default="false"/>
   <xacro:arg name="default_gripper_baud" default="2000000"/>
+  <xacro:arg name="use_nav" default="false"/>
   <xacro:arg name="attach_to" default="xarm_base"/>
   <xacro:arg name="attach_xyz" default="0 0 0"/>
   <xacro:arg name="attach_rpy" default="0 0 0"/>
@@ -89,20 +90,31 @@
        in MuJoCo the arm is attached directly to world and there is no
        pedestal, so pin world<->base_link at identity for sim only. -->
   <link name="world" />
-  <xacro:if value="$(arg mujoco_plugin)">
-    <joint name="world_to_base" type="fixed">
-      <parent link="world" />
-      <child link="base_link" />
-      <origin rpy="0 0 0" xyz="0 0 0" />
+  <!-- use_nav=false (default): world is root; standalone manipulation or sim -->
+  <xacro:unless value="$(arg use_nav)">
+    <xacro:if value="$(arg mujoco_plugin)">
+      <joint name="world_to_base" type="fixed">
+        <parent link="world" />
+        <child link="base_link" />
+        <origin rpy="0 0 0" xyz="0 0 0" />
+      </joint>
+    </xacro:if>
+    <xacro:unless value="$(arg mujoco_plugin)">
+      <joint name="world_to_base" type="fixed">
+        <parent link="world" />
+        <child link="base_link" />
+        <origin rpy="0 0 0" xyz="0 0 0.3" />
+      </joint>
+    </xacro:unless>
+  </xacro:unless>
+  <!-- use_nav=true: nav owns base_link; world becomes child at -0.3m Z (same offset, nav-safe) -->
+  <xacro:if value="$(arg use_nav)">
+    <joint name="base_to_world" type="fixed">
+      <parent link="base_link" />
+      <child link="world" />
+      <origin rpy="0 0 0" xyz="0 0 -0.3" />
     </joint>
   </xacro:if>
-  <xacro:unless value="$(arg mujoco_plugin)">
-    <joint name="world_to_base" type="fixed">
-      <parent link="world" />
-      <child link="base_link" />
-      <origin rpy="0 0 0" xyz="0 0 0.3" />
-    </joint>
-  </xacro:unless>
   <!-- XARM MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/xarm/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 
