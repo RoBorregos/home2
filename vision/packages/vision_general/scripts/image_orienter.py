@@ -12,7 +12,7 @@ import rclpy
 import rclpy.qos
 from cv_bridge import CvBridge
 from rclpy.node import Node
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import Int16
 
 from frida_constants.vision_constants import (
@@ -36,7 +36,9 @@ class ImageOrienter(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
 
-        self.create_subscription(Image, CAMERA_TOPIC, self._image_cb, img_qos)
+        self.create_subscription(
+            CompressedImage, CAMERA_TOPIC, self._image_cb, img_qos
+        )
         self.create_subscription(Int16, CAMERA_ROTATION_TOPIC, self._rotation_cb, 10)
 
         self.pub = self.create_publisher(Image, IMAGE_ORIENTED_TOPIC, img_qos)
@@ -55,12 +57,9 @@ class ImageOrienter(Node):
         self.rotation = value
         self.get_logger().info(f"Camera rotation set to {self.rotation}")
 
-    def _image_cb(self, msg: Image):
-        if self.rotation == 0:
-            self.pub.publish(msg)
-            return
+    def _image_cb(self, msg: CompressedImage):
         try:
-            frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            frame = self.bridge.compressed_imgmsg_to_cv2(msg, "bgr8")
         except Exception as e:
             self.get_logger().error(f"Image conversion failed: {e}")
             return

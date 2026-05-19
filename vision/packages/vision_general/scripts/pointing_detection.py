@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import CompressedImage, Image
 from visualization_msgs.msg import Marker
 
 from frida_interfaces.srv import DetectPointingObject, SetPointingObjectClasses
@@ -77,7 +77,7 @@ class DetectPointingObjectServer(Node):
         )
 
         self.image_sub = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            CompressedImage, COMPRESSED_CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.visualizer_pub = self.create_publisher(
@@ -162,7 +162,7 @@ class DetectPointingObjectServer(Node):
                 j += 1
 
     def image_callback(self, data):
-        self.bgr_img = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.bgr_img = self.bridge.compressed_imgmsg_to_cv2(data, "bgr8")
         if self.active_flag and self.runThread is None or not self.runThread.is_alive():
             self.runThread = threading.Thread(
                 target=self.run_inference, args=(), daemon=True
