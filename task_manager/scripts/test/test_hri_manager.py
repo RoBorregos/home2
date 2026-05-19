@@ -214,6 +214,11 @@ class TestHriManager(Node):
         with open(test_cases_file, "r") as f:
             test_cases = json.load(f)
 
+        # Load isolated test objects data to ensure stability
+        test_objects_file = os.path.join(DATA_DIR, "test_objects.json")
+        with open(test_objects_file, "r") as f:
+            self.hri_manager.objects_data = json.load(f)
+
         # Prepare output directory and file
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_file = os.path.join(OUTPUT_DIR, f"categorize_objects_{date_str}.csv")
