@@ -135,8 +135,16 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
             (pa, _resolve_method(getattr(pa.action, "action", ""), subtask_handlers))
             for pa in per_command_actions
         ]
+        self._started = False
 
     def update(self) -> py_trees.common.Status:
+        if not self._started:
+            self._started = True
+            if self._resolved:
+                cmd_idx = self._resolved[0][0].source_cmd
+                self.logger.info(
+                    f"fallback running cmd_idx={cmd_idx}, " f"{len(self._resolved)} actions"
+                )
         for pa, method in self._resolved:
             if method is None:
                 kind = getattr(pa.action, "action", "")
@@ -147,4 +155,28 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
             _dispatch(pa, method, self._on_complete, self.logger)
         # The fallback branch always reports SUCCESS — its job is to give
         # every command its chance, not to gate on per-action outcomes.
+        return py_trees.common.Status.SUCCESS
+
+
+class OneShotCallbackLeaf(py_trees.behaviour.Behaviour):
+    """Leaf that fires ``callback`` exactly once on its first update.
+
+    Used at the head of the sequential-fallback branch so the operator gets
+    a visible signal (on-screen text, log line, etc.) the moment the tree
+    advances past the interleaved branch. Always returns SUCCESS so the
+    enclosing Sequence advances unconditionally.
+    """
+
+    def __init__(self, callback: Callable[[], None], name: str = "one_shot"):
+        super().__init__(name=name)
+        self._callback = callback
+        self._fired = False
+
+    def update(self) -> py_trees.common.Status:
+        if not self._fired:
+            self._fired = True
+            try:
+                self._callback()
+            except Exception:  # noqa: BLE001 — never let a debug hook tank the BT
+                self.logger.exception(f"{self.name} callback raised")
         return py_trees.common.Status.SUCCESS

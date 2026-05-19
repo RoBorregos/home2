@@ -203,12 +203,27 @@ class GPSRTM(Node):
         spoken = self.subtask_manager.hri.parse_plan_to_text([pa.action for pa in plan.actions])
         self.subtask_manager.hri.say(f"I will now execute the merged plan: {spoken}", wait=False)
 
+        fallback_lines = ["Falling back to the sequential plan."]
+        for cmd_idx, per_cmd in enumerate(plan.fallback):
+            if not per_cmd:
+                continue
+            cmd_text = self.subtask_manager.hri.parse_plan_to_text([pa.action for pa in per_cmd])
+            fallback_lines.append(f"command {cmd_idx + 1}: {cmd_text}")
+        fallback_text = "\n".join(fallback_lines)
+
+        def _announce_fallback():
+            try:
+                self.subtask_manager.hri.publish_display_step(fallback_text)
+            except Exception as e:  # noqa: BLE001
+                self.get_logger().warning(f"publish_display_step failed: {e}")
+
         root = build_tree(
             plan,
             subtask_handlers=[self.gpsr_tasks, self.gpsr_individual_tasks],
             on_action_complete=self._on_action_complete,
             retry_count=2,
             global_budget_s=GLOBAL_BUDGET_S,
+            on_fallback_entry=_announce_fallback,
         )
         self.get_logger().info("Behaviour tree:\n" + render_tree_ascii(root))
 

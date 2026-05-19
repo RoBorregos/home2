@@ -27,7 +27,11 @@ from typing import Any, Callable, Optional, Sequence
 
 import py_trees
 
-from task_manager.gpsr.leaf_behaviours import ActionLeaf, SequentialFallbackLeaf
+from task_manager.gpsr.leaf_behaviours import (
+    ActionLeaf,
+    OneShotCallbackLeaf,
+    SequentialFallbackLeaf,
+)
 from task_manager.gpsr.merger import InterleavedPlan, PlanAction
 from task_manager.gpsr.timeouts import GLOBAL_BUDGET_S, timeout_for
 
@@ -58,6 +62,7 @@ def build_tree(
     on_action_complete: Optional[Callable[[PlanAction, Any, Any], None]] = None,
     retry_count: int = 2,
     global_budget_s: float = GLOBAL_BUDGET_S,
+    on_fallback_entry: Optional[Callable[[], None]] = None,
 ) -> py_trees.behaviour.Behaviour:
     """Build the GPSR behaviour tree for ``plan``.
 
@@ -71,6 +76,11 @@ def build_tree(
             ``hri.add_command_history`` so per-action results are logged.
         retry_count: per-action retry attempts.
         global_budget_s: wall-clock budget for the interleaved sequence.
+        on_fallback_entry: optional no-arg callback fired exactly once when
+            the Selector advances from the interleaved branch to the
+            sequential-fallback branch — useful for debug announcements
+            (on-screen text, log line, etc.). Only installed when the
+            plan actually has fallback content to run.
 
     Returns:
         the root Selector behaviour ready for ``tick()``.
@@ -88,6 +98,8 @@ def build_tree(
     )
 
     fallback_seq = py_trees.composites.Sequence(name="sequential_fallback", memory=True)
+    if on_fallback_entry is not None and any(plan.fallback):
+        fallback_seq.add_child(OneShotCallbackLeaf(on_fallback_entry, name="announce_fallback"))
     for cmd_idx, per_cmd in enumerate(plan.fallback):
         if not per_cmd:
             continue
