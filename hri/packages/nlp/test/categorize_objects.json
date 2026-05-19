@@ -35,7 +35,7 @@
         "answer": {
             "0": {"category": "drink", "objects_to_add": ["milk", "fanta"]},
             "1": {"category": "dish", "objects_to_add": ["fork"]},
-            "2": {"category": "miscellaneous", "objects_to_add": ["tangerine", "ketchup"]}
+            "2": {"category": ["food", "fruit"], "objects_to_add": ["tangerine", "ketchup"]}
         }
     }
 ]

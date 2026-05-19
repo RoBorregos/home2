@@ -248,12 +248,13 @@ class TestHriManager(Node):
                             success = False
                             break
 
-                        # Handle category as a list - take first element
-                        actual_category = categorized_shelves[shelve]
-                        if isinstance(actual_category, list):
-                            actual_category = actual_category[0] if actual_category else None
+                        # Handle category validation (can be string or list)
+                        actual_cats = categorized_shelves[shelve]
+                        expected_cats = expected[shelve]["category"]
+                        if isinstance(expected_cats, str):
+                            expected_cats = [expected_cats]
 
-                        if expected[shelve]["category"] != actual_category:
+                        if set(actual_cats) != set(expected_cats):
                             success = False
                             break
 

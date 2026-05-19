@@ -1322,15 +1322,13 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Categorizing objects...")
 
         try:
-            categorized_shelves = {}
+            categorized_shelves = {level: [] for level in shelves}
             category_to_level = {}
             empty_levels = []
 
             # Step 1: Analyze existing shelf contents
             for level in shelves:
-                categorized_shelves[level] = []
                 shelf_objects = shelves[level]
-
                 if not shelf_objects:
                     empty_levels.append(level)
                 else:
@@ -1341,32 +1339,44 @@ class HRITasks(metaclass=SubtaskMeta):
                         # Keep track of which category is on which shelf
                         category_to_level[category] = level
 
+            # Group table objects by category
+            table_objects_by_category = {}
+            for obj in table_objects:
+                cat = self.deterministic_categorization(obj)
+                if cat not in table_objects_by_category:
+                    table_objects_by_category[cat] = []
+                table_objects_by_category[cat].append(obj)
+
             objects_to_add = {level: [] for level in shelves}
 
-            # Step 2: Assign table objects to shelves
-            for table_object in table_objects:
-                category = self.deterministic_categorization(table_object)
-
-                if category in category_to_level:
+            new_categories = []
+            for cat, objs in table_objects_by_category.items():
+                if cat in category_to_level:
                     # Case 1: Category already exists on a shelf
-                    target_level = category_to_level[category]
-                    objects_to_add[target_level].append(table_object)
-                elif empty_levels:
-                    # Case 2: Category is new, but there's an empty shelf
-                    target_level = empty_levels.pop(0)
-                    categorized_shelves[target_level].append(category)
-                    category_to_level[category] = target_level
-                    objects_to_add[target_level].append(table_object)
+                    target_level = category_to_level[cat]
+                    objects_to_add[target_level].extend(objs)
                 else:
-                    # Case 3: Category is new and no empty shelves, use first available shelf as fallback
-                    fallback_level = list(shelves.keys())[0] if shelves else 0
-                    if "miscellaneous" not in categorized_shelves.get(fallback_level, []):
-                        if fallback_level not in categorized_shelves:
-                            categorized_shelves[fallback_level] = []
-                        categorized_shelves[fallback_level].append("miscellaneous")
+                    new_categories.append(cat)
 
-                    if fallback_level in objects_to_add:
-                        objects_to_add[fallback_level].append(table_object)
+            # Step 2: Assign new categories to shelves
+            if new_categories:
+                if empty_levels:
+                    # Case 2: Distribute new categories across empty shelves
+                    for i, cat in enumerate(new_categories):
+                        target_level = empty_levels[i % len(empty_levels)]
+                        if cat not in categorized_shelves[target_level]:
+                            categorized_shelves[target_level].append(cat)
+                        category_to_level[cat] = target_level
+                        objects_to_add[target_level].extend(table_objects_by_category[cat])
+                else:
+                    # Case 3: No empty shelves, distribute across all shelves
+                    shelf_levels = sorted(list(shelves.keys()))
+                    for i, cat in enumerate(new_categories):
+                        target_level = shelf_levels[i % len(shelf_levels)]
+                        if cat not in categorized_shelves[target_level]:
+                            categorized_shelves[target_level].append(cat)
+                        category_to_level[cat] = target_level
+                        objects_to_add[target_level].extend(table_objects_by_category[cat])
 
         except Exception as e:
             self.node.get_logger().error(f"Error in categorize_objects: {e}")
