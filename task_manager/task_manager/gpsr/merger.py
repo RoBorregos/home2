@@ -326,7 +326,6 @@ def merge(
     M = len(flat_segments)
     if M == 0:
         return InterleavedPlan(actions=[], fallback=_build_fallback(commands))
-
     seg_cmd: List[int] = []
     seg_pos: List[int] = []
     cmd_seg_mask: List[int] = [0] * n_cmds
