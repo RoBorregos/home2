@@ -30,7 +30,7 @@ from task_manager.utils.status import Status
 
 ATTEMPT_LIMIT = 3
 
-MENU_ITEMS = ["apple", "pear", "orange", "sprite"]
+MENU_ITEMS = ["apple", "orange", "snack"]
 
 
 class DemoRoborregosDay(Node):
@@ -228,8 +228,9 @@ class DemoRoborregosDay(Node):
                 hotwords=menu_hotwords,
                 initial_prompt=f"The customer is ordering from a menu: {menu_hotwords}.",
                 options=list(MENU_ITEMS),
-                # use_hotwords=True,
-                retries=2,
+                always_confirm=True,
+                use_keyword=False,
+                retries=3,
             )
             if status == Status.EXECUTION_SUCCESS and item and item in MENU_ITEMS:
                 self.current_item = item
@@ -248,11 +249,11 @@ class DemoRoborregosDay(Node):
         # ──────────────────── TURN_TO_PICK ─────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.TURN_TO_PICK:
             if not self._state_announced:
-                self.subtask_manager.manipulation.move_to_position("table_stare_back")
-                self.subtask_manager.hri.say(
-                    "I am scanning the table for your item.",
-                    wait=False,
-                )
+                self.subtask_manager.manipulation.move_to_position("table_stare")
+                # self.subtask_manager.hri.say(
+                #     "I am scanning the table for your item.",
+                #     wait=False,
+                # )
                 self._state_announced = True
                 return
 
@@ -264,7 +265,10 @@ class DemoRoborregosDay(Node):
 
         # ─────────────────────── PICK_OBJECT ───────────────────────────
         elif self.current_state == DemoRoborregosDay.States.PICK_OBJECT:
-            status = self._pick_with_retry(self.current_item)
+            manip_item = self.current_item
+            if manip_item == "snack":
+                manip_item = "blue_cereal_box"
+            status = self._pick_with_retry(manip_item)
             if status == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I have the item!")
             else:
@@ -299,12 +303,9 @@ class DemoRoborregosDay(Node):
                 "Have you taken the item?",
                 retries=3,
                 wait_between_retries=5,
+                use_keyword=False,
             )
             self.subtask_manager.manipulation.open_gripper()
-            if confirmation == "yes":
-                Logger.success(self, "Item delivered successfully.")
-            else:
-                Logger.warn(self, "No confirmation received, continuing anyway.")
             self._set_state(DemoRoborregosDay.States.FAREWELL)
 
         # ─────────────────────── FAREWELL ──────────────────────────────
