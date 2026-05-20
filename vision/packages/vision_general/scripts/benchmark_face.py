@@ -49,11 +49,13 @@ def cosine_distance(a: np.ndarray, b: np.ndarray) -> float:
 
 def benchmark_dlib(images: list[tuple[str, np.ndarray]], n_runs: int):
     import face_recognition
+    from PIL import Image as PILImage
 
     detect_times, encode_times, embeddings, names = [], [], [], []
 
     for name, bgr in images:
-        rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+        pil_img = PILImage.fromarray(bgr[:, :, ::-1])  # BGR→RGB via PIL
+        rgb = np.array(pil_img)
 
         times = []
         for _ in range(n_runs):
@@ -82,6 +84,9 @@ def benchmark_dlib(images: list[tuple[str, np.ndarray]], n_runs: int):
 
 
 def benchmark_insightface(images: list[tuple[str, np.ndarray]], n_runs: int):
+    import sys
+    from unittest.mock import MagicMock
+    sys.modules.setdefault("mpl_toolkits.mplot3d", MagicMock())
     from insightface.app import FaceAnalysis
 
     app = FaceAnalysis(
