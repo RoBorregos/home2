@@ -3,6 +3,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from launch.actions import LogInfo
 from speech.speech_api_utils import SpeechApiUtils
 
 from frida_constants import ModuleNames, parse_ros_config
@@ -40,11 +41,6 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["respeaker"]["ros__parameters"]
 
-    eim_config = parse_ros_config(
-        os.path.join(get_package_share_directory("speech"), "config", "kws_eim.yaml"),
-        [ModuleNames.HRI.value],
-    )["kws_eim"]["ros__parameters"]
-
     voice_detection_config = parse_ros_config(
         os.path.join(
             get_package_share_directory("speech"), "config", "voice_detection.yaml"
@@ -52,12 +48,7 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
 
-    ei_audio_classifier_config = parse_ros_config(
-        os.path.join(
-            get_package_share_directory("speech"), "config", "ei_audio_classifier.yaml"
-        ),
-        [ModuleNames.HRI.value],
-    )["ei_audio_classifier"]["ros__parameters"]
+    env_type = os.environ.get("ENV_TYPE", "cpu")
 
     nodes = [
         Node(
@@ -102,29 +93,79 @@ def generate_launch_description():
         ),
         Node(
             package="speech",
-            executable="kws_eim.py",
-            name="kws_eim",
-            output="screen",
-            emulate_tty=True,
-            parameters=[eim_config],
-        ),
-        Node(
-            package="speech",
-            executable="ei_audio_classifier.py",
-            name="ei_audio_classifier",
-            output="screen",
-            emulate_tty=True,
-            parameters=[ei_audio_classifier_config],
-        ),
-        Node(
-            package="speech",
             executable="audio_feedback.py",
             name="audio_feedback",
         ),
     ]
 
+    actions = [LogInfo(msg=f"Environment type detected: {env_type}")]
+
+    if env_type == "l4t":
+        actions.append(
+            LogInfo(msg="L4T environment detected - adding Edge Impulse nodes")
+        )
+        eim_config = parse_ros_config(
+            os.path.join(
+                get_package_share_directory("speech"), "config", "kws_eim.yaml"
+            ),
+            [ModuleNames.HRI.value],
+        )["kws_eim"]["ros__parameters"]
+
+        ei_audio_classifier_config = parse_ros_config(
+            os.path.join(
+                get_package_share_directory("speech"),
+                "config",
+                "ei_audio_classifier.yaml",
+            ),
+            [ModuleNames.HRI.value],
+        )["ei_audio_classifier"]["ros__parameters"]
+
+        nodes.extend(
+            [
+                Node(
+                    package="speech",
+                    executable="kws_eim.py",
+                    name="kws_eim",
+                    output="screen",
+                    emulate_tty=True,
+                    parameters=[eim_config],
+                ),
+                Node(
+                    package="speech",
+                    executable="ei_audio_classifier.py",
+                    name="ei_audio_classifier",
+                    output="screen",
+                    emulate_tty=True,
+                    parameters=[ei_audio_classifier_config],
+                ),
+            ]
+        )
+    else:
+        actions.append(
+            LogInfo(msg=f"{env_type} environment detected - adding OpenWakeWord node")
+        )
+        oww_config_path = os.path.join(
+            get_package_share_directory("speech"), "config", "kws_oww.yaml"
+        )
+        oww_config = parse_ros_config(oww_config_path, [ModuleNames.HRI.value])[
+            "kws_oww"
+        ]["ros__parameters"]
+
+        nodes.append(
+            Node(
+                package="speech",
+                executable="kws_oww.py",
+                name="kws_oww",
+                output="screen",
+                emulate_tty=True,
+                parameters=[oww_config],
+            )
+        )
+
     if SpeechApiUtils.respeaker_available():
-        print("ReSpeaker detected - adding respeaker node to launch")
+        actions.append(
+            LogInfo(msg="ReSpeaker detected - adding respeaker node to launch")
+        )
         nodes.append(
             Node(
                 package="speech",
@@ -136,6 +177,6 @@ def generate_launch_description():
             )
         )
     else:
-        print("ReSpeaker not detected - skipping respeaker node")
+        actions.append(LogInfo(msg="ReSpeaker not detected - skipping respeaker node"))
 
-    return LaunchDescription(nodes)
+    return LaunchDescription(nodes + actions)

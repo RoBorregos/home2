@@ -44,8 +44,8 @@ def generate_launch_description():
             ),
             DeclareLaunchArgument(
                 "pick_min_height",
-                default_value="0.1",
-                description="Minimum height (m) a grasp pose must clear above the detected support plane. Real robot 0.1; sim lowers this because the plane segmenter tends to pick a wrong plane off the house mesh.",
+                default_value="0.04",
+                description="Minimum height (m) a grasp pose must clear above the detected support plane. Matches PICK_MIN_HEIGHT used before the parameter was exposed; sim can lower it because the plane segmenter sometimes picks a wrong plane off the house mesh.",
             ),
             Node(
                 package="pick_and_place",

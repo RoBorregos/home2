@@ -44,7 +44,7 @@ import numpy as np
 from tf_transformations import quaternion_from_euler
 import tf2_ros
 from transforms3d.quaternions import quat2mat
-from frida_motion_planning.utils.tf_utils import transform_point
+from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
     open_gripper,
@@ -849,7 +849,24 @@ class PickMotionServer(Node):
                 return True
             return False
 
-        pick_height = pose.pose.position.z
+        # Grasp poses arrive in base_link (gpd_service target_frame) but the
+        # plane primitive comes back from MoveIt in the planning frame (world,
+        # which is 0.3 m above base_link on the real robot — the physical
+        # pedestal offset baked into FRIDA_Real.urdf.xacro). Comparing z values
+        # without transforming silently rejects every valid grasp by that 0.3 m.
+        plane_frame = self.plane.pose.header.frame_id
+        pose_in_plane_frame = pose
+        if plane_frame and plane_frame != pose.header.frame_id:
+            ok, transformed = transform_pose(pose, plane_frame, self.tf_buffer)
+            if not ok:
+                self.get_logger().error(
+                    f"check_feasibility: failed to transform pose from "
+                    f"{pose.header.frame_id} to {plane_frame}; assuming infeasible"
+                )
+                return False
+            pose_in_plane_frame = transformed
+
+        pick_height = pose_in_plane_frame.pose.position.z
         plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
 
         # Cutlery keeps its own constant (flatter objects need tighter tolerance);
