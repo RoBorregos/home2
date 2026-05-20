@@ -29,6 +29,9 @@ if [ -f "requirements.txt" ]; then
     pip3 install -q -r /tmp/cgn_reqs.txt
 fi
 
+# Ensure these are installed even if missing from submodule requirements.txt
+pip3 install -q trimesh tqdm
+
 if [ -f "setup.py" ]; then
     echo "[CGN] Installing Contact-GraspNet python package..."
     pip3 install -q -e .

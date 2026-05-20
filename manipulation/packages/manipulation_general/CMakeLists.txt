@@ -13,7 +13,7 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 
 #Install directories
-install(DIRECTORY launch
+install(DIRECTORY launch rviz
   DESTINATION share/${PROJECT_NAME})
 
 

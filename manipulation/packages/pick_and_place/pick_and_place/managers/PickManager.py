@@ -1,7 +1,9 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import PickPerceptionService, DetectionHandler
-from geometry_msgs.msg import PoseStamped, PointStamped
+from geometry_msgs.msg import PoseStamped, PointStamped, Vector3, Point
 from std_srvs.srv import SetBool
+from std_msgs.msg import ColorRGBA, Header
+from visualization_msgs.msg import Marker, MarkerArray
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
 from frida_interfaces.action import PickMotion
@@ -21,6 +23,7 @@ from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 import numpy as np
 from pick_and_place.utils.perception_utils import get_object_point
+from rclpy.qos import QoSProfile, DurabilityPolicy
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
@@ -52,6 +55,60 @@ FLAT_GRASP_SAMPLES = 10
 FLAT_GRASP_SAMPLE_WINDOW = 3.0
 
 
+def _publish_grasp_markers(publisher, grasp_poses, grasp_scores, frame_id):
+    if not grasp_poses:
+        return
+    min_s, max_s = min(grasp_scores), max(grasp_scores)
+    markers = MarkerArray()
+    # clear previous markers
+    clear = Marker(action=Marker.DELETEALL)
+    clear.header = Header(frame_id=frame_id)
+    clear.ns = "grasp_points"
+    markers.markers.append(clear)
+    for i, (pose, score) in enumerate(zip(grasp_poses, grasp_scores)):
+        t = (score - min_s) / (max_s - min_s + 1e-6)
+        color = ColorRGBA(r=float(1 - t), g=float(t), b=0.0, a=0.9)
+        header = Header(frame_id=frame_id)
+
+        sphere = Marker(
+            header=header,
+            ns="grasp_points",
+            id=i,
+            type=Marker.SPHERE,
+            action=Marker.ADD,
+        )
+        sphere.pose = pose.pose
+        sphere.scale = Vector3(x=0.03, y=0.03, z=0.03)
+        sphere.color = color
+
+        # approach arrow: base = tip - local_z * shaft
+        qx, qy, qz, qw = (
+            pose.pose.orientation.x,
+            pose.pose.orientation.y,
+            pose.pose.orientation.z,
+            pose.pose.orientation.w,
+        )
+        lz = (
+            2 * (qx * qz + qy * qw),
+            2 * (qy * qz - qx * qw),
+            1 - 2 * (qx * qx + qy * qy),
+        )
+        shaft = 0.08
+        tip = pose.pose.position
+        base = Point(
+            x=tip.x - lz[0] * shaft, y=tip.y - lz[1] * shaft, z=tip.z - lz[2] * shaft
+        )
+        arrow = Marker(
+            header=header, ns="grasp_arrows", id=i, type=Marker.ARROW, action=Marker.ADD
+        )
+        arrow.points = [base, tip]
+        arrow.scale = Vector3(x=0.008, y=0.016, z=0.0)
+        arrow.color = color
+
+        markers.markers.extend([sphere, arrow])
+    publisher.publish(markers)
+
+
 def is_cutlery(object_name: str) -> bool:
     if object_name is None:
         return False
@@ -76,6 +133,11 @@ class PickManager:
         self._grasp_samples = []
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
+
+        latch = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.grasp_marker_pub = self.node.create_publisher(
+            MarkerArray, "/manipulation/grasp_markers", latch
+        )
 
         self.node.create_subscription(
             PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
@@ -283,6 +345,12 @@ class PickManager:
 
                 grasp_poses, grasp_scores = get_grasps(
                     self.node.grasp_detection_client, object_cluster, cfg_path
+                )
+                _publish_grasp_markers(
+                    self.grasp_marker_pub,
+                    grasp_poses,
+                    grasp_scores,
+                    object_cluster.header.frame_id,
                 )
                 if len(grasp_poses) == 0:
                     continue

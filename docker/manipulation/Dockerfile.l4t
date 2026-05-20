@@ -24,6 +24,9 @@ WORKDIR /
 RUN rm -r installs/
 
 #Copying GPD script and variables
+COPY docker/manipulation/setup_gpd.sh /home/ros/setup_gpd.sh
+COPY docker/manipulation/setup_contact_graspnet.sh /home/ros/setup_contact_graspnet.sh
+RUN chmod +x /home/ros/setup_gpd.sh /home/ros/setup_contact_graspnet.sh
 RUN echo ". /home/ros/setup_gpd.sh" >> /home/ros/.bashrc
 RUN echo ". /home/ros/setup_contact_graspnet.sh" >> /home/ros/.bashrc
 RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc

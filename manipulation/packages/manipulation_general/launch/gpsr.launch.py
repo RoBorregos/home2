@@ -14,12 +14,12 @@ def generate_launch_description():
         [
             DeclareLaunchArgument(
                 "grasp_backend",
-                default_value="gpd",
+                default_value="contact_graspnet",
                 description="Grasp detection backend: 'gpd' or 'contact_graspnet'.",
             ),
             DeclareLaunchArgument(
                 "ckpt_dir",
-                default_value="checkpoints/contact_graspnet",
+                default_value="/workspace/src/manipulation/packages/contact_graspnet/checkpoints/contact_graspnet",
                 description="Contact-GraspNet checkpoint dir (used when grasp_backend=contact_graspnet).",
             ),
             IncludeLaunchDescription(
