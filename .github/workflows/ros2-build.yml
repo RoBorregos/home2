@@ -23,5 +23,6 @@ jobs:
           chmod +x ./.github/workflows/setup.sh
 
       - name: Build
-        run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR="$(pwd)/install/gpd" && colcon build --symlink-install
+        # GITHUB_ACTIONS=false: workaround for vamp nanobind stub install path bug — see manipulation/packages/vamp_moveit_plugin/ReadMe.md#ci-build-note
+        run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR="$(pwd)/install/gpd" && export GITHUB_ACTIONS=false && colcon build --symlink-install
       
