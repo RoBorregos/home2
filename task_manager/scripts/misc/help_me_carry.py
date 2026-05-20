@@ -9,10 +9,10 @@ import time as t
 import rclpy
 from rclpy.duration import Duration
 from rclpy.node import Node
-from subtask_managers.generic_tasks import GenericTask
-from utils.logger import Logger
-from utils.status import Status
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.subtask_managers.generic_tasks import GenericTask
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -284,9 +284,12 @@ class HelpMeCarryTM(Node):
             # MOCK: self.subtask_manager.manipulation.place(pose)
             self.current_state = HelpMeCarryTM.TASK_STATES["END"]
 
-        if self.current_state == HelpMeCarryTM.TASK_STATES["END"]:
+        if (
+            self.current_state == HelpMeCarryTM.TASK_STATES["END"]
+            or self.current_state == HelpMeCarryTM.TASK_STATES["TEST_END"]
+        ):
             Logger.state(self, "Ending task")
-            # self.subtask_manager.hri.say("I have finished my task, I will rest now.")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

@@ -6,7 +6,6 @@ import yaml
 import torch
 import torch.nn as nn
 from PIL import Image
-from torch.autograd import Variable
 from scipy.spatial.distance import cosine
 import pathlib
 
@@ -17,17 +16,21 @@ epoch = "last"
 linear_num = 512
 batch_size = 256
 folder_path = str(pathlib.Path(__file__).parent)
-# _ = timm.create_model("swin_base_patch4_window7_224", pretrained=True)
 
+# Resolve model weights from the source tree via the package file location.
+# Works with --symlink-install (symlinks back to source) and direct execution.
+_models_root = str(pathlib.Path(__file__).resolve().parent / "models")
 
 use_gpu = torch.cuda.is_available()
+# Enable FP16 for Orin AGX — halves memory and doubles throughput
+use_fp16 = use_gpu and torch.cuda.get_device_capability()[0] >= 7
 gpu_ids = [0]
 ms = []
 ms.append(math.sqrt(float(1)))
 
 if use_swin:
     h, w = 224, 224
-    name = "models/swin"
+    name = "swin"
 
 else:
     h, w = 256, 128
@@ -44,7 +47,7 @@ data_transforms = transforms.Compose(
 )
 
 
-config_path = os.path.join(folder_path, name, "opts.yaml")
+config_path = os.path.join(_models_root, name, "opts.yaml")
 with open(config_path, "r") as stream:
     config = yaml.load(
         stream, Loader=yaml.FullLoader
@@ -81,7 +84,7 @@ def get_structure():
 
 
 def load_network(network):
-    save_path = os.path.join(folder_path, name, "net_%s.pth" % epoch)
+    save_path = os.path.join(_models_root, name, "net_%s.pth" % epoch)
     try:
         if use_gpu:
             print("Loading model from GPU")
@@ -122,61 +125,31 @@ def fliplr(img):
 
 
 def extract_feature_from_img(image, model):
+    model.eval()
     if use_gpu:
-        image = data_transforms(image).unsqueeze(0)  # Add batch dimension
-        # print(f"Data preprocessing time: {time.time() - start_time:.4f} seconds")
-        # Extract features from the image
-        model.eval()
-        with torch.no_grad():
-            features = (
-                torch.zeros(1, linear_num).cuda()
-                if torch.cuda.is_available()
-                else torch.zeros(1, linear_num)
-            )
-            # print(f"Create features time: {time.time() - start_time:.4f} seconds")
-            for i in range(1):
-                if i == 1:
-                    # Apply horizontal flipping for augmentation
-                    image = torch.flip(image, dims=[3])
-                input_img = image.cuda()
-                for scale in ms:
-                    if scale != 1:
-                        input_img = torch.nn.functional.interpolate(
-                            input_img,
-                            scale_factor=scale,
-                            mode="bicubic",
-                            align_corners=False,
-                        )
-                    outputs = model(input_img)
-                    # print(
-                    #     f"Model inference time for scale {scale}: {time.time() - start_time:.4f} seconds"
-                    # )
-                    features += outputs
-
-            # Normalize features
+        image = data_transforms(image).unsqueeze(0).cuda()
+        with torch.no_grad(), torch.cuda.amp.autocast(enabled=use_fp16):
+            features = torch.zeros(1, linear_num, device="cuda")
+            input_img = image
+            for scale in ms:
+                if scale != 1:
+                    input_img = torch.nn.functional.interpolate(
+                        input_img,
+                        scale_factor=scale,
+                        mode="bicubic",
+                        align_corners=False,
+                    )
+                features += model(input_img)
             features /= torch.norm(features, p=2, dim=1, keepdim=True)
-            # print(f"Feature extraction time: {time.time() - start_time:.4f} seconds")
-            # features = features.cpu()
         return features
     else:
-        image = data_transforms(image)  # Add batch dimension
-        # ff = torch.FloatTensor(n,opt.linear_num).zero_().cuda()
-
-        # Extract features from the image
-        model.eval()
+        image = data_transforms(image)
         with torch.no_grad():
-            features = (
-                torch.zeros(linear_num).cuda() if use_gpu else torch.zeros(linear_num)
-            )
+            features = torch.zeros(linear_num)
             for i in range(2):
                 if i == 1:
-                    # Apply horizontal flipping for augmentation
                     image = torch.flip(image, dims=[2])
                 input_img = image.unsqueeze(0)
-                # if use_gpu:
-                #     input_img = Variable(image.cuda())
-                # else:
-                #     input_img = Variable(image)
                 for scale in ms:
                     if scale != 1:
                         input_img = torch.nn.functional.interpolate(
@@ -185,13 +158,8 @@ def extract_feature_from_img(image, model):
                             mode="bicubic",
                             align_corners=False,
                         )
-                    outputs = model(input_img)
-                    features += outputs.squeeze()
-
-            # Normalize features
+                    features += model(input_img).squeeze()
             features /= torch.norm(features, p=2, dim=0)
-            # print(features)
-            # features = features.cpu()
         return features.cpu()
 
 
@@ -223,37 +191,25 @@ def extract_feature_from_img_batch(images, model, batch_size=64):
         raise ValueError("Input images must be a list of PIL images or a tensor.")
     # Extract features from the images
     model.eval()
-    features_list = torch.zeros(
-        images_tensor.shape[0], linear_num, device="cuda" if use_gpu else "cpu"
-    )
-    with torch.no_grad():
+    device = "cuda" if use_gpu else "cpu"
+    features_list = torch.zeros(images_tensor.shape[0], linear_num, device=device)
+    with torch.no_grad(), torch.cuda.amp.autocast(enabled=use_fp16 and use_gpu):
         for i in range(0, images_tensor.shape[0], batch_size):
             end = min(i + batch_size, images_tensor.shape[0])
             batch_images = images_tensor[i:end]
+            features = torch.zeros(batch_images.shape[0], linear_num, device=device)
 
-            features = (
-                torch.zeros(batch_images.shape[0], linear_num).cuda()
-                if use_gpu
-                else torch.zeros(batch_images.shape[0], linear_num)
-            )
-            for j in range(1):
-                if j == 1:
-                    # Apply horizontal flipping for augmentation
-                    batch_images = fliplr(batch_images)
+            input_img = batch_images
+            for scale in ms:
+                if scale != 1:
+                    input_img = torch.nn.functional.interpolate(
+                        input_img,
+                        scale_factor=scale,
+                        mode="bicubic",
+                        align_corners=False,
+                    )
+                features += model(input_img)
 
-                input_img = Variable(batch_images)
-                for scale in ms:
-                    if scale != 1:
-                        input_img = torch.nn.functional.interpolate(
-                            input_img,
-                            scale_factor=scale,
-                            mode="bicubic",
-                            align_corners=False,
-                        )
-                    outputs = model(input_img)
-                    features += outputs
-
-            # Normalize features
             features /= torch.norm(features, p=2, dim=1, keepdim=True)
             features_list[i:end] = features
     return features_list

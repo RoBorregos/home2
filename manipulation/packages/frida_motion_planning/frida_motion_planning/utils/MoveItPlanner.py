@@ -57,7 +57,15 @@ class MoveItPlanner(Planner):
         self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
         self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
         self.switch_controller_client = None
-        self.mode_enabled = True
+        # Auto-detect real-robot xarm services. On the real robot the xarm
+        # driver exposes /xarm/set_mode within milliseconds. In simulation it
+        # never comes up and we want to skip XArmServices gracefully; the
+        # short timeout is invisible on the real robot and safe in sim.
+        self.mode_enabled = self.mode_client.wait_for_service(timeout_sec=3.0)
+        if not self.mode_enabled:
+            self.node.get_logger().warn(
+                "xarm set_mode service not found within 3s; assuming sim and disabling xarm_services"
+            )
 
         self.joint_states = None
         # Set initial parameters
@@ -116,6 +124,8 @@ class MoveItPlanner(Planner):
         start_time = time.time()
         while future is None and time.time() - start_time < PYMOVEIT_FUTURE_TIMEOUT:
             future = self.moveit2.get_execution_future()
+            if future is None:
+                time.sleep(0.001)
 
         # If we couldn't get the 'future' in time, something went wrong.
         if future is None:
@@ -127,9 +137,11 @@ class MoveItPlanner(Planner):
         # --- 3. Wait for Execution to Complete (if requested) ---
         if wait:
             self.node.get_logger().info("Waiting for execution to complete...")
-            # This loop blocks the code until the action ends (success, failure, or cancellation).
+            # Block until the action ends (success, failure, or cancellation).
+            # time.sleep yields CPU so the executor thread pool can keep
+            # servicing other callbacks (e.g. incoming action goals).
             while not future.done():
-                pass  # Active wait. In a real node, this would be handled more elegantly.
+                time.sleep(0.001)
 
             # --- 4. Check the Final Result ---
             # Once 'future.done()' is True, we can see the result.
@@ -222,6 +234,16 @@ class MoveItPlanner(Planner):
             tolerance_joint_position=tolerance,
             weight_joint_position=weight,
         )
+
+    def reset_controller(self) -> None:
+        """Reset the trajectory controller by sending a dummy trajectory from current joint state."""
+        if self.joint_states is None:
+            self.node.get_logger().warn(
+                "No joint states available, cannot reset controller."
+            )
+            return
+        joint_positions = list(self.joint_states.position)
+        self.moveit2.reset_controller(joint_state=joint_positions, sync=True)
 
     def get_current_operation_state(self) -> MoveIt2State:
         return self.moveit2.query_state()

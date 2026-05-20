@@ -12,8 +12,8 @@ from rclpy.node import Node
 
 # from subtask_managers.hri_tasks import HRITasks
 
-from subtask_managers.manipulation_tasks import ManipulationTasks
-from subtask_managers.nav_tasks import NavigationTasks
+from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
+from task_manager.subtask_managers.nav_tasks import NavigationTasks
 # import time as t
 
 

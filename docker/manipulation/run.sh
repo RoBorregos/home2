@@ -7,50 +7,12 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-# IMPORTANT: Also edit auto-complete.sh to add new arguments
-DETACHED=""
-BUILD=""
-BUILD_IMAGE=""
-
 COMPOSE="docker-compose-${ENV_TYPE}.yaml"
-
-# Parse arguments
-for arg in "${ARGS[@]}"; do
-    case $arg in
-    "-d")
-        DETACHED="-d"
-        ;;
-    "--build")
-        BUILD="true"
-        ;;
-    "--recreate")
-        docker compose -f "$COMPOSE" down
-        ;;
-    "--down")
-        docker compose -f "$COMPOSE" down
-        exit 0
-        ;;
-    "--stop")
-        docker compose -f "$COMPOSE" stop
-        exit 0
-        ;;
-    "--build-image")
-        BUILD_IMAGE="--build"
-        ;;
-    esac
-done
+parse_common_flags "$COMPOSE" "${ARGS[@]}"
 
 #_________________________SETUP_________________________
 
-# Reset .env
-echo "" > .env
-
-# Export user
-add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
-
-# Create dirs with current user to avoid permission problems
-mkdir -p install build log
+setup_common_env "manipulation"
 
 #_________________________RUN_________________________
 
@@ -60,26 +22,30 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE"
 else
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE "
 fi
 
 case $TASK in
-    "--receptionist")
-        RUN="ros2 launch manipulation_general receptionist.launch.py"
+    "--hric")
+        RUN="ros2 launch manipulation_general hric.launch.py"
         ;;
     "--carry")
         RUN="ros2 launch manipulation_general carry.launch.py"
         ;;
-    "--storing-groceries")
-        RUN="ros2 launch vision_general storing_groceries_launch.py"
-        ;;
     "--gpsr")
         RUN="ros2 launch manipulation_general gpsr.launch.py"
+        ;;
+    "--ppc")
+        RUN="ros2 launch manipulation_general ppc.launch.py"
+        ;;
+    "--restaurant")
+        RUN="ros2 launch manipulation_general restaurant.launch.py"
         ;;
     *)
         RUN="bash"
@@ -87,6 +53,11 @@ case $TASK in
 esac
 
 COMMAND="$SETUP && $RUN"
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading manipulation image to DockerHub (env: ${ENV_TYPE})..."
+  ensure_and_upload_image "roborregos/home2:manipulation-${ENV_TYPE}" "$COMPOSE"
+fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="manipulation")

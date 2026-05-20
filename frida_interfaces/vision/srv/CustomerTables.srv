@@ -1,0 +1,4 @@
+
+---
+frida_interfaces/CustomerTable[] customer_tables
+bool success

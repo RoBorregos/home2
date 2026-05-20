@@ -8,12 +8,12 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from subtask_managers.gpsr_single_tasks import GPSRSingleTask
-from subtask_managers.gpsr_tasks import GPSRTask
+from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
+from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
-from utils.baml_client.types import CommandListLLM
-from utils.logger import Logger
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.baml_client.types import CommandListLLM
+from task_manager.utils.logger import Logger
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -72,7 +72,7 @@ class DemoTM(Node):
 
         if self.current_state == DemoTM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
 
             while not self.subtask_manager.hri.start_button_clicked:
@@ -142,7 +142,7 @@ class DemoTM(Node):
                 )
 
             self.executed_commands += 1
-
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("I've finished executing the command.")
 
 

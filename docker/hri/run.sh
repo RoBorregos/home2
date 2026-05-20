@@ -7,51 +7,18 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-# IMPORTANT: Also edit auto-complete.sh to add new arguments
-DETACHED=""
-BUILD=""
-BUILD_IMAGE=""
-BUILD_DISPLAY=""
-OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
+parse_common_flags "$COMPOSE" "${ARGS[@]}"
 
-# Set flags from arguments
+# Parse hri-specific flags
 for arg in "${ARGS[@]}"; do
   case "$arg" in
-    "-d")
-        DETACHED="-d"
-        ;;
-    "--build")
-        BUILD="true"
-        ;;
-    "--recreate")
-        docker compose -f "$COMPOSE" down
-        ;;
-    "--down")
-        docker compose -f "$COMPOSE" down
-        exit 0
-        ;;
-    "--stop")
-        docker compose -f "$COMPOSE" stop
-        exit 0
-        ;;
-    "--build-image")
-        BUILD_IMAGE="--build"
-        ;;
-    "--build-display")
-        BUILD_DISPLAY="true"
-        ;;
-    "--open-display")
-        OPEN_DISPLAY="true"
-        ;;
-    "--download-model")
-        DOWNLOAD_MODEL="true"
-        ;;
-    "--regenerate-db")
-        REGENERATE_DB="true"
+    "--download-model") DOWNLOAD_MODEL="true" ;;
+    "--regenerate-db")  REGENERATE_DB="true" ;;
+    "--build-proto")    BUILD_PROTO="true" ;;
   esac
 done
 
@@ -74,36 +41,33 @@ else
   export SETUP_DONE=true
 fi
 
+# HRI uses compose/.env instead of .env; env file path is passed as argument
+setup_common_env "hri" "compose/.env"
+
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
 # Create dirs with current user to avoid permission problems
-mkdir -p install build log \
-  ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
-  ../../hri/packages/speech/assets/downloads/offline_voice/audios/
+mkdir -p ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
+         ../../hri/packages/speech/assets/downloads/offline_voice/audios/ \
+         ../../hri/packages/speech/assets/downloads/kws/ \
+         ../../hri/packages/speech/assets/downloads/door/
 
-# Reset .env
-echo "" > compose/.env
-
-# Export user
-add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
-
-# Set environment type and runtime
+# HRI-specific env vars
 add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
+
+if [ "$ENV_TYPE" = "l4t" ]; then
+  add_or_update_variable compose/.env "ENV_SUFFIX" "-l4t"
+fi
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable compose/.env "RUNTIME" "nvidia"
 fi
-
+if [ "$ENV_TYPE" = "cuda" ]; then
+  add_or_update_variable compose/.env "STT_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
+  add_or_update_variable compose/.env "TTS_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
+fi
 # If setup was done before persist it again now that .env has been reset
 if [ "${SETUP_DONE:-}" = "true" ]; then
   add_or_update_variable .env "SETUP_DONE" "true"
-fi
-
-# Check if display setup is needed
-DISPLAY_DIR="../../hri/packages/display/display"
-if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
-  echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f compose/hri-ros.yaml run $BUILD_IMAGE --rm --entrypoint "" hri-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
 fi
 
 # Regenerate database if requested
@@ -112,27 +76,29 @@ if [ "$REGENERATE_DB" == "true" ]; then
   bash scripts/regenerate_db.sh "$ENV_TYPE"
 fi
 
+# Build proto files if requested
+if [ "$BUILD_PROTO" == "true" ]; then
+  echo "Building proto files..."
+  docker compose -f "$COMPOSE" run --rm --entrypoint "" hri-ros bash -c \
+    "cd /workspace/src/hri/proto_interfaces && \
+    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. proto_interfaces/speech.proto && \
+    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. proto_interfaces/tts.proto"
+fi
+
 #_________________________RUN_________________________
 
-GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-PACKAGES="speech nlp embeddings display"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
+PACKAGES="speech nlp embeddings"
 PROFILES=()
 RUN=""
 
 case $TASK in
-  "--receptionist")
-    RUN="ros2 launch speech hri_launch.py"
-    PROFILES=("receptionist")
-    ;;
-  "--storing-groceries")
-    PROFILES=("storing")
-    RUN="ros2 launch speech hri_launch.py"
-    ;;
-  "--gpsr")
-    PROFILES=("gpsr")
+  "--restaurant"|"--hric"|"--storing-groceries"|"--gpsr"|"--ppc"|"--finals")
+    PROFILES=("${TASK#--}")
     RUN="ros2 launch speech hri_launch.py"
     ;;
   *)
@@ -148,28 +114,24 @@ fi
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
-COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
+COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
-cleanup() {
-  # Ensure the process is not left running
-  [ -n "$wait_for_display_pid" ] && kill "$wait_for_display_pid" 2>/dev/null || true
-}
-trap cleanup SIGINT SIGTERM
-
-# Function to wait for service and launch display
-wait_and_launch_display() {
-  until curl --output /dev/null --silent --head --fail http://localhost:3000; do
-    sleep 1
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."
+  HRI_IMAGES=(
+    "roborregos/home2:hri-${ENV_TYPE}"
+    "roborregos/home2:hri-stt-${ENV_TYPE}"
+    "roborregos/home2:hri-tts-${ENV_TYPE}"
+    "roborregos/home2:hri-postgres-${ENV_TYPE}"
+  )
+  # ollama is only built for cuda and l4t envs
+  if [ "$ENV_TYPE" = "cuda" ] || [ "$ENV_TYPE" = "l4t" ]; then
+    HRI_IMAGES+=("roborregos/home2:hri-ollama-${ENV_TYPE}")
+  fi
+  for img in "${HRI_IMAGES[@]}"; do
+    ensure_and_upload_image "$img" "$COMPOSE"
   done
-  chmod +x scripts/open-display.bash
-  local task_route="${TASK#--}"
-  bash scripts/open-display.bash "$task_route"
-}
-
-if [ -n "$OPEN_DISPLAY" ]; then
-  wait_and_launch_display &
-  wait_for_display_pid=$!
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then

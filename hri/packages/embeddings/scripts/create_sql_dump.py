@@ -3,9 +3,12 @@
 import json
 import os
 
+import rclpy
 from embeddings.postgres_adapter import PostgresAdapter
+from frida_interfaces.srv import MapAreas
 
 from frida_constants.hri_constants import KNOWLEDGE_TYPE
+from frida_constants.navigation_constants import AREAS_SERVICE
 
 p = PostgresAdapter()
 
@@ -260,11 +263,36 @@ def main():
         json_to_hand_items_dumps(markers),
     )
 
+    print("Fetching areas from AREAS_SERVICE...")
+    areas_json = None
+    rclpy.init()
+    node = rclpy.create_node("create_sql_dump")
+    client = node.create_client(MapAreas, AREAS_SERVICE)
+    if not client.wait_for_service(timeout_sec=5.0):
+        node.get_logger().warn(
+            "AREAS_SERVICE not available, falling back to areas.json"
+        )
+    else:
+        future = client.call_async(MapAreas.Request())
+        rclpy.spin_until_future_complete(node, future, timeout_sec=10.0)
+        result = future.result()
+        if result is not None and result.areas != "":
+            areas_json = json.loads(result.areas)
+        else:
+            node.get_logger().warn(
+                "AREAS_SERVICE returned empty data, falling back to areas.json"
+            )
+    node.destroy_node()
+    rclpy.shutdown()
+
+    if areas_json is None:
+        areas_json = frida_constants_jsons["areas.json"]
+
     print("Writing locations")
     write_to_file(
         os.path.join(DOCKER_PATH, "04-locations.sql"),
         json_to_locations_dumps(
-            frida_constants_jsons["areas.json"],
+            areas_json,
             frida_constants_jsons["context_areas.json"],
         ),
     )

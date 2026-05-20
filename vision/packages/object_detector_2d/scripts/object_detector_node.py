@@ -1,438 +1,207 @@
 #! /usr/bin/env python3
-import rclpy
-import rclpy.duration
-import rclpy.node
-import rclpy.time
-import tf2_ros
-from cv_bridge import CvBridge, CvBridgeError
-from geometry_msgs.msg import Point, PoseArray, Pose
-from std_msgs.msg import Bool
-from sensor_msgs.msg import Image, CameraInfo
-from visualization_msgs.msg import Marker, MarkerArray
-from frida_interfaces.msg import ObjectDetectionArray
-from dataclasses import dataclass
-import pathlib
-import threading
+"""Runs multiple YOLO models continuously, publishes detections, and exposes trash/detection/yolo services."""
+
 import copy
-from typing import List
+import json
+import os
+
 import cv2 as cv
-from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
-from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
-from detectors.ObjectDetector import Detection, ObjectDectectorParams
+import rclpy
+from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
-    DEPTH_IMAGE_TOPIC,
-    CAMERA_INFO_TOPIC,
-    DETECTIONS_TOPIC,
-    DETECTIONS_IMAGE_TOPIC,
-    DETECTIONS_POSES_TOPIC,
+    DETECTION_HANDLER_TOPIC_SRV,
     DETECTIONS_3D_TOPIC,
     DETECTIONS_ACTIVE_TOPIC,
-    DEBUG_IMAGE_TOPIC,
-    CAMERA_FRAME,
+    DETECTIONS_IMAGE_TOPIC,
+    DETECTIONS_POSES_TOPIC,
+    DETECTIONS_TOPIC,
+    TRASH_SERVICE_CATEGORY,
+    YOLO_DETECTION_TOPIC,
+    YOLO_DETECTIONS_PUBLISHER_TOPIC,
 )
-
-MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
-
-print("PATH   ", MODELS_PATH)
-ARGS = {
-    "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
-    "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
-    "CAMERA_INFO_TOPIC": CAMERA_INFO_TOPIC,
-    "DETECTIONS_TOPIC": DETECTIONS_TOPIC,
-    "DETECTIONS_IMAGE_TOPIC": DETECTIONS_IMAGE_TOPIC,
-    "DETECTIONS_POSES_TOPIC": DETECTIONS_POSES_TOPIC,
-    "DETECTIONS_3D_TOPIC": DETECTIONS_3D_TOPIC,
-    "DETECTIONS_ACTIVE_TOPIC": DETECTIONS_ACTIVE_TOPIC,
-    "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
-    "CAMERA_FRAME": CAMERA_FRAME,
-    "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": "tmr_30classes_v2.pt",
-    "USE_ACTIVE_FLAG": False,
-    "DEPTH_ACTIVE": True,
-    "VERBOSE": False,
-    "USE_YOLO8": True,
-    "FLIP_IMAGE": False,
-    "USE_ZED_TRANSFORM": True,
-    "MIN_SCORE_THRESH": 0.3,
-}
+from frida_interfaces.msg import Detection, ObjectDetectionArray
+from frida_interfaces.srv import DetectionHandler, SetTrashCategory, YoloDetect
+from sensor_msgs.msg import Image
+from detectors.registry import ModelRegistry
+from detectors.utils import iou_deduplicate
+from base_detector_node import BaseDetectorNode
 
 
-@dataclass
-class NodeParams:
-    RGB_IMAGE_TOPIC: str = None
-    DEPTH_IMAGE_TOPIC: str = None
-    CAMERA_INFO_TOPIC: str = None
-    DETECTIONS_TOPIC: str = None
-    DETECTIONS_POSES_TOPIC: str = None
-    DETECTIONS_3D_TOPIC: str = None
-    DETECTIONS_ACTIVE_TOPIC: str = None
-    DETECTIONS_IMAGE_TOPIC: str = None
-    DEBUG_IMAGE_TOPIC: str = None
-    YOLO_MODEL_PATH: str = None
-    USE_ACTIVE_FLAG: bool = None
-    VERBOSE: bool = None
-    USE_YOLO8: bool = None
-
-
-# TODO DEFINE HOW TO GET params
-
-
-class object_detector_node(rclpy.node.Node):
-    def __init__(self, node_name: str = "object_detector_2D_node"):
-        super().__init__(node_name)
-
-        for key, value in ARGS.items():
-            self.declare_parameter(key, value)
-
-        self.bridge = CvBridge()
-        self.depth_image = []
-        self.rgb_image = []
-        self.camera_info = CameraInfo()
-        self.detections_frame = []
-
-        self.set_parameters()
-        self.active_flag = not self.node_params.USE_ACTIVE_FLAG
-
-        if self.node_params.USE_YOLO8:
-            self.object_detector_2d = YoloV8ObjectDetector(
-                self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
-            )
-        else:
-            self.object_detector_2d = YoloV5ObjectDetector(
-                self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
-            )
-
-        self.handleSubcriptions()
-        self.handlePublishers()
-        self.runThread = None
-
-        self.tfBuffer = tf2_ros.Buffer()
-        self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
-
-        # Frames per second throughput estimator
-        self.curr_clock = 0
-
-        self.get_logger().info("Object Detector 2D Node has been started")
-
-    def set_parameters(self):
-        self.object_detector_parameters = ObjectDectectorParams()
-        self.object_detector_parameters.depth_active = (
-            self.get_parameter("DEPTH_ACTIVE").get_parameter_value().bool_value
-        )
-        self.object_detector_parameters.min_score_thresh = (
-            self.get_parameter("MIN_SCORE_THRESH").get_parameter_value().double_value
-        )
-        self.object_detector_parameters.target_frame = (
-            self.get_parameter("TARGET_FRAME").get_parameter_value().string_value
-        )
-        self.object_detector_parameters.camera_frame = (
-            self.get_parameter("CAMERA_FRAME").get_parameter_value().string_value
-        )
-        self.object_detector_parameters.flip_image = (
-            self.get_parameter("FLIP_IMAGE").get_parameter_value().bool_value
-        )
-        self.object_detector_parameters.use_zed_transfrom = (
-            self.get_parameter("USE_ZED_TRANSFORM").get_parameter_value().bool_value
+class ObjectDetectorNode(BaseDetectorNode):
+    def __init__(self):
+        super().__init__(
+            "object_detector_2D_node",
+            default_det_topic=DETECTIONS_TOPIC,
+            default_det_img_topic=DETECTIONS_IMAGE_TOPIC,
+            default_det_poses_topic=DETECTIONS_POSES_TOPIC,
+            default_det_3d_topic=DETECTIONS_3D_TOPIC,
+            default_active_topic=DETECTIONS_ACTIVE_TOPIC,
+            fixed_active_topic="/vision/object_detector/active",
         )
 
-        self.node_params = NodeParams()
-        self.node_params.RGB_IMAGE_TOPIC = (
-            self.get_parameter("RGB_IMAGE_TOPIC").get_parameter_value().string_value
-        )
-        self.node_params.DEPTH_IMAGE_TOPIC = (
-            self.get_parameter("DEPTH_IMAGE_TOPIC").get_parameter_value().string_value
-        )
-        self.node_params.CAMERA_INFO_TOPIC = (
-            self.get_parameter("CAMERA_INFO_TOPIC").get_parameter_value().string_value
-        )
-        self.node_params.DETECTIONS_TOPIC = (
-            self.get_parameter("DETECTIONS_TOPIC").get_parameter_value().string_value
-        )
-        self.node_params.DETECTIONS_POSES_TOPIC = (
-            self.get_parameter("DETECTIONS_POSES_TOPIC")
-            .get_parameter_value()
-            .string_value
-        )
-        self.node_params.DETECTIONS_3D_TOPIC = (
-            self.get_parameter("DETECTIONS_3D_TOPIC").get_parameter_value().string_value
-        )
-        self.node_params.DETECTIONS_ACTIVE_TOPIC = (
-            self.get_parameter("DETECTIONS_ACTIVE_TOPIC")
-            .get_parameter_value()
-            .string_value
-        )
-        self.node_params.DETECTIONS_IMAGE_TOPIC = (
-            self.get_parameter("DETECTIONS_IMAGE_TOPIC")
-            .get_parameter_value()
-            .string_value
-        )
-        self.node_params.DEBUG_IMAGE_TOPIC = (
-            self.get_parameter("DEBUG_IMAGE_TOPIC").get_parameter_value().string_value
-        )
-        self.node_params.YOLO_MODEL_PATH = MODELS_PATH + (
-            self.get_parameter("YOLO_MODEL_PATH").get_parameter_value().string_value
-        )
-        print("PATH_FINALLLLL: ", self.node_params.YOLO_MODEL_PATH)
-        self.get_logger().info(f"path: {self.node_params.YOLO_MODEL_PATH}")
-        self.node_params.USE_ACTIVE_FLAG = (
-            self.get_parameter("USE_ACTIVE_FLAG").get_parameter_value().bool_value
-        )
-        self.node_params.VERBOSE = (
-            self.get_parameter("VERBOSE").get_parameter_value().bool_value
-        )
-        self.node_params.USE_YOLO8 = (
-            self.get_parameter("USE_YOLO8").get_parameter_value().bool_value
-        )
+        model_names = self.declare_param(
+            "models", ["yolo_v26_finetuned"]
+        ).string_array_value
 
-        self.get_logger().info(
-            "Listening to image on topic: " + self.node_params.RGB_IMAGE_TOPIC
-        )
+        self.models = [ModelRegistry.get(name) for name in model_names]
+        self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
+        self.yolo_service_model = ModelRegistry.get("yolo_generic")
 
-    def handlePublishers(self):
-        self.detections_publisher = self.create_publisher(
-            ObjectDetectionArray, self.node_params.DETECTIONS_TOPIC, 5
-        )
-        self.detections_pose_publisher = self.create_publisher(
-            PoseArray, self.node_params.DETECTIONS_POSES_TOPIC, 5
-        )
-        self.detections_3d = self.create_publisher(
-            MarkerArray, self.node_params.DETECTIONS_3D_TOPIC, 5
-        )
-        self.detections_image_publisher = self.create_publisher(
-            Image, self.node_params.DETECTIONS_IMAGE_TOPIC, 5
-        )
-        self.debug_image_publisher = self.create_publisher(
-            Image, self.node_params.DEBUG_IMAGE_TOPIC, 5
-        )
-
-        if self.node_params.VERBOSE:
-            self.get_logger().info(
-                "Publishers have been created with the following topics: "
-            )
-            self.get_logger().info(self.node_params.DETECTIONS_TOPIC)
-            self.get_logger().info(self.node_params.DETECTIONS_POSES_TOPIC)
-            self.get_logger().info(self.node_params.DETECTIONS_3D_TOPIC)
-            self.get_logger().info(self.node_params.DETECTIONS_IMAGE_TOPIC)
-            self.get_logger().info(self.node_params.DEBUG_IMAGE_TOPIC)
-
-    def handleSubcriptions(self):
-        qos = rclpy.qos.QoSProfile(
-            depth=5,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-        )
-        if self.node_params.VERBOSE:
-            self.get_logger().info(
-                "Subcribers have been created with the following topics: "
-            )
-            self.get_logger().info(self.node_params.RGB_IMAGE_TOPIC)
-        self.rgb_image_sub = self.create_subscription(
-            Image, self.node_params.RGB_IMAGE_TOPIC, self.rgbImageCallback, qos
-        )
-        if self.object_detector_parameters.depth_active:
-            self.depth_subscriber = self.create_subscription(
-                Image, self.node_params.DEPTH_IMAGE_TOPIC, self.depthImageCallback, qos
-            )
-            self.recieved_camera_info = False
-            self.camera_info_subscriber = self.create_subscription(
-                CameraInfo,
-                self.node_params.CAMERA_INFO_TOPIC,
-                self.cameraInfoCallback,
-                qos,
-            )
-
-            if self.node_params.VERBOSE:
-                self.get_logger().info(self.node_params.DEPTH_IMAGE_TOPIC)
-                self.get_logger().info(self.node_params.CAMERA_INFO_TOPIC)
-
-        if self.node_params.USE_ACTIVE_FLAG:
-            self.create_subscription(
-                Bool,
-                self.node_params.DETECTIONS_ACTIVE_TOPIC,
-                self.activeFlagCallback,
-                5,
-            )
-            if self.node_params.VERBOSE:
-                self.get_logger().info(self.node_params.DETECTIONS_ACTIVE_TOPIC)
-
-    # Callback for active flag
-    def activeFlagCallback(self, msg):
-        self.activeFlag = msg.data
-
-    # Function to handle a ROS depthPublishers have been created input.
-    def depthImageCallback(self, data):
+        self.category = None
         try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-            if self.node_params.VERBOSE:
-                self.get_logger().info("SUCCESS: Recieved depth image")
-        except CvBridgeError as e:
-            if self.node_params.VERBOSE:
-                self.get_logger().error(f"Failed to recieve depth image, exception{e}")
-
-    # Function to handle ROS camera info input.
-    def cameraInfoCallback(self, data):
-        if not self.recieved_camera_info:
-            self.object_detector_2d.object_detector_params_.camera_info = data
-            self.recieved_camera_info = True
-            if self.node_params.VERBOSE:
-                self.get_logger().info("SUCCESS: Recieved camera info")
-
-    def rgbImageCallback(self, data):
-        self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        self.curr_clock = data.header.stamp
-        if not self.active_flag:
-            self.detections_frame = self.rgb_image
-        elif (
-            self.active_flag and self.runThread is None or not self.runThread.is_alive()
-        ):
-            self.runThread = threading.Thread(
-                target=self.run, args=(self.rgb_image,), daemon=True
+            objects_path = os.path.join(
+                get_package_share_directory("frida_constants"), "data/objects.json"
             )
-            self.runThread.start()
+            with open(objects_path) as f:
+                self.object_to_category = json.load(f).get("object_to_category", {})
+        except Exception as e:
+            self.get_logger().error(f"Failed to load objects.json: {e}")
+            self.object_to_category = {}
 
-        if self.node_params.VERBOSE:
-            self.get_logger().info("SUCCESS: Recieved rgb image")
+        self.pub_yolo_image = self.create_publisher(
+            Image, YOLO_DETECTIONS_PUBLISHER_TOPIC, 5
+        )
 
-        if len(self.detections_frame) > 0:
-            self.detections_image_publisher.publish(
-                self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8")
-            )
+        self.create_service(
+            SetTrashCategory, TRASH_SERVICE_CATEGORY, self.set_trash_category
+        )
+        self.create_service(
+            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV, self.detection_handler
+        )
+        self.create_service(YoloDetect, YOLO_DETECTION_TOPIC, self.yolo_detect)
 
-    def visualize_detections(
-        self,
-        image,
-        detections: List[Detection],
-        use_normalized_coordinates=True,
-        max_boxes_to_draw=200,
-        agnostic_mode=False,
-    ):
-        """Visualize detections on an input image."""
+    def box_color(self, det):
+        return (0, 0, 255) if det.label_text.startswith("trash/") else (0, 255, 0)
 
-        # Convert image to BGR format (OpenCV uses BGR instead of RGB)
-        image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
+    # ------------------------------------------------------------------ services
 
-        for detection in detections:
-            color = (0, 0, 0) if agnostic_mode else (0, 255, 0)
-            ymin, xmin, ymax, xmax = (
-                detection.bbox_.y1,
-                detection.bbox_.x1,
-                detection.bbox_.y2,
-                detection.bbox_.x2,
-            )
-            if use_normalized_coordinates:
-                (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
-            else:
-                (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
-            (left, right, top, bottom) = (
-                int(left * image.shape[1]),
-                int(right * image.shape[1]),
-                int(top * image.shape[0]),
-                int(bottom * image.shape[0]),
-            )
-            cv.rectangle(image, (left, top), (right, bottom), color, 7)
-            # draw label, name and score
+    def set_trash_category(self, req, res):
+        if not req.category:
+            res.success = False
+            self.get_logger().warn("No category in SetTrashCategory request")
+            return res
+        self.category = req.category.lower()
+        res.success = True
+        self.get_logger().info(f"Trash category set to: {self.category}")
+        return res
+
+    def detection_handler(self, request, response):
+        detections = list(self.latest_detections)
+        if request.label and request.label != "all":
+            detections = [d for d in detections if d.label_text == request.label]
+        elif request.labels:
+            labels_set = set(request.labels)
+            detections = [d for d in detections if d.label_text in labels_set]
+        if request.closest_object and detections:
+            detections = [
+                min(
+                    detections,
+                    key=lambda d: d.point3d.point.x**2
+                    + d.point3d.point.y**2
+                    + d.point3d.point.z**2,
+                )
+            ]
+        response.detection_array.detections = detections
+        response.success = len(detections) > 0
+        self.get_logger().info(
+            f"DetectionHandler: label='{request.label}' returned={len(detections)}"
+        )
+        return response
+
+    def yolo_detect(self, request, response):
+        if self.latest_frame is None:
+            self.get_logger().warn("YoloDetect called but no frame received yet")
+            response.success = False
+            response.detections = []
+            return response
+
+        classes = list(request.classes) if request.classes else None
+        raw = self.yolo_service_model.detect(self.latest_frame)
+        if classes is not None:
+            raw = [d for d in raw if d.class_id_ in classes]
+
+        h, w = self.latest_frame.shape[:2]
+        annotated = self.latest_frame.copy()
+        ros_dets = []
+        for d in raw:
+            det = Detection()
+            det.x1 = int(d.bbox_.x1 * w)
+            det.y1 = int(d.bbox_.y1 * h)
+            det.x2 = int(d.bbox_.x2 * w)
+            det.y2 = int(d.bbox_.y2 * h)
+            det.confidence = d.confidence_
+            det.class_id = d.class_id_
+            ros_dets.append(det)
+            cv.rectangle(annotated, (det.x1, det.y1), (det.x2, det.y2), (0, 255, 0), 2)
             cv.putText(
-                image,
-                f"{detection.class_id_}: {detection.label_}: {detection.confidence_}",
-                (left, top - 10),
+                annotated,
+                f"{d.label_}: {d.confidence_:.2f}",
+                (det.x1, det.y1 - 10),
                 cv.FONT_HERSHEY_SIMPLEX,
-                2,
-                color,
+                0.6,
+                (0, 255, 0),
                 2,
             )
-            # draw centroid
-            cv.circle(
-                image,
-                (int((left + right) / 2), int((top + bottom) / 2)),
-                5,
-                (0, 0, 255),
-                -1,
-            )
 
-        # Convert image back to RGB format
-        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+        self.pub_yolo_image.publish(self.bridge.cv2_to_imgmsg(annotated, "bgr8"))
+        response.success = True
+        response.detections = ros_dets
+        return response
 
-        return image
-
-    def visualize_3d_detections(self, detections):
-        marker_array = MarkerArray()
-
-        for index in range(len(detections)):
-            marker = Marker()
-            marker.header.frame_id = self.object_detector_parameters.camera_frame
-            marker.header.stamp = self.curr_clock
-            marker.type = Marker.SPHERE
-            marker.action = Marker.ADD
-            marker.id = index
-            marker.pose.position.x = detections[index].point_stamped_.point.x
-            marker.pose.position.y = detections[index].point_stamped_.point.y
-            marker.pose.position.z = detections[index].point_stamped_.point.z
-            marker.pose.orientation.w = 1.0
-            marker.scale.x = 0.05
-            marker.scale.y = 0.05
-            marker.scale.z = 0.05
-            marker.color.a = 1.0
-            marker.color.r = 0.0
-            marker.color.g = 1.0
-            marker.color.b = 0.0
-            marker.lifetime = rclpy.duration.Duration(seconds=1).to_msg()
-            marker_array.markers.append(marker)
-
-        self.detections_3d.publish(marker_array)
+    # ------------------------------------------------------------------ inference
 
     def run(self, frame):
-        copy_frame = copy.deepcopy(frame)
-        detected_objects, visual_detections, visual_image = (
-            self.object_detector_2d.inference(
-                copy_frame, self.depth_image, self.tfBuffer
-            )
-        )
+        if self.flip_image:
+            frame = cv.rotate(frame, cv.ROTATE_180)
+        visual = copy.deepcopy(frame)
 
-        self.detections_frame = self.visualize_detections(
-            visual_image,
-            visual_detections,
-            use_normalized_coordinates=True,
-            max_boxes_to_draw=200,
-            agnostic_mode=False,
-        )
+        all_2d = []
+        for model in self.models:
+            all_2d.extend(model.detect(frame))
+        merged = iou_deduplicate(all_2d, threshold=0.6)
 
-        if self.node_params.VERBOSE:
-            for index in range(len(detected_objects)):
-                self.get_logger().info(
-                    f"Detection #{str(index)}:   {detected_objects[index].__str__()}"
+        if self.flip_image:
+            for det in merged:
+                det.bbox_.y2, det.bbox_.x2, det.bbox_.y1, det.bbox_.x1 = (
+                    1 - det.bbox_.y1,
+                    1 - det.bbox_.x1,
+                    1 - det.bbox_.y2,
+                    1 - det.bbox_.x2,
                 )
 
-        self.visualize_3d_detections(detected_objects)
+        all_detections = self.extract_3d(merged)
+        all_detections = self.filter_by_distance(all_detections)
 
-        self.detections_pose_publisher.publish(
-            PoseArray(
-                poses=[
-                    Pose(
-                        position=Point(
-                            x=detection.point_stamped_.point.x,
-                            y=detection.point_stamped_.point.y,
-                            z=detection.point_stamped_.point.z,
-                        )
-                    )
-                    for detection in detected_objects
-                ]
-            )
-        )
+        self.publish_3d_markers(all_detections)
+        self.publish_poses(all_detections)
 
-        # update time
-        for detection in self.object_detector_2d.getFridaDetections(detected_objects):
-            detection.point3d.header.stamp = self.curr_clock
-        self.detections_publisher.publish(
-            ObjectDetectionArray(
-                detections=self.object_detector_2d.getFridaDetections(detected_objects)
-            )
-        )
+        ros_detections = self.to_ros(all_detections)
+        for det in ros_detections:
+            det.point3d.header.stamp = self.curr_clock
+
+        self.latest_detections = ros_detections
+
+        published = []
+        for det in ros_detections:
+            d = copy.deepcopy(det)
+            cat = self.object_to_category.get(d.label_text.strip().lower())
+            if self.category and cat and cat == self.category:
+                d.label_text = f"trash/{d.label_text}"
+            published.append(d)
+
+        self.pub_detections.publish(ObjectDetectionArray(detections=published))
+        self.detections_frame = self.visualize(visual, published)
+
+        if self.verbose:
+            for i, d in enumerate(published):
+                self.get_logger().info(
+                    f"Detection #{i}: {d.label_text} ({d.score:.2f})"
+                )
 
 
 def main(args=None):
     rclpy.init(args=args)
-    object_detector_2d = object_detector_node("object_detector_2D_node")
-    rclpy.spin(object_detector_2d)
+    rclpy.spin(ObjectDetectorNode())
     rclpy.shutdown()
 
 

@@ -24,6 +24,8 @@ from frida_constants.manipulation_constants import (
     CUTLERY_PICK_MIN_HEIGHT,
     CUTLERY_NAMES,
     BASKETS,
+    CUTLERY_PICK_MIN_HEIGHT,
+    CUTLERY_NAMES,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
@@ -40,11 +42,40 @@ from geometry_msgs.msg import PoseStamped
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
+import tf2_ros
 from transforms3d.quaternions import quat2mat
+from frida_motion_planning.utils.tf_utils import transform_point
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
+    open_gripper,
 )
 import time
+
+from std_srvs.srv import Empty
+
+# Force-guarded descent imports
+from sensor_msgs.msg import JointState
+from xarm_msgs.srv import MoveVelocity, SetInt16
+
+# =============================================================================
+# Force-guarded descent constants
+# Units: speeds in mm/s (xArm SDK convention)
+# =============================================================================
+CUTLERY_DESCENT_SPEED = 20.0  # mm/s downward (= 2 cm/s)
+CUTLERY_EFFORT_THRESHOLD = (
+    6.5  # N - effort delta to detect contact (raised from 3.0 to avoid false positives)
+)
+CUTLERY_DESCENT_TIMEOUT = 10.0  # s - max descent before giving up
+CUTLERY_PRE_GRASP_HEIGHT = (
+    0.15  # m - pre-grasp height above target (MoveIt uses meters)
+)
+CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
+CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
+
+# Mode switching timing
+MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
+MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
+MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 
 from std_srvs.srv import SetBool, Empty
 
@@ -81,7 +112,19 @@ class PickMotionServer(Node):
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
+        # How high above the detected support plane a grasp position has to
+        # be to be considered feasible. Default keeps the real-robot safety
+        # margin; the sim launch overrides to a tiny value because the plane
+        # segmenter tends to lock onto a house wall instead of the table so
+        # the strict 0.1 m threshold rejects every valid grasp.
+        self.declare_parameter("pick_min_height", PICK_MIN_HEIGHT)
+        self.pick_min_height = self.get_parameter("pick_min_height").value
+        self.get_logger().info(f"Pick min height above plane: {self.pick_min_height} m")
+
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self._action_server = ActionServer(
             self,
@@ -134,17 +177,13 @@ class PickMotionServer(Node):
         self._vc_set_cartesian_velocity_client = self.create_client(
             MoveVelocity, "/xarm/vc_set_cartesian_velocity"
         )
-        self._set_mode_client = self.create_client(
-            SetInt16, '/xarm/set_mode'
-        )
-        self._set_state_client = self.create_client(
-            SetInt16, '/xarm/set_state'
-        )
+        self._set_mode_client = self.create_client(SetInt16, "/xarm/set_mode")
+        self._set_state_client = self.create_client(SetInt16, "/xarm/set_state")
 
         # Joint effort monitoring
         self._latest_joint_state = None
         self._joint_state_sub = self.create_subscription(
-            JointState, '/joint_states', self._joint_state_cb, 10
+            JointState, "/joint_states", self._joint_state_cb, 10
         )
 
         self._move_to_pose_action_client.wait_for_server()
@@ -172,16 +211,39 @@ class PickMotionServer(Node):
         self.get_logger().info("Executing go to hand goal...")
 
         base_point = copy.deepcopy(goal_handle.request.point)
-
+        self.get_logger().info(
+            f"Hand point received in frame '{base_point.header.frame_id}': "
+            f"({base_point.point.x:.3f}, {base_point.point.y:.3f}, {base_point.point.z:.3f})"
+        )
+        # Transform to base frame if necessary
+        if base_point.header.frame_id != "base_link":
+            success, base_point = transform_point(
+                base_point, "base_link", self.tf_buffer
+            )
+            if not success:
+                self.get_logger().error(
+                    f"Failed to transform hand point from '{goal_handle.request.point.header.frame_id}' to 'base_link'. "
+                    "Check that TF is available between these frames."
+                )
+                result = GoToHand.Result()
+                result.success = False
+                goal_handle.succeed()
+                return result
+            self.get_logger().info(
+                f"Transformed to base_link: ({base_point.point.x:.3f}, {base_point.point.y:.3f}, {base_point.point.z:.3f})"
+            )
+        # quaternion position
         qx, qy, qz, qw = quaternion_from_euler(-np.pi / 2, 0, 0)
         quat = [qx, qy, qz, qw]
 
-        rotation_matrix = quat2mat(quat)
-        z_axis = rotation_matrix[:, 1]
+        # quat2mat expects scalar-first [w, x, y, z]
+        rotation_matrix = quat2mat([qw, qx, qy, qz])
+        # Approach axis is the gripper's local Z (column 2), same convention as pick()
+        approach_axis = rotation_matrix[:, 2]
 
         base_position = (
             np.array([base_point.point.x, base_point.point.y, base_point.point.z])
-            + z_axis * self.ee_tip_offset
+            + approach_axis * self.ee_link_offset
         )
 
         hand_offset = goal_handle.request.hand_offset
@@ -417,6 +479,22 @@ class PickMotionServer(Node):
                             )
                         else:
                             pick_result.object_height = 0.0
+
+                        if lowest_obj is not None:
+                            pick_result.object_pick_height = (
+                                self.calculate_object_pick_height(
+                                    lowest_obj, ee_link_pose
+                                )
+                            )
+                        else:
+                            pick_result.object_pick_height = 0.0
+
+                        if lowest_obj is not None and highest_obj is not None:
+                            pick_result.object_height = self.calculate_object_height(
+                                lowest_obj, highest_obj
+                            )
+                        else:
+                            pick_result.object_height = 0.0
                     else:
                         self.get_logger().error("Failed to attach object")
 
@@ -492,8 +570,12 @@ class PickMotionServer(Node):
         start_time = time.time()
 
         try:
-            if not self._vc_set_cartesian_velocity_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error("[ForceGuard] vc_set_cartesian_velocity not available")
+            if not self._vc_set_cartesian_velocity_client.wait_for_service(
+                timeout_sec=2.0
+            ):
+                self.get_logger().error(
+                    "[ForceGuard] vc_set_cartesian_velocity not available"
+                )
                 self._restore_mode1()
                 return False
 
@@ -564,7 +646,7 @@ class PickMotionServer(Node):
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
             if not self._set_mode_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error(f"[ForceGuard] set_mode service unavailable")
+                self.get_logger().error("[ForceGuard] set_mode service unavailable")
                 return False
 
             mode_req = SetInt16.Request()
@@ -579,7 +661,7 @@ class PickMotionServer(Node):
             time.sleep(0.3)
 
             if not self._set_state_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error(f"[ForceGuard] set_state service unavailable")
+                self.get_logger().error("[ForceGuard] set_state service unavailable")
                 return False
 
             state_req = SetInt16.Request()
@@ -587,7 +669,7 @@ class PickMotionServer(Node):
             state_future = self._set_state_client.call_async(state_req)
             self.wait_for_future(state_future)
             if state_future.result() is None:
-                self.get_logger().error(f"[ForceGuard] set_state(0) returned None")
+                self.get_logger().error("[ForceGuard] set_state(0) returned None")
                 return False
 
             self.get_logger().info(f"[ForceGuard] Mode {mode}, State 0 OK")
@@ -617,14 +699,18 @@ class PickMotionServer(Node):
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
             if not self._set_xarm_mode(0):
-                self.get_logger().warn(f"[ForceGuard] Mode 0 failed (attempt {attempt + 1})")
+                self.get_logger().warn(
+                    f"[ForceGuard] Mode 0 failed (attempt {attempt + 1})"
+                )
                 time.sleep(1.0)
                 continue
 
             time.sleep(0.5)
 
             if not self._set_xarm_mode(1):
-                self.get_logger().warn(f"[ForceGuard] Mode 1 failed (attempt {attempt + 1})")
+                self.get_logger().warn(
+                    f"[ForceGuard] Mode 1 failed (attempt {attempt + 1})"
+                )
                 time.sleep(1.0)
                 continue
 
@@ -633,7 +719,9 @@ class PickMotionServer(Node):
             )
             time.sleep(MODE1_RECOVERY_TIME)
 
-            self.get_logger().info(f"[ForceGuard] Mode 1 restored (attempt {attempt + 1})")
+            self.get_logger().info(
+                f"[ForceGuard] Mode 1 restored (attempt {attempt + 1})"
+            )
             return
 
         self.get_logger().error("[ForceGuard] CRITICAL: Could not restore mode 1!")
@@ -642,7 +730,13 @@ class PickMotionServer(Node):
     # Existing Methods (unchanged)
     # ==================================================================
 
-    def move_to_pose(self, pose, tolerance_position=0.005, tolerance_orientation=0.02, velocity=PICK_VELOCITY):
+    def move_to_pose(
+        self,
+        pose,
+        tolerance_position=0.005,
+        tolerance_orientation=0.02,
+        velocity=PICK_VELOCITY,
+    ):
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = float(velocity)
@@ -758,7 +852,10 @@ class PickMotionServer(Node):
         pick_height = pose.pose.position.z
         plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
 
-        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else PICK_MIN_HEIGHT
+        # Cutlery keeps its own constant (flatter objects need tighter tolerance);
+        # non-flat picks use the pick_min_height parameter so sim and real can
+        # share the same launch without a per-environment override.
+        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else self.pick_min_height
 
         if pick_height < plane_height + min_height:
             self.get_logger().warn(

@@ -1,6 +1,7 @@
 #goal definition
 float32 timeout
 string hotwords
+string initial_prompt
 float32 silence_time
 float32 start_silence_time
 ---

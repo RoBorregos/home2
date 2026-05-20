@@ -1,0 +1,10 @@
+ei_audio_classifier:
+  ros__parameters:
+    RAW_AUDIO_TOPIC: REPLACE
+    DETECTION_TOPIC: /hri/speech/ei_detection
+    EI_SERVER_URL: "http://localhost:1337"
+    SAMPLE_RATE: 16000
+    WINDOW_SIZE_S: 1.0
+    NOISE_THRESHOLD: 0.8
+    SAVE_DETECTION_AUDIO: False
+    AUDIO_SAVE_DIR: /workspace/src/hri/packages/speech/assets/event_detections

@@ -12,5 +12,12 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="embeddings",
+                executable="postgres_service.py",
+                name="postgres_service",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )

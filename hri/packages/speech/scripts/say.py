@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 from collections import OrderedDict
 
 import grpc
@@ -16,12 +15,7 @@ from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
-
-# Add the directory containing the protos to the Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), "tts"))
-
-import tts_pb2
-import tts_pb2_grpc
+from proto_interfaces import tts_pb2, tts_pb2_grpc
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 

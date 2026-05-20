@@ -1,6 +1,7 @@
 # Goal definition
 geometry_msgs/PoseStamped pour_pose
 frida_interfaces/PickResult pick_result
+bool object_already_grasped
 # geometry_msgs/PointStamped bowl_position    # [x, y, z]
 # string object_name
 # float64 object_top_height            # Height of the top of the object

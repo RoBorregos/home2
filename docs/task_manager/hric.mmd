@@ -1,0 +1,40 @@
+---
+title: HRIC Task Manager – Finite State Machine
+---
+stateDiagram-v2
+    [*] --> WAIT_FOR_BUTTON
+
+    WAIT_FOR_BUTTON --> START : Button pressed
+
+    START --> WAIT_FOR_GUEST : Navigate to entrance
+
+    WAIT_FOR_GUEST --> GREETING : Person detected
+    WAIT_FOR_GUEST --> WAIT_FOR_GUEST : No person detected
+
+    GREETING --> SAVE_FACE : Name & drink obtained
+
+    SAVE_FACE --> SAVE_FACE : Face save failed<br/>(attempts < 3)
+    SAVE_FACE --> NAVIGATE_TO_LIVING_ROOM : 1st guest –<br/>face saved or max attempts
+    SAVE_FACE --> TAKE_BAG_OFFER : 2nd guest –<br/>face saved or max attempts
+
+    TAKE_BAG_OFFER --> NAVIGATE_TO_LIVING_ROOM : Offer to take bag,<br/>mention 1st guest
+
+    NAVIGATE_TO_LIVING_ROOM --> FIND_SEAT : Arrived at living room
+
+    FIND_SEAT --> NAVIGATE_TO_ENTRANCE : 1st guest –<br/>seat found & pointed
+    FIND_SEAT --> INTRODUCTION : 2nd guest –<br/>seat found & pointed
+
+    INTRODUCTION --> TAKE_BAG_DELIVER : Introduce guests<br/>to each other
+
+    NAVIGATE_TO_ENTRANCE --> WAIT_FOR_GUEST : Switch to 2nd guest,<br/>navigate to entrance
+
+    TAKE_BAG_DELIVER --> END : Deliver bag to host
+
+    END --> [*] : Task complete
+
+    note right of WAIT_FOR_BUTTON : Robot in nav_pose
+    note right of WAIT_FOR_GUEST : Detect person<br/>(timeout 10s)
+    note right of GREETING : Ask & confirm name,<br/>then favourite drink
+    note right of SAVE_FACE : Save face + describe person<br/>(up to 3 attempts)
+    note right of FIND_SEAT : Scan seat angles<br/>[0°, -90°] then point
+    note right of INTRODUCTION : Locate 1st guest by face,<br/>then introduce both guests

@@ -35,7 +35,7 @@ export default function GPSRPage() {
                 <div className="col-span-2 sticky top-0 self-start h-[inherit] bg-(--bg-dark)">
                     <div className="h-full flex flex-col items-center justify-center p-4">
                         <div className="w-3/4 mb-4">
-                            <StartButton />
+                            <StartButton size="xl" />
                         </div>
                         <VideoFeed />
                     </div>

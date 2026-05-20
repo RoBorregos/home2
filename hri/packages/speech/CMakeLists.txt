@@ -33,10 +33,12 @@ install(
   FILES_MATCHING PATTERN "*.py"
 )
 
-# Install ONNX files
+# Install ONNX and WAV files
 install(DIRECTORY assets
   DESTINATION share/${PROJECT_NAME}/
-  FILES_MATCHING PATTERN "*.onnx"
+  FILES_MATCHING
+  PATTERN "*.onnx"
+  PATTERN "*.wav"
 )
 
 # Install JSON files
@@ -52,13 +54,6 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
-)
-
-install(
-  DIRECTORY scripts/stt
-  DIRECTORY scripts/tts
-  DESTINATION lib/${PROJECT_NAME}
-  FILES_MATCHING PATTERN "*.py"
 )
 
 if(BUILD_TESTING)

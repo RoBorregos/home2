@@ -1,1 +1,0 @@
-bool ir_detection

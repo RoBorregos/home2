@@ -42,6 +42,14 @@ def run():
     )
     print(f"Description: {description_response.answer}")
 
+    # Generate subject points
+    points_response = stub.FindObjectPoints(
+        moondream_proto_pb2.FindObjectPointsRequest(
+            encoded_image=encoded_image, subject="Table"
+        )
+    )
+    print(f"Object points: {points_response.points}")
+
 
 if __name__ == "__main__":
     run()

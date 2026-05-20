@@ -5,6 +5,7 @@ package moondream;
 service MoonDreamService {
   rpc EncodeImage (ImageRequest) returns (EncodedImageResponse);
   rpc FindBeverage (FindBeverageRequest) returns (BeveragePositionResponse);
+  rpc FindObjectPoints (FindObjectPointsRequest) returns (FindObjectPointsResponse);
   rpc Query (QueryRequest) returns (QueryResponse);
 }
 
@@ -32,4 +33,19 @@ message QueryRequest {
 
 message QueryResponse {
   string answer = 1;
+}
+
+message FindObjectPointsRequest {
+  bytes encoded_image = 1;
+  string subject = 2;
+}
+
+message ObjectPoint {
+  float x = 1;
+  float y = 2;
+}
+
+message FindObjectPointsResponse {
+  repeated ObjectPoint points = 1;
+  bool found = 2;
 }

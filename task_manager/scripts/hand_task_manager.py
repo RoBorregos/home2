@@ -11,8 +11,8 @@ import time
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
-from utils.logger import Logger
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.logger import Logger
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -146,6 +146,7 @@ class HandTM(Node):
 
         if self.current_state == HandTM.TaskStates.END:
             Logger.state(self, "Task finished")
+            self.subtask_manager.hri.reset_task_status()
 
 
 def main(args=None):

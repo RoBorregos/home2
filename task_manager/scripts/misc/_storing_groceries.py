@@ -6,9 +6,9 @@ Task Manager for Storing Groceries task of Robocup @Home 2025
 
 import rclpy
 from rclpy.node import Node
-from utils.logger import Logger
-from utils.status import Status
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -609,6 +609,7 @@ class StoringGroceriesTM(Node):
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.say("I have completed storing all groceries.")
             self.subtask_manager.hri.say(f"Final score with penalties: {self.total_score}")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

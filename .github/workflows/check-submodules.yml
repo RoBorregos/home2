@@ -1,0 +1,67 @@
+name: Check Submodule Integrity
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-xarm-submodule:
+    name: Verify xarm_ros2 submodule
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+
+      - name: Check xarm_ros2 submodule commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SUBMODULE_PATH="manipulation/packages/xarm_ros2"
+          EXPECTED_REMOTE="https://github.com/RoBorregos/xarm_ros2.git"
+          EXPECTED_BRANCH="xarm_servicios_estable"
+
+          # Get the submodule commit pointer from this PR
+          SUBMODULE_COMMIT=$(git ls-tree HEAD "$SUBMODULE_PATH" | awk '{print $3}')
+
+          if [ -z "$SUBMODULE_COMMIT" ]; then
+            echo "::warning::Submodule ${SUBMODULE_PATH} not found in tree — skipping check."
+            exit 0
+          fi
+
+          echo "Submodule commit: ${SUBMODULE_COMMIT}"
+          echo "Expected remote:  ${EXPECTED_REMOTE}"
+          echo "Expected branch:  ${EXPECTED_BRANCH}"
+
+          # Clone only the expected branch (shallow) and check if the commit exists
+          git clone --bare --single-branch --branch "$EXPECTED_BRANCH" "$EXPECTED_REMOTE" /tmp/xarm_ros2_check
+
+          if git -C /tmp/xarm_ros2_check cat-file -e "${SUBMODULE_COMMIT}^{commit}" 2>/dev/null; then
+            # Verify the commit is reachable from the branch tip
+            BRANCH_TIP=$(git -C /tmp/xarm_ros2_check rev-parse "refs/heads/${EXPECTED_BRANCH}")
+            if git -C /tmp/xarm_ros2_check merge-base --is-ancestor "${SUBMODULE_COMMIT}" "${BRANCH_TIP}" 2>/dev/null; then
+              echo "✅ Submodule commit ${SUBMODULE_COMMIT:0:12} is on branch ${EXPECTED_BRANCH}"
+              exit 0
+            fi
+          fi
+
+          echo ""
+          echo "============================================================"
+          echo " ❌ xarm_ros2 submodule points to an invalid commit"
+          echo "============================================================"
+          echo ""
+          echo " Commit ${SUBMODULE_COMMIT:0:12} is NOT on branch"
+          echo " '${EXPECTED_BRANCH}' of ${EXPECTED_REMOTE}"
+          echo ""
+          echo " This usually means someone accidentally changed the"
+          echo " submodule pointer. To fix it:"
+          echo ""
+          echo "   git submodule update --init ${SUBMODULE_PATH}"
+          echo "   git add ${SUBMODULE_PATH}"
+          echo "   git commit --amend"
+          echo ""
+          echo "============================================================"
+          exit 1

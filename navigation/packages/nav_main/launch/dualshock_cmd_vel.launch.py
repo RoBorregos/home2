@@ -1,4 +1,4 @@
-
+import os
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
@@ -10,7 +10,7 @@ from launch_ros.descriptions import ComposableNode
 def generate_launch_description():
     """Generate launch description."""
     hw_type_arg = DeclareLaunchArgument(
-        'hw_type', default_value=TextSubstitution(text='DualShock4'))
+        'hw_type', default_value=TextSubstitution(text='DualSense'))
     topic_name_arg = DeclareLaunchArgument(
         'topic_name', default_value=TextSubstitution(text='/cmd_vel'))
 
@@ -19,6 +19,7 @@ def generate_launch_description():
         package='rclcpp_components',
         executable='component_container',
         namespace='',
+        output='own_log' if os.getenv('NAV_QUIET') == '1' else 'screen',
         composable_node_descriptions=[
             ComposableNode(
                 package='joy',
@@ -32,7 +33,7 @@ def generate_launch_description():
                 name='teleop_twist_joy_node',
                 namespace='',
                 parameters=[{
-                        'hw_type': LaunchConfiguration('hw_type')
+                        'hw_type': LaunchConfiguration('hw_type'),
                 }],
                 remappings=[
                     ('cmd_vel', LaunchConfiguration('topic_name'))

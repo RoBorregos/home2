@@ -1,0 +1,4 @@
+# Request: empty
+---
+frida_interfaces/ObjectDetectionArray detection_array
+bool success

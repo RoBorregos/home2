@@ -20,7 +20,7 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
       <geometry>
-        <mesh filename="${mesh_path}base_link.STL" />
+        <mesh filename="${mesh_path}base_link_collision.stl" />
       </geometry>
     </collision>
   </link>
@@ -30,6 +30,7 @@
     <parent link="base_link"/>
     <child link="base_footprint"/>
     <origin xyz="0 0 0" rpy="0 0 0 "/>
+    <axis xyz="0 0 1"/>
   </joint>
 
   <link name="xarm_base" />
@@ -37,6 +38,7 @@
     <origin xyz="0.036105613000001 0 0.441000000000001" rpy="0 0 1.57" />
     <parent link="base_link" />
     <child link="xarm_base" />
+    <axis xyz="0 0 1"/>
   </joint>
   
 </robot>

@@ -141,6 +141,7 @@ install(PROGRAMS
   scripts/record_relative_pose.py
   scripts/dock_to_handle.py
   scripts/basket_handle_grasp_estimator.py
+  scripts/flat_grasp_estimator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

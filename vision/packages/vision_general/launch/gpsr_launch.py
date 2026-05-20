@@ -12,14 +12,14 @@ def generate_launch_description():
     detector_launch_file = os.path.join(
         get_package_share_directory("object_detector_2d"),
         "launch",
-        "object_detector_combined.launch.py",
+        "object_detector_node.launch.py",
     )
     return LaunchDescription(
         [
             Node(
                 package="vision_general",
-                executable="receptionist_commands.py",
-                name="receptionist_commands",
+                executable="hric_commands.py",
+                name="hric_commands",
                 output="screen",
                 emulate_tty=True,
                 # parameters=[config],
@@ -48,8 +48,22 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
+            Node(
+                package="vision_general",
+                executable="trash_detection_node.py",
+                name="trash_detection_node",
+                output="screen",
+                emulate_tty=True,
+            ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(detector_launch_file)
+            ),
+            Node(
+                package="moondream_run",
+                executable="moondream_node.py",
+                name="moondream_node",
+                output="screen",
+                emulate_tty=True,
             ),
         ]
     )

@@ -115,9 +115,13 @@ class PlaceMotionServer(Node):
                 "################ Placing on shelf ##################"
             )
 
-        # generate several place_poses, so try every time higher from plane
-        n_poses = 8
-        poses_dist = 0.05
+        # Shelf: fewer poses with smaller step to avoid collisions above.
+        if is_shelf:
+            n_poses = 3
+            poses_dist = 0.02
+        else:
+            n_poses = 8
+            poses_dist = 0.05
         place_poses = []
         for i in range(n_poses):
             ee_link_pose = copy.deepcopy(place_pose)
@@ -207,8 +211,8 @@ class PlaceMotionServer(Node):
                 self.get_logger().info("Grasp pose reached")
                 result = True
                 break
-            elif is_shelf:
-                # try halfway through, but only if we are placing on shelf
+            elif is_shelf and i == 0:
+                # Halfway only on first iteration; elevated poses risk collision.
                 self.get_logger().info("Placing on table, halfway")
                 place_pose_handler, place_pose_result = self.move_to_pose(
                     ee_link_half_pose
@@ -218,6 +222,10 @@ class PlaceMotionServer(Node):
                     self.get_logger().info("Grasp halfway pose reached")
                     result = True
                     break
+            elif is_shelf:
+                self.get_logger().info(
+                    f"Skipping halfway fallback at iteration {i} (pose already elevated)"
+                )
 
         if result:
             self.deattach_pick_object()
@@ -259,8 +267,7 @@ class PlaceMotionServer(Node):
             return False
         while not future.done():
             pass
-        # self.get_logger().info("Execution done with status: " + str(future.result()))
-        return future  # 4 is the status for success
+        return future
 
     def deattach_pick_object(self):
         """Attach the pick object to the robot."""
@@ -272,7 +279,13 @@ class PlaceMotionServer(Node):
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = True
-                self._attach_collision_object_client.wait_for_service()
+                if not self._attach_collision_object_client.wait_for_service(
+                    timeout_sec=5.0
+                ):
+                    self.get_logger().error(
+                        "attach_collision_object service not available"
+                    )
+                    continue
                 future = self._attach_collision_object_client.call_async(request)
                 self.wait_for_future(future)
         return True
@@ -288,7 +301,9 @@ class PlaceMotionServer(Node):
         """Remove the collision object from the scene."""
         request = RemoveCollisionObject.Request()
         request.id = id
-        self._remove_collision_object_client.wait_for_service()
+        if not self._remove_collision_object_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("remove_collision_object service not available")
+            return False
         future = self._remove_collision_object_client.call_async(request)
         self.wait_for_future(future)
         return future.result().success

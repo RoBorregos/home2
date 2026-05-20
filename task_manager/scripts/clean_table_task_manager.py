@@ -17,9 +17,9 @@ import rclpy
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.node import Node
 from std_msgs.msg import Header
-from utils.logger import Logger
-from utils.status import Status
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -263,6 +263,7 @@ class CleanTableTM(Node):
 
         if self.current_state == CleanTableTM.TaskStates.END:
             Logger.state(self, "Ending Clean Table Task")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

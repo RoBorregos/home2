@@ -19,8 +19,6 @@
   <depend>xarm_moveit_config</depend>
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
-  <depend>object_detection_handler</depend>
-  <depend>object_detector_2d</depend>
   <depend>perception_3d</depend>
   <depend>arm_pkg</depend>
   <depend>frida_motion_planning</depend>

@@ -22,26 +22,21 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
-    CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     FACE_RECOGNITION_IMAGE,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
 )
 from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
-
-# from vision_general.utils.calculations import (
-#     get_depth,
-#     deproject_pixel_to_point,
-# )
 
 
 DEFAULT_NAME = "ale"
@@ -60,21 +55,46 @@ class FaceRecognition(Node):
         super().__init__("face_recognition")
         self.bridge = CvBridge()
         self.pbar = tqdm.tqdm(total=2)
-        self.callback_gorup = rclpy.callback_groups.ReentrantCallbackGroup()
-        qos = rclpy.qos.QoSProfile(
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        self._img_qos = rclpy.qos.QoSProfile(
             depth=1,
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
 
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            Image,
+            IMAGE_ORIENTED_TOPIC,
+            self.image_callback,
+            self._img_qos,
+            callback_group=self.callback_group,
         )
+        self.depth_subscriber = self.create_subscription(
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            self._img_qos,
+            callback_group=self.callback_group,
+        )
+        self.image_info_subscriber = self.create_subscription(
+            CameraInfo,
+            CAMERA_INFO_TOPIC,
+            self.image_info_callback,
+            self._img_qos,
+            callback_group=self.callback_group,
+        )
+
         self.new_name_service = self.create_service(
-            SaveName, SAVE_NAME_TOPIC, self.new_name_callback
+            SaveName,
+            SAVE_NAME_TOPIC,
+            self.new_name_callback,
+            callback_group=self.callback_group,
         )
         self.follow_by_service = self.create_service(
-            SaveName, FOLLOW_BY_TOPIC, self.follow_by_name_callback
+            SaveName,
+            FOLLOW_BY_TOPIC,
+            self.follow_by_name_callback,
+            callback_group=self.callback_group,
         )
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
         self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
@@ -83,18 +103,19 @@ class FaceRecognition(Node):
             PersonList, PERSON_LIST_TOPIC, 10
         )
 
-        self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
-        )
-
-        self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
-        )
-
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
+        self.vision_active = True
+        self.is_processing = False
+        self.create_subscription(
+            Bool,
+            "/vision/face_recognition/active",
+            self._active_callback,
+            10,
+            callback_group=self.callback_group,
+        )
         self.setup()
-        self.create_timer(0.05, self.run)
+        self.create_timer(0.2, self.run, callback_group=self.callback_group)
         # self.create_timer(0.05, self.publish_image)
 
     def setup(self):
@@ -259,13 +280,6 @@ class FaceRecognition(Node):
 
         target = Point()
 
-        # if len(self.depth_image) > 0:
-        #     point2D = (xc, yc)
-        #     depth = get_depth(self.depth_image, point2D)
-        #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-        #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-        #     target.z = point3D[2]
-
         target.x = move_x
         target.y = move_y
 
@@ -277,8 +291,20 @@ class FaceRecognition(Node):
         self.name_publisher.publish(person_seen)
         self.person_list_publisher.publish(self.face_list)
 
+    def _active_callback(self, msg):
+        if msg.data == self.vision_active:
+            return
+        self.vision_active = msg.data
+        self.get_logger().info(f"Face recognition active: {self.vision_active}")
+
     def run(self) -> None:
         """Run face recognition algorithm"""
+
+        if not self.vision_active:
+            return
+
+        if self.is_processing:
+            return
 
         if self.image is None:
             self.get_logger().info("No image")
@@ -289,6 +315,14 @@ class FaceRecognition(Node):
             # self.get_logger().info("Skipping image")
             return
 
+        self.is_processing = True
+        try:
+            self._run_inference()
+        finally:
+            self.is_processing = False
+
+    def _run_inference(self) -> None:
+        """Actual face recognition inference (called by run with lock)."""
         self.processing_id = self.id
 
         self.frame = self.image
@@ -299,8 +333,9 @@ class FaceRecognition(Node):
             self.frame, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
         )
 
-        # Find all the faces and face encodings in the current frame of video
-        face_locations = face_recognition.face_locations(resized_frame)
+        # Find all faces using dlib's CUDA-accelerated CNN model (built with CUDA sm_87)
+        # "cnn" uses GPU via dlib CUDA, "hog" would be CPU-only
+        face_locations = face_recognition.face_locations(resized_frame, model="cnn")
         # print("running")
         # return
 
@@ -444,15 +479,7 @@ class FaceRecognition(Node):
             self.publish_follow_face(xc, yc, largest_face_name)
         else:
             self.name_publisher.publish(String(data=""))
-        # if self.verbose:
-        #    cv2.imshow("Face recognition", self.annotated_frame)
-        # self.image_view = self.annotated_frame
-        # self.view_pub.publish(
-        #     self.bridge.cv2_to_imgmsg(self.self.annotated_frame, "bgr8")
-        # )
 
-        # if cv2.waitKey(1) & 0xFF == ord("q"):
-        #     self.prev_faces = []
         self.publish_image()
 
 

@@ -8,3 +8,6 @@
 **/models
 **.pyc
 packages/nlp/test/output/
+**/debug/audios/
+ComputeCache/
+packages/speech/assets/kws_detections/

@@ -1,2 +1,3 @@
 string object_name
 string bowl_name
+bool object_already_grasped

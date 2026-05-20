@@ -19,7 +19,12 @@ MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
 
 
 class PostgresAdapter:
-    def __init__(self):
+    def __init__(self, mock: bool = False):
+        if mock:
+            print(
+                "Using mock Postgres adapter. No database connection will be established."
+            )
+            return
         self.conn = psycopg2.connect(
             dbname="postgres",
             user="rbrgs",
