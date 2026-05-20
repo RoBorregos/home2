@@ -4,9 +4,12 @@
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
+    ExecuteProcess,
     IncludeLaunchDescription,
     OpaqueFunction,
+    RegisterEventHandler,
 )
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
@@ -24,24 +27,31 @@ def generate_launch_description():
     def grasp_detector_node(context, *args, **kwargs):
         grasp_backend = LaunchConfiguration("grasp_backend").perform(context)
         if grasp_backend == "contact_graspnet":
+            install_deps = ExecuteProcess(
+                cmd=["pip3", "install", "-q", "trimesh", "tqdm"],
+                output="screen",
+                name="install_cgn_deps",
+            )
+            cgn_node = Node(
+                package="contact_graspnet_ros",
+                executable="contact_graspnet_node",
+                name="contact_graspnet_node",
+                output="screen",
+                emulate_tty=True,
+                respawn=True,
+                parameters=[
+                    {
+                        "ckpt_dir": LaunchConfiguration("ckpt_dir").perform(context),
+                        "forward_passes": 1,
+                        "z_range": [0.2, 1.8],
+                    }
+                ],
+            )
             return [
-                Node(
-                    package="contact_graspnet_ros",
-                    executable="contact_graspnet_node",
-                    name="contact_graspnet_node",
-                    output="screen",
-                    emulate_tty=True,
-                    respawn=True,
-                    parameters=[
-                        {
-                            "ckpt_dir": LaunchConfiguration("ckpt_dir").perform(
-                                context
-                            ),
-                            "forward_passes": 1,
-                            "z_range": [0.2, 1.8],
-                        }
-                    ],
-                )
+                install_deps,
+                RegisterEventHandler(
+                    OnProcessExit(target_action=install_deps, on_exit=[cgn_node])
+                ),
             ]
         # default: gpd
         return [
