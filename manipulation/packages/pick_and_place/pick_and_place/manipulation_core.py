@@ -52,7 +52,6 @@ from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
 from pick_and_place.managers.PourManager import PourManager
 from frida_interfaces.msg import PickResult
-import time
 
 # tf buffer
 from tf2_ros import Buffer, TransformListener
@@ -155,7 +154,9 @@ class ManipulationCore(Node):
 
         self.get_logger().info("Manipulation Core has been started")
 
-    def pick_execute(self, object_name=None, object_point=None, pick_params=None):
+    def pick_execute(
+        self, object_name=None, object_point=None, pick_params=None, is_shelf=False
+    ):
         self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
 
@@ -165,6 +166,7 @@ class ManipulationCore(Node):
                 object_name=object_name,
                 point=object_point,
                 pick_params=pick_params,
+                is_shelf=is_shelf,
             )
             if not result:
                 self.get_logger().error("Pick failed")
@@ -238,13 +240,10 @@ class ManipulationCore(Node):
 
         response = ManipulationAction.Result()
 
-        self.clear_octomap()
-
         if goal_handle.request.scan_environment:
-            self.get_logger().info("Scanning environment")
-            self.scan_environment()
-            # give time to see
-            time.sleep(2.0)
+            self.get_logger().info("Keeping octomap for environment-aware planning")
+        else:
+            self.clear_octomap()
 
         if task_type == ManipulationTask.PICK:
             self.get_logger().info("Executing Pick Task")
@@ -252,6 +251,7 @@ class ManipulationCore(Node):
                 object_name=object_name,
                 object_point=object_point,
                 pick_params=goal_handle.request.pick_params,
+                is_shelf=goal_handle.request.scan_environment,
             )
             goal_handle.succeed()
             response.success = result
@@ -290,7 +290,9 @@ class ManipulationCore(Node):
         request = RemoveCollisionObject.Request()
         request.id = "all"
         request.include_attached = attached
-        self._remove_collision_object_client.wait_for_service()
+        if not self._remove_collision_object_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("remove_collision_object service not available")
+            return False
         future = self._remove_collision_object_client.call_async(request)
         wait_for_future(future)
         return future.result().success

@@ -40,9 +40,10 @@ import numpy as np
 from tf_transformations import quaternion_from_euler
 import tf2_ros
 from transforms3d.quaternions import quat2mat
-from frida_motion_planning.utils.tf_utils import transform_point
+from frida_motion_planning.utils.tf_utils import transform_point, transform_pose
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
+    open_gripper,
 )
 import time
 
@@ -65,7 +66,7 @@ CUTLERY_PRE_GRASP_HEIGHT = (
     0.15  # m - pre-grasp height above target (MoveIt uses meters)
 )
 CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
-CUTLERY_POST_CONTACT_RETRACT = 0.011  # m - retract upward after contact to relieve Z pressure before closing gripper
+CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
@@ -85,6 +86,15 @@ class PickMotionServer(Node):
         self.declare_parameter("ee_tip_offset", -0.17)
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
+
+        # How high above the detected support plane a grasp position has to
+        # be to be considered feasible. Default keeps the real-robot safety
+        # margin; the sim launch overrides to a tiny value because the plane
+        # segmenter tends to lock onto a house wall instead of the table so
+        # the strict 0.1 m threshold rejects every valid grasp.
+        self.declare_parameter("pick_min_height", PICK_MIN_HEIGHT)
+        self.pick_min_height = self.get_parameter("pick_min_height").value
+        self.get_logger().info(f"Pick min height above plane: {self.pick_min_height} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
@@ -328,10 +338,8 @@ class PickMotionServer(Node):
 
                     # Open gripper
                     self.get_logger().info("[Cutlery] Opening gripper...")
-                    open_req = SetBool.Request()
-                    open_req.data = False
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
-                    self._gripper_set_state_client.call_async(open_req)
+                    open_gripper(self._gripper_set_state_client)
                     time.sleep(0.5)
 
                     # Pre-grasp: 15cm above
@@ -371,7 +379,7 @@ class PickMotionServer(Node):
                     if contact:
                         # Retract slightly to relieve Z pressure so gripper can close fully
                         self.get_logger().info(
-                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT*1000:.1f}mm before closing gripper..."
+                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT * 1000:.1f}mm before closing gripper..."
                         )
                         retract_pose = copy.deepcopy(pre_grasp_pose)
                         retract_pose.pose.position.z = (
@@ -791,10 +799,30 @@ class PickMotionServer(Node):
                 return True
             return False
 
-        pick_height = pose.pose.position.z
+        # Grasp poses arrive in base_link (gpd_service target_frame) but the
+        # plane primitive comes back from MoveIt in the planning frame (world,
+        # which is 0.3 m above base_link on the real robot — the physical
+        # pedestal offset baked into FRIDA_Real.urdf.xacro). Comparing z values
+        # without transforming silently rejects every valid grasp by that 0.3 m.
+        plane_frame = self.plane.pose.header.frame_id
+        pose_in_plane_frame = pose
+        if plane_frame and plane_frame != pose.header.frame_id:
+            ok, transformed = transform_pose(pose, plane_frame, self.tf_buffer)
+            if not ok:
+                self.get_logger().error(
+                    f"check_feasibility: failed to transform pose from "
+                    f"{pose.header.frame_id} to {plane_frame}; assuming infeasible"
+                )
+                return False
+            pose_in_plane_frame = transformed
+
+        pick_height = pose_in_plane_frame.pose.position.z
         plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
 
-        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else PICK_MIN_HEIGHT
+        # Cutlery keeps its own constant (flatter objects need tighter tolerance);
+        # non-flat picks use the pick_min_height parameter so sim and real can
+        # share the same launch without a per-environment override.
+        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else self.pick_min_height
 
         if pick_height < plane_height + min_height:
             self.get_logger().warn(

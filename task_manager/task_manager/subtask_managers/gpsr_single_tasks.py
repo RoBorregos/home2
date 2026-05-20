@@ -1,6 +1,7 @@
 import time
 
 from frida_constants.hri_constants import GPSR_COMMANDS
+from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     GetVisualInfo,
@@ -64,10 +65,6 @@ class GPSRSingleTask(GenericTask):
         pretty_target = target.replace("_", " ")
         self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
-        target = location.subarea if location.subarea else location.area
-        pretty_target = target.replace("_", " ")
-        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
-
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         return result, "arrived to:" + command.location_to_go
 
@@ -110,6 +107,7 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = PickObject(**command)
 
+        self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
         self.subtask_manager.manipulation.move_to_position("table_stare")
         self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
 
@@ -165,7 +163,7 @@ class GPSRSingleTask(GenericTask):
                 )
                 return Status.TARGET_NOT_FOUND, ""
             s, res = self.subtask_manager.hri.confirm(
-                f"Have you placed the {command.object_to_pick} on my gripper?", use_hotwords=False
+                f"Have you placed the {command.object_to_pick} on my gripper?", use_keyword=False
             )
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will close my gripper")
@@ -223,7 +221,7 @@ class GPSRSingleTask(GenericTask):
                 )
                 return Status.EXECUTION_ERROR, ""
             s, res = self.subtask_manager.hri.confirm(
-                "Have you picked the object in my gripper?", use_hotwords=False
+                "Have you picked the object in my gripper?", use_keyword=False
             )
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will open my gripper")
@@ -281,7 +279,7 @@ class GPSRSingleTask(GenericTask):
             last_command = history[0]
             s, answer = self.subtask_manager.hri.answer_with_context(
                 command.user_instruction,
-                f"Result of executing {context} function on the context provided: {last_command.result}. Status: {last_command.status}",
+                f"Result of executing {context} function on the context provided: {last_command.result}.",
             )
             self.subtask_manager.hri.say(answer, wait=True)
             return Status.EXECUTION_SUCCESS, "success"
@@ -330,7 +328,7 @@ class GPSRSingleTask(GenericTask):
             "LLM_question",
             context="The user was asked to say a question. We want to infer his question from the response",
             confirm_question=confirm_question,
-            use_hotwords=False,
+            use_keyword=False,
             retries=3,
             min_wait_between_retries=5.0,
             skip_extract_data=True,
@@ -377,4 +375,10 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = GetVisualInfo(**command)
 
-        return self.subtask_manager.vision.visual_info(command.measure, command.object_category)
+        status, result = self.subtask_manager.vision.visual_info(
+            command.measure, command.object_category
+        )
+
+        self.subtask_manager.hri.say(f"{result}", wait=False)
+
+        return status, result

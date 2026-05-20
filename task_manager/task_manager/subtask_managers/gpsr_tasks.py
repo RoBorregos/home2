@@ -1,8 +1,4 @@
-import json
-import os
 import time
-
-from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
 from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
@@ -30,11 +26,6 @@ class GPSRTask(GenericTask):
         super().__init__(subtask_manager)
         # Angles are relative to current position
         self.pan_angles = [-35, 70]
-        package_share_directory = get_package_share_directory("frida_constants")
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-        with open(file_path, "r") as file:
-            self.locations = json.load(file)
-
         self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
         self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket", "jeans"]
 
@@ -83,7 +74,7 @@ class GPSRTask(GenericTask):
 
         while True:
             s, res = self.subtask_manager.hri.confirm(
-                "Have you grabbed the object?", use_hotwords=False
+                "Have you grabbed the object?", use_keyword=False
             )
             if res == "yes":
                 break
@@ -157,7 +148,7 @@ class GPSRTask(GenericTask):
             status, loc = self.subtask_manager.hri.ask_and_confirm(
                 question="Please tell me where to go.",
                 query="location",
-                use_hotwords=False,
+                use_keyword=False,
                 context="The user was asked to say the location. We want to infer the location from the response",
             )
 
@@ -166,22 +157,14 @@ class GPSRTask(GenericTask):
                 f"I'm sorry, I can't follow you, but I'll go to the {command.destination}",
             )
 
-        # infer location from the response
-        # go to
-        self.subtask_manager.hri.node.get_logger().info("arm to move")
+        location = self.subtask_manager.hri.query_location(loc)[0]
 
-        self.subtask_manager.manipulation.move_to_position("nav_pose")
-        location = self.subtask_manager.hri.query_location(loc)
-        self.subtask_manager.hri.node.get_logger().info("query location")
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
-        if len(location) > 0:
-            area = location[0].area
-            subarea = location[0].subarea
-            self.navigate_to(area, subarea, say=True)
-            return Status.EXECUTION_SUCCESS, "arrived to " + loc
-        else:
-            self.subtask_manager.hri.say(f"I am sorry, I do not know where {loc} is.")
-            return Status.EXECUTION_ERROR, "location not found"
+        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        return result, "arrived to:" + command.destination
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
@@ -216,22 +199,12 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = GuidePersonTo(**command)
 
-        location = self.subtask_manager.hri.query_location(command.destination_room)
-        area = self.subtask_manager.hri.get_area(location)
-        self.subtask_manager.hri.node.get_logger().info(f"Initial area: {area}.")
-
-        if isinstance(area, list):
-            area = area[0]
-
-        subarea = self.subtask_manager.hri.get_subarea(location)
-
-        if isinstance(subarea, list):
-            if len(subarea) == 0:
-                subarea = ""
-            else:
-                subarea = subarea[0]
-
-        self.navigate_to(area, subarea)
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        location = self.subtask_manager.hri.query_location(command.destination_room)[0]
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Now we will go to the {pretty_target}.", wait=False)
+        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
 
         self.subtask_manager.hri.say(f"We have arrived to {command.destination_room}!", wait=True)
         return Status.EXECUTION_SUCCESS, "arrived to " + command.destination_room
@@ -327,7 +300,7 @@ class GPSRTask(GenericTask):
                 s, response = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_hotwords=False,
+                    use_keyword=False,
                     context="The user was asked to say their name. We want to infer his name from the response",
                 )
                 if s == Status.EXECUTION_SUCCESS:
@@ -369,17 +342,23 @@ class GPSRTask(GenericTask):
         self.subtask_manager.hri.say(
             f"I am going to count {object_name}.",
         )
-        status, result = self.subtask_manager.vision.count_objects(object_name)
+
+        # Get detections from object detector
+        status, labels = self.subtask_manager.vision.count_objects(object_name)
+        if status != Status.EXECUTION_SUCCESS or not labels:
+            self.subtask_manager.hri.say(f"I didn't find any {object_name}.")
+            self.subtask_manager.hri.publish_display_topic(CAMERA_TOPIC)
+            return Status.TARGET_NOT_FOUND, f"0 ({object_name} counted)"
+
+        # Use LLM to count matching objects from detections
+        status, count = self.subtask_manager.hri.count_from_detections(labels, object_name)
         if status == Status.EXECUTION_SUCCESS:
-            self.subtask_manager.hri.say(
-                f"I have counted {result} {object_name}.",
-            )
-        elif status == Status.TARGET_NOT_FOUND:
-            self.subtask_manager.hri.say(
-                f"I didn't find any {object_name}.",
-            )
+            self.subtask_manager.hri.say(f"I have counted {count} {object_name}.")
+        else:
+            self.subtask_manager.hri.say(f"I couldn't determine how many {object_name} there are.")
+
         self.subtask_manager.hri.publish_display_topic(CAMERA_TOPIC)
-        return status, str(result) + f" ({object_name} counted)"
+        return status, str(count) + f" ({object_name} counted)"
 
     ## Manipulation, Vision
     def count(self, command: Count):
@@ -478,7 +457,7 @@ class GPSRTask(GenericTask):
 
     def find_person(self, command: FindPersonByName):
         if isinstance(command, dict):
-            command = Count(**command)
+            command = FindPersonByName(**command)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
@@ -598,12 +577,14 @@ class GPSRTask(GenericTask):
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_hotwords=False,
+                    use_keyword=False,
+                    hotwords=command.name,
                 )
+                new_name = self.subtask_manager.hri.remove_punctuation(new_name)
                 self.subtask_manager.vision.save_face_name(new_name)
                 name = new_name
 
-            if name == command.name:
+            if name == self.subtask_manager.hri.remove_punctuation(command.name):
                 self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
                 return Status.EXECUTION_SUCCESS, f"found {name}"
             else:

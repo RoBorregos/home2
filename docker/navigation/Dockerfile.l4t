@@ -15,9 +15,10 @@ RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/scri
 RUN chmod 777 install.sh
 RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && sed -i '2i export CMAKE_POLICY_VERSION_MINIMUM=3.5' install.sh && yes yes | sudo -E ./install.sh
 
-# Persist paths so subsequent RUN layers find CUDA OpenCV
-ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+# Persist paths so subsequent RUN layers find CUDA OpenCV and libtorch
+ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/dist-packages/torch/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/:${PYTHONPATH}
+
 
 #Building rtabmap packages
 RUN mkdir /home/ros/ros_packages3
@@ -27,8 +28,26 @@ RUN git clone --branch ros2 https://github.com/introlab/rtabmap_ros.git src/rtab
 RUN sudo apt update
 RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r -y
 RUN sed -i '/PATTERN "\*.h"/a\    PATTERN "*.hpp"' src/rtabmap_ros/rtabmap_sync/CMakeLists.txt
-RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args -DCMAKE_BUILD_TYPE=Release -DOpenCV_DIR=/usr/local/lib/cmake/opencv4
+RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DOpenCV_DIR=/usr/local/lib/cmake/opencv4 \
+    -DWITH_TORCH=ON \
+    -DWITH_PYTHON=ON \
+    -DTorch_DIR=$(python3 -c "import torch; print(torch.utils.cmake_prefix_path)")/Torch
 RUN echo "source /home/ros/ros_packages3/install/setup.bash" >> /home/ros/.bashrc
+
+# SuperPoint + SuperGlue models for RTABMap
+RUN git clone --depth 1 https://github.com/magicleap/SuperGluePretrainedNetwork.git /home/ros/SuperGlue
+
+# Copy RTABMap's SuperGlue wrapper script alongside the SuperGlue repo
+RUN cp /home/ros/ros_packages3/src/rtabmap/corelib/src/python/rtabmap_superglue.py /home/ros/SuperGlue/
+
+# Trace SuperPoint model with the installed PyTorch version
+COPY docker/navigation/trace_superpoint.py /tmp/trace_superpoint.py
+RUN mkdir -p /home/ros/models && python3 /tmp/trace_superpoint.py
+
+ENV SUPERGLUE_PATH=/home/ros/SuperGlue
+ENV SUPERPOINT_MODEL=/home/ros/models/superpoint_v1.pt
 
 #Install 
 WORKDIR /home/ros/
@@ -91,5 +110,11 @@ RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cycl
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
 RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+
+# Patch: os.add_dll_directory is Windows-only but PyTorch's init calls it.
+# sitecustomize.py runs automatically on every Python interpreter start.
+# Patch: os.add_dll_directory is Windows-only but PyTorch calls it.
+# RTABMap's embedded Python skips sitecustomize.py, so patch os.py directly.
+RUN sudo sed -i '$ a\# Patch for RTABMap embedded Python + PyTorch\ntry:\n    add_dll_directory\nexcept NameError:\n    add_dll_directory = lambda path: None' /usr/lib/python3.10/os.py
 
 WORKDIR /workspace

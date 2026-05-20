@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri zed"
-ORIN_SERVER_AREAS="hri manipulation"
+AREAS="vision manipulation navigation integration hri zed display simulation"
+ORIN_SERVER_AREAS="hri"
 
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
@@ -9,9 +9,12 @@ if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
 fi
 __HOME2_LIB_SOURCED=1
 
-# --- load .env ---
-if [ -f ".env" ]; then
-  source .env
+# --- load repo-root .env (for ORIN SSH creds, etc.) ---
+# Anchor to lib.sh's own directory so re-sourcing from a subdirectory does
+# not accidentally pull a stale per-area .env into the current shell.
+__HOME2_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$__HOME2_LIB_DIR/.env" ]; then
+  source "$__HOME2_LIB_DIR/.env"
 fi
 
 # --- helpers ---
@@ -99,10 +102,15 @@ add_or_update_variable() {
   escaped_value=$(printf '%s\n' "$value" | sed -e 's/[&/\]/\\&/g')
 
   if grep -q "^${variable}=" "$file" 2>/dev/null; then
-    sed -i "s|^${variable}=.*|${variable}=${escaped_value}|" "$file"
+    set_variable_in_file "$file" "$variable" "$escaped_value"
   else
     printf '%s=%s\n' "$variable" "$value" >> "$file"
   fi
+}
+
+set_variable_in_file() {
+  local file=$1 variable=$2 escaped_value=$3
+  sed -i "s|^${variable}=.*|${variable}=${escaped_value}|" "$file"
 }
 
 # Parse flags shared by all area run.sh scripts.
@@ -188,9 +196,9 @@ run_area() {
     fi
   fi
 
-  # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation, display, simulation)
   if [ "${CYCLONE_SHM}" = "1" ]; then
-    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ] || [ "$INPUT" = "display" ] || [ "$INPUT" = "simulation" ]; then
       ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
     fi
   fi
@@ -213,11 +221,12 @@ control() {
   local op_flag=${1:-}
   local msg="${op_flag#--}"
 
-  # TODO: instead of killing the whole tmux server, only kill home-related sessions.
-  if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
-    tmux kill-server || true
+  # --- Cleanup screen sessions ---
+  if command -v screen >/dev/null 2>&1; then
+    # Kill local screen sessions named 'frida' or matching areas
+    screen -ls | grep -E "\.frida|\.$(echo $AREAS | sed 's/ /|/g')" | cut -d. -f1 | awk '{print $1}' | xargs -I{} screen -X -S {} quit || true
   fi
-  orin_ssh "tmux kill-server" 2>/dev/null || true
+  orin_ssh "pkill screen" 2>/dev/null || true
 
   PARALLEL=${PARALLEL:-$(detect_cores)}
   local pids=()
@@ -273,16 +282,36 @@ control() {
 }
 
 run_task() {
-  for area in ${AREAS}; do
-    SESSION_NAME=$area
+  SESSION_NAME="frida"
 
+  # Kill existing sessions to start fresh
+  screen -S "$SESSION_NAME" -X quit 2>/dev/null || true
+  orin_ssh "screen -S $SESSION_NAME -X quit" 2>/dev/null || true
+
+  local local_first=true
+  local remote_first=true
+
+  for area in ${AREAS}; do
+    CMD="bash run.sh $area $*"
     if is_orin_area "${area}"; then
-      orin_ssh "tmux new-session -d -s '${SESSION_NAME}' && tmux send-keys -t '${SESSION_NAME}' 'cd $(pwd) && bash run.sh $area $*' C-m"
+      if [ "$remote_first" = true ]; then
+        orin_ssh "screen -dmS ${SESSION_NAME} -t ${area} bash -c 'cd $(pwd) && ${CMD}; exec bash'"
+        remote_first=false
+      else
+        orin_ssh "screen -S ${SESSION_NAME} -X screen -t ${area} bash -c 'cd $(pwd) && ${CMD}; exec bash'"
+      fi
     else
-      tmux new-session -d -s "$SESSION_NAME"
-      tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
+      if [ "$local_first" = true ]; then
+        screen -dmS "$SESSION_NAME" -t "$area" bash -c "$CMD; exec bash"
+        local_first=false
+      else
+        screen -S "$SESSION_NAME" -X screen -t "$area" bash -c "$CMD; exec bash"
+      fi
     fi
   done
+
+  echo "Tasks started in screen session '$SESSION_NAME'."
+  echo "To view, run: screen -r $SESSION_NAME"
 }
 
 ensure_roudi() {
@@ -325,5 +354,38 @@ update_map(){
       echo "export MAP_NAME=\"$map_flag\"" >> "$constant_source_file"
   fi
 
-  echo "REMEMBER TO SOURCE $constant_source_file TO BE ABLE TO USE MAP" 
+  echo "REMEMBER TO SOURCE $constant_source_file TO BE ABLE TO USE MAP"
+}
+
+# Resolve MAP_NAME, falling back to the user's shell rc file if the env var is
+# unset in the current shell (the common case when ./run.sh --update-map was
+# run in the same terminal without sourcing the rc file afterwards).
+resolve_map_name() {
+  local default_value="${1:-lab_23_march.db}"
+
+  if [ -n "${MAP_NAME:-}" ]; then
+    echo "$MAP_NAME"
+    return 0
+  fi
+
+  local rc_file="$HOME/.bashrc"
+  if [ -f "$HOME/.zshrc" ]; then
+    rc_file="$HOME/.zshrc"
+  fi
+
+  if [ -f "$rc_file" ]; then
+    local line
+    line=$(grep -E '^[[:space:]]*export[[:space:]]+MAP_NAME=' "$rc_file" | tail -n 1)
+    if [ -n "$line" ]; then
+      local value="${line#*=}"
+      value="${value%\"}"; value="${value#\"}"
+      value="${value%\'}"; value="${value#\'}"
+      if [ -n "$value" ]; then
+        echo "$value"
+        return 0
+      fi
+    fi
+  fi
+
+  echo "$default_value"
 }

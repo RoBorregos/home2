@@ -39,7 +39,7 @@ from frida_constants.hri_constants import (
     TASK_STATUS_TOPIC,
     TASK_STEP_TOPIC,
     TIMEOUT,
-    WAKEWORD_TOPIC,
+    KEYWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
@@ -184,7 +184,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
-            String, WAKEWORD_TOPIC, self._get_keyword, 10
+            String, KEYWORD_TOPIC, self._get_keyword, 10
         )
 
         self.current_transcription = ""
@@ -369,7 +369,7 @@ class HRITasks(metaclass=SubtaskMeta):
             return Status.EXECUTION_SUCCESS
         elif command == "clarification":
             self.say("Sorry, I don't undestand your command.")
-            self.say(command.complement)
+            self.say(complement)
             return Status.EXECUTION_SUCCESS
         else:
             self.say(f"Sorry, I don't know how to {command}")
@@ -481,7 +481,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Args:
             timeout (float): The maximum time to stop the transcription.
-            hotwords (str): Hotwords to improve the transcription accuracy.
+            hotwords (str): Hotwords passed to faster-whisper to improve transcription accuracy.
             initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
@@ -543,7 +543,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def confirm(
         self,
         question: str,
-        use_hotwords: bool = True,
+        use_keyword: bool = True,
         retries: int = 3,
         wait_between_retries: float = 5,
     ):
@@ -552,7 +552,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Args:
             question: the inquiry to confirm
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
         Returns:
@@ -570,7 +570,7 @@ class HRITasks(metaclass=SubtaskMeta):
             # Say the question
             self.say(question)
 
-            if use_hotwords:
+            if use_keyword:
                 # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
@@ -629,7 +629,7 @@ class HRITasks(metaclass=SubtaskMeta):
         query: str,
         context: str = "",
         confirm_question: Union[str, callable] = confirm_query,
-        use_hotwords: bool = True,
+        use_keyword: bool = True,
         hotwords="",
         retries: int = 3,
         min_wait_between_retries: float = 5,
@@ -649,7 +649,7 @@ class HRITasks(metaclass=SubtaskMeta):
             query: the data to extract from the interpreted text
             context: the context of the question. It could be used to help the extraction.
             confirm_question: a string or a callable function that returns a string used confirm the answer
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_keyword: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
@@ -751,7 +751,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # Ask for confirmation
                 if target_info != "" and target_found:
-                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                    s, confirmation = self.confirm(confirmation_text, use_keyword, 3)
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                         return Status.EXECUTION_SUCCESS, target_info
 
@@ -1063,7 +1063,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="What would you like to order first?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_keyword=False,
             options=items,
             retries=retries,
         )
@@ -1076,7 +1076,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="And what would you like as your second item?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_keyword=False,
             options=items,
             retries=retries,
         )
@@ -1263,6 +1263,39 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
+    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, 0), TIMEOUT)
+    def count_from_detections(
+        self, detected_labels: list[str], target_object: str
+    ) -> tuple[int, int]:
+        """
+        Count how many detections match the target object using LLM reasoning.
+
+        Args:
+            detected_labels: list of classnames from detect_objects
+            target_object: the type of object to count (e.g., "drinks", "fruits", "cups")
+
+        Returns:
+            Status, count (int)
+        """
+        if not detected_labels:
+            return Status.TARGET_NOT_FOUND, 0
+
+        context = f"Detected objects: {', '.join(detected_labels)}"
+        question = (
+            f"From the detected objects listed in the context, how many of them are '{target_object}' "
+            f"or belong to the category '{target_object}'? "
+            f"Consider synonyms and subcategories. Reply with ONLY a number."
+        )
+        status, answer = self.answer_with_context(question, context)
+        if status != Status.EXECUTION_SUCCESS:
+            return status, 0
+
+        try:
+            count = int("".join(filter(str.isdigit, answer)))
+        except ValueError:
+            count = 0
+        return Status.EXECUTION_SUCCESS, count
+
     def query_command_history(self, query: str, action: str, top_k: int = 1):
         raw = self._call_query_entry(
             collection="command_history",
@@ -1359,26 +1392,39 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def publish_display_step(self, step: str):
-        """Publish the current task step to drive the HRIC display layout."""
-        self.task_step_publisher.publish(String(data=step))
-        Logger.info(self.node, f"Published display step: {step}")
+    def publish_display_step(self, step: str, topic: str = TASK_STEP_TOPIC) -> None:
+        if topic == TASK_STEP_TOPIC:
+            self.task_step_publisher.publish(String(data=step))
+            Logger.info(self.node, f"Published display step: {step} → {topic}")
+            return
 
-    def deterministic_categorization(self, object_name: str):
+        if not hasattr(self, "_step_publishers"):
+            self._step_publishers: dict = {}
+        if topic not in self._step_publishers:
+            self._step_publishers[topic] = self.node.create_publisher(String, topic, 10)
+        self._step_publishers[topic].publish(String(data=step))
+        Logger.info(self.node, f"Published display step: {step} → {topic}")
+
+    def deterministic_categorization(self, object_name: str) -> str:
         """
         Note: it seems each object is mapped to a specific category, so no clustering is needed to group the objects.
         See "frida_constants/data/objects.md"
         """
+        # Fast path: direct lookup in object_to_category (works even
+        # without the FindClosest embeddings service).
+        obj_lower = object_name.lower().replace(" ", "_")
+        direct = self.objects_data.get("object_to_category", {})
+        if obj_lower in direct:
+            return direct[obj_lower]
+
+        # Slow path: semantic similarity via embeddings service.
         try:
-            # Get closest embedding word
             s, closest = self.find_closest(self.objects_data["all_objects"], object_name, top_k=1)
             closest = closest.results[0]
-
-            # Return the associated category
             return self.objects_data["object_to_category"][closest]
         except Exception as e:
             self.node.get_logger().error(f"Error finding closest object: {e}")
-            return Status.EXECUTION_ERROR, "unknown"
+            return "unknown"
 
     def show_map(self, name="", clear_map: bool = False):
         """

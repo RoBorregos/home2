@@ -22,6 +22,8 @@ from frida_constants.navigation_constants import(
         CAMERA_INFO_TOPIC,
         CAMERA_DEPTH_TOPIC,
         TIMEOUT_RTABMAP,
+        TIMEOUT_RTAB_SERVICE,
+        TIMEOUT_NAV2_LIFECYCLE,
         RTAB_PAUSE_SERVICE,
         RTAB_RESUME_SERVICE,
         NAV2_LIFECYCLE_SERVICE,
@@ -105,6 +107,11 @@ class Nav_Central(Node):
 
         self.lidar_group = ReentrantCallbackGroup()
         self.service_group = MutuallyExclusiveCallbackGroup()
+        self.rtab_service_group = ReentrantCallbackGroup()
+        self.rtabmap_pause_client = self.create_client(
+            Empty, RTAB_PAUSE_SERVICE, callback_group=self.rtab_service_group)
+        self.rtabmap_resume_client = self.create_client(
+            Empty, RTAB_RESUME_SERVICE, callback_group=self.rtab_service_group)
         self.lidar_msg = None
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
@@ -241,7 +248,7 @@ class Nav_Central(Node):
 
        # self.nav_logger("info", f"Monitoring -> Topics = {topics_ready} TF = {tf_ready}, ntoc = {self.no_topics_count} , ntfc = {self.no_tf_count}")
         #Check count limit
-        if ((self.no_topics_count >= NO_TOPICS_LIMIT) or (self.no_tf_count >= NO_TF_LIMIT) and self.nodes_status):
+        if (self.no_topics_count >= NO_TOPICS_LIMIT or self.no_tf_count >= NO_TF_LIMIT) and self.nodes_status:
             self.nodes_status = False
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, {'Topics not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, pausing nodes ...")
             self.pause_slam()
@@ -532,28 +539,37 @@ class Nav_Central(Node):
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
         self.nav_logger("info", "Loading Nav2 -> Fully loaded nav2 lifecycles")
             
+    def _call_service_with_timeout(self, client, request, call_timeout, label):
+        """Bounded service call — waits up to TIMEOUT_RTAB_SERVICE for readiness and
+        call_timeout for the response. Returns True on success, False on timeout."""
+        elapsed = 0.0
+        while not client.service_is_ready() and elapsed < TIMEOUT_RTAB_SERVICE:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
+            elapsed += 0.5
+        if not client.service_is_ready():
+            self.nav_logger("warn", f"{label} -> Service not available after {TIMEOUT_RTAB_SERVICE}s")
+            return False
+        future = client.call_async(request)
+        elapsed = 0.0
+        while not future.done() and elapsed < call_timeout:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not future.done():
+            self.nav_logger("error", f"{label} -> Call timed out after {call_timeout}s, no response")
+            return False
+        return True
+
     def pause_slam(self):
         """Pause Slam function"""
         if not self.rtabmap_loaded:
             self.nav_logger("warn", "Pausing Slam -> Rtabmap not loaded, skipping")
             return
         self.nav_logger("info", "Pausing Slam -> Starting pause slam..")
-        load_cb_group = ReentrantCallbackGroup()
-        rtabmap_pause = self.create_client(Empty, RTAB_PAUSE_SERVICE, callback_group=load_cb_group)
-        elapsed = 0.0
-        while not rtabmap_pause.service_is_ready() and elapsed < 5.0:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
-            elapsed += 0.5
-        if not rtabmap_pause.service_is_ready():
-            self.nav_logger("warn", "Pausing Slam -> Service not available, rtabmap may have crashed")
-            self.destroy_client(rtabmap_pause)
-            return
-        req = Empty.Request()
-        future = rtabmap_pause.call_async(req)
-        while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-        self.destroy_client(rtabmap_pause)
-        self.nav_logger("info", "Pausing Slam -> Finished pausing slam")
+        ok = self._call_service_with_timeout(
+            self.rtabmap_pause_client, Empty.Request(),
+            TIMEOUT_RTAB_SERVICE, "Pausing Slam")
+        if ok:
+            self.nav_logger("info", "Pausing Slam -> Finished pausing slam")
 
     def resume_slam(self):
         """Resuming Slam function"""
@@ -561,22 +577,11 @@ class Nav_Central(Node):
             self.nav_logger("warn", "Resuming Slam -> Rtabmap not loaded, skipping")
             return
         self.nav_logger("info", "Resuming Slam -> Starting resume slam..")
-        load_cb_group = ReentrantCallbackGroup()
-        rtabmap_resume = self.create_client(Empty, RTAB_RESUME_SERVICE, callback_group=load_cb_group)
-        elapsed = 0.0
-        while not rtabmap_resume.service_is_ready() and elapsed < 5.0:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
-            elapsed += 0.5
-        if not rtabmap_resume.service_is_ready():
-            self.nav_logger("warn", "Resuming Slam -> Service not available, rtabmap may have crashed")
-            self.destroy_client(rtabmap_resume)
-            return
-        req = Empty.Request()
-        future = rtabmap_resume.call_async(req)
-        while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-        self.destroy_client(rtabmap_resume)
-        self.nav_logger("info", "Resuming Slam -> Finished resuming slam")
+        ok = self._call_service_with_timeout(
+            self.rtabmap_resume_client, Empty.Request(),
+            TIMEOUT_RTAB_SERVICE, "Resuming Slam")
+        if ok:
+            self.nav_logger("info", "Resuming Slam -> Finished resuming slam")
 
     def pause_nav2(self):
         """Nav2 nodes pausing lifecycle"""
@@ -586,11 +591,11 @@ class Nav_Central(Node):
         self.nav_logger("info", "Pausing Nav2 -> Starting nav2 lifecycle pausing ...")
         req = ManageLifecycleNodes.Request()
         req.command = ManageLifecycleNodes.Request.PAUSE
-        future = self.lifecycle_client.call_async(req)
-        while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-        self.nav2_paused = True
-        self.nav_logger("info", "Pausing Nav2 -> Fully Paused nav2 lifecycles")
+        ok = self._call_service_with_timeout(
+            self.lifecycle_client, req, TIMEOUT_NAV2_LIFECYCLE, "Pausing Nav2")
+        if ok:
+            self.nav2_paused = True
+            self.nav_logger("info", "Pausing Nav2 -> Fully Paused nav2 lifecycles")
 
     def resume_nav2(self):
         """Nav2 nodes resume lifecycle"""
@@ -600,11 +605,11 @@ class Nav_Central(Node):
         self.nav_logger("info", "Resume Nav2 -> Starting nav2 lifecycle resume ...")
         req = ManageLifecycleNodes.Request()
         req.command = ManageLifecycleNodes.Request.RESUME
-        future = self.lifecycle_client.call_async(req)
-        while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-        self.nav2_paused = False
-        self.nav_logger("info", "Resume Nav2 -> Fully resumed nav2 lifecycles")
+        ok = self._call_service_with_timeout(
+            self.lifecycle_client, req, TIMEOUT_NAV2_LIFECYCLE, "Resume Nav2")
+        if ok:
+            self.nav2_paused = False
+            self.nav_logger("info", "Resume Nav2 -> Fully resumed nav2 lifecycles")
 
 def main(args=None):
     rclpy.init(args=args)
