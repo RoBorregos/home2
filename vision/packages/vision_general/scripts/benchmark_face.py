@@ -86,7 +86,10 @@ def benchmark_dlib(images: list[tuple[str, np.ndarray]], n_runs: int):
 def benchmark_insightface(images: list[tuple[str, np.ndarray]], n_runs: int):
     import sys
     from unittest.mock import MagicMock
-    sys.modules.setdefault("mpl_toolkits.mplot3d", MagicMock())
+    sys.modules.setdefault("insightface.app.mask_renderer",          MagicMock())
+    sys.modules.setdefault("insightface.thirdparty.face3d",          MagicMock())
+    sys.modules.setdefault("insightface.thirdparty.face3d.mesh",     MagicMock())
+    sys.modules.setdefault("insightface.thirdparty.face3d.mesh.vis", MagicMock())
     from insightface.app import FaceAnalysis
 
     app = FaceAnalysis(

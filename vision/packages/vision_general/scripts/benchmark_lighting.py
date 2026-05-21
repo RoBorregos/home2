@@ -19,7 +19,7 @@ Métricas por condición:
   - Tiempo de inferencia (ms)
 
 Uso:
-  python3 benchmark_lighting.py --images /path/to/images --known /path/to/known_faces
+
   python3 benchmark_lighting.py   # usa Utils/known_faces por defecto
 """
 
@@ -39,8 +39,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 KNOWN_FACES_PATH = str(Path(__file__).parent.parent / "Utils" / "known_faces")
-OUTPUT_DIR       = str(Path(__file__).parent)
+OUTPUT_DIR       = str(Path(__file__).parent.parent / "Utils" / "benchmark_graphs")
 N_RUNS           = 5   # repeticiones para promediar tiempos
+
+# Fix: insightface.app.mask_renderer importa face3d que usa mpl_toolkits del
+# sistema — incompatible con la versión pip de matplotlib. Se mockea antes de
+# cualquier import de insightface para evitar el error de importación.
+import sys
+from unittest.mock import MagicMock
+sys.modules.setdefault("insightface.app.mask_renderer",          MagicMock())
+sys.modules.setdefault("insightface.thirdparty.face3d",          MagicMock())
+sys.modules.setdefault("insightface.thirdparty.face3d.mesh",     MagicMock())
+sys.modules.setdefault("insightface.thirdparty.face3d.mesh.vis", MagicMock())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -224,7 +234,7 @@ def run_insightface(
     images: list[tuple[str, np.ndarray]],
     n_runs: int,
 ) -> dict[str, list[ConditionResult]]:
-    from insightface.app import FaceAnalysis
+    from insightface.app import FaceAnalysis  # noqa: importable después del mock
 
     app = FaceAnalysis(
         name="buffalo_l",
