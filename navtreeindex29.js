@@ -1,15 +1,5 @@
 var NAVTREEINDEX29 =
 {
-"namespacePickManager.html#a99b7b6f851b3ea9aa14340cda1585052":[30,0,116,3],
-"namespacePickManager.html#afcfec5898dcc59164a20e8562b51f08d":[30,0,116,6],
-"namespacePlaceManager.html":[30,0,117],
-"namespacePlaceManager.html#a0affa04e052ee79ba7a68cfd77e8e8d7":[30,0,117,1],
-"namespacePlanner.html":[30,0,118],
-"namespacePourManager.html":[30,0,122],
-"namespacePourManager.html#a4803853b3c06bb06873e9255f1063a15":[30,0,122,1],
-"namespaceServo.html":[30,0,143],
-"namespaceXArmServices.html":[30,0,176],
-"namespace__storing__groceries.html":[30,0,0],
 "namespace__storing__groceries.html#a155d3198243f1cb233bf4caf81e7cf93":[30,0,0,2],
 "namespace__storing__groceries.html#adc3b841dce9790c83b15a88ef9fb4340":[30,0,0,1],
 "namespaceadaptive__goal__publisher.html":[30,0,1],
@@ -249,5 +239,15 @@ var NAVTREEINDEX29 =
 "namespacefrida__constants_1_1hri__constants.html#a1445a0126f5ffb6f0817906046e5a278":[30,0,54,0,2],
 "namespacefrida__constants_1_1hri__constants.html#a178c823b8cab8a3ba2131d5cb2c3594c":[30,0,54,0,31],
 "namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2":[30,0,54,0,6],
-"namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e":[30,0,54,0,41]
+"namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e":[30,0,54,0,41],
+"namespacefrida__constants_1_1hri__constants.html#a36ae4fa83223f615cf521d31bd5c899e":[30,0,54,0,26],
+"namespacefrida__constants_1_1hri__constants.html#a38822034ad302c559f887912bec561a0":[30,0,54,0,14],
+"namespacefrida__constants_1_1hri__constants.html#a39e864d623eccc650625e054a9236911":[30,0,54,0,27],
+"namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733":[30,0,54,0,43],
+"namespacefrida__constants_1_1hri__constants.html#a3eafbf8ea957a6995529edc2d3fcc7e8":[30,0,54,0,29],
+"namespacefrida__constants_1_1hri__constants.html#a3fdac1c86ed416eee896a77aec9c4043":[30,0,54,0,10],
+"namespacefrida__constants_1_1hri__constants.html#a40d771feb1bf4ea070ce564f294ec534":[30,0,54,0,20],
+"namespacefrida__constants_1_1hri__constants.html#a451ff86158f7fdd9ed1e85902b264df4":[30,0,54,0,30],
+"namespacefrida__constants_1_1hri__constants.html#a4f57beaa697d3fd2366209c57e9261db":[30,0,54,0,44],
+"namespacefrida__constants_1_1hri__constants.html#a5122d4a93ffda1e706247ba9f13e538c":[30,0,54,0,28]
 };

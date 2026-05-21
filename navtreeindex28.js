@@ -1,15 +1,5 @@
 var NAVTREEINDEX28 =
 {
-"md_docs_Run_Areas_Manipulation_manipulation.html":[20],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md116":[20,0],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md117":[20,1],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md126":[20,1,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html":[21],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md128":[21,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md129":[21,0,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md130":[21,0,1],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md131":[21,0,1,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md132":[21,0,1,1],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md133":[21,1],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md134":[21,1,0],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md135":[21,2],
@@ -249,5 +239,15 @@ var NAVTREEINDEX28 =
 "namespacePickManager.html#a38889fce0778444ca2278c1767b44b7d":[30,0,116,5],
 "namespacePickManager.html#a68a22a9f3907767840a047f2fb9e855b":[30,0,116,1],
 "namespacePickManager.html#a6c7e5eb22b70e41142e616127270e24e":[30,0,116,2],
-"namespacePickManager.html#a6ebf5ef225508aaa23d867b6e5644785":[30,0,116,7]
+"namespacePickManager.html#a6ebf5ef225508aaa23d867b6e5644785":[30,0,116,7],
+"namespacePickManager.html#a99b7b6f851b3ea9aa14340cda1585052":[30,0,116,3],
+"namespacePickManager.html#afcfec5898dcc59164a20e8562b51f08d":[30,0,116,6],
+"namespacePlaceManager.html":[30,0,117],
+"namespacePlaceManager.html#a0affa04e052ee79ba7a68cfd77e8e8d7":[30,0,117,1],
+"namespacePlanner.html":[30,0,118],
+"namespacePourManager.html":[30,0,122],
+"namespacePourManager.html#a4803853b3c06bb06873e9255f1063a15":[30,0,122,1],
+"namespaceServo.html":[30,0,143],
+"namespaceXArmServices.html":[30,0,176],
+"namespace__storing__groceries.html":[30,0,0]
 };

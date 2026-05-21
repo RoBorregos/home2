@@ -1,15 +1,5 @@
 var NAVTREEINDEX27 =
 {
-"image__orienter_8py.html#a11fc2a04ef613b6ec82cf2adbcac671b":[32,0,7,0,2,1,6,1],
-"image__orienter_8py.html#a1b54ffbf3ba4107bf779bee3033a6e26":[32,0,7,0,2,1,6,2],
-"imu__sensor_8cpp.html":[32,0,3,0,4,1,2,0],
-"imu__sensor_8hpp.html":[32,0,3,0,4,1,0,3,0],
-"imu__sensor_8hpp_source.html":[32,0,3,0,4,1,0,3,0],
-"index.html":[],
-"index.html":[0],
-"index.html#autotoc_md100":[0,0,0],
-"index.html#autotoc_md101":[0,0,1],
-"index.html#autotoc_md102":[0,0,2],
 "index.html#autotoc_md103":[0,1],
 "index.html#autotoc_md104":[0,2],
 "index.html#autotoc_md105":[0,3],
@@ -249,5 +239,15 @@ var NAVTREEINDEX27 =
 "mapping_8launch_8py.html#ac951e3077b2a262f96039858d7fa2b20":[32,0,4,0,2,0,0,2,0],
 "masive__testin_8cpp.html":[32,0,3,0,6,4,2],
 "masive__testin_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97":[32,0,3,0,6,4,2,2],
-"masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[32,0,3,0,6,4,2,3]
+"masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[32,0,3,0,6,4,2,3],
+"md_docs_Run_Areas_Manipulation_manipulation.html":[20],
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md116":[20,0],
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md117":[20,1],
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md126":[20,1,0],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html":[21],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md128":[21,0],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md129":[21,0,0],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md130":[21,0,1],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md131":[21,0,1,0],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md132":[21,0,1,1]
 };

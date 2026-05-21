@@ -8,14 +8,11 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "attach_pick_object", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a142083fd5eb70a3722c97774500d6763", null ],
     [ "calculate_object_height", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ab2037dcf718ab15649bb40f17cbf2098", null ],
     [ "calculate_object_pick_height", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aae8e37df51f19f4e7a029e630ce9a400", null ],
-    [ "check_feasibility", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a39d7f1af971ed57598d7d96a00bd2155", null ],
     [ "execute_callback", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a921c792225a597827ba4fb2f7f394e55", null ],
     [ "execute_go_to_hand_callback", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a3f761e681791251c87ce039727c38083", null ],
-    [ "find_plane", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aea1a716a51c27c97f70db6e067e08de3", null ],
     [ "force_guarded_descent", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a445144c0f45236b2784c52fd0e56b7a6", null ],
     [ "get_collision_objects", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad2f61c52be8d2ddd85f4bd0342b1b11b", null ],
     [ "move_to_pose", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a74b845e25998b24f69c0842ee7c6ef77", null ],
-    [ "object_in_plane", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a0ebdc32a42f996cd1cffac7595a2dca4", null ],
     [ "pick", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a2ce7e4c2411faa589b016caa0bc05150", null ],
     [ "remove_collision_object", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aed937667c14d6f478bc408bf87845d6f", null ],
     [ "save_collision_objects", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#acf8ac6c4f7fa2b2fa664de7f878c3f9a", null ],
@@ -37,8 +34,6 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "collision_objects", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a0ee3e4f5cd7c8acb4ddc48cf1c8ebaac", null ],
     [ "ee_link_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a73261575260ca74ddf9ed56972d8f582", null ],
     [ "ee_tip_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a1d39e082c36cbebccfa97d40e856a9b0", null ],
-    [ "pick_min_height", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aa9c11fce29b4c7868355d9f44b6c94eb", null ],
-    [ "plane", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aab7727547bae26e2a95d557e4bec2108", null ],
     [ "tf_buffer", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a7c6bcf8de90f9317cbcefde17a39a79a", null ],
     [ "tf_listener", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad6b6e3181057befe40cf4154d4f64ddd", null ]
 ];

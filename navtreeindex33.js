@@ -1,15 +1,5 @@
 var NAVTREEINDEX33 =
 {
-"namespacetask__manager.html":[30,0,148],
-"namespacetask__manager_1_1config.html":[30,0,148,0],
-"namespacetask__manager_1_1config_1_1hri.html":[30,0,148,0,0],
-"namespacetask__manager_1_1config_1_1hri_1_1debug.html":[30,0,148,0,0,0],
-"namespacetask__manager_1_1config_1_1hri_1_1debug.html#a1ea1f4f28fed6eb7e5b2afe7685cdb8a":[30,0,148,0,0,0,1],
-"namespacetask__manager_1_1config_1_1hri_1_1debug.html#a72f6f5940c4749f5e6bf597ca63a2663":[30,0,148,0,0,0,0],
-"namespacetask__manager_1_1config_1_1hri_1_1mocked.html":[30,0,148,0,0,1],
-"namespacetask__manager_1_1config_1_1hri_1_1mocked.html#a37329c5357c57cf82d69498b3fad60ea":[30,0,148,0,0,1,0],
-"namespacetask__manager_1_1config_1_1hri_1_1mocked.html#a45c753c6078eb81d78fdd702d2980628":[30,0,148,0,0,1,2],
-"namespacetask__manager_1_1config_1_1hri_1_1mocked.html#ab3aa7ebaf3181dc3220ebf6b0538f744":[30,0,148,0,0,1,1],
 "namespacetask__manager_1_1subtask__managers.html":[30,0,148,1],
 "namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html":[30,0,148,1,0],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html":[30,0,148,1,1],
@@ -249,5 +239,15 @@ var NAVTREEINDEX33 =
 "namespacezed__simulator.html":[30,0,177],
 "namespacezed__simulator.html#a6d489b3a367f76b4f6c43605f89dbb5f":[30,0,177,1],
 "namespacezero__shot__object__detector__node.html":[30,0,178],
-"namespacezero__shot__object__detector__node.html#a1489f755c75c3eed93e2fe3ab401521f":[30,0,178,2]
+"namespacezero__shot__object__detector__node.html#a1489f755c75c3eed93e2fe3ab401521f":[30,0,178,2],
+"namespacezero__shot__object__detector__node.html#aba70d0632c70d26521c3901943462bc4":[30,0,178,1],
+"nav__basics_8launch_8py.html":[32,0,4,0,2,0,3],
+"nav__basics_8launch_8py.html#a0ad8a434cdfa5b959bd6a1d5df652146":[32,0,4,0,2,0,3,0],
+"nav__basics_8launch_8py.html#ac5d23aeb26e79af148252a849c2905ca":[32,0,4,0,2,0,3,1],
+"nav__central_8py.html":[32,0,4,0,2,2,3],
+"nav__central_8py.html#a03a4b9afc936746d5950dc3dd6443176":[32,0,4,0,2,2,3,2],
+"nav__central_8py.html#a2b76521918c13d0a97e1ad8c5b97c1f4":[32,0,4,0,2,2,3,1],
+"nav__central_8py.html#a86af41de54cd576d3ea441a7bdf3cd20":[32,0,4,0,2,2,3,3],
+"nav__tasks_8py.html":[32,0,6,2,1,9],
+"nav__tasks_8py.html#a06867581e22517934311749b093482d2":[32,0,6,2,1,9,1]
 };

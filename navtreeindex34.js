@@ -1,15 +1,5 @@
 var NAVTREEINDEX34 =
 {
-"namespacezero__shot__object__detector__node.html#aba70d0632c70d26521c3901943462bc4":[30,0,178,1],
-"nav__basics_8launch_8py.html":[32,0,4,0,2,0,3],
-"nav__basics_8launch_8py.html#a0ad8a434cdfa5b959bd6a1d5df652146":[32,0,4,0,2,0,3,0],
-"nav__basics_8launch_8py.html#ac5d23aeb26e79af148252a849c2905ca":[32,0,4,0,2,0,3,1],
-"nav__central_8py.html":[32,0,4,0,2,2,3],
-"nav__central_8py.html#a03a4b9afc936746d5950dc3dd6443176":[32,0,4,0,2,2,3,2],
-"nav__central_8py.html#a2b76521918c13d0a97e1ad8c5b97c1f4":[32,0,4,0,2,2,3,1],
-"nav__central_8py.html#a86af41de54cd576d3ea441a7bdf3cd20":[32,0,4,0,2,2,3,3],
-"nav__tasks_8py.html":[32,0,6,2,1,9],
-"nav__tasks_8py.html#a06867581e22517934311749b093482d2":[32,0,6,2,1,9,1],
 "nav__tasks_8py.html#a564154d84694edae2c6fd15d69727e26":[32,0,6,2,1,9,2],
 "nav__tasks_8py.html#ac8dd71a92d881ab3f302428e124e2b6b":[32,0,6,2,1,9,3],
 "nav__ui_8py.html":[32,0,4,0,1,3,1],
@@ -249,5 +239,15 @@ var NAVTREEINDEX34 =
 "safety__task__manager_8py.html#a207642360aafef76971e5142db35e75c":[32,0,6,1,10,3],
 "server_8py.html":[32,0,7,0,0,1,4],
 "server_8py.html#a3c8df1657c541fd80fbb8ffef44e8451":[32,0,7,0,0,1,4,8],
-"server_8py.html#a469f094fa099c5fafa3f1dc6960381fc":[32,0,7,0,0,1,4,1]
+"server_8py.html#a469f094fa099c5fafa3f1dc6960381fc":[32,0,7,0,0,1,4,1],
+"server_8py.html#a692f59b384dd93287c366eb7e7c0608b":[32,0,7,0,0,1,4,5],
+"server_8py.html#a70ecbc33459e4c393ccddd6f1d1bcc04":[32,0,7,0,0,1,4,3],
+"server_8py.html#a72aa2cd67bf6ea46a0eea394a62534a2":[32,0,7,0,0,1,4,9],
+"server_8py.html#a73d24dac725bd753dcbd09029b347665":[32,0,7,0,0,1,4,4],
+"server_8py.html#a8420e06a376c4d5feae2faf31fb7c9cf":[32,0,7,0,0,1,4,6],
+"server_8py.html#aa8e0e44f25a6911d78eb1af3ff58e07a":[32,0,7,0,0,1,4,7],
+"server_8py.html#ae3f6e1599e27626aa2ed68baa4311afd":[32,0,7,0,0,1,4,2],
+"service__utils_8py.html":[32,0,3,0,1,1,1,4],
+"service__utils_8py.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8":[32,0,3,0,1,1,1,4,3],
+"service__utils_8py.html#a479ef9705921d2c4e6c2549e4731ef57":[32,0,3,0,1,1,1,4,0]
 };
