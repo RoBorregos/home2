@@ -132,7 +132,7 @@ download_ei_model() {
     done
 
     if [ $WAITED -ge $MAX_WAIT ]; then
-        echo "Error: Timed out waiting for EI model $model_name."
+        echo "Error: Timed out waiting for EI model $model_name to download."
         docker stop "$CONTAINER_ID" 2>/dev/null
         docker rm "$CONTAINER_ID" 2>/dev/null
         return 1
