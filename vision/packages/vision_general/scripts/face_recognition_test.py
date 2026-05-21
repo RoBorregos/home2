@@ -45,8 +45,6 @@ KNOWN_FACES_PATH = PATH + "/Utils/known_faces"
 INSIGHTFACE_MODEL = "buffalo_l"
 INSIGHTFACE_CTX_ID = 0
 
-
-
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     """Return cosine similarity in [−1, 1]. Higher = more similar."""
     a = a / (np.linalg.norm(a) + 1e-10)
@@ -243,6 +241,17 @@ class FaceRecognition(Node):
             file_path = os.path.join(KNOWN_FACES_PATH, filename)
             os.remove(file_path)
 
+    def apply_clahe(self, bgr_img: np.ndarray) -> np.ndarray:
+        try:
+            lab = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2LAB)
+            l_img, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=0.5, tileGridSize=(16, 16))
+            l_img = clahe.apply(l_img)
+            lab = cv2.merge((l_img, a, b))
+            return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        except Exception:
+            return bgr_img
+
     def process_img(self, filename: str) -> None:
         img_path = f"{KNOWN_FACES_PATH}/{filename}"
         img_bgr  = cv2.imread(img_path)
@@ -250,6 +259,7 @@ class FaceRecognition(Node):
             self.get_logger().warn(f"Could not load image: {img_path}")
             return
 
+        img_bgr = self.apply_clahe(img_bgr)
         faces = self.app.get(img_bgr)
         if len(faces) == 0:
             self.get_logger().warn(f"No face found in {filename}, skipping.")
@@ -352,7 +362,7 @@ class FaceRecognition(Node):
             self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
-        detected_faces = self.app.get(self.frame)
+        detected_faces = self.app.get(self.apply_clahe(self.frame))
 
         largest_area         = 0
         follow_face_params   = None
@@ -363,7 +373,7 @@ class FaceRecognition(Node):
         self.face_list   = PersonList()
         detected         = False
 
-        for i, ins_face in enumerate(detected_faces):
+        for ins_face in detected_faces:
             x1, y1, x2, y2 = ins_face.bbox.astype(int)
 
             left   = max(x1 - TRACK_THRESHOLD, 0)
