@@ -6,7 +6,8 @@ point_cloud_camera:
     point_cloud_topic: /point_cloud
     max_range: 1.5
     point_subsample: 1
-    padding_offset: 0.02
-    padding_scale: 1.05
+    # Octomap padding: 0.03 provides the best balance for covering robot collisions
+    # without causing false collisions with the environment.
+    padding_offset: 0.03
     max_update_rate: 2.0
     filtered_cloud_topic: filtered_cloud
