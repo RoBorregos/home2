@@ -92,11 +92,6 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[sim_time_param],
             ),
-            DeclareLaunchArgument(
-                "pick_min_height",
-                default_value="0.04",
-                description="Minimum height (m) a grasp pose must clear above the detected support plane. Matches PICK_MIN_HEIGHT used before the parameter was exposed; sim can lower it because the plane segmenter sometimes picks a wrong plane off the house mesh.",
-            ),
             Node(
                 package="pick_and_place",
                 executable="pick_server.py",
@@ -107,7 +102,6 @@ def generate_launch_description():
                     {
                         # based on distance between end-effector link and contact point with objects e.g. where you grip
                         "ee_link_offset": -0.09,
-                        "pick_min_height": LaunchConfiguration("pick_min_height"),
                     },
                     sim_time_param,
                 ],
