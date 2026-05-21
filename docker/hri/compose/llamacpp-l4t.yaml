@@ -1,9 +1,8 @@
 services:
   llama:
-    profiles: [hric, carry, gpsr]
+    profiles: [hric, gpsr]
     container_name: home2-hri-llamacpp-l4t
     image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
-    pull_policy: missing
     runtime: nvidia
     network_mode: host
     volumes:

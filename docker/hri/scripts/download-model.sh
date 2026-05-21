@@ -13,8 +13,8 @@ ask_for_model() {
 echo "Which models do you want to download?"
 echo "  1) qwen3-8b         (Qwen3-8B Q4_K_M GGUF, for llama.cpp)"
 echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
-echo "  3) qwen3            (Qwen3 via Ollama pull — backup)"
-echo "  4) nomic-embed-text (embeddings via Ollama pull — backup)"
+echo "  3) qwen3            (Qwen3 via Ollama)"
+echo "  4) nomic-embed-text (embeddings via Ollama)"
 echo "  5) DeepFilterNet3"
 echo "  6) ei-door          (Door detection)"
 echo "  7) ei-kws           (Keyword detection)"
@@ -27,31 +27,35 @@ if [ -z "$MODELS_TO_DOWNLOAD" ]; then
     MODELS_TO_DOWNLOAD="all"
 fi
 
+# Download model and Modelfile to the directory where this script is located
 SCRIPT_DIR="../../hri/packages/nlp/assets"
 
-# ── qwen3-8b GGUF for llama.cpp ───────────────────────────────────────────────
+download_gguf() {
+    local name="$1"
+    local url="$2"
+    local dest="$3"
+    if [ ! -f "$dest" ]; then
+        echo "Downloading $name..."
+        curl -L "$url" -o "$dest"
+    else
+        echo "$name already exists. Skipping."
+    fi
+}
+
+# ── GGUFs for llama.cpp ───────────────────────────────────────────────────────
 if ask_for_model qwen3-8b 1; then
-    if [ ! -f "$SCRIPT_DIR/qwen3-8b.Q4_K_M.gguf" ]; then
-        echo "Downloading qwen3-8b GGUF for llama.cpp..."
-        curl -L https://huggingface.co/unsloth/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf \
-             -o "$SCRIPT_DIR/qwen3-8b.Q4_K_M.gguf"
-    else
-        echo "qwen3-8b GGUF already exists. Skipping."
-    fi
+    download_gguf "qwen3-8b" \
+        "https://huggingface.co/unsloth/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf" \
+        "$SCRIPT_DIR/qwen3-8b.Q4_K_M.gguf"
 fi
 
-# ── rbrgs GGUF for llama.cpp ──────────────────────────────────────────────────
 if ask_for_model rbrgs 2; then
-    if [ ! -f "$SCRIPT_DIR/rbrgs.F16.gguf" ]; then
-        echo "Downloading rbrgs GGUF..."
-        curl -L https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf \
-             -o "$SCRIPT_DIR/rbrgs.F16.gguf"
-    else
-        echo "rbrgs GGUF already exists. Skipping."
-    fi
+    download_gguf "rbrgs" \
+        "https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf" \
+        "$SCRIPT_DIR/rbrgs.F16.gguf"
 fi
 
-# ── DeepFilterNet3 ────────────────────────────────────────────────────────────
+# Download and unzip DeepFilterNet model
 DF_MODEL_DIR="../../hri/packages/speech/assets/downloads"
 DF_MODEL_URL="https://github.com/Rikorose/DeepFilterNet/raw/main/models/DeepFilterNet3.zip"
 ZIP_FILE="$DF_MODEL_DIR/DeepFilterNet3.zip"
@@ -66,11 +70,15 @@ if ask_for_model DeepFilterNet3 5; then
         rm "$ZIP_FILE"
         echo "DeepFilterNet3 model downloaded successfully."
     else
-        echo "DeepFilterNet3 model already exists. Skipping."
+        echo "DeepFilterNet3 model already exists. Skipping download."
     fi
 fi
 
 # ── Edge Impulse model downloads ──────────────────────────────────────────────
+# Downloads models via the EI inference container using an API key.
+# The container downloads the .eim file, then we copy it out.
+# API keys are read from environment variables: EI_API_KEY_DOOR, EI_API_KEY_KWS
+# You can also set them in docker/hri/.env
 EI_DOWNLOAD_DIR="../../hri/packages/speech/assets/downloads"
 EI_IMAGE="public.ecr.aws/g7a8t7v6/inference-container-jetson-orin-6-0:v1.92.11"
 
@@ -102,6 +110,7 @@ download_ei_model() {
         --force-target runner-linux-aarch64-jetson-orin-6-0 \
         --force-variant float32)
 
+    # Wait for the model to download and the server to start
     echo "Waiting for EI container to download and build the model (this may take a few minutes)..."
     MAX_WAIT=300
     WAITED=0
@@ -112,6 +121,7 @@ download_ei_model() {
         fi
         if ! docker ps -q --filter "id=$CONTAINER_ID" | grep -q .; then
             echo "Error: EI container exited unexpectedly for $model_name."
+            echo "Container logs:"
             docker logs "$CONTAINER_ID" 2>&1 | tail -20
             docker rm "$CONTAINER_ID" 2>/dev/null
             return 1
@@ -128,14 +138,18 @@ download_ei_model() {
         return 1
     fi
 
+    # Copy the model file from the container
+    # EI stores models in /root/.ei-linux-runner/models/
     echo "Copying model from container..."
     docker cp "$CONTAINER_ID:/root/.ei-linux-runner/models/" "/tmp/ei-models-$model_name"
+
+    # Find the .eim file and copy it to the output directory
     EIM_FILE=$(find "/tmp/ei-models-$model_name" -name "model.eim" -type f | head -1)
     if [ -n "$EIM_FILE" ]; then
         cp "$EIM_FILE" "$output_dir/model.eim"
         echo "Model saved to $output_dir/model.eim"
     else
-        echo "Warning: Could not find model.eim. Listing available files:"
+        echo "Warning: Could not find model.eim in container. Listing available files:"
         find "/tmp/ei-models-$model_name" -type f
     fi
 
@@ -146,7 +160,7 @@ download_ei_model() {
 
 if ask_for_model ei-door 6; then
     if [ -f "$EI_DOWNLOAD_DIR/door/model.eim" ]; then
-        echo "Edge Impulse door model already exists. Skipping."
+        echo "Edge Impulse door model already exists. Skipping download."
     else
         download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337"
     fi
@@ -154,13 +168,13 @@ fi
 
 if ask_for_model ei-kws 7; then
     if [ -f "$EI_DOWNLOAD_DIR/kws/model.eim" ]; then
-        echo "Edge Impulse kws model already exists. Skipping."
+        echo "Edge Impulse kws model already exists. Skipping download."
     else
         download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
     fi
 fi
 
-# ── Ollama models ─────────────────────────────────────────────────────────────
+# Detect available image
 if docker images | grep -q "dustynv/ollama"; then
     IMAGE="dustynv/ollama:0.6.8-r36.4"
     COMMAND="ollama serve"
