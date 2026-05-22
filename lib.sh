@@ -153,6 +153,7 @@ setup_common_env() {
   fi
 
   add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+  add_or_update_variable "$env_file" "ENV_TYPE"          "${ENV_TYPE:-cpu}"
   add_or_update_variable "$env_file" "LOCAL_USER_ID"     "$(id -u)"
   add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
   add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
