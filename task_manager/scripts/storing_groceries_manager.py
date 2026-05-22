@@ -103,7 +103,7 @@ for i in ExecutionStates:
 
 class Shelf(BaseModel):
     id: int = 0
-    tag: str = None
+    tag: list[str] = []
     objects: list[str] = []
 
 
