@@ -261,7 +261,7 @@ class StoringGroceriesManager(Node):
             )
             self.subtask_manager.hri.confirm(
                 "Can you please open the shelve cabinet for me? Please say yes when done!",
-                use_hotwords=True,
+                use_keyword=True,
             )
             hres: Status = self.nav_to("kitchen", "shelve")
             # hres: Status = self.nav_to("kitchen", "shelve", say=False)
@@ -565,7 +565,7 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.NOT_ALL_OBJECTS_PICKED:
             if len([i for k, i in self.object_to_placing_shelf.values() if k == 0]) == 0:
                 status, res = self.subtask_manager.hri.confirm(
-                    text="Did I pick all the objects?", use_hotwords=False
+                    text="Did I pick all the objects?", use_keyword=False
                 )
                 if res == "yes":
                     self.subtask_manager.hri.say(
@@ -580,7 +580,7 @@ class StoringGroceriesManager(Node):
 
             # if nothing works then go to deux: ask the user if there are more objects to pick
             status, res = self.subtask_manager.hri.confirm(
-                text="Did I pick all the objects?", use_hotwords=False
+                text="Did I pick all the objects?", use_keyword=False
             )
             if res == "yes":
                 self.subtask_manager.hri.say(text="I have finished placing the objects", wait=True)
@@ -604,7 +604,7 @@ class StoringGroceriesManager(Node):
                 # self.subtask_manager.hri.say(
                 #     text="Can you please help me opening the shelve cabinet for me?"
                 # )
-                # self.subtask_manager.hri.confirm("Can you please open the shelve cabinet for me? Please say yes when done!", use_hotwords=True)
+                # self.subtask_manager.hri.confirm("Can you please open the shelve cabinet for me? Please say yes when done!", use_keyword=True)
                 hres: Status = self.nav_to("kitchen", "table")
                 hres = Status.EXECUTION_SUCCESS
                 time.sleep(2)
@@ -905,7 +905,7 @@ class StoringGroceriesManager(Node):
             tries = 0
             while (
                 self.subtask_manager.hri.confirm(
-                    "Have you handed me the object?", use_hotwords=False
+                    "Have you handed me the object?", use_keyword=False
                 )[1]
                 != "yes"
             ):
@@ -928,7 +928,7 @@ class StoringGroceriesManager(Node):
                 )
                 while (
                     self.subtask_manager.hri.confirm(
-                        "Have you grabbed the object?", use_hotwords=False
+                        "Have you grabbed the object?", use_keyword=False
                     )[1]
                     != "yes"
                 ):
@@ -956,11 +956,11 @@ class StoringGroceriesManager(Node):
             tries = 0
 
             self.subtask_manager.hri.confirm(
-                "Have you grabbed the object?", use_hotwords=False, retries=5
+                "Have you grabbed the object?", use_keyword=False, retries=5
             )
             self.subtask_manager.manipulation.open_gripper()
             while (
-                self.subtask_manager.hri.confirm("Have you placed the object?", use_hotwords=False)[
+                self.subtask_manager.hri.confirm("Have you placed the object?", use_keyword=False)[
                     1
                 ]
                 != "yes"
