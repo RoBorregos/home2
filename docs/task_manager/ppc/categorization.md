@@ -29,15 +29,15 @@ If a category is "new" (not currently on any shelf), the system looks for empty 
 If there are no empty shelves, or if there are more new categories than empty shelves, the system distributes the new categories across the available shelves (starting with empty ones first) in a round-robin fashion.
 - Unlike previous versions, the system **avoids the "miscellaneous" label**.
 - Instead, it maintains the specific names of all categories present on a shelf.
-- A shelf can have multiple categories (e.g., "fruit food"), which are returned as a list and used by the robot to describe the shelf's contents.
+- A shelf can have multiple categories (e.g., `["fruit", "food"]`), which are returned as a list and used by the robot to describe the shelf's contents.
 
 ## API Compatibility
 
 The `categorize_objects` method returns:
 - `Status`: Execution status.
-- `old_api`: A dictionary mapping shelf levels to a space-separated string of categories (for legacy support).
+- `categories`: A dictionary mapping shelf levels to a list of all categories assigned to that shelf.
 - `objects_to_add`: A dictionary mapping shelf levels to the list of specific table objects to be placed there.
-- `categorized_shelves`: A dictionary mapping shelf levels to a list of all categories currently on that shelf.
+- `categorized_shelves`: A dictionary mapping shelf levels to a list of all categories currently on that shelf (including existing items).
 
 ## Testing
 
