@@ -30,4 +30,4 @@ A central `run.sh` script is used to manage the lifecycle of these containers. I
 
 ## Communication
 
-Communication between nodes is handled by the **Cyclone DDS** middleware, which is configured via `setup_cyclonedds.sh` to allow seamless multi-host or host-container interaction.
+Communication between nodes is handled by the **Cyclone DDS** middleware, which is configured via `scripts/setup_cyclonedds.sh` to allow seamless multi-host or host-container interaction.
