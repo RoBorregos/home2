@@ -1,18 +1,5 @@
 import usb.core
-import sys
-import os
-
-# Add the directory containing tuning.py to sys.path
-script_dir = os.path.dirname(os.path.abspath(__file__))
-tuning_path = os.path.join(script_dir, "..", "speech")
-sys.path.append(tuning_path)
-
-try:
-    from tuning import Tuning, PARAMETERS
-except ImportError:
-    # Fallback to hardcoded path if relative path fails for some reason
-    sys.path.append("/home/gil/repos/home2/hri/packages/speech/speech")
-    from tuning import Tuning, PARAMETERS
+from speech.tuning import Tuning, PARAMETERS
 
 
 def read_params():

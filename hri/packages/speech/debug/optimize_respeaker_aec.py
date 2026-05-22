@@ -1,9 +1,5 @@
 import usb.core
-import sys
-
-# Add the directory containing tuning.py to sys.path
-sys.path.append("/home/gil/repos/home2/hri/packages/speech/speech")
-from tuning import Tuning
+from speech.tuning import Tuning
 
 
 def optimize_aec():
@@ -29,9 +25,6 @@ def optimize_aec():
 
     # 5. Optionally adjust AEC Silence Level if it's too sensitive
     # tuning.write("AECSILENCELEVEL", 1e-09)
-
-    print("Done. Please test again while playing music.")
-    print("If it still fails, try changing RESPEAKER_CHANNEL to 4 in microphone.yaml")
 
 
 if __name__ == "__main__":
