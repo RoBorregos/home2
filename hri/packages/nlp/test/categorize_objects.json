@@ -37,5 +37,34 @@
             "1": {"category": ["dish"], "objects_to_add": ["fork"]},
             "2": {"category": ["food", "fruit"], "objects_to_add": ["tangerine", "ketchup"]}
         }
+    },
+    {
+        "name": "Overflow with no empty shelves",
+        "table_objects": ["apple", "sponge", "baseball"],
+        "shelves": {"0": ["coke"], "1": ["plate"]},
+        "answer": {
+            "0": {"category": ["drink", "fruit", "sport"], "objects_to_add": ["apple", "baseball"]},
+            "1": {"category": ["dish", "cleaning_supply"], "objects_to_add": ["sponge"]}
+        }
+    },
+    {
+        "name": "Multiple new categories on single empty shelf",
+        "table_objects": ["apple", "sponge", "baseball", "ketchup"],
+        "shelves": {"0": ["coke"], "1": ["plate"], "2": []},
+        "answer": {
+            "0": {"category": ["drink"], "objects_to_add": []},
+            "1": {"category": ["dish"], "objects_to_add": []},
+            "2": {"category": ["fruit", "cleaning_supply", "sport", "food"], "objects_to_add": ["apple", "sponge", "baseball", "ketchup"]}
+        }
+    },
+    {
+        "name": "Mixed existing and new categories",
+        "table_objects": ["fanta", "fork", "apple", "sponge"],
+        "shelves": {"0": ["coke"], "1": ["plate"], "2": []},
+        "answer": {
+            "0": {"category": ["drink"], "objects_to_add": ["fanta"]},
+            "1": {"category": ["dish"], "objects_to_add": ["fork"]},
+            "2": {"category": ["fruit", "cleaning_supply"], "objects_to_add": ["apple", "sponge"]}
+        }
     }
 ]
