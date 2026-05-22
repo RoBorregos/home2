@@ -4,7 +4,6 @@ var dir_a89c3d2d3adb8b7698d1aac82a56a6d1 =
     [ "AnswerQuestion.srv", "AnswerQuestion_8srv.html", null ],
     [ "AudioText.srv", "AudioText_8srv.html", null ],
     [ "BuildEmbeddings.srv", "BuildEmbeddings_8srv.html", null ],
-    [ "CategorizeShelves.srv", "CategorizeShelves_8srv.html", null ],
     [ "CommandInterpreter.srv", "CommandInterpreter_8srv.html", null ],
     [ "ExtractInfo.srv", "ExtractInfo_8srv.html", null ],
     [ "FindClosest.srv", "FindClosest_8srv.html", null ],

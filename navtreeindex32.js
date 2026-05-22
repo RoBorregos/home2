@@ -1,10 +1,5 @@
 var NAVTREEINDEX32 =
 {
-"namespacenav__central.html":[30,0,105],
-"namespacenav__central.html#a03a4b9afc936746d5950dc3dd6443176":[30,0,105,2],
-"namespacenav__central.html#a2b76521918c13d0a97e1ad8c5b97c1f4":[30,0,105,1],
-"namespacenav__central.html#a86af41de54cd576d3ea441a7bdf3cd20":[30,0,105,3],
-"namespacenav__ui.html":[30,0,106],
 "namespacenav__ui.html#a07ac368ca7be7cdc5199c492cec9ae47":[30,0,106,5],
 "namespacenav__ui.html#a4bad219f9283ca1fb19836b49aaf3a42":[30,0,106,6],
 "namespacenav__ui.html#a64ce8c70de6ed85629d910d470d1ec88":[30,0,106,11],
@@ -249,5 +244,10 @@ var NAVTREEINDEX32 =
 "namespacetask__manager_1_1config_1_1hri_1_1mocked.html":[30,0,148,0,0,1],
 "namespacetask__manager_1_1config_1_1hri_1_1mocked.html#a37329c5357c57cf82d69498b3fad60ea":[30,0,148,0,0,1,0],
 "namespacetask__manager_1_1config_1_1hri_1_1mocked.html#a45c753c6078eb81d78fdd702d2980628":[30,0,148,0,0,1,2],
-"namespacetask__manager_1_1config_1_1hri_1_1mocked.html#ab3aa7ebaf3181dc3220ebf6b0538f744":[30,0,148,0,0,1,1]
+"namespacetask__manager_1_1config_1_1hri_1_1mocked.html#ab3aa7ebaf3181dc3220ebf6b0538f744":[30,0,148,0,0,1,1],
+"namespacetask__manager_1_1subtask__managers.html":[30,0,148,1],
+"namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html":[30,0,148,1,0],
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html":[30,0,148,1,1],
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html#a342e4af688797931bd908d3bef0200da":[30,0,148,1,1,2],
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html#a9c9027b6a23f7c6f110fd538b7de0640":[30,0,148,1,1,1]
 };

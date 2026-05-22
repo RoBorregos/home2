@@ -1,10 +1,5 @@
 var NAVTREEINDEX34 =
 {
-"nav__tasks_8py.html#a564154d84694edae2c6fd15d69727e26":[32,0,6,2,1,9,2],
-"nav__tasks_8py.html#ac8dd71a92d881ab3f302428e124e2b6b":[32,0,6,2,1,9,3],
-"nav__ui_8py.html":[32,0,4,0,1,3,1],
-"nav__ui_8py.html#a07ac368ca7be7cdc5199c492cec9ae47":[32,0,4,0,1,3,1,5],
-"nav__ui_8py.html#a4bad219f9283ca1fb19836b49aaf3a42":[32,0,4,0,1,3,1,6],
 "nav__ui_8py.html#a64ce8c70de6ed85629d910d470d1ec88":[32,0,4,0,1,3,1,11],
 "nav__ui_8py.html#a689ea44630e0cf55e5c9ffe9d4306e86":[32,0,4,0,1,3,1,15],
 "nav__ui_8py.html#a81727c4c26971c1c8fe814bf77fad539":[32,0,4,0,1,3,1,13],
@@ -249,5 +244,10 @@ var NAVTREEINDEX34 =
 "server_8py.html#ae3f6e1599e27626aa2ed68baa4311afd":[32,0,7,0,0,1,4,2],
 "service__utils_8py.html":[32,0,3,0,1,1,1,4],
 "service__utils_8py.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8":[32,0,3,0,1,1,1,4,3],
-"service__utils_8py.html#a479ef9705921d2c4e6c2549e4731ef57":[32,0,3,0,1,1,1,4,0]
+"service__utils_8py.html#a479ef9705921d2c4e6c2549e4731ef57":[32,0,3,0,1,1,1,4,0],
+"service__utils_8py.html#a71accfcb34b0efa3659b647054fb840b":[32,0,3,0,1,1,1,4,1],
+"service__utils_8py.html#aa8e9262e7f52c324189d06f29a06f6da":[32,0,3,0,1,1,1,4,2],
+"simple__launch_8py.html":[32,0,3,0,4,1,3,0],
+"simple__launch_8py.html#a9448fb07fd4f1ccede887e90ae14d233":[32,0,3,0,4,1,3,0,0],
+"simple__launch_8py.html#af4d94c93de638c46af7dec98fbb938eb":[32,0,3,0,4,1,3,0,1]
 };

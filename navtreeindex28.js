@@ -1,9 +1,5 @@
 var NAVTREEINDEX28 =
 {
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md133":[21,1],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md134":[21,1,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md135":[21,2],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md136":[21,2,0],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md137":[21,3],
 "md_docs_Run_Areas_hri.html":[19],
 "md_docs_Run_Areas_hri.html#autotoc_md113":[19,0],
@@ -249,5 +245,9 @@ var NAVTREEINDEX28 =
 "namespacePourManager.html#a4803853b3c06bb06873e9255f1063a15":[30,0,122,1],
 "namespaceServo.html":[30,0,143],
 "namespaceXArmServices.html":[30,0,176],
-"namespace__storing__groceries.html":[30,0,0]
+"namespace__storing__groceries.html":[30,0,0],
+"namespace__storing__groceries.html#a155d3198243f1cb233bf4caf81e7cf93":[30,0,0,2],
+"namespace__storing__groceries.html#adc3b841dce9790c83b15a88ef9fb4340":[30,0,0,1],
+"namespaceadaptive__goal__publisher.html":[30,0,1],
+"namespaceadaptive__goal__publisher.html#acb33c8d4d3a1cc7881b498bd215f163d":[30,0,1,1]
 };

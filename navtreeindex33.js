@@ -1,10 +1,5 @@
 var NAVTREEINDEX33 =
 {
-"namespacetask__manager_1_1subtask__managers.html":[30,0,148,1],
-"namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html":[30,0,148,1,0],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html":[30,0,148,1,1],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html#a342e4af688797931bd908d3bef0200da":[30,0,148,1,1,2],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html#a9c9027b6a23f7c6f110fd538b7de0640":[30,0,148,1,1,1],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html":[30,0,148,1,2],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html":[30,0,148,1,3],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a006ca904dfde847a2b6aa1ba96d44872":[30,0,148,1,3,12],
@@ -249,5 +244,10 @@ var NAVTREEINDEX33 =
 "nav__central_8py.html#a2b76521918c13d0a97e1ad8c5b97c1f4":[32,0,4,0,2,2,3,1],
 "nav__central_8py.html#a86af41de54cd576d3ea441a7bdf3cd20":[32,0,4,0,2,2,3,3],
 "nav__tasks_8py.html":[32,0,6,2,1,9],
-"nav__tasks_8py.html#a06867581e22517934311749b093482d2":[32,0,6,2,1,9,1]
+"nav__tasks_8py.html#a06867581e22517934311749b093482d2":[32,0,6,2,1,9,1],
+"nav__tasks_8py.html#a564154d84694edae2c6fd15d69727e26":[32,0,6,2,1,9,2],
+"nav__tasks_8py.html#ac8dd71a92d881ab3f302428e124e2b6b":[32,0,6,2,1,9,3],
+"nav__ui_8py.html":[32,0,4,0,1,3,1],
+"nav__ui_8py.html#a07ac368ca7be7cdc5199c492cec9ae47":[32,0,4,0,1,3,1,5],
+"nav__ui_8py.html#a4bad219f9283ca1fb19836b49aaf3a42":[32,0,4,0,1,3,1,6]
 };
