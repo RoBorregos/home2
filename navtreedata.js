@@ -225,6 +225,17 @@ var NAVTREE =
       ] ],
       [ "Example", "md_docs_task_manager_decorators.html#autotoc_md192", null ]
     ] ],
+    [ "Object Categorization and Shelf Assignment", "md_docs_task_manager_ppc_categorization.html", [
+      [ "Overview", "md_docs_task_manager_ppc_categorization.html#autotoc_md194", null ],
+      [ "Categorization Logic", "md_docs_task_manager_ppc_categorization.html#autotoc_md195", null ],
+      [ "Shelf Assignment Algorithm", "md_docs_task_manager_ppc_categorization.html#autotoc_md196", [
+        [ "1. Existing Category Match", "md_docs_task_manager_ppc_categorization.html#autotoc_md197", null ],
+        [ "2. Empty Shelf Distribution", "md_docs_task_manager_ppc_categorization.html#autotoc_md198", null ],
+        [ "3. Overflow Distribution (Avoiding \"Miscellaneous\")", "md_docs_task_manager_ppc_categorization.html#autotoc_md199", null ]
+      ] ],
+      [ "API Compatibility", "md_docs_task_manager_ppc_categorization.html#autotoc_md200", null ],
+      [ "Testing", "md_docs_task_manager_ppc_categorization.html#autotoc_md201", null ]
+    ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
       [ "Namespace Members", "namespacemembers.html", [
@@ -287,18 +298,18 @@ var NAVTREEINDEX =
 "classtemp__follow_1_1FollowPersonNode.html#a3e937ac183d6fe514c4fff3fadf36651",
 "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#af1e33accd20b4632f13acbdda0d9d340",
 "classvisualization_1_1NoVisualization.html#a6a1d04027d7b41d8fda23f39a5fba397",
-"dir_84372eafc62a312f9c3558268938e064.html",
-"functions_func_h.html",
-"index.html#autotoc_md107",
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md137",
-"namespaceadd__collision__object.html",
-"namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8",
-"namespacegpsr__launch.html",
-"namespacenav__ui.html#a07ac368ca7be7cdc5199c492cec9ae47",
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html",
-"nav__ui_8py.html#a64ce8c70de6ed85629d910d470d1ec88",
-"simple__launch_8test_8py.html",
-"vision__constants_8py.html#a14b244fc490c19ebfc44d3b8f4cdcbc5"
+"dir_836e412c6ba9b2d050f060d2cb43f277.html",
+"functions_func_g.html",
+"index.html#autotoc_md106",
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md136",
+"namespacePlanner.html",
+"namespacefrida__constants_1_1hri__constants.html#a3eafbf8ea957a6995529edc2d3fcc7e8",
+"namespacegpsr.html",
+"namespacemujoco__simulate__gui.html",
+"namespacetask__manager_1_1config_1_1hri_1_1debug.html#a72f6f5940c4749f5e6bf597ca63a2663",
+"nav__central_8py.html#a03a4b9afc936746d5950dc3dd6443176",
+"server_8py.html#aa8e0e44f25a6911d78eb1af3ff58e07a",
+"vision__3D__utils_8py.html#a98f504ec1d9a17769ad241f28580d805"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
