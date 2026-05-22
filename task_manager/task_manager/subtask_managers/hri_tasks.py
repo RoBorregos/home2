@@ -1305,7 +1305,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
-    ) -> tuple[Status, dict[int, str], dict[int, list[str]], dict[int, list[str]]]:
+    ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]], dict[int, list[str]]]:
         """
         Categorize objects based on their shelf levels.
 
@@ -1315,7 +1315,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Returns:
             Status: Execution status.
-            dict[int, str]: Dictionary mapping shelf levels to categories (space separated).
+            dict[int, list[str]]: Dictionary mapping shelf levels to categories.
             dict[int, list[str]]: Dictionary mapping shelf levels to objects to add.
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
@@ -1388,10 +1388,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Logger.info(self.node, "Finished executing categorize_objects")
 
-        # Old API compatibility: space-separated categories string
-        old_api = {level: " ".join(cats) for level, cats in categorized_shelves.items()}
-
-        return Status.EXECUTION_SUCCESS, old_api, objects_to_add, categorized_shelves
+        return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add, categorized_shelves
 
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
