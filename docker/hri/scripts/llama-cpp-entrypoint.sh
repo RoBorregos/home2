@@ -22,8 +22,8 @@ wait_for_server() {
     echo "Server on port $port is ready."
 }
 
-# qwen3-8b on port 11434 — hric, carry, gpsr
-if [ "$ROLE" = "hric" ] || [ "$ROLE" = "carry" ] || [ "$ROLE" = "gpsr" ]; then
+# qwen3-8b on port 11434 — hric, gpsr
+if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ]; then
     echo "Starting qwen3-8b on port 11434..."
     llama-server \
         --model "$MODELS_DIR/qwen3-8b.Q4_K_M.gguf" \
@@ -59,3 +59,5 @@ if [ "$ROLE" = "gpsr" ]; then
 fi
 
 echo "All servers ready. Container running..."
+# Keep container alive and exit if any llama-server process dies
+wait
