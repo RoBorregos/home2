@@ -45,7 +45,7 @@ PATH = str(pathlib.Path(__file__).parent)
 PATH = get_package_share_directory("vision_general")
 KNOWN_FACES_PATH = PATH + "/Utils/known_faces"
 
-INSIGHTFACE_MODEL = "buffalo_l"
+INSIGHTFACE_MODEL = "buffalo_sc"
 INSIGHTFACE_CTX_ID = 0
 
 
@@ -240,7 +240,7 @@ class FaceRecognition(Node):
         try:
             lab = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2LAB)
             l_img, a, b = cv2.split(lab)
-            clahe = cv2.createCLAHE(clipLimit=0.5, tileGridSize=(16, 16))
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(16, 16))
             l_img = clahe.apply(l_img)
             lab = cv2.merge((l_img, a, b))
             return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
@@ -381,7 +381,7 @@ class FaceRecognition(Node):
                     flag = True
                     break
 
-            if not flag:
+            if not flag or name == "Unknown":
                 query_embedding = ins_face.embedding.astype(np.float32)
 
                 if len(self.people_encodings) > 0:

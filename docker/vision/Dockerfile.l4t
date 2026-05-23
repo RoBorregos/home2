@@ -49,6 +49,7 @@ RUN pip install --upgrade pip && \
     numpy==1.26.4 \
     cmake==3.25.2 \
     face_recognition \
+    insightface \
     ultralytics==8.4.19 \
     lap \
     tqdm \
@@ -58,7 +59,6 @@ RUN pip install --upgrade pip && \
     scipy \
     onnxslim>=0.1.71 \
     onnxruntime-gpu \
-    mediapipe
     grpcio==1.71.0 \
     protobuf==5.29.1
 
