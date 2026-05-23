@@ -768,7 +768,25 @@ class MotionPlanningServer(Node):
                 "ensure_arm_ready -> reactivating trajectory controller"
             )
             self._reactivate_controller()
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=1.0))
+            # Wait for arm to reach RUNNING state (1) instead of a fixed sleep.
+            # After recovery the arm transitions through states 4→5→1 and a
+            # fixed 1 s sleep is too short, causing GOAL_TOLERANCE_VIOLATED.
+            deadline = self.get_clock().now() + rclpy.duration.Duration(seconds=8.0)
+            while self.get_clock().now() < deadline:
+                if (
+                    self._arm_state is not None
+                    and self._arm_state.state == 1
+                    and self._arm_state.err == 0
+                ):
+                    break
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            else:
+                s = self._arm_state.state if self._arm_state else "?"
+                self.get_logger().warn(
+                    f"ensure_arm_ready -> arm did not reach RUNNING within 8 s (state={s})"
+                )
+            # Small settle delay once the arm reports RUNNING.
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.3))
 
     def reset_xarm_controller(self, request, response):
         self._reactivate_controller()
