@@ -138,7 +138,7 @@ class TestHriManager(Node):
 
         if TEST_TAKE_ORDER:
             self.test_take_order()
-        
+
         self.test_follow()
 
         exit(0)
@@ -147,7 +147,6 @@ class TestHriManager(Node):
         self.vision_manager.get_track_person()
         self.manipulation_manager.follow_person(True)
         self.navigation_manager.follow_person(True)
-        
 
     def individual_functions(self):
         # Test say
