@@ -1,5 +1,11 @@
 #!/bin/sh
 
+ENV_FILE="$(dirname "$0")/../.env"
+if [ -f "$ENV_FILE" ]; then
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+fi
+
 ask_for_model() {
     case " $MODELS_TO_DOWNLOAD " in
         *" all "*) return 0 ;;
@@ -91,6 +97,20 @@ download_ei_model() {
     if [ -z "$api_key" ]; then
         printf "Enter Edge Impulse API key for %s: " "$model_name"
         read -r api_key
+        if [ -n "$api_key" ] && [ -f "$ENV_FILE" ]; then
+            local env_var
+            case "$model_name" in
+                door) env_var="EI_API_KEY_DOOR" ;;
+                kws)  env_var="EI_API_KEY_KWS"  ;;
+                *)    env_var="EI_API_KEY_$(echo "$model_name" | tr '[:lower:]' '[:upper:]')" ;;
+            esac
+            if grep -q "^${env_var}=" "$ENV_FILE"; then
+                sed -i "s|^${env_var}=.*|${env_var}=${api_key}|" "$ENV_FILE"
+            else
+                printf '\n%s=%s\n' "$env_var" "$api_key" >> "$ENV_FILE"
+            fi
+            echo "API key saved to $ENV_FILE"
+        fi
     fi
 
     if [ -z "$api_key" ]; then
