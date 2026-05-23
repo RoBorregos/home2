@@ -14,5 +14,6 @@ var xarm__configurations_8py =
     [ "RECEIVE_OBJECT", "xarm__configurations_8py.html#a1ebb73dff17d4fb86c8530a2eda2fe58", null ],
     [ "SCAN_FLOOR_CARRY_BAG_POSE", "xarm__configurations_8py.html#a2bb2a5e5161403e9e48a8ed3b652fa54", null ],
     [ "TABLE_STARE", "xarm__configurations_8py.html#a9eb785a1b94b7fb277bc12ed1644044b", null ],
+    [ "TAKE_OBJECT", "xarm__configurations_8py.html#ab65d3bbb022f09a17bbe258ad7d3d377", null ],
     [ "XARM_CONFIGURATIONS", "xarm__configurations_8py.html#a9904f63744fd7b0759bfcf87a03f8ff9", null ]
 ];

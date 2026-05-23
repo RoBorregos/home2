@@ -115,6 +115,7 @@ var hierarchy =
     [ "mujoco_ros2_sensors::MujocoRos2Sensors::Sensors", "structmujoco__ros2__sensors_1_1MujocoRos2Sensors_1_1Sensors.html", null ],
     [ "frida_constants.vision_classes.ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ],
     [ "demo_manager.DemoTM.States", "classdemo__manager_1_1DemoTM_1_1States.html", null ],
+    [ "demo_roborregosday.DemoRoborregosDay.States", "classdemo__roborregosday_1_1DemoRoborregosDay_1_1States.html", null ],
     [ "egsr_cut.EGPSRTM.States", "classegsr__cut_1_1EGPSRTM_1_1States.html", null ],
     [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
     [ "str", null, [
@@ -198,6 +199,7 @@ var hierarchy =
       [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
       [ "demo_becas.DemoBecas", "classdemo__becas_1_1DemoBecas.html", null ],
       [ "demo_manager.DemoTM", "classdemo__manager_1_1DemoTM.html", null ],
+      [ "demo_roborregosday.DemoRoborregosDay", "classdemo__roborregosday_1_1DemoRoborregosDay.html", null ],
       [ "dishwasher_node.DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", null ],
       [ "dock_to_handle.DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", null ],
       [ "ds4_demo.ServoDS4", "classds4__demo_1_1ServoDS4.html", null ],

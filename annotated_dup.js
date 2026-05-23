@@ -56,6 +56,9 @@ var annotated_dup =
     [ "demo_manager", "namespacedemo__manager.html", [
       [ "DemoTM", "classdemo__manager_1_1DemoTM.html", "classdemo__manager_1_1DemoTM" ]
     ] ],
+    [ "demo_roborregosday", "namespacedemo__roborregosday.html", [
+      [ "DemoRoborregosDay", "classdemo__roborregosday_1_1DemoRoborregosDay.html", "classdemo__roborregosday_1_1DemoRoborregosDay" ]
+    ] ],
     [ "detection", "namespacedetection.html", [
       [ "Detection", "classdetection_1_1Detection.html", "classdetection_1_1Detection" ]
     ] ],

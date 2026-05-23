@@ -54,6 +54,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacedemo__face.html#ae3adde7c73c08762a4607a57106cd131", null ]
     ] ],
     [ "demo_manager", "namespacedemo__manager.html", "namespacedemo__manager" ],
+    [ "demo_roborregosday", "namespacedemo__roborregosday.html", "namespacedemo__roborregosday" ],
     [ "detection", "namespacedetection.html", "namespacedetection" ],
     [ "detectors", "namespacedetectors.html", "namespacedetectors" ],
     [ "dishwasher_node", "namespacedishwasher__node.html", "namespacedishwasher__node" ],
