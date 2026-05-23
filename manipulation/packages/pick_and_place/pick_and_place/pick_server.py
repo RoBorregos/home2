@@ -274,6 +274,14 @@ class PickMotionServer(Node):
 
         self.save_collision_objects()
 
+        # Clear stale octomap voxels before planning. The arm may have stopped
+        # mid-motion in a previous attempt (e-stop, error), leaving the depth
+        # sensor's view of the arm itself captured as an obstacle. Those voxels
+        # block goal-tree sampling for every grasp pose until explicitly cleared.
+        if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+            self._clear_octomap_client.call_async(Empty.Request())
+            time.sleep(0.3)
+
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
                 ee_link_pose = copy.deepcopy(pose)
