@@ -6,7 +6,7 @@ Demo RoborrEGOS Day - Joystick-driven waiter demo.
 Flow (base does NOT move in this demo):
   1. GREET           – Frida introduces herself as the waiter and recites the menu.
   2. TAKE_ORDER      – Take the customer's order via hri.ask_and_confirm.
-  3. TURN_TO_PICK    – Arm turns 180° (table_stare_back); press X to confirm pick.
+  3. TURN_TO_PICK    – Arm turns 180° (table_stare); press X to confirm pick.
   4. PICK_OBJECT     – Pick ordered item from the turned pose; return to table_stare.
   5. WAIT_AFTER_PICK – Press Triangle to confirm and continue.
   6. PLACE_OBJECT    – Place item (retries + deus ex machina fallback).
@@ -131,7 +131,7 @@ class DemoRoborregosDay(Node):
     def _pick_with_retry(self, object_name: str) -> int:
         """Pick object_name with ATTEMPT_LIMIT retries then deus ex machina."""
         self.subtask_manager.hri.say(f"I will now pick the {object_name}.", wait=False)
-        # Arm is already at table_stare_back (turned 180° in TURN_TO_PICK);
+        # Arm is already at table_stare (turned 180° in TURN_TO_PICK);
         # do NOT move it back here.
 
         # Wait for the camera to stabilize and detect objects
@@ -254,7 +254,7 @@ class DemoRoborregosDay(Node):
         # ──────────────────── TURN_TO_PICK ─────────────────────────────
         elif self.current_state == DemoRoborregosDay.States.TURN_TO_PICK:
             if not self._state_announced:
-                self.subtask_manager.manipulation.move_to_position("table_stare_back")
+                self.subtask_manager.manipulation.move_to_position("table_stare")
                 self.subtask_manager.hri.say(
                     "I am scanning the table for your item.",
                     wait=False,
