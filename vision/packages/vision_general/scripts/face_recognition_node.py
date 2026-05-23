@@ -50,7 +50,6 @@ PATH = get_package_share_directory("vision_general")
 KNOWN_FACES_PATH = PATH + "/Utils/known_faces"
 
 INSIGHTFACE_MODEL = "buffalo_sc"
-INSIGHTFACE_CTX_ID = 0
 
 
 class FaceRecognition(Node):
@@ -126,14 +125,12 @@ class FaceRecognition(Node):
     def setup(self):
         """Initialise InsightFace pipeline and load known-face embeddings."""
 
-        self.get_logger().info(
-            f"Loading InsightFace model '{INSIGHTFACE_MODEL}' on ctx_id={INSIGHTFACE_CTX_ID} …"
-        )
+        self.get_logger().info(f"Loading InsightFace model '{INSIGHTFACE_MODEL}'")
         self.app = FaceAnalysis(
             name=INSIGHTFACE_MODEL,
             providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
         )
-        self.app.prepare(ctx_id=INSIGHTFACE_CTX_ID, det_size=(640, 640))
+        self.app.prepare(ctx_id=0, det_size=(640, 640))
         self.pbar.update(1)
 
         self.new_name = ""
@@ -171,6 +168,7 @@ class FaceRecognition(Node):
             print(f"Error: {e}")
 
     def image_info_callback(self, data):
+        """Callback to receive camera info"""
         self.imageInfo = data
 
     def new_name_callback(self, req, res):
@@ -226,6 +224,7 @@ class FaceRecognition(Node):
             )
 
     def process_imgs(self) -> None:
+        """Make encodings of known people images"""
         self.get_logger().info("Processing images")
         for filename in os.listdir(KNOWN_FACES_PATH):
             if filename == ".DS_Store":
@@ -311,6 +310,7 @@ class FaceRecognition(Node):
         self.new_name = ""
 
     def publish_follow_face(self, xc: float, yc: float, largest_face_name: str) -> None:
+        """Publish coordinates for arm to follow face"""
         difx = 0.0 if xc == 0 else xc - self.center[0]
         dify = 0.0 if yc == 0 else self.center[1] - yc
         move_x = difx * MAX_DEGREE / self.center[0]
