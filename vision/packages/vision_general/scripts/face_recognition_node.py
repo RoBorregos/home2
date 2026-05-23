@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
+
+# Node that detects and recognizes faces from a ZED camera using InsightFace (ArcFace).
 # ros2 run vision_general face_recognition_node.py
+# ros2 service call /vision/new_name frida_interfaces/srv/SaveName "{name: 'hector'}"
+
 import os
 import pathlib
 
