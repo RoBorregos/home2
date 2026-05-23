@@ -236,15 +236,6 @@ class HRIC_TM(Node):
                 self.subtask_manager.vision.describe_person(self.set_description)
                 self.subtask_manager.hri.say("I have saved your face.")
                 self.subtask_manager.manipulation.follow_face(False)
-
-                # TODO: this is handled in TAKE_BAG state, delete when we start using it.
-                guest_1 = self.guests[FIRST_GUEST_IDX]
-                if self.current_guest_idx == SECOND_GUEST_IDX:
-                    self.subtask_manager.hri.say(
-                        f"Another guest named {guest_1.name} is already in the living room. {guest_1.description}.",
-                        wait=True,
-                    )
-
                 if self.current_guest_idx == FIRST_GUEST_IDX:
                     self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
                 else:
