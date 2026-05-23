@@ -58,7 +58,7 @@ RUN pip install --upgrade pip && \
     scipy \
     onnxslim>=0.1.71 \
     onnxruntime-gpu \
-    mediapipe
+    mediapipe \
     grpcio==1.71.0 \
     protobuf==5.29.1
 
