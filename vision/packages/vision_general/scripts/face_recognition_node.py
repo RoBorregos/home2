@@ -8,7 +8,6 @@ import os
 import pathlib
 
 import cv2
-import insightface
 import numpy as np
 import rclpy
 import rclpy.duration
@@ -23,12 +22,11 @@ from std_msgs.msg import Bool, String
 
 from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
-    CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     FACE_RECOGNITION_IMAGE,
-    FLIP_IMAGE_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
@@ -50,6 +48,7 @@ KNOWN_FACES_PATH = PATH + "/Utils/known_faces"
 INSIGHTFACE_MODEL = "buffalo_l"
 INSIGHTFACE_CTX_ID = 0
 
+
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     """Return cosine similarity in [−1, 1]. Higher = more similar."""
     a = a / (np.linalg.norm(a) + 1e-10)
@@ -61,10 +60,11 @@ def _cosine_distances(known: list[np.ndarray], query: np.ndarray) -> np.ndarray:
     """Return 1 − cosine_similarity for each embedding in *known*."""
     if not known:
         return np.array([])
-    mat = np.stack(known)                       
+    mat = np.stack(known)
     mat = mat / (np.linalg.norm(mat, axis=1, keepdims=True) + 1e-10)
-    q   = query / (np.linalg.norm(query) + 1e-10)
-    return 1.0 - mat @ q                        
+    q = query / (np.linalg.norm(query) + 1e-10)
+    return 1.0 - mat @ q
+
 
 class FaceRecognition(Node):
     def __init__(self):
@@ -80,7 +80,7 @@ class FaceRecognition(Node):
 
         self.image_subscriber = self.create_subscription(
             Image,
-            CAMERA_TOPIC,
+            IMAGE_ORIENTED_TOPIC,
             self.image_callback,
             self._img_qos,
             callback_group=self.callback_group,
@@ -113,16 +113,17 @@ class FaceRecognition(Node):
             callback_group=self.callback_group,
         )
 
-        self.follow_publisher      = self.create_publisher(Point,      FOLLOW_TOPIC,           10)
-        self.view_pub              = self.create_publisher(Image,      FACE_RECOGNITION_IMAGE, 10)
-        self.name_publisher        = self.create_publisher(String,     PERSON_NAME_TOPIC,      10)
-        self.person_list_publisher = self.create_publisher(PersonList, PERSON_LIST_TOPIC,      10)
+        self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
+        self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
+        self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
+        self.person_list_publisher = self.create_publisher(
+            PersonList, PERSON_LIST_TOPIC, 10
+        )
 
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
-        self.vision_active   = True
-        self.is_processing   = False
-        self.flip_image      = False
+        self.vision_active = True
+        self.is_processing = False
 
         self.create_subscription(
             Bool,
@@ -131,17 +132,9 @@ class FaceRecognition(Node):
             10,
             callback_group=self.callback_group,
         )
-        self.create_subscription(
-            Bool,
-            FLIP_IMAGE_TOPIC,
-            self._flip_callback,
-            10,
-            callback_group=self.callback_group,
-        )
 
         self.setup()
         self.create_timer(0.2, self.run, callback_group=self.callback_group)
-
 
     def setup(self):
         """Initialise InsightFace pipeline and load known-face embeddings."""
@@ -156,21 +149,21 @@ class FaceRecognition(Node):
         self.app.prepare(ctx_id=INSIGHTFACE_CTX_ID, det_size=(640, 640))
         self.pbar.update(1)
 
-        self.new_name        = ""
-        self.image_view      = None
-        self.image           = None
-        self.prev_faces      = []
-        self.curr_faces      = []
-        self.depth_image     = []
-        self.follow_name     = "area"
-        self.id              = None
-        self.processing_id   = rclpy.duration.Infinite
+        self.new_name = ""
+        self.image_view = None
+        self.image = None
+        self.prev_faces = []
+        self.curr_faces = []
+        self.depth_image = []
+        self.follow_name = "area"
+        self.id = None
+        self.processing_id = rclpy.duration.Infinite
 
         self.default_name = self.declare_parameter("default_name", DEFAULT_NAME)
         self.default_name = self.default_name.value
 
         self.people_encodings: list[np.ndarray] = []
-        self.people_names:     list[str]        = []
+        self.people_names: list[str] = []
         self.people_encodings.append(np.zeros(512, dtype=np.float32))
         self.people_names.append("random")
 
@@ -179,9 +172,8 @@ class FaceRecognition(Node):
         self.pbar.update(1)
         self.get_logger().info("Face Recognition Ready  (insightface / ArcFace 512-d)")
 
-
     def image_callback(self, data):
-        self.id    = data.header.stamp
+        self.id = data.header.stamp
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
@@ -192,7 +184,6 @@ class FaceRecognition(Node):
 
     def image_info_callback(self, data):
         self.imageInfo = data
-
 
     def new_name_callback(self, req, res):
         """Assign a name to the currently largest detected face."""
@@ -217,7 +208,6 @@ class FaceRecognition(Node):
             self.get_logger().info(f"Follow name: {self.follow_name}")
             res.success = True
         return res
-
 
     def success(self, message) -> None:
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
@@ -259,7 +249,7 @@ class FaceRecognition(Node):
 
     def process_img(self, filename: str) -> None:
         img_path = f"{KNOWN_FACES_PATH}/{filename}"
-        img_bgr  = cv2.imread(img_path)
+        img_bgr = cv2.imread(img_path)
         if img_bgr is None:
             self.get_logger().warn(f"Could not load image: {img_path}")
             return
@@ -279,18 +269,22 @@ class FaceRecognition(Node):
     def save_face(self, name: str, xc: float, yc: float) -> None:
         """Append detected face to curr_faces and face_list PersonList."""
         self.curr_faces.append({"x": xc, "y": yc, "name": name})
-        curr_person      = Person()
+        curr_person = Person()
         curr_person.name = name
-        curr_person.x    = int((xc - self.center[0]) * MAX_DEGREE / self.center[0])
-        curr_person.y    = int((self.center[1] - yc) * MAX_DEGREE / self.center[1])
+        curr_person.x = int((xc - self.center[0]) * MAX_DEGREE / self.center[0])
+        curr_person.y = int((self.center[1] - yc) * MAX_DEGREE / self.center[1])
         self.face_list.list.append(curr_person)
 
     def assign_name(
         self,
-        left: float, top: float, bottom: float, right: float,
-        xc: float,   yc: float,
+        left: float,
+        top: float,
+        bottom: float,
+        right: float,
+        xc: float,
+        yc: float,
     ) -> None:
-        crop     = self.frame[top:bottom, left:right]
+        crop = self.frame[top:bottom, left:right]
         img_name = f"{self.new_name}.png"
         save_path = f"{KNOWN_FACES_PATH}/{img_name}"
         cv2.imwrite(save_path, crop)
@@ -299,44 +293,34 @@ class FaceRecognition(Node):
 
         for i, face in enumerate(self.curr_faces):
             if face["x"] == xc and face["y"] == yc:
-                self.curr_faces[i]["name"]       = self.new_name
-                self.face_list.list[i].name      = self.new_name
+                self.curr_faces[i]["name"] = self.new_name
+                self.face_list.list[i].name = self.new_name
                 break
 
         self.success(f"{self.new_name} face enrolled")
         self.new_name = ""
 
-
-    def publish_follow_face(
-        self, xc: float, yc: float, largest_face_name: str
-    ) -> None:
-        difx   = 0.0 if xc == 0 else xc - self.center[0]
-        dify   = 0.0 if yc == 0 else self.center[1] - yc
+    def publish_follow_face(self, xc: float, yc: float, largest_face_name: str) -> None:
+        difx = 0.0 if xc == 0 else xc - self.center[0]
+        dify = 0.0 if yc == 0 else self.center[1] - yc
         move_x = difx * MAX_DEGREE / self.center[0]
         move_y = dify * MAX_DEGREE / self.center[1]
 
-        target   = Point()
+        target = Point()
         target.x = move_x
         target.y = move_y
         self.follow_publisher.publish(target)
 
-        person_seen      = String()
+        person_seen = String()
         person_seen.data = largest_face_name
         self.name_publisher.publish(person_seen)
         self.person_list_publisher.publish(self.face_list)
-
 
     def _active_callback(self, msg):
         if msg.data == self.vision_active:
             return
         self.vision_active = msg.data
         self.get_logger().info(f"Face recognition active: {self.vision_active}")
-
-    def _flip_callback(self, msg):
-        if msg.data != self.flip_image:
-            self.flip_image = msg.data
-            self.get_logger().info(f"Flip image: {self.flip_image}")
-
 
     def run(self) -> None:
         if not self.vision_active:
@@ -358,32 +342,29 @@ class FaceRecognition(Node):
         finally:
             self.is_processing = False
 
-
     def _run_inference(self) -> None:
         self.processing_id = self.id
 
         self.frame = self.image
-        if self.flip_image:
-            self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
         detected_faces = self.app.get(self.apply_clahe(self.frame))
 
-        largest_area         = 0
-        follow_face_params   = None
-        largest_area_params  = None
-        largest_face_name    = ""
+        largest_area = 0
+        follow_face_params = None
+        largest_area_params = None
+        largest_face_name = ""
 
-        self.curr_faces  = []
-        self.face_list   = PersonList()
-        detected         = False
+        self.curr_faces = []
+        self.face_list = PersonList()
+        detected = False
 
         for ins_face in detected_faces:
             x1, y1, x2, y2 = ins_face.bbox.astype(int)
 
-            left   = max(x1 - TRACK_THRESHOLD, 0)
-            right  = min(x2 + TRACK_THRESHOLD, self.frame.shape[1])
-            top    = max(y1 - TRACK_THRESHOLD, 0)
+            left = max(x1 - TRACK_THRESHOLD, 0)
+            right = min(x2 + TRACK_THRESHOLD, self.frame.shape[1])
+            top = max(y1 - TRACK_THRESHOLD, 0)
             bottom = min(y2 + TRACK_THRESHOLD, self.frame.shape[0])
 
             centerx = (x1 + x2) / 2.0
@@ -404,15 +385,17 @@ class FaceRecognition(Node):
                 query_embedding = ins_face.embedding.astype(np.float32)
 
                 if len(self.people_encodings) > 0:
-                    distances       = _cosine_distances(self.people_encodings, query_embedding)
-                    best_match_idx  = int(np.argmin(distances))
+                    distances = _cosine_distances(
+                        self.people_encodings, query_embedding
+                    )
+                    best_match_idx = int(np.argmin(distances))
                     best_similarity = 1.0 - float(distances[best_match_idx])
 
                     if best_similarity >= MATCH_THRESHOLD and best_match_idx != 0:
                         name = self.people_names[best_match_idx]
 
-            xc   = left + (right - left) / 2.0
-            yc   = top  + (bottom - top) / 2.0
+            xc = left + (right - left) / 2.0
+            yc = top + (bottom - top) / 2.0
             area = (right - left) * (bottom - top)
 
             self.save_face(name, xc, yc)
@@ -421,13 +404,17 @@ class FaceRecognition(Node):
             color = (255, 0, 0) if flag else (0, 0, 255)
             cv2.rectangle(
                 self.annotated_frame,
-                (left, bottom - 35), (right, bottom),
-                color, cv2.FILLED,
+                (left, bottom - 35),
+                (right, bottom),
+                color,
+                cv2.FILLED,
             )
             cv2.rectangle(
                 self.annotated_frame,
-                (left, top), (right, bottom),
-                color, 2,
+                (left, top),
+                (right, bottom),
+                color,
+                2,
             )
             cv2.putText(
                 self.annotated_frame,
@@ -440,9 +427,9 @@ class FaceRecognition(Node):
             )
 
             if area > largest_area:
-                largest_area        = area
+                largest_area = area
                 largest_area_params = [left, top, right, bottom]
-                largest_face_name   = name
+                largest_face_name = name
 
             if self.follow_name == name:
                 follow_face_params = [left, top, right, bottom]
@@ -453,7 +440,7 @@ class FaceRecognition(Node):
         if largest_area != 0:
             left, top, right, bottom = largest_area_params
             xc = left + (right - left) / 2.0
-            yc = top  + (bottom - top) / 2.0
+            yc = top + (bottom - top) / 2.0
 
             if self.new_name != "":
                 largest_face_name = self.new_name
@@ -463,7 +450,7 @@ class FaceRecognition(Node):
             if follow_face_params is not None:
                 left, top, right, bottom = follow_face_params
                 xc = left + (right - left) / 2.0
-                yc = top  + (bottom - top) / 2.0
+                yc = top + (bottom - top) / 2.0
                 largest_face_name = self.follow_name
             else:
                 detected = False
@@ -477,15 +464,17 @@ class FaceRecognition(Node):
 
         self.publish_image()
 
+
 def _bbox_area(bbox) -> float:
     """Return pixel area of an InsightFace bbox [x1, y1, x2, y2]."""
     x1, y1, x2, y2 = bbox
     return max(0.0, x2 - x1) * max(0.0, y2 - y1)
 
+
 def main(args=None):
     rclpy.init(args=args)
     try:
-        node     = FaceRecognition()
+        node = FaceRecognition()
         executor = rclpy.executors.MultiThreadedExecutor(5)
         executor.add_node(node)
         executor.spin()
