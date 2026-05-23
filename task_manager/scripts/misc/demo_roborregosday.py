@@ -232,7 +232,6 @@ class DemoRoborregosDay(Node):
                 hotwords=menu_hotwords,
                 initial_prompt=f"The customer is ordering from a menu: {menu_hotwords}.",
                 options=list(MENU_ITEMS),
-                # use_hotwords=True,
                 retries=3,
             )
             if status == Status.EXECUTION_SUCCESS and item and item in MENU_ITEMS:
