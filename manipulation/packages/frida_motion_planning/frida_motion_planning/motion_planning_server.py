@@ -321,6 +321,7 @@ class MotionPlanningServer(Node):
 
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
+        self._ensure_arm_ready()
         pose = goal_handle.request.pose
         target_link = goal_handle.request.target_link
         tolerance_position = (
@@ -342,7 +343,6 @@ class MotionPlanningServer(Node):
 
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            self._ensure_arm_ready()
             was_execution_successful = self.planner.execute_plan(trajectory_plan)
             return was_execution_successful
         else:
@@ -381,6 +381,7 @@ class MotionPlanningServer(Node):
             self.get_logger().error(str(e))
             return False
 
+        self._ensure_arm_ready()
         self.get_logger().info("Planning joint goal...")
         was_plan_successful, trajectory_plan = self.planner.plan_joint_goal(
             joint_positions,
@@ -391,7 +392,6 @@ class MotionPlanningServer(Node):
         self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            self._ensure_arm_ready()
             was_execution_successful = self.planner.execute_plan(trajectory_plan)
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
@@ -729,7 +729,7 @@ class MotionPlanningServer(Node):
         )
 
     def _ensure_arm_ready(self):
-        """Check arm state and auto-recover from known-bad states before executing a trajectory.
+        """Check arm state and auto-recover from known-bad states before planning.
         No-op in simulation (real_xarm=False) or when robot_states not yet received."""
         if not self.real_xarm or self._arm_state is None:
             return
