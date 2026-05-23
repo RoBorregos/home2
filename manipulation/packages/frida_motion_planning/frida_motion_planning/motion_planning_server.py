@@ -193,6 +193,11 @@ class MotionPlanningServer(Node):
             "/controller_manager/switch_controller",
             callback_group=self.callback_group,
         )
+        self._clear_octomap_client = self.create_client(
+            Empty,
+            "/clear_octomap",
+            callback_group=self.callback_group,
+        )
 
         self._arm_state: RobotMsg | None = None
         if self.real_xarm:
@@ -803,14 +808,14 @@ class MotionPlanningServer(Node):
                 "ensure_arm_ready -> reactivating trajectory controller"
             )
             self._reactivate_controller()
-            # Wait for arm to reach RUNNING state (1) instead of a fixed sleep.
-            # After recovery the arm transitions through states 4→5→1 and a
-            # fixed 1 s sleep is too short, causing GOAL_TOLERANCE_VIOLATED.
+            # Wait for arm to leave error/stop state. State 1 (SPORT) only fires
+            # while actively moving; state 2 is normal idle/standby after re-enable.
+            # Both are valid "ready" states per _xarm_is_ready_write (curr_state <= 2).
             deadline = self.get_clock().now() + rclpy.duration.Duration(seconds=8.0)
             while self.get_clock().now() < deadline:
                 if (
                     self._arm_state is not None
-                    and self._arm_state.state == 1
+                    and self._arm_state.state in (1, 2)
                     and self._arm_state.err == 0
                 ):
                     break
@@ -818,9 +823,16 @@ class MotionPlanningServer(Node):
             else:
                 s = self._arm_state.state if self._arm_state else "?"
                 self.get_logger().warn(
-                    f"ensure_arm_ready -> arm did not reach RUNNING within 8 s (state={s})"
+                    f"ensure_arm_ready -> arm did not reach ready state within 8 s (state={s})"
                 )
-            # Small settle delay once the arm reports RUNNING.
+            # Clear stale octomap voxels: when the arm stops mid-motion the depth
+            # sensor captures the arm itself as an obstacle, making every goal pose
+            # look like a collision and causing OMPL to fail on the goal tree.
+            self.get_logger().info("ensure_arm_ready -> clearing octomap")
+            self._call_svc(
+                self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
+            )
+            # Small settle delay after octomap clear before planning starts.
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.3))
 
     def reset_xarm_controller(self, request, response):
