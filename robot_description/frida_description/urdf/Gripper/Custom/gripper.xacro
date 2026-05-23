@@ -122,11 +122,11 @@
            contact compute cost; condim=4 is the sweet spot: kills the
            rotation-around-normal failure mode while staying realtime. -->
       <reference name="right_finger">
-          <joint range="0 0.056" limited="true" />
+          <joint range="0 0.056" limited="true" damping="5.0" armature="0.01"/>
           <geom name="right_finger_collision_0" friction="5.0 2.0 0.2" solref="-50000 -500" solimp="0.98 0.999 0.0001" condim="4"/>
       </reference>
       <reference name="left_finger">
-          <joint range="0 0.056" limited="true" />
+          <joint range="0 0.056" limited="true" damping="5.0" armature="0.01"/>
           <geom name="left_finger_collision_0" friction="5.0 2.0 0.2" solref="-50000 -500" solimp="0.98 0.999 0.0001" condim="4"/>
       </reference>
       <equality>
