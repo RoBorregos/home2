@@ -355,13 +355,8 @@ class PickManager:
                 if len(grasp_poses) == 0:
                     continue
 
-                if len(grasp_poses) > 5:
-                    indices = np.random.choice(len(grasp_poses), size=5, replace=False)
-                    grasp_poses = [grasp_poses[i] for i in indices]
-                    grasp_scores = [grasp_scores[i] for i in indices]
-                else:
-                    grasp_poses = grasp_poses[:5]
-                    grasp_scores = grasp_scores[:5]
+                grasp_poses = grasp_poses[:5]
+                grasp_scores = grasp_scores[:5]
 
                 new_grasp_poses = []
                 new_grasp_scores = []

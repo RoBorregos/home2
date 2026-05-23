@@ -7,6 +7,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
 from frida_interfaces.srv import GraspDetection
+from frida_constants.manipulation_constants import GRASP_DETECTION_SERVICE
 import sensor_msgs_py.point_cloud2 as pc2
 
 # sys.path must be extended before importing contact_graspnet_pytorch.
@@ -64,7 +65,7 @@ class ContactGraspNetNode(Node):
             # We don't exit here to allow the node to stay alive for debugging
 
         self.srv = self.create_service(
-            GraspDetection, "detect_grasps", self.detect_grasps_callback
+            GraspDetection, GRASP_DETECTION_SERVICE, self.detect_grasps_callback
         )
 
     def detect_grasps_callback(self, request, response):

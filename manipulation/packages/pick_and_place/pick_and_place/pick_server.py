@@ -273,6 +273,7 @@ class PickMotionServer(Node):
             grasping_alternative_distance = -0.025
 
         self.save_collision_objects()
+        self._clear_pick_collision_objects()
 
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
@@ -684,6 +685,25 @@ class PickMotionServer(Node):
 
     def save_collision_objects(self):
         self.collision_objects = self.get_collision_objects()
+
+    def _clear_pick_collision_objects(self):
+        """Remove frida_pick_object spheres so MoveIt can plan to the grasp pose.
+
+        The object's collision spheres sit at the contact points — the gripper
+        fingers are in collision with them when the gripper is at the grasp pose,
+        which causes OMPL to report "Unable to sample any valid states for goal
+        tree".  We remove them before planning; other collision objects (table
+        plane, neighbouring objects) stay.
+        """
+        if not self._remove_collision_object_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warn(
+                "remove_collision_object service unavailable — "
+                "skipping pick-object sphere removal"
+            )
+            return
+        for obj in self.collision_objects:
+            if PICK_OBJECT_NAMESPACE in obj.id:
+                self.remove_collision_object(obj.id)
 
     def attach_pick_object(self):
         obj_lowest = None
