@@ -42,7 +42,7 @@ def generate_launch_description():
                 parameters=[
                     {
                         "ckpt_dir": LaunchConfiguration("ckpt_dir").perform(context),
-                        "forward_passes": 1,
+                        "forward_passes": 2,
                         "z_range": [0.2, 1.8],
                     }
                 ],
@@ -102,6 +102,9 @@ def generate_launch_description():
                     {
                         # based on distance between end-effector link and contact point with objects e.g. where you grip
                         "ee_link_offset": -0.09,
+                        # minimum height above the detected table plane a grasp must clear.
+                        # 0.04 = 4 cm (sim default); increase for real robot to avoid table hits.
+                        "pick_min_height": 0.10,
                     },
                     sim_time_param,
                 ],
