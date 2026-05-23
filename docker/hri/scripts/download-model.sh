@@ -159,19 +159,11 @@ download_ei_model() {
 }
 
 if ask_for_model ei-door 6; then
-    if [ -f "$EI_DOWNLOAD_DIR/door/model.eim" ]; then
-        echo "Edge Impulse door model already exists. Skipping download."
-    else
-        download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337"
-    fi
+    download_ei_model "door" "" "1337"
 fi
 
 if ask_for_model ei-kws 7; then
-    if [ -f "$EI_DOWNLOAD_DIR/kws/model.eim" ]; then
-        echo "Edge Impulse kws model already exists. Skipping download."
-    else
-        download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
-    fi
+    download_ei_model "kws" "" "1338"
 fi
 
 # Detect available image
