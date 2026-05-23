@@ -3,7 +3,7 @@
 
 <xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/Gripper/Custom/" />
 
-<xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' fixed_joints:='false' mujoco_plugin:=false">
+<xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' fixed_joints:='false' mujoco_plugin:=false ros2_control_plugin:='uf_robot_hardware/UFRobotFakeSystemHardware'">
     <xacro:unless value="${attach_to == ''}">
       <joint name="gripper_fix" type="fixed">
         <parent link="${attach_to}"/>
@@ -172,11 +172,29 @@
         <adhesion name="gripper_adhesion"      body="gripper"      ctrlrange="0 1" gain="200"/>
       </actuator>
     </mujoco>
-    <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper_mujoco_ros2_control.xacro" />
-    <xacro:gripper_mujoco_control/>
   </xacro:if>
 
-
+  <!-- ros2_control for the gripper: declared only for sim hardware (MuJoCo or
+       the fake plugin used by frida_fake_moveit_config). On real hardware the
+       gripper is driven through xarm's separate service API, NOT ros2_control —
+       UFRobotSystemHardware needs a robot_ip param per <ros2_control> block,
+       and a second instance for the gripper (without its own robot_ip) crashes
+       the controller_manager with "No param named 'robot_ip'" → SIGSEGV. For
+       fake/MuJoCo modes we still need this so rightfinger gets state-published
+       (otherwise the finger meshes render at world origin). initial_value=0.056
+       in MuJoCo opens the gripper at start; defaults to 0 elsewhere. -->
+  <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper_ros2_control.xacro" />
+  <xacro:if value="${mujoco_plugin}">
+    <xacro:gripper_ros2_control
+        ros2_control_plugin="mujoco_ros2_control/MujocoSystem"
+        initial_value="0.056" />
+  </xacro:if>
+  <xacro:unless value="${mujoco_plugin}">
+    <xacro:if value="${'Fake' in ros2_control_plugin}">
+      <xacro:gripper_ros2_control
+          ros2_control_plugin="${ros2_control_plugin}" />
+    </xacro:if>
+  </xacro:unless>
 
   </xacro:macro>
 

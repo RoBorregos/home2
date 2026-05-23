@@ -7,11 +7,22 @@ CURRENT_DIR="$(pwd)"
 echo "LS MANIPULATION"
 ls ./manipulation/packages
 
-echo "APT UPDATE" 
+echo "APT UPDATE"
 sudo apt update
 
- 
-echo "ROSDEP INIT" 
+# nanobind's stubgen.py (invoked by vamp's CMakeLists during build) needs
+# typing.get_type_hints(include_extras=True) AND typing_extensions.TypeVarTuple.
+# include_extras only exists on Python 3.11+; TypeVarTuple was added to
+# typing_extensions 4.1.0 (Jan 2022). Ubuntu 22.04's apt package
+# python3-typing-extensions ships 3.10.0.2-1 (no TypeVarTuple) so we install
+# via pip instead. Without this the vamp build aborts at the __init__.pyi
+# generation step on the ros:humble CI image.
+echo "INSTALL PYTHON BUILD DEPS (modern typing_extensions for vamp/nanobind stubgen)"
+sudo apt install -y python3-pip
+sudo pip install --upgrade 'typing_extensions>=4.6'
+
+
+echo "ROSDEP INIT"
 rosdep init
 
 echo "ROSDEP UPDATE"
