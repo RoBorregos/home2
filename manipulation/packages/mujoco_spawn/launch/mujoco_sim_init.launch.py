@@ -31,7 +31,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
     effort_control = LaunchConfiguration("effort_control", default=False)
     velocity_control = LaunchConfiguration("velocity_control", default=False)
     add_gripper = LaunchConfiguration("add_gripper", default=False)
-    load_zed = LaunchConfiguration("load_zed", default=True)
     add_vacuum_gripper = LaunchConfiguration("add_vacuum_gripper", default=False)
     add_bio_gripper = LaunchConfiguration("add_bio_gripper", default=False)
     dof = LaunchConfiguration("dof", default=6)
@@ -152,7 +151,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ros2_control_plugin=ros2_control_plugin,
         ros2_control_params="/tmp/final_frida.yaml",
         add_gripper=add_gripper,
-        load_zed=load_zed,
         add_vacuum_gripper=add_vacuum_gripper,
         add_bio_gripper=add_bio_gripper,
         add_realsense_d435i=add_realsense_d435i,
@@ -423,7 +421,6 @@ def generate_launch_description():
         [
             DeclareLaunchArgument("launch_moveit", default_value="false"),
             DeclareLaunchArgument("launch_perception", default_value="false"),
-            DeclareLaunchArgument("load_zed", default_value="true"),
             OpaqueFunction(function=generate_nodes_for_spawn),
         ]
     )
