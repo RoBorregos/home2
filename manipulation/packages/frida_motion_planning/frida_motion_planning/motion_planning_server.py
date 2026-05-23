@@ -34,6 +34,8 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
+    XARM_ROBOT_STATES_TOPIC,
+    XARM_CLEAN_ERROR_SERVICE,
 )
 
 from frida_interfaces.msg import CollisionObject
@@ -45,6 +47,8 @@ from frida_motion_planning.utils.XArmServices import XArmServices
 
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
+from xarm_msgs.msg import RobotMsg
+from xarm_msgs.srv import SetInt16, Call as XArmCall
 from rclpy.qos import QoSProfile
 from controller_manager_msgs.srv import SwitchController
 
@@ -189,6 +193,21 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
+        self._arm_state: RobotMsg | None = None
+        if self.real_xarm:
+            self._clean_error_client = self.create_client(
+                XArmCall,
+                XARM_CLEAN_ERROR_SERVICE,
+                callback_group=self.callback_group,
+            )
+            self.create_subscription(
+                RobotMsg,
+                XARM_ROBOT_STATES_TOPIC,
+                lambda msg: setattr(self, "_arm_state", msg),
+                10,
+                callback_group=self.callback_group,
+            )
+
         self.current_mode = -1
 
         self.get_logger().info("Motion Planning Server has been started")
@@ -323,6 +342,7 @@ class MotionPlanningServer(Node):
 
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
+            self._ensure_arm_ready()
             was_execution_successful = self.planner.execute_plan(trajectory_plan)
             return was_execution_successful
         else:
@@ -371,6 +391,7 @@ class MotionPlanningServer(Node):
         self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
+            self._ensure_arm_ready()
             was_execution_successful = self.planner.execute_plan(trajectory_plan)
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
@@ -649,34 +670,108 @@ class MotionPlanningServer(Node):
 
         return response
 
-    def reset_xarm_controller(self, request, response):
-        """Reactivate the xarm6_traj_controller via controller_manager."""
-        self.get_logger().info("Reactivating xarm6_traj_controller...")
+    def _call_svc(self, client, request, timeout, label):
+        """Call a ROS service with a bounded timeout. Returns True on success."""
+        elapsed = 0.0
+        while not client.service_is_ready() and elapsed < timeout:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not client.service_is_ready():
+            self.get_logger().warn(f"{label} -> service not ready after {timeout}s")
+            return False
+        future = client.call_async(request)
+        elapsed = 0.0
+        while not future.done() and elapsed < timeout:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not future.done():
+            self.get_logger().error(f"{label} -> timed out after {timeout}s")
+            return False
+        return True
 
+    def _reactivate_controller(self):
+        """Reactivate xarm6_traj_controller via controller_manager. Returns True on success."""
         if not self.switch_controller_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("switch_controller service not available")
-            return response
-
+            self.get_logger().error(
+                "_reactivate_controller -> switch_controller not available"
+            )
+            return False
         switch_req = SwitchController.Request()
         switch_req.activate_controllers = ["xarm6_traj_controller"]
         switch_req.deactivate_controllers = []
         switch_req.strictness = SwitchController.Request.BEST_EFFORT
-
         future = self.switch_controller_client.call_async(switch_req)
-
-        # Wait for the result
         start = self.get_clock().now()
         while not future.done():
             if (self.get_clock().now() - start).nanoseconds > 5e9:
-                self.get_logger().error("Timeout waiting for switch_controller")
-                return response
-
+                self.get_logger().error("_reactivate_controller -> timeout")
+                return False
         result = future.result()
         if result and result.ok:
-            self.get_logger().info("xarm6_traj_controller reactivated successfully")
-        else:
-            self.get_logger().error("Failed to reactivate xarm6_traj_controller")
+            self.get_logger().info(
+                "_reactivate_controller -> xarm6_traj_controller reactivated"
+            )
+            return True
+        self.get_logger().error("_reactivate_controller -> failed")
+        return False
 
+    def _reinit_mode1(self):
+        """Transition arm through mode 0 → mode 1 and re-enable motion."""
+        req_en = SetInt16.Request()
+        req_en.data = 0
+        self._call_svc(self.planner.mode_client, SetInt16.Request(), 5.0, "set_mode(0)")
+        self._call_svc(self.planner.state_client, req_en, 5.0, "set_state(0)")
+        req1 = SetInt16.Request()
+        req1.data = 1
+        self._call_svc(self.planner.mode_client, req1, 5.0, "set_mode(1)")
+        self._call_svc(
+            self.planner.state_client, req_en, 5.0, "set_state(0) post-mode1"
+        )
+
+    def _ensure_arm_ready(self):
+        """Check arm state and auto-recover from known-bad states before executing a trajectory.
+        No-op in simulation (real_xarm=False) or when robot_states not yet received."""
+        if not self.real_xarm or self._arm_state is None:
+            return
+        state = self._arm_state
+        recovered = False
+
+        if state.err != 0:
+            self.get_logger().warn(
+                f"ensure_arm_ready -> err={state.err}, cleaning error and reinitializing mode"
+            )
+            self._call_svc(
+                self._clean_error_client, XArmCall.Request(), 5.0, "clean_error"
+            )
+            self._reinit_mode1()
+            recovered = True
+        elif state.mode not in (0, 1):
+            self.get_logger().warn(
+                f"ensure_arm_ready -> mode={state.mode} (expected 0 or 1), restoring mode 1"
+            )
+            self._reinit_mode1()
+            recovered = True
+
+        if state.state in (3, 4):
+            self.get_logger().warn(
+                f"ensure_arm_ready -> arm state={state.state} (paused/stopped), re-enabling motion"
+            )
+            req_en = SetInt16.Request()
+            req_en.data = 0
+            self._call_svc(
+                self.planner.state_client, req_en, 5.0, "set_state(0) re-enable"
+            )
+            recovered = True
+
+        if recovered:
+            self.get_logger().info(
+                "ensure_arm_ready -> reactivating trajectory controller"
+            )
+            self._reactivate_controller()
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=1.0))
+
+    def reset_xarm_controller(self, request, response):
+        self._reactivate_controller()
         return response
 
     def joint_states_callback(self, msg: JointState):

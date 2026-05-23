@@ -561,7 +561,9 @@ class PickMotionServer(Node):
         self._stop_cartesian_velocity()
 
         # --- 6. Restore mode 1 ---
-        self._restore_mode1()
+        mode_restored = self._restore_mode1()
+        if not mode_restored:
+            return False
 
         return contact_detected
 
@@ -616,7 +618,9 @@ class PickMotionServer(Node):
         except Exception as e:
             self.get_logger().error(f"[ForceGuard] Stop error: {e}")
 
-    def _restore_mode1(self):
+    def _restore_mode1(self) -> bool:
+        """Restore the arm to mode 1 (ServoJ) after force-guarded descent.
+        Returns True on success, False if all retries fail."""
         self.get_logger().info("[ForceGuard] Restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -644,9 +648,12 @@ class PickMotionServer(Node):
             self.get_logger().info(
                 f"[ForceGuard] Mode 1 restored (attempt {attempt + 1})"
             )
-            return
+            return True
 
-        self.get_logger().error("[ForceGuard] CRITICAL: Could not restore mode 1!")
+        self.get_logger().error(
+            "[ForceGuard] CRITICAL: Could not restore mode 1 after all retries — aborting"
+        )
+        return False
 
     # ==================================================================
     # Existing Methods (unchanged)

@@ -92,6 +92,8 @@ def launch_setup(context, *args, **kwargs):
         executable="xarm_driver_node",
         output="screen",
         emulate_tty=True,
+        respawn=True,
+        respawn_delay=1.0,
         parameters=[
             robot_params,
             {
