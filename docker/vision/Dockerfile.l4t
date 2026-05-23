@@ -48,7 +48,6 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir \
     numpy==1.26.4 \
     cmake==3.25.2 \
-    face_recognition \
     insightface \
     ultralytics==8.4.19 \
     lap \

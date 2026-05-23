@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
-# Node that detects and recognizes faces from a ZED camera using InsightFace (ArcFace).
-# ros2 run vision_general face_recognition_node.py
-# ros2 service call /vision/new_name frida_interfaces/srv/SaveName "{name: 'hector'}"
+"""
+Node to recognize known people and
+name new faces.
+- Publisher for largest face detected
+coordinates for arm following.
+- Service to assign name to face.
+"""
 
 import os
 import pathlib
@@ -47,23 +51,6 @@ KNOWN_FACES_PATH = PATH + "/Utils/known_faces"
 
 INSIGHTFACE_MODEL = "buffalo_sc"
 INSIGHTFACE_CTX_ID = 0
-
-
-def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
-    """Return cosine similarity in [−1, 1]. Higher = more similar."""
-    a = a / (np.linalg.norm(a) + 1e-10)
-    b = b / (np.linalg.norm(b) + 1e-10)
-    return float(np.dot(a, b))
-
-
-def _cosine_distances(known: list[np.ndarray], query: np.ndarray) -> np.ndarray:
-    """Return 1 − cosine_similarity for each embedding in *known*."""
-    if not known:
-        return np.array([])
-    mat = np.stack(known)
-    mat = mat / (np.linalg.norm(mat, axis=1, keepdims=True) + 1e-10)
-    q = query / (np.linalg.norm(query) + 1e-10)
-    return 1.0 - mat @ q
 
 
 class FaceRecognition(Node):
@@ -165,18 +152,19 @@ class FaceRecognition(Node):
         self.people_encodings: list[np.ndarray] = []
         self.people_names: list[str] = []
         self.people_encodings.append(np.zeros(512, dtype=np.float32))
-        self.people_names.append("random")
 
         self.clear()
         self.process_imgs()
         self.pbar.update(1)
-        self.get_logger().info("Face Recognition Ready  (insightface / ArcFace 512-d)")
+        self.get_logger().info("Face Recognition Ready")
 
     def image_callback(self, data):
+        """Callback to get image from camera"""
         self.id = data.header.stamp
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
+        """Callback to receive depth image from camera"""
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
         except Exception as e:
@@ -186,7 +174,7 @@ class FaceRecognition(Node):
         self.imageInfo = data
 
     def new_name_callback(self, req, res):
-        """Assign a name to the currently largest detected face."""
+        """Callback to add a new face to the known faces"""
         self.get_logger().info("Executing service new face")
         self.new_name = req.name
         if len(self.curr_faces) == 0:
@@ -198,34 +186,54 @@ class FaceRecognition(Node):
         return res
 
     def follow_by_name_callback(self, req, res):
-        """Set which face name (or 'area') the arm should follow."""
+        """Callback to follow face by name or area"""
         self.get_logger().info("Executing service follow by")
         self.follow_name = req.name
         if len(self.curr_faces) == 0:
             self.get_logger().info("No face detected")
             res.success = False
         else:
-            self.get_logger().info(f"Follow name: {self.follow_name}")
+            self.get_logger().info(f"New name: {self.follow_name}")
             res.success = True
         return res
 
+    @staticmethod
+    def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+        """Return cosine similarity in [−1, 1]. Higher = more similar."""
+        a = a / (np.linalg.norm(a) + 1e-10)
+        b = b / (np.linalg.norm(b) + 1e-10)
+        return float(np.dot(a, b))
+
+    @staticmethod
+    def _cosine_distances(known: list[np.ndarray], query: np.ndarray) -> np.ndarray:
+        """Return 1 − cosine_similarity for each embedding in *known*."""
+        if not known:
+            return np.array([])
+        mat = np.stack(known)
+        mat = mat / (np.linalg.norm(mat, axis=1, keepdims=True) + 1e-10)
+        q = query / (np.linalg.norm(query) + 1e-10)
+        return 1.0 - mat @ q
+
     def success(self, message) -> None:
+        """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
     def publish_image(self) -> None:
+        """Publish image with annotations"""
         if len(self.annotated_frame) > 0:
             self.view_pub.publish(
                 self.bridge.cv2_to_imgmsg(self.annotated_frame, "bgr8")
             )
 
     def process_imgs(self) -> None:
-        self.get_logger().info("Processing known-face images …")
+        self.get_logger().info("Processing images")
         for filename in os.listdir(KNOWN_FACES_PATH):
             if filename == ".DS_Store":
                 continue
             self.process_img(filename)
 
     def clear(self) -> None:
+        """Clear previous results"""
         for filename in os.listdir(KNOWN_FACES_PATH):
             if (
                 filename == ".DS_Store"
@@ -248,6 +256,7 @@ class FaceRecognition(Node):
             return bgr_img
 
     def process_img(self, filename: str) -> None:
+        """Process image, obtain encodings and add to known people"""
         img_path = f"{KNOWN_FACES_PATH}/{filename}"
         img_bgr = cv2.imread(img_path)
         if img_bgr is None:
@@ -267,7 +276,7 @@ class FaceRecognition(Node):
         self.people_names.append(filename[:-4])
 
     def save_face(self, name: str, xc: float, yc: float) -> None:
-        """Append detected face to curr_faces and face_list PersonList."""
+        """Save face to list and return Person message"""
         self.curr_faces.append({"x": xc, "y": yc, "name": name})
         curr_person = Person()
         curr_person.name = name
@@ -284,6 +293,7 @@ class FaceRecognition(Node):
         xc: float,
         yc: float,
     ) -> None:
+        """Assign name to largest face detected"""
         crop = self.frame[top:bottom, left:right]
         img_name = f"{self.new_name}.png"
         save_path = f"{KNOWN_FACES_PATH}/{img_name}"
@@ -323,6 +333,7 @@ class FaceRecognition(Node):
         self.get_logger().info(f"Face recognition active: {self.vision_active}")
 
     def run(self) -> None:
+        """Run face recognition algorithm"""
         if not self.vision_active:
             return
         if self.is_processing:
@@ -343,6 +354,7 @@ class FaceRecognition(Node):
             self.is_processing = False
 
     def _run_inference(self) -> None:
+        """Actual face recognition inference (called by run with lock)."""
         self.processing_id = self.id
 
         self.frame = self.image
@@ -385,7 +397,7 @@ class FaceRecognition(Node):
                 query_embedding = ins_face.embedding.astype(np.float32)
 
                 if len(self.people_encodings) > 0:
-                    distances = _cosine_distances(
+                    distances = self._cosine_distances(
                         self.people_encodings, query_embedding
                     )
                     best_match_idx = int(np.argmin(distances))
