@@ -136,6 +136,55 @@ class ContactGraspNetNode(Node):
             grasps = grasps[idx]
             grasp_scores = grasp_scores[idx]
 
+            # ── Post-processing ──────────────────────────────────────────
+            # 1. Filter: drop grasps that approach from below the table.
+            #    Column 2 of the 4x4 matrix is the approach direction in
+            #    base_link frame.  Positive Z means the gripper would have
+            #    to come from under the table — physically impossible.
+            #    Allow up to 0.3 of upward tilt (≈17° tolerance) for
+            #    slightly angled side approaches.
+            MAX_UPWARD = 0.3
+            valid = np.array([g[2, 2] < MAX_UPWARD for g in grasps])
+            if valid.sum() == 0:
+                self.get_logger().warn(
+                    "All grasps approach from below — using unfiltered set"
+                )
+            else:
+                grasps = grasps[valid]
+                grasp_scores = grasp_scores[valid]
+
+            # 2. Normalise roll: snap the gripper's Y-axis to be as close
+            #    to world-up as possible, keeping the approach (Z) fixed.
+            #    Effect:
+            #    • Top-down grasps  → fingers stay horizontal (any azimuth)
+            #    • Side grasps      → fingers point vertically (natural squeeze)
+            #    This eliminates arbitrary roll that makes MoveIt's IK search
+            #    expensive and produces the weird markers seen in RViz.
+            normalised = []
+            world_up = np.array([0.0, 0.0, 1.0])
+            for g in grasps:
+                z = g[:3, 2].copy()
+                z /= np.linalg.norm(z)
+                ref = world_up
+                perp = ref - np.dot(ref, z) * z
+                if np.linalg.norm(perp) < 0.15:  # near-vertical approach
+                    ref = np.array([1.0, 0.0, 0.0])
+                    perp = ref - np.dot(ref, z) * z
+                y_new = perp / np.linalg.norm(perp)
+                x_new = np.cross(y_new, z)
+                x_new /= np.linalg.norm(x_new)
+                m = g.copy()
+                m[:3, 0] = x_new
+                m[:3, 1] = y_new
+                m[:3, 2] = z
+                normalised.append(m)
+            grasps = np.array(normalised)
+            # ────────────────────────────────────────────────────────────
+
+            self.get_logger().info(
+                f"After filtering/normalisation: {len(grasps)} grasps remain."
+            )
+
             for i in range(len(grasps)):
                 matrix = grasps[i]  # 4x4 matrix
                 score = grasp_scores[i]
