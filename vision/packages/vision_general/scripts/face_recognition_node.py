@@ -12,7 +12,6 @@ import os
 import pathlib
 
 import cv2
-import face_recognition
 import numpy as np
 import rclpy
 import rclpy.duration
@@ -20,6 +19,7 @@ import tqdm
 from ament_index_python.packages import get_package_share_directory
 from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
+from insightface.app import FaceAnalysis
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import Bool, String
@@ -41,13 +41,15 @@ from frida_interfaces.srv import SaveName
 
 DEFAULT_NAME = "ale"
 TRACK_THRESHOLD = 50
-MATCH_THRESHOLD = 0.5
+MATCH_THRESHOLD = 0.35
 MAX_DEGREE = 1
 RESIZE_FACTOR = 1
 
 PATH = str(pathlib.Path(__file__).parent)
 PATH = get_package_share_directory("vision_general")
 KNOWN_FACES_PATH = PATH + "/Utils/known_faces"
+
+INSIGHTFACE_MODEL = "buffalo_sc"
 
 
 class FaceRecognition(Node):
@@ -96,6 +98,7 @@ class FaceRecognition(Node):
             self.follow_by_name_callback,
             callback_group=self.callback_group,
         )
+
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
         self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
@@ -107,6 +110,7 @@ class FaceRecognition(Node):
         self.annotated_frame = []
         self.vision_active = True
         self.is_processing = False
+
         self.create_subscription(
             Bool,
             "/vision/face_recognition/active",
@@ -114,15 +118,21 @@ class FaceRecognition(Node):
             10,
             callback_group=self.callback_group,
         )
+
         self.setup()
         self.create_timer(0.2, self.run, callback_group=self.callback_group)
-        # self.create_timer(0.05, self.publish_image)
 
     def setup(self):
-        """Setup face recognition, reset variables and load models"""
-        random = face_recognition.load_image_file(f"{KNOWN_FACES_PATH}/random.png")
-        random_encodings = face_recognition.face_encodings(random)[0]
+        """Initialise InsightFace pipeline and load known-face embeddings."""
+
+        self.get_logger().info(f"Loading InsightFace model '{INSIGHTFACE_MODEL}'")
+        self.app = FaceAnalysis(
+            name=INSIGHTFACE_MODEL,
+            providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+        )
+        self.app.prepare(ctx_id=0, det_size=(640, 640))
         self.pbar.update(1)
+
         self.new_name = ""
         self.image_view = None
         self.image = None
@@ -132,29 +142,29 @@ class FaceRecognition(Node):
         self.follow_name = "area"
         self.id = None
         self.processing_id = rclpy.duration.Infinite
+
         self.default_name = self.declare_parameter("default_name", DEFAULT_NAME)
         self.default_name = self.default_name.value
 
-        self.people = [[random_encodings, "random"]]
-        self.people_encodings = [random_encodings]
-        self.people_names = ["random"]
+        self.people_encodings: list[np.ndarray] = []
+        self.people_names: list[str] = []
+        self.people_encodings.append(np.zeros(512, dtype=np.float32))
+        self.people_names.append("random")
 
         self.clear()
         self.process_imgs()
+        self.pbar.update(1)
         self.get_logger().info("Face Recognition Ready")
 
     def image_callback(self, data):
         """Callback to get image from camera"""
-        # self.get_logger().info("img received reentrant")
         self.id = data.header.stamp
-        # self.get_logger().info(f"s{self.id}")
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
         """Callback to receive depth image from camera"""
         try:
-            depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-            self.depth_image = depth_image
+            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
         except Exception as e:
             print(f"Error: {e}")
 
@@ -186,6 +196,23 @@ class FaceRecognition(Node):
             res.success = True
         return res
 
+    @staticmethod
+    def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+        """Return cosine similarity in [−1, 1]. Higher = more similar."""
+        a = a / (np.linalg.norm(a) + 1e-10)
+        b = b / (np.linalg.norm(b) + 1e-10)
+        return float(np.dot(a, b))
+
+    @staticmethod
+    def _cosine_distances(known: list[np.ndarray], query: np.ndarray) -> np.ndarray:
+        """Return 1 − cosine_similarity for each embedding in *known*."""
+        if not known:
+            return np.array([])
+        mat = np.stack(known)
+        mat = mat / (np.linalg.norm(mat, axis=1, keepdims=True) + 1e-10)
+        q = query / (np.linalg.norm(query) + 1e-10)
+        return 1.0 - mat @ q
+
     def success(self, message) -> None:
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
@@ -203,7 +230,6 @@ class FaceRecognition(Node):
         for filename in os.listdir(KNOWN_FACES_PATH):
             if filename == ".DS_Store":
                 continue
-
             self.process_img(filename)
 
     def clear(self) -> None:
@@ -215,25 +241,39 @@ class FaceRecognition(Node):
                 or filename == self.default_name + ".png"
             ):
                 continue
-
             file_path = os.path.join(KNOWN_FACES_PATH, filename)
             os.remove(file_path)
 
+    def apply_clahe(self, bgr_img: np.ndarray) -> np.ndarray:
+        try:
+            lab = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2LAB)
+            l_img, a, b = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(16, 16))
+            l_img = clahe.apply(l_img)
+            lab = cv2.merge((l_img, a, b))
+            return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        except Exception:
+            return bgr_img
+
     def process_img(self, filename: str) -> None:
         """Process image, obtain encodings and add to known people"""
-        img = face_recognition.load_image_file(f"{KNOWN_FACES_PATH}/{filename}")
-        cur_encodings = face_recognition.face_encodings(img)
-
-        if len(cur_encodings) == 0:
-            print("no encodings found")
+        img_path = f"{KNOWN_FACES_PATH}/{filename}"
+        img_bgr = cv2.imread(img_path)
+        if img_bgr is None:
+            self.get_logger().warn(f"Could not load image: {img_path}")
             return
 
-        if len(cur_encodings) > 0:
-            cur_encodings = cur_encodings[0]
+        img_bgr = self.apply_clahe(img_bgr)
+        faces = self.app.get(img_bgr)
+        if len(faces) == 0:
+            self.get_logger().warn(f"No face found in {filename}, skipping.")
+            return
 
-        self.people_encodings.append(cur_encodings)
+        face = max(faces, key=lambda f: _bbox_area(f.bbox))
+        embedding = face.embedding.astype(np.float32)
+
+        self.people_encodings.append(embedding)
         self.people_names.append(filename[:-4])
-        self.people.append([cur_encodings, filename[:-4]])
 
     def save_face(self, name: str, xc: float, yc: float) -> None:
         """Save face to list and return Person message"""
@@ -245,49 +285,45 @@ class FaceRecognition(Node):
         self.face_list.list.append(curr_person)
 
     def assign_name(
-        self, left: float, top: float, bottom: float, right: float, xc: float, yc: float
+        self,
+        left: float,
+        top: float,
+        bottom: float,
+        right: float,
+        xc: float,
+        yc: float,
     ) -> None:
         """Assign name to largest face detected"""
-
         crop = self.frame[top:bottom, left:right]
-
         img_name = f"{self.new_name}.png"
         save_path = f"{KNOWN_FACES_PATH}/{img_name}"
         cv2.imwrite(save_path, crop)
+
         self.process_img(img_name)
 
-        # Update prev recognitions for tracker
         for i, face in enumerate(self.curr_faces):
             if face["x"] == xc and face["y"] == yc:
-                index = i
+                self.curr_faces[i]["name"] = self.new_name
+                self.face_list.list[i].name = self.new_name
+                break
 
-            # cv2.circle(self.annotated_frame, (int(face["x"]), int(face["y"])), 5, (0, 255, 0), -1)
-
-        self.curr_faces[index]["name"] = self.new_name
-        self.face_list.list[index].name = self.new_name
-        self.success(f"{self.new_name} face saved")
-
+        self.success(f"{self.new_name} face enrolled")
         self.new_name = ""
 
     def publish_follow_face(self, xc: float, yc: float, largest_face_name: str) -> None:
         """Publish coordinates for arm to follow face"""
-        # Coordinates to follow largest face
-        difx = 0 if xc == 0 else xc - self.center[0]
-        dify = 0 if yc == 0 else self.center[1] - yc
-
+        difx = 0.0 if xc == 0 else xc - self.center[0]
+        dify = 0.0 if yc == 0 else self.center[1] - yc
         move_x = difx * MAX_DEGREE / self.center[0]
         move_y = dify * MAX_DEGREE / self.center[1]
 
         target = Point()
-
         target.x = move_x
         target.y = move_y
-
         self.follow_publisher.publish(target)
 
         person_seen = String()
         person_seen.data = largest_face_name
-
         self.name_publisher.publish(person_seen)
         self.person_list_publisher.publish(self.face_list)
 
@@ -299,20 +335,17 @@ class FaceRecognition(Node):
 
     def run(self) -> None:
         """Run face recognition algorithm"""
-
         if not self.vision_active:
             return
-
         if self.is_processing:
             return
-
         if self.image is None:
             self.get_logger().info("No image")
             return
+
         self.annotated_frame = self.image
 
         if self.id == self.processing_id:
-            # self.get_logger().info("Skipping image")
             return
 
         self.is_processing = True
@@ -328,16 +361,7 @@ class FaceRecognition(Node):
         self.frame = self.image
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
-
-        resized_frame = cv2.resize(
-            self.frame, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
-        )
-
-        # Find all faces using dlib's CUDA-accelerated CNN model (built with CUDA sm_87)
-        # "cnn" uses GPU via dlib CUDA, "hog" would be CPU-only
-        face_locations = face_recognition.face_locations(resized_frame, model="cnn")
-        # print("running")
-        # return
+        detected_faces = self.app.get(self.apply_clahe(self.frame))
 
         largest_area = 0
         follow_face_params = None
@@ -347,95 +371,69 @@ class FaceRecognition(Node):
         self.curr_faces = []
         self.face_list = PersonList()
         detected = False
-        face_encodings = None
 
-        # Process each face
-        for i, location in enumerate(face_locations):
-            # Center of current face
-            scale_factor = 1 / RESIZE_FACTOR
-            centerx = (location[3] + (location[1] - location[3]) / 2) * scale_factor
-            centery = (location[0] + (location[2] - location[0]) / 2) * scale_factor
+        for ins_face in detected_faces:
+            x1, y1, x2, y2 = ins_face.bbox.astype(int)
 
-            top, right, bottom, left = [int(i * scale_factor) for i in location]
+            left = max(x1 - TRACK_THRESHOLD, 0)
+            right = min(x2 + TRACK_THRESHOLD, self.frame.shape[1])
+            top = max(y1 - TRACK_THRESHOLD, 0)
+            bottom = min(y2 + TRACK_THRESHOLD, self.frame.shape[0])
+
+            centerx = (x1 + x2) / 2.0
+            centery = (y1 + y2) / 2.0
+
             name = "Unknown"
-
-            # Extend bbox
-            left = max(left - TRACK_THRESHOLD, 0)
-            right = min(right + TRACK_THRESHOLD, self.frame.shape[1])
-            top = max(0, top - TRACK_THRESHOLD)
-            bottom = min(bottom + TRACK_THRESHOLD, self.frame.shape[0])
-
-            # Tracking
             flag = False
             for prev_face in self.prev_faces:
-                # If the face is within the tracking threshold
-                if (abs(prev_face["x"] - centerx) < TRACK_THRESHOLD) and (
-                    abs(prev_face["y"] - centery) < TRACK_THRESHOLD
+                if (
+                    abs(prev_face["x"] - centerx) < TRACK_THRESHOLD
+                    and abs(prev_face["y"] - centery) < TRACK_THRESHOLD
                 ):
                     name = prev_face["name"]
                     flag = True
                     break
 
-            # If not a tracked face, then it needs to be processed (compare to known faces)
-            if not flag:
-                if face_encodings is None:
-                    face_encodings = face_recognition.face_encodings(
-                        resized_frame, face_locations
+            if not flag or name == "Unknown":
+                query_embedding = ins_face.embedding.astype(np.float32)
+
+                if len(self.people_encodings) > 0:
+                    distances = self._cosine_distances(
+                        self.people_encodings, query_embedding
                     )
+                    best_match_idx = int(np.argmin(distances))
+                    best_similarity = 1.0 - float(distances[best_match_idx])
 
-                face_encoding = face_encodings[i]
+                    if best_similarity >= MATCH_THRESHOLD and best_match_idx != 0:
+                        name = self.people_names[best_match_idx]
 
-                # See if the face is a match for the known face(s)
-                matches = face_recognition.compare_faces(
-                    face_encoding, self.people_encodings, MATCH_THRESHOLD
-                )
-                face_distances = face_recognition.face_distance(
-                    self.people_encodings, face_encoding
-                )
-                best_match_index = np.argmin(face_distances)
-
-                # If it is known, then the name is updated
-                if matches[best_match_index]:
-                    name = self.people_names[best_match_index]
-
-            xc = left + (right - left) / 2
-            yc = top + (bottom - top) / 2
+            xc = left + (right - left) / 2.0
+            yc = top + (bottom - top) / 2.0
             area = (right - left) * (bottom - top)
 
-            # Add face to list
             self.save_face(name, xc, yc)
             detected = True
 
-            # Show results
-            if flag:
-                cv2.rectangle(
-                    self.annotated_frame,
-                    (left, bottom - 35),
-                    (right, bottom),
-                    (255, 0, 0),
-                    cv2.FILLED,
-                )
-                cv2.rectangle(
-                    self.annotated_frame, (left, top), (right, bottom), (255, 0, 0), 2
-                )
-            else:
-                cv2.rectangle(
-                    self.annotated_frame,
-                    (left, bottom - 35),
-                    (right, bottom),
-                    (0, 0, 255),
-                    cv2.FILLED,
-                )
-                cv2.rectangle(
-                    self.annotated_frame, (left, top), (right, bottom), (0, 0, 255), 2
-                )
-
-            font = cv2.FONT_HERSHEY_DUPLEX
+            color = (255, 0, 0) if flag else (0, 0, 255)
+            cv2.rectangle(
+                self.annotated_frame,
+                (left, bottom - 35),
+                (right, bottom),
+                color,
+                cv2.FILLED,
+            )
+            cv2.rectangle(
+                self.annotated_frame,
+                (left, top),
+                (right, bottom),
+                color,
+                2,
+            )
             cv2.putText(
                 self.annotated_frame,
                 name,
                 (left + 6, bottom - 6),
-                font,
+                cv2.FONT_HERSHEY_DUPLEX,
                 1.0,
                 (255, 255, 255),
                 1,
@@ -449,16 +447,14 @@ class FaceRecognition(Node):
             if self.follow_name == name:
                 follow_face_params = [left, top, right, bottom]
 
-        xc = 0
-        yc = 0
+        xc = 0.0
+        yc = 0.0
 
-        # For the follow face by name or area:
         if largest_area != 0:
             left, top, right, bottom = largest_area_params
-            xc = left + (right - left) / 2
-            yc = top + (bottom - top) / 2
+            xc = left + (right - left) / 2.0
+            yc = top + (bottom - top) / 2.0
 
-            # Center of the face
             if self.new_name != "":
                 largest_face_name = self.new_name
                 self.assign_name(left, top, bottom, right, xc, yc)
@@ -466,15 +462,14 @@ class FaceRecognition(Node):
         if self.follow_name != "area":
             if follow_face_params is not None:
                 left, top, right, bottom = follow_face_params
-                xc = left + (right - left) / 2
-                yc = top + (bottom - top) / 2
+                xc = left + (right - left) / 2.0
+                yc = top + (bottom - top) / 2.0
                 largest_face_name = self.follow_name
             else:
                 detected = False
 
         self.prev_faces = self.curr_faces
 
-        # Calculate the joint degrees for the arm to follow the face
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)
         else:
@@ -483,9 +478,14 @@ class FaceRecognition(Node):
         self.publish_image()
 
 
+def _bbox_area(bbox) -> float:
+    """Return pixel area of an InsightFace bbox [x1, y1, x2, y2]."""
+    x1, y1, x2, y2 = bbox
+    return max(0.0, x2 - x1) * max(0.0, y2 - y1)
+
+
 def main(args=None):
     rclpy.init(args=args)
-
     try:
         node = FaceRecognition()
         executor = rclpy.executors.MultiThreadedExecutor(5)
