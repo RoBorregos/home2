@@ -731,9 +731,17 @@ class MotionPlanningServer(Node):
     def _ensure_arm_ready(self):
         """Check arm state and auto-recover from known-bad states before planning.
         No-op in simulation (real_xarm=False) or when robot_states not yet received."""
-        if not self.real_xarm or self._arm_state is None:
+        if not self.real_xarm:
+            return
+        if self._arm_state is None:
+            self.get_logger().warn(
+                "ensure_arm_ready -> no robot_states received yet, skipping check"
+            )
             return
         state = self._arm_state
+        self.get_logger().info(
+            f"ensure_arm_ready -> state={state.state} mode={state.mode} err={state.err}"
+        )
         recovered = False
 
         if state.err != 0:
@@ -745,9 +753,12 @@ class MotionPlanningServer(Node):
             )
             self._reinit_mode1()
             recovered = True
-        elif state.mode not in (0, 1):
+        elif state.mode != 1:
+            # MoveIt requires servo mode (mode=1). mode=0 (position mode) also
+            # needs recovery — e-stop release often drops the arm to mode=0 with
+            # err=0, which the old `not in (0, 1)` check silently missed.
             self.get_logger().warn(
-                f"ensure_arm_ready -> mode={state.mode} (expected 0 or 1), restoring mode 1"
+                f"ensure_arm_ready -> mode={state.mode} (expected 1), restoring mode 1"
             )
             self._reinit_mode1()
             recovered = True
