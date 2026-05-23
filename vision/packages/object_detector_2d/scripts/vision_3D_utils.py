@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Camera math utilities: pixel-to-3D deprojection, depth extraction, and 2D centroid computation."""
 
 import math
 import sys

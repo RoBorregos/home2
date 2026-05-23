@@ -103,7 +103,7 @@ class DataExtractor(Node):
         self.get_logger().info(f"Extracting {request.data} from text")
 
         if len(request.full_text.strip().split(" ")) < 2:
-            self.get_logger().error(
+            self.get_logger().debug(
                 "Received text with less than 2 words. Returning input text as result."
             )
             response.result = request.full_text
@@ -144,16 +144,20 @@ class DataExtractor(Node):
     def extract_via_llm(self, text: str, data: str, context: str) -> str:
         messages, response_format = get_extract_data_args(text, data, context)
 
-        response_content = (
-            self.client.beta.chat.completions.parse(
-                model=MODEL.EXTRACT_INFO_REQUESTED.value,
-                temperature=self.temperature,
-                messages=messages,
-                response_format=response_format,
+        try:
+            response_content = (
+                self.client.beta.chat.completions.parse(
+                    model=MODEL.EXTRACT_INFO_REQUESTED.value,
+                    temperature=self.temperature,
+                    messages=messages,
+                    response_format=response_format,
+                )
+                .choices[0]
+                .message.content
             )
-            .choices[0]
-            .message.content
-        )
+        except Exception as e:
+            self.get_logger().error(f"LLM extraction failed: {e}")
+            return ""
 
         self.get_logger().info(f"Extracted data: {response_content}")
 
@@ -162,9 +166,9 @@ class DataExtractor(Node):
             result = ExtractedData(**response_data)
         except Exception as e:
             self.get_logger().error(f"Service error: {e}")
-            raise rclpy.exceptions.ServiceException(str(e))
+            return ""
 
-        return result.data
+        return result.data if result.data else ""
 
     def extract_name(self, text: str) -> str:
         doc = self.nlp(text)

@@ -1,6 +1,6 @@
 ObjectDetect2D:
   ros__parameters:
-    RGB_IMAGE_TOPIC: /zed/zed_node/rgb/image_rect_color
+    RGB_IMAGE_TOPIC: /vision/camera/image_oriented
     DEPTH_IMAGE_TOPIC: /zed/zed_node/depth/depth_registered
     CAMERA_INFO_TOPIC: /zed/zed_node/depth/camera_info
     DETECTIONS_TOPIC: /vision/detections
@@ -8,16 +8,13 @@ ObjectDetect2D:
     DETECTIONS_POSES_TOPIC: /vision/detection_poses
     DETECTIONS_3D_TOPIC: /vision/detections_3d
     DETECTIONS_ACTIVE_TOPIC: /detections_active
-    DEBUG_IMAGE_TOPIC: /vision/debug_image
     CAMERA_FRAME: zed_left_camera_optical_frame
     TARGET_FRAME: base_link
-    YOLO_MODEL_PATH: tmr2026.pt
+    models:
+      - yolo_finetuned
+      - cutlery
     USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False
-    USE_YOLO8: False
-    USE_YOLO26: True
     FLIP_IMAGE: False
-    USE_ZED_TRANSFORM: True
-    MIN_SCORE_THRESH: 0.75
     MAX_DEPTH_THRESH: 2.0
