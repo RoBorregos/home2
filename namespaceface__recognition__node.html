@@ -105,6 +105,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a882828e6bb88b9e2a74c099a1b2bba2f"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a882828e6bb88b9e2a74c099a1b2bba2f">_bbox_area</a> (bbox)</td></tr>
+<tr class="separator:a882828e6bb88b9e2a74c099a1b2bba2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe2d04ddc5e2378a7b776a096ca9c278"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278">main</a> (args=None)</td></tr>
 <tr class="separator:abe2d04ddc5e2378a7b776a096ca9c278"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -114,7 +116,7 @@ Variables</h2></td></tr>
 <tr class="separator:af990b03ce580e863acd6da4c4481f1ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a036fbe5f51cfd2209b19a270357d2b35"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a036fbe5f51cfd2209b19a270357d2b35">TRACK_THRESHOLD</a> = 50</td></tr>
 <tr class="separator:a036fbe5f51cfd2209b19a270357d2b35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7d4636518fc66a1e7d866bd84deb7929"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a7d4636518fc66a1e7d866bd84deb7929">MATCH_THRESHOLD</a> = 0.5</td></tr>
+<tr class="memitem:a7d4636518fc66a1e7d866bd84deb7929"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a7d4636518fc66a1e7d866bd84deb7929">MATCH_THRESHOLD</a> = 0.35</td></tr>
 <tr class="separator:a7d4636518fc66a1e7d866bd84deb7929"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56617f4391f49f52c38a3bdabc308aad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a56617f4391f49f52c38a3bdabc308aad">MAX_DEGREE</a> = 1</td></tr>
 <tr class="separator:a56617f4391f49f52c38a3bdabc308aad"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -124,6 +126,8 @@ Variables</h2></td></tr>
 <tr class="separator:a2cdad657ac233e7e409732e4566479fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a166e5b8323737530752db607917e635f"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a166e5b8323737530752db607917e635f">KNOWN_FACES_PATH</a> = <a class="el" href="namespaceface__recognition__node.html#a2cdad657ac233e7e409732e4566479fb">PATH</a> + &quot;/Utils/known_faces&quot;</td></tr>
 <tr class="separator:a166e5b8323737530752db607917e635f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a431a2158d0036495aa165310a73e46b9"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceface__recognition__node.html#a431a2158d0036495aa165310a73e46b9">INSIGHTFACE_MODEL</a> = &quot;buffalo_sc&quot;</td></tr>
+<tr class="separator:a431a2158d0036495aa165310a73e46b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Node to recognize known people and
@@ -132,6 +136,32 @@ name new faces.
 coordinates for arm following.
 - Service to assign name to face.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="a882828e6bb88b9e2a74c099a1b2bba2f" name="a882828e6bb88b9e2a74c099a1b2bba2f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a882828e6bb88b9e2a74c099a1b2bba2f">&#9670;&#160;</a></span>_bbox_area()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> float face_recognition_node._bbox_area </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bbox</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Return pixel area of an InsightFace bbox [x1, y1, x2, y2].</pre> 
+</div>
+</div>
 <a id="abe2d04ddc5e2378a7b776a096ca9c278" name="abe2d04ddc5e2378a7b776a096ca9c278"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abe2d04ddc5e2378a7b776a096ca9c278">&#9670;&#160;</a></span>main()</h2>
 
@@ -165,6 +195,20 @@ coordinates for arm following.
 
 </div>
 </div>
+<a id="a431a2158d0036495aa165310a73e46b9" name="a431a2158d0036495aa165310a73e46b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a431a2158d0036495aa165310a73e46b9">&#9670;&#160;</a></span>INSIGHTFACE_MODEL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">str face_recognition_node.INSIGHTFACE_MODEL = &quot;buffalo_sc&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a166e5b8323737530752db607917e635f" name="a166e5b8323737530752db607917e635f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a166e5b8323737530752db607917e635f">&#9670;&#160;</a></span>KNOWN_FACES_PATH</h2>
 
@@ -186,7 +230,7 @@ coordinates for arm following.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float face_recognition_node.MATCH_THRESHOLD = 0.5</td>
+          <td class="memname">float face_recognition_node.MATCH_THRESHOLD = 0.35</td>
         </tr>
       </table>
 </div><div class="memdoc">

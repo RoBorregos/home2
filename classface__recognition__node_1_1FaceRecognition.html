@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classface__recognition__node_1_1FaceRe
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-static-methods">Static Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classface__recognition__node_1_1FaceRecognition-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">face_recognition_node.FaceRecognition Class Reference</div></div>
@@ -130,6 +131,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7860026b2d18f1a9143de4832bfcf86e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdd9c91ceaea336b4c64cefb996a56cb"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#abdd9c91ceaea336b4c64cefb996a56cb">clear</a> (self)</td></tr>
 <tr class="separator:abdd9c91ceaea336b4c64cefb996a56cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c9d04c050d7e7b02e9a29a7db701a98"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a2c9d04c050d7e7b02e9a29a7db701a98">apply_clahe</a> (self, np.ndarray bgr_img)</td></tr>
+<tr class="separator:a2c9d04c050d7e7b02e9a29a7db701a98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83a07f0edfd386dc7b7b50a609406e5f"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a83a07f0edfd386dc7b7b50a609406e5f">process_img</a> (self, str filename)</td></tr>
 <tr class="separator:a83a07f0edfd386dc7b7b50a609406e5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae13aad73a32f3f8df91db22976a03668"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ae13aad73a32f3f8df91db22976a03668">save_face</a> (self, str name, float xc, float yc)</td></tr>
@@ -175,6 +178,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ac4b6b446e0008904d27b14136be93a91"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a504afb97880386bf8c4c21b6bfe7a0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a4a504afb97880386bf8c4c21b6bfe7a0">is_processing</a></td></tr>
 <tr class="separator:a4a504afb97880386bf8c4c21b6bfe7a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad9b2aa2641e493c13c24908fe72a129"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#aad9b2aa2641e493c13c24908fe72a129">app</a></td></tr>
+<tr class="separator:aad9b2aa2641e493c13c24908fe72a129"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b8bded49db6137eaf41ae170470ccbd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a7b8bded49db6137eaf41ae170470ccbd">new_name</a></td></tr>
 <tr class="separator:a7b8bded49db6137eaf41ae170470ccbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad760ce019c25665b48c6ddbaf5d191bb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ad760ce019c25665b48c6ddbaf5d191bb">image_view</a></td></tr>
@@ -195,12 +200,6 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a2694555d14a68eb83c8f756d40b842c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7dd439cbed45923fe83c3eb4dad7344a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a7dd439cbed45923fe83c3eb4dad7344a">default_name</a></td></tr>
 <tr class="separator:a7dd439cbed45923fe83c3eb4dad7344a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab81de16faa95c7448e789ec929a707ec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ab81de16faa95c7448e789ec929a707ec">people</a></td></tr>
-<tr class="separator:ab81de16faa95c7448e789ec929a707ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a283bb69fe848d677fd4c68bec3d1c495"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a283bb69fe848d677fd4c68bec3d1c495">people_encodings</a></td></tr>
-<tr class="separator:a283bb69fe848d677fd4c68bec3d1c495"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15ede0c79446507746b86121cd5ab98f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a15ede0c79446507746b86121cd5ab98f">people_names</a></td></tr>
-<tr class="separator:a15ede0c79446507746b86121cd5ab98f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae990e478494e7bba2832c0b0c07bbbd6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ae990e478494e7bba2832c0b0c07bbbd6">imageInfo</a></td></tr>
 <tr class="separator:ae990e478494e7bba2832c0b0c07bbbd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2add4bd1b3301595e0e5a2dc31e1b3d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#ad2add4bd1b3301595e0e5a2dc31e1b3d">frame</a></td></tr>
@@ -216,6 +215,13 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a32d47b5eb78ec86be1c9cd82590883d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4aeeb6dfa547ca599c25040392a3aa0c"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a4aeeb6dfa547ca599c25040392a3aa0c">_run_inference</a> (self)</td></tr>
 <tr class="separator:a4aeeb6dfa547ca599c25040392a3aa0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-methods" name="pro-static-methods"></a>
+Static Protected Member Functions</h2></td></tr>
+<tr class="memitem:a1ba7c3a5d8c55229d12d82efb9b2f904"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a1ba7c3a5d8c55229d12d82efb9b2f904">_cosine_similarity</a> (np.ndarray a, np.ndarray b)</td></tr>
+<tr class="separator:a1ba7c3a5d8c55229d12d82efb9b2f904"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8796334aa7d14baa300ac2abe369eafa"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classface__recognition__node_1_1FaceRecognition.html#a8796334aa7d14baa300ac2abe369eafa">_cosine_distances</a> (list[np.ndarray] known, np.ndarray query)</td></tr>
+<tr class="separator:a8796334aa7d14baa300ac2abe369eafa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -278,6 +284,78 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a8796334aa7d14baa300ac2abe369eafa" name="a8796334aa7d14baa300ac2abe369eafa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8796334aa7d14baa300ac2abe369eafa">&#9670;&#160;</a></span>_cosine_distances()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> np.ndarray face_recognition_node.FaceRecognition._cosine_distances </td>
+          <td>(</td>
+          <td class="paramtype">list[np.ndarray]&#160;</td>
+          <td class="paramname"><em>known</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>query</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Return 1 − cosine_similarity for each embedding in *known*.</pre> 
+</div>
+</div>
+<a id="a1ba7c3a5d8c55229d12d82efb9b2f904" name="a1ba7c3a5d8c55229d12d82efb9b2f904"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ba7c3a5d8c55229d12d82efb9b2f904">&#9670;&#160;</a></span>_cosine_similarity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> float face_recognition_node.FaceRecognition._cosine_similarity </td>
+          <td>(</td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Return cosine similarity in [−1, 1]. Higher = more similar.</pre> 
+</div>
+</div>
 <a id="a4aeeb6dfa547ca599c25040392a3aa0c" name="a4aeeb6dfa547ca599c25040392a3aa0c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4aeeb6dfa547ca599c25040392a3aa0c">&#9670;&#160;</a></span>_run_inference()</h2>
 
@@ -302,6 +380,34 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Actual face recognition inference (called by run with lock).</pre> 
+</div>
+</div>
+<a id="a2c9d04c050d7e7b02e9a29a7db701a98" name="a2c9d04c050d7e7b02e9a29a7db701a98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c9d04c050d7e7b02e9a29a7db701a98">&#9670;&#160;</a></span>apply_clahe()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> np.ndarray face_recognition_node.FaceRecognition.apply_clahe </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>bgr_img</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 <a id="a99480313eff42a75e45bd944be6b9eee" name="a99480313eff42a75e45bd944be6b9eee"></a>
@@ -349,8 +455,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">float
-    &#160;</td>
+          <td class="paramtype">float&#160;</td>
           <td class="paramname"><em>yc</em>&#160;</td>
         </tr>
         <tr>
@@ -710,7 +815,7 @@ Protected Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Setup face recognition, reset variables and load models</pre> 
+<pre class="fragment">Initialise InsightFace pipeline and load known-face embeddings.</pre> 
 </div>
 </div>
 <a id="aa60ec7e695061fd845e4ebbfece41da9" name="aa60ec7e695061fd845e4ebbfece41da9"></a>
@@ -772,6 +877,20 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">face_recognition_node.FaceRecognition.annotated_frame</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aad9b2aa2641e493c13c24908fe72a129" name="aad9b2aa2641e493c13c24908fe72a129"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad9b2aa2641e493c13c24908fe72a129">&#9670;&#160;</a></span>app</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">face_recognition_node.FaceRecognition.app</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -1094,48 +1213,6 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">face_recognition_node.FaceRecognition.pbar</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ab81de16faa95c7448e789ec929a707ec" name="ab81de16faa95c7448e789ec929a707ec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab81de16faa95c7448e789ec929a707ec">&#9670;&#160;</a></span>people</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">face_recognition_node.FaceRecognition.people</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a283bb69fe848d677fd4c68bec3d1c495" name="a283bb69fe848d677fd4c68bec3d1c495"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a283bb69fe848d677fd4c68bec3d1c495">&#9670;&#160;</a></span>people_encodings</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">face_recognition_node.FaceRecognition.people_encodings</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a15ede0c79446507746b86121cd5ab98f" name="a15ede0c79446507746b86121cd5ab98f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15ede0c79446507746b86121cd5ab98f">&#9670;&#160;</a></span>people_names</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">face_recognition_node.FaceRecognition.people_names</td>
         </tr>
       </table>
 </div><div class="memdoc">
