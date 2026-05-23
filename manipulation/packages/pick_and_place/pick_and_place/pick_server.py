@@ -664,6 +664,8 @@ class PickMotionServer(Node):
         request.velocity = float(velocity)
         request.acceleration = float(PICK_ACCELERATION)
         request.planner_id = PICK_PLANNER
+        request.planning_time = 3.0
+        request.planning_attempts = 5
         request.target_link = GRASP_LINK_FRAME
         request.tolerance_position = tolerance_position
         request.tolerance_orientation = tolerance_orientation
