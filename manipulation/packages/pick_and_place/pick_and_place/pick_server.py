@@ -274,6 +274,10 @@ class PickMotionServer(Node):
 
         self.save_collision_objects()
         self._clear_pick_collision_objects()
+        # pymoveit2 publishes removal to /collision_object topic (async); give
+        # move_group time to apply it before planning starts, otherwise the
+        # object spheres are still in the scene and block every IK solution.
+        time.sleep(0.5)
 
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
@@ -701,9 +705,14 @@ class PickMotionServer(Node):
                 "skipping pick-object sphere removal"
             )
             return
+        removed = 0
         for obj in self.collision_objects:
             if PICK_OBJECT_NAMESPACE in obj.id:
                 self.remove_collision_object(obj.id)
+                removed += 1
+        self.get_logger().info(
+            f"Removed {removed} pick-object collision spheres from planning scene"
+        )
 
     def attach_pick_object(self):
         obj_lowest = None
