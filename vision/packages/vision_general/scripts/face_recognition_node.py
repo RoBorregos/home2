@@ -149,6 +149,7 @@ class FaceRecognition(Node):
         self.people_encodings: list[np.ndarray] = []
         self.people_names: list[str] = []
         self.people_encodings.append(np.zeros(512, dtype=np.float32))
+        self.people_names.append("random")
 
         self.clear()
         self.process_imgs()
