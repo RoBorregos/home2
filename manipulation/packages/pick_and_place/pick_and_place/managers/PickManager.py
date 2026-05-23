@@ -12,6 +12,7 @@ from frida_motion_planning.utils.service_utils import (
 from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
+    TABLEWARE_NAMES,
     POUR_OBJECT_NAMES,
 )
 from typing import Tuple
@@ -56,6 +57,12 @@ def is_cutlery(object_name: str) -> bool:
     if object_name is None:
         return False
     return object_name.lower() in CUTLERY_NAMES
+
+
+def is_tableware(object_name: str) -> bool:
+    if object_name is None:
+        return False
+    return object_name.lower() in TABLEWARE_NAMES
 
 
 def is_pour_object(object_name: str) -> bool:
