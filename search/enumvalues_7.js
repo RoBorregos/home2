@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['z_0',['Z',['../add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;add_primitives.cpp'],['../remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;remove_plane.cpp'],['../add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;add_primitives.cpp'],['../remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;remove_plane.cpp']]]
+  ['shortcut_0',['SHORTCUT',['../namespacevamp_1_1planning.html#a468c494057cc1477f6ad0ba3fbb4ebf4aa595824a23b82ccdcaff13fb45c26cf1',1,'vamp::planning']]]
 ];

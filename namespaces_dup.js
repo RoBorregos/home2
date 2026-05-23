@@ -10,7 +10,14 @@ var namespaces_dup =
       [ "point_in_polygon", "namespacearea__check.html#a57f97085ecda9c86f7f750d44a2bf6ec", null ]
     ] ],
     [ "arm_pkg", "namespacearm__pkg.html", "namespacearm__pkg" ],
+    [ "attachments", "namespaceattachments.html", [
+      [ "main", "namespaceattachments.html#a43331084867eb005f9f5b0b783163757", null ],
+      [ "a", "namespaceattachments.html#ae313171c75da313de1e55b0eb505e17b", null ],
+      [ "b", "namespaceattachments.html#a44fc122e75f579cd0867fb20ff7d47a7", null ],
+      [ "problem", "namespaceattachments.html#ab1ede0b50eb7ba27402ea374f857a7f0", null ]
+    ] ],
     [ "base_detector_node", "namespacebase__detector__node.html", "namespacebase__detector__node" ],
+    [ "benchmark_vamp", "namespacebenchmark__vamp.html", "namespacebenchmark__vamp" ],
     [ "calculations", "namespacecalculations.html", [
       [ "deproject_pixel_to_point", "namespacecalculations.html#af8d8159051ab90fd57ec31e9221579f5", null ],
       [ "get2DCentroid", "namespacecalculations.html#a9b5eb19cdc3b480d8b741b2a394bd49a", null ],
@@ -88,6 +95,9 @@ var namespaces_dup =
     [ "ekf", "namespaceekf.html", [
       [ "generate_launch_description", "namespaceekf.html#a32e94cb02311b88f95d5b52017cf6948", null ]
     ] ],
+    [ "evaluate_mbm", "namespaceevaluate__mbm.html", [
+      [ "main", "namespaceevaluate__mbm.html#aa346f69415bd523a19a5647fe30c3740", null ]
+    ] ],
     [ "ex_gripper", "namespaceex__gripper.html", [
       [ "main", "namespaceex__gripper.html#a6be88f1664d375f6790226f8c67eec80", null ]
     ] ],
@@ -104,6 +114,11 @@ var namespaces_dup =
     [ "example_node", "namespaceexample__node.html", "namespaceexample__node" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
     [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", "namespaceflat__grasp__estimator" ],
+    [ "flying_sphere", "namespaceflying__sphere.html", [
+      [ "main", "namespaceflying__sphere.html#a16e948a58bf363c63448a2e12fbfb72c", null ],
+      [ "goal_pos", "namespaceflying__sphere.html#acb69026d6e931da75e2e65186b913021", null ],
+      [ "robot_initial_pos", "namespaceflying__sphere.html#a232fa5491ad98ffe851d7e60e220c279", null ]
+    ] ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", "namespacefollow__face__node__copt" ],
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],
@@ -124,6 +139,7 @@ var namespaces_dup =
       [ "launch_setup", "namespacefrida__driver.html#a7b2dcd48dd7fdcb70e23940fe7d4695b", null ]
     ] ],
     [ "frida_fake_moveit_config", "namespacefrida__fake__moveit__config.html", [
+      [ "_deep_update", "namespacefrida__fake__moveit__config.html#a6b937307670b780d88c2311b1b5b2fc3", null ],
       [ "generate_launch_description", "namespacefrida__fake__moveit__config.html#abfd963b35611d317b78a420c0197adeb", null ],
       [ "launch_setup", "namespacefrida__fake__moveit__config.html#a9630fb34d2013bb4291e09ddaabe69dc", null ]
     ] ],
@@ -178,6 +194,11 @@ var namespaces_dup =
     [ "hric_task_manager", "namespacehric__task__manager.html", "namespacehric__task__manager" ],
     [ "ikfast", "namespaceikfast.html", "namespaceikfast" ],
     [ "image_orienter", "namespaceimage__orienter.html", "namespaceimage__orienter" ],
+    [ "inflate_body_spheres", "namespaceinflate__body__spheres.html", [
+      [ "inflate", "namespaceinflate__body__spheres.html#a616cda5cdffc4a2453f7755c4717ac4b", null ],
+      [ "main", "namespaceinflate__body__spheres.html#a9cd297cc022b9e6ed4bd24e40cedcd45", null ],
+      [ "BODY_LINKS", "namespaceinflate__body__spheres.html#a1f90a775b7c2e98642874f82cef30e18", null ]
+    ] ],
     [ "iou_matching", "namespaceiou__matching.html", [
       [ "iou", "namespaceiou__matching.html#a8a1fdfd67c4235dd72f8055807874aff", null ],
       [ "iou_cost", "namespaceiou__matching.html#a169ef7c7d312ff6ad71d6972b531c688", null ]
@@ -293,6 +314,47 @@ var namespaces_dup =
     [ "ppc_launch", "namespaceppc__launch.html", [
       [ "generate_launch_description", "namespaceppc__launch.html#aacd047cb473dc687d72cb32e87ff33fe", null ]
     ] ],
+    [ "probe_cuboid", "namespaceprobe__cuboid.html", [
+      [ "lerp", "namespaceprobe__cuboid.html#a3de7c604f25ad76ec649164a85f7097d", null ],
+      [ "sphere_box_clearance", "namespaceprobe__cuboid.html#a1184eba5c886c4d612a76ac9830b625c", null ],
+      [ "best_clear", "namespaceprobe__cuboid.html#a322b67497a757a4eb9a3b35ec0fae311", null ],
+      [ "best_idx", "namespaceprobe__cuboid.html#ab2ee19d203b8b5992557b66528ff1d89", null ],
+      [ "BOX_CENTER", "namespaceprobe__cuboid.html#aec4cb6cd2c6c19a1be8555804a42daaf", null ],
+      [ "BOX_HALF", "namespaceprobe__cuboid.html#adc8b7c287b5d7343879f5cc48f866104", null ],
+      [ "BOX_MAX", "namespaceprobe__cuboid.html#a302bdcaec28023ac175a965c73219893", null ],
+      [ "BOX_MIN", "namespaceprobe__cuboid.html#ab814b0e2975a887a072a2b89ef83aef2", null ],
+      [ "c", "namespaceprobe__cuboid.html#afa731ba0714b786f582b87fa12dd9081", null ],
+      [ "env_box", "namespaceprobe__cuboid.html#aaa0a57af366635aabcf7c3fe7ea92db4", null ],
+      [ "GOAL", "namespaceprobe__cuboid.html#ae7dff4f120113faa20633c9392330a32", null ],
+      [ "mark", "namespaceprobe__cuboid.html#acf436806888a68dc7962293d79755763", null ],
+      [ "MOVEIT_INVALID", "namespaceprobe__cuboid.html#ae06bfc651ffef421b7ce711a50e8dac2", null ],
+      [ "MOVEIT_N", "namespaceprobe__cuboid.html#ad3e686446af268d67432f9109b621a88", null ],
+      [ "n_penetrating", "namespaceprobe__cuboid.html#a84487e83505430307cb20498bef7597b", null ],
+      [ "q", "namespaceprobe__cuboid.html#ad550047b191be23f9b29f26dd0784ebd", null ],
+      [ "sorted_by_z", "namespaceprobe__cuboid.html#aa8ab7b78e15b7e19983e275f5d89a700", null ],
+      [ "spheres", "namespaceprobe__cuboid.html#a4246293cfd54756a9e7ddb6d8d4384dc", null ],
+      [ "sr", "namespaceprobe__cuboid.html#a29fc30636251865c7cb4b4c2caad7c91", null ],
+      [ "START", "namespaceprobe__cuboid.html#a7dd3674fa7463e140ca85c3a12fe9e3e", null ],
+      [ "status", "namespaceprobe__cuboid.html#aae0bc16f805d29779720349be1f44ed5", null ],
+      [ "sx", "namespaceprobe__cuboid.html#ad9418f115c439172fe347ae3c98f837a", null ],
+      [ "sy", "namespaceprobe__cuboid.html#a42b0b904ab6714c866d3c9b7ba541087", null ],
+      [ "sz", "namespaceprobe__cuboid.html#a3a75572420b98cd2916e59dabd4ce577", null ],
+      [ "t", "namespaceprobe__cuboid.html#aa3c48d155e0f7d2e81800f4350e5ab53", null ],
+      [ "vamp_invalid", "namespaceprobe__cuboid.html#a58b6718bd9f42215c7a6bb2ece051c66", null ],
+      [ "worst_overall", "namespaceprobe__cuboid.html#ac49d27172c615164aad3d4f2d650573f", null ]
+    ] ],
+    [ "problem_tar_to_pkl_json", "namespaceproblem__tar__to__pkl__json.html", [
+      [ "load_moveit_yaml_request", "namespaceproblem__tar__to__pkl__json.html#a3d70fa31c6683e097063555e4155b5e3", null ],
+      [ "load_moveit_yaml_scene", "namespaceproblem__tar__to__pkl__json.html#a9754781bb2889a4657b97962fa0fc175", null ],
+      [ "main", "namespaceproblem__tar__to__pkl__json.html#ab1d9fd37727ec32935f28b4397f2e731", null ],
+      [ "test_problem", "namespaceproblem__tar__to__pkl__json.html#ad316be76687b4bbfb11d59e893cfedf0", null ],
+      [ "transform_from_yaml", "namespaceproblem__tar__to__pkl__json.html#af7ad160e11b2b69c3f904adeb6a852b3", null ],
+      [ "try", "namespaceproblem__tar__to__pkl__json.html#a7cddefbdf5535f2f7675d242bbf3afdc", null ]
+    ] ],
+    [ "random_dance", "namespacerandom__dance.html", [
+      [ "main", "namespacerandom__dance.html#ac1529052cb9529d85902c8182845cddb", null ],
+      [ "sample_valid", "namespacerandom__dance.html#a8bbebe78043a08027ef40579653add21", null ]
+    ] ],
     [ "receptionist", "namespacereceptionist.html", [
       [ "generate_launch_description", "namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8", null ]
     ] ],
@@ -351,6 +413,12 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacerestaurant__launch.html#a8b652244d943c8e2e5d03bb2e33103e9", null ]
     ] ],
     [ "restaurant_task_manager", "namespacerestaurant__task__manager.html", "namespacerestaurant__task__manager" ],
+    [ "robometrics_to_pkl_json", "namespacerobometrics__to__pkl__json.html", [
+      [ "main", "namespacerobometrics__to__pkl__json.html#a939e57270c4ab7514975b7e0d1584b57", null ],
+      [ "robometric_to_vamp", "namespacerobometrics__to__pkl__json.html#a81ee13f6f7918bd65a5ab5addd65aa57", null ],
+      [ "test_problem", "namespacerobometrics__to__pkl__json.html#a82cfb68c65ca2aabcc4ce8a636a38b18", null ],
+      [ "datasets", "namespacerobometrics__to__pkl__json.html#a60383597795724fe31606e39374ea514", null ]
+    ] ],
     [ "robot_sim", "namespacerobot__sim.html", [
       [ "generate_launch_description", "namespacerobot__sim.html#aa1de369c762aa456d4c9e31388d6f617", null ],
       [ "launch_setup", "namespacerobot__sim.html#aa842398b51f41c4ee2a7105e1e83009e", null ]
@@ -377,6 +445,12 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacesimulate__map.html#ad6149f6889b194fc6ef401af9ad4a40b", null ]
     ] ],
     [ "simulate_position", "namespacesimulate__position.html", "namespacesimulate__position" ],
+    [ "sphere_cage_example", "namespacesphere__cage__example.html", [
+      [ "main", "namespacesphere__cage__example.html#a72ed4e8ba3dcd7dbfdd1793b6d79c326", null ],
+      [ "a", "namespacesphere__cage__example.html#a4178e0f520cd2d44d8ac8c5c1dc3f631", null ],
+      [ "b", "namespacesphere__cage__example.html#ae0026bacb9650c976f0badf4f5d085a1", null ],
+      [ "problem", "namespacesphere__cage__example.html#a8e7ac800c865e92caf5b2e46ce4fb2ac", null ]
+    ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
     [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
@@ -406,11 +480,15 @@ var namespaces_dup =
       [ "_is_tensorrt_available", "namespacetrt__utils.html#a32e507a426c6ab7dcd37eb74888950c9", null ],
       [ "load_yolo_trt", "namespacetrt__utils.html#a60b6f5e8a22c056723d7c0a0ecd88ca3", null ]
     ] ],
+    [ "unc", "namespaceunc.html", "namespaceunc" ],
     [ "unitree_h1", "namespaceunitree__h1.html", [
       [ "create_nodes", "namespaceunitree__h1.html#a8cd98f3b33f96dc92ba5aacccf0b9a0f", null ],
       [ "generate_launch_description", "namespaceunitree__h1.html#acd23c96a910cd26955ad22c40585eae5", null ]
     ] ],
     [ "utils", "namespaceutils.html", "namespaceutils" ],
+    [ "vamp", "namespacevamp.html", "namespacevamp" ],
+    [ "vamp_moveit_plugin", "namespacevamp__moveit__plugin.html", "namespacevamp__moveit__plugin" ],
+    [ "vamp_server", "namespacevamp__server.html", "namespacevamp__server" ],
     [ "vision_3D_utils", "namespacevision__3D__utils.html", [
       [ "deproject_pixel_to_point", "namespacevision__3D__utils.html#aa21ba9a101d1e05716a26c5420b239cf", null ],
       [ "get2DCentroid", "namespacevision__3D__utils.html#aacc42d41856be0a1a34cfe33498aa9b8", null ],
@@ -419,6 +497,15 @@ var namespaces_dup =
       [ "FLT_EPSILON", "namespacevision__3D__utils.html#a98f504ec1d9a17769ad241f28580d805", null ]
     ] ],
     [ "visualization", "namespacevisualization.html", "namespacevisualization" ],
+    [ "visualize_mbm", "namespacevisualize__mbm.html", [
+      [ "main", "namespacevisualize__mbm.html#a2caa0d958d1ae9a1ae73039e9f4db9bc", null ]
+    ] ],
+    [ "visualize_ompl", "namespacevisualize__ompl.html", [
+      [ "main", "namespacevisualize__ompl.html#a4532f4be7af00467d4ce0d5c2595262e", null ],
+      [ "solve", "namespacevisualize__ompl.html#a9322a523fe0a26e30f125e6e4c8a0beb", null ],
+      [ "except", "namespacevisualize__ompl.html#ae245427310db70d41aee97ceb1927fc2", null ],
+      [ "try", "namespacevisualize__ompl.html#a7edcc4c645ef011e992b567e1695655e", null ]
+    ] ],
     [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", "namespacewait__for__controller__input__node" ],
     [ "xarm6", "namespacexarm6.html", [
       [ "base_link_name", "namespacexarm6.html#a26baf8750ec84dc6d4deea500c98907a", null ],

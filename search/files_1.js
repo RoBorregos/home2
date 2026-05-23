@@ -7,10 +7,16 @@ var searchData=
   ['addentry_2esrv_4',['AddEntry.srv',['../AddEntry_8srv.html',1,'']]],
   ['addpickprimitives_2esrv_5',['AddPickPrimitives.srv',['../AddPickPrimitives_8srv.html',1,'']]],
   ['answerquestion_2esrv_6',['AnswerQuestion.srv',['../AnswerQuestion_8srv.html',1,'']]],
-  ['area_5fcheck_2epy_7',['area_check.py',['../area__check_8py.html',1,'']]],
-  ['attachcollisionobject_2esrv_8',['AttachCollisionObject.srv',['../AttachCollisionObject_8srv.html',1,'']]],
-  ['audiodata_2emsg_9',['AudioData.msg',['../AudioData_8msg.html',1,'']]],
-  ['audiodatastamped_2emsg_10',['AudioDataStamped.msg',['../AudioDataStamped_8msg.html',1,'']]],
-  ['audioinfo_2emsg_11',['AudioInfo.msg',['../AudioInfo_8msg.html',1,'']]],
-  ['audiotext_2esrv_12',['AudioText.srv',['../AudioText_8srv.html',1,'']]]
+  ['aorrtc_2ehh_7',['aorrtc.hh',['../aorrtc_8hh.html',1,'']]],
+  ['aorrtc_5fsettings_2ehh_8',['aorrtc_settings.hh',['../aorrtc__settings_8hh.html',1,'']]],
+  ['aox_5fnn_2ehh_9',['aox_nn.hh',['../aox__nn_8hh.html',1,'']]],
+  ['area_5fcheck_2epy_10',['area_check.py',['../area__check_8py.html',1,'']]],
+  ['attachcollisionobject_2esrv_11',['AttachCollisionObject.srv',['../AttachCollisionObject_8srv.html',1,'']]],
+  ['attachments_2ehh_12',['attachments.hh',['../attachments_8hh.html',1,'']]],
+  ['attachments_2epy_13',['attachments.py',['../attachments_8py.html',1,'']]],
+  ['audiodata_2emsg_14',['AudioData.msg',['../AudioData_8msg.html',1,'']]],
+  ['audiodatastamped_2emsg_15',['AudioDataStamped.msg',['../AudioDataStamped_8msg.html',1,'']]],
+  ['audioinfo_2emsg_16',['AudioInfo.msg',['../AudioInfo_8msg.html',1,'']]],
+  ['audiotext_2esrv_17',['AudioText.srv',['../AudioText_8srv.html',1,'']]],
+  ['avx_2ehh_18',['avx.hh',['../avx_8hh.html',1,'']]]
 ];

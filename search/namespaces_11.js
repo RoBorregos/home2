@@ -9,7 +9,8 @@ var searchData=
   ['simple_5flaunch_6',['simple_launch',['../namespacesimple__launch.html',1,'']]],
   ['simulate_5fmap_7',['simulate_map',['../namespacesimulate__map.html',1,'']]],
   ['simulate_5fposition_8',['simulate_position',['../namespacesimulate__position.html',1,'']]],
-  ['storing_5fgroceries_5fmanager_9',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]],
-  ['urdf2mjcf_10',['urdf2mjcf',['../namespacescripts_1_1urdf2mjcf.html',1,'scripts']]],
-  ['xacro2mjcf_11',['xacro2mjcf',['../namespacescripts_1_1xacro2mjcf.html',1,'scripts']]]
+  ['sphere_5fcage_5fexample_9',['sphere_cage_example',['../namespacesphere__cage__example.html',1,'']]],
+  ['storing_5fgroceries_5fmanager_10',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]],
+  ['urdf2mjcf_11',['urdf2mjcf',['../namespacescripts_1_1urdf2mjcf.html',1,'scripts']]],
+  ['xacro2mjcf_12',['xacro2mjcf',['../namespacescripts_1_1xacro2mjcf.html',1,'scripts']]]
 ];

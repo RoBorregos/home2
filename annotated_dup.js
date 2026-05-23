@@ -21,6 +21,9 @@ var annotated_dup =
     [ "base_detector_node", "namespacebase__detector__node.html", [
       [ "BaseDetectorNode", "classbase__detector__node_1_1BaseDetectorNode.html", "classbase__detector__node_1_1BaseDetectorNode" ]
     ] ],
+    [ "benchmark_vamp", "namespacebenchmark__vamp.html", [
+      [ "BenchmarkNode", "classbenchmark__vamp_1_1BenchmarkNode.html", "classbenchmark__vamp_1_1BenchmarkNode" ]
+    ] ],
     [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", [
       [ "LidarCalibrator", "classcalibrate__ignore__laser_1_1LidarCalibrator.html", "classcalibrate__ignore__laser_1_1LidarCalibrator" ]
     ] ],
@@ -487,8 +490,114 @@ var annotated_dup =
     [ "trash_detection_node", "namespacetrash__detection__node.html", [
       [ "TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", "classtrash__detection__node_1_1TrashDetectionNode" ]
     ] ],
+    [ "unc", "namespaceunc.html", [
+      [ "robotics", "namespaceunc_1_1robotics.html", [
+        [ "nigh", "namespaceunc_1_1robotics_1_1nigh.html", [
+          [ "metric", "namespaceunc_1_1robotics_1_1nigh_1_1metric.html", [
+            [ "Space< vamp::planning::NNFloatArray< dim >, LP< 2 > >", "structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html", "structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4" ]
+          ] ]
+        ] ]
+      ] ]
+    ] ],
     [ "utils", "namespaceutils.html", [
       [ "CrossEntropyLabelSmooth", "classutils_1_1CrossEntropyLabelSmooth.html", "classutils_1_1CrossEntropyLabelSmooth" ]
+    ] ],
+    [ "vamp", "namespacevamp.html", [
+      [ "binding", "namespacevamp_1_1binding.html", [
+        [ "ArrayInput", "structvamp_1_1binding_1_1ArrayInput.html", "structvamp_1_1binding_1_1ArrayInput" ],
+        [ "Helper", "structvamp_1_1binding_1_1Helper.html", "structvamp_1_1binding_1_1Helper" ],
+        [ "NDArrayInput", "structvamp_1_1binding_1_1NDArrayInput.html", "structvamp_1_1binding_1_1NDArrayInput" ]
+      ] ],
+      [ "collision", "namespacevamp_1_1collision.html", [
+        [ "Attachment", "structvamp_1_1collision_1_1Attachment.html", "structvamp_1_1collision_1_1Attachment" ],
+        [ "CAPT", "structvamp_1_1collision_1_1CAPT.html", "structvamp_1_1collision_1_1CAPT" ],
+        [ "Cuboid", "structvamp_1_1collision_1_1Cuboid.html", "structvamp_1_1collision_1_1Cuboid" ],
+        [ "Cylinder", "structvamp_1_1collision_1_1Cylinder.html", "structvamp_1_1collision_1_1Cylinder" ],
+        [ "Environment", "structvamp_1_1collision_1_1Environment.html", "structvamp_1_1collision_1_1Environment" ],
+        [ "HeightField", "structvamp_1_1collision_1_1HeightField.html", "structvamp_1_1collision_1_1HeightField" ],
+        [ "Shape", "structvamp_1_1collision_1_1Shape.html", "structvamp_1_1collision_1_1Shape" ],
+        [ "Sphere", "structvamp_1_1collision_1_1Sphere.html", "structvamp_1_1collision_1_1Sphere" ],
+        [ "Volume", "structvamp_1_1collision_1_1Volume.html", "structvamp_1_1collision_1_1Volume" ]
+      ] ],
+      [ "disable_rendering", "namespacevamp_1_1disable__rendering.html", [
+        [ "DisableRendering", "classvamp_1_1disable__rendering_1_1DisableRendering.html", "classvamp_1_1disable__rendering_1_1DisableRendering" ]
+      ] ],
+      [ "planning", "namespacevamp_1_1planning.html", [
+        [ "utils", "namespacevamp_1_1planning_1_1utils.html", [
+          [ "ConnectedComponent", "structvamp_1_1planning_1_1utils_1_1ConnectedComponent.html", "structvamp_1_1planning_1_1utils_1_1ConnectedComponent" ],
+          [ "QueueNode", "structvamp_1_1planning_1_1utils_1_1QueueNode.html", "structvamp_1_1planning_1_1utils_1_1QueueNode" ]
+        ] ],
+        [ "AORRTC", "structvamp_1_1planning_1_1AORRTC.html", "structvamp_1_1planning_1_1AORRTC" ],
+        [ "AORRTCSettings", "structvamp_1_1planning_1_1AORRTCSettings.html", "structvamp_1_1planning_1_1AORRTCSettings" ],
+        [ "AOX_RRTC", "structvamp_1_1planning_1_1AOX__RRTC.html", "structvamp_1_1planning_1_1AOX__RRTC" ],
+        [ "BSplineSettings", "structvamp_1_1planning_1_1BSplineSettings.html", "structvamp_1_1planning_1_1BSplineSettings" ],
+        [ "ConstantNeighborParams", "structvamp_1_1planning_1_1ConstantNeighborParams.html", "structvamp_1_1planning_1_1ConstantNeighborParams" ],
+        [ "FCIT", "structvamp_1_1planning_1_1FCIT.html", "structvamp_1_1planning_1_1FCIT" ],
+        [ "FCITRoadmapNode", "structvamp_1_1planning_1_1FCITRoadmapNode.html", "structvamp_1_1planning_1_1FCITRoadmapNode" ],
+        [ "FCITStarNeighborParams", "structvamp_1_1planning_1_1FCITStarNeighborParams.html", "structvamp_1_1planning_1_1FCITStarNeighborParams" ],
+        [ "FMTStarNeighborParams", "structvamp_1_1planning_1_1FMTStarNeighborParams.html", "structvamp_1_1planning_1_1FMTStarNeighborParams" ],
+        [ "GNATNode", "structvamp_1_1planning_1_1GNATNode.html", "structvamp_1_1planning_1_1GNATNode" ],
+        [ "NearestNeighborsGNAT", "classvamp_1_1planning_1_1NearestNeighborsGNAT.html", "classvamp_1_1planning_1_1NearestNeighborsGNAT" ],
+        [ "NNFloatArray", "structvamp_1_1planning_1_1NNFloatArray.html", "structvamp_1_1planning_1_1NNFloatArray" ],
+        [ "NNNode", "structvamp_1_1planning_1_1NNNode.html", "structvamp_1_1planning_1_1NNNode" ],
+        [ "NNNodeKey", "structvamp_1_1planning_1_1NNNodeKey.html", "structvamp_1_1planning_1_1NNNodeKey" ],
+        [ "Path", "structvamp_1_1planning_1_1Path.html", "structvamp_1_1planning_1_1Path" ],
+        [ "Percents", "structvamp_1_1planning_1_1Percents.html", null ],
+        [ "PerturbSettings", "structvamp_1_1planning_1_1PerturbSettings.html", "structvamp_1_1planning_1_1PerturbSettings" ],
+        [ "PlanningResult", "structvamp_1_1planning_1_1PlanningResult.html", "structvamp_1_1planning_1_1PlanningResult" ],
+        [ "PRM", "structvamp_1_1planning_1_1PRM.html", "structvamp_1_1planning_1_1PRM" ],
+        [ "PRMStarNeighborParams", "structvamp_1_1planning_1_1PRMStarNeighborParams.html", "structvamp_1_1planning_1_1PRMStarNeighborParams" ],
+        [ "ProlateHyperspheroid", "classvamp_1_1planning_1_1ProlateHyperspheroid.html", "classvamp_1_1planning_1_1ProlateHyperspheroid" ],
+        [ "ProlateHyperspheroidRNG", "structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html", "structvamp_1_1planning_1_1ProlateHyperspheroidRNG" ],
+        [ "QueueEdge", "structvamp_1_1planning_1_1QueueEdge.html", "structvamp_1_1planning_1_1QueueEdge" ],
+        [ "ReduceSettings", "structvamp_1_1planning_1_1ReduceSettings.html", "structvamp_1_1planning_1_1ReduceSettings" ],
+        [ "Roadmap", "structvamp_1_1planning_1_1Roadmap.html", "structvamp_1_1planning_1_1Roadmap" ],
+        [ "RoadmapNode", "structvamp_1_1planning_1_1RoadmapNode.html", "structvamp_1_1planning_1_1RoadmapNode" ],
+        [ "RoadmapSettings", "structvamp_1_1planning_1_1RoadmapSettings.html", "structvamp_1_1planning_1_1RoadmapSettings" ],
+        [ "RRTC", "structvamp_1_1planning_1_1RRTC.html", "structvamp_1_1planning_1_1RRTC" ],
+        [ "RRTCSettings", "structvamp_1_1planning_1_1RRTCSettings.html", "structvamp_1_1planning_1_1RRTCSettings" ],
+        [ "ShortcutSettings", "structvamp_1_1planning_1_1ShortcutSettings.html", null ],
+        [ "SimplifySettings", "structvamp_1_1planning_1_1SimplifySettings.html", "structvamp_1_1planning_1_1SimplifySettings" ]
+      ] ],
+      [ "pybullet_interface", "namespacevamp_1_1pybullet__interface.html", [
+        [ "PyBulletSimulator", "classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html", "classvamp_1_1pybullet__interface_1_1PyBulletSimulator" ]
+      ] ],
+      [ "redirect_stream", "namespacevamp_1_1redirect__stream.html", [
+        [ "RedirectStream", "classvamp_1_1redirect__stream_1_1RedirectStream.html", "classvamp_1_1redirect__stream_1_1RedirectStream" ]
+      ] ],
+      [ "rng", "namespacevamp_1_1rng.html", [
+        [ "Distribution", "structvamp_1_1rng_1_1Distribution.html", "structvamp_1_1rng_1_1Distribution" ],
+        [ "Halton", "structvamp_1_1rng_1_1Halton.html", "structvamp_1_1rng_1_1Halton" ],
+        [ "RNG", "structvamp_1_1rng_1_1RNG.html", "structvamp_1_1rng_1_1RNG" ],
+        [ "XORShift", "structvamp_1_1rng_1_1XORShift.html", "structvamp_1_1rng_1_1XORShift" ]
+      ] ],
+      [ "robots", "namespacevamp_1_1robots.html", [
+        [ "Baxter", "structvamp_1_1robots_1_1Baxter.html", "structvamp_1_1robots_1_1Baxter" ],
+        [ "Fetch", "structvamp_1_1robots_1_1Fetch.html", "structvamp_1_1robots_1_1Fetch" ],
+        [ "FRIDA_Real", "structvamp_1_1robots_1_1FRIDA__Real.html", "structvamp_1_1robots_1_1FRIDA__Real" ],
+        [ "Panda", "structvamp_1_1robots_1_1Panda.html", "structvamp_1_1robots_1_1Panda" ],
+        [ "Sphere", "structvamp_1_1robots_1_1Sphere.html", "structvamp_1_1robots_1_1Sphere" ],
+        [ "UR5", "structvamp_1_1robots_1_1UR5.html", "structvamp_1_1robots_1_1UR5" ]
+      ] ],
+      [ "transformations", "namespacevamp_1_1transformations.html", [
+        [ "Arcball", "classvamp_1_1transformations_1_1Arcball.html", "classvamp_1_1transformations_1_1Arcball" ]
+      ] ],
+      [ "same_num_scalars", "structvamp_1_1same__num__scalars.html", null ],
+      [ "SIMDVector", "structvamp_1_1SIMDVector.html", null ],
+      [ "SIMDVector< __m256 >", "structvamp_1_1SIMDVector_3_01____m256_01_4.html", "structvamp_1_1SIMDVector_3_01____m256_01_4" ],
+      [ "SIMDVector< __m256i >", "structvamp_1_1SIMDVector_3_01____m256i_01_4.html", "structvamp_1_1SIMDVector_3_01____m256i_01_4" ],
+      [ "SIMDVector< float32x4_t >", "structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html", "structvamp_1_1SIMDVector_3_01float32x4__t_01_4" ],
+      [ "SIMDVector< int32x4_t >", "structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html", "structvamp_1_1SIMDVector_3_01int32x4__t_01_4" ],
+      [ "Vector", "structvamp_1_1Vector.html", "structvamp_1_1Vector" ],
+      [ "VectorInterface", "structvamp_1_1VectorInterface.html", "structvamp_1_1VectorInterface" ],
+      [ "VectorSignature", "structvamp_1_1VectorSignature.html", "structvamp_1_1VectorSignature" ]
+    ] ],
+    [ "vamp_moveit_plugin", "namespacevamp__moveit__plugin.html", [
+      [ "VampPlannerManager", "classvamp__moveit__plugin_1_1VampPlannerManager.html", "classvamp__moveit__plugin_1_1VampPlannerManager" ],
+      [ "VampPlanningContext", "classvamp__moveit__plugin_1_1VampPlanningContext.html", "classvamp__moveit__plugin_1_1VampPlanningContext" ]
+    ] ],
+    [ "vamp_server", "namespacevamp__server.html", [
+      [ "VampServer", "classvamp__server_1_1VampServer.html", "classvamp__server_1_1VampServer" ]
     ] ],
     [ "visualization", "namespacevisualization.html", [
       [ "NoVisualization", "classvisualization_1_1NoVisualization.html", "classvisualization_1_1NoVisualization" ],
@@ -526,5 +635,7 @@ var annotated_dup =
     [ "PublishNode", "classPublishNode.html", "classPublishNode" ],
     [ "TableSegmentationNode", "classTableSegmentationNode.html", "classTableSegmentationNode" ],
     [ "TestsNode", "classTestsNode.html", "classTestsNode" ],
+    [ "VAMPMotionValidator", "structVAMPMotionValidator.html", "structVAMPMotionValidator" ],
+    [ "VAMPStateValidator", "structVAMPStateValidator.html", "structVAMPStateValidator" ],
     [ "Xarm_gripper_mujoco_bridge", "classXarm__gripper__mujoco__bridge.html", "classXarm__gripper__mujoco__bridge" ]
 ];

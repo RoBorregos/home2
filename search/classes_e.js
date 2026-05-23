@@ -5,7 +5,16 @@ var searchData=
   ['navigationtasks_2',['NavigationTasks',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html',1,'task_manager::subtask_managers::nav_tasks']]],
   ['navrosnode_3',['NavRosNode',['../classnav__ui_1_1NavRosNode.html',1,'nav_ui']]],
   ['navui_4',['NavUI',['../classnav__ui_1_1NavUI.html',1,'nav_ui']]],
-  ['nearestneighbordistancemetric_5',['NearestNeighborDistanceMetric',['../classnn__matching_1_1NearestNeighborDistanceMetric.html',1,'nn_matching']]],
-  ['nodemonitor_6',['NodeMonitor',['../classnode__monitor_1_1NodeMonitor.html',1,'node_monitor']]],
-  ['novisualization_7',['NoVisualization',['../classvisualization_1_1NoVisualization.html',1,'visualization']]]
+  ['ndarrayinput_5',['NDArrayInput',['../structvamp_1_1binding_1_1NDArrayInput.html',1,'vamp::binding']]],
+  ['nearestneighbordistancemetric_6',['NearestNeighborDistanceMetric',['../classnn__matching_1_1NearestNeighborDistanceMetric.html',1,'nn_matching']]],
+  ['nearestneighborsgnat_7',['NearestNeighborsGNAT',['../classvamp_1_1planning_1_1NearestNeighborsGNAT.html',1,'vamp::planning']]],
+  ['neighbor_8',['Neighbor',['../structvamp_1_1planning_1_1FCITRoadmapNode_1_1Neighbor.html',1,'vamp::planning::FCITRoadmapNode::Neighbor'],['../structvamp_1_1planning_1_1RoadmapNode_1_1Neighbor.html',1,'vamp::planning::RoadmapNode::Neighbor']]],
+  ['nnfloatarray_9',['NNFloatArray',['../structvamp_1_1planning_1_1NNFloatArray.html',1,'vamp::planning']]],
+  ['nnfloatarray_3c_20dimension_20_3e_10',['NNFloatArray&lt; dimension &gt;',['../structvamp_1_1planning_1_1NNFloatArray.html',1,'vamp::planning']]],
+  ['nnnode_11',['NNNode',['../structvamp_1_1planning_1_1NNNode.html',1,'vamp::planning']]],
+  ['nnnodekey_12',['NNNodeKey',['../structvamp_1_1planning_1_1NNNodeKey.html',1,'vamp::planning']]],
+  ['node_13',['Node',['../classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html',1,'vamp::planning::NearestNeighborsGNAT']]],
+  ['nodedistcompare_14',['NodeDistCompare',['../structvamp_1_1planning_1_1NearestNeighborsGNAT_1_1NodeDistCompare.html',1,'vamp::planning::NearestNeighborsGNAT']]],
+  ['nodemonitor_15',['NodeMonitor',['../classnode__monitor_1_1NodeMonitor.html',1,'node_monitor']]],
+  ['novisualization_16',['NoVisualization',['../classvisualization_1_1NoVisualization.html',1,'visualization']]]
 ];

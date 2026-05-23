@@ -9,6 +9,8 @@ var dir_7789cadc33ffb2720130327e1e043559 =
     [ "perception_3d", "dir_bc8214742e70226e9f3875da81f47894.html", "dir_bc8214742e70226e9f3875da81f47894" ],
     [ "pick_and_place", "dir_bb44dde2ef2e242adc1d06a241fda96b.html", "dir_bb44dde2ef2e242adc1d06a241fda96b" ],
     [ "place", "dir_3f92b3e0173490419c7de5eb42745e0b.html", "dir_3f92b3e0173490419c7de5eb42745e0b" ],
+    [ "vamp", "dir_6cfd23c982e1bf81b7bc305842170982.html", "dir_6cfd23c982e1bf81b7bc305842170982" ],
+    [ "vamp_moveit_plugin", "dir_dda0fb40629957ba60b7829a96c1d69d.html", "dir_dda0fb40629957ba60b7829a96c1d69d" ],
     [ "xarm6_ikfast_plugin", "dir_6c02798860940d042eb2017c065a4ba9.html", "dir_6c02798860940d042eb2017c065a4ba9" ],
     [ "xarm_utils", "dir_7fc4285055b5d60db6b38598535f26f9.html", "dir_7fc4285055b5d60db6b38598535f26f9" ]
 ];

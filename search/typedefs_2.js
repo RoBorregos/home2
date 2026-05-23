@@ -1,5 +1,8 @@
 var searchData=
 [
-  ['pointcloudns_0',['PointCloudNS',['../down__sample__pc_8cpp.html#adc3f32de3702dd114e2ab1c2ddd3cae9',1,'down_sample_pc.cpp']]],
-  ['pointcloudtype_1',['pointCloudType',['../down__sample__pc_8cpp.html#ab2a47326e0e97826112f1ec1d3896594',1,'down_sample_pc.cpp']]]
+  ['d_0',['D',['../structvamp_1_1VectorInterface.html#ad83468d662fed68c03d3d8ee1d4ed719',1,'vamp::VectorInterface']]],
+  ['datat_1',['DataT',['../structvamp_1_1VectorSignature.html#a8b02a104fac7d13b35057c099bedb91a',1,'vamp::VectorSignature::DataT()'],['../structvamp_1_1VectorInterface.html#ac8637df2dcc32d62568b4db3e77631a8',1,'vamp::VectorInterface::DataT()'],['../structvamp_1_1Vector.html#a974485b6924dec166052638c3d358a6b',1,'vamp::Vector::DataT()']]],
+  ['debug_2',['Debug',['../structvamp_1_1robots_1_1Baxter.html#a72cbeb6bafb7381ba2da78953ea6ebea',1,'vamp::robots::Baxter::Debug()'],['../structvamp_1_1robots_1_1Fetch.html#a5ead64b746e8203c253796f8cadac5e0',1,'vamp::robots::Fetch::Debug()'],['../structvamp_1_1robots_1_1Panda.html#a9e61f45d0b2ffa7ba227f9e063b34bab',1,'vamp::robots::Panda::Debug()'],['../structvamp_1_1robots_1_1Sphere.html#a477319ee3046a9de4edff9dc38e151a0',1,'vamp::robots::Sphere::Debug()'],['../structvamp_1_1robots_1_1UR5.html#adc08e3b91e432f24c9997932ba721664',1,'vamp::robots::UR5::Debug()'],['../structvamp_1_1robots_1_1FRIDA__Real.html#aab5637f1f4a2afdbecfb5ac24ac3f825',1,'vamp::robots::FRIDA_Real::Debug()']]],
+  ['distance_3',['Distance',['../structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html#ac83bb2eb2648f6ef024c8f7b4568a7d0',1,'unc::robotics::nigh::metric::Space&lt; vamp::planning::NNFloatArray&lt; dim &gt;, LP&lt; 2 &gt; &gt;']]],
+  ['distancefunction_4',['DistanceFunction',['../classvamp_1_1planning_1_1NearestNeighborsGNAT.html#a7489a1ee848c35cb5c274cca6b375bdc',1,'vamp::planning::NearestNeighborsGNAT']]]
 ];

@@ -1,25 +1,56 @@
 var hierarchy =
 [
     [ "detectors.yolo_e._SuppressStderr", "classdetectors_1_1yolo__e_1_1__SuppressStderr.html", null ],
+    [ "vamp::collision::CAPT::AlignedAllocator< T >", "structvamp_1_1collision_1_1CAPT_1_1AlignedAllocator.html", null ],
+    [ "vamp::planning::AORRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1AORRTC.html", null ],
+    [ "vamp::planning::AORRTCSettings", "structvamp_1_1planning_1_1AORRTCSettings.html", null ],
+    [ "vamp::planning::AOX_RRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1AOX__RRTC.html", null ],
+    [ "std::array", null, [
+      [ "vamp::robots::Baxter::ConfigurationBuffer", "structvamp_1_1robots_1_1Baxter_1_1ConfigurationBuffer.html", null ],
+      [ "vamp::robots::FRIDA_Real::ConfigurationBuffer", "structvamp_1_1robots_1_1FRIDA__Real_1_1ConfigurationBuffer.html", null ],
+      [ "vamp::robots::Fetch::ConfigurationBuffer", "structvamp_1_1robots_1_1Fetch_1_1ConfigurationBuffer.html", null ],
+      [ "vamp::robots::Panda::ConfigurationBuffer", "structvamp_1_1robots_1_1Panda_1_1ConfigurationBuffer.html", null ],
+      [ "vamp::robots::Sphere::ConfigurationBuffer", "structvamp_1_1robots_1_1Sphere_1_1ConfigurationBuffer.html", null ],
+      [ "vamp::robots::UR5::ConfigurationBuffer", "structvamp_1_1robots_1_1UR5_1_1ConfigurationBuffer.html", null ]
+    ] ],
+    [ "vamp::binding::ArrayInput< Robot >", "structvamp_1_1binding_1_1ArrayInput.html", null ],
+    [ "vamp::collision::Attachment< DataT >", "structvamp_1_1collision_1_1Attachment.html", null ],
+    [ "vamp::robots::Baxter", "structvamp_1_1robots_1_1Baxter.html", null ],
     [ "detectors.base.BBOX", "classdetectors_1_1base_1_1BBOX.html", null ],
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
+    [ "vamp::planning::BSplineSettings", "structvamp_1_1planning_1_1BSplineSettings.html", null ],
+    [ "vamp::collision::CAPT::BuildFrame", "structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html", null ],
+    [ "vamp::collision::CAPT", "structvamp_1_1collision_1_1CAPT.html", null ],
     [ "CheckValue< T >", "structCheckValue.html", null ],
     [ "task_manager.utils.colored_logger.CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
     [ "task_manager.utils.config.MockConfig.Config", "classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html", null ],
     [ "task_manager.utils.config.SubtaskConfig.Config", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
     [ "task_manager.utils.config.TopicConfig.Config", "classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html", null ],
+    [ "vamp::planning::utils::ConnectedComponent", "structvamp_1_1planning_1_1utils_1_1ConnectedComponent.html", null ],
+    [ "vamp::planning::ConstantNeighborParams", "structvamp_1_1planning_1_1ConstantNeighborParams.html", null ],
     [ "detectors.base.Detection", "classdetectors_1_1base_1_1Detection.html", null ],
+    [ "vamp.disable_rendering.DisableRendering", "classvamp_1_1disable__rendering_1_1DisableRendering.html", null ],
+    [ "vamp::rng::Distribution", "structvamp_1_1rng_1_1Distribution.html", null ],
+    [ "vamp::collision::Environment< DataT >", "structvamp_1_1collision_1_1Environment.html", null ],
     [ "task_manager.utils.exploration_planner.ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
+    [ "vamp::planning::FCIT< Robot, rake, resolution, NeighborParamsT >", "structvamp_1_1planning_1_1FCIT.html", null ],
+    [ "vamp::planning::FCITRoadmapNode", "structvamp_1_1planning_1_1FCITRoadmapNode.html", null ],
+    [ "vamp::planning::FCITStarNeighborParams", "structvamp_1_1planning_1_1FCITStarNeighborParams.html", null ],
+    [ "vamp::robots::Fetch", "structvamp_1_1robots_1_1Fetch.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
+    [ "vamp::planning::FMTStarNeighborParams", "structvamp_1_1planning_1_1FMTStarNeighborParams.html", null ],
+    [ "vamp::robots::FRIDA_Real", "structvamp_1_1robots_1_1FRIDA__Real.html", null ],
     [ "task_manager.subtask_managers.generic_tasks.GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", [
       [ "task_manager.subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
       [ "task_manager.subtask_managers.gpsr_tasks.GPSRTask", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
     ] ],
+    [ "vamp::planning::GNATNode< dimension >", "structvamp_1_1planning_1_1GNATNode.html", null ],
     [ "hric_task_manager.Guest", "classhric__task__manager_1_1Guest.html", null ],
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
+    [ "vamp::binding::Helper< Robot, Input >", "structvamp_1_1binding_1_1Helper.html", null ],
     [ "task_manager.subtask_managers.hri_hand.HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
     [ "ikfast::IkFastFunctions< T >", "classikfast_1_1IkFastFunctions.html", null ],
     [ "ikfast::IkSingleDOFSolutionBase< T >", "classikfast_1_1IkSingleDOFSolutionBase.html", null ],
@@ -61,6 +92,9 @@ var hierarchy =
       [ "utils.CrossEntropyLabelSmooth", "classutils_1_1CrossEntropyLabelSmooth.html", null ]
     ] ],
     [ "moondream_lib.MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", null ],
+    [ "ompl::base::MotionValidator", null, [
+      [ "VAMPMotionValidator", "structVAMPMotionValidator.html", null ]
+    ] ],
     [ "arm_pkg.moveit_configs_builder.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigs.html", null ],
     [ "arm_pkg.moveit_configs_builder_sim.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigs.html", null ],
     [ "mujoco_rgbd_camera::MujocoDepthCamera", "classmujoco__rgbd__camera_1_1MujocoDepthCamera.html", null ],
@@ -70,6 +104,14 @@ var hierarchy =
     [ "mujoco_visualization::MujocoVisualization", "classmujoco__visualization_1_1MujocoVisualization.html", null ],
     [ "pick_and_place.fix_position_to_plane.MyPoint", "classpick__and__place_1_1fix__position__to__plane_1_1MyPoint.html", null ],
     [ "task_manager.subtask_managers.nav_tasks.NavigationTasks", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html", null ],
+    [ "vamp::binding::NDArrayInput< Robot >", "structvamp_1_1binding_1_1NDArrayInput.html", null ],
+    [ "vamp::planning::NearestNeighborsGNAT< _T >", "classvamp_1_1planning_1_1NearestNeighborsGNAT.html", null ],
+    [ "vamp::planning::FCITRoadmapNode::Neighbor", "structvamp_1_1planning_1_1FCITRoadmapNode_1_1Neighbor.html", null ],
+    [ "vamp::planning::RoadmapNode::Neighbor", "structvamp_1_1planning_1_1RoadmapNode_1_1Neighbor.html", null ],
+    [ "vamp::planning::NNFloatArray< dim_ >", "structvamp_1_1planning_1_1NNFloatArray.html", null ],
+    [ "vamp::planning::NNFloatArray< dimension >", "structvamp_1_1planning_1_1NNFloatArray.html", null ],
+    [ "vamp::planning::NNNode< dimension >", "structvamp_1_1planning_1_1NNNode.html", null ],
+    [ "vamp::planning::NNNodeKey< dimension >", "structvamp_1_1planning_1_1NNNodeKey.html", null ],
     [ "rclcpp::Node", null, [
       [ "AddPrimitivesNode", "classAddPrimitivesNode.html", null ],
       [ "CallServicesNode", "classCallServicesNode.html", null ],
@@ -90,6 +132,8 @@ var hierarchy =
       ] ],
       [ "simple_launch.TestNode", "classsimple__launch_1_1TestNode.html", null ]
     ] ],
+    [ "vamp::planning::NearestNeighborsGNAT< _T >::Node", "classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html", null ],
+    [ "vamp::planning::NearestNeighborsGNAT< _T >::NodeDistCompare", "structvamp_1_1planning_1_1NearestNeighborsGNAT_1_1NodeDistCompare.html", null ],
     [ "object", null, [
       [ "detection.Detection", "classdetection_1_1Detection.html", null ],
       [ "kalman_filter.KalmanFilter", "classkalman__filter_1_1KalmanFilter.html", null ],
@@ -99,24 +143,81 @@ var hierarchy =
       ] ],
       [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ],
       [ "nn_matching.NearestNeighborDistanceMetric", "classnn__matching_1_1NearestNeighborDistanceMetric.html", null ],
+      [ "vamp.transformations.Arcball", "classvamp_1_1transformations_1_1Arcball.html", null ],
       [ "visualization.NoVisualization", "classvisualization_1_1NoVisualization.html", null ],
       [ "visualization.Visualization", "classvisualization_1_1Visualization.html", null ]
     ] ],
     [ "pickandplace_task_manager.ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", null ],
+    [ "vamp::robots::Panda", "structvamp_1_1robots_1_1Panda.html", null ],
+    [ "vamp::planning::Percents< n >", "structvamp_1_1planning_1_1Percents.html", null ],
+    [ "vamp::planning::PerturbSettings", "structvamp_1_1planning_1_1PerturbSettings.html", null ],
     [ "PickAndPlaceTM", null, [
       [ "test_ppc_cabinet_place.PPCTestCabinetPlace", "classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html", null ]
     ] ],
     [ "PickManager.PickManager", "classPickManager_1_1PickManager.html", null ],
     [ "PlaceManager.PlaceManager", "classPlaceManager_1_1PlaceManager.html", null ],
+    [ "vamp::binding::Helper< Robot, Input >::PlannerHelper< Planner, Settings >", "structvamp_1_1binding_1_1Helper_1_1PlannerHelper.html", null ],
+    [ "planning_interface::PlannerManager", null, [
+      [ "vamp_moveit_plugin::VampPlannerManager", "classvamp__moveit__plugin_1_1VampPlannerManager.html", null ]
+    ] ],
+    [ "planning_interface::PlanningContext", null, [
+      [ "vamp_moveit_plugin::VampPlanningContext", "classvamp__moveit__plugin_1_1VampPlanningContext.html", null ]
+    ] ],
+    [ "vamp::planning::PlanningResult< Robot >", "structvamp_1_1planning_1_1PlanningResult.html", null ],
     [ "pose_detection.PoseDetection", "classpose__detection_1_1PoseDetection.html", null ],
     [ "mujoco_ros2_sensors::PoseSensor", "classmujoco__ros2__sensors_1_1PoseSensor.html", null ],
     [ "mujoco_ros2_sensors::PoseSensorStruct", "structmujoco__ros2__sensors_1_1PoseSensorStruct.html", null ],
     [ "PourManager.PourManager", "classPourManager_1_1PourManager.html", null ],
+    [ "vamp::planning::PRM< Robot, rake, resolution, NeighborParamsT >", "structvamp_1_1planning_1_1PRM.html", null ],
+    [ "vamp::planning::PRMStarNeighborParams", "structvamp_1_1planning_1_1PRMStarNeighborParams.html", null ],
+    [ "vamp::planning::ProlateHyperspheroid< Robot >", "classvamp_1_1planning_1_1ProlateHyperspheroid.html", null ],
+    [ "vamp::planning::ProlateHyperspheroid< vamp::robots::Panda >", "classvamp_1_1planning_1_1ProlateHyperspheroid.html", null ],
+    [ "vamp.pybullet_interface.PyBulletSimulator", "classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html", null ],
+    [ "vamp::planning::QueueEdge", "structvamp_1_1planning_1_1QueueEdge.html", null ],
+    [ "vamp::planning::utils::QueueNode", "structvamp_1_1planning_1_1utils_1_1QueueNode.html", null ],
+    [ "vamp.redirect_stream.RedirectStream", "classvamp_1_1redirect__stream_1_1RedirectStream.html", null ],
+    [ "vamp::planning::ReduceSettings", "structvamp_1_1planning_1_1ReduceSettings.html", null ],
+    [ "vamp::rng::RNG< Robot >", "structvamp_1_1rng_1_1RNG.html", [
+      [ "vamp::planning::ProlateHyperspheroidRNG< Robot >", "structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html", null ],
+      [ "vamp::rng::Halton< Robot >", "structvamp_1_1rng_1_1Halton.html", null ],
+      [ "vamp::rng::XORShift< Robot >", "structvamp_1_1rng_1_1XORShift.html", null ]
+    ] ],
+    [ "vamp::rng::RNG< vamp::robots::Panda >", "structvamp_1_1rng_1_1RNG.html", null ],
+    [ "vamp::planning::Roadmap< Robot >", "structvamp_1_1planning_1_1Roadmap.html", null ],
+    [ "vamp::planning::RoadmapNode", "structvamp_1_1planning_1_1RoadmapNode.html", null ],
+    [ "vamp::planning::RoadmapSettings< NeighborParams >", "structvamp_1_1planning_1_1RoadmapSettings.html", null ],
+    [ "vamp::planning::RRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1RRTC.html", null ],
+    [ "vamp::planning::RRTCSettings", "structvamp_1_1planning_1_1RRTCSettings.html", null ],
+    [ "vamp::same_num_scalars< S1, S2 >", "structvamp_1_1same__num__scalars.html", null ],
     [ "mujoco_ros2_sensors::MujocoRos2Sensors::Sensors", "structmujoco__ros2__sensors_1_1MujocoRos2Sensors_1_1Sensors.html", null ],
+    [ "vamp::collision::Shape< DataT >", "structvamp_1_1collision_1_1Shape.html", [
+      [ "vamp::collision::Cuboid< DataT >", "structvamp_1_1collision_1_1Cuboid.html", null ],
+      [ "vamp::collision::Cylinder< DataT >", "structvamp_1_1collision_1_1Cylinder.html", null ],
+      [ "vamp::collision::HeightField< DataT >", "structvamp_1_1collision_1_1HeightField.html", null ],
+      [ "vamp::collision::Sphere< DataT >", "structvamp_1_1collision_1_1Sphere.html", null ]
+    ] ],
     [ "frida_constants.vision_classes.ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ],
+    [ "vamp::planning::ShortcutSettings", "structvamp_1_1planning_1_1ShortcutSettings.html", null ],
+    [ "vamp::SIMDVector< VectorT >", "structvamp_1_1SIMDVector.html", null ],
+    [ "vamp::SIMDVector< __m256 >", "structvamp_1_1SIMDVector_3_01____m256_01_4.html", null ],
+    [ "vamp::SIMDVector< __m256i >", "structvamp_1_1SIMDVector_3_01____m256i_01_4.html", null ],
+    [ "vamp::SIMDVector< float32x4_t >", "structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html", null ],
+    [ "vamp::SIMDVector< int32x4_t >", "structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html", null ],
+    [ "vamp::planning::SimplifySettings", "structvamp_1_1planning_1_1SimplifySettings.html", null ],
+    [ "unc::robotics::nigh::metric::Space< vamp::planning::NNFloatArray< dim >, LP< 2 > >", "structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html", null ],
+    [ "vamp::robots::Sphere", "structvamp_1_1robots_1_1Sphere.html", null ],
+    [ "vamp::robots::Baxter::Spheres< rake >", "structvamp_1_1robots_1_1Baxter_1_1Spheres.html", null ],
+    [ "vamp::robots::Fetch::Spheres< rake >", "structvamp_1_1robots_1_1Fetch_1_1Spheres.html", null ],
+    [ "vamp::robots::FRIDA_Real::Spheres< rake >", "structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html", null ],
+    [ "vamp::robots::Panda::Spheres< rake >", "structvamp_1_1robots_1_1Panda_1_1Spheres.html", null ],
+    [ "vamp::robots::Sphere::Spheres< rake >", "structvamp_1_1robots_1_1Sphere_1_1Spheres.html", null ],
+    [ "vamp::robots::UR5::Spheres< rake >", "structvamp_1_1robots_1_1UR5_1_1Spheres.html", null ],
     [ "demo_manager.DemoTM.States", "classdemo__manager_1_1DemoTM_1_1States.html", null ],
     [ "demo_roborregosday.DemoRoborregosDay.States", "classdemo__roborregosday_1_1DemoRoborregosDay_1_1States.html", null ],
     [ "egsr_cut.EGPSRTM.States", "classegsr__cut_1_1EGPSRTM_1_1States.html", null ],
+    [ "ompl::base::StateValidityChecker", null, [
+      [ "VAMPStateValidator", "structVAMPStateValidator.html", null ]
+    ] ],
     [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
     [ "str", null, [
       [ "task_manager.utils.config.TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ]
@@ -137,6 +238,7 @@ var hierarchy =
     [ "unittest.TestCase", null, [
       [ "simple_launch.TestBringup", "classsimple__launch_1_1TestBringup.html", null ]
     ] ],
+    [ "vamp_server.VampServer.Timer", "classvamp__server_1_1VampServer_1_1Timer.html", null ],
     [ "track.Track", "classtrack_1_1Track.html", null ],
     [ "tracker.Tracker", "classtracker_1_1Tracker.html", null ],
     [ "track.TrackState", "classtrack_1_1TrackState.html", null ],
@@ -145,7 +247,26 @@ var hierarchy =
         [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
       ] ]
     ] ],
+    [ "vamp::robots::UR5", "structvamp_1_1robots_1_1UR5.html", null ],
+    [ "std::vector", null, [
+      [ "vamp::planning::Path< vamp::robots::Panda >", "structvamp_1_1planning_1_1Path.html", null ],
+      [ "vamp::planning::Path< Robot >", "structvamp_1_1planning_1_1Path.html", null ]
+    ] ],
+    [ "vamp::VectorInterface< DerivedT, Sig >", "structvamp_1_1VectorInterface.html", [
+      [ "vamp::Vector< dimension >", "structvamp_1_1Vector.html", null ],
+      [ "vamp::Vector< SIMDVector< __m256i >, 1, Robot::dimension >", "structvamp_1_1Vector.html", null ],
+      [ "vamp::Vector< rake, n_spheres >", "structvamp_1_1Vector.html", null ],
+      [ "vamp::Vector< rake, 1 >", "structvamp_1_1Vector.html", null ]
+    ] ],
+    [ "vamp::VectorInterface< Vector< dimension, num_rows, num_scalars_per_row >, VectorSignature< dimension, num_rows, num_scalars_per_row > >", "structvamp_1_1VectorInterface.html", null ],
+    [ "vamp::VectorInterface< Vector< rake, num_rows, num_scalars_per_row >, VectorSignature< rake, num_rows, num_scalars_per_row > >", "structvamp_1_1VectorInterface.html", null ],
+    [ "vamp::VectorInterface< Vector< SimdT, num_rows, num_scalars_per_row >, VectorSignature< SimdT, num_rows, num_scalars_per_row > >", "structvamp_1_1VectorInterface.html", [
+      [ "vamp::Vector< SimdT, num_rows, num_scalars_per_row >", "structvamp_1_1Vector.html", null ]
+    ] ],
+    [ "vamp::VectorInterface< Vector< SIMDVector< __m256i >, num_rows, num_scalars_per_row >, VectorSignature< SIMDVector< __m256i >, num_rows, num_scalars_per_row > >", "structvamp_1_1VectorInterface.html", null ],
+    [ "vamp::VectorSignature< SimdT_, num_rows_, num_scalars_per_row_ >", "structvamp_1_1VectorSignature.html", null ],
     [ "task_manager.subtask_managers.vision_tasks.VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", null ],
+    [ "vamp::collision::Volume", "structvamp_1_1collision_1_1Volume.html", null ],
     [ "mujoco_ros2_sensors::WrenchSensor", "classmujoco__ros2__sensors_1_1WrenchSensor.html", null ],
     [ "mujoco_ros2_sensors::WrenchSensorStruct", "structmujoco__ros2__sensors_1_1WrenchSensorStruct.html", null ],
     [ "XArmServices.XArmServices", "classXArmServices_1_1XArmServices.html", null ],
@@ -188,8 +309,12 @@ var hierarchy =
       [ "task_manager.utils.task.Task", "classtask__manager_1_1utils_1_1task_1_1Task.html", null ]
     ] ],
     [ "Node", null, [
+      [ "vamp_server.VampServer", "classvamp__server_1_1VampServer.html", null ]
+    ] ],
+    [ "Node", null, [
       [ "_storing_groceries.StoringGroceriesTM", "class__storing__groceries_1_1StoringGroceriesTM.html", null ],
       [ "adaptive_goal_publisher.AdaptiveGoalPublisher", "classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html", null ],
+      [ "benchmark_vamp.BenchmarkNode", "classbenchmark__vamp_1_1BenchmarkNode.html", null ],
       [ "calibrate_ignore_laser.LidarCalibrator", "classcalibrate__ignore__laser_1_1LidarCalibrator.html", null ],
       [ "call_joint_goal.MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", null ],
       [ "call_pick_action.PickMotionClient", "classcall__pick__action_1_1PickMotionClient.html", null ],
