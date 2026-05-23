@@ -12,8 +12,6 @@ import rclpy
 import requests
 from nlp.assets.baml_client.sync_client import b
 from nlp.assets.dialogs import (
-    format_response,
-    get_categorize_shelves_args,
     get_is_coherent_dialog,
     get_previous_command_answer,
 )
@@ -24,7 +22,6 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipe
 
 from frida_constants.hri_constants import CATEGORIZE_IDK_THRESHOLD, MODEL
 from frida_interfaces.srv import (
-    CategorizeShelves,
     CommandInterpreter,
     Grammar,
     IsCoherent,
@@ -71,7 +68,6 @@ class LLMUtils(Node):
         self.declare_parameter("IS_COHERENT_SERVICE", "/nlp/is_coherent")
         self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
         self.declare_parameter("IS_NEGATIVE_SERVICE", "/nlp/is_negative")
-        self.declare_parameter("CATEGORIZE_SERVICE", "/nlp/categorize_shelves")
         self.declare_parameter(
             "COMMAND_INTERPRETER_SERVICE", "/nlp/command_interpreter"
         )
@@ -105,10 +101,6 @@ class LLMUtils(Node):
         )
         is_negative_service = (
             self.get_parameter("IS_NEGATIVE_SERVICE").get_parameter_value().string_value
-        )
-
-        categorize_shelves_service = (
-            self.get_parameter("CATEGORIZE_SERVICE").get_parameter_value().string_value
         )
 
         command_interpreter_service = (
@@ -147,10 +139,6 @@ class LLMUtils(Node):
         self.create_service(IsNegative, is_negative_service, self.is_negative)
         self.create_service(
             IsCoherent, is_coherent_service, self.is_coherent_service_callback
-        )
-
-        self.create_service(
-            CategorizeShelves, categorize_shelves_service, self.categorize_shelves
         )
 
         self.create_service(
@@ -242,68 +230,6 @@ class LLMUtils(Node):
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
         return result
-
-    def categorize_shelves(
-        self, request: CategorizeShelves.Request, response: CategorizeShelves.Response
-    ) -> CategorizeShelves.Response:
-        """Service to categorize shelves."""
-
-        self.get_logger().info("Categorizing shelves")
-        self.get_logger().info("request.shelves: " + str(request.shelves.data))
-        self.get_logger().info("request.table_objects: " + str(request.table_objects))
-
-        shelves: dict[int, list[str]] = eval(request.shelves.data)
-        shelves = {int(k): v for k, v in shelves.items()}
-        table_objects = request.table_objects
-        table_objects = [str(obj.data) for obj in table_objects]
-        self.get_logger().info(f"Shelves: {shelves} and table objects: {table_objects}")
-
-        messages, response_format = get_categorize_shelves_args(shelves, table_objects)
-
-        response_content = (
-            self.client.beta.chat.completions.parse(
-                model=MODEL.CATEGORIZE_SHELVES.value,
-                temperature=self.temperature,
-                messages=messages,
-                response_format=response_format,
-            )
-            .choices[0]
-            .message.content
-        )
-
-        if "</think>" in response_content:
-            response_content = response_content.split("</think>")[-1].strip()
-
-        try:
-            categorized_shelves = json.loads(response_content)
-            self.get_logger().info(f"Categorized shelves: {categorized_shelves}")
-            response.categorized_shelves = [
-                str(c) for c in categorized_shelves["categories"]
-            ]
-
-            return response
-        except Exception as e:
-            print(f"Error parsing JSON: {e}")
-            self.get_logger().error(f"Service error: {e}")
-            categorized_shelves = self.generic_structured_output(
-                format_response(response_content), response_format
-            )
-            print(f"Structured response: {categorized_shelves}")
-
-        try:
-            response.categorized_shelves = [
-                str(c) for c in categorized_shelves.categories
-            ]
-        except Exception as e:
-            self.get_logger().error(f"Service error: {e}")
-            raise rclpy.exceptions.ServiceException(str(e))
-
-        self.get_logger().info(f"Response: {str(response.objects_to_add)}")
-        self.get_logger().info(
-            f"Categorized shelves: {str(response.categorized_shelves)}"
-        )
-
-        return response
 
     def is_positive(
         self, request: IsPositive.Request, response: IsPositive.Response
