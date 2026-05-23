@@ -12,6 +12,7 @@ XARM_SETSTATE_SERVICE = "/xarm/set_state"
 XARM_SETMODE_MOVEIT_SERVICE = "/manipulation/xarm/set_moveit_mode"
 XARM_ROBOT_STATES_TOPIC = "/xarm/robot_states"
 XARM_CLEAN_ERROR_SERVICE = "/xarm/clean_error"
+XARM_MOTION_ENABLE_SERVICE = "/xarm/motion_enable"
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
 

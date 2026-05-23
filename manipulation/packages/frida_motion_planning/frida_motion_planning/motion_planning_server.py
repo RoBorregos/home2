@@ -36,6 +36,7 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
     XARM_ROBOT_STATES_TOPIC,
     XARM_CLEAN_ERROR_SERVICE,
+    XARM_MOTION_ENABLE_SERVICE,
 )
 
 from frida_interfaces.msg import CollisionObject
@@ -48,7 +49,7 @@ from frida_motion_planning.utils.XArmServices import XArmServices
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 from xarm_msgs.msg import RobotMsg
-from xarm_msgs.srv import SetInt16, Call as XArmCall
+from xarm_msgs.srv import SetInt16, SetInt16ById, Call as XArmCall
 from rclpy.qos import QoSProfile
 from controller_manager_msgs.srv import SwitchController
 
@@ -198,6 +199,11 @@ class MotionPlanningServer(Node):
             self._clean_error_client = self.create_client(
                 XArmCall,
                 XARM_CLEAN_ERROR_SERVICE,
+                callback_group=self.callback_group,
+            )
+            self._motion_enable_client = self.create_client(
+                SetInt16ById,
+                XARM_MOTION_ENABLE_SERVICE,
                 callback_group=self.callback_group,
             )
             self.create_subscription(
@@ -689,34 +695,49 @@ class MotionPlanningServer(Node):
             return False
         return True
 
+    def _switch_controller(self, deactivate: list, activate: list, label: str) -> bool:
+        """Send one SwitchController request. Returns True on success."""
+        req = SwitchController.Request()
+        req.deactivate_controllers = deactivate
+        req.activate_controllers = activate
+        req.strictness = SwitchController.Request.BEST_EFFORT
+        future = self.switch_controller_client.call_async(req)
+        start = self.get_clock().now()
+        while not future.done():
+            if (self.get_clock().now() - start).nanoseconds > 5e9:
+                self.get_logger().error(f"{label} -> timeout")
+                return False
+        result = future.result()
+        if result and result.ok:
+            self.get_logger().info(f"{label} -> ok")
+            return True
+        self.get_logger().error(f"{label} -> failed")
+        return False
+
     def _reactivate_controller(self):
-        """Reactivate xarm6_traj_controller via controller_manager. Returns True on success."""
+        """Deactivate then reactivate xarm6_traj_controller. Returns True on success."""
         if not self.switch_controller_client.wait_for_service(timeout_sec=5.0):
             self.get_logger().error(
                 "_reactivate_controller -> switch_controller not available"
             )
             return False
-        switch_req = SwitchController.Request()
-        switch_req.activate_controllers = ["xarm6_traj_controller"]
-        switch_req.deactivate_controllers = []
-        switch_req.strictness = SwitchController.Request.BEST_EFFORT
-        future = self.switch_controller_client.call_async(switch_req)
-        start = self.get_clock().now()
-        while not future.done():
-            if (self.get_clock().now() - start).nanoseconds > 5e9:
-                self.get_logger().error("_reactivate_controller -> timeout")
-                return False
-        result = future.result()
-        if result and result.ok:
-            self.get_logger().info(
-                "_reactivate_controller -> xarm6_traj_controller reactivated"
-            )
-            return True
-        self.get_logger().error("_reactivate_controller -> failed")
-        return False
+        self._switch_controller(
+            ["xarm6_traj_controller"], [], "deactivate xarm6_traj_controller"
+        )
+        return self._switch_controller(
+            [], ["xarm6_traj_controller"], "activate xarm6_traj_controller"
+        )
+
+    def _motion_enable(self) -> bool:
+        """Re-enable all motors (required after e-stop before mode/state changes)."""
+        req = SetInt16ById.Request()
+        req.id = 8  # all joints
+        req.data = 1  # enable
+        return self._call_svc(self._motion_enable_client, req, 5.0, "motion_enable")
 
     def _reinit_mode1(self):
-        """Transition arm through mode 0 → mode 1 and re-enable motion."""
+        """Re-enable motors and transition arm through mode 0 → mode 1."""
+        self._motion_enable()
         req_en = SetInt16.Request()
         req_en.data = 0
         self._call_svc(self.planner.mode_client, SetInt16.Request(), 5.0, "set_mode(0)")
@@ -767,6 +788,9 @@ class MotionPlanningServer(Node):
             self.get_logger().warn(
                 f"ensure_arm_ready -> arm state={state.state} (paused/stopped), re-enabling motion"
             )
+            # motion_enable is needed here too: e-stop with mode still 1 skips
+            # _reinit_mode1 above, so motors would still be disabled otherwise.
+            self._motion_enable()
             req_en = SetInt16.Request()
             req_en.data = 0
             self._call_svc(
