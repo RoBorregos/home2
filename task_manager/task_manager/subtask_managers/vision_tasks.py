@@ -8,6 +8,7 @@ commands.
 
 import math
 import time
+import numpy as np
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
@@ -946,11 +947,59 @@ class VisionTasks:
         labels = [det.classname for det in detections]
         return Status.EXECUTION_SUCCESS, labels
 
-    def describe_person(self, callback):
-        """Describe the person in the image"""
+    def describe_person(self, callback=None):
+        """Describe the person in the image asynchronously."""
         Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses, etc. Don't mention if the person is looking directly at the camera."
-        self.moondream_query_async(prompt, query_person=True, callback=callback)
+        attributes = [
+            "describe the type of clothes and color the person is wearing (dress, pants and shirt, skirt and shirt, shorts and shirt, etc.)",
+            "the person has glasses (if not, respond only '0')",
+            "the person has facial hair (if not, respond only '0', if yes, describe the facial hair)",
+            "describe the age group the person belongs to (teenager, young adult, middle-aged, or elderly)",
+            "is wearing jewerly? (if not, respond only '0', if yes, describe the jewelry)",
+            "describe the hair texture and/or style and color (straight, wavy, curly, in a pony tail, etc.)",
+            "is wearing a hat? (if not, respond only '0', if yes, describe the hat)",
+            "describe the build of the person (thin, average, athletic, overweight, etc.)",
+            "describe the height of the person (short, average, tall, etc.)",
+        ]
+
+        seen = set()
+
+        state = {"index": np.random.randint(0, len(attributes)), "count": 0, "parts": []}
+
+        def finish():
+            description = "; ".join(state["parts"])
+            if description:
+                description += ";"
+            if callback:
+                callback(Status.EXECUTION_SUCCESS, description)
+
+        def handle_result(status, answer):
+            if status == Status.EXECUTION_SUCCESS and answer:
+                cleaned = answer.strip()
+                if cleaned and cleaned[0] != "0":
+                    state["parts"].append(cleaned)
+                    state["count"] += 1
+                seen.add(state["index"])
+
+            while state["index"] in seen and len(seen) < len(attributes):
+                state["index"] = np.random.randint(0, len(attributes))
+            if state["count"] >= 4 or len(seen) >= len(attributes):
+                finish()
+                return
+
+            self.moondream_query_async(
+                attributes[state["index"]],
+                query_person=True,
+                callback=handle_result,
+            )
+
+        if not attributes:
+            finish()
+            return
+
+        self.moondream_query_async(
+            attributes[state["index"]], query_person=True, callback=handle_result
+        )
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
         time.sleep(TIMEOUT)
