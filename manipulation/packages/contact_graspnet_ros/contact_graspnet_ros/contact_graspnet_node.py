@@ -30,6 +30,7 @@ class ContactGraspNetNode(Node):
         self.declare_parameter("ckpt_dir", "checkpoints/contact_graspnet")
         self.declare_parameter("forward_passes", 1)
         self.declare_parameter("z_range", [0.2, 1.8])
+        self.declare_parameter("pick_min_height", 0.03)
 
         ckpt_dir = self.get_parameter("ckpt_dir").get_parameter_value().string_value
         # Resolve absolute path for ckpt_dir if relative
@@ -228,16 +229,19 @@ class ContactGraspNetNode(Node):
             #    when the grasp target is near the table — drop these early.
             #    Cluster is in base_link so pc_full Z is height above the floor.
             cluster_min_z = float(np.min(pc_full[:, 2]))
-            TABLE_MARGIN = 0.03  # 3 cm above cluster bottom
+            pick_min_height = (
+                self.get_parameter("pick_min_height").get_parameter_value().double_value
+            )
             valid_height = np.array(
-                [g[2, 3] >= cluster_min_z + TABLE_MARGIN for g in grasps]
+                [g[2, 3] >= cluster_min_z + pick_min_height for g in grasps]
             )
             if valid_height.sum() > 0:
                 grasps = grasps[valid_height]
                 grasp_scores = grasp_scores[valid_height]
                 self.get_logger().info(
                     f"Height filter: {valid_height.sum()}/{len(valid_height)} grasps "
-                    f"above z={cluster_min_z + TABLE_MARGIN:.3f} m"
+                    f"above z={cluster_min_z + pick_min_height:.3f} m "
+                    f"(pick_min_height={pick_min_height:.3f})"
                 )
             else:
                 self.get_logger().warn(

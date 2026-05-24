@@ -38,12 +38,7 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[
-                {
-                    "ee_link_offset": ee_link_offset,
-                    # minimum height above the detected table plane a grasp must clear.
-                    # 0.04 = 4 cm (sim default); increase for real robot to avoid table hits.
-                    "pick_min_height": 0.10,
-                },
+                {"ee_link_offset": ee_link_offset},
                 sim_time_param,
             ],
         )
@@ -66,6 +61,9 @@ def generate_launch_description():
                         "ckpt_dir": LaunchConfiguration("ckpt_dir").perform(context),
                         "forward_passes": 1,
                         "z_range": [0.2, 1.8],
+                        "pick_min_height": float(
+                            LaunchConfiguration("pick_min_height").perform(context)
+                        ),
                     }
                 ],
             )
@@ -106,6 +104,12 @@ def generate_launch_description():
                 "ckpt_dir",
                 default_value="checkpoints/contact_graspnet",
                 description="Path to Contact-GraspNet checkpoint dir (used only when grasp_backend=contact_graspnet).",
+            ),
+            DeclareLaunchArgument(
+                "pick_min_height",
+                default_value="0.03",
+                description="Minimum height (m) above cluster bottom a grasp must clear. "
+                "Lower for flat objects (banana=0.01, normal=0.03).",
             ),
             OpaqueFunction(function=grasp_detector_node),
             Node(
