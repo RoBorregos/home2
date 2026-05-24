@@ -4,6 +4,8 @@ import os
 import sys
 import numpy as np
 import rclpy
+import tf2_ros
+from rclpy.duration import Duration
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
 from frida_interfaces.srv import GraspDetection
@@ -67,6 +69,9 @@ class ContactGraspNetNode(Node):
         self.srv = self.create_service(
             GraspDetection, GRASP_DETECTION_SERVICE, self.detect_grasps_callback
         )
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
     def detect_grasps_callback(self, request, response):
         self.get_logger().info("Received grasp detection request")
@@ -185,12 +190,40 @@ class ContactGraspNetNode(Node):
                 f"After filtering/normalisation: {len(grasps)} grasps remain."
             )
 
+            # Transform grasps to base_link (matches GPD output convention).
+            # CGN predicts in the input cloud frame; if the cluster was captured
+            # in camera frame the positions would shift as the arm moves.
+            source_frame = request.input_cloud.header.frame_id
+            output_frame = source_frame
+            T_base_cloud = np.eye(4, dtype=np.float64)
+            if source_frame and source_frame != "base_link":
+                try:
+                    tf_stamped = self.tf_buffer.lookup_transform(
+                        "base_link",
+                        source_frame,
+                        request.input_cloud.header.stamp,
+                        timeout=Duration(seconds=1.0),
+                    )
+                    T_base_cloud = self._transform_to_matrix(tf_stamped)
+                    output_frame = "base_link"
+                    self.get_logger().info(
+                        f"Transformed grasps from '{source_frame}' to base_link"
+                    )
+                except Exception as tf_ex:
+                    self.get_logger().warn(
+                        f"TF '{source_frame}'→base_link failed: {tf_ex}; "
+                        "outputting in original frame"
+                    )
+
+            grasps = np.array([T_base_cloud @ g for g in grasps])
+
             for i in range(len(grasps)):
                 matrix = grasps[i]  # 4x4 matrix
                 score = grasp_scores[i]
 
                 pose_stamped = PoseStamped()
-                pose_stamped.header = request.input_cloud.header
+                pose_stamped.header.stamp = request.input_cloud.header.stamp
+                pose_stamped.header.frame_id = output_frame
 
                 # Extract position
                 pose_stamped.pose.position.x = float(matrix[0, 3])
@@ -216,6 +249,34 @@ class ContactGraspNetNode(Node):
             response.message = f"Inference error: {str(e)}"
 
         return response
+
+    def _transform_to_matrix(self, tf_stamped):
+        t = tf_stamped.transform.translation
+        r = tf_stamped.transform.rotation
+        qx, qy, qz, qw = r.x, r.y, r.z, r.w
+        R = np.array(
+            [
+                [
+                    1 - 2 * (qy**2 + qz**2),
+                    2 * (qx * qy - qz * qw),
+                    2 * (qx * qz + qy * qw),
+                ],
+                [
+                    2 * (qx * qy + qz * qw),
+                    1 - 2 * (qx**2 + qz**2),
+                    2 * (qy * qz - qx * qw),
+                ],
+                [
+                    2 * (qx * qz - qy * qw),
+                    2 * (qy * qz + qx * qw),
+                    1 - 2 * (qx**2 + qy**2),
+                ],
+            ]
+        )
+        T = np.eye(4)
+        T[:3, :3] = R
+        T[:3, 3] = [t.x, t.y, t.z]
+        return T
 
     def matrix_to_quaternion(self, m):
         # Simple matrix to quaternion conversion

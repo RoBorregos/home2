@@ -26,6 +26,28 @@ def generate_launch_description():
 
     def grasp_detector_node(context, *args, **kwargs):
         grasp_backend = LaunchConfiguration("grasp_backend").perform(context)
+
+        # ee_link_offset differs per backend:
+        #   GPD  reports the palm-root center → offset -0.125 m
+        #   CGN  reports the contact point on the object surface → offset -0.09 m
+        ee_link_offset = -0.09 if grasp_backend == "contact_graspnet" else -0.125
+        pick_server_node = Node(
+            package="pick_and_place",
+            executable="pick_server.py",
+            name="pick_server",
+            output="screen",
+            emulate_tty=True,
+            parameters=[
+                {
+                    "ee_link_offset": ee_link_offset,
+                    # minimum height above the detected table plane a grasp must clear.
+                    # 0.04 = 4 cm (sim default); increase for real robot to avoid table hits.
+                    "pick_min_height": 0.10,
+                },
+                sim_time_param,
+            ],
+        )
+
         if grasp_backend == "contact_graspnet":
             install_deps = ExecuteProcess(
                 cmd=["pip3", "install", "-q", "trimesh", "tqdm"],
@@ -42,7 +64,7 @@ def generate_launch_description():
                 parameters=[
                     {
                         "ckpt_dir": LaunchConfiguration("ckpt_dir").perform(context),
-                        "forward_passes": 2,
+                        "forward_passes": 1,
                         "z_range": [0.2, 1.8],
                     }
                 ],
@@ -52,6 +74,7 @@ def generate_launch_description():
                 RegisterEventHandler(
                     OnProcessExit(target_action=install_deps, on_exit=[cgn_node])
                 ),
+                pick_server_node,
             ]
         # default: gpd
         return [
@@ -63,7 +86,8 @@ def generate_launch_description():
                 emulate_tty=True,
                 respawn=True,
                 parameters=[sim_time_param],
-            )
+            ),
+            pick_server_node,
         ]
 
     return LaunchDescription(
@@ -91,23 +115,6 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[sim_time_param],
-            ),
-            Node(
-                package="pick_and_place",
-                executable="pick_server.py",
-                name="pick_server",
-                output="screen",
-                emulate_tty=True,
-                parameters=[
-                    {
-                        # based on distance between end-effector link and contact point with objects e.g. where you grip
-                        "ee_link_offset": -0.09,
-                        # minimum height above the detected table plane a grasp must clear.
-                        # 0.04 = 4 cm (sim default); increase for real robot to avoid table hits.
-                        "pick_min_height": 0.10,
-                    },
-                    sim_time_param,
-                ],
             ),
             Node(
                 package="pick_and_place",
