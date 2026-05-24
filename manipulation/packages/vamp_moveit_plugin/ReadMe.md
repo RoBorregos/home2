@@ -6,6 +6,22 @@ VAMP (Vectorized And Motion Planning) is an ultra-fast motion planner for the FR
 
 ---
 
+## Setup / first run
+
+VAMP has two pieces that must be in place before `vamp_server.py` (or the `vamp` planner pipeline) works:
+
+1. **The `vamp` submodule source** — checked out under `manipulation/packages/vamp/`. Like every other submodule in this repo, this is a one-time step after cloning or after a pull that adds/changes the submodule (switching branches does **not** update submodule working trees):
+   ```bash
+   git submodule update --init --recursive manipulation/packages/vamp
+   ```
+   Symptom if missing: `ModuleNotFoundError: No module named 'vamp'` (the whole package is absent).
+
+2. **The compiled Python bindings** (`_core_ext.*.so`) — these are a non-standard build artifact that the normal `colcon build` does **not** produce. `./run.sh manipulation` now runs `docker/manipulation/setup_vamp.sh` automatically on container startup: it short-circuits (~1 s) when the `.so` is already built and compiles it (~1–2 min) only when missing. No manual step needed. Symptom if it were missing: `ModuleNotFoundError: No module named 'vamp._core._core_ext'` (package present, binding absent).
+
+If the auto-compile ever fails, the launch/shell still proceeds (the planner's OMPL fallback works without VAMP); you can rebuild manually with `bash /workspace/src/docker/manipulation/setup_vamp.sh` inside the container.
+
+---
+
 ## Architecture
 
 ```
