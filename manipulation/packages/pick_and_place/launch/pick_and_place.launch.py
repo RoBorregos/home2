@@ -30,7 +30,7 @@ def generate_launch_description():
         # ee_link_offset differs per backend:
         #   GPD  reports the palm-root center → offset -0.125 m
         #   CGN  reports the contact point on the object surface → offset -0.09 m
-        ee_link_offset = -0.09 if grasp_backend == "contact_graspnet" else -0.125
+        ee_link_offset = -0.05 if grasp_backend == "contact_graspnet" else -0.125
         pick_server_node = Node(
             package="pick_and_place",
             executable="pick_server.py",

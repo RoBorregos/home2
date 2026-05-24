@@ -143,14 +143,20 @@ class ContactGraspNetNode(Node):
             grasp_scores = grasp_scores[idx]
 
             # ── Post-processing ──────────────────────────────────────────
-            # 1. Filter: drop grasps that approach from below the table.
-            #    Column 2 of the 4x4 matrix is the approach direction in
-            #    base_link frame.  Positive Z means the gripper would have
-            #    to come from under the table — physically impossible.
-            #    Allow up to 0.3 of upward tilt (≈17° tolerance) for
-            #    slightly angled side approaches.
-            MAX_UPWARD = 0.3
-            valid = np.array([g[2, 2] < MAX_UPWARD for g in grasps])
+            # 1. Filter: prefer top-down approaches.
+            #    g[2,2] is the Z component of the approach axis in base_link.
+            #    -1 = straight down, 0 = horizontal, +1 = straight up.
+            #    Threshold -0.3 means the approach must point at least 17°
+            #    below horizontal — rejects pure side grasps and upward grasps.
+            #    Falls back to accepting any downward component (-0.0) if too few
+            #    grasps survive, and finally to the original permissive filter.
+            PREFER_TOPDOWN = -0.3
+            valid = np.array([g[2, 2] < PREFER_TOPDOWN for g in grasps])
+            if valid.sum() == 0:
+                self.get_logger().warn(
+                    "No downward-approach grasps found — falling back to any non-upward"
+                )
+                valid = np.array([g[2, 2] < 0.3 for g in grasps])
             if valid.sum() == 0:
                 self.get_logger().warn(
                     "All grasps approach from below — using unfiltered set"
@@ -158,6 +164,9 @@ class ContactGraspNetNode(Node):
             else:
                 grasps = grasps[valid]
                 grasp_scores = grasp_scores[valid]
+            self.get_logger().info(
+                f"Approach filter: {valid.sum()} grasps with downward approach retained."
+            )
 
             # 2. Normalise roll: snap the gripper's Y-axis to be as close
             #    to world-up as possible, keeping the approach (Z) fixed.
