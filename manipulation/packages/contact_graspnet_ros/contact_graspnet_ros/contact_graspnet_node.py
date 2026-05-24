@@ -143,72 +143,9 @@ class ContactGraspNetNode(Node):
             grasp_scores = grasp_scores[idx]
 
             # ── Post-processing ──────────────────────────────────────────
-            # 1. Filter: prefer top-down approaches.
-            #    g[2,2] is the Z component of the approach axis in base_link.
-            #    -1 = straight down, 0 = horizontal, +1 = straight up.
-            #    Threshold -0.3 means the approach must point at least 17°
-            #    below horizontal — rejects pure side grasps and upward grasps.
-            #    Falls back to accepting any downward component (-0.0) if too few
-            #    grasps survive, and finally to the original permissive filter.
-            PREFER_TOPDOWN = -0.3
-            valid = np.array([g[2, 2] < PREFER_TOPDOWN for g in grasps])
-            if valid.sum() == 0:
-                self.get_logger().warn(
-                    "No downward-approach grasps found — falling back to any non-upward"
-                )
-                valid = np.array([g[2, 2] < 0.3 for g in grasps])
-            if valid.sum() == 0:
-                self.get_logger().warn(
-                    "All grasps approach from below — using unfiltered set"
-                )
-            else:
-                grasps = grasps[valid]
-                grasp_scores = grasp_scores[valid]
-            self.get_logger().info(
-                f"Approach filter: {valid.sum()} grasps with downward approach retained."
-            )
-
-            # 2. Normalise roll: snap the gripper's Y-axis to be as close
-            #    to world-up as possible, keeping the approach (Z) fixed.
-            #    Additionally snap near-vertical approach axes to exact vertical:
-            #    CGN sometimes predicts a 2-5° tilt on top-down grasps which
-            #    causes the gripper to arrive slightly inclined and miss the object.
-            normalised = []
-            world_up = np.array([0.0, 0.0, 1.0])
-            SNAP_VERTICAL = (
-                0.92  # cos(≈23°) — snap to [0,0,±1] if approach is this close
-            )
-            for g in grasps:
-                z = g[:3, 2].copy()
-                z /= np.linalg.norm(z)
-
-                # Snap near-vertical approaches to exactly vertical
-                if abs(z[2]) >= SNAP_VERTICAL:
-                    z = np.array([0.0, 0.0, float(np.sign(z[2]))])
-
-                ref = world_up
-                perp = ref - np.dot(ref, z) * z
-                if np.linalg.norm(perp) < 0.15:  # near-vertical approach
-                    ref = np.array([1.0, 0.0, 0.0])
-                    perp = ref - np.dot(ref, z) * z
-                y_new = perp / np.linalg.norm(perp)
-                x_new = np.cross(y_new, z)
-                x_new /= np.linalg.norm(x_new)
-                m = g.copy()
-                m[:3, 0] = x_new
-                m[:3, 1] = y_new
-                m[:3, 2] = z
-                normalised.append(m)
-            grasps = np.array(normalised)
-            # ────────────────────────────────────────────────────────────
-
-            self.get_logger().info(
-                f"After filtering/normalisation: {len(grasps)} grasps remain."
-            )
-
-            # Transform grasps to base_link (matches GPD output convention).
-            # CGN predicts in the input cloud frame; if the cluster was captured
-            # in camera frame the positions would shift as the arm moves.
+            # Step 1: Transform to base_link FIRST so all subsequent filters
+            # operate in the world frame (Z points up).  Filtering in camera
+            # frame was the root cause of side/inclined grasps reaching the arm.
             source_frame = request.input_cloud.header.frame_id
             output_frame = source_frame
             T_base_cloud = np.eye(4, dtype=np.float64)
@@ -233,11 +170,65 @@ class ContactGraspNetNode(Node):
 
             grasps = np.array([T_base_cloud @ g for g in grasps])
 
-            # 3. Filter grasps too close to the cluster bottom (≈ table surface).
-            #    The table collision box's padding forces MoveIt to plan wide arcs
-            #    when the grasp target is near the table — drop these early.
-            #    Cluster is in base_link so pc_full Z is height above the floor.
-            cluster_min_z = float(np.min(pc_full[:, 2]))
+            # Also transform the point cloud so cluster_min_z is in base_link.
+            ones = np.ones((pc_full.shape[0], 1), dtype=np.float64)
+            pc_base = (T_base_cloud @ np.hstack([pc_full.astype(np.float64), ones]).T).T
+            cluster_min_z = float(np.min(pc_base[:, 2]))
+
+            # Step 2: Approach filter in base_link.
+            # g[2,2] is the Z component of the approach axis in base_link:
+            #   -1 = straight down, 0 = horizontal, +1 = straight up.
+            # Threshold -0.3 means approach must point ≥17° below horizontal.
+            PREFER_TOPDOWN = -0.3
+            valid = np.array([g[2, 2] < PREFER_TOPDOWN for g in grasps])
+            if valid.sum() == 0:
+                self.get_logger().warn(
+                    "No downward-approach grasps found — falling back to any non-upward"
+                )
+                valid = np.array([g[2, 2] < 0.3 for g in grasps])
+            if valid.sum() == 0:
+                self.get_logger().warn(
+                    "All grasps approach from below — using unfiltered set"
+                )
+            else:
+                grasps = grasps[valid]
+                grasp_scores = grasp_scores[valid]
+            self.get_logger().info(
+                f"Approach filter: {valid.sum()} grasps with downward approach retained."
+            )
+
+            # Step 3: Roll normalisation + snap-to-vertical in base_link.
+            # world_up=[0,0,1] is now correct because we are in base_link.
+            normalised = []
+            world_up = np.array([0.0, 0.0, 1.0])
+            SNAP_VERTICAL = 0.92  # cos(≈23°) — snap to exact vertical if this close
+            for g in grasps:
+                z = g[:3, 2].copy()
+                z /= np.linalg.norm(z)
+
+                if abs(z[2]) >= SNAP_VERTICAL:
+                    z = np.array([0.0, 0.0, float(np.sign(z[2]))])
+
+                ref = world_up
+                perp = ref - np.dot(ref, z) * z
+                if np.linalg.norm(perp) < 0.15:
+                    ref = np.array([1.0, 0.0, 0.0])
+                    perp = ref - np.dot(ref, z) * z
+                y_new = perp / np.linalg.norm(perp)
+                x_new = np.cross(y_new, z)
+                x_new /= np.linalg.norm(x_new)
+                m = g.copy()
+                m[:3, 0] = x_new
+                m[:3, 1] = y_new
+                m[:3, 2] = z
+                normalised.append(m)
+            grasps = np.array(normalised)
+
+            self.get_logger().info(
+                f"After filtering/normalisation: {len(grasps)} grasps remain."
+            )
+
+            # Step 4: Height filter — drop grasps too close to the table surface.
             pick_min_height = (
                 self.get_parameter("pick_min_height").get_parameter_value().double_value
             )
@@ -256,6 +247,7 @@ class ContactGraspNetNode(Node):
                 self.get_logger().warn(
                     "All grasps near table surface — skipping height filter"
                 )
+            # ────────────────────────────────────────────────────────────
 
             for i in range(len(grasps)):
                 matrix = grasps[i]  # 4x4 matrix

@@ -12,7 +12,7 @@ def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
     request.input_cloud = object_cloud
     request.cfg_path = cgf_path
     future = grasp_detection_client.call_async(request)
-    future = wait_for_future(future, timeout=10)
+    future = wait_for_future(future, timeout=60)
 
     if not future:
         return [], []
