@@ -105,6 +105,10 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:ab8a02fbb5dc8cce1c29d1ccbd029adb8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#ab8a02fbb5dc8cce1c29d1ccbd029adb8">_vamp_server_already_running</a> ()</td></tr>
+<tr class="separator:ab8a02fbb5dc8cce1c29d1ccbd029adb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf93c9047766704dcdf2f04679249bfe"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#aaf93c9047766704dcdf2f04679249bfe">launch_setup</a> (context, *args, **kwargs)</td></tr>
+<tr class="separator:aaf93c9047766704dcdf2f04679249bfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a422ea43584028219c2363bd771f9bc6a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#a422ea43584028219c2363bd771f9bc6a">generate_launch_description</a> ()</td></tr>
 <tr class="separator:a422ea43584028219c2363bd771f9bc6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab353937234a6271d6e02d344b8e6c1bd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#ab353937234a6271d6e02d344b8e6c1bd">load_joint_limits_from_urdf</a> (urdf_path, joint_names)</td></tr>
@@ -114,6 +118,8 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
+<tr class="memitem:a4fa7368d4827ac760aae537addc51d41"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#a4fa7368d4827ac760aae537addc51d41">_SERVER_PARAMS</a></td></tr>
+<tr class="separator:a4fa7368d4827ac760aae537addc51d41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a904010a1707c149cef750b58ee7abe15"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#a904010a1707c149cef750b58ee7abe15">actual_dir</a> = os.path.dirname(os.path.abspath(__file__))</td></tr>
 <tr class="separator:a904010a1707c149cef750b58ee7abe15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae772aaae82b28a08e05d0d48cd75f9e9"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#ae772aaae82b28a08e05d0d48cd75f9e9">ruta_vamp</a> = os.path.abspath(os.path.join(<a class="el" href="namespacevamp__server.html#a904010a1707c149cef750b58ee7abe15">actual_dir</a>, &quot;../../vamp/src&quot;))</td></tr>
@@ -138,6 +144,14 @@ Parameters are tunable at launch:
     max_iterations:=100000 \
     range:=0.03 \
     security_margin:=0.03
+
+Singleton guard:
+  The frida moveit configs include this launch file (start_vamp_server:=true),
+  so running it again by hand would create a second node named "vamp_server"
+  — a name collision that makes the VAMP service ambiguous. To prevent that,
+  this launch checks the ROS graph at startup and skips launching if a
+  "vamp_server" node is already running. Override with force:=true if you
+  really want a second instance.
 </pre><pre class="fragment">VAMP Planning Server — Optimized for FRIDA (xArm 6)
 ====================================================
 Key design decisions:
@@ -147,6 +161,32 @@ Key design decisions:
   - Path processing INVERTED for extreme speed: Prune -&gt; Smooth -&gt; Validate
   - C++ Shortcutting is COMPLETELY REMOVED to guarantee geometric stability.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="ab8a02fbb5dc8cce1c29d1ccbd029adb8" name="ab8a02fbb5dc8cce1c29d1ccbd029adb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8a02fbb5dc8cce1c29d1ccbd029adb8">&#9670;&#160;</a></span>_vamp_server_already_running()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vamp_server._vamp_server_already_running </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">True if a 'vamp_server' node is already on the ROS graph (via `ros2 node list`).
+Fails open: any error (timeout, ros2 missing) returns False so the guard never blocks a launch.</pre> 
+</div>
+</div>
 <a id="a422ea43584028219c2363bd771f9bc6a" name="a422ea43584028219c2363bd771f9bc6a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a422ea43584028219c2363bd771f9bc6a">&#9670;&#160;</a></span>generate_launch_description()</h2>
 
@@ -158,6 +198,40 @@ Key design decisions:
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aaf93c9047766704dcdf2f04679249bfe" name="aaf93c9047766704dcdf2f04679249bfe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf93c9047766704dcdf2f04679249bfe">&#9670;&#160;</a></span>launch_setup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vamp_server.launch_setup </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>context</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">*&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">**&#160;</td>
+          <td class="paramname"><em>kwargs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -212,6 +286,41 @@ in the order given. Raises if any joint or its &lt;limit&gt; tag is missing.</pr
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="a4fa7368d4827ac760aae537addc51d41" name="a4fa7368d4827ac760aae537addc51d41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4fa7368d4827ac760aae537addc51d41">&#9670;&#160;</a></span>_SERVER_PARAMS</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict vamp_server._SERVER_PARAMS</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
+<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;max_iterations&quot;</span>: <span class="stringliteral">&quot;50000&quot;</span>,</div>
+<div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;range&quot;</span>: <span class="stringliteral">&quot;0.05&quot;</span>,</div>
+<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;security_margin&quot;</span>: <span class="stringliteral">&quot;0.02&quot;</span>,</div>
+<div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;max_retries&quot;</span>: <span class="stringliteral">&quot;3&quot;</span>,</div>
+<div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&quot;finger_left_default&quot;</span>: <span class="stringliteral">&quot;0.8&quot;</span>,</div>
+<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&quot;finger_right_default&quot;</span>: <span class="stringliteral">&quot;0.8&quot;</span>,</div>
+<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;validation_step_size&quot;</span>: <span class="stringliteral">&quot;0.05&quot;</span>,</div>
+<div class="line"><span class="lineno">    9</span>    <span class="stringliteral">&quot;smoothing_window&quot;</span>: <span class="stringliteral">&quot;5&quot;</span>,</div>
+<div class="line"><span class="lineno">   10</span>    <span class="stringliteral">&quot;smoothing_passes&quot;</span>: <span class="stringliteral">&quot;3&quot;</span>,</div>
+<div class="line"><span class="lineno">   11</span>    <span class="stringliteral">&quot;min_r_point&quot;</span>: <span class="stringliteral">&quot;0.09&quot;</span>,</div>
+<div class="line"><span class="lineno">   12</span>    <span class="stringliteral">&quot;self_filter_distance&quot;</span>: <span class="stringliteral">&quot;0.12&quot;</span>,</div>
+<div class="line"><span class="lineno">   13</span>}</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="a904010a1707c149cef750b58ee7abe15" name="a904010a1707c149cef750b58ee7abe15"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a904010a1707c149cef750b58ee7abe15">&#9670;&#160;</a></span>actual_dir</h2>
 

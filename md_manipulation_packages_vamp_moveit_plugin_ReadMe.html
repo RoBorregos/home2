@@ -194,11 +194,12 @@ Step 2 — Build and enter the container</h2>
 </ul>
 <h2><a class="anchor" id="autotoc_md107"></a>
 Step 3 — Launch and plan</h2>
-<p>In terminal 1 (inside container): </p><div class="fragment"><div class="line">source /workspace/install/setup.bash</div>
+<p>Inside the container: </p><div class="fragment"><div class="line">source /workspace/install/setup.bash</div>
 <div class="line">ros2 launch arm_pkg frida_fake_moveit_config.launch.py</div>
-</div><!-- fragment --><p>In terminal 2 (inside container): </p><div class="fragment"><div class="line">export PYTHONPATH=&quot;/workspace/src/manipulation/packages/vamp/src:$PYTHONPATH&quot;</div>
-<div class="line">ros2 run vamp_moveit_plugin vamp_server.py</div>
-</div><!-- fragment --><p>Then open RViz, set the planning group to <code><a class="el" href="namespacexarm6.html">xarm6</a></code>, set a goal state, and click <b>Plan</b>.</p>
+</div><!-- fragment --><p>This <b>also starts <code><a class="el" href="vamp__server_8py.html">vamp_server.py</a></code> automatically</b> (the "vamp" pipeline is the default planner, so its backend must be running). To disable it — e.g. to exercise the OMPL fallback, or to run the server separately/remotely — pass: </p><div class="fragment"><div class="line">ros2 launch arm_pkg frida_fake_moveit_config.launch.py start_vamp_server:=false</div>
+</div><!-- fragment --><p> and then launch the server yourself in another terminal: </p><div class="fragment"><div class="line">ros2 run vamp_moveit_plugin vamp_server.py   # PYTHONPATH is set by .bash_aliases</div>
+</div><!-- fragment --><p>The same <code>start_vamp_server</code> argument exists on the real <code><a class="el" href="frida__moveit__config_8launch_8py.html">frida_moveit_config.launch.py</a></code>.</p>
+<p>Then open RViz, set the planning group to <code><a class="el" href="namespacexarm6.html">xarm6</a></code>, set a goal state, and click <b>Plan</b>.</p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md109"></a>
 Regenerating &lt;tt&gt;frida_real.hh&lt;/tt&gt; (Robot Geometry Changed)</h1>
