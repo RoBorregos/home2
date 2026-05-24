@@ -6,6 +6,7 @@ Navigation Area SubTask Manager
 """
 
 import json
+import math
 import os
 import rclpy
 from rclpy.node import Node
@@ -13,10 +14,14 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
+    GOAL_NAV_ACTION_SERVER,
     MOVE_LOCATION_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
+from geometry_msgs.msg import PoseStamped
+from nav2_msgs.action import NavigateToPose
+from rclpy.action import ActionClient
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -36,6 +41,9 @@ class NavigationTasks:
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+        self.navigate_to_pose_client = ActionClient(
+            self.node, NavigateToPose, GOAL_NAV_ACTION_SERVER
+        )
 
         # Task Actions and Services check
         self.services = {
@@ -161,6 +169,45 @@ class NavigationTasks:
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    def navigate_to_pose(self, x: float, y: float, yaw: float) -> tuple:
+        """Navigate to raw map coordinates with given yaw (radians)."""
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = self.node.get_clock().now().to_msg()
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+        pose.pose.position.z = 0.0
+        pose.pose.orientation.z = math.sin(yaw / 2.0)
+        pose.pose.orientation.w = math.cos(yaw / 2.0)
+
+        CLog.nav(
+            self.node,
+            "MOVE",
+            f"Requesting navigation to pose ({x:.2f}, {y:.2f}, yaw={math.degrees(yaw):.1f}°)",
+        )
+
+        if not self.navigate_to_pose_client.wait_for_server(
+            timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        ):
+            CLog.nav(self.node, "ERROR", "NavigateToPose action server not available")
+            return (Status.EXECUTION_ERROR, "NavigateToPose action server not available")
+
+        goal_msg = NavigateToPose.Goal()
+        goal_msg.pose = pose
+        goal_future = self.navigate_to_pose_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, goal_future)
+        goal_handle = goal_future.result()
+
+        if goal_handle is None or not goal_handle.accepted:
+            CLog.nav(self.node, "ERROR", "Pose goal rejected")
+            return (Status.EXECUTION_ERROR, "Goal rejected")
+
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        CLog.nav(self.node, "SUCCESS", f"Pose goal ({x:.2f}, {y:.2f}) reached")
+        return (Status.EXECUTION_SUCCESS, "")
 
 
 if __name__ == "__main__":
