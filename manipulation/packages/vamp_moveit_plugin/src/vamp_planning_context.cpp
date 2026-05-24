@@ -208,7 +208,9 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
 
   
   std::vector<double> start_state;
-  moveit::core::RobotState start_robot_state(robot_model_);
+  // Seed from the current scene state so joints absent from req.start_state (partial or
+  // is_diff requests, e.g. from RViz) keep real values instead of uninitialized garbage.
+  moveit::core::RobotState start_robot_state = getPlanningScene()->getCurrentState();
   moveit::core::robotStateMsgToRobotState(req.start_state, start_robot_state);
   const moveit::core::JointModelGroup* jmg =
       start_robot_state.getJointModelGroup(getGroupName());
