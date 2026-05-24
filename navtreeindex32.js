@@ -1,5 +1,6 @@
 var NAVTREEINDEX32 =
 {
+"namespacedisplay__gz.html":[36,0,30],
 "namespacedisplay__gz.html#a4f95fbbb9f34a1fd59c2387ed4123947":[36,0,30,0],
 "namespacedisplay__gz__tmr2025.html":[36,0,31],
 "namespacedisplay__gz__tmr2025.html#a153b0bab395c49b4a2223b915b400035":[36,0,31,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX32 =
 "namespacefrida__constants_1_1manipulation__constants.html#af55ce2d4d10ba27a67ce252b5388d79b":[36,0,59,2,56],
 "namespacefrida__constants_1_1manipulation__constants.html#af8b011a4e4212fb9450412d1c99bffc2":[36,0,59,2,12],
 "namespacefrida__constants_1_1manipulation__constants.html#af9a02a63f5f786598e17b38c153a64bc":[36,0,59,2,16],
-"namespacefrida__constants_1_1manipulation__constants.html#af9d0103144937989c937241d2944eae5":[36,0,59,2,1],
-"namespacefrida__constants_1_1manipulation__constants.html#afb44d7214e7e343d9f0c7162e2550bc8":[36,0,59,2,38]
+"namespacefrida__constants_1_1manipulation__constants.html#af9d0103144937989c937241d2944eae5":[36,0,59,2,1]
 };

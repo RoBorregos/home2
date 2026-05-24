@@ -1,5 +1,6 @@
 var NAVTREEINDEX35 =
 {
+"namespacepointing__detection.html#af403d88fbae3e2b0891a658ccb3d4054":[36,0,126,4],
 "namespacepose__detection.html":[36,0,127],
 "namespacepose__detection.html#a0fa4657c7964f252abb37457c48c64b9":[36,0,127,3],
 "namespacepose__detection.html#a1cf363879219f89b064ecb6b68514ad1":[36,0,127,15],
@@ -248,6 +249,5 @@ var NAVTREEINDEX35 =
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a63fe5db1c4b4e863170f23945233b405":[36,0,159,1,6,8],
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a80eea2cd019132d5e097a50ba62f5a71":[36,0,159,1,6,2],
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#a8351689b4ef9ecb6ec60607400d447b3":[36,0,159,1,6,3],
-"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1":[36,0,159,1,6,1],
-"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ad3289042cb213f59aa6594b68d43bd1a":[36,0,159,1,6,4]
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#acb3de2e45c2ebfe133179c42b0b983e1":[36,0,159,1,6,1]
 };

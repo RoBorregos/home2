@@ -1,5 +1,6 @@
 var NAVTREEINDEX34 =
 {
+"namespacelinear__assignment.html#af726e8ac9333bb98f165bf49c0c7a991":[36,0,90,2],
 "namespacelook__at__example.html":[36,0,91],
 "namespacelook__at__example.html#adc1b4dbd73f98a092d682f946ed57ef3":[36,0,91,1],
 "namespacemap__area__tagger.html":[36,0,92],
@@ -12,8 +13,8 @@ var NAVTREEINDEX34 =
 "namespacemapping.html":[36,0,93],
 "namespacemapping.html#a3a2ccf081850f9ede9e85ed58952fba0":[36,0,93,1],
 "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20":[36,0,93,0],
-"namespacemembers.html":[36,1,0,0],
 "namespacemembers.html":[36,1,0],
+"namespacemembers.html":[36,1,0,0],
 "namespacemembers_a.html":[36,1,0,1],
 "namespacemembers_b.html":[36,1,0,2],
 "namespacemembers_c.html":[36,1,0,3],
@@ -22,8 +23,8 @@ var NAVTREEINDEX34 =
 "namespacemembers_enum.html":[36,1,4],
 "namespacemembers_eval.html":[36,1,5],
 "namespacemembers_f.html":[36,1,0,6],
-"namespacemembers_func.html":[36,1,1,0],
 "namespacemembers_func.html":[36,1,1],
+"namespacemembers_func.html":[36,1,1,0],
 "namespacemembers_func_a.html":[36,1,1,1],
 "namespacemembers_func_b.html":[36,1,1,2],
 "namespacemembers_func_c.html":[36,1,1,3],
@@ -64,8 +65,8 @@ var NAVTREEINDEX34 =
 "namespacemembers_type.html":[36,1,3],
 "namespacemembers_u.html":[36,1,0,21],
 "namespacemembers_v.html":[36,1,0,22],
-"namespacemembers_vars.html":[36,1,2],
 "namespacemembers_vars.html":[36,1,2,0],
+"namespacemembers_vars.html":[36,1,2],
 "namespacemembers_vars_a.html":[36,1,2,1],
 "namespacemembers_vars_b.html":[36,1,2,2],
 "namespacemembers_vars_c.html":[36,1,2,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX34 =
 "namespacepointing__detection.html#a8484a25857896f32674ad44c8297a05d":[36,0,126,10],
 "namespacepointing__detection.html#a9db6ce1f51fbb1400f9c27f9fa04df6d":[36,0,126,2],
 "namespacepointing__detection.html#ae5a5ea3ffce7705feea4d4250f9fb2ad":[36,0,126,9],
-"namespacepointing__detection.html#aecdfe9b610d5fd6382dd55d2679ce09b":[36,0,126,8],
-"namespacepointing__detection.html#af403d88fbae3e2b0891a658ccb3d4054":[36,0,126,4]
+"namespacepointing__detection.html#aecdfe9b610d5fd6382dd55d2679ce09b":[36,0,126,8]
 };

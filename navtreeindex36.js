@@ -1,5 +1,6 @@
 var NAVTREEINDEX36 =
 {
+"namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ad3289042cb213f59aa6594b68d43bd1a":[36,0,159,1,6,4],
 "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html#ae0b3b1c391b51f0bfa80905dcb3cdce5":[36,0,159,1,6,7],
 "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html":[36,0,159,1,7],
 "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a15819095e4c3fb2c326672d8b2218181":[36,0,159,1,7,4],
@@ -248,6 +249,5 @@ var NAVTREEINDEX36 =
 "namespacevamp_1_1constants.html#a1779d8d79308791cfbc0f05eac47d7a1":[36,0,181,3,0],
 "namespacevamp_1_1constants.html#a1c229c8586b44fa8e9714be82ed9d89d":[36,0,181,3,3],
 "namespacevamp_1_1constants.html#a38cb1935c353bc1067edeb914ee74a57":[36,0,181,3,4],
-"namespacevamp_1_1constants.html#ac212edf24f540aa581a91332a1bac9d2":[36,0,181,3,1],
-"namespacevamp_1_1disable__rendering.html":[36,0,181,4]
+"namespacevamp_1_1constants.html#ac212edf24f540aa581a91332a1bac9d2":[36,0,181,3,1]
 };

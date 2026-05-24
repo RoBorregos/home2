@@ -97,6 +97,16 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_moveit_p
 <p><b>Paper:</b> Kingston et al., "Vamp: Vectorized Motion Planning" (2023) — <a href="https://arxiv.org/abs/2309.14545">arXiv:2309.14545</a></p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md99"></a>
+Setup / first run</h1>
+<p>VAMP has two pieces that must be in place before <code><a class="el" href="vamp__server_8py.html">vamp_server.py</a></code> (or the <code>vamp</code> planner pipeline) works:</p>
+<ol type="1">
+<li><b>The <code>vamp</code> submodule source</b> — checked out under <code>manipulation/packages/vamp/</code>. Like every other submodule in this repo, this is a one-time step after cloning or after a pull that adds/changes the submodule (switching branches does <b>not</b> update submodule working trees): <div class="fragment"><div class="line">git submodule update --init --recursive manipulation/packages/vamp</div>
+</div><!-- fragment --> Symptom if missing: &lsquo;ModuleNotFoundError: No module named 'vamp&rsquo;` (the whole package is absent).</li>
+<li><b>The compiled Python bindings</b> (<code>_core_ext.*.so</code>) — these are a non-standard build artifact that the normal <code>colcon build</code> does <b>not</b> produce. <code>./run.sh manipulation</code> now runs <code>docker/manipulation/setup_vamp.sh</code> automatically on container startup: it short-circuits (~1 s) when the <code>.so</code> is already built and compiles it (~1–2 min) only when missing. No manual step needed. Symptom if it were missing: &lsquo;ModuleNotFoundError: No module named 'vamp._core._core_ext&rsquo;` (package present, binding absent).</li>
+</ol>
+<p>If the auto-compile ever fails, the launch/shell still proceeds (the planner's OMPL fallback works without VAMP); you can rebuild manually with <code>bash /workspace/src/docker/manipulation/setup_vamp.sh</code> inside the container.</p>
+<hr  />
+<h1><a class="anchor" id="autotoc_md101"></a>
 Architecture</h1>
 <div class="fragment"><div class="line">MoveIt2 (move_group)</div>
 <div class="line">    └── pipeline &quot;vamp&quot;</div>
@@ -151,15 +161,15 @@ Architecture</h1>
 <td class="markdownTableBodyNone"><code>docker/manipulation/generate_frida_collisions.sh</code>   </td><td class="markdownTableBodyNone">HOST script to regenerate <code><a class="el" href="frida__real_8hh.html">frida_real.hh</a></code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md101"></a>
+<h1><a class="anchor" id="autotoc_md103"></a>
 Setup from Scratch (New Developer)</h1>
-<h2><a class="anchor" id="autotoc_md102"></a>
+<h2><a class="anchor" id="autotoc_md104"></a>
 Prerequisites</h2>
 <ul>
 <li>Docker installed and running</li>
 <li>The repository cloned with submodules: <code>git clone --recursive &lt;repo&gt;</code></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md103"></a>
+<h2><a class="anchor" id="autotoc_md105"></a>
 Step 1 — Generate the collision model (HOST, one-time)</h2>
 <p>This runs <b>outside Docker</b> and uses the Cricket Docker image to generate <code><a class="el" href="frida__real_8hh.html">frida_real.hh</a></code>:</p>
 <div class="fragment"><div class="line">cd &lt;repo_root&gt;</div>
@@ -172,7 +182,7 @@ Step 1 — Generate the collision model (HOST, one-time)</h2>
 <blockquote class="doxtable">
 <p>&zwj;If you skip this step, VAMP will still compile but won't know FRIDA's geometry and all states will be invalid. </p>
 </blockquote>
-<h2><a class="anchor" id="autotoc_md104"></a>
+<h2><a class="anchor" id="autotoc_md106"></a>
 Step 2 — Build and enter the container</h2>
 <div class="fragment"><div class="line">./run.sh manipulation</div>
 </div><!-- fragment --><p>On first run, <code>setup_vamp.sh</code> automatically:</p><ul>
@@ -182,7 +192,7 @@ Step 2 — Build and enter the container</h2>
 <li>Copies the compiled <code>.so</code> to <code>vamp/src/vamp/_core/</code></li>
 <li>Exports <code>PYTHONPATH</code> so <code>import vamp</code> works</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md105"></a>
+<h2><a class="anchor" id="autotoc_md107"></a>
 Step 3 — Launch and plan</h2>
 <p>In terminal 1 (inside container): </p><div class="fragment"><div class="line">source /workspace/install/setup.bash</div>
 <div class="line">ros2 launch arm_pkg frida_fake_moveit_config.launch.py</div>
@@ -190,10 +200,10 @@ Step 3 — Launch and plan</h2>
 <div class="line">ros2 run vamp_moveit_plugin vamp_server.py</div>
 </div><!-- fragment --><p>Then open RViz, set the planning group to <code><a class="el" href="namespacexarm6.html">xarm6</a></code>, set a goal state, and click <b>Plan</b>.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md107"></a>
+<h1><a class="anchor" id="autotoc_md109"></a>
 Regenerating &lt;tt&gt;frida_real.hh&lt;/tt&gt; (Robot Geometry Changed)</h1>
 <p>Run this whenever the robot's URDF or meshes change (new gripper, camera mount, etc.):</p>
-<h2><a class="anchor" id="autotoc_md108"></a>
+<h2><a class="anchor" id="autotoc_md110"></a>
 Step 1 — Re-spherize with FOAM (HOST)</h2>
 <p>FOAM converts STL meshes into sphere approximations. The spherized URDF is already committed at <code>robot_description/.../xarm6.urdf</code>, but if the robot changes you need to re-run FOAM:</p>
 <div class="fragment"><div class="line"># From the repo root on the HOST</div>
@@ -217,16 +227,16 @@ Step 1 — Re-spherize with FOAM (HOST)</h2>
 </div><!-- fragment --><blockquote class="doxtable">
 <p>&zwj;<b>Note:</b> <code>branch=8</code> controls spheres per link. Higher = more accurate but slower planning. 8 gives ~82 total spheres which balances accuracy and speed well. </p>
 </blockquote>
-<h2><a class="anchor" id="autotoc_md109"></a>
+<h2><a class="anchor" id="autotoc_md111"></a>
 Step 2 — Regenerate the C++ header with Cricket</h2>
 <div class="fragment"><div class="line">bash docker/manipulation/generate_frida_collisions.sh</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md110"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md112"></a>
 Step 3 — Rebuild VAMP</h2>
 <p>Inside the container: </p><div class="fragment"><div class="line">rm -rf /workspace/src/manipulation/packages/vamp/src/impl/vamp/robots/frida_real.hh</div>
 <div class="line">bash /workspace/src/docker/manipulation/setup_vamp.sh</div>
 </div><!-- fragment --><p>The setup script detects that the <code>.so</code> doesn't contain <code>frida_real</code> and triggers a full rebuild automatically.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md112"></a>
+<h1><a class="anchor" id="autotoc_md114"></a>
 Configurable Parameters</h1>
 <p>All parameters are ROS2 parameters that can be overridden at launch:</p>
 <table class="markdownTable">
@@ -258,9 +268,9 @@ Configurable Parameters</h1>
 <div class="line">  -p security_margin:=0.05 \</div>
 <div class="line">  -p max_iterations:=100000</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md114"></a>
+<h1><a class="anchor" id="autotoc_md116"></a>
 Adding a New Robot to VAMP</h1>
-<h2><a class="anchor" id="autotoc_md115"></a>
+<h2><a class="anchor" id="autotoc_md117"></a>
 Step 1 — Spherize the robot with FOAM</h2>
 <p>You need a URDF with only the arm links (no base, no gripper) and the STL meshes accessible.</p>
 <div class="fragment"><div class="line">docker run --rm -it \</div>
@@ -272,7 +282,7 @@ Step 1 — Spherize the robot with FOAM</h2>
 <div class="line">    --filename /workspace/robot_arm_only.urdf \</div>
 <div class="line">    --output /workspace/robot_spherized.urdf \</div>
 <div class="line">    --branch 8 --depth 1&quot;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md116"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md118"></a>
 Step 2 — Generate the C++ header with Cricket</h2>
 <p>Create a config JSON: </p><div class="fragment"><div class="line">{</div>
 <div class="line">    &quot;name&quot;: &quot;MyRobot&quot;,</div>
@@ -289,7 +299,7 @@ Step 2 — Generate the C++ header with Cricket</h2>
 <div class="line">  -v /path/to/cricket:/workspace \</div>
 <div class="line">  cricket-tool \</div>
 <div class="line">  -c &quot;/tmp/build/fkcc_gen /tmp/myrobot_config.json&quot;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md117"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md119"></a>
 Step 3 — Register the robot in VAMP</h2>
 <p>Copy the <code>.hh</code> to VAMP: </p><div class="fragment"><div class="line">cp /tmp/myrobot.hh \</div>
 <div class="line">   manipulation/packages/vamp/src/impl/vamp/robots/myrobot.hh</div>
@@ -297,19 +307,19 @@ Step 3 — Register the robot in VAMP</h2>
 <div class="line">list(APPEND VAMP_ROBOT_STRUCTS MyRobot)</div>
 </div><!-- fragment --><p>Rebuild VAMP and verify: </p><div class="fragment"><div class="line"><span class="keyword">import</span> vamp</div>
 <div class="line">print(hasattr(vamp, <span class="stringliteral">&#39;myrobot&#39;</span>))  <span class="comment"># Should print True</span></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md118"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md120"></a>
 Step 4 — Update vamp_server.py</h2>
 <p>Replace all references to <code>vamp.frida_real</code> with <code>vamp.myrobot</code>.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md120"></a>
+<h1><a class="anchor" id="autotoc_md122"></a>
 Troubleshooting</h1>
-<h2><a class="anchor" id="autotoc_md121"></a>
+<h2><a class="anchor" id="autotoc_md123"></a>
 &lt;tt&gt;frida_real not found&lt;/tt&gt; on import</h2>
 <div class="fragment"><div class="line">AttributeError: module &#39;vamp&#39; has no attribute &#39;frida_real&#39;</div>
 </div><!-- fragment --><p> <b>Fix:</b> The <code>.so</code> was compiled without <code>frida_real</code>. Run: </p><div class="fragment"><div class="line">bash /workspace/src/docker/manipulation/setup_vamp.sh</div>
 </div><!-- fragment --><p> If that doesn't help, force a rebuild: </p><div class="fragment"><div class="line">rm /workspace/src/manipulation/packages/vamp/src/vamp/_core/_core_ext*.so</div>
 <div class="line">bash /workspace/src/docker/manipulation/setup_vamp.sh</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md122"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md124"></a>
 &lt;tt&gt;Start INVALID (self-collision/joint-limits)&lt;/tt&gt;</h2>
 <p>VAMP thinks the robot's current state is in collision with itself or out of joint limits.</p>
 <p><b>Fix:</b> Check that <code><a class="el" href="frida__real_8hh.html">frida_real.hh</a></code> has reasonable sphere radii (should be 0.02–0.09m, not 0.1m uniform): </p><div class="fragment"><div class="line"><span class="keyword">import</span> vamp</div>
@@ -317,42 +327,42 @@ Troubleshooting</h1>
 <div class="line">print(<span class="stringliteral">&#39;n_spheres:&#39;</span>, r.n_spheres())      <span class="comment"># Should be 82</span></div>
 <div class="line">print(<span class="stringliteral">&#39;min_radius:&#39;</span>, r.min_max_radii()) <span class="comment"># Should be ~(0.02, 0.09)</span></div>
 </div><!-- fragment --><p> If spheres look wrong, regenerate <code><a class="el" href="frida__real_8hh.html">frida_real.hh</a></code> using the steps above.</p>
-<h2><a class="anchor" id="autotoc_md123"></a>
+<h2><a class="anchor" id="autotoc_md125"></a>
 &lt;tt&gt;VAMP timeout after 10.0 s&lt;/tt&gt;</h2>
 <p>The C++ plugin sent a request but never received a response.</p>
 <p><b>Cause:</b> <code><a class="el" href="vamp__server_8py.html">vamp_server.py</a></code> is not running. <b>Fix:</b> Start the server in a separate terminal: </p><div class="fragment"><div class="line">export PYTHONPATH=&quot;/workspace/src/manipulation/packages/vamp/src:$PYTHONPATH&quot;</div>
 <div class="line">ros2 run vamp_moveit_plugin vamp_server.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md124"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md126"></a>
 &lt;tt&gt;VAMP plan failed FCL post-validation against current PlanningScene&lt;/tt&gt;</h2>
 <p>Expected log — not an error. VAMP's sphere model said the plan was clean but FCL caught a real collision. The plugin should immediately log <code>Falling back to OMPL (attempt 1/4)...</code> and recover automatically.</p>
 <p><b>When to act:</b> if the fallback ALSO fails repeatedly for cases that should be solvable (e.g. an obstacle clearly outside the robot's path), the cause is usually URDF geometry off (a sensor link mounted in the wrong place). Use <code><a class="el" href="probe__cuboid_8py.html">probe_cuboid.py</a></code> to inspect sphere positions and compare against the visual mesh in RViz.</p>
-<h2><a class="anchor" id="autotoc_md125"></a>
+<h2><a class="anchor" id="autotoc_md127"></a>
 &lt;tt&gt;Exec format error: vamp_server.py&lt;/tt&gt;</h2>
 <p>The installed script lost its execute permission.</p>
 <p><b>Fix:</b> </p><div class="fragment"><div class="line">chmod +x /workspace/install/vamp_moveit_plugin/lib/vamp_moveit_plugin/vamp_server.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md126"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md128"></a>
 MoveIt shows "Failed" but server shows "SUCCESS"</h2>
 <p>MoveIt's internal path validator rejected the trajectory. <b>This should now self-recover</b> — the plugin's <code>runOmplFallback()</code> fires whenever VAMP's plan fails FCL post-validation. Expect to see in the logs:</p>
 <div class="fragment"><div class="line">VAMP plan failed FCL post-validation against current PlanningScene</div>
 <div class="line">Falling back to OMPL (attempt N/4)...</div>
 <div class="line">OMPL fallback SUCCESS | ...</div>
 </div><!-- fragment --><p><b>When to act:</b> if you see <code>OMPL fallback FAILED after 4 attempts</code>, neither planner can find a valid path. That usually means the goal is genuinely unreachable (start/goal in true collision, obstacle blocks everything). Re-evaluate the request — VAMP+OMPL agree there's no plan.</p>
-<h2><a class="anchor" id="autotoc_md127"></a>
+<h2><a class="anchor" id="autotoc_md129"></a>
 &lt;tt&gt;Segmentation fault&lt;/tt&gt; on second planning request</h2>
 <p>The C++ executor is conflicting with move_group's executor.</p>
 <p><b>Fix:</b> Ensure <code><a class="el" href="vamp__planning__context_8cpp.html">vamp_planning_context.cpp</a></code> uses a dedicated child node for the service client (not <code>rclcpp::spin_until_future_complete(node_, ...)</code>). This is already fixed in the current code.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md129"></a>
+<h1><a class="anchor" id="autotoc_md131"></a>
 Design Decisions</h1>
 <p><b>Why Python server + C++ bridge instead of pure C++?</b> VAMP's Python bindings are more stable for custom robots. The C++ API requires recompiling VAMP itself when adding new robots. The Python server can be updated without recompiling.</p>
 <p><b>Why SHORTCUT+BSPLINE instead of a custom smoother?</b> The native VAMP simplifier is guaranteed collision-free by construction (Kingston et al. 2023). A moving-average filter is faster to implement but can push waypoints into obstacles.</p>
 <p><b>Why 68 spheres?</b> The current model covers the full FRIDA: arm links (24 spheres across link_base + link1..6), gripper + fingers (20 spheres — kept tight for picking precision), base_link chassis (8), and head sensors zed_camera_link/intel_realsense/laser (14). 68 was chosen by FOAM's <code>--branch 8</code> parameter as a balance between coverage accuracy and FK cost per plan check. The earlier 82-sphere model was geometrically broken (all spheres stacked at link joint origins — see commit <code>9ef5bb6a</code> for the diagnosis and fix); the 68-sphere model from <code>vampTest/cricket/frida.hh</code> has proper FK distribution.</p>
 <p><b>Why <code>security_margin=0.02</code>?</b> Small default — the OMPL fallback handles the cases where the sphere model under-covers what FCL would catch. Larger margins (0.05+) help VAMP avoid more obstacles directly but block close-approach picking of small objects. If you find yourself raising the margin, see if the corner case can be addressed by the fallback layer instead — that keeps the gripper precise.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md131"></a>
+<h1><a class="anchor" id="autotoc_md133"></a>
 Safety architecture — debugging the layered fallback</h1>
 <p>The planner uses 4 layers of defense; understanding which layer fired tells you where to debug.</p>
-<h2><a class="anchor" id="autotoc_md132"></a>
+<h2><a class="anchor" id="autotoc_md134"></a>
 Expected logs by scenario</h2>
 <p><b>Happy path — VAMP succeeds, FCL agrees:</b> </p><div class="fragment"><div class="line">[move_group] VAMP request: 0 spheres, 1 boxes</div>
 <div class="line">[vamp_server] SUCCESS | 56 waypoints | total=22.0 ms</div>
@@ -377,14 +387,14 @@ Expected logs by scenario</h2>
 <div class="line">[move_group] OMPL fallback FAILED after 4 attempts | ... ms total — caller will receive PLANNING_FAILED</div>
 <div class="line">[move_group] No motion plan found. No execution attempted.</div>
 </div><!-- fragment --><p> The system correctly tells the caller no plan exists. No execution, no crash.</p>
-<h2><a class="anchor" id="autotoc_md133"></a>
+<h2><a class="anchor" id="autotoc_md135"></a>
 Diagnosing sphere-model coverage</h2>
 <p>When <code>VAMP plan failed FCL post-validation</code> fires frequently for cases that VISUALLY look fine, the sphere model probably under-covers the link involved. Use <code><a class="el" href="probe__cuboid_8py.html">probe_cuboid.py</a></code> to inspect:</p>
 <div class="fragment"><div class="line"># Edit BOX_CENTER, BOX_HALF, START, GOAL at the top of the script to match</div>
 <div class="line"># the failing case (the move_group log prints these), then:</div>
 <div class="line">python3 /workspace/src/manipulation/packages/vamp_moveit_plugin/scripts/probe_cuboid.py</div>
 </div><!-- fragment --><p>The "All sphere positions" section shows where the robot's 68 spheres land for a state on the failing trajectory. The "n_penetrating" column tells you how many spheres VAMP thinks intersect the obstacle. If FCL flags a state but n_penetrating is 0, the sphere model is missing coverage somewhere — usually a link with few spheres (link5/link6 have only a few each) or a sensor mounted at an awkward angle (zed_camera_link).</p>
-<h2><a class="anchor" id="autotoc_md134"></a>
+<h2><a class="anchor" id="autotoc_md136"></a>
 Tunable knobs vs. fixing the model</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -399,7 +409,7 @@ Tunable knobs vs. fixing the model</h2>
 <td class="markdownTableBodyNone">VAMP takes &gt;1s on every plan   </td><td class="markdownTableBodyNone">Lower <code>max_iterations</code>   </td><td class="markdownTableBodyNone">Tune <code>range</code> (RRT step) for your scene size   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md136"></a>
+<h1><a class="anchor" id="autotoc_md138"></a>
 CI build note</h1>
 <p>The repo's <code>ros2-build.yml</code> exports <code>GITHUB_ACTIONS=false</code> before <code>colcon build</code> to work around a bug in <code>vamp/cmake/Python.cmake</code>: under <code>if($ENV{GITHUB_ACTIONS})</code> it sets <code>STUB_PREFIX=""</code> and reuses the same relative path for <code>nanobind_add_stub(OUTPUT ...)</code> and <code>install(FILES ...)</code>, but those resolve against the build dir and source dir respectively — the install step then fails with <code>file INSTALL cannot find __init__.pyi</code>. Forcing the env var to false makes vamp take the else branch which uses an absolute build-dir-prefixed path consistently. Verified locally against a <code>ros:humble</code> container reproducing the original CI failure. </p>
 </div></div><!-- contents -->
