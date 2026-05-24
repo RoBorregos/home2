@@ -6,9 +6,11 @@ Provides a /follow_face service to activate/deactivate face tracking,
 and switches the arm between velocity mode (4) and MoveIt mode (1) accordingly.
 """
 
+import math
 import time
 
 import rclpy
+from frida_constants.hri_constants import RESPEAKER_DOA_TOPIC, VOICE_ACTIVITY_TOPIC
 from frida_constants.manipulation_constants import (
     FACE_RECOGNITION_LIFETIME,
     FOLLOW_FACE_SPEED,
@@ -20,6 +22,7 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from geometry_msgs.msg import Point
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from std_msgs.msg import Bool, Int16
 from std_srvs.srv import Empty
 from task_manager.utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16
@@ -35,6 +38,9 @@ SERVICE_TIMEOUT = 5.0
 SET_MODE_RETRIES = 2
 RUN_LOOP_PERIOD = 0.1
 
+DOA_FUSION_WEIGHT = 0.3  # How much DOA contributes to x error when person is speaking
+DOA_LIFETIME = 1.5  # Max age of DOA data in seconds (published every 0.5 s)
+
 
 class FollowFaceNode(Node):
     """Node that tracks a detected face by sending joint velocity commands to the xArm."""
@@ -49,6 +55,22 @@ class FollowFaceNode(Node):
             "/vision/follow_face",
             self._face_detection_callback,
             2,
+            callback_group=callback_group,
+        )
+
+        # Voice activity and DOA subscriptions for microphone-assisted tracking
+        self.create_subscription(
+            Bool,
+            VOICE_ACTIVITY_TOPIC,
+            self._voice_activity_callback,
+            10,
+            callback_group=callback_group,
+        )
+        self.create_subscription(
+            Int16,
+            RESPEAKER_DOA_TOPIC,
+            self._doa_callback,
+            10,
             callback_group=callback_group,
         )
 
@@ -114,6 +136,11 @@ class FollowFaceNode(Node):
         self.face_y = 0.0
         self.last_face_detection_time = 0.0
         self.has_new_face_data = False
+
+        # Microphone DOA / voice activity state
+        self.is_speaking = False
+        self.doa_angle = 0
+        self.last_doa_time = 0.0
 
         # Previous velocities for stop detection
         self.prev_x = 0.0
@@ -233,6 +260,25 @@ class FollowFaceNode(Node):
 
         return self.face_x, self.face_y
 
+    # -- Voice activity / DOA --
+
+    def _voice_activity_callback(self, msg: Bool):
+        self.is_speaking = msg.data
+
+    def _doa_callback(self, msg: Int16):
+        self.doa_angle = msg.data
+        self.last_doa_time = time.time()
+
+    def _doa_x_error(self) -> float | None:
+        """Convert DOA angle to a normalized x error in [-1, 1].
+
+        0° = directly in front (no error), 90° = right (+1), 270° = left (-1).
+        Returns None when DOA data is stale.
+        """
+        if time.time() - self.last_doa_time > DOA_LIFETIME:
+            return None
+        return math.sin(math.radians(self.doa_angle))
+
     # -- Movement --
 
     def _send_velocity(self, x_vel: float, y_vel: float):
@@ -276,7 +322,18 @@ class FollowFaceNode(Node):
         x, y = self._get_face_position()
 
         if x is None or y is None:
-            # No fresh face data — stop arm if it was previously moving
+            # No face visible — use DOA alone when person is actively speaking
+            if self.is_speaking:
+                doa_x = self._doa_x_error()
+                if doa_x is not None:
+                    if abs(doa_x) > FOLLOW_FACE_TOLERANCE:
+                        self._send_velocity(doa_x, 0.0)
+                        self.prev_x = doa_x
+                        self.prev_y = 0.0
+                        self.last_move_time = time.time()
+                    return
+
+            # No face and not speaking (or no DOA) — stop if arm was moving
             if (self.prev_x != 0.0 or self.prev_y != 0.0) and (
                 time.time() - self.last_move_time
             ) >= STOP_TIMEOUT:
@@ -286,6 +343,12 @@ class FollowFaceNode(Node):
             return
 
         y = -y
+
+        # When speaking, blend DOA angle into the x error as secondary feedback
+        if self.is_speaking:
+            doa_x = self._doa_x_error()
+            if doa_x is not None:
+                x = (1.0 - DOA_FUSION_WEIGHT) * x + DOA_FUSION_WEIGHT * doa_x
 
         if abs(x) > FOLLOW_FACE_TOLERANCE or abs(y) > FOLLOW_FACE_TOLERANCE:
             self._send_velocity(x, y)
