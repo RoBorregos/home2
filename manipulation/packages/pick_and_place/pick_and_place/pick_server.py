@@ -395,6 +395,28 @@ class PickMotionServer(Node):
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
                 if grasp_pose_result.result.success:
                     self.get_logger().info("Grasp pose reached")
+
+                    # Micro-descent: move 1.5 cm further along the approach axis
+                    # so the fingers make firm contact with the object.
+                    # Compensates for small calibration errors without changing
+                    # the planned target. Ignored if table collision blocks it.
+                    if not is_flat:
+                        descent_pos = (
+                            np.array(
+                                [
+                                    ee_link_pose.pose.position.x,
+                                    ee_link_pose.pose.position.y,
+                                    ee_link_pose.pose.position.z,
+                                ]
+                            )
+                            + z_axis * 0.015
+                        )
+                        descent_pose = copy.deepcopy(ee_link_pose)
+                        descent_pose.pose.position.x = float(descent_pos[0])
+                        descent_pose.pose.position.y = float(descent_pos[1])
+                        descent_pose.pose.position.z = float(descent_pos[2])
+                        self.move_to_pose(descent_pose, velocity=0.05)
+
                     result, lowest_obj, highest_obj = self.attach_pick_object()
 
                     self.get_logger().info("Closing gripper")

@@ -22,7 +22,7 @@ def generate_launch_description():
                     )
                 ),
             ),
-            # Pick and place stack (includes GPD, manipulation_core, pick/place/pour servers,
+            # Pick and place stack (includes CGN, manipulation_core, pick/place/pour servers,
             # perception_3d, heatmap, motion planning, fix_position_to_plane, flat_grasp_estimator)
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -34,6 +34,7 @@ def generate_launch_description():
                         ]
                     )
                 ),
+                launch_arguments={"grasp_backend": "contact_graspnet"}.items(),
             ),
         ]
     )
