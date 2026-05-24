@@ -160,16 +160,22 @@ class ContactGraspNetNode(Node):
 
             # 2. Normalise roll: snap the gripper's Y-axis to be as close
             #    to world-up as possible, keeping the approach (Z) fixed.
-            #    Effect:
-            #    • Top-down grasps  → fingers stay horizontal (any azimuth)
-            #    • Side grasps      → fingers point vertically (natural squeeze)
-            #    This eliminates arbitrary roll that makes MoveIt's IK search
-            #    expensive and produces the weird markers seen in RViz.
+            #    Additionally snap near-vertical approach axes to exact vertical:
+            #    CGN sometimes predicts a 2-5° tilt on top-down grasps which
+            #    causes the gripper to arrive slightly inclined and miss the object.
             normalised = []
             world_up = np.array([0.0, 0.0, 1.0])
+            SNAP_VERTICAL = (
+                0.92  # cos(≈23°) — snap to [0,0,±1] if approach is this close
+            )
             for g in grasps:
                 z = g[:3, 2].copy()
                 z /= np.linalg.norm(z)
+
+                # Snap near-vertical approaches to exactly vertical
+                if abs(z[2]) >= SNAP_VERTICAL:
+                    z = np.array([0.0, 0.0, float(np.sign(z[2]))])
+
                 ref = world_up
                 perp = ref - np.dot(ref, z) * z
                 if np.linalg.norm(perp) < 0.15:  # near-vertical approach
@@ -216,6 +222,27 @@ class ContactGraspNetNode(Node):
                     )
 
             grasps = np.array([T_base_cloud @ g for g in grasps])
+
+            # 3. Filter grasps too close to the cluster bottom (≈ table surface).
+            #    The table collision box's padding forces MoveIt to plan wide arcs
+            #    when the grasp target is near the table — drop these early.
+            #    Cluster is in base_link so pc_full Z is height above the floor.
+            cluster_min_z = float(np.min(pc_full[:, 2]))
+            TABLE_MARGIN = 0.03  # 3 cm above cluster bottom
+            valid_height = np.array(
+                [g[2, 3] >= cluster_min_z + TABLE_MARGIN for g in grasps]
+            )
+            if valid_height.sum() > 0:
+                grasps = grasps[valid_height]
+                grasp_scores = grasp_scores[valid_height]
+                self.get_logger().info(
+                    f"Height filter: {valid_height.sum()}/{len(valid_height)} grasps "
+                    f"above z={cluster_min_z + TABLE_MARGIN:.3f} m"
+                )
+            else:
+                self.get_logger().warn(
+                    "All grasps near table surface — skipping height filter"
+                )
 
             for i in range(len(grasps)):
                 matrix = grasps[i]  # 4x4 matrix

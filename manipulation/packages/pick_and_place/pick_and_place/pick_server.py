@@ -661,7 +661,7 @@ class PickMotionServer(Node):
         self,
         pose,
         tolerance_position=0.005,
-        tolerance_orientation=0.02,
+        tolerance_orientation=0.05,
         velocity=PICK_VELOCITY,
     ):
         request = MoveToPose.Goal()
