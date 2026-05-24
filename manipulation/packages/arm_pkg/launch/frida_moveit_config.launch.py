@@ -18,6 +18,7 @@ from launch.actions import (
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
@@ -255,11 +256,27 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # Start the VAMP backend ("vamp" is the default planner; without it every plan
+    # waits ~3s then falls back to OMPL). Disable with start_vamp_server:=false.
+    vamp_server_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("vamp_moveit_plugin"),
+                    "launch",
+                    "vamp_server.launch.py",
+                ]
+            )
+        ),
+        condition=IfCondition(LaunchConfiguration("start_vamp_server", default="true")),
+    )
+
     return [
         SetEnvironmentVariable(name="ROS_LOG_LEVEL", value=log_level),
         SetEnvironmentVariable(
             name="RCUTILS_LOGGING_SEVERITY_THRESHOLD", value=log_level
         ),
+        vamp_server_launch,
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_publisher_node,
