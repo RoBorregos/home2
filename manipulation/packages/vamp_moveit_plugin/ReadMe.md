@@ -97,17 +97,22 @@ On first run, `setup_vamp.sh` automatically:
 
 ### Step 3 — Launch and plan
 
-In terminal 1 (inside container):
+Inside the container:
 ```bash
 source /workspace/install/setup.bash
 ros2 launch arm_pkg frida_fake_moveit_config.launch.py
 ```
 
-In terminal 2 (inside container):
+This **also starts `vamp_server.py` automatically** (the "vamp" pipeline is the default planner, so its backend must be running). To disable it — e.g. to exercise the OMPL fallback, or to run the server separately/remotely — pass:
 ```bash
-export PYTHONPATH="/workspace/src/manipulation/packages/vamp/src:$PYTHONPATH"
-ros2 run vamp_moveit_plugin vamp_server.py
+ros2 launch arm_pkg frida_fake_moveit_config.launch.py start_vamp_server:=false
 ```
+and then launch the server yourself in another terminal:
+```bash
+ros2 run vamp_moveit_plugin vamp_server.py   # PYTHONPATH is set by .bash_aliases
+```
+
+The same `start_vamp_server` argument exists on the real `frida_moveit_config.launch.py`.
 
 Then open RViz, set the planning group to `xarm6`, set a goal state, and click **Plan**.
 
