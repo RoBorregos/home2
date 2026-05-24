@@ -23,7 +23,7 @@ GPD_SETUP=". /home/ros/setup_gpd.sh"
 CGN_SETUP=". /home/ros/setup_contact_graspnet.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils contact_graspnet_ros --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
