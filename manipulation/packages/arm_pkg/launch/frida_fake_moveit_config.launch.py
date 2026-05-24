@@ -293,9 +293,7 @@ def launch_setup(context, *args, **kwargs):
                 ]
             )
         ),
-        condition=IfCondition(
-            LaunchConfiguration("start_vamp_server", default="true")
-        ),
+        condition=IfCondition(LaunchConfiguration("start_vamp_server", default="true")),
     )
 
     return [

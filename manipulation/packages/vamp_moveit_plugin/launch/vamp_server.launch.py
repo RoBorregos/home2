@@ -86,9 +86,7 @@ def launch_setup(context, *args, **kwargs):
             executable="vamp_server.py",
             name="vamp_server",
             output="screen",
-            parameters=[
-                {name: LaunchConfiguration(name) for name in _SERVER_PARAMS}
-            ],
+            parameters=[{name: LaunchConfiguration(name) for name in _SERVER_PARAMS}],
         )
     ]
 
@@ -109,7 +107,9 @@ def generate_launch_description():
     }
 
     declared_args = [
-        DeclareLaunchArgument(name, default_value=default, description=arg_descriptions[name])
+        DeclareLaunchArgument(
+            name, default_value=default, description=arg_descriptions[name]
+        )
         for name, default in _SERVER_PARAMS.items()
     ]
     declared_args.append(
