@@ -48,12 +48,8 @@ _SERVER_PARAMS = {
 
 
 def _vamp_server_already_running():
-    """Return True if a node named 'vamp_server' is already on the ROS graph.
-
-    Uses `ros2 node list` rather than rclpy so we don't have to spin up (and
-    tear down) a node inside the launch description. Any failure (timeout, ros2
-    not found) is treated as 'not running' so the guard never blocks a
-    legitimate launch."""
+    """True if a 'vamp_server' node is already on the ROS graph (via `ros2 node list`).
+    Fails open: any error (timeout, ros2 missing) returns False so the guard never blocks a launch."""
     try:
         result = subprocess.run(
             ["ros2", "node", "list"],

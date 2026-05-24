@@ -278,11 +278,8 @@ def launch_setup(context, *args, **kwargs):
             )
         )
 
-    # VAMP planning server. The "vamp" pipeline is the default planner (set
-    # above), so its backend must be running or every plan waits ~3s for the
-    # service, times out, and falls back to OMPL. Start it here by default;
-    # disable with start_vamp_server:=false to exercise the OMPL fallback or
-    # run the server separately.
+    # Start the VAMP backend ("vamp" is the default planner; without it every plan
+    # waits ~3s then falls back to OMPL). Disable with start_vamp_server:=false.
     vamp_server_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
