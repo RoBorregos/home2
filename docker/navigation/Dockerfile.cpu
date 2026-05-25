@@ -15,8 +15,9 @@ RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frid
 RUN sudo rm -rf /workspace/src/
 
 # CycloneDDS with SHM (iceoryx zero-copy)
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp libcap2-bin \
     && sudo rm -rf /var/lib/apt/lists/*
+RUN echo "/opt/ros/humble/lib" | sudo tee /etc/ld.so.conf.d/ros2.conf && sudo ldconfig
 
 # Iceoryx from source (expanded publisher/subscriber limits)
 RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \

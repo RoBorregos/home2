@@ -29,6 +29,7 @@
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
   <depend>dashgo_driver</depend>
+  <depend>dashgo_driver_cpp</depend>
   <depend>map_context</depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
