@@ -1,0 +1,11 @@
+# Request
+float64[] start_state
+float64[] goal_state
+float64[] sphere_centers_flat
+float64[] sphere_radii
+float64[] box_centers_flat
+float64[] box_sizes_flat
+---
+# Response
+float64[] waypoints_flat
+bool success

@@ -43,7 +43,7 @@ class ObjectDetectorNode(BaseDetectorNode):
             "models", ["yolo_v26_finetuned"]
         ).string_array_value
 
-        self.models = [ModelRegistry.get(name) for name in model_names]
+        self.models = [ModelRegistry.get(name) for name in model_names if name]
         self.get_logger().info(f"Loaded models: {[m.name for m in self.models]}")
         self.yolo_service_model = ModelRegistry.get("yolo_generic")
 

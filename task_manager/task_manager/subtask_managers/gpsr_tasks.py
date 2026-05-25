@@ -1,8 +1,4 @@
-import json
-import os
 import time
-
-from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
 from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
@@ -30,11 +26,6 @@ class GPSRTask(GenericTask):
         super().__init__(subtask_manager)
         # Angles are relative to current position
         self.pan_angles = [-35, 70]
-        package_share_directory = get_package_share_directory("frida_constants")
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-        with open(file_path, "r") as file:
-            self.locations = json.load(file)
-
         self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
         self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket", "jeans"]
 
@@ -83,7 +74,7 @@ class GPSRTask(GenericTask):
 
         while True:
             s, res = self.subtask_manager.hri.confirm(
-                "Have you grabbed the object?", use_hotwords=False
+                "Have you grabbed the object?", use_keyword=False
             )
             if res == "yes":
                 break
@@ -157,7 +148,7 @@ class GPSRTask(GenericTask):
             status, loc = self.subtask_manager.hri.ask_and_confirm(
                 question="Please tell me where to go.",
                 query="location",
-                use_hotwords=False,
+                use_keyword=False,
                 context="The user was asked to say the location. We want to infer the location from the response",
             )
 
@@ -309,7 +300,7 @@ class GPSRTask(GenericTask):
                 s, response = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_hotwords=False,
+                    use_keyword=False,
                     context="The user was asked to say their name. We want to infer his name from the response",
                 )
                 if s == Status.EXECUTION_SUCCESS:
@@ -586,7 +577,7 @@ class GPSRTask(GenericTask):
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_hotwords=False,
+                    use_keyword=False,
                     hotwords=command.name,
                 )
                 new_name = self.subtask_manager.hri.remove_punctuation(new_name)
