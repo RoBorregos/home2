@@ -22,7 +22,7 @@
         general:
             camera_timeout_sec: 5
             camera_max_reconnect: 5
-            camera_flip: true
+            camera_flip: false
             self_calib: true # Enable the self-calibration process at camera opening.
             serial_number: 0 # overwritten by launch file
             pub_resolution: 'NATIVE' # The resolution used for image and depth map publishing. 'NATIVE' to use the same `general.grab_resolution` - `CUSTOM` to apply the `general.pub_downscale_factor` downscale factory to reduce bandwidth in transmission
