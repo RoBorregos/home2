@@ -22,8 +22,9 @@ def generate_launch_description():
                     )
                 ),
             ),
-            # Pick and place stack (includes GPD, manipulation_core, pick/place/pour servers,
-            # perception_3d, heatmap, motion planning, fix_position_to_plane, flat_grasp_estimator)
+            # Pick and place stack (includes Contact-GraspNet node, manipulation_core,
+            # pick/place/pour servers, perception_3d, heatmap, motion planning,
+            # fix_position_to_plane, flat_grasp_estimator)
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     PathJoinSubstitution(

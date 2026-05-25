@@ -19,19 +19,18 @@ setup_common_env "manipulation"
 
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
-GPD_SETUP=". /home/ros/setup_gpd.sh"
-GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
+CGN_SETUP=". /home/ros/setup_contact_graspnet.sh"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils vamp_moveit_plugin --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils contact_graspnet_ros vamp_moveit_plugin --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 # Build VAMP's _core_ext.*.so if missing (~1s no-op when already built); the normal colcon build above doesn't produce it.
 # Non-fatal: keep going on failure since the plugin's OMPL fallback works without VAMP.
 VAMP_SETUP="(bash /workspace/src/docker/manipulation/setup_vamp.sh || echo '[WARN] VAMP setup failed — vamp planning unavailable, OMPL fallback still works')"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES &&  $CYCLONE_SOURCE && $COLCON && $SOURCE && $VAMP_SETUP"
+    SETUP="$CGN_SETUP && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $COLCON && $SOURCE && $VAMP_SETUP"
 else
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE &&  $CYCLONE_SOURCE && $VAMP_SETUP"
+    SETUP="$CGN_SETUP && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE && $VAMP_SETUP"
 fi
 
 case $TASK in

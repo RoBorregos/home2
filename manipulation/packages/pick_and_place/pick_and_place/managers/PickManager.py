@@ -25,17 +25,8 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 
-CFG_PATHS = [
-    [
-        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
-        True,
-    ],
-    [
-        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
-        False,
-    ],
-]
-
+# Maximum number of CGN grasps forwarded to PickMotion (best-scored first).
+MAX_GRASP_CANDIDATES = 5
 
 # FINE HEIGHT ADJUSTMENT FOR CUTLERY
 # If it's floating, use negative values (e.g. -0.02)
@@ -272,77 +263,39 @@ class PickManager:
                     pick_result_success = True
 
         else:
-            for CFG_PATH in CFG_PATHS:
-                cfg_path = CFG_PATH[0]
-                is_reversible = CFG_PATH[1]
-                if is_reversible and height < 0.06:
-                    self.node.get_logger().warn(
-                        "Object is too small for reversible grasping, skipping reversible grasps"
-                    )
-                    continue
-
-                grasp_poses, grasp_scores = get_grasps(
-                    self.node.grasp_detection_client, object_cluster, cfg_path
+            # Contact-GraspNet returns grasps already sorted by confidence score.
+            # Pass an empty cfg_path — CGN ignores it (model is loaded at node startup).
+            grasp_poses, grasp_scores = get_grasps(
+                self.node.grasp_detection_client, object_cluster, ""
+            )
+            if len(grasp_poses) == 0:
+                self.node.get_logger().error(
+                    "Contact-GraspNet returned no valid grasps"
                 )
-                if len(grasp_poses) == 0:
-                    continue
+                return False, None
 
-                if len(grasp_poses) > 5:
-                    indices = np.random.choice(len(grasp_poses), size=5, replace=False)
-                    grasp_poses = [grasp_poses[i] for i in indices]
-                    grasp_scores = [grasp_scores[i] for i in indices]
-                else:
-                    grasp_poses = grasp_poses[:5]
-                    grasp_scores = grasp_scores[:5]
+            # Take the top-N grasps by score (already sorted, best first).
+            grasp_poses = list(grasp_poses[:MAX_GRASP_CANDIDATES])
+            grasp_scores = [float(s) for s in grasp_scores[:MAX_GRASP_CANDIDATES]]
 
-                new_grasp_poses = []
-                new_grasp_scores = []
-                if is_reversible:
-                    for pose, grasp_score in zip(grasp_poses, grasp_scores):
-                        new_grasp_poses.append(pose)
-                        new_grasp_scores.append(grasp_score)
-                        reversed_pose = copy.deepcopy(pose)
-                        q_orig = [
-                            pose.pose.orientation.x,
-                            pose.pose.orientation.y,
-                            pose.pose.orientation.z,
-                            pose.pose.orientation.w,
-                        ]
-                        q_orig_rot = R.from_quat(q_orig)
-                        q_z_180_local = R.from_euler("z", 180, degrees=True)
-                        q_result = (q_orig_rot * q_z_180_local).as_quat()
-                        reversed_pose.pose.orientation.x = q_result[0]
-                        reversed_pose.pose.orientation.y = q_result[1]
-                        reversed_pose.pose.orientation.z = q_result[2]
-                        reversed_pose.pose.orientation.w = q_result[3]
-                        new_grasp_poses.append(reversed_pose)
-                        new_grasp_scores.append(grasp_score)
-                    new_grasp_scores = new_grasp_scores[:5]
-                    new_grasp_poses = new_grasp_poses[:5]
-                else:
-                    new_grasp_poses = grasp_poses
-                    new_grasp_scores = grasp_scores
+            self.node.get_logger().info(
+                f"CGN: {len(grasp_poses)} grasps — "
+                f"top score={grasp_scores[0]:.3f}, min score={grasp_scores[-1]:.3f}"
+            )
 
-                if len(new_grasp_poses) == 0:
-                    self.node.get_logger().error("No grasp poses detected")
-                    continue
+            goal_msg = PickMotion.Goal()
+            goal_msg.grasping_poses = grasp_poses
+            goal_msg.grasping_scores = grasp_scores
+            goal_msg.object_name = object_name
 
-                goal_msg = PickMotion.Goal()
-                goal_msg.grasping_poses = new_grasp_poses
-                goal_msg.grasping_scores = new_grasp_scores
-
-                self.node.get_logger().info("Sending pick motion goal...")
-                future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-                future = wait_for_future(future, timeout=30)
-                if not future:
-                    break
+            self.node.get_logger().info("Sending pick motion goal...")
+            future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
+            future = wait_for_future(future, timeout=60)
+            if future:
                 pick_result = future.result().get_result().result
                 self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
                 if pick_result.success != 0:
                     pick_result_success = True
-                    break
-                else:
-                    time.sleep(0.2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")

@@ -34,66 +34,55 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 find_package(visualization_msgs REQUIRED)
 
-# --------------------- GPD Configuration ---------------------
-# Use find_library as in your original CMake
+# --------------------- GPD Configuration (optional) ---------------------
+# Contact-GraspNet is now the active grasp backend.
+# GPD is kept as an optional build target for reference but is NOT launched.
 find_library(GPD_LIB NAMES gpd PATHS "$ENV{GPD_INSTALL_DIR}/lib" PATH_SUFFIXES lib NO_DEFAULT_PATH)
 
-# Check if GPD was found
-if (NOT GPD_LIB)
-  message("ENV Variable: $ENV{GPD_INSTALL_DIR}")
-  message(FATAL_ERROR "Library GPD not found. Check ENV variable GPD_INSTALL_DIR.")
+if(GPD_LIB)
+  message(STATUS "GPD found at ${GPD_LIB} — building gpd_service (inactive, CGN is the active backend)")
+
+  include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${PCL_INCLUDE_DIRS}
+    $ENV{GPD_INSTALL_DIR}/include
+  )
+
+  add_executable(gpd_test src/gpd_test.cpp)
+  add_executable(gpd_service src/gpd_service.cpp)
+
+  ament_target_dependencies(gpd_test
+                            frida_interfaces
+                            std_srvs
+                            rclcpp
+                            pcl_conversions
+                            pcl_msgs
+                            OpenCV
+                            rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL
+                            )
+
+  ament_target_dependencies(gpd_service
+                            frida_interfaces
+                            frida_constants
+                            std_srvs
+                            rclcpp
+                            pcl_conversions
+                            pcl_msgs
+                            OpenCV
+                            rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL visualization_msgs
+                            )
+
+  target_link_libraries(gpd_test  ${OpenCV_LIBS} ${GPD_LIB} Eigen3::Eigen)
+  target_link_libraries(gpd_service ${OpenCV_LIBS} ${GPD_LIB} Eigen3::Eigen)
+
+  install(TARGETS gpd_test gpd_service DESTINATION lib/${PROJECT_NAME})
 else()
-  message(STATUS "Library GPD found in ${GPD_LIB}")
+  message(STATUS "GPD library not found — skipping gpd_service (Contact-GraspNet is the active backend)")
+  include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${PCL_INCLUDE_DIRS}
+  )
 endif()
-
-# Include directories
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${PCL_INCLUDE_DIRS}
-  $ENV{GPD_INSTALL_DIR}/include
-)
-
-# Create executable
-add_executable(gpd_test src/gpd_test.cpp)
-add_executable(gpd_service src/gpd_service.cpp)
-
-ament_target_dependencies(gpd_test
-                          frida_interfaces
-                          std_srvs 
-                          rclcpp 
-                          pcl_conversions 
-                          pcl_msgs 
-                          OpenCV
-                          rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL
-                          )
-
-ament_target_dependencies(gpd_service
-                          frida_interfaces
-                          frida_constants
-                          std_srvs 
-                          rclcpp 
-                          pcl_conversions 
-                          pcl_msgs 
-                          OpenCV
-                          rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL visualization_msgs
-                          )
-
-# Link libraries
-target_link_libraries(gpd_test
-  ${OpenCV_LIBS}
-  ${GPD_LIB}
-  Eigen3::Eigen
-)
-
-target_link_libraries(gpd_service
-  ${OpenCV_LIBS}
-  ${GPD_LIB}
-  Eigen3::Eigen
-)
-
-# Install targets
-install(TARGETS gpd_test DESTINATION lib/${PROJECT_NAME})
-install(TARGETS gpd_service DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY worlds DESTINATION share/${PROJECT_NAME})
 

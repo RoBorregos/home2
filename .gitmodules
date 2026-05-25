@@ -26,4 +26,7 @@
 [submodule "manipulation/packages/vamp"]
 	path = manipulation/packages/vamp
 	url = https://github.com/KavrakiLab/vamp.git
+[submodule "manipulation/packages/contact_graspnet"]
+	path = manipulation/packages/contact_graspnet
+	url = https://github.com/elchun/contact_graspnet_pytorch.git
 
