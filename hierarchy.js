@@ -270,7 +270,6 @@ var hierarchy =
     [ "mujoco_ros2_sensors::WrenchSensor", "classmujoco__ros2__sensors_1_1WrenchSensor.html", null ],
     [ "mujoco_ros2_sensors::WrenchSensorStruct", "structmujoco__ros2__sensors_1_1WrenchSensorStruct.html", null ],
     [ "XArmServices.XArmServices", "classXArmServices_1_1XArmServices.html", null ],
-    [ "camera_test.ZedSimulator", "classcamera__test_1_1ZedSimulator.html", null ],
     [ "ABC", null, [
       [ "Planner.Planner", "classPlanner_1_1Planner.html", null ],
       [ "Servo.Servo", "classServo_1_1Servo.html", null ],

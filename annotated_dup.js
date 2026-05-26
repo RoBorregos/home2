@@ -36,9 +36,6 @@ var annotated_dup =
     [ "call_pose_goal", "namespacecall__pose__goal.html", [
       [ "MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", "classcall__pose__goal_1_1MoveToPoseClient" ]
     ] ],
-    [ "camera_test", "namespacecamera__test.html", [
-      [ "ZedSimulator", "classcamera__test_1_1ZedSimulator.html", "classcamera__test_1_1ZedSimulator" ]
-    ] ],
     [ "clean_table_task_manager", "namespaceclean__table__task__manager.html", [
       [ "CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", "classclean__table__task__manager_1_1CleanTableTM" ]
     ] ],

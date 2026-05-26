@@ -34,7 +34,6 @@ var namespaces_dup =
     [ "call_joint_goal", "namespacecall__joint__goal.html", "namespacecall__joint__goal" ],
     [ "call_pick_action", "namespacecall__pick__action.html", "namespacecall__pick__action" ],
     [ "call_pose_goal", "namespacecall__pose__goal.html", "namespacecall__pose__goal" ],
-    [ "camera_test", "namespacecamera__test.html", "namespacecamera__test" ],
     [ "carry", "namespacecarry.html", [
       [ "generate_launch_description", "namespacecarry.html#a13d8f63b1ec69c76e488d9b0960dc65c", null ]
     ] ],
