@@ -428,6 +428,15 @@ class HRICCommands(Node):
         no person within the bbox and return the angle
         of the largest available chair."""
         chair_queue = queue.PriorityQueue()
+        
+        req = MapAreas.Request()
+        future = self.retrieve_areas_srv.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
+        if (future.result() is None) or (future.result().areas == ""):
+            self.get_logger().error("Failed to retrieve areas")
+            return False, 0
+        else:
+            areas_json = json.loads(str(future.result().areas))
 
         for chair in self.chairs:
             occupied = False
@@ -444,6 +453,7 @@ class HRICCommands(Node):
 
             # Convert chair bbox center to PointStamped and check if inside house
             if self.camera_info is not None and self.depth_image is not None:
+
                 cx = int((xmin + xmax) / 2)
                 cy = int(y_center_chair)
                 chair_point = point2d_to_ros_point_stamped(
@@ -455,13 +465,6 @@ class HRICCommands(Node):
                     rotation=self.rotation,
                 )
 
-                req = MapAreas.Request()
-                future = self.retrieve_areas_srv.call_async(req)
-                rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
-                if (future.result() is None) or (future.result().areas == ""):
-                    continue
-                else:
-                    areas_json = json.loads(str(future.result().areas))
 
                 try:
                     transform = self.tf_buffer.lookup_transform(
