@@ -41,20 +41,18 @@ from frida_interfaces.srv import SaveName
 
 def _insightface_providers() -> list:
     cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
-    if cache_dir:
-        return [
-            (
-                "TensorrtExecutionProvider",
-                {
-                    "trt_engine_cache_enable": True,
-                    "trt_engine_cache_path": cache_dir,
-                    "trt_fp16_enable": True,
-                },
-            ),
-            "CUDAExecutionProvider",
-            "CPUExecutionProvider",
-        ]
-    return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+    return [
+        (
+            "TensorrtExecutionProvider",
+            {
+                "trt_engine_cache_enable": True,
+                "trt_engine_cache_path": cache_dir,
+                "trt_fp16_enable": True,
+            },
+        ),
+        "CUDAExecutionProvider",
+        "CPUExecutionProvider",
+    ]
 
 
 DEFAULT_NAME = "ale"
