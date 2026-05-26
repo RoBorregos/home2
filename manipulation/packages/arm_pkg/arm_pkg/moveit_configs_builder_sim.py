@@ -321,6 +321,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
             'geometry_mesh_tcp_rpy': geometry_mesh_tcp_rpy,
             'load_zed': load_zed,
             'simulation': "True",
+            'mujoco_plugin': 'true',
         }
         self.__srdf_xacro_args = {
             'prefix': prefix,
