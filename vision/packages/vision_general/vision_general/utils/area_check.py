@@ -43,6 +43,7 @@ def is_point_in_room(point_stamped: PointStamped, room_name: str, areas_json) ->
     point = (point_stamped.point.x, point_stamped.point.y)
     return point_in_polygon(point, polygon)
 
+
 def is_point_in_house(point_stamped: PointStamped, areas_json) -> bool:
     return any(
         is_point_in_room(point_stamped, room, areas_json)
@@ -118,7 +119,7 @@ def filter_detections_in_house(
         if rooms:
             if any(is_point_in_room(point_map, room, areas_json) for room in rooms):
                 filtered.append(det)
-        else: 
+        else:
             if is_point_in_house(point_map, areas_json):
                 filtered.append(det)
 

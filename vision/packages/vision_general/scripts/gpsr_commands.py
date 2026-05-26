@@ -126,7 +126,7 @@ class GPSRCommands(Node):
             self.detect_pose_gesture_callback,
             callback_group=self.callback_group,
         )
-        
+
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.yolo_client = self.create_client(
@@ -534,7 +534,7 @@ class GPSRCommands(Node):
         ]
 
         self.people = self.get_detections(0)
-        
+
         gesture = self.pose_detection.detectGesture(cropped_frame)
 
         if gesture in gestures:
