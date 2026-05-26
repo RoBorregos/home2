@@ -43,11 +43,18 @@ def is_point_in_room(point_stamped: PointStamped, room_name: str, areas_json) ->
     point = (point_stamped.point.x, point_stamped.point.y)
     return point_in_polygon(point, polygon)
 
+def is_point_in_house(point_stamped: PointStamped, areas_json) -> bool:
+    return any(
+        is_point_in_room(point_stamped, room, areas_json)
+        for room in areas_json
+        if areas_json.get(room, {}).get("polygon")
+    )
 
-def filter_class(
+
+def filter_detections_in_house(
     frame,
     detections: list,
-    class_ids: list[str],
+    class_ids: list[int],
     rooms: list[str] | None,
     camera_info,
     depth_image,
@@ -57,10 +64,11 @@ def filter_class(
     rotation: int = 0,
 ) -> list:
     """
-    Return only detections of class_name whose bbox center is inside room_name.
+    Filter detections by class ID and spatial location.
 
-    If spatial data (camera_info / depth_image / tf_buffer / areas_json) is
-    unavailable, detections matching class_name pass through without room filtering.
+    If rooms is provided, only detections inside one of those rooms are kept.
+    If rooms is None, detections inside any room of the hosue will be kept (as long as they have a polygon)
+    If spatial data is unavailable, detections matching class_ids pass through unfiltered.
     """
     h, w = frame.shape[:2]
     filtered = []
@@ -76,7 +84,7 @@ def filter_class(
         if det["class_id"] not in class_ids:
             continue
 
-        if not spatial_ready or rooms is None:
+        if not spatial_ready:
             filtered.append(det)
             continue
 
@@ -107,9 +115,11 @@ def filter_class(
         except Exception:
             continue
 
-        for room in rooms:
-            if is_point_in_room(point_map, room, areas_json):
+        if rooms:
+            if any(is_point_in_room(point_map, room, areas_json) for room in rooms):
+                filtered.append(det)
+        else: 
+            if is_point_in_house(point_map, areas_json):
                 filtered.append(det)
 
     return filtered
-
