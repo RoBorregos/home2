@@ -9,6 +9,7 @@ ENV_TYPE="${*: -1}"
 
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
+BENCHMARK=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 parse_common_flags "$COMPOSE" "${ARGS[@]}"
@@ -19,6 +20,7 @@ for arg in "${ARGS[@]}"; do
     "--download-model") DOWNLOAD_MODEL="true" ;;
     "--regenerate-db")  REGENERATE_DB="true" ;;
     "--build-proto")    BUILD_PROTO="true" ;;
+    "--benchmark")      BENCHMARK="true" ;;
   esac
 done
 
@@ -45,6 +47,11 @@ fi
 setup_common_env "hri" "compose/.env"
 
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
+
+if [ "$BENCHMARK" == "true" ]; then
+  bash ./scripts/run-benchmark.sh
+  exit 0
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p ../../hri/packages/speech/assets/downloads/offline_voice/model/ \

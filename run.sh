@@ -63,6 +63,7 @@ Additional Flags:
   --recreate         Forces the recreation of containers (useful for network or .env changes).
   --open-display     Opens the graphical interface (UI/Display) required for HRI or Vision.
   --clean            Deletes the build/, log/, and install/ folders and frida_interfaces_cache/.
+  --benchmark        (hri only) Interactive NLP model benchmark using llama.cpp.
 
 Examples:
   ./run.sh hri --receptionist --open-display
