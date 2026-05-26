@@ -404,12 +404,12 @@ class HRICCommands(Node):
                 continue
 
             if class_id == 0:
-                self.people.append({"bbox": bbox, "label": label, "class": class_id})
+                self.people.append({"bbox": bbox, "label": label, "class_id": class_id})
                 color = (0, 0, 255)
             elif class_id == 56:
-                self.chairs.append({"bbox": bbox, "label": label, "class": class_id})
+                self.chairs.append({"bbox": bbox, "label": label, "class_id": class_id})
             elif class_id == 57:
-                self.couches.append({"bbox": bbox, "label": label, "class": class_id})
+                self.couches.append({"bbox": bbox, "label": label, "class_id": class_id})
 
             cv2.rectangle(self.output_image, (x1, y1), (x2, y2), color, 2)
             cv2.putText(
