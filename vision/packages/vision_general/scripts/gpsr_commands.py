@@ -4,6 +4,7 @@
 Node to handle GPSR commands.
 """
 
+import cv2
 import rclpy
 import rclpy.qos
 from rclpy.node import Node
@@ -149,7 +150,7 @@ class GPSRCommands(Node):
         self.people = []
 
         self.get_logger().info("GPSRCommands Ready.")
-        # self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
@@ -476,6 +477,7 @@ class GPSRCommands(Node):
             self.camera_info, self.depth_image, self.tf_buffer,
             self.areas, CAMERA_FRAME,
         )
+        self._draw_and_publish(filtered)
         response.success = True
         response.count = len(filtered)
         response.detections = self._dicts_to_detection_msgs(filtered)
@@ -494,10 +496,28 @@ class GPSRCommands(Node):
             self.camera_info, self.depth_image, self.tf_buffer,
             self.areas, CAMERA_FRAME,
         )
+        self._draw_and_publish(filtered)
         response.success = True
         response.count = len(filtered)
         response.detections = self._dicts_to_detection_msgs(filtered)
         return response
+
+    def _draw_and_publish(self, detections: list):
+        canvas = self.image.copy()
+        for d in detections:
+            x1, y1, x2, y2 = d["bbox"]
+            cv2.rectangle(canvas, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(
+                canvas,
+                str(d["class_id"]),
+                (x1, y1 - 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2,
+                cv2.LINE_AA,
+            )
+        self.output_image = canvas
 
     def _dicts_to_detection_msgs(self, detections: list):
         from frida_interfaces.msg import Detection
