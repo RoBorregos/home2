@@ -36,9 +36,9 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from tf2_ros import Buffer, TransformListener
-from vision_general.utils.area_check import filter_class
 from frida_constants.navigation_constants import AREAS_SERVICE
 from ament_index_python.packages import get_package_share_directory
+from vision_general.utils.area_check import filter_detections_in_house
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -438,7 +438,7 @@ class HRICCommands(Node):
             return False, 0
         areas_json = json.loads(str(future.result().areas))
 
-        chairs_in_room = filter_class(
+        chairs_in_room = filter_detections_in_house(
             frame,
             self.chairs,
             [56],
