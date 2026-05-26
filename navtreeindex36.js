@@ -1,5 +1,7 @@
 var NAVTREEINDEX36 =
 {
+"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#a564154d84694edae2c6fd15d69727e26":[36,0,158,1,8,2],
+"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#ac8dd71a92d881ab3f302428e124e2b6b":[36,0,158,1,8,3],
 "namespacetask__manager_1_1subtask__managers_1_1subtask__meta.html":[36,0,158,1,9],
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html":[36,0,158,1,10],
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a487ed937fcdfff5c5bea256543493678":[36,0,158,1,10,6],
@@ -247,7 +249,5 @@ var NAVTREEINDEX36 =
 "namespacevamp_1_1planning.html#a819484b16ca5862b48da7353bec80ee1":[36,0,180,5,32],
 "namespacevamp_1_1planning.html#aafbdbb09e149d4fffb4bac2593084eb7":[36,0,180,5,33],
 "namespacevamp_1_1planning.html#ac31f9bc1e286da55e5a7be02849e596b":[36,0,180,5,38],
-"namespacevamp_1_1planning.html#acc588d1d80c05937503dec02851aac5b":[36,0,180,5,36],
-"namespacevamp_1_1planning_1_1utils.html":[36,0,180,5,0],
-"namespacevamp_1_1planning_1_1utils.html#a05c8a128f7da7be8c754143c68b4499c":[36,0,180,5,0,5]
+"namespacevamp_1_1planning.html#acc588d1d80c05937503dec02851aac5b":[36,0,180,5,36]
 };

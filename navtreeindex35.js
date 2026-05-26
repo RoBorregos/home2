@@ -1,5 +1,7 @@
 var NAVTREEINDEX35 =
 {
+"namespacepose__detection.html#ad520d300288e9f0dfaca335f6623aed3":[36,0,126,1],
+"namespacepose__detection.html#ad8f828751d16823638c4ea381064fecb":[36,0,126,5],
 "namespacepose__detection.html#ae3868a14fc820b79836a4f22bf7f1337":[36,0,126,13],
 "namespaceppc.html":[36,0,128],
 "namespaceppc.html#aa3727ca5bcd22835536315a39ed75071":[36,0,128,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX35 =
 "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#ad2c48d09d4fd7a7a4470eab00d2a31fa":[36,0,158,1,7,2],
 "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#af100c45ca0837aa8dcea64c1673a8fb5":[36,0,158,1,7,9],
 "namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html":[36,0,158,1,8],
-"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#a06867581e22517934311749b093482d2":[36,0,158,1,8,1],
-"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#a564154d84694edae2c6fd15d69727e26":[36,0,158,1,8,2],
-"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#ac8dd71a92d881ab3f302428e124e2b6b":[36,0,158,1,8,3]
+"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#a06867581e22517934311749b093482d2":[36,0,158,1,8,1]
 };

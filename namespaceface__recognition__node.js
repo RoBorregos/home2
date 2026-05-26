@@ -2,6 +2,7 @@ var namespaceface__recognition__node =
 [
     [ "FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", "classface__recognition__node_1_1FaceRecognition" ],
     [ "_bbox_area", "namespaceface__recognition__node.html#a882828e6bb88b9e2a74c099a1b2bba2f", null ],
+    [ "_insightface_providers", "namespaceface__recognition__node.html#aaa44220cae396b2af80363f6084bcc5c", null ],
     [ "main", "namespaceface__recognition__node.html#abe2d04ddc5e2378a7b776a096ca9c278", null ],
     [ "DEFAULT_NAME", "namespaceface__recognition__node.html#af990b03ce580e863acd6da4c4481f1ff", null ],
     [ "INSIGHTFACE_MODEL", "namespaceface__recognition__node.html#a431a2158d0036495aa165310a73e46b9", null ],

@@ -1,5 +1,6 @@
 var NAVTREEINDEX29 =
 {
+"index.html":[0],
 "index.html#autotoc_md192":[0,0],
 "index.html#autotoc_md193":[0,0,0],
 "index.html#autotoc_md194":[0,0,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX29 =
 "manipulation__tasks_8py.html#abba582e852efb634001953a6f6e13989":[38,0,6,2,1,8,8],
 "manipulation__tasks_8py.html#ac0ffc9ca4f25c4f8fedebc41d53d04bd":[38,0,6,2,1,8,11],
 "manipulation__tasks_8py.html#ad2c48d09d4fd7a7a4470eab00d2a31fa":[38,0,6,2,1,8,3],
-"manipulation__tasks_8py.html#af100c45ca0837aa8dcea64c1673a8fb5":[38,0,6,2,1,8,10],
-"map__area__tagger_8py.html":[38,0,4,0,1,3,0]
+"manipulation__tasks_8py.html#af100c45ca0837aa8dcea64c1673a8fb5":[38,0,6,2,1,8,10]
 };

@@ -1,5 +1,6 @@
 var NAVTREEINDEX28 =
 {
+"functions_func_d.html":[37,3,1,4],
 "functions_func_e.html":[37,3,1,5],
 "functions_func_f.html":[37,3,1,6],
 "functions_func_g.html":[37,3,1,7],
@@ -248,6 +249,5 @@ var NAVTREEINDEX28 =
 "imu__sensor_8cpp.html":[38,0,3,0,4,1,2,0],
 "imu__sensor_8hpp.html":[38,0,3,0,4,1,0,3,0],
 "imu__sensor_8hpp_source.html":[38,0,3,0,4,1,0,3,0],
-"index.html":[],
-"index.html":[0]
+"index.html":[]
 };

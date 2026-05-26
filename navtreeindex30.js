@@ -1,5 +1,6 @@
 var NAVTREEINDEX30 =
 {
+"map__area__tagger_8py.html":[38,0,4,0,1,3,0],
 "map__area__tagger_8py.html#a0a8c16661fedc07a4d89252f175f3fde":[38,0,4,0,1,3,0,3],
 "map__area__tagger_8py.html#a33c0e02922d99d9405848a521fad78ab":[38,0,4,0,1,3,0,2],
 "map__area__tagger_8py.html#a5ff188d3d9297ca930d16ba3349e0f0d":[38,0,4,0,1,3,0,5],
@@ -248,6 +249,5 @@ var NAVTREEINDEX30 =
 "md_manipulation_packages_vamp_scripts_README.html#autotoc_md95":[10,4],
 "md_manipulation_packages_vamp_scripts_README.html#autotoc_md96":[10,4,0],
 "md_manipulation_packages_vamp_scripts_cpp_README.html":[9],
-"md_manipulation_packages_vamp_scripts_cpp_README.html#autotoc_md88":[9,0],
-"md_manipulation_packages_vamp_scripts_cpp_README.html#autotoc_md89":[9,1]
+"md_manipulation_packages_vamp_scripts_cpp_README.html#autotoc_md88":[9,0]
 };
