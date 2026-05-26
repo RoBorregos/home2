@@ -96,13 +96,38 @@
       <joint name="${prefix}joint6" value="0.7854" />
     </group_state>
 
+    <!-- ZED + gripper custom (parallel mount, #944): el ensamble
+         (base_gripper, leftFinger, rightFinger, zed, zed_camera_link) va rigido
+         sobre link_eef, por eso se deshabilitan entre si y contra la muneca. -->
+    <!-- ensamble interno -->
+    <disable_collisions link1="base_gripper" link2="zed" reason="Adjacent"/>
+    <disable_collisions link1="base_gripper" link2="zed_camera_link" reason="Never"/>
+    <disable_collisions link1="base_gripper" link2="leftFinger" reason="Adjacent"/>
+    <disable_collisions link1="base_gripper" link2="rightFinger" reason="Adjacent"/>
+    <disable_collisions link1="leftFinger" link2="rightFinger" reason="Never"/>
+    <disable_collisions link1="leftFinger" link2="zed" reason="Never"/>
+    <disable_collisions link1="leftFinger" link2="zed_camera_link" reason="Never"/>
+    <disable_collisions link1="rightFinger" link2="zed" reason="Never"/>
+    <disable_collisions link1="rightFinger" link2="zed_camera_link" reason="Never"/>
+    <disable_collisions link1="zed" link2="zed_camera_link" reason="Adjacent"/>
+    <!-- ensamble vs muneca -->
+    <disable_collisions link1="base_gripper" link2="link_eef" reason="Adjacent"/>
+    <disable_collisions link1="base_gripper" link2="link6" reason="Never"/>
+    <disable_collisions link1="base_gripper" link2="link5" reason="Never"/>
+    <disable_collisions link1="leftFinger" link2="link_eef" reason="Never"/>
+    <disable_collisions link1="leftFinger" link2="link6" reason="Never"/>
+    <disable_collisions link1="rightFinger" link2="link_eef" reason="Never"/>
+    <disable_collisions link1="rightFinger" link2="link6" reason="Never"/>
+    <disable_collisions link1="zed" link2="link_eef" reason="Never"/>
+    <disable_collisions link1="zed" link2="link6" reason="Never"/>
+    <disable_collisions link1="zed" link2="link5" reason="Never"/>
+    <disable_collisions link1="zed" link2="link4" reason="Never"/>
+    <disable_collisions link1="zed" link2="link3" reason="Never"/>
     <disable_collisions link1="zed_camera_link" link2="link_eef" reason="Never"/>
-    <disable_collisions link1="zed_camera_link" link2="gripper" reason="Never"/>
-    <disable_collisions link1="zed_camera_link" link2="left_finger" reason="Never"/>
-    <disable_collisions link1="zed_camera_link" link2="link3" reason="Never"/>
-    <disable_collisions link1="zed_camera_link" link2="link5" reason="Never"/>
     <disable_collisions link1="zed_camera_link" link2="link6" reason="Never"/>
-    <disable_collisions link1="zed_camera_link" link2="right_finger" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="link5" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="link4" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="link3" reason="Never"/>
 
     <!-- gripper -->
     <xacro:if value="${add_gripper}">
@@ -190,20 +215,20 @@
       <disable_collisions link1="LIDAR" link2="link4" reason="Never"/>
       <disable_collisions link1="LIDAR" link2="link_base" reason="Never"/>
       <disable_collisions link1="base_link" link2="intel_realsense" reason="Adjacent"/>
-      <disable_collisions link1="base_link" link2="left_finger" reason="Default"/>
+      <disable_collisions link1="base_link" link2="leftFinger" reason="Default"/>
       <disable_collisions link1="base_link" link2="link1" reason="Never"/>
       <disable_collisions link1="base_link" link2="link_base" reason="Adjacent"/>
-      <disable_collisions link1="base_link" link2="right_finger" reason="Default"/>
-      <disable_collisions link1="gripper" link2="left_finger" reason="Adjacent"/>
-      <disable_collisions link1="gripper" link2="link5" reason="Never"/>
-      <disable_collisions link1="gripper" link2="link6" reason="Never"/>
-      <disable_collisions link1="gripper" link2="right_finger" reason="Adjacent"/>
+      <disable_collisions link1="base_link" link2="rightFinger" reason="Default"/>
+      <disable_collisions link1="base_gripper" link2="leftFinger" reason="Adjacent"/>
+      <disable_collisions link1="base_gripper" link2="link5" reason="Never"/>
+      <disable_collisions link1="base_gripper" link2="link6" reason="Never"/>
+      <disable_collisions link1="base_gripper" link2="rightFinger" reason="Adjacent"/>
       <disable_collisions link1="intel_realsense" link2="link1" reason="Never"/>
       <disable_collisions link1="intel_realsense" link2="link2" reason="Never"/>
       <disable_collisions link1="intel_realsense" link2="link_base" reason="Never"/>
-      <disable_collisions link1="left_finger" link2="link5" reason="Never"/>
-      <disable_collisions link1="left_finger" link2="link6" reason="Never"/>
-      <disable_collisions link1="left_finger" link2="right_finger" reason="Never"/>
+      <disable_collisions link1="leftFinger" link2="link5" reason="Never"/>
+      <disable_collisions link1="leftFinger" link2="link6" reason="Never"/>
+      <disable_collisions link1="leftFinger" link2="rightFinger" reason="Never"/>
       <disable_collisions link1="link1" link2="link2" reason="Adjacent"/>
       <disable_collisions link1="link1" link2="link3" reason="Never"/>
       <disable_collisions link1="link1" link2="link_base" reason="Adjacent"/>
@@ -215,8 +240,8 @@
       <disable_collisions link1="link4" link2="link5" reason="Adjacent"/>
       <disable_collisions link1="link4" link2="link6" reason="Never"/>
       <disable_collisions link1="link5" link2="link6" reason="Adjacent"/>
-      <disable_collisions link1="link5" link2="right_finger" reason="Never"/>
-      <disable_collisions link1="link6" link2="right_finger" reason="Never"/>
+      <disable_collisions link1="link5" link2="rightFinger" reason="Never"/>
+      <disable_collisions link1="link6" link2="rightFinger" reason="Never"/>
     </xacro:if>
     <!-- bio gripper -->
     <xacro:if value="${not add_gripper and add_bio_gripper}">
@@ -296,14 +321,14 @@
     <!-- Added urdf frida collisions -->
     <disable_collisions link1="base_link" link2="intel_realsense" reason="Adjacent"/>
     <disable_collisions link1="base_link" link2="laser" reason="Adjacent"/>
-    <disable_collisions link1="base_link" link2="left_finger" reason="Default"/>
+    <disable_collisions link1="base_link" link2="leftFinger" reason="Default"/>
     <disable_collisions link1="base_link" link2="link1" reason="Never"/>
     <disable_collisions link1="base_link" link2="link_base" reason="Adjacent"/>
-    <disable_collisions link1="gripper" link2="left_finger" reason="Adjacent"/>
-    <disable_collisions link1="gripper" link2="link5" reason="Never"/>
-    <disable_collisions link1="gripper" link2="link6" reason="Adjacent"/>
-    <disable_collisions link1="gripper" link2="right_finger" reason="Adjacent"/>
-    <disable_collisions link1="gripper" link2="zed_camera_center" reason="Adjacent"/>
+    <disable_collisions link1="base_gripper" link2="leftFinger" reason="Adjacent"/>
+    <disable_collisions link1="base_gripper" link2="link5" reason="Never"/>
+    <disable_collisions link1="base_gripper" link2="link6" reason="Adjacent"/>
+    <disable_collisions link1="base_gripper" link2="rightFinger" reason="Adjacent"/>
+    <disable_collisions link1="base_gripper" link2="zed_camera_center" reason="Adjacent"/>
     <disable_collisions link1="intel_realsense" link2="laser" reason="Never"/>
     <disable_collisions link1="intel_realsense" link2="link1" reason="Never"/>
     <disable_collisions link1="intel_realsense" link2="link2" reason="Never"/>
@@ -313,10 +338,10 @@
     <disable_collisions link1="laser" link2="link3" reason="Never"/>
     <disable_collisions link1="laser" link2="link4" reason="Never"/>
     <disable_collisions link1="laser" link2="link_base" reason="Never"/>
-    <disable_collisions link1="left_finger" link2="link5" reason="Never"/>
-    <disable_collisions link1="left_finger" link2="link6" reason="Never"/>
-    <disable_collisions link1="left_finger" link2="right_finger" reason="Default"/>
-    <disable_collisions link1="left_finger" link2="zed_camera_center" reason="Never"/>
+    <disable_collisions link1="leftFinger" link2="link5" reason="Never"/>
+    <disable_collisions link1="leftFinger" link2="link6" reason="Never"/>
+    <disable_collisions link1="leftFinger" link2="rightFinger" reason="Default"/>
+    <disable_collisions link1="leftFinger" link2="zed_camera_center" reason="Never"/>
     <disable_collisions link1="link1" link2="link2" reason="Adjacent"/>
     <disable_collisions link1="link1" link2="link3" reason="Never"/>
     <disable_collisions link1="link1" link2="link_base" reason="Adjacent"/>
@@ -329,10 +354,10 @@
     <disable_collisions link1="link4" link2="link5" reason="Adjacent"/>
     <disable_collisions link1="link4" link2="link6" reason="Never"/>
     <disable_collisions link1="link5" link2="link6" reason="Adjacent"/>
-    <disable_collisions link1="link5" link2="right_finger" reason="Never"/>
+    <disable_collisions link1="link5" link2="rightFinger" reason="Never"/>
     <disable_collisions link1="link5" link2="zed_camera_center" reason="Never"/>
-    <disable_collisions link1="link6" link2="right_finger" reason="Never"/>
+    <disable_collisions link1="link6" link2="rightFinger" reason="Never"/>
     <disable_collisions link1="link6" link2="zed_camera_center" reason="Never"/>
-    <disable_collisions link1="right_finger" link2="zed_camera_center" reason="Never"/>
+    <disable_collisions link1="rightFinger" link2="zed_camera_center" reason="Never"/>
   </xacro:macro>
 </robot>
