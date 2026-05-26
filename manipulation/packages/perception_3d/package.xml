@@ -18,8 +18,10 @@
     <build_type>ament_cmake</build_type>
   </export>
   
-  <depend>rclcpp</depend> 
+  <depend>rclcpp</depend>
   <depend>pcl_ros</depend>
   <depend>std_msgs</depend>
   <depend>tf_transformations</depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>sensor_msgs_py</exec_depend>
 </package>

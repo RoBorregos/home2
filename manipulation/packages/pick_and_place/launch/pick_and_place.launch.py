@@ -115,5 +115,20 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="perception_3d",
+                executable="basket_handle_grasp_estimator.py",
+                name="basket_handle_grasp_estimator",
+                output="screen",
+                emulate_tty=True,
+                parameters=[
+                    {
+                        "publish_debug_markers": True,
+                        "save_debug_pcd": False,
+                        "use_rim_boundary": True,
+                    },
+                    sim_time_param,
+                ],
+            ),
         ]
     )
