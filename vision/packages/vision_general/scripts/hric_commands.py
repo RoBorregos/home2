@@ -35,9 +35,8 @@ from frida_constants.vision_constants import (
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
 )
-from tf2_geometry_msgs import do_transform_point
 from tf2_ros import Buffer, TransformListener
-from vision_general.utils.area_check import is_point_in_room
+from vision_general.utils.filter_class import filter_class
 from frida_constants.navigation_constants import AREAS_SERVICE
 from ament_index_python.packages import get_package_share_directory
 
@@ -437,10 +436,22 @@ class HRICCommands(Node):
         if (future.result() is None) or (future.result().areas == ""):
             self.get_logger().error("Failed to retrieve areas")
             return False, 0
-        else:
-            areas_json = json.loads(str(future.result().areas))
+        areas_json = json.loads(str(future.result().areas))
 
-        for chair in self.chairs:
+        chairs_in_room = filter_class(
+            frame,
+            self.chairs,
+            [56],
+            ["living_room"],
+            self.camera_info,
+            self.depth_image,
+            self.tf_buffer,
+            areas_json,
+            CAMERA_FRAME,
+            rotation=self.rotation,
+        )
+
+        for chair in chairs_in_room:
             occupied = False
             xmin = chair["bbox"][0]
             xmax = chair["bbox"][2]
@@ -452,34 +463,6 @@ class HRICCommands(Node):
                 (0, 255, 255),
                 -1,
             )
-
-            # Convert chair bbox center to PointStamped and check if inside house
-            if self.camera_info is not None and self.depth_image is not None:
-                cx = int((xmin + xmax) / 2)
-                cy = int(y_center_chair)
-                chair_point = point2d_to_ros_point_stamped(
-                    self.camera_info,
-                    self.depth_image,
-                    (cx, cy),
-                    CAMERA_FRAME,
-                    Time(sec=0, nanosec=0),
-                    rotation=self.rotation,
-                )
-
-                try:
-                    transform = self.tf_buffer.lookup_transform(
-                        "map",
-                        chair_point.header.frame_id,
-                        rclpy.time.Time(),
-                        timeout=rclpy.duration.Duration(seconds=0.1),
-                    )
-                    point_map = do_transform_point(chair_point, transform)
-                except Exception as e:
-                    self.get_logger().warn(f"TF failed: {e}")
-                    continue
-
-                if not is_point_in_room(point_map, "living_room", areas_json):
-                    continue  # Skip this chair if not inside house
 
             for person in self.people:
                 center_x = (person["bbox"][0] + person["bbox"][2]) / 2
