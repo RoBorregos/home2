@@ -127,7 +127,10 @@
     </link>
 
     <joint name="ZED" type="fixed">
-      <origin xyz="0 -0.0594045903873689 -0.0136964999847231" rpy="1.57079632679489 -1.5707963267949 0" />
+      <!-- xyz: CAD + corrección gripper-touch (#944): +2.5 cm z (residuo de montaje
+           medido con 6 toques FK-vs-cámara, δ_z std 1.7 mm). CAD original era
+           "0 -0.0594045903873689 -0.0136964999847231". rpy intacto. -->
+      <origin xyz="-0.004595226903 -0.0642916212 0.0115921721" rpy="1.57079632679489 -1.5707963267949 0" />
       <parent link="base_gripper" />
       <child link="zed" />
       <axis xyz="0 0 0" />
