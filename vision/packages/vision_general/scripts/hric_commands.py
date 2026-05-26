@@ -409,7 +409,9 @@ class HRICCommands(Node):
             elif class_id == 56:
                 self.chairs.append({"bbox": bbox, "label": label, "class_id": class_id})
             elif class_id == 57:
-                self.couches.append({"bbox": bbox, "label": label, "class_id": class_id})
+                self.couches.append(
+                    {"bbox": bbox, "label": label, "class_id": class_id}
+                )
 
             cv2.rectangle(self.output_image, (x1, y1), (x2, y2), color, 2)
             cv2.putText(
@@ -428,7 +430,7 @@ class HRICCommands(Node):
         no person within the bbox and return the angle
         of the largest available chair."""
         chair_queue = queue.PriorityQueue()
-        
+
         req = MapAreas.Request()
         future = self.retrieve_areas_srv.call_async(req)
         rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
@@ -453,7 +455,6 @@ class HRICCommands(Node):
 
             # Convert chair bbox center to PointStamped and check if inside house
             if self.camera_info is not None and self.depth_image is not None:
-
                 cx = int((xmin + xmax) / 2)
                 cy = int(y_center_chair)
                 chair_point = point2d_to_ros_point_stamped(
@@ -464,7 +465,6 @@ class HRICCommands(Node):
                     Time(sec=0, nanosec=0),
                     rotation=self.rotation,
                 )
-
 
                 try:
                     transform = self.tf_buffer.lookup_transform(

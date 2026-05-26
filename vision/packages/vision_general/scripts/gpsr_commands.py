@@ -72,11 +72,17 @@ class GPSRCommands(Node):
             Image, CAMERA_TOPIC, self.image_callback, qos
         )
         self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos,
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            qos,
             callback_group=self.callback_group,
         )
         self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, qos,
+            CameraInfo,
+            CAMERA_INFO_TOPIC,
+            self.camera_info_callback,
+            qos,
             callback_group=self.callback_group,
         )
 
@@ -468,9 +474,15 @@ class GPSRCommands(Node):
 
         detections = self.get_detections()
         filtered = filter_class(
-            self.image, detections, list(request.class_ids), None,
-            self.camera_info, self.depth_image, self.tf_buffer,
-            self.areas, CAMERA_FRAME,
+            self.image,
+            detections,
+            list(request.class_ids),
+            None,
+            self.camera_info,
+            self.depth_image,
+            self.tf_buffer,
+            self.areas,
+            CAMERA_FRAME,
         )
         self._draw_and_publish(filtered)
         response.success = True
@@ -487,9 +499,15 @@ class GPSRCommands(Node):
 
         detections = self.get_detections()
         filtered = filter_class(
-            self.image, detections, list(request.class_ids), list(request.rooms),
-            self.camera_info, self.depth_image, self.tf_buffer,
-            self.areas, CAMERA_FRAME,
+            self.image,
+            detections,
+            list(request.class_ids),
+            list(request.rooms),
+            self.camera_info,
+            self.depth_image,
+            self.tf_buffer,
+            self.areas,
+            CAMERA_FRAME,
         )
         self._draw_and_publish(filtered)
         response.success = True
@@ -516,6 +534,7 @@ class GPSRCommands(Node):
 
     def _dicts_to_detection_msgs(self, detections: list):
         from frida_interfaces.msg import Detection
+
         msgs = []
         for d in detections:
             msg = Detection()
