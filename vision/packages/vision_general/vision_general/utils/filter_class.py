@@ -1,34 +1,34 @@
 import rclpy
 from builtin_interfaces.msg import Time
 from tf2_geometry_msgs import do_transform_point
+from tf2_ros import Buffer
 
-from frida_constants.vision_classes import BBOX
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from vision_general.utils.area_check import is_point_in_room
-from frida_constants.vision_constants import CAMERA_FRAME
-from tf2_ros import Buffer
+
 
 def filter_class(
     frame,
     detections: list,
-    class_name: str,
+    class_id: int,
     room_name: str,
     camera_info,
     depth_image,
-    tf_buffer : Buffer,
+    tf_buffer: Buffer,
     areas_json: dict,
-    camera_rotation: int = 0,
+    camera_frame: str,
+    rotation: int = 0,
 ) -> list:
     """
     Return only detections of class_name whose bbox center is inside room_name.
 
-    class_name: int (YOLO class id, e.g. 0) or str (class label, e.g. 'person').
-                Matched against BBOX.classname as a string.
+    detections: list of dicts with keys "class_id" (str) and "bbox" (x1,y1,x2,y2).
+    class_id: int class id to filter out if it isn't in the room
     room_name:  key in areas_json polygon map (e.g. 'living_room').
+    
     If spatial data (camera_info / depth_image / tf_buffer / areas_json) is
-    unavailable, detections pass through without room filtering.
+    unavailable, detections matching class_name pass through without room filtering.
     """
-    class_key = class_name if isinstance(class_name, str) else str(class_name)
     h, w = frame.shape[:2]
     filtered = []
 
@@ -40,15 +40,16 @@ def filter_class(
     )
 
     for det in detections:
-        if det.classname != class_key:
+        if det["class_id"] != class_id:
             continue
 
         if not spatial_ready:
             filtered.append(det)
             continue
 
-        cx = int((det.x1 + det.x2) / 2)
-        cy = int((det.y1 + det.y2) / 2)
+        x1, y1, x2, y2 = det["bbox"]
+        cx = int((x1 + x2) / 2)
+        cy = int((y1 + y2) / 2)
 
         if not (0 <= cx < w and 0 <= cy < h):
             continue
@@ -57,9 +58,9 @@ def filter_class(
             camera_info,
             depth_image,
             (cx, cy),
-            CAMERA_FRAME,
+            camera_frame,
             Time(sec=0, nanosec=0),
-            rotation=camera_rotation,
+            rotation=rotation,
         )
 
         try:
