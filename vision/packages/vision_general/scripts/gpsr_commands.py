@@ -164,11 +164,6 @@ class GPSRCommands(Node):
         """Callback to receive the image from the camera."""
         try:
             self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-            if self.image is None:
-                return
-
-            self.output_image = self.image.copy()
-
         except Exception as e:
             print(f"Error: {e}")
 
