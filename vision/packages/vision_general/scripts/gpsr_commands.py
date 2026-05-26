@@ -4,7 +4,6 @@
 Node to handle GPSR commands.
 """
 
-import cv2
 import rclpy
 import rclpy.qos
 from rclpy.node import Node
