@@ -121,21 +121,7 @@ class GPSRCommands(Node):
             self.detect_pose_gesture_callback,
             callback_group=self.callback_group,
         )
-
-        self.filter_by_class = self.create_service(
-            FilterClass,
-            FILTER_CLASS_TOPIC,
-            self.filter_class_callback,
-            callback_group=self.callback_group,
-        )
-
-        self.filter_by_class_and_room = self.create_service(
-            FilterClassRoom,
-            FILTER_CLASS_ROOM_TOPIC,
-            self.filter_class_room_callback,
-            callback_group=self.callback_group,
-        )
-
+        
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.yolo_client = self.create_client(
@@ -465,73 +451,6 @@ class GPSRCommands(Node):
 
         return Gestures.UNKNOWN.value
 
-    def filter_class_callback(self, request, response):
-        self.get_logger().info("Executing service Filter Class")
-        if self.image is None:
-            response.success = False
-            response.count = 0
-            return response
-
-        detections = self.get_detections()
-        filtered = filter_class(
-            self.image,
-            detections,
-            list(request.class_ids),
-            None,
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-        )
-        self._draw_and_publish(filtered)
-        response.success = True
-        response.count = len(filtered)
-        response.detections = self._dicts_to_detection_msgs(filtered)
-        return response
-
-    def filter_class_room_callback(self, request, response):
-        self.get_logger().info("Executing service Filter Class Room")
-        if self.image is None:
-            response.success = False
-            response.count = 0
-            return response
-
-        detections = self.get_detections()
-        filtered = filter_class(
-            self.image,
-            detections,
-            list(request.class_ids),
-            list(request.rooms),
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-        )
-        self._draw_and_publish(filtered)
-        response.success = True
-        response.count = len(filtered)
-        response.detections = self._dicts_to_detection_msgs(filtered)
-        return response
-
-    def _draw_and_publish(self, detections: list):
-        canvas = self.image.copy()
-        for d in detections:
-            x1, y1, x2, y2 = d["bbox"]
-            cv2.rectangle(canvas, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(
-                canvas,
-                str(d["class_id"]),
-                (x1, y1 - 5),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 255, 0),
-                2,
-                cv2.LINE_AA,
-            )
-        self.output_image = canvas
-
     def _dicts_to_detection_msgs(self, detections: list):
         from frida_interfaces.msg import Detection
 
@@ -612,21 +531,6 @@ class GPSRCommands(Node):
         if result.success:
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
-
-    def is_inside(self, x, y, polygon):
-        inside = False
-        n = len(polygon)
-        for i in range(n):
-            x1, y1 = polygon[i]
-            x2, y2 = polygon[(i + 1) % n]
-
-            if (y1 > y) != (y2 > y):
-                xinters = (y - y1) * (x2 - x1) / (
-                    y2 - y1 + 1e-10
-                ) + x1  # Avoid zero division
-                if x < xinters:
-                    inside = not inside
-        return inside
 
 
 def main(args=None):
