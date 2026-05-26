@@ -6,12 +6,12 @@ from tf2_ros import Buffer
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from vision_general.utils.area_check import is_point_in_room
 
-
 def filter_class(
     frame,
     detections: list,
-    class_id: int,
-    room_name: str,
+    class_ids: list[str],
+    rooms: list[str] | None,
+    
     camera_info,
     depth_image,
     tf_buffer: Buffer,
@@ -40,10 +40,10 @@ def filter_class(
     )
 
     for det in detections:
-        if det["class_id"] != class_id:
+        if det["class_id"] not in class_ids:
             continue
 
-        if not spatial_ready:
+        if not spatial_ready or rooms is None:
             filtered.append(det)
             continue
 
@@ -74,7 +74,8 @@ def filter_class(
         except Exception:
             continue
 
-        if is_point_in_room(point_map, room_name, areas_json):
-            filtered.append(det)
+        for room in rooms: 
+            if is_point_in_room(point_map, room, areas_json):
+                filtered.append(det)
 
     return filtered
