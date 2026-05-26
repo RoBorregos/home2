@@ -39,6 +39,24 @@ from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
 
 
+def _insightface_providers() -> list:
+    cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
+    if cache_dir:
+        return [
+            (
+                "TensorrtExecutionProvider",
+                {
+                    "trt_engine_cache_enable": True,
+                    "trt_engine_cache_path": cache_dir,
+                    "trt_fp16_enable": True,
+                },
+            ),
+            "CUDAExecutionProvider",
+            "CPUExecutionProvider",
+        ]
+    return ["CUDAExecutionProvider", "CPUExecutionProvider"]
+
+
 DEFAULT_NAME = "ale"
 TRACK_THRESHOLD = 50
 MATCH_THRESHOLD = 0.35
@@ -128,7 +146,7 @@ class FaceRecognition(Node):
         self.get_logger().info(f"Loading InsightFace model '{INSIGHTFACE_MODEL}'")
         self.app = FaceAnalysis(
             name=INSIGHTFACE_MODEL,
-            providers=["CUDAExecutionProvider", "CPUExecutionProvider"],
+            providers=_insightface_providers(),
         )
         self.app.prepare(ctx_id=0, det_size=(640, 640))
         self.pbar.update(1)
