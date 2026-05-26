@@ -47,7 +47,7 @@ RESIZE_FACTOR = 1
 
 PATH = str(pathlib.Path(__file__).parent)
 PATH = get_package_share_directory("vision_general")
-KNOWN_FACES_PATH = PATH + "/Utils/known_faces"
+KNOWN_FACES_PATH = PATH + "/vision_general/utils/known_faces"
 
 INSIGHTFACE_MODEL = "buffalo_sc"
 
