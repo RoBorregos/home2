@@ -1,0 +1,23 @@
+services:
+  mlc:
+    profiles: [hric, gpsr, benchmark]
+    container_name: home2-hri-mlc-l4t
+    image: dustynv/mlc:0.20.0-r36.4.0
+    runtime: nvidia
+    network_mode: host
+    shm_size: 8gb
+    volumes:
+      - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
+      - ../../../hri/packages/nlp/assets/mlc-cache:/root/.cache/mlc_llm
+      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
+      - ../scripts/mlc-entrypoint.sh:/scripts/entrypoint.sh
+    environment:
+      ROLE: ${ROLE}
+      MLC_PORT: ${MLC_PORT:-11437}
+      MLC_MODEL: ${MLC_MODEL:-HF://mlc-ai/Qwen3-30B-A3B-q4f16_1-MLC}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu/tegra
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]

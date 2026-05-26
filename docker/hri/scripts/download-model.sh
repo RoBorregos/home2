@@ -18,6 +18,8 @@ echo "  4) nomic-embed-text (embeddings via Ollama)"
 echo "  5) DeepFilterNet3"
 echo "  6) ei-door          (Door detection)"
 echo "  7) ei-kws           (Keyword detection)"
+echo "  8) qwen3-moe        (Qwen3-30B-A3B Q4_K_M GGUF, for llama.cpp + Ollama)"
+echo "  9) qwen3-moe-ollama (Qwen3-30B-A3B via Ollama registry)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -53,6 +55,14 @@ if ask_for_model rbrgs 2; then
     download_gguf "rbrgs" \
         "https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf" \
         "$SCRIPT_DIR/rbrgs.F16.gguf"
+fi
+
+# Qwen3 30B-A3B MoE GGUF — for llama.cpp benchmark backend on port 11438.
+# ~18 GB on disk; will fit on Orin AGX 64 GB but verify before downloading.
+if ask_for_model qwen3-moe 8; then
+    download_gguf "qwen3-30b-a3b" \
+        "https://huggingface.co/unsloth/Qwen3-30B-A3B-GGUF/resolve/main/Qwen3-30B-A3B-Q4_K_M.gguf" \
+        "$SCRIPT_DIR/qwen3-30b-a3b.Q4_K_M.gguf"
 fi
 
 # Download and unzip DeepFilterNet model
@@ -201,6 +211,17 @@ if ask_for_model nomic-embed-text 4; then
     docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
 fi
 
+if ask_for_model qwen3-moe-ollama 9; then
+    docker exec "$CONTAINER_ID" ollama pull qwen3:30b-a3b
+fi
+
 docker stop "$CONTAINER_ID"
+
+# vLLM and MLC-LLM auto-download their model artifacts from HuggingFace on
+# first container start. No explicit download needed here, but make sure
+# there is at least ~25 GB free in $SCRIPT_DIR before launching them.
+echo
+echo "Note: vLLM (Qwen3-30B-A3B-AWQ ~18 GB) and MLC-LLM (q4f16_1 ~17 GB)"
+echo "      auto-download on first run. Ensure $SCRIPT_DIR has free space."
 
 echo "All selected models downloaded."

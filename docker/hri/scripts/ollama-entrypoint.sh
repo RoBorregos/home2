@@ -30,6 +30,10 @@ elif [ "$ROLE" = "gpsr" ]; then
   curl http://localhost:11434/api/generate -d '{"model": "rbrgs", "keep_alive": -1}'
 elif [ "$ROLE" = "storing" ]; then
   echo "Storing role detected, not loading any models..."
+elif [ "$ROLE" = "benchmark" ]; then
+  # Pull and preload Qwen3 30B-A3B MoE for the 4-way backend benchmark.
+  ollama pull qwen3:30b-a3b
+  curl http://localhost:11434/api/generate -d '{"model": "qwen3:30b-a3b", "keep_alive": -1}'
 else
   echo "Unknown ROLE: $ROLE"
 fi

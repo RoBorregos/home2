@@ -58,6 +58,26 @@ if [ "$ROLE" = "gpsr" ]; then
     wait_for_server 11435
 fi
 
+# qwen3 30B-A3B MoE on port 11438 — benchmark role only.
+# Requires a llama.cpp build with `qwen3moe` architecture support; if the
+# image's bundled binary is too old, rebuild it from current llama.cpp HEAD.
+if [ "$ROLE" = "benchmark" ]; then
+    echo "Starting qwen3-30b-a3b (MoE) on port 11438..."
+    llama-server \
+        --model "$MODELS_DIR/qwen3-30b-a3b.Q4_K_M.gguf" \
+        --host 0.0.0.0 \
+        --port 11438 \
+        --ctx-size 4096 \
+        -ngl 99 \
+        --flash-attn on \
+        --cache-type-k q8_0 \
+        --cache-type-v q8_0 \
+        --parallel 1 \
+        --alias qwen3 \
+        &
+    wait_for_server 11438
+fi
+
 echo "All servers ready. Container running..."
 # Keep container alive and exit if any llama-server process dies
 wait
