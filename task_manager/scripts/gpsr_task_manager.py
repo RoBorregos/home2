@@ -12,6 +12,7 @@ from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.duration import Duration
 from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener
+import py_trees
 
 from task_manager.gpsr.bt_builder import build_tree, render_tree_ascii
 from task_manager.gpsr.merger import merge
@@ -24,11 +25,6 @@ from task_manager.utils.baml_client.types import CommandListLLM
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
-
-try:
-    import py_trees
-except ImportError:  # pragma: no cover — py_trees is in package.xml runtime deps
-    py_trees = None
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -186,13 +182,6 @@ class GPSRTM(Node):
 
     def _execute_interleaved_batch(self):
         """Plan + tick the py_trees tree for the current batch."""
-        if py_trees is None:
-            self.get_logger().error(
-                "py_trees not installed — falling back to sequential execution."
-            )
-            self._execute_sequential_fallback(self.batched_commands)
-            return
-
         plan = merge(
             self.batched_commands,
             locator=self._resolve_xy,
