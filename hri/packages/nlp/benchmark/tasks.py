@@ -234,6 +234,16 @@ def _command_interpreter_messages(command: str) -> list:
 # ── Shared timed inference helper ─────────────────────────────────────────────
 
 
+def _extract_json(content: str) -> str:
+    """Strip thinking tags and markdown code fences before json.loads()."""
+    if "</think>" in content:
+        content = content.split("</think>")[-1].strip()
+    # Strip ```json ... ``` or ``` ... ``` wrappers
+    content = re.sub(r"^```(?:json)?\s*\n?", "", content.strip())
+    content = re.sub(r"\n?```\s*$", "", content.strip())
+    return content.strip()
+
+
 def _run_timed(
     client: OpenAI, model: str, messages: list, max_tokens: int = 128
 ) -> dict:
@@ -253,13 +263,18 @@ def _run_timed(
 
     for chunk in stream:
         now = time.perf_counter()
-        delta = chunk.choices[0].delta.content if chunk.choices else None
-        if delta and t_first is None:
-            t_first = now
+        if chunk.choices:
+            d = chunk.choices[0].delta
+            # Count both content and reasoning_content (Qwen3 thinking mode)
+            any_content = (d.content or "") + (
+                getattr(d, "reasoning_content", None) or ""
+            )
+            if any_content and t_first is None:
+                t_first = now
+            if chunk.choices[0].finish_reason in ("stop", "length"):
+                t_end = now
         if chunk.usage:
             completion_tokens = chunk.usage.completion_tokens or 0
-        if chunk.choices and chunk.choices[0].finish_reason in ("stop", "length"):
-            t_end = now
 
     if t_first is None or t_end is None:
         return {"ttft_ms": None, "total_ms": None, "tokens_per_s": None}
@@ -286,21 +301,17 @@ def _parse_structured(
             max_tokens=max_tokens,
             temperature=0.0,
         )
-        content = resp.choices[0].message.content or ""
-        if "</think>" in content:
-            content = content.split("</think>")[-1].strip()
+        content = _extract_json(resp.choices[0].message.content or "")
         return response_format(**json.loads(content))
     except Exception:
-        # Fallback: unstructured call + manual parse
+        # Fallback: unstructured call + manual JSON parse
         resp = client.chat.completions.create(
             model=model,
             messages=messages,
             max_tokens=max_tokens,
             temperature=0.0,
         )
-        content = resp.choices[0].message.content or ""
-        if "</think>" in content:
-            content = content.split("</think>")[-1].strip()
+        content = _extract_json(resp.choices[0].message.content or "")
         return response_format(**json.loads(content))
 
 
