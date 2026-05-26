@@ -2,6 +2,13 @@ ultralytics
 numpy==1.26.0
 imutils
 transforms3d
+# Open3D — used by perception_3d/basket_handle_grasp_estimator.py for
+# rim boundary extraction (compute_boundary_points, tensor API added in 0.17).
+# PyPI ships cp310 wheels for x86_64 and aarch64 (works on dustynv/l4t-pytorch
+# r36.4.0 which is JetPack 6 / Ubuntu 22.04 / Python 3.10). CPU-only on aarch64
+# — CUDA module is not built into the prebuilt wheel, which is fine for our
+# ~10–30k-point ROI workload.
+open3d==0.18.0
 # YOLOE (zero-shot detector) uses text prompts via OpenAI CLIP.  Without
 # this the first run of the detector tries to pip-install on-the-fly from
 # git+https://github.com/ultralytics/CLIP.git which registers itself as
