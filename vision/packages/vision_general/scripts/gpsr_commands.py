@@ -42,7 +42,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURE_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
-from vision_general.utils.filter_class import filter_class
+from vision_general.utils.area_check import filter_class
 from tf2_ros import Buffer, TransformListener
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy

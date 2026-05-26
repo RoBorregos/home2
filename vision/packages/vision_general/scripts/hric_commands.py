@@ -36,7 +36,7 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from tf2_ros import Buffer, TransformListener
-from vision_general.utils.filter_class import filter_class
+from vision_general.utils.area_check import filter_class
 from frida_constants.navigation_constants import AREAS_SERVICE
 from ament_index_python.packages import get_package_share_directory
 
