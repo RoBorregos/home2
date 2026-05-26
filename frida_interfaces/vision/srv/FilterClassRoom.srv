@@ -1,0 +1,6 @@
+int32[] class_ids
+string[] rooms
+---
+bool success
+int32 count
+Detection[] detections

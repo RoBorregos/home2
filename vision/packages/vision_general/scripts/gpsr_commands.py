@@ -8,7 +8,7 @@ import rclpy
 import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from vision_general.utils.ros_utils import wait_for_future
 import os
 import json
@@ -19,13 +19,20 @@ from frida_interfaces.srv import (
     PersonPoseGesture,
     CropQuery,
     CountByColor,
+    FilterClass,
+    FilterClassRoom,
 )
 
 from ament_index_python.packages import get_package_share_directory
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
+    CAMERA_FRAME,
+    CAMERA_INFO_TOPIC,
     COUNT_BY_PERSON_TOPIC,
+    DEPTH_IMAGE_TOPIC,
+    FILTER_CLASS_TOPIC,
+    FILTER_CLASS_ROOM_TOPIC,
     IMAGE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_POSE_TOPIC,
@@ -34,6 +41,8 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURE_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
+from vision_general.utils.filter_class import filter_class
+from tf2_ros import Buffer, TransformListener
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
@@ -60,6 +69,14 @@ class GPSRCommands(Node):
         )
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, qos
+        )
+        self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, qos,
+            callback_group=self.callback_group,
         )
 
         # Define services for GPSR commands
@@ -98,6 +115,20 @@ class GPSRCommands(Node):
             callback_group=self.callback_group,
         )
 
+        self.filter_by_class = self.create_service(
+            FilterClass,
+            FILTER_CLASS_TOPIC,
+            self.filter_class_callback,
+            callback_group=self.callback_group,
+        )
+
+        self.filter_by_class_and_room = self.create_service(
+            FilterClassRoom,
+            FILTER_CLASS_ROOM_TOPIC,
+            self.filter_class_room_callback,
+            callback_group=self.callback_group,
+        )
+
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.yolo_client = self.create_client(
@@ -107,7 +138,12 @@ class GPSRCommands(Node):
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
 
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         self.image = None
+        self.depth_image = None
+        self.camera_info = None
         self.pose_detection = PoseDetection()
         self.output_image = []
         self.people = []
@@ -134,6 +170,15 @@ class GPSRCommands(Node):
 
         except Exception as e:
             print(f"Error: {e}")
+
+    def depth_callback(self, msg):
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
+        except Exception as e:
+            self.get_logger().error(f"Depth conversion error: {e}")
+
+    def camera_info_callback(self, msg):
+        self.camera_info = msg
 
     def count_by_pose_callback(self, request, response):
         """Callback to count a specific pose in the image."""
@@ -417,6 +462,53 @@ class GPSRCommands(Node):
             return gesture.value
 
         return Gestures.UNKNOWN.value
+
+    def filter_class_callback(self, request, response):
+        self.get_logger().info("Executing service Filter Class")
+        if self.image is None:
+            response.success = False
+            response.count = 0
+            return response
+
+        detections = self.get_detections()
+        filtered = filter_class(
+            self.image, detections, list(request.class_ids), None,
+            self.camera_info, self.depth_image, self.tf_buffer,
+            self.areas, CAMERA_FRAME,
+        )
+        response.success = True
+        response.count = len(filtered)
+        response.detections = self._dicts_to_detection_msgs(filtered)
+        return response
+
+    def filter_class_room_callback(self, request, response):
+        self.get_logger().info("Executing service Filter Class Room")
+        if self.image is None:
+            response.success = False
+            response.count = 0
+            return response
+
+        detections = self.get_detections()
+        filtered = filter_class(
+            self.image, detections, list(request.class_ids), list(request.rooms),
+            self.camera_info, self.depth_image, self.tf_buffer,
+            self.areas, CAMERA_FRAME,
+        )
+        response.success = True
+        response.count = len(filtered)
+        response.detections = self._dicts_to_detection_msgs(filtered)
+        return response
+
+    def _dicts_to_detection_msgs(self, detections: list):
+        from frida_interfaces.msg import Detection
+        msgs = []
+        for d in detections:
+            msg = Detection()
+            msg.x1, msg.y1, msg.x2, msg.y2 = d["bbox"]
+            msg.confidence = d["confidence"]
+            msg.class_id = d["class_id"]
+            msgs.append(msg)
+        return msgs
 
     def get_detections(self, comp_class=None, timeout=5.0):
         """

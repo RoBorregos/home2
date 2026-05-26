@@ -1,0 +1,5 @@
+int32[] class_ids
+---
+bool success
+int32 count
+Detection[] detections
