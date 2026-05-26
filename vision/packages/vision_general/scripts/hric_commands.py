@@ -7,6 +7,7 @@ available seats. Tasks for HRIC commands.
 
 import cv2
 import numpy as np
+import os
 import queue
 import time
 import json
@@ -21,7 +22,7 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect, MapAreas
+from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
@@ -36,11 +37,13 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from tf2_ros import Buffer, TransformListener
-from frida_constants.navigation_constants import AREAS_SERVICE
 from ament_index_python.packages import get_package_share_directory
 from vision_general.utils.area_check import filter_detections_in_house
 
 package_share_dir = get_package_share_directory("vision_general")
+
+constants = get_package_share_directory("frida_constants")
+_areas_file_path = os.path.join(constants, "map_areas/areas.json")
 
 # YOLO COCO keypoint indices for wrist (hand proxy)
 LEFT_WRIST_IDX = 9
@@ -91,8 +94,6 @@ class HRICCommands(Node):
             self._img_qos,
             callback_group=self.callback_group,
         )
-        self.retrieve_areas_srv = self.create_client(MapAreas, AREAS_SERVICE)
-
         self.create_subscription(
             Int16,
             CAMERA_ROTATION_TOPIC,
@@ -134,6 +135,10 @@ class HRICCommands(Node):
         self.output_image = []
         self.check = False
         self.rotation = 0
+
+        # Load areas from the JSON file
+        with open(_areas_file_path, "r") as f:
+            self.areas = json.load(f)
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
@@ -430,14 +435,6 @@ class HRICCommands(Node):
         of the largest available chair."""
         chair_queue = queue.PriorityQueue()
 
-        req = MapAreas.Request()
-        future = self.retrieve_areas_srv.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
-        if (future.result() is None) or (future.result().areas == ""):
-            self.get_logger().error("Failed to retrieve areas")
-            return False, 0
-        areas_json = json.loads(str(future.result().areas))
-
         chairs_in_room = filter_detections_in_house(
             frame,
             self.chairs,
@@ -446,7 +443,7 @@ class HRICCommands(Node):
             self.camera_info,
             self.depth_image,
             self.tf_buffer,
-            areas_json,
+            self.areas,
             CAMERA_FRAME,
             rotation=self.rotation,
         )
