@@ -47,14 +47,17 @@ constants = get_package_share_directory("frida_constants")
 file_path = os.path.join(constants, "map_areas/areas.json")
 
 DEFAULT_TENSORRT_CACHE_DIR = "/home/orin/dev/manip/docker/vision/trt_cache"
-TENSORRT_CACHE_DIR = os.environ.get("TENSORRT_CACHE_DIR", DEFAULT_TENSORRT_CACHE_DIR)
-os.environ["TENSORRT_CACHE_DIR"] = TENSORRT_CACHE_DIR
-os.makedirs(TENSORRT_CACHE_DIR, exist_ok=True)
 
 
 class GPSRCommands(Node):
     def __init__(self):
         super().__init__("gpsr_commands")
+        tensorrt_cache_dir = os.environ.get(
+            "TENSORRT_CACHE_DIR", DEFAULT_TENSORRT_CACHE_DIR
+        )
+        if "TENSORRT_CACHE_DIR" not in os.environ:
+            os.environ["TENSORRT_CACHE_DIR"] = tensorrt_cache_dir
+        os.makedirs(tensorrt_cache_dir, exist_ok=True)
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
