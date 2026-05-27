@@ -120,7 +120,7 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a4fa7368d4827ac760aae537addc51d41"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#a4fa7368d4827ac760aae537addc51d41">_SERVER_PARAMS</a></td></tr>
 <tr class="separator:a4fa7368d4827ac760aae537addc51d41"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a904010a1707c149cef750b58ee7abe15"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#a904010a1707c149cef750b58ee7abe15">actual_dir</a> = os.path.dirname(os.path.abspath(__file__))</td></tr>
+<tr class="memitem:a904010a1707c149cef750b58ee7abe15"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#a904010a1707c149cef750b58ee7abe15">actual_dir</a> = os.path.dirname(os.path.realpath(__file__))</td></tr>
 <tr class="separator:a904010a1707c149cef750b58ee7abe15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae772aaae82b28a08e05d0d48cd75f9e9"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacevamp__server.html#ae772aaae82b28a08e05d0d48cd75f9e9">ruta_vamp</a> = os.path.abspath(os.path.join(<a class="el" href="namespacevamp__server.html#a904010a1707c149cef750b58ee7abe15">actual_dir</a>, &quot;../../vamp/src&quot;))</td></tr>
 <tr class="separator:ae772aaae82b28a08e05d0d48cd75f9e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -328,7 +328,7 @@ in the order given. Raises if any joint or its &lt;limit&gt; tag is missing.</pr
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">os vamp_server.actual_dir = os.path.dirname(os.path.abspath(__file__))</td>
+          <td class="memname">os vamp_server.actual_dir = os.path.dirname(os.path.realpath(__file__))</td>
         </tr>
       </table>
 </div><div class="memdoc">
