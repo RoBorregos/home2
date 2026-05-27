@@ -2,7 +2,7 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from std_srvs.srv import SetBool, Empty
@@ -37,6 +37,9 @@ from frida_constants.manipulation_constants import (
     XARM_ROBOT_STATES_TOPIC,
     XARM_CLEAN_ERROR_SERVICE,
     XARM_MOTION_ENABLE_SERVICE,
+)
+from frida_motion_planning.utils.service_utils import (
+    move_joint_positions as send_joint_goal,
 )
 
 from frida_interfaces.msg import CollisionObject
@@ -213,6 +216,13 @@ class MotionPlanningServer(Node):
             XARM_MOTION_ENABLE_SERVICE,
             callback_group=self.callback_group,
         )
+        # Action client to own move_joints server — used for nav_pose recovery
+        self._move_joints_client = ActionClient(
+            self,
+            MoveJoints,
+            MOVE_JOINTS_ACTION_SERVER,
+            callback_group=self.callback_group,
+        )
         self.create_subscription(
             RobotMsg,
             XARM_ROBOT_STATES_TOPIC,
@@ -283,7 +293,9 @@ class MotionPlanningServer(Node):
                     "Trajectory file parsed successfully. Executing plan..."
                 )
                 # Step 2: Use the planner's execution function
-                response.success = self.planner.execute_plan(trajectory_msg)
+                response.success = self.planner.execute_plan(
+                    trajectory_msg, get_arm_state=lambda: self._arm_state
+                )
             else:
                 self.get_logger().error("Failed to parse trajectory file.")
                 response.success = False
@@ -354,7 +366,9 @@ class MotionPlanningServer(Node):
 
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            was_execution_successful = self.planner.execute_plan(trajectory_plan)
+            was_execution_successful = self.planner.execute_plan(
+                trajectory_plan, get_arm_state=lambda: self._arm_state
+            )
             return was_execution_successful
         else:
             self.get_logger().error("Cannot execute because planning failed.")
@@ -403,7 +417,9 @@ class MotionPlanningServer(Node):
         self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            was_execution_successful = self.planner.execute_plan(trajectory_plan)
+            was_execution_successful = self.planner.execute_plan(
+                trajectory_plan, get_arm_state=lambda: self._arm_state
+            )
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
                 return True
@@ -765,6 +781,7 @@ class MotionPlanningServer(Node):
         s = self._arm_state
         needs_reinit = s.err != 0 or s.mode != 1
         needs_reenable = s.state in (3, 4)
+        reset_position = False
 
         if not (needs_reinit or needs_reenable):
             return  # arm already healthy, nothing to do
@@ -782,6 +799,7 @@ class MotionPlanningServer(Node):
             self._reinit_mode1()
 
         if needs_reenable:
+            reset_position = s.state == 4  # E-Stop
             self.get_logger().warn(
                 f"ensure_arm_ready -> state={s.state} (paused/stopped), re-enabling motion"
             )
@@ -796,6 +814,12 @@ class MotionPlanningServer(Node):
         self._call_svc(
             self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
         )
+        if reset_position:
+            send_joint_goal(
+                move_joints_action_client=self._move_joints_client,
+                named_position="nav_pose",
+                velocity=0.3,
+            )
 
     def _wait_for_arm_ready(self, timeout_sec: float = 5.0):
         """Spin-wait until arm reports state 1/2 with no error, or timeout."""
