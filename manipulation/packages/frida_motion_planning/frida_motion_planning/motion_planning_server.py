@@ -74,6 +74,10 @@ class MotionPlanningServer(Node):
         self.planner.set_planning_time(0.5)
         self.planner.set_planner(PICK_PLANNER)
 
+        # xarm states
+        self._arm_state: RobotMsg | None = None
+        self.current_mode = -1
+
         self.servo = MoveItServo(
             self,
             self.callback_group,
@@ -199,27 +203,23 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        self._arm_state: RobotMsg | None = None
-        if self.real_xarm:
-            self._clean_error_client = self.create_client(
-                XArmCall,
-                XARM_CLEAN_ERROR_SERVICE,
-                callback_group=self.callback_group,
-            )
-            self._motion_enable_client = self.create_client(
-                SetInt16ById,
-                XARM_MOTION_ENABLE_SERVICE,
-                callback_group=self.callback_group,
-            )
-            self.create_subscription(
-                RobotMsg,
-                XARM_ROBOT_STATES_TOPIC,
-                lambda msg: setattr(self, "_arm_state", msg),
-                10,
-                callback_group=self.callback_group,
-            )
-
-        self.current_mode = -1
+        self._clean_error_client = self.create_client(
+            XArmCall,
+            XARM_CLEAN_ERROR_SERVICE,
+            callback_group=self.callback_group,
+        )
+        self._motion_enable_client = self.create_client(
+            SetInt16ById,
+            XARM_MOTION_ENABLE_SERVICE,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            RobotMsg,
+            XARM_ROBOT_STATES_TOPIC,
+            lambda msg: setattr(self, "_arm_state", msg),
+            10,
+            callback_group=self.callback_group,
+        )
 
         self.get_logger().info("Motion Planning Server has been started")
         self.get_collision_objects_service = self.create_service(
@@ -755,85 +755,63 @@ class MotionPlanningServer(Node):
         )
 
     def _ensure_arm_ready(self):
-        """Check arm state and auto-recover from known-bad states before planning.
-        No-op in simulation (real_xarm=False) or when robot_states not yet received."""
-        if not self.real_xarm:
-            return
+        """Check arm state and auto-recover from known-bad states before planning."""
         if self._arm_state is None:
             self.get_logger().warn(
                 "ensure_arm_ready -> no robot_states received yet, skipping check"
             )
             return
-        state = self._arm_state
-        self.get_logger().info(
-            f"ensure_arm_ready -> state={state.state} mode={state.mode} err={state.err}"
-        )
-        recovered = False
 
-        if state.err != 0:
-            self.get_logger().warn(
-                f"ensure_arm_ready -> err={state.err}, cleaning error and reinitializing mode"
-            )
+        s = self._arm_state
+        needs_reinit = s.err != 0 or s.mode != 1
+        needs_reenable = s.state in (3, 4)
+
+        if not (needs_reinit or needs_reenable):
+            return  # arm already healthy, nothing to do
+
+        if s.err != 0:
+            self.get_logger().warn(f"ensure_arm_ready -> err={s.err}, cleaning error")
             self._call_svc(
                 self._clean_error_client, XArmCall.Request(), 5.0, "clean_error"
             )
-            self._reinit_mode1()
-            recovered = True
-        elif state.mode != 1:
-            # MoveIt requires servo mode (mode=1). mode=0 (position mode) also
-            # needs recovery — e-stop release often drops the arm to mode=0 with
-            # err=0, which the old `not in (0, 1)` check silently missed.
-            self.get_logger().warn(
-                f"ensure_arm_ready -> mode={state.mode} (expected 1), restoring mode 1"
-            )
-            self._reinit_mode1()
-            recovered = True
 
-        if state.state in (3, 4):
+        if needs_reinit:
             self.get_logger().warn(
-                f"ensure_arm_ready -> arm state={state.state} (paused/stopped), re-enabling motion"
+                f"ensure_arm_ready -> mode={s.mode} (expected 1), reinit mode 1"
             )
-            # motion_enable is needed here too: e-stop with mode still 1 skips
-            # _reinit_mode1 above, so motors would still be disabled otherwise.
+            self._reinit_mode1()
+
+        if needs_reenable:
+            self.get_logger().warn(
+                f"ensure_arm_ready -> state={s.state} (paused/stopped), re-enabling motion"
+            )
             self._motion_enable()
-            req_en = SetInt16.Request()
-            req_en.data = 0
-            self._call_svc(
-                self.planner.state_client, req_en, 5.0, "set_state(0) re-enable"
-            )
-            recovered = True
+            req = SetInt16.Request()
+            req.data = 0
+            self._call_svc(self.planner.state_client, req, 5.0, "set_state(0)")
 
-        if recovered:
-            self.get_logger().info(
-                "ensure_arm_ready -> reactivating trajectory controller"
-            )
-            self._reactivate_controller()
-            # Wait for arm to leave error/stop state. State 1 (SPORT) only fires
-            # while actively moving; state 2 is normal idle/standby after re-enable.
-            # Both are valid "ready" states per _xarm_is_ready_write (curr_state <= 2).
-            deadline = self.get_clock().now() + rclpy.duration.Duration(seconds=8.0)
-            while self.get_clock().now() < deadline:
-                if (
-                    self._arm_state is not None
-                    and self._arm_state.state in (1, 2)
-                    and self._arm_state.err == 0
-                ):
-                    break
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            else:
-                s = self._arm_state.state if self._arm_state else "?"
-                self.get_logger().warn(
-                    f"ensure_arm_ready -> arm did not reach ready state within 8 s (state={s})"
-                )
-            # Clear stale octomap voxels: when the arm stops mid-motion the depth
-            # sensor captures the arm itself as an obstacle, making every goal pose
-            # look like a collision and causing OMPL to fail on the goal tree.
-            self.get_logger().info("ensure_arm_ready -> clearing octomap")
-            self._call_svc(
-                self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
-            )
-            # Small settle delay after octomap clear before planning starts.
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.3))
+        self._reactivate_controller()
+        self._wait_for_arm_ready(timeout_sec=5.0)
+        # Clear stale octomap voxels: when the arm stops mid-motion the camera captures the arm itself as an obstacle
+        self._call_svc(
+            self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
+        )
+
+    def _wait_for_arm_ready(self, timeout_sec: float = 5.0):
+        """Spin-wait until arm reports state 1/2 with no error, or timeout."""
+        deadline = self.get_clock().now() + rclpy.duration.Duration(seconds=timeout_sec)
+        while self.get_clock().now() < deadline:
+            if (
+                self._arm_state is not None
+                and self._arm_state.state in (1, 2)
+                and self._arm_state.err == 0
+            ):
+                return
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        s = self._arm_state.state if self._arm_state else "?"
+        self.get_logger().warn(
+            f"ensure_arm_ready -> arm did not reach ready state within {timeout_sec}s (state={s})"
+        )
 
     def reset_xarm_controller(self, request, response):
         self._reactivate_controller()

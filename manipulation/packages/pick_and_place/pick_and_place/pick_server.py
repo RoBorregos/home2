@@ -274,14 +274,6 @@ class PickMotionServer(Node):
 
         self.save_collision_objects()
 
-        # Clear stale octomap voxels before planning. The arm may have stopped
-        # mid-motion in a previous attempt (e-stop, error), leaving the depth
-        # sensor's view of the arm itself captured as an obstacle. Those voxels
-        # block goal-tree sampling for every grasp pose until explicitly cleared.
-        if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
-            self._clear_octomap_client.call_async(Empty.Request())
-            time.sleep(0.3)
-
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
                 ee_link_pose = copy.deepcopy(pose)
@@ -569,9 +561,7 @@ class PickMotionServer(Node):
         self._stop_cartesian_velocity()
 
         # --- 6. Restore mode 1 ---
-        mode_restored = self._restore_mode1()
-        if not mode_restored:
-            return False
+        self._restore_mode1()
 
         return contact_detected
 
@@ -627,8 +617,6 @@ class PickMotionServer(Node):
             self.get_logger().error(f"[ForceGuard] Stop error: {e}")
 
     def _restore_mode1(self) -> bool:
-        """Restore the arm to mode 1 (ServoJ) after force-guarded descent.
-        Returns True on success, False if all retries fail."""
         self.get_logger().info("[ForceGuard] Restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -656,12 +644,11 @@ class PickMotionServer(Node):
             self.get_logger().info(
                 f"[ForceGuard] Mode 1 restored (attempt {attempt + 1})"
             )
-            return True
+            return
 
-        self.get_logger().error(
-            "[ForceGuard] CRITICAL: Could not restore mode 1 after all retries — aborting"
-        )
-        return False
+        self.get_logger().error("[ForceGuard] CRITICAL: Could not restore mode 1!")
+
+        return
 
     # ==================================================================
     # Existing Methods (unchanged)
