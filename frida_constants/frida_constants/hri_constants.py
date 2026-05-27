@@ -1,5 +1,3 @@
-import json
-import os
 from enum import Enum
 
 SPEAK_SERVICE = "/hri/speech/speak"
@@ -94,17 +92,33 @@ VOWEL_FREQ_HIGH = 255
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.7
 SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.7
 TIMEOUT = 5.0
-try:
-    from ament_index_python.packages import get_package_share_directory
-
-    objects_path = os.path.join(
-        get_package_share_directory("frida_constants"), "data", "objects.json"
-    )
-    with open(objects_path, "r") as f:
-        data = json.load(f)
-        HRIC_DRINK_HOTWORDS = data.get("categories", {}).get("drink", [])
-except Exception:
-    HRIC_DRINK_HOTWORDS = ["water", "coke", "coffee", "tea", "milk", "juice"]
+HRIC_DRINK_HOTWORDS = [
+    "water",
+    "coke",
+    "cola",
+    "diet coke",
+    "pepsi",
+    "sprite",
+    "lemonade",
+    "iced tea",
+    "coffee",
+    "tea",
+    "milk",
+    "hot chocolate",
+    "orange juice",
+    "apple juice",
+    "grape juice",
+    "latte",
+    "cappuccino",
+    "smoothie",
+    "green tea",
+    "barley tea",
+    "boba",
+    "bubble tea",
+    "soju",
+    "banana milk",
+    "strawberry milk",
+]
 
 HRIC_NAME_HOTWORDS = [
     "Alex",

@@ -191,11 +191,10 @@ class HRIC_TM(Node):
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?",
                 query="name",
-                initial_prompt=f"The user is telling their name. Expected names: {', '.join(self.name_options)}",
+                initial_prompt=f"What is your name? The name is likely one of: {', '.join(self.name_options)}",
                 context="The question 'What is your name?' was asked, full_text corresponds to the response.",
-                options=self.name_options,
+                hotwords=", ".join(self.name_options),
                 retries=5,
-                hotwords=" ".join(self.name_options),
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -206,11 +205,11 @@ class HRIC_TM(Node):
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?",
                 query="LLM_drink",
-                initial_prompt=f"The user is choosing a drink. Options include: {', '.join(self.drink_options)}",
+                initial_prompt=f"What is your favorite drink? The drink is likely one of: {', '.join(self.drink_options)}",
                 context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
-                options=self.drink_options,
+                hotwords=", ".join(self.drink_options),
                 retries=5,
-                hotwords=" ".join(self.drink_options),
+            
             )
 
             if status == Status.EXECUTION_SUCCESS:
