@@ -140,7 +140,18 @@ class HRIC_TM(Node):
         time.sleep(timeout)
 
     def set_description(self, status, description: str):
-        self.get_current_guest().description = description
+        if status == Status.EXECUTION_SUCCESS and description:
+            _, natural = self.subtask_manager.hri.answer_with_context(
+                question=(
+                    "Convert these physical attributes into a single fluent English sentence "
+                    "suitable for spoken speech. Start with 'They are'. "
+                    "Do not use semicolons or list formatting."
+                ),
+                context=description,
+            )
+            self.get_current_guest().description = natural if natural else description
+        else:
+            self.get_current_guest().description = description
 
     def run(self):
         """Finite State Machine"""
