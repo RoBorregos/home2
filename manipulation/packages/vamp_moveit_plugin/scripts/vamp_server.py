@@ -22,7 +22,7 @@ from ament_index_python.packages import get_package_share_directory
 from vamp_moveit_plugin.srv import VampPlan
 import numpy as np
 
-actual_dir = os.path.dirname(os.path.abspath(__file__))
+actual_dir = os.path.dirname(os.path.realpath(__file__))
 ruta_vamp = os.path.abspath(os.path.join(actual_dir, "../../vamp/src"))
 sys.path.append(ruta_vamp)
 import vamp  # noqa: E402 — VAMP bindings live in submodule src/, must extend sys.path first
