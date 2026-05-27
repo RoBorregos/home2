@@ -9,7 +9,6 @@ import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from std_msgs.msg import Int16
 from vision_general.utils.ros_utils import wait_for_future
 import os
 import json
@@ -25,8 +24,7 @@ from frida_interfaces.srv import (
 from ament_index_python.packages import get_package_share_directory
 
 from frida_constants.vision_constants import (
-    CAMERA_ROTATION_TOPIC,
-    CAMERA_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     CAMERA_FRAME,
     CAMERA_INFO_TOPIC,
     COUNT_BY_PERSON_TOPIC,
@@ -66,7 +64,7 @@ class GPSRCommands(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            Image, IMAGE_ORIENTED_TOPIC, self.image_callback, qos
         )
         self.create_subscription(
             Image,
@@ -82,14 +80,6 @@ class GPSRCommands(Node):
             qos,
             callback_group=self.callback_group,
         )
-        self.create_subscription(
-            Int16,
-            CAMERA_ROTATION_TOPIC,
-            self._rotation_callback,
-            10,
-            callback_group=self.callback_group,
-        )
-
         # Define services for GPSR commands
         self.count_by_pose_service = self.create_service(
             CountByPose,
@@ -141,7 +131,6 @@ class GPSRCommands(Node):
         self.image = None
         self.depth_image = None
         self.camera_info = None
-        self.rotation = 0
         self.pose_detection = PoseDetection()
         self.output_image = []
         self.people = []
@@ -156,12 +145,6 @@ class GPSRCommands(Node):
         # Load areas from the JSON file
         with open(file_path, "r") as file:
             self.areas = json.load(file)
-
-    def _rotation_callback(self, msg):
-        value = int(msg.data) % 360
-        if value != self.rotation:
-            self.rotation = value
-            self.get_logger().info(f"Camera rotation set to {self.rotation}")
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -199,18 +182,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
 
-        self.people = filter_detections_in_house(
-            frame,
-            self.people,
-            [0],
-            None,
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-            rotation=self.rotation,
-        )
+        self.people = self._filter_people(frame, self.people)
 
         pose_requested = request.pose_requested
 
@@ -267,18 +239,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
 
-        self.people = filter_detections_in_house(
-            frame,
-            self.people,
-            [0],
-            None,
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-            rotation=self.rotation,
-        )
+        self.people = self._filter_people(frame, self.people)
 
         gesture_requested = request.pose_requested
 
@@ -313,18 +274,7 @@ class GPSRCommands(Node):
 
         self.people = self.get_detections(0)
 
-        self.people = filter_detections_in_house(
-            frame,
-            self.people,
-            [0],
-            None,
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-            rotation=self.rotation,
-        )
+        self.people = self._filter_people(frame, self.people)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -359,18 +309,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
 
-        self.people = filter_detections_in_house(
-            frame,
-            self.people,
-            [0],
-            None,
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-            rotation=self.rotation,
-        )
+        self.people = self._filter_people(frame, self.people)
 
         # Count people detected
         people_count = len(self.people)
@@ -393,18 +332,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
 
-        self.people = filter_detections_in_house(
-            frame,
-            self.people,
-            [0],
-            None,
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-            rotation=self.rotation,
-        )
+        self.people = self._filter_people(frame, self.people)
 
         clothing = request.clothing
         color = request.color
@@ -453,18 +381,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
 
-        self.people = filter_detections_in_house(
-            frame,
-            self.people,
-            [0],
-            None,
-            self.camera_info,
-            self.depth_image,
-            self.tf_buffer,
-            self.areas,
-            CAMERA_FRAME,
-            rotation=self.rotation,
-        )
+        self.people = self._filter_people(frame, self.people)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -552,6 +469,19 @@ class GPSRCommands(Node):
             msg.class_id = d["class_id"]
             msgs.append(msg)
         return msgs
+
+    def _filter_people(self, frame, people):
+        return filter_detections_in_house(
+            frame,
+            people,
+            [0],
+            None,
+            self.camera_info,
+            self.depth_image,
+            self.tf_buffer,
+            self.areas,
+            CAMERA_FRAME,
+        )
 
     def get_detections(self, comp_class=None, timeout=5.0):
         """
