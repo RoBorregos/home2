@@ -1,2 +1,1 @@
-cmake==3.25.2
-face_recognition
+insightface

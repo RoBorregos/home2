@@ -13,10 +13,11 @@ on:
       - "docker/navigation/**"
       - "docker/manipulation/**"
       - "docker/integration/**"
+      - "docker/display/**"
   workflow_dispatch:
     inputs:
       area:
-        description: "Area to build and push (hri/vision/navigation/manipulation/integration/all)"
+        description: "Area to build and push (hri/vision/navigation/manipulation/integration/display/all)"
         required: false
         default: "all"
 
@@ -34,6 +35,7 @@ jobs:
       navigation_matrix: ${{ steps.matrices.outputs.navigation }}
       manipulation_matrix: ${{ steps.matrices.outputs.manipulation }}
       integration: ${{ steps.filter.outputs.integration }}
+      display: ${{ steps.filter.outputs.display }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,6 +66,8 @@ jobs:
               - 'docker/manipulation/Dockerfile.cuda'
             integration:
               - 'docker/integration/**'
+            display:
+              - 'docker/display/**'
 
       - name: Check if base images exist on DockerHub
         id: base_check
@@ -584,4 +588,59 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ steps.base.outputs.image }}
           cache-from: type=registry,ref=roborregos/home2:integration-${{ matrix.env }}
+          cache-to: type=inline
+
+  # ─────────────────────────────────────────────────────────────
+  # DISPLAY — cpu + cuda
+  # ─────────────────────────────────────────────────────────────
+  display:
+    name: "Display [${{ matrix.env }}]"
+    runs-on: ubuntu-latest
+    needs: [detect, base]
+    if: |
+      always() &&
+      (needs.detect.result == 'success') &&
+      (needs.base.result == 'success' || needs.base.result == 'skipped') &&
+      (
+        (github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'display' || github.event.inputs.area == 'all')) ||
+        (github.event_name == 'push' && needs.detect.outputs.display == 'true')
+      )
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [cpu, cuda]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: roborregos
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set base image arg
+        id: base
+        run: |
+          case "${{ matrix.env }}" in
+            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/display/Dockerfile
+          push: true
+          tags: roborregos/home2:display-${{ matrix.env }}
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.image }}
+          cache-from: type=registry,ref=roborregos/home2:display-${{ matrix.env }}
           cache-to: type=inline

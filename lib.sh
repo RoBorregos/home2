@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri zed display"
+AREAS="vision manipulation navigation integration hri zed display simulation"
 ORIN_SERVER_AREAS="hri"
 
 # --- guard against multiple sourcing ---
@@ -102,10 +102,15 @@ add_or_update_variable() {
   escaped_value=$(printf '%s\n' "$value" | sed -e 's/[&/\]/\\&/g')
 
   if grep -q "^${variable}=" "$file" 2>/dev/null; then
-    sed -i "s|^${variable}=.*|${variable}=${escaped_value}|" "$file"
+    set_variable_in_file "$file" "$variable" "$escaped_value"
   else
     printf '%s=%s\n' "$variable" "$value" >> "$file"
   fi
+}
+
+set_variable_in_file() {
+  local file=$1 variable=$2 escaped_value=$3
+  sed -i "s|^${variable}=.*|${variable}=${escaped_value}|" "$file"
 }
 
 # Parse flags shared by all area run.sh scripts.
@@ -191,9 +196,9 @@ run_area() {
     fi
   fi
 
-  # Start RouDi container for SHM-enabled areas (zed, vision, navigation, display)
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation, display, simulation)
   if [ "${CYCLONE_SHM}" = "1" ]; then
-    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ] || [ "$INPUT" = "display" ]; then
+    if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ] || [ "$INPUT" = "display" ] || [ "$INPUT" = "simulation" ]; then
       ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
     fi
   fi
