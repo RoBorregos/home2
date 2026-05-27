@@ -209,7 +209,6 @@ class HRIC_TM(Node):
                 context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
                 hotwords=", ".join(self.drink_options),
                 retries=5,
-            
             )
 
             if status == Status.EXECUTION_SUCCESS:
