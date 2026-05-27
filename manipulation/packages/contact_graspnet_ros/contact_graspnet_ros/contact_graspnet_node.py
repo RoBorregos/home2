@@ -2,9 +2,11 @@
 
 import os
 import sys
+import contextlib
 import numpy as np
 import rclpy
 import tf2_ros
+import torch
 from rclpy.duration import Duration
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped
@@ -31,6 +33,14 @@ class ContactGraspNetNode(Node):
         self.declare_parameter("forward_passes", 1)
         self.declare_parameter("z_range", [0.2, 1.8])
         self.declare_parameter("pick_min_height", 0.03)
+        # FP16 autocast for the forward pass. Jetson Orin's tensor cores only
+        # accelerate FP16/BF16 — pure FP32 leaves most of the GPU idle. Expect
+        # 1.5–2× inference speedup. Toggle off if you suspect accuracy drift.
+        self.declare_parameter("use_fp16", True)
+        self.use_fp16 = (
+            self.get_parameter("use_fp16").get_parameter_value().bool_value
+            and torch.cuda.is_available()
+        )
 
         ckpt_dir = self.get_parameter("ckpt_dir").get_parameter_value().string_value
         if not os.path.isabs(ckpt_dir):
@@ -56,13 +66,18 @@ class ContactGraspNetNode(Node):
             )
             checkpoint_io.load("model.pt")
 
-            self.get_logger().info("Model loaded. Running GPU warm-up pass...")
+            self.get_logger().info(
+                f"Model loaded (fp16={self.use_fp16}). Running GPU warm-up pass..."
+            )
             # Warm-up: one dummy forward pass so the first real pick avoids
             # CUDA JIT compilation overhead (~10 s cold-start on Jetson Orin).
+            # Run under the same autocast context as real inference so the JIT
+            # caches FP16 kernels, not FP32 ones.
             dummy_pc = np.random.rand(50, 3).astype(np.float32)
-            self.grasp_estimator.predict_scene_grasps(
-                dummy_pc, local_regions=False, filter_grasps=False, forward_passes=1
-            )
+            with self._inference_context():
+                self.grasp_estimator.predict_scene_grasps(
+                    dummy_pc, local_regions=False, filter_grasps=False, forward_passes=1
+                )
             self.get_logger().info("Warm-up complete — node ready for grasp requests.")
 
         except Exception as e:
@@ -78,6 +93,18 @@ class ContactGraspNetNode(Node):
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+
+    def _inference_context(self):
+        """Autocast context used for both warm-up and real inference.
+
+        FP16 only applies to the model's matmul/conv layers — PointNet++ ops
+        (FPS, ball-query, etc.) stay in FP32 because they're hand-written CUDA
+        kernels that don't go through the autocast dispatch. That's fine: those
+        ops aren't the bottleneck.
+        """
+        if self.use_fp16:
+            return torch.cuda.amp.autocast(dtype=torch.float16)
+        return contextlib.nullcontext()
 
     # ──────────────────────────────────────────────────────────────────────────
     # Service callback
@@ -123,14 +150,15 @@ class ContactGraspNetNode(Node):
                 self.get_parameter("forward_passes").get_parameter_value().integer_value
             )
 
-            pred_grasps_cam, scores, contact_pts, _ = (
-                self.grasp_estimator.predict_scene_grasps(
-                    pc_full,
-                    local_regions=False,
-                    filter_grasps=False,
-                    forward_passes=forward_passes,
+            with self._inference_context():
+                pred_grasps_cam, scores, contact_pts, _ = (
+                    self.grasp_estimator.predict_scene_grasps(
+                        pc_full,
+                        local_regions=False,
+                        filter_grasps=False,
+                        forward_passes=forward_passes,
+                    )
                 )
-            )
 
             grasps = pred_grasps_cam[-1]
             grasp_scores = scores[-1]

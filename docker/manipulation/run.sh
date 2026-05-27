@@ -20,17 +20,22 @@ setup_common_env "manipulation"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 CGN_SETUP=". /home/ros/setup_contact_graspnet.sh"
+# GPD setup is optional. Only sourced when /home/ros/setup_gpd.sh exists and
+# /workspace/install/gpd is present — keeps the container working when GPD is
+# not installed (CGN-only setups). arm_pkg/CMakeLists already builds gpd_service
+# conditionally on GPD_INSTALL_DIR.
+GPD_SETUP="if [ -f /home/ros/setup_gpd.sh ] && [ -d /workspace/install/gpd ]; then . /home/ros/setup_gpd.sh && export GPD_INSTALL_DIR=/workspace/install/gpd; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils contact_graspnet_ros vamp_moveit_plugin --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general xarm6_ikfast_plugin xarm_utils contact_graspnet_ros arm_pkg vamp_moveit_plugin --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 # Build VAMP's _core_ext.*.so if missing (~1s no-op when already built); the normal colcon build above doesn't produce it.
 # Non-fatal: keep going on failure since the plugin's OMPL fallback works without VAMP.
 VAMP_SETUP="(bash /workspace/src/docker/manipulation/setup_vamp.sh || echo '[WARN] VAMP setup failed — vamp planning unavailable, OMPL fallback still works')"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$CGN_SETUP && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $COLCON && $SOURCE && $VAMP_SETUP"
+    SETUP="$CGN_SETUP && $GPD_SETUP && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $COLCON && $SOURCE && $VAMP_SETUP"
 else
-    SETUP="$CGN_SETUP && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE && $VAMP_SETUP"
+    SETUP="$CGN_SETUP && $GPD_SETUP && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE && $VAMP_SETUP"
 fi
 
 case $TASK in
