@@ -52,10 +52,10 @@ DEFAULT_TENSORRT_CACHE_DIR = "/home/orin/dev/manip/docker/vision/trt_cache"
 class GPSRCommands(Node):
     def __init__(self):
         super().__init__("gpsr_commands")
-        tensorrt_cache_dir = os.environ.setdefault(
-            "TENSORRT_CACHE_DIR", DEFAULT_TENSORRT_CACHE_DIR
+        os.makedirs(
+            os.environ.setdefault("TENSORRT_CACHE_DIR", DEFAULT_TENSORRT_CACHE_DIR),
+            exist_ok=True,
         )
-        os.makedirs(tensorrt_cache_dir, exist_ok=True)
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
