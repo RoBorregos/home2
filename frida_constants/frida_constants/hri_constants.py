@@ -99,11 +99,23 @@ HRIC_DRINK_HOTWORDS = [
     "water",
     "coke",
     "cola",
+    "diet coke",
+    "pepsi",
+    "sprite",
+    "lemonade",
+    "iced tea",
+    "sweet tea",
     "coffee",
     "tea",
     "milk",
+    "hot chocolate",
     "orange juice",
     "apple juice",
+    "grape juice",
+    "cranberry juice",
+    "latte",
+    "cappuccino",
+    "smoothie",
 ]
 
 

@@ -195,7 +195,7 @@ class HRIC_TM(Node):
                 question="What is your name?",
                 query="name",
                 context="The question 'What is your name?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your name?' was asked",
+                initial_prompt=f"What is your name? The name is likely one of: {', '.join(self.name_hotwords)}",
                 hotwords=name_hotwords,
                 retries=5,
             )
@@ -214,7 +214,7 @@ class HRIC_TM(Node):
                 question="What is your favorite drink?",
                 query="LLM_drink",
                 context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your favorite drink?' was asked",
+                initial_prompt=f"What is your favorite drink? The drink is likely one of: {', '.join(self.drink_hotwords)}",
                 hotwords=drink_hotwords,
                 retries=5,
             )
