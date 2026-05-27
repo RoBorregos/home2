@@ -46,6 +46,18 @@ TABLE_STARE = {
     "degrees": True,
 }
 
+TAKE_OBJECT = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -35.0,
+        "joint3": -35.0,
+        "joint4": 0.0,
+        "joint5": 26.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 RECEIVE_OBJECT = {
     "joints": {
         "joint1": -1.6047106981277466,
@@ -186,6 +198,7 @@ XARM_CONFIGURATIONS = {
     "front_low_stare": FRONT_LOW_STARE,
     "front_stare_carry_bag": FRONT_STARE_CARRY_BAG,
     "table_stare": TABLE_STARE,
+    "take_object": TAKE_OBJECT,
     "receive_object": RECEIVE_OBJECT,
     "cutlery_stare": CUTLERY_STARE,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,

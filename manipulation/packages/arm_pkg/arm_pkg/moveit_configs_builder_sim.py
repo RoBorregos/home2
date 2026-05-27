@@ -285,7 +285,6 @@ class MoveItConfigsBuilder(ParameterBuilder):
             'report_type': report_type,
             'baud_checkset': baud_checkset,
             'default_gripper_baud': default_gripper_baud,
-            'mujoco_plugin': "true",
             'dof': dof,
             'robot_type': robot_type,
             'prefix': prefix,
@@ -322,6 +321,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
             'geometry_mesh_tcp_rpy': geometry_mesh_tcp_rpy,
             'load_zed': load_zed,
             'simulation': "True",
+            'mujoco_plugin': 'true',
         }
         self.__srdf_xacro_args = {
             'prefix': prefix,
@@ -331,12 +331,14 @@ class MoveItConfigsBuilder(ParameterBuilder):
             'add_vacuum_gripper': add_vacuum_gripper,
             'add_bio_gripper': add_bio_gripper,
             'add_other_geometry': add_other_geometry,
-            'mujoco_plugin': "true",
         }
 
         self.__urdf_package = Path(get_package_share_directory("frida_description"))
-        self.__urdf_file_path = Path("urdf/TMR2025/FRIDA_Real.urdf.xacro")
-        self.__srdf_file_path = Path("srdf/xarm.srdf.xacro")
+        self.__urdf_file_path = Path("urdf/TMR2025/FRIDA.urdf.xacro")
+        if load_zed:
+            self.__srdf_file_path = Path("srdf/xarm.srdf.xacro")
+        else:
+            self.__srdf_file_path = Path("srdf/xarm.srdf.sim.xacro")
 
         self.__robot_description = 'robot_description'
         

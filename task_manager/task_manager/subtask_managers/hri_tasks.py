@@ -16,7 +16,6 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     ANSWER_PUBLISHER,
-    CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
@@ -39,12 +38,11 @@ from frida_constants.hri_constants import (
     TASK_STATUS_TOPIC,
     TASK_STEP_TOPIC,
     TIMEOUT,
-    WAKEWORD_TOPIC,
+    KEYWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
     AddEntry,
-    CategorizeShelves,
     CommandInterpreter,
     ExtractInfo,
     FindClosest,
@@ -182,9 +180,8 @@ class HRITasks(metaclass=SubtaskMeta):
         self.find_closest_service = self.node.create_client(FindClosest, FIND_CLOSEST_SERVICE)
         self.items = self.get_items_embeddings()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
-        self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
-            String, WAKEWORD_TOPIC, self._get_keyword, 10
+            String, KEYWORD_TOPIC, self._get_keyword, 10
         )
 
         self.current_transcription = ""
@@ -482,7 +479,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Args:
             timeout (float): The maximum time to stop the transcription.
-            hotwords (str): Hotwords to improve the transcription accuracy.
+            hotwords (str): Hotwords passed to faster-whisper to improve transcription accuracy.
             initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
@@ -544,7 +541,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def confirm(
         self,
         question: str,
-        use_hotwords: bool = True,
+        use_keyword: bool = True,
         retries: int = 3,
         wait_between_retries: float = 5,
     ):
@@ -553,7 +550,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Args:
             question: the inquiry to confirm
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_keyword: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             wait_between_retries: the amount of time to wait between retries
         Returns:
@@ -571,7 +568,7 @@ class HRITasks(metaclass=SubtaskMeta):
             # Say the question
             self.say(question)
 
-            if use_hotwords:
+            if use_keyword:
                 # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
@@ -630,7 +627,7 @@ class HRITasks(metaclass=SubtaskMeta):
         query: str,
         context: str = "",
         confirm_question: Union[str, callable] = confirm_query,
-        use_hotwords: bool = True,
+        use_keyword: bool = True,
         hotwords="",
         retries: int = 3,
         min_wait_between_retries: float = 5,
@@ -650,7 +647,7 @@ class HRITasks(metaclass=SubtaskMeta):
             query: the data to extract from the interpreted text
             context: the context of the question. It could be used to help the extraction.
             confirm_question: a string or a callable function that returns a string used confirm the answer
-            use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
+            use_keyword: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
@@ -752,7 +749,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # Ask for confirmation
                 if target_info != "" and target_found:
-                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                    s, confirmation = self.confirm(confirmation_text, use_keyword, 3)
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                         return Status.EXECUTION_SUCCESS, target_info
 
@@ -1064,7 +1061,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="What would you like to order first?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_keyword=False,
             options=items,
             retries=retries,
         )
@@ -1077,7 +1074,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question="And what would you like as your second item?",
             query="LLM_ordered_items",
             context=context,
-            use_hotwords=False,
+            use_keyword=False,
             options=items,
             retries=retries,
         )
@@ -1309,7 +1306,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
-    ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
+    ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]], dict[int, list[str]]]:
         """
         Categorize objects based on their shelf levels.
 
@@ -1318,85 +1315,98 @@ class HRITasks(metaclass=SubtaskMeta):
             shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
 
         Returns:
+            Status: Execution status.
+            dict[int, list[str]]: Dictionary mapping shelf levels to categories.
+            dict[int, list[str]]: Dictionary mapping shelf levels to objects to add.
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
         Logger.info(self.node, "Categorizing objects...")
 
         try:
-            categorized_shelves = {}
+            categorized_shelves = {level: [] for level in shelves}
+            category_to_level = {}
+            empty_levels = []
 
-            category_shelve = {}
-
-            # Use this as miscellaneous category for empty shelves
-            empty_shelve_index = 0
-            miscellaneous_category = False
-
+            # Step 1: Analyze existing shelf contents
             for level in shelves:
-                if level not in categorized_shelves:
-                    categorized_shelves[level] = []
-
-                for object_name in shelves[level]:
-                    category = self.deterministic_categorization(object_name)
-                    categorized_shelves[level].append(category)
-                    category_shelve[category] = level
-
-                if len(categorized_shelves[level]) < 1:
-                    categorized_shelves[level] = ["empty"]
-                    empty_shelve_index = level
-
-            objects_to_add = {level: [] for level in shelves.keys()}
-
-            for table_object in table_objects:
-                category = self.deterministic_categorization(table_object)
-
-                if category in category_shelve.keys():
-                    objects_to_add[category_shelve[category]].append(table_object)
+                shelf_objects = shelves[level]
+                if not shelf_objects:
+                    empty_levels.append(level)
                 else:
-                    placed_object = False
-                    for key in categorized_shelves.keys():
-                        if categorized_shelves[key] == "empty":
-                            categorized_shelves[key] = category
-                            objects_to_add[key].append(table_object)
-                            placed_object = True
-                            break
+                    for object_name in shelf_objects:
+                        category = self.deterministic_categorization(object_name)
+                        if category not in categorized_shelves[level]:
+                            categorized_shelves[level].append(category)
+                        # Keep track of which category is on which shelf
+                        category_to_level[category] = level
 
-                    if not placed_object:
-                        categorized_shelves[empty_shelve_index] = ["miscellaneous"]
-                        miscellaneous_category = True
-                        objects_to_add[empty_shelve_index].append(table_object)
+            # Group table objects by category
+            table_objects_by_category = {}
+            for obj in table_objects:
+                cat = self.deterministic_categorization(obj)
+                if cat not in table_objects_by_category:
+                    table_objects_by_category[cat] = []
+                table_objects_by_category[cat].append(obj)
 
-            if miscellaneous_category:
-                categorized_shelves[empty_shelve_index] = ["miscellaneous"]
+            objects_to_add = {level: [] for level in shelves}
+
+            new_categories = []
+            for cat, objs in table_objects_by_category.items():
+                if cat in category_to_level:
+                    # Case 1: Category already exists on a shelf
+                    target_level = category_to_level[cat]
+                    objects_to_add[target_level].extend(objs)
+                else:
+                    new_categories.append(cat)
+
+            # Step 2: Assign new categories to shelves
+            if new_categories:
+                if empty_levels:
+                    # Case 2: Distribute new categories across empty shelves
+                    for i, cat in enumerate(new_categories):
+                        target_level = empty_levels[i % len(empty_levels)]
+                        if cat not in categorized_shelves[target_level]:
+                            categorized_shelves[target_level].append(cat)
+                        category_to_level[cat] = target_level
+                        objects_to_add[target_level].extend(table_objects_by_category[cat])
+                else:
+                    # Case 3: No empty shelves, distribute across all shelves
+                    shelf_levels = sorted(list(shelves.keys()))
+                    for i, cat in enumerate(new_categories):
+                        target_level = shelf_levels[i % len(shelf_levels)]
+                        if cat not in categorized_shelves[target_level]:
+                            categorized_shelves[target_level].append(cat)
+                        category_to_level[cat] = target_level
+                        objects_to_add[target_level].extend(table_objects_by_category[cat])
 
         except Exception as e:
-            self.node.get_logger().error(f"Error: {e}")
-            return Status.EXECUTION_ERROR, {}, {}
+            self.node.get_logger().error(f"Error in categorize_objects: {e}")
+            return Status.EXECUTION_ERROR, {}, {}, {}
 
-        # Remove duplicated categories
+        # Remove duplicated categories (should already be unique, but for safety)
         for level in categorized_shelves:
-            unique = set()
-
-            for cat in categorized_shelves[level]:
-                unique.add(cat)
-
-            categorized_shelves[level] = list(unique)
+            categorized_shelves[level] = list(set(categorized_shelves[level]))
 
         Logger.info(self.node, "Finished executing categorize_objects")
 
-        old_api = {}
-        for key in categorized_shelves:
-            old_api[key] = " ".join(categorized_shelves[key])
-
-        return Status.EXECUTION_SUCCESS, old_api, objects_to_add, categorized_shelves
+        return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add, categorized_shelves
 
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def publish_display_step(self, step: str):
-        """Publish the current task step to drive the HRIC display layout."""
-        self.task_step_publisher.publish(String(data=step))
-        Logger.info(self.node, f"Published display step: {step}")
+    def publish_display_step(self, step: str, topic: str = TASK_STEP_TOPIC) -> None:
+        if topic == TASK_STEP_TOPIC:
+            self.task_step_publisher.publish(String(data=step))
+            Logger.info(self.node, f"Published display step: {step} → {topic}")
+            return
+
+        if not hasattr(self, "_step_publishers"):
+            self._step_publishers: dict = {}
+        if topic not in self._step_publishers:
+            self._step_publishers[topic] = self.node.create_publisher(String, topic, 10)
+        self._step_publishers[topic].publish(String(data=step))
+        Logger.info(self.node, f"Published display step: {step} → {topic}")
 
     def deterministic_categorization(self, object_name: str) -> str:
         """

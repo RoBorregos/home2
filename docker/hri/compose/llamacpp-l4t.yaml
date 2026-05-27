@@ -1,0 +1,19 @@
+services:
+  llama:
+    profiles: [hric, gpsr]
+    container_name: home2-hri-llamacpp-l4t
+    image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
+    runtime: nvidia
+    network_mode: host
+    volumes:
+      - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
+      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
+      - ../scripts/llama-cpp-entrypoint.sh:/scripts/entrypoint.sh
+    environment:
+      ROLE: ${ROLE}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu/tegra
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]

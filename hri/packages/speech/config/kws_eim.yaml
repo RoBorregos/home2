@@ -2,9 +2,9 @@ kws_eim:
   ros__parameters:
     EI_SERVER_URL: "http://localhost:1338"
     PROCESSED_AUDIO_TOPIC: REPLACE
-    WAKEWORD_TOPIC: REPLACE
+    KEYWORD_TOPIC: REPLACE
     detection_cooldown: 1.0
-    SENSITIVITY_THRESHOLD: 0.35
+    SENSITIVITY_THRESHOLD: 0.45
     sample_rate: 16000
     window_size_s: 1.0
     hop_ratio: 0.25
