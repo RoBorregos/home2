@@ -46,6 +46,9 @@ package_share_dir = get_package_share_directory("vision_general")
 constants = get_package_share_directory("frida_constants")
 file_path = os.path.join(constants, "map_areas/areas.json")
 
+TENSORRT_CACHE_DIR = "/home/orin/dev/manip/docker/vision/trt_cache"
+os.environ["TENSORRT_CACHE_DIR"] = TENSORRT_CACHE_DIR
+
 
 class GPSRCommands(Node):
     def __init__(self):
