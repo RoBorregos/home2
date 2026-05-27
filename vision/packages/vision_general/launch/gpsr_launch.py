@@ -18,6 +18,13 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
+                executable="vision_central.py",
+                name="vision_central",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
                 executable="hric_commands.py",
                 name="hric_commands",
                 output="screen",

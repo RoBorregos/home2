@@ -17,6 +17,13 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
+                executable="vision_central.py",
+                name="vision_central",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
                 executable="restaurant_commands.py",
                 name="restaurant_commands",
                 output="screen",

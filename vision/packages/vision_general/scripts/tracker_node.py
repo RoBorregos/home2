@@ -59,6 +59,7 @@ from vision_general.utils.ros_utils import wait_for_future
 from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
+from std_msgs.msg import Bool
 from geometry_msgs.msg import Point, PointStamped
 
 from vision_general.utils.reid_model import (
@@ -82,6 +83,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     SET_TARGET_TOPIC,
     SET_TARGET_BY_TOPIC,
+    TRACKER_ACTIVE_TOPIC,
     TRACKER_IMAGE_TOPIC,
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
@@ -131,6 +133,9 @@ class SingleTracker(Node):
         self.image_info_subscriber = self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
         )
+        self.tracker_active_subscriber = self.create_subscription(
+            Bool, TRACKER_ACTIVE_TOPIC, self.tracker_active_callback, 10
+        )
 
         self.set_target_service = self.create_service(
             SetBool, SET_TARGET_TOPIC, self.set_target_callback
@@ -157,6 +162,7 @@ class SingleTracker(Node):
         )
 
         self.verbose = self.declare_parameter("verbose", True)
+        self.tracker_active = True
         self.setup()
         self.last_reid_extraction = time.time()
         self.create_timer(0.1, self.run)
@@ -240,6 +246,10 @@ class SingleTracker(Node):
 
     def set_target_callback(self, request, response):
         """Callback to set the target to track"""
+        if not self.tracker_active and request.data:
+            response.success = False
+            self.get_logger().warn("Tracker inactive: cannot enable target tracking")
+            return response
         self.target_set = request.data
         if self.target_set:
             response.success = self.set_target()
@@ -251,6 +261,10 @@ class SingleTracker(Node):
 
     def set_target_by_callback(self, request, response):
         """Callback to set target by pose, gesture, clothes, etc"""
+        if not self.tracker_active and request.track_enabled:
+            response.success = False
+            self.get_logger().warn("Tracker inactive: cannot enable target tracking")
+            return response
         self.target_set = request.track_enabled
         if self.target_set:
             response.success = self.set_target(request.track_by, request.value)
@@ -261,6 +275,18 @@ class SingleTracker(Node):
             response.success = True
             self.get_logger().info("Tracking disabled")
         return response
+
+    def tracker_active_callback(self, msg: Bool):
+        """Enable/disable tracker runtime from a central active topic."""
+        if msg.data == self.tracker_active:
+            return
+        self.tracker_active = msg.data
+        if not self.tracker_active:
+            # Deactivate live tracking immediately and report inactive state.
+            self.target_set = False
+            self.is_tracking_result = False
+            self._reset_person_data()
+        self.get_logger().info(f"Tracker active: {self.tracker_active}")
 
     def publish_image(self):
         """Publish the image to the camera topic"""
@@ -534,6 +560,9 @@ class SingleTracker(Node):
 
     def run(self):
         """Main loop to run the tracker"""
+        if not self.tracker_active:
+            self.is_tracking_result = False
+            return
 
         if not self.target_set:
             self.is_tracking_result = False
