@@ -2,38 +2,48 @@
 
 import rclpy
 from rclpy.node import Node
+import time
 
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import Task
 from task_manager.subtask_managers.vision_tasks import VisionTasks
+from task_manager.subtask_managers.hri_tasks import HRITasks
 
 
 class TestPersonDescription(Node):
     def __init__(self):
         super().__init__("describe_person_test")
-        self.vision = VisionTasks(self.node, task=Task.HRIC)
+        self.vision = VisionTasks(self, task=Task.DEBUG)
+        self.hri = HRITasks(self, task=Task.DEBUG)
         rclpy.spin_once(self, timeout_sec=1.0)
         self.result = {"status": None, "description": ""}
 
     def on_description(self, status, description):
         self.result["status"] = status
-        self.result["description"] = description
+
+        if status == Status.EXECUTION_SUCCESS and description:
+            _, natural = self.subtask_manager.hri.answer_with_context(
+                question=(
+                    "Convert these physical attributes into a single fluent English sentence "
+                    "suitable for spoken speech. Start with 'They are'. "
+                    "Do not use semicolons or list formatting."
+                ),
+                context=description,
+            )            
+            self.result["description"] = natural if natural else description
+        else:
+            self.result["description"] = description
 
     def run_test(self):
         self.vision.describe_person(callback=self.on_description)
 
-        rclpy.spin_once(self.node, timeout_sec=0.1)
+        time.sleep(10)
 
-        if self.result["status"] == Status.EXECUTION_SUCCESS:
-            print(self.result["description"])
-        elif self.done.is_set():
-            print(f"Status: {self.result['status']}, description: {self.result['description']}")
-        else:
-            print("No result")
+        print(f"Description: {self.result['description']}")
 
 def main(args=None):
     rclpy.init(args=args)
-    node = TestHRICFaceSave()
+    node = TestPersonDescription()
     try:
         node.run_test()
     except KeyboardInterrupt:
