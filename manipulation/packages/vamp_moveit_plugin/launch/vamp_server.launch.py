@@ -32,21 +32,21 @@ from launch_ros.actions import Node
 
 
 # (param name -> default value) for every tunable the server accepts.
-# min_r_point ~ octomap_resolution (0.025) + small safety margin; previous 0.09
-# inflated every voxel to a 9 cm sphere, masking goal collisions FCL kept.
-# self_filter_distance ~ gripper_opening (5 cm) + margin; previous 0.12 stripped
-# object voxels at the goal config, so VAMP planned "successfully" but FCL
-# post-validation rejected the plan.
+# range and validation_step_size lowered to 0.025 — finer RRT steps + denser
+# validation produce smoother paths that FCL post-validation accepts more
+# often (VAMP's sphere model takes shortcuts FCL mesh rejects at narrow
+# passages). smoothing_passes bumped to 5 for the same reason.
+# min_r_point/self_filter tuned for tabletop grasps (see prior notes).
 _SERVER_PARAMS = {
     "max_iterations": "50000",
-    "range": "0.05",
+    "range": "0.025",
     "security_margin": "0.02",
     "max_retries": "3",
     "finger_left_default": "0.8",
     "finger_right_default": "0.8",
-    "validation_step_size": "0.05",
+    "validation_step_size": "0.025",
     "smoothing_window": "5",
-    "smoothing_passes": "3",
+    "smoothing_passes": "5",
     "min_r_point": "0.035",
     "self_filter_distance": "0.07",
 }

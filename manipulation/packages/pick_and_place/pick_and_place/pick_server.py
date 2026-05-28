@@ -383,12 +383,12 @@ class PickMotionServer(Node):
                         continue
 
                 else:
-                    # Bump planning budget for normal-object grasps — 0.5 s
-                    # default is too short for RRTConnect with the octomap
-                    # populated; 1.5 s / 8 attempts matches the MoveIt manip
-                    # tutorial guidance for dense scenes.
+                    # Keep defaults (planning_time=0.5, attempts=5). VAMP's
+                    # internal OMPL fallback runs 4 retries each using
+                    # planning_time, so a higher value amplifies wasted time
+                    # when the goal can't be sampled. Default behavior here.
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
-                        ee_link_pose, planning_time=1.5, planning_attempts=8
+                        ee_link_pose
                     )
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
