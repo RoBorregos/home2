@@ -41,6 +41,11 @@ def generate_launch_description():
                 name="object_aware_pointcloud_filter",
                 output="screen",
                 emulate_tty=True,
+                # Respawn so transient dependency issues (e.g. vision_msgs not
+                # yet installed when launched in a fresh container) self-heal
+                # once the deps appear, instead of leaving the chain dead.
+                respawn=True,
+                respawn_delay=2.0,
                 parameters=[
                     {
                         "input_topic": input_topic,
