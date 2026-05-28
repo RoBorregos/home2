@@ -569,9 +569,11 @@ class HRITasks(metaclass=SubtaskMeta):
             self.say(question)
 
             if use_keyword:
-                # self.say("Please confirm by saying yes or no")
-
+                self.questions_publisher.publish(
+                    String(data=json.dumps({"question": question, "options": ["yes", "no"]}))
+                )
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
+                self.questions_publisher.publish(String(data=""))
                 if s == Status.EXECUTION_SUCCESS:
                     return Status.EXECUTION_SUCCESS, keyword
             else:
@@ -699,6 +701,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 target_info = interpreted_text
                 target_found = options is None
                 similarity = 1
+                _retry = False
                 try:
                     # Always extract the data using LLM if not skipped
                     if not skip_extract_data:
@@ -735,8 +738,7 @@ class HRITasks(metaclass=SubtaskMeta):
                                 target_info = similarity_list.results[0]
                                 similarity = similarity_list.similarities[0]
                             else:
-                                self.say("Sorry, I couldn't understand.")
-                                continue
+                                _retry = True
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
                     normalized_confidences = {
@@ -770,6 +772,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 except Exception as e:
                     print("Failed matching result:", e)
+
+                if _retry:
+                    self.say("Sorry, I couldn't understand.")
+                    continue
 
                 if not always_confirm and skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info

@@ -7,6 +7,7 @@ import { rosClient } from "../RosClient";
 
 export function QuestionModal() {
   const [question, setQuestion] = useState<string | null>(null);
+  const [options, setOptions] = useState<string[] | null>(null);
   const [answer, setAnswer] = useState<string>("");
   const [isOpen, setIsOpen] = useState(false);
   const [answerPublisher, setAnswerPublisher] = useState<Topic<{
@@ -33,9 +34,17 @@ export function QuestionModal() {
       if (!msg.data?.trim()) {
         setIsOpen(false);
         setQuestion(null);
+        setOptions(null);
         setAnswer("");
       } else {
-        setQuestion(msg.data);
+        try {
+          const parsed = JSON.parse(msg.data);
+          setQuestion(parsed.question ?? msg.data);
+          setOptions(parsed.options ?? null);
+        } catch {
+          setQuestion(msg.data);
+          setOptions(null);
+        }
         setIsOpen(true);
       }
     });
@@ -85,32 +94,52 @@ export function QuestionModal() {
         </div>
 
         <div className="space-y-4">
-          <label className="block">
-            <span className="text-sm font-medium text-(--text-light) mb-2 block">
-              Your Answer
-            </span>
-            <textarea
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Type your answer here..."
-              className="w-full px-4 py-3 bg-(--bg-darker) text-(--text-light) border border-(--border-light) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blue) resize-none"
-              rows={4}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && e.ctrlKey) {
-                  handleSendAnswer();
-                }
-              }}
-            />
-          </label>
-
-          <button
-            onClick={handleSendAnswer}
-            disabled={!answer.trim()}
-            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-(--blue) hover:bg-(--blue-hover) disabled:bg-(--text-gray) disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
-          >
-            <Send className="h-5 w-5" />
-            Send Answer (Ctrl+Enter)
-          </button>
+          {options ? (
+            <div className="flex gap-4 justify-center">
+              {options.map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => {
+                    if (answerPublisher) answerPublisher.publish({ data: opt });
+                    setIsOpen(false);
+                    setQuestion(null);
+                    setOptions(null);
+                  }}
+                  className="flex-1 px-6 py-4 text-xl font-bold rounded-lg transition-colors bg-(--blue) hover:bg-(--blue-hover) text-white uppercase"
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              <label className="block">
+                <span className="text-sm font-medium text-(--text-light) mb-2 block">
+                  Your Answer
+                </span>
+                <textarea
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  placeholder="Type your answer here..."
+                  className="w-full px-4 py-3 bg-(--bg-darker) text-(--text-light) border border-(--border-light) rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blue) resize-none"
+                  rows={4}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.ctrlKey) {
+                      handleSendAnswer();
+                    }
+                  }}
+                />
+              </label>
+              <button
+                onClick={handleSendAnswer}
+                disabled={!answer.trim()}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-(--blue) hover:bg-(--blue-hover) disabled:bg-(--text-gray) disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
+              >
+                <Send className="h-5 w-5" />
+                Send Answer (Ctrl+Enter)
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
