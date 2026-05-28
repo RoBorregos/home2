@@ -245,6 +245,22 @@ def launch_setup(context, *args, **kwargs):
         ),
     )
 
+    # Object-aware pointcloud filter — drops points inside the target
+    # object's published bbox before they reach move_group's octomap monitor.
+    # No-op until perception publishes a bbox (default TTL 30 s), so its
+    # presence is safe even when not picking.
+    object_aware_filter = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("perception_3d"),
+                    "launch",
+                    "object_aware_pointcloud_filter.launch.py",
+                ]
+            )
+        ),
+    )
+
     control_node = Node(
         package="controller_manager",
         executable="spawner",
@@ -283,6 +299,7 @@ def launch_setup(context, *args, **kwargs):
         ros2_control_launch,
         control_node,
         downsample_pcd,
+        object_aware_filter,
     ]
 
 
