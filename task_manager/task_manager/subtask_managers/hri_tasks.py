@@ -689,10 +689,10 @@ class HRITasks(metaclass=SubtaskMeta):
                         s, extracted_info = self.extract_data(query, interpreted_text, context)
                         if s == Status.EXECUTION_SUCCESS:
                             target_info = extracted_info
+                            target_found = True
                         elif not options:
                             self.say("Sorry, I couldn't understand.")
                             continue
-                        target_found = True
 
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
