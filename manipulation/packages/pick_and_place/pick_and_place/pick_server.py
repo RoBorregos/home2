@@ -631,7 +631,7 @@ class PickMotionServer(Node):
         except Exception as e:
             self.get_logger().error(f"[ForceGuard] Stop error: {e}")
 
-    def _restore_mode1(self) -> bool:
+    def _restore_mode1(self):
         self.get_logger().info("[ForceGuard] Restoring mode 1...")
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
@@ -662,8 +662,6 @@ class PickMotionServer(Node):
             return
 
         self.get_logger().error("[ForceGuard] CRITICAL: Could not restore mode 1!")
-
-        return
 
     # ==================================================================
     # Existing Methods (unchanged)
