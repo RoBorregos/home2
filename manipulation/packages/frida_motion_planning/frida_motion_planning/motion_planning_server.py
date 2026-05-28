@@ -747,7 +747,7 @@ class MotionPlanningServer(Node):
                 self._estop_pub.publish(Bool(data=False))
                 send_joint_goal(
                     move_joints_action_client=self._move_joints_client,
-                    named_position="nav_pose",
+                    named_position="table_stare",
                     velocity=0.3,
                 )
                 self._call_svc(
