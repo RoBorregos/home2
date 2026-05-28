@@ -236,6 +236,11 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
+        self._recovering = False
+        self.create_timer(
+            2.0, self._try_estop_recovery, callback_group=self.callback_group
+        )
+
         self.get_logger().info("Motion Planning Server has been started")
         self.get_collision_objects_service = self.create_service(
             GetCollisionObjects,
@@ -716,17 +721,23 @@ class MotionPlanningServer(Node):
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
+        if msg.state == 4 and not self._in_estop:
+            self._in_estop = True
+            self.get_logger().warn("E-stop ACTIVATED — broadcasting abort")
+            self._estop_pub.publish(Bool(data=True))
 
-        if msg.state == 4:
-            if not self._in_estop:
-                self._in_estop = True
-                self.get_logger().warn("E-stop ACTIVATED — broadcasting abort")
-                self._estop_pub.publish(Bool(data=True))
-        else:
-            if self._in_estop:
+    def _try_estop_recovery(self):
+        if not self._in_estop or self._recovering:
+            return
+        self._recovering = True
+        try:
+            self.get_logger().info("E-stop active — attempting arm recovery...")
+            self._ensure_arm_ready()
+            if self._arm_state and self._arm_state.state not in (3, 4):
                 self._in_estop = False
-                self.get_logger().warn("E-stop RELEASED — recovering to nav_pose")
-                self._ensure_arm_ready()
+                self.get_logger().warn(
+                    "E-stop CLEARED — arm recovered, going to nav_pose"
+                )
                 self._estop_pub.publish(Bool(data=False))
                 send_joint_goal(
                     move_joints_action_client=self._move_joints_client,
@@ -736,6 +747,8 @@ class MotionPlanningServer(Node):
                 self._call_svc(
                     self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
                 )
+        finally:
+            self._recovering = False
 
     def _call_svc(self, client, request, timeout, label):
         """Call a ROS service with a bounded timeout. Returns True on success."""
