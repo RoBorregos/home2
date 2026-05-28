@@ -50,7 +50,7 @@ var searchData=
   ['use_5fphs_47',['use_phs',['../structvamp_1_1planning_1_1AORRTCSettings.html#a75de7a8b14170e18dcfaac9133b2365f',1,'vamp::planning::AORRTCSettings']]],
   ['use_5fqr_48',['USE_QR',['../namespacedemo__manager.html#a62ce8766f52bf96b489df0459fec5928',1,'demo_manager']]],
   ['use_5fright_5fhand_49',['USE_RIGHT_HAND',['../namespacepointing__detection.html#a197c3d9ed96b3db5850117c5d78e684a',1,'pointing_detection']]],
-  ['use_5fside_5ftable_50',['use_side_table',['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3416885d6aa2b236cda204e5c05788ee',1,'pickandplace_task_manager.PickAndPlaceTM.use_side_table()'],['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#a41e6c43978fec097b6f7c953fc42192b',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.use_side_table()']]],
+  ['use_5fside_5ftable_50',['use_side_table',['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#a41e6c43978fec097b6f7c953fc42192b',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.use_side_table()'],['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3416885d6aa2b236cda204e5c05788ee',1,'pickandplace_task_manager.PickAndPlaceTM.use_side_table()']]],
   ['use_5fswin_51',['use_swin',['../namespacereid__model.html#afd0c502aecc7fb1b4bdc4ebf9acda11f',1,'reid_model']]],
   ['use_5fzed_52',['use_zed',['../classzed__simulator_1_1ZedSimulator.html#a51ea3acb3de2294481c6d53d9cfd9f77',1,'zed_simulator::ZedSimulator']]],
   ['useful_5faudio_5fnode_5fname_53',['USEFUL_AUDIO_NODE_NAME',['../namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a',1,'frida_constants::hri_constants']]],
