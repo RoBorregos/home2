@@ -142,6 +142,7 @@ install(PROGRAMS
   scripts/record_relative_pose.py
   scripts/dock_to_handle.py
   scripts/flat_grasp_estimator.py
+  scripts/object_aware_pointcloud_filter.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

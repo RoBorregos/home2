@@ -10,7 +10,7 @@ RUN rm -r /workspace/requirements/
 
 RUN chown -R ros:ros /workspace
 
-RUN apt update && apt install -y ros-humble-zed-msgs ros-humble-moveit*
+RUN apt update && apt install -y ros-humble-zed-msgs ros-humble-moveit* ros-humble-vision-msgs
 
 # Install manipulation dependencies
 WORKDIR /installs
