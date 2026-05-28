@@ -649,6 +649,7 @@ class TestHriManager(Node):
             options=HRIC_NAME_HOTWORDS,
             retries=3,
             hotwords=" ".join(HRIC_NAME_HOTWORDS),
+            start_silence_time=5.0,
         )
         self.get_logger().info(f"Result Name: {name} (Status: {status})")
 
@@ -661,6 +662,7 @@ class TestHriManager(Node):
             options=HRIC_DRINK_HOTWORDS,
             retries=3,
             hotwords=" ".join(HRIC_DRINK_HOTWORDS),
+            start_silence_time=5.0,
         )
         self.get_logger().info(f"Result Drink: {drink} (Status: {status})")
 

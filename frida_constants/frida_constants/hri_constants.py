@@ -93,7 +93,7 @@ VOWEL_FREQ_HIGH = 255
 # HRI Subtask Manager
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.7
 SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.7
-TIMEOUT = 5.0
+MIN_EXTRACTION_CONFIDENCE_THRESHOLD = 0.25
 try:
     from ament_index_python.packages import get_package_share_directory
 
