@@ -147,10 +147,10 @@ def launch_setup(context, *args, **kwargs):
             geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
         )
         .planning_pipelines(
-            # Default "ompl": VAMP needs retuning before it can be default
-            # again (its self-filter masks goal voxels FCL keeps -> rejection).
+            # VAMP retuned (lower min_r_point + self_filter_distance + padding)
+            # so its sphere model matches FCL; default pipeline back to "vamp".
             pipelines=["vamp", "ompl"],
-            default_planning_pipeline="ompl",
+            default_planning_pipeline="vamp",
         )
         .to_moveit_configs()
     )
@@ -259,8 +259,8 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # VAMP backend off by default (pipeline above is "ompl"). Re-enable with
-    # start_vamp_server:=true and flip the default pipeline back to "vamp".
+    # VAMP backend on by default (pipeline above is "vamp"). Disable with
+    # start_vamp_server:=false to run plain OMPL via the secondary pipeline.
     vamp_server_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -271,9 +271,7 @@ def launch_setup(context, *args, **kwargs):
                 ]
             )
         ),
-        condition=IfCondition(
-            LaunchConfiguration("start_vamp_server", default="false")
-        ),
+        condition=IfCondition(LaunchConfiguration("start_vamp_server", default="true")),
     )
 
     return [

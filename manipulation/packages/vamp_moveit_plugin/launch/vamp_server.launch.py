@@ -32,6 +32,11 @@ from launch_ros.actions import Node
 
 
 # (param name -> default value) for every tunable the server accepts.
+# min_r_point ~ octomap_resolution (0.025) + small safety margin; previous 0.09
+# inflated every voxel to a 9 cm sphere, masking goal collisions FCL kept.
+# self_filter_distance ~ gripper_opening (5 cm) + margin; previous 0.12 stripped
+# object voxels at the goal config, so VAMP planned "successfully" but FCL
+# post-validation rejected the plan.
 _SERVER_PARAMS = {
     "max_iterations": "50000",
     "range": "0.05",
@@ -42,8 +47,8 @@ _SERVER_PARAMS = {
     "validation_step_size": "0.05",
     "smoothing_window": "5",
     "smoothing_passes": "3",
-    "min_r_point": "0.09",
-    "self_filter_distance": "0.12",
+    "min_r_point": "0.035",
+    "self_filter_distance": "0.07",
 }
 
 

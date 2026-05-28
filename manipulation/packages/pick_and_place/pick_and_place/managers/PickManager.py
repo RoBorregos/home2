@@ -287,13 +287,14 @@ class PickManager:
                 if len(grasp_poses) == 0:
                     continue
 
-                if len(grasp_poses) > 5:
-                    indices = np.random.choice(len(grasp_poses), size=5, replace=False)
-                    grasp_poses = [grasp_poses[i] for i in indices]
-                    grasp_scores = [grasp_scores[i] for i in indices]
-                else:
-                    grasp_poses = grasp_poses[:5]
-                    grasp_scores = grasp_scores[:5]
+                # Sort by GPD score (descending) so the best grasps are tried
+                # first; previous random.choice wasted iterations on low-score
+                # grasps when a high-score one would have worked.
+                sorted_grasps = sorted(
+                    zip(grasp_poses, grasp_scores), key=lambda p: -p[1]
+                )[:5]
+                grasp_poses = [g[0] for g in sorted_grasps]
+                grasp_scores = [g[1] for g in sorted_grasps]
 
                 new_grasp_poses = []
                 new_grasp_scores = []

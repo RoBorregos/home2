@@ -6,9 +6,9 @@ point_cloud_camera:
     point_cloud_topic: /point_cloud
     max_range: 1.5
     point_subsample: 1
-    # Octomap padding: 0.03 provides the best balance for covering robot collisions
-    # without causing false collisions with the environment.
-    padding_offset: 0.03
-    padding_scale: 1.05
+    # Padding lowered from 0.03/1.05 (nav scale) to 0.0/1.0 — fine for tabletop
+    # manipulation where voxel inflation crowds the gripper at small-object grasps.
+    padding_offset: 0.0
+    padding_scale: 1.0
     max_update_rate: 2.0
     filtered_cloud_topic: filtered_cloud

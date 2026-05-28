@@ -383,8 +383,12 @@ class PickMotionServer(Node):
                         continue
 
                 else:
+                    # Bump planning budget for normal-object grasps — 0.5 s
+                    # default is too short for RRTConnect with the octomap
+                    # populated; 1.5 s / 8 attempts matches the MoveIt manip
+                    # tutorial guidance for dense scenes.
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
-                        ee_link_pose
+                        ee_link_pose, planning_time=1.5, planning_attempts=8
                     )
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
@@ -658,6 +662,8 @@ class PickMotionServer(Node):
         tolerance_position=0.005,
         tolerance_orientation=0.02,
         velocity=PICK_VELOCITY,
+        planning_time=0.0,
+        planning_attempts=0,
     ):
         request = MoveToPose.Goal()
         request.pose = pose
@@ -667,6 +673,12 @@ class PickMotionServer(Node):
         request.target_link = GRASP_LINK_FRAME
         request.tolerance_position = tolerance_position
         request.tolerance_orientation = tolerance_orientation
+        # motion_planning_server.set_planning_settings honors these only when
+        # > thresholds (0.1 s / 0 attempts); else its defaults (0.5 s / 5) apply.
+        if planning_time > 0:
+            request.planning_time = float(planning_time)
+        if planning_attempts > 0:
+            request.planning_attempts = int(planning_attempts)
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
