@@ -74,7 +74,9 @@ def launch_setup(context, *args, **kwargs):
 
     octomap_config = {
         "octomap_frame": "base_link",
-        "octomap_resolution": 0.05,
+        # Restored to pre-#977 value: at 0.05 m, padded voxels cover small
+        # grasp goals (~6-7 cm objects) and FCL rejects the gripper pose.
+        "octomap_resolution": 0.025,
         "max_range": 2.0,
     }
 
