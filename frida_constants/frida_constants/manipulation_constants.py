@@ -27,6 +27,7 @@ ALWAYS_SET_MODE = False
 JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
+ESTOP_TOPIC = "/manipulation/estop"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"

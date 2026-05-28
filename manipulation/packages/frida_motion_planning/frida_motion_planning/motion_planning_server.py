@@ -5,6 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionServer, ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
+from std_msgs.msg import Bool
 from std_srvs.srv import SetBool, Empty
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
@@ -37,14 +38,15 @@ from frida_constants.manipulation_constants import (
     XARM_ROBOT_STATES_TOPIC,
     XARM_CLEAN_ERROR_SERVICE,
     XARM_MOTION_ENABLE_SERVICE,
-)
-from frida_motion_planning.utils.service_utils import (
-    move_joint_positions as send_joint_goal,
+    ESTOP_TOPIC,
 )
 
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
+from frida_motion_planning.utils.service_utils import (
+    move_joint_positions as send_joint_goal,
+)
 
 
 from frida_motion_planning.utils.XArmServices import XArmServices
@@ -200,6 +202,15 @@ class MotionPlanningServer(Node):
             "/controller_manager/switch_controller",
             callback_group=self.callback_group,
         )
+        self._move_joints_client = ActionClient(
+            self,
+            MoveJoints,
+            MOVE_JOINTS_ACTION_SERVER,
+            callback_group=self.callback_group,
+        )
+
+        self._estop_pub = self.create_publisher(Bool, ESTOP_TOPIC, 10)
+
         self._clear_octomap_client = self.create_client(
             Empty,
             "/clear_octomap",
@@ -216,17 +227,10 @@ class MotionPlanningServer(Node):
             XARM_MOTION_ENABLE_SERVICE,
             callback_group=self.callback_group,
         )
-        # Action client to own move_joints server — used for nav_pose recovery
-        self._move_joints_client = ActionClient(
-            self,
-            MoveJoints,
-            MOVE_JOINTS_ACTION_SERVER,
-            callback_group=self.callback_group,
-        )
         self.create_subscription(
             RobotMsg,
             XARM_ROBOT_STATES_TOPIC,
-            lambda msg: setattr(self, "_arm_state", msg),
+            self._on_arm_state,
             10,
             callback_group=self.callback_group,
         )
@@ -242,6 +246,12 @@ class MotionPlanningServer(Node):
 
     def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
+        if self._arm_state and self._arm_state.state == 4:
+            self.get_logger().warn("E-stop active — rejecting move_to_pose")
+            goal_handle.abort()
+            result = MoveToPose.Result()
+            result.success = False
+            return result
         self.get_logger().info("Executing pose goal...")
 
         # Initialize result
@@ -314,6 +324,12 @@ class MotionPlanningServer(Node):
 
     def move_joints_execute_callback(self, goal_handle):
         """Manages the lifecycle of the MoveJoints action."""
+        if self._arm_state and self._arm_state.state == 4:
+            self.get_logger().warn("E-stop active — rejecting move_joints")
+            goal_handle.abort()
+            result = MoveJoints.Result()
+            result.success = False
+            return result
         self.get_logger().info("Executing joint goal action...")
         result = MoveJoints.Result()
         self.set_planning_settings(goal_handle)
@@ -697,6 +713,27 @@ class MotionPlanningServer(Node):
 
         return response
 
+    def _on_arm_state(self, msg: RobotMsg):
+        prev = self._arm_state
+        self._arm_state = msg
+
+        if msg.state == 4 and (prev is None or prev.state != 4):
+            self.get_logger().warn("E-stop ACTIVATED — broadcasting abort")
+            self._estop_pub.publish(Bool(data=True))
+
+        elif prev is not None and prev.state == 4 and msg.state != 4:
+            self.get_logger().warn("E-stop RELEASED — recovering to nav_pose")
+            self._ensure_arm_ready()
+            send_joint_goal(
+                move_joints_action_client=self._move_joints_client,
+                named_position="nav_pose",
+                velocity=0.3,
+            )
+            self._call_svc(
+                self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
+            )
+            self._estop_pub.publish(Bool(data=False))
+
     def _call_svc(self, client, request, timeout, label):
         """Call a ROS service with a bounded timeout. Returns True on success."""
         elapsed = 0.0
@@ -781,7 +818,6 @@ class MotionPlanningServer(Node):
         s = self._arm_state
         needs_reinit = s.err != 0 or s.mode != 1
         needs_reenable = s.state in (3, 4)
-        reset_position = False
 
         if not (needs_reinit or needs_reenable):
             return  # arm already healthy, nothing to do
@@ -799,7 +835,6 @@ class MotionPlanningServer(Node):
             self._reinit_mode1()
 
         if needs_reenable:
-            reset_position = s.state == 4  # E-Stop
             self.get_logger().warn(
                 f"ensure_arm_ready -> state={s.state} (paused/stopped), re-enabling motion"
             )
@@ -814,12 +849,6 @@ class MotionPlanningServer(Node):
         self._call_svc(
             self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
         )
-        if reset_position:
-            send_joint_goal(
-                move_joints_action_client=self._move_joints_client,
-                named_position="nav_pose",
-                velocity=0.3,
-            )
 
     def _wait_for_arm_ready(self, timeout_sec: float = 5.0):
         """Spin-wait until arm reports state 1/2 with no error, or timeout."""
