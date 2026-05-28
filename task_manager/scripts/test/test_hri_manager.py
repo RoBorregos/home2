@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Union
 
 import rclpy
+from frida_constants.hri_constants import HRIC_DRINK_HOTWORDS, HRIC_NAME_HOTWORDS
 from rclpy.node import Node
 from task_manager.subtask_managers.hri_tasks import HRITasks
 
@@ -78,6 +79,7 @@ TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
+TEST_HRIC_HOTWORDS = False
 
 
 class TestHriManager(Node):
@@ -131,6 +133,9 @@ class TestHriManager(Node):
 
         if TEST_TAKE_ORDER:
             self.test_take_order()
+
+        if TEST_HRIC_HOTWORDS:
+            self.test_hric_hotwords_strategy()
 
         exit(0)
 
@@ -631,6 +636,33 @@ class TestHriManager(Node):
             f.write(f"\n=== RETURN CODE: {result.returncode} ===\n")
 
         self.get_logger().info(f"Results saved to {output_file}")
+
+    def test_hric_hotwords_strategy(self):
+        self.get_logger().info("=== Testing HRIC Hotwords Strategy ===")
+
+        self.get_logger().info("Testing NAME extraction...")
+        status, name = self.hri_manager.ask_and_confirm(
+            question="What is your name?",
+            query="name",
+            initial_prompt=f"The user is telling their name. Expected names: {', '.join(HRIC_NAME_HOTWORDS)}",
+            context="The person is introducing themselves. Extract only the name.",
+            options=HRIC_NAME_HOTWORDS,
+            retries=3,
+            hotwords=" ".join(HRIC_NAME_HOTWORDS),
+        )
+        self.get_logger().info(f"Result Name: {name} (Status: {status})")
+
+        self.get_logger().info("Testing DRINK extraction...")
+        status, drink = self.hri_manager.ask_and_confirm(
+            question="What is your favorite drink?",
+            query="LLM_drink",
+            initial_prompt=f"The user is choosing a drink. Options include: {', '.join(HRIC_DRINK_HOTWORDS)}",
+            context="The person is stating their favorite drink. Extract only the drink name.",
+            options=HRIC_DRINK_HOTWORDS,
+            retries=3,
+            hotwords=" ".join(HRIC_DRINK_HOTWORDS),
+        )
+        self.get_logger().info(f"Result Drink: {drink} (Status: {status})")
 
 
 def main(args=None):
