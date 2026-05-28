@@ -3,7 +3,11 @@ sensors:
 
 point_cloud_camera:
     sensor_plugin: occupancy_map_monitor/PointCloudOctomapUpdater
-    point_cloud_topic: /point_cloud
+    # /point_cloud_object_filtered = /point_cloud passed through the
+    # object_aware_pointcloud_filter node; identical to /point_cloud when
+    # no pick perception bbox is active, drops the target's points during
+    # an active pick so the octomap stays clear at the grasp location.
+    point_cloud_topic: /point_cloud_object_filtered
     max_range: 1.5
     point_subsample: 1
     # Padding lowered from 0.03/1.05 (nav scale) to 0.0/1.0 — fine for tabletop
