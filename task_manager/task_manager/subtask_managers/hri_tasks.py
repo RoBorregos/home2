@@ -735,7 +735,8 @@ class HRITasks(metaclass=SubtaskMeta):
                                 target_info = similarity_list.results[0]
                                 similarity = similarity_list.similarities[0]
                             else:
-                                target_found = False
+                                self.say("Sorry, I couldn't understand.")
+                                continue
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
                     normalized_confidences = {
