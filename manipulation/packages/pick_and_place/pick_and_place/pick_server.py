@@ -31,6 +31,12 @@ from frida_interfaces.srv import (
 from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
+from moveit_msgs.srv import ApplyPlanningScene, GetPlanningScene
+from moveit_msgs.msg import (
+    PlanningScene,
+    PlanningSceneComponents,
+    AllowedCollisionEntry,
+)
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
@@ -123,6 +129,18 @@ class PickMotionServer(Node):
         self._remove_collision_object_client = self.create_client(
             RemoveCollisionObject,
             REMOVE_COLLISION_OBJECT_SERVICE,
+        )
+
+        # Direct PlanningScene clients for surgical ACM updates. Scoped
+        # strictly to specific collision object IDs (the frida_pick_object_*
+        # spheres at the target location) — never to <octomap>, which is a
+        # single coarse identity in MoveIt and would let the gripper plan
+        # through the table.
+        self._get_planning_scene_client = self.create_client(
+            GetPlanningScene, "/get_planning_scene"
+        )
+        self._apply_planning_scene_client = self.create_client(
+            ApplyPlanningScene, "/apply_planning_scene"
         )
 
         self._gripper_set_state_client = self.create_client(
@@ -274,160 +292,187 @@ class PickMotionServer(Node):
 
         self.save_collision_objects()
 
-        for i, pose in enumerate(grasping_poses):
-            for j in range(num_grasping_alternatives):
-                ee_link_pose = copy.deepcopy(pose)
-                offset_distance = self.ee_link_offset
-                offset_distance += j * grasping_alternative_distance
-
-                quat = [
-                    ee_link_pose.pose.orientation.w,
-                    ee_link_pose.pose.orientation.x,
-                    ee_link_pose.pose.orientation.y,
-                    ee_link_pose.pose.orientation.z,
-                ]
-                rotation_matrix = quat2mat(quat)
-                z_axis = rotation_matrix[:, 2]
-
-                new_position = (
-                    np.array(
-                        [
-                            ee_link_pose.pose.position.x,
-                            ee_link_pose.pose.position.y,
-                            ee_link_pose.pose.position.z,
-                        ]
-                    )
-                    + z_axis * offset_distance
+        # ACM-allow the gripper contact links vs the SPECIFIC perception
+        # sphere IDs at the target location (NOT vs <octomap> — the bbox
+        # filter already drops those voxels from the octomap, so the
+        # gripper has no <octomap> contact at the grasp pose). The sphere
+        # IDs are scoped to the target object only, so this permission
+        # cannot relax any other collision in the scene. try/finally
+        # restores the ACM on every exit path.
+        target_sphere_ids = [
+            o.id for o in self.collision_objects if PICK_OBJECT_NAMESPACE in o.id
+        ]
+        acm_set = False
+        try:
+            if target_sphere_ids:
+                acm_set = self.set_acm_pairs(
+                    EEF_CONTACT_LINKS, target_sphere_ids, allowed=True
                 )
-                ee_link_pose.pose.position.x = new_position[0]
-                ee_link_pose.pose.position.y = new_position[1]
-                ee_link_pose.pose.position.z = new_position[2]
 
-                if is_flat:
-                    self.get_logger().info(
-                        f"[Cutlery] Force-guarded pick flow for alternative {j}"
-                    )
+            for i, pose in enumerate(grasping_poses):
+                for j in range(num_grasping_alternatives):
+                    ee_link_pose = copy.deepcopy(pose)
+                    offset_distance = self.ee_link_offset
+                    offset_distance += j * grasping_alternative_distance
 
-                    # Open gripper
-                    self.get_logger().info("[Cutlery] Opening gripper...")
-                    self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
-                    open_gripper(self._gripper_set_state_client)
-                    time.sleep(0.5)
+                    quat = [
+                        ee_link_pose.pose.orientation.w,
+                        ee_link_pose.pose.orientation.x,
+                        ee_link_pose.pose.orientation.y,
+                        ee_link_pose.pose.orientation.z,
+                    ]
+                    rotation_matrix = quat2mat(quat)
+                    z_axis = rotation_matrix[:, 2]
 
-                    # Pre-grasp: 15cm above
-                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
-                    pre_grasp_pose.pose.position.z += CUTLERY_PRE_GRASP_HEIGHT
-
-                    self.get_logger().info(
-                        f"[Cutlery] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
-                        f"(target Z={ee_link_pose.pose.position.z:.4f})"
-                    )
-
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
-                        self.get_logger().warn(
-                            f"[Cutlery] Pre-grasp failed for alternative {j}, trying next"
+                    new_position = (
+                        np.array(
+                            [
+                                ee_link_pose.pose.position.x,
+                                ee_link_pose.pose.position.y,
+                                ee_link_pose.pose.position.z,
+                            ]
                         )
-                        continue
-
-                    self.get_logger().info("[Cutlery] Pre-grasp reached")
-
-                    # Clear octomap
-                    self.get_logger().info("[Cutlery] Clearing octomap...")
-                    if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
-                        req = Empty.Request()
-                        self._clear_octomap_client.call_async(req)
-                    time.sleep(0.3)
-
-                    # Force-guarded descent
-                    self.get_logger().info(
-                        "[Cutlery] Starting force-guarded descent..."
+                        + z_axis * offset_distance
                     )
-                    contact = self.force_guarded_descent()
+                    ee_link_pose.pose.position.x = new_position[0]
+                    ee_link_pose.pose.position.y = new_position[1]
+                    ee_link_pose.pose.position.z = new_position[2]
 
-                    if contact:
-                        # Retract slightly to relieve Z pressure so gripper can close fully
+                    if is_flat:
                         self.get_logger().info(
-                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT * 1000:.1f}mm before closing gripper..."
+                            f"[Cutlery] Force-guarded pick flow for alternative {j}"
                         )
-                        retract_pose = copy.deepcopy(pre_grasp_pose)
-                        retract_pose.pose.position.z = (
-                            ee_link_pose.pose.position.z + CUTLERY_POST_CONTACT_RETRACT
-                        )
-                        self.move_to_pose(retract_pose, velocity=0.1)
+
+                        # Open gripper
+                        self.get_logger().info("[Cutlery] Opening gripper...")
+                        self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
+                        open_gripper(self._gripper_set_state_client)
                         time.sleep(0.5)
 
-                        self.get_logger().info("[Cutlery] Closing gripper...")
+                        # Pre-grasp: 15cm above
+                        pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                        pre_grasp_pose.pose.position.z += CUTLERY_PRE_GRASP_HEIGHT
+
+                        self.get_logger().info(
+                            f"[Cutlery] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
+                            f"(target Z={ee_link_pose.pose.position.z:.4f})"
+                        )
+
+                        pre_handler, pre_result = self.move_to_pose(
+                            pre_grasp_pose, velocity=0.3
+                        )
+
+                        if not pre_result.result.success:
+                            self.get_logger().warn(
+                                f"[Cutlery] Pre-grasp failed for alternative {j}, trying next"
+                            )
+                            continue
+
+                        self.get_logger().info("[Cutlery] Pre-grasp reached")
+
+                        # Clear octomap
+                        self.get_logger().info("[Cutlery] Clearing octomap...")
+                        if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+                            req = Empty.Request()
+                            self._clear_octomap_client.call_async(req)
+                        time.sleep(0.3)
+
+                        # Force-guarded descent
+                        self.get_logger().info(
+                            "[Cutlery] Starting force-guarded descent..."
+                        )
+                        contact = self.force_guarded_descent()
+
+                        if contact:
+                            # Retract slightly to relieve Z pressure so gripper can close fully
+                            self.get_logger().info(
+                                f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT * 1000:.1f}mm before closing gripper..."
+                            )
+                            retract_pose = copy.deepcopy(pre_grasp_pose)
+                            retract_pose.pose.position.z = (
+                                ee_link_pose.pose.position.z
+                                + CUTLERY_POST_CONTACT_RETRACT
+                            )
+                            self.move_to_pose(retract_pose, velocity=0.1)
+                            time.sleep(0.5)
+
+                            self.get_logger().info("[Cutlery] Closing gripper...")
+                            close_gripper(self._gripper_set_state_client)
+                            time.sleep(1.5)
+                            self.get_logger().info("[Cutlery] Gripper closed")
+
+                            # Lift
+                            self.get_logger().info("[Cutlery] Lifting...")
+                            self.move_to_pose(pre_grasp_pose, velocity=0.2)
+
+                            pick_result.pick_pose = ee_link_pose
+                            pick_result.grasp_score = (
+                                goal_handle.request.grasping_scores[i]
+                            )
+                            pick_result.object_pick_height = 0.0
+                            pick_result.object_height = 0.0
+
+                            self.get_logger().info("[Cutlery] Pick complete!")
+                            return True, pick_result
+                        else:
+                            self.get_logger().warn(
+                                f"[Cutlery] No contact for alternative {j}, trying next"
+                            )
+                            continue
+
+                    else:
+                        # Keep defaults (planning_time=0.5, attempts=5). VAMP's
+                        # internal OMPL fallback runs 4 retries each using
+                        # planning_time, so a higher value amplifies wasted time
+                        # when the goal can't be sampled. Default behavior here.
+                        grasp_pose_handler, grasp_pose_result = self.move_to_pose(
+                            ee_link_pose
+                        )
+
+                    print(f"Grasp Pose {i} result: {grasp_pose_result}")
+                    if grasp_pose_result.result.success:
+                        self.get_logger().info("Grasp pose reached")
+                        result, lowest_obj, highest_obj = self.attach_pick_object()
+
+                        self.get_logger().info("Closing gripper")
                         close_gripper(self._gripper_set_state_client)
                         time.sleep(1.5)
-                        self.get_logger().info("[Cutlery] Gripper closed")
+                        self.get_logger().info("Gripper closed")
 
-                        # Lift
-                        self.get_logger().info("[Cutlery] Lifting...")
-                        self.move_to_pose(pre_grasp_pose, velocity=0.2)
+                        if result:
+                            self.get_logger().info("Object attached")
+                            pick_result.pick_pose = ee_link_pose
+                            pick_result.grasp_score = (
+                                goal_handle.request.grasping_scores[i]
+                            )
 
-                        pick_result.pick_pose = ee_link_pose
-                        pick_result.grasp_score = goal_handle.request.grasping_scores[i]
-                        pick_result.object_pick_height = 0.0
-                        pick_result.object_height = 0.0
-
-                        self.get_logger().info("[Cutlery] Pick complete!")
-                        return True, pick_result
-                    else:
-                        self.get_logger().warn(
-                            f"[Cutlery] No contact for alternative {j}, trying next"
-                        )
-                        continue
-
-                else:
-                    # Keep defaults (planning_time=0.5, attempts=5). VAMP's
-                    # internal OMPL fallback runs 4 retries each using
-                    # planning_time, so a higher value amplifies wasted time
-                    # when the goal can't be sampled. Default behavior here.
-                    grasp_pose_handler, grasp_pose_result = self.move_to_pose(
-                        ee_link_pose
-                    )
-
-                print(f"Grasp Pose {i} result: {grasp_pose_result}")
-                if grasp_pose_result.result.success:
-                    self.get_logger().info("Grasp pose reached")
-                    result, lowest_obj, highest_obj = self.attach_pick_object()
-
-                    self.get_logger().info("Closing gripper")
-                    close_gripper(self._gripper_set_state_client)
-                    time.sleep(1.5)
-                    self.get_logger().info("Gripper closed")
-
-                    if result:
-                        self.get_logger().info("Object attached")
-                        pick_result.pick_pose = ee_link_pose
-                        pick_result.grasp_score = goal_handle.request.grasping_scores[i]
-
-                        if lowest_obj is not None:
-                            pick_result.object_pick_height = (
-                                self.calculate_object_pick_height(
-                                    lowest_obj, ee_link_pose
+                            if lowest_obj is not None:
+                                pick_result.object_pick_height = (
+                                    self.calculate_object_pick_height(
+                                        lowest_obj, ee_link_pose
+                                    )
                                 )
-                            )
+                            else:
+                                pick_result.object_pick_height = 0.0
+
+                            if lowest_obj is not None and highest_obj is not None:
+                                pick_result.object_height = (
+                                    self.calculate_object_height(
+                                        lowest_obj, highest_obj
+                                    )
+                                )
+                            else:
+                                pick_result.object_height = 0.0
                         else:
-                            pick_result.object_pick_height = 0.0
+                            self.get_logger().error("Failed to attach object")
 
-                        if lowest_obj is not None and highest_obj is not None:
-                            pick_result.object_height = self.calculate_object_height(
-                                lowest_obj, highest_obj
-                            )
-                        else:
-                            pick_result.object_height = 0.0
-                    else:
-                        self.get_logger().error("Failed to attach object")
+                        return True, pick_result
 
-                    return True, pick_result
-
-        self.get_logger().error("Failed to reach any grasp pose")
-        return False, pick_result
+            self.get_logger().error("Failed to reach any grasp pose")
+            return False, pick_result
+        finally:
+            if acm_set:
+                self.set_acm_pairs(EEF_CONTACT_LINKS, target_sphere_ids, allowed=False)
 
     # ==================================================================
     # Force-Guarded Descent
@@ -733,6 +778,63 @@ class PickMotionServer(Node):
         future = self._remove_collision_object_client.call_async(request)
         self.wait_for_future(future)
         return future.result().success
+
+    def set_acm_pairs(self, link_ids, object_ids, allowed):
+        """Surgically (dis)allow collisions between specific links and objects.
+
+        Modifies only the (link_id, object_id) cells of the ACM symmetrically;
+        every other pair stays untouched. Safe by design as long as object_ids
+        is a list of SPECIFIC collision-object IDs at the target location
+        (e.g. frida_pick_object_* spheres) — never <octomap>, which is a
+        single coarse entity in MoveIt and would permit gripper-vs-anywhere.
+        Returns True on apply success, False otherwise. No-op on empty lists.
+        """
+        if not link_ids or not object_ids:
+            return True
+        if not self._get_planning_scene_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warn("set_acm_pairs: /get_planning_scene not ready")
+            return False
+        req = GetPlanningScene.Request()
+        req.components.components = PlanningSceneComponents.ALLOWED_COLLISION_MATRIX
+        future = self._get_planning_scene_client.call_async(req)
+        self.wait_for_future(future)
+        acm = future.result().scene.allowed_collision_matrix
+
+        # Ensure every needed name has a row+column (defaults all-disallowed).
+        for name in list(link_ids) + list(object_ids):
+            if name in acm.entry_names:
+                continue
+            acm.entry_names.append(name)
+            for entry in acm.entry_values:
+                entry.enabled.append(False)
+            new_entry = AllowedCollisionEntry()
+            new_entry.enabled = [False] * len(acm.entry_names)
+            acm.entry_values.append(new_entry)
+
+        # Flip only the requested cells, symmetrically.
+        for link in link_ids:
+            i = acm.entry_names.index(link)
+            for obj in object_ids:
+                j = acm.entry_names.index(obj)
+                acm.entry_values[i].enabled[j] = bool(allowed)
+                acm.entry_values[j].enabled[i] = bool(allowed)
+
+        diff = PlanningScene()
+        diff.is_diff = True
+        diff.allowed_collision_matrix = acm
+        if not self._apply_planning_scene_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warn("set_acm_pairs: /apply_planning_scene not ready")
+            return False
+        apply_req = ApplyPlanningScene.Request()
+        apply_req.scene = diff
+        apply_future = self._apply_planning_scene_client.call_async(apply_req)
+        self.wait_for_future(apply_future)
+        ok = bool(apply_future.result().success)
+        if not ok:
+            self.get_logger().warn(
+                f"set_acm_pairs: apply failed (links={link_ids}, n_objs={len(object_ids)}, allowed={allowed})"
+            )
+        return ok
 
     def calculate_object_pick_height(self, obj, pose):
         if obj.pose.header.frame_id != pose.header.frame_id:
