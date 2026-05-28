@@ -22,24 +22,41 @@ class TestPersonDescription(Node):
         self.result["status"] = status
 
         if status == Status.EXECUTION_SUCCESS and description:
-            _, natural = self.subtask_manager.hri.answer_with_context(
+            future = self.hri.answer_with_context(
                 question=(
                     "Convert these physical attributes into a single fluent English sentence "
                     "suitable for spoken speech. Start with 'They are'. "
                     "Do not use semicolons or list formatting."
                 ),
                 context=description,
-            )            
-            self.result["description"] = natural if natural else description
+                is_async=True,
+            )
+
+            def callback(f):
+                _, natural = f.result()
+                natural_answer = natural if natural else description
+                self.result["description"] = natural_answer
+                print(f"Final natural description: {natural_answer}")
+                self.hri.say(natural_answer, wait=False)
+
+            future.add_done_callback(callback)
         else:
             self.result["description"] = description
+            print(f"Raw description: {description}")
 
     def run_test(self):
+        print("Starting person description test...")
         self.vision.describe_person(callback=self.on_description)
 
-        time.sleep(10)
+        start_time = time.time()
+        # Spin for up to 30 seconds to allow async operations to complete
+        while time.time() - start_time < 30:
+            rclpy.spin_once(self, timeout_sec=0.1)
+            if self.result["description"]:
+                break
 
-        print(f"Description: {self.result['description']}")
+        print(f"Test finished. Result description: {self.result['description']}")
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -55,4 +72,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-

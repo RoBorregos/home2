@@ -141,15 +141,22 @@ class HRIC_TM(Node):
 
     def set_description(self, status, description: str):
         if status == Status.EXECUTION_SUCCESS and description:
-            _, natural = self.subtask_manager.hri.answer_with_context(
+            future = self.subtask_manager.hri.answer_with_context(
                 question=(
                     "Convert these physical attributes into a single fluent English sentence "
                     "suitable for spoken speech. Start with 'They are'. "
                     "Do not use semicolons or list formatting."
                 ),
                 context=description,
+                is_async=True,
             )
-            self.get_current_guest().description = natural if natural else description
+
+            def callback(f):
+                _, natural = f.result()
+                natural_answer = natural if natural else description
+                self.get_current_guest().description = natural_answer
+
+            future.add_done_callback(callback)
         else:
             self.get_current_guest().description = description
 
