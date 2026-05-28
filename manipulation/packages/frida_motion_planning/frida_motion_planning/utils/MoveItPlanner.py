@@ -106,7 +106,7 @@ class MoveItPlanner(Planner):
             # Returns a tuple consistent also in case of failure
             return False, None
 
-    def execute_plan(self, trajectory, wait: bool = True, get_arm_state=None):
+    def execute_plan(self, trajectory, wait: bool = True, is_estop_active=None):
         """
         Takes a pre-planned trajectory and executes it.
         Monitors the execution and returns True if completed successfully.
@@ -142,8 +142,7 @@ class MoveItPlanner(Planner):
             # servicing other callbacks (e.g. incoming action goals).
             while not future.done():
                 # Check external abort condition (e.g. e-stop pressed mid-execution)
-                state = get_arm_state() if get_arm_state else None
-                if state and state.state == 4:
+                if is_estop_active and is_estop_active():
                     self.moveit2.cancel_execution()
                     return False
                 time.sleep(0.001)
