@@ -81,6 +81,7 @@ class MotionPlanningServer(Node):
 
         # xarm states
         self._arm_state: RobotMsg | None = None
+        self._in_estop = False
         self.current_mode = -1
 
         self.servo = MoveItServo(
@@ -246,7 +247,7 @@ class MotionPlanningServer(Node):
 
     def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
-        if self._arm_state and self._arm_state.state == 4:
+        if self._in_estop:
             self.get_logger().warn("E-stop active — rejecting move_to_pose")
             goal_handle.abort()
             result = MoveToPose.Result()
@@ -324,7 +325,7 @@ class MotionPlanningServer(Node):
 
     def move_joints_execute_callback(self, goal_handle):
         """Manages the lifecycle of the MoveJoints action."""
-        if self._arm_state and self._arm_state.state == 4:
+        if self._in_estop:
             self.get_logger().warn("E-stop active — rejecting move_joints")
             goal_handle.abort()
             result = MoveJoints.Result()
@@ -714,25 +715,27 @@ class MotionPlanningServer(Node):
         return response
 
     def _on_arm_state(self, msg: RobotMsg):
-        prev = self._arm_state
         self._arm_state = msg
 
-        if msg.state == 4 and (prev is None or prev.state != 4):
-            self.get_logger().warn("E-stop ACTIVATED — broadcasting abort")
-            self._estop_pub.publish(Bool(data=True))
-
-        elif prev is not None and prev.state == 4 and msg.state != 4:
-            self.get_logger().warn("E-stop RELEASED — recovering to nav_pose")
-            self._ensure_arm_ready()
-            send_joint_goal(
-                move_joints_action_client=self._move_joints_client,
-                named_position="nav_pose",
-                velocity=0.3,
-            )
-            self._call_svc(
-                self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
-            )
-            self._estop_pub.publish(Bool(data=False))
+        if msg.state == 4:
+            if not self._in_estop:
+                self._in_estop = True
+                self.get_logger().warn("E-stop ACTIVATED — broadcasting abort")
+                self._estop_pub.publish(Bool(data=True))
+        else:
+            if self._in_estop:
+                self._in_estop = False
+                self.get_logger().warn("E-stop RELEASED — recovering to nav_pose")
+                self._ensure_arm_ready()
+                self._estop_pub.publish(Bool(data=False))
+                send_joint_goal(
+                    move_joints_action_client=self._move_joints_client,
+                    named_position="nav_pose",
+                    velocity=0.3,
+                )
+                self._call_svc(
+                    self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
+                )
 
     def _call_svc(self, client, request, timeout, label):
         """Call a ROS service with a bounded timeout. Returns True on success."""
