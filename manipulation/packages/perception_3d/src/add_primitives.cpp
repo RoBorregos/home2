@@ -45,6 +45,9 @@
 #include <frida_interfaces/srv/get_plane_bbox.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 #include <utility>
+#include <vision_msgs/msg/bounding_box3_d.hpp>
+#include <vision_msgs/msg/detection3_d.hpp>
+#include <vision_msgs/msg/detection3_d_array.hpp>
 
 enum class PassThroughFilterType { X, Y, Z };
 
@@ -110,6 +113,16 @@ private:
   rclcpp::Client<frida_interfaces::srv::AddCollisionObjects>::SharedPtr
       add_collision_object_client;
 
+  // Publishes the target object's bounding box (in base_link) every time a
+  // pick perception is processed for the actual target (is_object &&
+  // !is_other_objects). A downstream filter node uses this bbox to drop
+  // pointcloud points inside it before they reach move_group's octomap
+  // monitor, so the object isn't represented as octomap voxels (only as the
+  // explicit perception spheres). Gripper-vs-spheres can then be ACM-allowed
+  // surgically without touching <octomap>, which was the unsafe shortcut.
+  rclcpp::Publisher<vision_msgs::msg::Detection3DArray>::SharedPtr
+      target_object_bbox_pub;
+
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
 
@@ -153,6 +166,13 @@ public:
     // this->remove_plane_client =
     //     this->create_client<frida_interfaces::srv::RemovePlane>(
     //         REMOVE_PLANE_SERVICE);
+
+    // Target bbox publisher — used by the object-aware pointcloud filter
+    // node (Phase 2) to drop points inside the target's bounding box before
+    // they feed the octomap monitor in move_group.
+    this->target_object_bbox_pub =
+        this->create_publisher<vision_msgs::msg::Detection3DArray>(
+            "/manipulation/target_object_bbox", 10);
 
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
@@ -645,6 +665,36 @@ public:
 
       ASSERT_AND_RETURN_CODE(status, OK,
                              "Error downsampling object with code %d", status);
+
+      // Publish the TARGET object's axis-aligned bbox in base_link so the
+      // downstream pointcloud filter can drop points inside it before they
+      // hit the octomap monitor. Only published for the actual target
+      // (is_object && !is_other_objects) — surrounding clutter ("other_*")
+      // must remain visible to the planner so the arm doesn't crash into it.
+      if (!request->is_other_objects && !cloud->points.empty()) {
+        pcl::PointXYZ min_pt, max_pt;
+        pcl::getMinMax3D(*cloud, min_pt, max_pt);
+        const double margin = 0.03;  // 3 cm margin around cluster
+        vision_msgs::msg::Detection3DArray bbox_msg;
+        bbox_msg.header.frame_id = "base_link";
+        bbox_msg.header.stamp = this->now();
+        vision_msgs::msg::Detection3D det;
+        det.bbox.center.position.x = (min_pt.x + max_pt.x) / 2.0;
+        det.bbox.center.position.y = (min_pt.y + max_pt.y) / 2.0;
+        det.bbox.center.position.z = (min_pt.z + max_pt.z) / 2.0;
+        det.bbox.center.orientation.w = 1.0;  // axis-aligned
+        det.bbox.size.x = (max_pt.x - min_pt.x) + 2.0 * margin;
+        det.bbox.size.y = (max_pt.y - min_pt.y) + 2.0 * margin;
+        det.bbox.size.z = (max_pt.z - min_pt.z) + 2.0 * margin;
+        bbox_msg.detections.push_back(det);
+        this->target_object_bbox_pub->publish(bbox_msg);
+        RCLCPP_INFO(
+            this->get_logger(),
+            "Published target bbox center=(%.3f,%.3f,%.3f) size=(%.3f,%.3f,%.3f)",
+            det.bbox.center.position.x, det.bbox.center.position.y,
+            det.bbox.center.position.z, det.bbox.size.x, det.bbox.size.y,
+            det.bbox.size.z);
+      }
 
       std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
           req2 = std::make_shared<
