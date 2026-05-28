@@ -80,7 +80,10 @@ class PlaceMotionServer(Node):
 
         self._estop = False
         self.create_subscription(
-            Bool, ESTOP_TOPIC, lambda msg: setattr(self, "_estop", msg.data), 10
+            Bool,
+            ESTOP_TOPIC,
+            lambda msg: setattr(self, "_estop", True) if msg.data else None,
+            10,
         )
 
         self._move_to_pose_action_client.wait_for_server()
@@ -91,6 +94,7 @@ class PlaceMotionServer(Node):
 
     async def execute_callback(self, goal_handle):
         """Execute the place action when a goal is received."""
+        self._estop = False
         self.get_logger().info("Executing place goal...")
 
         # Initialize result

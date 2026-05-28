@@ -721,9 +721,11 @@ class MotionPlanningServer(Node):
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
-        if msg.state == 4 and not self._in_estop:
+        if (msg.state == 4 or msg.err != 0) and not self._in_estop:
             self._in_estop = True
-            self.get_logger().warn("E-stop ACTIVATED — broadcasting abort")
+            self.get_logger().warn(
+                f"E-stop ACTIVATED (state={msg.state}, err={msg.err}) — broadcasting abort"
+            )
             self._estop_pub.publish(Bool(data=True))
 
     def _try_estop_recovery(self):
@@ -733,7 +735,11 @@ class MotionPlanningServer(Node):
         try:
             self.get_logger().info("E-stop active — attempting arm recovery...")
             self._ensure_arm_ready()
-            if self._arm_state and self._arm_state.state not in (3, 4):
+            if (
+                self._arm_state
+                and self._arm_state.state not in (3, 4)
+                and self._arm_state.err == 0
+            ):
                 self._in_estop = False
                 self.get_logger().warn(
                     "E-stop CLEARED — arm recovered, going to nav_pose"
