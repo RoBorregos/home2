@@ -31,11 +31,26 @@ if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable .env "RUNTIME" "nvidia"
 fi
 
-# Install deps + build Next.js bundle if missing (or forced)
+# Install deps + build Next.js bundle if missing, source changed, or forced
 DISPLAY_DIR="../../hri/packages/display/display"
-if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
+HASH_FILE="$DISPLAY_DIR/.next/.build-hash"
+
+compute_display_hash() {
+  find "$DISPLAY_DIR/app" "$DISPLAY_DIR/components" "$DISPLAY_DIR/types" \
+       "$DISPLAY_DIR/RosClient.ts" "$DISPLAY_DIR/package.json" \
+       "$DISPLAY_DIR/tsconfig.json" \
+    -type f 2>/dev/null \
+    | sort | xargs md5sum 2>/dev/null | md5sum | awk '{print $1}'
+}
+
+CURRENT_HASH=$(compute_display_hash)
+STORED_HASH=$(cat "$HASH_FILE" 2>/dev/null || echo "")
+
+if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] \
+    || [ "$CURRENT_HASH" != "$STORED_HASH" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Installing dependencies and building display inside temporary container..."
   docker compose -f "$COMPOSE" run $BUILD_IMAGE --rm --entrypoint "" display-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
+  echo "$CURRENT_HASH" > "$HASH_FILE"
 fi
 
 #_________________________RUN_________________________
