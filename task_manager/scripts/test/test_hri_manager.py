@@ -202,20 +202,22 @@ class TestHriManager(Node):
 
         s, interest1 = self.hri_manager.ask_and_confirm(
             "What is your main interest?",
-            "LLM_interest",
+            "LLM_hobby",
             "The person is answering about their main hobby or interest. Extract the hobby or activity, even if it is a phrase like 'going to the gym' or 'playing soccer'. Return empty only if the response is a filler word (okay, yes, sure) or completely unrelated to hobbies.",
             confirm_preference,
             initial_prompt="Expected: a hobby or interest such as sports, music, cooking, gaming, reading, art, technology, travel, fitness.",
             start_silence_time=5.0,
+            always_confirm=True,
         )
 
         s, interest2 = self.hri_manager.ask_and_confirm(
             "What is your favorite second interest?",
-            "LLM_interest",
+            "LLM_hobby",
             "The person is answering about their second hobby or interest. Extract the hobby or activity, even if it is a phrase like 'going to the gym' or 'playing soccer'. Return empty only if the response is a filler word (okay, yes, sure) or completely unrelated to hobbies.",
             confirm_preference,
             initial_prompt="Expected: a hobby or interest such as sports, music, cooking, gaming, reading, art, technology, travel, fitness.",
             start_silence_time=5.0,
+            always_confirm=True,
         )
 
     def test_categorize_shelves(self):
