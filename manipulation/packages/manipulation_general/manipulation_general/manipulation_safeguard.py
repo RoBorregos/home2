@@ -161,6 +161,7 @@ class ManipulationSafeguard(Node):
             if (self.get_clock().now() - start).nanoseconds > 5e9:
                 self.get_logger().error(f"{label} -> timeout")
                 return False
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
         result = future.result()
         if result and result.ok:
             self.get_logger().info(f"{label} -> ok")
