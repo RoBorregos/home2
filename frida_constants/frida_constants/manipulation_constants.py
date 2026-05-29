@@ -16,6 +16,14 @@ XARM_MOTION_ENABLE_SERVICE = "/xarm/motion_enable"
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
 
+# xArm arm state values (from xArm SDK)
+XARM_STATE_READY = 1
+XARM_STATE_MOVING = 2
+XARM_STATE_PAUSED = 3
+XARM_STATE_STOPPED = 4  # error / e-stop
+
+XARM_ALL_JOINTS_ID = 8  # pass to motion_enable to target all joints
+
 FACE_RECOGNITION_LIFETIME = 0.1
 FOLLOW_FACE_SPEED = 1.5
 FOLLOW_FACE_TOLERANCE = 0.15

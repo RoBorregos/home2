@@ -19,6 +19,12 @@ from frida_constants.manipulation_constants import (
     ESTOP_TOPIC,
     MOVE_JOINTS_ACTION_SERVER,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
+    MOVEIT_MODE,
+    XARM_STATE_READY,
+    XARM_STATE_MOVING,
+    XARM_STATE_PAUSED,
+    XARM_STATE_STOPPED,
+    XARM_ALL_JOINTS_ID,
 )
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
@@ -88,7 +94,7 @@ class ManipulationSafeguard(Node):
         self._ensure_arm_ready()
         ok = (
             self._arm_state is not None
-            and self._arm_state.state in (1, 2)
+            and self._arm_state.state in (XARM_STATE_READY, XARM_STATE_MOVING)
             and self._arm_state.err == 0
         )
         response.success = ok
@@ -97,7 +103,7 @@ class ManipulationSafeguard(Node):
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
-        if (msg.state == 4 or msg.err != 0) and not self._in_estop:
+        if (msg.state == XARM_STATE_STOPPED or msg.err != 0) and not self._in_estop:
             self._in_estop = True
             self.get_logger().warn(
                 f"E-stop ACTIVATED (state={msg.state}, err={msg.err}) — broadcasting abort"
@@ -113,7 +119,7 @@ class ManipulationSafeguard(Node):
             self._ensure_arm_ready()
             if (
                 self._arm_state
-                and self._arm_state.state not in (3, 4)
+                and self._arm_state.state not in (XARM_STATE_PAUSED, XARM_STATE_STOPPED)
                 and self._arm_state.err == 0
             ):
                 self._in_estop = False
@@ -184,7 +190,7 @@ class ManipulationSafeguard(Node):
 
     def _motion_enable(self) -> bool:
         req = SetInt16ById.Request()
-        req.id = 8
+        req.id = XARM_ALL_JOINTS_ID
         req.data = 1
         return self._call_svc(self._motion_enable_client, req, 5.0, "motion_enable")
 
@@ -207,8 +213,8 @@ class ManipulationSafeguard(Node):
             return
 
         s = self._arm_state
-        needs_reinit = s.err != 0 or s.mode != 1
-        needs_reenable = s.state in (3, 4)
+        needs_reinit = s.err != 0 or s.mode != MOVEIT_MODE
+        needs_reenable = s.state in (XARM_STATE_PAUSED, XARM_STATE_STOPPED)
 
         if not (needs_reinit or needs_reenable):
             return
@@ -246,7 +252,7 @@ class ManipulationSafeguard(Node):
         while self.get_clock().now() < deadline:
             if (
                 self._arm_state is not None
-                and self._arm_state.state in (1, 2)
+                and self._arm_state.state in (XARM_STATE_READY, XARM_STATE_MOVING)
                 and self._arm_state.err == 0
             ):
                 return
