@@ -17,7 +17,9 @@ import rclpy
 from rclpy.node import Node
 
 from _merger_helpers import (
+    fallback_preserves_all,
     gripper_invariant_holds,
+    non_goto_actions_preserved,
     per_command_order_preserved,
 )
 from task_manager.subtask_managers.hri_tasks import HRITasks
@@ -1035,6 +1037,104 @@ class TestHriManager(Node):
             return order == list(range(17)) and len(plan.actions) == 34, plan
 
         scenarios.append(("m_cap_fallback_to_sequential", s_m_cap_fallback))
+
+        # 16. Regression: the three canonical GPSR utterances merged as a batch
+        # must not drop any command or any command's work. This guards the
+        # reported "loses the first part of the first command" symptom: the
+        # merger is deterministic and preserves every command, so a real loss
+        # can only come from upstream LLM decomposition, never from merge().
+        def _example_commands():
+            c_escort = _cmd(
+                _act("go_to", location_to_go="chairs"),
+                _act("find_person", attribute_value="wearing a black blouse"),
+                _act("guide_person_to", destination_room="bathroom"),
+            )
+            c_tell = _cmd(
+                _act("go_to", location_to_go="side_tables"),
+                _act("get_visual_info", measure="biggest", object_category="object"),
+                _act("go_to", location_to_go="start_location"),
+                _act(
+                    "say_with_context", user_instruction="biggest object", previous_command_info=[]
+                ),
+            )
+            c_meet = _cmd(
+                _act("go_to", location_to_go="entrance"),
+                _act("find_person_by_name", name="adel"),
+                _act("follow_person_until", destination="waste_basket"),
+            )
+            coords = {
+                "chairs": (0.0, 0.0),
+                "bathroom": (2.0, 1.0),
+                "side_tables": (5.0, 5.0),
+                "start_location": (0.0, 0.0),
+                "entrance": (-3.0, 2.0),
+                "waste_basket": (-5.0, 4.0),
+            }
+            return [c_escort, c_tell, c_meet], coords
+
+        def s_example_batch_no_loss():
+            cmds, coords = _example_commands()
+            plan = merge(cmds, locator=_make_locator(coords), origin=(0.0, 0.0))
+            ok = (
+                non_goto_actions_preserved(plan, cmds)
+                and fallback_preserves_all(plan, cmds)
+                and gripper_invariant_holds(plan.actions)
+                and per_command_order_preserved(plan.actions, n_cmds=len(cmds))
+                # the user's FIRST command's first action survives into the plan
+                and any(pa.source_cmd == 0 and pa.source_idx == 0 for pa in plan.actions)
+            )
+            return ok, plan
+
+        scenarios.append(("example_batch_no_command_lost", s_example_batch_no_loss))
+
+        # 17. Same three commands, origin=None. The schedule may reorder which
+        # command runs first (no map-origin bias), but still nothing is lost.
+        def s_example_batch_origin_none_no_loss():
+            cmds, coords = _example_commands()
+            plan = merge(cmds, locator=_make_locator(coords), origin=None)
+            ok = (
+                non_goto_actions_preserved(plan, cmds)
+                and fallback_preserves_all(plan, cmds)
+                and per_command_order_preserved(plan.actions, n_cmds=len(cmds))
+            )
+            return ok, plan
+
+        scenarios.append(("example_batch_origin_none_no_loss", s_example_batch_origin_none_no_loss))
+
+        # 18. Shared start location: the tiebreak must protect cmd0's leading
+        # go_to so it is the surviving visit and cmd0's first part is never the
+        # one collapsed away (only the later command's redundant go_to is).
+        def s_shared_start_first_command_protected():
+            cmd0 = _cmd(
+                _act("go_to", location_to_go="chairs"),
+                _act("find_person", attribute_value="black blouse"),
+                _act("guide_person_to", destination_room="bathroom"),
+            )
+            cmd1 = _cmd(
+                _act("go_to", location_to_go="chairs"),
+                _act("count", target_to_count="cups"),
+            )
+            coords = {"chairs": (10.0, 0.0), "bathroom": (50.0, 50.0)}
+            plan = merge([cmd0, cmd1], locator=_make_locator(coords), origin=(9.0, 0.0))
+            chairs_gotos = [
+                pa
+                for pa in plan.actions
+                if pa.action.action == "go_to" and pa.action.location_to_go == "chairs"
+            ]
+            first_goto = next((pa for pa in plan.actions if pa.action.action == "go_to"), None)
+            ok = (
+                non_goto_actions_preserved(plan, [cmd0, cmd1])
+                and len(chairs_gotos) == 1
+                # the one surviving go_to chairs belongs to cmd0, not cmd1
+                and chairs_gotos[0].source_cmd == 0
+                and first_goto is not None
+                and first_goto.source_cmd == 0
+            )
+            return ok, plan
+
+        scenarios.append(
+            ("shared_start_first_command_goto_protected", s_shared_start_first_command_protected)
+        )
 
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_file = os.path.join(OUTPUT_DIR, f"merger_{date_str}.csv")
