@@ -22,7 +22,7 @@
         general:
             camera_timeout_sec: 5
             camera_max_reconnect: 5
-            camera_flip: false
+            camera_flip: false # cámara está físicamente derecha (#944); la corrección de 180° va en el URDF (load_zed), no aquí
             self_calib: true # Enable the self-calibration process at camera opening.
             serial_number: 0 # overwritten by launch file
             pub_resolution: 'NATIVE' # The resolution used for image and depth map publishing. 'NATIVE' to use the same `general.grab_resolution` - `CUSTOM` to apply the `general.pub_downscale_factor` downscale factory to reduce bandwidth in transmission
@@ -49,9 +49,13 @@
             sensors_pub_rate: 30. # frequency of publishing of sensors data. MAX: 400. - MIN: grab rate
 
         region_of_interest:
-            automatic_roi: false # Enable the automatic ROI generation
+            automatic_roi: false # (#944) determinista via manual_polygon abajo. El automatic_roi NO sirve aquí: solo mira la mitad inferior (image_height_ratio_cutoff) pero el gripper va ARRIBA del FoV.
             depth_far_threshold_meters: 2.5 # Filtering how far object in the ROI should be considered
             image_height_ratio_cutoff: 0.5 # By default consider only the lower half of the image
+            # (#944) ROI = zona VÁLIDA (la ZED procesa AQUÍ, ignora el resto). Conserva los 2/3
+            # inferiores (mesa+objetos), excluye la franja superior donde va el gripper. Normalizado
+            # [0,1], y=0 arriba. TUNEAR el 0.38: súbelo si queda gripper, bájalo si recorta objetos.
+            manual_polygon: '[[0.0,0.38],[1.0,0.38],[1.0,1.0],[0.0,1.0]]'
             #manual_polygon: '[]' # A polygon defining the ROI where the ZED SDK perform the processing ignoring the rest. Coordinates must be normalized to '1.0' to be resolution independent.
             #manual_polygon: '[[0.25,0.33],[0.75,0.33],[0.75,0.5],[0.5,0.75],[0.25,0.5]]'
             #manual_polygon: '[[0.25,0.25],[0.75,0.25],[0.75,0.75],[0.25,0.75]]'

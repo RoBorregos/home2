@@ -6,8 +6,8 @@ point_cloud_camera:
     point_cloud_topic: /point_cloud
     max_range: 1.5
     point_subsample: 1
-    # Octomap padding: 0.03 provides the best balance for covering robot collisions
-    # without causing false collisions with the environment.
+    # Alineado con main (#944): 0.1 inflaba el octomap 10 cm -> falsas colisiones del
+    # gripper con objeto/mesa al agarrar -> FCL rechazaba el grasp. 0.03 = balance de main.
     padding_offset: 0.03
     padding_scale: 1.05
     max_update_rate: 2.0

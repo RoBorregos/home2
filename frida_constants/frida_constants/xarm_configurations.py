@@ -40,7 +40,7 @@ TABLE_STARE = {
         "joint2": -80.0,
         "joint3": -70.0,
         "joint4": 0.0,
-        "joint5": 50.0,
+        "joint5": 80.0,
         "joint6": 45.0,
     },
     "degrees": True,
