@@ -154,7 +154,7 @@ class PickMotionServer(Node):
         self.create_subscription(
             Bool,
             ESTOP_TOPIC,
-            lambda msg: setattr(self, "_estop", True) if msg.data else None,
+            lambda msg: setattr(self, "_estop", msg.data),
             10,
         )
 
@@ -165,7 +165,6 @@ class PickMotionServer(Node):
         self._latest_joint_state = msg
 
     async def execute_callback(self, goal_handle):
-        self._estop = False
         self.get_logger().info("Executing pick goal...")
 
         feedback = PickMotion.Feedback()
