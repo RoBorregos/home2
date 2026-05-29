@@ -34,7 +34,7 @@ def get_object_point(object_name: str, detection_handler_client) -> PointStamped
 
 
 def get_object_cluster(
-    point: PointStamped, perception_3d_client, add_collision_objects=True
+    point: PointStamped, perception_3d_client, add_collision_objects: bool = True
 ):
     request = PickPerceptionService.Request()
     request.point = point

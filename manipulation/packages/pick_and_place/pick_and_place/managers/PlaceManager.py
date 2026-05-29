@@ -10,6 +10,7 @@ from frida_interfaces.action import PlaceMotion
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
+from frida_constants.manipulation_constants import TOP_SAFETY_MARGIN
 from pick_and_place.utils.perception_utils import get_object_point, get_object_cluster
 from frida_constants.manipulation_constants import (
     SHELF_MIN_REACH,
@@ -22,8 +23,7 @@ import numpy as np
 import json
 
 
-def get_object_centroid(object_cluster):
-    # 8. Compute Centroid/Height and Set Pour Pose
+def get_object_cloud_params(object_cluster):
     cloud_gen = point_cloud2.read_points(
         object_cluster, field_names=("x", "y", "z"), skip_nans=True
     )
@@ -33,7 +33,42 @@ def get_object_centroid(object_cluster):
 
     points_np = np.array(points)
     centroid = np.mean(points_np, axis=0)
-    return centroid
+    max_z = np.max(points_np[:, 2])
+    return centroid, max_z
+
+
+def get_object_top_center(object_cluster, top_margin=0.03, node=None):
+    """Estimate the center of the top opening of a convex object (e.g. trash can)."""
+    cloud_gen = point_cloud2.read_points(
+        object_cluster, field_names=("x", "y", "z"), skip_nans=True
+    )
+    points = [list(p) for p in cloud_gen]
+    if not points:
+        return None
+
+    points_np = np.array(points)
+    max_z = np.max(points_np[:, 2])
+
+    # Radius from full cloud Y-extent (body has more coverage than rim)
+    full_min_y = np.min(points_np[:, 1])
+    full_max_y = np.max(points_np[:, 1])
+    radius = (full_max_y - full_min_y) / 2.0
+    center_y = (full_min_y + full_max_y) / 2.0
+
+    # X: front edge of the object + radius = geometric center
+    # Use 5th percentile instead of absolute min for noise robustness
+    front_x = float(np.percentile(points_np[:, 0], 5))
+    center_x = front_x + radius
+
+    if node:
+        node.get_logger().info(
+            f"[top_center] radius={radius:.3f}, front_x={front_x:.3f}, "
+            f"center=({center_x:.3f}, {center_y:.3f}), "
+            f"cloud_size={len(points_np)}, top_points={np.sum(points_np[:, 2] >= max_z - top_margin)}"
+        )
+
+    center = np.array([center_x, center_y, max_z])
+    return center, max_z
 
 
 class PlaceManager:
@@ -50,11 +85,22 @@ class PlaceManager:
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
         self.node.get_logger().info("Executing Place Task")
         self.node.get_logger().info("Setting initial joint positions")
+
+        start_position = "table_stare"
+        return_position = "table_stare"
+        if place_params.special_request != "":
+            try:
+                request_dict = json.loads(place_params.special_request)
+                start_position = request_dict.get("start_position", start_position)
+                return_position = request_dict.get("return_position", return_position)
+            except Exception as e:
+                self.node.get_logger().error(f"Failed to parse special_request: {e}")
+
         # Set initial joint positions
         if not place_params.is_shelf:
             send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
+                named_position=start_position,
                 velocity=0.3,
             )
 
@@ -92,7 +138,7 @@ class PlaceManager:
         for i in range(5):
             back_res = send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
+                named_position=return_position,
                 velocity=0.5,
             )
             if back_res:
@@ -106,6 +152,7 @@ class PlaceManager:
         self, place_params: PlaceParams, pick_result: PickResult
     ) -> PoseStamped:
         result_pose = PoseStamped()
+        place_on_top = False
 
         if place_params.forced_pose.header.frame_id != "":
             self.node.get_logger().info("Using forced place pose")
@@ -163,7 +210,9 @@ class PlaceManager:
                             )
                             self.node.remove_all_collision_object(attached=False)
                             # get centroid and use that as the close by point instead
-                            object_centroid = get_object_centroid(object_cluster)
+                            object_centroid, max_z = get_object_cloud_params(
+                                object_cluster
+                            )
                             close_by_point.point.x = float(object_centroid[0])
                             close_by_point.point.y = float(object_centroid[1])
                             close_by_point.point.z = float(object_centroid[2])
@@ -243,10 +292,14 @@ class PlaceManager:
             if place_params.special_request != "":
                 request_dict = json.loads(place_params.special_request)
                 request = request_dict.get("request", "")
-                location = request_dict.get("location", "")
+                special_position = request_dict.get("position", "")
+                max_distance = request_dict.get("max_distance", 0.3)
+                max_height = request_dict.get("max_height", 0.2)
                 close_by_point = None
                 if request == "close_by":
-                    self.node.get_logger().info("Using close by place pose")
+                    self.node.get_logger().info(
+                        f"Using close by place pose with max_distance={max_distance}, max_height={max_height}"
+                    )
                     close_by_object_name = request_dict["object"]
                     for i in range(5):
                         try:
@@ -281,18 +334,55 @@ class PlaceManager:
                         )
                         return None
 
-                    if location == "top":
-                        # we want to place on top of the object
+                    if special_position == "top":
                         result_pose.header.frame_id = close_by_point.header.frame_id
                         result_pose.pose.position.x = close_by_point.point.x
                         result_pose.pose.position.y = close_by_point.point.y
-                        result_pose.pose.position.z = close_by_point.point.z
+                        top_z = close_by_point.point.z
+                        try:
+                            if (
+                                "object_cluster" not in locals()
+                                or object_cluster is None
+                            ):
+                                object_cluster = get_object_cluster(
+                                    close_by_point,
+                                    self.node.pick_perception_3d_client,
+                                    add_collision_objects=False,
+                                )
+
+                            if object_cluster is not None:
+                                top_params = get_object_top_center(
+                                    object_cluster, node=self.node
+                                )
+                                if top_params is not None:
+                                    center, max_z = top_params
+                                    result_pose.pose.position.x = float(center[0])
+                                    result_pose.pose.position.y = float(center[1])
+                                    top_z = float(max_z)
+                                    self.node.get_logger().info(
+                                        f"Using estimated top center xy=({center[0]:.3f}, {center[1]:.3f}), top z={top_z:.3f}"
+                                    )
+                        except Exception as e:
+                            self.node.get_logger().warn(
+                                f"Could not compute cluster params, using detection point: {e}"
+                            )
+
+                        result_pose.pose.position.z = (
+                            top_z + max_height + TOP_SAFETY_MARGIN
+                        )
+                        self.node.get_logger().info(
+                            f"Top placement z={result_pose.pose.position.z:.3f} (top_z={top_z:.3f} + max_height={max_height} + margin={TOP_SAFETY_MARGIN})"
+                        )
+                        place_on_top = True
                     elif (
                         close_by_point is not None
                         and close_by_point.header.frame_id != ""
                     ):
                         heatmap_request.close_point = close_by_point
                         heatmap_request.special_request = place_params.special_request
+                        self.node.get_logger().info(
+                            f"Position '{special_position}' using max_distance={max_distance} for heatmap search"
+                        )
 
             # if the task is not a forced pose or place on top of an object,
             # we use the perception service to get optimal place pose
@@ -387,10 +477,10 @@ class PlaceManager:
                 f"Object height detected: {pick_result.object_pick_height}"
             )
 
-        # forget height if placing on shelf
-        result_pose.pose.position.z += (
-            pick_result.object_pick_height if not place_params.is_shelf else 0.1
-        )
+        if not place_on_top:
+            result_pose.pose.position.z += (
+                pick_result.object_pick_height if not place_params.is_shelf else 0.1
+            )
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 
         return result_pose
