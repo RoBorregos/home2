@@ -6,7 +6,7 @@ from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from std_msgs.msg import Bool
-from std_srvs.srv import SetBool, Empty, Trigger
+from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
@@ -180,7 +180,7 @@ class MotionPlanningServer(Node):
         )
 
         self.reset_controller_client = self.create_service(
-            Empty,
+            Trigger,
             "/manipulation/reset_xarm_controller",
             self.reset_xarm_controller,
             callback_group=self.callback_group,
@@ -678,20 +678,22 @@ class MotionPlanningServer(Node):
 
         return response
 
-    def _call_ensure_arm_ready(self):
+    def _call_ensure_arm_ready(self) -> bool:
         if not self._ensure_arm_ready_client.wait_for_service(timeout_sec=5.0):
             self.get_logger().warn("ensure_arm_ready service not available, skipping")
-            return
+            return False
         future = self._ensure_arm_ready_client.call_async(Trigger.Request())
         start = self.get_clock().now()
         while not future.done():
             if (self.get_clock().now() - start).nanoseconds > 15e9:
                 self.get_logger().error("ensure_arm_ready timed out")
-                return
+                return False
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        return future.result().success
 
     def reset_xarm_controller(self, request, response):
-        self._call_ensure_arm_ready()
+        response.success = self._call_ensure_arm_ready()
+        response.message = "" if response.success else "arm recovery failed"
         return response
 
     def joint_states_callback(self, msg: JointState):
