@@ -308,24 +308,25 @@ class HRIC_TM(Node):
                     "I could not reach your hand. Place the bag directly on my gripper."
                 )
 
+            # TODO: Detect if the bag was placed in the gripper instead of timeout.
             self.timeout(5)
-            s, res = self.subtask_manager.hri.confirm("Have you placed the bag on my gripper?")
-            if s == Status.EXECUTION_SUCCESS and res == "yes":
-                self.subtask_manager.hri.say(
-                    "Thank you, I will close my gripper now. Please be careful with your hand."
-                )
-                self.subtask_manager.manipulation.close_gripper()
-                self.carrying_bag = True
-                self.timeout(3)
-                guest_1 = self.guests[FIRST_GUEST_IDX]
-                self.subtask_manager.hri.say(
-                    f"Please follow me to the living room. By the way, another guest named {guest_1.name} is already in the living room. {guest_1.description}.",
-                    wait=False,
-                )
-                self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
-            else:
-                self.current_attempts += 1
-                Logger.info(self, "Error confirming bag placement")
+            self.subtask_manager.hri.say(
+                "Please be careful with your hand, I'll close my gripper in 3"
+            )
+            self.timeout(0.5)
+            self.subtask_manager.hri.say("2")
+            self.timeout(0.5)
+            self.subtask_manager.hri.say("1")
+            self.timeout(0.5)
+            self.subtask_manager.manipulation.close_gripper()
+            self.carrying_bag = True
+            self.timeout(3)
+            guest_1 = self.guests[FIRST_GUEST_IDX]
+            self.subtask_manager.hri.say(
+                f"Please follow me to the living room. By the way, another guest named {guest_1.name} is already in the living room. {guest_1.description}.",
+                wait=False,
+            )
+            self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
 
         elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM)
