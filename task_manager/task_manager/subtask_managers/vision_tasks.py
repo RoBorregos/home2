@@ -951,15 +951,13 @@ class VisionTasks:
         """Describe the person in the image asynchronously."""
         Logger.info(self.node, "Describing person")
         attributes = [
-            "describe the type of clothes and color the person is wearing (dress, pants and shirt, skirt and shirt, shorts and shirt, etc.)",
-            "the person has glasses (if not, respond only '0')",
-            "the person has facial hair (if not, respond only '0', if yes, describe the facial hair)",
-            "describe the age group the person belongs to (teenager, young adult, middle-aged, or elderly)",
-            "is wearing jewerly? (if not, respond only '0', if yes, describe the jewelry)",
-            "describe the hair texture and/or style and color (straight, wavy, curly, in a pony tail, etc.)",
-            "is wearing a hat? (if not, respond only '0', if yes, describe the hat)",
-            "describe the build of the person (thin, average, athletic, overweight, etc.)",
-            "describe the height of the person (short, average, tall, etc.)",
+            "describe the type of clothes and color the person in the front is wearing (dress, pants and shirt, skirt and shirt, shorts and shirt, etc.). Format: The person is wearing [description].",
+            "does the person in the front have glasses? (if not, respond only '0', if yes, describe the glasses).",
+            "does the person in the front have facial hair (if not, respond only '0', if yes, describe the facial hair).",
+            "describe the age group the person in the front belongs to (teenager, young adult, middle-aged, or elderly).",
+            "is the person in the front wearing jewerly? (if not, respond only '0', if yes, describe the jewelry).",
+            "describe the hair style and color of the person in the front (straight, wavy, curly, in a pony tail, etc.). Format: The person has [description] hair.",
+            "what is the build of the person in the front? (thin, average, athletic, robust, etc.). Format: Their build is [description].",
         ]
 
         seen = set()
