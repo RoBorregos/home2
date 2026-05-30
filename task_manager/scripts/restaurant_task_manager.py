@@ -130,7 +130,7 @@ class RestaurantTaskManager(Node):
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you placed the object in my gripper?",
-            use_hotwords=True,
+            use_keyword=True,
             retries=3,
             wait_between_retries=5,
         )
@@ -189,7 +189,7 @@ class RestaurantTaskManager(Node):
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you grabbed the object from my gripper?",
-            use_hotwords=True,
+            use_keyword=True,
             retries=3,
             wait_between_retries=5,
         )

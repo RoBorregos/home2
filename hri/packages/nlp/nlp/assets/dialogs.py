@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 
 import pytz
 from nlp.assets.schemas import (
-    CategorizeShelvesResult,
     ExtractedData,
     IsAnswerCoherent,
     IsAnswerNegative,
@@ -97,7 +96,7 @@ Ensure that the extracted data is always **the most contextually relevant** answ
             },
             {
                 "role": "user",
-                "content": user_content,
+                "content": user_content + " /no_think",
             },
         ],
         ExtractedData,
@@ -149,7 +148,7 @@ def get_is_answer_positive_args(interpreted_text):
             },
             {
                 "role": "user",
-                "content": interpreted_text,
+                "content": interpreted_text + " /no_think",
             },
         ],
         IsAnswerPositive,
@@ -212,59 +211,10 @@ But does **not** include:
             },
             {
                 "role": "user",
-                "content": interpreted_text,
+                "content": interpreted_text + " /no_think",
             },
         ],
         IsAnswerNegative,
-    )
-
-
-def get_categorize_shelves_args(shelves, table_objects=[]):
-    print("AQUI AUQI")
-    print("Shelves:", shelves)
-    print("Table Objects:", table_objects)
-    return (
-        [
-            {
-                "role": "system",
-                "content": """
-You are a categorization assistant. Your task is to assign a unique category to each shelf based on the objects it contains, including any table_objects that might be in an empty or underfilled shelves. Each shelf must have a distinct category, and the category label must accurately cover all items assigned to that shelf and the ones on the table that should be placed in it.
-
-Return only a JSON object with a single key "categories", whose value is an array of category names in the same order as the input shelves. Do not include any extra text, explanation, or formatting.
-
-Examples:
-
-Input:
-Shelves: [["orange", "banana"], ["water", "cup"], []], table_objects: ["chips", "soda"]
-Output:
-{"categories": ["fruit","beverages","snacks"]}
-
-Input:
-Shelves: [["hammer","screwdriver"], ["jeans","shirt"]], table_objects: ["nails","socks"]
-Output:
-{"categories": ["tools","clothing"]}
-
-Input:
-Shelves: [["hammer", "can"], ["bowl", "water_bottle"], ["chips"]], table_objects: []
-Output:
-{"categories": ["metalic","plastic","snacks"]}
-
-Input:
-Shelves: [["apple", "fresca_can"], ["bowl", "yellow_bowl"], ["pringles"]], table_objects: ["chips", "orange"]
-Output:
-{"categories": ["sweets","containers","chips"]}
-
-PLEASE dont only use these categories you can use as many as you need in order to categorize the shelves. other useful categories could be: "kitchen", "containers", "electronics", "toys", "sports", "utencils", "cleaning supplies", "tools", "fruit", "vegetables", "snacks", "beverages", "dairy", "salty snaks", "sweets", "canned food". And others.
-Please dont leave empty categories if possible. only if there is absolutely no relation at all between the objects in the shelf and the table objects, you can leave it empty.
-ONLY Output the number of categories that match the number of shelves, there are no exceptions to this rule. 
-""",
-            },
-            {
-                "role": "user",
-                "content": f"Shelves: {shelves}, table_objects: {table_objects}",
-            },
-        ],
-        CategorizeShelvesResult,
     )
 
 
@@ -276,7 +226,7 @@ def format_response(response):
         },
         {
             "role": "user",
-            "content": response,
+            "content": response + " /no_think",
         },
     ]
 
@@ -292,7 +242,7 @@ def clean_question_rag(question):
         },
         {
             "role": "user",
-            "content": question,
+            "content": question + " /no_think",
         },
     ]
 
@@ -364,7 +314,7 @@ def get_previous_command_answer(context, question):
         },
         {
             "role": "user",
-            "content": question,
+            "content": question + " /no_think",
         },
     ]
 

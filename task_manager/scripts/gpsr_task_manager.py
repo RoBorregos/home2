@@ -8,9 +8,11 @@ import time
 from datetime import datetime
 
 import rclpy
+from frida_constants.hri_constants import GPSR_COMMAND_INDEX_TOPIC, GPSR_TASK_STEP_TOPIC
 from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.duration import Duration
 from rclpy.node import Node
+from std_msgs.msg import Int32
 from tf2_ros import Buffer, TransformListener
 import py_trees
 
@@ -65,6 +67,7 @@ class GPSRTM(Node):
         )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
+        self._command_index_pub = self.create_publisher(Int32, GPSR_COMMAND_INDEX_TOPIC, 10)
 
         self.current_state = (
             GPSRTM.TaskStates.START
@@ -135,6 +138,14 @@ class GPSRTM(Node):
             if self.previous_state != self.current_state
             else self.current_state,
         )
+
+        self.subtask_manager.hri.publish_display_step(new_state.lower(), GPSR_TASK_STEP_TOPIC)
+        self._publish_command_index(self.executed_commands)
+
+    def _publish_command_index(self, index: int) -> None:
+        msg = Int32()
+        msg.data = index
+        self._command_index_pub.publish(msg)
 
     def _resolve_xy(self, location_name: str):
         """Resolve a free-text location to (x, y) using query_location +
@@ -275,6 +286,10 @@ class GPSRTM(Node):
         """Finite State Machine"""
 
         if self.current_state == GPSRTM.TaskStates.WAITING_FOR_BUTTON:
+            self.subtask_manager.hri.publish_display_step(
+                "waiting_for_button", GPSR_TASK_STEP_TOPIC
+            )
+            self._publish_command_index(self.executed_commands)
             CLog.fsm(self, "STATE", "Waiting for start button...")
             self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
@@ -326,7 +341,7 @@ class GPSRTM(Node):
                 "LLM_command",
                 context="The user was asked to say a command. We want to infer his complete instruction from the response",
                 confirm_question=confirm_command,
-                use_hotwords=False,
+                use_keyword=False,
                 retries=ATTEMPT_LIMIT,
                 min_wait_between_retries=5.0,
                 skip_extract_data=True,
@@ -390,6 +405,11 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.TaskStates.FINISHED_COMMAND
             else:
                 command = self.commands.pop(0)
+
+                self.subtask_manager.hri.publish_display_step(
+                    f"executing:{command.action}", GPSR_TASK_STEP_TOPIC
+                )
+                self._publish_command_index(self.executed_commands)
 
                 self.get_logger().info(f"Executing command: {str(command)}")
                 self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)

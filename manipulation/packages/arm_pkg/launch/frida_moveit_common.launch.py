@@ -69,10 +69,13 @@ def launch_setup(context, *args, **kwargs):
 
     moveit_config_dump = moveit_config_dump.perform(context)
     moveit_config_dict = yaml.load(moveit_config_dump, Loader=yaml.FullLoader)
+
     moveit_config_package_name = "xarm_moveit_config"
 
     octomap_config = {
         "octomap_frame": "base_link",
+        # Restored to pre-#977 value: at 0.05 m, padded voxels cover small
+        # grasp goals (~6-7 cm objects) and FCL rejects the gripper pose.
         "octomap_resolution": 0.025,
         "max_range": 2.0,
     }
@@ -88,6 +91,12 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             moveit_config_dict,
             {"use_sim_time": use_sim_time},
+            {
+                "vamp.response_adapters": "default_planner_response_adapters/AddTimeOptimalParameterization"
+            },
+            {"vamp.check_solution_paths": False},
+            {"planning_scene_monitor_options": {"publish_planning_scene": True}},
+            {"check_solution_paths": False},
             octomap_config,
             octomap_updater_config,
         ],

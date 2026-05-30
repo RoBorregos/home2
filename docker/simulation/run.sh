@@ -1,0 +1,91 @@
+#!/bin/bash
+source ../../lib.sh
+
+#_________________________ARGUMENTS_________________________
+
+ARGS=("$@")  # Save all arguments in an array
+TASK=${ARGS[0]}
+echo "TASK is: $TASK"
+ENV_TYPE="${*: -1}"
+
+if [[ ! "$ENV_TYPE" =~ ^(cpu|cuda|l4t)$ ]]; then
+  ENV_TYPE="cpu"
+fi
+
+COMPOSE="docker-compose.yaml"
+parse_common_flags "$COMPOSE" "${ARGS[@]}"
+
+#_________________________SETUP_________________________
+
+setup_common_env "simulation"
+add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
+add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:simulation-${ENV_TYPE}"
+
+# Pre-flight check: Increase network buffers on host if possible
+# This prevents the 'failed to create domain' error in CycloneDDS
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    CURR_MAX=$(cat /proc/sys/net/core/rmem_max)
+    if [ "$CURR_MAX" -lt 10485760 ]; then
+        echo "[Network] Host rmem_max is low ($CURR_MAX). Attempting to increase to 10MB..."
+        sudo sysctl -w net.core.rmem_max=10485760 || echo "[Network] Warning: Could not increase buffer. Simulation might crash."
+    fi
+fi
+
+if [ "$ENV_TYPE" != "cpu" ]; then
+    add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+fi
+
+#_________________________RUN_________________________
+
+SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_INSTALL="if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi"
+SOURCE_CYCLONE="source /usr/local/bin/cyclonedds_setup.sh"
+GPD_SETUP=". /home/ros/setup_gpd.sh"
+GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
+
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export CYCLONEDDS_URI="file:///etc/cyclonedds.xml"
+
+# Launch the MuJoCo simulation with the robot model
+RUN_SIMULATION="ros2 launch mujoco_spawn mujoco_sim_init.launch.py"
+
+# Fix for CycloneDDS multicast in Docker
+sudo ip route add 224.0.0.0/4 dev lo 2>/dev/null || true
+
+# Default command to run if no specific task is provided
+DEFAULT_COMMAND="bash"
+
+COLCON="colcon build --symlink-install --packages-up-to mujoco_spawn mujoco_ros2_control xarm_description frida_description xarm_msgs arm_pkg frida_interfaces frida_constants xarm_controller xarm_moveit_config --packages-ignore xarm_gazebo"
+
+if [ "$BUILD" == "true" ]; then
+    PRE_COMMAND="$GPD_SETUP && $GPD_EXPORT && $COLCON && source /workspace/install/setup.bash && "
+else
+    PRE_COMMAND="$GPD_SETUP && $GPD_EXPORT && "
+fi
+
+PREFIX_CMD="$SOURCE_ROS && $SOURCE_CYCLONE && $SOURCE_INSTALL && $PRE_COMMAND"
+
+case $TASK in
+    "--sim")
+        COMMAND="$PREFIX_CMD$RUN_SIMULATION"
+        ;;
+    *)
+        COMMAND="$PREFIX_CMD$DEFAULT_COMMAND"
+        ;;
+esac
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading simulation image to DockerHub (env: ${ENV_TYPE})..."
+  ensure_and_upload_image "roborregos/home2:simulation-${ENV_TYPE}" "$COMPOSE"
+fi
+
+if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+    ALREADY_RUNNING=$(docker ps -q -f name="simulation")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
+        docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
+    fi
+    docker compose -f "$COMPOSE" exec simulation bash -c "$COMMAND"
+else
+    add_or_update_variable .env "COMMAND" "$COMMAND"
+    docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
+fi

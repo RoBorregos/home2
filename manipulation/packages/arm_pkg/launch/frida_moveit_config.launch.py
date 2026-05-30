@@ -14,10 +14,11 @@ from launch.actions import (
     OpaqueFunction,
     IncludeLaunchDescription,
     SetEnvironmentVariable,
+    DeclareLaunchArgument,
 )
-from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
@@ -25,14 +26,12 @@ from uf_ros_lib.uf_robot_utils import generate_ros2_control_params_temp_file
 
 
 def launch_setup(context, *args, **kwargs):
-    clean_logs = LaunchConfiguration("clean_logs", default="true")
-    should_clean = clean_logs.perform(context)
-    if should_clean.lower() == "true":
-        print(
-            "\033[93m[LAUNCH] Modo Limpio ACTIVADO: Ocultando logs INFO (Markers, Init...)\033[0m"
-        )
-        os.environ["RCUTILS_LOGGING_SEVERITY_THRESHOLD"] = "WARN"
-        os.environ["ROS_LOG_LEVEL"] = "WARN"
+    debug = LaunchConfiguration("debug", default="false")
+    is_debug = debug.perform(context).lower() == "true"
+    log_level = "INFO" if is_debug else "WARN"
+
+    if not is_debug:
+        print("\033[94m[LAUNCH] Clean Mode \033[0m")
 
     robot_ip = LaunchConfiguration("robot_ip", default="192.168.31.180")
     report_type = LaunchConfiguration("report_type", default="normal")
@@ -105,50 +104,62 @@ def launch_setup(context, *args, **kwargs):
         robot_type=robot_type.perform(context),
     )
 
-    moveit_config = MoveItConfigsBuilder(
-        context=context,
-        controllers_name=controllers_name,
-        robot_ip=robot_ip,
-        report_type=report_type,
-        baud_checkset=baud_checkset,
-        default_gripper_baud=default_gripper_baud,
-        dof=dof,
-        robot_type=robot_type,
-        prefix=prefix,
-        hw_ns=hw_ns,
-        limited=limited,
-        effort_control=effort_control,
-        velocity_control=velocity_control,
-        model1300=model1300,
-        robot_sn=robot_sn,
-        attach_to=attach_to,
-        attach_xyz=attach_xyz,
-        attach_rpy=attach_rpy,
-        mesh_suffix=mesh_suffix,
-        kinematics_suffix=kinematics_suffix,
-        ros2_control_plugin=ros2_control_plugin,
-        ros2_control_params=ros2_control_params,
-        add_gripper=add_gripper,
-        add_vacuum_gripper=add_vacuum_gripper,
-        add_bio_gripper=add_bio_gripper,
-        add_realsense_d435i=add_realsense_d435i,
-        add_d435i_links=add_d435i_links,
-        add_other_geometry=add_other_geometry,
-        geometry_type=geometry_type,
-        geometry_mass=geometry_mass,
-        geometry_height=geometry_height,
-        geometry_radius=geometry_radius,
-        geometry_length=geometry_length,
-        geometry_width=geometry_width,
-        geometry_mesh_filename=geometry_mesh_filename,
-        geometry_mesh_origin_xyz=geometry_mesh_origin_xyz,
-        geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
-        geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
-        geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
-    ).to_moveit_configs()
+    moveit_config = (
+        MoveItConfigsBuilder(
+            context=context,
+            controllers_name=controllers_name,
+            robot_ip=robot_ip,
+            report_type=report_type,
+            baud_checkset=baud_checkset,
+            default_gripper_baud=default_gripper_baud,
+            dof=dof,
+            robot_type=robot_type,
+            prefix=prefix,
+            hw_ns=hw_ns,
+            limited=limited,
+            effort_control=effort_control,
+            velocity_control=velocity_control,
+            model1300=model1300,
+            robot_sn=robot_sn,
+            attach_to=attach_to,
+            attach_xyz=attach_xyz,
+            attach_rpy=attach_rpy,
+            mesh_suffix=mesh_suffix,
+            kinematics_suffix=kinematics_suffix,
+            ros2_control_plugin=ros2_control_plugin,
+            ros2_control_params=ros2_control_params,
+            add_gripper=add_gripper,
+            add_vacuum_gripper=add_vacuum_gripper,
+            add_bio_gripper=add_bio_gripper,
+            add_realsense_d435i=add_realsense_d435i,
+            add_d435i_links=add_d435i_links,
+            add_other_geometry=add_other_geometry,
+            geometry_type=geometry_type,
+            geometry_mass=geometry_mass,
+            geometry_height=geometry_height,
+            geometry_radius=geometry_radius,
+            geometry_length=geometry_length,
+            geometry_width=geometry_width,
+            geometry_mesh_filename=geometry_mesh_filename,
+            geometry_mesh_origin_xyz=geometry_mesh_origin_xyz,
+            geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
+            geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
+            geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
+        )
+        .planning_pipelines(
+            # Default "ompl": VAMP needs retuning before it can be default
+            # again (its self-filter masks goal voxels FCL keeps -> rejection).
+            pipelines=["vamp", "ompl"],
+            default_planning_pipeline="ompl",
+        )
+        .to_moveit_configs()
+    )
+
+    moveit_config.planning_pipelines["vamp"]["planning_plugin"] = (
+        "vamp_moveit_plugin/VampPlannerManager"
+    )
 
     # robot description launch
-    # xarm_description/launch/_robot_description.launch.py
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -165,7 +176,6 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # robot moveit common launch
-    # xarm_moveit_config/launch/_robot_moveit_common2.launch.py
     robot_moveit_common_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -185,7 +195,6 @@ def launch_setup(context, *args, **kwargs):
             "show_rviz": show_rviz,
             "use_sim_time": "false",
             "moveit_config_dump": yaml.dump(moveit_config.to_dict()),
-            "clean_logs": clean_logs,
         }.items(),
     )
 
@@ -215,7 +224,6 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # ros2 control launch
-    # xarm_controller/launch/_ros2_control.launch.py
     ros2_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -251,26 +259,46 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # VAMP backend off by default (pipeline above is "ompl"). Re-enable with
+    # start_vamp_server:=true and flip the default pipeline back to "vamp".
+    vamp_server_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("vamp_moveit_plugin"),
+                    "launch",
+                    "vamp_server.launch.py",
+                ]
+            )
+        ),
+        condition=IfCondition(
+            LaunchConfiguration("start_vamp_server", default="false")
+        ),
+    )
+
     return [
+        SetEnvironmentVariable(name="ROS_LOG_LEVEL", value=log_level),
         SetEnvironmentVariable(
-            name="ROS_LOG_LEVEL",
-            value="WARN",
-            condition=IfCondition(clean_logs),
+            name="RCUTILS_LOGGING_SEVERITY_THRESHOLD", value=log_level
         ),
-        SetEnvironmentVariable(
-            name="RCUTILS_LOGGING_SEVERITY_THRESHOLD",
-            value="WARN",
-            condition=IfCondition(clean_logs),
-        ),
+        vamp_server_launch,
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_publisher_node,
         ros2_control_launch,
         control_node,
         downsample_pcd,
-        # robot_driver_launch,
     ]
 
 
 def generate_launch_description():
-    return LaunchDescription([OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument(
+                "debug",
+                default_value="false",
+                description="If true, sets log level to INFO to show more details. Default is false (WARN level) for cleaner output.",
+            ),
+            OpaqueFunction(function=launch_setup),
+        ]
+    )
