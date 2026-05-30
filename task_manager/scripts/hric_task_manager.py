@@ -144,7 +144,7 @@ class HRIC_TM(Node):
             future = self.subtask_manager.hri.answer_with_context(
                 question=(
                     "Convert these physical attributes into a single fluent English sentence "
-                    "suitable for spoken speech. Start with 'They are'. "
+                    "suitable for describing a person in spoken speech. Start with 'They are'. "
                     "Do not use semicolons or list formatting."
                 ),
                 context=description,
