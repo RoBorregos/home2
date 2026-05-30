@@ -370,7 +370,7 @@ class GPSRTM(Node):
                 if self.interleave_enabled:
                     self.batched_commands.append(CommandListLLM(commands=self.commands))
                     plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
-                    self.subtask_manager.hri.say(f"Got it. I will plan: {plan_text}.", wait=False)
+                    self.subtask_manager.hri.say(plan_text, wait=False)
                     if (
                         len(self.batched_commands) >= self.batch_size
                         or (self.executed_commands + len(self.batched_commands)) >= MAX_COMMANDS
