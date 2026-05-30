@@ -155,8 +155,8 @@ class HRIC_TM(Node):
                 _, natural = f.result()
                 natural_answer = natural if natural else description
                 self.guests[FIRST_GUEST_IDX].description = natural_answer
-                self._logger.info(
-                    f"Description for {self.guests[FIRST_GUEST_IDX].name}: {natural_answer}"
+                Logger.info(
+                    self, f"Description for {self.guests[FIRST_GUEST_IDX].name}: {natural_answer}"
                 )
 
             future.add_done_callback(callback)
