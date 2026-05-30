@@ -78,7 +78,7 @@ class HRIC_TM(Node):
         self.current_state = HRIC_TM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         # Face recognition starts off, activated only when needed
-        # self.subtask_manager.vision.deactivate_face_recognition()
+        self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.vision.camera_upside_down(False)
         Logger.info(self, "HRICTaskManager has started.")
 
@@ -122,7 +122,7 @@ class HRIC_TM(Node):
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
-        # self.subtask_manager.vision.deactivate_face_recognition()
+        self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.clear_collision_objects()
         self.subtask_manager.manipulation.move_to_position("nav_pose")
@@ -154,11 +154,14 @@ class HRIC_TM(Node):
             def callback(f):
                 _, natural = f.result()
                 natural_answer = natural if natural else description
-                self.get_current_guest().description = natural_answer
+                self.guests[FIRST_GUEST_IDX].description = natural_answer
+                self._logger.info(
+                    f"Description for {self.guests[FIRST_GUEST_IDX].name}: {natural_answer}"
+                )
 
             future.add_done_callback(callback)
         else:
-            self.get_current_guest().description = description
+            self.guests[FIRST_GUEST_IDX].description = description
 
     def run(self):
         """Finite State Machine"""
@@ -305,8 +308,10 @@ class HRIC_TM(Node):
 
             if not hand_reached:
                 self.subtask_manager.hri.say(
-                    "I could not reach your hand. Place the bag directly on my gripper."
+                    "Place the bag in my gripper.",
+                    wait=False,
                 )
+                self.subtask_manager.manipulation.move_to_position("nav_pose")
 
             # TODO: Detect if the bag was placed in the gripper instead of timeout.
             self.timeout(5)
