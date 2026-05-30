@@ -356,7 +356,7 @@ class FaceRecognition(Node):
         if self.is_processing:
             return
         if self.image is None:
-            self.get_logger().info("No image")
+            # self.get_logger().info("No image")
             return
 
         self.annotated_frame = self.image

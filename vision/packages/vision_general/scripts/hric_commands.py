@@ -18,10 +18,10 @@ from sensor_msgs.msg import Image, CameraInfo
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, Bool
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect, MapAreas
+from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect, MapAreas, DetectBag
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
@@ -34,6 +34,8 @@ from frida_constants.vision_constants import (
     IMAGE_ORIENTED_TOPIC,
     IMAGE_TOPIC_HRIC,
     YOLO_DETECTION_TOPIC,
+    DETECT_BAG_SERVICE,
+    DETECT_BAG_OBSTRUCTION_TOPIC,
 )
 from tf2_geometry_msgs import do_transform_point
 from tf2_ros import Buffer, TransformListener
@@ -58,6 +60,11 @@ MAX_DEGREE = 50
 AREA_PERCENTAGE_THRESHOLD = 0.01
 CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
+BAG_NEAR_DEPTH_M = 0.30
+BAG_NEAR_PIXEL_RATIO = 0.50
+BAG_OBSTRUCTION_PUBLISH_PERIOD = 0.2
+BAG_OBS_TRUE_DEBOUNCE = 2
+BAG_OBS_FALSE_DEBOUNCE = 2
 
 
 class HRICCommands(Node):
@@ -123,6 +130,16 @@ class HRICCommands(Node):
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
+        self.detect_bag = self.create_service(
+            DetectBag,
+            DETECT_BAG_SERVICE,
+            self.detect_bag_callback,
+            callback_group=self.callback_group,
+        )
+        self.bag_obstruction_pub = self.create_publisher(
+            Bool, DETECT_BAG_OBSTRUCTION_TOPIC, 10
+        )
+
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
@@ -135,6 +152,9 @@ class HRICCommands(Node):
         self.output_image = []
         self.check = False
         self.rotation = 0
+        self._bag_obstructed = False
+        self._bag_true_count = 0
+        self._bag_false_count = 0
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
@@ -149,6 +169,11 @@ class HRICCommands(Node):
         self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
+        self.create_timer(
+            BAG_OBSTRUCTION_PUBLISH_PERIOD,
+            self.publish_bag_obstruction,
+            callback_group=self.callback_group,
+        )
 
     def _rotation_callback(self, msg):
         value = int(msg.data) % 360
@@ -168,6 +193,68 @@ class HRICCommands(Node):
 
     def camera_info_callback(self, msg):
         self.camera_info = msg
+
+    def run_bag_inference(self):
+        """Detect bag using depth image density."""
+        if self.depth_image is None or self.camera_info is None:
+            self.get_logger().warn("Depth image or camera info not available")
+            return None
+
+        depth = self.depth_image
+        if depth.size == 0:
+            return None
+
+        # Ignore invalid depth and compute ratio of pixels dangerously close to camera.
+        valid = np.isfinite(depth) & (depth > 0.0)
+        if not np.any(valid):
+            return None
+
+        near_mask = valid & (depth <= BAG_NEAR_DEPTH_M)
+        near_ratio = float(np.count_nonzero(near_mask)) / float(np.count_nonzero(valid))
+
+        if near_ratio < BAG_NEAR_PIXEL_RATIO:
+            return None
+
+        ys, xs = np.where(near_mask)
+        cx = int(np.median(xs))
+        cy = int(np.median(ys))
+
+        stamped = point2d_to_ros_point_stamped(
+            self.camera_info,
+            self.depth_image,
+            (cx, cy),
+            CAMERA_FRAME,
+            Time(sec=0, nanosec=0),
+            rotation=self.rotation,
+        )
+        self.get_logger().warn(
+            f"Near obstruction detected: near_ratio={near_ratio:.3f}, depth_thresh={BAG_NEAR_DEPTH_M:.2f}m"
+        )
+        return stamped
+
+    def publish_bag_obstruction(self):
+        """Continuously publish near-obstruction state with debounce."""
+        obstructed_now = self.run_bag_inference() is not None
+
+        if obstructed_now:
+            self._bag_true_count += 1
+            self._bag_false_count = 0
+            if (
+                self._bag_true_count >= BAG_OBS_TRUE_DEBOUNCE
+                and not self._bag_obstructed
+            ):
+                self._bag_obstructed = True
+                self.get_logger().warn("Bag obstruction state ON")
+        else:
+            self._bag_false_count += 1
+            self._bag_true_count = 0
+            if self._bag_false_count >= BAG_OBS_FALSE_DEBOUNCE and self._bag_obstructed:
+                self._bag_obstructed = False
+                self.get_logger().info("Bag obstruction state OFF")
+
+        msg = Bool()
+        msg.data = self._bag_obstructed
+        self.bag_obstruction_pub.publish(msg)
 
     def run_hand_inference(self):
         """Detect hand position using YOLO pose wrist keypoints (TensorRT accelerated)."""
@@ -238,6 +325,20 @@ class HRICCommands(Node):
         else:
             response.success = False
             self.get_logger().info("No hand detected")
+        return response
+
+    def detect_bag_callback(self, request, response):
+        bag_point = self.run_bag_inference()
+        if bag_point is not None:
+            response.point = bag_point
+            response.success = True
+            self.get_logger().info(
+                f"Bag detected at ({bag_point.point.x:.3f}, "
+                f"{bag_point.point.y:.3f}, {bag_point.point.z:.3f})"
+            )
+        else:
+            response.success = False
+            self.get_logger().info("No bag detected")
         return response
 
     def find_seat_callback(self, request, response):

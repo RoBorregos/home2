@@ -5,6 +5,7 @@ Task Manager for testing the vision subtask manager
 """
 
 import rclpy
+import time
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from visualization_msgs.msg import Marker
@@ -24,6 +25,8 @@ TEST_FIND_SEAT = False
 TEST_GET_PERSON_NAME = False
 TEST_FOLLOW_FACE = False
 TEST_HAND_MARKER = False
+TEST_DETECT_BAG = False
+TEST_BAG_OBSTRUCTION_MONITOR = False
 
 FOLLOW_FACE_FLIP = False
 HAND_MARKER_FLIP = False
@@ -62,6 +65,10 @@ class TestVisionManager(Node):
 
         if TEST_HAND_MARKER:
             self.test_hand_marker()
+        if TEST_DETECT_BAG:
+            self.test_detect_bag()
+        if TEST_BAG_OBSTRUCTION_MONITOR:
+            self.test_bag_obstruction_monitor()
 
         exit(0)
 
@@ -211,6 +218,32 @@ class TestVisionManager(Node):
         finally:
             self.vision_manager.camera_upside_down(False)
             Logger.info(self, "hand marker test stopped")
+
+    def test_detect_bag(self):
+        Logger.info(self, "=== Testing detect_bag (near obstruction) ===")
+        status, point = self.vision_manager.detect_bag()
+        if status == Status.EXECUTION_SUCCESS and point is not None:
+            Logger.success(
+                self,
+                f"Near obstruction detected at ({point.point.x:.3f}, {point.point.y:.3f}, {point.point.z:.3f})",
+            )
+        else:
+            Logger.warn(self, "No near obstruction detected")
+
+    def test_bag_obstruction_monitor(self):
+        Logger.info(self, "=== Testing live bag obstruction topic ===")
+        Logger.info(self, "Monitoring obstruction status (Ctrl+C to stop)...")
+        try:
+            while rclpy.ok():
+                rclpy.spin_once(self, timeout_sec=0.1)
+                status, obstructed = self.vision_manager.is_bag_obstructed(
+                    timeout_sec=1.0, fail_safe=True
+                )
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.info(self, f"bag_obstructed={obstructed}")
+                time.sleep(0.2)
+        except KeyboardInterrupt:
+            pass
 
 
 def main(args=None):

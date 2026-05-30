@@ -37,6 +37,8 @@ from frida_constants.vision_constants import (
     DETECT_HAND_SERVICE,
     CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
+    DETECT_BAG_SERVICE,
+    DETECT_BAG_OBSTRUCTION_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
@@ -56,6 +58,7 @@ from frida_interfaces.srv import (
     ShelfDetectionHandler,
     TrackBy,
     DetectHand,
+    DetectBag,
     CustomerTables,
 )
 from geometry_msgs.msg import Point, PointStamped
@@ -99,6 +102,8 @@ class VisionTasks:
         self.flag_active_face = False
         self.person_list = []
         self.person_name = ""
+        self.bag_obstructed = False
+        self.bag_obstruction_stamp = None
 
         self.rotate_camera_publisher = self.node.create_publisher(Int16, CAMERA_ROTATION_TOPIC, 10)
         self.face_subscriber = self.node.create_subscription(
@@ -109,6 +114,9 @@ class VisionTasks:
         )
         self.face_name_subscriber = self.node.create_subscription(
             String, PERSON_NAME_TOPIC, self.person_name_callback, 10
+        )
+        self.bag_obstruction_subscriber = self.node.create_subscription(
+            BoolMsg, DETECT_BAG_OBSTRUCTION_TOPIC, self.bag_obstruction_callback, 10
         )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
@@ -126,6 +134,7 @@ class VisionTasks:
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_hand_client = self.node.create_client(DetectHand, DETECT_HAND_SERVICE)
+        self.detect_bag_client = self.node.create_client(DetectBag, DETECT_BAG_SERVICE)
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
@@ -161,6 +170,7 @@ class VisionTasks:
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
                 "detect_hand": {"client": self.detect_hand_client, "type": "service"},
+                "detect_bag": {"client": self.detect_bag_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
@@ -333,6 +343,11 @@ class VisionTasks:
     def person_name_callback(self, msg: String):
         """Callback for the face name subscriber"""
         self.person_name = msg.data
+
+    def bag_obstruction_callback(self, msg: BoolMsg):
+        """Callback for live bag obstruction status."""
+        self.bag_obstructed = bool(msg.data)
+        self.bag_obstruction_stamp = self.node.get_clock().now()
 
     def get_follow_face(self):
         """Get the face to follow"""
@@ -912,6 +927,49 @@ class VisionTasks:
             f"Hand detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
         )
         return Status.EXECUTION_SUCCESS, result.point
+
+    @mockable(return_value=(Status.EXECUTION_ERROR, None))
+    @service_check("detect_bag_client", [Status.EXECUTION_ERROR, None], TIMEOUT)
+    def detect_bag(self) -> tuple[int, PointStamped]:
+        """Detect bag obstruction and return its 3D position."""
+        Logger.info(self.node, "Detecting bag obstruction")
+        request = DetectBag.Request()
+        try:
+            future = self.detect_bag_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+            if not result.success:
+                Logger.warn(self.node, "No bag obstruction detected")
+                return Status.TARGET_NOT_FOUND, None
+        except Exception as e:
+            Logger.error(self.node, f"Error detecting bag obstruction: {e}")
+            return Status.EXECUTION_ERROR, None
+        Logger.success(
+            self.node,
+            f"Bag obstruction detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
+        )
+        return Status.EXECUTION_SUCCESS, result.point
+
+    def is_bag_obstructed(
+        self, timeout_sec: float = 1.0, fail_safe: bool = True
+    ) -> tuple[int, bool]:
+        """
+        Read continuous bag obstruction status from topic with freshness timeout.
+        If stale/no data and fail_safe=True, returns obstructed=True.
+        """
+        if self.bag_obstruction_stamp is None:
+            Logger.warn(self.node, "No bag obstruction topic data received yet")
+            return Status.EXECUTION_SUCCESS, True if fail_safe else False
+
+        age_sec = (self.node.get_clock().now() - self.bag_obstruction_stamp).nanoseconds / 1e9
+        if age_sec > timeout_sec:
+            Logger.warn(
+                self.node,
+                f"Bag obstruction topic stale ({age_sec:.2f}s > {timeout_sec:.2f}s)",
+            )
+            return Status.EXECUTION_SUCCESS, True if fail_safe else False
+
+        return Status.EXECUTION_SUCCESS, self.bag_obstructed
 
     def visual_info(self, description, object="object"):
         """Return the object matching the description"""

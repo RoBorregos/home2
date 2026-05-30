@@ -117,6 +117,8 @@ CHECK_PERSON_TOPIC = "/vision/hric/detect_person"
 FIND_SEAT_TOPIC = "/vision/hric/find_seat"
 IMAGE_TOPIC_HRIC = "/vision/hric/img_person_detecion"
 DETECT_HAND_SERVICE = "/vision/hric/detect_hand"
+DETECT_BAG_SERVICE = "/vision/hric/detect_bag"
+DETECT_BAG_OBSTRUCTION_TOPIC = "/vision/hric/bag_obstruction"
 
 # GPSR commands node
 COUNT_BY_COLOR_TOPIC = "/vision/gpsr/count_by_color"
