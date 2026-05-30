@@ -6,11 +6,12 @@ Provides a /follow_face service to activate/deactivate face tracking,
 and switches the arm between velocity mode (4) and MoveIt mode (1) accordingly.
 """
 
+import json
 import math
 import time
 
 import rclpy
-from frida_constants.hri_constants import RESPEAKER_DOA_TOPIC, VOICE_ACTIVITY_TOPIC
+from frida_constants.hri_constants import KEYWORD_TOPIC, RESPEAKER_DOA_TOPIC, VOICE_ACTIVITY_TOPIC
 from frida_constants.manipulation_constants import (
     FACE_RECOGNITION_LIFETIME,
     FOLLOW_FACE_SPEED,
@@ -22,7 +23,7 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from geometry_msgs.msg import Point
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
-from std_msgs.msg import Bool, Int16
+from std_msgs.msg import Bool, Int16, String
 from std_srvs.srv import Empty
 from task_manager.utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16
@@ -40,6 +41,9 @@ RUN_LOOP_PERIOD = 0.1
 
 DOA_FUSION_WEIGHT = 0.3  # How much DOA contributes to x error when person is speaking
 DOA_LIFETIME = 1.5  # Max age of DOA data in seconds (published every 0.5 s)
+
+KEYWORD_TRIGGER_WORD = "frida"
+KEYWORD_DOA_TIMEOUT = 3.0  # Max seconds to attempt rotating toward keyword DOA angle
 
 
 class FollowFaceNode(Node):
@@ -70,6 +74,13 @@ class FollowFaceNode(Node):
             Int16,
             RESPEAKER_DOA_TOPIC,
             self._doa_callback,
+            10,
+            callback_group=callback_group,
+        )
+        self.create_subscription(
+            String,
+            KEYWORD_TOPIC,
+            self._kws_callback,
             10,
             callback_group=callback_group,
         )
@@ -141,6 +152,11 @@ class FollowFaceNode(Node):
         self.is_speaking = False
         self.doa_angle = 0
         self.last_doa_time = 0.0
+
+        # Keyword-triggered DOA rotation state
+        self.keyword_triggered = False
+        self.keyword_doa_angle = 0
+        self.keyword_trigger_time = 0.0
 
         # Previous velocities for stop detection
         self.prev_x = 0.0
@@ -269,6 +285,21 @@ class FollowFaceNode(Node):
         self.doa_angle = msg.data
         self.last_doa_time = time.time()
 
+    def _kws_callback(self, msg: String):
+        try:
+            data = json.loads(msg.data)
+            if KEYWORD_TRIGGER_WORD in data.get("keyword", "").lower():
+                if self._doa_x_error() is not None:
+                    self.keyword_triggered = True
+                    self.keyword_doa_angle = self.doa_angle
+                    self.keyword_trigger_time = time.time()
+                    Logger.info(
+                        self,
+                        f"Keyword '{KEYWORD_TRIGGER_WORD}' detected — rotating to DOA {self.keyword_doa_angle}°",
+                    )
+        except (json.JSONDecodeError, KeyError):
+            pass
+
     def _doa_x_error(self) -> float | None:
         """Convert DOA angle to a normalized x error in [-1, 1].
 
@@ -318,6 +349,20 @@ class FollowFaceNode(Node):
         """Timer callback: send velocity commands to track the face."""
         if not self.is_following_face_active or not self.arm_ready:
             return
+
+        # Keyword-triggered DOA rotation — highest priority
+        if self.keyword_triggered:
+            if time.time() - self.keyword_trigger_time > KEYWORD_DOA_TIMEOUT:
+                Logger.warn(self, "Keyword DOA rotation timed out")
+                self.keyword_triggered = False
+            else:
+                doa_x = math.sin(math.radians(self.keyword_doa_angle))
+                if abs(doa_x) > FOLLOW_FACE_TOLERANCE:
+                    self._send_velocity(doa_x, 0.0)
+                else:
+                    Logger.info(self, "Keyword DOA rotation complete")
+                    self.keyword_triggered = False
+                return
 
         x, y = self._get_face_position()
 
