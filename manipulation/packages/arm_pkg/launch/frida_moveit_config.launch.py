@@ -19,6 +19,7 @@ from launch.actions import (
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch.conditions import IfCondition
+from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
@@ -147,7 +148,10 @@ def launch_setup(context, *args, **kwargs):
             geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
         )
         .planning_pipelines(
-            pipelines=["vamp", "ompl"], default_planning_pipeline="vamp"
+            # Default "ompl": VAMP needs retuning before it can be default
+            # again (its self-filter masks goal voxels FCL keeps -> rejection).
+            pipelines=["vamp", "ompl"],
+            default_planning_pipeline="ompl",
         )
         .to_moveit_configs()
     )
@@ -276,6 +280,7 @@ def launch_setup(context, *args, **kwargs):
         SetEnvironmentVariable(
             name="RCUTILS_LOGGING_SEVERITY_THRESHOLD", value=log_level
         ),
+        vamp_server_launch,
         vamp_server_launch,
         robot_description_launch,
         robot_moveit_common_launch,
