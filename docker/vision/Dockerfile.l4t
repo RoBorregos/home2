@@ -48,7 +48,7 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir \
     numpy==1.26.4 \
     cmake==3.25.2 \
-    face_recognition \
+    insightface \
     ultralytics==8.4.19 \
     lap \
     tqdm \
@@ -57,8 +57,6 @@ RUN pip install --upgrade pip && \
     pyyaml \
     scipy \
     onnxslim>=0.1.71 \
-    onnxruntime-gpu \
-    mediapipe
     grpcio==1.71.0 \
     protobuf==5.29.1
 
@@ -120,3 +118,8 @@ ENV TENSORRT_CACHE_DIR=/workspace/trt_cache
 # These require host-level access and cannot be set inside the container.
 
 USER ros
+
+# ── onnxruntime-gpu (must install as ros user) ──
+# The ros user's pip config includes pypi.jetson-ai-lab.io, which provides
+# the Jetson-optimized build with TensorrtExecutionProvider + CUDAExecutionProvider.
+RUN pip install --no-cache-dir onnxruntime-gpu

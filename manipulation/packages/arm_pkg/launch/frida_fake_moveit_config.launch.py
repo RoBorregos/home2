@@ -16,10 +16,23 @@ from launch.actions import (
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
 from uf_ros_lib.uf_robot_utils import generate_ros2_control_params_temp_file
+
+
+def _deep_update(source, overrides):
+    """Recursively merge `overrides` into `source` (in-place).
+    Same semantics as the helper in mujoco_sim_init.launch.py — keep them
+    in sync if either changes."""
+    for key, value in overrides.items():
+        if isinstance(value, dict) and key in source and isinstance(source[key], dict):
+            _deep_update(source[key], value)
+        else:
+            source[key] = value
+    return source
 
 
 def launch_setup(context, *args, **kwargs):
@@ -87,43 +100,74 @@ def launch_setup(context, *args, **kwargs):
         robot_type=robot_type.perform(context),
     )
 
-    moveit_config = MoveItConfigsBuilder(
-        context=context,
-        controllers_name=controllers_name,
-        dof=dof,
-        robot_type=robot_type,
-        prefix=prefix,
-        hw_ns=hw_ns,
-        limited=limited,
-        effort_control=effort_control,
-        velocity_control=velocity_control,
-        model1300=model1300,
-        robot_sn=robot_sn,
-        attach_to=attach_to,
-        attach_xyz=attach_xyz,
-        attach_rpy=attach_rpy,
-        mesh_suffix=mesh_suffix,
-        kinematics_suffix=kinematics_suffix,
-        ros2_control_plugin=ros2_control_plugin,
-        ros2_control_params=ros2_control_params,
-        add_gripper=add_gripper,
-        add_vacuum_gripper=add_vacuum_gripper,
-        add_bio_gripper=add_bio_gripper,
-        add_realsense_d435i=add_realsense_d435i,
-        add_d435i_links=add_d435i_links,
-        add_other_geometry=add_other_geometry,
-        geometry_type=geometry_type,
-        geometry_mass=geometry_mass,
-        geometry_height=geometry_height,
-        geometry_radius=geometry_radius,
-        geometry_length=geometry_length,
-        geometry_width=geometry_width,
-        geometry_mesh_filename=geometry_mesh_filename,
-        geometry_mesh_origin_xyz=geometry_mesh_origin_xyz,
-        geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
-        geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
-        geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
-    ).to_moveit_configs()
+    # Merge the FRIDA Custom gripper controller config on top of the xarm
+    # arm-only controllers so rightfinger gets a controller in fake mode.
+    # Without this nobody publishes rightfinger state, robot_state_publisher
+    # can't compute the gripper->finger TFs, and the finger meshes render
+    # at world origin instead of attached to the gripper. The Custom gripper
+    # is always attached in FRIDA_Real.urdf.xacro regardless of add_gripper
+    # (which controls the xarm stock gripper).
+    gripper_yaml = os.path.join(
+        get_package_share_directory("frida_description"),
+        "config",
+        "custom_gripper_controllers.yaml",
+    )
+    with open(ros2_control_params) as _f:
+        _merged_params = yaml.safe_load(_f)
+    with open(gripper_yaml) as _f:
+        _gripper_params = yaml.safe_load(_f)
+    _deep_update(_merged_params, _gripper_params)
+    ros2_control_params = "/tmp/frida_fake_controllers.yaml"
+    with open(ros2_control_params, "w") as _f:
+        yaml.dump(_merged_params, _f)
+
+    moveit_config = (
+        MoveItConfigsBuilder(
+            context=context,
+            controllers_name=controllers_name,
+            dof=dof,
+            robot_type=robot_type,
+            prefix=prefix,
+            hw_ns=hw_ns,
+            limited=limited,
+            effort_control=effort_control,
+            velocity_control=velocity_control,
+            model1300=model1300,
+            robot_sn=robot_sn,
+            attach_to=attach_to,
+            attach_xyz=attach_xyz,
+            attach_rpy=attach_rpy,
+            mesh_suffix=mesh_suffix,
+            kinematics_suffix=kinematics_suffix,
+            ros2_control_plugin=ros2_control_plugin,
+            ros2_control_params=ros2_control_params,
+            add_gripper=add_gripper,
+            add_vacuum_gripper=add_vacuum_gripper,
+            add_bio_gripper=add_bio_gripper,
+            add_realsense_d435i=add_realsense_d435i,
+            add_d435i_links=add_d435i_links,
+            add_other_geometry=add_other_geometry,
+            geometry_type=geometry_type,
+            geometry_mass=geometry_mass,
+            geometry_height=geometry_height,
+            geometry_radius=geometry_radius,
+            geometry_length=geometry_length,
+            geometry_width=geometry_width,
+            geometry_mesh_filename=geometry_mesh_filename,
+            geometry_mesh_origin_xyz=geometry_mesh_origin_xyz,
+            geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
+            geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
+            geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
+        )
+        .planning_pipelines(
+            pipelines=["vamp", "ompl"], default_planning_pipeline="vamp"
+        )
+        .to_moveit_configs()
+    )
+
+    moveit_config.planning_pipelines["vamp"]["planning_plugin"] = (
+        "vamp_moveit_plugin/VampPlannerManager"
+    )
 
     # robot description launch
     # xarm_description/launch/_robot_description.launch.py
@@ -183,6 +227,12 @@ def launch_setup(context, *args, **kwargs):
             "{}bio_gripper_traj_controller".format(prefix.perform(context))
         )
 
+    # FRIDA's Custom gripper controller (drives rightfinger; leftfinger
+    # follows via URDF <mimic>). Named xarm_gripper_traj_controller to match
+    # the yaml in frida_description/config/custom_gripper_controllers.yaml,
+    # which the MuJoCo init launch also consumes — keep the name in sync.
+    controllers.append("{}xarm_gripper_traj_controller".format(prefix.perform(context)))
+
     # ros2 control launch
     # xarm_controller/launch/_ros2_control.launch.py
     ros2_control_launch = IncludeLaunchDescription(
@@ -228,7 +278,23 @@ def launch_setup(context, *args, **kwargs):
             )
         )
 
+    # Start the VAMP backend ("vamp" is the default planner; without it every plan
+    # waits ~3s then falls back to OMPL). Disable with start_vamp_server:=false.
+    vamp_server_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("vamp_moveit_plugin"),
+                    "launch",
+                    "vamp_server.launch.py",
+                ]
+            )
+        ),
+        condition=IfCondition(LaunchConfiguration("start_vamp_server", default="true")),
+    )
+
     return [
+        vamp_server_launch,
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_broadcaster,
