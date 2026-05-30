@@ -60,11 +60,28 @@ MAX_DEGREE = 50
 AREA_PERCENTAGE_THRESHOLD = 0.01
 CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
-BAG_NEAR_DEPTH_M = 0.30
+BAG_NEAR_DEPTH_M = 0.10
 BAG_NEAR_PIXEL_RATIO = 0.50
-BAG_OBSTRUCTION_PUBLISH_PERIOD = 0.2
+
+# ROI-based gripper obstruction detection.
+# Camera is mounted under the gripper, so the gripper opening is expected near image center.
+GRIPPER_ROI_W_RATIO = 0.35
+GRIPPER_ROI_H_RATIO = 0.35
+GRIPPER_NEAR_DEPTH_M = 0.35
+GRIPPER_VALID_MIN_DEPTH_M = 0.02
+GRIPPER_OCCUPIED_RATIO = 0.20
+GRIPPER_DEPTH_DIFF_M = 0.05
+GRIPPER_USE_BASELINE = False
+GRIPPER_BASELINE_FRAMES = 30
+BAG_OBSTRUCTION_PUBLISH_PERIOD = 0.01
 BAG_OBS_TRUE_DEBOUNCE = 2
 BAG_OBS_FALSE_DEBOUNCE = 2
+BAG_CLASS_ID = 26  # COCO handbag
+BAG_MIN_CONF = 0.35
+BAG_MIN_AREA_RATIO = 0.01
+BAG_NEAR_Z_M = 0.35
+HAND_NEAR_Z_M = 0.18
+DEBUG_BAG_LOG_EVERY_N = 10
 
 
 class HRICCommands(Node):
@@ -155,6 +172,10 @@ class HRICCommands(Node):
         self._bag_obstructed = False
         self._bag_true_count = 0
         self._bag_false_count = 0
+        self._bag_debug_tick = 0
+        self._bag_yolo_future = None
+        self._empty_gripper_depth = None
+        self._baseline_depth_samples = []
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
@@ -194,46 +215,151 @@ class HRICCommands(Node):
     def camera_info_callback(self, msg):
         self.camera_info = msg
 
+    def get_gripper_roi(self):
+        """Return a centered ROI around the gripper opening.
+
+        The ZED is mounted below the gripper, so the bag should appear near the
+        center of the image when it is placed in the gripper.
+        """
+        if self.image is None:
+            return None
+
+        h, w = self.image.shape[:2]
+        roi_w = int(w * GRIPPER_ROI_W_RATIO)
+        roi_h = int(h * GRIPPER_ROI_H_RATIO)
+        cx = w // 2
+        cy = h // 2
+
+        x1 = max(0, cx - roi_w // 2)
+        y1 = max(0, cy - roi_h // 2)
+        x2 = min(w, cx + roi_w // 2)
+        y2 = min(h, cy + roi_h // 2)
+
+        return x1, y1, x2, y2
+
+    def _depth_roi_to_point(self, x1, y1, x2, y2, roi_depth, valid_mask):
+        """Convert the closest valid ROI pixel into a PointStamped."""
+        if self.camera_info is None:
+            return None
+
+        ys, xs = np.where(valid_mask)
+        if len(xs) == 0:
+            return None
+
+        depths = roi_depth[ys, xs]
+        best_idx = int(np.argmin(depths))
+        px = int(x1 + xs[best_idx])
+        py = int(y1 + ys[best_idx])
+
+        try:
+            return point2d_to_ros_point_stamped(
+                self.camera_info,
+                self.depth_image,
+                (px, py),
+                CAMERA_FRAME,
+                Time(sec=0, nanosec=0),
+                rotation=self.rotation,
+            )
+        except Exception as e:
+            self.get_logger().warn(f"Failed to convert gripper ROI pixel to 3D point: {e}")
+            return None
+
     def run_bag_inference(self):
-        """Detect bag using depth image density."""
-        if self.depth_image is None or self.camera_info is None:
-            self.get_logger().warn("Depth image or camera info not available")
+        """Detect whether a bag/object has been placed in the gripper.
+
+        This does not depend on YOLO class labels. It checks whether enough valid
+        depth pixels inside the centered gripper ROI are close to the camera.
+        This works better for cloth bags, paper bags, and partially occluded hands.
+        """
+        if self.image is None or self.depth_image is None or self.camera_info is None:
             return None
 
-        depth = self.depth_image
-        if depth.size == 0:
+        roi = self.get_gripper_roi()
+        if roi is None:
             return None
 
-        # Ignore invalid depth and compute ratio of pixels dangerously close to camera.
-        valid = np.isfinite(depth) & (depth > 0.0)
-        if not np.any(valid):
-            return None
+        x1, y1, x2, y2 = roi
+        roi_depth = self.depth_image[y1:y2, x1:x2]
 
-        near_mask = valid & (depth <= BAG_NEAR_DEPTH_M)
-        near_ratio = float(np.count_nonzero(near_mask)) / float(np.count_nonzero(valid))
-
-        if near_ratio < BAG_NEAR_PIXEL_RATIO:
-            return None
-
-        ys, xs = np.where(near_mask)
-        cx = int(np.median(xs))
-        cy = int(np.median(ys))
-
-        stamped = point2d_to_ros_point_stamped(
-            self.camera_info,
-            self.depth_image,
-            (cx, cy),
-            CAMERA_FRAME,
-            Time(sec=0, nanosec=0),
-            rotation=self.rotation,
+        valid = (
+            np.isfinite(roi_depth)
+            & (roi_depth > GRIPPER_VALID_MIN_DEPTH_M)
         )
-        self.get_logger().warn(
-            f"Near obstruction detected: near_ratio={near_ratio:.3f}, depth_thresh={BAG_NEAR_DEPTH_M:.2f}m"
-        )
-        return stamped
+
+        valid_count = int(np.sum(valid))
+        if valid_count == 0:
+            if self._bag_debug_tick % DEBUG_BAG_LOG_EVERY_N == 0:
+                self.get_logger().info("[bag-debug] gripper ROI has no valid depth pixels")
+            return None
+
+        # Optional baseline mode: learn empty gripper depth for the first frames.
+        if GRIPPER_USE_BASELINE and self._empty_gripper_depth is None:
+            self._baseline_depth_samples.append(roi_depth.copy())
+            if len(self._baseline_depth_samples) >= GRIPPER_BASELINE_FRAMES:
+                self._empty_gripper_depth = np.nanmedian(
+                    np.stack(self._baseline_depth_samples), axis=0
+                )
+                self.get_logger().info("Empty gripper depth baseline captured")
+            return None
+
+        near_mask = valid & (roi_depth <= GRIPPER_NEAR_DEPTH_M)
+
+        if GRIPPER_USE_BASELINE and self._empty_gripper_depth is not None:
+            baseline_roi = self._empty_gripper_depth
+            diff = baseline_roi - roi_depth
+            changed_mask = valid & np.isfinite(diff) & (diff > GRIPPER_DEPTH_DIFF_M)
+            occupied_mask = near_mask | changed_mask
+        else:
+            occupied_mask = near_mask
+
+        occupied_count = int(np.sum(occupied_mask))
+        occupied_ratio = occupied_count / max(1, valid_count)
+
+        # Debug drawing on output image when available.
+        if self.output_image is not None and len(self.output_image) != 0:
+            color = (0, 255, 255)
+            if occupied_ratio >= GRIPPER_OCCUPIED_RATIO:
+                color = (0, 255, 0)
+            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(
+                self.output_image,
+                f"gripper ROI: {occupied_ratio:.2f}",
+                (x1, max(20, y1 - 10)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                color,
+                2,
+                cv2.LINE_AA,
+            )
+
+        if self._bag_debug_tick % DEBUG_BAG_LOG_EVERY_N == 0:
+            min_depth = float(np.nanmin(roi_depth[valid]))
+            self.get_logger().info(
+                "[bag-debug] gripper ROI "
+                f"roi=({x1},{y1},{x2},{y2}) valid={valid_count} "
+                f"occupied={occupied_count} ratio={occupied_ratio:.3f} "
+                f"min_depth={min_depth:.3f}m near_thresh={GRIPPER_NEAR_DEPTH_M:.3f}m "
+                f"ratio_thresh={GRIPPER_OCCUPIED_RATIO:.3f}"
+            )
+
+        if occupied_ratio >= GRIPPER_OCCUPIED_RATIO:
+            point = self._depth_roi_to_point(x1, y1, x2, y2, roi_depth, occupied_mask)
+            if point is not None:
+                self.get_logger().warn(
+                    f"Object detected in gripper ROI: ratio={occupied_ratio:.2f}, z={point.point.z:.3f}m"
+                )
+            return point
+
+        return None
 
     def publish_bag_obstruction(self):
         """Continuously publish near-obstruction state with debounce."""
+        self._bag_debug_tick += 1
+
+        # Keep a debug image updated even when find_seat is not running.
+        if self.image is not None:
+            self.output_image = self.image.copy()
+
         obstructed_now = self.run_bag_inference() is not None
 
         if obstructed_now:
@@ -255,6 +381,12 @@ class HRICCommands(Node):
         msg = Bool()
         msg.data = self._bag_obstructed
         self.bag_obstruction_pub.publish(msg)
+
+        if self._bag_debug_tick % DEBUG_BAG_LOG_EVERY_N == 0:
+            self.get_logger().info(
+                f"[bag-debug] topic={DETECT_BAG_OBSTRUCTION_TOPIC} raw={obstructed_now} "
+                f"debounced={self._bag_obstructed} true_count={self._bag_true_count} false_count={self._bag_false_count}"
+            )
 
     def run_hand_inference(self):
         """Detect hand position using YOLO pose wrist keypoints (TensorRT accelerated)."""
