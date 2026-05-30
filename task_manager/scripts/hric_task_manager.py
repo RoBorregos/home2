@@ -254,10 +254,10 @@ class HRIC_TM(Node):
             result = self.subtask_manager.vision.save_face_name(self.get_current_guest().name)
 
             if result == Status.EXECUTION_SUCCESS or self.current_attempts >= ATTEMPT_LIMIT:
-                self.subtask_manager.vision.describe_person(self.set_description)
                 self.subtask_manager.hri.say("I have saved your face.")
                 self.subtask_manager.manipulation.follow_face(False)
                 if self.current_guest_idx == FIRST_GUEST_IDX:
+                    self.subtask_manager.vision.describe_person(self.set_description)
                     self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
                 else:
                     self.current_state = HRIC_TM.TaskStates.TAKE_BAG
