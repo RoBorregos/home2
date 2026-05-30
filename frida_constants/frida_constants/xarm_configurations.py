@@ -193,6 +193,30 @@ PICK_BASKET_POSE = {
     "degrees": True,
 }
 
+LOOK_BACK_STARE = {
+    "joints": {
+        "joint1": 90.0,
+        "joint2": -70.0,
+        "joint3": -45.0,
+        "joint4": 0.0,
+        "joint5": 30.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
+BASKET_HOLD_BACK_POSE = {
+    "joints": {
+        "joint1": 90.0,
+        "joint2": -50.0,
+        "joint3": -60.0,
+        "joint4": 0.0,
+        "joint5": 20.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -210,4 +234,6 @@ XARM_CONFIGURATIONS = {
     "hand_bag_pose": HAND_BAG_POSE,
     "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
     "pick_basket_pose": PICK_BASKET_POSE,
+    "look_back_stare": LOOK_BACK_STARE,
+    "basket_hold_back_pose": BASKET_HOLD_BACK_POSE,
 }
