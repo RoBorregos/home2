@@ -179,13 +179,6 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        self.reset_controller_client = self.create_service(
-            Trigger,
-            "/manipulation/reset_xarm_controller",
-            self.reset_xarm_controller,
-            callback_group=self.callback_group,
-        )
-
         self._ensure_arm_ready_client = self.create_client(
             Trigger,
             MANIPULATION_ENSURE_ARM_READY_SERVICE,
@@ -732,11 +725,6 @@ class MotionPlanningServer(Node):
                 return False
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
         return future.result().success
-
-    def reset_xarm_controller(self, request, response):
-        response.success = self._call_ensure_arm_ready()
-        response.message = "" if response.success else "arm recovery failed"
-        return response
 
     def joint_states_callback(self, msg: JointState):
         # TODO: make use of this information
