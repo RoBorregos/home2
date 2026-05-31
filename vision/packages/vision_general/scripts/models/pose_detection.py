@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+"""YOLO-pose model: PoseDetection class and TensorRT-aware loader."""
 
 import cv2
 import numpy as np
@@ -409,7 +409,6 @@ class PoseDetection:
                 x, y = int(points[idx][0] * w), int(points[idx][1] * h)
                 cv2.circle(image, (x, y), 5, (0, 255, 0), -1)
 
-        # Draw arm connections
         arms = [
             (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST),
             (RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST),
@@ -431,43 +430,3 @@ class PoseDetection:
                     (255, 255, 0),
                     2,
                 )
-
-
-def main():
-    pose_detection = PoseDetection()
-    cap = cv2.VideoCapture(0)
-
-    if not cap.isOpened():
-        print("Error: Could not open camera.")
-        return
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("Error: Could not read frame.")
-            break
-
-        gesture = pose_detection.detectGesture(frame)
-        points, conf = pose_detection._get_keypoints(frame)
-        pose_detection.draw_landmarks(frame, points, conf)
-
-        cv2.putText(
-            frame,
-            f"Gesture: {gesture.value}",
-            (10, 60),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 255, 0),
-            2,
-        )
-
-        cv2.imshow("Pose and Gesture Detection", frame)
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            break
-
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    main()
