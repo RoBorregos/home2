@@ -192,6 +192,10 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
+        self._joint_goal_target_pub = self.create_publisher(
+            JointState, "/manipulation/joint_goal_target", 1
+        )
+
         self.create_subscription(
             Bool,
             ESTOP_TOPIC,
@@ -406,6 +410,10 @@ class MotionPlanningServer(Node):
             self.get_logger().error(str(e))
             return False
 
+        msg = JointState()
+        msg.name = list(joint_names)
+        msg.position = [float(p) for p in joint_positions]
+        self._joint_goal_target_pub.publish(msg)
         self._call_ensure_arm_ready()
         self.get_logger().info("Planning joint goal...")
         original_planner = self.planner.moveit2.planner_id

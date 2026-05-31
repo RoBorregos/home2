@@ -6,6 +6,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from std_msgs.msg import Bool
+from sensor_msgs.msg import JointState
 from std_srvs.srv import Empty, Trigger
 from xarm_msgs.msg import RobotMsg
 from xarm_msgs.srv import SetInt16, SetInt16ById, Call as XArmCall, MoveJoint
@@ -52,6 +53,7 @@ class ManipulationSafeguard(Node):
         self._arm_state: RobotMsg | None = None
         self._in_estop = False
         self._recovering = False
+        self._pending_target_angles: list[float] | None = None
 
         self.create_subscription(
             RobotMsg,
@@ -100,6 +102,14 @@ class ManipulationSafeguard(Node):
             callback_group=self.callback_group,
         )
 
+        self.create_subscription(
+            JointState,
+            "/manipulation/joint_goal_target",
+            self._on_joint_goal_target,
+            1,
+            callback_group=self.callback_group,
+        )
+
         self.create_timer(
             2.0, self._try_estop_recovery, callback_group=self.callback_group
         )
@@ -117,6 +127,14 @@ class ManipulationSafeguard(Node):
         response.success = ok
         response.message = "" if ok else "arm not ready after recovery attempt"
         return response
+
+    def _on_joint_goal_target(self, msg: JointState):
+        """Store the incoming joint target so _ensure_arm_ready can use it when OOB."""
+        target = {name: pos for name, pos in zip(msg.name, msg.position)}
+        self._pending_target_angles = [
+            target.get(name, self._arm_state.angle[i] if self._arm_state else 0.0)
+            for i, name in enumerate(_JOINT_NAMES)
+        ]
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
@@ -212,6 +230,38 @@ class ManipulationSafeguard(Node):
             "set_servo_angle normalization",
         )
         self.get_logger().warn("Joint normalization move complete.")
+
+    def _normalize_joints_to_target(self, target_angles: list[float]):
+        """Move all joints directly to target_angles via xarm mode 0 (absolute positioning).
+        Avoids the intermediate normalization-to-zero step when joints are OOB."""
+        self.get_logger().warn(
+            "OOB recovery: moving directly to joint target via mode 0 (skipping intermediate 0-rad step)..."
+        )
+        req_mode0 = SetInt16.Request()
+        req_mode0.data = _POSITION_MODE
+        self._call_svc(
+            self._set_mode_client, req_mode0, 5.0, "set_mode(0) for OOB recovery"
+        )
+        req_state0 = SetInt16.Request()
+        req_state0.data = 0
+        self._call_svc(
+            self._set_state_client, req_state0, 5.0, "set_state(0) for OOB recovery"
+        )
+
+        req_move = MoveJoint.Request()
+        req_move.angles = [float(a) for a in target_angles]
+        req_move.speed = 1.5
+        req_move.acc = 0.5
+        req_move.wait = True
+        req_move.timeout = 30.0
+        req_move.relative = False
+        self._call_svc(
+            self._set_servo_angle_client,
+            req_move,
+            32.0,
+            "set_servo_angle to target (OOB recovery)",
+        )
+        self.get_logger().warn("OOB recovery direct move complete.")
 
     def _call_svc(self, client, request, timeout, label):
         elapsed = 0.0
@@ -312,7 +362,11 @@ class ManipulationSafeguard(Node):
             self._call_svc(self._set_state_client, req, 5.0, "set_state(0)")
 
         if needs_normalize:
-            self._normalize_joints(bad_joints)
+            if self._pending_target_angles is not None:
+                self._normalize_joints_to_target(self._pending_target_angles)
+                self._pending_target_angles = None
+            else:
+                self._normalize_joints(bad_joints)
             needs_reinit = True  # arm is now in mode 0; must reinit to mode 1
 
         if needs_reinit:
