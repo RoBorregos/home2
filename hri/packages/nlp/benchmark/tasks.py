@@ -346,7 +346,7 @@ class ExtractDataTask:
         messages = _extract_data_messages(text, data_type, context)
         try:
             result = _parse_structured(
-                client, model, messages, ExtractedData, max_tokens=128
+                client, model, messages, ExtractedData, max_tokens=512
             )
             got = result.data
         except Exception as e:
@@ -375,7 +375,7 @@ class IsPositiveTask:
         messages = _is_positive_messages(text)
         try:
             result = _parse_structured(
-                client, model, messages, IsAnswerPositive, max_tokens=20
+                client, model, messages, IsAnswerPositive, max_tokens=512
             )
             got = result.is_positive
         except Exception as e:
@@ -402,7 +402,7 @@ class IsNegativeTask:
         messages = _is_negative_messages(text)
         try:
             result = _parse_structured(
-                client, model, messages, IsAnswerNegative, max_tokens=20
+                client, model, messages, IsAnswerNegative, max_tokens=512
             )
             got = result.is_negative
         except Exception as e:
