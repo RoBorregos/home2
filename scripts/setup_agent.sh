@@ -1,8 +1,19 @@
 #!/bin/bash
 
 # Default instructions content
-DEFAULT_CONTENT="You are an expert developer on this project.
-Before writing code, ALWAYS read the necessary context files in the docs/ai/ directory to understand our architecture, tech stack, and coding standards."
+DEFAULT_CONTENT="You are an expert developer on this project (FRIDA - Friendly Robotics Interactive Domestic Assistant, ROS 2 service robot).
+
+## Global Context — Always Read
+Before writing code, read these files:
+- docs/ai/architecture.md       — system areas, Docker execution model, run.sh usage
+- docs/ai/tech_stack.md         — ROS 2, Python/C++, DDS, Docker, CUDA/L4T platforms
+- docs/ai/coding_standards.md   — ROS 2 node patterns, frida_interfaces usage, Ruff, type hints
+
+## Area-Specific Context — Read When Working on an Area
+When working on a specific area, also read its doc:
+- Vision:        docs/Run/Areas/vision.md
+- Manipulation:  docs/Run/Areas/Manipulation/manipulation.md
+  Pick & Place:  docs/Run/Areas/Manipulation/pick_and_place.md"
 
 function show_usage() {
     echo "Usage: $0 [agent_type]"
