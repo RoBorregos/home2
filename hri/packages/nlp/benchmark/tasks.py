@@ -346,7 +346,7 @@ class ExtractDataTask:
         messages = _extract_data_messages(text, data_type, context)
         try:
             result = _parse_structured(
-                client, model, messages, ExtractedData, max_tokens=60
+                client, model, messages, ExtractedData, max_tokens=128
             )
             got = result.data
         except Exception as e:
