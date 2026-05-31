@@ -15,6 +15,7 @@
 #   --tasks N           Task preset 1-4 (skips interactive task menu)
 #   --models "1 3 5"    Model selection (skips interactive model menu)
 #   --all               Benchmark every model in the registry
+#   --delete            Interactive menu to delete cached GGUFs from disk
 #
 # All output is tee'd to hri/packages/nlp/benchmark/results/logs/<timestamp>.log
 # so you can leave it running and check later.
@@ -39,6 +40,7 @@ RUNS=3
 TASK_PRESET=""
 MODEL_SELECT=""
 SELECT_ALL=false
+DELETE_MODE=false
 
 # ── Args ─────────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -48,11 +50,46 @@ while [[ $# -gt 0 ]]; do
         --tasks)     TASK_PRESET="$2"; shift 2 ;;
         --models)    MODEL_SELECT="$2"; shift 2 ;;
         --all)       SELECT_ALL=true; shift ;;
+        --delete)    DELETE_MODE=true; shift ;;
         -h|--help)
-            sed -n '2,22p' "$0"; exit 0 ;;
+            sed -n '2,23p' "$0"; exit 0 ;;
         *)           echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
+
+# ── Delete mode ──────────────────────────────────────────────────────────────
+if $DELETE_MODE; then
+    echo ""
+    echo "Cached GGUFs in $ASSETS_DIR:"
+    mapfile -t gguf_files < <(find "$ASSETS_DIR" -maxdepth 1 -name "*.gguf" | sort)
+    if [[ ${#gguf_files[@]} -eq 0 ]]; then
+        echo "  (none)"
+        exit 0
+    fi
+    for i in "${!gguf_files[@]}"; do
+        size=$(du -h "${gguf_files[$i]}" 2>/dev/null | cut -f1)
+        printf "  %2d) %-50s [%s]\n" "$((i+1))" "$(basename "${gguf_files[$i]}")" "$size"
+    done
+    echo ""
+    printf "Select models to delete (space-separated nums, or empty=cancel): "
+    read -r selection </dev/tty
+    [[ -z "$selection" ]] && echo "Cancelled." && exit 0
+    for n in $selection; do
+        if ! [[ "$n" =~ ^[0-9]+$ ]] || (( n < 1 || n > ${#gguf_files[@]} )); then
+            echo "Invalid: $n — skipped"; continue
+        fi
+        f="${gguf_files[$((n-1))]}"
+        printf "  Delete %s? [y/N] " "$(basename "$f")"
+        read -r confirm </dev/tty
+        if [[ "$confirm" =~ ^[yY]$ ]]; then
+            rm -f "$f"
+            echo "  Deleted: $(basename "$f")"
+        else
+            echo "  Skipped."
+        fi
+    done
+    exit 0
+fi
 
 # ── Logging ──────────────────────────────────────────────────────────────────
 LOG_DIR="$BENCHMARK_DIR/results/logs"
