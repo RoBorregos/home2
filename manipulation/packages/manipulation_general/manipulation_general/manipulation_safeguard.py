@@ -121,14 +121,9 @@ class ManipulationSafeguard(Node):
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
         is_fault = msg.state == XARM_STATE_STOPPED or msg.err != 0
-        is_oob = bool(self._joints_out_of_bounds())
-        if (is_fault or is_oob) and not self._in_estop:
+        if is_fault and not self._in_estop:
             self._in_estop = True
-            if is_fault:
-                reason = f"state={msg.state}, err={msg.err}"
-            else:
-                bad = [_JOINT_NAMES[i] for i in self._joints_out_of_bounds()]
-                reason = f"joints out of bounds: {bad}"
+            reason = f"state={msg.state}, err={msg.err}"
             self.get_logger().warn(f"E-stop ACTIVATED ({reason}) — broadcasting abort")
             self._estop_pub.publish(Bool(data=True))
 
@@ -143,7 +138,6 @@ class ManipulationSafeguard(Node):
                 self._arm_state
                 and self._arm_state.state not in (XARM_STATE_PAUSED, XARM_STATE_STOPPED)
                 and self._arm_state.err == 0
-                and not self._joints_out_of_bounds()
             ):
                 self._in_estop = False
                 self.get_logger().warn(
