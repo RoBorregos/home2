@@ -4,12 +4,16 @@ Task Manager for Doing Laundry Task
 """
 
 import math
+import numpy as np
 import rclpy
 from rclpy.duration import Duration
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401
 from geometry_msgs.msg import PointStamped, PoseStamped
+from sensor_msgs.msg import PointCloud2
+from frida_constants.manipulation_constants import ZED_POINT_CLOUD_TOPIC
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -50,6 +54,10 @@ class DoingLaundryTM(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
+        self._latest_cloud: PointCloud2 = None
+        qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)
+        self.create_subscription(PointCloud2, ZED_POINT_CLOUD_TOPIC, self._cloud_cb, qos)
+
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "DoingLaundryTM has started.")
 
@@ -71,6 +79,55 @@ class DoingLaundryTM(Node):
             Logger.info(self, f"Carrying basket to {location}")
             self.subtask_manager.hri.say(f"Carrying basket to {location}.", wait=False)
         return self.subtask_manager.nav.move_to_location(location, sublocation)
+
+    def _cloud_cb(self, msg: PointCloud2):
+        self._latest_cloud = msg
+
+    def _nearest_point_in_bbox(self, detection) -> PointStamped:
+        """Return the nearest 3D point (min depth) inside the detection bbox from the point cloud.
+
+        Falls back to detection.point3d if no valid cloud or no valid points in region.
+        """
+        cloud = self._latest_cloud
+        if cloud is None or cloud.height == 0 or cloud.width == 0:
+            Logger.warn(self, "No point cloud available, using centroid fallback")
+            return detection.point3d
+
+        h, w = cloud.height, cloud.width
+
+        row_min = max(0, int(detection.ymin * h))
+        row_max = min(h - 1, int(detection.ymax * h))
+        col_min = max(0, int(detection.xmin * w))
+        col_max = min(w - 1, int(detection.xmax * w))
+
+        # Parse organized PointCloud2: float32 x, y, z at offsets 0, 4, 8
+        floats_per_point = cloud.point_step // 4
+        data = np.frombuffer(cloud.data, dtype=np.float32).reshape(h, w, floats_per_point)
+        roi = data[row_min : row_max + 1, col_min : col_max + 1, :3]  # (rows, cols, xyz)
+
+        z_roi = roi[:, :, 2]  # Z = depth in camera optical frame
+        valid = np.isfinite(z_roi) & (z_roi > 0.0)
+
+        if not np.any(valid):
+            Logger.warn(self, "No valid depth in bbox, using centroid fallback")
+            return detection.point3d
+
+        masked_z = np.where(valid, z_roi, np.inf)
+        r, c = np.unravel_index(int(np.argmin(masked_z)), masked_z.shape)
+
+        pt = PointStamped()
+        pt.header.frame_id = cloud.header.frame_id
+        pt.header.stamp = cloud.header.stamp
+        pt.point.x = float(roi[r, c, 0])
+        pt.point.y = float(roi[r, c, 1])
+        pt.point.z = float(roi[r, c, 2])
+
+        Logger.info(
+            self,
+            f"Nearest bbox point: ({pt.point.x:.3f}, {pt.point.y:.3f}, {pt.point.z:.3f}) "
+            f"vs centroid z={detection.point3d.point.z:.3f}",
+        )
+        return pt
 
     def _compute_behind_basket_pose(self, basket_detection):
         """
@@ -129,17 +186,17 @@ class DoingLaundryTM(Node):
         )
         return approach_x, approach_y, yaw
 
-    def _basket_approach_pose(self, basket_detection) -> PoseStamped:
+    def _basket_approach_pose(self, point_stamped: PointStamped) -> PoseStamped:
         """Compute a PoseStamped for arm approach to basket.
 
-        Transforms basket centroid from camera frame to base_link and builds
-        a horizontal-approach orientation (gripper pointing toward basket).
+        Transforms the given PointStamped to base_link and builds a
+        horizontal-approach orientation (gripper pointing toward basket).
 
         Returns PoseStamped in base_link, or None on TF failure.
         """
         try:
             basket_bl = self.tf_buffer.transform(
-                basket_detection.point3d, "base_link", timeout=Duration(seconds=1.0)
+                point_stamped, "base_link", timeout=Duration(seconds=1.0)
             )
         except TransformException as e:
             Logger.error(self, f"TF basket→base_link failed: {e}")
@@ -281,8 +338,11 @@ class DoingLaundryTM(Node):
             Logger.info(self, "Opening gripper before approach.")
             self.subtask_manager.manipulation.open_gripper()
 
+            Logger.info(self, "Getting nearest 3D point in basket bbox.")
+            nearest_pt = self._nearest_point_in_bbox(self.basket_close_detection)
+
             Logger.info(self, "Computing basket approach pose.")
-            target_pose = self._basket_approach_pose(self.basket_close_detection)
+            target_pose = self._basket_approach_pose(nearest_pt)
             if target_pose is None:
                 Logger.error(self, "Could not compute basket approach pose. Retrying detection.")
                 self.basket_close_detection = None
