@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import math
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -7,7 +8,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from std_msgs.msg import Bool
 from std_srvs.srv import Empty, Trigger
 from xarm_msgs.msg import RobotMsg
-from xarm_msgs.srv import SetInt16, SetInt16ById, Call as XArmCall
+from xarm_msgs.srv import SetInt16, SetInt16ById, Call as XArmCall, MoveJoint
 from controller_manager_msgs.srv import SwitchController
 from frida_interfaces.action import MoveJoints
 from frida_constants.manipulation_constants import (
@@ -29,6 +30,18 @@ from frida_constants.manipulation_constants import (
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
+from frida_pymoveit2.robots.xarm6 import (
+    JOINT_POSITION_LIMITS,
+    joint_names as xarm6_joint_names,
+)
+
+# Single source of truth for joint limits — matches what MoveIt uses (frida_pymoveit2/robots/xarm6.py).
+# Using per-joint limits avoids false positives on joints that legitimately exceed ±π (e.g. joint1/4/6
+# have hardware limits of ±2π, but FRIDA configuration restricts them to ±π*0.99 = ±3.11018).
+_JOINT_NAMES = xarm6_joint_names()
+_BOUNDS_TOLERANCE = 0.11  # slightly above start_state_max_bounds_error (0.1 rad)
+_XARM_SET_SERVO_ANGLE = "/xarm/set_servo_angle"
+_POSITION_MODE = 0  # xarm mode 0: direct position control, bypasses MoveIt
 
 
 class ManipulationSafeguard(Node):
@@ -76,6 +89,9 @@ class ManipulationSafeguard(Node):
             MOVE_JOINTS_ACTION_SERVER,
             callback_group=self.callback_group,
         )
+        self._set_servo_angle_client = self.create_client(
+            MoveJoint, _XARM_SET_SERVO_ANGLE, callback_group=self.callback_group
+        )
 
         self.create_service(
             Trigger,
@@ -96,6 +112,7 @@ class ManipulationSafeguard(Node):
             self._arm_state is not None
             and self._arm_state.state in (XARM_STATE_READY, XARM_STATE_MOVING)
             and self._arm_state.err == 0
+            and not self._joints_out_of_bounds()
         )
         response.success = ok
         response.message = "" if ok else "arm not ready after recovery attempt"
@@ -103,11 +120,16 @@ class ManipulationSafeguard(Node):
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
-        if (msg.state == XARM_STATE_STOPPED or msg.err != 0) and not self._in_estop:
+        is_fault = msg.state == XARM_STATE_STOPPED or msg.err != 0
+        is_oob = bool(self._joints_out_of_bounds())
+        if (is_fault or is_oob) and not self._in_estop:
             self._in_estop = True
-            self.get_logger().warn(
-                f"E-stop ACTIVATED (state={msg.state}, err={msg.err}) — broadcasting abort"
-            )
+            if is_fault:
+                reason = f"state={msg.state}, err={msg.err}"
+            else:
+                bad = [_JOINT_NAMES[i] for i in self._joints_out_of_bounds()]
+                reason = f"joints out of bounds: {bad}"
+            self.get_logger().warn(f"E-stop ACTIVATED ({reason}) — broadcasting abort")
             self._estop_pub.publish(Bool(data=True))
 
     def _try_estop_recovery(self):
@@ -121,6 +143,7 @@ class ManipulationSafeguard(Node):
                 self._arm_state
                 and self._arm_state.state not in (XARM_STATE_PAUSED, XARM_STATE_STOPPED)
                 and self._arm_state.err == 0
+                and not self._joints_out_of_bounds()
             ):
                 self._in_estop = False
                 self.get_logger().warn(
@@ -137,6 +160,64 @@ class ManipulationSafeguard(Node):
                 )
         finally:
             self._recovering = False
+
+    def _joints_out_of_bounds(self) -> list[int]:
+        """Return indices of joints whose reported angle violates JOINT_POSITION_LIMITS."""
+        if not self._arm_state or not self._arm_state.angle:
+            return []
+        bad = []
+        for i, (name, angle) in enumerate(zip(_JOINT_NAMES, self._arm_state.angle)):
+            lower, upper = JOINT_POSITION_LIMITS[name]
+            if angle < lower - _BOUNDS_TOLERANCE or angle > upper + _BOUNDS_TOLERANCE:
+                bad.append(i)
+        return bad
+
+    def _normalize_joints(self, bad_indices: list[int]):
+        """Move out-of-bounds joints back within limits via xarm mode 0.
+        Leaves the arm in mode 0 — caller is responsible for reinit and recovery."""
+        self.get_logger().warn("Normalizing joints via direct xarm control (mode 0)...")
+
+        deltas = [0.0] * len(self._arm_state.angle)
+        for i in bad_indices:
+            name = _JOINT_NAMES[i]
+            lower, upper = JOINT_POSITION_LIMITS[name]
+            raw = self._arm_state.angle[i]
+            delta = 0.0
+            while raw + delta > upper + _BOUNDS_TOLERANCE:
+                delta -= 2 * math.pi
+            while raw + delta < lower - _BOUNDS_TOLERANCE:
+                delta += 2 * math.pi
+            deltas[i] = delta
+            self.get_logger().warn(
+                f"{name} OOB ({raw:.4f} rad) — moving by {delta:.4f} rad "
+                f"to {raw + delta:.4f} rad (limits [{lower:.4f}, {upper:.4f}])"
+            )
+
+        req_mode0 = SetInt16.Request()
+        req_mode0.data = _POSITION_MODE
+        self._call_svc(
+            self._set_mode_client, req_mode0, 5.0, "set_mode(0) for normalization"
+        )
+        req_state0 = SetInt16.Request()
+        req_state0.data = 0
+        self._call_svc(
+            self._set_state_client, req_state0, 5.0, "set_state(0) for normalization"
+        )
+
+        req_move = MoveJoint.Request()
+        req_move.angles = [float(d) for d in deltas]
+        req_move.speed = 1.5
+        req_move.acc = 0.5
+        req_move.wait = True
+        req_move.timeout = 15.0
+        req_move.relative = True
+        self._call_svc(
+            self._set_servo_angle_client,
+            req_move,
+            17.0,
+            "set_servo_angle normalization",
+        )
+        self.get_logger().warn("Joint normalization move complete.")
 
     def _call_svc(self, client, request, timeout, label):
         elapsed = 0.0
@@ -215,8 +296,10 @@ class ManipulationSafeguard(Node):
         s = self._arm_state
         needs_reinit = s.err != 0 or s.mode != MOVEIT_MODE
         needs_reenable = s.state in (XARM_STATE_PAUSED, XARM_STATE_STOPPED)
+        bad_joints = self._joints_out_of_bounds()
+        needs_normalize = bool(bad_joints)
 
-        if not (needs_reinit or needs_reenable):
+        if not (needs_reinit or needs_reenable or needs_normalize):
             return
 
         if s.err != 0:
@@ -224,12 +307,6 @@ class ManipulationSafeguard(Node):
             self._call_svc(
                 self._clean_error_client, XArmCall.Request(), 5.0, "clean_error"
             )
-
-        if needs_reinit:
-            self.get_logger().warn(
-                f"ensure_arm_ready -> mode={s.mode} (expected 1), reinit mode 1"
-            )
-            self._reinit_mode1()
 
         if needs_reenable:
             self.get_logger().warn(
@@ -239,6 +316,16 @@ class ManipulationSafeguard(Node):
             req = SetInt16.Request()
             req.data = 0
             self._call_svc(self._set_state_client, req, 5.0, "set_state(0)")
+
+        if needs_normalize:
+            self._normalize_joints(bad_joints)
+            needs_reinit = True  # arm is now in mode 0; must reinit to mode 1
+
+        if needs_reinit:
+            self.get_logger().warn(
+                f"ensure_arm_ready -> mode={s.mode} (expected 1), reinit mode 1"
+            )
+            self._reinit_mode1()
 
         self._reactivate_controller()
         self._wait_for_arm_ready(timeout_sec=5.0)
