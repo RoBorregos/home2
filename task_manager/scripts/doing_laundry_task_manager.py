@@ -145,7 +145,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
             Logger.info(self, "Navigating to basket area")
-            status, error = self.navigate_to("laundry", "basket_view")
+            status, error = self.navigate_to("laundry", "laundry_basket")
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_state = DoingLaundryTM.TaskStates.DETECT_BASKET
