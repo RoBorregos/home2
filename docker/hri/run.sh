@@ -10,18 +10,29 @@ ENV_TYPE="${*: -1}"
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
 BENCHMARK=""
+BENCHMARK_PASSTHROUGH=()
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 parse_common_flags "$COMPOSE" "${ARGS[@]}"
 
-# Parse hri-specific flags
-for arg in "${ARGS[@]}"; do
+# Parse hri-specific flags; collect benchmark passthrough args
+i=0
+while [[ $i -lt ${#ARGS[@]} ]]; do
+  arg="${ARGS[$i]}"
   case "$arg" in
     "--download-model") DOWNLOAD_MODEL="true" ;;
     "--regenerate-db")  REGENERATE_DB="true" ;;
     "--build-proto")    BUILD_PROTO="true" ;;
-    "--benchmark")      BENCHMARK="true" ;;
+    "--benchmark")        BENCHMARK="true" ;;
+    "--benchmark-delete") BENCHMARK="true"; BENCHMARK_PASSTHROUGH+=("--delete") ;;
+    # benchmark passthrough: flags forwarded to run-benchmark.sh
+    "--ephemeral"|"--all") BENCHMARK_PASSTHROUGH+=("$arg") ;;
+    "--runs"|"--tasks"|"--models")
+      BENCHMARK_PASSTHROUGH+=("$arg")
+      (( i++ )) || true
+      [[ $i -lt ${#ARGS[@]} ]] && BENCHMARK_PASSTHROUGH+=("${ARGS[$i]}") ;;
   esac
+  (( i++ )) || true
 done
 
 #_________________________SETUP_________________________
@@ -49,7 +60,7 @@ setup_common_env "hri" "compose/.env"
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
 if [ "$BENCHMARK" == "true" ]; then
-  bash ./scripts/run-benchmark.sh
+  bash ./scripts/run-benchmark.sh "${BENCHMARK_PASSTHROUGH[@]+"${BENCHMARK_PASSTHROUGH[@]}"}"
   exit 0
 fi
 
