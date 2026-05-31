@@ -9,7 +9,8 @@ from rclpy.duration import Duration
 from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
+from tf_transformations import quaternion_from_euler
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -129,6 +130,47 @@ class DoingLaundryTM(Node):
         )
         return approach_x, approach_y, yaw
 
+    def _basket_approach_pose(self, basket_detection) -> PoseStamped:
+        """Compute a PoseStamped for arm approach to basket.
+
+        Transforms basket centroid from camera frame to base_link and builds
+        a horizontal-approach orientation (gripper pointing toward basket).
+
+        Returns PoseStamped in base_link, or None on TF failure.
+        """
+        try:
+            basket_bl = self.tf_buffer.transform(
+                basket_detection.point3d, "base_link", timeout=Duration(seconds=1.0)
+            )
+        except TransformException as e:
+            Logger.error(self, f"TF basket→base_link failed: {e}")
+            return None
+
+        bx = basket_bl.point.x
+        by = basket_bl.point.y
+        bz = basket_bl.point.z
+
+        # Yaw toward basket, pitch=pi/2 for horizontal approach
+        yaw = math.atan2(by, bx)
+        qx, qy, qz, qw = quaternion_from_euler(0.0, math.pi / 2, yaw)
+
+        pose = PoseStamped()
+        pose.header.frame_id = "base_link"
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = bx
+        pose.pose.position.y = by
+        pose.pose.position.z = bz
+        pose.pose.orientation.x = qx
+        pose.pose.orientation.y = qy
+        pose.pose.orientation.z = qz
+        pose.pose.orientation.w = qw
+
+        Logger.info(
+            self,
+            f"Basket approach pose: ({bx:.3f}, {by:.3f}, {bz:.3f}) yaw={math.degrees(yaw):.1f}°",
+        )
+        return pose
+
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
@@ -232,14 +274,20 @@ class DoingLaundryTM(Node):
             Logger.info(self, "Opening gripper before approach.")
             self.subtask_manager.manipulation.open_gripper()
 
-            Logger.info(self, "Moving arm to basket via go_to_hand.")
-            result = self.subtask_manager.manipulation.go_to_hand(
-                point=self.basket_close_detection.point3d,
-                hand_offset=0.05,
-            )
+            Logger.info(self, "Computing basket approach pose.")
+            target_pose = self._basket_approach_pose(self.basket_close_detection)
+            if target_pose is None:
+                Logger.error(self, "Could not compute basket approach pose. Retrying detection.")
+                self.basket_close_detection = None
+                self.look_back_detect_attempts = 0
+                self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_DETECT
+                return
+
+            Logger.info(self, "Moving arm to basket via move_arm_to_pose.")
+            result = self.subtask_manager.manipulation.move_arm_to_pose(target_pose, velocity=0.3)
 
             if result != Status.EXECUTION_SUCCESS:
-                Logger.error(self, "go_to_hand failed. Retrying detection.")
+                Logger.error(self, "move_arm_to_pose failed. Retrying detection.")
                 self.basket_close_detection = None
                 self.look_back_detect_attempts = 0
                 self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_DETECT
@@ -247,9 +295,6 @@ class DoingLaundryTM(Node):
 
             Logger.info(self, "Closing gripper to grab basket.")
             self.subtask_manager.manipulation.close_gripper()
-
-            Logger.info(self, "Moving to basket_hold_back_pose for safe navigation.")
-            self.subtask_manager.manipulation.move_to_position("basket_hold_back_pose")
 
             Logger.success(self, "Basket grabbed. Heading to laundry table.")
             self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE
