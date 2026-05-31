@@ -3,6 +3,7 @@
 import os
 import sys
 import contextlib
+import time
 import numpy as np
 import rclpy
 import tf2_ros
@@ -37,6 +38,8 @@ class ContactGraspNetNode(Node):
         # accelerate FP16/BF16 — pure FP32 leaves most of the GPU idle. Expect
         # 1.5–2× inference speedup. Toggle off if you suspect accuracy drift.
         self.declare_parameter("use_fp16", True)
+        self.declare_parameter("max_input_points", 1024)
+        self.declare_parameter("use_torch_compile", True)
         self.use_fp16 = (
             self.get_parameter("use_fp16").get_parameter_value().bool_value
             and torch.cuda.is_available()
@@ -66,6 +69,19 @@ class ContactGraspNetNode(Node):
             )
             checkpoint_io.load("model.pt")
 
+            use_torch_compile = (
+                self.get_parameter("use_torch_compile").get_parameter_value().bool_value
+                and torch.cuda.is_available()
+            )
+            if use_torch_compile:
+                self.get_logger().info(
+                    "torch.compile enabled (mode=reduce-overhead) — "
+                    "first warm-up triggers JIT compilation (~30-60 s on Orin, one-time)."
+                )
+                self.grasp_estimator.model = torch.compile(
+                    self.grasp_estimator.model, mode="reduce-overhead"
+                )
+
             self.get_logger().info(
                 f"Model loaded (fp16={self.use_fp16}). Running GPU warm-up pass..."
             )
@@ -73,7 +89,14 @@ class ContactGraspNetNode(Node):
             # CUDA JIT compilation overhead (~10 s cold-start on Jetson Orin).
             # Run under the same autocast context as real inference so the JIT
             # caches FP16 kernels, not FP32 ones.
-            dummy_pc = np.random.rand(50, 3).astype(np.float32)
+            # Point count must match max_input_points so torch.compile's graph
+            # cache is primed for the exact shape used in real inference.
+            max_input_points = (
+                self.get_parameter("max_input_points")
+                .get_parameter_value()
+                .integer_value
+            )
+            dummy_pc = np.random.rand(max_input_points, 3).astype(np.float32)
             with self._inference_context():
                 self.grasp_estimator.predict_scene_grasps(
                     dummy_pc, local_regions=False, filter_grasps=False, forward_passes=1
@@ -128,6 +151,19 @@ class ContactGraspNetNode(Node):
 
             pc_full = np.array(points_list, dtype=np.float32)
 
+            max_input_points = (
+                self.get_parameter("max_input_points")
+                .get_parameter_value()
+                .integer_value
+            )
+            if pc_full.shape[0] > max_input_points:
+                original_count = pc_full.shape[0]
+                idx = np.random.choice(original_count, max_input_points, replace=False)
+                pc_full = pc_full[idx]
+                self.get_logger().debug(
+                    f"Downsampled point cloud: {original_count} → {max_input_points} points"
+                )
+
             if pc_full.shape[0] == 0:
                 response.success = False
                 response.message = "Empty point cloud"
@@ -150,6 +186,7 @@ class ContactGraspNetNode(Node):
                 self.get_parameter("forward_passes").get_parameter_value().integer_value
             )
 
+            _t0 = time.perf_counter()
             with self._inference_context():
                 pred_grasps_cam, scores, contact_pts, _ = (
                     self.grasp_estimator.predict_scene_grasps(
@@ -159,6 +196,13 @@ class ContactGraspNetNode(Node):
                         forward_passes=forward_passes,
                     )
                 )
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+            _t1 = time.perf_counter()
+            self.get_logger().info(
+                f"Inference: {(_t1 - _t0) * 1000:.1f} ms "
+                f"({pc_full.shape[0]} pts, fp16={self.use_fp16})"
+            )
 
             grasps = pred_grasps_cam[-1]
             grasp_scores = scores[-1]

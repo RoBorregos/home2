@@ -26,6 +26,13 @@ def generate_launch_description():
                         "pick_min_height": float(
                             LaunchConfiguration("pick_min_height").perform(context)
                         ),
+                        "max_input_points": int(
+                            LaunchConfiguration("max_input_points").perform(context)
+                        ),
+                        "use_torch_compile": LaunchConfiguration("use_torch_compile")
+                        .perform(context)
+                        .lower()
+                        == "true",
                     }
                 ],
             )
@@ -47,6 +54,24 @@ def generate_launch_description():
                 "pick_min_height",
                 default_value="0.03",
                 description="Min height above cluster bottom a grasp must clear (m).",
+            ),
+            DeclareLaunchArgument(
+                "max_input_points",
+                default_value="1024",
+                description=(
+                    "Cap on input cloud size before CGN inference. "
+                    "CGN internally FPS-reduces to ~1024 anyway. "
+                    "Must match warm-up size for torch.compile graph cache correctness."
+                ),
+            ),
+            DeclareLaunchArgument(
+                "use_torch_compile",
+                default_value="true",
+                description=(
+                    "Enable torch.compile(mode='reduce-overhead') on the GraspNet model. "
+                    "Adds ~30-60 s to startup on Jetson Orin (one-time JIT compilation). "
+                    "Set to false for faster restarts during development."
+                ),
             ),
             OpaqueFunction(function=cgn_node),
         ]
