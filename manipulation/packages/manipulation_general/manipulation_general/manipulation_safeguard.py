@@ -18,6 +18,8 @@ from frida_constants.manipulation_constants import (
     XARM_MOTION_ENABLE_SERVICE,
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
+    XARM_SET_SERVO_ANGLE_SERVICE,
+    XARM_POSITION_MODE,
     ESTOP_TOPIC,
     MOVE_JOINTS_ACTION_SERVER,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
@@ -36,13 +38,9 @@ from frida_pymoveit2.robots.xarm6 import (
     joint_names as xarm6_joint_names,
 )
 
-# Single source of truth for joint limits — matches what MoveIt uses (frida_pymoveit2/robots/xarm6.py).
-# Using per-joint limits avoids false positives on joints that legitimately exceed ±π (e.g. joint1/4/6
-# have hardware limits of ±2π, but FRIDA configuration restricts them to ±π*0.99 = ±3.11018).
+# Per-joint limits from frida_pymoveit2/robots/xarm6.py — same source MoveIt uses.
 _JOINT_NAMES = xarm6_joint_names()
 _BOUNDS_TOLERANCE = 0.11  # slightly above start_state_max_bounds_error (0.1 rad)
-_XARM_SET_SERVO_ANGLE = "/xarm/set_servo_angle"
-_POSITION_MODE = 0  # xarm mode 0: direct position control, bypasses MoveIt
 
 
 class ManipulationSafeguard(Node):
@@ -92,7 +90,7 @@ class ManipulationSafeguard(Node):
             callback_group=self.callback_group,
         )
         self._set_servo_angle_client = self.create_client(
-            MoveJoint, _XARM_SET_SERVO_ANGLE, callback_group=self.callback_group
+            MoveJoint, XARM_SET_SERVO_ANGLE_SERVICE, callback_group=self.callback_group
         )
 
         self.create_service(
@@ -206,7 +204,7 @@ class ManipulationSafeguard(Node):
             )
 
         req_mode0 = SetInt16.Request()
-        req_mode0.data = _POSITION_MODE
+        req_mode0.data = XARM_POSITION_MODE
         self._call_svc(
             self._set_mode_client, req_mode0, 5.0, "set_mode(0) for normalization"
         )
@@ -238,7 +236,7 @@ class ManipulationSafeguard(Node):
             "OOB recovery: moving directly to joint target via mode 0 (skipping intermediate 0-rad step)..."
         )
         req_mode0 = SetInt16.Request()
-        req_mode0.data = _POSITION_MODE
+        req_mode0.data = XARM_POSITION_MODE
         self._call_svc(
             self._set_mode_client, req_mode0, 5.0, "set_mode(0) for OOB recovery"
         )
