@@ -36,7 +36,8 @@ def _print_rich(model: str, task_results: dict) -> None:
     t.add_column("Cases", justify="right")
     t.add_column("Accuracy", justify="right")
     t.add_column("Avg TTFT (ms)", justify="right")
-    t.add_column("Avg tok/s", justify="right")
+    t.add_column("tok/s (total)", justify="right")
+    t.add_column("tok/s (decode)", justify="right")
 
     for task_name, r in task_results.items():
         cases = r.get("cases", [])
@@ -46,12 +47,14 @@ def _print_rich(model: str, task_results: dict) -> None:
         acc_color = "green" if pct >= 80 else ("yellow" if pct >= 60 else "red")
         ttft = r.get("avg_ttft_ms")
         tps = r.get("avg_tokens_per_s")
+        dtps = r.get("avg_decode_tokens_per_s")
         t.add_row(
             task_name,
             str(total),
             f"[{acc_color}]{passed}/{total} ({pct:.0f}%)[/{acc_color}]",
             f"{ttft:.0f}" if ttft else "—",
             f"{tps:.1f}" if tps else "—",
+            f"{dtps:.1f}" if dtps else "—",
         )
 
     console.print(t)
@@ -82,7 +85,7 @@ def _print_failures_rich(console, task_results: dict) -> None:
 
 def _print_plain(model: str, task_results: dict) -> None:
     print(f"\n=== Model: {model} ===")
-    header = f"{'Task':<22} {'Cases':>6} {'Accuracy':>14} {'TTFT ms':>10} {'tok/s':>8}"
+    header = f"{'Task':<22} {'Cases':>6} {'Accuracy':>14} {'TTFT ms':>10} {'tok/s':>8} {'decode tok/s':>14}"
     print(header)
     print("-" * len(header))
     for task_name, r in task_results.items():
@@ -92,9 +95,11 @@ def _print_plain(model: str, task_results: dict) -> None:
         pct = (passed / total * 100) if total else 0
         ttft = r.get("avg_ttft_ms")
         tps = r.get("avg_tokens_per_s")
+        dtps = r.get("avg_decode_tokens_per_s")
         print(
             f"{task_name:<22} {total:>6} {passed}/{total} ({pct:.0f}%){'':<3}"
             f" {f'{ttft:.0f}' if ttft else '—':>10} {f'{tps:.1f}' if tps else '—':>8}"
+            f" {f'{dtps:.1f}' if dtps else '—':>14}"
         )
 
 
@@ -160,6 +165,7 @@ def save_json(all_results: dict, output_dir: str) -> str:
                 "failed_cases": failed[:10],
                 "avg_ttft_ms": r.get("avg_ttft_ms"),
                 "avg_tokens_per_s": r.get("avg_tokens_per_s"),
+                "avg_decode_tokens_per_s": r.get("avg_decode_tokens_per_s"),
             }
 
     with open(path, "w") as f:

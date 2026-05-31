@@ -277,16 +277,30 @@ def _run_timed(
             completion_tokens = chunk.usage.completion_tokens or 0
 
     if t_first is None or t_end is None:
-        return {"ttft_ms": None, "total_ms": None, "tokens_per_s": None}
+        return {
+            "ttft_ms": None,
+            "total_ms": None,
+            "tokens_per_s": None,
+            "decode_tokens_per_s": None,
+        }
 
     total_s = t_end - t_start
+    gen_s = t_end - t_first  # decode-only (excludes prefill)
     ttft_ms = (t_first - t_start) * 1000
     total_ms = total_s * 1000
     tps = (
         (completion_tokens / total_s) if total_s > 0 and completion_tokens > 0 else 0.0
     )
+    decode_tps = (
+        (completion_tokens / gen_s) if gen_s > 0 and completion_tokens > 0 else 0.0
+    )
 
-    return {"ttft_ms": ttft_ms, "total_ms": total_ms, "tokens_per_s": tps}
+    return {
+        "ttft_ms": ttft_ms,
+        "total_ms": total_ms,
+        "tokens_per_s": tps,
+        "decode_tokens_per_s": decode_tps,
+    }
 
 
 def _parse_structured(
@@ -459,17 +473,25 @@ class CommandInterpreterTask:
 def run_perf(client: OpenAI, model: str, task_cls, runs: int) -> dict:
     """Run `runs` timed inferences on the task's representative prompt."""
     msgs = task_cls.perf_messages()
-    ttft_list, tps_list = [], []
+    ttft_list, tps_list, decode_tps_list = [], [], []
     for _ in range(runs):
         r = _run_timed(client, model, msgs)
         if r["ttft_ms"] is not None:
             ttft_list.append(r["ttft_ms"])
             tps_list.append(r["tokens_per_s"])
+            decode_tps_list.append(r["decode_tokens_per_s"])
     if not ttft_list:
-        return {"avg_ttft_ms": None, "avg_tokens_per_s": None}
+        return {
+            "avg_ttft_ms": None,
+            "avg_tokens_per_s": None,
+            "avg_decode_tokens_per_s": None,
+        }
     return {
         "avg_ttft_ms": round(sum(ttft_list) / len(ttft_list), 1),
         "avg_tokens_per_s": round(sum(tps_list) / len(tps_list), 1),
+        "avg_decode_tokens_per_s": round(
+            sum(decode_tps_list) / len(decode_tps_list), 1
+        ),
     }
 
 
