@@ -10,7 +10,6 @@ from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401
 from geometry_msgs.msg import PointStamped, PoseStamped
-from tf_transformations import quaternion_from_euler
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -151,8 +150,16 @@ class DoingLaundryTM(Node):
         bz = basket_bl.point.z
 
         # Yaw toward basket, pitch=pi/2 for horizontal approach
+        # quaternion_from_euler(roll=0, pitch=pi/2, yaw=yaw) — computed inline
         yaw = math.atan2(by, bx)
-        qx, qy, qz, qw = quaternion_from_euler(0.0, math.pi / 2, yaw)
+        cp = math.cos(math.pi / 4)  # cos(pitch/2) = cos(pi/4)
+        sp = math.sin(math.pi / 4)  # sin(pitch/2) = sin(pi/4)
+        cy = math.cos(yaw / 2)
+        sy = math.sin(yaw / 2)
+        qw = cp * cy
+        qx = -sp * sy
+        qy = sp * cy
+        qz = cp * sy
 
         pose = PoseStamped()
         pose.header.frame_id = "base_link"
