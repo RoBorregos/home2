@@ -33,7 +33,6 @@ def resolve_test_file(raw_path: str, config_file: Path) -> Path:
     p = Path(raw_path)
     if not p.is_absolute():
         p = (config_file.parent / p).resolve()
-    # Also try relative to /test_data mount (Docker mode)
     if not p.exists():
         docker_path = Path("/test_data") / Path(raw_path).name
         if docker_path.exists():
@@ -66,7 +65,6 @@ def pull_model_if_needed(base_url: str, model: str) -> None:
             data = _json.loads(resp.read())
         names = [m["name"] for m in data.get("models", [])]
 
-        # Normalize: "qwen3:latest" matches "qwen3"
         def normalize(n):
             return n.split(":")[0]
 

@@ -22,7 +22,7 @@
 
 set -euo pipefail
 
-# ── Paths ────────────────────────────────────────────────────────────────────
+# Paths
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ASSETS_DIR="$(realpath "$SCRIPT_DIR/../../../hri/packages/nlp/assets")"
 BENCHMARK_DIR="$(realpath "$SCRIPT_DIR/../../../hri/packages/nlp/benchmark")"
@@ -42,7 +42,7 @@ MODEL_SELECT=""
 SELECT_ALL=false
 DELETE_MODE=false
 
-# ── Args ─────────────────────────────────────────────────────────────────────
+# Args
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --ephemeral) EPHEMERAL=true; shift ;;
@@ -57,7 +57,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# ── Delete mode ──────────────────────────────────────────────────────────────
+# Delete mode
 if $DELETE_MODE; then
     echo ""
     echo "Cached GGUFs in $ASSETS_DIR:"
@@ -91,7 +91,7 @@ if $DELETE_MODE; then
     exit 0
 fi
 
-# ── Logging ──────────────────────────────────────────────────────────────────
+# Logging
 LOG_DIR="$BENCHMARK_DIR/results/logs"
 mkdir -p "$LOG_DIR"
 TS="$(date +%Y%m%d-%H%M%S)"
@@ -106,7 +106,7 @@ echo "  FRIDA — NLP Multi-Model Benchmark  (llama.cpp)"
 echo "  $(date)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# ── Safety: refuse to run if the production llamacpp container is up ─────────
+# Safety: refuse to run if the production llamacpp container is up
 if docker ps --format '{{.Names}}' | grep -qx "$LIVE_CONTAINER"; then
     echo ""
     echo "ERROR: The live llamacpp container ($LIVE_CONTAINER) is running."
@@ -115,7 +115,7 @@ if docker ps --format '{{.Names}}' | grep -qx "$LIVE_CONTAINER"; then
     exit 1
 fi
 
-# ── Parse registry ───────────────────────────────────────────────────────────
+# Parse registry
 if [[ ! -f "$REGISTRY" ]]; then
     echo "ERROR: registry not found at $REGISTRY"
     exit 1
@@ -136,7 +136,7 @@ if [[ ${#MODEL_NAMES[@]} -eq 0 ]]; then
     exit 1
 fi
 
-# ── Model menu ───────────────────────────────────────────────────────────────
+# Model menu
 echo ""
 echo "Available models:"
 for i in "${!MODEL_NAMES[@]}"; do
@@ -175,7 +175,7 @@ echo ""
 echo "Will benchmark: ${#SELECTED[@]} model(s)"
 for idx in "${SELECTED[@]}"; do echo "  • ${MODEL_NAMES[$idx]}"; done
 
-# ── Task menu ────────────────────────────────────────────────────────────────
+# Task menu
 echo ""
 echo "Tasks to benchmark:"
 echo "  1) All enabled (extract_data, is_positive, is_negative)"
@@ -199,13 +199,13 @@ echo ""
 echo "Perf runs per task: $RUNS"
 $EPHEMERAL && echo "Ephemeral mode: GGUFs will be deleted after each model."
 
-# ── Build the benchmark image once ───────────────────────────────────────────
+# Build the benchmark image once
 echo ""
 echo "Building benchmark image..."
 docker build -q -t "$BENCHMARK_IMAGE" "$BENCHMARK_DIR" >/dev/null
 mkdir -p "$BENCHMARK_DIR/results"
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
+# Helpers
 cleanup_llama() {
     docker stop "$LLAMA_CONTAINER" 2>/dev/null || true
     docker rm  "$LLAMA_CONTAINER" 2>/dev/null || true
@@ -280,7 +280,7 @@ download_model() {
     mv "$dest.partial" "$dest"
 }
 
-# ── Main loop ────────────────────────────────────────────────────────────────
+# Main loop
 SUCCESSES=()
 FAILURES=()
 
@@ -351,7 +351,7 @@ for idx in "${SELECTED[@]}"; do
     fi
 done
 
-# ── Summary ──────────────────────────────────────────────────────────────────
+# Summary
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Done.  $(date)"

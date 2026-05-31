@@ -25,12 +25,6 @@ while [[ $i -lt ${#ARGS[@]} ]]; do
     "--build-proto")    BUILD_PROTO="true" ;;
     "--benchmark")        BENCHMARK="true" ;;
     "--benchmark-delete") BENCHMARK="true"; BENCHMARK_PASSTHROUGH+=("--delete") ;;
-    # benchmark passthrough: flags forwarded to run-benchmark.sh
-    "--ephemeral"|"--all") BENCHMARK_PASSTHROUGH+=("$arg") ;;
-    "--runs"|"--tasks"|"--models")
-      BENCHMARK_PASSTHROUGH+=("$arg")
-      (( i++ )) || true
-      [[ $i -lt ${#ARGS[@]} ]] && BENCHMARK_PASSTHROUGH+=("${ARGS[$i]}") ;;
   esac
   (( i++ )) || true
 done

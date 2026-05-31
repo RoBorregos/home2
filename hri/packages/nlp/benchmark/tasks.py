@@ -9,9 +9,6 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 
-# ── Pydantic schemas (mirrors hri/packages/nlp/nlp/assets/schemas.py) ─────────
-
-
 class ExtractedData(BaseModel):
     data: str
     rationale: str = Field(default="")
@@ -23,9 +20,6 @@ class IsAnswerPositive(BaseModel):
 
 class IsAnswerNegative(BaseModel):
     is_negative: bool
-
-
-# ── Prompt builders (verbatim from hri/packages/nlp/nlp/assets/dialogs.py) ────
 
 
 def _extract_data_messages(
@@ -231,9 +225,6 @@ def _command_interpreter_messages(command: str) -> list:
     ]
 
 
-# ── Shared timed inference helper ─────────────────────────────────────────────
-
-
 def _extract_json(content: str) -> str:
     """Strip thinking tags and markdown code fences before json.loads()."""
     if "</think>" in content:
@@ -327,9 +318,6 @@ def _parse_structured(
         )
         content = _extract_json(resp.choices[0].message.content or "")
         return response_format(**json.loads(content))
-
-
-# ── Task classes ──────────────────────────────────────────────────────────────
 
 
 class ExtractDataTask:
