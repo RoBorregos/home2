@@ -314,38 +314,41 @@ class MotionPlanningServer(Node):
             if goal_handle.request.tolerance_orientation
             else 0.05
         )
+        # Cartesian routing (default false → comportamiento de siempre).
+        # min_fraction solo se usa si cartesian=true; default 0.8 si el caller no lo setea.
+        cartesian = goal_handle.request.cartesian
+        cartesian_min_fraction = (
+            goal_handle.request.cartesian_min_fraction
+            if goal_handle.request.cartesian_min_fraction > 0.0
+            else 0.8
+        )
+        if cartesian:
+            self.get_logger().info(
+                f"Planning CARTESIAN path (min_fraction={cartesian_min_fraction})"
+            )
 
-        original_planner = self.planner.moveit2.planner_id
-
-        # Try planning with requested planner
         was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
             pose=pose,
             target_link=target_link,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
+            cartesian=cartesian,
+            cartesian_fraction_threshold=cartesian_min_fraction,
         )
-
-        # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
-        if not was_plan_successful and original_planner == "vamp":
-            self.get_logger().warn(
-                "VAMP planning failed, falling back to RRTConnect..."
-            )
-            self.planner.set_planner("RRTConnect")
-            was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
-                pose=pose,
-                target_link=target_link,
-                tolerance_position=tolerance_position,
-                tolerance_orientation=tolerance_orientation,
-            )
-            # Restore original planner setting
-            self.planner.set_planner(original_planner)
 
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
             was_execution_successful = self.planner.execute_plan(trajectory_plan)
             return was_execution_successful
         else:
-            self.get_logger().error("Cannot execute because planning failed.")
+            # NO fallback silencioso: devolvemos fail y el caller decide (pick_server).
+            if cartesian:
+                self.get_logger().error(
+                    "Cartesian planning failed (fraction below threshold or unreachable). "
+                    "Returning failure; caller decides fallback."
+                )
+            else:
+                self.get_logger().error("Cannot execute because planning failed.")
             return False
 
     def move_joints(self, goal_handle, feedback):
@@ -381,27 +384,12 @@ class MotionPlanningServer(Node):
             return False
 
         self.get_logger().info("Planning joint goal...")
-        original_planner = self.planner.moveit2.planner_id
         was_plan_successful, trajectory_plan = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
             # wait=True,
             # set_mode=False,
         )
-
-        # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
-        if not was_plan_successful and original_planner == "vamp":
-            self.get_logger().warn(
-                "VAMP planning failed, falling back to RRTConnect..."
-            )
-            self.planner.set_planner("RRTConnect")
-            was_plan_successful, trajectory_plan = self.planner.plan_joint_goal(
-                joint_positions,
-                joint_names,
-            )
-            # Restore original planner setting
-            self.planner.set_planner(original_planner)
-
         self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
