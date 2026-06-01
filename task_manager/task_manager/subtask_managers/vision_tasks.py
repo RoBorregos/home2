@@ -8,7 +8,7 @@ commands.
 
 import math
 import time
-import numpy as np
+import random
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
@@ -955,14 +955,14 @@ class VisionTasks:
             "does the person in the front have glasses? (if not, respond only '0', if yes, describe the glasses).",
             "does the person in the front have facial hair (if not, respond only '0', if yes, describe the facial hair).",
             "describe the age group the person in the front belongs to (teenager, young adult, middle-aged, or elderly).",
-            "is the person in the front wearing jewerly? (if not, respond only '0', if yes, describe the jewelry).",
+            "is the person in the front wearing jewelry? (if not, respond only '0', if yes, describe the jewelry).",
             "describe the hair style and color of the person in the front (straight, wavy, curly, in a pony tail, etc.). Format: The person has [description] hair.",
             "what is the build of the person in the front? (thin, average, athletic, robust, etc.). Format: Their build is [description].",
         ]
 
         seen = set()
 
-        state = {"index": np.random.randint(0, len(attributes)), "count": 0, "parts": []}
+        state = {"index": random.randrange(len(attributes)), "count": 0, "parts": []}
 
         def finish():
             description = "; ".join(state["parts"])
@@ -972,15 +972,15 @@ class VisionTasks:
                 callback(Status.EXECUTION_SUCCESS, description)
 
         def handle_result(status, answer):
+            seen.add(state["index"])
             if status == Status.EXECUTION_SUCCESS and answer:
                 cleaned = answer.strip()
                 if cleaned and cleaned[0] != "0":
                     state["parts"].append(cleaned)
                     state["count"] += 1
-                seen.add(state["index"])
 
             while state["index"] in seen and len(seen) < len(attributes):
-                state["index"] = np.random.randint(0, len(attributes))
+                state["index"] = random.randrange(len(attributes))
             if state["count"] >= 4 or len(seen) >= len(attributes):
                 finish()
                 return
