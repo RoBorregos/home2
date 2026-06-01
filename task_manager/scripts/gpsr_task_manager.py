@@ -87,12 +87,30 @@ class GPSRTM(Node):
         # Batch-mode state for the +200 pt interleaved-execution bonus.
         self.declare_parameter("interleave_enabled", True)
         self.declare_parameter("batch_size", BATCH_SIZE)
+        self.declare_parameter("test_mode", False)
+        self.declare_parameter(
+            "test_commands",
+            [
+                "go to the kitchen and get me a coke",
+                "find a person in the living room and tell them the time",
+                "go to the office and pick up the trash",
+            ],
+        )
+
         self.interleave_enabled = bool(
             self.get_parameter("interleave_enabled").get_parameter_value().bool_value
         )
         self.batch_size = int(
             self.get_parameter("batch_size").get_parameter_value().integer_value or BATCH_SIZE
         )
+        self.test_mode = bool(self.get_parameter("test_mode").get_parameter_value().bool_value)
+        self.test_nl_commands = list(
+            self.get_parameter("test_commands").get_parameter_value().string_array_value
+        )
+
+        if self.test_mode:
+            self.current_state = GPSRTM.TaskStates.WAITING_FOR_COMMAND
+
         self.batched_commands: list = []
         self._location_cache: dict[str, tuple[float, float] | None] = {}
 
@@ -336,17 +354,27 @@ class GPSRTM(Node):
             self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("front_stare")
 
-            s, user_command = self.subtask_manager.hri.ask_and_confirm(
-                "What is your command?",
-                "LLM_command",
-                context="The user was asked to say a command. We want to infer his complete instruction from the response",
-                confirm_question=confirm_command,
-                use_keyword=False,
-                retries=ATTEMPT_LIMIT,
-                min_wait_between_retries=5.0,
-                skip_extract_data=True,
-                always_confirm=True,
-            )
+            if self.test_mode:
+                if self.test_nl_commands:
+                    user_command = self.test_nl_commands.pop(0)
+                    s = Status.EXECUTION_SUCCESS
+                    self.get_logger().info(f"TEST MODE: Using hardcoded command: {user_command}")
+                else:
+                    self.get_logger().info("TEST MODE: No more hardcoded commands. Waiting...")
+                    time.sleep(1.0)
+                    return
+            else:
+                s, user_command = self.subtask_manager.hri.ask_and_confirm(
+                    "What is your command?",
+                    "LLM_command",
+                    context="The user was asked to say a command. We want to infer his complete instruction from the response",
+                    confirm_question=confirm_command,
+                    use_keyword=False,
+                    retries=ATTEMPT_LIMIT,
+                    min_wait_between_retries=5.0,
+                    skip_extract_data=True,
+                    always_confirm=True,
+                )
 
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
@@ -378,7 +406,10 @@ class GPSRTM(Node):
                         self.current_state = GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH
                     else:
                         self.subtask_manager.hri.say("Please give me the next command.", wait=False)
-                        self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
+                        if self.test_mode:
+                            self.current_state = GPSRTM.TaskStates.WAITING_FOR_COMMAND
+                        else:
+                            self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
                 else:
                     self.subtask_manager.hri.say("I will now execute your command.", wait=False)
                     plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
