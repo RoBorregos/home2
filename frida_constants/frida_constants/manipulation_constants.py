@@ -32,6 +32,8 @@ MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
 PICK_VELOCITY = 0.5
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
+PICK_PRE_GRASP_HEIGHT = 0.05  # standoff distance for the normal pick path
+# (cutlery uses CUTLERY_PRE_GRASP_HEIGHT = 0.15, local to pick_server)
 
 # Scan
 SCAN_ANGLE_VERTICAL = 30.0  # degrees
