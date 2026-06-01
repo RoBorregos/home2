@@ -10,6 +10,7 @@ from frida_constants.manipulation_constants import (
     PICK_VELOCITY,
     PICK_ACCELERATION,
     PICK_PLANNER,
+    PICK_PRE_GRASP_HEIGHT,
     ATTACH_COLLISION_OBJECT_SERVICE,
     REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
@@ -383,9 +384,45 @@ class PickMotionServer(Node):
                         continue
 
                 else:
-                    grasp_pose_handler, grasp_pose_result = self.move_to_pose(
-                        ee_link_pose
-                    )
+                    # F1 (plan v2): pre-grasp + descenso cartesiano por el eje de
+                    # approach + fallback a plan libre. Zero regression: el peor caso
+                    # es el comportamiento de hoy (move libre directo a la grasp pose).
+                    #
+                    # pre_grasp_pose: PICK_PRE_GRASP_HEIGHT "atras" del ee_link_pose a lo
+                    # largo del approach axis (z_axis del frame del grasp). Convencion GPD:
+                    # z_axis apunta del ee_link hacia el contact point, asi que restar lo
+                    # aleja del objeto (mismo signo que el ee_link_offset negativo).
+                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                    pre_grasp_pose.pose.position.x -= z_axis[0] * PICK_PRE_GRASP_HEIGHT
+                    pre_grasp_pose.pose.position.y -= z_axis[1] * PICK_PRE_GRASP_HEIGHT
+                    pre_grasp_pose.pose.position.z -= z_axis[2] * PICK_PRE_GRASP_HEIGHT
+
+                    pre_handler, pre_result = self.move_to_pose(pre_grasp_pose)
+
+                    if pre_result.result.success:
+                        # Pre-grasp alcanzado -> descenso CARTESIANO recto por el approach axis
+                        self.get_logger().info(
+                            "Pre-grasp reached, attempting cartesian descent to grasp"
+                        )
+                        grasp_pose_handler, grasp_pose_result = self.move_to_pose(
+                            ee_link_pose, cartesian=True, cartesian_min_fraction=0.8
+                        )
+                        if not grasp_pose_result.result.success:
+                            # Fallback: plan libre directo (= comportamiento de hoy)
+                            self.get_logger().warn(
+                                "Cartesian descent failed, falling back to free plan to grasp"
+                            )
+                            grasp_pose_handler, grasp_pose_result = self.move_to_pose(
+                                ee_link_pose
+                            )
+                    else:
+                        # Pre-grasp inalcanzable -> fallback directo al plan libre (= hoy)
+                        self.get_logger().warn(
+                            "Pre-grasp unreachable, falling back to direct free plan to grasp"
+                        )
+                        grasp_pose_handler, grasp_pose_result = self.move_to_pose(
+                            ee_link_pose
+                        )
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
                 if grasp_pose_result.result.success:
@@ -658,6 +695,8 @@ class PickMotionServer(Node):
         tolerance_position=0.005,
         tolerance_orientation=0.02,
         velocity=PICK_VELOCITY,
+        cartesian=False,
+        cartesian_min_fraction=0.8,
     ):
         request = MoveToPose.Goal()
         request.pose = pose
@@ -667,6 +706,8 @@ class PickMotionServer(Node):
         request.target_link = GRASP_LINK_FRAME
         request.tolerance_position = tolerance_position
         request.tolerance_orientation = tolerance_orientation
+        request.cartesian = cartesian
+        request.cartesian_min_fraction = float(cartesian_min_fraction)
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
