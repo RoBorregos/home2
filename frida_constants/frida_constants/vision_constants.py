@@ -24,8 +24,10 @@ ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
 ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
 ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
-DETECTIONS_ACTIVE_TOPIC = "asd"
-DEBUG_IMAGE_TOPIC = "asd"
+DETECTIONS_ACTIVE_TOPIC = "/vision/detections_active"
+OBJECT_DETECTOR_ACTIVE_TOPIC = "/vision/object_detector/active"
+ZERO_SHOT_DETECTOR_ACTIVE_TOPIC = "/vision/zero_shot_detector/active"
+DEBUG_IMAGE_TOPIC = "/vision/debug_image"
 ZERO_SHOT_DEFAULT_CLASSES = [
     # "transparent_box",
     # "red_cloth",
@@ -81,6 +83,7 @@ DETECTION_HANDLER_TOPIC_SRV = "/vision/detection_handler"
 # Tracker node
 SET_TARGET_TOPIC = "/vision/set_tracking_target"
 SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
+TRACKER_ACTIVE_TOPIC = "/vision/tracker/active"
 RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
 CENTROID_TOIC = "/vision/tracker_centroid"
@@ -107,6 +110,7 @@ PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
+FACE_RECOGNITION_ACTIVE_TOPIC = "/vision/face_recognition/active"
 
 # Camera orientation (centralized flip/rotation handling)
 IMAGE_ORIENTED_TOPIC = "/vision/camera/image_oriented"
@@ -137,6 +141,14 @@ PERSON_POINT_TOPIC = "/vision/person_inside_point"
 
 # Show detection topic
 SHOW_DETECTION_TOPIC = "/vision/show_detection"
+
+# Vision central (global state/health controller)
+VISION_CENTRAL_NODE_NAME = "vision_central"
+VISION_CENTRAL_PAUSE_SERVICE = "/vision/central/pause"
+VISION_CENTRAL_RESUME_SERVICE = "/vision/central/resume"
+VISION_CENTRAL_SET_ENABLED_SERVICE = "/vision/central/set_enabled"
+VISION_CENTRAL_STATUS_SERVICE = "/vision/central/status"
+VISION_CENTRAL_MONITOR_TOPIC = "/vision/central/node_monitor"
 
 # Yolo detection node
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
