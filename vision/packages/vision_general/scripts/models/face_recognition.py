@@ -1,4 +1,4 @@
-"""InsightFace-based face recognition model — no ROS dependencies."""
+"""InsightFace-based face recognition model."""
 
 import os
 
