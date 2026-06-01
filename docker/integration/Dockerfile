@@ -15,7 +15,6 @@ RUN baml-cli generate
 
 WORKDIR /workspace
 
-# Use specific packages instead of copying everything to keep the image small
 COPY task_manager /workspace/src/task_manager
 COPY frida_constants /workspace/src/frida_constants
 COPY frida_interfaces /workspace/src/frida_interfaces
