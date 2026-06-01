@@ -1264,7 +1264,11 @@ class HRITasks(metaclass=SubtaskMeta):
             answer_future = self.llm_wrapper_service.call_async(request)
 
             def callback(f):
-                future.set_result((Status.EXECUTION_SUCCESS, f.result().answer))
+                try:
+                    future.set_result((Status.EXECUTION_SUCCESS, f.result().answer))
+                except Exception as e:
+                    Logger.error(self.node, f"Error in answer_with_context async callback: {e}")
+                    future.set_result((Status.EXECUTION_ERROR, ""))
 
             answer_future.add_done_callback(callback)
             return future
