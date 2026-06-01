@@ -9,6 +9,8 @@ string planner_id
 string target_link
 bool apply_constraint
 frida_interfaces/Constraint constraint
+bool cartesian false
+float64 cartesian_min_fraction 0.8
 ---
 #result definition
 int32 success
