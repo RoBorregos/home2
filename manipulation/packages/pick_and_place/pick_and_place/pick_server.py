@@ -8,6 +8,7 @@ from std_srvs.srv import SetBool
 from frida_constants.manipulation_constants import (
     MOVE_TO_POSE_ACTION_SERVER,
     PICK_VELOCITY,
+    PICK_APPROACH_VELOCITY,
     PICK_ACCELERATION,
     PICK_PLANNER,
     ATTACH_COLLISION_OBJECT_SERVICE,
@@ -383,8 +384,10 @@ class PickMotionServer(Node):
                         continue
 
                 else:
+                    # Fase 0.2 — approach final lento: da tiempo a la detección de colisión del
+                    # xArm a frenar antes de dañar (energía de impacto ~v²). Ver pick_robustez_plan.
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
-                        ee_link_pose
+                        ee_link_pose, velocity=PICK_APPROACH_VELOCITY
                     )
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")

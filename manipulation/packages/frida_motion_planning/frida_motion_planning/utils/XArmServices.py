@@ -4,6 +4,7 @@ from frida_constants.manipulation_constants import (
     XARM_MOVEVELOCITY_SERVICE,
     JOINT_VELOCITY_MODE,
     XARM_SET_DIGITAL_TGPIO_SERVICE,
+    XARM_SET_COLLISION_SENSITIVITY_SERVICE,
 )
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from typing import List
@@ -17,6 +18,7 @@ class XArmServices:
         self.mode_client = mode_client
         self.state_client = state_client
         self.move_velocity_client = None
+        self.collision_client = None
         # The gripper IO client must be created regardless of whether the
         # xarm low-level services are available: in sim the bridge exposes
         # /xarm/set_tgpio_digital (the real-robot gripper service name) so
@@ -35,6 +37,9 @@ class XArmServices:
             return
         self.move_velocity_client = self.node.create_client(
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE
+        )
+        self.collision_client = self.node.create_client(
+            SetInt16, XARM_SET_COLLISION_SENSITIVITY_SERVICE
         )
         # In simulation the xarm low-level services never come up. Without a
         # timeout this blocks the node init forever, so the action server is
@@ -105,6 +110,33 @@ class XArmServices:
             self.node.get_logger().error("Failed to call set state service")
             return False
         return True
+
+    def set_collision_sensitivity(self, level: int) -> bool:
+        """Fase 0.1 — red de seguridad de hardware: sensibilidad de detección de colisión del
+        xArm (0=off, 1-5, mayor = más sensible). Ante contacto inesperado el firmware PARA y
+        entra en estado de protección. Idempotente; se re-aplica tras un recovery porque ciertos
+        resets de error pueden bajar la sensibilidad. Ver docs/pick_robustez_plan.md §3 (Fase 0.1)."""
+        if self.collision_client is None:
+            self.node.get_logger().warn(
+                "Cannot set collision sensitivity: service unavailable (sim?)"
+            )
+            return False
+        if not self.collision_client.wait_for_service(timeout_sec=3.0):
+            self.node.get_logger().error(
+                "set_collision_sensitivity service not available"
+            )
+            return False
+        request = SetInt16.Request()
+        request.data = int(level)
+        future = self.collision_client.call_async(request)
+        future = wait_for_future(future)
+        if future is not None:
+            self.node.get_logger().info(
+                f"xArm collision detection sensitivity set to {level}"
+            )
+            return True
+        self.node.get_logger().error("Failed to set collision sensitivity")
+        return False
 
     def set_gripper_state(self, state: str) -> bool:
         if self.move_velocity_client is None:

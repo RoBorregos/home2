@@ -34,6 +34,7 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
+    COLLISION_SENSITIVITY,
 )
 
 from frida_interfaces.msg import CollisionObject
@@ -158,6 +159,10 @@ class MotionPlanningServer(Node):
                 self, self.planner.mode_client, self.planner.state_client
             )
             self.real_xarm = True
+            # Fase 0.1 — red de seguridad: habilitar detección de colisión del xArm al arranque
+            # (valor afinable vía COLLISION_SENSITIVITY, sin recompilar). El driver C++ ya pone un
+            # piso en on_activate; esto aplica el valor autoritativo una vez que los nodos suben.
+            self.xarm_services.set_collision_sensitivity(COLLISION_SENSITIVITY)
         else:
             self.xarm_services = XArmServices(self, None, None)
             self.real_xarm = False

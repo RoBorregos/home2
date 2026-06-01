@@ -9,6 +9,7 @@ RAD2DEG = 180.0 / PI
 # xArm Constants
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
+XARM_SET_COLLISION_SENSITIVITY_SERVICE = "/xarm/set_collision_sensitivity"
 XARM_SETMODE_MOVEIT_SERVICE = "/manipulation/xarm/set_moveit_mode"
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
@@ -32,6 +33,13 @@ MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
 PICK_VELOCITY = 0.5
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
+# Fase 0.1 — sensibilidad de detección de colisión del xArm: 0=off, 1-5, MAYOR = más sensible
+# (CONFIRMAR empíricamente). Red de seguridad de hardware. Tunear al alza sin falsos disparos.
+# Detalle: docs/pick_robustez_plan.md §3 (Fase 0.1) y §3.bis (protocolo de validación).
+COLLISION_SENSITIVITY = 3
+# Fase 0.2 — velocidad lenta del approach final del pick (m/s). Energía de impacto ~v²: da tiempo
+# a que la detección de colisión frene antes de dañar. Más lento que PICK_VELOCITY (0.5).
+PICK_APPROACH_VELOCITY = 0.10
 
 # Scan
 SCAN_ANGLE_VERTICAL = 30.0  # degrees
