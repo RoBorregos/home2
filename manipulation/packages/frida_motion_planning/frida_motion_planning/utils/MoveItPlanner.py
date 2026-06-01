@@ -166,6 +166,7 @@ class MoveItPlanner(Planner):
         cartesian: bool = False,
         tolerance_position: float = 0.015,
         tolerance_orientation: float = 0.02,
+        cartesian_fraction_threshold: float = 0.8,
     ):
         self.node.get_logger().info("Generating a plan for a pose goal...")
 
@@ -176,6 +177,7 @@ class MoveItPlanner(Planner):
             target_link=target_link,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
+            cartesian_fraction_threshold=cartesian_fraction_threshold,
         )
 
         # Check if a valid plan was found (if not None)
