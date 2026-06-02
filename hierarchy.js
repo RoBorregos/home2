@@ -350,6 +350,7 @@ var hierarchy =
       [ "image_orienter.ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", null ],
       [ "is_person_inside.IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
+      [ "manipulation_general.manipulation_safeguard.ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", null ],
       [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
       [ "nav_central.Nav_Central", "classnav__central_1_1Nav__Central.html", null ],
       [ "nav_ui.NavRosNode", "classnav__ui_1_1NavRosNode.html", null ],

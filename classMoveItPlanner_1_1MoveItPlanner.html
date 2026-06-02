@@ -121,8 +121,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a862ec15d3c59156146eedd06b92a0c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95bde4c9a317016dc3d86a058d00920a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a95bde4c9a317016dc3d86a058d00920a">plan_joint_goal</a> (self, List[float] joint_positions, List[str] joint_names)</td></tr>
 <tr class="separator:a95bde4c9a317016dc3d86a058d00920a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a15a0739b7c05572eed120cc4e845ad22"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a15a0739b7c05572eed120cc4e845ad22">execute_plan</a> (self, trajectory, bool wait=True)</td></tr>
-<tr class="separator:a15a0739b7c05572eed120cc4e845ad22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad7281f503eeac4d889b933e74e31d6c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#aad7281f503eeac4d889b933e74e31d6c">execute_plan</a> (self, trajectory, bool wait=True, is_estop_active=None)</td></tr>
+<tr class="separator:aad7281f503eeac4d889b933e74e31d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1c81b0be7e6b68826c012c69e651250"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ac1c81b0be7e6b68826c012c69e651250">plan_pose_goal</a> (self, PoseStamped pose, str target_link=<a class="el" href="namespacexarm6.html#a98e484bb41a72ad13138043f3728bf2c">xarm6.end_effector_name</a>(), bool cartesian=False, float tolerance_position=0.015, float tolerance_orientation=0.02)</td></tr>
 <tr class="separator:ac1c81b0be7e6b68826c012c69e651250"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21b8178d73aa57c202d3441babdde521"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a21b8178d73aa57c202d3441babdde521">reset_controller</a> (self)</td></tr>
@@ -733,8 +733,8 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a15a0739b7c05572eed120cc4e845ad22" name="a15a0739b7c05572eed120cc4e845ad22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a15a0739b7c05572eed120cc4e845ad22">&#9670;&#160;</a></span>execute_plan()</h2>
+<a id="aad7281f503eeac4d889b933e74e31d6c" name="aad7281f503eeac4d889b933e74e31d6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad7281f503eeac4d889b933e74e31d6c">&#9670;&#160;</a></span>execute_plan()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -755,7 +755,13 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>wait</em> = <code>True</code>&#160;</td>
+          <td class="paramname"><em>wait</em> = <code>True</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>is_estop_active</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

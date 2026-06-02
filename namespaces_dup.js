@@ -236,6 +236,7 @@ var namespaces_dup =
       [ "INFTY_COST", "namespacelinear__assignment.html#a4dc5d6dd36ab525c7eec56cb41e458e1", null ]
     ] ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
+    [ "manipulation_general", "namespacemanipulation__general.html", "namespacemanipulation__general" ],
     [ "map_area_tagger", "namespacemap__area__tagger.html", "namespacemap__area__tagger" ],
     [ "mapping", "namespacemapping.html", [
       [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ],

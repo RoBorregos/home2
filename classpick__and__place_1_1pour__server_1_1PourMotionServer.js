@@ -14,6 +14,7 @@ var classpick__and__place_1_1pour__server_1_1PourMotionServer =
     [ "wait_for_future", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a6de5d1848510d2f5f799033787268a25", null ],
     [ "_action_server", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a4180fe90594e733f738edbe9b8147076", null ],
     [ "_attach_collision_object_client", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a85e04dea1bce785eace2d531a063f3cd", null ],
+    [ "_estop", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#ac93bdf01d5b91cb53db8daf094e0357a", null ],
     [ "_get_collision_objects_client", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#ab5ec7fb33b7a503a93468a5453597b1a", null ],
     [ "_get_joints_client", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#af5c53d86f34b3d1e7687b5370cc817ed", null ],
     [ "_gripper_set_state_client", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#a2c37efbad5628dadbb0c01bfc6e89670", null ],

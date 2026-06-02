@@ -20,6 +20,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "_action_server", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a282f47521b1b994c9e9cff2fdb19c2ca", null ],
     [ "_attach_collision_object_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ae57b2ad5c0b02a9680a000085356a35a", null ],
     [ "_clear_octomap_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ac595a3c6fd000859e88573156976b259", null ],
+    [ "_estop", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#afcce39ddf6633f014dde760e5ee8a9ad", null ],
     [ "_get_collision_objects_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ac941cc8330441d5bfefa23078dcacd4c", null ],
     [ "_go_to_hand_server", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a5c2ff5cf5d21344495b98314889e987a", null ],
     [ "_gripper_set_state_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aa2489955b8586035c570b4e498eacdcf", null ],

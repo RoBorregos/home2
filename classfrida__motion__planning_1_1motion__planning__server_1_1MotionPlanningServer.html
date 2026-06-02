@@ -93,6 +93,7 @@ $(document).ready(function(){initNavTree('classfrida__motion__planning_1_1motion
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">frida_motion_planning.motion_planning_server.MotionPlanningServer Class Reference</div></div>
@@ -145,8 +146,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aea88b13a3934fd34d23f63f1664449d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4275f01acfc190b5adf75889422f8f9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab4275f01acfc190b5adf75889422f8f9">set_gripper_state_callback</a> (self, request, response)</td></tr>
 <tr class="separator:ab4275f01acfc190b5adf75889422f8f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f2f0deb788836e499630b1680c8e491"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a5f2f0deb788836e499630b1680c8e491">reset_xarm_controller</a> (self, request, response)</td></tr>
-<tr class="separator:a5f2f0deb788836e499630b1680c8e491"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7992df652eda862b888a69facf63b915"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a7992df652eda862b888a69facf63b915">joint_states_callback</a> (self, JointState msg)</td></tr>
 <tr class="separator:a7992df652eda862b888a69facf63b915"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -156,6 +155,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ad6e7dd9468691b1d01bee8db6196fd79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af601e3018a058428cfbafa87df992b4c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#af601e3018a058428cfbafa87df992b4c">planner</a></td></tr>
 <tr class="separator:af601e3018a058428cfbafa87df992b4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0fbce25a8ae2cec2115b4e02cc2b8c81"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a0fbce25a8ae2cec2115b4e02cc2b8c81">current_mode</a></td></tr>
+<tr class="separator:a0fbce25a8ae2cec2115b4e02cc2b8c81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26b556cdcc04bb701a5c22030c6c6086"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a26b556cdcc04bb701a5c22030c6c6086">servo</a></td></tr>
 <tr class="separator:a26b556cdcc04bb701a5c22030c6c6086"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b7a0a18d394c28633c998cfe4dfcf26"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a2b7a0a18d394c28633c998cfe4dfcf26">get_joints_service</a></td></tr>
@@ -184,23 +185,28 @@ Public Attributes</h2></td></tr>
 <tr class="separator:acc0f2af5075e7ce4938846141e60d9c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0c489e020520e3f40db1f1330cc6051"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ac0c489e020520e3f40db1f1330cc6051">joint_states_sub</a></td></tr>
 <tr class="separator:ac0c489e020520e3f40db1f1330cc6051"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:affc6b0285a02cd7886ad966a7dac46f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#affc6b0285a02cd7886ad966a7dac46f8">reset_controller_client</a></td></tr>
-<tr class="separator:affc6b0285a02cd7886ad966a7dac46f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa1af25712c7ed1a317543b9e24bec8d9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aa1af25712c7ed1a317543b9e24bec8d9">switch_controller_client</a></td></tr>
-<tr class="separator:aa1af25712c7ed1a317543b9e24bec8d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fbce25a8ae2cec2115b4e02cc2b8c81"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a0fbce25a8ae2cec2115b4e02cc2b8c81">current_mode</a></td></tr>
-<tr class="separator:a0fbce25a8ae2cec2115b4e02cc2b8c81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa2b407e5123032137e540dd2749c175"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aaa2b407e5123032137e540dd2749c175">get_collision_objects_service</a></td></tr>
 <tr class="separator:aaa2b407e5123032137e540dd2749c175"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ac0586f778f07638f5e82561715603a79"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ac0586f778f07638f5e82561715603a79">_call_ensure_arm_ready</a> (self)</td></tr>
+<tr class="separator:ac0586f778f07638f5e82561715603a79"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
+<tr class="memitem:aed8551f6e76caddf73fc39527c17231d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aed8551f6e76caddf73fc39527c17231d">_in_estop</a></td></tr>
+<tr class="separator:aed8551f6e76caddf73fc39527c17231d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe8f5ef58c9944745c00c096277fb397"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#abe8f5ef58c9944745c00c096277fb397">_move_to_pose_server</a></td></tr>
 <tr class="separator:abe8f5ef58c9944745c00c096277fb397"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63360f21d53a97a9b8601075fdbbb138"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a63360f21d53a97a9b8601075fdbbb138">_debug_pose_publisher</a></td></tr>
 <tr class="separator:a63360f21d53a97a9b8601075fdbbb138"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a350bf3ecfd11ecdb19107ef7d6b17b8f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a350bf3ecfd11ecdb19107ef7d6b17b8f">_move_joints_server</a></td></tr>
 <tr class="separator:a350bf3ecfd11ecdb19107ef7d6b17b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3fe3360f97a378cf202507819f0846a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab3fe3360f97a378cf202507819f0846a">_ensure_arm_ready_client</a></td></tr>
+<tr class="separator:ab3fe3360f97a378cf202507819f0846a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46b96e90db232a46762650772cbe1a38"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a46b96e90db232a46762650772cbe1a38">_joint_goal_target_pub</a></td></tr>
+<tr class="separator:a46b96e90db232a46762650772cbe1a38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aa69f12975b9c066e6e7995b83771f2f2" name="aa69f12975b9c066e6e7995b83771f2f2"></a>
@@ -222,6 +228,32 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ac0586f778f07638f5e82561715603a79" name="ac0586f778f07638f5e82561715603a79"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0586f778f07638f5e82561715603a79">&#9670;&#160;</a></span>_call_ensure_arm_ready()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool frida_motion_planning.motion_planning_server.MotionPlanningServer._call_ensure_arm_ready </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a6b385ee345581ea80a6d31e3559d560f" name="a6b385ee345581ea80a6d31e3559d560f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6b385ee345581ea80a6d31e3559d560f">&#9670;&#160;</a></span>add_collision_objects_callback()</h2>
 
@@ -663,40 +695,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a5f2f0deb788836e499630b1680c8e491" name="a5f2f0deb788836e499630b1680c8e491"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f2f0deb788836e499630b1680c8e491">&#9670;&#160;</a></span>reset_xarm_controller()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def frida_motion_planning.motion_planning_server.MotionPlanningServer.reset_xarm_controller </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>request</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>response</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Reactivate the xarm6_traj_controller via controller_manager.</pre> 
-</div>
-</div>
 <a id="a12dd1033adcd1f78ab7b914a7eb75f4c" name="a12dd1033adcd1f78ab7b914a7eb75f4c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a12dd1033adcd1f78ab7b914a7eb75f4c">&#9670;&#160;</a></span>servo_speed_callback()</h2>
 
@@ -867,6 +865,72 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer._debug_pose_publisher</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab3fe3360f97a378cf202507819f0846a" name="ab3fe3360f97a378cf202507819f0846a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3fe3360f97a378cf202507819f0846a">&#9670;&#160;</a></span>_ensure_arm_ready_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer._ensure_arm_ready_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aed8551f6e76caddf73fc39527c17231d" name="aed8551f6e76caddf73fc39527c17231d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed8551f6e76caddf73fc39527c17231d">&#9670;&#160;</a></span>_in_estop</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer._in_estop</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a46b96e90db232a46762650772cbe1a38" name="a46b96e90db232a46762650772cbe1a38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a46b96e90db232a46762650772cbe1a38">&#9670;&#160;</a></span>_joint_goal_target_pub</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer._joint_goal_target_pub</td>
         </tr>
       </table>
   </td>
@@ -1104,20 +1168,6 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="affc6b0285a02cd7886ad966a7dac46f8" name="affc6b0285a02cd7886ad966a7dac46f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#affc6b0285a02cd7886ad966a7dac46f8">&#9670;&#160;</a></span>reset_controller_client</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer.reset_controller_client</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a26b556cdcc04bb701a5c22030c6c6086" name="a26b556cdcc04bb701a5c22030c6c6086"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26b556cdcc04bb701a5c22030c6c6086">&#9670;&#160;</a></span>servo</h2>
 
@@ -1140,20 +1190,6 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer.servo_speed_subscriber</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa1af25712c7ed1a317543b9e24bec8d9" name="aa1af25712c7ed1a317543b9e24bec8d9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa1af25712c7ed1a317543b9e24bec8d9">&#9670;&#160;</a></span>switch_controller_client</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer.switch_controller_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

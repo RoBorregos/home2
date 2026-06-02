@@ -195,6 +195,11 @@ var annotated_dup =
     [ "look_at_example", "namespacelook__at__example.html", [
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],
+    [ "manipulation_general", "namespacemanipulation__general.html", [
+      [ "manipulation_safeguard", "namespacemanipulation__general_1_1manipulation__safeguard.html", [
+        [ "ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard" ]
+      ] ]
+    ] ],
     [ "map_area_tagger", "namespacemap__area__tagger.html", [
       [ "MapAreaTagger", "classmap__area__tagger_1_1MapAreaTagger.html", "classmap__area__tagger_1_1MapAreaTagger" ],
       [ "MapCanvas", "classmap__area__tagger_1_1MapCanvas.html", "classmap__area__tagger_1_1MapCanvas" ]

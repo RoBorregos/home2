@@ -9,6 +9,7 @@ var classpick__and__place_1_1manipulation__core_1_1ManipulationCore =
     [ "remove_all_collision_object", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac2452bc48f6fa9aa009ee7de0e7eb44f", null ],
     [ "scan_environment", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ad3d8443292aa7c88404b7d19dc334ae3", null ],
     [ "_clear_octomap_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac3979c3e0b2a665f7b7afcbd04e500d3", null ],
+    [ "_estop", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a6cf405e9879e49e8ebb3981b9de6d844", null ],
     [ "_get_collision_objects_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a65136601fe7fe980fcc978e41a495f82", null ],
     [ "_get_joints_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a4d58193e2b69a17b4d54b1c63aa034ff", null ],
     [ "_gripper_set_state_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#af24f12619bf5ba6265eb0a56e193149b", null ],
