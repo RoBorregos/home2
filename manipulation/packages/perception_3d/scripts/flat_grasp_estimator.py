@@ -33,6 +33,12 @@ TABLE_HEIGHT_BUFFER_SIZE = 15
 # Maximum allowed deviation from the running median (reject outliers)
 TABLE_HEIGHT_OUTLIER_THRESH = 0.015  # 15mm
 
+# --- Basket (rim/edge) grasp estimation ---
+# Minimum height above the detected floor for a point to count as basket (not floor)
+RIM_MIN_HEIGHT = 0.05  # m
+# Fraction of points closest to the base used to estimate the near rim point
+BASKET_NEAR_FRACTION = 0.05
+
 
 class FlatGraspEstimator(Node):
     def __init__(self):
@@ -49,6 +55,7 @@ class FlatGraspEstimator(Node):
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
         self.target_classes = ["spoon", "fork", "knife"]
+        self.basket_classes = ["laundry_basket", "basket"]
 
         # Start disabled — only enabled explicitly before a cutlery pick.
         # Saves CPU/network when no manipulation is in progress.
@@ -70,6 +77,10 @@ class FlatGraspEstimator(Node):
 
         self.pose_pub = self.create_publisher(
             PoseStamped, "/manipulation/flat_grasp_pose", 10
+        )
+
+        self.basket_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/basket_grasp_pose", 10
         )
 
         self.enable_srv = self.create_service(
@@ -113,8 +124,11 @@ class FlatGraspEstimator(Node):
         if self.latest_depth is None or self.intrinsics is None:
             return
         for det in msg.detections:
-            if det.label_text.lower() in self.target_classes:
+            label = det.label_text.lower()
+            if label in self.target_classes:
                 self.process_flat_object(det)
+            elif label in self.basket_classes:
+                self.process_basket_object(det)
 
     def get_stable_table_height(self, new_reading):
         """Add a new table height reading and return a stable averaged value.
@@ -269,6 +283,148 @@ class FlatGraspEstimator(Node):
             f"Y={centroid_xy[1]:.3f}, Z={grasp_z:.4f} "
             f"(raw_table={raw_table_height:.4f}, stable_table={stable_table_height:.4f}, "
             f"buf={len(self.table_height_buffer)})"
+        )
+
+    def process_basket_object(self, detection: ObjectDetection):
+        """Estimate a top-down grasp on the near rim/edge of a basket on the floor.
+
+        Deprojects the whole detection bbox into a 3D prism, transforms it to the
+        base frame, rejects the floor, and selects the point closest to the base
+        (the near rim). The grasp is oriented so the gripper fingers close radially
+        across the rim wall (one finger inside, one outside the basket).
+        """
+        h_img, w_img = self.latest_depth.shape
+
+        if detection.xmax <= 1.0 and detection.ymax <= 1.0:
+            xmin = int(max(0, detection.xmin * w_img))
+            ymin = int(max(0, detection.ymin * h_img))
+            xmax = int(min(w_img, detection.xmax * w_img))
+            ymax = int(min(h_img, detection.ymax * h_img))
+        else:
+            xmin = int(max(0, detection.xmin))
+            ymin = int(max(0, detection.ymin))
+            xmax = int(min(w_img, detection.xmax))
+            ymax = int(min(h_img, detection.ymax))
+
+        if xmax <= xmin or ymax <= ymin:
+            return
+
+        roi_depth = self.latest_depth[ymin:ymax, xmin:xmax]
+
+        valid_mask = (roi_depth > 0) & (~np.isnan(roi_depth))
+        if np.count_nonzero(valid_mask) < MIN_POINTS_FOR_PCA:
+            return
+
+        # Whole-frustum prism: deproject every valid pixel in the bbox (no table seg).
+        v_local, u_local = np.where(valid_mask)
+        u_global = u_local + xmin
+        v_global = v_local + ymin
+        z_vals = roi_depth[v_local, u_local]
+
+        fx, fy = self.intrinsics["fx"], self.intrinsics["fy"]
+        cx, cy = self.intrinsics["cx"], self.intrinsics["cy"]
+        x = (u_global - cx) * z_vals / fx
+        y = (v_global - cy) * z_vals / fy
+        points_3d_cam = np.vstack((x, y, z_vals)).T
+
+        # --- TRANSFORM TO BASE FRAME ---
+        try:
+            trans = self.tf_buffer.lookup_transform(
+                self.target_frame,
+                self.depth_frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=1.0),
+            )
+        except Exception as e:
+            self.get_logger().warn(f"Waiting for TF tree from camera to base... {e}")
+            return
+
+        q = [
+            trans.transform.rotation.x,
+            trans.transform.rotation.y,
+            trans.transform.rotation.z,
+            trans.transform.rotation.w,
+        ]
+        t = [
+            trans.transform.translation.x,
+            trans.transform.translation.y,
+            trans.transform.translation.z,
+        ]
+        rot_mat = Rotation.from_quat(q).as_matrix()
+
+        T_mat = np.eye(4)
+        T_mat[:3, :3] = rot_mat
+        T_mat[:3, 3] = t
+
+        points_3d_hom = np.hstack((points_3d_cam, np.ones((points_3d_cam.shape[0], 1))))
+        points_base = (T_mat @ points_3d_hom.T).T[:, :3]
+
+        # Filter out NaN/Inf points
+        finite_mask = np.isfinite(points_base).all(axis=1)
+        points_base = points_base[finite_mask]
+        if len(points_base) < MIN_POINTS_FOR_PCA:
+            return
+
+        # --- FLOOR REJECTION ---
+        # The floor is the lowest surface in the frustum; keep only points that sit
+        # clearly above it so nearer floor returns aren't mistaken for the rim.
+        floor_z = np.percentile(points_base[:, 2], 5)
+        rim_mask = points_base[:, 2] > floor_z + RIM_MIN_HEIGHT
+        rim_points = points_base[rim_mask]
+        if len(rim_points) < MIN_POINTS_FOR_PCA:
+            self.get_logger().warn(
+                "Not enough basket points above the floor for a rim estimate"
+            )
+            return
+
+        # --- NEAR RIM POINT (closest to base) ---
+        horiz_dist = np.sqrt(rim_points[:, 0] ** 2 + rim_points[:, 1] ** 2)
+        k = max(MIN_POINTS_FOR_PCA, int(BASKET_NEAR_FRACTION * len(horiz_dist)))
+        k = min(k, len(horiz_dist))
+        near_idx = np.argsort(horiz_dist)[:k]
+        rim_point = np.median(rim_points[near_idx], axis=0)
+        rim_x, rim_y, rim_z = (
+            float(rim_point[0]),
+            float(rim_point[1]),
+            float(rim_point[2]),
+        )
+
+        # --- STRADDLE ORIENTATION (top-down, fingers close radially across the wall) ---
+        Z_grasp = np.array([0.0, 0.0, -1.0])
+        radial = np.array([rim_x, rim_y, 0.0])
+        radial_norm = np.linalg.norm(radial)
+        if radial_norm < 1e-6:
+            return
+        radial = radial / radial_norm
+
+        # Gripper local Y is the finger-closing axis (same convention as the flat path).
+        Y_grasp = radial
+        X_grasp = np.cross(Y_grasp, Z_grasp)
+        X_grasp = X_grasp / np.linalg.norm(X_grasp)
+        Y_grasp = np.cross(Z_grasp, X_grasp)
+
+        new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
+        new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
+
+        # --- PUBLISH ---
+        grasp_pose = PoseStamped()
+        grasp_pose.header.frame_id = self.target_frame
+        grasp_pose.header.stamp = self.get_clock().now().to_msg()
+
+        grasp_pose.pose.position.x = rim_x
+        grasp_pose.pose.position.y = rim_y
+        grasp_pose.pose.position.z = rim_z
+
+        grasp_pose.pose.orientation.x = new_quat[0]
+        grasp_pose.pose.orientation.y = new_quat[1]
+        grasp_pose.pose.orientation.z = new_quat[2]
+        grasp_pose.pose.orientation.w = new_quat[3]
+
+        self.basket_pose_pub.publish(grasp_pose)
+        self.get_logger().info(
+            f"Basket rim grasp (link_base): X={rim_x:.3f}, Y={rim_y:.3f}, "
+            f"Z={rim_z:.4f} (floor_z={floor_z:.4f}, rim_pts={len(rim_points)}, "
+            f"near_k={k})"
         )
 
 

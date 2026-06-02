@@ -23,6 +23,10 @@ from frida_constants.manipulation_constants import (
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
     ESTOP_TOPIC,
+    BASKET_NAMES,
+    BASKET_PRE_GRASP_HEIGHT,
+    BASKET_DESCENT_SPEED,
+    BASKET_DESCENT_DISTANCE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -274,10 +278,16 @@ class PickMotionServer(Node):
         grasping_poses = goal_handle.request.grasping_poses
 
         is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
+        is_basket = goal_handle.request.object_name.lower() in BASKET_NAMES
 
         if is_flat:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
+        elif is_basket:
+            # Each grasping_pose is already a distinct radial/flip candidate;
+            # no extra z-offset alternatives needed.
+            num_grasping_alternatives = 1
+            grasping_alternative_distance = 0.0
         else:
             num_grasping_alternatives = 2
             grasping_alternative_distance = -0.025
@@ -395,6 +405,75 @@ class PickMotionServer(Node):
                             f"[Cutlery] No contact for alternative {j}, trying next"
                         )
                         continue
+
+                elif is_basket:
+                    self.get_logger().info(
+                        f"[Basket] Fixed-distance pick flow for pose {i}"
+                    )
+
+                    # Open gripper
+                    self.get_logger().info("[Basket] Opening gripper...")
+                    self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
+                    open_gripper(self._gripper_set_state_client)
+                    time.sleep(0.5)
+
+                    # Pre-grasp above the rim (MoveIt)
+                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                    pre_grasp_pose.pose.position.z += BASKET_PRE_GRASP_HEIGHT
+
+                    self.get_logger().info(
+                        f"[Basket] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
+                        f"(rim Z={ee_link_pose.pose.position.z:.4f})"
+                    )
+
+                    pre_handler, pre_result = self.move_to_pose(
+                        pre_grasp_pose, velocity=0.3
+                    )
+
+                    if not pre_result.result.success:
+                        self.get_logger().warn(
+                            f"[Basket] Pre-grasp failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    self.get_logger().info("[Basket] Pre-grasp reached")
+
+                    # Clear octomap before the open-loop descent
+                    self.get_logger().info("[Basket] Clearing octomap...")
+                    if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+                        req = Empty.Request()
+                        self._clear_octomap_client.call_async(req)
+                    time.sleep(0.3)
+
+                    # Fixed-distance descent (xArm cartesian velocity, no MoveIt, no force)
+                    self.get_logger().info(
+                        f"[Basket] Descending a fixed {BASKET_DESCENT_DISTANCE * 1000:.0f}mm..."
+                    )
+                    descended = self.fixed_distance_descent(BASKET_DESCENT_DISTANCE)
+
+                    if not descended:
+                        self.get_logger().warn(
+                            f"[Basket] Descent failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    # Close gripper on the rim
+                    self.get_logger().info("[Basket] Closing gripper...")
+                    close_gripper(self._gripper_set_state_client)
+                    time.sleep(1.5)
+                    self.get_logger().info("[Basket] Gripper closed")
+
+                    # Lift back to pre-grasp (MoveIt)
+                    self.get_logger().info("[Basket] Lifting...")
+                    self.move_to_pose(pre_grasp_pose, velocity=0.2)
+
+                    pick_result.pick_pose = ee_link_pose
+                    pick_result.grasp_score = goal_handle.request.grasping_scores[i]
+                    pick_result.object_pick_height = 0.0
+                    pick_result.object_height = 0.0
+
+                    self.get_logger().info("[Basket] Pick complete!")
+                    return True, pick_result
 
                 else:
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
@@ -578,6 +657,81 @@ class PickMotionServer(Node):
         self._restore_mode1()
 
         return contact_detected
+
+    def fixed_distance_descent(self, distance_m: float) -> bool:
+        """
+        Descend a FIXED distance in -Z using xArm mode 5 (cartesian velocity control).
+        Open-loop: no effort monitoring. The descent runs for distance/speed seconds
+        then stops. Reuses the same mode-switching machinery as force_guarded_descent.
+        """
+        self.get_logger().info(
+            f"[FixedDescent] Descending {distance_m * 1000:.0f}mm at "
+            f"{BASKET_DESCENT_SPEED:.1f} mm/s"
+        )
+
+        # --- Transition: mode 1 -> 0 -> 5 ---
+        if not self._set_xarm_mode(0):
+            self.get_logger().error("[FixedDescent] Failed to set mode 0")
+            return False
+        time.sleep(0.5)
+
+        if not self._set_xarm_mode(5):
+            self.get_logger().error("[FixedDescent] Failed to set mode 5")
+            self._restore_mode1()
+            return False
+
+        self.get_logger().info(
+            f"[FixedDescent] Waiting {MODE_SWITCH_SETTLE_TIME}s for mode 5 settle..."
+        )
+        time.sleep(MODE_SWITCH_SETTLE_TIME)
+
+        success = False
+        try:
+            if not self._vc_set_cartesian_velocity_client.wait_for_service(
+                timeout_sec=2.0
+            ):
+                self.get_logger().error(
+                    "[FixedDescent] vc_set_cartesian_velocity not available"
+                )
+                self._restore_mode1()
+                return False
+
+            vel_req = MoveVelocity.Request()
+            vel_req.speeds = [0.0, 0.0, -BASKET_DESCENT_SPEED, 0.0, 0.0, 0.0]
+            vel_req.is_tool_coord = False
+            vel_req.duration = 0.0
+
+            vel_future = self._vc_set_cartesian_velocity_client.call_async(vel_req)
+            self.wait_for_future(vel_future)
+
+            if vel_future.result() is None:
+                self.get_logger().error("[FixedDescent] Velocity command failed")
+                self._restore_mode1()
+                return False
+
+            # Open-loop: hold velocity for the time needed to cover the distance.
+            descent_time = (distance_m * 1000.0) / BASKET_DESCENT_SPEED
+            self.get_logger().info(
+                f"[FixedDescent] Holding velocity for {descent_time:.2f}s"
+            )
+            elapsed = 0.0
+            while elapsed < descent_time:
+                if self._estop:
+                    self.get_logger().warn("[FixedDescent] E-stop during descent")
+                    break
+                time.sleep(0.02)
+                elapsed += 0.02
+
+            success = not self._estop
+
+        except Exception as e:
+            self.get_logger().error(f"[FixedDescent] Descent error: {e}")
+
+        # --- Stop and restore mode 1 ---
+        self._stop_cartesian_velocity()
+        self._restore_mode1()
+
+        return success
 
     def _set_xarm_mode(self, mode: int) -> bool:
         try:

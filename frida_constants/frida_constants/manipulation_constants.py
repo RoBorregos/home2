@@ -71,6 +71,16 @@ CUTLERY_NAMES = ["fork", "knife", "spoon", "cutlery"]
 POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
+# Basket (floor pick by the rim/edge, top-down straddle grasp)
+BASKET_NAMES = ["basket", "laundry_basket"]
+BASKET_PRE_GRASP_HEIGHT = 0.20  # m above the rim for the MoveIt pre-grasp
+BASKET_GRASP_Z_TWEAK = (
+    -0.03
+)  # m: target ~3 cm below rim top so fingers straddle the wall
+BASKET_DESCENT_SPEED = 20.0  # mm/s downward (xArm cartesian-velocity convention)
+# Fixed descent distance from the pre-grasp down to the grasp point (no force feedback)
+BASKET_DESCENT_DISTANCE = BASKET_PRE_GRASP_HEIGHT - BASKET_GRASP_Z_TWEAK  # = 0.23 m
+
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
 HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
