@@ -13,6 +13,7 @@ from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401
 from geometry_msgs.msg import PointStamped, PoseStamped, Twist
 from sensor_msgs.msg import PointCloud2
+from std_srvs.srv import Empty
 from visualization_msgs.msg import Marker
 from frida_constants.manipulation_constants import ZED_POINT_CLOUD_TOPIC
 from task_manager.utils.logger import Logger
@@ -109,6 +110,7 @@ class DoingLaundryTM(Node):
         )
         self._marker_pub = self.create_publisher(Marker, "/laundry/basket_grasp_marker", marker_qos)
         self._cmd_vel_pub = self.create_publisher(Twist, CMD_VEL_TOPIC, 10)
+        self._clear_octomap_client = self.create_client(Empty, "/clear_octomap")
         self.approach_attempts = 0
 
         self.subtask_manager.manipulation.move_to_position("nav_pose")
@@ -163,6 +165,25 @@ class DoingLaundryTM(Node):
         if status != Status.EXECUTION_SUCCESS:
             Logger.error(self, f"Rotation failed: {error}")
         return status
+
+    def _clear_octomap(self) -> bool:
+        """Call /clear_octomap to wipe MoveIt's collision world.
+
+        The basket (and surrounding clutter near the floor) gets baked into the
+        octomap by the ZED point cloud. MoveIt will then refuse any plan that
+        passes near it, blocking the grasp. We mirror pick_server.py which clears
+        the octomap right before a cutlery (flat) pick for the same reason.
+        """
+        if not self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+            Logger.warn(self, "/clear_octomap service not available — skipping.")
+            return False
+        future = self._clear_octomap_client.call_async(Empty.Request())
+        rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
+        if future.done():
+            Logger.info(self, "Octomap cleared.")
+            return True
+        Logger.warn(self, "/clear_octomap call timed out.")
+        return False
 
     def _approach_base_backward(self, distance: float) -> bool:
         """Drive the base backward by `distance` meters using direct /cmd_vel.
@@ -404,21 +425,34 @@ class DoingLaundryTM(Node):
             return None
 
         best_size = len(best_cluster_pts)
-        # XY centroid = basket center in plan view
-        cx = float(np.mean(best_cluster_pts[:, 0]))
-        cy = float(np.mean(best_cluster_pts[:, 1]))
+        # XY centroid of full cluster (for logging only)
+        centroid_x = float(np.mean(best_cluster_pts[:, 0]))
+        centroid_y = float(np.mean(best_cluster_pts[:, 1]))
         # Rim height: 90th-percentile Z (robust to outliers above the rim)
         rim_z = float(np.percentile(best_cluster_pts[:, 2], 90))
 
+        # NEAREST-RIM-POINT: pick the cluster point with min XY distance to link_base.
+        # This is the closest edge of the basket rim — much more reachable than the
+        # centroid, since the arm only needs to extend to the near side, not center.
+        # We average the few closest points to avoid jitter from a single noisy point.
+        xy = best_cluster_pts[:, :2]
+        d_xy = np.linalg.norm(xy, axis=1)
+        n_near = max(5, len(xy) // 10)
+        near_idx = np.argsort(d_xy)[:n_near]
+        near_pts = best_cluster_pts[near_idx]
+        cx = float(np.mean(near_pts[:, 0]))
+        cy = float(np.mean(near_pts[:, 1]))
+
         Logger.success(
             self,
-            f"Basket isolated: {best_size} pts, center=({cx:.3f},{cy:.3f}) "
-            f"rim_z={rim_z:.3f} (x_range={best_cluster_pts[:,0].ptp():.2f}, "
-            f"y_range={best_cluster_pts[:,1].ptp():.2f})",
+            f"Basket isolated: {best_size} pts. "
+            f"Centroid=({centroid_x:.3f},{centroid_y:.3f}) dist={math.hypot(centroid_x,centroid_y):.2f}m. "
+            f"NEAR-RIM target=({cx:.3f},{cy:.3f}) dist={math.hypot(cx,cy):.2f}m "
+            f"(avg of {n_near} nearest pts) rim_z={rim_z:.3f}",
         )
 
         # DEBUG: compare camera-frame distance vs link_base-frame distance
-        centroid_bl = np.array([cx, cy, float(np.mean(best_cluster_pts[:, 2]))])
+        centroid_bl = np.array([centroid_x, centroid_y, float(np.mean(best_cluster_pts[:, 2]))])
         cam_dist = float(np.linalg.norm(centroid_bl - translation))
         cam_horiz = float(np.linalg.norm((centroid_bl - translation)[:2]))
         bl_dist = float(np.linalg.norm(centroid_bl))
@@ -643,6 +677,7 @@ class DoingLaundryTM(Node):
                 f"[1/3] PRE-GRASP: hovering at z={pre_grasp.pose.position.z:.3f} "
                 f"(rim_z + {PRE_GRASP_HEIGHT_ABOVE_RIM:.2f}m)",
             )
+            self._clear_octomap()
             result = self.subtask_manager.manipulation.move_arm_to_pose(
                 pre_grasp, velocity=PRE_GRASP_VELOCITY
             )
@@ -674,6 +709,7 @@ class DoingLaundryTM(Node):
                 f"[2/3] DESCEND: lowering to z={grasp.pose.position.z:.3f} "
                 f"(rim_z − {GRASP_DEPTH_BELOW_RIM:.2f}m) to wrap rim",
             )
+            self._clear_octomap()
             result = self.subtask_manager.manipulation.move_arm_to_pose(
                 grasp, velocity=DESCENT_VELOCITY
             )
@@ -687,6 +723,7 @@ class DoingLaundryTM(Node):
 
             # Lift back to pre-grasp height so we don't drag the basket on the floor
             Logger.info(self, "Lifting basket to pre-grasp height.")
+            self._clear_octomap()
             self.subtask_manager.manipulation.move_arm_to_pose(pre_grasp, velocity=LIFT_VELOCITY)
 
             # Compact carry pose for navigation
