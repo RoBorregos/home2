@@ -859,8 +859,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 future.set_result(
                     (
-                        Status.EXECUTION_SUCCESS,
-                        parsed,
+                        Status.EXECUTION_SUCCESS
+                        if isinstance(parsed, CommandListLLM)
+                        else Status.EXECUTION_ERROR,
+                        parsed.commands if isinstance(parsed, CommandListLLM) else [],
                     )
                 )
 
@@ -875,10 +877,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Logger.info(
             self.node,
-            "command_interpreter result: " + str(command_list),
+            "command_interpreter result: " + str(command_list.commands),
         )
 
-        return Status.EXECUTION_SUCCESS, command_list
+        return Status.EXECUTION_SUCCESS, command_list.commands
 
     def parse_plan_to_text(self, commands: list) -> str:
         """

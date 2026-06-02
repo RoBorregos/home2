@@ -101,6 +101,13 @@ def generate_launch_description():
                 parameters=[sim_time_param],
             ),
             Node(
+                package="manipulation_general",
+                executable="manipulation_safeguard.py",
+                output="screen",
+                emulate_tty=True,
+                parameters=[sim_time_param],
+            ),
+            Node(
                 package="pick_and_place",
                 executable="fix_position_to_plane.py",
                 name="fix_position_to_plane",

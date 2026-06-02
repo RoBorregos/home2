@@ -204,6 +204,8 @@ def launch_setup(context, *args, **kwargs):
         executable="joint_state_publisher",
         name="joint_state_publisher",
         output="screen",
+        respawn=True,
+        respawn_delay=1.0,
         parameters=[
             {
                 "source_list": [
