@@ -182,6 +182,18 @@ class ManipulationSafeguard(Node):
                 bad.append(i)
         return bad
 
+    def _find_delta(self, raw: float, lower: float, upper: float) -> float | None:
+        """Return the multiple of 2π closest to zero that brings raw into [lower, upper].
+        Returns None if no such multiple exists (joint range < 2π with no valid landing)."""
+        two_pi = 2 * math.pi
+        n_lo = math.ceil((lower - raw) / two_pi)
+        n_hi = math.floor((upper - raw) / two_pi)
+        if n_lo > n_hi:
+            return None
+        # Pick the integer n in [n_lo, n_hi] closest to 0 to minimise travel
+        n = min(range(n_lo, n_hi + 1), key=abs)
+        return n * two_pi
+
     def _normalize_joints(self, bad_indices: list[int]):
         """Move out-of-bounds joints back within limits via xarm mode 0.
         Leaves the arm in mode 0 — caller is responsible for reinit and recovery."""
@@ -192,11 +204,13 @@ class ManipulationSafeguard(Node):
             name = _JOINT_NAMES[i]
             lower, upper = JOINT_POSITION_LIMITS[name]
             raw = self._arm_state.angle[i]
-            delta = 0.0
-            while raw + delta > upper + _BOUNDS_TOLERANCE:
-                delta -= 2 * math.pi
-            while raw + delta < lower - _BOUNDS_TOLERANCE:
-                delta += 2 * math.pi
+            delta = self._find_delta(raw, lower, upper)
+            if delta is None:
+                self.get_logger().error(
+                    f"{name} OOB ({raw:.4f} rad) — no multiple of 2π brings it into "
+                    f"[{lower:.4f}, {upper:.4f}]. Skipping normalization for this joint."
+                )
+                return
             deltas[i] = delta
             self.get_logger().warn(
                 f"{name} OOB ({raw:.4f} rad) — moving by {delta:.4f} rad "
