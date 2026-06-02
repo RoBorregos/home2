@@ -22,11 +22,11 @@ wait_for_server() {
     echo "Server on port $port is ready."
 }
 
-# qwen3-8b on port 11434 — hric, gpsr
+# qwen3-4b on port 11434 — hric, gpsr
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ]; then
-    echo "Starting qwen3-8b on port 11434..."
+    echo "Starting qwen3-4b on port 11434..."
     llama-server \
-        --model "$MODELS_DIR/qwen3-8b.Q4_K_M.gguf" \
+        --model "$MODELS_DIR/qwen3-4b.Q4_K_M.gguf" \
         --host 0.0.0.0 \
         --port 11434 \
         --ctx-size 2048 \
