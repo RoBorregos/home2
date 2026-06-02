@@ -18,8 +18,6 @@ from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-APPROACH_DIST = 0.55  # meters from basket center to robot base_link when backing in
-
 ATTEMPT_LIMIT = 3
 
 # Height filter in base_link frame for basket rim (meters above floor)
@@ -40,8 +38,7 @@ class DoingLaundryTM(Node):
         WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
         START = "START"
         NAVIGATE_TO_BASKET = "NAVIGATE_TO_BASKET"
-        DETECT_BASKET = "DETECT_BASKET"
-        NAVIGATE_BEHIND_BASKET = "NAVIGATE_BEHIND_BASKET"
+        ROTATE_BEHIND_BASKET = "ROTATE_BEHIND_BASKET"
         LOOK_BACK_AND_SCAN = "LOOK_BACK_AND_SCAN"
         PICK_LAUNDRY = "PICK_LAUNDRY"
         NAVIGATE_TO_LAUNDRY_TABLE = "NAVIGATE_TO_LAUNDRY_TABLE"
@@ -50,12 +47,12 @@ class DoingLaundryTM(Node):
 
     def __init__(self):
         super().__init__("doing_laundry_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=[])
-        self.current_state = DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.DOING_LAUNDRY, mock_areas=["navigation", "vision", "hri"]
+        )
+        self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN
         self.running_task = True
-        self.basket_detection = None
         self.basket_grasp_point: PointStamped = None
-        self.detect_attempts = 0
         self.scan_attempts = 0
 
         self.tf_buffer = Buffer()
@@ -88,6 +85,35 @@ class DoingLaundryTM(Node):
             Logger.info(self, f"Carrying basket to {location}")
             self.subtask_manager.hri.say(f"Carrying basket to {location}.", wait=False)
         return self.subtask_manager.nav.move_to_location(location, sublocation)
+
+    def _rotate_180(self):
+        """Rotate 180° in place so the robot's back faces the basket."""
+        try:
+            robot_tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0)
+            )
+        except TransformException as e:
+            Logger.error(self, f"TF base_link→map failed for rotation: {e}")
+            return Status.EXECUTION_ERROR
+
+        rx = robot_tf.transform.translation.x
+        ry = robot_tf.transform.translation.y
+        q = robot_tf.transform.rotation
+        current_yaw = math.atan2(
+            2.0 * (q.w * q.z + q.x * q.y),
+            1.0 - 2.0 * (q.y**2 + q.z**2),
+        )
+        new_yaw = current_yaw + math.pi
+
+        Logger.info(
+            self,
+            f"Rotating 180°: {math.degrees(current_yaw):.1f}° → {math.degrees(new_yaw):.1f}°",
+        )
+        self.subtask_manager.hri.say("Turning to face basket.", wait=False)
+        status, error = self.subtask_manager.nav.navigate_to_pose(rx, ry, new_yaw)
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.error(self, f"Rotation failed: {error}")
+        return status
 
     # ------------------------------------------------------------------ point cloud
 
@@ -147,7 +173,6 @@ class DoingLaundryTM(Node):
             ]
         )
         translation = np.array([t.x, t.y, t.z])
-
         xyz_bl = (R @ xyz_cam.T).T + translation
 
         # Filter by height: basket rim range above floor in base_link
@@ -189,58 +214,6 @@ class DoingLaundryTM(Node):
         return pt
 
     # ------------------------------------------------------------------ helpers
-
-    def _compute_behind_basket_pose(self, basket_detection):
-        """Compute nav goal so robot backs up to basket (back faces basket).
-
-        Returns (x, y, yaw) in map frame, or None on TF failure.
-        """
-        try:
-            basket_stamped = PointStamped()
-            basket_stamped.header = basket_detection.point3d.header
-            basket_stamped.point = basket_detection.point3d.point
-
-            basket_map = self.tf_buffer.transform(
-                basket_stamped, "map", timeout=Duration(seconds=1.0)
-            )
-        except TransformException as e:
-            Logger.error(self, f"TF basket→map failed: {e}")
-            return None
-
-        bx, by = basket_map.point.x, basket_map.point.y
-
-        try:
-            robot_tf = self.tf_buffer.lookup_transform(
-                "map",
-                "base_link",
-                rclpy.time.Time(),
-                timeout=Duration(seconds=1.0),
-            )
-            rx = robot_tf.transform.translation.x
-            ry = robot_tf.transform.translation.y
-        except TransformException as e:
-            Logger.error(self, f"TF base_link→map failed: {e}")
-            return None
-
-        dx, dy = rx - bx, ry - by
-        dist = math.sqrt(dx**2 + dy**2)
-        if dist < 0.001:
-            Logger.error(self, "Robot too close to basket to compute approach direction")
-            return None
-        nx, ny = dx / dist, dy / dist
-
-        approach_x = bx + nx * APPROACH_DIST
-        approach_y = by + ny * APPROACH_DIST
-
-        # Yaw: face AWAY from basket (back toward basket)
-        yaw = math.atan2(ny, nx)
-
-        Logger.info(
-            self,
-            f"Behind-basket pose: ({approach_x:.2f}, {approach_y:.2f}, {math.degrees(yaw):.1f}°)"
-            f" | basket=({bx:.2f},{by:.2f}) robot=({rx:.2f},{ry:.2f})",
-        )
-        return approach_x, approach_y, yaw
 
     def _basket_approach_pose(self, point_stamped: PointStamped) -> PoseStamped:
         """Compute a PoseStamped for arm approach to basket.
@@ -308,62 +281,27 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
             Logger.info(self, "Navigating to basket area")
-            status, error = self.navigate_to("laundry", "laundry_basket")
+            status, error = self.navigate_to("laundry", "basket_view")
 
             if status == Status.EXECUTION_SUCCESS:
-                self.current_state = DoingLaundryTM.TaskStates.DETECT_BASKET
+                self.current_state = DoingLaundryTM.TaskStates.ROTATE_BEHIND_BASKET
             else:
                 Logger.error(self, f"Navigation failed: {error}. Retrying...")
 
-        elif self.current_state == DoingLaundryTM.TaskStates.DETECT_BASKET:
-            Logger.info(self, "Detecting laundry basket to compute behind-basket pose.")
-            status, basket_detection = self.subtask_manager.vision.detect_laundry_basket()
+        elif self.current_state == DoingLaundryTM.TaskStates.ROTATE_BEHIND_BASKET:
+            Logger.info(self, "Rotating 180° so back faces basket.")
+            status = self._rotate_180()
 
-            if status == Status.EXECUTION_SUCCESS and basket_detection:
-                Logger.info(self, f"Basket detected: {basket_detection.classname}")
-                self.basket_detection = basket_detection
-                self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_BEHIND_BASKET
+            if status == Status.EXECUTION_SUCCESS:
+                Logger.success(self, "Rotation complete. Back now faces basket.")
+                self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN
             else:
-                self.detect_attempts += 1
-                if self.detect_attempts >= ATTEMPT_LIMIT:
-                    Logger.error(self, "Basket detection failed after max attempts. Ending.")
-                    self.current_state = DoingLaundryTM.TaskStates.END
-                else:
-                    Logger.warn(
-                        self, f"Basket not detected (attempt {self.detect_attempts}), retrying..."
-                    )
-
-        elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_BEHIND_BASKET:
-            Logger.info(self, "Computing behind-basket approach pose.")
-            pose = self._compute_behind_basket_pose(self.basket_detection)
-
-            if pose is None:
-                Logger.error(self, "Could not compute behind-basket pose. Re-detecting.")
-                self.current_state = DoingLaundryTM.TaskStates.DETECT_BASKET
-            else:
-                approach_x, approach_y, yaw = pose
-                self.subtask_manager.manipulation.move_to_position("nav_pose")
-                self.subtask_manager.hri.say("Positioning behind the basket.", wait=False)
-                status, error = self.subtask_manager.nav.navigate_to_pose(
-                    approach_x, approach_y, yaw
-                )
-
-                if status == Status.EXECUTION_SUCCESS:
-                    Logger.success(self, "Reached behind-basket position.")
-                    self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN
-                else:
-                    Logger.error(self, f"Failed to reach behind-basket pose: {error}. Retrying...")
+                Logger.error(self, "Rotation failed. Retrying...")
 
         elif self.current_state == DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN:
             Logger.info(self, "Moving to look_back_stare to scan basket from behind.")
             result = self.subtask_manager.manipulation.move_to_position("look_back_stare")
 
-            if result != Status.EXECUTION_SUCCESS:
-                Logger.error(self, "Failed to move to look_back_stare. Ending.")
-                self.current_state = DoingLaundryTM.TaskStates.END
-                return
-
-            # Let the cloud settle after arm movement
             for _ in range(20):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
