@@ -288,16 +288,23 @@ class FollowFaceNode(Node):
     def _kws_callback(self, msg: String):
         try:
             data = json.loads(msg.data)
-            if KEYWORD_TRIGGER_WORD in data.get("keyword", "").lower():
+            label = data.get("label", "").lower()
+            score = float(data.get("score", 0.0))
+            if KEYWORD_TRIGGER_WORD in label and score >= 0.6:
                 if self._doa_x_error() is not None:
                     self.keyword_triggered = True
                     self.keyword_doa_angle = self.doa_angle
                     self.keyword_trigger_time = time.time()
                     Logger.info(
                         self,
-                        f"Keyword '{KEYWORD_TRIGGER_WORD}' detected — rotating to DOA {self.keyword_doa_angle}°",
+                        f"Keyword '{KEYWORD_TRIGGER_WORD}' detected (score={score:.2f}) — rotating to DOA {self.keyword_doa_angle}°",
                     )
-        except (json.JSONDecodeError, KeyError):
+                else:
+                    Logger.warn(
+                        self,
+                        f"Keyword '{KEYWORD_TRIGGER_WORD}' detected but DOA is stale",
+                    )
+        except (json.JSONDecodeError, KeyError, ValueError):
             pass
 
     def _doa_x_error(self) -> float | None:
