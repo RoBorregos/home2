@@ -83,17 +83,19 @@ class GPSRTM(Node):
 
         if isinstance(self.commands, dict):
             self.commands = CommandListLLM(**self.commands).commands
+        elif isinstance(self.commands, CommandListLLM):
+            self.commands = self.commands.commands
 
         # Batch-mode state for the +200 pt interleaved-execution bonus.
         self.declare_parameter("interleave_enabled", True)
         self.declare_parameter("batch_size", BATCH_SIZE)
-        self.declare_parameter("test_mode", False)
+        self.declare_parameter("test_mode", True)
         self.declare_parameter(
             "test_commands",
             [
-                "go to the kitchen and get me a coke",
-                "find a person in the living room and tell them the time",
-                "go to the office and pick up the trash",
+                "tell me how many people in the bathroom are wearing red blouses",
+                "tell the pose of the person at the sofa to the person at the lamp",
+                "go to the storage rack then find a pringles and grasp it and bring it to the standing person in the living room",
             ],
         )
 
