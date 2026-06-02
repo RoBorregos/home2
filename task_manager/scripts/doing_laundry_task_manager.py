@@ -20,12 +20,15 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
-# Height filter in base_link frame for basket rim (meters above floor)
-BASKET_HEIGHT_MIN = 0.05
-BASKET_HEIGHT_MAX = 0.50
+# Height filter in link_base frame for basket rim
+BASKET_HEIGHT_MIN = -0.30
+BASKET_HEIGHT_MAX = 0.30
 
-# Max distance from base_link origin to consider a point as basket
+# Max distance from link_base origin to consider a point as basket
 BASKET_MAX_DIST = 1.5
+
+# xarm6 safe reach limit from link_base — target is clamped to this
+ARM_MAX_REACH = 0.60
 
 # Subsample step when scanning the point cloud (higher = faster, less precise)
 CLOUD_SAMPLE_STEP = 6
@@ -121,12 +124,12 @@ class DoingLaundryTM(Node):
         self._latest_cloud = msg
 
     def _nearest_basket_point_from_cloud(self) -> PointStamped:
-        """Find the nearest point cloud point in base_link that is at basket height.
+        """Find the nearest point cloud point in link_base that is at basket height.
 
-        Transforms the full cloud to base_link, filters by height and distance,
-        and returns the closest point to the robot. No vision required.
+        Transforms the full cloud to link_base (xarm6 base frame), filters by height and distance,
+        and returns the closest point to the arm. No vision required.
 
-        Returns PointStamped in base_link, or None if no valid points found.
+        Returns PointStamped in link_base, or None if no valid points found.
         """
         cloud = self._latest_cloud
         if cloud is None or cloud.height == 0 or cloud.width == 0:
@@ -149,16 +152,16 @@ class DoingLaundryTM(Node):
             Logger.warn(self, "Point cloud has no valid points after filtering")
             return None
 
-        # Get transform from camera frame to base_link
+        # Get transform from camera frame to link_base (xarm6 base)
         try:
             tf_msg = self.tf_buffer.lookup_transform(
-                "base_link",
+                "link_base",
                 cloud.header.frame_id,
                 rclpy.time.Time(),
                 timeout=Duration(seconds=1.0),
             )
         except TransformException as e:
-            Logger.error(self, f"TF cloud→base_link failed: {e}")
+            Logger.error(self, f"TF cloud→link_base failed: {e}")
             return None
 
         # Build rotation matrix from quaternion
@@ -175,7 +178,7 @@ class DoingLaundryTM(Node):
         translation = np.array([t.x, t.y, t.z])
         xyz_bl = (R @ xyz_cam.T).T + translation
 
-        # Filter by height: basket rim range above floor in base_link
+        # Filter by height: basket rim range in link_base frame
         height_mask = (xyz_bl[:, 2] >= BASKET_HEIGHT_MIN) & (xyz_bl[:, 2] <= BASKET_HEIGHT_MAX)
         xyz_bl = xyz_bl[height_mask]
 
@@ -200,7 +203,7 @@ class DoingLaundryTM(Node):
         nearest = xyz_bl[idx]
 
         pt = PointStamped()
-        pt.header.frame_id = "base_link"
+        pt.header.frame_id = "link_base"
         pt.header.stamp = self.get_clock().now().to_msg()
         pt.point.x = float(nearest[0])
         pt.point.y = float(nearest[1])
@@ -208,7 +211,7 @@ class DoingLaundryTM(Node):
 
         Logger.info(
             self,
-            f"Nearest basket point in base_link: ({nearest[0]:.3f}, {nearest[1]:.3f}, "
+            f"Nearest basket point in link_base: ({nearest[0]:.3f}, {nearest[1]:.3f}, "
             f"{nearest[2]:.3f}) dist={dists[idx]:.3f}m",
         )
         return pt
@@ -218,22 +221,30 @@ class DoingLaundryTM(Node):
     def _basket_approach_pose(self, point_stamped: PointStamped) -> PoseStamped:
         """Compute a PoseStamped for arm approach to basket.
 
-        Transforms the given PointStamped to base_link and builds a
+        Transforms the given PointStamped to link_base (xarm6 base frame) and builds a
         horizontal-approach orientation (gripper pointing toward basket).
 
-        Returns PoseStamped in base_link, or None on TF failure.
+        Returns PoseStamped in link_base, or None on TF failure.
         """
         try:
             basket_bl = self.tf_buffer.transform(
-                point_stamped, "base_link", timeout=Duration(seconds=1.0)
+                point_stamped, "link_base", timeout=Duration(seconds=1.0)
             )
         except TransformException as e:
-            Logger.error(self, f"TF basket→base_link failed: {e}")
+            Logger.error(self, f"TF basket→link_base failed: {e}")
             return None
 
         bx = basket_bl.point.x
         by = basket_bl.point.y
         bz = basket_bl.point.z
+
+        dist = math.sqrt(bx**2 + by**2 + bz**2)
+        if dist > ARM_MAX_REACH:
+            Logger.error(
+                self,
+                f"Basket at {dist:.3f}m is beyond ARM_MAX_REACH={ARM_MAX_REACH}m — too far to grasp",
+            )
+            return None
 
         # quaternion_from_euler(roll=0, pitch=pi/2, yaw=yaw) — computed inline
         yaw = math.atan2(by, bx)
@@ -247,7 +258,7 @@ class DoingLaundryTM(Node):
         qz = cp * sy
 
         pose = PoseStamped()
-        pose.header.frame_id = "base_link"
+        pose.header.frame_id = "link_base"
         pose.header.stamp = self.get_clock().now().to_msg()
         pose.pose.position.x = bx
         pose.pose.position.y = by
