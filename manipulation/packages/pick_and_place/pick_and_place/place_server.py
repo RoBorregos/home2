@@ -20,6 +20,7 @@ from frida_constants.manipulation_constants import (
     SHELF_POSITION_PREPLACE_POSE,
     GRIPPER_SET_STATE_SERVICE,
     GRASP_LINK_FRAME,
+    ESTOP_TOPIC,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -27,6 +28,7 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
 )
 from std_srvs.srv import SetBool
+from std_msgs.msg import Bool
 from frida_interfaces.action import PlaceMotion, MoveToPose
 from frida_motion_planning.utils.service_utils import (
     open_gripper,
@@ -74,6 +76,14 @@ class PlaceMotionServer(Node):
         self._gripper_set_state_client = self.create_client(
             SetBool,
             GRIPPER_SET_STATE_SERVICE,
+        )
+
+        self._estop = False
+        self.create_subscription(
+            Bool,
+            ESTOP_TOPIC,
+            lambda msg: setattr(self, "_estop", msg.data),
+            10,
         )
 
         self._move_to_pose_action_client.wait_for_server()
@@ -189,6 +199,8 @@ class PlaceMotionServer(Node):
 
         result = False
         for i, poses in enumerate(place_poses):
+            if self._estop:
+                return False
             # Move to pre-grasp pose
 
             ee_link_pre_pose = poses[0]

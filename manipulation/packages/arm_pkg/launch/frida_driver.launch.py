@@ -92,6 +92,9 @@ def launch_setup(context, *args, **kwargs):
         executable="xarm_driver_node",
         output="screen",
         emulate_tty=True,
+        respawn=True,
+        # Assumption: driver crashes are transient. NOT safe if it dies mid-trajectory, operator should verify arm state before safeguard auto-recovers.
+        respawn_delay=1.0,
         parameters=[
             robot_params,
             {
