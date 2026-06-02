@@ -219,14 +219,18 @@ class ManipulationSafeguard(Node):
 
         req_mode0 = SetInt16.Request()
         req_mode0.data = XARM_POSITION_MODE
-        self._call_svc(
+        if not self._call_svc(
             self._set_mode_client, req_mode0, 5.0, "set_mode(0) for normalization"
-        )
+        ):
+            self.get_logger().error("Normalization aborted: failed to set mode 0.")
+            return
         req_state0 = SetInt16.Request()
         req_state0.data = 0
-        self._call_svc(
+        if not self._call_svc(
             self._set_state_client, req_state0, 5.0, "set_state(0) for normalization"
-        )
+        ):
+            self.get_logger().error("Normalization aborted: failed to set state 0.")
+            return
 
         req_move = MoveJoint.Request()
         req_move.angles = [float(d) for d in deltas]
@@ -251,14 +255,18 @@ class ManipulationSafeguard(Node):
         )
         req_mode0 = SetInt16.Request()
         req_mode0.data = XARM_POSITION_MODE
-        self._call_svc(
+        if not self._call_svc(
             self._set_mode_client, req_mode0, 5.0, "set_mode(0) for OOB recovery"
-        )
+        ):
+            self.get_logger().error("OOB recovery aborted: failed to set mode 0.")
+            return
         req_state0 = SetInt16.Request()
         req_state0.data = 0
-        self._call_svc(
+        if not self._call_svc(
             self._set_state_client, req_state0, 5.0, "set_state(0) for OOB recovery"
-        )
+        ):
+            self.get_logger().error("OOB recovery aborted: failed to set state 0.")
+            return
 
         req_move = MoveJoint.Request()
         req_move.angles = [float(a) for a in target_angles]
