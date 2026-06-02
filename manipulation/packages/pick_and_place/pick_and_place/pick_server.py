@@ -22,6 +22,7 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    ESTOP_TOPIC,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -31,6 +32,7 @@ from frida_interfaces.srv import (
 from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Bool
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
@@ -146,6 +148,14 @@ class PickMotionServer(Node):
         self._latest_joint_state = None
         self._joint_state_sub = self.create_subscription(
             JointState, "/joint_states", self._joint_state_cb, 10
+        )
+
+        self._estop = False
+        self.create_subscription(
+            Bool,
+            ESTOP_TOPIC,
+            lambda msg: setattr(self, "_estop", msg.data),
+            10,
         )
 
         self._move_to_pose_action_client.wait_for_server()
@@ -275,7 +285,11 @@ class PickMotionServer(Node):
         self.save_collision_objects()
 
         for i, pose in enumerate(grasping_poses):
+            if self._estop:
+                return False, pick_result
             for j in range(num_grasping_alternatives):
+                if self._estop:
+                    return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
                 offset_distance = self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance

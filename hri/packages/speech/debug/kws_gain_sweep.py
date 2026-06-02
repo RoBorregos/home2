@@ -9,7 +9,7 @@ Usage:
         --ei-url http://localhost:1338 \
         --threshold 0.5
 
-Filename convention from kws_eim.py's _save_audio_window is:
+Filename convention from ei_audio_node.py's _save_audio_window is:
     {timestamp}_{label}_{score}.wav
 The middle token is used as ground-truth label when available.
 """

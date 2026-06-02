@@ -18,8 +18,12 @@
   <depend>geometry_msgs</depend>
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
+  <depend>frida_motion_planning</depend>
   <depend>task_manager</depend>
   <depend>pick_and_place</depend>
+  <depend>std_srvs</depend>
+  <depend>xarm_msgs</depend>
+  <depend>controller_manager_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
