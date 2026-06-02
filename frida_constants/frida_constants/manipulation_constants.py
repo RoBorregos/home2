@@ -10,8 +10,21 @@ RAD2DEG = 180.0 / PI
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
 XARM_SETMODE_MOVEIT_SERVICE = "/manipulation/xarm/set_moveit_mode"
+XARM_ROBOT_STATES_TOPIC = "/xarm/robot_states"
+XARM_CLEAN_ERROR_SERVICE = "/xarm/clean_error"
+XARM_MOTION_ENABLE_SERVICE = "/xarm/motion_enable"
+XARM_SET_SERVO_ANGLE_SERVICE = "/xarm/set_servo_angle"
+XARM_POSITION_MODE = 0  # mode 0: direct position control, bypasses MoveIt
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
+
+# xArm arm state values (from xArm SDK)
+XARM_STATE_READY = 1
+XARM_STATE_MOVING = 2
+XARM_STATE_PAUSED = 3
+XARM_STATE_STOPPED = 4  # error / e-stop
+
+XARM_ALL_JOINTS_ID = 8  # pass to motion_enable to target all joints
 
 FACE_RECOGNITION_LIFETIME = 0.1
 FOLLOW_FACE_SPEED = 1.5
@@ -24,6 +37,7 @@ ALWAYS_SET_MODE = False
 JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
+ESTOP_TOPIC = "/manipulation/estop"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
@@ -69,6 +83,7 @@ PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 CLOSE_BY_MAX_DISTANCE = 0.3  # Maximum distance for close-by heatmap generation
 
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
+MANIPULATION_ENSURE_ARM_READY_SERVICE = "/manipulation/ensure_arm_ready"
 
 ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
 ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
