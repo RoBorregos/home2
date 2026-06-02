@@ -11,23 +11,20 @@ class GoTo {
 
 class PickObject {
   action "pick_object"
-  object_to_pick string @description(#"Name of the object to pick"#)
-  object_ref string?
+  object_to_pick string @description("Name of the object to pick")
   @@description(#"Use this command to pick a specific object"#)
 }
 
 class FindPersonByName {
   action "find_person_by_name"
-  name string @description(#"Name of the person to find"#)
-  person_ref string?
+  name string @description("Name of the person to find")
   @@description(#"Use this command to find a person by name"#)
 }
 
 class FindPerson {
   action "find_person"
-  attribute_value string @description(#"Can be a feature/pose (pointing to
+  attribute_value "" | string @description(#"Can be a feature/pose (pointing to
   the left, standing, blue shirt, etc.). If just asked to find ANY person, leave empty"#)
-  person_ref string?
   @@description(#"Use this command to find a person whose name is not known,
   and an optional attribute is provided to identify the person"#)
 }
@@ -42,9 +39,8 @@ class Count {
 
 class GetPersonInfo {
   action "get_person_info"
-  info_type string @description(#"Information to be
+  info_type "pose"|"gesture"|"name"|string @description(#"Information to be
   retrieved about the person (pose, gesture, name, clothing, age, etc.)"#)
-  person_ref string?
   @@description(#"Use this command to get information about a person,
   info type is the type of information to be retrieved.
   Can only be used AFTER a person is found by the find_person action"#)
@@ -72,7 +68,6 @@ class FollowPersonUntil {
   destination "cancelled"|string @description(#"The destination location to which
   the robot will follow the person until, can be a room, furniture, etc. or
   'cancelled' if the robot is to follow the person until asked to stop"#)
-  person_ref string?
   @@description(#"Use this command to follow a person until a specific
   destination or requested to stop"#)
 }
@@ -81,14 +76,11 @@ class GuidePersonTo {
   action "guide_person_to"
   destination_room string @description(#"The destination to guide or lead a person to
   can be a room, furniture, etc."#)
-  person_ref string?
   @@description(#"Use this command to guide a person to a specific destination"#)
 }
 
 class GiveObject {
   action "give_object"
-  object_ref string?
-  person_ref string?
   @@description(#"Use this command to give the currently held object to a person
   this object is already stored in the system's memory, just use the command to
   trigger the action. It usually follows a 'pick_object' and 'go_to' command"#)
@@ -96,7 +88,6 @@ class GiveObject {
 
 class PlaceObject {
   action "place_object"
-  object_ref string?
   @@description(#"Use this command to place the currently held object on the
   current location, the object and location are already stored in the system's memory,
   just use the command to trigger the action. It usually follows a 'pick_object'
@@ -108,7 +99,7 @@ class SayWithContext {
   user_instruction string @description(#"Instruction that will help to system
   to return the desired information to the user, it can be a question or a
   statement like 'tell me how many foods there are on the bookshelf'"#)
-  previous_command_info string[] | string @description(#"Previous commands needed to return
+  previous_command_info string[] @description(#"Previous commands needed to return
   the desired information to the user, it has to be a list of previous command or
   commands that have been executed (['count', 'get_visual_info'], etc.), or
   internal information that the system has stored in its memory 
@@ -118,7 +109,7 @@ class SayWithContext {
   answer_question since here it just the robot talking without a conversation"#)
 }
 
-type AvailableCommands = GoTo | FindPersonByName | FindPerson | Count | GetPersonInfo | GetVisualInfo | AnswerQuestion | FollowPersonUntil | GuidePersonTo | GiveObject | PlaceObject | SayWithContext | PickObject
+type AvailableCommands = GoTo | PickObject | FindPersonByName | FindPerson | Count | GetPersonInfo | GetVisualInfo | AnswerQuestion | FollowPersonUntil | GuidePersonTo | GiveObject | PlaceObject | SayWithContext
 
 /// Robot command list model
 class CommandListLLM {
@@ -195,21 +186,18 @@ template_string RobotServiceSystem() #"
 You are a command interpreter for a robot. Your task is to interpret the user's command and convert it into a structured format that the robot can understand.
 "#
 
-function GenerateCommandList(request: string) -> AvailableCommands[] {
+function GenerateCommandList(request: string) -> CommandListLLM {
   client LOCAL_FINETUNED_NEW
   prompt #"
     {{ _.role("system") }}
     You are a command interpreter for a robot. Your task is to interpret the user's command and convert it into a structured format that the robot can understand.
-
-    Return in JSON format following this schema:
-    {{ ctx.output_format }}
 
     {{ _.role("user") }}
     {{ request }}
   "#
 }
 
-function GenerateNonTunedCommandList(request: string) -> AvailableCommands[] {
+function GenerateNonTunedCommandList(request: string) -> CommandListLLM {
   client LOCAL_FINETUNED_NEW
   prompt #"
     {{ _.role("system") }}
