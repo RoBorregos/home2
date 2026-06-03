@@ -62,9 +62,7 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.GPSR, mock_areas=["vision", "manipulation", "navigation"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
         self._command_index_pub = self.create_publisher(Int32, GPSR_COMMAND_INDEX_TOPIC, 10)
@@ -89,7 +87,7 @@ class GPSRTM(Node):
         # Batch-mode state for the +200 pt interleaved-execution bonus.
         self.declare_parameter("interleave_enabled", True)
         self.declare_parameter("batch_size", BATCH_SIZE)
-        self.declare_parameter("test_mode", True)
+        self.declare_parameter("test_mode", False)
         self.declare_parameter(
             "test_commands",
             [
@@ -223,7 +221,7 @@ class GPSRTM(Node):
             f"{len(plan.actions)} interleaved actions"
         )
         spoken = self.subtask_manager.hri.parse_plan_to_text([pa.action for pa in plan.actions])
-        self.subtask_manager.hri.say(f"I will now execute the merged plan: {spoken}", wait=False)
+        self.subtask_manager.hri.say(f"I will now execute the merged plan: {spoken}")
 
         fallback_lines = ["Falling back to the sequential plan."]
         for cmd_idx, per_cmd in enumerate(plan.fallback):
@@ -400,7 +398,7 @@ class GPSRTM(Node):
                 if self.interleave_enabled:
                     self.batched_commands.append(CommandListLLM(commands=self.commands))
                     plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
-                    self.subtask_manager.hri.say(plan_text, wait=False)
+                    self.subtask_manager.hri.say(plan_text)
                     if (
                         len(self.batched_commands) >= self.batch_size
                         or (self.executed_commands + len(self.batched_commands)) >= MAX_COMMANDS
@@ -415,7 +413,7 @@ class GPSRTM(Node):
                 else:
                     self.subtask_manager.hri.say("I will now execute your command.", wait=False)
                     plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
-                    self.subtask_manager.hri.say(plan_text, wait=True)
+                    self.subtask_manager.hri.say(plan_text)
                     self.current_state = GPSRTM.TaskStates.EXECUTING_COMMAND
 
         elif self.current_state == GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH:

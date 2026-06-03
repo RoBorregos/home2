@@ -65,7 +65,7 @@ def _dispatch(
     try:
         outcome = method(action)
     except Exception:  # noqa: BLE001 — we want the BT to handle it
-        logger.exception(f"{kind} raised")
+        logger.error(f"{kind} raised")
         return None
     status, result = _unpack_outcome(outcome)
     if status is None:
@@ -74,7 +74,7 @@ def _dispatch(
         try:
             on_complete(plan_action, status, result)
         except Exception:  # noqa: BLE001
-            logger.exception("on_complete hook raised")
+            logger.error("on_complete hook raised")
     return status
 
 
@@ -178,5 +178,5 @@ class OneShotCallbackLeaf(py_trees.behaviour.Behaviour):
             try:
                 self._callback()
             except Exception:  # noqa: BLE001 — never let a debug hook tank the BT
-                self.logger.exception(f"{self.name} callback raised")
+                self.logger.error(f"{self.name} callback raised")
         return py_trees.common.Status.SUCCESS
