@@ -493,7 +493,9 @@ class GPSRCommands(Node):
         # Ensure YOLO service is available. We use a short timeout so the
         # node can operate even if YOLO is not running at startup.
         if not self.yolo_client.wait_for_service(timeout_sec=0.5):
-            self.get_logger().warn("YOLO service not available, returning no detections.")
+            self.get_logger().warn(
+                "YOLO service not available, returning no detections."
+            )
             return []
 
         # Create request
