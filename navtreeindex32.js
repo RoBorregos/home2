@@ -1,5 +1,7 @@
 var NAVTREEINDEX32 =
 {
+"namespaceattachments.html#ae313171c75da313de1e55b0eb505e17b":[36,0,5,1],
+"namespacebase__detector__node.html":[36,0,6],
 "namespacebenchmark__vamp.html":[36,0,7],
 "namespacebenchmark__vamp.html#a186b0c38ab4698ef0b34c529dc33a197":[36,0,7,5],
 "namespacebenchmark__vamp.html#a9b0d761583c11cecee33ee66344bfdd9":[36,0,7,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX32 =
 "namespacefrida__constants_1_1hri__constants.html#a4f57beaa697d3fd2366209c57e9261db":[36,0,58,0,43],
 "namespacefrida__constants_1_1hri__constants.html#a5122d4a93ffda1e706247ba9f13e538c":[36,0,58,0,27],
 "namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7":[36,0,58,0,46],
-"namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9":[36,0,58,0,17],
-"namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8":[36,0,58,0,38],
-"namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29":[36,0,58,0,34]
+"namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9":[36,0,58,0,17]
 };

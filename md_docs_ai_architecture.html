@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.6"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Roborregos @Home documentation: Help me carry</title>
+<title>Roborregos @Home documentation: FRIDA Architecture</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -64,7 +64,7 @@ $(function() {
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
-$(document).ready(function(){initNavTree('md_docs_Run_Tasks_help_me_carry.html',''); initResizable(); });
+$(document).ready(function(){initNavTree('md_docs_ai_architecture.html',''); initResizable(); });
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -90,16 +90,35 @@ $(document).ready(function(){initNavTree('md_docs_Run_Tasks_help_me_carry.html',
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">Help me carry </div></div>
+  <div class="headertitle"><div class="title">FRIDA Architecture </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md253"></a>
-Integration</h1>
-<p>Run container. From the root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh integration --help-me-carry</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md254"></a>
-Vision</h1>
-<p>Run container. From the root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh vision --help-me-carry</div>
-</div><!-- fragment --> </div></div><!-- contents -->
+<div class="textblock"><p>The software architecture for <b>FRIDA</b> (Friendly Robotics Interactive Domestic Assistant) is built on <b>ROS 2</b> and designed with modularity in mind. The system is divided into several "Areas," each representing a specific robotic capability.</p>
+<h1><a class="anchor" id="autotoc_md163"></a>
+Core Areas</h1>
+<p>Each area typically corresponds to a set of ROS 2 packages and containers:</p>
+<ul>
+<li><b>Vision</b>: Handles image processing, object detection, and perception tasks.</li>
+<li><b>Human-Robot Interaction (HRI)</b>: Manages communication with users through voice, visual interfaces, and social behaviors.</li>
+<li><b>Navigation</b>: Responsible for localization, mapping, and path planning.</li>
+<li><b>Manipulation</b>: Controls the robotic arms and grippers for tasks like picking and placing objects.</li>
+<li><b>Integration</b>: Orchestrates the interaction between multiple areas to fulfill complex service robot challenges.</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md164"></a>
+Execution Model</h1>
+<p>The project utilizes <b>Docker</b> and <b>Docker Compose</b> to ensure a consistent environment across different hardware platforms (CPU, CUDA, L4T).</p>
+<h2><a class="anchor" id="autotoc_md165"></a>
+The &lt;tt&gt;run.sh&lt;/tt&gt; Script</h2>
+<p>A central <code>run.sh</code> script is used to manage the lifecycle of these containers. It automatically detects the environment and spins up the necessary services.</p>
+<div class="fragment"><div class="line"># Example: Run the vision area</div>
+<div class="line">./run.sh vision</div>
+<div class="line"> </div>
+<div class="line"># Example: Run a competition task (GPSR)</div>
+<div class="line">./run.sh --gpsr</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md166"></a>
+Communication</h1>
+<p>Communication between nodes is handled by the <b>Cyclone DDS</b> middleware, which is configured via <code>scripts/setup_cyclonedds.sh</code> to allow seamless multi-host or host-container interaction. </p>
+</div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
 <!-- start footer part -->

@@ -1,5 +1,7 @@
 var NAVTREEINDEX37 =
 {
+"namespacetrack.html":[36,0,173],
+"namespacetracker.html":[36,0,174],
 "namespacetracker__node.html":[36,0,175],
 "namespacetracker__node.html#a1019ff64cd9459d9a26b3a73dd0ed134":[36,0,175,6],
 "namespacetracker__node.html#a31ff474623ba03e3fc97d08114c58089":[36,0,175,8],
@@ -247,7 +249,5 @@ var NAVTREEINDEX37 =
 "namespacewait__for__controller__input__node.html#abe191a8897bb324ceaa8765539c4a73e":[36,0,188,2],
 "namespacewait__for__controller__input__node.html#acbf56aac299c905ea9db596606231f61":[36,0,188,1],
 "namespacexarm6.html":[36,0,189],
-"namespacexarm6.html#a00587301dda23bf4389850792cf5e6df":[36,0,189,10],
-"namespacexarm6.html#a26baf8750ec84dc6d4deea500c98907a":[36,0,189,0],
-"namespacexarm6.html#a5b0cec9095cd260e03b3ea69e5262082":[36,0,189,7]
+"namespacexarm6.html#a00587301dda23bf4389850792cf5e6df":[36,0,189,10]
 };

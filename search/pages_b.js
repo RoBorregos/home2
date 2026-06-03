@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['storing_20groceries_0',['Storing Groceries',['../md_docs_Run_Tasks_storing_groceries.html',1,'']]]
+  ['tech_20stack_0',['Tech Stack',['../md_docs_ai_tech_stack.html',1,'']]]
 ];

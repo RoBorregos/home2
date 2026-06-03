@@ -1,5 +1,7 @@
 var NAVTREEINDEX45 =
 {
+"task__manager_2task__manager_2subtask__managers_2____init_____8py.html":[38,0,6,2,1,0],
+"task__manager_2task__manager_2utils_2____init_____8py.html":[38,0,6,2,2,0],
 "temp__follow_8py.html":[38,0,6,1,0,13],
 "temp__follow_8py.html#a027d977acaf4012fe97da3b05f6a746d":[38,0,6,1,0,13,7],
 "temp__follow_8py.html#a24e0bd389d3274839f801a5f6d7cf9b6":[38,0,6,1,0,13,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX45 =
 "vision__constants_8py.html":[38,0,1,1,7],
 "vision__constants_8py.html#a033a5597e312e4e911732ea94d904b9c":[38,0,1,1,7,13],
 "vision__constants_8py.html#a03983d3f159310b7d5cd63db4c94cca2":[38,0,1,1,7,52],
-"vision__constants_8py.html#a0d9e36475a3e1aba0ac82d421424b504":[38,0,1,1,7,11],
-"vision__constants_8py.html#a0f1e21b2876c5aff0a6ce0bb081cd000":[38,0,1,1,7,48],
-"vision__constants_8py.html#a14b244fc490c19ebfc44d3b8f4cdcbc5":[38,0,1,1,7,12]
+"vision__constants_8py.html#a0d9e36475a3e1aba0ac82d421424b504":[38,0,1,1,7,11]
 };

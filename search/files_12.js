@@ -34,9 +34,8 @@ var searchData=
   ['sphere_5fheightfield_2ehh_31',['sphere_heightfield.hh',['../sphere__heightfield_8hh.html',1,'']]],
   ['sphere_5fsphere_2ehh_32',['sphere_sphere.hh',['../sphere__sphere_8hh.html',1,'']]],
   ['status_2epy_33',['status.py',['../status_8py.html',1,'']]],
-  ['storing_2dgroceries_2emd_34',['storing-groceries.md',['../storing-groceries_8md.html',1,'']]],
-  ['storing_5fgroceries_5fmanager_2epy_35',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
-  ['stt_2esrv_36',['STT.srv',['../STT_8srv.html',1,'']]],
-  ['subtask_5fmanager_2epy_37',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]],
-  ['subtask_5fmeta_2epy_38',['subtask_meta.py',['../subtask__meta_8py.html',1,'']]]
+  ['storing_5fgroceries_5fmanager_2epy_34',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
+  ['stt_2esrv_35',['STT.srv',['../STT_8srv.html',1,'']]],
+  ['subtask_5fmanager_2epy_36',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]],
+  ['subtask_5fmeta_2epy_37',['subtask_meta.py',['../subtask__meta_8py.html',1,'']]]
 ];

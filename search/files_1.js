@@ -10,13 +10,14 @@ var searchData=
   ['aorrtc_2ehh_7',['aorrtc.hh',['../aorrtc_8hh.html',1,'']]],
   ['aorrtc_5fsettings_2ehh_8',['aorrtc_settings.hh',['../aorrtc__settings_8hh.html',1,'']]],
   ['aox_5fnn_2ehh_9',['aox_nn.hh',['../aox__nn_8hh.html',1,'']]],
-  ['area_5fcheck_2epy_10',['area_check.py',['../area__check_8py.html',1,'']]],
-  ['attachcollisionobject_2esrv_11',['AttachCollisionObject.srv',['../AttachCollisionObject_8srv.html',1,'']]],
-  ['attachments_2ehh_12',['attachments.hh',['../attachments_8hh.html',1,'']]],
-  ['attachments_2epy_13',['attachments.py',['../attachments_8py.html',1,'']]],
-  ['audiodata_2emsg_14',['AudioData.msg',['../AudioData_8msg.html',1,'']]],
-  ['audiodatastamped_2emsg_15',['AudioDataStamped.msg',['../AudioDataStamped_8msg.html',1,'']]],
-  ['audioinfo_2emsg_16',['AudioInfo.msg',['../AudioInfo_8msg.html',1,'']]],
-  ['audiotext_2esrv_17',['AudioText.srv',['../AudioText_8srv.html',1,'']]],
-  ['avx_2ehh_18',['avx.hh',['../avx_8hh.html',1,'']]]
+  ['architecture_2emd_10',['architecture.md',['../architecture_8md.html',1,'']]],
+  ['area_5fcheck_2epy_11',['area_check.py',['../area__check_8py.html',1,'']]],
+  ['attachcollisionobject_2esrv_12',['AttachCollisionObject.srv',['../AttachCollisionObject_8srv.html',1,'']]],
+  ['attachments_2ehh_13',['attachments.hh',['../attachments_8hh.html',1,'']]],
+  ['attachments_2epy_14',['attachments.py',['../attachments_8py.html',1,'']]],
+  ['audiodata_2emsg_15',['AudioData.msg',['../AudioData_8msg.html',1,'']]],
+  ['audiodatastamped_2emsg_16',['AudioDataStamped.msg',['../AudioDataStamped_8msg.html',1,'']]],
+  ['audioinfo_2emsg_17',['AudioInfo.msg',['../AudioInfo_8msg.html',1,'']]],
+  ['audiotext_2esrv_18',['AudioText.srv',['../AudioText_8srv.html',1,'']]],
+  ['avx_2ehh_19',['avx.hh',['../avx_8hh.html',1,'']]]
 ];
