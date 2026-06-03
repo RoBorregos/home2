@@ -14,6 +14,7 @@ from frida_constants.manipulation_constants import (
     CUTLERY_NAMES,
     POUR_OBJECT_NAMES,
     BASKET_NAMES,
+    CLOTHES_NAMES,
 )
 from typing import Tuple
 import time
@@ -65,6 +66,13 @@ def is_basket(object_name: str) -> bool:
     return object_name.lower() in BASKET_NAMES
 
 
+def is_clothes(object_name: str) -> bool:
+    """Clothes are picked from inside the basket; located via the basket detection."""
+    if object_name is None:
+        return False
+    return object_name.lower() in CLOTHES_NAMES
+
+
 def is_pour_object(object_name: str) -> bool:
     """Objects that must be picked upright for pouring."""
     if object_name is None:
@@ -81,6 +89,9 @@ class PickManager:
         self.latest_flat_grasp = None
         self._collecting_samples = False
         self._grasp_samples = []
+        # When True, only clothes poses are collected (the estimator publishes both a
+        # rim and a clothes pose per basket detection; this keeps the buffers separate).
+        self._sampling_clothes = False
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
@@ -95,12 +106,31 @@ class PickManager:
             self.flat_grasp_callback,
             10,
         )
+        # Clothes poses (basket bbox centroid) come on their own topic.
+        self.node.create_subscription(
+            PoseStamped,
+            "/manipulation/clothes_grasp_pose",
+            self.clothes_grasp_callback,
+            10,
+        )
 
         self._flat_estimator_enable = self.node.create_client(
             SetBool, "/flat_grasp_estimator/enable"
         )
 
     def flat_grasp_callback(self, msg):
+        # Flat (cutlery) + basket rim poses. Ignored during a clothes pick so the
+        # rim pose published alongside the clothes pose doesn't contaminate samples.
+        if self._sampling_clothes:
+            return
+        self.latest_flat_grasp = msg
+        if self._collecting_samples:
+            self._grasp_samples.append(msg)
+
+    def clothes_grasp_callback(self, msg):
+        # Only collected during a clothes pick.
+        if not self._sampling_clothes:
+            return
         self.latest_flat_grasp = msg
         if self._collecting_samples:
             self._grasp_samples.append(msg)
@@ -124,10 +154,16 @@ class PickManager:
         self.node.get_logger().info("Setting initial joint positions")
 
         is_basket_object = is_basket(object_name)
-        is_flat_object = is_cutlery(object_name) or is_basket_object
+        is_clothes_object = is_clothes(object_name)
+        is_flat_object = (
+            is_cutlery(object_name) or is_basket_object or is_clothes_object
+        )
+        # Clothes and basket rim poses are published together per basket detection;
+        # this flag selects which topic feeds the sample buffer.
+        self._sampling_clothes = is_clothes_object
 
         if not pick_params.in_configuration:
-            if is_basket_object:
+            if is_basket_object or is_clothes_object:
                 stare_position = "look_back_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
@@ -196,9 +232,9 @@ class PickManager:
             avg_z = np.median([s.pose.position.z for s in samples])
             z_std = np.std([s.pose.position.z for s in samples])
 
-            # Basket: publish the rim Z as-is; pick_server applies BASKET_GRASP_Z_TWEAK.
-            # Cutlery: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
-            z_tweak = 0.0 if is_basket_object else FLAT_GRASP_Z_TWEAK
+            # Basket/clothes: publish Z as-is; pick_server applies the descent-based
+            # tweak. Cutlery: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
+            z_tweak = FLAT_GRASP_Z_TWEAK if is_cutlery(object_name) else 0.0
 
             self.node.get_logger().info(
                 f"Averaged pose: X={avg_x:.3f}, Y={avg_y:.3f}, "
@@ -287,7 +323,7 @@ class PickManager:
             # Cutlery: 90° alternative (either short/long axis grip works).
             # Basket: 180° flip about Z keeps the fingers radial (straddling the
             # rim) while flipping the approach for IK reachability.
-            alt_angle = 180 if is_basket_object else 90
+            alt_angle = 180 if (is_basket_object or is_clothes_object) else 90
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
                 [

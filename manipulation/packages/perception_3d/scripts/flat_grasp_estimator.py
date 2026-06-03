@@ -42,6 +42,8 @@ BASKET_NEAR_FRACTION = 0.05
 BASKET_TOP_PERCENTILE = 90
 # Vertical band below the rim-top kept as the rim ring (meters)
 RIM_TOP_BAND = 0.03
+# Half-size (pixels) of the window used to median-filter the bbox-center depth for clothes
+CLOTHES_CENTER_WINDOW = 5
 
 
 class FlatGraspEstimator(Node):
@@ -85,6 +87,13 @@ class FlatGraspEstimator(Node):
 
         self.basket_pose_pub = self.create_publisher(
             PoseStamped, "/manipulation/basket_grasp_pose", 10
+        )
+
+        # Clothes inside the basket are located from the SAME basket detection
+        # (bbox centroid), published on a separate topic. PickManager samples
+        # whichever topic matches the requested pick (rim vs clothes).
+        self.clothes_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/clothes_grasp_pose", 10
         )
 
         self.enable_srv = self.create_service(
@@ -439,6 +448,80 @@ class FlatGraspEstimator(Node):
             f"Basket rim grasp (link_base): X={rim_x:.3f}, Y={rim_y:.3f}, "
             f"Z={rim_z:.4f} (floor_z={floor_z:.4f}, top_z={top_z:.4f}, "
             f"rim_pts={len(rim_points)}, top_ring={len(top_ring)}, near_k={k})"
+        )
+
+        # --- CLOTHES POSE (bbox centroid, for picking clothes INSIDE the basket) ---
+        # The clothes are located from this same basket detection: deproject the bbox
+        # center pixel (≈ the top of the clothes pile in the middle of the basket).
+        self.publish_clothes_pose(xmin, xmax, ymin, ymax, fx, fy, cx, cy, T_mat)
+
+    def publish_clothes_pose(self, xmin, xmax, ymin, ymax, fx, fy, cx, cy, T_mat):
+        """Deproject the basket bbox center and publish a top-down clothes grasp pose.
+
+        Reuses the intrinsics and base transform already computed for the rim. The
+        center depth is a small-window median (robust to holes / dark fabric). The
+        orientation matches the rim grasp (top-down, wrist radial toward the base).
+        """
+        cu = int((xmin + xmax) / 2)
+        cv = int((ymin + ymax) / 2)
+
+        # Median depth over a small window around the center (robust to NaN/holes).
+        win = CLOTHES_CENTER_WINDOW
+        w_lo = max(xmin, cu - win)
+        w_hi = min(xmax, cu + win + 1)
+        h_lo = max(ymin, cv - win)
+        h_hi = min(ymax, cv + win + 1)
+        center_patch = self.latest_depth[h_lo:h_hi, w_lo:w_hi]
+        valid = center_patch[(center_patch > 0) & (~np.isnan(center_patch))]
+        if len(valid) == 0:
+            return
+        z = float(np.median(valid))
+
+        x_cam = (cu - cx) * z / fx
+        y_cam = (cv - cy) * z / fy
+        point_cam = np.array([x_cam, y_cam, z, 1.0])
+        point_base = T_mat @ point_cam
+        if not np.isfinite(point_base[:3]).all():
+            return
+        clothes_x, clothes_y, clothes_z = (
+            float(point_base[0]),
+            float(point_base[1]),
+            float(point_base[2]),
+        )
+
+        # --- TOP-DOWN ORIENTATION (radial wrist, same convention as the rim grasp) ---
+        Z_grasp = np.array([0.0, 0.0, -1.0])
+        radial = np.array([clothes_x, clothes_y, 0.0])
+        radial_norm = np.linalg.norm(radial)
+        if radial_norm < 1e-6:
+            return
+        radial = radial / radial_norm
+
+        Y_grasp = radial
+        X_grasp = np.cross(Y_grasp, Z_grasp)
+        X_grasp = X_grasp / np.linalg.norm(X_grasp)
+        Y_grasp = np.cross(Z_grasp, X_grasp)
+
+        new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
+        new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
+
+        grasp_pose = PoseStamped()
+        grasp_pose.header.frame_id = self.target_frame
+        grasp_pose.header.stamp = self.get_clock().now().to_msg()
+
+        grasp_pose.pose.position.x = clothes_x
+        grasp_pose.pose.position.y = clothes_y
+        grasp_pose.pose.position.z = clothes_z
+
+        grasp_pose.pose.orientation.x = new_quat[0]
+        grasp_pose.pose.orientation.y = new_quat[1]
+        grasp_pose.pose.orientation.z = new_quat[2]
+        grasp_pose.pose.orientation.w = new_quat[3]
+
+        self.clothes_pose_pub.publish(grasp_pose)
+        self.get_logger().info(
+            f"Clothes grasp (link_base): X={clothes_x:.3f}, Y={clothes_y:.3f}, "
+            f"Z={clothes_z:.4f} (center_px=({cu},{cv}), patch_pts={len(valid)})"
         )
 
 

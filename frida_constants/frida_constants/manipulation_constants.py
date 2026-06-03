@@ -81,6 +81,10 @@ BASKET_DESCENT_SPEED = 20.0  # mm/s downward (xArm cartesian-velocity convention
 # Fixed descent distance from the pre-grasp down to the grasp point (no force feedback)
 BASKET_DESCENT_DISTANCE = BASKET_PRE_GRASP_HEIGHT - BASKET_GRASP_Z_TWEAK  # = 0.23 m
 
+# Clothes inside the basket: requested as "laundry_clothes", but the detection used to
+# locate them is the basket itself (BASKET_NAMES). Motion reuses ALL basket constants.
+CLOTHES_NAMES = ["laundry_clothes"]
+
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
 HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
