@@ -48,8 +48,8 @@ def load_yolo_pose(model_name="yolo11m-pose.pt"):
 
 class PoseDetection:
     def __init__(self):
+        self.yolo_pose = load_yolo_pose()
         print("Pose Detection Ready (YOLO TensorRT)")
-        self.yolo_pose = YOLO("yolo11m-pose.pt")
 
     # ── Full-image detection ──
 
