@@ -29,16 +29,21 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.status import Status
-from frida_interfaces.action import ManipulationAction, GoToHand
+from frida_interfaces.action import ManipulationAction, GoToHand, MoveToPose
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
 
+import tf2_ros
+from tf2_geometry_msgs import do_transform_point
+
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    MOVE_TO_POSE_ACTION_SERVER,
+    GRASP_LINK_FRAME,
 )
 import time as t
 
@@ -110,9 +115,15 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        self._move_to_pose_action_client = ActionClient(
+            self.node, MoveToPose, MOVE_TO_POSE_ACTION_SERVER
+        )
         self._flat_grasp_estimator_client = self.node.create_client(
             SetBool, "/flat_grasp_estimator/enable"
         )
+
+        self._tf_buffer = tf2_ros.Buffer()
+        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self.node)
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -672,6 +683,91 @@ class ManipulationTasks:
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
         self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_move_to_pose_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def move_to_washing_machine_hole(
+        self,
+        hole_point: PointStamped,
+        forward_extension: float = 0.20,
+        velocity: float = 0.2,
+        planner_id: str = "RRTConnect",
+        tolerance_position: float = 0.02,
+        tolerance_orientation: float = 0.1,
+    ) -> int:
+        """Extend the arm forward to point into the washing machine drum.
+
+        Takes the 3D centroid of the drum opening (from moondream / vision),
+        transforms it into base_link, and commands the EE to a pose at the
+        centroid height pushed forward by `forward_extension` so most joints
+        end up in front of the base — an "arrow into the drum" approach pose.
+        Not a pick.
+        """
+        if hole_point is None or hole_point.header.frame_id == "":
+            Logger.error(self.node, "move_to_washing_machine_hole: invalid hole_point")
+            return Status.EXECUTION_ERROR
+
+        target_frame = "base_link"
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                target_frame,
+                hole_point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            point_base = do_transform_point(hole_point, transform)
+        except Exception as e:
+            Logger.error(
+                self.node,
+                f"TF {hole_point.header.frame_id} -> {target_frame} failed: {e}",
+            )
+            return Status.EXECUTION_ERROR
+
+        pose = PoseStamped()
+        pose.header.frame_id = target_frame
+        pose.header.stamp = self.node.get_clock().now().to_msg()
+        pose.pose.position.x = point_base.point.x + forward_extension
+        pose.pose.position.y = point_base.point.y
+        pose.pose.position.z = point_base.point.z
+        pose.pose.orientation.x = 0.0
+        pose.pose.orientation.y = 0.0
+        pose.pose.orientation.z = 0.0
+        pose.pose.orientation.w = 1.0
+
+        Logger.info(
+            self.node,
+            f"move_to_washing_machine_hole target in {target_frame}: "
+            f"({pose.pose.position.x:.3f}, {pose.pose.position.y:.3f}, "
+            f"{pose.pose.position.z:.3f}) [extension={forward_extension:.2f} m]",
+        )
+
+        goal = MoveToPose.Goal()
+        goal.pose = pose
+        goal.velocity = float(velocity)
+        goal.planner_id = planner_id
+        goal.target_link = GRASP_LINK_FRAME
+        goal.tolerance_position = float(tolerance_position)
+        goal.tolerance_orientation = float(tolerance_orientation)
+
+        self._move_to_pose_action_client.wait_for_server()
+        send_future = self._move_to_pose_action_client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self.node, send_future, timeout_sec=TIMEOUT)
+        goal_handle = send_future.result()
+        if goal_handle is None or not goal_handle.accepted:
+            Logger.error(self.node, "MoveToPose goal rejected")
+            return Status.EXECUTION_ERROR
+
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "Reached washing machine approach pose")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "MoveToPose failed to reach washing machine pose")
+        return Status.EXECUTION_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
