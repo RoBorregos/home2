@@ -27,6 +27,9 @@ class DoingLaundryTM(Node):
         PICK_LAUNDRY = "PICK_LAUNDRY"
         NAVIGATE_TO_LAUNDRY_TABLE = "NAVIGATE_TO_LAUNDRY_TABLE"
         UNLOAD_LAUNDRY = "UNLOAD_LAUNDRY"
+        NAVIGATE_TO_DISHWASHER = "NAVIGATE_TO_DISHWASHER"
+        UNLOAD_DISHWASHER = "UNLOAD_DISHWASHER"
+        CLOSE_DISHWASHER = "CLOSE_DISHWASHER"
         END = "END"
 
     def __init__(self):
@@ -175,6 +178,43 @@ class DoingLaundryTM(Node):
             self.subtask_manager.manipulation.open_gripper()
             self.subtask_manager.hri.say("Basket delivered to the table.", wait=False)
             self.current_state = DoingLaundryTM.TaskStates.END
+
+        elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_DISHWASHER:
+            Logger.info(self, "Navigating to dishwasher with basket.")
+            status, error = self.navigate_to("kitchen", "dishwasher")
+
+            if status == Status.EXECUTION_SUCCESS:
+                Logger.success(self, "Reached dishwasher.")
+                Logger.info(self, "Attempting to load basket into dishwasher.")
+                self.subtask_manager.hri.say("Loading the basket into the dishwasher.", wait=False)
+                if result == Status.EXECUTION_SUCCESS:
+                    Logger.success(self, "Basket loaded into dishwasher.")
+                    self.current_state = DoingLaundryTM.TaskStates.END
+                else:
+                    Logger.error(self, "Failed to load basket into dishwasher. Ending task.")
+                    self.current_state = DoingLaundryTM.TaskStates.END
+            else:
+                Logger.error(self, f"Navigation to dishwasher failed: {error}. Retrying...")
+
+        elif self.current_state == DoingLaundryTM.TaskStates.UNLOAD_DISHWASHER:
+            Logger.info(self, "Attempting to unload dishwasher.")
+            self.subtask_manager.hri.say("Unloading the dishwasher.", wait=False)
+            if result == Status.EXECUTION_SUCCESS:
+                Logger.success(self, "Dishwasher unloaded.")
+                self.current_state = DoingLaundryTM.TaskStates.CLOSE_DISHWASHER
+            else:
+                Logger.error(self, "Failed to unload dishwasher. Ending task.")
+                self.current_state = DoingLaundryTM.TaskStates.END
+
+        elif self.current_state == DoingLaundryTM.TaskStates.CLOSE_DISHWASHER:
+            Logger.info(self, "Closing dishwasher door.")
+            self.subtask_manager.hri.say("Closing the dishwasher door.", wait=False)
+            if result == Status.EXECUTION_SUCCESS:
+                Logger.success(self, "Dishwasher door closed.")
+                self.current_state = DoingLaundryTM.TaskStates.END
+            else:
+                Logger.error(self, "Failed to close dishwasher door. Ending task.")
+                self.current_state = DoingLaundryTM.TaskStates.END
 
         elif self.current_state == DoingLaundryTM.TaskStates.END:
             Logger.state(self, "Ending task")
