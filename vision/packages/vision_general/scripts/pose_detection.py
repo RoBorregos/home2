@@ -27,7 +27,7 @@ KP_CONF = 0.3
 
 def load_yolo_pose(model_name="yolo11m-pose.pt"):
     """Load YOLO pose model with automatic TensorRT export for Orin AGX."""
-    engine_path = model_name.replace(".pt", ".engine")
+    engine_path = f"/workspace/trt_cache/{model_name.replace('.pt', '.engine')}"
     if os.path.exists(engine_path):
         print(f"[PoseDetection] Loading TensorRT engine: {engine_path}")
         return YOLO(engine_path, task="pose")
