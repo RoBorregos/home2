@@ -72,7 +72,7 @@ POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Basket (floor pick by the rim/edge, top-down straddle grasp)
-BASKET_NAMES = ["basket", "laundry_basket"]
+BASKET_NAMES = ["basket", "aundry_basket"]
 BASKET_PRE_GRASP_HEIGHT = 0.20  # m above the rim for the MoveIt pre-grasp
 BASKET_GRASP_Z_TWEAK = (
     -0.03

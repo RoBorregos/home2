@@ -55,7 +55,7 @@ class FlatGraspEstimator(Node):
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
         self.target_classes = ["spoon", "fork", "knife"]
-        self.basket_classes = ["laundry_basket", "basket"]
+        self.basket_classes = ["aundry_basket", "basket"]
 
         # Start disabled — only enabled explicitly before a cutlery pick.
         # Saves CPU/network when no manipulation is in progress.

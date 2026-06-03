@@ -301,7 +301,14 @@ class PickMotionServer(Node):
                 if self._estop:
                     return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
-                offset_distance = self.ee_link_offset
+                # Basket is grasped with the fingertips straddling the rim, so the
+                # commanded frame must be offset by the full tip distance, not just
+                # the link distance — otherwise the fingers descend too far and hit
+                # the basket. (Cutlery uses the link offset since its force-guarded
+                # descent absorbs any residual offset error.)
+                offset_distance = (
+                    self.ee_tip_offset if is_basket else self.ee_link_offset
+                )
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [

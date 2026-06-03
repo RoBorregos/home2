@@ -418,17 +418,24 @@ class PickManager:
                 velocity=0.3,
             )
 
-        self.node.get_logger().info("Returning to position")
-
-        self.node.clear_octomap()
-        for i in range(5):
-            return_result = send_joint_goal(
-                move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
-                velocity=0.5,
+        if is_basket_object:
+            # Hold the rim where pick_server left the arm (lifted pre-grasp).
+            # Do NOT return to a stare pose so the basket stays grasped in place.
+            self.node.get_logger().info(
+                "Basket pick: holding rim position (skipping return to stare)"
             )
-            if return_result:
-                break
+        else:
+            self.node.get_logger().info("Returning to position")
+
+            self.node.clear_octomap()
+            for i in range(5):
+                return_result = send_joint_goal(
+                    move_joints_action_client=self.node._move_joints_client,
+                    named_position="table_stare",
+                    velocity=0.5,
+                )
+                if return_result:
+                    break
 
         self.node.get_logger().info("Pick Task completed successfully")
         result.success = True
