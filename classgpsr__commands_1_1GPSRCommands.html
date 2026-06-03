@@ -93,6 +93,7 @@ $(document).ready(function(){initNavTree('classgpsr__commands_1_1GPSRCommands.ht
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classgpsr__commands_1_1GPSRCommands-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">gpsr_commands.GPSRCommands Class Reference</div></div>
 </div><!--header-->
@@ -110,6 +111,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad0a01a65f3853e0eb55897d9c44b0aee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2168d7eb41b42e92c53da56c1cd65c2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ac2168d7eb41b42e92c53da56c1cd65c2">image_callback</a> (self, data)</td></tr>
 <tr class="separator:ac2168d7eb41b42e92c53da56c1cd65c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62e1125be804ee48c2d20c06c910eb11"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a62e1125be804ee48c2d20c06c910eb11">depth_callback</a> (self, msg)</td></tr>
+<tr class="separator:a62e1125be804ee48c2d20c06c910eb11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a64b8721e9a7a6dce509694f4ab033bef"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a64b8721e9a7a6dce509694f4ab033bef">camera_info_callback</a> (self, msg)</td></tr>
+<tr class="separator:a64b8721e9a7a6dce509694f4ab033bef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f099c4ff3f42997126a99e7534c29e1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a7f099c4ff3f42997126a99e7534c29e1">count_by_pose_callback</a> (self, request, response)</td></tr>
 <tr class="separator:a7f099c4ff3f42997126a99e7534c29e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f94a1a2ca03d10d612141ea76e667be"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a9f94a1a2ca03d10d612141ea76e667be">count_by_gestures_callback</a> (self, request, response)</td></tr>
@@ -132,8 +137,6 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad060e3a6d5c783408fff6a8df1c31cf5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a758d3b60afd37459b07c4274205cd1d7"><td class="memItemLeft" align="right" valign="top">tuple[int, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a758d3b60afd37459b07c4274205cd1d7">moondream_crop_query</a> (self, str prompt, list[float] bbox)</td></tr>
 <tr class="separator:a758d3b60afd37459b07c4274205cd1d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9a752904ba82ff3a27caa9baa458c397"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a9a752904ba82ff3a27caa9baa458c397">is_inside</a> (self, x, y, polygon)</td></tr>
-<tr class="separator:a9a752904ba82ff3a27caa9baa458c397"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -157,8 +160,16 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a6f8dab48437a968ad38fa867bbbfa199"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab8dc1494d1a666e0ca9e963ec7f26e2b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ab8dc1494d1a666e0ca9e963ec7f26e2b">yolo_client</a></td></tr>
 <tr class="separator:ab8dc1494d1a666e0ca9e963ec7f26e2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5640d419364ee207a47e124541b0fb6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ac5640d419364ee207a47e124541b0fb6">tf_buffer</a></td></tr>
+<tr class="separator:ac5640d419364ee207a47e124541b0fb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade5a5a28fa3bae861f331f25b612756a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ade5a5a28fa3bae861f331f25b612756a">tf_listener</a></td></tr>
+<tr class="separator:ade5a5a28fa3bae861f331f25b612756a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f73b3927532453045d016580d5ecad7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a1f73b3927532453045d016580d5ecad7">image</a></td></tr>
 <tr class="separator:a1f73b3927532453045d016580d5ecad7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac564155988b1baf00efe2f07d24ecb75"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ac564155988b1baf00efe2f07d24ecb75">depth_image</a></td></tr>
+<tr class="separator:ac564155988b1baf00efe2f07d24ecb75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afe5f3f1edc7e6f9cdb885a985c251a34"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#afe5f3f1edc7e6f9cdb885a985c251a34">camera_info</a></td></tr>
+<tr class="separator:afe5f3f1edc7e6f9cdb885a985c251a34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8f89fade140ca424d2ea96a4b38b9fb6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a8f89fade140ca424d2ea96a4b38b9fb6">pose_detection</a></td></tr>
 <tr class="separator:a8f89fade140ca424d2ea96a4b38b9fb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37658fa13c8e5d1f1f7685f1f3a1c27f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a37658fa13c8e5d1f1f7685f1f3a1c27f">output_image</a></td></tr>
@@ -169,6 +180,13 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ad104ba02ae9a97e081c2c9fe907450eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a928bee0668cea771ab24a95f6b34ec16"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a928bee0668cea771ab24a95f6b34ec16">areas</a></td></tr>
 <tr class="separator:a928bee0668cea771ab24a95f6b34ec16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:af44da302fa693c7a99ba8d76ef97e751"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#af44da302fa693c7a99ba8d76ef97e751">_dicts_to_detection_msgs</a> (self, list detections)</td></tr>
+<tr class="separator:af44da302fa693c7a99ba8d76ef97e751"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8e841aa2f5943246de4c0b0c8f540412"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a8e841aa2f5943246de4c0b0c8f540412">_filter_people</a> (self, frame, <a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2">people</a>)</td></tr>
+<tr class="separator:a8e841aa2f5943246de4c0b0c8f540412"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad0a01a65f3853e0eb55897d9c44b0aee" name="ad0a01a65f3853e0eb55897d9c44b0aee"></a>
@@ -190,6 +208,112 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="af44da302fa693c7a99ba8d76ef97e751" name="af44da302fa693c7a99ba8d76ef97e751"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af44da302fa693c7a99ba8d76ef97e751">&#9670;&#160;</a></span>_dicts_to_detection_msgs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands._dicts_to_detection_msgs </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list&#160;</td>
+          <td class="paramname"><em>detections</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8e841aa2f5943246de4c0b0c8f540412" name="a8e841aa2f5943246de4c0b0c8f540412"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8e841aa2f5943246de4c0b0c8f540412">&#9670;&#160;</a></span>_filter_people()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands._filter_people </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>people</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a64b8721e9a7a6dce509694f4ab033bef" name="a64b8721e9a7a6dce509694f4ab033bef"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64b8721e9a7a6dce509694f4ab033bef">&#9670;&#160;</a></span>camera_info_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands.camera_info_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>msg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a26012972d777c04eed5e6049860b7be0" name="a26012972d777c04eed5e6049860b7be0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26012972d777c04eed5e6049860b7be0">&#9670;&#160;</a></span>count_by_color_callback()</h2>
 
@@ -354,6 +478,34 @@ Public Attributes</h2></td></tr>
 <pre class="fragment">Count the gestures in the image and return a dictionary.</pre> 
 </div>
 </div>
+<a id="a62e1125be804ee48c2d20c06c910eb11" name="a62e1125be804ee48c2d20c06c910eb11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62e1125be804ee48c2d20c06c910eb11">&#9670;&#160;</a></span>depth_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands.depth_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>msg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a5d7db3415e4863955cedbd8994206717" name="a5d7db3415e4863955cedbd8994206717"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5d7db3415e4863955cedbd8994206717">&#9670;&#160;</a></span>detect_gesture()</h2>
 
@@ -480,46 +632,6 @@ comp_class: int or None (None = detect all classes)
 <pre class="fragment">Callback to receive the image from the camera.</pre> 
 </div>
 </div>
-<a id="a9a752904ba82ff3a27caa9baa458c397" name="a9a752904ba82ff3a27caa9baa458c397"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9a752904ba82ff3a27caa9baa458c397">&#9670;&#160;</a></span>is_inside()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def gpsr_commands.GPSRCommands.is_inside </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>x</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>y</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>polygon</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a758d3b60afd37459b07c4274205cd1d7" name="a758d3b60afd37459b07c4274205cd1d7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a758d3b60afd37459b07c4274205cd1d7">&#9670;&#160;</a></span>moondream_crop_query()</h2>
 
@@ -643,6 +755,20 @@ comp_class: int or None (None = detect all classes)
 
 </div>
 </div>
+<a id="afe5f3f1edc7e6f9cdb885a985c251a34" name="afe5f3f1edc7e6f9cdb885a985c251a34"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe5f3f1edc7e6f9cdb885a985c251a34">&#9670;&#160;</a></span>camera_info</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">gpsr_commands.GPSRCommands.camera_info</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a166dff3cb5d69f02907b9815570cf534" name="a166dff3cb5d69f02907b9815570cf534"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a166dff3cb5d69f02907b9815570cf534">&#9670;&#160;</a></span>count_by_color_service</h2>
 
@@ -693,6 +819,20 @@ comp_class: int or None (None = detect all classes)
       <table class="memname">
         <tr>
           <td class="memname">gpsr_commands.GPSRCommands.count_by_pose_service</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac564155988b1baf00efe2f07d24ecb75" name="ac564155988b1baf00efe2f07d24ecb75"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac564155988b1baf00efe2f07d24ecb75">&#9670;&#160;</a></span>depth_image</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">gpsr_commands.GPSRCommands.depth_image</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -805,6 +945,34 @@ comp_class: int or None (None = detect all classes)
       <table class="memname">
         <tr>
           <td class="memname">gpsr_commands.GPSRCommands.pose_gesture_detection_service</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac5640d419364ee207a47e124541b0fb6" name="ac5640d419364ee207a47e124541b0fb6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5640d419364ee207a47e124541b0fb6">&#9670;&#160;</a></span>tf_buffer</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">gpsr_commands.GPSRCommands.tf_buffer</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ade5a5a28fa3bae861f331f25b612756a" name="ade5a5a28fa3bae861f331f25b612756a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade5a5a28fa3bae861f331f25b612756a">&#9670;&#160;</a></span>tf_listener</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">gpsr_commands.GPSRCommands.tf_listener</td>
         </tr>
       </table>
 </div><div class="memdoc">

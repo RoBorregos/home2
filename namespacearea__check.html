@@ -102,8 +102,121 @@ Functions</h2></td></tr>
 <tr class="separator:a57f97085ecda9c86f7f750d44a2bf6ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adde7b9820374ec0867e3bcc9888ae56f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacearea__check.html#adde7b9820374ec0867e3bcc9888ae56f">is_point_in_room</a> (PointStamped point_stamped, str room_name, areas_json)</td></tr>
 <tr class="separator:adde7b9820374ec0867e3bcc9888ae56f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a96dc766a4c5632b741a45f3930ea3448"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacearea__check.html#a96dc766a4c5632b741a45f3930ea3448">is_point_in_house</a> (PointStamped point_stamped, areas_json)</td></tr>
+<tr class="separator:a96dc766a4c5632b741a45f3930ea3448"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2f9676eacc1c5466e43c74599c50c4fa"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacearea__check.html#a2f9676eacc1c5466e43c74599c50c4fa">filter_detections_in_house</a> (frame, list detections, list[int] class_ids, list[str]|None rooms, camera_info, depth_image, Buffer tf_buffer, dict areas_json, str camera_frame, int rotation=0)</td></tr>
+<tr class="separator:a2f9676eacc1c5466e43c74599c50c4fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a2f9676eacc1c5466e43c74599c50c4fa" name="a2f9676eacc1c5466e43c74599c50c4fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f9676eacc1c5466e43c74599c50c4fa">&#9670;&#160;</a></span>filter_detections_in_house()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> list area_check.filter_detections_in_house </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list&#160;</td>
+          <td class="paramname"><em>detections</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[int]&#160;</td>
+          <td class="paramname"><em>class_ids</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[str] | None&#160;</td>
+          <td class="paramname"><em>rooms</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>camera_info</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>depth_image</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Buffer&#160;</td>
+          <td class="paramname"><em>tf_buffer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict&#160;</td>
+          <td class="paramname"><em>areas_json</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>camera_frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &#160;</td>
+          <td class="paramname"><em>rotation</em> = <code>0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Filter detections by class ID and spatial location.
+
+If rooms is provided, only detections inside one of those rooms are kept.
+If rooms is None, detections inside any room of the hosue will be kept (as long as they have a polygon)
+If spatial data is unavailable, detections matching class_ids pass through unfiltered.
+</pre> 
+</div>
+</div>
+<a id="a96dc766a4c5632b741a45f3930ea3448" name="a96dc766a4c5632b741a45f3930ea3448"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a96dc766a4c5632b741a45f3930ea3448">&#9670;&#160;</a></span>is_point_in_house()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool area_check.is_point_in_house </td>
+          <td>(</td>
+          <td class="paramtype">PointStamped&#160;</td>
+          <td class="paramname"><em>point_stamped</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>areas_json</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="adde7b9820374ec0867e3bcc9888ae56f" name="adde7b9820374ec0867e3bcc9888ae56f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adde7b9820374ec0867e3bcc9888ae56f">&#9670;&#160;</a></span>is_point_in_room()</h2>
 
