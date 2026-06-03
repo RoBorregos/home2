@@ -156,6 +156,7 @@ set(srv_files
   "vision/srv/PersonPosture.srv"
   "vision/srv/Query.srv"
   "vision/srv/ObjectPoints.srv"
+  "vision/srv/MoondreamPoint3D.srv"
   "vision/srv/SaveName.srv"
   "vision/srv/SetDetectorClasses.srv"
   "vision/srv/SetPointingObjectClasses.srv"
