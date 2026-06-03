@@ -15,7 +15,9 @@
 #   --tasks N           Task preset 1-4 (skips interactive task menu)
 #   --models "1 3 5"    Model selection (skips interactive model menu)
 #   --all               Benchmark every model in the registry
-#   --delete            Interactive menu to delete cached GGUFs from disk
+#
+# In the interactive model menu, enter -1 to open the cached-GGUF delete menu
+# instead of running a benchmark.
 #
 # All output is tee'd to hri/packages/nlp/benchmark/results/logs/<timestamp>.log
 # so you can leave it running and check later.
@@ -40,7 +42,6 @@ RUNS=3
 TASK_PRESET=""
 MODEL_SELECT=""
 SELECT_ALL=false
-DELETE_MODE=false
 
 # Args
 while [[ $# -gt 0 ]]; do
@@ -50,21 +51,19 @@ while [[ $# -gt 0 ]]; do
         --tasks)     TASK_PRESET="$2"; shift 2 ;;
         --models)    MODEL_SELECT="$2"; shift 2 ;;
         --all)       SELECT_ALL=true; shift ;;
-        --delete)    DELETE_MODE=true; shift ;;
         -h|--help)
-            sed -n '2,23p' "$0"; exit 0 ;;
+            sed -n '2,25p' "$0"; exit 0 ;;
         *)           echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
 
-# Delete mode
-if $DELETE_MODE; then
+run_delete_menu() {
     echo ""
     echo "Cached GGUFs in $ASSETS_DIR:"
     mapfile -t gguf_files < <(find "$ASSETS_DIR" -maxdepth 1 -name "*.gguf" | sort)
     if [[ ${#gguf_files[@]} -eq 0 ]]; then
         echo "  (none)"
-        exit 0
+        return 0
     fi
     for i in "${!gguf_files[@]}"; do
         size=$(du -h "${gguf_files[$i]}" 2>/dev/null | cut -f1)
@@ -73,7 +72,7 @@ if $DELETE_MODE; then
     echo ""
     printf "Select models to delete (space-separated nums, or empty=cancel): "
     read -r selection </dev/tty
-    [[ -z "$selection" ]] && echo "Cancelled." && exit 0
+    [[ -z "$selection" ]] && echo "Cancelled." && return 0
     for n in $selection; do
         if ! [[ "$n" =~ ^[0-9]+$ ]] || (( n < 1 || n > ${#gguf_files[@]} )); then
             echo "Invalid: $n — skipped"; continue
@@ -88,8 +87,7 @@ if $DELETE_MODE; then
             echo "  Skipped."
         fi
     done
-    exit 0
-fi
+}
 
 # Logging
 LOG_DIR="$BENCHMARK_DIR/results/logs"
@@ -148,6 +146,7 @@ for i in "${!MODEL_NAMES[@]}"; do
     fi
     printf "  %2d) %-22s [%s]\n" "$((i+1))" "${MODEL_NAMES[$i]}" "$status"
 done
+printf "  %2s) %-22s\n" "-1" "delete cached models"
 echo ""
 
 declare -a SELECTED
@@ -157,10 +156,13 @@ elif [[ -n "$MODEL_SELECT" ]]; then
     read -r -a sel <<< "$MODEL_SELECT"
     for n in "${sel[@]}"; do SELECTED+=("$((n-1))"); done
 else
-    printf "Select models (space-separated nums, or empty=all): "
+    printf "Select models (space-separated nums, -1=delete menu, empty=all): "
     read -r selection </dev/tty
     if [[ -z "$selection" ]]; then
         for i in "${!MODEL_NAMES[@]}"; do SELECTED+=("$i"); done
+    elif [[ "$selection" =~ ^[[:space:]]*-1[[:space:]]*$ ]]; then
+        run_delete_menu
+        exit 0
     else
         for n in $selection; do
             if ! [[ "$n" =~ ^[0-9]+$ ]] || (( n < 1 || n > ${#MODEL_NAMES[@]} )); then

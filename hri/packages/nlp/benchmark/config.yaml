@@ -4,10 +4,10 @@ ollama:
   timeout_s: 60
 
 benchmark:
-  runs: 3          # repeticiones para medir performance
-  thinking: false  # si true, no agrega /no_think a los prompts
+  runs: 3          # repetitions to measure performance
+  thinking: false  # if true, does not append /no_think to prompts
 
-# Modelos a comparar (nombres de Ollama, e.g. qwen3, qwen3.5, gemma3:4b, llama3.2)
+# Models to compare (Ollama names, e.g. qwen3, qwen3.5, gemma3:4b, llama3.2)
 models:
   - qwen3
 
@@ -22,7 +22,7 @@ tasks:
     enabled: true
     test_file: "../test/is_negative.json"
   command_interpreter:
-    enabled: false   # opt-in: scoring más complejo (Jaccard sobre action tokens)
+    enabled: false   # opt-in: more complex scoring (Jaccard over action tokens)
     test_file: "../test/command_interpreter.json"
 
 output:
