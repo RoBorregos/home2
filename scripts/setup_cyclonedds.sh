@@ -5,9 +5,9 @@
 # The host just needs CycloneDDS network config and kernel buffer tuning.
 #
 # Usage:
-#   sudo bash setup_cyclonedds.sh [INTERFACE]        - Full setup (host machine)
-#   sudo bash setup_cyclonedds.sh --host-only [IFACE] - Only apply sysctl + save interface
-#   sudo bash setup_cyclonedds.sh --revert            - Revert to FastDDS
+#   sudo bash scripts/setup_cyclonedds.sh [INTERFACE]        - Full setup (host machine)
+#   sudo bash scripts/setup_cyclonedds.sh --host-only [IFACE] - Only apply sysctl + save interface
+#   sudo bash scripts/setup_cyclonedds.sh --revert            - Revert to FastDDS
 
 set -e
 
