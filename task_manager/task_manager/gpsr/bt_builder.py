@@ -63,6 +63,7 @@ def build_tree(
     retry_count: int = 2,
     global_budget_s: float = GLOBAL_BUDGET_S,
     on_fallback_entry: Optional[Callable[[], None]] = None,
+    is_completed: Optional[Callable[[PlanAction], bool]] = None,
 ) -> py_trees.behaviour.Behaviour:
     """Build the GPSR behaviour tree for ``plan``.
 
@@ -81,6 +82,14 @@ def build_tree(
             sequential-fallback branch — useful for debug announcements
             (on-screen text, log line, etc.). Only installed when the
             plan actually has fallback content to run.
+        is_completed: optional predicate ``(plan_action) -> bool`` used by the
+            sequential-fallback branch to resume rather than restart. Any
+            non-``go_to`` action it reports as already completed (typically
+            because the interleaved branch succeeded on it) is skipped instead
+            of re-executed, and a ``go_to`` is skipped when its whole segment of
+            following work is already done (so the robot doesn't drive to a
+            location with nothing left to do). ``None`` disables skipping (full
+            restart).
 
     Returns:
         the root Selector behaviour ready for ``tick()``.
@@ -109,6 +118,7 @@ def build_tree(
                 subtask_handlers,
                 on_complete=on_action_complete,
                 name=f"fallback_cmd{cmd_idx}",
+                is_completed=is_completed,
             )
         )
 

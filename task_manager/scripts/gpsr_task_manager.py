@@ -113,6 +113,9 @@ class GPSRTM(Node):
 
         self.batched_commands: list = []
         self._location_cache: dict[str, tuple[float, float] | None] = {}
+        # (source_cmd, source_idx) of actions that succeeded in the interleaved
+        # branch, so the sequential fallback can resume instead of restarting.
+        self._completed: set[tuple[int, int]] = set()
 
         # TF for resolving robot pose at batch start (used as the planning
         # origin so the merger optimises travel relative to where the robot
@@ -199,6 +202,8 @@ class GPSRTM(Node):
             return None
 
     def _on_action_complete(self, plan_action, status, result):
+        if status == Status.EXECUTION_SUCCESS:
+            self._completed.add((plan_action.source_cmd, plan_action.source_idx))
         try:
             self.subtask_manager.hri.add_command_history(plan_action.action, result, status)
         except Exception as e:  # noqa: BLE001
@@ -211,6 +216,7 @@ class GPSRTM(Node):
 
     def _execute_interleaved_batch(self):
         """Plan + tick the py_trees tree for the current batch."""
+        self._completed.clear()
         plan = merge(
             self.batched_commands,
             locator=self._resolve_xy,
@@ -244,6 +250,7 @@ class GPSRTM(Node):
             retry_count=2,
             global_budget_s=GLOBAL_BUDGET_S,
             on_fallback_entry=_announce_fallback,
+            is_completed=lambda pa: (pa.source_cmd, pa.source_idx) in self._completed,
         )
         self.get_logger().info("Behaviour tree:\n" + render_tree_ascii(root))
 

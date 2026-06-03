@@ -123,12 +123,14 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
         subtask_handlers: Sequence[Any],
         on_complete: Optional[Callable[[PlanAction, Any, Any], None]] = None,
         name: Optional[str] = None,
+        is_completed: Optional[Callable[[PlanAction], bool]] = None,
     ):
         if not per_command_actions:
             raise ValueError("SequentialFallbackLeaf requires at least one action")
         super().__init__(name=name or f"fallback_cmd#{per_command_actions[0].source_cmd}")
         self._handlers = subtask_handlers
         self._on_complete = on_complete
+        self._is_completed = is_completed
         # Resolve handlers once so a missing-method misconfiguration
         # surfaces here, in tree construction, rather than mid-tick.
         self._resolved: List[Tuple[PlanAction, Optional[Callable]]] = [
@@ -136,6 +138,42 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
             for pa in per_command_actions
         ]
         self._started = False
+
+    def _resume_skip_mask(self) -> List[bool]:
+        """Compute which resolved actions to skip when resuming.
+
+        Two rules, both no-ops when ``is_completed`` is ``None``:
+
+        * A non-``go_to`` action the interleaved branch already finished is
+          skipped (avoids redoing work, e.g. a double pick).
+        * A ``go_to`` is skipped when every non-``go_to`` action in its segment
+          (the run of actions up to the next ``go_to`` or end of command) is
+          already done — otherwise the robot would drive to a location with no
+          work left to perform. A ``go_to`` is kept whenever any pending work
+          remains in its segment, so the robot still re-establishes position
+          before resuming.
+        """
+        n = len(self._resolved)
+        completed = [
+            getattr(pa.action, "action", "") != "go_to"
+            and self._is_completed is not None
+            and self._is_completed(pa)
+            for pa, _ in self._resolved
+        ]
+        skip = list(completed)
+        for i in range(n):
+            if getattr(self._resolved[i][0].action, "action", "") != "go_to":
+                continue
+            has_pending_work = False
+            for j in range(i + 1, n):
+                if getattr(self._resolved[j][0].action, "action", "") == "go_to":
+                    break
+                if not skip[j]:
+                    has_pending_work = True
+                    break
+            if not has_pending_work:
+                skip[i] = True
+        return skip
 
     def update(self) -> py_trees.common.Status:
         if not self._started:
@@ -145,9 +183,13 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
                 self.logger.info(
                     f"fallback running cmd_idx={cmd_idx}, " f"{len(self._resolved)} actions"
                 )
-        for pa, method in self._resolved:
+        skip = self._resume_skip_mask()
+        for idx, (pa, method) in enumerate(self._resolved):
+            kind = getattr(pa.action, "action", "")
+            if skip[idx]:
+                self.logger.info(f"resume: skipping {kind} cmd={pa.source_cmd} idx={pa.source_idx}")
+                continue
             if method is None:
-                kind = getattr(pa.action, "action", "")
                 self.logger.error(
                     f"No handler for action '{kind}' in [{_handler_names(self._handlers)}]"
                 )

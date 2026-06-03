@@ -86,6 +86,7 @@ TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
 TEST_MERGER = True
+TEST_FALLBACK_RESUME = True
 
 
 class TestHriManager(Node):
@@ -142,6 +143,9 @@ class TestHriManager(Node):
 
         if TEST_MERGER:
             self.test_merger()
+
+        if TEST_FALLBACK_RESUME:
+            self.test_fallback_resume()
 
         exit(0)
 
@@ -674,6 +678,83 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Merger results: {passed}/{len(scenarios)} passed")
         self.get_logger().info(f"Saved to {output_file}")
+
+    def test_fallback_resume(self):
+        """Unit-test the interleaved->sequential resume safeguard. Pure-Python,
+        no ROS services. Builds a per-command fallback plan, marks some actions
+        as already completed by the interleaved branch, ticks a
+        SequentialFallbackLeaf, and asserts it resumes (skips completed non-go_to
+        actions) rather than restarting from the beginning."""
+        from task_manager.gpsr.leaf_behaviours import SequentialFallbackLeaf
+        from task_manager.gpsr.merger import merge
+
+        class RecordingHandler:
+            """Stub handler whose every attribute is a callable that records the
+            action kind it was invoked with and reports success."""
+
+            def __init__(self, calls):
+                self._calls = calls
+
+            def __getattr__(self, name):
+                def _call(action):
+                    self._calls.append(getattr(action, "action", name))
+                    return Status.EXECUTION_SUCCESS, None
+
+                return _call
+
+        commands = build_commands(
+            [
+                [
+                    {"action": "go_to", "location_to_go": "kitchen"},
+                    {"action": "pick_object", "object_to_pick": "apple"},
+                    {"action": "go_to", "location_to_go": "living_room"},
+                    {"action": "place_object"},
+                ]
+            ]
+        )
+        plan = merge(commands)
+        per_cmd = plan.fallback[0]
+
+        def run_leaf(completed):
+            """Tick a fallback leaf whose completed set is ``completed`` (a set
+            of (source_cmd, source_idx)); return the action kinds it dispatched."""
+            calls = []
+            is_completed = (
+                None
+                if completed is None
+                else (lambda pa: (pa.source_cmd, pa.source_idx) in completed)
+            )
+            leaf = SequentialFallbackLeaf(
+                per_cmd,
+                [RecordingHandler(calls)],
+                is_completed=is_completed,
+            )
+            leaf.update()
+            return calls
+
+        # The pick (idx 1) finished in the interleaved branch; the place (idx 3)
+        # did not. Resume must run only the living_room trip + place, and must
+        # NOT drive to the kitchen (its only work, the pick, is already done).
+        partial = run_leaf({(0, 1)})
+        # Every action finished: resume should do nothing at all (no wasted trips).
+        all_done = run_leaf({(0, 1), (0, 3)})
+        # No completion info: the full command runs from the beginning.
+        full = run_leaf(None)
+
+        failures = []
+        if partial != ["go_to", "place_object"]:
+            failures.append(
+                f"partial resume should skip the wasted kitchen trip + pick, got {partial}"
+            )
+        if all_done != []:
+            failures.append(f"fully-completed command should run nothing, got {all_done}")
+        if full != ["go_to", "pick_object", "go_to", "place_object"]:
+            failures.append(f"default (is_completed=None) must run all actions: {full}")
+
+        if failures:
+            self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
+        else:
+            self.get_logger().info(f"  PASS (partial={partial}, all_done={all_done}, full={full})")
 
     def test_command_interpreter_baml(self):
         # Prepare output file
