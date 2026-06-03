@@ -36,3 +36,5 @@ hri/packages/speech/assets/event_detections/
 CLAUDE.md
 GEMINI.md
 .github/copilot-instructions.md
+**/trt_cache
+manipulation/packages/contact_graspnet/

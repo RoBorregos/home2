@@ -8,7 +8,7 @@ import rclpy
 import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from vision_general.utils.ros_utils import wait_for_future
 import os
 import json
@@ -24,8 +24,11 @@ from frida_interfaces.srv import (
 from ament_index_python.packages import get_package_share_directory
 
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
+    CAMERA_FRAME,
+    CAMERA_INFO_TOPIC,
     COUNT_BY_PERSON_TOPIC,
+    DEPTH_IMAGE_TOPIC,
     IMAGE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_POSE_TOPIC,
@@ -34,6 +37,8 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURE_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
+from vision_general.utils.area_check import filter_detections_in_house
+from tf2_ros import Buffer, TransformListener
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
@@ -59,9 +64,22 @@ class GPSRCommands(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            Image, IMAGE_ORIENTED_TOPIC, self.image_callback, qos
         )
-
+        self.create_subscription(
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            qos,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            CameraInfo,
+            CAMERA_INFO_TOPIC,
+            self.camera_info_callback,
+            qos,
+            callback_group=self.callback_group,
+        )
         # Define services for GPSR commands
         self.count_by_pose_service = self.create_service(
             CountByPose,
@@ -107,13 +125,18 @@ class GPSRCommands(Node):
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
 
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         self.image = None
+        self.depth_image = None
+        self.camera_info = None
         self.pose_detection = PoseDetection()
         self.output_image = []
         self.people = []
 
         self.get_logger().info("GPSRCommands Ready.")
-        # self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
@@ -127,13 +150,17 @@ class GPSRCommands(Node):
         """Callback to receive the image from the camera."""
         try:
             self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-            if self.image is None:
-                return
-
-            self.output_image = self.image.copy()
-
         except Exception as e:
             print(f"Error: {e}")
+
+    def depth_callback(self, msg):
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
+        except Exception as e:
+            self.get_logger().error(f"Depth conversion error: {e}")
+
+    def camera_info_callback(self, msg):
+        self.camera_info = msg
 
     def count_by_pose_callback(self, request, response):
         """Callback to count a specific pose in the image."""
@@ -154,6 +181,8 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
+
+        self.people = self._filter_people(frame, self.people)
 
         pose_requested = request.pose_requested
 
@@ -210,6 +239,8 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
 
+        self.people = self._filter_people(frame, self.people)
+
         gesture_requested = request.pose_requested
 
         # Convert gesture_requested to Enum Gestures
@@ -242,6 +273,8 @@ class GPSRCommands(Node):
         }
 
         self.people = self.get_detections(0)
+
+        self.people = self._filter_people(frame, self.people)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -276,6 +309,8 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
 
+        self.people = self._filter_people(frame, self.people)
+
         # Count people detected
         people_count = len(self.people)
 
@@ -296,6 +331,8 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
+
+        self.people = self._filter_people(frame, self.people)
 
         clothing = request.clothing
         color = request.color
@@ -343,6 +380,8 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
         self.people = self.get_detections(0)
+
+        self.people = self._filter_people(frame, self.people)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -411,12 +450,38 @@ class GPSRCommands(Node):
         ]
 
         self.people = self.get_detections(0)
+
         gesture = self.pose_detection.detectGesture(cropped_frame)
 
         if gesture in gestures:
             return gesture.value
 
         return Gestures.UNKNOWN.value
+
+    def _dicts_to_detection_msgs(self, detections: list):
+        from frida_interfaces.msg import Detection
+
+        msgs = []
+        for d in detections:
+            msg = Detection()
+            msg.x1, msg.y1, msg.x2, msg.y2 = d["bbox"]
+            msg.confidence = d["confidence"]
+            msg.class_id = d["class_id"]
+            msgs.append(msg)
+        return msgs
+
+    def _filter_people(self, frame, people):
+        return filter_detections_in_house(
+            frame,
+            people,
+            [0],
+            None,
+            self.camera_info,
+            self.depth_image,
+            self.tf_buffer,
+            self.areas,
+            CAMERA_FRAME,
+        )
 
     def get_detections(self, comp_class=None, timeout=5.0):
         """
@@ -486,21 +551,6 @@ class GPSRCommands(Node):
         if result.success:
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
-
-    def is_inside(self, x, y, polygon):
-        inside = False
-        n = len(polygon)
-        for i in range(n):
-            x1, y1 = polygon[i]
-            x2, y2 = polygon[(i + 1) % n]
-
-            if (y1 > y) != (y2 > y):
-                xinters = (y - y1) * (x2 - x1) / (
-                    y2 - y1 + 1e-10
-                ) + x1  # Avoid zero division
-                if x < xinters:
-                    inside = not inside
-        return inside
 
 
 def main(args=None):

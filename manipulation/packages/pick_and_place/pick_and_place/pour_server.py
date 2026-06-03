@@ -9,6 +9,7 @@ from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from std_srvs.srv import SetBool
+from std_msgs.msg import Bool
 from sensor_msgs.msg import JointState
 from frida_pymoveit2.robots import xarm6
 from frida_pymoveit2.robots.xarm6 import JOINT_POSITION_LIMITS
@@ -42,6 +43,7 @@ from frida_constants.manipulation_constants import (
     POUR_MOTION_ACTION_SERVER,
     POUR_VELOCITY,
     REMOVE_COLLISION_OBJECT_SERVICE,
+    ESTOP_TOPIC,
 )
 from frida_interfaces.action import MoveToPose, PourMotion, MoveJoints
 from frida_interfaces.msg import Constraint
@@ -120,6 +122,14 @@ class PourMotionServer(Node):
             GRIPPER_SET_STATE_SERVICE,
         )
 
+        self._estop = False
+        self.create_subscription(
+            Bool,
+            ESTOP_TOPIC,
+            lambda msg: setattr(self, "_estop", msg.data),
+            10,
+        )
+
         self._move_to_pose_action_client.wait_for_server()
 
         self.get_logger().info("Pour Action Server has been started")
@@ -162,6 +172,8 @@ class PourMotionServer(Node):
             tries = 2
             distance_between_tries = 0.025
             for i in range(tries):
+                if self._estop:
+                    return False, None
                 self.get_logger().warn("Trying to move to pour pose")
                 new_pose.pose.position.z += distance_between_tries
                 self.get_logger().info(f"Pour pose: {new_pose.pose}")
@@ -202,6 +214,8 @@ class PourMotionServer(Node):
         tries = 5
         distance_between_tries = 0.025
         for i in range(tries):
+            if self._estop:
+                return False, None
             # self.get_logger().warn(f"Trying to pour object: {self.node.pour.request.object_name}")
             self.get_logger().warn("Trying to pour object")
             pose.pose.position.z += distance_between_tries
