@@ -306,9 +306,7 @@ class PickMotionServer(Node):
                 # the link distance — otherwise the fingers descend too far and hit
                 # the basket. (Cutlery uses the link offset since its force-guarded
                 # descent absorbs any residual offset error.)
-                offset_distance = (
-                    self.ee_tip_offset if is_basket else self.ee_link_offset
-                )
+                offset_distance = -0.12 if is_basket else self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [
@@ -469,15 +467,6 @@ class PickMotionServer(Node):
                     close_gripper(self._gripper_set_state_client)
                     time.sleep(1.5)
                     self.get_logger().info("[Basket] Gripper closed")
-
-                    # Lift back to pre-grasp (MoveIt)
-                    self.get_logger().info("[Basket] Lifting...")
-                    self.move_to_pose(pre_grasp_pose, velocity=0.2)
-
-                    pick_result.pick_pose = ee_link_pose
-                    pick_result.grasp_score = goal_handle.request.grasping_scores[i]
-                    pick_result.object_pick_height = 0.0
-                    pick_result.object_height = 0.0
 
                     self.get_logger().info("[Basket] Pick complete!")
                     return True, pick_result

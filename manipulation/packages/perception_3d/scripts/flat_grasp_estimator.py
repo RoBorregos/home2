@@ -38,6 +38,10 @@ TABLE_HEIGHT_OUTLIER_THRESH = 0.015  # 15mm
 RIM_MIN_HEIGHT = 0.05  # m
 # Fraction of points closest to the base used to estimate the near rim point
 BASKET_NEAR_FRACTION = 0.05
+# Percentile of Z used as the rim-top height (robust to a few high outliers)
+BASKET_TOP_PERCENTILE = 90
+# Vertical band below the rim-top kept as the rim ring (meters)
+RIM_TOP_BAND = 0.03
 
 
 class FlatGraspEstimator(Node):
@@ -377,12 +381,22 @@ class FlatGraspEstimator(Node):
             )
             return
 
-        # --- NEAR RIM POINT (closest to base) ---
-        horiz_dist = np.sqrt(rim_points[:, 0] ** 2 + rim_points[:, 1] ** 2)
+        # --- RIM TOP RING ---
+        # The rim is the TOP edge of the basket. Selecting points purely by horizontal
+        # distance picks the whole near wall (top..floor), whose median Z lands near the
+        # wall middle -> the grasp would descend far below the rim. Anchor to the top:
+        # take the rim-top height as a high Z percentile and keep only the top ring.
+        top_z = np.percentile(rim_points[:, 2], BASKET_TOP_PERCENTILE)
+        top_ring = rim_points[rim_points[:, 2] > top_z - RIM_TOP_BAND]
+        if len(top_ring) < MIN_POINTS_FOR_PCA:
+            top_ring = rim_points
+
+        # --- NEAR RIM POINT (closest to base, along the top ring) ---
+        horiz_dist = np.sqrt(top_ring[:, 0] ** 2 + top_ring[:, 1] ** 2)
         k = max(MIN_POINTS_FOR_PCA, int(BASKET_NEAR_FRACTION * len(horiz_dist)))
         k = min(k, len(horiz_dist))
         near_idx = np.argsort(horiz_dist)[:k]
-        rim_point = np.median(rim_points[near_idx], axis=0)
+        rim_point = np.median(top_ring[near_idx], axis=0)
         rim_x, rim_y, rim_z = (
             float(rim_point[0]),
             float(rim_point[1]),
@@ -423,8 +437,8 @@ class FlatGraspEstimator(Node):
         self.basket_pose_pub.publish(grasp_pose)
         self.get_logger().info(
             f"Basket rim grasp (link_base): X={rim_x:.3f}, Y={rim_y:.3f}, "
-            f"Z={rim_z:.4f} (floor_z={floor_z:.4f}, rim_pts={len(rim_points)}, "
-            f"near_k={k})"
+            f"Z={rim_z:.4f} (floor_z={floor_z:.4f}, top_z={top_z:.4f}, "
+            f"rim_pts={len(rim_points)}, top_ring={len(top_ring)}, near_k={k})"
         )
 
 
