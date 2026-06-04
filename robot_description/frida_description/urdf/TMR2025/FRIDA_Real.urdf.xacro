@@ -43,7 +43,7 @@
   <xacro:arg name="kinematics_suffix" default=""/>
   <!-- ZED ARGUMENTS -->
   <!-- ROBOT COMPONENTS -->
-  <xacro:include filename="robot_real.xacro"/>
+  <xacro:include filename="../../../home_custom_base_description/urdf/robot.xacro"/>
   <!-- MUJOCO PARAMS -->
   <!-- gravcomp mirrors the xarm6 firmware's internal gravity compensation:
        the real servos hold pose against gravity on their own, so the sim does the same.
