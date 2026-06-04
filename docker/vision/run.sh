@@ -99,6 +99,7 @@ mkdir -p install build log
 #_________________________RUN_________________________
 
 SOURCE_ROS="source /opt/ros/humble/setup.bash && source /usr/local/bin/cyclonedds_setup.sh"
+SOURCE_CONSTANTS="if [ -f frida_constants_cache/install/local_setup.bash ]; then source frida_constants_cache/install/local_setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
@@ -147,9 +148,9 @@ case $TASK in
 esac
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_CONSTANTS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_CONSTANTS && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 COMMAND="$SETUP && $RUN"

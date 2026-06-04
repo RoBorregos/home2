@@ -17,6 +17,7 @@ services:
       - ./install:/workspace/install
       - ./log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+      - ../frida_constants_cache:/workspace/frida_constants_cache
       - ${HOME}/.Xauthority:/home/ros/.Xauthority:rw
       - ../manipulation/setup_gpd.sh:/home/ros/setup_gpd.sh
     network_mode: host

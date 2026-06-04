@@ -40,6 +40,7 @@ fi
 
 #_________________________RUN_________________________
 
+SOURCE_CONSTANTS="if [ -f frida_constants_cache/install/local_setup.bash ]; then source frida_constants_cache/install/local_setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
@@ -51,7 +52,7 @@ if [ "$BUILD" == "true" ]; then
     BUILD_COMMAND="colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to $PACKAGES &&"
 fi
 
-COMMAND="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
+COMMAND="$SOURCE_ROS && $SOURCE_CONSTANTS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 
 cleanup() {
   [ -n "$wait_for_display_pid" ] && kill "$wait_for_display_pid" 2>/dev/null || true

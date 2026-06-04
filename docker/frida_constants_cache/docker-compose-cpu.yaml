@@ -1,0 +1,18 @@
+services:
+  frida_constants_cache:
+    build:
+      context: .
+      dockerfile: ../Dockerfile.ROS
+      args:
+        BASE_IMAGE: ubuntu:22.04
+    image: roborregos/home2:cpu_base
+    container_name: home2-frida-constants-cache
+    volumes:
+      - ../../:/workspace/src
+      - ./build:/workspace/frida_constants_cache/build
+      - ./install:/workspace/frida_constants_cache/install
+      - ./log:/workspace/log
+    tty: true
+    user: ${UID}:${GID}
+    entrypoint: ["bash", "-il", "-c"]
+    command: ["source /opt/ros/humble/setup.bash && colcon build --symlink-install --build-base /workspace/frida_constants_cache/build --install-base /workspace/frida_constants_cache/install --packages-select frida_constants"]

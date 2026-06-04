@@ -28,15 +28,16 @@ esac
 # Commands to run inside the container
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_CONSTANTS="if [ -f frida_constants_cache/install/local_setup.bash ]; then source frida_constants_cache/install/local_setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 COLCON="colcon build --symlink-install --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $CYCLONE_SOURCE &&$SOURCE_INTERFACES && $COLCON && $SOURCE"
+    SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $CYCLONE_SOURCE && $SOURCE_CONSTANTS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_CONSTANTS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $SOURCE"
 fi
 
 case $TASK in
