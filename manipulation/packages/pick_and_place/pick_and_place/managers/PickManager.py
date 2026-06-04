@@ -13,7 +13,7 @@ from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
     POUR_OBJECT_NAMES,
-    BASKET_NAMES,
+    RIM_NAMES,
 )
 from typing import Tuple
 import time
@@ -59,10 +59,10 @@ def is_cutlery(object_name: str) -> bool:
     return object_name.lower() in CUTLERY_NAMES
 
 
-def is_basket(object_name: str) -> bool:
+def is_rim(object_name: str) -> bool:
     if object_name is None:
         return False
-    return object_name.lower() in BASKET_NAMES
+    return object_name.lower() in RIM_NAMES
 
 
 def is_pour_object(object_name: str) -> bool:
@@ -87,11 +87,11 @@ class PickManager:
         self.node.create_subscription(
             PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
         )
-        # Basket rim poses are published by the same estimator node on a separate
+        # Rim poses are published by the same estimator node on a separate
         # topic; reuse the same sample buffer (only one branch is active per pick).
         self.node.create_subscription(
             PoseStamped,
-            "/manipulation/basket_grasp_pose",
+            "/manipulation/rim_grasp_pose",
             self.flat_grasp_callback,
             10,
         )
@@ -106,7 +106,7 @@ class PickManager:
             self._grasp_samples.append(msg)
 
     def set_flat_estimator(self, enabled: bool):
-        """Enable/disable the (flat/basket) grasp estimator node."""
+        """Enable/disable the (flat/rim) grasp estimator node."""
         if not self._flat_estimator_enable.wait_for_service(timeout_sec=2.0):
             self.node.get_logger().warn(
                 "flat_grasp_estimator enable service unavailable"
@@ -123,11 +123,11 @@ class PickManager:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
 
-        is_basket_object = is_basket(object_name)
-        is_flat_object = is_cutlery(object_name) or is_basket_object
+        is_rim_object = is_rim(object_name)
+        is_flat_object = is_cutlery(object_name) or is_rim_object
 
         if not pick_params.in_configuration:
-            if is_basket_object:
+            if is_rim_object:
                 stare_position = "look_back_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
@@ -196,9 +196,9 @@ class PickManager:
             avg_z = np.median([s.pose.position.z for s in samples])
             z_std = np.std([s.pose.position.z for s in samples])
 
-            # Basket: publish the rim Z as-is; pick_server applies BASKET_GRASP_Z_TWEAK.
+            # Rim: publish the rim Z as-is; pick_server applies RIM_GRASP_Z_TWEAK.
             # Cutlery: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
-            z_tweak = 0.0 if is_basket_object else FLAT_GRASP_Z_TWEAK
+            z_tweak = 0.0 if is_rim_object else FLAT_GRASP_Z_TWEAK
 
             self.node.get_logger().info(
                 f"Averaged pose: X={avg_x:.3f}, Y={avg_y:.3f}, "
@@ -285,9 +285,9 @@ class PickManager:
 
         if is_flat_object:
             # Cutlery: 90° alternative (either short/long axis grip works).
-            # Basket: 180° flip about Z keeps the fingers radial (straddling the
-            # rim) while flipping the approach for IK reachability.
-            alt_angle = 180 if is_basket_object else 90
+            # Rim: 180° flip about Z keeps the fingers radial (straddling the
+            # wall) while flipping the approach for IK reachability.
+            alt_angle = 180 if is_rim_object else 90
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
                 [
@@ -418,11 +418,11 @@ class PickManager:
                 velocity=0.3,
             )
 
-        if is_basket_object:
-            # Hold the rim where pick_server left the arm (lifted pre-grasp).
-            # Do NOT return to a stare pose so the basket stays grasped in place.
+        if is_rim_object:
+            # Hold the position where pick_server left the arm (lifted pre-grasp).
+            # Do NOT return to a stare pose so the object stays grasped in place.
             self.node.get_logger().info(
-                "Basket pick: holding rim position (skipping return to stare)"
+                "Rim pick: holding position (skipping return to stare)"
             )
         else:
             self.node.get_logger().info("Returning to position")

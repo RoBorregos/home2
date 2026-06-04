@@ -23,10 +23,10 @@ from frida_constants.manipulation_constants import (
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
     ESTOP_TOPIC,
-    BASKET_NAMES,
-    BASKET_PRE_GRASP_HEIGHT,
-    BASKET_DESCENT_SPEED,
-    BASKET_DESCENT_DISTANCE,
+    RIM_NAMES,
+    RIM_PRE_GRASP_HEIGHT,
+    RIM_DESCENT_SPEED,
+    RIM_DESCENT_DISTANCE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -278,12 +278,12 @@ class PickMotionServer(Node):
         grasping_poses = goal_handle.request.grasping_poses
 
         is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
-        is_basket = goal_handle.request.object_name.lower() in BASKET_NAMES
+        is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
 
         if is_flat:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
-        elif is_basket:
+        elif is_rim:
             # Each grasping_pose is already a distinct radial/flip candidate;
             # no extra z-offset alternatives needed.
             num_grasping_alternatives = 1
@@ -301,12 +301,11 @@ class PickMotionServer(Node):
                 if self._estop:
                     return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
-                # Basket is grasped with the fingertips straddling the rim, so the
-                # commanded frame must be offset by the full tip distance, not just
-                # the link distance — otherwise the fingers descend too far and hit
-                # the basket. (Cutlery uses the link offset since its force-guarded
-                # descent absorbs any residual offset error.)
-                offset_distance = -0.12 if is_basket else self.ee_link_offset
+                # Rim pick: fingertips straddle the wall, so the commanded frame must
+                # be offset by the full tip distance, not just the link distance —
+                # otherwise the fingers descend too far. (Cutlery uses the link offset
+                # since its force-guarded descent absorbs any residual offset error.)
+                offset_distance = -0.12 if is_rim else self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [
@@ -411,23 +410,23 @@ class PickMotionServer(Node):
                         )
                         continue
 
-                elif is_basket:
+                elif is_rim:
                     self.get_logger().info(
-                        f"[Basket] Fixed-distance pick flow for pose {i}"
+                        f"[Rim] Fixed-distance pick flow for pose {i}"
                     )
 
                     # Open gripper
-                    self.get_logger().info("[Basket] Opening gripper...")
+                    self.get_logger().info("[Rim] Opening gripper...")
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
                     open_gripper(self._gripper_set_state_client)
                     time.sleep(0.5)
 
                     # Pre-grasp above the rim (MoveIt)
                     pre_grasp_pose = copy.deepcopy(ee_link_pose)
-                    pre_grasp_pose.pose.position.z += BASKET_PRE_GRASP_HEIGHT
+                    pre_grasp_pose.pose.position.z += RIM_PRE_GRASP_HEIGHT
 
                     self.get_logger().info(
-                        f"[Basket] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
+                        f"[Rim] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
                         f"(rim Z={ee_link_pose.pose.position.z:.4f})"
                     )
 
@@ -437,14 +436,14 @@ class PickMotionServer(Node):
 
                     if not pre_result.result.success:
                         self.get_logger().warn(
-                            f"[Basket] Pre-grasp failed for pose {i}, trying next"
+                            f"[Rim] Pre-grasp failed for pose {i}, trying next"
                         )
                         continue
 
-                    self.get_logger().info("[Basket] Pre-grasp reached")
+                    self.get_logger().info("[Rim] Pre-grasp reached")
 
                     # Clear octomap before the open-loop descent
-                    self.get_logger().info("[Basket] Clearing octomap...")
+                    self.get_logger().info("[Rim] Clearing octomap...")
                     if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
                         req = Empty.Request()
                         self._clear_octomap_client.call_async(req)
@@ -452,23 +451,23 @@ class PickMotionServer(Node):
 
                     # Fixed-distance descent (xArm cartesian velocity, no MoveIt, no force)
                     self.get_logger().info(
-                        f"[Basket] Descending a fixed {BASKET_DESCENT_DISTANCE * 1000:.0f}mm..."
+                        f"[Rim] Descending a fixed {RIM_DESCENT_DISTANCE * 1000:.0f}mm..."
                     )
-                    descended = self.fixed_distance_descent(BASKET_DESCENT_DISTANCE)
+                    descended = self.fixed_distance_descent(RIM_DESCENT_DISTANCE)
 
                     if not descended:
                         self.get_logger().warn(
-                            f"[Basket] Descent failed for pose {i}, trying next"
+                            f"[Rim] Descent failed for pose {i}, trying next"
                         )
                         continue
 
                     # Close gripper on the rim
-                    self.get_logger().info("[Basket] Closing gripper...")
+                    self.get_logger().info("[Rim] Closing gripper...")
                     close_gripper(self._gripper_set_state_client)
                     time.sleep(1.5)
-                    self.get_logger().info("[Basket] Gripper closed")
+                    self.get_logger().info("[Rim] Gripper closed")
 
-                    self.get_logger().info("[Basket] Pick complete!")
+                    self.get_logger().info("[Rim] Pick complete!")
                     return True, pick_result
 
                 else:
@@ -662,7 +661,7 @@ class PickMotionServer(Node):
         """
         self.get_logger().info(
             f"[FixedDescent] Descending {distance_m * 1000:.0f}mm at "
-            f"{BASKET_DESCENT_SPEED:.1f} mm/s"
+            f"{RIM_DESCENT_SPEED:.1f} mm/s"
         )
 
         # --- Transition: mode 1 -> 0 -> 5 ---
@@ -693,7 +692,7 @@ class PickMotionServer(Node):
                 return False
 
             vel_req = MoveVelocity.Request()
-            vel_req.speeds = [0.0, 0.0, -BASKET_DESCENT_SPEED, 0.0, 0.0, 0.0]
+            vel_req.speeds = [0.0, 0.0, -RIM_DESCENT_SPEED, 0.0, 0.0, 0.0]
             vel_req.is_tool_coord = False
             vel_req.duration = 0.0
 
@@ -706,7 +705,7 @@ class PickMotionServer(Node):
                 return False
 
             # Open-loop: hold velocity for the time needed to cover the distance.
-            descent_time = (distance_m * 1000.0) / BASKET_DESCENT_SPEED
+            descent_time = (distance_m * 1000.0) / RIM_DESCENT_SPEED
             self.get_logger().info(
                 f"[FixedDescent] Holding velocity for {descent_time:.2f}s"
             )

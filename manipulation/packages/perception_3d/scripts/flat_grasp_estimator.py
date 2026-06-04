@@ -18,6 +18,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
+from frida_constants.manipulation_constants import RIM_NAMES
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
 
@@ -33,13 +34,12 @@ TABLE_HEIGHT_BUFFER_SIZE = 15
 # Maximum allowed deviation from the running median (reject outliers)
 TABLE_HEIGHT_OUTLIER_THRESH = 0.015  # 15mm
 
-# --- Basket (rim/edge) grasp estimation ---
-# Minimum height above the detected floor for a point to count as basket (not floor)
+# --- Rim grasp estimation ---
 RIM_MIN_HEIGHT = 0.05  # m
 # Fraction of points closest to the base used to estimate the near rim point
-BASKET_NEAR_FRACTION = 0.05
+RIM_NEAR_FRACTION = 0.05
 # Percentile of Z used as the rim-top height (robust to a few high outliers)
-BASKET_TOP_PERCENTILE = 90
+RIM_TOP_PERCENTILE = 90
 # Vertical band below the rim-top kept as the rim ring (meters)
 RIM_TOP_BAND = 0.03
 
@@ -59,7 +59,7 @@ class FlatGraspEstimator(Node):
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
         self.target_classes = ["spoon", "fork", "knife"]
-        self.basket_classes = ["aundry_basket", "basket"]
+        self.rim_classes = list(RIM_NAMES)
 
         # Start disabled — only enabled explicitly before a cutlery pick.
         # Saves CPU/network when no manipulation is in progress.
@@ -83,8 +83,8 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/flat_grasp_pose", 10
         )
 
-        self.basket_pose_pub = self.create_publisher(
-            PoseStamped, "/manipulation/basket_grasp_pose", 10
+        self.rim_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/rim_grasp_pose", 10
         )
 
         self.enable_srv = self.create_service(
@@ -131,8 +131,8 @@ class FlatGraspEstimator(Node):
             label = det.label_text.lower()
             if label in self.target_classes:
                 self.process_flat_object(det)
-            elif label in self.basket_classes:
-                self.process_basket_object(det)
+            elif label in self.rim_classes:
+                self.process_rim_object(det)
 
     def get_stable_table_height(self, new_reading):
         """Add a new table height reading and return a stable averaged value.
@@ -282,20 +282,14 @@ class FlatGraspEstimator(Node):
         grasp_pose.pose.orientation.w = new_quat[3]
 
         self.pose_pub.publish(grasp_pose)
-        self.get_logger().info(
-            f"Grasp (link_base): X={centroid_xy[0]:.3f}, "
-            f"Y={centroid_xy[1]:.3f}, Z={grasp_z:.4f} "
-            f"(raw_table={raw_table_height:.4f}, stable_table={stable_table_height:.4f}, "
-            f"buf={len(self.table_height_buffer)})"
-        )
 
-    def process_basket_object(self, detection: ObjectDetection):
-        """Estimate a top-down grasp on the near rim/edge of a basket on the floor.
+    def process_rim_object(self, detection: ObjectDetection):
+        """Estimate a top-down grasp on the near rim.
 
         Deprojects the whole detection bbox into a 3D prism, transforms it to the
         base frame, rejects the floor, and selects the point closest to the base
         (the near rim). The grasp is oriented so the gripper fingers close radially
-        across the rim wall (one finger inside, one outside the basket).
+        across the rim wall (one finger inside, one outside).
         """
         h_img, w_img = self.latest_depth.shape
 
@@ -371,29 +365,26 @@ class FlatGraspEstimator(Node):
 
         # --- FLOOR REJECTION ---
         # The floor is the lowest surface in the frustum; keep only points that sit
-        # clearly above it so nearer floor returns aren't mistaken for the rim.
         floor_z = np.percentile(points_base[:, 2], 5)
         rim_mask = points_base[:, 2] > floor_z + RIM_MIN_HEIGHT
         rim_points = points_base[rim_mask]
         if len(rim_points) < MIN_POINTS_FOR_PCA:
             self.get_logger().warn(
-                "Not enough basket points above the floor for a rim estimate"
+                "Not enough rim points above the floor for a rim estimate"
             )
             return
 
         # --- RIM TOP RING ---
-        # The rim is the TOP edge of the basket. Selecting points purely by horizontal
-        # distance picks the whole near wall (top..floor), whose median Z lands near the
-        # wall middle -> the grasp would descend far below the rim. Anchor to the top:
+        # The rim is the TOP edge of the object. Anchor to the top:
         # take the rim-top height as a high Z percentile and keep only the top ring.
-        top_z = np.percentile(rim_points[:, 2], BASKET_TOP_PERCENTILE)
+        top_z = np.percentile(rim_points[:, 2], RIM_TOP_PERCENTILE)
         top_ring = rim_points[rim_points[:, 2] > top_z - RIM_TOP_BAND]
         if len(top_ring) < MIN_POINTS_FOR_PCA:
             top_ring = rim_points
 
         # --- NEAR RIM POINT (closest to base, along the top ring) ---
         horiz_dist = np.sqrt(top_ring[:, 0] ** 2 + top_ring[:, 1] ** 2)
-        k = max(MIN_POINTS_FOR_PCA, int(BASKET_NEAR_FRACTION * len(horiz_dist)))
+        k = max(MIN_POINTS_FOR_PCA, int(RIM_NEAR_FRACTION * len(horiz_dist)))
         k = min(k, len(horiz_dist))
         near_idx = np.argsort(horiz_dist)[:k]
         rim_point = np.median(top_ring[near_idx], axis=0)
@@ -411,7 +402,7 @@ class FlatGraspEstimator(Node):
             return
         radial = radial / radial_norm
 
-        # Gripper local Y is the finger-closing axis (same convention as the flat path).
+        # Gripper local Y is the finger-closing axis.
         Y_grasp = radial
         X_grasp = np.cross(Y_grasp, Z_grasp)
         X_grasp = X_grasp / np.linalg.norm(X_grasp)
@@ -434,12 +425,7 @@ class FlatGraspEstimator(Node):
         grasp_pose.pose.orientation.z = new_quat[2]
         grasp_pose.pose.orientation.w = new_quat[3]
 
-        self.basket_pose_pub.publish(grasp_pose)
-        self.get_logger().info(
-            f"Basket rim grasp (link_base): X={rim_x:.3f}, Y={rim_y:.3f}, "
-            f"Z={rim_z:.4f} (floor_z={floor_z:.4f}, top_z={top_z:.4f}, "
-            f"rim_pts={len(rim_points)}, top_ring={len(top_ring)}, near_k={k})"
-        )
+        self.rim_pose_pub.publish(grasp_pose)
 
 
 def main(args=None):
