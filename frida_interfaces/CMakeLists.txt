@@ -102,6 +102,7 @@ set(srv_files
   "hri/srv/AddEntry.srv"
   "hri/srv/AudioText.srv"
   "hri/srv/BuildEmbeddings.srv"
+  "hri/srv/CategorizeShelves.srv"
   "hri/srv/CommandInterpreter.srv"
   "hri/srv/ExtractInfo.srv"
   "hri/srv/Grammar.srv"
@@ -169,6 +170,8 @@ set(srv_files
   "vision/srv/SetTrashCategory.srv"
   "navigation/srv/MapAreas.srv"
   "navigation/srv/MoveLocation.srv"
+  "navigation/srv/GoToPose.srv"
+  "navigation/srv/GetRobotPose.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

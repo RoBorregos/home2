@@ -37,11 +37,15 @@ from frida_constants.navigation_constants import(
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
+        GO_TO_POSE_SERVICE,
+        GET_ROBOT_POSE_SERVICE,
         )
 from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
-        MoveLocation
+        MoveLocation,
+        GoToPose,
+        GetRobotPose,
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -82,6 +86,9 @@ class Nav_Central(Node):
         self.nav_logger("info", "NAV_CENTRAL STARTED") 
         self.localization = self.declare_parameter('localization', False).value
         self.mapping = self.declare_parameter('mapping', False).value
+        # use_nav2: enable Nav2 even in mapping mode (hybrid SLAM+navigation)
+        # Defaults to True when not in pure-mapping mode (backward compatible)
+        self.use_nav2 = self.declare_parameter('use_nav2', not self.mapping).value
         self.map_name= self.declare_parameter('map_name', 'rtabmap_map.db').value
         self.mapping_config = self.declare_parameter('rtab_mapping_config', '').value
         self.localization_config = self.declare_parameter('rtab_localization_config', '').value
@@ -131,6 +138,14 @@ class Nav_Central(Node):
             Empty, RESUME_NAV_SERVICE, self._resume_nav_callback,
             callback_group=self.service_group)
 
+        # Point-based navigation services
+        self.go_to_pose_srv = self.create_service(
+            GoToPose, GO_TO_POSE_SERVICE, self.go_to_pose_callback,
+            callback_group=self.service_group)
+        self.get_robot_pose_srv = self.create_service(
+            GetRobotPose, GET_ROBOT_POSE_SERVICE, self.get_robot_pose_callback,
+            callback_group=self.service_group)
+
         # Initial pose tracking
         self._initial_pose_set = False
         self._initial_pose_sub = self.create_subscription(
@@ -158,7 +173,7 @@ class Nav_Central(Node):
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
-        if not self.mapping:
+        if self.use_nav2:
             # Create lifecycle client early so DDS has time to match endpoints
             self._lifecycle_cb_group = ReentrantCallbackGroup()
             self.lifecycle_client = self.create_client(
@@ -173,13 +188,14 @@ class Nav_Central(Node):
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
         self.start_slam()
         self.rtabmap_loaded = True
-        if not self.mapping:
+        if self.use_nav2:
             self.nav_logger("info", "Slam completed, Starting nav2 ...")
             self.load_nav2()
             self.nav_logger("info", "Nav2 completed")
-            self._wait_for_initial_pose()
+            if not self.mapping:
+                self._wait_for_initial_pose()
         else:
-            self.nav_logger("info", "Mapping mode: nav2 skipped")
+            self.nav_logger("info", "Nav2 not enabled, skipped")
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
         self.nodes_status = True
         self.baseline_tf_static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
@@ -252,14 +268,14 @@ class Nav_Central(Node):
             self.nodes_status = False
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, {'Topics not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, pausing nodes ...")
             self.pause_slam()
-            if not self.mapping:
+            if self.use_nav2:
                 self.pause_nav2()
         elif (self.no_topics_count == 0) and (self.no_tf_count == 0):
             if self.nodes_status == False:
                 self.nodes_status = True
                 self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
                 self.resume_slam()
-                if not self.mapping:
+                if self.use_nav2:
                     self.resume_nav2()
         
 
@@ -277,7 +293,7 @@ class Nav_Central(Node):
         """Service callback: manually resume RTABMap and nav2 from the UI."""
         self.nav_logger("info", "Resume Nav Service -> Manual resume requested")
         self.resume_slam()
-        if not self.mapping:
+        if self.use_nav2:
             self.resume_nav2()
         self.nodes_status = True
         self.no_topics_count = 0
@@ -383,13 +399,13 @@ class Nav_Central(Node):
         feedback = feedback_msg.feedback
         self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
 
-    def send_nav_goal(self, pose, behaivor_tree = None):
+    def send_nav_goal(self, pose, behavior_tree=None):
         """Function to send goal to nav2 bt"""
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
-        if behaivor_tree is not None:
-            goal_msg.behaivor_tree = behaivor_tree
+        if behavior_tree is not None:
+            goal_msg.behavior_tree = behavior_tree
         self.goal_action_client.wait_for_server()
 
         _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
@@ -448,7 +464,144 @@ class Nav_Central(Node):
         self.pause_slam()
         self.pause_nav2()
         return response
-        
+
+    def go_to_pose_callback(self, request, response):
+        """Navigate to an arbitrary PoseStamped goal."""
+        self.nav_logger("info", "GoToPose -> Service called")
+
+        if not self.use_nav2 or not self.rtabmap_loaded:
+            self.nav_logger("error", "GoToPose -> Navigation not ready")
+            response.success = False
+            response.error = "Navigation not ready"
+            return response
+
+        # Resume SLAM and Nav2 for navigation (paused between goals to save CPU)
+        self.resume_slam()
+        if self.use_nav2:
+            self.resume_nav2()
+
+        if self.nav2_paused:
+            self.nav_logger("error", "GoToPose -> Nav2 is paused")
+            response.success = False
+            response.error = "Nav2 is paused"
+            return response
+
+        # Transform goal to map frame if it's in a different frame
+        target_pose = request.target_pose
+        if target_pose.header.frame_id and target_pose.header.frame_id != "map":
+            try:
+                if self.tf_listener is None:
+                    self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+                transform = self.tf_buffer.lookup_transform(
+                    'map', target_pose.header.frame_id,
+                    rclpy.time.Time(), timeout=Duration(seconds=2.0)
+                )
+                # Transform the position
+                from tf2_geometry_msgs import do_transform_pose_stamped
+                target_pose = do_transform_pose_stamped(target_pose, transform)
+                self.nav_logger("info",
+                    f"GoToPose -> Transformed to map frame: ({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f})")
+            except Exception as e:
+                self.nav_logger("error", f"GoToPose -> TF transform failed: {e}")
+                response.success = False
+                response.error = f"TF transform failed: {e}"
+                return response
+
+        # Flatten to 2D navigation (z=0)
+        target_pose.pose.position.z = 0.0
+
+        # Parse standoff distance from behavior_tree field (format: "bt_path|standoff=X.X")
+        bt_raw = request.behavior_tree if request.behavior_tree else ""
+        standoff = 0.0
+        if "|standoff=" in bt_raw:
+            parts = bt_raw.split("|standoff=")
+            bt_raw = parts[0]
+            try:
+                standoff = float(parts[1])
+            except ValueError:
+                pass
+
+        # Get robot position for standoff and clamping calculations
+        MAX_GOAL_DISTANCE = 2.5  # meters — stay within mapped area
+        try:
+            robot_tf = self.tf_buffer.lookup_transform(
+                'map', 'base_link', rclpy.time.Time(), timeout=Duration(seconds=1.0)
+            )
+            rx = robot_tf.transform.translation.x
+            ry = robot_tf.transform.translation.y
+            dx = target_pose.pose.position.x - rx
+            dy = target_pose.pose.position.y - ry
+            dist = math.sqrt(dx * dx + dy * dy)
+
+            # Apply standoff: move goal back toward robot
+            if standoff > 0.0 and dist > standoff:
+                scale = (dist - standoff) / dist
+                target_pose.pose.position.x = rx + dx * scale
+                target_pose.pose.position.y = ry + dy * scale
+                # Orient robot to face the original target point
+                yaw = math.atan2(dy, dx)
+                target_pose.pose.orientation.x = 0.0
+                target_pose.pose.orientation.y = 0.0
+                target_pose.pose.orientation.z = math.sin(yaw / 2.0)
+                target_pose.pose.orientation.w = math.cos(yaw / 2.0)
+                new_dist = dist - standoff
+                self.nav_logger("info",
+                    f"GoToPose -> Standoff {standoff:.1f}m applied: goal at "
+                    f"({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f}), "
+                    f"{new_dist:.2f}m from robot, facing target")
+                dist = new_dist
+            elif standoff > 0.0 and dist <= standoff:
+                self.nav_logger("info",
+                    f"GoToPose -> Already within standoff ({dist:.2f}m <= {standoff:.1f}m), skipping nav")
+                response.success = True
+                response.error = ""
+                return response
+
+            # Clamp to max distance for mapping mode
+            if dist > MAX_GOAL_DISTANCE:
+                clamp_scale = MAX_GOAL_DISTANCE / dist
+                target_pose.pose.position.x = rx + (target_pose.pose.position.x - rx) * clamp_scale
+                target_pose.pose.position.y = ry + (target_pose.pose.position.y - ry) * clamp_scale
+                self.nav_logger("info",
+                    f"GoToPose -> Clamped to {MAX_GOAL_DISTANCE}m: "
+                    f"({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f})")
+        except Exception as e:
+            self.nav_logger("warn", f"GoToPose -> Could not compute standoff/clamp: {e}")
+
+        bt = bt_raw if bt_raw else None
+        result = self.send_nav_goal(target_pose, bt)
+        response.success = result[0]
+        response.error = result[1]
+
+        # Pause SLAM after navigation to reduce CPU and improve map quality
+        self.pause_slam()
+
+        return response
+
+    def get_robot_pose_callback(self, request, response):
+        """Return current robot pose via TF lookup (map -> base_link)."""
+        try:
+            if self.tf_listener is None:
+                self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
+            transform = self.tf_buffer.lookup_transform(
+                'map', 'base_link', rclpy.time.Time(), timeout=Duration(seconds=1.0)
+            )
+            pose = PoseStamped()
+            pose.header.frame_id = 'map'
+            pose.header.stamp = transform.header.stamp
+            pose.pose.position.x = transform.transform.translation.x
+            pose.pose.position.y = transform.transform.translation.y
+            pose.pose.position.z = transform.transform.translation.z
+            pose.pose.orientation = transform.transform.rotation
+            response.success = True
+            response.pose = pose
+            response.error = ""
+        except Exception as e:
+            self.nav_logger("error", f"GetRobotPose -> TF lookup failed: {e}")
+            response.success = False
+            response.error = str(e)
+        return response
+
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}

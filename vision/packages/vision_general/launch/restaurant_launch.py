@@ -11,10 +11,24 @@ def generate_launch_description():
     detector_launch_file = os.path.join(
         get_package_share_directory("object_detector_2d"),
         "launch",
-        "object_detector_node.launch.py",
+        "object_detector_combined.launch.py",
     )
     return LaunchDescription(
         [
+            Node(
+                package="vision_general",
+                executable="image_orienter.py",
+                name="image_orienter",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
+                executable="yolo_node.py",
+                name="yolo_node",
+                output="screen",
+                emulate_tty=True,
+            ),
             Node(
                 package="vision_general",
                 executable="restaurant_commands.py",
@@ -33,6 +47,13 @@ def generate_launch_description():
                 package="vision_general",
                 executable="face_recognition_node.py",
                 name="face_recognition",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="moondream_run",
+                executable="moondream_node.py",
+                name="moondream_node",
                 output="screen",
                 emulate_tty=True,
             ),

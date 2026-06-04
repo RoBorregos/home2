@@ -136,6 +136,7 @@ class RESTAURANTCommands(Node):
         response.success = True
 
         self.publish_table_customer_image(response.customer_tables, table_pixels)
+        self.get_logger().info(f"TABLES DETECTED {table_groups} -------")
         self.get_logger().info(
             f"Associated {assigned_customers}/{len(customer_people)} customers to tables"
         )
