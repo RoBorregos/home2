@@ -122,10 +122,6 @@ class GPSRCommands(Node):
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
-        # Do not block node initialization waiting for the YOLO service.
-        # The service availability is checked lazily inside `get_detections()`
-        # with a short timeout to avoid long block during startup.
-
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
