@@ -61,6 +61,9 @@ case $TASK in
     "--demo-becas")
         RUN="ros2 run task_manager demo_becas.py"
         ;;
+    "--finals")
+        RUN="ros2 run task_manager finals_task_manager.py"
+        ;;
     *)
         RUN="bash"
         ;;

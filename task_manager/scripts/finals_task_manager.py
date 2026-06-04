@@ -51,30 +51,29 @@ def search_command(command, objects: list[object]):
     return None
 
 
-class EGPSRTM(Node):
+class FINALS_TM(Node):
     """Class to manage the GPSR task"""
 
     class States:
         WAITING_FOR_BUTTON = -1
         START = 0
         EXPLORATION = 1
-        HANDLE_TRASH = 2
-        HANDLE_MISPLACED_OBJECT = 3
-        WAIT_FOR_COMMAND = 4
-        EXECUTE_COMMAND = 5
-        DONE = 6
-        FIND = 7
-        EXECUTING_COMMAND = 8
-        FINISHED_COMMAND = 9
+        WELCOME_GUEST = 2
+        CHECK_TRASH = 3
+        CHECK_OBJECTS = 4
+        CHECK_PERSON = 5
+        EXECUTING_COMMAND = 6
+        FINISHED_COMMAND = 7
+        DONE = 8
 
     def __init__(self):
         """Initialize the node"""
-        super().__init__("egpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
+        super().__init__("finals_task_manager")
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = EGPSRTM.States.WAITING_FOR_BUTTON
+        self.current_state = FINALS_TM.States.WAITING_FOR_BUTTON
         self.running_task = True
         self.current_attempt = 0
         self.exploration_locations = []
@@ -84,9 +83,10 @@ class EGPSRTM(Node):
         self.people_to_ask_command = deque()
         self.exploration_complete = False
         self.problems_solved = {"trash": 0, "misplaced_objects": 0, "commands": 0}
+        self.guest_welcomed = False
         self.current_misplaced_object_index = 0
         self.index = 0
-        self.pick_count = 7
+        self.pick_count = 0
         self.curr_location = "start_area"
         self.curr_sublocation = "safe_place"
         self.ignore_pick = ["orange_juice", "cornflakes", "tuna_can"]
@@ -103,7 +103,7 @@ class EGPSRTM(Node):
 
         self.CATEGORY_TO_LOCATION = {
             "snack": ("bedroom", "side_table"),
-            "dishe": ("kitchen", "table"),
+            "dish": ("kitchen", "table"),
             "cleaning_supply": ("kitchen", "dishwasher"),
             "fruit": ("office", "desk"),
             "drink": ("office", "bar"),
@@ -141,6 +141,7 @@ class EGPSRTM(Node):
             ["kitchen", "table"],
             ["kitchen", "shelf"],
             ["living_room", "cabinet"],
+            # ["exit", "safe_place"], # Uncomment to enable Welcome Guest task
         ]
 
         package_share_directory = get_package_share_directory("frida_constants")
@@ -165,37 +166,27 @@ class EGPSRTM(Node):
         if isinstance(self.commands, dict):
             self.commands = CommandListLLM(**self.commands).commands
 
-        self.commands = []
-
-        Logger.info(self, "EGPSRTaskManager has started.")
+        Logger.info(self, "FINALS_TM has started.")
 
     def timeout(self, timeout: int = 2):
-        start_time = time.time()
-        while (time.time() - start_time) < timeout:
-            pass
+        time.sleep(timeout)
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location and update current position"""
+        self.subtask_manager.manipulation.follow_face(False)
+        self.subtask_manager.manipulation.clear_collision_objects()
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+
         if say:
             self.subtask_manager.hri.say(f"I will go to the {location} {sublocation}.")
-            # self.subtask_manager.manipulation.`follow_face`(False)
 
-        self.subtask_manager.manipulation.move_joint_positions(
-            named_position="nav_pose", velocity=0.5, degrees=True
-        )
-        self.subtask_manager.nav.resume_nav()
         # Log navigation
         self.get_logger().info(
             f"Navigating from {self.curr_location}/{self.curr_sublocation} to {location}/{sublocation or 'safe_place'}"
         )
 
-        future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+        self.subtask_manager.nav.move_to_location(location, sublocation)
 
-        # Update location using NavigationTasks after navigation
-        # self.update_current_location() using NavigationTasks
-        self.subtask_manager.nav.pause_nav()
         self.curr_location = location
         self.curr_sublocation = sublocation if sublocation else "safe_place"
 
@@ -209,7 +200,7 @@ class EGPSRTM(Node):
                     timeout=timeout, ignore_labels=[] if not ignore else self.ignore_pick
                 )
             except Exception as e:
-                print(e)
+                self.get_logger().error(f"Error detecting objects: {e}")
             if status != Status.EXECUTION_SUCCESS or detections is None or len(detections) == 0:
                 detections = []
                 continue
@@ -225,7 +216,7 @@ class EGPSRTM(Node):
                 time.sleep(1)
                 status, detections = self.subtask_manager.vision.detect_objects(timeout=timeout)
             except Exception as e:
-                print(e)
+                self.get_logger().error(f"Error detecting objects on floor: {e}")
             if status != Status.EXECUTION_SUCCESS or detections is None or len(detections) == 0:
                 detections = []
                 continue
@@ -233,14 +224,11 @@ class EGPSRTM(Node):
                 break
 
         for det in detections:
-            # if det.point3d.point.z <= below_z:
             height = self.convert_to_height(det)
-            while height is None:
-                height = self.convert_to_height(det)
-            if height <= below_z:
+            if height is not None and height <= below_z:
                 results.append(det)
                 self.get_logger().info(f"Detected {det.classname} on the floor below z={below_z}m")
-            else:
+            elif height is not None:
                 self.get_logger().info(
                     f"Detected {det.classname} above the floor at height {height}m, ignoring it"
                 )
@@ -253,7 +241,7 @@ class EGPSRTM(Node):
         return results
 
     def convert_to_height(self, detection: BBOX) -> float:
-        """Convert the object to height"""
+        """Convert the object to height using the point transformer service"""
         try:
             stamped_point = PointStamped()
             stamped_point.header.frame_id = "zed_left_camera_optical_frame"
@@ -261,18 +249,28 @@ class EGPSRTM(Node):
             stamped_point.point.x = detection.px
             stamped_point.point.y = detection.py
             stamped_point.point.z = detection.pz
+
             transform_message = PointTransformation.Request()
             transform_message.target_frame = "base_link"
             transform_message.point = stamped_point
-            transform_frame = self.transform_tf.call_async(transform_message)
-            rclpy.spin_until_future_complete(self, transform_frame)
-            transformed_point = transform_frame.result()
+
+            future = self.transform_tf.call_async(transform_message)
+
+            # Wait for the future to complete without blocking the whole executor
+            start_wait = time.time()
+            while not future.done():
+                rclpy.spin_once(self, timeout_sec=0.01)
+                if time.time() - start_wait > 5.0:
+                    self.get_logger().error("Point transformation service timed out")
+                    return None
+
+            transformed_point = future.result()
             if not transformed_point.success:
                 Logger.error(self, f"{transformed_point.error_message}")
                 return None
-            transformed_point = transformed_point.transformed_point
-            Logger.info(self, f"Actual height: {transformed_point.point.z}")
-            return transformed_point.point.z
+
+            Logger.info(self, f"Actual height: {transformed_point.transformed_point.point.z}")
+            return transformed_point.transformed_point.point.z
         except Exception as e:
             Logger.error(self, f"Error converting to height: {e}")
             return None
@@ -293,7 +291,7 @@ class EGPSRTM(Node):
         return False
 
     def run(self):
-        if self.current_state == EGPSRTM.States.WAITING_FOR_BUTTON:
+        if self.current_state == FINALS_TM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.publish_display_topic("/vision/detections_image")
@@ -301,8 +299,8 @@ class EGPSRTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, egpsr task will begin now")
-            self.current_state = EGPSRTM.States.START
-        elif self.current_state == EGPSRTM.States.START:
+            self.current_state = FINALS_TM.States.START
+        elif self.current_state == FINALS_TM.States.START:
             res = "closed"
             while res == "closed":
                 self.subtask_manager.hri.say("Waiting for door to be opened")
@@ -316,139 +314,152 @@ class EGPSRTM(Node):
             self.subtask_manager.hri.say(
                 "I will start now. Referee please stay close to me in case I need help.", wait=False
             )
-            self.current_state = EGPSRTM.States.FIND
+            self.current_state = FINALS_TM.States.EXPLORATION
 
-        elif self.current_state == EGPSRTM.States.EXPLORATION:
+        elif self.current_state == FINALS_TM.States.EXPLORATION:
             self.index += 1
             self.index = self.index % len(self.exploration_locations)
-            self.navigate_to(
-                self.exploration_locations[self.index][0],
-                self.exploration_locations[self.index][1],
-                True,
-            )
-            self.current_state = EGPSRTM.States.FIND
-        elif self.current_state == EGPSRTM.States.FIND:
-            time.sleep(3)
-            location = (
-                self.exploration_locations[self.index][0],
-                self.exploration_locations[self.index][1],
-            )
-            if location in self.PLACEMENT_LOCATIONS:
-                res = []
+            location = self.exploration_locations[self.index]
+            self.navigate_to(location[0], location[1], True)
+
+            if location[0] == "exit" and not self.guest_welcomed:
+                self.current_state = FINALS_TM.States.WELCOME_GUEST
             else:
-                res = self.objects_on_floor(below_z=0.1, retries=4, timeout=10)
-                if len(res) > 0:
-                    for i in res:
-                        # self.subtask_manager.hri.confirm(
-                        #     f"Can you please help me picking the {i.classname} from the floor? please say yes when you are done"
-                        # )
-                        # self.subtask_manager.hri.confirm(
-                        #     f"Can you please help me throwing the {i.classname} into the trashbin? please say yes when you are done"
-                        # )
-                        s, confirmation = self.subtask_manager.hri.confirm(
-                            f"Can you please help me picking the {i.classname} and placing it into the trashbin? please say yes when you are done",
-                            retries=2,
-                        )
-                if len(res) == 0:
-                    self.subtask_manager.hri.say("I didnt find any trash objects in the floor")
+                self.current_state = FINALS_TM.States.CHECK_TRASH
 
-            if location in self.PLACEMENT_LOCATIONS:
-                self.subtask_manager.manipulation.move_to_position("table_stare")
-                time.sleep(1)
-                objs = self.detect_objects(ignore=True)
-                new_objs = []
-                max_distance = 1.0
-                for objeton in objs:
-                    if objeton.point3d.point.z <= max_distance:
-                        new_objs.append(objeton)
-                objs = new_objs
-                for i in objs:
-                    category = self.subtask_manager.hri.deterministic_categorization(i.classname)
-                    if location != self.CATEGORY_TO_LOCATION[category]:
-                        self.subtask_manager.hri.say(
-                            f"I have detected a {i.classname} on the {location[0]} {location[1]} which is not its correct location. I will try to pick it up. and place it on the {self.CATEGORY_TO_LOCATION[category][0]} {self.CATEGORY_TO_LOCATION[category][1]}."
-                        )
-                        s, a = self.gpsr_individual_tasks.pick_object(
-                            {"action": "pick_object", "object_to_pick": i.classname}
-                        )
-
-                        if s == Status.TARGET_NOT_FOUND:
-                            break
-                        correct_loc = self.CATEGORY_TO_LOCATION[category]
-                        self.navigate_to(correct_loc[0], correct_loc[1])
-                        self.subtask_manager.manipulation.move_to_position("table_stare")
-                        self.subtask_manager.hri.say(
-                            f"Now I will place the {i.classname} on the {correct_loc[0]} {correct_loc[1]} corresponding to its category {category}."
-                        )
-                        self.subtask_manager.manipulation.move_to_position("table_stare")
-                        if (
-                            correct_loc[1] == "shelve"
-                            or correct_loc[1] == "shelf"
-                            or correct_loc[1] == "cabinet"
-                        ):
-                            self.subtask_manager.manipulation.get_optimal_pose_for_plane(0.6, 0.5)
-                            self.subtask_manager.manipulation.place_on_shelf(0.7, 0.5)
-                        else:
-                            self.gpsr_individual_tasks.place_object(None)
-                        self.pick_count += 1
-                        self.current_state = EGPSRTM.States.EXPLORATION
-                        return
-
-            if location in self.PLACEMENT_LOCATIONS:
-                self.current_state = EGPSRTM.States.EXPLORATION
-                return
-
-            if self.pick_count <= 2:
-                self.current_state = EGPSRTM.States.EXPLORATION
-                return
-            # execute command
+        elif self.current_state == FINALS_TM.States.WELCOME_GUEST:
             self.subtask_manager.hri.say(
-                "Raise your hand If you have any tasks or commands for me, please raise your hand and keep it raised"
+                "I am at the exit door. Referee, please open the door for me so I can welcome the guest."
             )
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            # Wait for door to open
+            res = "closed"
+            while res == "closed":
+                status, res = self.subtask_manager.nav.check_door()
+                if status != Status.EXECUTION_SUCCESS:
+                    Logger.error(self, "Failed to check door status")
+                    break
+                if res == "closed":
+                    time.sleep(2)
 
-            people = self.detect_people_with_raised_arms()
-            max_retries = 2
-            while not people and max_retries > 0:
+            self.subtask_manager.hri.say(
+                "Welcome to our home! I am Frida. Please tell me, how can I help you today?"
+            )
+            self.guest_welcomed = True
+            # The guest is right here, so we transition directly to CHECK_PERSON
+            # to hear their command without doing other checks.
+            self.current_state = FINALS_TM.States.CHECK_PERSON
+
+        elif self.current_state == FINALS_TM.States.CHECK_TRASH:
+            location = tuple(self.exploration_locations[self.index])
+            if location not in self.PLACEMENT_LOCATIONS:
+                """Handle trash objects on the floor"""
+                if self.problems_solved["trash"] < 2:
+                    res = self.objects_on_floor(below_z=0.1, retries=4, timeout=10)
+                    if len(res) > 0:
+                        for i in res:
+                            s, confirmation = self.subtask_manager.hri.confirm(
+                                f"Can you please help me picking the {i.classname} and placing it into the trashbin? please say yes when you are done",
+                                retries=2,
+                            )
+                            if s == Status.EXECUTION_SUCCESS:
+                                self.problems_solved["trash"] += 1
+                                if self.problems_solved["trash"] >= 2:
+                                    break
+                    else:
+                        self.subtask_manager.hri.say("I didn't find any trash objects on the floor")
+                else:
+                    self.get_logger().info("Already solved 2 trash problems, skipping.")
+
+            self.current_state = FINALS_TM.States.CHECK_OBJECTS
+
+        elif self.current_state == FINALS_TM.States.CHECK_OBJECTS:
+            location = tuple(self.exploration_locations[self.index])
+            if location in self.PLACEMENT_LOCATIONS:
+                """Handle objects that are not in their correct location"""
+                if self.problems_solved["misplaced_objects"] < 2:
+                    self.subtask_manager.manipulation.move_to_position("table_stare")
+                    time.sleep(1)
+                    objs = self.detect_objects(ignore=True)
+                    new_objs = []
+                    max_distance = 1.0
+                    for objeton in objs:
+                        if objeton.point3d.point.z <= max_distance:
+                            new_objs.append(objeton)
+                    objs = new_objs
+
+                    for i in objs:
+                        category = self.subtask_manager.hri.deterministic_categorization(
+                            i.classname
+                        )
+                        if location != self.CATEGORY_TO_LOCATION.get(category):
+                            self.subtask_manager.hri.say(
+                                f"I have detected a {i.classname} on the {location[0]} {location[1]} which is not its correct location. I will try to pick it up and place it on the {self.CATEGORY_TO_LOCATION[category][0]} {self.CATEGORY_TO_LOCATION[category][1]}."
+                            )
+                            s, a = self.gpsr_individual_tasks.pick_object(
+                                {"action": "pick_object", "object_to_pick": i.classname}
+                            )
+
+                            if s == Status.TARGET_NOT_FOUND:
+                                continue
+
+                            correct_loc = self.CATEGORY_TO_LOCATION[category]
+                            self.navigate_to(correct_loc[0], correct_loc[1])
+                            self.subtask_manager.manipulation.move_to_position("table_stare")
+                            self.subtask_manager.hri.say(
+                                f"Now I will place the {i.classname} on the {correct_loc[0]} {correct_loc[1]} corresponding to its category {category}."
+                            )
+                            self.subtask_manager.manipulation.move_to_position("table_stare")
+                            if correct_loc[1] in ["shelve", "shelf", "cabinet"]:
+                                self.subtask_manager.manipulation.get_optimal_pose_for_plane(
+                                    0.6, 0.5
+                                )
+                                self.subtask_manager.manipulation.place_on_shelf(0.7, 0.5)
+                            else:
+                                self.gpsr_individual_tasks.place_object(None)
+
+                            self.problems_solved["misplaced_objects"] += 1
+                            self.pick_count += 1
+                            if self.problems_solved["misplaced_objects"] >= 2:
+                                break
+                else:
+                    self.get_logger().info("Already solved 2 misplaced object problems, skipping.")
+
+            self.current_state = FINALS_TM.States.CHECK_PERSON
+
+        elif self.current_state == FINALS_TM.States.CHECK_PERSON:
+            """Handle waiting for and interpreting human commands"""
+            if self.problems_solved["commands"] < 3:  # Just a sane limit
                 self.subtask_manager.hri.say(
-                    "Raise your hand if you have a task for me please and keep it raised",
-                    wait=False,
+                    "If you have any tasks or commands for me, please raise your hand and keep it raised"
                 )
-                time.sleep(2)
+                self.subtask_manager.manipulation.move_joint_positions(
+                    named_position="front_stare", velocity=0.5, degrees=True
+                )
+
                 people = self.detect_people_with_raised_arms()
-                max_retries -= 1
-            if not people:
-                self.subtask_manager.hri.say(
-                    "I did not detect any person with raised arms. I will continue exploring."
-                )
-                self.current_state = EGPSRTM.States.EXPLORATION
-                return
-            if people:
-                self.subtask_manager.hri.say(
-                    "I have detected a person with raised arms. Can you please approach me?"
-                )
-                self.subtask_manager.hri.confirm(
-                    "Please confirm if you are ready to give me a command. Say yes when you are ready.",
-                    retries=2,
-                )
-
-                s, user_command = self.subtask_manager.hri.ask_and_confirm(
-                    "What is your command?",
-                    "LLM_command",
-                    context="The user was asked to say a command. We want to infer his complete instruction from the response",
-                    confirm_question=confirm_command,
-                    use_hotwords=False,
-                    retries=2,
-                    min_wait_between_retries=2.0,
-                    skip_extract_data=True,
-                )
-                max_retries = 1
-                while s != Status.EXECUTION_SUCCESS and max_retries > 0:
+                max_retries = 2
+                while not people and max_retries > 0:
                     self.subtask_manager.hri.say(
-                        "I did not understand your command. Please try again."
+                        "Raise your hand if you have a task for me please and keep it raised",
+                        wait=False,
                     )
+                    time.sleep(2)
+                    people = self.detect_people_with_raised_arms()
+                    max_retries -= 1
+
+                if not people:
+                    self.subtask_manager.hri.say(
+                        "I did not detect any person with raised arms. I will continue exploring."
+                    )
+                else:
+                    self.subtask_manager.hri.say(
+                        "I have detected a person with raised arms. Can you please approach me?"
+                    )
+                    self.subtask_manager.hri.confirm(
+                        "Please confirm if you are ready to give me a command. Say yes when you are ready.",
+                        retries=2,
+                    )
+
                     s, user_command = self.subtask_manager.hri.ask_and_confirm(
                         "What is your command?",
                         "LLM_command",
@@ -459,50 +470,61 @@ class EGPSRTM(Node):
                         min_wait_between_retries=2.0,
                         skip_extract_data=True,
                     )
-                    max_retries -= 1
-                if s != Status.EXECUTION_SUCCESS:
-                    self.subtask_manager.hri.say("I am sorry, I could not understand your command.")
-                    self.current_state = EGPSRTM.States.EXPLORATION
-                    return
-                self.subtask_manager.hri.say("heard: " + user_command, wait=False)
-                self.subtask_manager.hri.say(
-                    "I am planning how to perform your command, please wait a moment", wait=False
-                )
-                s, commands = self.subtask_manager.hri.command_interpreter(user_command)
 
-                self.get_logger().info(f"Interpreted command: {user_command} -> {str(commands)}")
-                if s != Status.EXECUTION_SUCCESS:
-                    self.subtask_manager.hri.say("I am sorry, I could not understand your command.")
-                    self.current_state = EGPSRTM.States.EXPLORATION
-                    return
-                self.subtask_manager.hri.say("I will now execute your command", wait=False)
-                self.commands = commands
-                self.current_state = EGPSRTM.States.EXECUTING_COMMAND
-                return
-            self.subtask_manager.hri.say(
-                "I did not detect any person with raised arms. I will continue exploring."
-            )
-            self.current_state = EGPSRTM.States.EXPLORATION
-            return
-        elif self.current_state == EGPSRTM.States.EXECUTING_COMMAND:
+                    if s != Status.EXECUTION_SUCCESS:
+                        self.subtask_manager.hri.say(
+                            "I am sorry, I could not understand your command."
+                        )
+                    else:
+                        self.subtask_manager.hri.say("heard: " + user_command, wait=False)
+                        self.subtask_manager.hri.say(
+                            "I am planning how to perform your command, please wait a moment",
+                            wait=False,
+                        )
+                        s, commands = self.subtask_manager.hri.command_interpreter(user_command)
+
+                        self.get_logger().info(
+                            f"Interpreted command: {user_command} -> {str(commands)}"
+                        )
+                        if s != Status.EXECUTION_SUCCESS:
+                            self.subtask_manager.hri.say(
+                                "I am sorry, I could not understand your command."
+                            )
+                        else:
+                            self.subtask_manager.hri.say(
+                                "I will now execute your command", wait=False
+                            )
+                            self.commands = (
+                                list(commands) if not isinstance(commands, list) else commands
+                            )
+                            self.problems_solved["commands"] += 1
+                            self.current_state = FINALS_TM.States.EXECUTING_COMMAND
+            else:
+                self.get_logger().info("Already solved enough command problems, skipping.")
+
+            # If handling command didn't trigger a state change to EXECUTING_COMMAND, go back to exploration
+            if self.current_state == FINALS_TM.States.CHECK_PERSON:
+                self.current_state = FINALS_TM.States.EXPLORATION
+
+        elif self.current_state == FINALS_TM.States.EXECUTING_COMMAND:
             if len(self.commands) == 0:
-                self.current_state = EGPSRTM.States.FINISHED_COMMAND
+                self.current_state = FINALS_TM.States.FINISHED_COMMAND
             else:
                 command = self.commands.pop(0)
 
                 self.get_logger().info(f"Executing command: {str(command)}")
 
                 try:
-                    exec_commad = search_command(
+                    exec_command = search_command(
                         command.action,
                         [self.gpsr_tasks, self.gpsr_individual_tasks],
                     )
-                    if exec_commad is None:
+                    if exec_command is None:
                         self.get_logger().error(
                             f"Command {command} is not implemented in GPSRTask or in the subtask managers."
                         )
                     else:
-                        status, res = exec_commad(command)
+                        status, res = exec_command(command)
                         self.get_logger().info(f"status-> {str(status)}")
                         self.get_logger().info(f"res-> {str(res)}")
                         self.subtask_manager.hri.add_command_history(
@@ -514,26 +536,16 @@ class EGPSRTM(Node):
                     self.get_logger().warning(
                         f"Error occured while executing command ({str(command)}): " + str(e)
                     )
-        elif self.current_state == EGPSRTM.States.FINISHED_COMMAND:
+        elif self.current_state == FINALS_TM.States.FINISHED_COMMAND:
             """Handle the finished command state"""
             self.subtask_manager.hri.say(
                 "I have finished executing the command.",
                 wait=False,
             )
-            self.current_state = EGPSRTM.States.EXPLORATION
+            self.current_state = FINALS_TM.States.EXPLORATION
             return
-        # elif self.current_state == self.States.HANDLE_TRASH:
-        #     self._handle_trash()
 
-        elif self.current_state == self.States.HANDLE_MISPLACED_OBJECT:
-            self._handle_misplaced_object()
-
-        elif self.current_state == self.States.WAIT_FOR_COMMAND:
-            self._handle_wait_for_command()
-        elif self.current_state == self.States.EXECUTE_COMMAND:
-            self._handle_execute_command()
-
-        elif self.current_state == self.States.DONE:
+        elif self.current_state == FINALS_TM.States.DONE:
             """Handle completion state"""
             self.subtask_manager.hri.say(
                 "I am done with the task. I will now return to my home position.",
@@ -546,7 +558,7 @@ class EGPSRTM(Node):
 def main(args=None):
     """Main function"""
     rclpy.init(args=args)
-    node = EGPSRTM()
+    node = FINALS_TM()
 
     try:
         while rclpy.ok() and node.running_task:
