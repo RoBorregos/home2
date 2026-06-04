@@ -122,9 +122,6 @@ class GPSRCommands(Node):
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
-        while not self.yolo_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("YOLO service not available, waiting...")
-
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
@@ -488,6 +485,14 @@ class GPSRCommands(Node):
         Obtain YOLO detections via the YOLO service.
         comp_class: int or None (None = detect all classes)
         """
+
+        # Ensure YOLO service is available. We use a short timeout so the
+        # node can operate even if YOLO is not running at startup.
+        if not self.yolo_client.wait_for_service(timeout_sec=0.5):
+            self.get_logger().warn(
+                "YOLO service not available, returning no detections."
+            )
+            return []
 
         # Create request
         req = YoloDetect.Request()
