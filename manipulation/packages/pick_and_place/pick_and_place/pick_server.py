@@ -305,10 +305,7 @@ class PickMotionServer(Node):
                 if self._estop:
                     return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
-                # Rim pick: fingertips straddle the wall, so the commanded frame must
-                # be offset by the full tip distance, not just the link distance —
-                # otherwise the fingers descend too far. (Cutlery uses the link offset
-                # since its force-guarded descent absorbs any residual offset error.)
+                # Rim: offset by full tip distance so fingers straddle the wall without descending too far.
                 offset_distance = self.rim_tip_offset if is_rim else self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance
 
@@ -453,7 +450,7 @@ class PickMotionServer(Node):
                         self._clear_octomap_client.call_async(req)
                     time.sleep(0.3)
 
-                    # Fixed-distance descent (xArm cartesian velocity, no MoveIt, no force)
+                    # Fixed-distance descent (xArm cartesian velocity)
                     self.get_logger().info(
                         f"[Rim] Descending a fixed {RIM_DESCENT_DISTANCE * 1000:.0f}mm..."
                     )
@@ -660,8 +657,6 @@ class PickMotionServer(Node):
     def fixed_distance_descent(self, distance_m: float) -> bool:
         """
         Descend a FIXED distance in -Z using xArm mode 5 (cartesian velocity control).
-        Open-loop: no effort monitoring. The descent runs for distance/speed seconds
-        then stops. Reuses the same mode-switching machinery as force_guarded_descent.
         """
         self.get_logger().info(
             f"[FixedDescent] Descending {distance_m * 1000:.0f}mm at "
