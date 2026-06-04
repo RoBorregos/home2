@@ -89,6 +89,10 @@ class PickMotionServer(Node):
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
+        self.declare_parameter("rim_tip_offset", -0.12)
+        self.rim_tip_offset = self.get_parameter("rim_tip_offset").value
+        self.get_logger().info(f"Rim tip offset: {self.rim_tip_offset} m")
+
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
         self.tf_buffer = tf2_ros.Buffer()
@@ -305,7 +309,7 @@ class PickMotionServer(Node):
                 # be offset by the full tip distance, not just the link distance —
                 # otherwise the fingers descend too far. (Cutlery uses the link offset
                 # since its force-guarded descent absorbs any residual offset error.)
-                offset_distance = -0.12 if is_rim else self.ee_link_offset
+                offset_distance = self.rim_tip_offset if is_rim else self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [
