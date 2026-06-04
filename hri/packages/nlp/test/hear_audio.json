@@ -1,0 +1,7 @@
+[
+  {
+    "name": "basic_greeting",
+    "audio_file": "hello_frida.wav",
+    "expected_transcript": "hello frida"
+  }
+]
