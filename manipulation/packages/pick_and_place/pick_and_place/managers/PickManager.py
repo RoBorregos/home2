@@ -197,7 +197,7 @@ class PickManager:
             z_std = np.std([s.pose.position.z for s in samples])
 
             # Rim: publish the rim Z as-is; pick_server applies RIM_GRASP_Z_TWEAK.
-            # Cutlery: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
+            # Flat: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
             z_tweak = 0.0 if is_rim_object else FLAT_GRASP_Z_TWEAK
 
             self.node.get_logger().info(
@@ -284,9 +284,8 @@ class PickManager:
         print("Gripper Result:", result)
 
         if is_flat_object:
-            # Cutlery: 90° alternative (either short/long axis grip works).
-            # Rim: 180° flip about Z keeps the fingers radial (straddling the
-            # wall) while flipping the approach for IK reachability.
+            # Flat: 90° alternative (either short/long axis grip works).
+            # Rim: 180° flip about Z keeps the fingers radial.
             alt_angle = 180 if is_rim_object else 90
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
@@ -420,7 +419,6 @@ class PickManager:
 
         if is_rim_object:
             # Hold the position where pick_server left the arm (lifted pre-grasp).
-            # Do NOT return to a stare pose so the object stays grasped in place.
             self.node.get_logger().info(
                 "Rim pick: holding position (skipping return to stare)"
             )
