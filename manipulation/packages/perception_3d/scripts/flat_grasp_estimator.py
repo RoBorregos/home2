@@ -36,9 +36,7 @@ TABLE_HEIGHT_OUTLIER_THRESH = 0.015  # 15mm
 
 # --- Rim grasp estimation ---
 RIM_MIN_HEIGHT = 0.05  # Minimum height above the floor
-RIM_NEAR_FRACTION = (
-    0.05  # Fraction of points closest to the base used to estimate the near rim point
-)
+RIM_NEAR_FRACTION = 0.05  # Fraction of nearest points used to estimate the near rim
 RIM_TOP_PERCENTILE = 90  # Percentile of Z used as the rim-top height
 RIM_TOP_BAND = 0.03  # Vertical band below the rim-top kept as the rim ring (meters)
 
