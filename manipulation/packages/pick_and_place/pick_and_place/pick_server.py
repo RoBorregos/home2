@@ -14,18 +14,15 @@ from frida_constants.manipulation_constants import (
     REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
     PICK_OBJECT_NAMESPACE,
-    PLANE_NAMESPACE,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
-    PLANE_OBJECT_COLLISION_TOLERANCE,
     SAFETY_HEIGHT,
-    PICK_MIN_HEIGHT,
-    CUTLERY_PICK_MIN_HEIGHT,
     CUTLERY_NAMES,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    ESTOP_TOPIC,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -35,6 +32,7 @@ from frida_interfaces.srv import (
 from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
+from std_msgs.msg import Bool
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
@@ -86,15 +84,6 @@ class PickMotionServer(Node):
         self.declare_parameter("ee_tip_offset", -0.17)
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
-
-        # How high above the detected support plane a grasp position has to
-        # be to be considered feasible. Default keeps the real-robot safety
-        # margin; the sim launch overrides to a tiny value because the plane
-        # segmenter tends to lock onto a house wall instead of the table so
-        # the strict 0.1 m threshold rejects every valid grasp.
-        self.declare_parameter("pick_min_height", PICK_MIN_HEIGHT)
-        self.pick_min_height = self.get_parameter("pick_min_height").value
-        self.get_logger().info(f"Pick min height above plane: {self.pick_min_height} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
@@ -159,6 +148,14 @@ class PickMotionServer(Node):
         self._latest_joint_state = None
         self._joint_state_sub = self.create_subscription(
             JointState, "/joint_states", self._joint_state_cb, 10
+        )
+
+        self._estop = False
+        self.create_subscription(
+            Bool,
+            ESTOP_TOPIC,
+            lambda msg: setattr(self, "_estop", msg.data),
+            10,
         )
 
         self._move_to_pose_action_client.wait_for_server()
@@ -286,18 +283,13 @@ class PickMotionServer(Node):
             grasping_alternative_distance = -0.025
 
         self.save_collision_objects()
-        self.find_plane()
-
-        if self.plane is None and not is_flat:
-            self.get_logger().error("No plane found, cannot pick object")
-            return False, pick_result
-        elif self.plane is None and is_flat:
-            self.get_logger().warn(
-                "No plane found, but object is flat. Bypassing safety check."
-            )
 
         for i, pose in enumerate(grasping_poses):
+            if self._estop:
+                return False, pick_result
             for j in range(num_grasping_alternatives):
+                if self._estop:
+                    return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
                 offset_distance = self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance
@@ -324,12 +316,6 @@ class PickMotionServer(Node):
                 ee_link_pose.pose.position.x = new_position[0]
                 ee_link_pose.pose.position.y = new_position[1]
                 ee_link_pose.pose.position.z = new_position[2]
-
-                if not self.check_feasibility(ee_link_pose, is_flat=is_flat):
-                    self.get_logger().warn(
-                        f"Grasping alternative {j} is not feasible, skipping"
-                    )
-                    continue
 
                 if is_flat:
                     self.get_logger().info(
@@ -711,13 +697,6 @@ class PickMotionServer(Node):
     def save_collision_objects(self):
         self.collision_objects = self.get_collision_objects()
 
-    def find_plane(self):
-        self.plane = None
-        for obj in self.collision_objects:
-            if PLANE_NAMESPACE in obj.id:
-                self.get_logger().info(f"Plane object found: {obj.id}")
-                self.plane = obj
-
     def attach_pick_object(self):
         obj_lowest = None
         obj_highest = None
@@ -735,9 +714,6 @@ class PickMotionServer(Node):
                 else:
                     if obj.pose.pose.position.z > obj_highest.pose.pose.position.z:
                         obj_highest = obj
-                if self.plane is not None and self.object_in_plane(obj, self.plane):
-                    self.remove_collision_object(obj.id)
-                    continue
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
@@ -751,13 +727,6 @@ class PickMotionServer(Node):
         future = self._get_collision_objects_client.call_async(request)
         self.wait_for_future(future)
         return future.result().collision_objects
-
-    def object_in_plane(self, obj, plane):
-        plane_top_height = plane.pose.pose.position.z + plane.dimensions.z / 2
-        return (
-            obj.pose.pose.position.z
-            < plane_top_height + PLANE_OBJECT_COLLISION_TOLERANCE
-        )
 
     def remove_collision_object(self, id):
         request = RemoveCollisionObject.Request()
@@ -792,28 +761,6 @@ class PickMotionServer(Node):
         height = (obj_highest_z + obj_radius) - (obj_lowest_z - obj_radius)
         self.get_logger().info(f"Object height: {height}")
         return height
-
-    def check_feasibility(self, pose, is_flat=False):
-        if self.plane is None:
-            if is_flat:
-                return True
-            return False
-
-        pick_height = pose.pose.position.z
-        plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
-
-        # Cutlery keeps its own constant (flatter objects need tighter tolerance);
-        # non-flat picks use the pick_min_height parameter so sim and real can
-        # share the same launch without a per-environment override.
-        min_height = CUTLERY_PICK_MIN_HEIGHT if is_flat else self.pick_min_height
-
-        if pick_height < plane_height + min_height:
-            self.get_logger().warn(
-                f"Pick height {pick_height:.4f} is below acceptable height "
-                f"(plane={plane_height:.4f}, min={min_height:.4f})"
-            )
-            return False
-        return True
 
 
 def main(args=None):

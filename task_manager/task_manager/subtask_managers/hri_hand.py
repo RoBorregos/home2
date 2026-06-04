@@ -20,7 +20,7 @@ class HRIHand:
             "Are you referring to a piece of furniture or an object as the placement location?",
             "furniture or object",
             context="The user should specify whether they want to place the item near furniture (like a table, chair, sofa) or near an object (like a cup, book, phone).",
-            use_hotwords=False,
+            use_keyword=False,
             retries=3,
             min_wait_between_retries=3,
             skip_extract_data=False,
@@ -44,7 +44,7 @@ class HRIHand:
             question,
             "furniture type",
             context="The user should specify a piece of furniture like table, chair, sofa, bed, desk, shelf, etc.",
-            use_hotwords=False,
+            use_keyword=False,
             retries=3,
             min_wait_between_retries=3,
             skip_extract_data=False,
@@ -80,7 +80,7 @@ class HRIHand:
 
                 confirm_status, confirmation = self.hri_manager.confirm(
                     confirm_question,
-                    use_hotwords=True,
+                    use_keyword=True,
                     retries=2,
                 )
 
@@ -93,7 +93,7 @@ class HRIHand:
 
                     confirm_status, confirmation = self.hri_manager.confirm(
                         confirm_question,
-                        use_hotwords=True,
+                        use_keyword=True,
                         retries=2,
                     )
                     if confirmation == "yes":
@@ -112,7 +112,7 @@ class HRIHand:
             question,
             "object name",
             context="The user should specify an object like a cup, book, phone, pen, etc.",
-            use_hotwords=False,
+            use_keyword=False,
             retries=3,
             min_wait_between_retries=3,
             skip_extract_data=False,
@@ -130,7 +130,7 @@ class HRIHand:
                 confirm_question = f"Should I place it near the {object_name}?"
                 confirm_status, confirmation = self.hri_manager.confirm(
                     confirm_question,
-                    use_hotwords=True,
+                    use_keyword=True,
                     retries=2,
                 )
 
@@ -142,7 +142,7 @@ class HRIHand:
                     confirm_question = f"How about near the {name_object}?"
                     confirm_status, confirmation = self.hri_manager.confirm(
                         confirm_question,
-                        use_hotwords=True,
+                        use_keyword=True,
                         retries=2,
                     )
                     if confirmation == "yes":
@@ -159,7 +159,7 @@ class HRIHand:
             "Where do you want me to place it with respect to the location? Please say left, right, front, back, top, or nearby.",
             "LLM_orientation",
             context="The user should specify a spatial orientation like left, right, front, back, top, or nearby.",
-            use_hotwords=False,
+            use_keyword=False,
             retries=3,
             min_wait_between_retries=3,
             skip_extract_data=True,
@@ -177,7 +177,7 @@ class HRIHand:
                 # Confirm with the user
                 prefix = "on the " if orientation != "nearby" else ""
                 confirm_status, confirmation = self.hri_manager.confirm(
-                    f"Should I place it {prefix}{orientation}?", use_hotwords=True, retries=2
+                    f"Should I place it {prefix}{orientation}?", use_keyword=True, retries=2
                 )
 
                 if confirmation == "yes":
@@ -188,7 +188,7 @@ class HRIHand:
                         second_orientation = closest.results[1]
                         prefix = "on the " if second_orientation != "nearby" else ""
                         confirm_status, confirmation = self.hri_manager.confirm(
-                            f"How about {prefix}{second_orientation}?", use_hotwords=True, retries=2
+                            f"How about {prefix}{second_orientation}?", use_keyword=True, retries=2
                         )
                         if confirmation == "yes":
                             return status, second_orientation
@@ -242,7 +242,7 @@ class HRIHand:
         prefix = "on the " if orientation != "nearby" else ""
         final_confirmation_status, confirmation = self.hri_manager.confirm(
             f"So I should place the object {prefix}{orientation} the {location}. Is that correct?",
-            use_hotwords=True,
+            use_keyword=True,
             retries=2,
         )
 

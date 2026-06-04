@@ -63,25 +63,8 @@ export function MessagesList() {
       | "text_spoken",
     content: string
   ) => {
-    let displayContent = content;
-
-    if (type === "keyword") {
-      try {
-        const jsonString = content.replace(/'/g, '"');
-        const parsedContent = JSON.parse(jsonString);
-
-        if (parsedContent.score !== -1) {
-          displayContent = parsedContent.keyword;
-        } else {
-          return;
-        }
-      } catch (error) {
-        console.error("Error parsing keyword content:", error);
-      }
-    }
-
     const timestamp = new Date();
-    const newMessage: Message = { type, content: displayContent, timestamp };
+    const newMessage: Message = { type, content, timestamp };
 
     if (type === "heard") {
       if (audioStateRef.current === "listening") {
@@ -128,15 +111,22 @@ export function MessagesList() {
       addMessage("spoken", msg.data);
     });
 
-    // Subscribe to keyword (oww)
-    const owwTopic = new Topic<{ data: string }>({
+    // Subscribe to keyword (kws)
+    const kwsTopic = new Topic<{ data: string }>({
       ros: rosClient,
-      name: "/hri/speech/oww",
+      name: "/hri/speech/kws",
       messageType: "std_msgs/String",
     });
 
-    owwTopic.subscribe((msg: { data: string }) => {
-      addMessage("keyword", msg.data);
+    kwsTopic.subscribe((msg: { data: string }) => {
+      try {
+        const data = JSON.parse(msg.data);
+        if (data.keyword) {
+          addMessage("keyword", String(data.keyword));
+        }
+      } catch (e) {
+        console.error("Error parsing KWS message:", e);
+      }
     });
 
     // Subscribe to answers
@@ -154,7 +144,7 @@ export function MessagesList() {
       audioStateTopic.unsubscribe();
       rawCommandTopic.unsubscribe();
       textSpokenTopic.unsubscribe();
-      owwTopic.unsubscribe();
+      kwsTopic.unsubscribe();
       answersTopic.unsubscribe();
     };
   }, []);

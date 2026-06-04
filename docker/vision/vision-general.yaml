@@ -21,6 +21,7 @@ services:
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
       - ./trt_cache:/workspace/trt_cache
+      - ./trt_cache:/home/ros/.insightface
 
     network_mode: host
     ipc: host
