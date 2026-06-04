@@ -116,7 +116,7 @@ fi
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
-OPTIMIZE_AEC="python3 /workspace/src/hri/packages/speech/debug/optimize_respeaker_aec.py"
+OPTIMIZE_AEC="python3 /workspace/src/hri/packages/speech/debug/optimize_respeaker.py"
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND $SOURCE_INSTALL && ($OPTIMIZE_AEC || true) && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
