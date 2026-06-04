@@ -45,6 +45,7 @@ fi
 setup_common_env "hri" "compose/.env"
 
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
+[ "$TASK" = "--download-model" ] && exit 0
 
 # Create dirs with current user to avoid permission problems
 mkdir -p ../../hri/packages/speech/assets/downloads/offline_voice/model/ \

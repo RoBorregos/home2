@@ -14,13 +14,14 @@ from frida_constants.manipulation_constants import (
     FOLLOW_FACE_SPEED,
     FOLLOW_FACE_TOLERANCE,
     MOVEIT_MODE,
+    MANIPULATION_ENSURE_ARM_READY_SERVICE,
 )
 from frida_interfaces.srv import FollowFace
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from geometry_msgs.msg import Point
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
-from std_srvs.srv import Empty
+from std_srvs.srv import Trigger
 from task_manager.utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16
 
@@ -63,7 +64,7 @@ class FollowFaceNode(Node):
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE, callback_group=callback_group
         )
         self.reset_controller_client = self.create_client(
-            Empty, "/manipulation/reset_xarm_controller", callback_group=callback_group
+            Trigger, MANIPULATION_ENSURE_ARM_READY_SERVICE, callback_group=callback_group
         )
         # Client to configure the xArm driver to NOT reset TGPIO outputs
         # when the robot state/mode changes. Without this, switching between
@@ -156,7 +157,7 @@ class FollowFaceNode(Node):
 
                 if reset_controller:
                     Logger.info(self, "Resetting trajectory controller")
-                    future_ctrl = self.reset_controller_client.call_async(Empty.Request())
+                    future_ctrl = self.reset_controller_client.call_async(Trigger.Request())
                     future_ctrl = wait_for_future(future_ctrl)
                     if not future_ctrl:
                         Logger.error(self, "Failed to reset controller")

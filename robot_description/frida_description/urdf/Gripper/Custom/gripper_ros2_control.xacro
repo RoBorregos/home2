@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Generic ros2_control system for the FRIDA Custom gripper.
+       Plugin is parameterized so this works for fake hardware
+       (UFRobotFakeSystemHardware), real hardware, and MuJoCo
+       (mujoco_ros2_control/MujocoSystem). leftfinger follows
+       rightfinger via the URDF <mimic> tag, so only rightfinger
+       needs a ros2_control state interface. -->
+  <xacro:macro name="gripper_ros2_control" params="
+      prefix:=''
+      ros2_control_plugin:='uf_robot_hardware/UFRobotFakeSystemHardware'
+      initial_value:='0.0' ">
+
+    <ros2_control name="${prefix}FridaGripperSystem" type="system">
+      <hardware>
+        <plugin>${ros2_control_plugin}</plugin>
+      </hardware>
+      <joint name="${prefix}rightfinger">
+        <command_interface name="position">
+          <param name="min">0.0</param>
+          <param name="max">0.056</param>
+        </command_interface>
+        <state_interface name="position">
+          <param name="initial_value">${initial_value}</param>
+        </state_interface>
+        <state_interface name="velocity"/>
+      </joint>
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>
