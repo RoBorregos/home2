@@ -689,7 +689,7 @@ class TestHriManager(Node):
         passed_tests = 0
 
         for i, test_case in enumerate(test_cases, 1):
-            audio_file = os.path.join(DATA_DIR, test_case["audio_file"])
+            audio_file = os.path.join(DATA_DIR, "recordings", test_case["audio_file"])
             expected = test_case["expected_transcript"]
             self.get_logger().info(f"Test case {i}: {test_case['name']} (Audio: {audio_file})")
 
