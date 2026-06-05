@@ -4,13 +4,14 @@ from launch import LaunchDescription
 from launch.substitutions import Command, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     ld = LaunchDescription()
 
     # Process URDF xacro file
     urdf_file = PathJoinSubstitution([FindPackageShare('frida_description'), 'urdf', 'TMR2025', 'FRIDA_Real.urdf.xacro'])
-    robot_description = Command(['xacro ', urdf_file])
+    robot_description = ParameterValue(Command(['xacro ', urdf_file]), value_type=str)
 
     # robot_state_publisher
     ld.add_action(Node(
