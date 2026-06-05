@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:gz="http://gazebosim.org/schema">
 
 <!-- XARM ARGUMENTS -->
   <xacro:arg name="prefix" default=""/>
@@ -43,7 +43,7 @@
   <xacro:arg name="kinematics_suffix" default=""/>
   <!-- ZED ARGUMENTS -->
   <!-- ROBOT COMPONENTS -->
-  <xacro:include filename="robot_real.xacro"/>
+  <xacro:include filename="$(find home_custom_base_description)/urdf/robot.xacro"/>
   <!-- MUJOCO PARAMS -->
   <!-- gravcomp mirrors the xarm6 firmware's internal gravity compensation:
        the real servos hold pose against gravity on their own, so the sim does the same.
@@ -92,14 +92,14 @@
   <xacro:if value="$(arg mujoco_plugin)">
     <joint name="world_to_base" type="fixed">
       <parent link="world" />
-      <child link="base_link" />
+      <child link="_base_footprint" />
       <origin rpy="0 0 0" xyz="0 0 0" />
     </joint>
   </xacro:if>
   <xacro:unless value="$(arg mujoco_plugin)">
     <joint name="world_to_base" type="fixed">
       <parent link="world" />
-      <child link="base_link" />
+      <child link="_base_footprint" />
       <origin rpy="0 0 0" xyz="0 0 0.3" />
     </joint>
   </xacro:unless>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro" xmlns:gz="http://gazebosim.org/schema">
 
 
   <xacro:arg name="prefix" default=""/>
@@ -50,7 +50,7 @@
   <xacro:arg name="simulation" default="false"/>
 
 
-  <xacro:include filename="robot.xacro"/>
+  <xacro:include filename="$(find home_custom_base_description)/urdf/robot.xacro"/>
 
       <!-- Mujoco Config -->
     <xacro:if value="$(arg mujoco_plugin)">
