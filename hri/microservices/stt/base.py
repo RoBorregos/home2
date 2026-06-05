@@ -47,6 +47,7 @@ class ServeClientBase(object):
         self.same_output_count = 0
         self.transcript = []
         self.end_time_for_same_output = None
+        self.stream_ended = False
 
         # threading
         self.lock = threading.Lock()
@@ -72,26 +73,53 @@ class ServeClientBase(object):
                 break
 
             if self.frames_np is None:
+                if getattr(self, "stream_ended", False):
+                    break
                 continue
 
             if self.clip_audio:
                 self.clip_audio_if_no_valid_segment()
 
             input_bytes, duration = self.get_audio_chunk_for_processing()
-            if duration < 1.0:
+            if duration < 1.0 and not getattr(self, "stream_ended", False):
                 time.sleep(0.1)  # wait for audio chunks to arrive
                 continue
+
+            # If stream has ended and no new meaningful audio is present, break out of the loop.
+            if getattr(self, "stream_ended", False) and duration < 0.1:
+                break
+
             try:
                 input_sample = input_bytes.copy()
                 result = self.transcribe_audio(input_sample)
 
                 if result is None or self.language is None:
                     self.timestamp_offset += duration
+                    if getattr(self, "stream_ended", False):
+                        break
                     time.sleep(
                         0.25
                     )  # wait for voice activity, result is None when no voice activity
                     continue
                 self.handle_transcription_output(result, duration)
+
+                if getattr(self, "stream_ended", False):
+                    # Force finalize the current output
+                    if self.current_out.strip() != "":
+                        self.text.append(self.current_out)
+                        with self.lock:
+                            self.transcript.append(
+                                self.format_segment(
+                                    self.timestamp_offset,
+                                    self.timestamp_offset + duration,
+                                    self.current_out,
+                                    completed=True,
+                                )
+                            )
+                        self.current_out = ""
+                    # Ensure segments are updated for the client one last time
+                    self.segments = self.prepare_segments()
+                    break
 
             except Exception as e:
                 logging.error(f"[ERROR]: Failed to transcribe audio chunk: {e}")

@@ -1,5 +1,6 @@
 import argparse
 import os
+import time
 from concurrent import futures
 
 import grpc
@@ -75,6 +76,48 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                 except Exception as e:
                     print(f"Error processing chunk: {str(e)}")
                     continue
+
+            if client:
+                client.stream_ended = True
+                print("Stream ended. Waiting for final transcription...")
+
+                while client.trans_thread.is_alive():
+                    text = "".join([segment["text"] for segment in client.segments])
+                    if text != prev_text:
+                        prev_text = text
+                        print("Transcription updated (finalizing):", str(text))
+
+                        word_infos = [
+                            speech_pb2.WordInfo(
+                                word=w["word"],
+                                confidence=w["confidence"],
+                                start=w["start"],
+                                end=w["end"],
+                            )
+                            for w in client.word_confidences
+                        ]
+
+                        yield speech_pb2.TextResponse(text=text, words=word_infos)
+                    time.sleep(0.05)
+
+                # Final check after thread completes
+                text = "".join([segment["text"] for segment in client.segments])
+                if text != prev_text:
+                    prev_text = text
+                    print("Final transcription updated:", str(text))
+
+                    word_infos = [
+                        speech_pb2.WordInfo(
+                            word=w["word"],
+                            confidence=w["confidence"],
+                            start=w["start"],
+                            end=w["end"],
+                        )
+                        for w in client.word_confidences
+                    ]
+
+                    yield speech_pb2.TextResponse(text=text, words=word_infos)
+
         except Exception as e:
             print("Transcription ended")
             if len(str(e)) > 0:
