@@ -27,23 +27,38 @@ def generate_launch_description():
     ld.add_action(Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
+        name='frida_state_publisher',
         output='screen',
         parameters=[{
             'robot_description': robot_description,
             'use_sim_time': False,
-        }]
+        }],
+        remappings=[
+            ('/tf', 'tf'),
+            ('/tf_static', 'tf_static'),
+        ]
     ))
 
     ld.add_action(Node(
         package='joint_state_publisher_gui',
         executable='joint_state_publisher_gui',
-        output='screen'
+        name='frida_joint_state_publisher_gui',
+        output='screen',
+        remappings=[
+            ('/tf', 'tf'),
+            ('/tf_static', 'tf_static'),
+        ]
     ))
 
     ld.add_action(Node(
         package='rviz2',
         executable='rviz2',
-        output='screen'
+        name='rviz2',
+        output='screen',
+        remappings=[
+            ('/tf', 'tf'),
+            ('/tf_static', 'tf_static'),
+        ]
     ))
 
     return ld
