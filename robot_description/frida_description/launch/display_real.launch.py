@@ -5,10 +5,8 @@ from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 
-def generate_launch_description():
-    ld = LaunchDescription()
 
-    # Process URDF xacro file
+def generate_launch_description():
     urdf_file = PathJoinSubstitution([
         FindPackageShare('frida_description'),
         'urdf', 'TMR2025', 'FRIDA_Real.urdf.xacro'
@@ -24,8 +22,7 @@ def generate_launch_description():
         value_type=str
     )
 
-    ld.add_action(GroupAction([
-        PushRosNamespace('frida'),
+    return LaunchDescription([
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
@@ -38,20 +35,13 @@ def generate_launch_description():
         Node(
             package='joint_state_publisher_gui',
             executable='joint_state_publisher_gui',
-            output='screen',
+            output='screen'
         ),
-    ]
-    ))
-
-    ld.add_action(Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        remappings=[
-            ('/tf', 'tf'),
-            ('/tf_static', 'tf_static'),
-        ]
-    ))
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            output='screen'
+        ),
+    ])
 
     return ld
