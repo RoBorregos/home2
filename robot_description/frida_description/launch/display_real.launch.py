@@ -24,30 +24,23 @@ def generate_launch_description():
         value_type=str
     )
 
-    ld.add_action(Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        name='frida_state_publisher',
-        output='screen',
-        parameters=[{
-            'robot_description': robot_description,
-            'use_sim_time': False,
-        }],
-        remappings=[
-            ('/tf', 'tf'),
-            ('/tf_static', 'tf_static'),
-        ]
-    ))
-
-    ld.add_action(Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        name='frida_joint_state_publisher_gui',
-        output='screen',
-        remappings=[
-            ('/tf', 'tf'),
-            ('/tf_static', 'tf_static'),
-        ]
+    ld.add_action(GroupAction([
+        PushRosNamespace('frida'),
+        Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            output='screen',
+            parameters=[{
+                'robot_description': robot_description,
+                'use_sim_time': False,
+            }]
+        ),
+        Node(
+            package='joint_state_publisher_gui',
+            executable='joint_state_publisher_gui',
+            output='screen',
+        ),
+    ]
     ))
 
     ld.add_action(Node(
