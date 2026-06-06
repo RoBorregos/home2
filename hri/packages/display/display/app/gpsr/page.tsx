@@ -41,6 +41,7 @@ const FSM_STEPS: FsmStep[] = [
   { key: "start",               label: "Start",       icon: <Bot          className="h-3.5 w-3.5" /> },
   { key: "wait_button_command", label: "Ready",       icon: <Flame        className="h-3.5 w-3.5" /> },
   { key: "waiting_for_command", label: "Listening",   icon: <Mic          className="h-3.5 w-3.5" /> },
+  { key: "plan_and_execute_batch", label: "Merged Plan", icon: <BarChart3 className="h-3.5 w-3.5" /> },
   { key: "executing",           label: "Executing",   icon: <Play         className="h-3.5 w-3.5" /> },
   { key: "finished_command",    label: "Finished",    icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
 ];
@@ -95,6 +96,7 @@ function getDisplayMode(fsmState: string, command: string | null): DisplayMode {
   if (fsmState === "waiting_for_button" || fsmState === "wait_button_command") return "button";
   if (fsmState === "start")                                                     return "camera";
   if (fsmState === "waiting_for_command")                                       return "logs";
+  if (fsmState === "plan_and_execute_batch")                                    return "logs";
   if (fsmState === "finished_command" || fsmState === "done")                   return "logs";
   if (fsmState === "executing" && command) return COMMAND_DISPLAY[command] ?? "camera";
   return "camera";

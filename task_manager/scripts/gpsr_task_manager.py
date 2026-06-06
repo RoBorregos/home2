@@ -161,7 +161,7 @@ class GPSRTM(Node):
         )
 
         self.subtask_manager.hri.publish_display_step(new_state.lower(), GPSR_TASK_STEP_TOPIC)
-        self._publish_command_index(self.executed_commands)
+        self._publish_command_index(self.executed_commands + len(self.batched_commands))
 
     def _publish_command_index(self, index: int) -> None:
         msg = Int32()
@@ -404,6 +404,7 @@ class GPSRTM(Node):
 
                 if self.interleave_enabled:
                     self.batched_commands.append(CommandListLLM(commands=self.commands))
+                    self._publish_command_index(self.executed_commands + len(self.batched_commands))
                     plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
                     self.subtask_manager.hri.say(plan_text)
                     if (
