@@ -81,29 +81,32 @@ class PickManager:
         self.latest_flat_grasp = None
         self._collecting_samples = False
         self._grasp_samples = []
+        self._active_topic = None  # "flat" | "rim"
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
         self.node.create_subscription(
-            PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
+            PoseStamped, "/manipulation/flat_grasp_pose", self._flat_cb, 10
         )
-        # Rim poses are published by the same estimator node on a separate
-        # topic; reuse the same sample buffer (only one branch is active per pick).
         self.node.create_subscription(
-            PoseStamped,
-            "/manipulation/rim_grasp_pose",
-            self.flat_grasp_callback,
-            10,
+            PoseStamped, "/manipulation/rim_grasp_pose", self._rim_cb, 10
         )
 
         self._flat_estimator_enable = self.node.create_client(
             SetBool, "/flat_grasp_estimator/enable"
         )
 
-    def flat_grasp_callback(self, msg):
-        self.latest_flat_grasp = msg
-        if self._collecting_samples:
-            self._grasp_samples.append(msg)
+    def _flat_cb(self, msg):
+        if self._active_topic == "flat":
+            self.latest_flat_grasp = msg
+            if self._collecting_samples:
+                self._grasp_samples.append(msg)
+
+    def _rim_cb(self, msg):
+        if self._active_topic == "rim":
+            self.latest_flat_grasp = msg
+            if self._collecting_samples:
+                self._grasp_samples.append(msg)
 
     def set_flat_estimator(self, enabled: bool):
         """Enable/disable the (flat/rim) grasp estimator node."""
@@ -148,6 +151,7 @@ class PickManager:
             )
 
             # Enable the estimator so it starts publishing grasp poses.
+            self._active_topic = "rim" if is_rim_object else "flat"
             self.set_flat_estimator(True)
 
             # Collect multiple poses and average for stable Z
@@ -314,6 +318,7 @@ class PickManager:
             future = wait_for_future(future, timeout=30)
 
             # Estimator no longer needed once the goal is sent — free it.
+            self._active_topic = None
             self.set_flat_estimator(False)
 
             if future:
