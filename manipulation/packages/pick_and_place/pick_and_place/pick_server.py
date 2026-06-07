@@ -463,7 +463,7 @@ class PickMotionServer(Node):
 
                     self.get_logger().info("[Rim] Pre-grasp reached")
 
-                    # Clear octomap before the open-loop descent
+                    # Clear octomap
                     self.get_logger().info("[Rim] Clearing octomap...")
                     if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
                         req = Empty.Request()
