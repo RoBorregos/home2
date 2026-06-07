@@ -685,12 +685,15 @@ class PickMotionServer(Node):
         )
 
         # --- Read start position before any mode switch ---
+        wait_start = time.time()
+        while self._get_tcp_z() is None:
+            if time.time() - wait_start > 2.0:
+                self.get_logger().error(
+                    "[FixedDescent] No robot_states received after 2s — cannot verify descent"
+                )
+                return False
+            time.sleep(0.05)
         start_z = self._get_tcp_z()
-        if start_z is None:
-            self.get_logger().error(
-                "[FixedDescent] No robot_states received — cannot verify descent"
-            )
-            return False
         target_z = start_z - distance_m
         self.get_logger().info(
             f"[FixedDescent] start_z={start_z * 1000:.1f}mm  "

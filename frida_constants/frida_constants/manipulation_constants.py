@@ -74,7 +74,7 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 # Rim pick
 RIM_NAMES = ["basket", "aundry_basket", "laundry_basket"]
 RIM_PRE_GRASP_HEIGHT = 0.10
-RIM_GRASP_Z_TWEAK = -0.03  # m: target ~3 cm below rim top so fingers straddle the wall
+RIM_GRASP_Z_TWEAK = -0.05  # m: target ~3 cm below rim top so fingers straddle the wall
 RIM_DESCENT_SPEED = 20.0  # mm/s
 RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
 
