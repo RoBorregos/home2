@@ -332,10 +332,7 @@ class FlatGraspEstimator(Node):
         floor_z = np.percentile(points_base[:, 2], 5)
         rim_points = points_base[points_base[:, 2] > floor_z + RIM_MIN_HEIGHT]
         if len(rim_points) < MIN_POINTS_FOR_PCA:
-            self.get_logger().warn(
-                "Not enough rim points above the floor for a rim estimate"
-            )
-            return
+            rim_points = points_base
 
         # --- RIM TOP RING ---
         # The rim is the TOP edge of the object. Anchor to the top:
