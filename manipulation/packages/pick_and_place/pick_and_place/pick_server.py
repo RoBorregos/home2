@@ -27,6 +27,7 @@ from frida_constants.manipulation_constants import (
     RIM_PRE_GRASP_HEIGHT,
     RIM_DESCENT_SPEED,
     RIM_DESCENT_DISTANCE,
+    XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -54,6 +55,7 @@ from std_srvs.srv import Empty
 # Force-guarded descent imports
 from sensor_msgs.msg import JointState
 from xarm_msgs.srv import MoveVelocity, SetInt16
+from xarm_msgs.msg import RobotMsg
 
 # =============================================================================
 # Force-guarded descent constants
@@ -74,6 +76,9 @@ CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to reli
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
 MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
+
+# Closed-loop fixed-distance descent constants
+DESCENT_TIMEOUT_FACTOR = 2.5
 
 
 class PickMotionServer(Node):
@@ -158,6 +163,12 @@ class PickMotionServer(Node):
             JointState, "/joint_states", self._joint_state_cb, 10
         )
 
+        # TCP position feedback for closed-loop descent
+        self._latest_robot_state = None
+        self.create_subscription(
+            RobotMsg, XARM_ROBOT_STATES_TOPIC, self._robot_state_cb, 10
+        )
+
         self._estop = False
         self.create_subscription(
             Bool,
@@ -171,6 +182,15 @@ class PickMotionServer(Node):
 
     def _joint_state_cb(self, msg: JointState):
         self._latest_joint_state = msg
+
+    def _robot_state_cb(self, msg: RobotMsg):
+        self._latest_robot_state = msg
+
+    def _get_tcp_z(self):
+        """Return current TCP Z in meters (base frame), or None if no state received yet."""
+        if self._latest_robot_state is None:
+            return None
+        return self._latest_robot_state.pose[2] / 1000.0
 
     async def execute_callback(self, goal_handle):
         self.get_logger().info("Executing pick goal...")
@@ -656,11 +676,25 @@ class PickMotionServer(Node):
 
     def fixed_distance_descent(self, distance_m: float) -> bool:
         """
-        Descend a FIXED distance in -Z using xArm mode 5 (cartesian velocity control).
+        Descend a fixed distance in -Z using xArm mode 5 (cartesian velocity control).
+        Closed-loop on /xarm/robot_states TCP Z.
         """
         self.get_logger().info(
             f"[FixedDescent] Descending {distance_m * 1000:.0f}mm at "
             f"{RIM_DESCENT_SPEED:.1f} mm/s"
+        )
+
+        # --- Read start position before any mode switch ---
+        start_z = self._get_tcp_z()
+        if start_z is None:
+            self.get_logger().error(
+                "[FixedDescent] No robot_states received — cannot verify descent"
+            )
+            return False
+        target_z = start_z - distance_m
+        self.get_logger().info(
+            f"[FixedDescent] start_z={start_z * 1000:.1f}mm  "
+            f"target_z={target_z * 1000:.1f}mm"
         )
 
         # --- Transition: mode 1 -> 0 -> 5 ---
@@ -679,7 +713,7 @@ class PickMotionServer(Node):
         )
         time.sleep(MODE_SWITCH_SETTLE_TIME)
 
-        success = False
+        reached = False
         try:
             if not self._vc_set_cartesian_velocity_client.wait_for_service(
                 timeout_sec=2.0
@@ -687,7 +721,6 @@ class PickMotionServer(Node):
                 self.get_logger().error(
                     "[FixedDescent] vc_set_cartesian_velocity not available"
                 )
-                self._restore_mode1()
                 return False
 
             vel_req = MoveVelocity.Request()
@@ -695,37 +728,61 @@ class PickMotionServer(Node):
             vel_req.is_tool_coord = False
             vel_req.duration = 0.0
 
+            # Initial velocity command
             vel_future = self._vc_set_cartesian_velocity_client.call_async(vel_req)
             self.wait_for_future(vel_future)
-
             if vel_future.result() is None:
-                self.get_logger().error("[FixedDescent] Velocity command failed")
-                self._restore_mode1()
+                self.get_logger().error(
+                    "[FixedDescent] Initial velocity command failed"
+                )
                 return False
 
-            # Open-loop: hold velocity for the time needed to cover the distance.
-            descent_time = (distance_m * 1000.0) / RIM_DESCENT_SPEED
-            self.get_logger().info(
-                f"[FixedDescent] Holding velocity for {descent_time:.2f}s"
-            )
-            elapsed = 0.0
-            while elapsed < descent_time:
+            expected_time = (distance_m * 1000.0) / RIM_DESCENT_SPEED
+            timeout = expected_time * DESCENT_TIMEOUT_FACTOR
+
+            loop_start = time.time()
+
+            while True:
+                time.sleep(0.02)  # 50 Hz
+                now = time.time()
+                elapsed = now - loop_start
+
+                # Timeout guard
+                if elapsed > timeout:
+                    self.get_logger().warn(
+                        f"[FixedDescent] Timeout after {elapsed:.1f}s "
+                        f"(limit={timeout:.1f}s)"
+                    )
+                    break
+
+                # E-stop
                 if self._estop:
                     self.get_logger().warn("[FixedDescent] E-stop during descent")
                     break
-                time.sleep(0.02)
-                elapsed += 0.02
 
-            success = not self._estop
+                cur_z = self._get_tcp_z()
+                if cur_z is None:
+                    continue
+
+                descended = start_z - cur_z
+
+                # Reached target?
+                if descended >= distance_m:
+                    self.get_logger().info(
+                        f"[FixedDescent] Reached! descended={descended * 1000:.1f}mm "
+                        f"(target={distance_m * 1000:.0f}mm)"
+                    )
+                    reached = True
+                    break
 
         except Exception as e:
             self.get_logger().error(f"[FixedDescent] Descent error: {e}")
 
-        # --- Stop and restore mode 1 ---
-        self._stop_cartesian_velocity()
-        self._restore_mode1()
+        finally:
+            self._stop_cartesian_velocity()
+            self._restore_mode1()
 
-        return success
+        return reached
 
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
