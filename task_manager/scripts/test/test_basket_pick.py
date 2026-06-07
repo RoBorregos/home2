@@ -3,7 +3,7 @@
 """Manual test for the rim pick feature.
 
 Drives the full pipeline end-to-end through the manipulation action server:
-  look_back_stare -> enable grasp estimator -> detect "laundry_basket" ->
+  look_side_stare -> enable grasp estimator -> detect "laundry_basket" ->
   rim_grasp_estimator publishes the near-rim pose -> PickManager builds a
   PickMotion goal -> pick_server does MoveIt pre-grasp + fixed-distance descent
   -> close gripper -> lift.
@@ -12,7 +12,7 @@ Requirements before running:
   - manipulation stack up (manipulation_core / pick_server) and the
     flat_grasp_estimator node (it also handles rim objects).
   - vision detector publishing on /vision/detections with a "laundry_basket"
-    class, and an object on the floor within view of look_back_stare.
+    class, and an object on the floor within view of look_side_stare.
 
 PickManager enables/disables the estimator on its own, so this test only needs
 to send the pick request — same as a normal pick_object call.

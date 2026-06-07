@@ -128,7 +128,7 @@ class PickManager:
 
         if not pick_params.in_configuration:
             if is_rim_object:
-                stare_position = "look_back_stare"
+                stare_position = "look_side_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
             else:
