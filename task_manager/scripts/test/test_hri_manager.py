@@ -90,8 +90,8 @@ def calculate_wer(reference, hypothesis):
     S: substitutions, D: deletions, I: insertions, N: number of words in reference.
     WER = (S + D + I) / N
     """
-    ref_words = reference.lower().split()
-    hyp_words = hypothesis.lower().split()
+    ref_words = HRITasks.remove_punctuation(reference).split()
+    hyp_words = HRITasks.remove_punctuation(hypothesis).split()
     n = len(ref_words)
     if n == 0:
         return 1.0 if len(hyp_words) > 0 else 0.0
