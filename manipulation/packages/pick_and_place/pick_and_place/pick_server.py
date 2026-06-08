@@ -192,6 +192,12 @@ class PickMotionServer(Node):
             return None
         return self._latest_robot_state.pose[2] / 1000.0
 
+    def _clear_octomap(self, settle: float = 0.3):
+        """Clear the octomap and wait briefly for the planning scene to update."""
+        if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+            self._clear_octomap_client.call_async(Empty.Request())
+        time.sleep(settle)
+
     async def execute_callback(self, goal_handle):
         self.get_logger().info("Executing pick goal...")
 
@@ -372,6 +378,8 @@ class PickMotionServer(Node):
                         f"(target Z={ee_link_pose.pose.position.z:.4f})"
                     )
 
+                    self._clear_octomap()
+
                     pre_handler, pre_result = self.move_to_pose(
                         pre_grasp_pose, velocity=0.3
                     )
@@ -386,10 +394,7 @@ class PickMotionServer(Node):
 
                     # Clear octomap
                     self.get_logger().info("[Cutlery] Clearing octomap...")
-                    if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
-                        req = Empty.Request()
-                        self._clear_octomap_client.call_async(req)
-                    time.sleep(0.3)
+                    self._clear_octomap()
 
                     # Force-guarded descent
                     self.get_logger().info(
@@ -451,6 +456,8 @@ class PickMotionServer(Node):
                         f"(rim Z={ee_link_pose.pose.position.z:.4f})"
                     )
 
+                    self._clear_octomap()
+
                     pre_handler, pre_result = self.move_to_pose(
                         pre_grasp_pose, velocity=0.3
                     )
@@ -463,12 +470,9 @@ class PickMotionServer(Node):
 
                     self.get_logger().info("[Rim] Pre-grasp reached")
 
-                    # Clear octomap
+                    # Clear octomap again before the descent phase.
                     self.get_logger().info("[Rim] Clearing octomap...")
-                    if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
-                        req = Empty.Request()
-                        self._clear_octomap_client.call_async(req)
-                    time.sleep(0.3)
+                    self._clear_octomap()
 
                     # Fixed-distance descent (xArm cartesian velocity)
                     self.get_logger().info(
