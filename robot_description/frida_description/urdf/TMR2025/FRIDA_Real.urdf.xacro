@@ -38,7 +38,7 @@
   <xacro:arg name="default_gripper_baud" default="2000000"/>
   <xacro:arg name="attach_to" default="xarm_base"/>
   <xacro:arg name="attach_xyz" default="0 0 0"/>
-  <xacro:arg name="attach_rpy" default="0 0 0"/>
+  <xacro:arg name="attach_rpy" default="0 0 1.5707963267949"/>
   <xacro:arg name="mesh_suffix" default="stl"/>
   <xacro:arg name="kinematics_suffix" default=""/>
   <!-- ZED ARGUMENTS -->
