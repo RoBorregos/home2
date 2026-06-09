@@ -8,11 +8,15 @@ import csv
 import json
 import os
 import subprocess
+import threading
 import time
+import wave
 from datetime import datetime
 from typing import Union
 
+import numpy as np
 import rclpy
+from frida_interfaces.msg import AudioData
 from rclpy.node import Node
 from task_manager.subtask_managers.hri_tasks import HRITasks
 
@@ -78,12 +82,47 @@ TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
+TEST_HEAR_AUDIO = False
+
+
+def calculate_wer(reference, hypothesis):
+    """
+    Calculation of Word Error Rate.
+    S: substitutions, D: deletions, I: insertions, N: number of words in reference.
+    WER = (S + D + I) / N
+    """
+    ref_words = HRITasks.remove_punctuation(reference).split()
+    hyp_words = HRITasks.remove_punctuation(hypothesis).split()
+    n = len(ref_words)
+    if n == 0:
+        return 1.0 if len(hyp_words) > 0 else 0.0
+
+    # Initialize matrix
+    d = [[0] * (len(hyp_words) + 1) for _ in range(len(ref_words) + 1)]
+    for i in range(len(ref_words) + 1):
+        d[i][0] = i
+    for j in range(len(hyp_words) + 1):
+        d[0][j] = j
+
+    # Compute Levenshtein distance
+    for i in range(1, len(ref_words) + 1):
+        for j in range(1, len(hyp_words) + 1):
+            if ref_words[i - 1] == hyp_words[j - 1]:
+                d[i][j] = d[i - 1][j - 1]
+            else:
+                substitution = d[i - 1][j - 1] + 1
+                insertion = d[i][j - 1] + 1
+                deletion = d[i - 1][j] + 1
+                d[i][j] = min(substitution, insertion, deletion)
+
+    return d[len(ref_words)][len(hyp_words)] / n
 
 
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
         self.hri_manager = HRITasks(self, task=Task.DEBUG, mock_data=False)
+        self.audio_pub = self.create_publisher(AudioData, "/hri/rawAudioChunk", 10)
         rclpy.spin_once(self, timeout_sec=1.0)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
@@ -131,6 +170,9 @@ class TestHriManager(Node):
 
         if TEST_TAKE_ORDER:
             self.test_take_order()
+
+        if TEST_HEAR_AUDIO:
+            self.test_hear_audio()
 
         exit(0)
 
@@ -631,6 +673,124 @@ class TestHriManager(Node):
             f.write(f"\n=== RETURN CODE: {result.returncode} ===\n")
 
         self.get_logger().info(f"Results saved to {output_file}")
+
+    def test_hear_audio(self):
+        test_cases_file = os.path.join(DATA_DIR, "hear_audio.json")
+        if not os.path.exists(test_cases_file):
+            self.get_logger().error(f"Test cases file not found: {test_cases_file}")
+            return
+
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"hear_audio_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, test_case in enumerate(test_cases, 1):
+            audio_file = os.path.join(DATA_DIR, "recordings", test_case["audio_file"])
+            expected = test_case["expected_transcript"]
+            self.get_logger().info(f"Test case {i}: {test_case['name']} (Audio: {audio_file})")
+
+            if not os.path.exists(audio_file):
+                self.get_logger().error(f"Audio file not found: {audio_file}")
+                results.append([i, test_case["name"], expected, "FILE_NOT_FOUND", False])
+                continue
+
+            # Start background thread to publish audio
+            stop_event = threading.Event()
+            gain = test_case.get("gain", 1.0)
+            pub_thread = threading.Thread(
+                target=self._publish_audio_file, args=(audio_file, stop_event, gain)
+            )
+            pub_thread.start()
+
+            try:
+                s, actual_transcript, _ = self.hri_manager.hear()
+                stop_event.set()
+                pub_thread.join()
+
+                if s == Status.EXECUTION_SUCCESS:
+                    wer = calculate_wer(expected, actual_transcript)
+                    accuracy = 1.0 - wer
+                    success = accuracy >= 0.8  # 80% accuracy threshold
+
+                    if success:
+                        passed_tests += 1
+                        self.get_logger().info(
+                            f"Test passed! Accuracy: {accuracy:.2%}, Heard: {actual_transcript}"
+                        )
+                    else:
+                        self.get_logger().error(
+                            f"Test failed. Accuracy: {accuracy:.2%}, Expected: '{expected}', Heard: '{actual_transcript}'"
+                        )
+
+                    results.append([i, test_case["name"], expected, actual_transcript, accuracy])
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    results.append([i, test_case["name"], expected, f"ERROR: {s}", 0.0])
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                results.append([i, test_case["name"], expected, f"EXCEPTION: {str(e)}", 0.0])
+                stop_event.set()
+                pub_thread.join()
+
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                ["test_number", "name", "expected_transcript", "actual_transcript", "accuracy"]
+            )
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def _publish_audio_file(self, file_path, stop_event, gain=1.0):
+        """Publishes audio file chunks to /hri/rawAudioChunk."""
+        time.sleep(1.5)  # Wait for hear() to start listening
+
+        try:
+            with wave.open(file_path, "rb") as wf:
+                params = wf.getparams()
+                rate = params.framerate
+                chunk_size = 1024
+                sample_width = params.sampwidth
+
+                # Check if it's 16kHz
+                if rate != 16000:
+                    self.get_logger().warn(
+                        f"Audio rate is {rate}, expected 16000. Transcription might fail."
+                    )
+
+                data = wf.readframes(chunk_size)
+                while data and not stop_event.is_set():
+                    if gain != 1.0:
+                        # Assuming 16-bit PCM (sample_width=2)
+                        if sample_width == 2:
+                            audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
+                            audio_array *= gain
+                            audio_array = np.clip(audio_array, -32768, 32767).astype(np.int16)
+                            data = audio_array.tobytes()
+                        else:
+                            self.get_logger().warn(
+                                f"Gain only supported for 16-bit audio, got {sample_width*8}-bit"
+                            )
+
+                    msg = AudioData()
+                    msg.data = data
+                    self.audio_pub.publish(msg)
+
+                    # Sleep to simulate real-time
+                    time.sleep(chunk_size / rate)
+                    data = wf.readframes(chunk_size)
+        except Exception as e:
+            self.get_logger().error(f"Error in _publish_audio_file: {e}")
 
 
 def main(args=None):
