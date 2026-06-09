@@ -2,56 +2,67 @@
   {
     "name": "basic_greeting",
     "audio_file": "hello_frida.wav",
-    "expected_transcript": "hello frida"
+    "expected_transcript": "hello frida",
+    "gain": 2.0
   },
   {
     "name": "move_forward",
     "audio_file": "move_forward.wav",
-    "expected_transcript": "move forward"
+    "expected_transcript": "move forward",
+    "gain": 2.0
   },
   {
     "name": "turn_left",
     "audio_file": "turn_left.wav",
-    "expected_transcript": "turn left"
+    "expected_transcript": "turn left",
+    "gain": 2.0
   },
   {
     "name": "stop_command",
     "audio_file": "stop.wav",
-    "expected_transcript": "stop"
+    "expected_transcript": "stop",
+    "gain": 2.0
   },
   {
     "name": "ask_location_kitchen",
     "audio_file": "where_is_kitchen.wav",
-    "expected_transcript": "where is the kitchen"
+    "expected_transcript": "where is the kitchen",
+    "gain": 2.0
   },
   {
     "name": "request_water",
     "audio_file": "bring_water.wav",
-    "expected_transcript": "bring me a bottle of water"
+    "expected_transcript": "bring me a bottle of water",
+    "gain": 2.0
   },
   {
     "name": "ask_time",
     "audio_file": "what_time.wav",
-    "expected_transcript": "what time is it"
+    "expected_transcript": "what time is it",
+    "gain": 2.0
   },
   {
     "name": "follow_me",
     "audio_file": "follow_me.wav",
-    "expected_transcript": "follow me"
+    "expected_transcript": "follow me",
+    "gain": 2.0
   },
   {
     "name": "go_to_living_room",
     "audio_file": "go_to_living_room.wav",
-    "expected_transcript": "go to the living room"
+    "expected_transcript": "go to the living room",
+    "gain": 2.0
   },
   {
     "name": "identify_object",
     "audio_file": "identify_object.wav",
-    "expected_transcript": "identify this object"
+    "expected_transcript": "identify this object",
+    "gain": 2.0
   },
   {
     "name": "goodbye_greeting",
     "audio_file": "goodbye_frida.wav",
-    "expected_transcript": "goodbye frida"
+    "expected_transcript": "goodbye frida",
+    "gain": 2.0
   }
 ]

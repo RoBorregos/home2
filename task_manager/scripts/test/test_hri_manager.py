@@ -14,6 +14,7 @@ import wave
 from datetime import datetime
 from typing import Union
 
+import numpy as np
 import rclpy
 from frida_interfaces.msg import AudioData
 from rclpy.node import Node
@@ -700,8 +701,9 @@ class TestHriManager(Node):
 
             # Start background thread to publish audio
             stop_event = threading.Event()
+            gain = test_case.get("gain", 1.0)
             pub_thread = threading.Thread(
-                target=self._publish_audio_file, args=(audio_file, stop_event)
+                target=self._publish_audio_file, args=(audio_file, stop_event, gain)
             )
             pub_thread.start()
 
@@ -749,7 +751,7 @@ class TestHriManager(Node):
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
-    def _publish_audio_file(self, file_path, stop_event):
+    def _publish_audio_file(self, file_path, stop_event, gain=1.0):
         """Publishes audio file chunks to /hri/rawAudioChunk."""
         time.sleep(1.5)  # Wait for hear() to start listening
 
@@ -758,6 +760,7 @@ class TestHriManager(Node):
                 params = wf.getparams()
                 rate = params.framerate
                 chunk_size = 1024
+                sample_width = params.sampwidth
 
                 # Check if it's 16kHz
                 if rate != 16000:
@@ -767,6 +770,18 @@ class TestHriManager(Node):
 
                 data = wf.readframes(chunk_size)
                 while data and not stop_event.is_set():
+                    if gain != 1.0:
+                        # Assuming 16-bit PCM (sample_width=2)
+                        if sample_width == 2:
+                            audio_array = np.frombuffer(data, dtype=np.int16).astype(np.float32)
+                            audio_array *= gain
+                            audio_array = np.clip(audio_array, -32768, 32767).astype(np.int16)
+                            data = audio_array.tobytes()
+                        else:
+                            self.get_logger().warn(
+                                f"Gain only supported for 16-bit audio, got {sample_width*8}-bit"
+                            )
+
                     msg = AudioData()
                     msg.data = data
                     self.audio_pub.publish(msg)
