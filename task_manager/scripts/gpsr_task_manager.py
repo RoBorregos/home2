@@ -34,7 +34,7 @@ BATCH_SIZE = 3
 
 
 def confirm_command(interpreted_text, target_info):
-    return f"Did you say {target_info}?"
+    return f"Is your command: {target_info}?"
 
 
 def search_command(command, objects: list[object]):
@@ -333,7 +333,7 @@ class GPSRTM(Node):
             self.navigate_to("start_area", "", False)
 
             self.subtask_manager.hri.say(
-                "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks. Please tell them to me one by one."
+                "Hi, my name is Frida and I am a general purpose robot. Please press the button on my screen to start telling me the commands one by one."
             )
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
 
@@ -349,7 +349,7 @@ class GPSRTM(Node):
                 if time.time() - start_time > say_time:
                     start_time = time.time()
                     self.subtask_manager.hri.say(
-                        "Waiting for the blue start button on my screen to be pressed to hear the command.",
+                        "Please press the blue start button to begin.",
                         speed=1,
                     )
                 rclpy.spin_once(self, timeout_sec=0.1)
@@ -381,6 +381,7 @@ class GPSRTM(Node):
                     min_wait_between_retries=5.0,
                     skip_extract_data=True,
                     always_confirm=True,
+                    max_audio_length=20.0,
                 )
 
             if s != Status.EXECUTION_SUCCESS:
@@ -413,7 +414,9 @@ class GPSRTM(Node):
                     ):
                         self.current_state = GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH
                     else:
-                        self.subtask_manager.hri.say("Please give me the next command.", wait=False)
+                        self.subtask_manager.hri.say(
+                            "Please press the button to give me the next command.", wait=False
+                        )
                         if self.test_mode:
                             self.current_state = GPSRTM.TaskStates.WAITING_FOR_COMMAND
                         else:
