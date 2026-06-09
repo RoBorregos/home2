@@ -402,10 +402,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def _get_keyword(self, msg: String) -> None:
         try:
-            data = eval(msg.data)
-            self.keyword = data["keyword"]
+            data = json.loads(msg.data)
+            self.keyword = data.get("keyword", "")
         except Exception as e:
-            self.node.get_logger().error(f"Error: {e}")
+            self.node.get_logger().error(f"Error parsing KWS JSON: {e}")
             self.keyword = ""
 
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)

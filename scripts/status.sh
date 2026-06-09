@@ -12,15 +12,19 @@ fi
 
 # check arguments passed as --help or -h
 if [ "$ARG1" == "--help" ] || [ "$ARG1" == "-h" ]; then
-  echo "Usage: ./status.sh [area_name] [task] or ./status.sh [task]"
-  echo "Example: ./status.sh vision --receptionist or ./status.sh --receptionist"
+  echo "Usage: ./scripts/status.sh [area_name] [task] or ./scripts/status.sh [task]"
+  echo "Example: ./scripts/status.sh vision --receptionist or ./scripts/status.sh --receptionist"
   exit 0
 fi
 
-CONFIG_PATH="status/configs"
+# Get the directory where the script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+CONFIG_PATH="$PROJECT_ROOT/status/configs"
 
 # Load lib to check nodes required from each area
-source "status/check_nodes.sh"
+source "$PROJECT_ROOT/status/check_nodes.sh"
 source_colors
 
 if [ -n "$ARG2" ]; then

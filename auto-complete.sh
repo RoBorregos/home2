@@ -12,11 +12,15 @@ _run_sh_autocomplete() {
     # Add area specific flags
     case "${words[1]}" in
         hri)
-            flags="$flags --build-display --open-display --download-model --regenerate-db --build-proto"
+            flags="$flags --download-model --regenerate-db --build-proto"
             ;;
         integration)
             # TODO: add other important scripts
             flags="$flags --test-hri --demo-becas"
+            ;;
+        display)
+            flags="$flags --build-display --open-display"
+            ;;
     esac
 
     local options
@@ -36,7 +40,7 @@ _run_sh_autocomplete() {
 }
 
 complete -F _run_sh_autocomplete ./run.sh
-complete -F _run_sh_autocomplete ./status.sh
+complete -F _run_sh_autocomplete ./scripts/status.sh
 
 # To use this script:
 # Source this script in your terminal: `source auto-complete.sh` or 
