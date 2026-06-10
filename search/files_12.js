@@ -36,6 +36,5 @@ var searchData=
   ['status_2epy_33',['status.py',['../status_8py.html',1,'']]],
   ['storing_5fgroceries_5fmanager_2epy_34',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
   ['stt_2esrv_35',['STT.srv',['../STT_8srv.html',1,'']]],
-  ['subtask_5fmanager_2epy_36',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]],
-  ['subtask_5fmeta_2epy_37',['subtask_meta.py',['../subtask__meta_8py.html',1,'']]]
+  ['subtask_5fmanager_2epy_36',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]]
 ];

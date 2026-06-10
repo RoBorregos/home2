@@ -27,7 +27,5 @@ var searchData=
   ['storinggroceriesmanager_24',['StoringGroceriesManager',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html',1,'storing_groceries_manager']]],
   ['storinggroceriestm_25',['StoringGroceriesTM',['../class__storing__groceries_1_1StoringGroceriesTM.html',1,'_storing_groceries']]],
   ['subtask_5fmanager_26',['SUBTASK_MANAGER',['../classfrida__constants_1_1navigation__constants_1_1SUBTASK__MANAGER.html',1,'frida_constants::navigation_constants']]],
-  ['subtaskconfig_27',['SubtaskConfig',['../classtask__manager_1_1utils_1_1config_1_1SubtaskConfig.html',1,'task_manager::utils::config']]],
-  ['subtaskmanager_28',['SubtaskManager',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html',1,'task_manager::utils::subtask_manager']]],
-  ['subtaskmeta_29',['SubtaskMeta',['../classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta.html',1,'task_manager::subtask_managers::subtask_meta']]]
+  ['subtaskmanager_27',['SubtaskManager',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html',1,'task_manager::utils::subtask_manager']]]
 ];

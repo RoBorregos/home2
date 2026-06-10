@@ -71,6 +71,7 @@ var classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "keyword_client", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a2183aabd66aeff1dd31fd7a8bb94c724", null ],
     [ "last_hotwords", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a70cefa9ab9c1e46b315d369d1523a87d", null ],
     [ "llm_wrapper_service", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a926af91494d6147bb92fa0d447d669c0", null ],
+    [ "mock_data", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a1bcfdb46a04f87a6ebea92e784333ee5", null ],
     [ "mock_db", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a53b68bb31121a8a20eef0cf84128a83a", null ],
     [ "names", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a701c21732f808796299391bf4cbca5c6", null ],
     [ "node", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a0161cc25f47da2eb6831fdbed0c2a97c", null ],

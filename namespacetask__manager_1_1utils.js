@@ -1,7 +1,6 @@
 var namespacetask__manager_1_1utils =
 [
     [ "colored_logger", "namespacetask__manager_1_1utils_1_1colored__logger.html", "namespacetask__manager_1_1utils_1_1colored__logger" ],
-    [ "config", "namespacetask__manager_1_1utils_1_1config.html", "namespacetask__manager_1_1utils_1_1config" ],
     [ "decorators", "namespacetask__manager_1_1utils_1_1decorators.html", [
       [ "mockable", "namespacetask__manager_1_1utils_1_1decorators.html#a026a1029f1cd63d148cea86009000db0", null ],
       [ "service_check", "namespacetask__manager_1_1utils_1_1decorators.html#a71d32900d7390409fe37451aa09c2cf0", null ]

@@ -10,6 +10,5 @@ var dir_2cc4506cbd6db8b57838626098c52a0d =
     [ "hri_tasks.py", "hri__tasks_8py.html", "hri__tasks_8py" ],
     [ "manipulation_tasks.py", "manipulation__tasks_8py.html", "manipulation__tasks_8py" ],
     [ "nav_tasks.py", "nav__tasks_8py.html", "nav__tasks_8py" ],
-    [ "subtask_meta.py", "subtask__meta_8py.html", "subtask__meta_8py" ],
     [ "vision_tasks.py", "vision__tasks_8py.html", "vision__tasks_8py" ]
 ];

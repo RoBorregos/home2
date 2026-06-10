@@ -409,9 +409,6 @@ var annotated_dup =
         [ "nav_tasks", "namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html", [
           [ "NavigationTasks", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks" ]
         ] ],
-        [ "subtask_meta", "namespacetask__manager_1_1subtask__managers_1_1subtask__meta.html", [
-          [ "SubtaskMeta", "classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", "classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta" ]
-        ] ],
         [ "vision_tasks", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html", [
           [ "VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks" ]
         ] ]
@@ -419,12 +416,6 @@ var annotated_dup =
       [ "utils", "namespacetask__manager_1_1utils.html", [
         [ "colored_logger", "namespacetask__manager_1_1utils_1_1colored__logger.html", [
           [ "CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ]
-        ] ],
-        [ "config", "namespacetask__manager_1_1utils_1_1config.html", [
-          [ "MockConfig", "classtask__manager_1_1utils_1_1config_1_1MockConfig.html", "classtask__manager_1_1utils_1_1config_1_1MockConfig" ],
-          [ "SubtaskConfig", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig.html", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig" ],
-          [ "TopicConfig", "classtask__manager_1_1utils_1_1config_1_1TopicConfig.html", "classtask__manager_1_1utils_1_1config_1_1TopicConfig" ],
-          [ "TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ]
         ] ],
         [ "exploration_planner", "namespacetask__manager_1_1utils_1_1exploration__planner.html", [
           [ "ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner" ]

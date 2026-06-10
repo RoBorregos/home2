@@ -25,9 +25,6 @@ var hierarchy =
     [ "CheckValue< T >", "structCheckValue.html", null ],
     [ "task_manager.utils.colored_logger.CLog", "classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
-    [ "task_manager.utils.config.MockConfig.Config", "classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html", null ],
-    [ "task_manager.utils.config.SubtaskConfig.Config", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
-    [ "task_manager.utils.config.TopicConfig.Config", "classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html", null ],
     [ "vamp::planning::utils::ConnectedComponent", "structvamp_1_1planning_1_1utils_1_1ConnectedComponent.html", null ],
     [ "vamp::planning::ConstantNeighborParams", "structvamp_1_1planning_1_1ConstantNeighborParams.html", null ],
     [ "detectors.base.Detection", "classdetectors_1_1base_1_1Detection.html", null ],
@@ -52,6 +49,7 @@ var hierarchy =
     [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
     [ "vamp::binding::Helper< Robot, Input >", "structvamp_1_1binding_1_1Helper.html", null ],
     [ "task_manager.subtask_managers.hri_hand.HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
+    [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ],
     [ "ikfast::IkFastFunctions< T >", "classikfast_1_1IkFastFunctions.html", null ],
     [ "ikfast::IkSingleDOFSolutionBase< T >", "classikfast_1_1IkSingleDOFSolutionBase.html", null ],
     [ "ikfast::IkSolutionBase< T >", "classikfast_1_1IkSolutionBase.html", [
@@ -72,9 +70,6 @@ var hierarchy =
     [ "task_manager.subtask_managers.hri_dataclasses.Location", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1Location.html", null ],
     [ "task_manager.utils.logger.Logger", "classtask__manager_1_1utils_1_1logger_1_1Logger.html", null ],
     [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", null ],
-    [ "metaclass", null, [
-      [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
-    ] ],
     [ "detectors.registry.ModelRegistry", "classdetectors_1_1registry_1_1ModelRegistry.html", null ],
     [ "nn.Module", null, [
       [ "model.ClassBlock", "classmodel_1_1ClassBlock.html", null ],
@@ -219,9 +214,6 @@ var hierarchy =
       [ "VAMPStateValidator", "structVAMPStateValidator.html", null ]
     ] ],
     [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
-    [ "str", null, [
-      [ "task_manager.utils.config.TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ]
-    ] ],
     [ "task_manager.utils.subtask_manager.SubtaskManager", "classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html", null ],
     [ "hardware_interface::SystemInterface", null, [
       [ "mujoco_ros2_control::MujocoSystemInterface", "classmujoco__ros2__control_1_1MujocoSystemInterface.html", [
@@ -242,11 +234,6 @@ var hierarchy =
     [ "track.Track", "classtrack_1_1Track.html", null ],
     [ "tracker.Tracker", "classtracker_1_1Tracker.html", null ],
     [ "track.TrackState", "classtrack_1_1TrackState.html", null ],
-    [ "type", null, [
-      [ "task_manager.subtask_managers.subtask_meta.SubtaskMeta", "classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", [
-        [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
-      ] ]
-    ] ],
     [ "vamp::robots::UR5", "structvamp_1_1robots_1_1UR5.html", null ],
     [ "std::vector", null, [
       [ "vamp::planning::Path< vamp::robots::Panda >", "structvamp_1_1planning_1_1Path.html", null ],
@@ -280,10 +267,7 @@ var hierarchy =
       ] ]
     ] ],
     [ "BaseModel", null, [
-      [ "storing_groceries_manager.Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ],
-      [ "task_manager.utils.config.MockConfig", "classtask__manager_1_1utils_1_1config_1_1MockConfig.html", null ],
-      [ "task_manager.utils.config.SubtaskConfig", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig.html", null ],
-      [ "task_manager.utils.config.TopicConfig", "classtask__manager_1_1utils_1_1config_1_1TopicConfig.html", null ]
+      [ "storing_groceries_manager.Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ]
     ] ],
     [ "Enum", null, [
       [ "frida_constants.ModuleNames", "classfrida__constants_1_1ModuleNames.html", null ],
@@ -303,7 +287,6 @@ var hierarchy =
       [ "storing_groceries_manager.Retries", "classstoring__groceries__manager_1_1Retries.html", null ],
       [ "task_manager.subtask_managers.hri_dataclasses.AudioStates", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html", null ],
       [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
-      [ "task_manager.utils.config.TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ],
       [ "task_manager.utils.status.Status", "classtask__manager_1_1utils_1_1status_1_1Status.html", null ],
       [ "task_manager.utils.task.Task", "classtask__manager_1_1utils_1_1task_1_1Task.html", null ]
     ] ],

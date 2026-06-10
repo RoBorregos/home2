@@ -33,6 +33,5 @@ var namespacetask__manager_1_1subtask__managers =
     [ "hri_tasks", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks" ],
     [ "manipulation_tasks", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks" ],
     [ "nav_tasks", "namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1nav__tasks" ],
-    [ "subtask_meta", "namespacetask__manager_1_1subtask__managers_1_1subtask__meta.html", "namespacetask__manager_1_1subtask__managers_1_1subtask__meta" ],
     [ "vision_tasks", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks" ]
 ];
