@@ -1,8 +1,0 @@
-# Minimal ROS 2 Control parameter file for home_custom_base_simulation.
-# This file is referenced by home_custom_base_description/urdf/home_base_ros2_control.xacro.
-
-ros__parameters:
-  use_sim_time: true
-
-  # Add controller definitions and hardware parameters here as needed.
-  # The package exists primarily to satisfy xacro $(find home_custom_base_simulation).

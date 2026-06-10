@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="home_base_ros2_control" params="name prefix use_sim_time"
+    xmlns:gz="http://gazebosim.org/schema">
+
+    <!-- ROS 2 Control Setup - only for Gazebo simulation -->
+    <xacro:if value="${use_sim_time}">
+      <ros2_control name="${name}_hardware" type="system">
+        <hardware>
+          <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+        </hardware>
+
+        <joint name="${prefix}_wheel_FL_joint">
+          <command_interface name="velocity">
+            <param name="min">-10</param>
+            <param name="max">10</param>
+          </command_interface>
+          <state_interface name="velocity"/>
+          <state_interface name="position"/>
+        </joint>
+
+        <joint name="${prefix}_wheel_FR_joint">
+          <command_interface name="velocity">
+            <param name="min">-10</param>
+            <param name="max">10</param>
+          </command_interface>
+          <state_interface name="velocity"/>
+          <state_interface name="position"/>
+        </joint>
+
+        <joint name="${prefix}_wheel_RL_joint">
+          <command_interface name="velocity">
+            <param name="min">-10</param>
+            <param name="max">10</param>
+          </command_interface>
+          <state_interface name="velocity"/>
+          <state_interface name="position"/>
+        </joint>
+
+        <joint name="${prefix}_wheel_RR_joint">
+          <command_interface name="velocity">
+            <param name="min">-10</param>
+            <param name="max">10</param>
+          </command_interface>
+          <state_interface name="velocity"/>
+          <state_interface name="position"/>
+        </joint>
+      </ros2_control>
+
+      <!-- To emulate Mecanum wheels in Gazebo with spherical collisions it
+  requires a custom friction model so the vehicle can strafe left to right -->
+      <!-- Wheel friction properties -->
+      <gazebo reference="${prefix}_wheel_RL">
+        <collision>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>0.0</mu2>
+                <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+      </gazebo>
+
+      <gazebo reference="${prefix}_wheel_RR">
+        <collision>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>0.0</mu2>
+                <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+      </gazebo>
+
+      <gazebo reference="${prefix}_wheel_FL">
+        <collision>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>0.0</mu2>
+                <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+      </gazebo>
+
+      <gazebo reference="${prefix}_wheel_FR">
+        <collision>
+          <surface>
+            <friction>
+              <ode>
+                <mu>1.0</mu>
+                <mu2>0.0</mu2>
+                <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+      </gazebo>
+
+
+      <!-- Gazebo ROS2 Control Plugin -->
+      <gazebo>
+        <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+          <parameters>$(find home_custom_base_simulation)/config/ros2_control_mecanum.yaml</parameters>
+          <ros>
+            <robot_param>robot_description</robot_param>
+            <robot_param_node>robot_state_publisher</robot_param_node>
+          </ros>
+        </plugin>
+      </gazebo>
+    </xacro:if>
+
+  </xacro:macro>
+
+</robot>

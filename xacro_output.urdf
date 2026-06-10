@@ -4,313 +4,126 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="FRIDA" xmlns:gz="http://gazebosim.org/schema">
-  <material name="home_base_gray">
-    <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1"/>
-  </material>
-  <material name="home_base_lidar">
-    <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
-  </material>
-  <!-- =================== base_footprint (root) =================== -->
-  <link name="_base_footprint"/>
-  <joint name="_base_footprint_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0 0 0.0385"/>
-    <parent link="_base_footprint"/>
-    <child link="_base_link"/>
-  </joint>
-  <!-- =================== base_link =================== -->
-  <link name="_base_link">
+  <link name="base_link">
     <inertial>
-      <origin rpy="0 0 0" xyz="0.0035289 4.9532E-05 0.18881"/>
-      <mass value="31.284"/>
-      <inertia ixx="0.16472" ixy="6.3557E-05" ixz="0.00075615" iyy="0.12042" iyz="-0.0002185" izz="0.20341"/>
+      <origin rpy="0 0 0" xyz="0.031681 -0.0052694 0.10165"/>
+      <mass value="200.075"/>
+      <inertia ixx="0.44959" ixy="-0.005113" ixz="0.017804" iyy="0.46194" iyz="-0.00061969" izz="0.78515"/>
     </inertial>
     <visual>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/base_link.STL"/>
+        <mesh filename="file:///home/jeremy/home2/install/frida_description/share/frida_description/urdf/meshes/TMR2025/base_link.STL"/>
       </geometry>
-      <material name="home_base_gray"/>
+      <material name="">
+        <color rgba="0.745 0.203 0.482 1"/>
+      </material>
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/base_link.STL"/>
+        <mesh filename="file:///home/jeremy/home2/install/frida_description/share/frida_description/urdf/meshes/TMR2025/base_link_collision.stl"/>
       </geometry>
     </collision>
   </link>
-  <!-- =================== wheel_FL =================== -->
-  <link name="_wheel_FL">
-    <inertial>
-      <origin rpy="0 0 0" xyz="-2.01760275153617E-11 -1.2648801422932E-08 -0.000225751978378957"/>
-      <mass value="0.316522165409144"/>
-      <inertia ixx="0.00018550184297716" ixy="1.47011741018487E-13" ixz="2.37351682170515E-11" iyy="0.000185501841925862" iyz="3.06630872791257E-11" izz="0.000329540832812286"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-      <material name="home_base_gray"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="_wheel_FL_joint" type="continuous">
-    <origin rpy="-1.5707963267949 0 0" xyz="0.184790699909997 0.219394995052441 0.0376959841787657"/>
-    <parent link="_base_link"/>
-    <child link="_wheel_FL"/>
+  <link name="base_footprint"/>
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_footprint"/>
+    <origin rpy="0 0 0 " xyz="0 0 0"/>
     <axis xyz="0 0 1"/>
-  </joint>
-  <!-- =================== wheel_FR =================== -->
-  <link name="_wheel_FR">
-    <inertial>
-      <origin rpy="0 0 0" xyz="1.08346649985158E-08 2.62530414074647E-09 -0.000243946115891319"/>
-      <mass value="0.316802369656036"/>
-      <inertia ixx="0.000185524626213339" ixy="3.28960054383515E-11" ixz="-3.31069057136383E-11" iyy="0.000185524577692034" iyz="1.46274884608806E-10" izz="0.000329541494389925"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-      <material name="home_base_gray"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="_wheel_FR_joint" type="continuous">
-    <origin rpy="-1.5707963267949 0 0" xyz="0.184790699909996 -0.219395004947559 0.0376959841787653"/>
-    <parent link="_base_link"/>
-    <child link="_wheel_FR"/>
-    <axis xyz="0 0 1"/>
-  </joint>
-  <!-- =================== wheel_RL =================== -->
-  <link name="_wheel_RL">
-    <inertial>
-      <origin rpy="0 0 0" xyz="6.27955468179842E-09 -8.84368271322766E-09 -0.000243945799877326"/>
-      <mass value="0.316802379932942"/>
-      <inertia ixx="0.000185524613388858" ixy="-3.95566165674954E-11" ixz="1.17507787929333E-10" iyy="0.000185524592122908" iyz="9.32696147810741E-11" izz="0.000329541494439521"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-      <material name="home_base_gray"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="_wheel_RL_joint" type="continuous">
-    <origin rpy="-1.5707963267949 0 0" xyz="-0.184790699909991 0.219394995052441 0.0376959841787652"/>
-    <parent link="_base_link"/>
-    <child link="_wheel_RL"/>
-    <axis xyz="0 0 1"/>
-  </joint>
-  <!-- =================== wheel_RR =================== -->
-  <link name="_wheel_RR">
-    <inertial>
-      <origin rpy="0 0 0" xyz="1.54742141322828E-09 1.26432938458987E-08 -0.000225751989580358"/>
-      <mass value="0.316522156157189"/>
-      <inertia ixx="0.000185501841998064" ixy="-9.89385955526853E-15" ixz="-2.625503122693E-11" iyy="0.00018550184097349" iyz="-2.87014788963402E-11" izz="0.000329540832766985"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-      <material name="home_base_gray"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/wheel.STL"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="_wheel_RR_joint" type="continuous">
-    <origin rpy="-1.5707963267949 0 0" xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661"/>
-    <parent link="_base_link"/>
-    <child link="_wheel_RR"/>
-    <axis xyz="0 0 1"/>
-  </joint>
-  <!-- =================== lidar_front =================== -->
-  <link name="_lidar_front">
-    <inertial>
-      <origin rpy="0 0 0" xyz="-0.000159118177998852 3.36756577745678E-06 -0.00515345431268351"/>
-      <mass value="0.100467493631956"/>
-      <inertia ixx="3.42207960441524E-05" ixy="9.82554883966053E-09" ixz="-2.35749897825955E-07" iyy="3.47512781108353E-05" iyz="4.57302960893946E-09" izz="4.25510359877868E-05"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/lidar_front.STL"/>
-      </geometry>
-      <material name="home_base_lidar"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/lidar_front.STL"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="_lidar_front_joint" type="fixed">
-    <origin rpy="0 0 -1.5707963267949" xyz="0.287749512711774 -0.207249957761446 0.135795984178765"/>
-    <parent link="_base_link"/>
-    <child link="_lidar_front"/>
-  </joint>
-  <!-- =================== lidar_rear =================== -->
-  <link name="_lidar_rear">
-    <inertial>
-      <origin rpy="0 0 0" xyz="-0.000159118177998907 3.36756577740127E-06 -0.00515345431268352"/>
-      <mass value="0.100467493631956"/>
-      <inertia ixx="3.42207960441524E-05" ixy="9.8255488396398E-09" ixz="-2.35749897825974E-07" iyy="3.47512781108353E-05" iyz="4.57302960896798E-09" izz="4.25510359877867E-05"/>
-    </inertial>
-    <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/lidar_rear.STL"/>
-      </geometry>
-      <material name="home_base_lidar"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
-      <geometry>
-        <mesh filename="package://home_custom_base_description/meshes/visual/lidar_rear.STL"/>
-      </geometry>
-    </collision>
-  </link>
-  <joint name="_lidar_rear_joint" type="fixed">
-    <origin rpy="0 0 1.5707963267949" xyz="-0.287749512711767 0.207249947866326 0.135795984178765"/>
-    <parent link="_base_link"/>
-    <child link="_lidar_rear"/>
   </joint>
   <link name="xarm_base"/>
-  <joint name="xarm_joint" type="fixed">
-    <origin rpy="0 0 0" xyz="0.0410000000000036 -0.00367166302995694 0.520695984178765"/>
-    <parent link="_base_link"/>
+  <joint name="xarm_base_joint" type="fixed">
+    <origin rpy="0 0 1.57" xyz="0.036105613000001 0 0.441000000000001"/>
+    <parent link="base_link"/>
     <child link="xarm_base"/>
-    <axis xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
   </joint>
-  <ros2_control name="home_base_hardware" type="system">
-    <hardware>
-      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
-    </hardware>
-    <joint name="_wheel_FL_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-    <joint name="_wheel_FR_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-    <joint name="_wheel_RL_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-    <joint name="_wheel_RR_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-  </ros2_control>
-  <!-- To emulate Mecanum wheels in Gazebo with spherical collisions it
-  requires a custom friction model so the vehicle can strafe left to right -->
-  <!-- Wheel friction properties -->
-  <gazebo reference="_wheel_RL">
+  <link name="laser">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-1.3878E-17 3.3818E-34 -0.0125"/>
+      <mass value="0.096211"/>
+      <inertia ixx="3.4476E-05" ixy="-1.3255E-52" ixz="6.0099E-37" iyy="3.4476E-05" iyz="8.1342E-38" izz="5.8929E-05"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="file:///home/jeremy/home2/install/frida_description/share/frida_description/urdf/meshes/TMR2025/LIDAR.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.102 0.102 0.102 1"/>
+      </material>
+    </visual>
     <collision>
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
-          </ode>
-        </friction>
-      </surface>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="file:///home/jeremy/home2/install/frida_description/share/frida_description/urdf/meshes/TMR2025/LIDAR.STL"/>
+      </geometry>
     </collision>
-  </gazebo>
-  <gazebo reference="_wheel_RR">
+  </link>
+  <joint name="lidar" type="fixed">
+    <origin rpy="0 0 3.14" xyz="0.16 0 0.002"/>
+    <parent link="base_link"/>
+    <child link="laser"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+  <link name="imu_base">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-1.3878E-17 3.3818E-34 -0.0125"/>
+      <mass value="0.096211"/>
+      <inertia ixx="3.4476E-05" ixy="-1.3255E-52" ixz="6.0099E-37" iyy="3.4476E-05" iyz="8.1342E-38" izz="5.8929E-05"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <material name="">
+        <color rgba="0.102 0.102 0.102 1"/>
+      </material>
+      <geometry>
+        <box size="0.01 0.01 0.01"/>
+      </geometry>
+    </visual>
     <collision>
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
-          </ode>
-        </friction>
-      </surface>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.001 0.001 0.001"/>
+      </geometry>
     </collision>
-  </gazebo>
-  <gazebo reference="_wheel_FL">
+  </link>
+  <joint name="imu_base_joint" type="fixed">
+    <origin rpy="3.1416 3.1416 1.57" xyz="0.15026 0 0.002"/>
+    <parent link="base_link"/>
+    <child link="imu_base"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+  <link name="intel_realsense">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.000276500325472787 -3.68172093455318E-07 -6.47494519674385E-05"/>
+      <mass value="0.048201"/>
+      <inertia ixx="2.7391E-05" ixy="-4.2599E-07" ixz="5.14365274506557E-08" iyy="3.3506E-06" iyz="-2.32499967543505E-08" izz="2.6652E-05"/>
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="file:///home/jeremy/home2/install/frida_description/share/frida_description/urdf/meshes/TMR2025/intel_realsense.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.776 0.757 0.737 1"/>
+      </material>
+    </visual>
     <collision>
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
-          </ode>
-        </friction>
-      </surface>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <mesh filename="file:///home/jeremy/home2/install/frida_description/share/frida_description/urdf/meshes/TMR2025/intel_realsense.STL"/>
+      </geometry>
     </collision>
-  </gazebo>
-  <gazebo reference="_wheel_FR">
-    <collision>
-      <surface>
-        <friction>
-          <ode>
-            <mu>1.0</mu>
-            <mu2>0.0</mu2>
-            <fdir1 gz:expressed_in="base_link">1 -1 0</fdir1>
-          </ode>
-        </friction>
-      </surface>
-    </collision>
-  </gazebo>
-  <!-- Gazebo ROS2 Control Plugin -->
-  <gazebo>
-    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-      <parameters>/home/jeremy/home2/install/home_custom_base_simulation/share/home_custom_base_simulation/config/ros2_control_mecanum.yaml</parameters>
-      <ros>
-        <robot_param>robot_description</robot_param>
-        <robot_param_node>robot_state_publisher</robot_param_node>
-      </ros>
-    </plugin>
-  </gazebo>
-  <!-- Webots driver plugin configuration -->
-  <webots>
-    <plugin type="webots_ros2_control::Ros2Control"/>
-  </webots>
+  </link>
+  <joint name="intelrealsense" type="fixed">
+    <origin rpy="0 0 0" xyz="0.140953490988428 0 0.428947355746093"/>
+    <parent link="base_link"/>
+    <child link="intel_realsense"/>
+    <axis xyz="0 0 1"/>
+  </joint>
   <!-- The world<->base_link offset matters for MoveIt because "world" is the
        planning frame: the plane-collision-object added by perception_3d in
        "base_link" gets stored by MoveIt in "world", and pick_server.check_
@@ -322,7 +135,7 @@
   <link name="world"/>
   <joint name="world_to_base" type="fixed">
     <parent link="world"/>
-    <child link="_base_footprint"/>
+    <child link="base_link"/>
     <origin rpy="0 0 0" xyz="0 0 0.3"/>
   </joint>
   <!-- Insert at the beginning of xarm_device_macro.xacro -->
