@@ -55,11 +55,18 @@ def _dispatch(
     method: Callable,
     on_complete: Optional[Callable[[PlanAction, Any, Any], None]],
     logger: Any,
+    on_start: Optional[Callable[[PlanAction], None]] = None,
 ) -> Optional[Status]:
     """Call ``method(plan_action.action)``, fire ``on_complete``, return Status.
 
     Returns ``None`` if the handler raised or returned a non-Status value.
     """
+    if on_start is not None:
+        try:
+            on_start(plan_action)
+        except Exception:  # noqa: BLE001
+            logger.error("on_start hook raised")
+
     action = plan_action.action
     kind = getattr(action, "action", "")
     try:
@@ -87,6 +94,7 @@ class ActionLeaf(py_trees.behaviour.Behaviour):
         subtask_handlers: Sequence[Any],
         on_complete: Optional[Callable[[PlanAction, Any, Any], None]] = None,
         name: Optional[str] = None,
+        on_start: Optional[Callable[[PlanAction], None]] = None,
     ):
         kind = getattr(plan_action.action, "action", "?")
         super().__init__(name=name or f"{kind}#{plan_action.source_cmd}.{plan_action.source_idx}")
@@ -94,6 +102,7 @@ class ActionLeaf(py_trees.behaviour.Behaviour):
         self._handlers = subtask_handlers
         self._method = _resolve_method(kind, subtask_handlers)
         self._on_complete = on_complete
+        self._on_start = on_start
 
     def update(self) -> py_trees.common.Status:
         if self._method is None:
@@ -102,7 +111,13 @@ class ActionLeaf(py_trees.behaviour.Behaviour):
                 f"No handler for action '{kind}' in [{_handler_names(self._handlers)}]"
             )
             return py_trees.common.Status.FAILURE
-        status = _dispatch(self._plan_action, self._method, self._on_complete, self.logger)
+        status = _dispatch(
+            self._plan_action,
+            self._method,
+            self._on_complete,
+            self.logger,
+            on_start=self._on_start,
+        )
         if status == Status.EXECUTION_SUCCESS:
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
@@ -124,6 +139,7 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
         on_complete: Optional[Callable[[PlanAction, Any, Any], None]] = None,
         name: Optional[str] = None,
         is_completed: Optional[Callable[[PlanAction], bool]] = None,
+        on_start: Optional[Callable[[PlanAction], None]] = None,
     ):
         if not per_command_actions:
             raise ValueError("SequentialFallbackLeaf requires at least one action")
@@ -131,6 +147,7 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
         self._handlers = subtask_handlers
         self._on_complete = on_complete
         self._is_completed = is_completed
+        self._on_start = on_start
         # Resolve handlers once so a missing-method misconfiguration
         # surfaces here, in tree construction, rather than mid-tick.
         self._resolved: List[Tuple[PlanAction, Optional[Callable]]] = [
@@ -194,7 +211,7 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
                     f"No handler for action '{kind}' in [{_handler_names(self._handlers)}]"
                 )
                 continue
-            _dispatch(pa, method, self._on_complete, self.logger)
+            _dispatch(pa, method, self._on_complete, self.logger, on_start=self._on_start)
         # The fallback branch always reports SUCCESS — its job is to give
         # every command its chance, not to gate on per-action outcomes.
         return py_trees.common.Status.SUCCESS

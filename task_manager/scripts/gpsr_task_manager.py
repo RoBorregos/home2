@@ -205,6 +205,10 @@ class GPSRTM(Node):
             self.get_logger().warning(f"current pose lookup failed: {e}")
             return None
 
+    def _on_action_start(self, plan_action):
+        kind = getattr(plan_action.action, "action", "?")
+        self.subtask_manager.hri.publish_display_step(f"executing:{kind}", GPSR_TASK_STEP_TOPIC)
+
     def _on_action_complete(self, plan_action, status, result):
         if status == Status.EXECUTION_SUCCESS:
             self._completed.add((plan_action.source_cmd, plan_action.source_idx))
@@ -258,6 +262,7 @@ class GPSRTM(Node):
             global_budget_s=GLOBAL_BUDGET_S,
             on_fallback_entry=_announce_fallback,
             is_completed=lambda pa: (pa.source_cmd, pa.source_idx) in self._completed,
+            on_action_start=self._on_action_start,
         )
         self.get_logger().info("Behaviour tree:\n" + render_tree_ascii(root))
 
