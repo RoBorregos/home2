@@ -43,7 +43,7 @@ const FSM_STEPS: FsmStep[] = [
   { key: "waiting_for_command", label: "Listening",   icon: <Mic          className="h-3.5 w-3.5" /> },
   { key: "plan_and_execute_batch", label: "Merged Plan", icon: <BarChart3 className="h-3.5 w-3.5" /> },
   { key: "executing",           label: "Executing",   icon: <Play         className="h-3.5 w-3.5" /> },
-  { key: "finished_command",    label: "Finished",    icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
+  { key: "done",    label: "Done",    icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
 ];
 
 const COMMAND_DISPLAY: Record<string, DisplayMode> = {
