@@ -14,9 +14,10 @@ from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
+    NAV_QUERY_SERVICE,
     SUBTASK_MANAGER,
 )
-from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
+from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation, NavQuery
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -36,6 +37,7 @@ class NavigationTasks:
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+        self.nav_query_srv = self.node.create_client(NavQuery, NAV_QUERY_SERVICE)
 
         # Task Actions and Services check
         self.services = {
@@ -43,6 +45,7 @@ class NavigationTasks:
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+                "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
             },
         }
 
@@ -161,6 +164,49 @@ class NavigationTasks:
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, {"distance": 5.0}), delay=1)
+    @service_check(
+        "nav_query_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def get_path_info(self, location_b, sublocation_b, location_a="", sublocation_a=""):
+        """Query the real path distance (m) to a map area without moving the
+        robot. Empty location_a starts from the robot's current pose.
+        Returns (Status, {"distance": float})."""
+        if sublocation_b == "":
+            sublocation_b = "safe_place"
+        if location_a != "" and sublocation_a == "":
+            sublocation_a = "safe_place"
+        origin = f"{location_a} - {sublocation_a}" if location_a else "current pose"
+        CLog.nav(
+            self.node,
+            "INFO",
+            f"Querying path from {origin} to {location_b} - {sublocation_b}",
+        )
+        request = NavQuery.Request()
+        request.location_a = location_a
+        request.sublocation_a = sublocation_a
+        request.location_b = location_b
+        request.sublocation_b = sublocation_b
+        future = self.nav_query_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.NAV_QUERY_TIMEOUT.value
+        )
+        result = future.result()
+        if result is None:
+            CLog.nav(self.node, "ERROR", "Path query failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+        if not result.success:
+            CLog.nav(self.node, "ERROR", f"Path query failed: {result.error}")
+            return (Status.EXECUTION_ERROR, result.error)
+        CLog.nav(
+            self.node,
+            "SUCCESS",
+            f"Path to {location_b}: {result.distance_meters:.2f} m",
+        )
+        return (Status.EXECUTION_SUCCESS, {"distance": result.distance_meters})
 
 
 if __name__ == "__main__":
