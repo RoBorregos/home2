@@ -8,7 +8,11 @@ import time
 from datetime import datetime
 
 import rclpy
-from frida_constants.hri_constants import GPSR_COMMAND_INDEX_TOPIC, GPSR_TASK_STEP_TOPIC
+from frida_constants.hri_constants import (
+    GPSR_COMMAND_INDEX_TOPIC,
+    GPSR_TASK_STEP_TOPIC,
+    ANSWER_PUBLISHER,
+)
 from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.duration import Duration
 from rclpy.node import Node
@@ -228,6 +232,7 @@ class GPSRTM(Node):
         )
         spoken = self.subtask_manager.hri.parse_plan_to_text([pa.action for pa in plan.actions])
         self.subtask_manager.hri.say(f"I will now execute the merged plan: {spoken}")
+        self.subtask_manager.hri.publish_display_step("executing", GPSR_TASK_STEP_TOPIC)
 
         fallback_lines = ["Falling back to the sequential plan."]
         for cmd_idx, per_cmd in enumerate(plan.fallback):
@@ -239,7 +244,9 @@ class GPSRTM(Node):
 
         def _announce_fallback():
             try:
-                self.subtask_manager.hri.publish_display_step(fallback_text)
+                self.subtask_manager.hri.publish_display_step("executing", GPSR_TASK_STEP_TOPIC)
+                # Also log the full fallback text to the answers topic for visibility
+                self.subtask_manager.hri.publish_display_step(fallback_text, ANSWER_PUBLISHER)
             except Exception as e:  # noqa: BLE001
                 self.get_logger().warning(f"publish_display_step failed: {e}")
 
@@ -376,7 +383,6 @@ class GPSRTM(Node):
                     "LLM_command",
                     context="The user was asked to say a command. We want to infer his complete instruction from the response",
                     confirm_question=confirm_command,
-                    use_keyword=False,
                     retries=ATTEMPT_LIMIT,
                     min_wait_between_retries=5.0,
                     skip_extract_data=True,

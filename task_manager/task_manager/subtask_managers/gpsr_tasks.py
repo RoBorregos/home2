@@ -4,6 +4,7 @@ from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     DETECTIONS_IMAGE_TOPIC,
     CAMERA_TOPIC,
+    IMAGE_TOPIC_HRIC,
 )
 from task_manager.utils.baml_client.types import (
     Count,
@@ -123,6 +124,8 @@ class GPSRTask(GenericTask):
         """
         if isinstance(command, dict):
             command = FollowPersonUntil(**command)
+
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
 
         # TODO: fix this, now follow person until only has destination because
         # it can only be triggered after a find_person action, my suggestion for
@@ -427,6 +430,7 @@ class GPSRTask(GenericTask):
             value = f"{cache_color} {cache_cloth}s"
             command.target_to_count = value
 
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.hri.say(
             f"I am going to count the {value}.",
         )
@@ -459,6 +463,7 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
@@ -551,6 +556,7 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for retry in range(3):
             self.subtask_manager.hri.node.get_logger().info(f"Retry {retry}.")
