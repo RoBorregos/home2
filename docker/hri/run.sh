@@ -10,6 +10,7 @@ ENV_TYPE="${*: -1}"
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
 BENCHMARK=""
+VIA_HRI=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 parse_common_flags "$COMPOSE" "${ARGS[@]}"
@@ -23,6 +24,7 @@ while [[ $i -lt ${#ARGS[@]} ]]; do
     "--regenerate-db")  REGENERATE_DB="true" ;;
     "--build-proto")    BUILD_PROTO="true" ;;
     "--benchmark")      BENCHMARK="true" ;;
+    "--via-hri")        VIA_HRI="true" ;;
   esac
   (( i++ )) || true
 done
@@ -52,7 +54,10 @@ setup_common_env "hri" "compose/.env"
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
 if [ "$BENCHMARK" == "true" ]; then
-  bash ./scripts/run-benchmark.sh
+  BENCH_ARGS=()
+  [ "$VIA_HRI" == "true" ] && BENCH_ARGS+=("--via-hri")
+  BENCH_ARGS+=("--env" "$ENV_TYPE")
+  bash ./scripts/run-benchmark.sh "${BENCH_ARGS[@]}"
   exit 0
 fi
 

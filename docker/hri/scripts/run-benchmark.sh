@@ -42,6 +42,8 @@ RUNS=3
 TASK_PRESET=""
 MODEL_SELECT=""
 SELECT_ALL=false
+VIA_HRI=false
+ENV_TYPE_ARG="${ENV_TYPE:-l4t}"
 
 # Args
 while [[ $# -gt 0 ]]; do
@@ -51,6 +53,8 @@ while [[ $# -gt 0 ]]; do
         --tasks)     TASK_PRESET="$2"; shift 2 ;;
         --models)    MODEL_SELECT="$2"; shift 2 ;;
         --all)       SELECT_ALL=true; shift ;;
+        --via-hri)   VIA_HRI=true; shift ;;
+        --env)       ENV_TYPE_ARG="$2"; shift 2 ;;
         -h|--help)
             sed -n '2,25p' "$0"; exit 0 ;;
         *)           echo "Unknown flag: $1"; exit 1 ;;
@@ -190,21 +194,48 @@ if [[ -z "$TASK_PRESET" ]]; then
 fi
 TASK_PRESET="${TASK_PRESET:-1}"
 case "$TASK_PRESET" in
-    1) TASK_ARGS=() ;;
-    2) TASK_ARGS=(--tasks extract_data) ;;
-    3) TASK_ARGS=(--tasks is_positive is_negative) ;;
-    4) TASK_ARGS=(--tasks command_interpreter) ;;
+    1) TASK_ARGS=(); TASK_NAMES=(extract_data is_positive is_negative) ;;
+    2) TASK_ARGS=(--tasks extract_data); TASK_NAMES=(extract_data) ;;
+    3) TASK_ARGS=(--tasks is_positive is_negative); TASK_NAMES=(is_positive is_negative) ;;
+    4) TASK_ARGS=(--tasks command_interpreter); TASK_NAMES=(command_interpreter) ;;
     *) echo "Invalid task preset: $TASK_PRESET"; exit 1 ;;
 esac
+
+# --via-hri preflight: HRI services container must already be running so that
+# hri_manager.extract_data / is_positive / is_negative resolve through ROS.
+if $VIA_HRI; then
+    if ! docker ps --format '{{.Names}}' | grep -q 'hri-ros'; then
+        echo ""
+        echo "ERROR: --via-hri requires the HRI services container (hri-ros) running."
+        echo "       Start it first:  ./docker/hri/run.sh $ENV_TYPE_ARG"
+        echo "       (it brings up the nlp microservice that hri_manager talks to)"
+        exit 1
+    fi
+    if [[ "${TASK_NAMES[*]}" =~ command_interpreter ]]; then
+        echo "WARNING: command_interpreter via --via-hri is not yet supported; skipping that task."
+        # Filter it out
+        NEW_NAMES=()
+        for n in "${TASK_NAMES[@]}"; do
+            [[ "$n" != "command_interpreter" ]] && NEW_NAMES+=("$n")
+        done
+        TASK_NAMES=("${NEW_NAMES[@]}")
+        if [[ ${#TASK_NAMES[@]} -eq 0 ]]; then
+            echo "No supported tasks remain. Exiting."
+            exit 1
+        fi
+    fi
+fi
 
 echo ""
 echo "Perf runs per task: $RUNS"
 $EPHEMERAL && echo "Ephemeral mode: GGUFs will be deleted after each model."
 
-# Build the benchmark image once
-echo ""
-echo "Building benchmark image..."
-docker build -q -t "$BENCHMARK_IMAGE" "$BENCHMARK_DIR" >/dev/null
+# Build the benchmark image once (skip in --via-hri mode — integration container handles tests)
+if ! $VIA_HRI; then
+    echo ""
+    echo "Building benchmark image..."
+    docker build -q -t "$BENCHMARK_IMAGE" "$BENCHMARK_DIR" >/dev/null
+fi
 mkdir -p "$BENCHMARK_DIR/results"
 
 # Helpers
@@ -328,21 +359,44 @@ for idx in "${SELECTED[@]}"; do
     fi
 
     echo ""
-    echo "  ── Running benchmark ─────────────────────────────"
-    if docker run --rm \
-        --network host \
-        -v "$BENCHMARK_DIR/results:/benchmark/results" \
-        -v "$TEST_DATA_DIR:/test_data:ro" \
-        "$BENCHMARK_IMAGE" \
-        --ollama-url "http://localhost:$PORT/v1" \
-        --models    "$alias_name" \
-        "${TASK_ARGS[@]+"${TASK_ARGS[@]}"}" \
-        --runs "$RUNS"
-    then
-        SUCCESSES+=("$name")
+    if $VIA_HRI; then
+        echo "  ── Running benchmark via HRI pipeline (integration container) ──"
+        TASK_CSV=$(IFS=,; echo "${TASK_NAMES[*]}")
+        INTEGRATION_RUN="$(realpath "$SCRIPT_DIR/../../integration/run.sh")"
+        INTEGRATION_DIR="$(dirname "$INTEGRATION_RUN")"
+        if (
+            cd "$INTEGRATION_DIR" && \
+            TEST_NLP=true \
+            NLP_MODEL_ALIAS="$alias_name" \
+            NLP_OLLAMA_URL="http://localhost:$PORT/v1" \
+            NLP_TASKS="$TASK_CSV" \
+            NLP_RUNS="$RUNS" \
+            NLP_RESULTS_DIR="/workspace/src/hri/packages/nlp/benchmark/results" \
+            bash "$INTEGRATION_RUN" --test-hri "$ENV_TYPE_ARG"
+        )
+        then
+            SUCCESSES+=("$name")
+        else
+            echo "  HRI-pipeline benchmark errored for $name."
+            FAILURES+=("$name (benchmark-via-hri)")
+        fi
     else
-        echo "  Benchmark errored for $name."
-        FAILURES+=("$name (benchmark)")
+        echo "  ── Running benchmark ─────────────────────────────"
+        if docker run --rm \
+            --network host \
+            -v "$BENCHMARK_DIR/results:/benchmark/results" \
+            -v "$TEST_DATA_DIR:/test_data:ro" \
+            "$BENCHMARK_IMAGE" \
+            --ollama-url "http://localhost:$PORT/v1" \
+            --models    "$alias_name" \
+            "${TASK_ARGS[@]+"${TASK_ARGS[@]}"}" \
+            --runs "$RUNS"
+        then
+            SUCCESSES+=("$name")
+        else
+            echo "  Benchmark errored for $name."
+            FAILURES+=("$name (benchmark)")
+        fi
     fi
 
     cleanup_llama
