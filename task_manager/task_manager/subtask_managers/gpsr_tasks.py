@@ -74,9 +74,7 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_to_position(named_position="receive_object")
 
         while True:
-            s, res = self.subtask_manager.hri.confirm(
-                "Have you grabbed the object?", use_keyword=False
-            )
+            s, res = self.subtask_manager.hri.confirm("Have you grabbed the object?")
             if res == "yes":
                 break
             else:
@@ -151,7 +149,6 @@ class GPSRTask(GenericTask):
             status, loc = self.subtask_manager.hri.ask_and_confirm(
                 question="Please tell me where to go.",
                 query="location",
-                use_keyword=False,
                 context="The user was asked to say the location. We want to infer the location from the response",
             )
 
@@ -303,7 +300,6 @@ class GPSRTask(GenericTask):
                 s, response = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_keyword=False,
                     context="The user was asked to say their name. We want to infer his name from the response",
                 )
                 if s == Status.EXECUTION_SUCCESS:
@@ -583,7 +579,6 @@ class GPSRTask(GenericTask):
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_keyword=False,
                     hotwords=command.name,
                 )
                 new_name = self.subtask_manager.hri.remove_punctuation(new_name)

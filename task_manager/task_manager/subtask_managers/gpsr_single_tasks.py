@@ -163,7 +163,7 @@ class GPSRSingleTask(GenericTask):
                 )
                 return Status.TARGET_NOT_FOUND, ""
             s, res = self.subtask_manager.hri.confirm(
-                f"Have you placed the {command.object_to_pick} on my gripper?", use_keyword=False
+                f"Have you placed the {command.object_to_pick} on my gripper?"
             )
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will close my gripper")
@@ -220,9 +220,7 @@ class GPSRSingleTask(GenericTask):
                     "I couldn't hear your confirmation, I will abort placing the object."
                 )
                 return Status.EXECUTION_ERROR, ""
-            s, res = self.subtask_manager.hri.confirm(
-                "Have you picked the object in my gripper?", use_keyword=False
-            )
+            s, res = self.subtask_manager.hri.confirm("Have you picked the object in my gripper?")
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will open my gripper")
                 return (
@@ -328,7 +326,6 @@ class GPSRSingleTask(GenericTask):
             "LLM_question",
             context="The user was asked to say a question. We want to infer his question from the response",
             confirm_question=confirm_question,
-            use_keyword=False,
             retries=3,
             min_wait_between_retries=5.0,
             skip_extract_data=True,
