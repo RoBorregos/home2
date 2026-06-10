@@ -148,6 +148,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Static TF
+    publish_attach_tf = LaunchConfiguration("publish_attach_tf", default="false")
     static_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -155,6 +156,7 @@ def launch_setup(context, *args, **kwargs):
         output="screen",
         arguments=args + log_args,
         parameters=[{"use_sim_time": use_sim_time}],
+        condition=IfCondition(publish_attach_tf),
     )
 
     robot_planner_node_launch = IncludeLaunchDescription(
