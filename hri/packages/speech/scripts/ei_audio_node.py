@@ -180,7 +180,7 @@ class EIAudioNode(Node):
                 if self.save_detection_audio:
                     self._save_audio_window(audio_window, best_label, best_score)
 
-                detection_info = {"label": best_label, "score": float(best_score)}
+                detection_info = {"keyword": best_label, "score": float(best_score)}
                 self.publisher.publish(String(data=json.dumps(detection_info)))
                 self.last_detection_time = current_time
 
