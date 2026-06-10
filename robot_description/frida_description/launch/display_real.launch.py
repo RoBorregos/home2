@@ -12,6 +12,11 @@ def generate_launch_description():
         'urdf', 'TMR2025', 'FRIDA_Real.urdf.xacro'
     ])
 
+    rviz_config = PathJoinSubstitution([
+        FindPackageShare('frida_description'),
+        'config', 'display.rviz'
+    ])
+
     robot_description = ParameterValue(
         Command([
             'xacro ', urdf_file,
@@ -40,8 +45,7 @@ def generate_launch_description():
         Node(
             package='rviz2',
             executable='rviz2',
+            arguments=['-d', rviz_config],
             output='screen'
         ),
     ])
-
-    return ld
