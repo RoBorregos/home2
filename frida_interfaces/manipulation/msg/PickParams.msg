@@ -5,3 +5,4 @@ float32 min_distance
 bool closest
 bool largest
 bool in_configuration # if set to false it will move the arm to an appropiate joint configuration
+bool force_flat_grasp # if true, use the flat-grasp estimator pipeline regardless of object name

@@ -2,6 +2,7 @@
 geometry_msgs/PoseStamped[] grasping_poses
 float64[] grasping_scores
 string object_name
+bool force_flat_grasp
 ---
 #result definition
 int32 success

@@ -18,6 +18,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
+from frida_constants.manipulation_constants import FLAT_GRASP_OBJECTS
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
 
@@ -48,7 +49,7 @@ class FlatGraspEstimator(Node):
         self.intrinsics = None
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
-        self.target_classes = ["spoon", "fork", "knife"]
+        self.target_classes = {name.lower() for name in FLAT_GRASP_OBJECTS}
 
         # Start disabled — only enabled explicitly before a cutlery pick.
         # Saves CPU/network when no manipulation is in progress.

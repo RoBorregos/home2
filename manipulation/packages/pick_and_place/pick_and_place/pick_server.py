@@ -19,6 +19,7 @@ from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     SAFETY_HEIGHT,
     CUTLERY_NAMES,
+    FLAT_GRASP_OBJECTS,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
@@ -273,9 +274,16 @@ class PickMotionServer(Node):
         pick_result = PickResult()
         grasping_poses = goal_handle.request.grasping_poses
 
-        is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
+        object_name_lower = goal_handle.request.object_name.lower()
+        force_flat = bool(getattr(goal_handle.request, "force_flat_grasp", False))
+        is_cutlery_obj = object_name_lower in CUTLERY_NAMES
+        is_flat = (
+            is_cutlery_obj or object_name_lower in FLAT_GRASP_OBJECTS or force_flat
+        )
 
-        if is_flat:
+        # Cutlery uses a tighter, multi-alternative descent tuned to thin metal.
+        # Other flat objects (e.g. pills) use the standard 2-alt spacing.
+        if is_cutlery_obj:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
         else:

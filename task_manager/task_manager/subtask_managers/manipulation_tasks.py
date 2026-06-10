@@ -330,17 +330,23 @@ class ManipulationTasks:
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
     def pick_object(
-        self, object_name: str, in_configuration: bool = False, scan_environment: bool = False
+        self,
+        object_name: str,
+        in_configuration: bool = False,
+        scan_environment: bool = False,
+        force_flat_grasp: bool = False,
     ):
         """Pick an object by name
         object_name: name of the object to pick
         in_configuration: True if the object is in the configuration
-        scan_environment: True to scan environment before picking (useful for shelf picks)"""
+        scan_environment: True to scan environment before picking (useful for shelf picks)
+        force_flat_grasp: True to force the flat-grasp estimator path for non-cutlery objects"""
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
         goal_msg.pick_params.in_configuration = in_configuration
+        goal_msg.pick_params.force_flat_grasp = force_flat_grasp
         goal_msg.scan_environment = scan_environment
 
         future = self._manipulation_action_client.send_goal_async(goal_msg)
@@ -396,6 +402,16 @@ class ManipulationTasks:
         self.set_flat_grasp_estimator(True)
         try:
             result = self.pick_object(object_name)
+        finally:
+            self.set_flat_grasp_estimator(False)
+        return result
+
+    def pick_flat(self, object_name: str) -> int:
+        """Pick any flat object (e.g. pill) using the flat-grasp estimator pipeline.
+        Forces the flat path regardless of whether the object is in FLAT_GRASP_OBJECTS."""
+        self.set_flat_grasp_estimator(True)
+        try:
+            result = self.pick_object(object_name, force_flat_grasp=True)
         finally:
             self.set_flat_grasp_estimator(False)
         return result

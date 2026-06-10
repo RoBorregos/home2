@@ -68,6 +68,10 @@ SAFETY_HEIGHT = 0.05
 PICK_MIN_HEIGHT = 0.04
 CUTLERY_PICK_MIN_HEIGHT = 0.002
 CUTLERY_NAMES = ["fork", "knife", "spoon", "cutlery"]
+# Superset of object labels that should be picked with the flat-grasp estimator
+# pipeline (PCA top-down pose + low descent). All cutlery is flat-graspable, plus
+# additional non-cutlery flat items like pills.
+FLAT_GRASP_OBJECTS = set(CUTLERY_NAMES) | {"pill"}
 POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 

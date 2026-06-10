@@ -12,6 +12,7 @@ from frida_motion_planning.utils.service_utils import (
 from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
+    FLAT_GRASP_OBJECTS,
     POUR_OBJECT_NAMES,
 )
 from typing import Tuple
@@ -58,6 +59,12 @@ def is_cutlery(object_name: str) -> bool:
     return object_name.lower() in CUTLERY_NAMES
 
 
+def is_flat_grasp_object(object_name: str) -> bool:
+    if object_name is None:
+        return False
+    return object_name.lower() in FLAT_GRASP_OBJECTS
+
+
 def is_pour_object(object_name: str) -> bool:
     """Objects that must be picked upright for pouring."""
     if object_name is None:
@@ -92,10 +99,12 @@ class PickManager:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
 
-        is_flat_object = is_cutlery(object_name)
+        force_flat = bool(getattr(pick_params, "force_flat_grasp", False))
+        is_flat_object = is_flat_grasp_object(object_name) or force_flat
+        is_cutlery_object = is_cutlery(object_name)
 
         if not pick_params.in_configuration:
-            stare_position = "cutlery_stare" if is_flat_object else "table_stare"
+            stare_position = "cutlery_stare" if is_cutlery_object else "table_stare"
             send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
                 named_position=stare_position,
@@ -258,6 +267,7 @@ class PickManager:
             goal_msg.grasping_poses = [grasp_pose, grasp_pose_alt]
             goal_msg.grasping_scores = [1.0, 0.9]
             goal_msg.object_name = object_name
+            goal_msg.force_flat_grasp = force_flat
 
             self.node.get_logger().info(
                 "Sending Pick Motion goal (flat grasp estimator)..."
