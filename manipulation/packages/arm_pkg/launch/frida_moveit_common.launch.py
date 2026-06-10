@@ -55,7 +55,7 @@ def launch_setup(context, *args, **kwargs):
     prefix = LaunchConfiguration("prefix", default="")
     attach_to = LaunchConfiguration("attach_to", default="world")
     attach_xyz = LaunchConfiguration("attach_xyz", default='"0 0 0"')
-    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 0"')
+    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 1.5707963267948966"')
     no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
     show_rviz = LaunchConfiguration("show_rviz", default=True)
     use_sim_time = LaunchConfiguration("use_sim_time", default=False)
