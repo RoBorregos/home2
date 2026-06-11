@@ -11,7 +11,7 @@ def generate_launch_description():
     detector_launch_file = os.path.join(
         get_package_share_directory("object_detector_2d"),
         "launch",
-        "object_detector_combined.launch.py",
+        "object_detector_node.launch.py",
     )
     return LaunchDescription(
         [
@@ -19,13 +19,6 @@ def generate_launch_description():
                 package="vision_general",
                 executable="image_orienter.py",
                 name="image_orienter",
-                output="screen",
-                emulate_tty=True,
-            ),
-            Node(
-                package="vision_general",
-                executable="yolo_node.py",
-                name="yolo_node",
                 output="screen",
                 emulate_tty=True,
             ),

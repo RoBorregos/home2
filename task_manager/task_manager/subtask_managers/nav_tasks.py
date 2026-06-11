@@ -33,6 +33,14 @@ from task_manager.utils.task import Task
 NAV_GOAL_TIMEOUT = 90.0
 
 
+def _mock_pose():
+    """Build a valid placeholder PoseStamped for mocked navigation."""
+    pose = PoseStamped()
+    pose.header.frame_id = "map"
+    pose.pose.orientation.w = 1.0
+    return pose
+
+
 def _get_adaptive_bt_path():
     """Get the full installed path for the adaptive behavior tree."""
     try:
@@ -199,7 +207,7 @@ class NavigationTasks:
 
     # ── Point-based navigation methods (unmapped / restaurant) ──
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, None), delay=1)
+    @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, _mock_pose()), delay=1)
     @service_check(
         "get_robot_pose_srv",
         (Status.EXECUTION_ERROR, None),

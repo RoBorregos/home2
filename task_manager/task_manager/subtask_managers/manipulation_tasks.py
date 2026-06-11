@@ -54,6 +54,9 @@ TIMEOUT = 5.0
 RAD_TO_DEG = 180 / 3.14159265359
 DEG_TO_RAD = 3.14159265359 / 180
 
+# Front reference
+FORWARD_JOINT1_DEG = -90.0
+
 
 class ManipulationTasks:
     """Class to manage the vision tasks"""
@@ -649,7 +652,7 @@ class ManipulationTasks:
         if not isinstance(joint_positions, dict):
             Logger.error(self.node, f"Failed to get joint positions in pan_to: {joint_positions}")
             return Status.EXECUTION_ERROR
-        joint_positions["joint1"] = joint_positions["joint1"] - degrees
+        joint_positions["joint1"] = FORWARD_JOINT1_DEG - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def point(self, degrees: float):

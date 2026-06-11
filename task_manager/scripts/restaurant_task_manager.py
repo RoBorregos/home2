@@ -56,7 +56,7 @@ class RestaurantTaskManager(Node):
 
         self.running_task = True
 
-        # Table data: {table_id: {'customer_points', 'customer_map_points', 'orders', 'coordinates', 'num_customers'}}
+        # Table data: {table_id: {'customer_points', 'customer_pan_angles', 'orders', 'coordinates', 'num_customers'}}
         self.tables = {}
         self.tables_sorted_by_customers = []
         self.current_table_idx = 0
@@ -86,43 +86,22 @@ class RestaurantTaskManager(Node):
         while (time.time() - start_time) < timeout:
             pass
 
-    def _point_to_map_frame(self, point_stamped):
-        """Transform a PointStamped to map frame; returns None on failure."""
+    def _pan_angle_to(self, point_stamped):
+        """Return the pan_to angle (degrees) to face a PointStamped, computed in base_link."""
+        if point_stamped is None:
+            return None
         try:
             t = self.tf_buffer.lookup_transform(
-                "map", point_stamped.header.frame_id, rclpy.time.Time()
+                "base_link", point_stamped.header.frame_id, rclpy.time.Time()
             )
-            return do_transform_point(point_stamped, t)
+            bl_point = do_transform_point(point_stamped, t)
         except TransformException as e:
-            Logger.warn(self, f"TF transform failed: {e}")
+            Logger.warn(self, f"TF to base_link failed for pan: {e}")
             return None
 
-    def _bearing_pan_angle(self, map_point):
-        """Return the pan_to angle (degrees) to face a map-frame PointStamped from current pose.
-
-        Returns None when current pose is unavailable.
-        Positive angle = customer is to the right; matches pan_to's subtraction convention.
-        """
-        status, current_pose = self.subtask_manager.nav.get_current_pose()
-        if status != Status.EXECUTION_SUCCESS or current_pose is None:
-            Logger.warn(self, "Could not get current pose for bearing calculation.")
-            return None
-
-        dx = map_point.point.x - current_pose.pose.position.x
-        dy = map_point.point.y - current_pose.pose.position.y
-        bearing = math.atan2(dy, dx)
-
-        q = current_pose.pose.orientation
-        robot_yaw = math.atan2(
-            2.0 * (q.w * q.z + q.x * q.y),
-            1.0 - 2.0 * (q.y * q.y + q.z * q.z),
-        )
-
-        # Angle from robot forward to customer (positive = right, matching pan_to convention)
-        angle = math.degrees(robot_yaw - bearing)
-        # Normalise to [-180, 180]
-        angle = (angle + 180.0) % 360.0 - 180.0
-        return angle
+        # base_link: x forward, y left. pan_to treats +deg as customer-to-right,
+        # so negate atan2(y, x). Result is inherently within [-180, 180].
+        return -math.degrees(math.atan2(bl_point.point.y, bl_point.point.x))
 
     def sort_tables_by_customers(self):
         """Sort tables by number of customers (descending - greedy strategy)."""
@@ -143,7 +122,7 @@ class RestaurantTaskManager(Node):
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you placed the object in my gripper?",
-            use_hotwords=True,
+            use_keyword=True,
             retries=3,
             wait_between_retries=5,
         )
@@ -200,7 +179,7 @@ class RestaurantTaskManager(Node):
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you grabbed the object from my gripper?",
-            use_hotwords=True,
+            use_keyword=True,
             retries=3,
             wait_between_retries=5,
         )
@@ -333,13 +312,13 @@ class RestaurantTaskManager(Node):
                 if len(table_msg.people.list) == 0:
                     continue
                 customer_points = []
-                customer_map_points = []
+                customer_pan_angles = []
                 for person in table_msg.people.list:
                     customer_points.append(person.point3d)
-                    customer_map_points.append(self._point_to_map_frame(person.point3d))
+                    customer_pan_angles.append(self._pan_angle_to(person.point3d))
                 self.tables[table_idx] = {
                     "customer_points": customer_points,
-                    "customer_map_points": customer_map_points,
+                    "customer_pan_angles": customer_pan_angles,
                     "orders": [],
                     "coordinates": table_msg.table_point,
                     "num_customers": len(table_msg.people.list),
@@ -391,18 +370,12 @@ class RestaurantTaskManager(Node):
                         if arrived_pose is not None:
                             table["approach_pose"] = arrived_pose
 
-                map_point = table["customer_map_points"][self.current_customer_index]
-                if map_point is not None:
-                    pan_angle = self._bearing_pan_angle(map_point)
-                    self.subtask_manager.manipulation.pan_to(
-                        pan_angle if pan_angle is not None else 0.0
-                    )
+                # Pan to the angle precomputed at scan
+                pan_angle = table["customer_pan_angles"][self.current_customer_index]
+                if pan_angle is not None:
+                    self.subtask_manager.manipulation.pan_to(pan_angle)
                 else:
-                    Logger.warn(self, "No map-frame point for customer, facing forward.")
-                    self.subtask_manager.manipulation.pan_to(0.0)
-                self.subtask_manager.vision.activate_face_recognition()
-                self.subtask_manager.manipulation.follow_face(True)
-                self.subtask_manager.manipulation.move_to_position("front_stare", velocity=0.5)
+                    Logger.warn(self, "Could not resolve customer bearing, facing forward.")
 
                 order_received = False
                 for order_attempt in range(ATTEMPT_LIMIT):
@@ -426,7 +399,6 @@ class RestaurantTaskManager(Node):
                         "Sorry, I couldn't get your order. I'll move to the next customer."
                     )
 
-                self.subtask_manager.manipulation.follow_face(False)
                 self.current_customer_index += 1
 
             else:

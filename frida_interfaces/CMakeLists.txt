@@ -102,7 +102,6 @@ set(srv_files
   "hri/srv/AddEntry.srv"
   "hri/srv/AudioText.srv"
   "hri/srv/BuildEmbeddings.srv"
-  "hri/srv/CategorizeShelves.srv"
   "hri/srv/CommandInterpreter.srv"
   "hri/srv/ExtractInfo.srv"
   "hri/srv/Grammar.srv"
