@@ -217,6 +217,42 @@ BASKET_HOLD_BACK_POSE = {
     "degrees": True,
 }
 
+INITIAL_CLOSE_LAUNDRY_POSE = {
+    "joints": {
+        "joint1": -175.3,
+        "joint2": -34.2,
+        "joint3": -41.1,
+        "joint4": 0.1,
+        "joint5": -11.8,
+        "joint6": 45.1,
+    },
+    "degrees": True,
+}
+
+MID_CLOSE_LAUNDRY_POSE = {
+    "joints": {
+        "joint1": -88.5,
+        "joint2": -34.2,
+        "joint3": -41.1,
+        "joint4": 0.1,
+        "joint5": -11.8,
+        "joint6": 45.1,
+    },
+    "degrees": True,
+}
+
+END_CLOSE_LAUNDRY_POSE = {
+    "joints": {
+        "joint1": -87.5,
+        "joint2": 39.8,
+        "joint3": -116.6,
+        "joint4": 0.1,
+        "joint5": -11.8,
+        "joint6": 45.1,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -236,4 +272,7 @@ XARM_CONFIGURATIONS = {
     "pick_basket_pose": PICK_BASKET_POSE,
     "look_back_stare": LOOK_BACK_STARE,
     "basket_hold_back_pose": BASKET_HOLD_BACK_POSE,
+    "initial_close_laundry_pose": INITIAL_CLOSE_LAUNDRY_POSE,
+    "mid_close_laundry_pose": MID_CLOSE_LAUNDRY_POSE,
+    "end_close_laundry_pose": END_CLOSE_LAUNDRY_POSE,
 }
