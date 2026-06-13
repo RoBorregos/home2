@@ -10,6 +10,7 @@ ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Re
 - [Getting Started](#getting-started)
 - [Usage](#usage)
 - [Cyclone DDS Setup](#cyclone-dds-setup)
+- [AI Agent Setup](#ai-agent-setup)
 - [Documentation](#documentation)
 - [Video Demonstrations](#video-demonstrations)
 - [Team Members](#team-members)
@@ -99,7 +100,7 @@ To enable communication between multiple computers (e.g., robot and development 
 ### Bare Metal (Orin, direct install)
 
 ```bash
-sudo bash setup_cyclonedds.sh <INTERFACE>
+sudo bash scripts/setup_cyclonedds.sh <INTERFACE>
 source ~/.bashrc
 ```
 
@@ -108,7 +109,7 @@ source ~/.bashrc
 Run the host-only setup once to apply kernel buffer settings:
 
 ```bash
-sudo bash setup_cyclonedds.sh --host-only <INTERFACE>
+sudo bash scripts/setup_cyclonedds.sh --host-only <INTERFACE>
 ```
 
 Then run your area normally — `run.sh` reads the configuration automatically:
@@ -126,11 +127,21 @@ ip -br link show
 ### Revert to FastDDS
 
 ```bash
-sudo bash setup_cyclonedds.sh --revert
+sudo bash scripts/setup_cyclonedds.sh --revert
 source ~/.bashrc
 ```
 
 For detailed configuration options, see the [CycloneDDS setup docs](docs/cyclonedds-setup.md).
+
+## AI Agent Setup
+
+To set up personalized instructions for your AI development agent (Claude, Gemini, or Copilot), run the setup script:
+
+```bash
+./scripts/setup-agent.sh [agent_type]
+```
+
+Available `agent_type` options: `claude`, `gemini`, `copilot`, `custom`. If no argument is provided, the script will prompt you for a choice.
 
 ## Documentation
 

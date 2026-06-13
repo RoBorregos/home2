@@ -63,25 +63,8 @@ export function MessagesList() {
       | "text_spoken",
     content: string
   ) => {
-    let displayContent = content;
-
-    if (type === "keyword") {
-      try {
-        const jsonString = content.replace(/'/g, '"');
-        const parsedContent = JSON.parse(jsonString);
-
-        if (parsedContent.score !== -1) {
-          displayContent = parsedContent.keyword;
-        } else {
-          return;
-        }
-      } catch (error) {
-        console.error("Error parsing keyword content:", error);
-      }
-    }
-
     const timestamp = new Date();
-    const newMessage: Message = { type, content: displayContent, timestamp };
+    const newMessage: Message = { type, content, timestamp };
 
     if (type === "heard") {
       if (audioStateRef.current === "listening") {
@@ -137,17 +120,12 @@ export function MessagesList() {
 
     kwsTopic.subscribe((msg: { data: string }) => {
       try {
-        // The KWS node publishes stringified Python dicts like "{'keyword': 'Frida', 'score': 0.8}"
-        // We need to handle single quotes before parsing as JSON
-        const jsonStr = msg.data.replace(/'/g, '"');
-        const data = JSON.parse(jsonStr);
+        const data = JSON.parse(msg.data);
         if (data.keyword) {
-          addMessage("keyword", data.keyword);
-        } else {
-          addMessage("keyword", msg.data);
+          addMessage("keyword", String(data.keyword));
         }
       } catch (e) {
-        addMessage("keyword", msg.data);
+        console.error("Error parsing KWS message:", e);
       }
     });
 

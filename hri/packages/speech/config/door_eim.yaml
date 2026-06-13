@@ -1,0 +1,14 @@
+door_eim:
+  ros__parameters:
+    audio_topic: /hri/rawAudioChunk
+    KEYWORD_TOPIC: /hri/speech/ei_detection
+    ei_server_url: "http://localhost:1337"
+    sample_rate: 16000
+    window_size_s: 1.0
+    hop_ratio: 1.0
+    sensitivity_threshold: 0.8
+    detection_cooldown: 0.0
+    audio_gain: 1.0
+    noise_label: "noise"
+    save_detection_audio: False
+    audio_save_dir: /workspace/src/hri/packages/speech/assets/event_detections
