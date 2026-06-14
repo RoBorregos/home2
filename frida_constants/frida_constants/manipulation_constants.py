@@ -78,9 +78,7 @@ RIM_GRASP_Z_TWEAK = -0.05  # m: target ~3 cm below rim top so fingers straddle t
 RIM_DESCENT_SPEED = 20.0  # mm/s
 RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
 
-# Gap pick (generic: grab the highest content inside a rim/cavity, e.g. clothes in
-# a basket). Reuses the rim deprojection but targets the central height peak inside
-# the cavity instead of the rim edge.
+# Gap pick
 GAP_NAMES = ["gap", "hole", "clothes"]  # task-level object_name aliases
 GAP_PRE_GRASP_HEIGHT = 0.05  # m
 GAP_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
