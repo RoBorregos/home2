@@ -61,7 +61,7 @@ def confirm_preference(interpreted_text, extracted_data):
 
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
-BENCHMARK_DIR = "/workspace/src/hri/packages/nlp/benchmark"
+BENCHMARK_DIR = "/workspace/src/hri/benchmarks/nlp"
 
 COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
