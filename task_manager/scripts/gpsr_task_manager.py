@@ -117,6 +117,10 @@ class GPSRTM(Node):
 
         self.batched_commands: list = []
         self._location_cache: dict[str, tuple[float, float] | None] = {}
+        # Live areas table (poses) fetched once per planning session via the
+        # retrieve_areas service; falls back to nav.areas_backup when the
+        # service is unavailable. Reset alongside _location_cache.
+        self._areas: dict | None = None
         # (source_cmd, source_idx) of actions that succeeded in the interleaved
         # branch, so the sequential fallback can resume instead of restarting.
         self._completed: set[tuple[int, int]] = set()
@@ -172,9 +176,38 @@ class GPSRTM(Node):
         msg.data = index
         self._command_index_pub.publish(msg)
 
+    def _get_areas(self):
+        """Areas table (poses) for distance estimation, fetched once per
+        planning session.
+
+        Prefers the live ``retrieve_areas`` service so poses reflect the
+        current map; falls back to the static ``nav.areas_backup`` (loaded
+        from areas.json) when the service is unavailable or returns junk.
+        Returns ``{}`` when nothing usable is available, so the merger's
+        locator degrades to unknown coordinates (LARGE_M) rather than raising.
+        """
+        if self._areas is not None:
+            return self._areas
+        areas = None
+        try:
+            status, data = self.subtask_manager.nav.retrieve_areas()
+            if status == Status.EXECUTION_SUCCESS and isinstance(data, dict):
+                areas = data
+            else:
+                self.get_logger().warning(
+                    f"retrieve_areas returned status={status}; using backup map"
+                )
+        except Exception as e:  # noqa: BLE001
+            self.get_logger().warning(f"retrieve_areas failed: {e}; using backup map")
+        if areas is None:
+            backup = getattr(self.subtask_manager.nav, "areas_backup", None)
+            areas = backup if isinstance(backup, dict) else {}
+        self._areas = areas
+        return areas
+
     def _resolve_xy(self, location_name: str):
         """Resolve a free-text location to (x, y) using query_location +
-        nav.areas_backup. Memoized per planning session."""
+        the live areas table (see _get_areas). Memoized per planning session."""
         if not location_name:
             return None
         if location_name in self._location_cache:
@@ -184,11 +217,10 @@ class GPSRTM(Node):
             hits = self.subtask_manager.hri.query_location(location_name, top_k=1)
             if hits:
                 hit = hits[0]
-                areas = getattr(self.subtask_manager.nav, "areas_backup", None)
-                if isinstance(areas, dict):
-                    pose = areas.get(hit.area, {}).get(hit.subarea or "safe_place")
-                    if pose and len(pose) >= 2:
-                        xy = (float(pose[0]), float(pose[1]))
+                areas = self._get_areas()
+                pose = areas.get(hit.area, {}).get(hit.subarea or "safe_place")
+                if pose and len(pose) >= 2:
+                    xy = (float(pose[0]), float(pose[1]))
         except Exception as e:  # noqa: BLE001
             self.get_logger().warning(f"Location resolve failed for '{location_name}': {e}")
         self._location_cache[location_name] = xy
@@ -286,6 +318,7 @@ class GPSRTM(Node):
 
         self.get_logger().info(f"Batch tree finished with status={root.status}")
         self._location_cache.clear()
+        self._areas = None
 
     def _execute_sequential_fallback(self, batched_commands):
         """Last-ditch path when py_trees is unavailable."""
