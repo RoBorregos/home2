@@ -27,6 +27,9 @@ from frida_constants.manipulation_constants import (
     RIM_PRE_GRASP_HEIGHT,
     RIM_DESCENT_SPEED,
     RIM_DESCENT_DISTANCE,
+    GAP_NAMES,
+    GAP_PRE_GRASP_HEIGHT,
+    GAP_DESCENT_DISTANCE,
     XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.srv import (
@@ -309,12 +312,13 @@ class PickMotionServer(Node):
 
         is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
         is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
+        is_gap = goal_handle.request.object_name.lower() in GAP_NAMES
 
         if is_flat:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
-        elif is_rim:
-            # Each grasping_pose is already a distinct radial/flip candidate;
+        elif is_rim or is_gap:
+            # Each grasping_pose is already a distinct candidate;
             # no extra z-offset alternatives needed.
             num_grasping_alternatives = 1
             grasping_alternative_distance = 0.0
@@ -493,6 +497,66 @@ class PickMotionServer(Node):
                     self.get_logger().info("[Rim] Gripper closed")
 
                     self.get_logger().info("[Rim] Pick complete!")
+                    return True, pick_result
+
+                elif is_gap:
+                    self.get_logger().info(
+                        f"[Gap] Fixed-distance pick flow for pose {i}"
+                    )
+
+                    # Open gripper
+                    self.get_logger().info("[Gap] Opening gripper...")
+                    self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
+                    open_gripper(self._gripper_set_state_client)
+                    time.sleep(0.5)
+
+                    # Pre-grasp above the content peak (MoveIt)
+                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                    pre_grasp_pose.pose.position.z += GAP_PRE_GRASP_HEIGHT
+
+                    self.get_logger().info(
+                        f"[Gap] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
+                        f"(content Z={ee_link_pose.pose.position.z:.4f})"
+                    )
+
+                    self._clear_octomap()
+
+                    pre_handler, pre_result = self.move_to_pose(
+                        pre_grasp_pose, velocity=0.3
+                    )
+
+                    if not pre_result.result.success:
+                        self.get_logger().warn(
+                            f"[Gap] Pre-grasp failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    self.get_logger().info("[Gap] Pre-grasp reached")
+
+                    # Clear octomap again before the descent phase.
+                    self.get_logger().info("[Gap] Clearing octomap...")
+                    self._clear_octomap()
+
+                    # Fixed-distance close-loop descent (reuses rim mechanism):
+                    # drives the pre-grasp offset plus penetration into the pile.
+                    self.get_logger().info(
+                        f"[Gap] Descending a fixed {GAP_DESCENT_DISTANCE * 1000:.0f}mm..."
+                    )
+                    descended = self.fixed_distance_descent(GAP_DESCENT_DISTANCE)
+
+                    if not descended:
+                        self.get_logger().warn(
+                            f"[Gap] Descent failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    # Close gripper on the content
+                    self.get_logger().info("[Gap] Closing gripper...")
+                    close_gripper(self._gripper_set_state_client)
+                    time.sleep(1.5)
+                    self.get_logger().info("[Gap] Gripper closed")
+
+                    self.get_logger().info("[Gap] Pick complete!")
                     return True, pick_result
 
                 else:
