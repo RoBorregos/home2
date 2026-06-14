@@ -74,12 +74,21 @@
       </geometry>
     </collision>
   </link>
-  <joint name="wheel_FL_joint" type="continuous">
-    <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
-    <parent link="base_link"/>
-    <child link="wheel_FL"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_FL_joint" type="continuous">
+      <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FL"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_FL_joint" type="fixed">
+      <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FL"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== wheel_FR =================== -->
   <link name="wheel_FR">
@@ -103,12 +112,21 @@
       </geometry>
     </collision>
   </link>
-  <joint name="wheel_FR_joint" type="continuous">
-    <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
-    <parent link="base_link"/>
-    <child link="wheel_FR"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_FR_joint" type="continuous">
+      <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FR"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_FR_joint" type="fixed">
+      <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FR"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== wheel_RL =================== -->
   <link name="wheel_RL">
@@ -132,12 +150,21 @@
       </geometry>
     </collision>
   </link>
-  <joint name="wheel_RL_joint" type="continuous">
-    <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
-    <parent link="base_link"/>
-    <child link="wheel_RL"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_RL_joint" type="continuous">
+      <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RL"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_RL_joint" type="fixed">
+      <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RL"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== wheel_RR =================== -->
   <link name="wheel_RR">
@@ -161,12 +188,21 @@
       </geometry>
     </collision>
   </link>
-  <joint name="wheel_RR_joint" type="continuous">
-    <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
-    <parent link="base_link"/>
-    <child link="wheel_RR"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_RR_joint" type="continuous">
+      <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RR"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_RR_joint" type="fixed">
+      <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RR"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== lidar_front =================== -->
   <link name="lidar_front">
