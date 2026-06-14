@@ -31,9 +31,8 @@ if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable .env "RUNTIME" "nvidia"
 fi
 
-# Install deps + build Next.js bundle if missing or forced
+# Install deps + build Next.js bundle if missing (or forced)
 DISPLAY_DIR="../../hri/packages/display/display"
-
 if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Installing dependencies and building display inside temporary container..."
   docker compose -f "$COMPOSE" run $BUILD_IMAGE --rm --entrypoint "" display-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
