@@ -82,10 +82,8 @@ RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
 # a basket). Reuses the rim deprojection but targets the central height peak inside
 # the cavity instead of the rim edge.
 GAP_NAMES = ["gap", "hole", "clothes"]  # task-level object_name aliases
-GAP_PRE_GRASP_HEIGHT = 0.10  # m above the detected content peak
-GAP_PENETRATION = 0.05  # m driven into the pile/content past the peak for grip
+GAP_PRE_GRASP_HEIGHT = 0.05  # m
 GAP_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
-GAP_DESCENT_DISTANCE = GAP_PRE_GRASP_HEIGHT + GAP_PENETRATION
 
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"

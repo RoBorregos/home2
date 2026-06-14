@@ -29,7 +29,6 @@ from frida_constants.manipulation_constants import (
     RIM_DESCENT_DISTANCE,
     GAP_NAMES,
     GAP_PRE_GRASP_HEIGHT,
-    GAP_DESCENT_DISTANCE,
     XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.srv import (
@@ -540,9 +539,9 @@ class PickMotionServer(Node):
                     # Fixed-distance close-loop descent (reuses rim mechanism):
                     # drives the pre-grasp offset plus penetration into the pile.
                     self.get_logger().info(
-                        f"[Gap] Descending a fixed {GAP_DESCENT_DISTANCE * 1000:.0f}mm..."
+                        f"[Gap] Descending a fixed {GAP_PRE_GRASP_HEIGHT * 1000:.0f}mm..."
                     )
-                    descended = self.fixed_distance_descent(GAP_DESCENT_DISTANCE)
+                    descended = self.fixed_distance_descent(GAP_PRE_GRASP_HEIGHT)
 
                     if not descended:
                         self.get_logger().warn(
