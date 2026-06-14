@@ -688,66 +688,59 @@ class ManipulationTasks:
     @service_check(
         client="_move_to_pose_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
-    def move_to_washing_machine_hole(
+    def move_to_point_offset(
         self,
-        hole_point: PointStamped,
-        forward_extension: float = 0.20,
+        point: PointStamped,
+        offset_xyz: tuple = (0.0, 0.0, 0.0),
+        frame: str = "base_link",
+        target_link: str = GRASP_LINK_FRAME,
         velocity: float = 0.2,
         planner_id: str = "RRTConnect",
         tolerance_position: float = 0.02,
         tolerance_orientation: float = 0.1,
     ) -> int:
-        """Extend the arm forward to point into the washing machine drum.
-
-        Takes the 3D centroid of the drum opening (from moondream / vision),
-        transforms it into base_link, and commands the EE to a pose at the
-        centroid height pushed forward by `forward_extension` so most joints
-        end up in front of the base — an "arrow into the drum" approach pose.
-        Not a pick.
+        """Transform `point` into `frame`, add `offset_xyz`, and command
+        `target_link` to that pose via the MoveToPose action.
         """
-        if hole_point is None or hole_point.header.frame_id == "":
-            Logger.error(self.node, "move_to_washing_machine_hole: invalid hole_point")
+        if point is None or point.header.frame_id == "":
+            Logger.error(self.node, "move_to_point_offset: invalid point")
             return Status.EXECUTION_ERROR
 
-        target_frame = "base_link"
         try:
             transform = self._tf_buffer.lookup_transform(
-                target_frame,
-                hole_point.header.frame_id,
+                frame,
+                point.header.frame_id,
                 rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=2.0),
             )
-            point_base = do_transform_point(hole_point, transform)
+            point_in = do_transform_point(point, transform)
         except Exception as e:
             Logger.error(
                 self.node,
-                f"TF {hole_point.header.frame_id} -> {target_frame} failed: {e}",
+                f"TF {point.header.frame_id} -> {frame} failed: {e}",
             )
             return Status.EXECUTION_ERROR
 
         pose = PoseStamped()
-        pose.header.frame_id = target_frame
+        pose.header.frame_id = frame
         pose.header.stamp = self.node.get_clock().now().to_msg()
-        pose.pose.position.x = point_base.point.x + forward_extension
-        pose.pose.position.y = point_base.point.y
-        pose.pose.position.z = point_base.point.z
-        pose.pose.orientation.x = 0.0
-        pose.pose.orientation.y = 0.0
-        pose.pose.orientation.z = 0.0
+        pose.pose.position.x = point_in.point.x + float(offset_xyz[0])
+        pose.pose.position.y = point_in.point.y + float(offset_xyz[1])
+        pose.pose.position.z = point_in.point.z + float(offset_xyz[2])
         pose.pose.orientation.w = 1.0
 
         Logger.info(
             self.node,
-            f"move_to_washing_machine_hole target in {target_frame}: "
+            f"move_to_point_offset target in {frame}: "
             f"({pose.pose.position.x:.3f}, {pose.pose.position.y:.3f}, "
-            f"{pose.pose.position.z:.3f}) [extension={forward_extension:.2f} m]",
+            f"{pose.pose.position.z:.3f}) offset={offset_xyz}",
         )
 
         goal = MoveToPose.Goal()
         goal.pose = pose
         goal.velocity = float(velocity)
         goal.planner_id = planner_id
-        goal.target_link = GRASP_LINK_FRAME
+        goal.target_link = target_link
         goal.tolerance_position = float(tolerance_position)
         goal.tolerance_orientation = float(tolerance_orientation)
 
@@ -763,10 +756,10 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
         result = result_future.result().result
         if result.success:
-            Logger.success(self.node, "Reached washing machine approach pose")
+            Logger.success(self.node, "MoveToPose reached target")
             return Status.EXECUTION_SUCCESS
 
-        Logger.error(self.node, "MoveToPose failed to reach washing machine pose")
+        Logger.error(self.node, "MoveToPose failed to reach target")
         return Status.EXECUTION_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)

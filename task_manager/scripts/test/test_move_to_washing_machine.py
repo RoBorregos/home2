@@ -22,6 +22,11 @@ from task_manager.utils.task import Task
 FORWARD_EXTENSION = 0.20  # meters past the drum centroid along base_link +x
 VELOCITY = 0.2
 CAMERA_FLIP = False
+SUBJECT = (
+    "exact geometric center of the circular washing machine drum opening "
+    "(the round hole in the front door where clothes go in); point at the "
+    "middle of the circle, not the door, rim, glass, or surrounding frame"
+)
 
 
 class TestMoveToWashingMachine(Node):
@@ -34,7 +39,7 @@ class TestMoveToWashingMachine(Node):
 
     def run(self) -> int:
         Logger.info(self, "Requesting washing machine hole centroid...")
-        point = self.vision.get_washing_machine_hole_point()
+        point = self.vision.get_moondream_point_3d(SUBJECT)
         if point is None:
             Logger.error(self, "No centroid returned from moondream. Aborting.")
             return 1
@@ -42,16 +47,16 @@ class TestMoveToWashingMachine(Node):
         p = point.point
         Logger.success(
             self,
-            f"Centroid @ {point.header.frame_id}: " f"({p.x:.3f}, {p.y:.3f}, {p.z:.3f})",
+            f"Centroid @ {point.header.frame_id}: ({p.x:.3f}, {p.y:.3f}, {p.z:.3f})",
         )
 
         Logger.info(
             self,
             f"Commanding MoveToPose with forward_extension={FORWARD_EXTENSION:.2f} m",
         )
-        status = self.manipulation.move_to_washing_machine_hole(
-            hole_point=point,
-            forward_extension=FORWARD_EXTENSION,
+        status = self.manipulation.move_to_point_offset(
+            point=point,
+            offset_xyz=(FORWARD_EXTENSION, 0.0, 0.0),
             velocity=VELOCITY,
         )
 

@@ -114,18 +114,7 @@ class TrashDetectionNode(Node):
         for pt in trashcan_pts:
             self.get_logger().info("Detected trashcan")
             trashcan = ObjectDetection()
-            point2d = (
-                min(
-                    max(int(pt[0] * self.imageInfo.width), 0), self.imageInfo.width - 1
-                ),
-                min(
-                    max(int(pt[1] * self.imageInfo.height), 0),
-                    self.imageInfo.height - 1,
-                ),
-            )
-            depth = get_depth(self.depth_image, point2d)
-            point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
-            ptStamped = self.build_point_stamped(point3d)
+            ptStamped, point2d = self._deproject_normalized(pt[0], pt[1])
 
             trashcan.label_text = "trashcan"
             trashcan.point3d = ptStamped
@@ -165,11 +154,18 @@ class TrashDetectionNode(Node):
         point_stamped.point.z = float(-xyz[1])
         return point_stamped
 
+    def _deproject_normalized(self, nx, ny):
+        point2d = (
+            min(max(int(nx * self.imageInfo.width), 0), self.imageInfo.width - 1),
+            min(max(int(ny * self.imageInfo.height), 0), self.imageInfo.height - 1),
+        )
+        depth = get_depth(self.depth_image, point2d)
+        point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
+        return self.build_point_stamped(point3d), point2d
+
     def get_moondream_point_3d(self, req, res):
-        """Service to return the 3D PointStamped at the center of a subject
-        detected by moondream point (e.g. 'washing machine door opening').
-        Points returned by moondream are averaged to recover the center of
-        a circular/concentrated object.
+        """Average moondream points for `req.subject` and deproject the
+        centroid to a 3D PointStamped in CAMERA_FRAME.
         """
         res.success = False
 
@@ -187,51 +183,29 @@ class TrashDetectionNode(Node):
 
         cx = sum(p[0] for p in pts) / len(pts)
         cy = sum(p[1] for p in pts) / len(pts)
-
-        point2d = (
-            min(max(int(cx * self.imageInfo.width), 0), self.imageInfo.width - 1),
-            min(max(int(cy * self.imageInfo.height), 0), self.imageInfo.height - 1),
-        )
-        depth = get_depth(self.depth_image, point2d)
-        point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
-
-        res.point = self.build_point_stamped(point3d)
+        res.point, point2d = self._deproject_normalized(cx, cy)
         res.success = True
         self.get_logger().info(
             f"Moondream 3D point for '{req.subject}': "
             f"({res.point.point.x:.3f}, {res.point.point.y:.3f}, {res.point.point.z:.3f})"
         )
 
-        self.publish_moondream_point_3d_debug(req.subject, point2d, res.point, pts)
+        self.publish_moondream_point_3d_debug(req.subject, point2d, res.point)
         return res
 
-    def publish_moondream_point_3d_debug(
-        self, subject, center_px, point_stamped, raw_pts
-    ):
-        """Publish a debug image overlaying the averaged center, raw moondream
-        points and the resulting 3D coordinates.
-        """
+    def publish_moondream_point_3d_debug(self, subject, center_px, point_stamped):
         if self.image is None:
             return
 
         debug = self.image.copy()
-        h, w = debug.shape[:2]
-
-        for p in raw_pts:
-            u = min(max(int(p[0] * w), 0), w - 1)
-            v = min(max(int(p[1] * h), 0), h - 1)
-            cv2.circle(debug, (u, v), 5, (0, 165, 255), -1)
-
         u, v = center_px
         cv2.drawMarker(debug, (u, v), (0, 255, 0), cv2.MARKER_CROSS, 24, 2)
         cv2.circle(debug, (u, v), 14, (0, 255, 0), 2)
-
         label = (
             f"{subject[:40]}  "
             f"xyz=({point_stamped.point.x:.2f},{point_stamped.point.y:.2f},"
             f"{point_stamped.point.z:.2f})"
         )
-        cv2.putText(debug, label, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 3)
         cv2.putText(
             debug, label, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1
         )

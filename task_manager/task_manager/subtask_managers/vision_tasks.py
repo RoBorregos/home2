@@ -949,20 +949,6 @@ class VisionTasks:
         )
         return result.point
 
-    def get_washing_machine_hole_point(self, timeout: float = TIMEOUT) -> PointStamped:
-        """Get the 3D PointStamped at the center of the circular washing
-        machine door opening using moondream point.
-        """
-        return self.get_moondream_point_3d(
-            subject=(
-                "exact geometric center of the circular washing machine drum "
-                "opening (the round hole in the front door where clothes go in); "
-                "point at the middle of the circle, not the door, rim, glass, "
-                "or surrounding frame"
-            ),
-            timeout=timeout,
-        )
-
     def visual_info(self, description, object="object"):
         """Return the object matching the description"""
         Logger.info(self.node, "Detecting object matching description")

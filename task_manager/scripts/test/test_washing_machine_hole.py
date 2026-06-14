@@ -3,7 +3,7 @@
 """
 Test for the washing-machine hole detection via moondream point.
 
-Continuously calls VisionTasks.get_washing_machine_hole_point() and publishes
+Continuously calls VisionTasks.get_moondream_point_3d(SUBJECT) and publishes
 the resulting 3D point as a Marker in CAMERA_FRAME so it can be visualized in
 RViz. The trash_detection_node also publishes a debug image on
 /vision/moondream_point_3d_debug overlaying the pixel used for deprojection.
@@ -21,6 +21,11 @@ from task_manager.utils.task import Task
 MARKER_TOPIC = "/vision/test/washing_machine_hole_marker"
 CAMERA_FLIP = False  # set True if the camera is mounted upside down
 LOOP_RATE_S = 0.5  # how often to re-query (moondream is not fast)
+SUBJECT = (
+    "exact geometric center of the circular washing machine drum opening "
+    "(the round hole in the front door where clothes go in); point at the "
+    "middle of the circle, not the door, rim, glass, or surrounding frame"
+)
 
 
 class TestWashingMachineHole(Node):
@@ -44,7 +49,7 @@ class TestWashingMachineHole(Node):
             while rclpy.ok():
                 rclpy.spin_once(self, timeout_sec=0.05)
 
-                point = self.vision_manager.get_washing_machine_hole_point()
+                point = self.vision_manager.get_moondream_point_3d(SUBJECT)
                 if point is None:
                     Logger.warn(self, "No washing machine hole found")
                     self._sleep(LOOP_RATE_S)
