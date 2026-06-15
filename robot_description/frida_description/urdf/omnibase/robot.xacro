@@ -47,7 +47,9 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/base_link.STL"/>
+        <!-- decimated collision mesh (~3.9k tris) to avoid MoveIt/FCL
+             "too many vertices in collision geometry" on the 430k visual mesh -->
+        <mesh filename="${mesh_dir}/base_link_collision.stl"/>
       </geometry>
     </collision>
   </link>
@@ -70,7 +72,8 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
@@ -108,7 +111,8 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
@@ -146,7 +150,8 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
@@ -184,7 +189,8 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
