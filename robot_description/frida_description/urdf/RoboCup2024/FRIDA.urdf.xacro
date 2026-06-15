@@ -39,7 +39,7 @@
   <xacro:arg name="geometry_mesh_tcp_rpy" default="0 0 0"/>
   <xacro:arg name="baud_checkset" default="true"/>
   <xacro:arg name="default_gripper_baud" default="2000000"/>
-  <xacro:arg name="attach_to" default="_base_link"/>
+  <xacro:arg name="attach_to" default="base_link"/>
   <xacro:arg name="attach_xyz" default="0.0049756 0 0.34"/>
   <xacro:arg name="attach_rpy" default="0 0 1.57"/>
   <xacro:arg name="mesh_suffix" default="stl"/>
@@ -49,7 +49,7 @@
   <xacro:arg name="simulation" default="false"/>
 
 
-  <xacro:include filename="$(find home_custom_base_description)/urdf/robot.xacro"/>
+  <xacro:include filename="robot.xacro"/>
 
   <xacro:include filename="$(find frida_description)/urdf/xarm/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 
