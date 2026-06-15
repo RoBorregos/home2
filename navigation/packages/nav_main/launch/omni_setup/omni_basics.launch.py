@@ -112,7 +112,7 @@ def generate_launch_description():
     )
 
     dashboard_node = Node(
-        package='odrive_comm',
+        package='omnidriver',
         executable='odrive_dashboard',
         name='odrive_dashboard_node',
         output='screen',
