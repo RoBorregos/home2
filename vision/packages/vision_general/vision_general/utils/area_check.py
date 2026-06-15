@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
+import rclpy
+from builtin_interfaces.msg import Time
 from geometry_msgs.msg import PointStamped
+from tf2_geometry_msgs import do_transform_point
+from tf2_ros import Buffer
+
+from vision_general.utils.calculations import point2d_to_ros_point_stamped
 
 
 def point_in_polygon(point, polygon):
@@ -36,3 +42,85 @@ def is_point_in_room(point_stamped: PointStamped, room_name: str, areas_json) ->
     polygon = areas_json[room_name]["polygon"]
     point = (point_stamped.point.x, point_stamped.point.y)
     return point_in_polygon(point, polygon)
+
+
+def is_point_in_house(point_stamped: PointStamped, areas_json) -> bool:
+    return any(
+        is_point_in_room(point_stamped, room, areas_json)
+        for room in areas_json
+        if areas_json.get(room, {}).get("polygon")
+    )
+
+
+def filter_detections_in_house(
+    frame,
+    detections: list,
+    class_ids: list[int],
+    rooms: list[str] | None,
+    camera_info,
+    depth_image,
+    tf_buffer: Buffer,
+    areas_json: dict,
+    camera_frame: str,
+    rotation: int = 0,
+) -> list:
+    """
+    Filter detections by class ID and spatial location.
+
+    If rooms is provided, only detections inside one of those rooms are kept.
+    If rooms is None, detections inside any room of the hosue will be kept (as long as they have a polygon)
+    If spatial data is unavailable, detections matching class_ids pass through unfiltered.
+    """
+    h, w = frame.shape[:2]
+    filtered = []
+
+    spatial_ready = (
+        camera_info is not None
+        and depth_image is not None
+        and tf_buffer is not None
+        and areas_json is not None
+    )
+
+    for det in detections:
+        if det["class_id"] not in class_ids:
+            continue
+
+        if not spatial_ready:
+            filtered.append(det)
+            continue
+
+        x1, y1, x2, y2 = det["bbox"]
+        cx = int((x1 + x2) / 2)
+        cy = int((y1 + y2) / 2)
+
+        if not (0 <= cx < w and 0 <= cy < h):
+            continue
+
+        point_stamped = point2d_to_ros_point_stamped(
+            camera_info,
+            depth_image,
+            (cx, cy),
+            camera_frame,
+            Time(sec=0, nanosec=0),
+            rotation=rotation,
+        )
+
+        try:
+            transform = tf_buffer.lookup_transform(
+                "map",
+                point_stamped.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=0.1),
+            )
+            point_map = do_transform_point(point_stamped, transform)
+        except Exception:
+            continue
+
+        if rooms:
+            if any(is_point_in_room(point_map, room, areas_json) for room in rooms):
+                filtered.append(det)
+        else:
+            if is_point_in_house(point_map, areas_json):
+                filtered.append(det)
+
+    return filtered

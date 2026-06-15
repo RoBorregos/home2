@@ -111,20 +111,20 @@ def generate_launch_description():
             [ModuleNames.HRI.value],
         )["kws_eim"]["ros__parameters"]
 
-        ei_audio_classifier_config = parse_ros_config(
+        door_eim_config = parse_ros_config(
             os.path.join(
                 get_package_share_directory("speech"),
                 "config",
-                "ei_audio_classifier.yaml",
+                "door_eim.yaml",
             ),
             [ModuleNames.HRI.value],
-        )["ei_audio_classifier"]["ros__parameters"]
+        )["door_eim"]["ros__parameters"]
 
         nodes.extend(
             [
                 Node(
                     package="speech",
-                    executable="kws_eim.py",
+                    executable="ei_audio_node.py",
                     name="kws_eim",
                     output="screen",
                     emulate_tty=True,
@@ -132,11 +132,11 @@ def generate_launch_description():
                 ),
                 Node(
                     package="speech",
-                    executable="ei_audio_classifier.py",
-                    name="ei_audio_classifier",
+                    executable="ei_audio_node.py",
+                    name="door_eim",
                     output="screen",
                     emulate_tty=True,
-                    parameters=[ei_audio_classifier_config],
+                    parameters=[door_eim_config],
                 ),
             ]
         )
