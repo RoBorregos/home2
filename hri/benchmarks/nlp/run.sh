@@ -55,12 +55,11 @@ done
 
 mkdir -p "$ASSETS_DIR" "$SCRIPT_DIR/results/logs"
 
-# ── Delete menu ───────────────────────────────────────────────────────────────
-if $DELETE_MODE; then
+run_delete_menu() {
     echo "Cached GGUFs in $ASSETS_DIR:"
     mapfile -t gguf_files < <(find "$ASSETS_DIR" -maxdepth 1 -name "*.gguf" | sort)
     if [[ ${#gguf_files[@]} -eq 0 ]]; then
-        echo "  (none)"; exit 0
+        echo "  (none)"; return 0
     fi
     for i in "${!gguf_files[@]}"; do
         size=$(du -h "${gguf_files[$i]}" 2>/dev/null | cut -f1)
@@ -68,7 +67,7 @@ if $DELETE_MODE; then
     done
     printf "Select to delete (space-separated nums, empty=cancel): "
     read -r selection </dev/tty
-    [[ -z "$selection" ]] && { echo "Cancelled."; exit 0; }
+    [[ -z "$selection" ]] && { echo "Cancelled."; return 0; }
     for n in $selection; do
         if ! [[ "$n" =~ ^[0-9]+$ ]] || (( n < 1 || n > ${#gguf_files[@]} )); then
             echo "Invalid: $n — skipped"; continue
@@ -76,6 +75,11 @@ if $DELETE_MODE; then
         f="${gguf_files[$((n-1))]}"
         rm -f "$f" && echo "  Deleted: $(basename "$f")"
     done
+}
+
+# ── Delete-only mode (--delete flag) ──────────────────────────────────────────
+if $DELETE_MODE; then
+    run_delete_menu
     exit 0
 fi
 
@@ -115,6 +119,7 @@ for i in "${!MODEL_NAMES[@]}"; do
     status=$([[ -f "$f" ]] && echo "cached" || echo "needs download")
     printf "  %2d) %-22s [%s]\n" "$((i+1))" "${MODEL_NAMES[$i]}" "$status"
 done
+printf "  %2s) %-22s\n" "-1" "delete cached models"
 
 declare -a SELECTED
 if $SELECT_ALL; then
@@ -122,12 +127,20 @@ if $SELECT_ALL; then
 elif [[ -n "$MODEL_SELECT" ]]; then
     for n in $MODEL_SELECT; do SELECTED+=("$((n-1))"); done
 else
-    printf "Select models (space-separated nums, empty=all): "
+    printf "Select models (space-separated nums, -1=delete menu, empty=all): "
     read -r selection </dev/tty
     if [[ -z "$selection" ]]; then
         for i in "${!MODEL_NAMES[@]}"; do SELECTED+=("$i"); done
+    elif [[ "$selection" =~ ^[[:space:]]*-1[[:space:]]*$ ]]; then
+        run_delete_menu
+        exit 0
     else
-        for n in $selection; do SELECTED+=("$((n-1))"); done
+        for n in $selection; do
+            if ! [[ "$n" =~ ^-?[0-9]+$ ]] || (( n < 1 || n > ${#MODEL_NAMES[@]} )); then
+                echo "Invalid selection: $n"; exit 1
+            fi
+            SELECTED+=("$((n-1))")
+        done
     fi
 fi
 
