@@ -110,7 +110,7 @@ CFG_SET_INPUT_POS = 0x30
 # ─────────────────────────────────────────────────────────────────────────────
 from pathlib import Path
 DASHBOARD_HTML = (
-    Path(get_package_share_directory('odrive_comm')) / 'assets' / 'dashboard.html'
+    Path(get_package_share_directory('omnidriver')) / 'assets' / 'dashboard.html'
 ).read_text()
 
 
@@ -282,7 +282,7 @@ class ODriveDashboardNode(Node):
         def serve_js(filename):
             # Try installed share dir first, fall back to source tree next to this file
             for candidate in [
-                Path(get_package_share_directory('odrive_comm')) / 'assets' / 'js',
+                Path(get_package_share_directory('omnidriver')) / 'assets' / 'js',
                 Path(__file__).parent.parent / 'assets' / 'js',
             ]:
                 if candidate.exists():
