@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <robot name="home_base" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="black_rgba" value="0.102 0.102 0.102 1" />
 
   <!-- Launch arguments -->
   <xacro:arg name="use_sim_time" default="false"/>
