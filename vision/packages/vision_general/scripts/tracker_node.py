@@ -73,7 +73,6 @@ from vision_general.utils.calculations import (
 from vision_general.utils.ros_utils import wait_for_future
 from models.tracker import TrackerModel, DEEPSORT_N_INIT
 
-DEPTH_THRESHOLD = 100
 REID_EXTRACT_FREQ = 0.3
 MAX_EMBEDDINGS = 128
 
@@ -119,8 +118,14 @@ class SingleTracker(Node):
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.last_reid_extraction = time.time()
-        self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.run_callback_group = rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
+        self.publish_callback_group = (
+            rclpy.callback_groups.MutuallyExclusiveCallbackGroup()
+        )
+        self.create_timer(0.1, self.run, callback_group=self.run_callback_group)
+        self.create_timer(
+            0.1, self.publish_image, callback_group=self.publish_callback_group
+        )
 
     def setup(self):
         self.active = True
@@ -228,7 +233,7 @@ class SingleTracker(Node):
         self.person_data["num_embeddings"] = 0
 
         self.frame = copy.deepcopy(self.image)
-        self.output_image = self.frame.copy()
+        output_image = self.frame.copy()
 
         tracked_people = []
         for _ in range(DEEPSORT_N_INIT + 1):
@@ -241,7 +246,7 @@ class SingleTracker(Node):
         for person in tracked_people:
             x1, y1, x2, y2 = person["x1"], person["y1"], person["x2"], person["y2"]
             track_id = person["track_id"]
-            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            cv2.rectangle(output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
             area = (x2 - x1) * (y2 - y1)
 
             if track_by == "largest_person":
@@ -270,14 +275,14 @@ class SingleTracker(Node):
             self.person_data["id"] = largest_person["id"]
             self.success(f"Target set: {largest_person['id']}")
             cv2.rectangle(
-                self.output_image,
+                output_image,
                 largest_person["bbox"][:2],
                 largest_person["bbox"][2:],
                 (0, 255, 0),
                 2,
             )
             cv2.putText(
-                self.output_image,
+                output_image,
                 f"Target by {track_by}: {largest_person['id']}",
                 largest_person["bbox"][:2],
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -286,6 +291,7 @@ class SingleTracker(Node):
                 2,
                 cv2.LINE_AA,
             )
+            self.output_image = output_image
             return True
 
         self.get_logger().warn("No person found")
@@ -358,14 +364,10 @@ class SingleTracker(Node):
             self.get_logger().error("No image available")
             return
 
-        self.output_image = self.frame.copy()
+        output_image = self.frame.copy()
 
-        start = time.time()
         yolo_results = self.model.predict(self.frame)
         tracked_people = self.model.run_deepsort(self.frame, yolo_results)
-        self.get_logger().info(
-            f"Det+Tracking {time.time()-start:.2f}s | People: {len(tracked_people)}"
-        )
 
         if self.person_data["id"] is None:
             self.frame = None
@@ -381,7 +383,7 @@ class SingleTracker(Node):
             if track_id == self.person_data["id"]:
                 person_in_frame = True
                 self.person_data["coordinates"] = (x1, y1, x2, y2)
-                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.rectangle(output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 cropped = self.frame[y1:y2, x1:x2]
                 embedding = None
 
@@ -418,10 +420,10 @@ class SingleTracker(Node):
                         embedding = self.model.extract_reid_tensor(cropped)
                     self.person_data[angle] = embedding
             else:
-                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                cv2.rectangle(output_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
             cv2.putText(
-                self.output_image,
+                output_image,
                 f"person {track_id}, Angle: {angle}",
                 (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -429,6 +431,7 @@ class SingleTracker(Node):
                 (0, 255, 0),
                 2,
             )
+            self.output_image = output_image
 
         # Re-identification if target lost
         reid_start = None
@@ -485,13 +488,6 @@ class SingleTracker(Node):
 
     def _publish_position(self):
         if len(self.depth_image) == 0:
-            self.get_logger().warn("Depth image not available")
-            return
-        if not (
-            -DEPTH_THRESHOLD
-            < self.depth_image_time.nanosec - self.image_time.nanosec
-            < DEPTH_THRESHOLD
-        ):
             self.get_logger().warn("Depth image not available")
             return
 
