@@ -24,9 +24,9 @@ setup(
     license='TODO: License declaration',
     entry_points={
         'console_scripts': [
-                'odrive_dashboard = odrive_comm.odrive_dashboard:main',
-                'odrive_serial_twist = odrive_comm.odrive_serial_twist:main',
-                'simple_rx = odrive_comm.simple_rx:main',
+                'odrive_dashboard = omnidriver.odrive_dashboard:main',
+                'odrive_serial_twist = omnidriver.odrive_serial_twist:main',
+                'simple_rx = omnidriver.simple_rx:main',
         ],
     },
 )
