@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""robot_localization EKF for the mecanum omnibase.
+"""Navigation basics for omnibase.
 
 Data flow:
     odrive_dashboard  ──>  /odrive/odom  (nav_msgs/Odometry, body-frame vx/vy)
@@ -7,6 +7,7 @@ Data flow:
                                 │
                                 ▼
                         ekf_node (this launch)  ──>  /odometry/filtered  +  TF odom->base_link
+    lidar setup ----> /scan1 , /scan2 - > /scan
 
 Fusion strategy for a mecanum base:
   * Wheels are trusted ONLY for body-frame linear velocity (vx, vy). They slip,
@@ -22,9 +23,6 @@ Prerequisites:
     rotates that body-frame twist by the IMU heading, so it must NOT be
     world-frame here or it gets rotated twice.
 
-Usage:
-    ros2 launch odrive_comm ekf.launch.py
-    ros2 launch odrive_comm ekf.launch.py use_dashboard:=true
 """
 
 from launch import LaunchDescription
@@ -32,17 +30,12 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch.actions import IncludeLaunchDescription  
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
-    use_dashboard = LaunchConfiguration('use_dashboard')
     cmd_vel_topic = LaunchConfiguration('cmd_vel_topic')
-
-    declare_use_dashboard = DeclareLaunchArgument(
-        'use_dashboard', default_value='false',
-        description='Also start the odrive_dashboard node (serial bridge + web GUI). '
-                    'Leave false if you already run it separately — only one '
-                    'process may open /dev/ttyACM0.')
 
     declare_cmd_vel_topic = DeclareLaunchArgument(
         'cmd_vel_topic', default_value='cmd_vel',
@@ -51,9 +44,16 @@ def generate_launch_description():
                     'velocity_smoother, set "cmd_vel_smoothed" so the base follows '
                     'the smoothed output instead of the raw controller command.')
 
-    # The frame_id the /odrive/imu message uses (matches imu_frame_id in the
-    # dashboard). robot_localization needs base_link -> imu_link in the TF tree.
-    imu_frame = 'imu_link'
+
+    lidar_setup = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare('nav_main'), 'launch', 'omni_setup', 'lidar_setup.launch.py'])),
+        # launch_arguments={
+        #     'use_dashboard': use_dashboard,
+        #     'cmd_vel_topic': cmd_vel_topic,
+        # }.items(),
+    )
+
 
     # robot_localization state-vector layout for the *_config arrays (15 values):
     #   X      Y      Z
@@ -61,6 +61,7 @@ def generate_launch_description():
     #   vx     vy     vz
     #   vroll  vpitch vyaw
     #   ax     ay     az
+
     ekf_node = Node(
         package='robot_localization',
         executable='ekf_node',
@@ -110,25 +111,17 @@ def generate_launch_description():
         }],
     )
 
-    # base_link -> imu_link static transform (IDENTITY -- keep it this way).
-    # The BNO085's inverted yaw is corrected at the SOURCE (odrive_dashboard
-    # negates yaw + yaw-rate), NOT here. A 180-deg roll in this TF does NOT work:
-    # with two_d_mode the filter flattens roll/pitch to zero, and a 180-deg
-    # rolled frame then collapses the fused yaw to 0 (gimbal-lock ambiguity).
-    # Only change x/y/z here if the IMU is physically translated from base_link.
-    # Optional: start the serial bridge + web dashboard from here too.
     dashboard_node = Node(
         package='odrive_comm',
         executable='odrive_dashboard',
         name='odrive_dashboard_node',
         output='screen',
-        condition=IfCondition(use_dashboard),
         remappings=[('cmd_vel', cmd_vel_topic)],
     )
 
     return LaunchDescription([
-        declare_use_dashboard,
         declare_cmd_vel_topic,
         dashboard_node,
         ekf_node,
+        lidar_setup,
     ])

@@ -15,8 +15,6 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/assets', ['assets/dashboard.html']),
         ('share/' + package_name + '/assets/js', ['assets/js/chart.umd.min.js', 'assets/js/socket.io.min.js']),
-        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
-        (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
