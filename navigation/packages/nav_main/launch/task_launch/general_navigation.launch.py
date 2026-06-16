@@ -33,13 +33,20 @@ def launch_function(context, *args, **kwargs):
     # WITHOUT extension) — matches where nav_ui saves it:
     #   <workspace>/packages/map_context/maps/<name>(.posegraph + .data)
     nav_src = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
-    omni_map_default = os.path.join(nav_src, 'packages', 'map_context', 'maps', areas_map_name)
+    maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
+    omni_map_default = os.path.join(maps_dir, areas_map_name)
     omni_map = LaunchConfiguration('map', default=omni_map_default)
 
-    # Keepout (virtual obstacle) filter — forwarded to nav2_omni; off by default.
-    use_keepout = LaunchConfiguration('use_keepout', default='false')
-    keepout_mask_default = os.path.join(nav_src, 'packages', 'map_context', 'maps', 'keepout_mask.yaml')
+    # Keepout (virtual obstacle) filter — AUTO-enabled when a mask named
+    # "<MAP_NAME>_keepout_mask.yaml" exists next to the map (draw it in the map
+    # tagger UI). Override with use_keepout:=true|false or keepout_mask:=/path.yaml.
+    keepout_mask_default = os.path.join(maps_dir, f'{areas_map_name}_keepout_mask.yaml')
     keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
+    keepout_mask_value = keepout_mask.perform(context)
+    use_keepout_default = 'true' if os.path.exists(keepout_mask_value) else 'false'
+    use_keepout = LaunchConfiguration('use_keepout', default=use_keepout_default)
+    print(f"[general_navigation] keepout mask '{keepout_mask_value}' "
+          f"exists={os.path.exists(keepout_mask_value)} -> use_keepout={use_keepout_default}")
 
     nav_central_node = Node(
         package='nav_main',

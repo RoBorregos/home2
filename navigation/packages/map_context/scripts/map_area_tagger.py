@@ -866,8 +866,13 @@ class MapAreaTagger(QMainWindow):
             QMessageBox.warning(self, "No zones", "Draw at least one keepout zone first.")
             return
 
-        default_dir = os.path.dirname(self.map_yaml_path) if self.map_yaml_path else ""
-        default_path = os.path.join(default_dir, "keepout_mask.yaml")
+        # Default name "<mapname>_keepout_mask.yaml" so general_navigation auto-detects it.
+        if self.map_yaml_path:
+            default_dir = os.path.dirname(self.map_yaml_path)
+            map_base = os.path.splitext(os.path.basename(self.map_yaml_path))[0]
+            default_path = os.path.join(default_dir, f"{map_base}_keepout_mask.yaml")
+        else:
+            default_path = "keepout_mask.yaml"
         path, _ = QFileDialog.getSaveFileName(
             self, "Save Keepout Mask", default_path, "Map YAML (*.yaml)")
         if not path:
