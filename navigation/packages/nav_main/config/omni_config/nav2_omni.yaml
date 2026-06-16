@@ -165,14 +165,8 @@ local_costmap:
       # ESTIMATE — symmetric ~0.48 m square. MEASURE and replace with the real polygon.
       footprint: "[ [0.325, 0.25], [0.325, -0.25], [-0.325, -0.25], [-0.325, 0.25] ]"
       plugins: ["obstacle_layer", "rgbd_obstacle_layer", "inflation_layer"]
-      filters: ["keepout_filter"]
-      keepout_filter:
-        # Virtual obstacles drawn on the keepout mask (planning/costmap only — it
-        # does NOT touch slam_toolbox localization). Inert until the filter mask +
-        # info servers are running (launch with use_keepout:=true).
-        plugin: "nav2_costmap_2d::KeepoutFilter"
-        enabled: True
-        filter_info_topic: "/costmap_filter_info"
+      # Keepout (virtual obstacles) is an OPT-IN overlay applied only when
+      # use_keepout:=true — see nav2_omni_keepout.yaml + nav2_omni.launch.py.
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0   # gentler than the source's 7.0 -> smoother cost gradient for MPPI
@@ -254,14 +248,8 @@ global_costmap:
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "rgbd_obstacle_layer", "inflation_layer"]
-      filters: ["keepout_filter"]
-      keepout_filter:
-        # Virtual obstacles drawn on the keepout mask — this is the one that makes
-        # the PLANNER route around drawn areas (e.g. a whole table). Localization
-        # untouched. Inert until the filter servers run (use_keepout:=true).
-        plugin: "nav2_costmap_2d::KeepoutFilter"
-        enabled: True
-        filter_info_topic: "/costmap_filter_info"
+      # Keepout (virtual obstacles) is an OPT-IN overlay applied only when
+      # use_keepout:=true — see nav2_omni_keepout.yaml + nav2_omni.launch.py.
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -394,25 +382,3 @@ velocity_smoother:
     odom_duration: 0.1
     deadband_velocity: [0.05, 0.05, 0.05]
     velocity_timeout: 1.0
-
-# --- Costmap filters: KEEPOUT zones (virtual obstacles drawn on a mask) --------
-# Paint areas the planner must avoid (e.g. a whole table, not just the legs the
-# lidar sees) onto a "mask" image, WITHOUT affecting localization — slam_toolbox
-# keeps matching against its pose-graph; the mask only edits the nav2 costmaps.
-# Enable with:  use_keepout:=true  keepout_mask:=/abs/path/to/mask.yaml
-# (see nav2_omni.launch.py). Both servers are lifecycle nodes.
-costmap_filter_info_server:
-  ros__parameters:
-    use_sim_time: False
-    type: 0                       # 0 = keepout / preferred-lanes filter
-    filter_info_topic: "/costmap_filter_info"
-    mask_topic: "/keepout_filter_mask"
-    base: 0.0
-    multiplier: 1.0
-
-filter_mask_server:
-  ros__parameters:
-    use_sim_time: False
-    frame_id: "map"
-    topic_name: "/keepout_filter_mask"
-    # yaml_filename is injected by the launch file (keepout_mask arg).
