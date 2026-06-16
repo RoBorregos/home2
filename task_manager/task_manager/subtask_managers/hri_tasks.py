@@ -68,10 +68,7 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
-from task_manager.config.hri.debug import config as test_hri_config
-from task_manager.config.hri.mocked import config as mocked_hri_config
 from task_manager.subtask_managers.hri_hand import HRIHand
-from task_manager.subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.sync_client import b
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -89,7 +86,7 @@ from task_manager.utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from task_manager.utils.decorators import service_check
+from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
@@ -153,12 +150,12 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
-class HRITasks(metaclass=SubtaskMeta):
+class HRITasks:
     """Class to manage the HRI tasks"""
 
     def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
-        config = mocked_hri_config if mock_data else test_hri_config
+        self.mock_data = mock_data
         self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
@@ -174,7 +171,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
-        self.mock_db = config.mock_db if config else False
+        self.mock_db = self.mock_data
         self.add_entry_service = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.query_entry_service = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
         self.find_closest_service = self.node.create_client(FindClosest, FIND_CLOSEST_SERVICE)
@@ -260,7 +257,8 @@ class HRITasks(metaclass=SubtaskMeta):
         with open(file_path, "r") as file:
             self.names = json.load(file)["names"]
 
-        self.setup_services()
+        if not self.mock_data:
+            self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
 
     def setup_services(self):
@@ -278,6 +276,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
     def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
         """Method to publish directly text to the speech node"""
@@ -294,6 +293,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Saying service finished executing")
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=True)
     @service_check("is_coherent_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def check_coherence(self, text: str) -> bool:
         """Check if the command is coherent and possible for the robot."""
@@ -305,6 +305,7 @@ class HRITasks(metaclass=SubtaskMeta):
             return future.result().is_coherent
         return False
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_extracted_data"))
     @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def extract_data(self, query, complete_text, context="", is_async=False) -> str | Future:
         """
@@ -399,12 +400,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def _get_keyword(self, msg: String) -> None:
         try:
-            data = eval(msg.data)
-            self.keyword = data["keyword"]
+            data = json.loads(msg.data)
+            self.keyword = data.get("keyword", "")
         except Exception as e:
-            self.node.get_logger().error(f"Error: {e}")
+            self.node.get_logger().error(f"Error parsing KWS JSON: {e}")
             self.keyword = ""
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked speech", {}))
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
     def hear(
         self,
@@ -827,6 +829,7 @@ class HRITasks(metaclass=SubtaskMeta):
             room=room,
         )
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
     def command_interpreter(
         self, text: str, is_async=False
     ) -> List[InterpreterAvailableCommands] | Future:
@@ -953,6 +956,7 @@ class HRITasks(metaclass=SubtaskMeta):
         plan = ", then ".join(steps[:-1]) + f", and finally {steps[-1]}"
         return f"My plan is to {plan}."
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, True))
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
@@ -964,6 +968,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, False))
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is negative: {text}")
@@ -993,6 +998,7 @@ class HRITasks(metaclass=SubtaskMeta):
         for f in cancel_future:
             rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_answer", 1.0))
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
         self,
@@ -1162,6 +1168,12 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         return [Location(**json.loads(r)) for r in raw]
 
+    @mockable(
+        return_value=(
+            Status.EXECUTION_SUCCESS,
+            FindClosestResult(results=["mocked_closest"], similarities=[1.0]),
+        )
+    )
     def find_closest(
         self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
     ) -> tuple[Status, FindClosestResult]:
@@ -1242,6 +1254,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return by_name, by_description
 
     # TODO: Make async
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def answer_with_context(self, question: str, context: str) -> str:
         """

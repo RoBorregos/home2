@@ -324,16 +324,13 @@ def get_is_coherent_dialog(text):
         "messages": [
             {
                 "role": "system",
-                "content": """You are a helpful assistant for a service robot named Frida.
-Your task is to determine if a command given by a user is **complete**, **unambiguous**, and **specific** enough for a robot to execute.
-
-The robot needs to know **what** to do and **what/who/where** the target is.
-If a command is cut off, missing a target object/person/location, or is too vague, mark it as **false**.
+                "content": """You are a service robot and will be given a command by the user.
+Your task is to determine if the given command is **complete** and not an input error.
+If a command is cut off or doesn't read as a command, mark it as **false**.
 
 Output a JSON with a single boolean field `is_coherent`.
-- Set `is_coherent` to **true** if the command is complete and executable.
-    - Examples: "Go to the kitchen", "Find the apple", "Pick up the bottle", "Follow me", "Tell me the time", "Take the bag to the living room".
-- Set `is_coherent` to **false** if the command is incomplete, ambiguous, or lacks context.
+- Set `is_coherent` to **true** if the command is complete.
+- Set `is_coherent` to **false** if the command is incomplete.
     - Examples: "Go to", "Find the", "Pick up", "Take", "Bring me the", "Search for", "The kitchen", "Apple".
 """,
             },
