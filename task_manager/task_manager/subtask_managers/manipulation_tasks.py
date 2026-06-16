@@ -764,6 +764,85 @@ class ManipulationTasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
+        client="_move_to_pose_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def move_to_height_in_front(
+        self,
+        reference_point: PointStamped,
+        forward_distance: float = 0.5,
+        lateral: float = 0.0,
+        frame: str = "base_link",
+        target_link: str = GRASP_LINK_FRAME,
+        velocity: float = 0.2,
+        planner_id: str = "RRTConnect",
+        tolerance_position: float = 0.02,
+        tolerance_orientation: float = 0.1,
+    ) -> int:
+        """Move `target_link` to a pose in `frame` at fixed (forward_distance, lateral)
+        and z equal to `reference_point`'s height after transforming into `frame`.
+        """
+        if reference_point is None or reference_point.header.frame_id == "":
+            Logger.error(self.node, "move_to_height_in_front: invalid reference_point")
+            return Status.EXECUTION_ERROR
+
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                frame,
+                reference_point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            ref_in = do_transform_point(reference_point, transform)
+        except Exception as e:
+            Logger.error(
+                self.node,
+                f"TF {reference_point.header.frame_id} -> {frame} failed: {e}",
+            )
+            return Status.EXECUTION_ERROR
+
+        pose = PoseStamped()
+        pose.header.frame_id = frame
+        pose.header.stamp = self.node.get_clock().now().to_msg()
+        pose.pose.position.x = float(forward_distance)
+        pose.pose.position.y = float(lateral)
+        pose.pose.position.z = ref_in.point.z
+        pose.pose.orientation.w = 1.0
+
+        Logger.info(
+            self.node,
+            f"move_to_height_in_front target in {frame}: "
+            f"({pose.pose.position.x:.3f}, {pose.pose.position.y:.3f}, "
+            f"{pose.pose.position.z:.3f}) [ref z from {reference_point.header.frame_id}]",
+        )
+
+        goal = MoveToPose.Goal()
+        goal.pose = pose
+        goal.velocity = float(velocity)
+        goal.planner_id = planner_id
+        goal.target_link = target_link
+        goal.tolerance_position = float(tolerance_position)
+        goal.tolerance_orientation = float(tolerance_orientation)
+
+        self._move_to_pose_action_client.wait_for_server()
+        send_future = self._move_to_pose_action_client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self.node, send_future, timeout_sec=TIMEOUT)
+        goal_handle = send_future.result()
+        if goal_handle is None or not goal_handle.accepted:
+            Logger.error(self.node, "MoveToPose goal rejected")
+            return Status.EXECUTION_ERROR
+
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "MoveToPose reached height-in-front target")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "MoveToPose failed to reach height-in-front target")
+        return Status.EXECUTION_ERROR
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
         client="_go_to_hand_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
     def go_to_hand(self, point: PointStamped, hand_offset: float = 0.1) -> int:

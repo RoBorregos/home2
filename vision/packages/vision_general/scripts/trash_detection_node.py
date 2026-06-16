@@ -163,6 +163,25 @@ class TrashDetectionNode(Node):
         point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
         return self.build_point_stamped(point3d), point2d
 
+    def _deproject_normalized_optical(self, nx, ny):
+        """Same as `_deproject_normalized` but returns the PointStamped in the
+        raw optical-frame convention (x=right, y=down, z=forward) so TF lookups
+        from CAMERA_FRAME apply the correct rotation downstream.
+        """
+        point2d = (
+            min(max(int(nx * self.imageInfo.width), 0), self.imageInfo.width - 1),
+            min(max(int(ny * self.imageInfo.height), 0), self.imageInfo.height - 1),
+        )
+        depth = get_depth(self.depth_image, point2d)
+        point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
+        ps = PointStamped()
+        ps.header.stamp = self.get_clock().now().to_msg()
+        ps.header.frame_id = CAMERA_FRAME
+        ps.point.x = float(point3d[0])
+        ps.point.y = float(point3d[1])
+        ps.point.z = float(point3d[2])
+        return ps, point2d
+
     def get_moondream_point_3d(self, req, res):
         """Average moondream points for `req.subject` and deproject the
         centroid to a 3D PointStamped in CAMERA_FRAME.
@@ -183,7 +202,7 @@ class TrashDetectionNode(Node):
 
         cx = sum(p[0] for p in pts) / len(pts)
         cy = sum(p[1] for p in pts) / len(pts)
-        res.point, point2d = self._deproject_normalized(cx, cy)
+        res.point, point2d = self._deproject_normalized_optical(cx, cy)
         res.success = True
         self.get_logger().info(
             f"Moondream 3D point for '{req.subject}': "

@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 """
-End-to-end test: get washing-machine drum centroid via moondream, then extend
-the xArm forward to that height so the gripper points into the drum opening.
-
-Single-shot. Tune `FORWARD_EXTENSION` between runs to adjust how far past the
-rim the EE is pushed.
+End-to-end test: get washing-machine drum centroid via moondream, then move
+the xArm to a pose at a fixed distance in front of the robot base, at the
+height of the detected centroid. The robot does NOT try to reach the centroid
+in 3D — it only matches its height.
 """
 
 import sys
@@ -19,7 +18,8 @@ from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
-FORWARD_EXTENSION = 0.20  # meters past the drum centroid along base_link +x
+FORWARD_DISTANCE = 0.50  # meters in front of base_link the EE is sent to
+LATERAL = 0.0  # meters left/right of base_link
 VELOCITY = 0.2
 CAMERA_FLIP = False
 SUBJECT = (
@@ -52,11 +52,13 @@ class TestMoveToWashingMachine(Node):
 
         Logger.info(
             self,
-            f"Commanding MoveToPose with forward_extension={FORWARD_EXTENSION:.2f} m",
+            f"Commanding MoveToPose at (x={FORWARD_DISTANCE:.2f}, "
+            f"y={LATERAL:.2f}, z=<centroid height>) in base_link",
         )
-        status = self.manipulation.move_to_point_offset(
-            point=point,
-            offset_xyz=(FORWARD_EXTENSION, 0.0, 0.0),
+        status = self.manipulation.move_to_height_in_front(
+            reference_point=point,
+            forward_distance=FORWARD_DISTANCE,
+            lateral=LATERAL,
             velocity=VELOCITY,
         )
 
