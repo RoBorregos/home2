@@ -3,10 +3,10 @@
 # Adapted from a differential-drive (Nova Carter) config. Key changes:
 #   * MPPI motion_model DiffDrive -> Omni, with vy sampling/limits enabled.
 #   * Obstacle sensing is now TWO layers: the 360 deg RPLIDAR C1 (/scan) feeds a
-#     2D obstacle_layer, and the ZED2 depth cloud
-#     (/zed/zed_node/point_cloud/cloud_registered) feeds a 3D voxel_layer so the
-#     base also sees table tops, chair seats and other overhangs that sit above
-#     the single lidar plane. min_obstacle_height filters out the floor.
+#     2D obstacle_layer, and the filtered ZED2 depth cloud (/point_cloud) feeds a
+#     3D voxel_layer so the base also sees table tops, chair seats and other
+#     overhangs that sit above the single lidar plane. min_obstacle_height (0.30)
+#     filters out the floor so stray floor returns don't litter the costmap.
 #   * Removed the charging-dock server (nova_carter_dock) — not on this robot.
 #   * Removed PreferForwardCritic (a diff-drive forward bias) and ObstaclesCritic
 #     (redundant with CostCritic, the modern footprint-aware obstacle critic).
@@ -198,12 +198,13 @@ local_costmap:
         combination_method: 1
         observation_sources: zed_cloud
         zed_cloud:
-          # VERIFY with `ros2 topic list` — ZED2 wrapper default for this namespace.
-          topic: /zed/zed_node/point_cloud/cloud_registered
+          # Filtered/cleaned cloud — lighter and far fewer floor returns than the
+          # raw ZED cloud. VERIFY the name with `ros2 topic list` if it changes.
+          topic: /point_cloud
           data_type: "PointCloud2"
           marking: True
           clearing: True
-          min_obstacle_height: 0.15  # ignore the floor (raise if floor marks as obstacle)
+          min_obstacle_height: 0.30  # ignore the floor (raised to drop floor false-positives)
           max_obstacle_height: 1.6
           obstacle_max_range: 2.5    # ZED reliable depth is 0.3-3.0 m; stay conservative
           obstacle_min_range: 0.30
@@ -254,11 +255,11 @@ global_costmap:
         combination_method: 1
         observation_sources: zed_cloud
         zed_cloud:
-          topic: /zed/zed_node/point_cloud/cloud_registered
+          topic: /point_cloud
           data_type: "PointCloud2"
           marking: True
           clearing: True
-          min_obstacle_height: 0.15
+          min_obstacle_height: 0.30
           max_obstacle_height: 1.6
           obstacle_max_range: 2.5
           obstacle_min_range: 0.30
