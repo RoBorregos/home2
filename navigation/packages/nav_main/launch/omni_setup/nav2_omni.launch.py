@@ -7,6 +7,18 @@ from launch.event_handlers import OnProcessStart
 from launch.conditions import IfCondition
 from ament_index_python.packages import get_package_share_directory
 import os
+import yaml
+import tempfile
+
+
+def _deep_merge(base, overlay):
+    """Recursively merge overlay dict into base dict (overlay wins)."""
+    for k, v in overlay.items():
+        if isinstance(v, dict) and isinstance(base.get(k), dict):
+            _deep_merge(base[k], v)
+        else:
+            base[k] = v
+    return base
 
 
 def launch_setup(context, *args, **kwargs):
@@ -17,13 +29,9 @@ def launch_setup(context, *args, **kwargs):
     keepout_overlay_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_keepout.yaml')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
-    nav2_params = ParameterFile(
-        LaunchConfiguration('nav2_config_file', default=nav2_params_file),
-        allow_substs=True)
+    nav2_cfg_path = LaunchConfiguration('nav2_config_file', default=nav2_params_file).perform(context)
 
-    # Keepout (virtual obstacle) filter — opt-in. The filter is loaded into the
-    # costmaps ONLY when enabled (via this overlay), so when it is off the costmap
-    # never logs "Filter mask was not received".
+    # Keepout (virtual obstacle) filter — opt-in.
     use_keepout = LaunchConfiguration('use_keepout', default='false').perform(context)
     keepout_on = use_keepout.lower() in ('true', '1')
     nav_src = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
@@ -31,11 +39,22 @@ def launch_setup(context, *args, **kwargs):
         nav_src, 'packages', 'map_context', 'maps', 'keepout_mask.yaml')
     keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
 
-    # controller_server owns local_costmap, planner_server owns global_costmap —
-    # those two get the keepout overlay merged on top when enabled.
-    costmap_params = [nav2_params]
+    # Build the nav2 param file. When keepout is on, deep-merge the keepout overlay
+    # into the nav2 params and write ONE merged file. Passing a single file is the
+    # reliable way to get the filter into the composed costmap sub-nodes — extra
+    # param files do not merge cleanly there. When off, use the base params as-is,
+    # so the costmaps never load the filter (no "mask not received" spam).
+    params_path = nav2_cfg_path
     if keepout_on:
-        costmap_params.append(ParameterFile(keepout_overlay_file, allow_substs=True))
+        with open(nav2_cfg_path) as f:
+            merged = yaml.safe_load(f)
+        with open(keepout_overlay_file) as f:
+            _deep_merge(merged, yaml.safe_load(f))
+        params_path = os.path.join(tempfile.gettempdir(), 'nav2_omni_keepout_merged.yaml')
+        with open(params_path, 'w') as f:
+            yaml.safe_dump(merged, f, default_flow_style=False, sort_keys=False)
+
+    nav2_params = ParameterFile(params_path, allow_substs=True)
 
     log_output = 'own_log' if os.getenv('NAV_QUIET') == '1' else 'screen'
 
@@ -59,7 +78,7 @@ def launch_setup(context, *args, **kwargs):
                 package='nav2_controller',
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
-                parameters=costmap_params,
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='nav2_smoother',
@@ -71,7 +90,7 @@ def launch_setup(context, *args, **kwargs):
                 package='nav2_planner',
                 plugin='nav2_planner::PlannerServer',
                 name='planner_server',
-                parameters=costmap_params,
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='nav2_behaviors',
@@ -132,21 +151,20 @@ def launch_setup(context, *args, **kwargs):
     # tells the KeepoutFilter how to read it; a dedicated lifecycle manager brings
     # them up (autostart) independently of nav_central's nav2 startup.
     if keepout_on:
-        keepout_params = ParameterFile(keepout_overlay_file, allow_substs=True)
         actions += [
             Node(
                 package='nav2_map_server',
                 executable='map_server',
                 name='filter_mask_server',
                 output=log_output,
-                parameters=[keepout_params, {'yaml_filename': keepout_mask}],
+                parameters=[nav2_params, {'yaml_filename': keepout_mask}],
             ),
             Node(
                 package='nav2_map_server',
                 executable='costmap_filter_info_server',
                 name='costmap_filter_info_server',
                 output=log_output,
-                parameters=[keepout_params],
+                parameters=[nav2_params],
             ),
             Node(
                 package='nav2_lifecycle_manager',
