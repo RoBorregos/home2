@@ -130,54 +130,61 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # Actions to run once the container is up: the nav2 stack, plus (when enabled)
+    # the keepout filter servers loaded INTO THE SAME CONTAINER as the costmaps.
+    # Co-locating them keeps the latched filter-info/mask topics in the same
+    # process as the costmap filters, which delivers reliably (cross-process
+    # transient-local was being dropped — e.g. via shared memory).
+    on_start_actions = [TimerAction(period=2.0, actions=[nav2_nodes])]
+
+    keepout_lifecycle = None
+    if keepout_on:
+        keepout_nodes = LoadComposableNodes(
+            target_container='nav2_container',
+            composable_node_descriptions=[
+                # filter_mask_server publishes the painted mask...
+                ComposableNode(
+                    package='nav2_map_server',
+                    plugin='nav2_map_server::MapServer',
+                    name='filter_mask_server',
+                    parameters=[nav2_params, {'yaml_filename': keepout_mask}],
+                ),
+                # ...costmap_filter_info_server tells the KeepoutFilter how to read it.
+                ComposableNode(
+                    package='nav2_map_server',
+                    plugin='nav2_map_server::CostmapFilterInfoServer',
+                    name='costmap_filter_info_server',
+                    parameters=[nav2_params],
+                ),
+            ],
+        )
+        on_start_actions.append(TimerAction(period=2.0, actions=[keepout_nodes]))
+        # Dedicated lifecycle manager brings the two filter servers up (autostart)
+        # independently of nav_central's nav2 startup.
+        keepout_lifecycle = Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_costmap_filters',
+            output=log_output,
+            parameters=[{
+                'use_sim_time': False,
+                'autostart': True,
+                'node_names': ['filter_mask_server', 'costmap_filter_info_server'],
+            }],
+        )
+
     # Delay node loading until container process is running
     delayed_nav2_load = RegisterEventHandler(
         condition=IfCondition(nav2_activate),
         event_handler=OnProcessStart(
             target_action=nav2_container,
-            on_start=[
-                TimerAction(
-                    period=2.0,
-                    actions=[nav2_nodes]
-                )
-            ]
+            on_start=on_start_actions,
         )
     )
 
     actions = [nav2_container, delayed_nav2_load]
-
-    # --- Keepout filter servers (only when use_keepout:=true) -----------------
-    # filter_mask_server publishes the painted mask; costmap_filter_info_server
-    # tells the KeepoutFilter how to read it; a dedicated lifecycle manager brings
-    # them up (autostart) independently of nav_central's nav2 startup.
-    if keepout_on:
-        actions += [
-            Node(
-                package='nav2_map_server',
-                executable='map_server',
-                name='filter_mask_server',
-                output=log_output,
-                parameters=[nav2_params, {'yaml_filename': keepout_mask}],
-            ),
-            Node(
-                package='nav2_map_server',
-                executable='costmap_filter_info_server',
-                name='costmap_filter_info_server',
-                output=log_output,
-                parameters=[nav2_params],
-            ),
-            Node(
-                package='nav2_lifecycle_manager',
-                executable='lifecycle_manager',
-                name='lifecycle_manager_costmap_filters',
-                output=log_output,
-                parameters=[{
-                    'use_sim_time': False,
-                    'autostart': True,
-                    'node_names': ['filter_mask_server', 'costmap_filter_info_server'],
-                }],
-            ),
-        ]
+    if keepout_lifecycle is not None:
+        actions.append(keepout_lifecycle)
 
     return actions
 
