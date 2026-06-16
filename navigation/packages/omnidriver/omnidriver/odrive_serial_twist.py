@@ -15,7 +15,7 @@ class SerialCommNode(Node):
         super().__init__('serial_comm_node')
 
         # Serial
-        self.ser = serial.Serial('/dev/ttyACM0', 230400, timeout=0.1)  # match STM32 USART3
+        self.ser = serial.Serial('/dev/ttyOmniSTM32', 230400, timeout=0.1)  # match STM32 USART3
 
         # TX command to STM32 UART_RX task:
         # expected format: "vx vy wz\r\n"

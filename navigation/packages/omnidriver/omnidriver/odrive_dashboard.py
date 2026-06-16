@@ -122,7 +122,7 @@ class ODriveDashboardNode(Node):
     def __init__(self):
         super().__init__('odrive_dashboard_node')
 
-        self.declare_parameter('serial_port',         '/dev/ttyACM0')
+        self.declare_parameter('serial_port',         '/dev/ttyOmniSTM32')
         self.declare_parameter('baud_rate',           230400)
         # nav2 on Humble (and teleop_twist_keyboard) publishes UNSTAMPED
         # geometry_msgs/Twist on /cmd_vel, so default to that. Set true only if

@@ -10,7 +10,7 @@ class RawSerialReceiver(Node):
         super().__init__('raw_serial_receiver')
 
         # Configure serial port
-        self.ser = serial.Serial('/dev/ttyACM0', 230400, timeout=0.2)  # match STM32 USART3
+        self.ser = serial.Serial('/dev/ttyOmniSTM32', 230400, timeout=0.2)  # match STM32 USART3
 
         # Publisher for raw UART RX data
         qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT)

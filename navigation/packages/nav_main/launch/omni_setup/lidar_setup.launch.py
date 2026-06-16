@@ -18,7 +18,7 @@ def launch_setup(context, *args, **kwargs):
         name='sllidar_rear',
         parameters=[{
             'channel_type': 'serial',
-            'serial_port': '/dev/ttyUSB0',
+            'serial_port': '/dev/ttyOmniLidar1',
             'serial_baudrate': 460800,
             'frame_id': 'lidar_rear',
             'inverted': False,
@@ -41,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
         name='sllidar_front',
         parameters=[{
             'channel_type': 'serial',
-            'serial_port': '/dev/ttyUSB1',
+            'serial_port': '/dev/ttyOmniLidar2',
             'serial_baudrate': 460800,
             'frame_id': 'lidar_front',
             'inverted': False,
