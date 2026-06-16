@@ -95,8 +95,9 @@ class MapCanvas(QWidget):
         self.panning = False
         self.areas = {}
         self.current_area = None
-        self.mode = 'location'  # 'location' or 'polygon'
+        self.mode = 'location'  # 'location', 'polygon' or 'keepout'
         self.temp_polygon = []
+        self.keepout_zones = []  # list of polygons (each a list of [mx, my]) -> keepout mask
         # Drag-to-orient state
         self.dragging_orientation = False
         self.drag_start_map = None  # (mx, my) where click started
@@ -182,7 +183,7 @@ class MapCanvas(QWidget):
                     self.dragging_orientation = True
                     self.drag_start_map = (mx, my)
                     self.drag_yaw = 0.0
-                elif self.mode == 'polygon':
+                elif self.mode in ('polygon', 'keepout'):
                     self.polygon_clicked.emit(mx, my)
 
     def mouseMoveEvent(self, event: QMouseEvent):
@@ -323,6 +324,17 @@ class MapCanvas(QWidget):
                 painter.setPen(QPen(label_color))
                 painter.drawText(QPointF(label_x, label_y), loc_name)
 
+        # Draw keepout zones (virtual obstacles for nav2 — red)
+        if self.keepout_zones:
+            painter.setPen(QPen(QColor(255, 60, 60, 220), 2.0 / self.zoom))
+            painter.setBrush(QBrush(QColor(255, 60, 60, 70)))
+            for zone in self.keepout_zones:
+                poly = QPolygonF()
+                for pt in zone:
+                    px, py = self.map_to_pixel(pt[0], pt[1])
+                    poly.append(QPointF(px, py))
+                painter.drawPolygon(poly)
+
         # Draw drag-to-orient preview
         if self.dragging_orientation and self.drag_start_map:
             smx, smy = self.drag_start_map
@@ -371,6 +383,7 @@ class MapAreaTagger(QMainWindow):
         self.current_task = next(iter(ROBOCUP_TASKS), None)
         self.mode = 'location'
         self.temp_polygon = []
+        self.keepout_zones = []
         self.map_yaml_path = None
         self.setup_ui()
         self.apply_style()
@@ -457,8 +470,12 @@ class MapAreaTagger(QMainWindow):
         self.btn_polygon_mode = QPushButton("Draw Polygon")
         self.btn_polygon_mode.setCheckable(True)
         self.btn_polygon_mode.clicked.connect(lambda: self.set_mode('polygon'))
+        self.btn_keepout_mode = QPushButton("Keepout")
+        self.btn_keepout_mode.setCheckable(True)
+        self.btn_keepout_mode.clicked.connect(lambda: self.set_mode('keepout'))
         mode_layout.addWidget(self.btn_location_mode)
         mode_layout.addWidget(self.btn_polygon_mode)
+        mode_layout.addWidget(self.btn_keepout_mode)
         panel_layout.addWidget(mode_group)
 
         # Area management
@@ -509,6 +526,24 @@ class MapAreaTagger(QMainWindow):
         self.btn_finish_polygon.setVisible(False)
         panel_layout.addWidget(self.btn_finish_polygon)
 
+        # Keepout zones -> nav2 keepout mask (virtual obstacles, planning only)
+        keepout_group = QGroupBox("Keepout Zones")
+        keepout_layout = QVBoxLayout(keepout_group)
+        self.lbl_keepout = QLabel("Zones: 0")
+        keepout_layout.addWidget(self.lbl_keepout)
+        keepout_btn_layout = QHBoxLayout()
+        self.btn_finish_keepout = QPushButton("Finish Zone")
+        self.btn_finish_keepout.clicked.connect(self.finish_keepout_zone)
+        self.btn_clear_keepout = QPushButton("Clear All")
+        self.btn_clear_keepout.clicked.connect(self.clear_keepouts)
+        keepout_btn_layout.addWidget(self.btn_finish_keepout)
+        keepout_btn_layout.addWidget(self.btn_clear_keepout)
+        keepout_layout.addLayout(keepout_btn_layout)
+        self.btn_save_keepout = QPushButton("Save Keepout Mask")
+        self.btn_save_keepout.clicked.connect(self.save_keepout_mask)
+        keepout_layout.addWidget(self.btn_save_keepout)
+        panel_layout.addWidget(keepout_group)
+
         panel_layout.addStretch()
 
         # Coordinates display
@@ -557,14 +592,18 @@ class MapAreaTagger(QMainWindow):
         self.canvas.mode = mode
         self.btn_location_mode.setChecked(mode == 'location')
         self.btn_polygon_mode.setChecked(mode == 'polygon')
+        self.btn_keepout_mode.setChecked(mode == 'keepout')
         self.btn_finish_polygon.setVisible(mode == 'polygon')
+        # Reset any in-progress outline when switching modes.
+        self.temp_polygon = []
+        self.canvas.temp_polygon = []
+        self.canvas.update()
         if mode == 'location':
-            self.temp_polygon = []
-            self.canvas.temp_polygon = []
-            self.canvas.update()
             self.status.showMessage("Click on the map to add a location")
+        elif mode == 'polygon':
+            self.status.showMessage("Click vertices to define area polygon. Click 'Finish Polygon' (or Enter) when done.")
         else:
-            self.status.showMessage("Click vertices to define polygon boundary. Click 'Finish Polygon' when done.")
+            self.status.showMessage("Click vertices to outline a keepout zone. Click 'Finish Zone' (or Enter) when done.")
 
     def new_project(self):
         reply = QMessageBox.question(
@@ -575,12 +614,15 @@ class MapAreaTagger(QMainWindow):
             self.areas = {}
             self.current_area = None
             self.temp_polygon = []
+            self.keepout_zones = []
             self.canvas.areas = {}
             self.canvas.temp_polygon = []
+            self.canvas.keepout_zones = []
             self.canvas.current_area = None
             self.refresh_area_list()
             self.refresh_tree()
             self.canvas.update()
+            self.lbl_keepout.setText("Zones: 0")
             self.status.showMessage("Started new project")
 
     def open_map(self):
@@ -750,6 +792,12 @@ class MapAreaTagger(QMainWindow):
         self.status.showMessage(f"Added/Updated '{name}' at ({mx:.2f}, {my:.2f}) yaw={math.degrees(yaw):.0f}")
 
     def on_polygon_click(self, mx, my):
+        if self.mode == 'keepout':
+            self.temp_polygon.append([mx, my])
+            self.canvas.temp_polygon = self.temp_polygon
+            self.canvas.update()
+            self.status.showMessage(f"Keepout vertex {len(self.temp_polygon)} at ({mx:.2f}, {my:.2f})")
+            return
         if not self.current_area:
             self.status.showMessage("Select or create an area first!")
             return
@@ -782,6 +830,96 @@ class MapAreaTagger(QMainWindow):
         self.canvas.areas = self.areas
         self.refresh_tree()
         self.canvas.update()
+
+    def finish_keepout_zone(self):
+        if len(self.temp_polygon) < 3:
+            self.status.showMessage("Need at least 3 vertices for a keepout zone")
+            return
+        self.keepout_zones.append(self.temp_polygon.copy())
+        self.canvas.keepout_zones = self.keepout_zones
+        self.temp_polygon = []
+        self.canvas.temp_polygon = []
+        self.canvas.update()
+        self.lbl_keepout.setText(f"Zones: {len(self.keepout_zones)}")
+        self.status.showMessage(f"Keepout zone saved ({len(self.keepout_zones)} total)")
+
+    def clear_keepouts(self):
+        if not self.keepout_zones and not self.temp_polygon:
+            return
+        self.keepout_zones = []
+        self.temp_polygon = []
+        self.canvas.keepout_zones = []
+        self.canvas.temp_polygon = []
+        self.canvas.update()
+        self.lbl_keepout.setText("Zones: 0")
+        self.status.showMessage("Cleared all keepout zones")
+
+    def save_keepout_mask(self):
+        """Rasterize the drawn keepout zones into a nav2 keepout mask (.pgm+.yaml),
+        aligned 1:1 with the loaded map. Black = keepout (lethal), white = free."""
+        if not self.canvas.pixmap:
+            QMessageBox.warning(
+                self, "No map",
+                "Open a map first — the mask must match its size/resolution/origin.")
+            return
+        if not self.keepout_zones:
+            QMessageBox.warning(self, "No zones", "Draw at least one keepout zone first.")
+            return
+
+        default_dir = os.path.dirname(self.map_yaml_path) if self.map_yaml_path else ""
+        default_path = os.path.join(default_dir, "keepout_mask.yaml")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Keepout Mask", default_path, "Map YAML (*.yaml)")
+        if not path:
+            return
+        if not path.endswith(".yaml"):
+            path += ".yaml"
+        pgm_path = path[:-5] + ".pgm"
+
+        w = self.canvas.pixmap.width()
+        h = self.canvas.pixmap.height()
+
+        # Rasterize: free (white=255) everywhere, keepout polygons filled black (0).
+        img = QImage(w, h, QImage.Format_Grayscale8)
+        img.fill(255)
+        painter = QPainter(img)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(QColor(0, 0, 0)))
+        for zone in self.keepout_zones:
+            poly = QPolygonF()
+            for mx, my in zone:
+                px, py = self.canvas.map_to_pixel(mx, my)
+                poly.append(QPointF(px, py))
+            painter.drawPolygon(poly)
+        painter.end()
+
+        # Extract grayscale bytes (handle row stride) into a (h, w) array.
+        bpl = img.bytesPerLine()
+        ptr = img.constBits()
+        ptr.setsize(h * bpl)
+        arr = np.frombuffer(ptr, np.uint8).reshape((h, bpl))[:, :w]
+
+        try:
+            with open(pgm_path, "wb") as f:
+                f.write(f"P5\n{w} {h}\n255\n".encode())
+                f.write(arr.tobytes())
+            with open(path, "w") as f:
+                f.write(f"image: {os.path.basename(pgm_path)}\n")
+                f.write(f"resolution: {self.canvas.resolution}\n")
+                f.write(f"origin: [{self.canvas.origin_x}, {self.canvas.origin_y}, 0.0]\n")
+                f.write("negate: 0\n")
+                f.write("occupied_thresh: 0.65\n")
+                f.write("free_thresh: 0.196\n")
+                f.write("mode: trinary\n")
+        except Exception as e:
+            QMessageBox.warning(self, "Save failed", str(e))
+            return
+
+        self.status.showMessage(f"Saved keepout mask: {os.path.basename(pgm_path)} + .yaml")
+        QMessageBox.information(
+            self, "Keepout mask saved",
+            f"Wrote:\n{pgm_path}\n{path}\n\nLaunch nav2 with:\n"
+            f"use_keepout:=true keepout_mask:={path}")
 
     def on_mouse_move(self, mx, my):
         self.coord_label.setText(f"x: {mx:.3f}  y: {my:.3f}")
@@ -913,13 +1051,16 @@ class MapAreaTagger(QMainWindow):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
-            if self.mode == 'polygon' and self.temp_polygon:
+            if self.mode in ('polygon', 'keepout') and self.temp_polygon:
                 self.temp_polygon = []
                 self.canvas.temp_polygon = []
                 self.canvas.update()
-                self.status.showMessage("Polygon cancelled")
-        elif event.key() == Qt.Key_Return and self.mode == 'polygon':
-            self.finish_polygon()
+                self.status.showMessage("Outline cancelled")
+        elif event.key() == Qt.Key_Return:
+            if self.mode == 'polygon':
+                self.finish_polygon()
+            elif self.mode == 'keepout':
+                self.finish_keepout_zone()
         super().keyPressEvent(event)
 
 

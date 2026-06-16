@@ -10,6 +10,8 @@ import os
 
 
 def generate_launch_description():
+    from frida_constants.navigation_constants import RTAB_MAPS_PATH
+
     pkg_file_route = get_package_share_directory('nav_main')
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
     nav2_activate = LaunchConfiguration('nav2', default='true')
@@ -17,6 +19,14 @@ def generate_launch_description():
     nav2_params = ParameterFile(
         LaunchConfiguration('nav2_config_file', default=nav2_params_file),
         allow_substs=True)
+
+    # Keepout (virtual obstacle) filter — opt-in. Off by default so nav2 behaves
+    # exactly as before until you draw a mask and pass use_keepout:=true.
+    use_keepout = LaunchConfiguration('use_keepout', default='false')
+    nav_src = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
+    keepout_mask_default = os.path.join(
+        nav_src, 'packages', 'map_context', 'maps', 'keepout_mask.yaml')
+    keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
 
     log_output = 'own_log' if os.getenv('NAV_QUIET') == '1' else 'screen'
 
@@ -106,7 +116,45 @@ def generate_launch_description():
         )
     )
 
+    # --- Keepout filter servers (only when use_keepout:=true) -----------------
+    # filter_mask_server publishes the painted mask; costmap_filter_info_server
+    # tells the KeepoutFilter how to read it; a dedicated lifecycle manager brings
+    # them up (autostart) independently of nav_central's nav2 startup.
+    filter_mask_server = Node(
+        condition=IfCondition(use_keepout),
+        package='nav2_map_server',
+        executable='map_server',
+        name='filter_mask_server',
+        output=log_output,
+        parameters=[nav2_params, {'yaml_filename': keepout_mask}],
+    )
+
+    costmap_filter_info_server = Node(
+        condition=IfCondition(use_keepout),
+        package='nav2_map_server',
+        executable='costmap_filter_info_server',
+        name='costmap_filter_info_server',
+        output=log_output,
+        parameters=[nav2_params],
+    )
+
+    lifecycle_manager_filters = Node(
+        condition=IfCondition(use_keepout),
+        package='nav2_lifecycle_manager',
+        executable='lifecycle_manager',
+        name='lifecycle_manager_costmap_filters',
+        output=log_output,
+        parameters=[{
+            'use_sim_time': False,
+            'autostart': True,
+            'node_names': ['filter_mask_server', 'costmap_filter_info_server'],
+        }],
+    )
+
     return LaunchDescription([
         nav2_container,
         delayed_nav2_load,
+        filter_mask_server,
+        costmap_filter_info_server,
+        lifecycle_manager_filters,
     ])

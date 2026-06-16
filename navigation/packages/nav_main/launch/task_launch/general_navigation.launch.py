@@ -36,6 +36,11 @@ def launch_function(context, *args, **kwargs):
     omni_map_default = os.path.join(nav_src, 'packages', 'map_context', 'maps', areas_map_name)
     omni_map = LaunchConfiguration('map', default=omni_map_default)
 
+    # Keepout (virtual obstacle) filter — forwarded to nav2_omni; off by default.
+    use_keepout = LaunchConfiguration('use_keepout', default='false')
+    keepout_mask_default = os.path.join(nav_src, 'packages', 'map_context', 'maps', 'keepout_mask.yaml')
+    keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
+
     nav_central_node = Node(
         package='nav_main',
         executable='nav_central.py',
@@ -107,6 +112,8 @@ def launch_function(context, *args, **kwargs):
         ),
         launch_arguments={
             'nav2': nav2_activate,
+            'use_keepout': use_keepout,
+            'keepout_mask': keepout_mask,
         }.items(),
     )
 
