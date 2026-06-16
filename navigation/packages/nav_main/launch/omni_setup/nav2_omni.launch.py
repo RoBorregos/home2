@@ -106,23 +106,7 @@ def generate_launch_description():
         )
     )
 
-    # Flush phantom voxel marks from the local costmap while the base is stopped
-    # (nav2 only raytrace-clears them once the robot moves).
-    costmap_cleaner = Node(
-        condition=IfCondition(nav2_activate),
-        package='nav_main',
-        executable='costmap_cleaner.py',
-        name='costmap_cleaner',
-        output='screen',
-        parameters=[{
-            'odom_topic': '/odometry/filtered',
-            'stationary_time': 0.5,
-            'clear_period': 1.0,
-        }],
-    )
-
     return LaunchDescription([
         nav2_container,
         delayed_nav2_load,
-        costmap_cleaner,
     ])
