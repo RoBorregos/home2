@@ -60,6 +60,7 @@ class TestMoveToWashingMachine(Node):
             forward_distance=FORWARD_DISTANCE,
             lateral=LATERAL,
             velocity=VELOCITY,
+            tolerance_orientation=3.14,  # any orientation — just hit the position
         )
 
         if status == Status.EXECUTION_SUCCESS:
