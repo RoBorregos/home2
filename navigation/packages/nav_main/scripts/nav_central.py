@@ -86,10 +86,25 @@ class Nav_Central(Node):
         self.mapping_config = self.declare_parameter('rtab_mapping_config', '').value
         self.localization_config = self.declare_parameter('rtab_localization_config', '').value
 
+        # Base + SLAM backend selection.
+        #   default_base: 'dashgo' (RTABMap RGBD SLAM) or 'omnibase' (slam_toolbox)
+        #   nav_type:     '2d' (slam_toolbox / lidar) or '3d' (RTABMap)
+        # Params absent -> legacy dashgo / RTABMap behaviour.
+        self.default_base = self.declare_parameter('default_base', 'dashgo').value
+        self.nav_type = self.declare_parameter('nav_type', '2d').value
+        self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
+        # Topic that proves the active SLAM backend is alive (setup + monitor use it).
+        self.slam_check_topic = '/map' if self.use_slam_toolbox else RTAB_CHECK_TOPIC
+
         self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = None 
-        self.required_topics = {'/zed/zed_node/rgb/camera_info', '/cmd_vel','/scan'}
-        self.required_frames = {'link_eef'}
+        self.tf_listener = None
+        if self.use_slam_toolbox:
+            # slam_toolbox is lidar-only: no RGBD camera, and the omnibase has no arm.
+            self.required_topics = {'/cmd_vel', '/scan'}
+            self.required_frames = {'base_link'}
+        else:
+            self.required_topics = {'/zed/zed_node/rgb/camera_info', '/cmd_vel', '/scan'}
+            self.required_frames = {'link_eef'}
         self.requirements_timeout = TIMEOUT_REQUIREMENTS
 
         self.rtabmap_remapping = [
@@ -192,10 +207,10 @@ class Nav_Central(Node):
         if self.tf_listener is None:
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        # Check if rtabmap crashed (was loaded but topic disappeared)
-        if self.rtabmap_loaded and not self.check_for_topics({RTAB_CHECK_TOPIC}):
+        # Check if the SLAM backend crashed (was loaded but its topic disappeared)
+        if self.rtabmap_loaded and not self.check_for_topics({self.slam_check_topic}):
             self.rtabmap_loaded = False
-            self.nav_logger("warn", "Monitor -> Rtabmap container crashed, will reload when requirements are met")
+            self.nav_logger("warn", "Monitor -> SLAM backend crashed, will reload when requirements are met")
 
         # Reload rtabmap if it crashed and requirements are available
         if not self.rtabmap_loaded and not self.rtabmap_reloading:
@@ -478,7 +493,29 @@ class Nav_Central(Node):
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=self.requirements_timeout))
 
     def start_slam(self):
-        """Function to load slam nodes"""                                                                                                                                                                                        
+        """Bring up (or confirm) the active SLAM backend."""
+        if self.use_slam_toolbox:
+            self.start_slam_toolbox()
+        else:
+            self.start_rtabmap()
+
+    def start_slam_toolbox(self):
+        """slam_toolbox runs as its own externally-launched node (see
+        omni_setup/slam.launch.py). We don't load it into a container here — we
+        just wait until it is publishing the map."""
+        slam_topics = {self.slam_check_topic}
+        self.nav_logger("info", "Loading Slam -> Waiting for slam_toolbox map ...")
+        elapsed = 0.0
+        while not self.check_for_topics(slam_topics) and elapsed < self.rtab_load_timeout:
+            t.sleep(0.5)
+            elapsed += 0.5
+        if self.check_for_topics(slam_topics):
+            self.nav_logger("info", "Loading Slam -> slam_toolbox map available")
+        else:
+            self.nav_logger("warn", "Loading Slam -> slam_toolbox map not seen yet, continuing")
+
+    def start_rtabmap(self):
+        """Function to load slam nodes"""
         # Load a node into the container
 
         rtabmap_params = params_from_yaml(self.config_path, 'rtabmap')
@@ -561,6 +598,9 @@ class Nav_Central(Node):
 
     def pause_slam(self):
         """Pause Slam function"""
+        if self.use_slam_toolbox:
+            # slam_toolbox self-recovers (respawn) — nothing to pause.
+            return
         if not self.rtabmap_loaded:
             self.nav_logger("warn", "Pausing Slam -> Rtabmap not loaded, skipping")
             return
@@ -573,6 +613,8 @@ class Nav_Central(Node):
 
     def resume_slam(self):
         """Resuming Slam function"""
+        if self.use_slam_toolbox:
+            return
         if not self.rtabmap_loaded:
             self.nav_logger("warn", "Resuming Slam -> Rtabmap not loaded, skipping")
             return

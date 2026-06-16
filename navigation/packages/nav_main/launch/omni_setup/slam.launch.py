@@ -38,55 +38,24 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.conditions import IfCondition
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
-from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('odrive_comm')
-    default_params = os.path.join(pkg_share, 'config', 'mapper_params_online_async.yaml')
+    pkg_share = get_package_share_directory('nav_main')
+    default_params = os.path.join(pkg_share, 'config','omni_config', 'mapper_params_online_async.yaml')
 
-    use_ekf = LaunchConfiguration('use_ekf')
-    use_dashboard = LaunchConfiguration('use_dashboard')
-    cmd_vel_topic = LaunchConfiguration('cmd_vel_topic')
     use_sim_time = LaunchConfiguration('use_sim_time')
     params_file = LaunchConfiguration('params_file')
 
-    declare_use_ekf = DeclareLaunchArgument(
-        'use_ekf', default_value='true',
-        description='Also start the EKF (ekf.launch.py), which provides the odom->base_link TF '
-                    'that SLAM needs. Set false if you already run the EKF separately.')
-    declare_use_dashboard = DeclareLaunchArgument(
-        'use_dashboard', default_value='true',
-        description='Forwarded to ekf.launch.py: also start odrive_dashboard (serial bridge + web GUI). '
-                    'Only one process may open /dev/ttyACM0.')
-    declare_cmd_vel_topic = DeclareLaunchArgument(
-        'cmd_vel_topic', default_value='cmd_vel',
-        description='Forwarded to ekf.launch.py: topic the dashboard listens on for velocity. '
-                    'Keep "cmd_vel" while mapping by teleop.')
     declare_use_sim_time = DeclareLaunchArgument(
         'use_sim_time', default_value='false',
         description='Use /clock instead of wall time (true only when replaying a rosbag in sim time).')
     declare_params_file = DeclareLaunchArgument(
         'params_file', default_value=default_params,
         description='slam_toolbox parameter YAML.')
-
-    # Bring up the EKF (odom->base_link). Reuses this package's ekf.launch.py and
-    # passes use_dashboard straight through.
-    ekf_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare('odrive_comm'), 'launch', 'ekf.launch.py'])),
-        condition=IfCondition(use_ekf),
-        launch_arguments={
-            'use_dashboard': use_dashboard,
-            'cmd_vel_topic': cmd_vel_topic,
-        }.items(),
-    )
-
     # slam_toolbox online-async mapper: publishes map->odom + /map.
     slam_node = Node(
         package='slam_toolbox',
@@ -103,11 +72,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        declare_use_ekf,
-        declare_use_dashboard,
-        declare_cmd_vel_topic,
         declare_use_sim_time,
         declare_params_file,
-        ekf_launch,
         slam_node,
     ])

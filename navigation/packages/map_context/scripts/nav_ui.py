@@ -104,6 +104,10 @@ class NavRosNode(Node):
         # 'navigation' or 'mapping'
         self.ui_mode = self.declare_parameter('mode', 'navigation').value
         self.map_name = self.declare_parameter('map_name', '').value
+        # Base + SLAM backend (mirrors nav_central). Params absent -> legacy RTABMap.
+        self.default_base = self.declare_parameter('default_base', 'dashgo').value
+        self.nav_type = self.declare_parameter('nav_type', '2d').value
+        self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
 
         # TF
         self.tf_buffer = Buffer()
@@ -161,9 +165,16 @@ class NavRosNode(Node):
         if self.ui_mode == 'navigation':
             self._resume_nav_client = self.create_client(Empty, RESUME_NAV_SERVICE)
 
-        # Mapping mode: map save via /rtabmap/backup
+        # Mapping mode: the map-save client depends on the SLAM backend.
         if self.ui_mode == 'mapping':
-            self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
+            if self.use_slam_toolbox:
+                from slam_toolbox.srv import SaveMap, SerializePoseGraph
+                self._slam_save_map_client = self.create_client(
+                    SaveMap, '/slam_toolbox/save_map')
+                self._slam_serialize_client = self.create_client(
+                    SerializePoseGraph, '/slam_toolbox/serialize_map')
+            else:
+                self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
 
         # Robot pose
         self.robot_x = 0.0
@@ -261,6 +272,68 @@ class NavRosNode(Node):
             f.write('free_thresh: 0.25\n')
 
     def save_map_async(self, name, on_done):
+        """Dispatch map saving to the active SLAM backend."""
+        if self.use_slam_toolbox:
+            self._save_map_slamtoolbox(name, on_done)
+        else:
+            self._save_map_rtabmap(name, on_done)
+
+    def _save_map_slamtoolbox(self, name, on_done):
+        """Serialize the slam_toolbox pose-graph (.posegraph + .data, for later
+        localization) and write the occupancy grid (.pgm + .yaml, for nav2)."""
+        import time
+        from slam_toolbox.srv import SaveMap, SerializePoseGraph
+        from std_msgs.msg import String
+        # Snapshot map_data now (main thread) to avoid race with ROS spin thread
+        map_snapshot = self.map_data
+
+        def _worker():
+            try:
+                nav_src  = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
+                maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
+                os.makedirs(maps_dir, exist_ok=True)
+                base = os.path.join(maps_dir, name)
+
+                # --- Serialize the pose-graph (needed for localization mode) ---
+                if not self._slam_serialize_client.wait_for_service(timeout_sec=10.0):
+                    on_done(False, "slam_toolbox serialize_map service not available")
+                    return
+                sreq = SerializePoseGraph.Request()
+                sreq.filename = base
+                future = self._slam_serialize_client.call_async(sreq)
+                elapsed = 0.0
+                while not future.done() and elapsed < 30.0:
+                    time.sleep(0.2)
+                    elapsed += 0.2
+                if not future.done():
+                    on_done(False, "serialize_map timed out")
+                    return
+
+                # --- Occupancy grid via slam_toolbox; fall back to writing it
+                # ourselves from the last /map if the service is unavailable. ---
+                grid_ok = False
+                if self._slam_save_map_client.wait_for_service(timeout_sec=5.0):
+                    mreq = SaveMap.Request()
+                    mreq.name = String(data=base)
+                    future = self._slam_save_map_client.call_async(mreq)
+                    elapsed = 0.0
+                    while not future.done() and elapsed < 30.0:
+                        time.sleep(0.2)
+                        elapsed += 0.2
+                    grid_ok = future.done()
+                if not grid_ok:
+                    if map_snapshot is None:
+                        on_done(False, "Graph serialized, but no /map yet for the grid")
+                        return
+                    self._write_map_files(map_snapshot, base)
+
+                on_done(True, f"{name}.posegraph  |  {name}.yaml + {name}.pgm")
+            except Exception as e:
+                on_done(False, str(e))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _save_map_rtabmap(self, name, on_done):
         """Save RTABMap DB and 2D map YAML in a background thread.
 
         Uses /rtabmap/backup which properly flushes all in-memory state to disk,
@@ -880,7 +953,7 @@ class NavUI(QMainWindow):
         mapping_group.setVisible(self.ui_mode == 'mapping')
 
         # Map DB
-        db_group = QGroupBox("RTAB-Map DB")
+        db_group = QGroupBox("Map DB")
         db_layout = QVBoxLayout(db_group)
         self.lbl_current_db = QLabel("Current: --")
         db_layout.addWidget(self.lbl_current_db)
