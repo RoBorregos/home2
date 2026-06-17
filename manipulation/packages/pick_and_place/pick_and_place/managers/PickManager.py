@@ -12,6 +12,7 @@ from frida_motion_planning.utils.service_utils import (
 from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
+    FLAT_OBJECT_NAMES,
     POUR_OBJECT_NAMES,
     RIM_NAMES,
 )
@@ -57,6 +58,13 @@ def is_cutlery(object_name: str) -> bool:
     if object_name is None:
         return False
     return object_name.lower() in CUTLERY_NAMES
+
+
+def is_flat_grasp(object_name: str) -> bool:
+    """Objects picked with the flat-grasp estimator (cutlery, plates, ...)."""
+    if object_name is None:
+        return False
+    return object_name.lower() in FLAT_OBJECT_NAMES
 
 
 def is_rim(object_name: str) -> bool:
@@ -127,7 +135,7 @@ class PickManager:
         self.node.get_logger().info("Setting initial joint positions")
 
         is_rim_object = is_rim(object_name)
-        is_flat_object = is_cutlery(object_name) or is_rim_object
+        is_flat_object = is_flat_grasp(object_name) or is_rim_object
 
         if not pick_params.in_configuration:
             if is_rim_object:

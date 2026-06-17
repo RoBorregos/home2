@@ -18,7 +18,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
-from frida_constants.manipulation_constants import RIM_NAMES
+from frida_constants.manipulation_constants import RIM_NAMES, FLAT_OBJECT_NAMES
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
 
@@ -55,7 +55,7 @@ class FlatGraspEstimator(Node):
         self.intrinsics = None
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
-        self.target_classes = ["spoon", "fork", "knife"]
+        self.target_classes = [n.lower() for n in FLAT_OBJECT_NAMES]
         self.rim_classes = list(RIM_NAMES)
 
         # Start disabled — only enabled explicitly before a cutlery pick.
