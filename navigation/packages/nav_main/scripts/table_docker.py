@@ -162,7 +162,7 @@ class TableDocker(Node):
         # Distance from base_link to whatever would hit the table first (arm tip in
         # its docking posture). MEASURE this and set it — the stop distances below
         # are clearances measured from THIS point, not from base_link.
-        self.front_offset = self.declare_parameter("front_offset", 0.40).value          # base_link -> arm front (m)
+        self.front_offset = self.declare_parameter("front_offset", 0.20).value          # base_link -> arm front (m)
 
         # --- Approach targets / safety (clearances from the arm front) ---
         self.target_distance = self.declare_parameter("target_distance", 0.10).value   # desired arm-front -> surface gap (m)
