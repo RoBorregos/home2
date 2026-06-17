@@ -124,6 +124,15 @@ def launch_function(context, *args, **kwargs):
         }.items(),
     )
 
+    # Table/shelf docking — perpendicular approach using the holonomic base + the
+    # lidar/cloud. nav_central calls its undock service before each new goal.
+    table_docker = Node(
+        package='nav_main',
+        executable='table_docker.py',
+        name='table_docker',
+        output='screen',
+    )
+
     launch_actions = [
         nav_central_node,
         nav_ui_node,
@@ -137,6 +146,7 @@ def launch_function(context, *args, **kwargs):
         if nav_type_value == '2d':
             launch_actions.append(omni_localization)
         launch_actions.append(nav2_omni)
+        launch_actions.append(table_docker)
 
     return launch_actions
 

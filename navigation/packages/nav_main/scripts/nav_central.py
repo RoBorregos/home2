@@ -10,7 +10,7 @@ from nav2_msgs.srv import ManageLifecycleNodes
 from nav2_msgs.action import NavigateToPose  
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
@@ -37,6 +37,7 @@ from frida_constants.navigation_constants import(
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
+        UNDOCK_SERVICE,
         )
 from frida_interfaces.srv import (
         CheckDoor,
@@ -127,6 +128,10 @@ class Nav_Central(Node):
             Empty, RTAB_PAUSE_SERVICE, callback_group=self.rtab_service_group)
         self.rtabmap_resume_client = self.create_client(
             Empty, RTAB_RESUME_SERVICE, callback_group=self.rtab_service_group)
+        # Undock (retreat) client — lets us back away from a docked surface before
+        # planning a new goal. No-op if the table_docker node isn't running.
+        self.undock_client = self.create_client(
+            Trigger, UNDOCK_SERVICE, callback_group=self.rtab_service_group)
         self.lidar_msg = None
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
@@ -423,6 +428,17 @@ class Nav_Central(Node):
         else:
             return (False, "Goal Rejected")
 
+    def _retreat_if_docked(self):
+        """Best-effort: ask the table_docker to back off if it's parked at a
+        surface. No-op (returns fast) when the docker node isn't running."""
+        if not self.undock_client.service_is_ready():
+            return
+        self.nav_logger("info", "Go_To_Area -> Undocking (retreat) before new goal ...")
+        ok = self._call_service_with_timeout(
+            self.undock_client, Trigger.Request(), TIMEOUT_NAV2_LIFECYCLE * 2, "Undock")
+        if not ok:
+            self.nav_logger("warn", "Go_To_Area -> Undock failed/timed out, continuing anyway")
+
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
 
@@ -439,7 +455,11 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Area not found"
             return response
-        
+
+        # If parked at a surface, back off first so nav2 plans from a clear pose
+        # (avoids the planner starting inside the inflation/lethal zone).
+        self._retreat_if_docked()
+
         self.resume_slam()
         self.resume_nav2()
         if self.nav2_paused or not self.rtabmap_loaded:

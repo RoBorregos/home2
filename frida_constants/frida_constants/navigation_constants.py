@@ -28,6 +28,12 @@ INITIAL_POSE_TOPIC = "/initialpose"
 ### Manual resume service (nav_central exposes this so the UI can unpause nav2+rtabmap)
 RESUME_NAV_SERVICE = "/navigation/resume_nav"
 
+### Table/shelf docking (perpendicular approach) — see table_docker.py
+DOCK_SERVICE = "/navigation/dock_to_surface"        # std_srvs/Trigger: align + approach
+UNDOCK_SERVICE = "/navigation/undock_from_surface"  # std_srvs/Trigger: back off so nav2 can plan
+DOCKED_TOPIC = "/navigation/docked"                  # std_msgs/Bool (latched): currently docked?
+POINT_CLOUD_TOPIC = "/point_cloud"                   # filtered ZED cloud also used by nav2
+
 ### General Constants
 MONITOR_RATE = 1.0
 NO_TF_LIMIT = 2
