@@ -360,6 +360,7 @@ var hierarchy =
       [ "simulate_position.SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
+      [ "test_basket_pick.TestRimPick", "classtest__basket__pick_1_1TestRimPick.html", null ],
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],
       [ "test_face_rec.TestHRICFaceSave", "classtest__face__rec_1_1TestHRICFaceSave.html", null ],
       [ "test_go_to_hand.TestGoToHand", "classtest__go__to__hand_1_1TestGoToHand.html", null ],

@@ -11,12 +11,13 @@ var searchData=
   ['testnavigationmanager_8',['TestNavigationManager',['../classtest__navigation__manager_1_1TestNavigationManager.html',1,'test_navigation_manager']]],
   ['testnode_9',['TestNode',['../classsimple__launch_1_1TestNode.html',1,'simple_launch.TestNode'],['../classtest__env_1_1TestNode.html',1,'test_env.TestNode']]],
   ['testplanparser_10',['TestPlanParser',['../classtest__plan__parser_1_1TestPlanParser.html',1,'test_plan_parser']]],
-  ['testsnode_11',['TestsNode',['../classTestsNode.html',1,'']]],
-  ['testtaskmanager_12',['TestTaskManager',['../classtest__manager_1_1TestTaskManager.html',1,'test_manager']]],
-  ['testvisionmanager_13',['TestVisionManager',['../classtest__vision__manager_1_1TestVisionManager.html',1,'test_vision_manager']]],
-  ['timer_14',['Timer',['../classvamp__server_1_1VampServer_1_1Timer.html',1,'vamp_server::VampServer']]],
-  ['track_15',['Track',['../classtrack_1_1Track.html',1,'track']]],
-  ['tracker_16',['Tracker',['../classtracker_1_1Tracker.html',1,'tracker']]],
-  ['trackstate_17',['TrackState',['../classtrack_1_1TrackState.html',1,'track']]],
-  ['trashdetectionnode_18',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]]
+  ['testrimpick_11',['TestRimPick',['../classtest__basket__pick_1_1TestRimPick.html',1,'test_basket_pick']]],
+  ['testsnode_12',['TestsNode',['../classTestsNode.html',1,'']]],
+  ['testtaskmanager_13',['TestTaskManager',['../classtest__manager_1_1TestTaskManager.html',1,'test_manager']]],
+  ['testvisionmanager_14',['TestVisionManager',['../classtest__vision__manager_1_1TestVisionManager.html',1,'test_vision_manager']]],
+  ['timer_15',['Timer',['../classvamp__server_1_1VampServer_1_1Timer.html',1,'vamp_server::VampServer']]],
+  ['track_16',['Track',['../classtrack_1_1Track.html',1,'track']]],
+  ['tracker_17',['Tracker',['../classtracker_1_1Tracker.html',1,'tracker']]],
+  ['trackstate_18',['TrackState',['../classtrack_1_1TrackState.html',1,'track']]],
+  ['trashdetectionnode_19',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]]
 ];

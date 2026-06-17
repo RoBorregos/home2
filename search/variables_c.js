@@ -10,7 +10,7 @@ var searchData=
   ['last_5fidx_7',['last_idx',['../classvisualization_1_1NoVisualization.html#ab6a84233abf588d981410bd4af50f35b',1,'visualization.NoVisualization.last_idx()'],['../classvisualization_1_1Visualization.html#a83f55566732ef3e3124165df7b0ba753',1,'visualization.Visualization.last_idx()']]],
   ['last_5finference_5ftime_8',['last_inference_time',['../classpointing__detection_1_1DetectPointingObjectServer.html#a913d9a70dabebbb46cf79e42593989e4',1,'pointing_detection::DetectPointingObjectServer']]],
   ['last_5fjoy_5fmsg_9',['last_joy_msg',['../classwait__for__controller__input__node_1_1WaitForControllerInputNode.html#af3f72a453f3345d6fe3a31ec9295c257',1,'wait_for_controller_input_node::WaitForControllerInputNode']]],
-  ['last_5fmouse_5fpos_10',['last_mouse_pos',['../classnav__ui_1_1NavCanvas.html#a889bffc19848faba43c30c3ddcc1783e',1,'nav_ui.NavCanvas.last_mouse_pos()'],['../classmap__area__tagger_1_1MapCanvas.html#aedea1d61fd0bfdfe7343c003d05d4098',1,'map_area_tagger.MapCanvas.last_mouse_pos()']]],
+  ['last_5fmouse_5fpos_10',['last_mouse_pos',['../classmap__area__tagger_1_1MapCanvas.html#aedea1d61fd0bfdfe7343c003d05d4098',1,'map_area_tagger.MapCanvas.last_mouse_pos()'],['../classnav__ui_1_1NavCanvas.html#a889bffc19848faba43c30c3ddcc1783e',1,'nav_ui.NavCanvas.last_mouse_pos()']]],
   ['last_5fmove_5ftime_11',['last_move_time',['../classfollow__face__node_1_1FollowFaceNode.html#ad10bc63c3c2361fa6a3839463bee6da6',1,'follow_face_node::FollowFaceNode']]],
   ['last_5fpoint_12',['last_point',['../classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html#a8d0c6670f79261ff2df342b156afb5dd',1,'pick_and_place::manipulation_client::ManipulationClient']]],
   ['last_5fprocess_5fpoint_13',['last_process_point',['../classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html#a17c5ced9ff30f7997590572902602724',1,'pick_and_place::manipulation_client::ManipulationClient']]],
@@ -36,7 +36,7 @@ var searchData=
   ['lc_5fresolution_33',['lc_resolution',['../classnav__ui_1_1NavCanvas.html#a19ad8c25ae1e9604638a4bea66d0074a',1,'nav_ui::NavCanvas']]],
   ['lc_5fwidth_34',['lc_width',['../classnav__ui_1_1NavCanvas.html#a0ce233e7c8a815b34705408e1cf0fc83',1,'nav_ui::NavCanvas']]],
   ['leave_5fbag_35',['LEAVE_BAG',['../classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html#a577968e7379eb5ffdbdb147cebeb5373',1,'hric_task_manager::HRIC_TM::TaskStates']]],
-  ['left_36',['LEFT',['../classmoondream__node_1_1Position.html#a48592042d7675fc4112e600c62334d60',1,'moondream_node.Position.LEFT()'],['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html#a05694e9631cfc0b02288feee899093b2',1,'task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction.LEFT()']]],
+  ['left_36',['LEFT',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html#a05694e9631cfc0b02288feee899093b2',1,'task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction.LEFT()'],['../classmoondream__node_1_1Position.html#a48592042d7675fc4112e600c62334d60',1,'moondream_node.Position.LEFT()']]],
   ['left_5fankle_37',['LEFT_ANKLE',['../namespacepose__detection.html#a4f1c0192ed6a117c5528d0e790d140d8',1,'pose_detection']]],
   ['left_5felbow_38',['LEFT_ELBOW',['../namespacepose__detection.html#ad8f828751d16823638c4ea381064fecb',1,'pose_detection']]],
   ['left_5fhip_39',['LEFT_HIP',['../namespacepose__detection.html#a789afef581d6f1cdcc8ea7604d848cee',1,'pose_detection']]],
@@ -79,7 +79,8 @@ var searchData=
   ['logs_76',['logs',['../classtest__navigation__manager_1_1TestNavigationManager.html#acb62efd6dd7d0897ff483d8ce198792a',1,'test_navigation_manager::TestNavigationManager']]],
   ['logsoftmax_77',['logsoftmax',['../classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109',1,'utils::CrossEntropyLabelSmooth']]],
   ['look_5fdegrees_78',['look_degrees',['../classhand__task__manager_1_1HandTM.html#adcb4d6f3bcdc57921dfa44a40df6089c',1,'hand_task_manager::HandTM']]],
-  ['lower_79',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
-  ['lows_80',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
-  ['lying_5fdown_81',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
+  ['look_5fside_5fstare_79',['LOOK_SIDE_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#adca6be045477cf1eaae672f79a1d5b6f',1,'frida_constants::xarm_configurations']]],
+  ['lower_80',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
+  ['lows_81',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
+  ['lying_5fdown_82',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
 ];

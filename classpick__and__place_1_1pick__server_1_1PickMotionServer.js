@@ -1,8 +1,11 @@
 var classpick__and__place_1_1pick__server_1_1PickMotionServer =
 [
     [ "__init__", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad85c094307880912181b1cf5ebdd5174", null ],
+    [ "_clear_octomap", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#af0bf45148ceb92741796bb8d9131c27e", null ],
+    [ "_get_tcp_z", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aac8e643a1593546ea0e903515e677511", null ],
     [ "_joint_state_cb", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ac6f0fb41488d7730c0373a4a52d49707", null ],
     [ "_restore_mode1", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a772f20a1163c1714617028dcfa17df62", null ],
+    [ "_robot_state_cb", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a47b59cb08cbaad36b4ddde7c2a1fb537", null ],
     [ "_set_xarm_mode", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a75ff3dd7b3da67a98ea51f3b8851b26d", null ],
     [ "_stop_cartesian_velocity", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a2ece4c4e4cbdf7600b57256a0f247e3d", null ],
     [ "attach_pick_object", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a142083fd5eb70a3722c97774500d6763", null ],
@@ -10,6 +13,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "calculate_object_pick_height", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aae8e37df51f19f4e7a029e630ce9a400", null ],
     [ "execute_callback", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a921c792225a597827ba4fb2f7f394e55", null ],
     [ "execute_go_to_hand_callback", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a3f761e681791251c87ce039727c38083", null ],
+    [ "fixed_distance_descent", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a5a79b2425c0712ff2899944b78f9356e", null ],
     [ "force_guarded_descent", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a445144c0f45236b2784c52fd0e56b7a6", null ],
     [ "get_collision_objects", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad2f61c52be8d2ddd85f4bd0342b1b11b", null ],
     [ "move_to_pose", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a74b845e25998b24f69c0842ee7c6ef77", null ],
@@ -26,6 +30,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "_gripper_set_state_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aa2489955b8586035c570b4e498eacdcf", null ],
     [ "_joint_state_sub", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a600923036b0bcd73c8e8acddc7b5119a", null ],
     [ "_latest_joint_state", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a711f10519ab481f40102bd187a9fbba8", null ],
+    [ "_latest_robot_state", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad8844d70c3a9ba1697d482a585b271ec", null ],
     [ "_move_to_pose_action_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a33b42ac19f6fb7c921c8755372ac3a91", null ],
     [ "_remove_collision_object_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a3465cd2bb38ca283600cead2612f6626", null ],
     [ "_set_mode_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aae736543f242e1670811a58f784c2ac7", null ],
@@ -35,6 +40,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "collision_objects", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a0ee3e4f5cd7c8acb4ddc48cf1c8ebaac", null ],
     [ "ee_link_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a73261575260ca74ddf9ed56972d8f582", null ],
     [ "ee_tip_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a1d39e082c36cbebccfa97d40e856a9b0", null ],
+    [ "rim_tip_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a0262f2cac399bab90392ee3a68cd37ec", null ],
     [ "tf_buffer", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a7c6bcf8de90f9317cbcefde17a39a79a", null ],
     [ "tf_listener", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad6b6e3181057befe40cf4154d4f64ddd", null ]
 ];

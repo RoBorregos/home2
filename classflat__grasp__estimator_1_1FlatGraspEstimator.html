@@ -93,6 +93,7 @@ $(document).ready(function(){initNavTree('classflat__grasp__estimator_1_1FlatGra
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classflat__grasp__estimator_1_1FlatGraspEstimator-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">flat_grasp_estimator.FlatGraspEstimator Class Reference</div></div>
 </div><!--header-->
@@ -120,6 +121,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6cb0c31383d813f327ebb52d0a1f2f25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5212316001796cadfeab3ec88336d925"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a5212316001796cadfeab3ec88336d925">process_flat_object</a> (self, ObjectDetection detection)</td></tr>
 <tr class="separator:a5212316001796cadfeab3ec88336d925"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a58c18ee7d021bf770f26f16d23e340bd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a58c18ee7d021bf770f26f16d23e340bd">process_rim_object</a> (self, ObjectDetection detection)</td></tr>
+<tr class="separator:a58c18ee7d021bf770f26f16d23e340bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -139,14 +142,31 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a021248ae6ecb3f84491719617b90a5ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f99dc251c2187f11249f37466eb8337"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a7f99dc251c2187f11249f37466eb8337">target_classes</a></td></tr>
 <tr class="separator:a7f99dc251c2187f11249f37466eb8337"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f4e9d969da0ef3474a221cf9014946d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a6f4e9d969da0ef3474a221cf9014946d">rim_classes</a></td></tr>
+<tr class="separator:a6f4e9d969da0ef3474a221cf9014946d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad5bfa30fd41448db630204209c8848c6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#ad5bfa30fd41448db630204209c8848c6">enabled</a></td></tr>
 <tr class="separator:ad5bfa30fd41448db630204209c8848c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3de316a1c39165c2cb0da44625b4e782"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a3de316a1c39165c2cb0da44625b4e782">table_height_buffer</a></td></tr>
 <tr class="separator:a3de316a1c39165c2cb0da44625b4e782"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab19c5c90e2822f3f720ff5f3abb916d3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#ab19c5c90e2822f3f720ff5f3abb916d3">pose_pub</a></td></tr>
 <tr class="separator:ab19c5c90e2822f3f720ff5f3abb916d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9314d69f11949e85c9d4b9c878fa966a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a9314d69f11949e85c9d4b9c878fa966a">rim_pose_pub</a></td></tr>
+<tr class="separator:a9314d69f11949e85c9d4b9c878fa966a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d8a9b7e3c427c3dac68d0d2d8e08449"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a4d8a9b7e3c427c3dac68d0d2d8e08449">enable_srv</a></td></tr>
 <tr class="separator:a4d8a9b7e3c427c3dac68d0d2d8e08449"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a37b5edf6a54cf79234c6e7d858af61ed"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a37b5edf6a54cf79234c6e7d858af61ed">_parse_bbox</a> (self, ObjectDetection detection)</td></tr>
+<tr class="separator:a37b5edf6a54cf79234c6e7d858af61ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab483cdd81af59126317d350b52dbe07d"><td class="memItemLeft" align="right" valign="top">np.ndarray&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#ab483cdd81af59126317d350b52dbe07d">_deproject_pixels</a> (self, u_global, v_global, z_vals)</td></tr>
+<tr class="separator:ab483cdd81af59126317d350b52dbe07d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ed27f44ac78247350e10184d8af52c9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a4ed27f44ac78247350e10184d8af52c9">_lookup_T_cam_to_base</a> (self)</td></tr>
+<tr class="separator:a4ed27f44ac78247350e10184d8af52c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38091e385e4d8134cf340ebb7ab3f881"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#a38091e385e4d8134cf340ebb7ab3f881">_apply_transform</a> (self, np.ndarray points_3d_cam, np.ndarray T_mat)</td></tr>
+<tr class="separator:a38091e385e4d8134cf340ebb7ab3f881"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa646f105c0faa75c065a98638129c9f6"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classflat__grasp__estimator_1_1FlatGraspEstimator.html#aa646f105c0faa75c065a98638129c9f6">_make_grasp_pose</a> (self, float x, float y, float z, quat)</td></tr>
+<tr class="separator:aa646f105c0faa75c065a98638129c9f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a15b88d8392684d09493f45ef6506feaf" name="a15b88d8392684d09493f45ef6506feaf"></a>
@@ -168,6 +188,212 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a38091e385e4d8134cf340ebb7ab3f881" name="a38091e385e4d8134cf340ebb7ab3f881"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a38091e385e4d8134cf340ebb7ab3f881">&#9670;&#160;</a></span>_apply_transform()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def flat_grasp_estimator.FlatGraspEstimator._apply_transform </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>points_3d_cam</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">np.ndarray&#160;</td>
+          <td class="paramname"><em>T_mat</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Transform Nx3 camera-frame points to base frame. Returns filtered array or None.</pre> 
+</div>
+</div>
+<a id="ab483cdd81af59126317d350b52dbe07d" name="ab483cdd81af59126317d350b52dbe07d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab483cdd81af59126317d350b52dbe07d">&#9670;&#160;</a></span>_deproject_pixels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> np.ndarray flat_grasp_estimator.FlatGraspEstimator._deproject_pixels </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>u_global</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>v_global</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>z_vals</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Deproject image pixels + depth to Nx3 points in camera frame.</pre> 
+</div>
+</div>
+<a id="a4ed27f44ac78247350e10184d8af52c9" name="a4ed27f44ac78247350e10184d8af52c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ed27f44ac78247350e10184d8af52c9">&#9670;&#160;</a></span>_lookup_T_cam_to_base()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def flat_grasp_estimator.FlatGraspEstimator._lookup_T_cam_to_base </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Return 4x4 homogeneous transform (camera → base), or None on TF failure.</pre> 
+</div>
+</div>
+<a id="aa646f105c0faa75c065a98638129c9f6" name="aa646f105c0faa75c065a98638129c9f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa646f105c0faa75c065a98638129c9f6">&#9670;&#160;</a></span>_make_grasp_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> PoseStamped flat_grasp_estimator.FlatGraspEstimator._make_grasp_pose </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>z</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>quat</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Build a stamped PoseStamped in the target frame.</pre> 
+</div>
+</div>
+<a id="a37b5edf6a54cf79234c6e7d858af61ed" name="a37b5edf6a54cf79234c6e7d858af61ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37b5edf6a54cf79234c6e7d858af61ed">&#9670;&#160;</a></span>_parse_bbox()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def flat_grasp_estimator.FlatGraspEstimator._parse_bbox </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ObjectDetection&#160;</td>
+          <td class="paramname"><em>detection</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Return (xmin, ymin, xmax, ymax) in pixels, or None if degenerate.</pre> 
+</div>
+</div>
 <a id="a5829898fbbf3dc6517124e4d5bd581d3" name="a5829898fbbf3dc6517124e4d5bd581d3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5829898fbbf3dc6517124e4d5bd581d3">&#9670;&#160;</a></span>camera_info_callback()</h2>
 
@@ -344,6 +570,34 @@ Rejects outliers that deviate too much from the running median.</pre>
 
 </div>
 </div>
+<a id="a58c18ee7d021bf770f26f16d23e340bd" name="a58c18ee7d021bf770f26f16d23e340bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a58c18ee7d021bf770f26f16d23e340bd">&#9670;&#160;</a></span>process_rim_object()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def flat_grasp_estimator.FlatGraspEstimator.process_rim_object </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">ObjectDetection&#160;</td>
+          <td class="paramname"><em>detection</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Top-down straddle grasp on the near rim/edge of a cylindrical object.</pre> 
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a04576bd785e2b1cdaf4ef73abbcfa22b" name="a04576bd785e2b1cdaf4ef73abbcfa22b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a04576bd785e2b1cdaf4ef73abbcfa22b">&#9670;&#160;</a></span>bridge</h2>
@@ -437,6 +691,34 @@ Rejects outliers that deviate too much from the running median.</pre>
       <table class="memname">
         <tr>
           <td class="memname">flat_grasp_estimator.FlatGraspEstimator.pose_pub</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6f4e9d969da0ef3474a221cf9014946d" name="a6f4e9d969da0ef3474a221cf9014946d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f4e9d969da0ef3474a221cf9014946d">&#9670;&#160;</a></span>rim_classes</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">flat_grasp_estimator.FlatGraspEstimator.rim_classes</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9314d69f11949e85c9d4b9c878fa966a" name="a9314d69f11949e85c9d4b9c878fa966a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9314d69f11949e85c9d4b9c878fa966a">&#9670;&#160;</a></span>rim_pose_pub</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">flat_grasp_estimator.FlatGraspEstimator.rim_pose_pub</td>
         </tr>
       </table>
 </div><div class="memdoc">

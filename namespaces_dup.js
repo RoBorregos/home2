@@ -456,6 +456,7 @@ var namespaces_dup =
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
     [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
+    [ "test_basket_pick", "namespacetest__basket__pick.html", "namespacetest__basket__pick" ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
     [ "test_face_rec", "namespacetest__face__rec.html", "namespacetest__face__rec" ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", "namespacetest__go__to__hand" ],

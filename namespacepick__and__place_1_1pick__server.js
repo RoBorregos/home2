@@ -8,6 +8,7 @@ var namespacepick__and__place_1_1pick__server =
     [ "CUTLERY_EFFORT_THRESHOLD", "namespacepick__and__place_1_1pick__server.html#ad498f621ea4c9c7412617652b9490b5a", null ],
     [ "CUTLERY_POST_CONTACT_RETRACT", "namespacepick__and__place_1_1pick__server.html#af4884b5c879b23e13b596af1a59d4049", null ],
     [ "CUTLERY_PRE_GRASP_HEIGHT", "namespacepick__and__place_1_1pick__server.html#ae59ed606e8f34b17ceb6741ced19afee", null ],
+    [ "DESCENT_TIMEOUT_FACTOR", "namespacepick__and__place_1_1pick__server.html#a8bcb6429300c59aa058c1bfe7ceec5b1", null ],
     [ "MODE1_RECOVERY_TIME", "namespacepick__and__place_1_1pick__server.html#afd6d16c38ad3b9f41d0d437d426f14e6", null ],
     [ "MODE1_RETRY_ATTEMPTS", "namespacepick__and__place_1_1pick__server.html#acaa40eda93eac1002f77d6f2a7be6552", null ],
     [ "MODE_SWITCH_SETTLE_TIME", "namespacepick__and__place_1_1pick__server.html#ad04afc6dca8e786059ec3c0934f88fcd", null ]

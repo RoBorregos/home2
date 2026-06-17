@@ -437,6 +437,9 @@ var annotated_dup =
     [ "temp_follow", "namespacetemp__follow.html", [
       [ "FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", "classtemp__follow_1_1FollowPersonNode" ]
     ] ],
+    [ "test_basket_pick", "namespacetest__basket__pick.html", [
+      [ "TestRimPick", "classtest__basket__pick_1_1TestRimPick.html", "classtest__basket__pick_1_1TestRimPick" ]
+    ] ],
     [ "test_env", "namespacetest__env.html", [
       [ "TestNode", "classtest__env_1_1TestNode.html", "classtest__env_1_1TestNode" ]
     ] ],

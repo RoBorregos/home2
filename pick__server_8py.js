@@ -8,6 +8,7 @@ var pick__server_8py =
     [ "CUTLERY_EFFORT_THRESHOLD", "pick__server_8py.html#ad498f621ea4c9c7412617652b9490b5a", null ],
     [ "CUTLERY_POST_CONTACT_RETRACT", "pick__server_8py.html#af4884b5c879b23e13b596af1a59d4049", null ],
     [ "CUTLERY_PRE_GRASP_HEIGHT", "pick__server_8py.html#ae59ed606e8f34b17ceb6741ced19afee", null ],
+    [ "DESCENT_TIMEOUT_FACTOR", "pick__server_8py.html#a8bcb6429300c59aa058c1bfe7ceec5b1", null ],
     [ "MODE1_RECOVERY_TIME", "pick__server_8py.html#afd6d16c38ad3b9f41d0d437d426f14e6", null ],
     [ "MODE1_RETRY_ATTEMPTS", "pick__server_8py.html#acaa40eda93eac1002f77d6f2a7be6552", null ],
     [ "MODE_SWITCH_SETTLE_TIME", "pick__server_8py.html#ad04afc6dca8e786059ec3c0934f88fcd", null ]

@@ -109,7 +109,7 @@ var searchData=
   ['location_5fto_5fcategory_106',['LOCATION_TO_CATEGORY',['../classegsr__cut_1_1EGPSRTM.html#af3ec00c5304030a8a49a64fef3b57ae7',1,'egsr_cut::EGPSRTM']]],
   ['lock_107',['lock',['../namespacelaunch__nav.html#a3cdcaa925ed4e9485dc5cd79df94a4aa',1,'launch_nav.lock()'],['../classrecord__joints__node_1_1JointRecorder.html#a89fd16be1b5bc48c3949c233594ee3eb',1,'record_joints_node.JointRecorder.lock()']]],
   ['lock_5fthreshold_108',['lock_threshold',['../classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html#a17ee32abc14f3446adf50bbac0cec291',1,'adaptive_goal_publisher::AdaptiveGoalPublisher']]],
-  ['log_109',['log',['../structvamp_1_1SIMDVector_3_01____m256_01_4.html#a80fd53182b9709c367d7ce177bbd9126',1,'vamp::SIMDVector&lt; __m256 &gt;::log()'],['../structvamp_1_1VectorInterface.html#adad84d69196d79835d30469556ca5d47',1,'vamp::VectorInterface::log()'],['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a413bbe4abfb312fe9421cfe7929d08d5',1,'vamp::SIMDVector&lt; float32x4_t &gt;::log()']]],
+  ['log_109',['log',['../structvamp_1_1VectorInterface.html#adad84d69196d79835d30469556ca5d47',1,'vamp::VectorInterface::log()'],['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a413bbe4abfb312fe9421cfe7929d08d5',1,'vamp::SIMDVector&lt; float32x4_t &gt;::log()'],['../structvamp_1_1SIMDVector_3_01____m256_01_4.html#a80fd53182b9709c367d7ce177bbd9126',1,'vamp::SIMDVector&lt; __m256 &gt;::log()']]],
   ['log_5fdir_5ffound_110',['log_dir_found',['../namespacelaunch__nav.html#a1eca33b263b3ea1e2b87696e1f9e71e3',1,'launch_nav']]],
   ['log_5fdir_5fpath_111',['log_dir_path',['../namespacelaunch__nav.html#a030fad57712e00e24720791193679fbc',1,'launch_nav']]],
   ['log_5ffile_5fkeywords_112',['LOG_FILE_KEYWORDS',['../namespacelaunch__nav.html#a0f243d550a43b80aa507f845a9d4cf03',1,'launch_nav']]],
@@ -123,11 +123,12 @@ var searchData=
   ['look_5fat_5fexample_120',['look_at_example',['../namespacelook__at__example.html',1,'']]],
   ['look_5fat_5fexample_2epy_121',['look_at_example.py',['../look__at__example_8py.html',1,'']]],
   ['look_5fdegrees_122',['look_degrees',['../classhand__task__manager_1_1HandTM.html#adcb4d6f3bcdc57921dfa44a40df6089c',1,'hand_task_manager::HandTM']]],
-  ['lookat_123',['LookAt',['../classlook__at__example_1_1LookAt.html',1,'look_at_example']]],
-  ['loop_124',['loop',['../classTestsNode.html#aaf661e864811984f3fb2367866edb481',1,'TestsNode::loop()'],['../classPublishNode.html#a6b0086392b839dbe2a8de24b807860b6',1,'PublishNode::loop()']]],
-  ['lower_125',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
-  ['lows_126',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
-  ['lshift_5fdispatch_127',['lshift_dispatch',['../structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html#a596a62b170cc1108ea44d9f52da0f251',1,'vamp::SIMDVector&lt; int32x4_t &gt;::lshift_dispatch()'],['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a186a3c6235c159524a08ef101d248407',1,'vamp::SIMDVector&lt; float32x4_t &gt;::lshift_dispatch()']]],
-  ['lshift_5flookup_128',['lshift_lookup',['../structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html#aa2631a752e27efe5eca525afb1139a7b',1,'vamp::SIMDVector&lt; int32x4_t &gt;::lshift_lookup()'],['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a0e727cefa5b07ddeb012b0f0005e737a',1,'vamp::SIMDVector&lt; float32x4_t &gt;::lshift_lookup()']]],
-  ['lying_5fdown_129',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
+  ['look_5fside_5fstare_123',['LOOK_SIDE_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#adca6be045477cf1eaae672f79a1d5b6f',1,'frida_constants::xarm_configurations']]],
+  ['lookat_124',['LookAt',['../classlook__at__example_1_1LookAt.html',1,'look_at_example']]],
+  ['loop_125',['loop',['../classTestsNode.html#aaf661e864811984f3fb2367866edb481',1,'TestsNode::loop()'],['../classPublishNode.html#a6b0086392b839dbe2a8de24b807860b6',1,'PublishNode::loop()']]],
+  ['lower_126',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
+  ['lows_127',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
+  ['lshift_5fdispatch_128',['lshift_dispatch',['../structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html#a596a62b170cc1108ea44d9f52da0f251',1,'vamp::SIMDVector&lt; int32x4_t &gt;::lshift_dispatch()'],['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a186a3c6235c159524a08ef101d248407',1,'vamp::SIMDVector&lt; float32x4_t &gt;::lshift_dispatch()']]],
+  ['lshift_5flookup_129',['lshift_lookup',['../structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html#aa2631a752e27efe5eca525afb1139a7b',1,'vamp::SIMDVector&lt; int32x4_t &gt;::lshift_lookup()'],['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a0e727cefa5b07ddeb012b0f0005e737a',1,'vamp::SIMDVector&lt; float32x4_t &gt;::lshift_lookup()']]],
+  ['lying_5fdown_130',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
 ];
