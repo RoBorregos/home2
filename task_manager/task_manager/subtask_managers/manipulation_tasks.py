@@ -30,7 +30,7 @@ from typing import List, Union
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.status import Status
 from frida_interfaces.action import ManipulationAction, GoToHand, MoveToPose
-from frida_interfaces.msg import ManipulationTask
+from frida_interfaces.msg import ManipulationTask, Constraint
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
@@ -777,9 +777,13 @@ class ManipulationTasks:
         planner_id: str = "RRTConnect",
         tolerance_position: float = 0.02,
         tolerance_orientation: float = 0.1,
+        orientation_xyzw: tuple = (0.0, 0.7071068, 0.0, 0.7071068),
+        per_axis_orientation_tolerance: tuple = None,
     ) -> int:
         """Move `target_link` to a pose in `frame` at fixed (forward_distance, lateral)
         and z equal to `reference_point`'s height after transforming into `frame`.
+        Default orientation is a 90° pitch about Y so the gripper approach axis
+        points along `frame`'s +X (forward).
         """
         if reference_point is None or reference_point.header.frame_id == "":
             Logger.error(self.node, "move_to_height_in_front: invalid reference_point")
@@ -806,7 +810,10 @@ class ManipulationTasks:
         pose.pose.position.x = float(forward_distance)
         pose.pose.position.y = float(lateral)
         pose.pose.position.z = ref_in.point.z
-        pose.pose.orientation.w = 1.0
+        pose.pose.orientation.x = float(orientation_xyzw[0])
+        pose.pose.orientation.y = float(orientation_xyzw[1])
+        pose.pose.orientation.z = float(orientation_xyzw[2])
+        pose.pose.orientation.w = float(orientation_xyzw[3])
 
         Logger.info(
             self.node,
@@ -822,6 +829,26 @@ class ManipulationTasks:
         goal.target_link = target_link
         goal.tolerance_position = float(tolerance_position)
         goal.tolerance_orientation = float(tolerance_orientation)
+
+        if per_axis_orientation_tolerance is not None:
+            constraint = Constraint()
+            constraint.orientation = pose.pose.orientation
+            constraint.frame_id = frame
+            constraint.target_link = target_link
+            constraint.tolerance_orientation = [
+                float(per_axis_orientation_tolerance[0]),
+                float(per_axis_orientation_tolerance[1]),
+                float(per_axis_orientation_tolerance[2]),
+            ]
+            constraint.weight = 1.0
+            constraint.parameterization = 1  # rotation vector (per-axis angle)
+            goal.apply_constraint = True
+            goal.constraint = constraint
+            Logger.info(
+                self.node,
+                f"Path orientation constraint per-axis tol={constraint.tolerance_orientation} "
+                f"in {frame}",
+            )
 
         self._move_to_pose_action_client.wait_for_server()
         send_future = self._move_to_pose_action_client.send_goal_async(goal)
