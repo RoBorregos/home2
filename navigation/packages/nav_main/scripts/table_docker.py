@@ -151,9 +151,15 @@ class TableDocker(Node):
         self.ransac_thresh = self.declare_parameter("ransac_thresh", 0.03).value
         self.ransac_min_inliers = int(self.declare_parameter("ransac_min_inliers", 12).value)
 
-        # --- Approach targets / safety ---
-        self.target_distance = self.declare_parameter("target_distance", 0.45).value   # base_link -> face (m)
-        self.min_safe = self.declare_parameter("min_safe", 0.30).value                 # nearest frontal point floor (m)
+        # --- Geometry: forward reach of the robot's FRONT-MOST part (the arm) ---
+        # Distance from base_link to whatever would hit the table first (arm tip in
+        # its docking posture). MEASURE this and set it — the stop distances below
+        # are clearances measured from THIS point, not from base_link.
+        self.front_offset = self.declare_parameter("front_offset", 0.40).value          # base_link -> arm front (m)
+
+        # --- Approach targets / safety (clearances from the arm front) ---
+        self.target_distance = self.declare_parameter("target_distance", 0.10).value   # desired arm-front -> surface gap (m)
+        self.min_safe = self.declare_parameter("min_safe", 0.05).value                 # hard floor arm-front -> nearest point (m)
         self.yaw_tol = self.declare_parameter("yaw_tol", 0.03).value
         self.y_tol = self.declare_parameter("y_tol", 0.03).value
         self.dist_tol = self.declare_parameter("dist_tol", 0.03).value
@@ -326,9 +332,11 @@ class TableDocker(Node):
         distance = abs(float(np.dot(normal, centroid)))
         y_center = float(centroid[1])
 
-        # Nearest frontal point (safety) — always from the scan if available.
-        scan_pts = self._scan_points(scan)
-        nearest = float(np.min(np.hypot(scan_pts[:, 0], scan_pts[:, 1]))) if len(scan_pts) else distance
+        # Nearest frontal point across ALL detection points (scan + cloud). This is
+        # what the arm could actually hit — e.g. a table overhang/edge the cloud
+        # sees but the lidar plane misses — so the approach stop uses this, not the
+        # RANSAC line distance (which may be the recessed legs).
+        nearest = float(np.min(np.hypot(pts[:, 0], pts[:, 1])))
         return e_yaw, y_center, distance, nearest
 
     # ----------------------------------------------------------------- dock
@@ -361,18 +369,21 @@ class TableDocker(Node):
             fails = 0
 
             e_yaw, y_center, distance, nearest = det
-            e_x = distance - self.target_distance
+            # Clearance between the robot's front-most part (the arm) and the
+            # CLOSEST detected point — this is what must not hit the table.
+            arm_clearance = nearest - self.front_offset
+            e_x = arm_clearance - self.target_distance
 
             # Controls.
             wz = self._clamp(self.k_yaw * e_yaw, self.max_wz)
             vy = self._clamp(self.k_y * y_center, self.max_vy)
             vx = self._clamp(self.k_x * e_x, self.max_vx) if e_x > 0 else 0.0
-            # Safety: never push forward past the closest safe distance.
-            if nearest <= self.min_safe:
+            # Safety: never let the arm front get closer than min_safe to anything.
+            if arm_clearance <= self.min_safe:
                 vx = 0.0
 
-            # Converged? aligned + centered + (at target distance OR can't get closer).
-            close_enough = (abs(e_x) <= self.dist_tol) or (nearest <= self.min_safe + 0.01)
+            # Converged? aligned + centered + (at target clearance OR can't get closer).
+            close_enough = (abs(e_x) <= self.dist_tol) or (arm_clearance <= self.min_safe + 0.01)
             if abs(e_yaw) <= self.yaw_tol and abs(y_center) <= self.y_tol and close_enough:
                 settled += 1
                 if settled >= self.settle_cycles:
@@ -380,8 +391,8 @@ class TableDocker(Node):
                     self.docked = True
                     self._publish_docked()
                     response.success = True
-                    response.message = (f"Docked: dist={distance:.3f}m nearest={nearest:.3f}m "
-                                        f"yaw_err={math.degrees(e_yaw):.1f}deg")
+                    response.message = (f"Docked: arm_clearance={arm_clearance:.3f}m "
+                                        f"nearest={nearest:.3f}m yaw_err={math.degrees(e_yaw):.1f}deg")
                     self.log("info", response.message)
                     return response
             else:
