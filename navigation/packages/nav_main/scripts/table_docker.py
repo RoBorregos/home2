@@ -209,7 +209,16 @@ class TableDocker(Node):
 
     # ------------------------------------------------------------------ utils
     def log(self, level, msg):
-        getattr(self.get_logger(), level)(f"TableDocker: {msg}")
+        # NOTE: each severity MUST be on its own line — rclpy caches severity per
+        # call site, so a single getattr line reused with different levels raises
+        # "Logger severity cannot be changed between calls."
+        text = f"TableDocker: {msg}"
+        if level == "warn":
+            self.get_logger().warn(text)
+        elif level == "error":
+            self.get_logger().error(text)
+        else:
+            self.get_logger().info(text)
 
     def _scan_cb(self, msg):
         with self._lock:
