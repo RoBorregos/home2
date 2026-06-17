@@ -38,12 +38,14 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallb
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from rclpy.time import Time as RclpyTime
+from rclpy.duration import Duration
 
 from std_srvs.srv import Trigger
 from std_msgs.msg import Bool
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Point
 from sensor_msgs.msg import LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
+from visualization_msgs.msg import Marker, MarkerArray
 
 import tf2_ros
 
@@ -181,6 +183,10 @@ class TableDocker(Node):
         self.retreat_speed = self.declare_parameter("retreat_speed", 0.12).value
         self.retreat_timeout = self.declare_parameter("retreat_timeout", 20.0).value
 
+        # --- Visualization (RViz) ---
+        self.publish_markers = self.declare_parameter("publish_markers", True).value
+        self.marker_rate = self.declare_parameter("marker_rate", 5.0).value
+
         # --- State (guarded by lock) ---
         self._lock = threading.Lock()
         self._scan = None
@@ -203,6 +209,13 @@ class TableDocker(Node):
         )
         self.docked_pub = self.create_publisher(Bool, DOCKED_TOPIC, docked_qos)
         self._publish_docked()
+
+        # RViz visualization of the detected surface (add a MarkerArray display on
+        # /table_docker/markers, fixed frame map or base_link).
+        self.marker_pub = self.create_publisher(MarkerArray, "/table_docker/markers", 10)
+        if self.publish_markers:
+            self.create_timer(1.0 / max(self.marker_rate, 0.1),
+                              self._marker_timer, callback_group=sensor_cb)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
@@ -304,8 +317,9 @@ class TableDocker(Node):
             self.log("warn", f"cloud transform/read failed ({e}); using scan only this cycle")
             return np.empty((0, 2))
 
-    def _detect_face(self):
-        """Return (e_yaw, y_center, distance, nearest_frontal) or None."""
+    def _detect(self):
+        """Detect the front face. Returns a dict (control errors + line geometry
+        for visualization) or None if nothing was found."""
         with self._lock:
             scan, cloud = self._scan, self._cloud
 
@@ -322,7 +336,7 @@ class TableDocker(Node):
         if fit is None:
             return None
 
-        normal, centroid = fit["normal"], fit["centroid"]
+        normal, centroid, direction = fit["normal"], fit["centroid"], fit["direction"]
         # Orient the normal to point from the robot toward the face (centroid x>0).
         if np.dot(normal, centroid) < 0:
             normal = -normal
@@ -337,7 +351,110 @@ class TableDocker(Node):
         # sees but the lidar plane misses — so the approach stop uses this, not the
         # RANSAC line distance (which may be the recessed legs).
         nearest = float(np.min(np.hypot(pts[:, 0], pts[:, 1])))
-        return e_yaw, y_center, distance, nearest
+
+        # Segment endpoints (project the inliers onto the line direction) for RViz.
+        c = -(normal @ centroid)
+        on_line = pts[np.abs(pts @ normal + c) < self.ransac_thresh]
+        if len(on_line) >= 2:
+            t = (on_line - centroid) @ direction
+            p1 = centroid + direction * float(t.min())
+            p2 = centroid + direction * float(t.max())
+        else:
+            p1 = centroid - direction * 0.3
+            p2 = centroid + direction * 0.3
+
+        return {
+            "e_yaw": e_yaw, "y_center": y_center, "distance": distance, "nearest": nearest,
+            "normal": normal, "centroid": centroid, "p1": p1, "p2": p2, "pts": pts,
+        }
+
+    # ----------------------------------------------------------- visualization
+    def _marker_timer(self):
+        try:
+            det = self._detect()
+        except Exception as e:
+            self.log("warn", f"marker detect failed: {e}")
+            det = None
+        self._publish_markers(det)
+
+    def _publish_markers(self, det):
+        arr = MarkerArray()
+        now = self.get_clock().now().to_msg()
+
+        if det is None:
+            clear = Marker()
+            clear.header.frame_id = self.base_frame
+            clear.header.stamp = now
+            clear.ns = "table_docker"
+            clear.action = Marker.DELETEALL
+            arr.markers.append(clear)
+            self.marker_pub.publish(arr)
+            return
+
+        life = Duration(seconds=2.0 / max(self.marker_rate, 0.1)).to_msg()
+
+        def base(mid, mtype):
+            m = Marker()
+            m.header.frame_id = self.base_frame
+            m.header.stamp = now
+            m.ns = "table_docker"
+            m.id = mid
+            m.type = mtype
+            m.action = Marker.ADD
+            m.lifetime = life
+            m.pose.orientation.w = 1.0
+            return m
+
+        # Fitted line (green) — the detected table/shelf front face.
+        line = base(0, Marker.LINE_STRIP)
+        line.scale.x = 0.03
+        line.color.g = 1.0
+        line.color.b = 0.2
+        line.color.a = 1.0
+        line.points = [Point(x=float(det["p1"][0]), y=float(det["p1"][1]), z=0.0),
+                       Point(x=float(det["p2"][0]), y=float(det["p2"][1]), z=0.0)]
+        arr.markers.append(line)
+
+        # Approach normal (blue) — drawn from the face back toward the robot.
+        c, n = det["centroid"], det["normal"]
+        arrow = base(1, Marker.ARROW)
+        arrow.scale.x = 0.02   # shaft diameter
+        arrow.scale.y = 0.05   # head diameter
+        arrow.scale.z = 0.07   # head length
+        arrow.color.b = 1.0
+        arrow.color.g = 0.4
+        arrow.color.a = 1.0
+        arrow.points = [Point(x=float(c[0]), y=float(c[1]), z=0.0),
+                        Point(x=float(c[0] - n[0] * 0.3), y=float(c[1] - n[1] * 0.3), z=0.0)]
+        arr.markers.append(arrow)
+
+        # Candidate points (yellow) used for the fit.
+        pts = det["pts"]
+        if len(pts) > 400:
+            pts = pts[:: len(pts) // 400 + 1]
+        pm = base(2, Marker.POINTS)
+        pm.scale.x = 0.02
+        pm.scale.y = 0.02
+        pm.color.r = 1.0
+        pm.color.g = 0.85
+        pm.color.a = 0.8
+        pm.points = [Point(x=float(p[0]), y=float(p[1]), z=0.0) for p in pts]
+        arr.markers.append(pm)
+
+        # Text readout (white) — yaw error + arm clearance + nearest distance.
+        arm_clear = det["nearest"] - self.front_offset
+        txt = base(3, Marker.TEXT_VIEW_FACING)
+        txt.scale.z = 0.12
+        txt.color.r = txt.color.g = txt.color.b = 1.0
+        txt.color.a = 1.0
+        txt.pose.position.x = float(c[0])
+        txt.pose.position.y = float(c[1])
+        txt.pose.position.z = 0.35
+        txt.text = (f"yaw_err={math.degrees(det['e_yaw']):.0f}deg  "
+                    f"clr={arm_clear:.2f}m  near={det['nearest']:.2f}m")
+        arr.markers.append(txt)
+
+        self.marker_pub.publish(arr)
 
     # ----------------------------------------------------------------- dock
     def _dock_cb(self, request, response):
@@ -355,7 +472,7 @@ class TableDocker(Node):
                 self.log("error", response.message)
                 return response
 
-            det = self._detect_face()
+            det = self._detect()
             if det is None:
                 fails += 1
                 self._stop()
@@ -368,7 +485,10 @@ class TableDocker(Node):
                 continue
             fails = 0
 
-            e_yaw, y_center, distance, nearest = det
+            e_yaw = det["e_yaw"]
+            y_center = det["y_center"]
+            distance = det["distance"]
+            nearest = det["nearest"]
             # Clearance between the robot's front-most part (the arm) and the
             # CLOSEST detected point — this is what must not hit the table.
             arm_clearance = nearest - self.front_offset
