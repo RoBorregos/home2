@@ -152,6 +152,11 @@ class TableDocker(Node):
         self.num_samples = int(self.declare_parameter("num_samples", 3).value)
         self.collect_timeout = self.declare_parameter("collect_timeout", 3.0).value
         self.fit_attempts = int(self.declare_parameter("fit_attempts", 5).value)
+        # Fit the FRONT EDGE only: keep the nearest point per angular bin (the
+        # contour facing the robot) before RANSAC, so the line locks onto the table
+        # edge instead of cutting through the middle of the table-top points.
+        self.use_front_contour = self.declare_parameter("use_front_contour", True).value
+        self.contour_bin_deg = self.declare_parameter("contour_bin_deg", 1.0).value
 
         # --- Geometry: forward reach of the robot's FRONT-MOST part (the arm) ---
         # Distance from base_link to whatever would hit the table first (arm tip in
@@ -355,25 +360,47 @@ class TableDocker(Node):
             time.sleep(0.05)
 
     # ----------------------------------------------------------------- fit/lock
+    def _front_contour(self, pts, bin_deg):
+        """Keep only the NEAREST point per angular bin — the near-side contour
+        facing the robot (the front edge), discarding the filled table interior so
+        RANSAC doesn't cut a line through the middle of the surface points."""
+        if len(pts) == 0:
+            return pts
+        ang = np.arctan2(pts[:, 1], pts[:, 0])
+        rng = np.hypot(pts[:, 0], pts[:, 1])
+        b = np.round(ang / math.radians(max(bin_deg, 0.1))).astype(np.int64)
+        seen = set()
+        keep = []
+        for i in np.argsort(rng):            # nearest first
+            bi = int(b[i])
+            if bi not in seen:
+                seen.add(bi)
+                keep.append(i)
+        return pts[np.array(keep, dtype=int)]
+
     def _fit_face(self):
         """One stable fit from the accumulated samples. Returns base_link geometry
-        dict {normal, centroid, direction, p1, p2, pts, nearest} or None."""
+        dict {normal, centroid, direction, p1, p2, pts, contour, nearest} or None."""
         pts = self._accumulate_points()
         if len(pts) < self.ransac_min_inliers:
             return None
-        fit = ransac_line(pts, self.ransac_iters, self.ransac_thresh, self.ransac_min_inliers)
+        # Fit the front edge (contour), not the filled surface.
+        fit_pts = self._front_contour(pts, self.contour_bin_deg) if self.use_front_contour else pts
+        if len(fit_pts) < self.ransac_min_inliers:
+            fit_pts = pts
+        fit = ransac_line(fit_pts, self.ransac_iters, self.ransac_thresh, self.ransac_min_inliers)
         if fit is None:
             return None
         normal, centroid, direction = fit["normal"], fit["centroid"], fit["direction"]
         if np.dot(normal, centroid) < 0:        # point the normal toward the face
             normal = -normal
-        inl = pts[fit["mask"]]
+        inl = fit_pts[fit["mask"]]
         t = (inl - centroid) @ direction
         p1 = centroid + direction * float(t.min())
         p2 = centroid + direction * float(t.max())
         nearest = float(np.min(np.hypot(pts[:, 0], pts[:, 1])))
         return {"normal": normal, "centroid": centroid, "direction": direction,
-                "p1": p1, "p2": p2, "pts": pts, "nearest": nearest}
+                "p1": p1, "p2": p2, "pts": pts, "contour": fit_pts, "nearest": nearest}
 
     def _lock_face(self, fit):
         """Store the fitted face in the odom frame so it stays world-fixed while
@@ -418,7 +445,7 @@ class TableDocker(Node):
         return float(np.min(np.hypot(sp[:, 0], sp[:, 1]))) if len(sp) else None
 
     # ----------------------------------------------------------- visualization
-    def _publish_markers(self, face, scan_nearest, pts=None):
+    def _publish_markers(self, face, scan_nearest, pts=None, contour=None):
         arr = MarkerArray()
         now = self.get_clock().now().to_msg()
         if face is None:
@@ -484,16 +511,26 @@ class TableDocker(Node):
                         Point(x=float(c[0] - n[0] * 0.3), y=float(c[1] - n[1] * 0.3), z=0.0)]
         arr.markers.append(arrow)
 
-        # Candidate points (yellow) — only when provided (preview).
+        # All candidate points (dim yellow) — only when provided (preview).
         if pts is not None and len(pts):
             sp = pts[:: len(pts) // 400 + 1] if len(pts) > 400 else pts
             pm = base(3, Marker.POINTS)
             pm.scale.x = pm.scale.y = 0.02
             pm.color.r = 1.0
             pm.color.g = 0.85
-            pm.color.a = 0.8
+            pm.color.a = 0.35
             pm.points = [Point(x=float(p[0]), y=float(p[1]), z=0.0) for p in sp]
             arr.markers.append(pm)
+
+        # Front-contour points actually fed to RANSAC (orange).
+        if contour is not None and len(contour):
+            cm = base(5, Marker.POINTS)
+            cm.scale.x = cm.scale.y = 0.03
+            cm.color.r = 1.0
+            cm.color.g = 0.45
+            cm.color.a = 1.0
+            cm.points = [Point(x=float(p[0]), y=float(p[1]), z=0.0) for p in contour]
+            arr.markers.append(cm)
 
         # Text readout.
         distance = abs(float(n @ c))
@@ -540,7 +577,7 @@ class TableDocker(Node):
             self.log("error", response.message)
             return response
         face = self._face_in_base()
-        self._publish_markers(face, self._live_nearest(), pts=fit["pts"])
+        self._publish_markers(face, self._live_nearest(), pts=fit["pts"], contour=fit["contour"])
         e_yaw = reduce_angle_mod_pi(math.atan2(fit["normal"][1], fit["normal"][0]))
         distance = abs(float(fit["normal"] @ fit["centroid"]))
         response.success = True
