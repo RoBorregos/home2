@@ -23,6 +23,11 @@ from frida_constants.manipulation_constants import (
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
     ESTOP_TOPIC,
+    RIM_NAMES,
+    RIM_PRE_GRASP_HEIGHT,
+    RIM_DESCENT_SPEED,
+    RIM_DESCENT_DISTANCE,
+    XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -50,6 +55,7 @@ from std_srvs.srv import Empty
 # Force-guarded descent imports
 from sensor_msgs.msg import JointState
 from xarm_msgs.srv import MoveVelocity, SetInt16
+from xarm_msgs.msg import RobotMsg
 
 # =============================================================================
 # Force-guarded descent constants
@@ -71,6 +77,9 @@ MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
 MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
 MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 
+# Closed-loop fixed-distance descent constants
+DESCENT_TIMEOUT_FACTOR = 2.5
+
 
 class PickMotionServer(Node):
     def __init__(self):
@@ -84,6 +93,10 @@ class PickMotionServer(Node):
         self.declare_parameter("ee_tip_offset", -0.17)
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
+
+        self.declare_parameter("rim_tip_offset", -0.12)
+        self.rim_tip_offset = self.get_parameter("rim_tip_offset").value
+        self.get_logger().info(f"Rim tip offset: {self.rim_tip_offset} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
@@ -150,6 +163,12 @@ class PickMotionServer(Node):
             JointState, "/joint_states", self._joint_state_cb, 10
         )
 
+        # TCP position feedback for closed-loop descent
+        self._latest_robot_state = None
+        self.create_subscription(
+            RobotMsg, XARM_ROBOT_STATES_TOPIC, self._robot_state_cb, 10
+        )
+
         self._estop = False
         self.create_subscription(
             Bool,
@@ -163,6 +182,21 @@ class PickMotionServer(Node):
 
     def _joint_state_cb(self, msg: JointState):
         self._latest_joint_state = msg
+
+    def _robot_state_cb(self, msg: RobotMsg):
+        self._latest_robot_state = msg
+
+    def _get_tcp_z(self):
+        """Return current TCP Z in meters (base frame), or None if no state received yet."""
+        if self._latest_robot_state is None:
+            return None
+        return self._latest_robot_state.pose[2] / 1000.0
+
+    def _clear_octomap(self, settle: float = 0.3):
+        """Clear the octomap and wait briefly for the planning scene to update."""
+        if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+            self._clear_octomap_client.call_async(Empty.Request())
+        time.sleep(settle)
 
     async def execute_callback(self, goal_handle):
         self.get_logger().info("Executing pick goal...")
@@ -274,10 +308,16 @@ class PickMotionServer(Node):
         grasping_poses = goal_handle.request.grasping_poses
 
         is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
+        is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
 
         if is_flat:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
+        elif is_rim:
+            # Each grasping_pose is already a distinct radial/flip candidate;
+            # no extra z-offset alternatives needed.
+            num_grasping_alternatives = 1
+            grasping_alternative_distance = 0.0
         else:
             num_grasping_alternatives = 2
             grasping_alternative_distance = -0.025
@@ -291,7 +331,8 @@ class PickMotionServer(Node):
                 if self._estop:
                     return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
-                offset_distance = self.ee_link_offset
+                # Rim: offset by full tip distance so fingers straddle the wall without descending too far.
+                offset_distance = self.rim_tip_offset if is_rim else self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [
@@ -337,6 +378,8 @@ class PickMotionServer(Node):
                         f"(target Z={ee_link_pose.pose.position.z:.4f})"
                     )
 
+                    self._clear_octomap()
+
                     pre_handler, pre_result = self.move_to_pose(
                         pre_grasp_pose, velocity=0.3
                     )
@@ -351,10 +394,7 @@ class PickMotionServer(Node):
 
                     # Clear octomap
                     self.get_logger().info("[Cutlery] Clearing octomap...")
-                    if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
-                        req = Empty.Request()
-                        self._clear_octomap_client.call_async(req)
-                    time.sleep(0.3)
+                    self._clear_octomap()
 
                     # Force-guarded descent
                     self.get_logger().info(
@@ -395,6 +435,65 @@ class PickMotionServer(Node):
                             f"[Cutlery] No contact for alternative {j}, trying next"
                         )
                         continue
+
+                elif is_rim:
+                    self.get_logger().info(
+                        f"[Rim] Fixed-distance pick flow for pose {i}"
+                    )
+
+                    # Open gripper
+                    self.get_logger().info("[Rim] Opening gripper...")
+                    self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
+                    open_gripper(self._gripper_set_state_client)
+                    time.sleep(0.5)
+
+                    # Pre-grasp above the rim (MoveIt)
+                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                    pre_grasp_pose.pose.position.z += RIM_PRE_GRASP_HEIGHT
+
+                    self.get_logger().info(
+                        f"[Rim] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
+                        f"(rim Z={ee_link_pose.pose.position.z:.4f})"
+                    )
+
+                    self._clear_octomap()
+
+                    pre_handler, pre_result = self.move_to_pose(
+                        pre_grasp_pose, velocity=0.3
+                    )
+
+                    if not pre_result.result.success:
+                        self.get_logger().warn(
+                            f"[Rim] Pre-grasp failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    self.get_logger().info("[Rim] Pre-grasp reached")
+
+                    # Clear octomap again before the descent phase.
+                    self.get_logger().info("[Rim] Clearing octomap...")
+                    self._clear_octomap()
+
+                    # Fixed-distance descent (xArm cartesian velocity)
+                    self.get_logger().info(
+                        f"[Rim] Descending a fixed {RIM_DESCENT_DISTANCE * 1000:.0f}mm..."
+                    )
+                    descended = self.fixed_distance_descent(RIM_DESCENT_DISTANCE)
+
+                    if not descended:
+                        self.get_logger().warn(
+                            f"[Rim] Descent failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    # Close gripper on the rim
+                    self.get_logger().info("[Rim] Closing gripper...")
+                    close_gripper(self._gripper_set_state_client)
+                    time.sleep(1.5)
+                    self.get_logger().info("[Rim] Gripper closed")
+
+                    self.get_logger().info("[Rim] Pick complete!")
+                    return True, pick_result
 
                 else:
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
@@ -578,6 +677,119 @@ class PickMotionServer(Node):
         self._restore_mode1()
 
         return contact_detected
+
+    def fixed_distance_descent(self, distance_m: float) -> bool:
+        """
+        Descend a fixed distance in -Z using xArm mode 5 (cartesian velocity control).
+        Closed-loop on /xarm/robot_states TCP Z.
+        """
+        self.get_logger().info(
+            f"[FixedDescent] Descending {distance_m * 1000:.0f}mm at "
+            f"{RIM_DESCENT_SPEED:.1f} mm/s"
+        )
+
+        # --- Read start position before any mode switch ---
+        wait_start = time.time()
+        while self._get_tcp_z() is None:
+            if time.time() - wait_start > 2.0:
+                self.get_logger().error(
+                    "[FixedDescent] No robot_states received after 2s — cannot verify descent"
+                )
+                return False
+            time.sleep(0.05)
+        start_z = self._get_tcp_z()
+        target_z = start_z - distance_m
+        self.get_logger().info(
+            f"[FixedDescent] start_z={start_z * 1000:.1f}mm  "
+            f"target_z={target_z * 1000:.1f}mm"
+        )
+
+        # --- Transition: mode 1 -> 0 -> 5 ---
+        if not self._set_xarm_mode(0):
+            self.get_logger().error("[FixedDescent] Failed to set mode 0")
+            return False
+        time.sleep(0.5)
+
+        if not self._set_xarm_mode(5):
+            self.get_logger().error("[FixedDescent] Failed to set mode 5")
+            self._restore_mode1()
+            return False
+
+        self.get_logger().info(
+            f"[FixedDescent] Waiting {MODE_SWITCH_SETTLE_TIME}s for mode 5 settle..."
+        )
+        time.sleep(MODE_SWITCH_SETTLE_TIME)
+
+        reached = False
+        try:
+            if not self._vc_set_cartesian_velocity_client.wait_for_service(
+                timeout_sec=2.0
+            ):
+                self.get_logger().error(
+                    "[FixedDescent] vc_set_cartesian_velocity not available"
+                )
+                return False
+
+            vel_req = MoveVelocity.Request()
+            vel_req.speeds = [0.0, 0.0, -RIM_DESCENT_SPEED, 0.0, 0.0, 0.0]
+            vel_req.is_tool_coord = False
+            vel_req.duration = 0.0
+
+            # Initial velocity command
+            vel_future = self._vc_set_cartesian_velocity_client.call_async(vel_req)
+            self.wait_for_future(vel_future)
+            if vel_future.result() is None:
+                self.get_logger().error(
+                    "[FixedDescent] Initial velocity command failed"
+                )
+                return False
+
+            expected_time = (distance_m * 1000.0) / RIM_DESCENT_SPEED
+            timeout = expected_time * DESCENT_TIMEOUT_FACTOR
+
+            loop_start = time.time()
+
+            while True:
+                time.sleep(0.02)  # 50 Hz
+                now = time.time()
+                elapsed = now - loop_start
+
+                # Timeout guard
+                if elapsed > timeout:
+                    self.get_logger().warn(
+                        f"[FixedDescent] Timeout after {elapsed:.1f}s "
+                        f"(limit={timeout:.1f}s)"
+                    )
+                    break
+
+                # E-stop
+                if self._estop:
+                    self.get_logger().warn("[FixedDescent] E-stop during descent")
+                    break
+
+                cur_z = self._get_tcp_z()
+                if cur_z is None:
+                    continue
+
+                descended = start_z - cur_z
+
+                # Reached target?
+                if descended >= distance_m:
+                    self.get_logger().info(
+                        f"[FixedDescent] Reached! descended={descended * 1000:.1f}mm "
+                        f"(target={distance_m * 1000:.0f}mm)"
+                    )
+                    reached = True
+                    break
+
+        except Exception as e:
+            self.get_logger().error(f"[FixedDescent] Descent error: {e}")
+
+        finally:
+            self._stop_cartesian_velocity()
+            self._restore_mode1()
+
+        return reached
 
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
