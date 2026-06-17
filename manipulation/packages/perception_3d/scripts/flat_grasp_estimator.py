@@ -41,10 +41,10 @@ RIM_NEAR_FRACTION = 0.05  # Fraction of nearest points used to estimate the near
 RIM_TOP_PERCENTILE = 90  # Percentile of Z used as the rim-top height
 RIM_TOP_BAND = 0.03  # Vertical band below the rim-top kept as the rim ring (meters)
 
-# --- Gap grasp estimation (highest content inside a cavity, e.g. clothes in a basket) ---
-GAP_GRID_RES = 0.05  # meters per cell of the elevation (height) grid
-GAP_PEAK_NBR = 3  # neighborhood size (cells) for local-maximum detection
-GAP_MIN_PEAK_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
+# --- Peak grasp estimation (highest content inside a cavity, e.g. clothes in a basket) ---
+PEAK_GRID_RES = 0.05  # meters per cell of the elevation (height) grid
+PEAK_NBR = 3  # neighborhood size (cells) for local-maximum detection
+PEAK_MIN_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
 
 
 class FlatGraspEstimator(Node):
@@ -90,8 +90,8 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/rim_grasp_pose", 10
         )
 
-        self.gap_pose_pub = self.create_publisher(
-            PoseStamped, "/manipulation/gap_grasp_pose", 10
+        self.peak_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/peak_grasp_pose", 10
         )
 
         self.enable_srv = self.create_service(
@@ -139,9 +139,9 @@ class FlatGraspEstimator(Node):
             if label in self.target_classes:
                 self.process_flat_object(det)
             elif label in self.rim_classes:
-                # A basket detection feeds both the rim grasp and the gap grasp.
+                # A basket detection feeds both the rim grasp and the peak grasp.
                 self.process_rim_object(det)
-                self.process_gap_object(det)
+                self.process_peak_object(det)
 
     def get_stable_table_height(self, new_reading):
         """Add a new table height reading and return a stable averaged value.
@@ -384,7 +384,7 @@ class FlatGraspEstimator(Node):
 
         self.rim_pose_pub.publish(self._make_grasp_pose(rim_x, rim_y, rim_z, new_quat))
 
-    def process_gap_object(self, detection: ObjectDetection):
+    def process_peak_object(self, detection: ObjectDetection):
         """Top-down grasp on the highest content inside a cavity."""
         bbox = self._parse_bbox(detection)
         if bbox is None:
@@ -421,12 +421,12 @@ class FlatGraspEstimator(Node):
             inside_points[:, 2],
         )
         x0, y0 = xs.min(), ys.min()
-        nx = int((xs.max() - x0) / GAP_GRID_RES) + 1
-        ny = int((ys.max() - y0) / GAP_GRID_RES) + 1
-        if nx < GAP_PEAK_NBR or ny < GAP_PEAK_NBR:
+        nx = int((xs.max() - x0) / PEAK_GRID_RES) + 1
+        ny = int((ys.max() - y0) / PEAK_GRID_RES) + 1
+        if nx < PEAK_NBR or ny < PEAK_NBR:
             return
-        ix = np.clip(((xs - x0) / GAP_GRID_RES).astype(int), 0, nx - 1)
-        iy = np.clip(((ys - y0) / GAP_GRID_RES).astype(int), 0, ny - 1)
+        ix = np.clip(((xs - x0) / PEAK_GRID_RES).astype(int), 0, nx - 1)
+        iy = np.clip(((ys - y0) / PEAK_GRID_RES).astype(int), 0, ny - 1)
 
         grid = np.full((nx, ny), -np.inf, dtype=float)
         np.maximum.at(grid, (ix, iy), zs)
@@ -435,16 +435,14 @@ class FlatGraspEstimator(Node):
             return
 
         # --- LOCAL MAXIMA (peaks): cell equals the max in its neighborhood ---
-        smoothed = ndi.maximum_filter(
-            np.where(filled, grid, -np.inf), size=GAP_PEAK_NBR
-        )
-        peak_mask = filled & (grid >= smoothed) & (grid > floor_z + GAP_MIN_PEAK_HEIGHT)
+        smoothed = ndi.maximum_filter(np.where(filled, grid, -np.inf), size=PEAK_NBR)
+        peak_mask = filled & (grid >= smoothed) & (grid > floor_z + PEAK_MIN_HEIGHT)
         peak_ix, peak_iy = np.where(peak_mask)
         if len(peak_ix) == 0:
             return
 
-        peak_x = x0 + (peak_ix + 0.5) * GAP_GRID_RES
-        peak_y = y0 + (peak_iy + 0.5) * GAP_GRID_RES
+        peak_x = x0 + (peak_ix + 0.5) * PEAK_GRID_RES
+        peak_y = y0 + (peak_iy + 0.5) * PEAK_GRID_RES
         peak_z = grid[peak_ix, peak_iy]
 
         # --- CAVITY CENTER and nearest peak to it ---
@@ -452,7 +450,7 @@ class FlatGraspEstimator(Node):
         center_y = np.median(ys)
         dist_to_center = np.sqrt((peak_x - center_x) ** 2 + (peak_y - center_y) ** 2)
         best = int(np.argmin(dist_to_center))
-        gap_x, gap_y, gap_z = (
+        peak_grasp_x, peak_grasp_y, peak_grasp_z = (
             float(peak_x[best]),
             float(peak_y[best]),
             float(peak_z[best]),
@@ -468,7 +466,9 @@ class FlatGraspEstimator(Node):
         new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
-        self.gap_pose_pub.publish(self._make_grasp_pose(gap_x, gap_y, gap_z, new_quat))
+        self.peak_pose_pub.publish(
+            self._make_grasp_pose(peak_grasp_x, peak_grasp_y, peak_grasp_z, new_quat)
+        )
 
 
 def main(args=None):

@@ -14,7 +14,7 @@ from frida_constants.manipulation_constants import (
     CUTLERY_NAMES,
     POUR_OBJECT_NAMES,
     RIM_NAMES,
-    GAP_NAMES,
+    PEAK_NAMES,
 )
 from typing import Tuple
 import time
@@ -66,11 +66,11 @@ def is_rim(object_name: str) -> bool:
     return object_name.lower() in RIM_NAMES
 
 
-def is_gap(object_name: str) -> bool:
+def is_peak(object_name: str) -> bool:
     """Pick the highest content inside a cavity (e.g. clothes in a basket)."""
     if object_name is None:
         return False
-    return object_name.lower() in GAP_NAMES
+    return object_name.lower() in PEAK_NAMES
 
 
 def is_pour_object(object_name: str) -> bool:
@@ -100,7 +100,7 @@ class PickManager:
             PoseStamped, "/manipulation/rim_grasp_pose", self._rim_cb, 10
         )
         self.node.create_subscription(
-            PoseStamped, "/manipulation/gap_grasp_pose", self._gap_cb, 10
+            PoseStamped, "/manipulation/peak_grasp_pose", self._peak_cb, 10
         )
 
         self._flat_estimator_enable = self.node.create_client(
@@ -119,8 +119,8 @@ class PickManager:
             if self._collecting_samples:
                 self._grasp_samples.append(msg)
 
-    def _gap_cb(self, msg):
-        if self._active_topic == "gap":
+    def _peak_cb(self, msg):
+        if self._active_topic == "peak":
             self.latest_flat_grasp = msg
             if self._collecting_samples:
                 self._grasp_samples.append(msg)
@@ -144,11 +144,11 @@ class PickManager:
         self.node.get_logger().info("Setting initial joint positions")
 
         is_rim_object = is_rim(object_name)
-        is_gap_object = is_gap(object_name)
-        is_flat_object = is_cutlery(object_name) or is_rim_object or is_gap_object
+        is_peak_object = is_peak(object_name)
+        is_flat_object = is_cutlery(object_name) or is_rim_object or is_peak_object
 
         if not pick_params.in_configuration:
-            if is_rim_object or is_gap_object:
+            if is_rim_object or is_peak_object:
                 stare_position = "look_side_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
@@ -169,8 +169,8 @@ class PickManager:
             )
 
             # Enable the estimator so it starts publishing grasp poses.
-            if is_gap_object:
-                self._active_topic = "gap"
+            if is_peak_object:
+                self._active_topic = "peak"
             elif is_rim_object:
                 self._active_topic = "rim"
             else:
@@ -223,9 +223,9 @@ class PickManager:
             avg_z = np.median([s.pose.position.z for s in samples])
             z_std = np.std([s.pose.position.z for s in samples])
 
-            # Rim/Gap: publish the estimator Z as-is; pick_server applies its offset.
+            # Rim/Peak: publish the estimator Z as-is; pick_server applies its offset.
             # Flat: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
-            z_tweak = 0.0 if (is_rim_object or is_gap_object) else FLAT_GRASP_Z_TWEAK
+            z_tweak = 0.0 if (is_rim_object or is_peak_object) else FLAT_GRASP_Z_TWEAK
 
             self.node.get_logger().info(
                 f"Averaged pose: X={avg_x:.3f}, Y={avg_y:.3f}, "
@@ -450,9 +450,9 @@ class PickManager:
             self.node.get_logger().info(
                 "Rim pick: holding position (skipping return to stare)"
             )
-        elif is_gap_object:
+        elif is_peak_object:
             # Return to the initial named pose (MoveIt) after grabbing the content.
-            self.node.get_logger().info("Gap pick: returning to look_side_stare")
+            self.node.get_logger().info("Peak pick: returning to look_side_stare")
             self.node.clear_octomap()
             for _ in range(5):
                 if send_joint_goal(
