@@ -364,12 +364,8 @@ class ManipulationTasks:
         return Status.EXECUTION_SUCCESS
 
     def pick_cutlery(self, object_name: str) -> int:
-        """Pick a flat object (cutlery, plate, ...).
-
-        The flat-grasp estimator is now driven entirely by the manipulation
-        side: PickManager detects flat objects (FLAT_OBJECT_NAMES) and requests
-        a pose from the estimate_flat_grasp service. This stays a thin alias
-        over pick_object for the task manager's existing call sites."""
+        """Thin alias over pick_object. PickManager auto-detects flat objects
+        (FLAT_OBJECT_NAMES) and gets a pose from the estimate_flat_grasp service."""
         return self.pick_object(object_name)
 
     def place(self, close_to: str = "", special_request: str = ""):

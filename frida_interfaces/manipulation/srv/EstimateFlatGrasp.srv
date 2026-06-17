@@ -1,7 +1,5 @@
-# Ask the flat-grasp estimator for a single, stabilized grasp pose.
-# The estimator collects several detection frames matching object_name,
-# medians the grasp position and returns one stable pose. Replaces the old
-# enable/disable + pose-topic streaming + client-side averaging flow.
+# Ask the flat-grasp estimator for one stabilized grasp pose. It collects a
+# few detection frames for object_name, medians the position and returns it.
 string object_name
 int32 num_samples       # frames to average; <= 0 uses the server default
 ---

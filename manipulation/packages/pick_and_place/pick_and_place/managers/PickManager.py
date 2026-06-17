@@ -150,8 +150,8 @@ class PickManager:
                 f"Flat grasp pose received ({response.samples_collected} samples), +tweak={z_tweak}"
             )
 
-            # Do NOT call get_object_cluster — it adds the table as a
-            # collision object which makes MoveIt reject all near-table paths
+            # Do NOT call get_object_cluster: it adds the table as a collision
+            # object which makes MoveIt reject all near-table paths.
             object_cluster = None
             points = []
 

@@ -1,20 +1,7 @@
 #!/usr/bin/env python3
 
-"""
-Offline routing tests for the flat-grasp generalization.
-
-A single ``FLAT_OBJECT_NAMES`` constant now drives every flat-grasp decision
-point (the flat_grasp_estimator's ``target_classes``, PickManager's
-``is_flat_object`` and pick_server's ``is_flat``). These tests verify the
-list's contents and the routing predicate so the four call sites stay
-consistent — without needing ROS, a robot, Docker or a built workspace.
-
-Run from anywhere::
-
-    python3 manipulation/packages/pick_and_place/pick_and_place/tests/test_flat_grasp_routing.py
-
-Exit code 0 when every check passes, 1 otherwise.
-"""
+"""Offline checks for the FLAT_OBJECT_NAMES routing list and predicate.
+Run with plain python3; no ROS, robot, Docker or build needed."""
 
 import importlib.util
 import os
@@ -101,7 +88,7 @@ def test_routing_predicate():
 
 
 def main():
-    print("Flat-grasp generalization — offline routing tests")
+    print("Flat-grasp routing tests")
     test_list_membership()
     test_routing_predicate()
     total = len(_RESULTS)
