@@ -33,9 +33,13 @@ def _load_constants():
     # Fallback: walk up the tree to find the source file (laptop, no build).
     d = os.path.dirname(os.path.abspath(__file__))
     for _ in range(8):
-        cand = os.path.join(d, "frida_constants", "frida_constants", "manipulation_constants.py")
+        cand = os.path.join(
+            d, "frida_constants", "frida_constants", "manipulation_constants.py"
+        )
         if os.path.isfile(cand):
-            spec = importlib.util.spec_from_file_location("manipulation_constants", cand)
+            spec = importlib.util.spec_from_file_location(
+                "manipulation_constants", cand
+            )
             mc = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(mc)
             return mc
@@ -60,7 +64,11 @@ _RESULTS = []
 def check(name, got, expected):
     ok = got == expected
     _RESULTS.append(ok)
-    print(f"  PASS  {name}" if ok else f"  FAIL  {name}: got={got!r} expected={expected!r}")
+    print(
+        f"  PASS  {name}"
+        if ok
+        else f"  FAIL  {name}: got={got!r} expected={expected!r}"
+    )
 
 
 def section(title):
@@ -77,7 +85,9 @@ def test_list_membership():
     for n in ("apple", "coca_cola", "bowl", "cup", "mug"):
         check(f"{n} is NOT flat (normal GPD)", n in FLAT_OBJECT_NAMES, False)
     # Rim objects are handled by a different strategy -> must stay disjoint.
-    check("rim names disjoint from flat", set(RIM_NAMES) & set(FLAT_OBJECT_NAMES), set())
+    check(
+        "rim names disjoint from flat", set(RIM_NAMES) & set(FLAT_OBJECT_NAMES), set()
+    )
 
 
 def test_routing_predicate():

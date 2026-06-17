@@ -126,7 +126,11 @@ class FlatGraspEstimator(Node):
             response.message = "camera intrinsics not received yet"
             return response
 
-        n = request.num_samples if request.num_samples > 0 else FLAT_GRASP_DEFAULT_SAMPLES
+        n = (
+            request.num_samples
+            if request.num_samples > 0
+            else FLAT_GRASP_DEFAULT_SAMPLES
+        )
 
         # Start a fresh collection session.
         self._samples = []
@@ -146,9 +150,7 @@ class FlatGraspEstimator(Node):
         )
         if not samples:
             response.success = False
-            response.message = (
-                f"no grasp samples for '{request.object_name}' within {FLAT_GRASP_TIMEOUT}s"
-            )
+            response.message = f"no grasp samples for '{request.object_name}' within {FLAT_GRASP_TIMEOUT}s"
             return response
 
         pose = copy.deepcopy(samples[-1])  # latest PCA orientation

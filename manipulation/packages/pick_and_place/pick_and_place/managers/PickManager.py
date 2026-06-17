@@ -1,6 +1,10 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_interfaces.srv import PickPerceptionService, DetectionHandler, EstimateFlatGrasp
-from geometry_msgs.msg import PoseStamped, PointStamped
+from frida_interfaces.srv import (
+    PickPerceptionService,
+    DetectionHandler,
+    EstimateFlatGrasp,
+)
+from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
