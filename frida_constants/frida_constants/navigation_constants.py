@@ -31,6 +31,7 @@ RESUME_NAV_SERVICE = "/navigation/resume_nav"
 ### Table/shelf docking (perpendicular approach) — see table_docker.py
 DOCK_SERVICE = "/navigation/dock_to_surface"        # std_srvs/Trigger: align + approach
 UNDOCK_SERVICE = "/navigation/undock_from_surface"  # std_srvs/Trigger: back off so nav2 can plan
+DOCK_PREVIEW_SERVICE = "/navigation/preview_dock"    # std_srvs/Trigger: detect + show markers, no motion
 DOCKED_TOPIC = "/navigation/docked"                  # std_msgs/Bool (latched): currently docked?
 POINT_CLOUD_TOPIC = "/point_cloud"                   # filtered ZED cloud also used by nav2
 

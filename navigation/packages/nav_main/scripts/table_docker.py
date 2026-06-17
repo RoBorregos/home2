@@ -2,33 +2,34 @@
 """Table/shelf docking — perpendicular approach for the holonomic omnibase.
 
 Idea: nav2 brings the robot to a STATIC "near" pose in front of a table/shelf.
-From there this node detects the table's front face with the lidar + ZED cloud,
-then closed-loop drives the (holonomic) base so it ends up PERPENDICULAR to the
-face, centered on it, and as close as it can safely get. Because detection is
-done live each time, the table can be moved/rotated and the robot still parks
-correctly relative to wherever it actually is.
+On a service call this node detects the table's front face ONCE from a few
+accumulated cloud/scan frames (stable RANSAC line -> polygon -> normal vector),
+LOCKS that face in the odom frame, then closed-loop drives the (holonomic) base
+so it ends up PERPENDICULAR to the face, centered on it, and as close as the arm
+can safely get. Locking the orientation kills the per-frame jitter you get from
+re-fitting every tick; the live lidar is still used as a safety stop.
 
 Flow
 ----
   1. nav2 -> static near pose (existing go_to_area).
-  2. /navigation/dock_to_surface (std_srvs/Trigger):
-       detect front face (RANSAC 2D line on /scan + /point_cloud in base_link),
-       then control wz (face fronto-parallel), vy (center), vx (approach) until
-       target_distance is reached OR the nearest frontal point hits min_safe.
-  3. /navigation/undock_from_surface (std_srvs/Trigger):
-       drive straight back retreat_distance (odom-measured) so the robot leaves
-       nav2's inflated/lethal zone and nav2 can plan the next goal.
+  2. /navigation/preview_dock (std_srvs/Trigger): detect + publish RViz markers
+     ONLY (no motion) — use this to check the fit/orientation before committing.
+  3. /navigation/dock_to_surface (std_srvs/Trigger): detect+lock, then approach.
+  4. /navigation/undock_from_surface (std_srvs/Trigger): back off retreat_distance
+     (odom-measured) so nav2 can plan the next goal. nav_central calls this before
+     every new location goal automatically.
 
-nav_central calls undock automatically before every new location goal, so you
-never have to remember to back off first.
+Stop rule: the robot's FRONT-MOST part (the arm, at front_offset from base_link)
+is kept target_distance from the surface, and never closer than min_safe to the
+nearest thing the lidar sees. MEASURE front_offset.
 
-All behaviour is parameterized — tune target_distance / min_safe / gains / the
-detection height band + FOV on the real robot.
+Detection runs only when a service is called — there is no free-running timer.
 """
 
 import math
 import time
 import threading
+import collections
 
 import numpy as np
 
@@ -58,6 +59,7 @@ except Exception:
 from frida_constants.navigation_constants import (
     DOCK_SERVICE,
     UNDOCK_SERVICE,
+    DOCK_PREVIEW_SERVICE,
     DOCKED_TOPIC,
     SCAN_TOPIC,
     POINT_CLOUD_TOPIC,
@@ -88,11 +90,8 @@ def reduce_angle_mod_pi(a):
 
 
 def ransac_line(pts, iters, thresh, min_inliers):
-    """RANSAC 2D line fit. pts: Nx2. Returns dict or None.
-
-    Returns normal (unit, perpendicular to the line), centroid of inliers,
-    direction (unit, along the line) and inlier count.
-    """
+    """RANSAC 2D line fit. pts: Nx2. Returns dict (normal, direction, centroid,
+    inlier mask, count) or None."""
     n = len(pts)
     if n < max(2, min_inliers):
         return None
@@ -122,12 +121,8 @@ def ransac_line(pts, iters, thresh, min_inliers):
     _, _, vv = np.linalg.svd(inl - centroid)
     direction = vv[0] / (np.linalg.norm(vv[0]) + 1e-12)
     normal = np.array([-direction[1], direction[0]])
-    return {
-        "normal": normal,
-        "direction": direction,
-        "centroid": centroid,
-        "count": best_count,
-    }
+    return {"normal": normal, "direction": direction, "centroid": centroid,
+            "mask": best_mask, "count": best_count}
 
 
 class TableDocker(Node):
@@ -140,6 +135,7 @@ class TableDocker(Node):
         self.cloud_topic = self.declare_parameter("cloud_topic", POINT_CLOUD_TOPIC).value
         self.odom_topic = self.declare_parameter("odom_topic", "/odometry/filtered").value
         self.base_frame = self.declare_parameter("base_frame", "base_link").value
+        self.odom_frame = self.declare_parameter("odom_frame", "odom").value
 
         # --- Detection ---
         # 'scan' | 'cloud' | 'both'. Cloud catches the table EDGE/shelf face above
@@ -149,9 +145,13 @@ class TableDocker(Node):
         self.max_detect_range = self.declare_parameter("max_detect_range", 1.5).value
         self.det_min_height = self.declare_parameter("det_min_height", 0.20).value
         self.det_max_height = self.declare_parameter("det_max_height", 1.20).value
-        self.ransac_iters = int(self.declare_parameter("ransac_iters", 200).value)
+        self.ransac_iters = int(self.declare_parameter("ransac_iters", 300).value)
         self.ransac_thresh = self.declare_parameter("ransac_thresh", 0.03).value
         self.ransac_min_inliers = int(self.declare_parameter("ransac_min_inliers", 12).value)
+        # How many recent cloud/scan frames to accumulate for ONE stable fit.
+        self.num_samples = int(self.declare_parameter("num_samples", 3).value)
+        self.collect_timeout = self.declare_parameter("collect_timeout", 3.0).value
+        self.fit_attempts = int(self.declare_parameter("fit_attempts", 5).value)
 
         # --- Geometry: forward reach of the robot's FRONT-MOST part (the arm) ---
         # Distance from base_link to whatever would hit the table first (arm tip in
@@ -176,7 +176,7 @@ class TableDocker(Node):
         self.control_rate = self.declare_parameter("control_rate", 15.0).value
         self.approach_timeout = self.declare_parameter("approach_timeout", 40.0).value
         self.settle_cycles = int(self.declare_parameter("settle_cycles", 5).value)
-        self.max_detect_fail = int(self.declare_parameter("max_detect_fail", 30).value)
+        self.max_tf_fail = int(self.declare_parameter("max_tf_fail", 30).value)
 
         # --- Retreat (undock) ---
         self.retreat_distance = self.declare_parameter("retreat_distance", 0.5).value
@@ -184,14 +184,16 @@ class TableDocker(Node):
         self.retreat_timeout = self.declare_parameter("retreat_timeout", 20.0).value
 
         # --- Visualization (RViz) ---
-        self.publish_markers = self.declare_parameter("publish_markers", True).value
-        self.marker_rate = self.declare_parameter("marker_rate", 5.0).value
+        self.polygon_depth = self.declare_parameter("polygon_depth", 0.40).value
+        self.marker_lifetime = self.declare_parameter("marker_lifetime", 5.0).value
 
         # --- State (guarded by lock) ---
         self._lock = threading.Lock()
         self._scan = None
-        self._cloud = None
         self._odom = None
+        self._cloud_buf = collections.deque(maxlen=max(self.num_samples, 1))
+        self._scan_buf = collections.deque(maxlen=max(self.num_samples, 1))
+        self._face = None       # locked face in odom frame
         self.docked = False
 
         sensor_cb = ReentrantCallbackGroup()
@@ -202,35 +204,27 @@ class TableDocker(Node):
         self.create_subscription(Odometry, self.odom_topic, self._odom_cb, 10, callback_group=sensor_cb)
 
         self.cmd_pub = self.create_publisher(Twist, self.cmd_vel_topic, 10)
-        docked_qos = QoSProfile(
-            depth=1,
-            durability=DurabilityPolicy.TRANSIENT_LOCAL,
-            reliability=ReliabilityPolicy.RELIABLE,
-        )
+        docked_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                                reliability=ReliabilityPolicy.RELIABLE)
         self.docked_pub = self.create_publisher(Bool, DOCKED_TOPIC, docked_qos)
         self._publish_docked()
-
-        # RViz visualization of the detected surface (add a MarkerArray display on
-        # /table_docker/markers, fixed frame map or base_link).
+        # RViz: add a MarkerArray display on /table_docker/markers.
         self.marker_pub = self.create_publisher(MarkerArray, "/table_docker/markers", 10)
-        if self.publish_markers:
-            self.create_timer(1.0 / max(self.marker_rate, 0.1),
-                              self._marker_timer, callback_group=sensor_cb)
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.create_service(Trigger, DOCK_SERVICE, self._dock_cb, callback_group=srv_cb)
         self.create_service(Trigger, UNDOCK_SERVICE, self._undock_cb, callback_group=srv_cb)
+        self.create_service(Trigger, DOCK_PREVIEW_SERVICE, self._preview_cb, callback_group=srv_cb)
 
-        self.log("info", f"table_docker ready. dock={DOCK_SERVICE} undock={UNDOCK_SERVICE} "
-                         f"target={self.target_distance}m min_safe={self.min_safe}m source={self.detect_source}")
+        self.log("info", f"table_docker ready. dock={DOCK_SERVICE} preview={DOCK_PREVIEW_SERVICE} "
+                         f"samples={self.num_samples} front_offset={self.front_offset}m "
+                         f"target={self.target_distance}m source={self.detect_source}")
 
     # ------------------------------------------------------------------ utils
     def log(self, level, msg):
-        # NOTE: each severity MUST be on its own line — rclpy caches severity per
-        # call site, so a single getattr line reused with different levels raises
-        # "Logger severity cannot be changed between calls."
+        # Each severity on its own line — rclpy caches severity per call site.
         text = f"TableDocker: {msg}"
         if level == "warn":
             self.get_logger().warn(text)
@@ -242,10 +236,11 @@ class TableDocker(Node):
     def _scan_cb(self, msg):
         with self._lock:
             self._scan = msg
+            self._scan_buf.append(msg)
 
     def _cloud_cb(self, msg):
         with self._lock:
-            self._cloud = msg
+            self._cloud_buf.append(msg)
 
     def _odom_cb(self, msg):
         with self._lock:
@@ -268,7 +263,25 @@ class TableDocker(Node):
     def _clamp(v, lim):
         return max(-lim, min(lim, v))
 
-    # -------------------------------------------------------------- detection
+    def _lookup_Rt(self, target, source):
+        try:
+            tf = self.tf_buffer.lookup_transform(target, source, RclpyTime())
+        except Exception as e:
+            self.log("warn", f"TF {target}<-{source} unavailable: {e}")
+            return None
+        q = tf.transform.rotation
+        tr = tf.transform.translation
+        return quat_to_rot(q.x, q.y, q.z, q.w), np.array([tr.x, tr.y, tr.z])
+
+    @staticmethod
+    def _xform_pt(R, t, p):
+        return (R @ np.array([p[0], p[1], 0.0]) + t)[:2]
+
+    @staticmethod
+    def _xform_vec(R, v):
+        return (R @ np.array([v[0], v[1], 0.0]))[:2]
+
+    # -------------------------------------------------------------- point sets
     def _scan_points(self, scan):
         """Frontal scan points (base_link) within FOV + range as Nx2 array."""
         if scan is None:
@@ -281,9 +294,7 @@ class TableDocker(Node):
         valid = np.isfinite(ranges) & (ranges > max(scan.range_min, 1e-3)) & (ranges < self.max_detect_range)
         valid &= np.abs(np.arctan2(np.sin(angles), np.cos(angles))) < (self.frontal_fov / 2.0)
         r, a = ranges[valid], angles[valid]
-        x = r * np.cos(a)
-        y = r * np.sin(a)
-        pts = np.stack([x, y], axis=1)
+        pts = np.stack([r * np.cos(a), r * np.sin(a)], axis=1)
         return pts[pts[:, 0] > 0.0]
 
     def _cloud_points(self, cloud):
@@ -295,16 +306,14 @@ class TableDocker(Node):
             arr = np.array([[p[0], p[1], p[2]] for p in raw], dtype=float)
             if arr.size == 0:
                 return np.empty((0, 2))
-            # Subsample very dense clouds to keep this snappy.
             if len(arr) > 6000:
                 arr = arr[:: len(arr) // 6000 + 1]
             if cloud.header.frame_id and cloud.header.frame_id != self.base_frame:
-                tf = self.tf_buffer.lookup_transform(
-                    self.base_frame, cloud.header.frame_id, RclpyTime())
-                q = tf.transform.rotation
-                t = tf.transform.translation
-                R = quat_to_rot(q.x, q.y, q.z, q.w)
-                arr = arr @ R.T + np.array([t.x, t.y, t.z])
+                Rt = self._lookup_Rt(self.base_frame, cloud.header.frame_id)
+                if Rt is None:
+                    return np.empty((0, 2))
+                R, t = Rt
+                arr = arr @ R.T + t
             m = (
                 (arr[:, 2] > self.det_min_height)
                 & (arr[:, 2] < self.det_max_height)
@@ -314,84 +323,117 @@ class TableDocker(Node):
             )
             return arr[m][:, :2]
         except Exception as e:
-            self.log("warn", f"cloud transform/read failed ({e}); using scan only this cycle")
+            self.log("warn", f"cloud read/transform failed ({e})")
             return np.empty((0, 2))
 
-    def _detect(self):
-        """Detect the front face. Returns a dict (control errors + line geometry
-        for visualization) or None if nothing was found."""
+    def _accumulate_points(self):
+        """Combine points from the last num_samples cloud/scan frames (base_link)."""
         with self._lock:
-            scan, cloud = self._scan, self._cloud
-
-        pts_list = []
+            clouds = list(self._cloud_buf)
+            scans = list(self._scan_buf)
+        parts = []
         if self.detect_source in ("scan", "both"):
-            pts_list.append(self._scan_points(scan))
+            for s in scans:
+                parts.append(self._scan_points(s))
         if self.detect_source in ("cloud", "both"):
-            pts_list.append(self._cloud_points(cloud))
-        pts = np.vstack([p for p in pts_list if len(p)]) if any(len(p) for p in pts_list) else np.empty((0, 2))
+            for c in clouds:
+                parts.append(self._cloud_points(c))
+        parts = [p for p in parts if len(p)]
+        return np.vstack(parts) if parts else np.empty((0, 2))
+
+    def _wait_for_samples(self):
+        """Block briefly until enough recent frames are buffered (robot stationary)."""
+        need_cloud = self.detect_source in ("cloud", "both")
+        end = time.time() + self.collect_timeout
+        while rclpy.ok() and time.time() < end:
+            with self._lock:
+                nc, ns = len(self._cloud_buf), len(self._scan_buf)
+            if need_cloud and nc >= self.num_samples:
+                return
+            if not need_cloud and ns >= 1:
+                return
+            time.sleep(0.05)
+
+    # ----------------------------------------------------------------- fit/lock
+    def _fit_face(self):
+        """One stable fit from the accumulated samples. Returns base_link geometry
+        dict {normal, centroid, direction, p1, p2, pts, nearest} or None."""
+        pts = self._accumulate_points()
         if len(pts) < self.ransac_min_inliers:
             return None
-
         fit = ransac_line(pts, self.ransac_iters, self.ransac_thresh, self.ransac_min_inliers)
         if fit is None:
             return None
-
         normal, centroid, direction = fit["normal"], fit["centroid"], fit["direction"]
-        # Orient the normal to point from the robot toward the face (centroid x>0).
-        if np.dot(normal, centroid) < 0:
+        if np.dot(normal, centroid) < 0:        # point the normal toward the face
             normal = -normal
-        # We want the normal aligned with robot +x (robot facing the face square-on).
-        e_yaw = reduce_angle_mod_pi(math.atan2(normal[1], normal[0]))
-        # Perpendicular distance from base_link origin to the face line.
-        distance = abs(float(np.dot(normal, centroid)))
-        y_center = float(centroid[1])
-
-        # Nearest frontal point across ALL detection points (scan + cloud). This is
-        # what the arm could actually hit — e.g. a table overhang/edge the cloud
-        # sees but the lidar plane misses — so the approach stop uses this, not the
-        # RANSAC line distance (which may be the recessed legs).
+        inl = pts[fit["mask"]]
+        t = (inl - centroid) @ direction
+        p1 = centroid + direction * float(t.min())
+        p2 = centroid + direction * float(t.max())
         nearest = float(np.min(np.hypot(pts[:, 0], pts[:, 1])))
+        return {"normal": normal, "centroid": centroid, "direction": direction,
+                "p1": p1, "p2": p2, "pts": pts, "nearest": nearest}
 
-        # Segment endpoints (project the inliers onto the line direction) for RViz.
-        c = -(normal @ centroid)
-        on_line = pts[np.abs(pts @ normal + c) < self.ransac_thresh]
-        if len(on_line) >= 2:
-            t = (on_line - centroid) @ direction
-            p1 = centroid + direction * float(t.min())
-            p2 = centroid + direction * float(t.max())
-        else:
-            p1 = centroid - direction * 0.3
-            p2 = centroid + direction * 0.3
+    def _lock_face(self, fit):
+        """Store the fitted face in the odom frame so it stays world-fixed while
+        the robot drives (no per-cycle re-fit -> no orientation jitter)."""
+        Rt = self._lookup_Rt(self.odom_frame, self.base_frame)
+        if Rt is None:
+            return False
+        R, t = Rt
+        with self._lock:
+            self._face = {
+                "normal": self._xform_vec(R, fit["normal"]),
+                "centroid": self._xform_pt(R, t, fit["centroid"]),
+                "p1": self._xform_pt(R, t, fit["p1"]),
+                "p2": self._xform_pt(R, t, fit["p2"]),
+            }
+        return True
 
-        return {
-            "e_yaw": e_yaw, "y_center": y_center, "distance": distance, "nearest": nearest,
-            "normal": normal, "centroid": centroid, "p1": p1, "p2": p2, "pts": pts,
-        }
+    def _face_in_base(self):
+        """Transform the locked (odom) face into the CURRENT base_link frame."""
+        with self._lock:
+            face = self._face
+        if face is None:
+            return None
+        Rt = self._lookup_Rt(self.base_frame, self.odom_frame)
+        if Rt is None:
+            return None
+        R, t = Rt
+        n = self._xform_vec(R, face["normal"])
+        n = n / (np.linalg.norm(n) + 1e-12)
+        c = self._xform_pt(R, t, face["centroid"])
+        if np.dot(n, c) < 0:
+            n = -n
+        return {"normal": n, "centroid": c,
+                "p1": self._xform_pt(R, t, face["p1"]),
+                "p2": self._xform_pt(R, t, face["p2"])}
+
+    def _live_nearest(self):
+        """Closest frontal point from the latest scan (safety override)."""
+        with self._lock:
+            scan = self._scan
+        sp = self._scan_points(scan)
+        return float(np.min(np.hypot(sp[:, 0], sp[:, 1]))) if len(sp) else None
 
     # ----------------------------------------------------------- visualization
-    def _marker_timer(self):
-        try:
-            det = self._detect()
-        except Exception as e:
-            self.log("warn", f"marker detect failed: {e}")
-            det = None
-        self._publish_markers(det)
-
-    def _publish_markers(self, det):
+    def _publish_markers(self, face, scan_nearest, pts=None):
         arr = MarkerArray()
         now = self.get_clock().now().to_msg()
-
-        if det is None:
-            clear = Marker()
-            clear.header.frame_id = self.base_frame
-            clear.header.stamp = now
-            clear.ns = "table_docker"
-            clear.action = Marker.DELETEALL
-            arr.markers.append(clear)
+        if face is None:
+            clr = Marker()
+            clr.header.frame_id = self.base_frame
+            clr.header.stamp = now
+            clr.ns = "table_docker"
+            clr.action = Marker.DELETEALL
+            arr.markers.append(clr)
             self.marker_pub.publish(arr)
             return
 
-        life = Duration(seconds=2.0 / max(self.marker_rate, 0.1)).to_msg()
+        life = Duration(seconds=self.marker_lifetime).to_msg()
+        n, c = face["normal"], face["centroid"]
+        p1, p2 = face["p1"], face["p2"]
 
         def base(mid, mtype):
             m = Marker()
@@ -405,22 +447,36 @@ class TableDocker(Node):
             m.pose.orientation.w = 1.0
             return m
 
-        # Fitted line (green) — the detected table/shelf front face.
+        # Fitted line (green).
         line = base(0, Marker.LINE_STRIP)
         line.scale.x = 0.03
         line.color.g = 1.0
         line.color.b = 0.2
         line.color.a = 1.0
-        line.points = [Point(x=float(det["p1"][0]), y=float(det["p1"][1]), z=0.0),
-                       Point(x=float(det["p2"][0]), y=float(det["p2"][1]), z=0.0)]
+        line.points = [Point(x=float(p1[0]), y=float(p1[1]), z=0.0),
+                       Point(x=float(p2[0]), y=float(p2[1]), z=0.0)]
         arr.markers.append(line)
 
-        # Approach normal (blue) — drawn from the face back toward the robot.
-        c, n = det["centroid"], det["normal"]
-        arrow = base(1, Marker.ARROW)
-        arrow.scale.x = 0.02   # shaft diameter
-        arrow.scale.y = 0.05   # head diameter
-        arrow.scale.z = 0.07   # head length
+        # Polygon (cyan) — the fitted face extruded into the surface by polygon_depth.
+        poly = base(1, Marker.LINE_STRIP)
+        poly.scale.x = 0.02
+        poly.color.g = 0.8
+        poly.color.b = 1.0
+        poly.color.a = 1.0
+        q1 = p1 + n * self.polygon_depth
+        q2 = p2 + n * self.polygon_depth
+        poly.points = [Point(x=float(p1[0]), y=float(p1[1]), z=0.0),
+                       Point(x=float(p2[0]), y=float(p2[1]), z=0.0),
+                       Point(x=float(q2[0]), y=float(q2[1]), z=0.0),
+                       Point(x=float(q1[0]), y=float(q1[1]), z=0.0),
+                       Point(x=float(p1[0]), y=float(p1[1]), z=0.0)]
+        arr.markers.append(poly)
+
+        # Approach normal (blue) — from the face back toward the robot.
+        arrow = base(2, Marker.ARROW)
+        arrow.scale.x = 0.02
+        arrow.scale.y = 0.05
+        arrow.scale.z = 0.07
         arrow.color.b = 1.0
         arrow.color.g = 0.4
         arrow.color.a = 1.0
@@ -428,41 +484,90 @@ class TableDocker(Node):
                         Point(x=float(c[0] - n[0] * 0.3), y=float(c[1] - n[1] * 0.3), z=0.0)]
         arr.markers.append(arrow)
 
-        # Candidate points (yellow) used for the fit.
-        pts = det["pts"]
-        if len(pts) > 400:
-            pts = pts[:: len(pts) // 400 + 1]
-        pm = base(2, Marker.POINTS)
-        pm.scale.x = 0.02
-        pm.scale.y = 0.02
-        pm.color.r = 1.0
-        pm.color.g = 0.85
-        pm.color.a = 0.8
-        pm.points = [Point(x=float(p[0]), y=float(p[1]), z=0.0) for p in pts]
-        arr.markers.append(pm)
+        # Candidate points (yellow) — only when provided (preview).
+        if pts is not None and len(pts):
+            sp = pts[:: len(pts) // 400 + 1] if len(pts) > 400 else pts
+            pm = base(3, Marker.POINTS)
+            pm.scale.x = pm.scale.y = 0.02
+            pm.color.r = 1.0
+            pm.color.g = 0.85
+            pm.color.a = 0.8
+            pm.points = [Point(x=float(p[0]), y=float(p[1]), z=0.0) for p in sp]
+            arr.markers.append(pm)
 
-        # Text readout (white) — yaw error + arm clearance + nearest distance.
-        arm_clear = det["nearest"] - self.front_offset
-        txt = base(3, Marker.TEXT_VIEW_FACING)
+        # Text readout.
+        distance = abs(float(n @ c))
+        arm_clear = distance - self.front_offset
+        e_yaw = reduce_angle_mod_pi(math.atan2(n[1], n[0]))
+        near_txt = f"{scan_nearest:.2f}" if scan_nearest is not None else "--"
+        txt = base(4, Marker.TEXT_VIEW_FACING)
         txt.scale.z = 0.12
         txt.color.r = txt.color.g = txt.color.b = 1.0
         txt.color.a = 1.0
         txt.pose.position.x = float(c[0])
         txt.pose.position.y = float(c[1])
         txt.pose.position.z = 0.35
-        txt.text = (f"yaw_err={math.degrees(det['e_yaw']):.0f}deg  "
-                    f"clr={arm_clear:.2f}m  near={det['nearest']:.2f}m")
+        txt.text = f"yaw_err={math.degrees(e_yaw):.0f}deg  clr={arm_clear:.2f}m  near={near_txt}m"
         arr.markers.append(txt)
 
         self.marker_pub.publish(arr)
 
+    # --------------------------------------------------------- detect + lock
+    def _detect_and_lock(self):
+        """Collect samples, fit once, lock in odom. Returns the base-frame fit or None."""
+        self._stop()
+        self._wait_for_samples()
+        fit = None
+        for _ in range(self.fit_attempts):
+            fit = self._fit_face()
+            if fit is not None:
+                break
+            time.sleep(0.1)
+        if fit is None:
+            return None
+        if not self._lock_face(fit):
+            return None
+        return fit
+
+    # ----------------------------------------------------------------- preview
+    def _preview_cb(self, request, response):
+        self.log("info", "Preview requested — detecting (no motion)")
+        fit = self._detect_and_lock()
+        if fit is None:
+            self._publish_markers(None, None)
+            response.success = False
+            response.message = "Could not detect a surface in front of the robot"
+            self.log("error", response.message)
+            return response
+        face = self._face_in_base()
+        self._publish_markers(face, self._live_nearest(), pts=fit["pts"])
+        e_yaw = reduce_angle_mod_pi(math.atan2(fit["normal"][1], fit["normal"][0]))
+        distance = abs(float(fit["normal"] @ fit["centroid"]))
+        response.success = True
+        response.message = (f"Detected: yaw_err={math.degrees(e_yaw):.1f}deg "
+                            f"dist={distance:.3f}m points={len(fit['pts'])}")
+        self.log("info", response.message)
+        return response
+
     # ----------------------------------------------------------------- dock
     def _dock_cb(self, request, response):
-        self.log("info", "Dock requested — detecting & approaching the surface")
+        self.log("info", "Dock requested — detecting & locking the surface")
+        fit = self._detect_and_lock()
+        if fit is None:
+            self._publish_markers(None, None)
+            response.success = False
+            response.message = "Could not detect a surface in front of the robot"
+            self.log("error", response.message)
+            return response
+
+        e0 = reduce_angle_mod_pi(math.atan2(fit["normal"][1], fit["normal"][0]))
+        self.log("info", f"Locked face: yaw_err={math.degrees(e0):.1f}deg "
+                         f"dist={abs(float(fit['normal'] @ fit['centroid'])):.3f}m — approaching")
+
         dt = 1.0 / self.control_rate
         deadline = time.time() + self.approach_timeout
         settled = 0
-        fails = 0
+        tf_fail = 0
 
         while rclpy.ok():
             if time.time() > deadline:
@@ -472,52 +577,54 @@ class TableDocker(Node):
                 self.log("error", response.message)
                 return response
 
-            det = self._detect()
-            if det is None:
-                fails += 1
+            face = self._face_in_base()
+            if face is None:
+                tf_fail += 1
                 self._stop()
-                if fails > self.max_detect_fail:
+                if tf_fail > self.max_tf_fail:
                     response.success = False
-                    response.message = "Could not detect a surface in front of the robot"
+                    response.message = "Lost the locked face transform (TF)"
                     self.log("error", response.message)
                     return response
                 time.sleep(dt)
                 continue
-            fails = 0
+            tf_fail = 0
 
-            e_yaw = det["e_yaw"]
-            y_center = det["y_center"]
-            distance = det["distance"]
-            nearest = det["nearest"]
-            # Clearance between the robot's front-most part (the arm) and the
-            # CLOSEST detected point — this is what must not hit the table.
-            arm_clearance = nearest - self.front_offset
+            n, c = face["normal"], face["centroid"]
+            e_yaw = reduce_angle_mod_pi(math.atan2(n[1], n[0]))   # want robot +x along normal
+            y_center = float(c[1])                                 # centre on the face
+            distance = abs(float(n @ c))                           # base_link -> locked face (perp)
+            arm_clearance = distance - self.front_offset
             e_x = arm_clearance - self.target_distance
 
-            # Controls.
+            # Live lidar safety override (independent of the locked face).
+            scan_near = self._live_nearest()
+            safety_stop = scan_near is not None and (scan_near - self.front_offset) <= self.min_safe
+
             wz = self._clamp(self.k_yaw * e_yaw, self.max_wz)
             vy = self._clamp(self.k_y * y_center, self.max_vy)
             vx = self._clamp(self.k_x * e_x, self.max_vx) if e_x > 0 else 0.0
-            # Safety: never let the arm front get closer than min_safe to anything.
-            if arm_clearance <= self.min_safe:
+            if arm_clearance <= self.min_safe or safety_stop:
                 vx = 0.0
 
-            # Converged? aligned + centered + (at target clearance OR can't get closer).
-            close_enough = (abs(e_x) <= self.dist_tol) or (arm_clearance <= self.min_safe + 0.01)
+            close_enough = (abs(e_x) <= self.dist_tol) or (arm_clearance <= self.min_safe + 0.01) or safety_stop
             if abs(e_yaw) <= self.yaw_tol and abs(y_center) <= self.y_tol and close_enough:
                 settled += 1
                 if settled >= self.settle_cycles:
                     self._stop()
                     self.docked = True
                     self._publish_docked()
+                    self._publish_markers(face, scan_near)
                     response.success = True
                     response.message = (f"Docked: arm_clearance={arm_clearance:.3f}m "
-                                        f"nearest={nearest:.3f}m yaw_err={math.degrees(e_yaw):.1f}deg")
+                                        f"scan_near={scan_near if scan_near is None else round(scan_near,3)}m "
+                                        f"yaw_err={math.degrees(e_yaw):.1f}deg")
                     self.log("info", response.message)
                     return response
             else:
                 settled = 0
 
+            self._publish_markers(face, scan_near)
             self._publish_cmd(vx, vy, wz)
             time.sleep(dt)
 
@@ -536,36 +643,33 @@ class TableDocker(Node):
         self.log("info", f"Undock requested — backing off {self.retreat_distance:.2f} m")
         with self._lock:
             start = self._odom
+        dt = 1.0 / self.control_rate
+
         if start is None:
-            # No odom: fall back to a timed retreat.
             self.log("warn", "No odometry; timed retreat")
             t_end = time.time() + (self.retreat_distance / max(self.retreat_speed, 1e-3))
             while rclpy.ok() and time.time() < t_end:
                 self._publish_cmd(-self.retreat_speed, 0.0, 0.0)
-                time.sleep(1.0 / self.control_rate)
-            self._stop()
-            self.docked = False
-            self._publish_docked()
-            response.success = True
-            response.message = "Retreated (timed)"
-            return response
-
-        x0 = start.pose.pose.position.x
-        y0 = start.pose.pose.position.y
-        deadline = time.time() + self.retreat_timeout
-        while rclpy.ok():
-            with self._lock:
-                cur = self._odom
-            traveled = math.hypot(cur.pose.pose.position.x - x0,
-                                  cur.pose.pose.position.y - y0) if cur else 0.0
-            if traveled >= self.retreat_distance or time.time() > deadline:
-                break
-            self._publish_cmd(-self.retreat_speed, 0.0, 0.0)
-            time.sleep(1.0 / self.control_rate)
+                time.sleep(dt)
+        else:
+            x0, y0 = start.pose.pose.position.x, start.pose.pose.position.y
+            deadline = time.time() + self.retreat_timeout
+            while rclpy.ok():
+                with self._lock:
+                    cur = self._odom
+                traveled = math.hypot(cur.pose.pose.position.x - x0,
+                                      cur.pose.pose.position.y - y0) if cur else 0.0
+                if traveled >= self.retreat_distance or time.time() > deadline:
+                    break
+                self._publish_cmd(-self.retreat_speed, 0.0, 0.0)
+                time.sleep(dt)
 
         self._stop()
+        with self._lock:
+            self._face = None
         self.docked = False
         self._publish_docked()
+        self._publish_markers(None, None)
         response.success = True
         response.message = f"Retreated {self.retreat_distance:.2f} m"
         self.log("info", response.message)
