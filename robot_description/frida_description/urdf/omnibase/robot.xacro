@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 <robot name="home_base" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="black_rgba" value="0.102 0.102 0.102 1" />
 
   <!-- Launch arguments -->
   <xacro:arg name="use_sim_time" default="false"/>
   <xacro:arg name="robot_type" default="real"/>
-  <xacro:arg name="prefix" default="home_base"/>
 
-  <xacro:property name="prefix" value="$(arg prefix)"/>
   <xacro:property name="use_sim_time" value="$(arg use_sim_time)"/>
   <xacro:property name="mesh_dir" value="file://$(find frida_description)/urdf/meshes/omnibase"/>
 
@@ -23,16 +22,16 @@
   </material>
 
   <!-- =================== base_footprint (root) =================== -->
-  <link name="${prefix}_base_footprint"/>
+  <link name="base_footprint"/>
 
-  <joint name="${prefix}_base_footprint_joint" type="fixed">
+  <joint name="base_footprint_joint" type="fixed">
     <origin xyz="0 0 0.0385" rpy="0 0 0"/>
-    <parent link="${prefix}_base_footprint"/>
-    <child link="${prefix}_base_link"/>
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
   </joint>
 
   <!-- =================== base_link =================== -->
-  <link name="${prefix}_base_link">
+  <link name="base_link">
     <inertial>
       <origin xyz="0.0035289 4.9532E-05 0.18881" rpy="0 0 0"/>
       <mass value="31.284"/>
@@ -49,13 +48,15 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/base_link.STL"/>
+        <!-- decimated collision mesh (~3.9k tris) to avoid MoveIt/FCL
+             "too many vertices in collision geometry" on the 430k visual mesh -->
+        <mesh filename="${mesh_dir}/base_link_collision.stl"/>
       </geometry>
     </collision>
   </link>
 
   <!-- =================== wheel_FL =================== -->
-  <link name="${prefix}_wheel_FL">
+  <link name="wheel_FL">
     <inertial>
       <origin xyz="-2.01760275153617E-11 -1.2648801422932E-08 -0.000225751978378957" rpy="0 0 0"/>
       <mass value="0.316522165409144"/>
@@ -72,19 +73,29 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
-  <joint name="${prefix}_wheel_FL_joint" type="continuous">
-    <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
-    <parent link="${prefix}_base_link"/>
-    <child link="${prefix}_wheel_FL"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_FL_joint" type="continuous">
+      <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FL"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_FL_joint" type="fixed">
+      <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FL"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== wheel_FR =================== -->
-  <link name="${prefix}_wheel_FR">
+  <link name="wheel_FR">
     <inertial>
       <origin xyz="1.08346649985158E-08 2.62530414074647E-09 -0.000243946115891319" rpy="0 0 0"/>
       <mass value="0.316802369656036"/>
@@ -101,19 +112,29 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
-  <joint name="${prefix}_wheel_FR_joint" type="continuous">
-    <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
-    <parent link="${prefix}_base_link"/>
-    <child link="${prefix}_wheel_FR"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_FR_joint" type="continuous">
+      <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FR"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_FR_joint" type="fixed">
+      <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_FR"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== wheel_RL =================== -->
-  <link name="${prefix}_wheel_RL">
+  <link name="wheel_RL">
     <inertial>
       <origin xyz="6.27955468179842E-09 -8.84368271322766E-09 -0.000243945799877326" rpy="0 0 0"/>
       <mass value="0.316802379932942"/>
@@ -130,19 +151,29 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
-  <joint name="${prefix}_wheel_RL_joint" type="continuous">
-    <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
-    <parent link="${prefix}_base_link"/>
-    <child link="${prefix}_wheel_RL"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_RL_joint" type="continuous">
+      <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RL"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_RL_joint" type="fixed">
+      <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RL"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== wheel_RR =================== -->
-  <link name="${prefix}_wheel_RR">
+  <link name="wheel_RR">
     <inertial>
       <origin xyz="1.54742141322828E-09 1.26432938458987E-08 -0.000225751989580358" rpy="0 0 0"/>
       <mass value="0.316522156157189"/>
@@ -159,19 +190,29 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh filename="${mesh_dir}/wheel.STL"/>
+        <!-- cylinder collision mesh (~190 tris) replacing the 264k visual mesh -->
+        <mesh filename="${mesh_dir}/wheel_collision.stl"/>
       </geometry>
     </collision>
   </link>
-  <joint name="${prefix}_wheel_RR_joint" type="continuous">
-    <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
-    <parent link="${prefix}_base_link"/>
-    <child link="${prefix}_wheel_RR"/>
-    <axis xyz="0 0 1"/>
-  </joint>
+  <xacro:if value="${use_sim_time}">
+    <joint name="wheel_RR_joint" type="continuous">
+      <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RR"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+  </xacro:if>
+  <xacro:unless value="${use_sim_time}">
+    <joint name="wheel_RR_joint" type="fixed">
+      <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
+      <parent link="base_link"/>
+      <child link="wheel_RR"/>
+    </joint>
+  </xacro:unless>
 
   <!-- =================== lidar_front =================== -->
-  <link name="${prefix}_lidar_front">
+  <link name="lidar_front">
     <inertial>
       <origin xyz="-0.000159118177998852 3.36756577745678E-06 -0.00515345431268351" rpy="0 0 0"/>
       <mass value="0.100467493631956"/>
@@ -192,14 +233,14 @@
       </geometry>
     </collision>
   </link>
-  <joint name="${prefix}_lidar_front_joint" type="fixed">
-    <origin xyz="0.287749512711774 -0.207249957761446 0.135795984178765" rpy="0 0 -1.5707963267949"/>
-    <parent link="${prefix}_base_link"/>
-    <child link="${prefix}_lidar_front"/>
+  <joint name="lidar_front_joint" type="fixed">
+    <origin xyz="0.287749512711774 -0.207249957761446 0.135795984178765" rpy="0 0 1.57"/>
+    <parent link="base_link"/>
+    <child link="lidar_front"/>
   </joint>
 
   <!-- =================== lidar_rear =================== -->
-  <link name="${prefix}_lidar_rear">
+  <link name="lidar_rear">
     <inertial>
       <origin xyz="-0.000159118177998907 3.36756577740127E-06 -0.00515345431268352" rpy="0 0 0"/>
       <mass value="0.100467493631956"/>
@@ -220,16 +261,16 @@
       </geometry>
     </collision>
   </link>
-  <joint name="${prefix}_lidar_rear_joint" type="fixed">
-    <origin xyz="-0.287749512711767 0.207249947866326 0.135795984178765" rpy="0 0 1.5707963267949"/>
-    <parent link="${prefix}_base_link"/>
-    <child link="${prefix}_lidar_rear"/>
+  <joint name="lidar_rear_joint" type="fixed">
+    <origin xyz="-0.287749512711767 0.207249947866326 0.135795984178765" rpy="0 0 -1.57"/>
+    <parent link="base_link"/>
+    <child link="lidar_rear"/>
   </joint>
 
   <link name="xarm_base" />
   <joint name="xarm_joint" type="fixed">
     <origin xyz="0.0410000000000036 -0.00367166302995694 0.520695984178765" rpy="0 0 0" />
-    <parent link="${prefix}_base_link" />
+    <parent link="base_link" />
     <child link="xarm_base" />
     <axis xyz="0 0 0" />
   </joint>
@@ -237,7 +278,7 @@
 
   <!-- =================== Conditionally add simulation components =================== -->
   <xacro:if value="${use_sim_time}">
-    <xacro:home_base_ros2_control name="home_base" prefix="${prefix}" use_sim_time="${use_sim_time}"/>
+    <xacro:home_base_ros2_control name="home_base" use_sim_time="${use_sim_time}"/>
 
     <!-- Webots driver plugin configuration -->
     <webots>
