@@ -41,6 +41,7 @@ from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy
 from rclpy.time import Time as RclpyTime
 from rclpy.duration import Duration
 
+from rcl_interfaces.msg import SetParametersResult
 from std_srvs.srv import Trigger
 from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist, Point
@@ -223,9 +224,22 @@ class TableDocker(Node):
         self.create_service(Trigger, UNDOCK_SERVICE, self._undock_cb, callback_group=srv_cb)
         self.create_service(Trigger, DOCK_PREVIEW_SERVICE, self._preview_cb, callback_group=srv_cb)
 
+        # Apply runtime parameter changes live (nav_central sets per-location
+        # front_offset before approaching; also makes `ros2 param set` effective).
+        self.add_on_set_parameters_callback(self._on_set_params)
+
         self.log("info", f"table_docker ready. dock={DOCK_SERVICE} preview={DOCK_PREVIEW_SERVICE} "
                          f"samples={self.num_samples} front_offset={self.front_offset}m "
                          f"target={self.target_distance}m source={self.detect_source}")
+
+    def _on_set_params(self, params):
+        """Sync runtime param changes into the cached attributes used by the loop."""
+        for p in params:
+            if p.name == "frontal_fov_deg":
+                self.frontal_fov = math.radians(float(p.value))
+            elif hasattr(self, p.name):
+                setattr(self, p.name, p.value)
+        return SetParametersResult(successful=True)
 
     # ------------------------------------------------------------------ utils
     def log(self, level, msg):

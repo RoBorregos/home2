@@ -6,6 +6,7 @@ from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
+from rcl_interfaces.srv import SetParameters
 from nav2_msgs.srv import ManageLifecycleNodes
 from nav2_msgs.action import NavigateToPose  
 from sensor_msgs.msg import LaserScan
@@ -38,6 +39,9 @@ from frida_constants.navigation_constants import(
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
         UNDOCK_SERVICE,
+        DOCK_SERVICE,
+        DEFAULT_DOCK_OFFSET,
+        parse_location,
         )
 from frida_interfaces.srv import (
         CheckDoor,
@@ -132,6 +136,12 @@ class Nav_Central(Node):
         # planning a new goal. No-op if the table_docker node isn't running.
         self.undock_client = self.create_client(
             Trigger, UNDOCK_SERVICE, callback_group=self.rtab_service_group)
+        # Dock (perpendicular approach) client + a parameter client to set the
+        # per-location front_offset on table_docker before approaching.
+        self.dock_client = self.create_client(
+            Trigger, DOCK_SERVICE, callback_group=self.rtab_service_group)
+        self.dock_param_client = self.create_client(
+            SetParameters, '/table_docker/set_parameters', callback_group=self.rtab_service_group)
         self.lidar_msg = None
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
@@ -439,6 +449,23 @@ class Nav_Central(Node):
         if not ok:
             self.nav_logger("warn", "Go_To_Area -> Undock failed/timed out, continuing anyway")
 
+    def _approach_table(self, offset):
+        """Trigger table_docker to perpendicular-approach the surface, setting the
+        per-location front_offset first. Best-effort: logs but never blocks nav."""
+        if not self.dock_client.service_is_ready():
+            self.nav_logger("warn", "Approach -> table_docker not available, skipping")
+            return False
+        if offset is None:
+            offset = DEFAULT_DOCK_OFFSET
+        if self.dock_param_client.service_is_ready():
+            req = SetParameters.Request()
+            req.parameters = [make_param('front_offset', float(offset))]
+            self._call_service_with_timeout(
+                self.dock_param_client, req, TIMEOUT_RTAB_SERVICE, "Approach SetParam")
+        self.nav_logger("info", f"Approach -> docking to surface (front_offset={offset})")
+        return self._call_service_with_timeout(
+            self.dock_client, Trigger.Request(), 60.0, "Approach")
+
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
 
@@ -456,6 +483,14 @@ class Nav_Central(Node):
             response.error = "Area not found"
             return response
 
+        # Location entry may carry docking config (approach + offset).
+        pose, do_approach, dock_offset = parse_location(fetch_coords)
+        if pose is None:
+            self.nav_logger("error", "Go_To_Area -> Area pose missing")
+            response.success = False
+            response.error = "Area pose missing"
+            return response
+
         # If parked at a surface, back off first so nav2 plans from a clear pose
         # (avoids the planner starting inside the inflation/lethal zone).
         self._retreat_if_docked()
@@ -467,21 +502,27 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Navigation not initialized"
             return response 
-        goal_coord = PoseStamped() 
+        goal_coord = PoseStamped()
         goal_coord.header.frame_id = "map"
-        goal_coord.pose.position.x = fetch_coords[0]
-        goal_coord.pose.position.y = fetch_coords[1]
-        goal_coord.pose.position.z = fetch_coords[2]
-        goal_coord.pose.orientation.x = fetch_coords[3]
-        goal_coord.pose.orientation.y = fetch_coords[4]
-        goal_coord.pose.orientation.z = fetch_coords[5]
-        goal_coord.pose.orientation.w = fetch_coords[6]
+        goal_coord.pose.position.x = pose[0]
+        goal_coord.pose.position.y = pose[1]
+        goal_coord.pose.position.z = pose[2]
+        goal_coord.pose.orientation.x = pose[3]
+        goal_coord.pose.orientation.y = pose[4]
+        goal_coord.pose.orientation.z = pose[5]
+        goal_coord.pose.orientation.w = pose[6]
 
-        future = self.send_nav_goal(goal_coord) 
+        future = self.send_nav_goal(goal_coord)
         response.success = future[0]
         response.error = future[1]
         self.pause_slam()
         self.pause_nav2()
+
+        # Per-location docking: after reaching the pose (nav2 paused, cmd_vel free),
+        # perpendicular-approach the table/shelf if the location asked for it.
+        if response.success and do_approach:
+            if not self._approach_table(dock_offset):
+                response.error = (response.error or "Goal Finished") + " | approach failed"
         return response
         
     def check_for_topics(self, topics):

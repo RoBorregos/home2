@@ -59,6 +59,37 @@ class SUBTASK_MANAGER(Enum):
     AREAS_RETRIEVE_TIMEOUT = 2.0
 
 
+# Default docking offset (table_docker front_offset) used when a location enables
+# approach but does not specify its own offset.
+DEFAULT_DOCK_OFFSET = 0.16
+
+
+def parse_location(value):
+    """Parse an areas.json location entry (backward compatible).
+
+    An entry is either:
+      * a 7-element pose list [x, y, z, qx, qy, qz, qw]              (no docking), or
+      * a dict {"pose": [7], "approach": bool, "offset": float}     (docking on).
+    Returns (pose7, approach, offset); offset is None when unspecified.
+    """
+    if isinstance(value, dict):
+        return value.get("pose"), bool(value.get("approach", False)), value.get("offset", None)
+    return value, False, None
+
+
+def make_location(pose, approach=False, offset=None):
+    """Build an areas.json location entry. Stays a plain 7-list when docking is
+    off (preserves the legacy format); becomes a dict only when approach/offset
+    are set."""
+    pose = list(pose)
+    if not approach and offset is None:
+        return pose
+    entry = {"pose": pose, "approach": bool(approach)}
+    if offset is not None:
+        entry["offset"] = float(offset)
+    return entry
+
+
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
 SCAN_TOPIC = "/scan"
