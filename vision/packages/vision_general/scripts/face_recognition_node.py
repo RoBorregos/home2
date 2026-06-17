@@ -10,6 +10,7 @@ coordinates for arm following.
 
 import os
 import pathlib
+import time
 
 import cv2
 import numpy as np
@@ -60,6 +61,8 @@ TRACK_THRESHOLD = 50
 MATCH_THRESHOLD = 0.35
 MAX_DEGREE = 1
 RESIZE_FACTOR = 1
+GAMMA_VALUE = 1.15
+BENCHMARK_LOG_INTERVAL = 100
 
 PATH = str(pathlib.Path(__file__).parent)
 PATH = get_package_share_directory("vision_general")
@@ -166,6 +169,10 @@ class FaceRecognition(Node):
         self.people_names: list[str] = []
         self.people_encodings.append(np.zeros(512, dtype=np.float32))
         self.people_names.append("random")
+        self.gamma_active = True
+        self.white_balance_active = True
+
+        self._reset_benchmark_stats()
 
         self.clear()
         self.process_imgs()
@@ -271,6 +278,111 @@ class FaceRecognition(Node):
         except Exception:
             return bgr_img
 
+    def apply_white_balance(self, bgr_img: np.ndarray) -> np.ndarray:
+        """Reduce color casts using a simple gray-world white balance."""
+        if not self.white_balance_active:
+            return bgr_img
+        try:
+            img = bgr_img.astype(np.float32)
+            b_channel, g_channel, r_channel = cv2.split(img)
+            mean_b = np.mean(b_channel)
+            mean_g = np.mean(g_channel)
+            mean_r = np.mean(r_channel)
+            mean_gray = (mean_b + mean_g + mean_r) / 3.0
+
+            b_channel *= mean_gray / (mean_b + 1e-6)
+            g_channel *= mean_gray / (mean_g + 1e-6)
+            r_channel *= mean_gray / (mean_r + 1e-6)
+
+            balanced = cv2.merge((b_channel, g_channel, r_channel))
+            return np.clip(balanced, 0, 255).astype(np.uint8)
+        except Exception:
+            return bgr_img
+
+    def apply_gamma(self, bgr_img: np.ndarray, gamma: float = 1.15) -> np.ndarray:
+        """Lift slightly dark frames without aggressively changing face detail."""
+        if not self.gamma_active:
+            return bgr_img
+        try:
+            inverse_gamma = 1.0 / gamma
+            table = np.array(
+                [((i / 255.0) ** inverse_gamma) * 255 for i in range(256)],
+                dtype=np.uint8,
+            )
+            return cv2.LUT(bgr_img, table)
+        except Exception:
+            return bgr_img
+
+    def preprocess_face_image(self, bgr_img: np.ndarray) -> np.ndarray:
+        """Normalize illumination before running face detection/recognition."""
+        img = self.apply_white_balance(bgr_img)
+        img = self.apply_gamma(img, GAMMA_VALUE)
+        return self.apply_clahe(img)
+
+    def _reset_benchmark_stats(self) -> None:
+        self.benchmark_frames = 0
+        self.benchmark_frames_with_faces = 0
+        self.benchmark_total_faces = 0
+        self.benchmark_recognized_faces = 0
+        self.benchmark_similarity_sum = 0.0
+        self.benchmark_similarity_count = 0
+        self.benchmark_preprocess_ms = 0.0
+        self.benchmark_inference_ms = 0.0
+        self.benchmark_total_ms = 0.0
+
+    def _update_benchmark_stats(
+        self,
+        preprocess_ms: float,
+        inference_ms: float,
+        total_ms: float,
+        faces_detected: int,
+        recognized_faces: int,
+        similarities: list[float],
+    ) -> None:
+        self.benchmark_frames += 1
+        self.benchmark_frames_with_faces += int(faces_detected > 0)
+        self.benchmark_total_faces += faces_detected
+        self.benchmark_recognized_faces += recognized_faces
+        self.benchmark_similarity_sum += float(sum(similarities))
+        self.benchmark_similarity_count += len(similarities)
+        self.benchmark_preprocess_ms += preprocess_ms
+        self.benchmark_inference_ms += inference_ms
+        self.benchmark_total_ms += total_ms
+
+        if self.benchmark_frames % BENCHMARK_LOG_INTERVAL != 0:
+            return
+
+        avg_faces = self.benchmark_total_faces / self.benchmark_frames
+        detection_rate = self.benchmark_frames_with_faces / self.benchmark_frames
+        recognition_rate = (
+            self.benchmark_recognized_faces / self.benchmark_total_faces
+            if self.benchmark_total_faces > 0
+            else 0.0
+        )
+        avg_similarity = (
+            self.benchmark_similarity_sum / self.benchmark_similarity_count
+            if self.benchmark_similarity_count > 0
+            else 0.0
+        )
+
+        self.get_logger().info(
+            "Benchmark[%d frames] gamma=%.2f preprocess=%.2f ms "
+            "inference=%.2f ms total=%.2f ms face_frames=%.1f%% "
+            "faces/frame=%.2f recognized=%.1f%% avg_similarity=%.3f"
+            % (
+                self.benchmark_frames,
+                GAMMA_VALUE,
+                self.benchmark_preprocess_ms / self.benchmark_frames,
+                self.benchmark_inference_ms / self.benchmark_frames,
+                self.benchmark_total_ms / self.benchmark_frames,
+                detection_rate * 100.0,
+                avg_faces,
+                recognition_rate * 100.0,
+                avg_similarity,
+            )
+        )
+        self._reset_benchmark_stats()
+
     def process_img(self, filename: str) -> None:
         """Process image, obtain encodings and add to known people"""
         img_path = f"{KNOWN_FACES_PATH}/{filename}"
@@ -279,7 +391,7 @@ class FaceRecognition(Node):
             self.get_logger().warn(f"Could not load image: {img_path}")
             return
 
-        img_bgr = self.apply_clahe(img_bgr)
+        img_bgr = self.preprocess_face_image(img_bgr)
         faces = self.app.get(img_bgr)
         if len(faces) == 0:
             self.get_logger().warn(f"No face found in {filename}, skipping.")
@@ -374,10 +486,17 @@ class FaceRecognition(Node):
         """Actual face recognition inference (called by run with lock)."""
         self.processing_id = self.id
 
+        total_start = time.perf_counter()
         self.frame = self.image
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
-        detected_faces = self.app.get(self.apply_clahe(self.frame))
+        preprocess_start = time.perf_counter()
+        processed_frame = self.preprocess_face_image(self.frame)
+        preprocess_ms = (time.perf_counter() - preprocess_start) * 1000.0
+
+        inference_start = time.perf_counter()
+        detected_faces = self.app.get(processed_frame)
+        inference_ms = (time.perf_counter() - inference_start) * 1000.0
 
         largest_area = 0
         follow_face_params = None
@@ -387,6 +506,8 @@ class FaceRecognition(Node):
         self.curr_faces = []
         self.face_list = PersonList()
         detected = False
+        recognized_faces = 0
+        recognized_similarities = []
 
         for ins_face in detected_faces:
             x1, y1, x2, y2 = ins_face.bbox.astype(int)
@@ -422,10 +543,14 @@ class FaceRecognition(Node):
 
                     if best_similarity >= MATCH_THRESHOLD and best_match_idx != 0:
                         name = self.people_names[best_match_idx]
+                        recognized_similarities.append(best_similarity)
 
             xc = left + (right - left) / 2.0
             yc = top + (bottom - top) / 2.0
             area = (right - left) * (bottom - top)
+
+            if name != "Unknown":
+                recognized_faces += 1
 
             self.save_face(name, xc, yc)
             detected = True
@@ -491,6 +616,15 @@ class FaceRecognition(Node):
         else:
             self.name_publisher.publish(String(data=""))
 
+        total_ms = (time.perf_counter() - total_start) * 1000.0
+        self._update_benchmark_stats(
+            preprocess_ms=preprocess_ms,
+            inference_ms=inference_ms,
+            total_ms=total_ms,
+            faces_detected=len(detected_faces),
+            recognized_faces=recognized_faces,
+            similarities=recognized_similarities,
+        )
         self.publish_image()
 
 
