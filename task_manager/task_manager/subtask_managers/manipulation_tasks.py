@@ -12,7 +12,6 @@ control and provides a simple interface for the task manager to use.
 
 import rclpy
 from rclpy.node import Node
-from std_srvs.srv import SetBool
 from task_manager.utils.logger import Logger
 
 # from geometry_msgs.msg import PoseStamped
@@ -110,9 +109,6 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
-        self._flat_grasp_estimator_client = self.node.create_client(
-            SetBool, "/flat_grasp_estimator/enable"
-        )
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -367,38 +363,14 @@ class ManipulationTasks:
 
         return Status.EXECUTION_SUCCESS
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS)
-    @service_check(
-        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
-    )
-    def set_flat_grasp_estimator(self, enable: bool) -> int:
-        """Enable or disable the flat grasp estimator node."""
-        if not self._flat_grasp_estimator_client.wait_for_service(timeout_sec=5.0):
-            Logger.error(self.node, "Flat grasp estimator service not available")
-            return Status.EXECUTION_ERROR
-
-        req = SetBool.Request()
-        req.data = enable
-        future = self._flat_grasp_estimator_client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
-
-        if future.result() is not None and future.result().success:
-            state = "enabled" if enable else "disabled"
-            Logger.info(self.node, f"Flat grasp estimator {state}")
-            return Status.EXECUTION_SUCCESS
-
-        Logger.error(self.node, "Failed to set flat grasp estimator state")
-        return Status.EXECUTION_ERROR
-
     def pick_cutlery(self, object_name: str) -> int:
-        """Pick a cutlery object (fork, knife, spoon).
-        Enables the flat grasp estimator, performs the pick, then disables it."""
-        self.set_flat_grasp_estimator(True)
-        try:
-            result = self.pick_object(object_name)
-        finally:
-            self.set_flat_grasp_estimator(False)
-        return result
+        """Pick a flat object (cutlery, plate, ...).
+
+        The flat-grasp estimator is now driven entirely by the manipulation
+        side: PickManager detects flat objects (FLAT_OBJECT_NAMES) and requests
+        a pose from the estimate_flat_grasp service. This stays a thin alias
+        over pick_object for the task manager's existing call sites."""
+        return self.pick_object(object_name)
 
     def place(self, close_to: str = "", special_request: str = ""):
         goal_msg = ManipulationAction.Goal()
