@@ -16,6 +16,7 @@ from frida_constants.navigation_constants import (
     CHECK_DOOR_SERVICE,
     GOAL_NAV_ACTION_SERVER,
     MOVE_LOCATION_SERVICE,
+    DOCK_TABLE_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
@@ -51,6 +52,7 @@ class NavigationTasks:
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+                "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
             },
         }
 
