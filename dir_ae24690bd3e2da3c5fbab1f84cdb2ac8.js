@@ -1,8 +1,6 @@
 var dir_ae24690bd3e2da3c5fbab1f84cdb2ac8 =
 [
-    [ "task_launch", "dir_de357348e548d05702c25df7dc5bff5f.html", "dir_de357348e548d05702c25df7dc5bff5f" ],
-    [ "dualshock_cmd_vel.launch.py", "dualshock__cmd__vel_8launch_8py.html", "dualshock__cmd__vel_8launch_8py" ],
-    [ "monitor.launch.py", "monitor_8launch_8py.html", "monitor_8launch_8py" ],
-    [ "nav_basics.launch.py", "nav__basics_8launch_8py.html", "nav__basics_8launch_8py" ],
-    [ "rtabnav2.launch.py", "rtabnav2_8launch_8py.html", "rtabnav2_8launch_8py" ]
+    [ "dashgo_base", "dir_1d550bd41f8edc32c348d68d20bb6bcb.html", "dir_1d550bd41f8edc32c348d68d20bb6bcb" ],
+    [ "omni_setup", "dir_d7a7ad1777a37fbc54a83a9adabb6f25.html", "dir_d7a7ad1777a37fbc54a83a9adabb6f25" ],
+    [ "task_launch", "dir_de357348e548d05702c25df7dc5bff5f.html", "dir_de357348e548d05702c25df7dc5bff5f" ]
 ];

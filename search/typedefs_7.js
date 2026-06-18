@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['metric_0',['Metric',['../structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html#a4eb9fc9ad6ff0e7732c69f670c760337',1,'unc::robotics::nigh::metric::Space&lt; vamp::planning::NNFloatArray&lt; dim &gt;, LP&lt; 2 &gt; &gt;']]]
+  ['metric_0',['Metric',['../structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html#a4eb9fc9ad6ff0e7732c69f670c760337',1,'unc::robotics::nigh::metric::Space&lt; vamp::planning::NNFloatArray&lt; dim &gt;, LP&lt; 2 &gt; &gt;']]],
+  ['mypointcloud_1',['myPointCloud',['../laserscan__virtualizer_8cpp.html#aac2a8e29e07eb40e9b4f503e9ccd515f',1,'laserscan_virtualizer.cpp']]]
 ];

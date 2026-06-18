@@ -7,6 +7,11 @@ var navigation__constants_8py =
     [ "CAMERA_INFO_TOPIC", "navigation__constants_8py.html#ab949a4f98b0a3cbde3de8a4180b43464", null ],
     [ "CAMERA_RGB_TOPIC", "navigation__constants_8py.html#a529021fff6389e6561c7e50b7607aa1a", null ],
     [ "CHECK_DOOR_SERVICE", "navigation__constants_8py.html#adb19bc481c12ff6451b03795dfd7edb4", null ],
+    [ "DEFAULT_DOCK_OFFSET", "navigation__constants_8py.html#a380761a1cbe9b53237dd9b24e10cb908", null ],
+    [ "DOCK_PREVIEW_SERVICE", "navigation__constants_8py.html#a8278e935f41df9dc21deb55b3f5d3fa4", null ],
+    [ "DOCK_SERVICE", "navigation__constants_8py.html#a3c80a6ead538e958383d0773c2af1180", null ],
+    [ "DOCK_TABLE_SERVICE", "navigation__constants_8py.html#a2c698b23712a1d344f2a4906cd03bb9e", null ],
+    [ "DOCKED_TOPIC", "navigation__constants_8py.html#a051097ea78c5f327e8cfa2177d1780db", null ],
     [ "GOAL_NAV_ACTION_SERVER", "navigation__constants_8py.html#a846cf984a623a45260d78d001731f1dd", null ],
     [ "GOAL_TOPIC", "navigation__constants_8py.html#a19da80c20445976caecaecc96e78881f", null ],
     [ "INITIAL_POSE_TOPIC", "navigation__constants_8py.html#ac6a7f5f5abb49204b1b6a9107471b4da", null ],
@@ -15,6 +20,7 @@ var navigation__constants_8py =
     [ "NAV2_LIFECYCLE_SERVICE", "navigation__constants_8py.html#ac613b0e6bdf9f2332b22a8f8dec9842a", null ],
     [ "NO_TF_LIMIT", "navigation__constants_8py.html#a0c539f7d23dbcc6c9137ec5379fb528f", null ],
     [ "NO_TOPICS_LIMIT", "navigation__constants_8py.html#a4281b030aa146f66253524fa6e0096c3", null ],
+    [ "POINT_CLOUD_TOPIC", "navigation__constants_8py.html#a2737a4f0e3f1c84b3201d173238dec32", null ],
     [ "RESUME_NAV_SERVICE", "navigation__constants_8py.html#aa5380c3fb996f841252cbac5e5841746", null ],
     [ "RTAB_CHECK_TOPIC", "navigation__constants_8py.html#a8b92de2f769fb1a6b93b0c409f9dd4c0", null ],
     [ "RTAB_CONTAINER_NODE", "navigation__constants_8py.html#a6f453750877d26465830a78223bfd93b", null ],
@@ -25,5 +31,6 @@ var navigation__constants_8py =
     [ "TIMEOUT_NAV2_LIFECYCLE", "navigation__constants_8py.html#a0a4af566d54624f333d55154c259116e", null ],
     [ "TIMEOUT_REQUIREMENTS", "navigation__constants_8py.html#a65165727c308a1e0140a1278d39eccb3", null ],
     [ "TIMEOUT_RTAB_SERVICE", "navigation__constants_8py.html#af8010b150d0b6da04c72b4103f1598f6", null ],
-    [ "TIMEOUT_RTABMAP", "navigation__constants_8py.html#a12d3925bb26fd88e4d40d4bd1f2e5726", null ]
+    [ "TIMEOUT_RTABMAP", "navigation__constants_8py.html#a12d3925bb26fd88e4d40d4bd1f2e5726", null ],
+    [ "UNDOCK_SERVICE", "navigation__constants_8py.html#a02ff249a429b5ed52b06e7fd67268ed8", null ]
 ];

@@ -277,6 +277,17 @@ var annotated_dup =
     [ "object_detector_node", "namespaceobject__detector__node.html", [
       [ "ObjectDetectorNode", "classobject__detector__node_1_1ObjectDetectorNode.html", "classobject__detector__node_1_1ObjectDetectorNode" ]
     ] ],
+    [ "omnidriver", "namespaceomnidriver.html", [
+      [ "odrive_dashboard", "namespaceomnidriver_1_1odrive__dashboard.html", [
+        [ "ODriveDashboardNode", "classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html", "classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode" ]
+      ] ],
+      [ "odrive_serial_twist", "namespaceomnidriver_1_1odrive__serial__twist.html", [
+        [ "SerialCommNode", "classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html", "classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode" ]
+      ] ],
+      [ "simple_rx", "namespaceomnidriver_1_1simple__rx.html", [
+        [ "RawSerialReceiver", "classomnidriver_1_1simple__rx_1_1RawSerialReceiver.html", "classomnidriver_1_1simple__rx_1_1RawSerialReceiver" ]
+      ] ]
+    ] ],
     [ "person_in_map", "namespaceperson__in__map.html", [
       [ "PersonLocation", "classperson__in__map_1_1PersonLocation.html", "classperson__in__map_1_1PersonLocation" ]
     ] ],
@@ -378,6 +389,9 @@ var annotated_dup =
       [ "Retries", "classstoring__groceries__manager_1_1Retries.html", null ],
       [ "Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ],
       [ "StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", "classstoring__groceries__manager_1_1StoringGroceriesManager" ]
+    ] ],
+    [ "table_docker", "namespacetable__docker.html", [
+      [ "TableDocker", "classtable__docker_1_1TableDocker.html", "classtable__docker_1_1TableDocker" ]
     ] ],
     [ "task_manager", "namespacetask__manager.html", [
       [ "subtask_managers", "namespacetask__manager_1_1subtask__managers.html", [
@@ -627,6 +641,8 @@ var annotated_dup =
     [ "ClientNode", "classClientNode.html", "classClientNode" ],
     [ "DownSamplePointCloud", "classDownSamplePointCloud.html", "classDownSamplePointCloud" ],
     [ "IKSolver", "classIKSolver.html", "classIKSolver" ],
+    [ "LaserscanMerger", "classLaserscanMerger.html", "classLaserscanMerger" ],
+    [ "LaserscanVirtualizer", "classLaserscanVirtualizer.html", "classLaserscanVirtualizer" ],
     [ "PublishHandleA", "classPublishHandleA.html", "classPublishHandleA" ],
     [ "PublishNode", "classPublishNode.html", "classPublishNode" ],
     [ "TableSegmentationNode", "classTableSegmentationNode.html", "classTableSegmentationNode" ],

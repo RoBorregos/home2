@@ -18,6 +18,7 @@ var classmap__area__tagger_1_1MapCanvas =
     [ "drag_start_map", "classmap__area__tagger_1_1MapCanvas.html#a99192edb46ab7f55c030572771f27e9b", null ],
     [ "drag_yaw", "classmap__area__tagger_1_1MapCanvas.html#a4dd8317b22cd02232edc88dfd8494be0", null ],
     [ "dragging_orientation", "classmap__area__tagger_1_1MapCanvas.html#aa63f1c82900b5c9d7bed38cc8da1a524", null ],
+    [ "keepout_zones", "classmap__area__tagger_1_1MapCanvas.html#ac73f62236754a3e91a324bf13eb9f5db", null ],
     [ "last_mouse_pos", "classmap__area__tagger_1_1MapCanvas.html#aedea1d61fd0bfdfe7343c003d05d4098", null ],
     [ "map_height", "classmap__area__tagger_1_1MapCanvas.html#a71a14716ce4b6d1df6282612c9a730c5", null ],
     [ "mode", "classmap__area__tagger_1_1MapCanvas.html#a72388a7d803d1f6eac69ac5bc1f53d77", null ],

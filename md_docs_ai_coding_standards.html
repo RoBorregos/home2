@@ -113,7 +113,7 @@ Example Node Pattern</h2>
 <div class="line">        super().__init__(<span class="stringliteral">&quot;my_node_name&quot;</span>)</div>
 <div class="line">        self.get_logger().info(<span class="stringliteral">&quot;Node initialized&quot;</span>)</div>
 <div class="line"> </div>
-<div class="line"><span class="keyword">def </span><a class="code hl_function" href="gpd__service_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a>(args=None):</div>
+<div class="line"><span class="keyword">def </span>main(args=None):</div>
 <div class="line">    rclpy.init(args=args)</div>
 <div class="line">    node = MyNode()</div>
 <div class="line">    <span class="keywordflow">try</span>:</div>
@@ -123,7 +123,6 @@ Example Node Pattern</h2>
 <div class="line">    <span class="keywordflow">finally</span>:</div>
 <div class="line">        node.destroy_node()</div>
 <div class="line">        rclpy.shutdown()</div>
-<div class="ttc" id="agpd__service_8cpp_html_a3c04138a5bfe5d72780bb7e82a18e627"><div class="ttname"><a href="gpd__service_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a></div><div class="ttdeci">int main(int argc, char **argv)</div><div class="ttdef"><b>Definition:</b> gpd_service.cpp:485</div></div>
 <div class="ttc" id="anamespacerclpy_1_1node_html"><div class="ttname"><a href="namespacerclpy_1_1node.html">rclpy.node</a></div></div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md170"></a>
 Interface Usage</h1>

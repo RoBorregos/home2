@@ -14,10 +14,11 @@ var searchData=
   ['update_5flaser_11',['update_laser',['../classpoint__transformer_1_1PointTransformer.html#a8004bd3f74182640c3bb273ffcdf4f52',1,'point_transformer::PointTransformer']]],
   ['update_5fmap_12',['update_map',['../classnav__ui_1_1NavCanvas.html#a4c23cf98ca2a54aeb7165cdad632c5bd',1,'nav_ui::NavCanvas']]],
   ['update_5fobject_5fposition_13',['update_object_position',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#a471d1f4cbb902a4b67865d99d2185df4',1,'vamp::pybullet_interface::PyBulletSimulator']]],
-  ['update_5fpath_14',['update_path',['../classnav__ui_1_1NavCanvas.html#ae612389c001624be3282491b6b11c834',1,'nav_ui::NavCanvas']]],
-  ['update_5fplanning_5fscene_15',['update_planning_scene',['../classMoveItPlanner_1_1MoveItPlanner.html#a0310e9b9f68668939ab91daebb613671',1,'MoveItPlanner::MoveItPlanner']]],
-  ['update_5frobot_5fpose_16',['update_robot_pose',['../classnav__ui_1_1NavRosNode.html#ab238869cbf7d263123ae048422e1a546',1,'nav_ui::NavRosNode']]],
-  ['update_5fservo_17',['update_servo',['../classMoveItServo_1_1MoveItServo.html#aaf70647ce6f808e5755685408014e57f',1,'MoveItServo.MoveItServo.update_servo()'],['../classServo_1_1Servo.html#add5939c19a2712cc9dcf7352759d12ab',1,'Servo.Servo.update_servo()']]],
-  ['updateradius_18',['updateRadius',['../classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html#afeaeb3e6794752888ad00624a01abbaa',1,'vamp::planning::NearestNeighborsGNAT::Node']]],
-  ['updaterange_19',['updateRange',['../classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html#a81c1561e5fbd12e2b234bb0e350d3a9d',1,'vamp::planning::NearestNeighborsGNAT::Node']]]
+  ['update_5fparameters_14',['update_parameters',['../classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html#a31c5b3dbb3c944e63bdc9e3da1784494',1,'omnidriver::odrive_serial_twist::SerialCommNode']]],
+  ['update_5fpath_15',['update_path',['../classnav__ui_1_1NavCanvas.html#ae612389c001624be3282491b6b11c834',1,'nav_ui::NavCanvas']]],
+  ['update_5fplanning_5fscene_16',['update_planning_scene',['../classMoveItPlanner_1_1MoveItPlanner.html#a0310e9b9f68668939ab91daebb613671',1,'MoveItPlanner::MoveItPlanner']]],
+  ['update_5frobot_5fpose_17',['update_robot_pose',['../classnav__ui_1_1NavRosNode.html#ab238869cbf7d263123ae048422e1a546',1,'nav_ui::NavRosNode']]],
+  ['update_5fservo_18',['update_servo',['../classMoveItServo_1_1MoveItServo.html#aaf70647ce6f808e5755685408014e57f',1,'MoveItServo.MoveItServo.update_servo()'],['../classServo_1_1Servo.html#add5939c19a2712cc9dcf7352759d12ab',1,'Servo.Servo.update_servo()']]],
+  ['updateradius_19',['updateRadius',['../classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html#afeaeb3e6794752888ad00624a01abbaa',1,'vamp::planning::NearestNeighborsGNAT::Node']]],
+  ['updaterange_20',['updateRange',['../classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html#a81c1561e5fbd12e2b234bb0e350d3a9d',1,'vamp::planning::NearestNeighborsGNAT::Node']]]
 ];

@@ -231,11 +231,18 @@ var namespaces_dup =
       [ "VIEW_LOG_DIR", "namespacelaunch__nav.html#a2df0ee976d79351ff02d519353fc5231", null ],
       [ "VIEWS", "namespacelaunch__nav.html#a96af342b5bd59dd400aefda6b7532555", null ]
     ] ],
+    [ "lidar_setup", "namespacelidar__setup.html", [
+      [ "generate_launch_description", "namespacelidar__setup.html#a270b8733299546018e10198255b2f9bf", null ],
+      [ "launch_setup", "namespacelidar__setup.html#a9990279d91c4caa156096d8ed443c567", null ]
+    ] ],
     [ "linear_assignment", "namespacelinear__assignment.html", [
       [ "gate_cost_matrix", "namespacelinear__assignment.html#a698de3cd650c504223c517799d7f3919", null ],
       [ "matching_cascade", "namespacelinear__assignment.html#a7718b8a9c2d1d36106d686868c55498a", null ],
       [ "min_cost_matching", "namespacelinear__assignment.html#af726e8ac9333bb98f165bf49c0c7a991", null ],
       [ "INFTY_COST", "namespacelinear__assignment.html#a4dc5d6dd36ab525c7eec56cb41e458e1", null ]
+    ] ],
+    [ "localization", "namespacelocalization.html", [
+      [ "generate_launch_description", "namespacelocalization.html#a03aa809ae87723efe694476a74017b40", null ]
     ] ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
     [ "manipulation_general", "namespacemanipulation__general.html", "namespacemanipulation__general" ],
@@ -243,6 +250,9 @@ var namespaces_dup =
     [ "mapping", "namespacemapping.html", [
       [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ],
       [ "launch_function", "namespacemapping.html#a3a2ccf081850f9ede9e85ed58952fba0", null ]
+    ] ],
+    [ "merge_multi", "namespacemerge__multi.html", [
+      [ "generate_launch_description", "namespacemerge__multi.html#aed4bf9362e9c7a4f7e289108d2e92868", null ]
     ] ],
     [ "model", "namespacemodel.html", "namespacemodel" ],
     [ "monitor", "namespacemonitor.html", [
@@ -280,6 +290,11 @@ var namespaces_dup =
     ] ],
     [ "mujoco_simulate_gui", "namespacemujoco__simulate__gui.html", "namespacemujoco__simulate__gui" ],
     [ "mujoco_visualization", "namespacemujoco__visualization.html", "namespacemujoco__visualization" ],
+    [ "nav2_omni", "namespacenav2__omni.html", [
+      [ "_deep_merge", "namespacenav2__omni.html#a8f9ab7e6f07b2aa955480714d501402f", null ],
+      [ "generate_launch_description", "namespacenav2__omni.html#ae46555951af49346cd9428eb1af550cf", null ],
+      [ "launch_setup", "namespacenav2__omni.html#a9f93b07e8eb53e1d1c2a1aac7bf8cd7c", null ]
+    ] ],
     [ "nav_basics", "namespacenav__basics.html", [
       [ "generate_launch_description", "namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146", null ],
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
@@ -292,6 +307,10 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceobject__detector__combined.html#a89d204316b51e6caf017cd1f6253e538", null ]
     ] ],
     [ "object_detector_node", "namespaceobject__detector__node.html", "namespaceobject__detector__node" ],
+    [ "omni_basics", "namespaceomni__basics.html", [
+      [ "generate_launch_description", "namespaceomni__basics.html#aaa6181047378b8fed9d7735c8f2a9341", null ]
+    ] ],
+    [ "omnidriver", "namespaceomnidriver.html", "namespaceomnidriver" ],
     [ "perception_3d", "namespaceperception__3d.html", [
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
@@ -442,11 +461,28 @@ var namespaces_dup =
       [ "open_gripper", "namespaceservice__utils.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8", null ]
     ] ],
     [ "Servo", "namespaceServo.html", "namespaceServo" ],
+    [ "setup", "namespacesetup.html", [
+      [ "data_files", "namespacesetup.html#ad027a8e9452da003dca32bf7467bd16e", null ],
+      [ "description", "namespacesetup.html#aedf461ec52a946bda975938ba0b93ec0", null ],
+      [ "entry_points", "namespacesetup.html#ada7058afc98897f073d3f3b8b9157059", null ],
+      [ "install_requires", "namespacesetup.html#abead4f26b530856f858f0d44c7cf2588", null ],
+      [ "license", "namespacesetup.html#a8ed6f50a28bd6a8794f8e1153baa6de9", null ],
+      [ "maintainer", "namespacesetup.html#aa1a7cf9bbf76004bb72697dc00bbee9d", null ],
+      [ "maintainer_email", "namespacesetup.html#a92a81adbfdd219564d5246ce8d77f869", null ],
+      [ "name", "namespacesetup.html#ab3a7a0638d76a01367c5bc3cc699447f", null ],
+      [ "package_name", "namespacesetup.html#a69903e4f05cebc9e005b22b36f5724eb", null ],
+      [ "packages", "namespacesetup.html#aff2375a361fd5865c77bd9aa093be747", null ],
+      [ "version", "namespacesetup.html#a2aa722b36a933088812b50ea79b97a5c", null ],
+      [ "zip_safe", "namespacesetup.html#a13510753661cb74083a0c664db11dde9", null ]
+    ] ],
     [ "simple_launch", "namespacesimple__launch.html", "namespacesimple__launch" ],
     [ "simulate_map", "namespacesimulate__map.html", [
       [ "generate_launch_description", "namespacesimulate__map.html#ad6149f6889b194fc6ef401af9ad4a40b", null ]
     ] ],
     [ "simulate_position", "namespacesimulate__position.html", "namespacesimulate__position" ],
+    [ "slam", "namespaceslam.html", [
+      [ "generate_launch_description", "namespaceslam.html#abf320ca1fe9de884454e58f38b254d90", null ]
+    ] ],
     [ "sphere_cage_example", "namespacesphere__cage__example.html", [
       [ "main", "namespacesphere__cage__example.html#a72ed4e8ba3dcd7dbfdd1793b6d79c326", null ],
       [ "a", "namespacesphere__cage__example.html#a4178e0f520cd2d44d8ac8c5c1dc3f631", null ],
@@ -454,16 +490,26 @@ var namespaces_dup =
       [ "problem", "namespacesphere__cage__example.html#a8e7ac800c865e92caf5b2e46ce4fb2ac", null ]
     ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
+    [ "table_docker", "namespacetable__docker.html", "namespacetable__docker" ],
     [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_basket_pick", "namespacetest__basket__pick.html", "namespacetest__basket__pick" ],
+    [ "test_copyright", "namespacetest__copyright.html", [
+      [ "test_copyright", "namespacetest__copyright.html#a156f4f961887d49bfb4cc9f6e7f6af0a", null ]
+    ] ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
     [ "test_face_rec", "namespacetest__face__rec.html", "namespacetest__face__rec" ],
+    [ "test_flake8", "namespacetest__flake8.html", [
+      [ "test_flake8", "namespacetest__flake8.html#a19bfcf597a661a366225b7d0cedd123c", null ]
+    ] ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", "namespacetest__go__to__hand" ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
     [ "test_navigation_manager", "namespacetest__navigation__manager.html", "namespacetest__navigation__manager" ],
+    [ "test_pep257", "namespacetest__pep257.html", [
+      [ "test_pep257", "namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f", null ]
+    ] ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", "namespacetest__plan__parser" ],
     [ "test_ppc_cabinet_place", "namespacetest__ppc__cabinet__place.html", "namespacetest__ppc__cabinet__place" ],
     [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],

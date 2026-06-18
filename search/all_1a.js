@@ -27,7 +27,8 @@ var searchData=
   ['zero_5fvector_24',['zero_vector',['../structvamp_1_1SIMDVector_3_01____m256i_01_4.html#ae6cc57145ac9345e4f261297380d69fc',1,'vamp::SIMDVector&lt; __m256i &gt;::zero_vector()'],['../structvamp_1_1VectorInterface.html#a558bf540df6172d92562b3c61ce89ed6',1,'vamp::VectorInterface::zero_vector()'],['../structvamp_1_1SIMDVector_3_01____m256_01_4.html#a407715782ce5074a0171af3da36cb696',1,'vamp::SIMDVector&lt; __m256 &gt;::zero_vector()'],['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a75610b28ba2090aef353dde28d11831e',1,'vamp::SIMDVector&lt; float32x4_t &gt;::zero_vector()'],['../structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html#aa134cfeb74a56dd6552488d3c0c6f476',1,'vamp::SIMDVector&lt; int32x4_t &gt;::zero_vector()']]],
   ['zeroshotdetectornode_25',['ZeroShotDetectorNode',['../classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html',1,'zero_shot_object_detector_node']]],
   ['zgetrf_5f_26',['zgetrf_',['../xarm6__ikfast61_8cpp.html#a6993bc2ff3751954630153bfd08bdd0b',1,'xarm6_ikfast61.cpp']]],
-  ['zoom_27',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]],
-  ['zs_28',['zs',['../structvamp_1_1collision_1_1HeightField.html#aa91e506ad514c6da58d5776e70c8cdc3',1,'vamp::collision::HeightField']]],
-  ['zv_29',['zv',['../structvamp_1_1collision_1_1Cylinder.html#a22a07c4b3d9a4ebbe5e73db577ccaae3',1,'vamp::collision::Cylinder']]]
+  ['zip_5fsafe_27',['zip_safe',['../namespacesetup.html#a13510753661cb74083a0c664db11dde9',1,'setup']]],
+  ['zoom_28',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]],
+  ['zs_29',['zs',['../structvamp_1_1collision_1_1HeightField.html#aa91e506ad514c6da58d5776e70c8cdc3',1,'vamp::collision::HeightField']]],
+  ['zv_30',['zv',['../structvamp_1_1collision_1_1Cylinder.html#a22a07c4b3d9a4ebbe5e73db577ccaae3',1,'vamp::collision::Cylinder']]]
 ];

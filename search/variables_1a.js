@@ -14,7 +14,8 @@ var searchData=
   ['zero_5fshot_5fdetections_5ftopic_11',['ZERO_SHOT_DETECTIONS_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a4f1a9aa60634d84c2d9ed3cc92933a8a',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fmodel_12',['ZERO_SHOT_MODEL',['../namespacefrida__constants_1_1vision__constants.html#af37f420f0d40b4c4fe368e24fc0c756e',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fsubscription_13',['zero_shot_subscription',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a081840d8eb3d3858c21ffceda56c8262',1,'pick_and_place::keyboard_input::KeyboardInput']]],
-  ['zoom_14',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]],
-  ['zs_15',['zs',['../structvamp_1_1collision_1_1HeightField.html#aa91e506ad514c6da58d5776e70c8cdc3',1,'vamp::collision::HeightField']]],
-  ['zv_16',['zv',['../structvamp_1_1collision_1_1Cylinder.html#a22a07c4b3d9a4ebbe5e73db577ccaae3',1,'vamp::collision::Cylinder']]]
+  ['zip_5fsafe_14',['zip_safe',['../namespacesetup.html#a13510753661cb74083a0c664db11dde9',1,'setup']]],
+  ['zoom_15',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]],
+  ['zs_16',['zs',['../structvamp_1_1collision_1_1HeightField.html#aa91e506ad514c6da58d5776e70c8cdc3',1,'vamp::collision::HeightField']]],
+  ['zv_17',['zv',['../structvamp_1_1collision_1_1Cylinder.html#a22a07c4b3d9a4ebbe5e73db577ccaae3',1,'vamp::collision::Cylinder']]]
 ];
