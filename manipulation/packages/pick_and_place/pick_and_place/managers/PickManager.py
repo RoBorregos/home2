@@ -3,13 +3,15 @@ from frida_interfaces.srv import (
     PickPerceptionService,
     DetectionHandler,
     EstimateFlatGrasp,
+    AddCollisionObjects,
+    RemoveCollisionObject,
 )
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
 from frida_interfaces.action import PickMotion
-from frida_interfaces.msg import PickResult
+from frida_interfaces.msg import PickResult, CollisionObject
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
@@ -20,6 +22,14 @@ from frida_constants.manipulation_constants import (
     POUR_OBJECT_NAMES,
     RIM_NAMES,
     PEAK_NAMES,
+    ADD_COLLISION_OBJECT_SERVICE,
+    REMOVE_COLLISION_OBJECT_SERVICE,
+    SHELF_CAVITY_CEILING_GAP,
+    SHELF_CAVITY_BACK_OFFSET,
+    SHELF_CAVITY_SIDE_HALFSPAN,
+    SHELF_CAVITY_SPAN,
+    SHELF_CAVITY_DEPTH,
+    SHELF_CAVITY_WALL,
 )
 from typing import Tuple
 import time
@@ -100,6 +110,83 @@ class PickManager:
         self._estimate_flat_grasp_client = self.node.create_client(
             EstimateFlatGrasp, "/manipulation/estimate_flat_grasp"
         )
+
+        # Shelf-cavity collision boxes (added/removed around shelf picks).
+        self._add_collision_client = self.node.create_client(
+            AddCollisionObjects, ADD_COLLISION_OBJECT_SERVICE
+        )
+        self._remove_collision_client = self.node.create_client(
+            RemoveCollisionObject, REMOVE_COLLISION_OBJECT_SERVICE
+        )
+        self._shelf_cavity_ids = [
+            "shelf_cavity_ceiling",
+            "shelf_cavity_back",
+            "shelf_cavity_left",
+            "shelf_cavity_right",
+        ]
+
+    def _add_shelf_cavity(self, point: PointStamped):
+        """Add box walls (ceiling/back/sides) around the shelf cavity so MoveIt
+        avoids the shelf while reaching in. Anchored to the object point."""
+        self._remove_shelf_cavity()  # clear any stale boxes from a prior pick
+        px, py, pz = point.point.x, point.point.y, point.point.z
+        gap = SHELF_CAVITY_CEILING_GAP
+        wall_h = gap + 0.10
+        specs = [
+            (
+                self._shelf_cavity_ids[0],
+                (px, py, pz + gap),
+                (SHELF_CAVITY_DEPTH, SHELF_CAVITY_SPAN, SHELF_CAVITY_WALL),
+            ),
+            (
+                self._shelf_cavity_ids[1],
+                (px + SHELF_CAVITY_BACK_OFFSET, py, pz + gap / 2),
+                (SHELF_CAVITY_WALL, SHELF_CAVITY_SPAN, wall_h),
+            ),
+            (
+                self._shelf_cavity_ids[2],
+                (px, py + SHELF_CAVITY_SIDE_HALFSPAN, pz + gap / 2),
+                (SHELF_CAVITY_DEPTH, SHELF_CAVITY_WALL, wall_h),
+            ),
+            (
+                self._shelf_cavity_ids[3],
+                (px, py - SHELF_CAVITY_SIDE_HALFSPAN, pz + gap / 2),
+                (SHELF_CAVITY_DEPTH, SHELF_CAVITY_WALL, wall_h),
+            ),
+        ]
+        objs = []
+        for oid, (cx, cy, cz), (dx, dy, dz) in specs:
+            co = CollisionObject()
+            co.id = oid
+            co.type = "box"
+            co.pose.header.frame_id = "base_link"
+            co.pose.pose.position.x = float(cx)
+            co.pose.pose.position.y = float(cy)
+            co.pose.pose.position.z = float(cz)
+            co.pose.pose.orientation.w = 1.0
+            co.dimensions.x = float(dx)
+            co.dimensions.y = float(dy)
+            co.dimensions.z = float(dz)
+            objs.append(co)
+        if not self._add_collision_client.wait_for_service(timeout_sec=2.0):
+            self.node.get_logger().warn(
+                "add_collision_objects unavailable; shelf cavity skipped"
+            )
+            return
+        req = AddCollisionObjects.Request()
+        req.collision_objects = objs
+        wait_for_future(self._add_collision_client.call_async(req), timeout=3)
+        self.node.get_logger().info("Shelf cavity collision added (ceiling/back/sides)")
+
+    def _remove_shelf_cavity(self):
+        """Remove the shelf-cavity boxes from the planning scene (idempotent)."""
+        if not self._remove_collision_client.wait_for_service(timeout_sec=1.0):
+            return
+        for oid in self._shelf_cavity_ids:
+            req = RemoveCollisionObject.Request()
+            req.id = oid
+            req.include_attached = False
+            wait_for_future(self._remove_collision_client.call_async(req), timeout=2)
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params, is_shelf: bool = False
@@ -268,6 +355,8 @@ class PickManager:
                     pick_result_success = True
 
         else:
+            if is_shelf:
+                self._add_shelf_cavity(point)
             for CFG_PATH in CFG_PATHS:
                 cfg_path = CFG_PATH[0]
                 is_reversible = CFG_PATH[1]
@@ -342,6 +431,8 @@ class PickManager:
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
+            if is_shelf:
+                self._remove_shelf_cavity()
             return False, None
 
         # close gripper
@@ -361,6 +452,7 @@ class PickManager:
                 named_position="front_stare",
                 velocity=0.3,
             )
+            self._remove_shelf_cavity()
 
         if is_rim_object:
             # Hold the position where pick_server left the arm (lifted pre-grasp).
