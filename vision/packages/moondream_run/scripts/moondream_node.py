@@ -308,16 +308,44 @@ class MoondreamNode(Node):
         self.get_logger().info("Executing service Person Posture")
 
         if self.image is None:
-            response.position = "No image received yet."
+            response.posture = "No image received yet."
+            response.success = False
+            self.get_logger().warn("No image received yet.")
             return response
 
-        query = "Determine if the person is sitting, standing, or lying down. Just mention the pose, no additional information is needed."
         cropped_frame = self.detect_and_crop_person()
-        encoded_image = self.moondream_model.encode_image(cropped_frame)
+        if cropped_frame is None:
+            response.posture = NOT_FOUND
+            response.success = False
+            self.get_logger().warn("No person detected for posture query.")
+            return response
 
-        response.description = self.moondream_model.generate_person_description(
-            encoded_image, query, stream=False
+        _, image_bytes = cv2.imencode(".jpg", cropped_frame)
+        image_bytes = image_bytes.tobytes()
+
+        query = (
+            "Determine if the person is sitting, standing, or lying down. "
+            "Answer using only one word: sitting, standing, or lying."
         )
+
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            )
+            grpc_response = self.stub.Query(
+                moondream_proto_pb2.QueryRequest(
+                    encoded_image=encoded.encoded_image,
+                    query=query,
+                )
+            )
+            response.posture = grpc_response.answer.strip().lower()
+            response.success = True
+            self.success(f"Person posture detected: {response.posture}")
+        except Exception as e:
+            self.get_logger().error(f"Error determining person posture: {e}")
+            response.posture = ""
+            response.success = False
+
         return response
 
     def success(self, message):
