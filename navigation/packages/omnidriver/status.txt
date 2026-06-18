@@ -1,0 +1,66 @@
+ODrive Dashboard — Change Summary (2026-05-06)
+===============================================
+
+1. BLUETOOTH STATUS DISPLAY
+----------------------------
+Files changed:
+  - odrive_comm/odrive_dashboard_2.py
+  - assets/dashboard.html
+  - assets/dashboard_offline.html
+
+What was done:
+  - The node now parses BT_active from each incoming STM32 telemetry line.
+  - bt_active (int 0 or 1) is added to the telemetry dict emitted over Socket.IO.
+  - Col 3 of the top row now shows a read-only "Bluetooth control: Active / Inactive"
+    indicator at the bottom of the card.
+    Green = Active (BT_active=1), Red = Inactive (BT_active=0).
+  - Updated purely by incoming telemetry — no button or toggle in the browser.
+
+
+2. OFFLINE DASHBOARD
+---------------------
+Files changed:
+  - assets/dashboard_offline.html  (new file)
+  - assets/js/chart.umd.min.js     (user must download — see SETUP below)
+  - assets/js/socket.io.min.js     (user must download — see SETUP below)
+  - odrive_comm/odrive_dashboard_2.py  (two new Flask routes)
+  - setup.py  (offline HTML and assets/js/ files added to data_files)
+
+What was done:
+  - dashboard_offline.html is identical to dashboard.html (including BT indicator)
+    but uses local JS files instead of CDN links:
+      CDN (online):  chart.js@4.4.0          → /js/chart.umd.min.js
+      CDN (online):  socket.io@4.7.2         → /js/socket.io.min.js
+    Both are served by a new GET /js/<file> Flask route from assets/js/.
+
+  WHY NOT /socket.io/socket.io.js?
+    python-socketio 5.x (installed: 5.16.1) dropped built-in client JS serving.
+    The /socket.io/socket.io.js endpoint returns HTTP 400.
+    The socket.io client must be bundled locally instead.
+
+  - The /js/ Flask route searches two locations (first match wins):
+      1. Installed share dir — install/odrive_comm/share/odrive_comm/assets/js/
+      2. Source tree      — src/odrive_comm/assets/js/  (works without rebuilding)
+
+  - Offline dashboard accessible at: http://localhost:5000/offline
+  - Online dashboard (/) is unchanged.
+
+
+REQUIRED SETUP — download JS files locally (internet required once)
+--------------------------------------------------------------------
+Run both commands from a machine with internet access:
+
+    mkdir -p ~/Github/home-custom-base/omnibase_ws/src/odrive_comm/assets/js
+
+    wget -O ~/Github/home-custom-base/omnibase_ws/src/odrive_comm/assets/js/chart.umd.min.js \
+        https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js
+
+    wget -O ~/Github/home-custom-base/omnibase_ws/src/odrive_comm/assets/js/socket.io.min.js \
+        https://cdn.jsdelivr.net/npm/socket.io@4.7.2/client-dist/socket.io.min.js
+
+Status:
+  chart.umd.min.js   — DONE (confirmed present)
+  socket.io.min.js   — PENDING (run the wget command above, then restart the node)
+
+After downloading socket.io.min.js and restarting the node,
+http://localhost:5000/offline will be fully functional without internet.
