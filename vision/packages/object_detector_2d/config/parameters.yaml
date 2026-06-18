@@ -10,8 +10,7 @@ ObjectDetect2D:
     DETECTIONS_ACTIVE_TOPIC: /detections_active
     CAMERA_FRAME: zed_left_camera_optical_frame
     TARGET_FRAME: base_link
-    models:
-      - yolo_finetuned
+    models: []
     USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False

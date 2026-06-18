@@ -12,6 +12,7 @@ control and provides a simple interface for the task manager to use.
 
 import rclpy
 from rclpy.node import Node
+from std_srvs.srv import SetBool
 from task_manager.utils.logger import Logger
 
 # from geometry_msgs.msg import PoseStamped
@@ -28,16 +29,21 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.status import Status
-from frida_interfaces.action import ManipulationAction, GoToHand
-from frida_interfaces.msg import ManipulationTask
+from frida_interfaces.action import ManipulationAction, GoToHand, MoveToPose
+from frida_interfaces.msg import ManipulationTask, Constraint
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
 
+import tf2_ros
+from tf2_geometry_msgs import do_transform_point
+
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    MOVE_TO_POSE_ACTION_SERVER,
+    GRASP_LINK_FRAME,
 )
 import time as t
 
@@ -109,6 +115,15 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        self._move_to_pose_action_client = ActionClient(
+            self.node, MoveToPose, MOVE_TO_POSE_ACTION_SERVER
+        )
+        self._flat_grasp_estimator_client = self.node.create_client(
+            SetBool, "/flat_grasp_estimator/enable"
+        )
+
+        self._tf_buffer = tf2_ros.Buffer()
+        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self.node)
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -362,6 +377,39 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def set_flat_grasp_estimator(self, enable: bool) -> int:
+        """Enable or disable the flat grasp estimator node."""
+        if not self._flat_grasp_estimator_client.wait_for_service(timeout_sec=5.0):
+            Logger.error(self.node, "Flat grasp estimator service not available")
+            return Status.EXECUTION_ERROR
+
+        req = SetBool.Request()
+        req.data = enable
+        future = self._flat_grasp_estimator_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
+
+        if future.result() is not None and future.result().success:
+            state = "enabled" if enable else "disabled"
+            Logger.info(self.node, f"Flat grasp estimator {state}")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "Failed to set flat grasp estimator state")
+        return Status.EXECUTION_ERROR
+
+    def pick_cutlery(self, object_name: str) -> int:
+        """Pick a cutlery object (fork, knife, spoon).
+        Enables the flat grasp estimator, performs the pick, then disables it."""
+        self.set_flat_grasp_estimator(True)
+        try:
+            result = self.pick_object(object_name)
+        finally:
+            self.set_flat_grasp_estimator(False)
+        return result
 
     def place(self, close_to: str = "", special_request: str = ""):
         goal_msg = ManipulationAction.Goal()
@@ -635,6 +683,291 @@ class ManipulationTasks:
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
         self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    def align_to_centroid_height(
+        self,
+        point: PointStamped,
+        pre_pose: str = "front_low_stare",
+        velocity: float = 0.2,
+        frame: str = "base_link",
+    ) -> int:
+        """Inclina joint2 hasta que `gripper_grasp_frame` quede a la z del
+        centroide 3D, y ajusta joint5 para mantener el eje de aproximación
+        horizontal. Joints 1, 3, 4 y 6 quedan lockeados en los valores de
+        `pre_pose` (por defecto `front_low_stare`).
+        """
+        from task_manager.utils.xarm_fk import (
+            J2_MAX,
+            J2_MIN,
+            J5_MAX,
+            J5_MIN,
+            fk_grasp_frame,
+            solve_j2_j5_for_height,
+        )
+
+        if point is None or point.header.frame_id == "":
+            Logger.error(self.node, "align_to_centroid_height: invalid point")
+            return Status.EXECUTION_ERROR
+
+        if (
+            self.move_joint_positions(named_position=pre_pose, velocity=0.3)
+            != Status.EXECUTION_SUCCESS
+        ):
+            Logger.error(self.node, f"Failed to move to pre-pose {pre_pose}")
+            return Status.EXECUTION_ERROR
+
+        rclpy.spin_once(self.node, timeout_sec=0.5)
+        current = self.get_joint_positions()
+        if not isinstance(current, dict) or "joint1" not in current:
+            Logger.error(self.node, f"align_to_centroid_height: bad joints {current}")
+            return Status.EXECUTION_ERROR
+        j1 = current["joint1"]
+        j2_seed = current["joint2"]
+        j3 = current["joint3"]
+        j4 = current["joint4"]
+        j5_seed = current["joint5"]
+        j6 = current["joint6"]
+
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                frame,
+                point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            point_in = do_transform_point(point, transform)
+        except Exception as e:
+            Logger.error(
+                self.node,
+                f"TF {point.header.frame_id} -> {frame} failed: {e}",
+            )
+            return Status.EXECUTION_ERROR
+
+        cz = point_in.point.z
+        Logger.info(
+            self.node,
+            f"align_to_centroid_height: target z={cz:.3f} in {frame} "
+            f"(centroid was {point.point.x:.3f},{point.point.y:.3f},{point.point.z:.3f} "
+            f"in {point.header.frame_id})",
+        )
+
+        j2, j5, reached = solve_j2_j5_for_height(
+            j1=j1,
+            j3=j3,
+            j4=j4,
+            j6=j6,
+            target_z=cz,
+            j2_seed=max(J2_MIN, min(J2_MAX, j2_seed)),
+            j5_seed=max(J5_MIN, min(J5_MAX, j5_seed)),
+        )
+        if not reached:
+            Logger.warn(
+                self.node,
+                f"Target z={cz:.3f} unreachable with j3,j4,j6 locked; "
+                f"clamping to best j2 = {j2:.3f} rad",
+            )
+
+        T = fk_grasp_frame(j1, j2, j3, j4, j5, j6)
+        Logger.info(
+            self.node,
+            f"Solved j2={j2:.3f} rad, j5={j5:.3f} rad -> FK z={T[2, 3]:.3f} "
+            f"(target {cz:.3f}, gripper-z·base-z={T[2, 2]:+.3f})",
+        )
+
+        target_joints = {
+            "joint1": j1,
+            "joint2": j2,
+            "joint3": j3,
+            "joint4": j4,
+            "joint5": j5,
+            "joint6": j6,
+        }
+        return self.move_joint_positions(joint_positions=target_joints, velocity=velocity)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_move_to_pose_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def move_to_point_offset(
+        self,
+        point: PointStamped,
+        offset_xyz: tuple = (0.0, 0.0, 0.0),
+        frame: str = "base_link",
+        target_link: str = GRASP_LINK_FRAME,
+        velocity: float = 0.2,
+        planner_id: str = "RRTConnect",
+        tolerance_position: float = 0.02,
+        tolerance_orientation: float = 0.1,
+    ) -> int:
+        """Transform `point` into `frame`, add `offset_xyz`, and command
+        `target_link` to that pose via the MoveToPose action.
+        """
+        if point is None or point.header.frame_id == "":
+            Logger.error(self.node, "move_to_point_offset: invalid point")
+            return Status.EXECUTION_ERROR
+
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                frame,
+                point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            point_in = do_transform_point(point, transform)
+        except Exception as e:
+            Logger.error(
+                self.node,
+                f"TF {point.header.frame_id} -> {frame} failed: {e}",
+            )
+            return Status.EXECUTION_ERROR
+
+        pose = PoseStamped()
+        pose.header.frame_id = frame
+        pose.header.stamp = self.node.get_clock().now().to_msg()
+        pose.pose.position.x = point_in.point.x + float(offset_xyz[0])
+        pose.pose.position.y = point_in.point.y + float(offset_xyz[1])
+        pose.pose.position.z = point_in.point.z + float(offset_xyz[2])
+        pose.pose.orientation.w = 1.0
+
+        Logger.info(
+            self.node,
+            f"move_to_point_offset target in {frame}: "
+            f"({pose.pose.position.x:.3f}, {pose.pose.position.y:.3f}, "
+            f"{pose.pose.position.z:.3f}) offset={offset_xyz}",
+        )
+
+        goal = MoveToPose.Goal()
+        goal.pose = pose
+        goal.velocity = float(velocity)
+        goal.planner_id = planner_id
+        goal.target_link = target_link
+        goal.tolerance_position = float(tolerance_position)
+        goal.tolerance_orientation = float(tolerance_orientation)
+
+        self._move_to_pose_action_client.wait_for_server()
+        send_future = self._move_to_pose_action_client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self.node, send_future, timeout_sec=TIMEOUT)
+        goal_handle = send_future.result()
+        if goal_handle is None or not goal_handle.accepted:
+            Logger.error(self.node, "MoveToPose goal rejected")
+            return Status.EXECUTION_ERROR
+
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "MoveToPose reached target")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "MoveToPose failed to reach target")
+        return Status.EXECUTION_ERROR
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_move_to_pose_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def move_to_height_in_front(
+        self,
+        reference_point: PointStamped,
+        forward_distance: float = 0.5,
+        lateral: float = 0.0,
+        frame: str = "base_link",
+        target_link: str = GRASP_LINK_FRAME,
+        velocity: float = 0.2,
+        planner_id: str = "RRTConnect",
+        tolerance_position: float = 0.02,
+        tolerance_orientation: float = 0.1,
+        orientation_xyzw: tuple = (0.0, 0.7071068, 0.0, 0.7071068),
+        per_axis_orientation_tolerance: tuple = None,
+    ) -> int:
+        """Move `target_link` to a pose in `frame` at fixed (forward_distance, lateral)
+        and z equal to `reference_point`'s height after transforming into `frame`.
+        Default orientation is a 90° pitch about Y so the gripper approach axis
+        points along `frame`'s +X (forward).
+        """
+        if reference_point is None or reference_point.header.frame_id == "":
+            Logger.error(self.node, "move_to_height_in_front: invalid reference_point")
+            return Status.EXECUTION_ERROR
+
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                frame,
+                reference_point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            ref_in = do_transform_point(reference_point, transform)
+        except Exception as e:
+            Logger.error(
+                self.node,
+                f"TF {reference_point.header.frame_id} -> {frame} failed: {e}",
+            )
+            return Status.EXECUTION_ERROR
+
+        pose = PoseStamped()
+        pose.header.frame_id = frame
+        pose.header.stamp = self.node.get_clock().now().to_msg()
+        pose.pose.position.x = float(forward_distance)
+        pose.pose.position.y = float(lateral)
+        pose.pose.position.z = ref_in.point.z
+        pose.pose.orientation.x = float(orientation_xyzw[0])
+        pose.pose.orientation.y = float(orientation_xyzw[1])
+        pose.pose.orientation.z = float(orientation_xyzw[2])
+        pose.pose.orientation.w = float(orientation_xyzw[3])
+
+        Logger.info(
+            self.node,
+            f"move_to_height_in_front target in {frame}: "
+            f"({pose.pose.position.x:.3f}, {pose.pose.position.y:.3f}, "
+            f"{pose.pose.position.z:.3f}) [ref z from {reference_point.header.frame_id}]",
+        )
+
+        goal = MoveToPose.Goal()
+        goal.pose = pose
+        goal.velocity = float(velocity)
+        goal.planner_id = planner_id
+        goal.target_link = target_link
+        goal.tolerance_position = float(tolerance_position)
+        goal.tolerance_orientation = float(tolerance_orientation)
+
+        if per_axis_orientation_tolerance is not None:
+            constraint = Constraint()
+            constraint.orientation = pose.pose.orientation
+            constraint.frame_id = frame
+            constraint.target_link = target_link
+            constraint.tolerance_orientation = [
+                float(per_axis_orientation_tolerance[0]),
+                float(per_axis_orientation_tolerance[1]),
+                float(per_axis_orientation_tolerance[2]),
+            ]
+            constraint.weight = 1.0
+            constraint.parameterization = 1  # rotation vector (per-axis angle)
+            goal.apply_constraint = True
+            goal.constraint = constraint
+            Logger.info(
+                self.node,
+                f"Path orientation constraint per-axis tol={constraint.tolerance_orientation} "
+                f"in {frame}",
+            )
+
+        self._move_to_pose_action_client.wait_for_server()
+        send_future = self._move_to_pose_action_client.send_goal_async(goal)
+        rclpy.spin_until_future_complete(self.node, send_future, timeout_sec=TIMEOUT)
+        goal_handle = send_future.result()
+        if goal_handle is None or not goal_handle.accepted:
+            Logger.error(self.node, "MoveToPose goal rejected")
+            return Status.EXECUTION_ERROR
+
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "MoveToPose reached height-in-front target")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "MoveToPose failed to reach height-in-front target")
+        return Status.EXECUTION_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(

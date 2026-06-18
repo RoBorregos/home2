@@ -16,10 +16,13 @@ from frida_constants.vision_constants import (
     OBJECT_POINTS_TOPIC,
     CAMERA_INFO_TOPIC,
     CAMERA_FRAME,
+    CAMERA_TOPIC,
     TRASHCAN_SERVICE,
+    MOONDREAM_POINT_3D_TOPIC,
+    MOONDREAM_POINT_3D_DEBUG_TOPIC,
 )
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
-from frida_interfaces.srv import ObjectPoints, TrashcanDetection
+from frida_interfaces.srv import ObjectPoints, TrashcanDetection, MoondreamPoint3D
 from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from vision_general.utils.ros_utils import wait_for_future
 
@@ -34,8 +37,10 @@ class TrashDetectionNode(Node):
         self.image = None
         self.imageInfo = None
         self.depth_image = None
+        self.trash_debug_image = None
 
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
+        self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
         )
@@ -53,8 +58,19 @@ class TrashDetectionNode(Node):
 
         self.debug_image_pub = self.create_publisher(Image, TRASH_DEBUG_IMAGE_TOPIC, 10)
 
+        self.moondream_point_3d_debug_pub = self.create_publisher(
+            Image, MOONDREAM_POINT_3D_DEBUG_TOPIC, 10
+        )
+
         self.moondream_point_client = self.create_client(
             ObjectPoints, OBJECT_POINTS_TOPIC
+        )
+
+        self.create_service(
+            MoondreamPoint3D,
+            MOONDREAM_POINT_3D_TOPIC,
+            self.get_moondream_point_3d,
+            callback_group=self.callback_group,
         )
 
         self.get_logger().info("Trash service ready")
@@ -98,18 +114,7 @@ class TrashDetectionNode(Node):
         for pt in trashcan_pts:
             self.get_logger().info("Detected trashcan")
             trashcan = ObjectDetection()
-            point2d = (
-                min(
-                    max(int(pt[0] * self.imageInfo.width), 0), self.imageInfo.width - 1
-                ),
-                min(
-                    max(int(pt[1] * self.imageInfo.height), 0),
-                    self.imageInfo.height - 1,
-                ),
-            )
-            depth = get_depth(self.depth_image, point2d)
-            point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
-            ptStamped = self.build_point_stamped(point3d)
+            ptStamped, point2d = self._deproject_normalized(pt[0], pt[1])
 
             trashcan.label_text = "trashcan"
             trashcan.point3d = ptStamped
@@ -148,6 +153,100 @@ class TrashDetectionNode(Node):
         point_stamped.point.y = float(-xyz[0])
         point_stamped.point.z = float(-xyz[1])
         return point_stamped
+
+    def _deproject_normalized(self, nx, ny):
+        point2d = (
+            min(max(int(nx * self.imageInfo.width), 0), self.imageInfo.width - 1),
+            min(max(int(ny * self.imageInfo.height), 0), self.imageInfo.height - 1),
+        )
+        depth = get_depth(self.depth_image, point2d)
+        point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
+        return self.build_point_stamped(point3d), point2d
+
+    def _deproject_normalized_optical(self, nx, ny):
+        """Same as `_deproject_normalized` but returns the PointStamped in the
+        raw optical-frame convention (x=right, y=down, z=forward) so TF lookups
+        from CAMERA_FRAME apply the correct rotation downstream.
+        """
+        # Camera_info and depth image can disagree on resolution (ZED reports
+        # camera_info at RGB size, but depth may be downsampled). Clamp to the
+        # smaller of the two so we never index out of bounds on the depth image.
+        depth_h, depth_w = self.depth_image.shape[:2]
+        max_w = min(self.imageInfo.width, depth_w) - 1
+        max_h = min(self.imageInfo.height, depth_h) - 1
+        point2d = (
+            min(max(int(nx * self.imageInfo.width), 0), max_w),
+            min(max(int(ny * self.imageInfo.height), 0), max_h),
+        )
+        # NOTE: calculations.get_depth has an internal axis swap that causes it
+        # to use the input's first component as row and the second as column,
+        # which is the opposite of the (col, row) convention point2d uses. Pass
+        # it swapped here so the spiral search stays inside the depth image
+        # bounds for non-square frames (otherwise large col indices crash with
+        # IndexError on axis 0). deproject_pixel_to_point expects (col, row).
+        depth = get_depth(self.depth_image, (point2d[1], point2d[0]))
+        point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
+        ps = PointStamped()
+        ps.header.stamp = self.get_clock().now().to_msg()
+        ps.header.frame_id = CAMERA_FRAME
+        ps.point.x = float(point3d[0])
+        ps.point.y = float(point3d[1])
+        ps.point.z = float(point3d[2])
+        return ps, point2d
+
+    def get_moondream_point_3d(self, req, res):
+        """Average moondream points for `req.subject` and deproject the
+        centroid to a 3D PointStamped in CAMERA_FRAME.
+        """
+        res.success = False
+
+        if self.imageInfo is None:
+            self.get_logger().warn("Cannot compute 3D point without camera info")
+            return res
+        if self.depth_image is None:
+            self.get_logger().warn("Cannot compute 3D point without depth image")
+            return res
+
+        pts = self.get_moondream_points(req.subject)
+        if not pts:
+            self.get_logger().warn(f"No moondream points for subject '{req.subject}'")
+            return res
+
+        cx = sum(p[0] for p in pts) / len(pts)
+        cy = sum(p[1] for p in pts) / len(pts)
+        res.point, point2d = self._deproject_normalized_optical(cx, cy)
+        res.success = True
+        self.get_logger().info(
+            f"Moondream 3D point for '{req.subject}': "
+            f"({res.point.point.x:.3f}, {res.point.point.y:.3f}, {res.point.point.z:.3f})"
+        )
+
+        self.publish_moondream_point_3d_debug(req.subject, point2d, res.point)
+        return res
+
+    def publish_moondream_point_3d_debug(self, subject, center_px, point_stamped):
+        if self.image is None:
+            return
+
+        debug = self.image.copy()
+        u, v = center_px
+        cv2.drawMarker(debug, (u, v), (0, 255, 0), cv2.MARKER_CROSS, 24, 2)
+        cv2.circle(debug, (u, v), 14, (0, 255, 0), 2)
+        label = (
+            f"{subject[:40]}  "
+            f"xyz=({point_stamped.point.x:.2f},{point_stamped.point.y:.2f},"
+            f"{point_stamped.point.z:.2f})"
+        )
+        cv2.putText(
+            debug, label, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1
+        )
+
+        try:
+            self.moondream_point_3d_debug_pub.publish(
+                self.bridge.cv2_to_imgmsg(debug, "bgr8")
+            )
+        except Exception as e:
+            self.get_logger().error(f"Debug image publish error: {e}")
 
     def get_moondream_points(self, subject) -> list[tuple[float, float]]:
         """Get object points from the MoonDream service."""
