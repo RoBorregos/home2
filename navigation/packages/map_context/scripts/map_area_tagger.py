@@ -17,17 +17,13 @@ from PyQt5.QtWidgets import (
     QListWidgetItem, QComboBox, QGroupBox, QSplitter, QMessageBox,
     QInputDialog, QScrollArea, QToolBar, QAction, QStatusBar,
     QFrame, QStyle, QMenu, QTreeWidget, QTreeWidgetItem, QHeaderView,
-    QDoubleSpinBox, QDialog, QDialogButtonBox, QFormLayout, QCheckBox
+    QDoubleSpinBox, QDialog, QDialogButtonBox, QFormLayout
 )
 from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QSize
 from PyQt5.QtGui import (
     QPixmap, QPainter, QColor, QPen, QBrush, QFont, QIcon,
     QWheelEvent, QMouseEvent, QPainterPath, QPolygonF, QCursor,
     QImage
-)
-
-from frida_constants.navigation_constants import (
-    parse_location, make_location, DEFAULT_DOCK_OFFSET,
 )
 
 
@@ -290,12 +286,9 @@ class MapCanvas(QWidget):
             for loc_name, loc_data in area_data.items():
                 if loc_name == 'polygon':
                     continue
-                pose, _approach, _offset = parse_location(loc_data)
-                if not pose or len(pose) < 7:
-                    continue
-                x, y = pose[0], pose[1]
-                qw = pose[6]
-                qz = pose[5]
+                x, y = loc_data[0], loc_data[1]
+                qw = loc_data[6] if len(loc_data) >= 7 else 1.0
+                qz = loc_data[5] if len(loc_data) >= 6 else 0.0
                 yaw = math.atan2(2.0 * qw * qz, 1.0 - 2.0 * qz * qz)
 
                 px, py = self.map_to_pixel(x, y)
@@ -515,7 +508,6 @@ class MapAreaTagger(QMainWindow):
         self.tree.setColumnWidth(3, 45)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.tree_context_menu)
-        self.tree.currentItemChanged.connect(self._on_tree_loc_selected)
         loc_layout.addWidget(self.tree)
 
         loc_btn_layout = QHBoxLayout()
@@ -527,26 +519,6 @@ class MapAreaTagger(QMainWindow):
         loc_btn_layout.addWidget(self.btn_clear_polygon)
         loc_layout.addLayout(loc_btn_layout)
         panel_layout.addWidget(loc_group)
-
-        # Docking config — applies to NEW locations as you place them, and to the
-        # location currently selected in the tree via "Apply to selected".
-        dock_group = QGroupBox("Table Docking")
-        dock_layout = QVBoxLayout(dock_group)
-        self.chk_approach = QCheckBox("Approach table after navigating here")
-        dock_layout.addWidget(self.chk_approach)
-        off_row = QHBoxLayout()
-        off_row.addWidget(QLabel("Offset (m):"))
-        self.spin_offset = QDoubleSpinBox()
-        self.spin_offset.setRange(0.0, 1.5)
-        self.spin_offset.setSingleStep(0.01)
-        self.spin_offset.setDecimals(3)
-        self.spin_offset.setValue(DEFAULT_DOCK_OFFSET)
-        off_row.addWidget(self.spin_offset)
-        dock_layout.addLayout(off_row)
-        self.btn_apply_dock = QPushButton("Apply to selected location")
-        self.btn_apply_dock.clicked.connect(self._apply_dock_to_selected)
-        dock_layout.addWidget(self.btn_apply_dock)
-        panel_layout.addWidget(dock_group)
 
         # Finish polygon button
         self.btn_finish_polygon = QPushButton("Finish Polygon")
@@ -811,18 +783,8 @@ class MapAreaTagger(QMainWindow):
         # Convert yaw to quaternion (z-axis rotation only)
         qz = math.sin(yaw / 2.0)
         qw = math.cos(yaw / 2.0)
-        pose = [mx, my, 0.0, 0.0, 0.0, qz, qw]
 
-        # Keep existing docking config when re-placing/relocating; otherwise take
-        # it from the Docking panel for a brand-new location.
-        existing = self.areas[self.current_area].get(name)
-        if existing is not None:
-            _p, approach, offset = parse_location(existing)
-        else:
-            approach = self.chk_approach.isChecked()
-            offset = round(self.spin_offset.value(), 3) if approach else None
-
-        self.areas[self.current_area][name] = make_location(pose, approach, offset)
+        self.areas[self.current_area][name] = [mx, my, 0.0, 0.0, 0.0, qz, qw]
         self.canvas.areas = self.areas
         self.refresh_tree()
         self.refresh_area_list()
@@ -1006,18 +968,16 @@ class MapAreaTagger(QMainWindow):
         for name, data in area.items():
             if name == 'polygon':
                 continue
-            pose, approach, offset = parse_location(data)
-            if not pose or len(pose) < 7:
-                continue
-            qz, qw = pose[5], pose[6]
-            yaw = math.degrees(math.atan2(2.0 * qw * qz, 1.0 - 2.0 * qz * qz))
-            item = QTreeWidgetItem([name, f"{pose[0]:.2f}", f"{pose[1]:.2f}", f"{yaw:.0f}"])
-            if approach:
-                # Tint + tooltip so docking-enabled locations stand out (keep the
-                # text exactly the name — delete/rename rely on item.text(0)).
-                item.setForeground(0, QBrush(QColor(180, 120, 230)))
-                off_txt = f"{offset:.2f} m" if offset is not None else "default"
-                item.setToolTip(0, f"Approach table @ this location (offset {off_txt})")
+            yaw = 0.0
+            if len(data) >= 7:
+                qz, qw = data[5], data[6]
+                yaw = math.degrees(math.atan2(2.0 * qw * qz, 1.0 - 2.0 * qz * qz))
+            item = QTreeWidgetItem([
+                name,
+                f"{data[0]:.2f}",
+                f"{data[1]:.2f}",
+                f"{yaw:.0f}"
+            ])
             self.tree.addTopLevelItem(item)
 
         # Polygon
@@ -1044,43 +1004,6 @@ class MapAreaTagger(QMainWindow):
                     pending_item.addChild(child)
                 self.tree.addTopLevelItem(pending_item)
                 pending_item.setExpanded(True)
-
-    def _on_tree_loc_selected(self, current, previous):
-        """Load the selected location's docking config into the Docking panel."""
-        if current is None or current.parent() is not None or not self.current_area:
-            return
-        name = current.text(0)
-        if name == 'polygon':
-            return
-        entry = self.areas.get(self.current_area, {}).get(name)
-        if entry is None:
-            return
-        _pose, approach, offset = parse_location(entry)
-        self.chk_approach.setChecked(bool(approach))
-        if offset is not None:
-            self.spin_offset.setValue(float(offset))
-
-    def _apply_dock_to_selected(self):
-        """Write the Docking panel (approach + offset) into the selected location."""
-        item = self.tree.currentItem()
-        if item is None or item.parent() is not None or not self.current_area:
-            self.status.showMessage("Select a location in the tree first")
-            return
-        name = item.text(0)
-        if name == 'polygon':
-            return
-        entry = self.areas.get(self.current_area, {}).get(name)
-        pose, _a, _o = parse_location(entry) if entry is not None else (None, False, None)
-        if not pose or len(pose) < 7:
-            self.status.showMessage("Select a location (not a polygon) first")
-            return
-        approach = self.chk_approach.isChecked()
-        offset = round(self.spin_offset.value(), 3) if approach else None
-        self.areas[self.current_area][name] = make_location(pose, approach, offset)
-        self.canvas.areas = self.areas
-        self.refresh_tree()
-        self.status.showMessage(
-            f"{name}: approach={'on' if approach else 'off'}" + (f"  offset={offset} m" if approach else ""))
 
     def tree_context_menu(self, pos):
         item = self.tree.itemAt(pos)

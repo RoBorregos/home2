@@ -173,15 +173,18 @@ class TableDocker(Node):
         self.dist_tol = self.declare_parameter("dist_tol", 0.03).value
 
         # --- Control gains / limits ---
-        self.k_yaw = self.declare_parameter("k_yaw", 0.8).value
-        self.k_y = self.declare_parameter("k_y", 0.6).value
-        self.k_x = self.declare_parameter("k_x", 0.5).value
-        self.max_wz = self.declare_parameter("max_wz", 0.4).value
-        self.max_vx = self.declare_parameter("max_vx", 0.12).value
-        self.max_vy = self.declare_parameter("max_vy", 0.12).value
+        self.k_yaw = self.declare_parameter("k_yaw", 1.4).value
+        self.k_y = self.declare_parameter("k_y", 1.0).value
+        self.k_x = self.declare_parameter("k_x", 0.9).value
+        self.max_wz = self.declare_parameter("max_wz", 0.8).value
+        self.max_vx = self.declare_parameter("max_vx", 0.22).value   # forward = collision dir, keep moderate
+        self.max_vy = self.declare_parameter("max_vy", 0.30).value
+        # Minimum forward speed while approaching (avoids the proportional crawl in
+        # the last few cm). Gated by the safety stop, so it stays safe.
+        self.min_vx = self.declare_parameter("min_vx", 0.04).value
         self.control_rate = self.declare_parameter("control_rate", 15.0).value
         self.approach_timeout = self.declare_parameter("approach_timeout", 40.0).value
-        self.settle_cycles = int(self.declare_parameter("settle_cycles", 5).value)
+        self.settle_cycles = int(self.declare_parameter("settle_cycles", 3).value)
         self.max_tf_fail = int(self.declare_parameter("max_tf_fail", 30).value)
 
         # --- Retreat (undock) ---
@@ -654,7 +657,13 @@ class TableDocker(Node):
 
             wz = self._clamp(self.k_yaw * e_yaw, self.max_wz)
             vy = self._clamp(self.k_y * y_center, self.max_vy)
-            vx = self._clamp(self.k_x * e_x, self.max_vx) if e_x > 0 else 0.0
+            if e_x > 0:
+                vx = self._clamp(self.k_x * e_x, self.max_vx)
+                # Keep at least min_vx until within tolerance (no final-cm crawl).
+                if e_x > self.dist_tol and 0.0 < vx < self.min_vx:
+                    vx = self.min_vx
+            else:
+                vx = 0.0
             if arm_clearance <= self.min_safe or safety_stop:
                 vx = 0.0
 
