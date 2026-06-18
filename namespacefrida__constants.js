@@ -23,6 +23,7 @@ var namespacefrida__constants =
       [ "EEF_LINK_NAME", "namespacefrida__constants_1_1manipulation__constants.html#abc01e1600c8a6c791bc5edb33bbf2576", null ],
       [ "ESTOP_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#a1922f5fe1cb5b7e349cf1409c11f1527", null ],
       [ "FACE_RECOGNITION_LIFETIME", "namespacefrida__constants_1_1manipulation__constants.html#ac5c569d6bae4713e9a97f1cfa14ca6d9", null ],
+      [ "FLAT_OBJECT_NAMES", "namespacefrida__constants_1_1manipulation__constants.html#a16619c3dde995d837c19d6d3b5d54db9", null ],
       [ "FOLLOW_FACE_SPEED", "namespacefrida__constants_1_1manipulation__constants.html#a876fcd239007b4cdec53c858e7e1ba6b", null ],
       [ "FOLLOW_FACE_TOLERANCE", "namespacefrida__constants_1_1manipulation__constants.html#af9a02a63f5f786598e17b38c153a64bc", null ],
       [ "GET_COLLISION_OBJECTS_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a35ee56f396288b5c13e1a83118353872", null ],

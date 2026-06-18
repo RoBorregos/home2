@@ -5,6 +5,7 @@ var dir_7fd0cf9ff5e572a6c00dd1677e1d80bb =
     [ "AttachCollisionObject.srv", "AttachCollisionObject_8srv.html", null ],
     [ "ClusterObjectFromPoint.srv", "ClusterObjectFromPoint_8srv.html", null ],
     [ "DockToHandle.srv", "DockToHandle_8srv.html", null ],
+    [ "EstimateFlatGrasp.srv", "EstimateFlatGrasp_8srv.html", null ],
     [ "GetCollisionObjects.srv", "GetCollisionObjects_8srv.html", null ],
     [ "GetJoints.srv", "GetJoints_8srv.html", null ],
     [ "GetOptimalPoseForPlane.srv", "GetOptimalPoseForPlane_8srv.html", null ],

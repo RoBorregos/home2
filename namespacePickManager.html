@@ -107,6 +107,8 @@ Classes</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a68a22a9f3907767840a047f2fb9e855b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePickManager.html#a68a22a9f3907767840a047f2fb9e855b">is_cutlery</a> (str object_name)</td></tr>
 <tr class="separator:a68a22a9f3907767840a047f2fb9e855b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a781c36bc7224c9bd2e246ceb618cc571"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePickManager.html#a781c36bc7224c9bd2e246ceb618cc571">is_flat_grasp</a> (str object_name)</td></tr>
+<tr class="separator:a781c36bc7224c9bd2e246ceb618cc571"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a704752b1d0feb96cedbc4b0f55895588"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePickManager.html#a704752b1d0feb96cedbc4b0f55895588">is_rim</a> (str object_name)</td></tr>
 <tr class="separator:a704752b1d0feb96cedbc4b0f55895588"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c7e5eb22b70e41142e616127270e24e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePickManager.html#a6c7e5eb22b70e41142e616127270e24e">is_pour_object</a> (str object_name)</td></tr>
@@ -120,10 +122,6 @@ Variables</h2></td></tr>
 <tr class="separator:a6ebf5ef225508aaa23d867b6e5644785"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcfec5898dcc59164a20e8562b51f08d"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePickManager.html#afcfec5898dcc59164a20e8562b51f08d">FLAT_GRASP_TIMEOUT</a> = 5.0</td></tr>
 <tr class="separator:afcfec5898dcc59164a20e8562b51f08d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a38889fce0778444ca2278c1767b44b7d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePickManager.html#a38889fce0778444ca2278c1767b44b7d">FLAT_GRASP_SAMPLES</a> = 10</td></tr>
-<tr class="separator:a38889fce0778444ca2278c1767b44b7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0be975bbeb13f0d6e97a74cf31c87ac4"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePickManager.html#a0be975bbeb13f0d6e97a74cf31c87ac4">FLAT_GRASP_SAMPLE_WINDOW</a> = 3.0</td></tr>
-<tr class="separator:a0be975bbeb13f0d6e97a74cf31c87ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a68a22a9f3907767840a047f2fb9e855b" name="a68a22a9f3907767840a047f2fb9e855b"></a>
@@ -142,6 +140,24 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a781c36bc7224c9bd2e246ceb618cc571" name="a781c36bc7224c9bd2e246ceb618cc571"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a781c36bc7224c9bd2e246ceb618cc571">&#9670;&#160;</a></span>is_flat_grasp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool PickManager.is_flat_grasp </td>
+          <td>(</td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>object_name</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Objects picked with the flat-grasp estimator (cutlery, plates, ...).</pre> 
 </div>
 </div>
 <a id="a6c7e5eb22b70e41142e616127270e24e" name="a6c7e5eb22b70e41142e616127270e24e"></a>
@@ -203,34 +219,6 @@ Variables</h2></td></tr>
 <div class="line"><span class="lineno">    9</span>    ],</div>
 <div class="line"><span class="lineno">   10</span>]</div>
 </div><!-- fragment -->
-</div>
-</div>
-<a id="a0be975bbeb13f0d6e97a74cf31c87ac4" name="a0be975bbeb13f0d6e97a74cf31c87ac4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0be975bbeb13f0d6e97a74cf31c87ac4">&#9670;&#160;</a></span>FLAT_GRASP_SAMPLE_WINDOW</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">float PickManager.FLAT_GRASP_SAMPLE_WINDOW = 3.0</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a38889fce0778444ca2278c1767b44b7d" name="a38889fce0778444ca2278c1767b44b7d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a38889fce0778444ca2278c1767b44b7d">&#9670;&#160;</a></span>FLAT_GRASP_SAMPLES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int PickManager.FLAT_GRASP_SAMPLES = 10</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
 </div>
 </div>
 <a id="afcfec5898dcc59164a20e8562b51f08d" name="afcfec5898dcc59164a20e8562b51f08d"></a>

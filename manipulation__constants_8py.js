@@ -16,6 +16,7 @@ var manipulation__constants_8py =
     [ "EEF_LINK_NAME", "manipulation__constants_8py.html#abc01e1600c8a6c791bc5edb33bbf2576", null ],
     [ "ESTOP_TOPIC", "manipulation__constants_8py.html#a1922f5fe1cb5b7e349cf1409c11f1527", null ],
     [ "FACE_RECOGNITION_LIFETIME", "manipulation__constants_8py.html#ac5c569d6bae4713e9a97f1cfa14ca6d9", null ],
+    [ "FLAT_OBJECT_NAMES", "manipulation__constants_8py.html#a16619c3dde995d837c19d6d3b5d54db9", null ],
     [ "FOLLOW_FACE_SPEED", "manipulation__constants_8py.html#a876fcd239007b4cdec53c858e7e1ba6b", null ],
     [ "FOLLOW_FACE_TOLERANCE", "manipulation__constants_8py.html#af9a02a63f5f786598e17b38c153a64bc", null ],
     [ "GET_COLLISION_OBJECTS_SERVICE", "manipulation__constants_8py.html#a35ee56f396288b5c13e1a83118353872", null ],
