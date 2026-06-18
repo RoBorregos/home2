@@ -8,7 +8,7 @@ Strategy: maximize pick+place score in 7 minutes.
 - Breakfast phase: bowl, cereal, milk, spoon placed on dining table with pour for cereal/milk.
 - Plates are skipped (GPD cannot grasp flat objects).
 - Dishwasher support controlled by use_dishwasher flag.
-- Cabinet shelf placement uses moondream perception to match categories.
+- Cabinet shelf placement uses an HRI categorize_objects call to match categories.
 """
 
 import json
@@ -72,6 +72,7 @@ class ObjectInfo:
         self.category = category
         self.bbox = bbox
         self.is_picked = False
+        self.skipped = False  # gave up before grasping (distinct from is_picked)
         self.is_placed = False
         self.placement_location: Location = None
 
@@ -289,6 +290,9 @@ class PickAndPlaceTM(Node):
         result = self.navigate_to(room, sublocation, say=say)
         if result == Status.EXECUTION_SUCCESS:
             self.current_location = location
+        else:
+            # Location unknown after a failed nav; do not skip the next request.
+            self.current_location = None
         return result
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -604,9 +608,9 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.CLEANUP_LOOP:
             self._track_state_change(PickAndPlaceTM.TaskStates.CLEANUP_LOOP)
 
-            while (
-                self.current_object_index < len(self.detected_objects)
-                and self.detected_objects[self.current_object_index].is_picked
+            while self.current_object_index < len(self.detected_objects) and (
+                self.detected_objects[self.current_object_index].is_picked
+                or self.detected_objects[self.current_object_index].skipped
             ):
                 self.current_object_index += 1
 
@@ -682,7 +686,7 @@ class PickAndPlaceTM(Node):
                         level="warn",
                     )
                     self.current_attempts = 0
-                    self.grasped_object.is_picked = True
+                    self.grasped_object.skipped = True
                     self.current_object_index += 1
                     self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
