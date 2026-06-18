@@ -16,7 +16,6 @@ from frida_constants.navigation_constants import (
     CHECK_DOOR_SERVICE,
     GOAL_NAV_ACTION_SERVER,
     MOVE_LOCATION_SERVICE,
-    DOCK_TABLE_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
