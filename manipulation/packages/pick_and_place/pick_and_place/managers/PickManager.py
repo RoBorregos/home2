@@ -19,6 +19,7 @@ from frida_constants.manipulation_constants import (
     FLAT_OBJECT_NAMES,
     POUR_OBJECT_NAMES,
     RIM_NAMES,
+    PEAK_NAMES,
 )
 from typing import Tuple
 import time
@@ -71,6 +72,13 @@ def is_rim(object_name: str) -> bool:
     return object_name.lower() in RIM_NAMES
 
 
+def is_peak(object_name: str) -> bool:
+    """Pick the highest content inside a cavity (e.g. clothes in a basket)."""
+    if object_name is None:
+        return False
+    return object_name.lower() in PEAK_NAMES
+
+
 def is_pour_object(object_name: str) -> bool:
     """Objects that must be picked upright for pouring."""
     if object_name is None:
@@ -100,10 +108,11 @@ class PickManager:
         self.node.get_logger().info("Setting initial joint positions")
 
         is_rim_object = is_rim(object_name)
-        is_flat_object = is_flat_grasp(object_name) or is_rim_object
+        is_peak_object = is_peak(object_name)
+        is_flat_object = is_flat_grasp(object_name) or is_rim_object or is_peak_object
 
         if not pick_params.in_configuration:
-            if is_rim_object:
+            if is_rim_object or is_peak_object:
                 stare_position = "look_side_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
@@ -141,9 +150,9 @@ class PickManager:
                 )
                 return False, None
 
-            # Rim: pose Z as-is (pick_server applies RIM_GRASP_Z_TWEAK).
+            # Rim/Peak: pose Z as-is (pick_server applies its own offset).
             # Flat: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
-            z_tweak = 0.0 if is_rim_object else FLAT_GRASP_Z_TWEAK
+            z_tweak = 0.0 if (is_rim_object or is_peak_object) else FLAT_GRASP_Z_TWEAK
             grasp_pose = response.pose
             grasp_pose.pose.position.z += z_tweak
             self.node.get_logger().info(
@@ -224,8 +233,8 @@ class PickManager:
 
         if is_flat_object:
             # Flat: 90° alternative (either short/long axis grip works).
-            # Rim: 180° flip about Z keeps the fingers radial.
-            alt_angle = 180 if is_rim_object else 90
+            # Rim/Peak: 180° flip about Z (top-down grasp is symmetric).
+            alt_angle = 180 if (is_rim_object or is_peak_object) else 90
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
                 [
@@ -358,6 +367,17 @@ class PickManager:
             self.node.get_logger().info(
                 "Rim pick: holding position (skipping return to stare)"
             )
+        elif is_peak_object:
+            # Return to the initial named pose (MoveIt) after grabbing the content.
+            self.node.get_logger().info("Peak pick: returning to look_side_stare")
+            self.node.clear_octomap()
+            for _ in range(5):
+                if send_joint_goal(
+                    move_joints_action_client=self.node._move_joints_client,
+                    named_position="look_side_stare",
+                    velocity=0.5,
+                ):
+                    break
         else:
             self.node.get_logger().info("Returning to position")
 
