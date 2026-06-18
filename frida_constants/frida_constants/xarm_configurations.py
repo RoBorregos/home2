@@ -181,74 +181,14 @@ SCAN_FLOOR_CARRY_BAG_POSE = {
     "degrees": True,
 }
 
-PICK_BASKET_POSE = {
+LOOK_SIDE_STARE = {
     "joints": {
-        "joint1": 96.8,
-        "joint2": 89.3,
-        "joint3": -95.3,
-        "joint4": 95.9,
-        "joint5": -0.4,
-        "joint6": 44.8,
-    },
-    "degrees": True,
-}
-
-LOOK_BACK_STARE = {
-    "joints": {
-        "joint1": 90.0,
+        "joint1": -180.0,
         "joint2": -70.0,
         "joint3": -45.0,
         "joint4": 0.0,
         "joint5": 30.0,
         "joint6": 45.0,
-    },
-    "degrees": True,
-}
-
-BASKET_HOLD_BACK_POSE = {
-    "joints": {
-        "joint1": 90.0,
-        "joint2": -50.0,
-        "joint3": -60.0,
-        "joint4": 0.0,
-        "joint5": 20.0,
-        "joint6": 45.0,
-    },
-    "degrees": True,
-}
-
-INITIAL_CLOSE_LAUNDRY_POSE = {
-    "joints": {
-        "joint1": -175.3,
-        "joint2": -34.2,
-        "joint3": -41.1,
-        "joint4": 0.1,
-        "joint5": -11.8,
-        "joint6": 45.1,
-    },
-    "degrees": True,
-}
-
-MID_CLOSE_LAUNDRY_POSE = {
-    "joints": {
-        "joint1": -88.5,
-        "joint2": -34.2,
-        "joint3": -41.1,
-        "joint4": 0.1,
-        "joint5": -11.8,
-        "joint6": 45.1,
-    },
-    "degrees": True,
-}
-
-END_CLOSE_LAUNDRY_POSE = {
-    "joints": {
-        "joint1": -87.5,
-        "joint2": 39.8,
-        "joint3": -116.6,
-        "joint4": 0.1,
-        "joint5": -11.8,
-        "joint6": 45.1,
     },
     "degrees": True,
 }
@@ -269,10 +209,5 @@ XARM_CONFIGURATIONS = {
     "place_floor_left": PLACE_FLOOR_LEFT,
     "hand_bag_pose": HAND_BAG_POSE,
     "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
-    "pick_basket_pose": PICK_BASKET_POSE,
-    "look_back_stare": LOOK_BACK_STARE,
-    "basket_hold_back_pose": BASKET_HOLD_BACK_POSE,
-    "initial_close_laundry_pose": INITIAL_CLOSE_LAUNDRY_POSE,
-    "mid_close_laundry_pose": MID_CLOSE_LAUNDRY_POSE,
-    "end_close_laundry_pose": END_CLOSE_LAUNDRY_POSE,
+    "look_side_stare": LOOK_SIDE_STARE,
 }

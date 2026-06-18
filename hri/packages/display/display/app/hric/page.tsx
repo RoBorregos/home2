@@ -56,7 +56,7 @@ const TASK_STEPS: TaskStep[] = [
   {
     key: "greeting",
     label: "Greeting",
-    display: "logs",
+    display: "both",
     icon: <MessageSquare className="h-4 w-4" />,
   },
   {

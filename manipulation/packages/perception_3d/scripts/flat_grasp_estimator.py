@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 
+import copy
+import time
+
 import rclpy
 from rclpy.node import Node
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 import numpy as np
 from collections import deque
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
-from std_srvs.srv import SetBool
 
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -18,8 +22,10 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
+from frida_constants.manipulation_constants import RIM_NAMES, FLAT_OBJECT_NAMES
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
+from frida_interfaces.srv import EstimateFlatGrasp
 
 # Fixed offset above table surface for grasp contact point (meters)
 GRASP_SURFACE_OFFSET = 0.003
@@ -32,6 +38,16 @@ TABLE_HEIGHT_BUFFER_SIZE = 15
 
 # Maximum allowed deviation from the running median (reject outliers)
 TABLE_HEIGHT_OUTLIER_THRESH = 0.015  # 15mm
+
+# --- Rim grasp estimation ---
+RIM_MIN_HEIGHT = 0.05  # Minimum height above the floor
+RIM_NEAR_FRACTION = 0.05  # Fraction of nearest points used to estimate the near rim
+RIM_TOP_PERCENTILE = 90  # Percentile of Z used as the rim-top height
+RIM_TOP_BAND = 0.03  # Vertical band below the rim-top kept as the rim ring (meters)
+
+# --- Service collection ---
+FLAT_GRASP_DEFAULT_SAMPLES = 10  # frames to median when the caller passes <= 0
+FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
 
 
 class FlatGraspEstimator(Node):
@@ -48,16 +64,25 @@ class FlatGraspEstimator(Node):
         self.intrinsics = None
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
-        self.target_classes = ["spoon", "fork", "knife"]
+        self.target_classes = [n.lower() for n in FLAT_OBJECT_NAMES]
+        self.rim_classes = list(RIM_NAMES)
 
-        # Start disabled — only enabled explicitly before a cutlery pick.
-        # Saves CPU/network when no manipulation is in progress.
-        self.enabled = False
+        # Collection state. The node only does the heavy per-frame work while a
+        # service request is collecting samples; it is idle otherwise (saves CPU).
+        self._collecting = False
+        self._target_label = None
+        self._samples = []
 
         # Rolling buffer for table height stabilization
         self.table_height_buffer = deque(maxlen=TABLE_HEIGHT_BUFFER_SIZE)
 
-        self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
+        # Reentrant group so the service handler can wait while the depth /
+        # detection callbacks keep filling the sample buffer (needs MultiThreadedExecutor).
+        cb_group = ReentrantCallbackGroup()
+
+        self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10, callback_group=cb_group
+        )
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, 1
         )
@@ -66,34 +91,80 @@ class FlatGraspEstimator(Node):
             DETECTIONS_TOPIC,
             self.detections_callback,
             10,
+            callback_group=cb_group,
         )
 
+        # Debug visualization (published while collecting).
         self.pose_pub = self.create_publisher(
             PoseStamped, "/manipulation/flat_grasp_pose", 10
         )
+        self.rim_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/rim_grasp_pose", 10
+        )
 
-        self.enable_srv = self.create_service(
-            SetBool, "/flat_grasp_estimator/enable", self.enable_callback
+        self.estimate_srv = self.create_service(
+            EstimateFlatGrasp,
+            "/manipulation/estimate_flat_grasp",
+            self.estimate_flat_grasp_cb,
+            callback_group=cb_group,
         )
 
         self.get_logger().info(
-            f"Flat Grasp Estimator initialized (disabled). Mapping to: {self.target_frame}"
+            f"Flat Grasp Estimator ready (service). Mapping to: {self.target_frame}"
         )
 
-    def enable_callback(self, request, response):
-        """Enable/disable detection processing. When disabled the node stays
-        alive and keeps its subscriptions but skips all work in the hot path."""
-        self.enabled = bool(request.data)
-        # Clear stale buffers when toggling so the next enable starts clean.
-        if not self.enabled:
-            self.table_height_buffer.clear()
+    def estimate_flat_grasp_cb(self, request, response):
+        """Collect several frames for request.object_name and return a single
+        stabilized grasp pose (median position, latest PCA orientation)."""
+        label = request.object_name.lower()
+        if label not in self.target_classes and label not in self.rim_classes:
+            response.success = False
+            response.message = f"'{request.object_name}' is not a flat/rim object"
+            return response
+        if self.intrinsics is None:
+            response.success = False
+            response.message = "camera intrinsics not received yet"
+            return response
+
+        n = (
+            request.num_samples
+            if request.num_samples > 0
+            else FLAT_GRASP_DEFAULT_SAMPLES
+        )
+
+        # Start a fresh collection session.
+        self._samples = []
+        self._target_label = label
+        self.table_height_buffer.clear()
+        self.latest_depth = None
+        self._collecting = True
+
+        deadline = time.time() + FLAT_GRASP_TIMEOUT
+        while time.time() < deadline and len(self._samples) < n:
+            time.sleep(0.05)
+        self._collecting = False
+
+        samples = list(self._samples)
+        self.get_logger().info(
+            f"Collected {len(samples)} grasp samples for '{request.object_name}'"
+        )
+        if not samples:
+            response.success = False
+            response.message = f"no grasp samples for '{request.object_name}' within {FLAT_GRASP_TIMEOUT}s"
+            return response
+
+        pose = copy.deepcopy(samples[-1])  # latest PCA orientation
+        pose.pose.position.x = float(np.median([s.pose.position.x for s in samples]))
+        pose.pose.position.y = float(np.median([s.pose.position.y for s in samples]))
+        pose.pose.position.z = float(np.median([s.pose.position.z for s in samples]))
+        response.pose = pose
         response.success = True
-        response.message = "enabled" if self.enabled else "disabled"
-        self.get_logger().info(f"Flat Grasp Estimator {response.message}")
+        response.samples_collected = len(samples)
+        response.message = f"averaged {len(samples)} samples"
         return response
 
     def depth_callback(self, msg):
-        if not self.enabled:
+        if not self._collecting:
             return
         self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
         self.depth_frame_id = msg.header.frame_id
@@ -108,13 +179,23 @@ class FlatGraspEstimator(Node):
             }
 
     def detections_callback(self, msg):
-        if not self.enabled:
+        if not self._collecting:
             return
         if self.latest_depth is None or self.intrinsics is None:
             return
         for det in msg.detections:
-            if det.label_text.lower() in self.target_classes:
-                self.process_flat_object(det)
+            label = det.label_text.lower()
+            if label != self._target_label:
+                continue
+            if label in self.rim_classes:
+                pose = self.process_rim_object(det)
+                pub = self.rim_pose_pub
+            else:
+                pose = self.process_flat_object(det)
+                pub = self.pose_pub
+            if pose is not None:
+                self._samples.append(pose)
+                pub.publish(pose)  # debug viz
 
     def get_stable_table_height(self, new_reading):
         """Add a new table height reading and return a stable averaged value.
@@ -128,9 +209,13 @@ class FlatGraspEstimator(Node):
         self.table_height_buffer.append(new_reading)
         return np.median(list(self.table_height_buffer))
 
-    def process_flat_object(self, detection: ObjectDetection):
-        h_img, w_img = self.latest_depth.shape
+    # ------------------------------------------------------------------
+    # Shared helpers
+    # ------------------------------------------------------------------
 
+    def _parse_bbox(self, detection: ObjectDetection):
+        """Return (xmin, ymin, xmax, ymax) in pixels, or None if degenerate."""
+        h_img, w_img = self.latest_depth.shape
         if detection.xmax <= 1.0 and detection.ymax <= 1.0:
             xmin = int(max(0, detection.xmin * w_img))
             ymin = int(max(0, detection.ymin * h_img))
@@ -141,12 +226,79 @@ class FlatGraspEstimator(Node):
             ymin = int(max(0, detection.ymin))
             xmax = int(min(w_img, detection.xmax))
             ymax = int(min(h_img, detection.ymax))
-
         if xmax <= xmin or ymax <= ymin:
+            return None
+        return xmin, ymin, xmax, ymax
+
+    def _deproject_pixels(self, u_global, v_global, z_vals) -> np.ndarray:
+        """Deproject image pixels + depth to Nx3 points in camera frame."""
+        fx, fy = self.intrinsics["fx"], self.intrinsics["fy"]
+        cx, cy = self.intrinsics["cx"], self.intrinsics["cy"]
+        x = (u_global - cx) * z_vals / fx
+        y = (v_global - cy) * z_vals / fy
+        return np.vstack((x, y, z_vals)).T
+
+    def _lookup_T_cam_to_base(self):
+        """Return 4x4 homogeneous transform (camera → base), or None on TF failure."""
+        try:
+            trans = self.tf_buffer.lookup_transform(
+                self.target_frame,
+                self.depth_frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=1.0),
+            )
+        except Exception as e:
+            self.get_logger().warn(f"Waiting for TF tree from camera to base... {e}")
+            return None
+        q = [
+            trans.transform.rotation.x,
+            trans.transform.rotation.y,
+            trans.transform.rotation.z,
+            trans.transform.rotation.w,
+        ]
+        t = [
+            trans.transform.translation.x,
+            trans.transform.translation.y,
+            trans.transform.translation.z,
+        ]
+        T = np.eye(4)
+        T[:3, :3] = Rotation.from_quat(q).as_matrix()
+        T[:3, 3] = t
+        return T
+
+    def _apply_transform(self, points_3d_cam: np.ndarray, T_mat: np.ndarray):
+        """Transform Nx3 camera-frame points to base frame. Returns filtered array or None."""
+        hom = np.hstack((points_3d_cam, np.ones((len(points_3d_cam), 1))))
+        points_base = (T_mat @ hom.T).T[:, :3]
+        finite = np.isfinite(points_base).all(axis=1)
+        points_base = points_base[finite]
+        return points_base if len(points_base) >= MIN_POINTS_FOR_PCA else None
+
+    def _make_grasp_pose(self, x: float, y: float, z: float, quat) -> PoseStamped:
+        """Build a stamped PoseStamped in the target frame."""
+        pose = PoseStamped()
+        pose.header.frame_id = self.target_frame
+        pose.header.stamp = self.get_clock().now().to_msg()
+        pose.pose.position.x = x
+        pose.pose.position.y = y
+        pose.pose.position.z = z
+        pose.pose.orientation.x = float(quat[0])
+        pose.pose.orientation.y = float(quat[1])
+        pose.pose.orientation.z = float(quat[2])
+        pose.pose.orientation.w = float(quat[3])
+        return pose
+
+    # ------------------------------------------------------------------
+    # Per-class grasp estimation
+    # ------------------------------------------------------------------
+
+    def process_flat_object(self, detection: ObjectDetection):
+        bbox = self._parse_bbox(detection)
+        if bbox is None:
             return
+        xmin, ymin, xmax, ymax = bbox
 
         roi_depth = self.latest_depth[ymin:ymax, xmin:xmax]
-
         valid_mask = (roi_depth > 0) & (~np.isnan(roi_depth))
         valid_roi = roi_depth[valid_mask]
         if len(valid_roi) < MIN_POINTS_FOR_PCA:
@@ -162,75 +314,37 @@ class FlatGraspEstimator(Node):
             & (roi_depth > table_z_cam - 0.05)
         )
         v_local, u_local = np.where(object_mask_roi)
-
-        use_full_roi = len(v_local) < MIN_POINTS_FOR_PCA
-        if use_full_roi:
+        if len(v_local) < MIN_POINTS_FOR_PCA:
             v_local, u_local = np.where(valid_mask)
 
-        u_global = u_local + xmin
-        v_global = v_local + ymin
-        z_vals = roi_depth[v_local, u_local]
+        points_3d_cam = self._deproject_pixels(
+            u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
+        )
 
-        fx, fy = self.intrinsics["fx"], self.intrinsics["fy"]
-        cx, cy = self.intrinsics["cx"], self.intrinsics["cy"]
-        x = (u_global - cx) * z_vals / fx
-        y = (v_global - cy) * z_vals / fy
-        points_3d_cam = np.vstack((x, y, z_vals)).T
-
-        # --- TRANSFORM TO BASE FRAME ---
-        try:
-            trans = self.tf_buffer.lookup_transform(
-                self.target_frame,
-                self.depth_frame_id,
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0),
-            )
-        except Exception as e:
-            self.get_logger().warn(f"Waiting for TF tree from camera to base... {e}")
+        T_mat = self._lookup_T_cam_to_base()
+        if T_mat is None:
             return
-
-        q = [
-            trans.transform.rotation.x,
-            trans.transform.rotation.y,
-            trans.transform.rotation.z,
-            trans.transform.rotation.w,
-        ]
-        t = [
-            trans.transform.translation.x,
-            trans.transform.translation.y,
-            trans.transform.translation.z,
-        ]
-        rot_mat = Rotation.from_quat(q).as_matrix()
-
-        T_mat = np.eye(4)
-        T_mat[:3, :3] = rot_mat
-        T_mat[:3, 3] = t
-
-        points_3d_hom = np.hstack((points_3d_cam, np.ones((points_3d_cam.shape[0], 1))))
-        points_base = (T_mat @ points_3d_hom.T).T[:, :3]
-
-        # Filter out NaN/Inf points
-        valid_mask = np.isfinite(points_base).all(axis=1)
-        points_base = points_base[valid_mask]
-        if len(points_base) < MIN_POINTS_FOR_PCA:
+        points_base = self._apply_transform(points_3d_cam, T_mat)
+        if points_base is None:
             return
 
         # --- GRASP POSITION ---
         centroid_xy = np.mean(points_base[:, :2], axis=0)
 
         # Transform table surface point at bbox center to base frame
-        bbox_center_u = (xmin + xmax) / 2.0
-        bbox_center_v = (ymin + ymax) / 2.0
-        table_x_cam = (bbox_center_u - cx) * table_z_cam / fx
-        table_y_cam = (bbox_center_v - cy) * table_z_cam / fy
-        table_point_cam = np.array([table_x_cam, table_y_cam, table_z_cam, 1.0])
-        table_point_base = T_mat @ table_point_cam
-        raw_table_height = table_point_base[2]
-
-        # Stabilize table height with rolling median + outlier rejection
-        stable_table_height = self.get_stable_table_height(raw_table_height)
-
-        grasp_z = stable_table_height + GRASP_SURFACE_OFFSET
+        fx, fy = self.intrinsics["fx"], self.intrinsics["fy"]
+        cx, cy = self.intrinsics["cx"], self.intrinsics["cy"]
+        bbox_cu, bbox_cv = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0
+        table_point_cam = np.array(
+            [
+                (bbox_cu - cx) * table_z_cam / fx,
+                (bbox_cv - cy) * table_z_cam / fy,
+                table_z_cam,
+                1.0,
+            ]
+        )
+        raw_table_height = (T_mat @ table_point_cam)[2]
+        grasp_z = self.get_stable_table_height(raw_table_height) + GRASP_SURFACE_OFFSET
 
         # --- GRASP ORIENTATION (PCA on XY to find long axis) ---
         points_2d_xy = points_base[:, :2] - centroid_xy
@@ -249,35 +363,92 @@ class FlatGraspEstimator(Node):
         new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
-        # --- PUBLISH ---
-        grasp_pose = PoseStamped()
-        grasp_pose.header.frame_id = self.target_frame
-        grasp_pose.header.stamp = self.get_clock().now().to_msg()
-
-        grasp_pose.pose.position.x = float(centroid_xy[0])
-        grasp_pose.pose.position.y = float(centroid_xy[1])
-        grasp_pose.pose.position.z = float(grasp_z)
-
-        grasp_pose.pose.orientation.x = new_quat[0]
-        grasp_pose.pose.orientation.y = new_quat[1]
-        grasp_pose.pose.orientation.z = new_quat[2]
-        grasp_pose.pose.orientation.w = new_quat[3]
-
-        self.pose_pub.publish(grasp_pose)
-        self.get_logger().info(
-            f"Grasp (link_base): X={centroid_xy[0]:.3f}, "
-            f"Y={centroid_xy[1]:.3f}, Z={grasp_z:.4f} "
-            f"(raw_table={raw_table_height:.4f}, stable_table={stable_table_height:.4f}, "
-            f"buf={len(self.table_height_buffer)})"
+        return self._make_grasp_pose(
+            float(centroid_xy[0]), float(centroid_xy[1]), float(grasp_z), new_quat
         )
+
+    def process_rim_object(self, detection: ObjectDetection):
+        """Top-down straddle grasp on the near rim/edge of a cylindrical object."""
+        bbox = self._parse_bbox(detection)
+        if bbox is None:
+            return
+        xmin, ymin, xmax, ymax = bbox
+
+        roi_depth = self.latest_depth[ymin:ymax, xmin:xmax]
+        valid_mask = (roi_depth > 0) & (~np.isnan(roi_depth))
+        if np.count_nonzero(valid_mask) < MIN_POINTS_FOR_PCA:
+            return
+
+        # Whole-frustum prism: deproject every valid pixel (no table seg).
+        v_local, u_local = np.where(valid_mask)
+        points_3d_cam = self._deproject_pixels(
+            u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
+        )
+
+        T_mat = self._lookup_T_cam_to_base()
+        if T_mat is None:
+            return
+        points_base = self._apply_transform(points_3d_cam, T_mat)
+        if points_base is None:
+            return
+
+        # --- FLOOR REJECTION ---
+        floor_z = np.percentile(points_base[:, 2], 5)
+        rim_points = points_base[points_base[:, 2] > floor_z + RIM_MIN_HEIGHT]
+        if len(rim_points) < MIN_POINTS_FOR_PCA:
+            rim_points = points_base
+
+        # --- RIM TOP RING ---
+        # The rim is the TOP edge of the object. Anchor to the top:
+        # take the rim-top height as a high Z percentile and keep only the top ring.
+        top_z = np.percentile(rim_points[:, 2], RIM_TOP_PERCENTILE)
+        top_ring = rim_points[rim_points[:, 2] > top_z - RIM_TOP_BAND]
+        if len(top_ring) < MIN_POINTS_FOR_PCA:
+            top_ring = rim_points
+
+        # --- NEAR RIM POINT (closest to robot, within the top ring) ---
+        horiz_dist = np.sqrt(top_ring[:, 0] ** 2 + top_ring[:, 1] ** 2)
+        k = min(
+            max(MIN_POINTS_FOR_PCA, int(RIM_NEAR_FRACTION * len(horiz_dist))),
+            len(horiz_dist),
+        )
+        rim_point = np.median(top_ring[np.argsort(horiz_dist)[:k]], axis=0)
+        rim_x, rim_y, rim_z = (
+            float(rim_point[0]),
+            float(rim_point[1]),
+            float(rim_point[2]),
+        )
+
+        # --- STRADDLE ORIENTATION (top-down, fingers close radially across the wall) ---
+        Z_grasp = np.array([0.0, 0.0, -1.0])
+        radial = np.array([rim_x, rim_y, 0.0])
+        radial_norm = np.linalg.norm(radial)
+        if radial_norm < 1e-6:
+            return
+        radial = radial / radial_norm
+        Y_grasp = radial
+        X_grasp = np.cross(Y_grasp, Z_grasp)
+        X_grasp = X_grasp / np.linalg.norm(X_grasp)
+        Y_grasp = np.cross(Z_grasp, X_grasp)
+
+        new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
+        new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
+
+        return self._make_grasp_pose(rim_x, rim_y, rim_z, new_quat)
 
 
 def main(args=None):
     rclpy.init(args=args)
     node = FlatGraspEstimator()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
