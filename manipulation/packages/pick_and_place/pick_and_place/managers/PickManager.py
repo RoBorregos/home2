@@ -232,9 +232,9 @@ class PickManager:
         print("Gripper Result:", result)
 
         if is_flat_object:
-            # Flat: 90° alternative (either short/long axis grip works).
-            # Rim/Peak: 180° flip about Z (top-down grasp is symmetric).
-            alt_angle = 180 if (is_rim_object or is_peak_object) else 90
+            # Always flip 180 (top-down symmetric). A 90 alt on flat cutlery would
+            # align the fingers with the long axis and collide with the object.
+            alt_angle = 180
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
                 [

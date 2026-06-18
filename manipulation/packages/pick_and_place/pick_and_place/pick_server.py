@@ -63,15 +63,21 @@ from xarm_msgs.msg import RobotMsg
 # Force-guarded descent constants
 # Units: speeds in mm/s (xArm SDK convention)
 # =============================================================================
-CUTLERY_DESCENT_SPEED = 20.0  # mm/s downward (= 2 cm/s)
-CUTLERY_EFFORT_THRESHOLD = (
-    6.5  # N - effort delta to detect contact (raised from 3.0 to avoid false positives)
-)
-CUTLERY_DESCENT_TIMEOUT = 10.0  # s - max descent before giving up
+CUTLERY_DESCENT_SPEED = 12.0  # mm/s downward (lowered from 20 for less impact force)
+# Hard safety ceiling on effort-delta. Normal contact uses the adaptive per-joint
+# threshold below, which survives base-height/pose changes without re-tuning.
+CUTLERY_EFFORT_THRESHOLD = 6.5  # N (ceiling)
+CUTLERY_DESCENT_TIMEOUT = 16.0  # s - must cover the 0.15 m pre-grasp at the speed above
 CUTLERY_PRE_GRASP_HEIGHT = (
     0.15  # m - pre-grasp height above target (MoveIt uses meters)
 )
-CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
+CUTLERY_EFFORT_GRACE_PERIOD = 0.3  # s - ignore effort right after velocity starts
+# Adaptive contact: after grace, sample each joint's effort-delta noise for
+# CALIB_WINDOW s, then trip when a joint exceeds mean + K*sigma (floored, capped).
+CUTLERY_EFFORT_CALIB_WINDOW = 0.3  # s
+CUTLERY_EFFORT_K = 5.0  # sigma multiplier for the per-joint trip level
+CUTLERY_EFFORT_MARGIN = 0.5  # N - added on top of K*sigma
+CUTLERY_EFFORT_MIN_TRIP = 1.5  # N - floor so a quiet joint does not trip on noise
 CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
@@ -695,7 +701,10 @@ class PickMotionServer(Node):
                 f"(threshold={CUTLERY_EFFORT_THRESHOLD}N, grace={CUTLERY_EFFORT_GRACE_PERIOD}s)"
             )
 
-            # --- 4. Monitor effort ---
+            # --- 4. Monitor effort (adaptive per-joint threshold) ---
+            calib_deltas = []
+            trip = None  # per-joint trip levels, set after the calibration window
+            calib_end = CUTLERY_EFFORT_GRACE_PERIOD + CUTLERY_EFFORT_CALIB_WINDOW
             while (time.time() - start_time) < CUTLERY_DESCENT_TIMEOUT:
                 time.sleep(0.02)  # 50Hz
 
@@ -706,18 +715,39 @@ class PickMotionServer(Node):
 
                 current_effort = np.array(self._latest_joint_state.effort)
                 effort_delta = np.abs(current_effort - effort_baseline)
-                max_delta = float(np.max(effort_delta))
-                max_joint = int(np.argmax(effort_delta))
 
-                # Skip during grace period (transient spikes from mode switch / motion start)
+                # Skip the transient right after velocity starts
                 if elapsed < CUTLERY_EFFORT_GRACE_PERIOD:
                     continue
 
-                if max_delta > CUTLERY_EFFORT_THRESHOLD:
+                # Calibrate each joint's noise floor on the contact-free descent
+                if elapsed < calib_end:
+                    calib_deltas.append(effort_delta)
+                    continue
+                if trip is None:
+                    calib = (
+                        np.array(calib_deltas)
+                        if calib_deltas
+                        else np.zeros((1, len(effort_delta)))
+                    )
+                    trip = calib.mean(axis=0) + CUTLERY_EFFORT_K * calib.std(axis=0)
+                    trip = np.maximum(
+                        trip + CUTLERY_EFFORT_MARGIN, CUTLERY_EFFORT_MIN_TRIP
+                    )
+                    trip = np.minimum(
+                        trip, CUTLERY_EFFORT_THRESHOLD
+                    )  # never above ceiling
+                    self.get_logger().info(
+                        f"[ForceGuard] Adaptive trip per joint: {[f'{t:.2f}' for t in trip]}"
+                    )
+
+                over = effort_delta > trip
+                if over.any() or float(np.max(effort_delta)) > CUTLERY_EFFORT_THRESHOLD:
+                    j = int(np.argmax(effort_delta - trip))
                     distance_mm = elapsed * CUTLERY_DESCENT_SPEED
                     self.get_logger().info(
-                        f"[ForceGuard] CONTACT! Joint {max_joint + 1} "
-                        f"delta={max_delta:.2f}N (threshold={CUTLERY_EFFORT_THRESHOLD}N) "
+                        f"[ForceGuard] CONTACT! Joint {j + 1} "
+                        f"delta={effort_delta[j]:.2f}N > trip={trip[j]:.2f}N "
                         f"after {elapsed:.2f}s (~{distance_mm:.1f}mm descended)"
                     )
                     contact_detected = True
