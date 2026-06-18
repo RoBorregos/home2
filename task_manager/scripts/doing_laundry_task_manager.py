@@ -11,6 +11,7 @@ from tf2_ros import Buffer, TransformListener, TransformException
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
+from frida_constants.manipulation_constants import CLOTHES_BASKET_EXIT_HEIGHT
 
 ATTEMPT_LIMIT = 3
 
@@ -185,11 +186,18 @@ class DoingLaundryTM(Node):
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_CLOTHES:
             Logger.info(self, "Requesting gap pick for clothes inside basket.")
             self.subtask_manager.hri.say("Picking clothes from the basket.", wait=False)
+            # Pre-pick approach: release, rise out of the basket workspace, then stage
+            # the arm so MoveIt does not plan a wild path into the pick pose.
+            self.subtask_manager.manipulation.open_gripper()
+            self.subtask_manager.manipulation.move_arm_vertical(
+                CLOTHES_BASKET_EXIT_HEIGHT, descend=False
+            )
+            self.subtask_manager.manipulation.move_to_position("look_side_low_stare")
             self.subtask_manager.manipulation.move_to_position("look_side_stare")
             for _ in range(20):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
-            result = self.subtask_manager.manipulation.pick_object("clothes")
+            result = self.subtask_manager.manipulation.pick_object("clothes", in_configuration=True)
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked.")
