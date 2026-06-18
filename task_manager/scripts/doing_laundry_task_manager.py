@@ -111,13 +111,15 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.START:
             Logger.state(self, "Starting Doing Laundry Task")
+            status, error = self.navigate_to("laundry", "safe_place")
+
             self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
             Logger.info(self, "Navigating to basket area")
 
-            # status, error = self.navigate_to("laundry", "laundry_basket")
-            status, error = self.navigate_to("living_room", "couches")
+            status, error = self.navigate_to("laundry", "laundry_basket")
+            # status, error = self.navigate_to("living_room", "couches")
 
             if status == Status.EXECUTION_SUCCESS:
                 # self.current_state = DoingLaundryTM.TaskStates.ROTATE_BEHIND_BASKET
@@ -205,7 +207,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE:
             Logger.info(self, "Navigating to laundry machine with basket.")
-            status, error = self.navigate_to("kitchen", "laundry_machine")
+            status, error = self.navigate_to("laundry", "laundry_machine")
 
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry machine.")
