@@ -147,7 +147,7 @@ class DemoRoborregosDay(Node):
             # in_configuration=True → pick from the current (turned 180°) pose;
             # otherwise PickManager would move the arm back to table_stare.
             if pick_label == "spoon":
-                status = self.subtask_manager.manipulation.pick_cutlery(pick_label)
+                status = self.subtask_manager.manipulation.pick_object(pick_label)
             else:
                 status = self.subtask_manager.manipulation.pick_object(
                     pick_label, in_configuration=True
