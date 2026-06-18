@@ -27,6 +27,7 @@ class DoingLaundryTM(Node):
         PICK_LAUNDRY = "PICK_LAUNDRY"
         NAVIGATE_TO_LAUNDRY_TABLE = "NAVIGATE_TO_LAUNDRY_TABLE"
         UNLOAD_LAUNDRY = "UNLOAD_LAUNDRY"
+        PICK_CLOTHES = "PICK_CLOTHES"
         NAVIGATE_TO_LAUNDRY_MACHINE = "NAVIGATE_TO_LAUNDRY_MACHINE"
         UNLOAD_LAUNDRY_MACHINE = "UNLOAD_LAUNDRY_MACHINE"
         CLOSE_LAUNDRY_MACHINE = "CLOSE_LAUNDRY_MACHINE"
@@ -177,7 +178,30 @@ class DoingLaundryTM(Node):
             Logger.info(self, "Opening gripper to release basket at table.")
             self.subtask_manager.manipulation.open_gripper()
             self.subtask_manager.hri.say("Basket delivered to the table.", wait=False)
-            self.current_state = DoingLaundryTM.TaskStates.END
+            self.current_state = DoingLaundryTM.TaskStates.PICK_CLOTHES
+
+        elif self.current_state == DoingLaundryTM.TaskStates.PICK_CLOTHES:
+            Logger.info(self, "Requesting gap pick for clothes inside basket.")
+            self.subtask_manager.hri.say("Picking clothes from the basket.", wait=False)
+            self.subtask_manager.manipulation.move_to_position("look_side_stare")
+            for _ in range(20):
+                rclpy.spin_once(self, timeout_sec=0.1)
+
+            result = self.subtask_manager.manipulation.pick_object("clothes")
+
+            if result == Status.EXECUTION_SUCCESS:
+                Logger.success(self, "Clothes picked.")
+                self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE
+            else:
+                self.pick_attempts += 1
+                if self.pick_attempts >= ATTEMPT_LIMIT:
+                    Logger.error(self, "Clothes pick failed after max attempts. Ending.")
+                    self.current_state = DoingLaundryTM.TaskStates.END
+                else:
+                    Logger.warn(
+                        self,
+                        f"Clothes pick failed (attempt {self.pick_attempts}), retrying.",
+                    )
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE:
             Logger.info(self, "Navigating to laundry machine with basket.")
