@@ -135,6 +135,7 @@ set(srv_files
   "manipulation/srv/Test.srv"
   "manipulation/srv/ToggleServo.srv"
   "manipulation/srv/PlayTrayectory.srv"
+  "manipulation/srv/EstimateFlatGrasp.srv"
   "task_manager/srv/FollowFace.srv"
   "task_manager/srv/PointTransformation.srv"
   "task_manager/srv/ReturnLocation.srv"
