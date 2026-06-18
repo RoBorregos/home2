@@ -18,7 +18,7 @@ from frida_constants.manipulation_constants import (
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
     SAFETY_HEIGHT,
-    CUTLERY_NAMES,
+    FLAT_OBJECT_NAMES,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
@@ -307,7 +307,7 @@ class PickMotionServer(Node):
         pick_result = PickResult()
         grasping_poses = goal_handle.request.grasping_poses
 
-        is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
+        is_flat = goal_handle.request.object_name.lower() in FLAT_OBJECT_NAMES
         is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
 
         if is_flat:

@@ -68,6 +68,8 @@ SAFETY_HEIGHT = 0.05
 PICK_MIN_HEIGHT = 0.04
 CUTLERY_PICK_MIN_HEIGHT = 0.002
 CUTLERY_NAMES = ["fork", "knife", "spoon", "cutlery"]
+# Objects picked with the flat-grasp estimator
+FLAT_OBJECT_NAMES = CUTLERY_NAMES + ["plate", "red_plate"]
 POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
