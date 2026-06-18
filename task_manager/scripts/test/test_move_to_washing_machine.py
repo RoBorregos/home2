@@ -11,12 +11,10 @@ import sys
 
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PointStamped
+# from geometry_msgs.msg import PointStamped
 
 from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
-
-# TODO: re-enable vision when ZED is back
-# from task_manager.subtask_managers.vision_tasks import VisionTasks
+from task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
@@ -42,37 +40,39 @@ HARDCODED_Z = 1.00
 class TestMoveToWashingMachine(Node):
     def __init__(self):
         super().__init__("test_move_to_washing_machine")
-        # TODO: re-enable vision when ZED is back
-        # self.vision = VisionTasks(self, task=Task.DEBUG)
+        self.vision = VisionTasks(self, task=Task.DEBUG)
         self.manipulation = ManipulationTasks(self, task=Task.DEBUG)
         rclpy.spin_once(self, timeout_sec=1.0)
-        # self.vision.camera_upside_down(CAMERA_FLIP)
+        self.vision.camera_upside_down(CAMERA_FLIP)
 
     def run(self) -> int:
-        # Pre-pose: move the arm to a horizontal-forward stare BEFORE the path
-        # constraint is enforced. The per-axis orientation constraint is applied
-        # to every state in the trajectory; if the start state already satisfies
-        # it, the planner doesn't have to fight contortions/self-collisions.
-        Logger.info(self, "Pre-positioning to table_stare so gripper starts horizontal...")
-        pre_status = self.manipulation.move_joint_positions(
-            named_position="table_stare", velocity=0.3
-        )
-        if pre_status != Status.EXECUTION_SUCCESS:
-            Logger.error(self, "Pre-position to table_stare failed. Aborting.")
-            return 3
+        # Pre-pose only needed when the per-axis path constraint is enabled
+        # (table_stare keeps the start state in roughly the constraint manifold).
+        # With the scalar goal-only tolerance, leaving the arm in its current pose
+        # gives the planner more flexibility — table_stare leaves the gripper
+        # pointing 50° down, which forces a wrist flip to reach a horizontal goal.
+        # Logger.info(self, "Pre-positioning to table_stare so gripper starts horizontal...")
+        # pre_status = self.manipulation.move_joint_positions(
+        #     named_position="table_stare", velocity=0.3
+        # )
+        # if pre_status != Status.EXECUTION_SUCCESS:
+        #     Logger.error(self, "Pre-position to table_stare failed. Aborting.")
+        #     return 3
 
-        Logger.info(self, "Using HARDCODED centroid (vision disabled)")
-        point = PointStamped()
-        point.header.frame_id = "base_link"
-        point.header.stamp = self.get_clock().now().to_msg()
-        point.point.x = HARDCODED_X
-        point.point.y = HARDCODED_Y
-        point.point.z = HARDCODED_Z
-        # TODO: re-enable vision when ZED is back
-        # point = self.vision.get_moondream_point_3d(SUBJECT)
-        # if point is None:
-        #     Logger.error(self, "No centroid returned from moondream. Aborting.")
-        #     return 1
+        # --- HARDCODED fallback (kept commented for quick debugging without ZED) ---
+        # Logger.info(self, "Using HARDCODED centroid (vision disabled)")
+        # point = PointStamped()
+        # point.header.frame_id = "base_link"
+        # point.header.stamp = self.get_clock().now().to_msg()
+        # point.point.x = HARDCODED_X
+        # point.point.y = HARDCODED_Y
+        # point.point.z = HARDCODED_Z
+        # --- Vision path ---
+        Logger.info(self, "Requesting washing machine hole centroid from moondream...")
+        point = self.vision.get_moondream_point_3d(SUBJECT)
+        if point is None:
+            Logger.error(self, "No centroid returned from moondream. Aborting.")
+            return 1
 
         p = point.point
         Logger.success(
@@ -90,13 +90,16 @@ class TestMoveToWashingMachine(Node):
             forward_distance=FORWARD_DISTANCE,
             lateral=LATERAL,
             velocity=VELOCITY,
-            tolerance_orientation=0.2,
+            tolerance_orientation=0.5,  # ~28° at goal — wide enough for IK sampler to hit
             # Per-axis path constraint in base_link: [rot_X, rot_Y, rot_Z].
-            # X (wrist roll about approach) FREE; Y (pitch up/down) and Z (yaw)
-            # at ~11° — gripper stays ~horizontal forward but planner has slack
-            # so the goal sampler can find valid IK and the path can avoid
-            # self-collisions. Tighten back to 0.05 only if the result looks tilted.
-            # per_axis_orientation_tolerance=(3.14159, 0.2, 0.2),
+            # X (wrist roll about approach) FREE.
+            # Y (pitch up/down) wide (~57°) — table_stare starts with the gripper
+            # pitched ~50° down. If Y is too tight, the START STATE itself violates
+            # the constraint and the projection forces self-collisions.
+            # Z (yaw) tight (~17°) — gripper must keep pointing forward, not sideways.
+            # The scalar tolerance_orientation=0.2 above still pulls the GOAL to
+            # horizontal regardless of Y slack.
+            # per_axis_orientation_tolerance=(3.14159, 1.0, 0.3),
         )
 
         if status == Status.EXECUTION_SUCCESS:
@@ -114,11 +117,10 @@ def main(args=None):
     except KeyboardInterrupt:
         rc = 130
     finally:
-        # TODO: re-enable vision when ZED is back
-        # try:
-        #     node.vision.camera_upside_down(False)
-        # except Exception:
-        #     pass
+        try:
+            node.vision.camera_upside_down(False)
+        except Exception:
+            pass
         node.destroy_node()
         rclpy.shutdown()
     sys.exit(rc)
