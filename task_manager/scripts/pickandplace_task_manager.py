@@ -159,7 +159,7 @@ class PickAndPlaceTM(Node):
             Location.CABINET: ("kitchen", "cabinet"),
             Location.TRASH_BIN: ("kitchen", "trash_bin"),
             Location.BREAKFAST_SURFACE: ("kitchen", "dining_table"),
-            Location.BREAKFAST_ITEMS: ("kitchen", "breakfast_items"),
+            Location.BREAKFAST_ITEMS: ("kitchen", "breakfast_surface"),
         }
 
         # Object tracking
