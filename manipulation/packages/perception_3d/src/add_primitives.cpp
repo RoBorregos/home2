@@ -589,12 +589,13 @@ public:
     if (request->is_plane) {
       RCLCPP_INFO(this->get_logger(), "Adding plane primitive");
 
-      BoxPrimitiveParams box_params;
-
-      STATUS_RESPONSE status = RansacNormals(cloud, box_params);
-
-      ASSERT_AND_RETURN_CODE(
-          status, OK, "Error computing box primitive with code %d", status);
+      // The plane cloud arrives in base_link. Instead of estimating the
+      // orientation statistically via PCA (RansacNormals), which was often
+      // wrong and produced a tilted plane, hardcode the orientation to the
+      // robot's orientation (identity in base_link) and size the box from an
+      // axis-aligned bounding box so the level slab covers the table.
+      pcl::PointXYZ min_pt, max_pt;
+      pcl::getMinMax3D(*cloud, min_pt, max_pt);
 
       std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
           req2 = std::make_shared<
@@ -608,14 +609,20 @@ public:
 
       req2->collision_objects[0].pose.header.stamp = this->now();
 
-      req2->collision_objects[0].pose.pose.position.x = box_params.centroid.x;
-      req2->collision_objects[0].pose.pose.position.y = box_params.centroid.y;
-      req2->collision_objects[0].pose.pose.position.z = box_params.centroid.z;
+      req2->collision_objects[0].pose.pose.position.x =
+          (min_pt.x + max_pt.x) / 2.0;
+      req2->collision_objects[0].pose.pose.position.y =
+          (min_pt.y + max_pt.y) / 2.0;
+      req2->collision_objects[0].pose.pose.position.z =
+          (min_pt.z + max_pt.z) / 2.0;
 
-      req2->collision_objects[0].pose.pose.orientation = box_params.orientation;
+      req2->collision_objects[0].pose.pose.orientation.x = 0.0;
+      req2->collision_objects[0].pose.pose.orientation.y = 0.0;
+      req2->collision_objects[0].pose.pose.orientation.z = 0.0;
+      req2->collision_objects[0].pose.pose.orientation.w = 1.0;
 
-      req2->collision_objects[0].dimensions.x = box_params.width;
-      req2->collision_objects[0].dimensions.y = box_params.depth;
+      req2->collision_objects[0].dimensions.x = max_pt.x - min_pt.x;
+      req2->collision_objects[0].dimensions.y = max_pt.y - min_pt.y;
       req2->collision_objects[0].dimensions.z = 0.025;
 
       auto res = this->add_collision_object_client->async_send_request(
