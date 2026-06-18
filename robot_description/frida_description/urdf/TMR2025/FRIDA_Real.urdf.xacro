@@ -38,12 +38,12 @@
   <xacro:arg name="default_gripper_baud" default="2000000"/>
   <xacro:arg name="attach_to" default="xarm_base"/>
   <xacro:arg name="attach_xyz" default="0 0 0"/>
-  <xacro:arg name="attach_rpy" default="0 0 1.5707963267948966"/>
+  <xacro:arg name="attach_rpy" default="0 0 0"/>
   <xacro:arg name="mesh_suffix" default="stl"/>
   <xacro:arg name="kinematics_suffix" default=""/>
   <!-- ZED ARGUMENTS -->
   <!-- ROBOT COMPONENTS -->
-  <xacro:include filename="$(find frida_description)/urdf/omnibase/robot.xacro"/>
+  <xacro:include filename="robot_real.xacro"/>
   <!-- MUJOCO PARAMS -->
   <!-- gravcomp mirrors the xarm6 firmware's internal gravity compensation:
        the real servos hold pose against gravity on their own, so the sim does the same.
@@ -92,14 +92,14 @@
   <xacro:if value="$(arg mujoco_plugin)">
     <joint name="world_to_base" type="fixed">
       <parent link="world" />
-      <child link="_base_footprint" />
+      <child link="base_link" />
       <origin rpy="0 0 0" xyz="0 0 0" />
     </joint>
   </xacro:if>
   <xacro:unless value="$(arg mujoco_plugin)">
     <joint name="world_to_base" type="fixed">
       <parent link="world" />
-      <child link="_base_footprint" />
+      <child link="base_link" />
       <origin rpy="0 0 0" xyz="0 0 0.3" />
     </joint>
   </xacro:unless>

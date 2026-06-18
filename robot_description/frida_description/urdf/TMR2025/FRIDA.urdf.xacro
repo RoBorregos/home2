@@ -50,7 +50,7 @@
   <xacro:arg name="simulation" default="false"/>
 
 
-  <xacro:include filename="$(find home_custom_base_description)/urdf/robot.xacro"/>
+  <xacro:include filename="robot.xacro"/>
 
       <!-- Mujoco Config -->
     <xacro:if value="$(arg mujoco_plugin)">
