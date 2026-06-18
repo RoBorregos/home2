@@ -194,7 +194,7 @@ local_costmap:
         # "phantom points linger until the robot moves" problem.
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
         enabled: true
-        voxel_decay: 3.0           # s — lower for faster auto-clear of stale marks
+        voxel_decay: 2.0           # s — lower for faster auto-clear of stale marks
         decay_model: 0             # 0=linear, 1=exponential, -1=persistent
         voxel_size: 0.05
         track_unknown_space: true
@@ -271,7 +271,7 @@ global_costmap:
         # planner also routes around tables / overhangs. Time-decays like the local.
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
         enabled: true
-        voxel_decay: 5.0
+        voxel_decay: 2.0
         decay_model: 0
         voxel_size: 0.05
         track_unknown_space: true
