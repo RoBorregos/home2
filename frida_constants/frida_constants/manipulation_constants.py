@@ -74,11 +74,16 @@ POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Rim pick
-RIM_NAMES = ["basket", "aundry_basket", "laundry_basket"]
+RIM_NAMES = ["basket", "laundry_basket"]
 RIM_PRE_GRASP_HEIGHT = 0.10
 RIM_GRASP_Z_TWEAK = -0.05  # m: target ~3 cm below rim top so fingers straddle the wall
 RIM_DESCENT_SPEED = 20.0  # mm/s
 RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
+
+# Peak pick
+PEAK_NAMES = ["clothes"]  # task-level object_name aliases
+PEAK_PRE_GRASP_HEIGHT = 0.05  # m
+PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
 
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"

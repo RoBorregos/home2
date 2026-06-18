@@ -26,7 +26,7 @@ from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
 
 # Must match an entry in RIM_NAMES (frida_constants.manipulation_constants)
 # and the label the detector publishes for the object.
-OBJECT_NAME = "aundry_basket"
+OBJECT_NAME = "laundry_basket"
 
 
 class TestRimPick(Node):
