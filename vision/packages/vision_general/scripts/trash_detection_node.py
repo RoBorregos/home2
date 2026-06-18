@@ -168,11 +168,23 @@ class TrashDetectionNode(Node):
         raw optical-frame convention (x=right, y=down, z=forward) so TF lookups
         from CAMERA_FRAME apply the correct rotation downstream.
         """
+        # Camera_info and depth image can disagree on resolution (ZED reports
+        # camera_info at RGB size, but depth may be downsampled). Clamp to the
+        # smaller of the two so we never index out of bounds on the depth image.
+        depth_h, depth_w = self.depth_image.shape[:2]
+        max_w = min(self.imageInfo.width, depth_w) - 1
+        max_h = min(self.imageInfo.height, depth_h) - 1
         point2d = (
-            min(max(int(nx * self.imageInfo.width), 0), self.imageInfo.width - 1),
-            min(max(int(ny * self.imageInfo.height), 0), self.imageInfo.height - 1),
+            min(max(int(nx * self.imageInfo.width), 0), max_w),
+            min(max(int(ny * self.imageInfo.height), 0), max_h),
         )
-        depth = get_depth(self.depth_image, point2d)
+        # NOTE: calculations.get_depth has an internal axis swap that causes it
+        # to use the input's first component as row and the second as column,
+        # which is the opposite of the (col, row) convention point2d uses. Pass
+        # it swapped here so the spiral search stays inside the depth image
+        # bounds for non-square frames (otherwise large col indices crash with
+        # IndexError on axis 0). deproject_pixel_to_point expects (col, row).
+        depth = get_depth(self.depth_image, (point2d[1], point2d[0]))
         point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
         ps = PointStamped()
         ps.header.stamp = self.get_clock().now().to_msg()
