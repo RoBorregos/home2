@@ -1,0 +1,9 @@
+# Ask the flat-grasp estimator for one stabilized grasp pose. It collects a
+# few detection frames for object_name, medians the position and returns it.
+string object_name
+int32 num_samples       # frames to average; <= 0 uses the server default
+---
+geometry_msgs/PoseStamped pose
+bool success
+int32 samples_collected
+string message
