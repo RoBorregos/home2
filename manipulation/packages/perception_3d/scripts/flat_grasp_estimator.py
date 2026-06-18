@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 
+import copy
+import time
+
 import rclpy
 from rclpy.node import Node
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 import numpy as np
 import scipy.ndimage as ndi
 from collections import deque
@@ -9,7 +14,6 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PoseStamped
 from scipy.spatial.transform import Rotation
-from std_srvs.srv import SetBool
 
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
@@ -19,9 +23,14 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
-from frida_constants.manipulation_constants import RIM_NAMES
+from frida_constants.manipulation_constants import (
+    RIM_NAMES,
+    FLAT_OBJECT_NAMES,
+    PEAK_NAMES,
+)
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
+from frida_interfaces.srv import EstimateFlatGrasp
 
 # Fixed offset above table surface for grasp contact point (meters)
 GRASP_SURFACE_OFFSET = 0.003
@@ -46,6 +55,10 @@ PEAK_GRID_RES = 0.05  # meters per cell of the elevation (height) grid
 PEAK_NBR = 3  # neighborhood size (cells) for local-maximum detection
 PEAK_MIN_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
 
+# --- Service collection ---
+FLAT_GRASP_DEFAULT_SAMPLES = 10  # frames to median when the caller passes <= 0
+FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
+
 
 class FlatGraspEstimator(Node):
     def __init__(self):
@@ -61,17 +74,27 @@ class FlatGraspEstimator(Node):
         self.intrinsics = None
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
-        self.target_classes = ["spoon", "fork", "knife"]
-        self.rim_classes = list(RIM_NAMES)
+        self.target_classes = [n.lower() for n in FLAT_OBJECT_NAMES]
+        self.rim_classes = [n.lower() for n in RIM_NAMES]
+        self.peak_classes = [n.lower() for n in PEAK_NAMES]
 
-        # Start disabled — only enabled explicitly before a cutlery pick.
-        # Saves CPU/network when no manipulation is in progress.
-        self.enabled = False
+        # Collection state. The node only does the heavy per-frame work while a
+        # service request is collecting samples; it is idle otherwise (saves CPU).
+        self._collecting = False
+        self._target_label = None
+        self._peak_mode = False
+        self._samples = []
 
         # Rolling buffer for table height stabilization
         self.table_height_buffer = deque(maxlen=TABLE_HEIGHT_BUFFER_SIZE)
 
-        self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
+        # Reentrant group so the service handler can wait while the depth /
+        # detection callbacks keep filling the sample buffer (needs MultiThreadedExecutor).
+        cb_group = ReentrantCallbackGroup()
+
+        self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10, callback_group=cb_group
+        )
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, 1
         )
@@ -80,12 +103,13 @@ class FlatGraspEstimator(Node):
             DETECTIONS_TOPIC,
             self.detections_callback,
             10,
+            callback_group=cb_group,
         )
 
+        # Debug visualization (published while collecting).
         self.pose_pub = self.create_publisher(
             PoseStamped, "/manipulation/flat_grasp_pose", 10
         )
-
         self.rim_pose_pub = self.create_publisher(
             PoseStamped, "/manipulation/rim_grasp_pose", 10
         )
@@ -94,28 +118,75 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/peak_grasp_pose", 10
         )
 
-        self.enable_srv = self.create_service(
-            SetBool, "/flat_grasp_estimator/enable", self.enable_callback
+        self.estimate_srv = self.create_service(
+            EstimateFlatGrasp,
+            "/manipulation/estimate_flat_grasp",
+            self.estimate_flat_grasp_cb,
+            callback_group=cb_group,
         )
 
         self.get_logger().info(
-            f"Flat Grasp Estimator initialized (disabled). Mapping to: {self.target_frame}"
+            f"Flat Grasp Estimator ready (service). Mapping to: {self.target_frame}"
         )
 
-    def enable_callback(self, request, response):
-        """Enable/disable detection processing. When disabled the node stays
-        alive and keeps its subscriptions but skips all work in the hot path."""
-        self.enabled = bool(request.data)
-        # Clear stale buffers when toggling so the next enable starts clean.
-        if not self.enabled:
-            self.table_height_buffer.clear()
+    def estimate_flat_grasp_cb(self, request, response):
+        """Collect several frames for request.object_name and return a single
+        stabilized grasp pose (median position, latest PCA orientation)."""
+        label = request.object_name.lower()
+        is_peak = label in self.peak_classes
+        if (
+            label not in self.target_classes
+            and label not in self.rim_classes
+            and not is_peak
+        ):
+            response.success = False
+            response.message = f"'{request.object_name}' is not a flat/rim/peak object"
+            return response
+        if self.intrinsics is None:
+            response.success = False
+            response.message = "camera intrinsics not received yet"
+            return response
+
+        n = (
+            request.num_samples
+            if request.num_samples > 0
+            else FLAT_GRASP_DEFAULT_SAMPLES
+        )
+
+        # Start a fresh collection session.
+        self._samples = []
+        self._target_label = label
+        self._peak_mode = is_peak
+        self.table_height_buffer.clear()
+        self.latest_depth = None
+        self._collecting = True
+
+        deadline = time.time() + FLAT_GRASP_TIMEOUT
+        while time.time() < deadline and len(self._samples) < n:
+            time.sleep(0.05)
+        self._collecting = False
+
+        samples = list(self._samples)
+        self.get_logger().info(
+            f"Collected {len(samples)} grasp samples for '{request.object_name}'"
+        )
+        if not samples:
+            response.success = False
+            response.message = f"no grasp samples for '{request.object_name}' within {FLAT_GRASP_TIMEOUT}s"
+            return response
+
+        pose = copy.deepcopy(samples[-1])  # latest PCA orientation
+        pose.pose.position.x = float(np.median([s.pose.position.x for s in samples]))
+        pose.pose.position.y = float(np.median([s.pose.position.y for s in samples]))
+        pose.pose.position.z = float(np.median([s.pose.position.z for s in samples]))
+        response.pose = pose
         response.success = True
-        response.message = "enabled" if self.enabled else "disabled"
-        self.get_logger().info(f"Flat Grasp Estimator {response.message}")
+        response.samples_collected = len(samples)
+        response.message = f"averaged {len(samples)} samples"
         return response
 
     def depth_callback(self, msg):
-        if not self.enabled:
+        if not self._collecting:
             return
         self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
         self.depth_frame_id = msg.header.frame_id
@@ -130,18 +201,30 @@ class FlatGraspEstimator(Node):
             }
 
     def detections_callback(self, msg):
-        if not self.enabled:
+        if not self._collecting:
             return
         if self.latest_depth is None or self.intrinsics is None:
             return
         for det in msg.detections:
             label = det.label_text.lower()
-            if label in self.target_classes:
-                self.process_flat_object(det)
+            if self._peak_mode:
+                # Peak content (e.g. clothes) is found inside a basket/rim
+                # detection, so the requested label never matches directly.
+                if label not in self.rim_classes:
+                    continue
+                pose = self.process_peak_object(det)
+                pub = self.peak_pose_pub
+            elif label != self._target_label:
+                continue
             elif label in self.rim_classes:
-                # A basket detection feeds both the rim grasp and the peak grasp.
-                self.process_rim_object(det)
-                self.process_peak_object(det)
+                pose = self.process_rim_object(det)
+                pub = self.rim_pose_pub
+            else:
+                pose = self.process_flat_object(det)
+                pub = self.pose_pub
+            if pose is not None:
+                self._samples.append(pose)
+                pub.publish(pose)  # debug viz
 
     def get_stable_table_height(self, new_reading):
         """Add a new table height reading and return a stable averaged value.
@@ -309,10 +392,8 @@ class FlatGraspEstimator(Node):
         new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
-        self.pose_pub.publish(
-            self._make_grasp_pose(
-                float(centroid_xy[0]), float(centroid_xy[1]), float(grasp_z), new_quat
-            )
+        return self._make_grasp_pose(
+            float(centroid_xy[0]), float(centroid_xy[1]), float(grasp_z), new_quat
         )
 
     def process_rim_object(self, detection: ObjectDetection):
@@ -382,7 +463,7 @@ class FlatGraspEstimator(Node):
         new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
-        self.rim_pose_pub.publish(self._make_grasp_pose(rim_x, rim_y, rim_z, new_quat))
+        return self._make_grasp_pose(rim_x, rim_y, rim_z, new_quat)
 
     def process_peak_object(self, detection: ObjectDetection):
         """Top-down grasp on the highest content inside a cavity."""
@@ -466,17 +547,21 @@ class FlatGraspEstimator(Node):
         new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
-        self.peak_pose_pub.publish(
-            self._make_grasp_pose(peak_grasp_x, peak_grasp_y, peak_grasp_z, new_quat)
-        )
+        return self._make_grasp_pose(peak_grasp_x, peak_grasp_y, peak_grasp_z, new_quat)
 
 
 def main(args=None):
     rclpy.init(args=args)
     node = FlatGraspEstimator()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
+    try:
+        executor.spin()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
