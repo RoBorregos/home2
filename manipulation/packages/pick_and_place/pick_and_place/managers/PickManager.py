@@ -1,10 +1,6 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_interfaces.srv import (
-    PickPerceptionService,
-    DetectionHandler,
-    EstimateFlatGrasp,
-)
-from geometry_msgs.msg import PointStamped
+from frida_interfaces.srv import PickPerceptionService, DetectionHandler
+from geometry_msgs.msg import PoseStamped, PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
@@ -16,10 +12,8 @@ from frida_motion_planning.utils.service_utils import (
 from frida_constants.manipulation_constants import (
     PICK_MAX_DISTANCE,
     CUTLERY_NAMES,
-    FLAT_OBJECT_NAMES,
     POUR_OBJECT_NAMES,
     RIM_NAMES,
-    PEAK_NAMES,
 )
 from typing import Tuple
 import time
@@ -49,8 +43,14 @@ CFG_PATHS = [
 # If it hits too hard, use positive values (e.g. 0.02)
 FLAT_GRASP_Z_TWEAK = 0.076
 
-# Max time to wait for the flat_grasp_estimator service to respond (seconds)
+# Timeout waiting for the flat_grasp_estimator to publish a pose (seconds)
 FLAT_GRASP_TIMEOUT = 5.0
+
+# Number of poses to collect and average for stable Z
+FLAT_GRASP_SAMPLES = 10
+
+# Time to collect samples (seconds)
+FLAT_GRASP_SAMPLE_WINDOW = 3.0
 
 
 def is_cutlery(object_name: str) -> bool:
@@ -59,24 +59,10 @@ def is_cutlery(object_name: str) -> bool:
     return object_name.lower() in CUTLERY_NAMES
 
 
-def is_flat_grasp(object_name: str) -> bool:
-    """Objects picked with the flat-grasp estimator (cutlery, plates, ...)."""
-    if object_name is None:
-        return False
-    return object_name.lower() in FLAT_OBJECT_NAMES
-
-
 def is_rim(object_name: str) -> bool:
     if object_name is None:
         return False
     return object_name.lower() in RIM_NAMES
-
-
-def is_peak(object_name: str) -> bool:
-    """Pick the highest content inside a cavity (e.g. clothes in a basket)."""
-    if object_name is None:
-        return False
-    return object_name.lower() in PEAK_NAMES
 
 
 def is_pour_object(object_name: str) -> bool:
@@ -92,14 +78,47 @@ class PickManager:
     def __init__(self, node):
         self.node = node
 
+        self.latest_flat_grasp = None
+        self._collecting_samples = False
+        self._grasp_samples = []
+        self._active_topic = None  # "flat" | "rim"
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
-        # Flat/rim grasps are obtained on demand from the flat_grasp_estimator
-        # service (it internally averages several frames and returns one pose).
-        self._estimate_flat_grasp_client = self.node.create_client(
-            EstimateFlatGrasp, "/manipulation/estimate_flat_grasp"
+        self.node.create_subscription(
+            PoseStamped, "/manipulation/flat_grasp_pose", self._flat_cb, 10
         )
+        self.node.create_subscription(
+            PoseStamped, "/manipulation/rim_grasp_pose", self._rim_cb, 10
+        )
+
+        self._flat_estimator_enable = self.node.create_client(
+            SetBool, "/flat_grasp_estimator/enable"
+        )
+
+    def _flat_cb(self, msg):
+        if self._active_topic == "flat":
+            self.latest_flat_grasp = msg
+            if self._collecting_samples:
+                self._grasp_samples.append(msg)
+
+    def _rim_cb(self, msg):
+        if self._active_topic == "rim":
+            self.latest_flat_grasp = msg
+            if self._collecting_samples:
+                self._grasp_samples.append(msg)
+
+    def set_flat_estimator(self, enabled: bool):
+        """Enable/disable the (flat/rim) grasp estimator node."""
+        if not self._flat_estimator_enable.wait_for_service(timeout_sec=2.0):
+            self.node.get_logger().warn(
+                "flat_grasp_estimator enable service unavailable"
+            )
+            return
+        request = SetBool.Request()
+        request.data = enabled
+        future = self._flat_estimator_enable.call_async(request)
+        wait_for_future(future, timeout=2)
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params, is_shelf: bool = False
@@ -108,11 +127,10 @@ class PickManager:
         self.node.get_logger().info("Setting initial joint positions")
 
         is_rim_object = is_rim(object_name)
-        is_peak_object = is_peak(object_name)
-        is_flat_object = is_flat_grasp(object_name) or is_rim_object or is_peak_object
+        is_flat_object = is_cutlery(object_name) or is_rim_object
 
         if not pick_params.in_configuration:
-            if is_rim_object or is_peak_object:
+            if is_rim_object:
                 stare_position = "look_side_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
@@ -129,38 +147,76 @@ class PickManager:
 
         if is_flat_object:
             self.node.get_logger().info(
-                f"Flat object detected: {object_name}. Requesting pose from estimator service..."
+                f"Flat object detected: {object_name}. Waiting for grasp estimator..."
             )
 
-            if not self._estimate_flat_grasp_client.wait_for_service(timeout_sec=5.0):
-                self.node.get_logger().error("estimate_flat_grasp service unavailable")
-                return False, None
+            # Enable the estimator so it starts publishing grasp poses.
+            self._active_topic = "rim" if is_rim_object else "flat"
+            self.set_flat_estimator(True)
 
-            request = EstimateFlatGrasp.Request()
-            request.object_name = object_name
-            request.num_samples = 0  # let the estimator use its default
-            future = self._estimate_flat_grasp_client.call_async(request)
-            future = wait_for_future(future, timeout=FLAT_GRASP_TIMEOUT + 3.0)
-            response = future.result() if future else None
+            # Collect multiple poses and average for stable Z
+            self._grasp_samples = []
+            self._collecting_samples = True
+            self.latest_flat_grasp = None
 
-            if response is None or not response.success:
-                reason = response.message if response is not None else "no response"
+            # Wait for first pose (timeout if estimator isn't running)
+            timeout_iterations = int(FLAT_GRASP_TIMEOUT / 0.1)
+            for _ in range(timeout_iterations):
+                if self.latest_flat_grasp is not None:
+                    break
+                time.sleep(0.1)
+
+            if self.latest_flat_grasp is None:
+                self._collecting_samples = False
+                self.set_flat_estimator(False)
                 self.node.get_logger().error(
-                    f"Flat grasp estimation failed for {object_name}: {reason}"
+                    f"Timeout: flat_grasp_pose not received for {object_name}"
                 )
                 return False, None
 
-            # Rim/Peak: pose Z as-is (pick_server applies its own offset).
-            # Flat: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
-            z_tweak = 0.0 if (is_rim_object or is_peak_object) else FLAT_GRASP_Z_TWEAK
-            grasp_pose = response.pose
-            grasp_pose.pose.position.z += z_tweak
+            # Collect more samples over the sample window
             self.node.get_logger().info(
-                f"Flat grasp pose received ({response.samples_collected} samples), +tweak={z_tweak}"
+                f"First pose received, collecting {FLAT_GRASP_SAMPLES} samples..."
+            )
+            sample_iterations = int(FLAT_GRASP_SAMPLE_WINDOW / 0.1)
+            for _ in range(sample_iterations):
+                if len(self._grasp_samples) >= FLAT_GRASP_SAMPLES:
+                    break
+                time.sleep(0.1)
+
+            self._collecting_samples = False
+            samples = self._grasp_samples
+
+            self.node.get_logger().info(f"Collected {len(samples)} grasp samples")
+
+            if len(samples) == 0:
+                self.set_flat_estimator(False)
+                self.node.get_logger().error("No grasp samples collected")
+                return False, None
+
+            # Average XY and Z across all samples for stability
+            avg_x = np.median([s.pose.position.x for s in samples])
+            avg_y = np.median([s.pose.position.y for s in samples])
+            avg_z = np.median([s.pose.position.z for s in samples])
+            z_std = np.std([s.pose.position.z for s in samples])
+
+            # Rim: publish the rim Z as-is; pick_server applies RIM_GRASP_Z_TWEAK.
+            # Flat: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
+            z_tweak = 0.0 if is_rim_object else FLAT_GRASP_Z_TWEAK
+
+            self.node.get_logger().info(
+                f"Averaged pose: X={avg_x:.3f}, Y={avg_y:.3f}, "
+                f"Z={avg_z:.4f} (std={z_std:.4f}), +tweak={z_tweak}"
             )
 
-            # Do NOT call get_object_cluster: it adds the table as a collision
-            # object which makes MoveIt reject all near-table paths.
+            # Use the last sample's orientation (PCA-computed) with averaged position
+            grasp_pose = copy.deepcopy(samples[-1])
+            grasp_pose.pose.position.x = float(avg_x)
+            grasp_pose.pose.position.y = float(avg_y)
+            grasp_pose.pose.position.z = float(avg_z) + z_tweak
+
+            # Do NOT call get_object_cluster — it adds the table as a
+            # collision object which makes MoveIt reject all near-table paths
             object_cluster = None
             points = []
 
@@ -233,8 +289,8 @@ class PickManager:
 
         if is_flat_object:
             # Flat: 90° alternative (either short/long axis grip works).
-            # Rim/Peak: 180° flip about Z (top-down grasp is symmetric).
-            alt_angle = 180 if (is_rim_object or is_peak_object) else 90
+            # Rim: 180° flip about Z keeps the fingers radial.
+            alt_angle = 180 if is_rim_object else 90
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
                 [
@@ -371,17 +427,6 @@ class PickManager:
             self.node.get_logger().info(
                 "Rim pick: holding position (skipping return to stare)"
             )
-        elif is_peak_object:
-            # Return to the initial named pose (MoveIt) after grabbing the content.
-            self.node.get_logger().info("Peak pick: returning to look_side_stare")
-            self.node.clear_octomap()
-            for _ in range(5):
-                if send_joint_goal(
-                    move_joints_action_client=self.node._move_joints_client,
-                    named_position="look_side_stare",
-                    velocity=0.5,
-                ):
-                    break
         else:
             self.node.get_logger().info("Returning to position")
 

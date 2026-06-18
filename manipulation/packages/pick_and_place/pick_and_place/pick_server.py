@@ -18,7 +18,7 @@ from frida_constants.manipulation_constants import (
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
     SAFETY_HEIGHT,
-    FLAT_OBJECT_NAMES,
+    CUTLERY_NAMES,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
@@ -27,16 +27,12 @@ from frida_constants.manipulation_constants import (
     RIM_PRE_GRASP_HEIGHT,
     RIM_DESCENT_SPEED,
     RIM_DESCENT_DISTANCE,
-    PEAK_NAMES,
-    PEAK_PRE_GRASP_HEIGHT,
-    FIXED_DISTANCE_MOVE_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
     RemoveCollisionObject,
-    FixedDistanceMove,
 )
 from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
@@ -181,25 +177,8 @@ class PickMotionServer(Node):
             10,
         )
 
-        # Expose the closed-loop fixed-distance cartesian move (up/down) so callers
-        # (e.g. the task manager) can lift the arm out of a tight workspace.
-        self._fixed_distance_move_srv = self.create_service(
-            FixedDistanceMove,
-            FIXED_DISTANCE_MOVE_SERVICE,
-            self._fixed_distance_move_cb,
-            callback_group=self.callback_group,
-        )
-
         self._move_to_pose_action_client.wait_for_server()
         self.get_logger().info("Pick Action Server has been started")
-
-    def _fixed_distance_move_cb(self, request, response):
-        reached = self.fixed_distance_descent(request.distance, descend=request.descend)
-        response.success = reached
-        response.message = (
-            "reached target" if reached else "did not reach target (see logs)"
-        )
-        return response
 
     def _joint_state_cb(self, msg: JointState):
         self._latest_joint_state = msg
@@ -328,15 +307,14 @@ class PickMotionServer(Node):
         pick_result = PickResult()
         grasping_poses = goal_handle.request.grasping_poses
 
-        is_flat = goal_handle.request.object_name.lower() in FLAT_OBJECT_NAMES
+        is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
         is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
-        is_peak = goal_handle.request.object_name.lower() in PEAK_NAMES
 
         if is_flat:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
-        elif is_rim or is_peak:
-            # Each grasping_pose is already a distinct candidate;
+        elif is_rim:
+            # Each grasping_pose is already a distinct radial/flip candidate;
             # no extra z-offset alternatives needed.
             num_grasping_alternatives = 1
             grasping_alternative_distance = 0.0
@@ -515,66 +493,6 @@ class PickMotionServer(Node):
                     self.get_logger().info("[Rim] Gripper closed")
 
                     self.get_logger().info("[Rim] Pick complete!")
-                    return True, pick_result
-
-                elif is_peak:
-                    self.get_logger().info(
-                        f"[Peak] Fixed-distance pick flow for pose {i}"
-                    )
-
-                    # Open gripper
-                    self.get_logger().info("[Peak] Opening gripper...")
-                    self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
-                    open_gripper(self._gripper_set_state_client)
-                    time.sleep(0.5)
-
-                    # Pre-grasp above the content peak (MoveIt)
-                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
-                    pre_grasp_pose.pose.position.z += PEAK_PRE_GRASP_HEIGHT
-
-                    self.get_logger().info(
-                        f"[Peak] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
-                        f"(content Z={ee_link_pose.pose.position.z:.4f})"
-                    )
-
-                    self._clear_octomap()
-
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
-                        self.get_logger().warn(
-                            f"[Peak] Pre-grasp failed for pose {i}, trying next"
-                        )
-                        continue
-
-                    self.get_logger().info("[Peak] Pre-grasp reached")
-
-                    # Clear octomap again before the descent phase.
-                    self.get_logger().info("[Peak] Clearing octomap...")
-                    self._clear_octomap()
-
-                    # Fixed-distance close-loop descent (reuses rim mechanism):
-                    # drives the pre-grasp offset plus penetration into the pile.
-                    self.get_logger().info(
-                        f"[Peak] Descending a fixed {PEAK_PRE_GRASP_HEIGHT * 1000:.0f}mm..."
-                    )
-                    descended = self.fixed_distance_descent(PEAK_PRE_GRASP_HEIGHT)
-
-                    if not descended:
-                        self.get_logger().warn(
-                            f"[Peak] Descent failed for pose {i}, trying next"
-                        )
-                        continue
-
-                    # Close gripper on the content
-                    self.get_logger().info("[Peak] Closing gripper...")
-                    close_gripper(self._gripper_set_state_client)
-                    time.sleep(1.5)
-                    self.get_logger().info("[Peak] Gripper closed")
-
-                    self.get_logger().info("[Peak] Pick complete!")
                     return True, pick_result
 
                 else:
@@ -760,16 +678,13 @@ class PickMotionServer(Node):
 
         return contact_detected
 
-    def fixed_distance_descent(self, distance_m: float, descend: bool = True) -> bool:
+    def fixed_distance_descent(self, distance_m: float) -> bool:
         """
-        Move a fixed distance in Z using xArm mode 5 (cartesian velocity control).
-        Closed-loop on /xarm/robot_states TCP Z. descend=True drives -Z (down),
-        descend=False drives +Z (up) reusing the same mechanism.
+        Descend a fixed distance in -Z using xArm mode 5 (cartesian velocity control).
+        Closed-loop on /xarm/robot_states TCP Z.
         """
-        sign = -1.0 if descend else 1.0
-        direction = "Descending" if descend else "Ascending"
         self.get_logger().info(
-            f"[FixedDescent] {direction} {distance_m * 1000:.0f}mm at "
+            f"[FixedDescent] Descending {distance_m * 1000:.0f}mm at "
             f"{RIM_DESCENT_SPEED:.1f} mm/s"
         )
 
@@ -783,7 +698,7 @@ class PickMotionServer(Node):
                 return False
             time.sleep(0.05)
         start_z = self._get_tcp_z()
-        target_z = start_z + sign * distance_m
+        target_z = start_z - distance_m
         self.get_logger().info(
             f"[FixedDescent] start_z={start_z * 1000:.1f}mm  "
             f"target_z={target_z * 1000:.1f}mm"
@@ -816,7 +731,7 @@ class PickMotionServer(Node):
                 return False
 
             vel_req = MoveVelocity.Request()
-            vel_req.speeds = [0.0, 0.0, sign * RIM_DESCENT_SPEED, 0.0, 0.0, 0.0]
+            vel_req.speeds = [0.0, 0.0, -RIM_DESCENT_SPEED, 0.0, 0.0, 0.0]
             vel_req.is_tool_coord = False
             vel_req.duration = 0.0
 
@@ -856,12 +771,12 @@ class PickMotionServer(Node):
                 if cur_z is None:
                     continue
 
-                moved = (start_z - cur_z) if descend else (cur_z - start_z)
+                descended = start_z - cur_z
 
                 # Reached target?
-                if moved >= distance_m:
+                if descended >= distance_m:
                     self.get_logger().info(
-                        f"[FixedDescent] Reached! moved={moved * 1000:.1f}mm "
+                        f"[FixedDescent] Reached! descended={descended * 1000:.1f}mm "
                         f"(target={distance_m * 1000:.0f}mm)"
                     )
                     reached = True
