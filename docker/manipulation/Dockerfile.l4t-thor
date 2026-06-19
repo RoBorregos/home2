@@ -1,0 +1,52 @@
+# Manipulation image for NVIDIA Jetson Thor (Ubuntu 24.04 / Humble-from-source).
+#
+# Built on top of roborregos/home2:l4t_thor_base (see ../Dockerfile.ROS-l4t-thor).
+# The only real difference vs the Orin Dockerfile.l4t is HOW the ROS packages are
+# installed: the Orin used `apt install ros-humble-zed-msgs ros-humble-moveit*`,
+# which has no binaries on Noble, so here we compile them from source with the
+# general ../ros_source_install.sh helper. CycloneDDS (RMW + config) already comes
+# from the base image, so we don't redo it here.
+
+ARG BASE_IMAGE=roborregos/home2:l4t_thor_base
+FROM ${BASE_IMAGE}
+
+SHELL ["/bin/bash", "-c"]
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN mkdir -p /workspace
+
+# Python Requirements
+COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /workspace/requirements/requirements.txt
+RUN rm -r /workspace/requirements/
+
+RUN chown -R ros:ros /workspace
+
+# ROS packages from source (replaces `apt install ros-humble-zed-msgs ros-humble-moveit*`).
+# Edit ROS_SOURCE_PKGS to add/remove packages. NOTE: `moveit` is the full metapackage
+# and pulls a large dependency tree (incl. rviz-based visualization) from source — if
+# you only need planning headless, narrow this to e.g.
+#   "moveit_ros_planning_interface moveit_planners moveit_kinematics zed_msgs"
+COPY docker/ros_source_install.sh /usr/local/bin/ros_source_install.sh
+RUN chmod +x /usr/local/bin/ros_source_install.sh
+ARG ROS_SOURCE_PKGS="moveit zed_msgs"
+RUN ros_source_install.sh ${ROS_SOURCE_PKGS}
+
+# Install manipulation dependencies (system deps of the home2 packages).
+WORKDIR /installs
+RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
+WORKDIR /installs/home2_install
+RUN (rosdep init || true) && rosdep update \
+    && rosdep install --from-paths /installs/home2_install/ --ignore-src -r \
+       --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y \
+    || true
+RUN rosdep fix-permissions
+WORKDIR /
+RUN rm -r installs/
+
+# Copying GPD script and variables
+RUN echo ". /home/ros/setup_gpd.sh" >> /home/ros/.bashrc
+RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc
+RUN echo "source /workspace/frida_interfaces_cache/install/setup.bash" >> /home/ros/.bashrc
+
+WORKDIR /workspace
