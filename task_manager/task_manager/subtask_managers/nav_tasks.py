@@ -14,11 +14,12 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
+    DOCK_TABLE_SERVICE,
     GOAL_NAV_ACTION_SERVER,
     MOVE_LOCATION_SERVICE,
     SUBTASK_MANAGER,
 )
-from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
+from frida_interfaces.srv import CheckDoor, DockTable, MapAreas, MoveLocation
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
 from rclpy.action import ActionClient
@@ -41,6 +42,7 @@ class NavigationTasks:
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+        self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.navigate_to_pose_client = ActionClient(
             self.node, NavigateToPose, GOAL_NAV_ACTION_SERVER
         )
