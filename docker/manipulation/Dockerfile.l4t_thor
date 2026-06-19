@@ -82,9 +82,10 @@ RUN rm -r installs/
 #   controller_manager - pick_and_place / xarm_controller (pulls the ros2_control
 #                        core: hardware_interface, controller_interface,
 #                        controller_manager_msgs, realtime_tools, ...)
+#   nav2_msgs          - task_manager (cross-area coordinator pulled by manipulation_general)
 # --deps pulls each one's tree; --exclude-path skips whatever ros_base/moveit
 # already provide, so only the ~20-30 genuinely-missing packages get built.
-ARG ROS_EXTRA_PKGS="urdf_launch pcl_ros cv_bridge control_toolbox controller_manager"
+ARG ROS_EXTRA_PKGS="urdf_launch pcl_ros cv_bridge control_toolbox controller_manager nav2_msgs"
 RUN ros_source_install.sh ${ROS_EXTRA_PKGS}
 
 # perception_3d hardcodes `#include <pcl-1.12/pcl/...>` (the Orin shipped PCL 1.12).
