@@ -10,6 +10,7 @@ from frida_motion_planning.utils.service_utils import (
     move_joint_positions,
 )
 from std_srvs.srv import SetBool, Empty
+from std_msgs.msg import Bool
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.action import (
@@ -44,6 +45,7 @@ from frida_constants.manipulation_constants import (
     SCAN_ANGLE_VERTICAL,
     SCAN_ANGLE_HORIZONTAL,
     GET_COLLISION_OBJECTS_SERVICE,
+    ESTOP_TOPIC,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
@@ -152,6 +154,11 @@ class ManipulationCore(Node):
 
         self.place_manager = PlaceManager(self)
 
+        self._estop = False
+        self.create_subscription(
+            Bool, ESTOP_TOPIC, lambda msg: setattr(self, "_estop", msg.data), 10
+        )
+
         self.get_logger().info("Manipulation Core has been started")
 
     def pick_execute(
@@ -223,6 +230,12 @@ class ManipulationCore(Node):
             return (False, PickResult())
 
     def manipulation_server_callback(self, goal_handle):
+        if self._estop:
+            self.get_logger().warn("E-stop active — aborting manipulation task")
+            goal_handle.abort()
+            response = ManipulationAction.Result()
+            response.success = False
+            return response
         task_type = goal_handle.request.task_type
         if task_type == ManipulationTask.POUR:
             object_name = goal_handle.request.pour_params.object_name

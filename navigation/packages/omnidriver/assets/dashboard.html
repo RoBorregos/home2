@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ODrive Dashboard</title>
+<script src="/js/chart.umd.min.js"></script>
+<script src="/js/socket.io.min.js"></script>
+<style>
+:root{
+  --bg:#f0f2f6;--surf:#e8eaf2;--card:#ffffff;
+  --bdr:rgba(0,0,0,.07);--shd:0 1px 5px rgba(0,0,0,.08);
+  --txt:#1a1d2a;--mut:#64748b;
+  --acc:#5c6ef0;--grn:#1a9a60;--amb:#b87900;--red:#c94040;
+  --r:9px;--g:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);
+     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     font-size:12px;display:flex;flex-direction:column;overflow-y:auto}
+
+/* topbar */
+.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+        padding:7px 16px;background:var(--card);border-bottom:1px solid var(--bdr);box-shadow:var(--shd)}
+.topbar h1{font-size:14px;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px;transition:background .4s}
+.dot.ok{background:var(--grn)}
+
+/* outer wrapper – 3 rows */
+.wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--g);padding:var(--g) 14px}
+
+/* ── ROW 1: config (4 equal columns) ── */
+.cfgrow{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--g);flex-shrink:0}
+
+/* ── ROW 2+3: axes 2×2 ── */
+.axes{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:var(--g)}
+
+/* card base */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);
+      box-shadow:var(--shd);padding:9px 11px;display:flex;flex-direction:column}
+.ct{font-size:9px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+.ah{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.aid{font-size:13px;font-weight:600}
+.pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--surf);color:var(--mut)}
+.pill.run{background:rgba(26,154,96,.12);color:var(--grn)}
+.pill.err{background:rgba(201,64,64,.12);color:var(--red)}
+
+/* metrics */
+.mr3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:5px}
+.met{background:var(--surf);border-radius:6px;padding:4px 7px}
+.ml{font-size:9px;color:var(--mut);margin-bottom:1px}
+.mv{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* error row */
+.er{display:flex;align-items:center;gap:4px;font-size:10px;margin-bottom:5px;color:var(--mut)}
+.ec{font-family:monospace;color:var(--red)}.ec.ok{color:var(--grn)}
+
+/* axis chart – fills remaining card height */
+.acw{flex:1;min-height:0;position:relative;margin-bottom:5px}
+
+/* config chart – fixed height so config row stays compact */
+.ccw{position:relative;height:80px;margin-top:4px}
+
+/* buttons */
+.btns{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
+.btn{padding:3px 9px;border-radius:5px;border:1px solid var(--bdr);background:var(--surf);
+     color:var(--txt);font-size:11px;cursor:pointer;transition:background .14s,border-color .14s}
+.btn:hover{background:#e0e3ef;border-color:#c5c8d8}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.pri:hover{background:#6e7ff2;border-color:#6e7ff2}
+.btn.dng{border-color:var(--red);color:var(--red)}.btn.dng:hover{background:rgba(201,64,64,.08)}
+.btn.suc{border-color:var(--grn);color:var(--grn)}.btn.suc:hover{background:rgba(26,154,96,.08)}
+
+/* slider rows */
+.sr{margin-bottom:4px}
+.slb{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:6px}
+.slb label{font-size:10px;color:var(--mut);white-space:nowrap;flex-shrink:0}
+input[type=range]{width:100%;accent-color:var(--acc)}
+
+/* number input */
+.numinp{width:68px;padding:2px 5px;border-radius:4px;border:1px solid var(--bdr);
+        background:var(--surf);color:var(--txt);font-size:11px;font-weight:600;
+        text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+.numinp:focus{outline:none;border-color:var(--acc);background:#fff}
+
+select{padding:3px 6px;border-radius:5px;background:var(--surf);color:var(--txt);
+       border:1px solid var(--bdr);font-size:11px;width:100%}
+select:focus{outline:none;border-color:var(--acc)}
+
+/* axis mask toggles */
+.mbrow{display:flex;gap:4px;margin-bottom:6px;align-items:center}
+.mbl{font-size:10px;color:var(--mut);flex-shrink:0}
+.mb{width:24px;height:20px;border-radius:4px;border:1px solid var(--bdr);background:var(--surf);
+    color:var(--mut);font-size:10px;cursor:pointer;text-align:center;line-height:20px}
+.mb.on{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* global actions grid */
+.gbts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.gbts .btn{padding:5px;text-align:center}
+
+/* scrollable log – fixed height */
+.log{background:var(--surf);border-radius:5px;padding:5px 7px;font-family:monospace;
+     font-size:9.5px;color:var(--mut);height:72px;overflow-y:auto;flex-shrink:0}
+.log .e{color:var(--red)}.log .i{color:var(--amb)}
+
+/* 2-col split inside a card */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>ODrive Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div><span class="dot" id="dot"></span><span style="font-size:11px;color:var(--mut)" id="cl">Disconnected</span></div>
+    <div style="font-size:10px;color:var(--mut)">ROS: <span id="rs" style="color:var(--amb)">waiting</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ══════════════ ROW 1 – CONFIG (4 wide columns) ══════════════ -->
+  <div class="cfgrow">
+
+    <!-- col 1: manual control -->
+    <div class="card">
+      <div class="ct">Last cmd_vel</div>
+      <div class="mr3" style="margin-bottom:7px">
+        <div class="met"><div class="ml">Vx m/s</div><div class="mv" id="cvx">0.000</div></div>
+        <div class="met"><div class="ml">Vy m/s</div><div class="mv" id="cvy">0.000</div></div>
+        <div class="met"><div class="ml">Wz r/s</div><div class="mv" id="cwz">0.000</div></div>
+      </div>
+      <div class="ct">Manual override</div>
+      <div class="sr">
+        <div class="slb"><label>Vx m/s</label><input type="number" class="numinp" id="ovxv" value="0.00" min="-0.5" max="0.5" step="0.01"></div>
+        <input type="range" id="ovx" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+      <div class="sr">
+        <div class="slb"><label>Vy m/s</label><input type="number" class="numinp" id="ovyv" value="0.00" min="-0.5" max="0.5" step="0.01"></div>
+        <input type="range" id="ovy" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+      <div class="sr">
+        <div class="slb"><label>Wz r/s</label><input type="number" class="numinp" id="owzv" value="0.00" min="-0.5" max="0.5" step="0.01"></div>
+        <input type="range" id="owz" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+      <div style="display:flex;gap:5px;margin-top:4px">
+        <button class="btn pri" id="bsv" style="flex:1">Send velocity</button>
+        <button class="btn dng" id="bzv" style="flex:1">Zero</button>
+      </div>
+    </div>
+
+    <!-- col 2: odometry + link status + robot velocity chart -->
+    <div class="card">
+      <div class="ct">Odometry</div>
+      <div class="mr3">
+        <div class="met"><div class="ml">φ rad</div><div class="mv" id="ophi">0.000</div></div>
+        <div class="met"><div class="ml">X m</div><div class="mv" id="ox">0.000</div></div>
+        <div class="met"><div class="ml">Y m</div><div class="mv" id="oy">0.000</div></div>
+      </div>
+      <!-- Link status: ESP32→STM32 age (from firmware), STM32→PC age (measured here). -->
+      <div class="ct">Links</div>
+      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px;font-size:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <span style="color:var(--mut)">ESP32→STM32</span>
+          <span style="display:flex;gap:6px;align-items:center">
+            <span id="lnkesp" class="mv" style="font-size:11px">unknown</span>
+            <span id="lnkespp" class="pill">UNKNOWN</span>
+          </span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <span style="color:var(--mut)">STM32→PC</span>
+          <span style="display:flex;gap:6px;align-items:center">
+            <span id="lnkpc" class="mv" style="font-size:11px">unknown</span>
+            <span id="lnkpcp" class="pill">UNKNOWN</span>
+          </span>
+        </div>
+      </div>
+      <div class="ct">Robot velocity</div>
+      <div class="ccw"><canvas id="vc"></canvas></div>
+    </div>
+
+    <!-- col 3: target mask + limits + gains -->
+    <div class="card">
+      <div class="mbrow">
+        <span class="mbl">Target:</span>
+        <button class="mb on" id="mb0">0</button>
+        <button class="mb on" id="mb1">1</button>
+        <button class="mb on" id="mb2">2</button>
+        <button class="mb on" id="mb3">3</button>
+        <button class="btn" id="mball" style="padding:2px 7px;font-size:10px;margin-left:2px">All</button>
+      </div>
+      <div class="g2">
+        <div>
+          <div class="ct">Limits</div>
+          <div class="sr">
+            <div class="slb"><label>Vel t/s</label><input type="number" class="numinp" id="vlv" value="10.00" min="0.5" max="50" step="0.5"></div>
+            <input type="range" id="slvl" min="0.5" max="50" step="0.5" value="10">
+          </div>
+          <div class="sr">
+            <div class="slb"><label>Curr A</label><input type="number" class="numinp" id="clv" value="20.00" min="1" max="60" step="1"></div>
+            <input type="range" id="slcl" min="1" max="60" step="1" value="20">
+          </div>
+          <button class="btn" id="bapl" style="width:100%;margin-top:2px">Apply limits</button>
+        </div>
+        <div>
+          <div class="ct">Gains</div>
+          <div class="sr">
+            <div class="slb"><label>Pos</label><input type="number" class="numinp" id="pgv" value="20.00" min="1" max="200" step="1"></div>
+            <input type="range" id="slpg" min="1" max="200" step="1" value="20">
+          </div>
+          <div class="sr">
+            <div class="slb"><label>Vel</label><input type="number" class="numinp" id="vgv" value="0.160" min="0.01" max="2" step="0.01"></div>
+            <input type="range" id="slvg" min="0.01" max="2" step="0.01" value="0.16">
+          </div>
+          <div class="sr">
+            <div class="slb"><label>Int</label><input type="number" class="numinp" id="vigv" value="0.320" min="0.01" max="4" step="0.01"></div>
+            <input type="range" id="slvi" min="0.01" max="4" step="0.01" value="0.32">
+          </div>
+          <button class="btn" id="bapg" style="width:100%;margin-top:2px">Apply gains</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surf);border-radius:6px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--mut);font-weight:600;white-space:nowrap">Bluetooth control:</span>
+        <span id="btst" style="font-size:11px;font-weight:700;color:var(--red)">Inactive</span>
+      </div>
+    </div>
+
+    <!-- col 4: mode + global actions + log -->
+    <div class="card">
+      <div class="ct">Controller mode</div>
+      <div class="sr"><select id="sctrl"><option value="2">Velocity</option><option value="3">Position</option><option value="1">Torque</option></select></div>
+      <div class="sr"><select id="sinp"><option value="1">Passthrough</option><option value="2">Vel ramp</option><option value="3">Pos filter</option><option value="5">Trap traj</option></select></div>
+      <button class="btn" id="bsm" style="width:100%;margin-bottom:8px">Set mode</button>
+
+      <div class="ct">Global actions</div>
+      <div class="gbts">
+        <button class="btn suc" id="bgst">Startup all</button>
+        <button class="btn dng" id="bgsp">Stop all</button>
+        <button class="btn"     id="bgce">Clear errors</button>
+        <button class="btn dng" id="bgrb">Reboot all</button>
+      </div>
+
+      <div class="ct">Activity log</div>
+      <div class="log" id="log"></div>
+    </div>
+
+  </div><!-- .cfgrow -->
+
+  <!-- ══════════════ ROWS 2 & 3 – AXIS CARDS 2×2 ══════════════ -->
+  <div class="axes" id="axes"></div>
+
+</div><!-- .wrap -->
+
+<script>
+const socket = io();
+const N = 4;
+
+socket.on('connect',    ()=>setConn(true));
+socket.on('disconnect', ()=>setConn(false));
+function setConn(ok){
+  document.getElementById('dot').className='dot'+(ok?' ok':'');
+  document.getElementById('cl').textContent=ok?'Connected':'Disconnected';
+}
+
+// shared robot-velocity chart
+const VH=60, vd={vx:Array(VH).fill(0),vy:Array(VH).fill(0),wz:Array(VH).fill(0)};
+const vc=new Chart(document.getElementById('vc').getContext('2d'),{
+  type:'line',
+  data:{labels:Array(VH).fill(''),datasets:[
+    {label:'Vx',data:vd.vx,borderColor:'#5c6ef0',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+    {label:'Vy',data:vd.vy,borderColor:'#1a9a60',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+    {label:'Wz',data:vd.wz,borderColor:'#b87900',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+  ]},
+  options:{animation:false,responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#64748b',font:{size:9},boxWidth:8}}},
+    scales:{x:{display:false},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b',font:{size:9},maxTicksLimit:3}}}}
+});
+
+// per-axis charts
+const AH=50;
+const ad=Array.from({length:N},()=>({vel:Array(AH).fill(0),iq:Array(AH).fill(0)}));
+const axCharts=[];
+
+const SN={0:'UNDEFINED',1:'IDLE',2:'STARTUP',3:'FULL_CALIB',4:'MOTOR_CALIB',
+          6:'IDX_SEARCH',7:'ENC_CALIB',8:'CLOSED_LOOP',9:'LOCKIN',
+          10:'DIR_FIND',11:'HOMING',12:'HALL_POL',13:'HALL_PHASE'};
+const CM={0:'VOLTAGE',1:'TORQUE',2:'VELOCITY',3:'POSITION'};
+
+const axes=document.getElementById('axes');
+for(let i=0;i<N;i++){
+  axes.insertAdjacentHTML('beforeend',`
+  <div class="card">
+    <div class="ah">
+      <span class="aid">Axis ${i} <span style="font-size:10px;color:var(--mut);font-weight:400" id="nd${i}">(node –)</span></span>
+      <span class="pill" id="pl${i}">IDLE</span>
+    </div>
+    <div class="mr3">
+      <div class="met"><div class="ml">Position t</div><div class="mv" id="po${i}">–</div></div>
+      <div class="met"><div class="ml">Velocity t/s</div><div class="mv" id="ve${i}">–</div></div>
+      <div class="met"><div class="ml">Vbus V</div><div class="mv" id="vb${i}">–</div></div>
+    </div>
+    <div class="mr3">
+      <div class="met"><div class="ml">Iq set A</div><div class="mv" id="is${i}">–</div></div>
+      <div class="met"><div class="ml">Iq meas A</div><div class="mv" id="im${i}">–</div></div>
+      <div class="met"><div class="ml">Ibus A</div><div class="mv" id="ib${i}">–</div></div>
+    </div>
+    <div class="er">Err: <span class="ec ok" id="er${i}">0x00000000</span>&nbsp;Ctrl: <span id="ct${i}">–</span></div>
+    <div class="acw"><canvas id="ac${i}"></canvas></div>
+    <div class="btns">
+      <button class="btn suc" onclick="ax(${i},'startup')">Startup</button>
+      <button class="btn dng" onclick="ax(${i},'stop')">Stop</button>
+      <button class="btn"     onclick="ax(${i},'clear')">Clear err</button>
+      <button class="btn"     onclick="ax(${i},'calib')">Calib</button>
+      <button class="btn dng" onclick="ax(${i},'reboot')">Reboot</button>
+    </div>
+  </div>`);
+
+  axCharts.push(new Chart(document.getElementById(`ac${i}`).getContext('2d'),{
+    type:'line',
+    data:{labels:Array(AH).fill(''),datasets:[
+      {label:'Vel t/s',data:ad[i].vel,borderColor:'#5c6ef0',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+      {label:'Iq A',   data:ad[i].iq, borderColor:'#b87900',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+    ]},
+    options:{animation:false,responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#64748b',font:{size:9},boxWidth:8}}},
+      scales:{x:{display:false},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b',font:{size:9},maxTicksLimit:3}}}}
+  }));
+}
+
+function g(id){return document.getElementById(id)}
+function pillCls(s,e){return e!==0?'pill err':s===8?'pill run':'pill'}
+
+// bidirectional slider ↔ number-input
+function link(slId,niId,fmt,mn,mx){
+  const sl=g(slId),ni=g(niId);
+  sl.oninput=()=>{ni.value=fmt(parseFloat(sl.value))};
+  ni.oninput=()=>{const v=parseFloat(ni.value);if(!isNaN(v))sl.value=Math.max(mn,Math.min(mx,v))};
+  function commit(){let v=parseFloat(ni.value);if(isNaN(v))v=parseFloat(sl.value);v=Math.max(mn,Math.min(mx,v));sl.value=v;ni.value=fmt(v)}
+  ni.onblur=commit;
+  ni.onkeydown=e=>{if(e.key==='Enter'){commit();ni.blur()}};
+}
+link('ovx','ovxv',v=>v.toFixed(2),-0.5,0.5);
+link('ovy','ovyv',v=>v.toFixed(2),-0.5,0.5);
+link('owz','owzv',v=>v.toFixed(2),-0.5,0.5);
+link('slvl','vlv', v=>v.toFixed(2),0.5,50);
+link('slcl','clv', v=>v.toFixed(2),1,60);
+link('slpg','pgv', v=>v.toFixed(2),1,200);
+link('slvg','vgv', v=>v.toFixed(3),0.01,2);
+link('slvi','vigv',v=>v.toFixed(3),0.01,4);
+
+// Link status helpers — render the ESP32→STM32 and STM32→PC ages with
+// an OK / WARN / LOST / UNKNOWN pill.  Thresholds match the Python side:
+//   OK    age < 500 ms
+//   WARN  500 ms ≤ age < 2000 ms
+//   LOST  age ≥ 2000 ms
+//   UNKNOWN  age is null / missing
+function fmtAge(ms){
+  if(ms===null||ms===undefined) return 'unknown';
+  if(ms<1000) return ms.toFixed(0)+' ms';
+  return (ms/1000).toFixed(2)+' s';
+}
+function applyLinkPill(pillEl, status){
+  pillEl.textContent = status;
+  pillEl.classList.remove('run','err');
+  // Colours from the existing palette:
+  //   OK   -> green   (.pill.run)
+  //   WARN -> amber   (inline style, no .pill.amb exists)
+  //   LOST -> red     (.pill.err)
+  //   UNKNOWN -> muted (default .pill)
+  pillEl.style.background=''; pillEl.style.color='';
+  if(status==='OK')        pillEl.classList.add('run');
+  else if(status==='WARN'){ pillEl.style.background='rgba(217,154,40,.12)'; pillEl.style.color='var(--amb)'; }
+  else if(status==='LOST') pillEl.classList.add('err');
+}
+function updateLink(prefix, ageMs, status){
+  g('lnk'+prefix).textContent = fmtAge(ageMs);
+  applyLinkPill(g('lnk'+prefix+'p'), status||'UNKNOWN');
+}
+
+// telemetry
+socket.on('telemetry',(d)=>{
+  g('rs').textContent='live'; g('rs').style.color='var(--grn)';
+  if(d.bt_active!==undefined){const b=g('btst');const _btl=['Inactive','Paired','Active'];const _btc=['var(--red)','var(--amb)','var(--grn)'];const _bti=Math.min(Math.max(d.bt_active,0),2);b.textContent=_btl[_bti];b.style.color=_btc[_bti];}
+  // Always refresh the link widget — the server pushes a fresh
+  // telemetry frame at ~4 Hz so the age values keep advancing even
+  // when the STM32 has gone silent.
+  updateLink('esp', d.esp32_age_ms, d.esp32_status);
+  updateLink('pc',  d.pc_age_ms,    d.pc_status);
+  g('cvx').textContent=d.cmd_vx.toFixed(3);
+  g('cvy').textContent=d.cmd_vy.toFixed(3);
+  g('cwz').textContent=d.cmd_wz.toFixed(3);
+  g('ophi').textContent=d.odom_phi.toFixed(3);
+  g('ox').textContent=d.odom_x.toFixed(3);
+  g('oy').textContent=d.odom_y.toFixed(3);
+  vd.vx.push(d.odom_vx);vd.vx.shift();
+  vd.vy.push(d.odom_vy);vd.vy.shift();
+  vd.wz.push(d.odom_w);vd.wz.shift();
+  vc.data.datasets[0].data=vd.vx;
+  vc.data.datasets[1].data=vd.vy;
+  vc.data.datasets[2].data=vd.wz;
+  vc.update();
+  for(let i=0;i<N;i++){
+    const st=d.axis_states[i],er=d.axis_errors[i],cm=d.ctrl_status[i];
+    g(`nd${i}`).textContent=`(node ${d.node_ids[i]})`;
+    g(`po${i}`).textContent=d.pos_est[i].toFixed(3);
+    g(`ve${i}`).textContent=d.vel_est[i].toFixed(3);
+    g(`vb${i}`).textContent=d.bus_voltage[i].toFixed(2);
+    g(`is${i}`).textContent=d.iq_setpoint[i].toFixed(3);
+    g(`im${i}`).textContent=d.iq_measured[i].toFixed(3);
+    g(`ib${i}`).textContent=d.bus_current[i].toFixed(3);
+    const ec=g(`er${i}`);
+    ec.textContent='0x'+er.toString(16).padStart(8,'0').toUpperCase();
+    ec.className='ec'+(er===0?' ok':'');
+    g(`ct${i}`).textContent=CM[cm]||cm;
+    const pl=g(`pl${i}`);
+    pl.textContent=SN[st]||`STATE_${st}`;
+    pl.className=pillCls(st,er);
+    ad[i].vel.push(d.vel_est[i]);   ad[i].vel.shift();
+    ad[i].iq.push(d.iq_measured[i]);ad[i].iq.shift();
+    axCharts[i].data.datasets[0].data=ad[i].vel;
+    axCharts[i].data.datasets[1].data=ad[i].iq;
+    axCharts[i].update();
+  }
+});
+
+socket.on('log',(m)=>appendLog(m.text,m.level||'i'));
+function appendLog(t,lv){
+  const now=new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const log=g('log');
+  log.insertAdjacentHTML('beforeend',`<div class="${lv}">[${now}] ${t}</div>`);
+  log.scrollTop=log.scrollHeight;
+}
+
+// axis mask
+let mask=0x0F;
+for(let i=0;i<4;i++){
+  g(`mb${i}`).onclick=function(){
+    this.classList.toggle('on');
+    mask=0;
+    for(let j=0;j<4;j++)if(g(`mb${j}`).classList.contains('on'))mask|=(1<<j);
+    if(mask===0)mask=0x0F;
+  };
+}
+g('mball').onclick=()=>{mask=0x0F;for(let j=0;j<4;j++)g(`mb${j}`).classList.add('on')};
+
+function send(o){socket.emit('command',o);appendLog(JSON.stringify(o),'i')}
+function ax(i,a){
+  const m=1<<i;
+  if(a==='startup')send({type:'startup',mask:m,ctrl_mode:parseInt(g('sctrl').value),input_mode:parseInt(g('sinp').value),state:8});
+  if(a==='stop')   send({type:'stop',mask:m});
+  if(a==='clear')  send({type:'clear_errors',mask:m});
+  if(a==='calib')  send({type:'set_state',mask:m,state:3});
+  if(a==='reboot') send({type:'reboot',mask:m});
+}
+
+g('bapl').onclick=()=>send({type:'set_limits',mask,vel_lim:parseFloat(g('vlv').value),curr_lim:parseFloat(g('clv').value)});
+g('bapg').onclick=()=>{
+  send({type:'set_pos_gain',mask,pos_gain:parseFloat(g('pgv').value)});
+  send({type:'set_vel_gains',mask,vel_gain:parseFloat(g('vgv').value),vel_int_gain:parseFloat(g('vigv').value)});
+};
+g('bsm').onclick=()=>{
+  const cm=parseInt(g('sctrl').value),im=parseInt(g('sinp').value);
+  send({type:'stop',mask});
+  setTimeout(()=>send({type:'set_ctrl_mode',mask,ctrl_mode:cm,input_mode:im}),350);
+  setTimeout(()=>send({type:'startup',mask,ctrl_mode:cm,input_mode:im,state:8}),750);
+};
+g('bsv').onclick=()=>send({type:'ctrl',vx:parseFloat(g('ovx').value),vy:parseFloat(g('ovy').value),wz:parseFloat(g('owz').value)});
+g('bzv').onclick=()=>{
+  ['ovx','ovy','owz'].forEach(id=>{g(id).value=0});
+  ['ovxv','ovyv','owzv'].forEach(id=>{g(id).value='0.00'});
+  send({type:'ctrl',vx:0,vy:0,wz:0});
+};
+g('bgst').onclick=()=>send({type:'startup',mask:0x0F,ctrl_mode:parseInt(g('sctrl').value),input_mode:parseInt(g('sinp').value),state:8});
+g('bgsp').onclick=()=>send({type:'stop',mask:0x0F});
+g('bgce').onclick=()=>send({type:'clear_errors',mask:0x0F});
+g('bgrb').onclick=()=>send({type:'reboot',mask:0x0F});
+</script>
+</body>
+</html>

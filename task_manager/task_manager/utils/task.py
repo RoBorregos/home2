@@ -12,4 +12,5 @@ class Task(Enum):
     HAND = 7
     RESTAURANT = 8
     PICK_AND_PLACE = 9
+    DOING_LAUNDRY = 10
     DEBUG = 100

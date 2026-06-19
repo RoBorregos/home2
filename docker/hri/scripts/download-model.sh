@@ -1,5 +1,11 @@
 #!/bin/sh
 
+ENV_FILE="$(dirname "$0")/../.env"
+if [ -f "$ENV_FILE" ]; then
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+fi
+
 ask_for_model() {
     case " $MODELS_TO_DOWNLOAD " in
         *" all "*) return 0 ;;
@@ -91,6 +97,20 @@ download_ei_model() {
     if [ -z "$api_key" ]; then
         printf "Enter Edge Impulse API key for %s: " "$model_name"
         read -r api_key
+        if [ -n "$api_key" ] && [ -f "$ENV_FILE" ]; then
+            local env_var
+            case "$model_name" in
+                door) env_var="EI_API_KEY_DOOR" ;;
+                kws)  env_var="EI_API_KEY_KWS"  ;;
+                *)    env_var="EI_API_KEY_$(echo "$model_name" | tr '[:lower:]' '[:upper:]')" ;;
+            esac
+            if grep -q "^${env_var}=" "$ENV_FILE"; then
+                sed -i "s|^${env_var}=.*|${env_var}=${api_key}|" "$ENV_FILE"
+            else
+                printf '\n%s=%s\n' "$env_var" "$api_key" >> "$ENV_FILE"
+            fi
+            echo "API key saved to $ENV_FILE"
+        fi
     fi
 
     if [ -z "$api_key" ]; then
@@ -98,6 +118,10 @@ download_ei_model() {
         return 1
     fi
 
+    if [ -d "$output_dir" ]; then
+        echo "Removing existing model directory: $output_dir"
+        rm -rf "$output_dir"
+    fi
     mkdir -p "$output_dir"
 
     echo "Downloading Edge Impulse model: $model_name ..."
@@ -159,48 +183,42 @@ download_ei_model() {
 }
 
 if ask_for_model ei-door 6; then
-    if [ -f "$EI_DOWNLOAD_DIR/door/model.eim" ]; then
-        echo "Edge Impulse door model already exists. Skipping download."
-    else
-        download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337"
-    fi
+    download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337"
 fi
 
 if ask_for_model ei-kws 7; then
-    if [ -f "$EI_DOWNLOAD_DIR/kws/model.eim" ]; then
-        echo "Edge Impulse kws model already exists. Skipping download."
+    download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
+fi
+
+if ask_for_model qwen3 3 || ask_for_model nomic-embed-text 4; then
+    # Detect available image
+    if docker images | grep -q "dustynv/ollama"; then
+        IMAGE="dustynv/ollama:0.6.8-r36.4"
+        COMMAND="ollama serve"
+    elif docker images | grep -q "ollama/ollama"; then
+        IMAGE="ollama/ollama"
+        COMMAND=""
     else
-        download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
+        echo "Error: No compatible Ollama image found. Pulling the default image..."
+        docker pull ollama/ollama:latest
+        IMAGE="ollama/ollama"
+        COMMAND=""
     fi
+
+    echo "Running: docker run -d --rm --runtime=nvidia -v \"$SCRIPT_DIR\":/ollama -e OLLAMA_MODELS=/ollama $IMAGE $COMMAND"
+
+    # Don't quote $COMMAND to allow for multiple word commands
+    CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$SCRIPT_DIR":/ollama -e OLLAMA_MODELS=/ollama "$IMAGE" $COMMAND)
+
+    if ask_for_model qwen3 3; then
+        docker exec "$CONTAINER_ID" ollama pull qwen3
+    fi
+
+    if ask_for_model nomic-embed-text 4; then
+        docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
+    fi
+
+    docker stop "$CONTAINER_ID"
 fi
-
-# Detect available image
-if docker images | grep -q "dustynv/ollama"; then
-    IMAGE="dustynv/ollama:0.6.8-r36.4"
-    COMMAND="ollama serve"
-elif docker images | grep -q "ollama/ollama"; then
-    IMAGE="ollama/ollama"
-    COMMAND=""
-else
-    echo "Error: No compatible Ollama image found. Pulling the default image..."
-    docker pull ollama/ollama:latest
-    IMAGE="ollama/ollama"
-    COMMAND=""
-fi
-
-echo "Running: docker run -d --rm --runtime=nvidia -v \"$SCRIPT_DIR\":/ollama -e OLLAMA_MODELS=/ollama $IMAGE $COMMAND"
-
-# Don't quote $COMMAND to allow for multiple word commands
-CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$SCRIPT_DIR":/ollama -e OLLAMA_MODELS=/ollama "$IMAGE" $COMMAND)
-
-if ask_for_model qwen3 3; then
-    docker exec "$CONTAINER_ID" ollama pull qwen3
-fi
-
-if ask_for_model nomic-embed-text 4; then
-    docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
-fi
-
-docker stop "$CONTAINER_ID"
 
 echo "All selected models downloaded."

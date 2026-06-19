@@ -10,8 +10,21 @@ RAD2DEG = 180.0 / PI
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
 XARM_SETMODE_MOVEIT_SERVICE = "/manipulation/xarm/set_moveit_mode"
+XARM_ROBOT_STATES_TOPIC = "/xarm/robot_states"
+XARM_CLEAN_ERROR_SERVICE = "/xarm/clean_error"
+XARM_MOTION_ENABLE_SERVICE = "/xarm/motion_enable"
+XARM_SET_SERVO_ANGLE_SERVICE = "/xarm/set_servo_angle"
+XARM_POSITION_MODE = 0  # mode 0: direct position control, bypasses MoveIt
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
+
+# xArm arm state values (from xArm SDK)
+XARM_STATE_READY = 1
+XARM_STATE_MOVING = 2
+XARM_STATE_PAUSED = 3
+XARM_STATE_STOPPED = 4  # error / e-stop
+
+XARM_ALL_JOINTS_ID = 8  # pass to motion_enable to target all joints
 
 FACE_RECOGNITION_LIFETIME = 0.1
 FOLLOW_FACE_SPEED = 1.5
@@ -24,6 +37,7 @@ ALWAYS_SET_MODE = False
 JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
+ESTOP_TOPIC = "/manipulation/estop"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
@@ -54,8 +68,27 @@ SAFETY_HEIGHT = 0.05
 PICK_MIN_HEIGHT = 0.04
 CUTLERY_PICK_MIN_HEIGHT = 0.002
 CUTLERY_NAMES = ["fork", "knife", "spoon", "cutlery"]
+# Objects picked with the flat-grasp estimator
+FLAT_OBJECT_NAMES = CUTLERY_NAMES + ["plate", "red_plate"]
 POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
+
+# Rim pick
+RIM_NAMES = ["basket", "laundry_basket"]
+RIM_PRE_GRASP_HEIGHT = 0.10
+RIM_GRASP_Z_TWEAK = -0.05  # m: target ~3 cm below rim top so fingers straddle the wall
+RIM_DESCENT_SPEED = 20.0  # mm/s
+RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
+
+# Peak pick
+PEAK_NAMES = ["clothes"]  # task-level object_name aliases
+PEAK_PRE_GRASP_HEIGHT = 0.05  # m
+PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
+
+# Fixed-distance cartesian move service
+FIXED_DISTANCE_MOVE_SERVICE = "/manipulation/fixed_distance_move"
+# Ascent used by the clothes pick to exit the basket workspace
+CLOTHES_BASKET_EXIT_HEIGHT = 0.1  # m
 
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
@@ -69,6 +102,7 @@ PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 CLOSE_BY_MAX_DISTANCE = 0.3  # Maximum distance for close-by heatmap generation
 
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
+MANIPULATION_ENSURE_ARM_READY_SERVICE = "/manipulation/ensure_arm_ready"
 
 ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
 ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"

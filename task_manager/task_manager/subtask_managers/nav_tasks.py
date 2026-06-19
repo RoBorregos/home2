@@ -14,9 +14,10 @@ from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
+    DOCK_TABLE_SERVICE,
     SUBTASK_MANAGER,
 )
-from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation
+from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation, DockTable
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -36,6 +37,7 @@ class NavigationTasks:
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+        self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
 
         # Task Actions and Services check
         self.services = {
@@ -43,6 +45,7 @@ class NavigationTasks:
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+                "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
             },
         }
 
@@ -157,6 +160,34 @@ class NavigationTasks:
                 return (Status.EXECUTION_SUCCESS, "")
             else:
                 CLog.nav(self.node, "ERROR", f"Goal failed: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check(
+        "dock_table_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def dock_table(self, offset=0.0):
+        """Perpendicular-approach (dock to) the table/shelf in front of the robot.
+
+        offset: desired front offset in meters; 0.0 uses the docker default.
+        """
+        CLog.nav(self.node, "MOVE", f"Requesting table docking (offset={offset})")
+        request = DockTable.Request()
+        request.offset = float(offset)
+        future = self.dock_table_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None:
+            if result.success:
+                CLog.nav(self.node, "SUCCESS", "Docked to table")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                CLog.nav(self.node, "ERROR", f"Docking failed: {result.error}")
                 return (Status.EXECUTION_ERROR, result.error)
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")
