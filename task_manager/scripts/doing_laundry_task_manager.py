@@ -38,9 +38,7 @@ class DoingLaundryTM(Node):
 
     def __init__(self):
         super().__init__("doing_laundry_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.DOING_LAUNDRY, mock_areas=["navigation", "hri"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=[])
         self.current_state = DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON
         self.running_task = True
 
@@ -185,7 +183,7 @@ class DoingLaundryTM(Node):
         elif self.current_state == DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE:
             Logger.info(self, "Placing clothes on the laundry table.")
             self.subtask_manager.hri.say("Placing clothes on the table.", wait=False)
-            result = self.subtask_manager.manipulation.place_object("clothes")
+            result = self.subtask_manager.manipulation.place()
 
             if result == Status.EXECUTION_SUCCESS:
                 # Attribute the placement to whichever loop we are currently in.
