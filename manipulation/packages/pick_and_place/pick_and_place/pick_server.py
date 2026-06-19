@@ -51,6 +51,7 @@ from frida_motion_planning.utils.service_utils import (
     open_gripper,
 )
 import time
+from collections import deque
 
 from std_srvs.srv import Empty
 
@@ -81,6 +82,16 @@ CUTLERY_EFFORT_MIN_TRIP = 1.5  # N - floor so a quiet joint does not trip on noi
 # J1 (base yaw) and J6 (tool roll) carry ~no vertical contact force on a top-down
 # grasp, so their effort drift causes false early trips. Exclude them from contact.
 CUTLERY_CONTACT_IGNORE_JOINTS = (0, 5)
+# Jump-based contact: trip on a sudden effort rise vs a trailing reference (robust
+# to slow gravity drift), after the motion settles and past a minimum descent.
+CUTLERY_CONTACT_SETTLE = 1.0  # s - skip the motion-onset spike before detecting
+CUTLERY_MIN_CONTACT_DESCENT = 0.08  # m - do not honor a jump before this depth
+CUTLERY_JUMP_WINDOW = 0.3  # s - age of the trailing effort reference
+CUTLERY_JUMP_TRIP = 2.5  # N - jump over the window that counts as contact
+CUTLERY_JUMP_SUSTAIN = 3  # consecutive samples (~0.06s) the jump must hold
+# Effort drifts several N from rest during a clean descent, so an absolute-vs-rest
+# threshold false-trips; this high ceiling is only a last-resort stop.
+CUTLERY_CONTACT_HARD_CEILING = 15.0  # N
 CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
@@ -433,7 +444,7 @@ class PickMotionServer(Node):
 
                         self.get_logger().info("[Cutlery] Closing gripper...")
                         close_gripper(self._gripper_set_state_client)
-                        time.sleep(1.5)
+                        time.sleep(2.5)  # let the gripper fully close before lifting
                         self.get_logger().info("[Cutlery] Gripper closed")
 
                         # Lift
@@ -710,10 +721,10 @@ class PickMotionServer(Node):
                 f"(threshold={CUTLERY_EFFORT_THRESHOLD}N, grace={CUTLERY_EFFORT_GRACE_PERIOD}s)"
             )
 
-            # --- 4. Monitor effort (adaptive per-joint threshold) ---
-            calib_deltas = []
-            trip = None  # per-joint trip levels, set after the calibration window
-            calib_end = CUTLERY_EFFORT_GRACE_PERIOD + CUTLERY_EFFORT_CALIB_WINDOW
+            # --- 4. Monitor effort: jump-based contact (robust to drift) ---
+            effort_hist = deque()  # (timestamp, effort) within JUMP_WINDOW, post-settle
+            consecutive = 0
+            last_log = 0.0
             while (time.time() - start_time) < CUTLERY_DESCENT_TIMEOUT:
                 time.sleep(0.02)  # 50Hz
 
@@ -723,52 +734,53 @@ class PickMotionServer(Node):
                     continue
 
                 current_effort = np.array(self._latest_joint_state.effort)
-                effort_delta = np.abs(current_effort - effort_baseline)
 
-                # Skip the transient right after velocity starts
-                if elapsed < CUTLERY_EFFORT_GRACE_PERIOD:
+                # Skip the motion-onset transient before any detection.
+                if elapsed < CUTLERY_CONTACT_SETTLE:
                     continue
 
-                # Calibrate each joint's noise floor on the contact-free descent
-                if elapsed < calib_end:
-                    calib_deltas.append(effort_delta)
-                    continue
-                if trip is None:
-                    calib = (
-                        np.array(calib_deltas)
-                        if calib_deltas
-                        else np.zeros((1, len(effort_delta)))
-                    )
-                    trip = calib.mean(axis=0) + CUTLERY_EFFORT_K * calib.std(axis=0)
-                    trip = np.maximum(
-                        trip + CUTLERY_EFFORT_MARGIN, CUTLERY_EFFORT_MIN_TRIP
-                    )
-                    trip = np.minimum(
-                        trip, CUTLERY_EFFORT_THRESHOLD
-                    )  # never above ceiling
-                    for ij in CUTLERY_CONTACT_IGNORE_JOINTS:
-                        if ij < len(trip):
-                            trip[ij] = np.inf  # never trip on these joints
-                    self.get_logger().info(
-                        f"[ForceGuard] Adaptive trip per joint: {[f'{t:.2f}' for t in trip]}"
-                    )
-
-                over = effort_delta > trip
-                considered_delta = effort_delta.copy()
-                for ij in CUTLERY_CONTACT_IGNORE_JOINTS:
-                    if ij < len(considered_delta):
-                        considered_delta[ij] = 0.0
-                if (
-                    over.any()
-                    or float(np.max(considered_delta)) > CUTLERY_EFFORT_THRESHOLD
+                now = time.time()
+                effort_hist.append((now, current_effort))
+                while (
+                    len(effort_hist) > 1
+                    and now - effort_hist[0][0] > CUTLERY_JUMP_WINDOW
                 ):
-                    j = int(np.argmax(effort_delta - trip))
-                    distance_mm = elapsed * CUTLERY_DESCENT_SPEED
-                    self._last_descent_m = distance_mm / 1000.0
+                    effort_hist.popleft()
+
+                descended = elapsed * CUTLERY_DESCENT_SPEED / 1000.0
+                abs_delta = np.abs(current_effort - effort_baseline)
+                jump_mag = np.abs(current_effort - effort_hist[0][1])
+                for ij in CUTLERY_CONTACT_IGNORE_JOINTS:
+                    if ij < len(abs_delta):
+                        abs_delta[ij] = 0.0
+                        jump_mag[ij] = 0.0
+
+                # Diagnostic: profile the slow drift (abs) vs the contact signal (jump).
+                if elapsed - last_log > 1.5:
                     self.get_logger().info(
-                        f"[ForceGuard] CONTACT! Joint {j + 1} "
-                        f"delta={effort_delta[j]:.2f}N > trip={trip[j]:.2f}N "
-                        f"after {elapsed:.2f}s (~{distance_mm:.1f}mm descended)"
+                        f"[ForceGuard] t={elapsed:.1f}s ~{descended * 1000:.0f}mm "
+                        f"max_abs={float(np.max(abs_delta)):.2f}N "
+                        f"max_jump={float(np.max(jump_mag)):.2f}N"
+                    )
+                    last_log = elapsed
+
+                # Real table contact is deep; only honor a trip past the min descent.
+                if descended < CUTLERY_MIN_CONTACT_DESCENT:
+                    continue
+
+                consecutive = (
+                    consecutive + 1 if (jump_mag > CUTLERY_JUMP_TRIP).any() else 0
+                )
+                hard = float(np.max(abs_delta)) > CUTLERY_CONTACT_HARD_CEILING
+                if consecutive >= CUTLERY_JUMP_SUSTAIN or hard:
+                    by_jump = consecutive >= CUTLERY_JUMP_SUSTAIN
+                    metric = jump_mag if by_jump else abs_delta
+                    j = int(np.argmax(metric))
+                    self._last_descent_m = descended
+                    self.get_logger().info(
+                        f"[ForceGuard] CONTACT ({'jump' if by_jump else 'ceiling'})! "
+                        f"Joint {j + 1} {float(metric[j]):.2f}N after {elapsed:.2f}s "
+                        f"(~{descended * 1000:.1f}mm descended)"
                     )
                     contact_detected = True
                     break
