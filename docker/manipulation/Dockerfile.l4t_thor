@@ -32,6 +32,15 @@ RUN chmod +x /usr/local/bin/ros_source_install.sh
 ARG ROS_SOURCE_PKGS="moveit zed_msgs"
 RUN ros_source_install.sh ${ROS_SOURCE_PKGS}
 
+# System libraries the dustynv Orin base bundled but the NGC base does not. On the
+# Orin these are deliberately skipped in rosdep (see --skip-keys below), so they
+# must be installed explicitly here. They are plain Ubuntu packages (no ROS apt
+# needed): PCL (gpd's find_package(PCL)) and C++ OpenCV. PCL on Noble is 1.14,
+# which satisfies gpd's `find_package(PCL 1.9)` minimum.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpcl-dev libopencv-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install manipulation dependencies (system deps of the home2 packages).
 WORKDIR /installs
 RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
