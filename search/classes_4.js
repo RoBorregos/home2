@@ -14,7 +14,8 @@ var searchData=
   ['distribution_11',['Distribution',['../structvamp_1_1rng_1_1Distribution.html',1,'vamp::rng']]],
   ['dockingposerecorder_12',['DockingPoseRecorder',['../classrecord__relative__pose_1_1DockingPoseRecorder.html',1,'record_relative_pose']]],
   ['docktohandlenode_13',['DockToHandleNode',['../classdock__to__handle_1_1DockToHandleNode.html',1,'dock_to_handle']]],
-  ['door_5fcheck_14',['DOOR_CHECK',['../classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html',1,'frida_constants::navigation_constants']]],
-  ['downsamplepointcloud_15',['DownSamplePointCloud',['../classDownSamplePointCloud.html',1,'']]],
-  ['dualmoveitconfigsbuilder_16',['DualMoveItConfigsBuilder',['../classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder.DualMoveItConfigsBuilder'],['../classarm__pkg_1_1moveit__configs__builder__sim_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder_sim.DualMoveItConfigsBuilder']]]
+  ['doinglaundrytm_14',['DoingLaundryTM',['../classdoing__laundry__task__manager_1_1DoingLaundryTM.html',1,'doing_laundry_task_manager']]],
+  ['door_5fcheck_15',['DOOR_CHECK',['../classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html',1,'frida_constants::navigation_constants']]],
+  ['downsamplepointcloud_16',['DownSamplePointCloud',['../classDownSamplePointCloud.html',1,'']]],
+  ['dualmoveitconfigsbuilder_17',['DualMoveItConfigsBuilder',['../classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder.DualMoveItConfigsBuilder'],['../classarm__pkg_1_1moveit__configs__builder__sim_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder_sim.DualMoveItConfigsBuilder']]]
 ];

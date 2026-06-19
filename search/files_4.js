@@ -29,8 +29,10 @@ var searchData=
   ['dock_5fto_5fhandle_2epy_26',['dock_to_handle.py',['../dock__to__handle_8py.html',1,'']]],
   ['docktable_2esrv_27',['DockTable.srv',['../DockTable_8srv.html',1,'']]],
   ['docktohandle_2esrv_28',['DockToHandle.srv',['../DockToHandle_8srv.html',1,'']]],
-  ['down_5fsample_5fpc_2ecpp_29',['down_sample_pc.cpp',['../down__sample__pc_8cpp.html',1,'']]],
-  ['downsample_5fpc_2elaunch_2epy_30',['downsample_pc.launch.py',['../downsample__pc_8launch_8py.html',1,'']]],
-  ['ds4_5fdemo_2epy_31',['ds4_demo.py',['../ds4__demo_8py.html',1,'']]],
-  ['dualshock_5fcmd_5fvel_2elaunch_2epy_32',['dualshock_cmd_vel.launch.py',['../dualshock__cmd__vel_8launch_8py.html',1,'']]]
+  ['doing_5flaundry_2elaunch_2epy_29',['doing_laundry.launch.py',['../doing__laundry_8launch_8py.html',1,'']]],
+  ['doing_5flaundry_5ftask_5fmanager_2epy_30',['doing_laundry_task_manager.py',['../doing__laundry__task__manager_8py.html',1,'']]],
+  ['down_5fsample_5fpc_2ecpp_31',['down_sample_pc.cpp',['../down__sample__pc_8cpp.html',1,'']]],
+  ['downsample_5fpc_2elaunch_2epy_32',['downsample_pc.launch.py',['../downsample__pc_8launch_8py.html',1,'']]],
+  ['ds4_5fdemo_2epy_33',['ds4_demo.py',['../ds4__demo_8py.html',1,'']]],
+  ['dualshock_5fcmd_5fvel_2elaunch_2epy_34',['dualshock_cmd_vel.launch.py',['../dualshock__cmd__vel_8launch_8py.html',1,'']]]
 ];

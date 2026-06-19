@@ -223,6 +223,7 @@ var hierarchy =
       ] ]
     ] ],
     [ "clean_table_task_manager.CleanTableTM.TaskStates", "classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
+    [ "doing_laundry_task_manager.DoingLaundryTM.TaskStates", "classdoing__laundry__task__manager_1_1DoingLaundryTM_1_1TaskStates.html", null ],
     [ "gpsr_task_manager.GPSRTM.TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "hand_task_manager.HandTM.TaskStates", "classhand__task__manager_1_1HandTM_1_1TaskStates.html", null ],
     [ "hric_task_manager.HRIC_TM.TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
@@ -311,6 +312,7 @@ var hierarchy =
       [ "demo_roborregosday.DemoRoborregosDay", "classdemo__roborregosday_1_1DemoRoborregosDay.html", null ],
       [ "dishwasher_node.DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", null ],
       [ "dock_to_handle.DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", null ],
+      [ "doing_laundry_task_manager.DoingLaundryTM", "classdoing__laundry__task__manager_1_1DoingLaundryTM.html", null ],
       [ "ds4_demo.ServoDS4", "classds4__demo_1_1ServoDS4.html", null ],
       [ "egsr_cut.EGPSRTM", "classegsr__cut_1_1EGPSRTM.html", null ],
       [ "ex_orientation_path_constraint.MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", null ],

@@ -123,6 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:acbf59eb45c43409ffb363830439484a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3f4b877e33afbdc634e567c33f35db8b"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3f4b877e33afbdc634e567c33f35db8b">get_joint_positions</a> (self, degrees=False)</td></tr>
 <tr class="separator:a3f4b877e33afbdc634e567c33f35db8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5010c3be21c5f30fc5a1bf68a0909f7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ad5010c3be21c5f30fc5a1bf68a0909f7">move_arm_vertical</a> (self, float distance, bool descend=False)</td></tr>
+<tr class="separator:ad5010c3be21c5f30fc5a1bf68a0909f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af519b448d9abce041240c19af65bbada"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af519b448d9abce041240c19af65bbada">follow_face</a> (self, follow)</td></tr>
 <tr class="separator:af519b448d9abce041240c19af65bbada"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae646f09f6afb46729b6364bb7d53126d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ae646f09f6afb46729b6364bb7d53126d">pick_object</a> (self, str object_name, bool in_configuration=False, bool scan_environment=False)</td></tr>
@@ -195,6 +197,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a18291a639a832f1fa8f7460266b37cd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2688212baf08066991712acefd4e66b5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a2688212baf08066991712acefd4e66b5">_get_joints_client</a></td></tr>
 <tr class="separator:a2688212baf08066991712acefd4e66b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70b214bbe1bb4a16d6fac2d60688e093"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a70b214bbe1bb4a16d6fac2d60688e093">_fixed_distance_move_client</a></td></tr>
+<tr class="separator:a70b214bbe1bb4a16d6fac2d60688e093"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2cef2a8b3755f05c522f2d0f53c0e21"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ae2cef2a8b3755f05c522f2d0f53c0e21">_remove_collision_object_client</a></td></tr>
 <tr class="separator:ae2cef2a8b3755f05c522f2d0f53c0e21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6cb30586f591e5740661c1a8e7cb429"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#aa6cb30586f591e5740661c1a8e7cb429">_manipulation_action_client</a></td></tr>
@@ -811,6 +815,41 @@ Returns:
 </pre> 
 </div>
 </div>
+<a id="ad5010c3be21c5f30fc5a1bf68a0909f7" name="ad5010c3be21c5f30fc5a1bf68a0909f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5010c3be21c5f30fc5a1bf68a0909f7">&#9670;&#160;</a></span>move_arm_vertical()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.move_arm_vertical </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>distance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>descend</em> = <code>False</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Move the TCP a fixed distance in Z (xArm mode 5 closed-loop).
+descend=False raises the arm (+Z); descend=True lowers it (-Z).</pre> 
+</div>
+</div>
 <a id="a2240523eee77c44fc5b6b590d68848c8" name="a2240523eee77c44fc5b6b590d68848c8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2240523eee77c44fc5b6b590d68848c8">&#9670;&#160;</a></span>move_joint_positions()</h2>
 
@@ -1188,6 +1227,28 @@ scan_environment: True to scan environment before picking (useful for shelf pick
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.manipulation_tasks.ManipulationTasks._fix_position_to_plane_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a70b214bbe1bb4a16d6fac2d60688e093" name="a70b214bbe1bb4a16d6fac2d60688e093"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70b214bbe1bb4a16d6fac2d60688e093">&#9670;&#160;</a></span>_fixed_distance_move_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.manipulation_tasks.ManipulationTasks._fixed_distance_move_client</td>
         </tr>
       </table>
   </td>

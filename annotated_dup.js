@@ -85,6 +85,9 @@ var annotated_dup =
     [ "dock_to_handle", "namespacedock__to__handle.html", [
       [ "DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", "classdock__to__handle_1_1DockToHandleNode" ]
     ] ],
+    [ "doing_laundry_task_manager", "namespacedoing__laundry__task__manager.html", [
+      [ "DoingLaundryTM", "classdoing__laundry__task__manager_1_1DoingLaundryTM.html", "classdoing__laundry__task__manager_1_1DoingLaundryTM" ]
+    ] ],
     [ "ds4_demo", "namespaceds4__demo.html", [
       [ "ServoDS4", "classds4__demo_1_1ServoDS4.html", "classds4__demo_1_1ServoDS4" ]
     ] ],

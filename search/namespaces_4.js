@@ -19,11 +19,13 @@ var searchData=
   ['display_5fsim_16',['display_sim',['../namespacedisplay__sim.html',1,'']]],
   ['display_5fsim_5ftmr2025_17',['display_sim_tmr2025',['../namespacedisplay__sim__tmr2025.html',1,'']]],
   ['dock_5fto_5fhandle_18',['dock_to_handle',['../namespacedock__to__handle.html',1,'']]],
-  ['downsample_5fpc_19',['downsample_pc',['../namespacedownsample__pc.html',1,'']]],
-  ['ds4_5fdemo_20',['ds4_demo',['../namespaceds4__demo.html',1,'']]],
-  ['dualshock_5fcmd_5fvel_21',['dualshock_cmd_vel',['../namespacedualshock__cmd__vel.html',1,'']]],
-  ['registry_22',['registry',['../namespacedetectors_1_1registry.html',1,'detectors']]],
-  ['utils_23',['utils',['../namespacedetectors_1_1utils.html',1,'detectors']]],
-  ['yolo_24',['yolo',['../namespacedetectors_1_1yolo.html',1,'detectors']]],
-  ['yolo_5fe_25',['yolo_e',['../namespacedetectors_1_1yolo__e.html',1,'detectors']]]
+  ['doing_5flaundry_19',['doing_laundry',['../namespacedoing__laundry.html',1,'']]],
+  ['doing_5flaundry_5ftask_5fmanager_20',['doing_laundry_task_manager',['../namespacedoing__laundry__task__manager.html',1,'']]],
+  ['downsample_5fpc_21',['downsample_pc',['../namespacedownsample__pc.html',1,'']]],
+  ['ds4_5fdemo_22',['ds4_demo',['../namespaceds4__demo.html',1,'']]],
+  ['dualshock_5fcmd_5fvel_23',['dualshock_cmd_vel',['../namespacedualshock__cmd__vel.html',1,'']]],
+  ['registry_24',['registry',['../namespacedetectors_1_1registry.html',1,'detectors']]],
+  ['utils_25',['utils',['../namespacedetectors_1_1utils.html',1,'detectors']]],
+  ['yolo_26',['yolo',['../namespacedetectors_1_1yolo.html',1,'detectors']]],
+  ['yolo_5fe_27',['yolo_e',['../namespacedetectors_1_1yolo__e.html',1,'detectors']]]
 ];

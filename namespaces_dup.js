@@ -85,6 +85,11 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacedisplay__sim__tmr2025.html#aa678e8e2cd36d56ee50a024b3782ee92", null ]
     ] ],
     [ "dock_to_handle", "namespacedock__to__handle.html", "namespacedock__to__handle" ],
+    [ "doing_laundry", "namespacedoing__laundry.html", [
+      [ "generate_launch_description", "namespacedoing__laundry.html#adb8dec639762b94af76da7878d735ef8", null ],
+      [ "launch_setup", "namespacedoing__laundry.html#a5484971fda232c2271c7e033fb82a335", null ]
+    ] ],
+    [ "doing_laundry_task_manager", "namespacedoing__laundry__task__manager.html", "namespacedoing__laundry__task__manager" ],
     [ "downsample_pc", "namespacedownsample__pc.html", [
       [ "generate_launch_description", "namespacedownsample__pc.html#ac2b4cab7e9652eb5d6142f99b1981c55", null ]
     ] ],
