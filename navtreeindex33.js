@@ -1,5 +1,12 @@
 var NAVTREEINDEX33 =
 {
+"md_docs_ai_coding_standards.html#autotoc_md169":[23,0,0],
+"md_docs_ai_coding_standards.html#autotoc_md170":[23,1],
+"md_docs_ai_coding_standards.html#autotoc_md171":[23,2],
+"md_docs_ai_coding_standards.html#autotoc_md172":[23,2,0],
+"md_docs_ai_coding_standards.html#autotoc_md173":[23,2,1],
+"md_docs_ai_coding_standards.html#autotoc_md174":[23,2,2],
+"md_docs_ai_tech_stack.html":[24],
 "md_docs_ai_tech_stack.html#autotoc_md176":[24,0],
 "md_docs_ai_tech_stack.html#autotoc_md177":[24,1],
 "md_docs_ai_tech_stack.html#autotoc_md178":[24,2],
@@ -242,12 +249,5 @@ var NAVTREEINDEX33 =
 "moondream__proto__pb2__grpc_8py.html#a5290e6e4261f6000cd6fcbadd6984cfd":[39,0,7,0,0,1,3,3],
 "moondream__proto__pb2__grpc_8py.html#aa946769636bca376ac4227070567a942":[39,0,7,0,0,1,3,5],
 "moondream__proto__pb2__grpc_8py.html#ab74109a22860ed8e9341570644b60c2f":[39,0,7,0,0,1,3,4],
-"moondream__proto__pb2__grpc_8py.html#ac878c7ce185e78213b6747ab8f31f5a9":[39,0,7,0,0,1,3,6],
-"moondream__proto__pb2__grpc_8py.html#adde178ad4f2aa86806845ca09c73f23f":[39,0,7,0,0,1,3,7],
-"motion__planning__server_8launch_8py.html":[39,0,3,0,1,2,1],
-"motion__planning__server_8launch_8py.html#a00476858453e5e0a857af18e9d323e0b":[39,0,3,0,1,2,1,0],
-"motion__planning__server_8py.html":[39,0,3,0,1,1,3],
-"motion__planning__server_8py.html#af7e4f543cce624c9891b51d04ce1ee68":[39,0,3,0,1,1,3,1],
-"moveit_8launch_8py.html":[39,0,5,0,1,7],
-"moveit_8launch_8py.html#a552973b0d26e34efef83b8ed1ddd6b19":[39,0,5,0,1,7,0]
+"moondream__proto__pb2__grpc_8py.html#ac878c7ce185e78213b6747ab8f31f5a9":[39,0,7,0,0,1,3,6]
 };

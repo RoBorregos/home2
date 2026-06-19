@@ -6,6 +6,7 @@ var xarm__configurations_8py =
     [ "FRONT_STARE", "xarm__configurations_8py.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
     [ "FRONT_STARE_CARRY_BAG", "xarm__configurations_8py.html#a11fb9768bb78ea1ba4ea84e0e587de48", null ],
     [ "HAND_BAG_POSE", "xarm__configurations_8py.html#a3573bdef9b6b808b471943095e5fbaa4", null ],
+    [ "LOOK_SIDE_LOW_STARE", "xarm__configurations_8py.html#a8b1e396afc938cca2d0950696c816b6b", null ],
     [ "LOOK_SIDE_STARE", "xarm__configurations_8py.html#adca6be045477cf1eaae672f79a1d5b6f", null ],
     [ "NAV_CARRY_BAG_POSE", "xarm__configurations_8py.html#a849e0344225e88acda565e96c4430eea", null ],
     [ "NAV_POSE", "xarm__configurations_8py.html#acd030439b63a120bde3ac743e5bab1f8", null ],

@@ -81,8 +81,9 @@ var searchData=
   ['logs_78',['logs',['../classtest__navigation__manager_1_1TestNavigationManager.html#acb62efd6dd7d0897ff483d8ce198792a',1,'test_navigation_manager::TestNavigationManager']]],
   ['logsoftmax_79',['logsoftmax',['../classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109',1,'utils::CrossEntropyLabelSmooth']]],
   ['look_5fdegrees_80',['look_degrees',['../classhand__task__manager_1_1HandTM.html#adcb4d6f3bcdc57921dfa44a40df6089c',1,'hand_task_manager::HandTM']]],
-  ['look_5fside_5fstare_81',['LOOK_SIDE_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#adca6be045477cf1eaae672f79a1d5b6f',1,'frida_constants::xarm_configurations']]],
-  ['lower_82',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
-  ['lows_83',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
-  ['lying_5fdown_84',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
+  ['look_5fside_5flow_5fstare_81',['LOOK_SIDE_LOW_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a8b1e396afc938cca2d0950696c816b6b',1,'frida_constants::xarm_configurations']]],
+  ['look_5fside_5fstare_82',['LOOK_SIDE_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#adca6be045477cf1eaae672f79a1d5b6f',1,'frida_constants::xarm_configurations']]],
+  ['lower_83',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
+  ['lows_84',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
+  ['lying_5fdown_85',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
 ];

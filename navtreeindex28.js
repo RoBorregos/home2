@@ -1,5 +1,10 @@
 var NAVTREEINDEX28 =
 {
+"classvamp__server_1_1VampServer.html#a948841ce36a5d89ed66a8ae4d9edc210":[38,0,113,0,18],
+"classvamp__server_1_1VampServer.html#a9bc3515e657c9b195a3902dfb7560d90":[37,0,196,0,22],
+"classvamp__server_1_1VampServer.html#a9bc3515e657c9b195a3902dfb7560d90":[38,0,113,0,22],
+"classvamp__server_1_1VampServer.html#a9e1e8b5cf42ee16e9082b20dadec4ca0":[37,0,196,0,7],
+"classvamp__server_1_1VampServer.html#a9e1e8b5cf42ee16e9082b20dadec4ca0":[38,0,113,0,7],
 "classvamp__server_1_1VampServer.html#aa1d72e5e56ea49558520cdf05f66c39b":[37,0,196,0,2],
 "classvamp__server_1_1VampServer.html#aa1d72e5e56ea49558520cdf05f66c39b":[38,0,113,0,2],
 "classvamp__server_1_1VampServer.html#aaae1e04b5c73210976b31b89dd7d25ef":[38,0,113,0,11],
@@ -244,10 +249,5 @@ var NAVTREEINDEX28 =
 "dir_076d647673382d6756d33bda67229ed7.html":[39,0,3,0,2,0],
 "dir_086cc6812def585bed1234f9257c1a0f.html":[39,0,2,2,0],
 "dir_094696d64bf9042e34c4ff3938c71239.html":[39,0,7],
-"dir_0aae9bd200567bc25f117775dfdc4641.html":[39,0,3,0,9,2,0],
-"dir_0b1a3a00bd000d4d3fdc5c11ce1b1673.html":[39,0,0,2,0],
-"dir_0b92744e7227a7ec11bc934c8f977690.html":[39,0,4,0,2,3],
-"dir_0f31f5212231d2a7371bcf069693955d.html":[39,0,4],
-"dir_1149a1c7dd2d12d224db274a9a129583.html":[39,0,7,0,1,2],
-"dir_14735a85225242a1a2e3169c2dcda286.html":[39,0,3,0,6,4]
+"dir_0aae9bd200567bc25f117775dfdc4641.html":[39,0,3,0,9,2,0]
 };
