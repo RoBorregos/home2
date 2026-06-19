@@ -88,7 +88,7 @@ PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
 # Fixed-distance cartesian move service
 FIXED_DISTANCE_MOVE_SERVICE = "/manipulation/fixed_distance_move"
 # Ascent used by the clothes pick to exit the basket workspace
-CLOTHES_BASKET_EXIT_HEIGHT = 0.15  # m
+CLOTHES_BASKET_EXIT_HEIGHT = 0.1  # m
 
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
