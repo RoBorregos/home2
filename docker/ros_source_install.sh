@@ -62,12 +62,18 @@ rosdep install --from-paths "${WS}/src" --ignore-src -r -y \
     --rosdistro "${ROS_DISTRO}" \
     --skip-keys "${ROSDEP_SKIP_KEYS:-}" || true
 
-# Neutralize -Werror across every package. GCC 13 (Noble) promotes deprecation
-# warnings in older ROS deps (octomap's std::iterator, ...) to hard errors, and
-# those packages bake in -Werror themselves. A thin compiler wrapper strips any
-# -Werror* token and appends -Wno-error, so the final command line always wins no
-# matter where the flag was injected (a plain CMAKE_CXX_FLAGS override can't,
-# because the package's own flags come later on the command line).
+# Make older ROS deps build under GCC 13 / Boost 1.83 (Noble). A thin compiler
+# wrapper does two things on every invocation:
+#   * strips any -Werror* token and appends -Wno-error, so deprecation *warnings*
+#     (octomap's std::iterator, moveit's std::random_shuffle, ...) stay warnings.
+#     The wrapper wins regardless of where a package injected -Werror, which a
+#     plain CMAKE_CXX_FLAGS override can't guarantee (the package's flags come
+#     later on the command line).
+#   * defines BOOST_ALLOW_DEPRECATED_HEADERS + BOOST_TIMER_ENABLE_DEPRECATED, so
+#     headers removed/`#error`-guarded in Boost 1.83 (boost/progress.hpp,
+#     boost/timer.hpp in moveit_ros_benchmarks, ...) still compile. These are hard
+#     preprocessor #errors, so -Wno-error does NOT help — only the define does.
+EXTRA_CFLAGS="-Wno-error -DBOOST_ALLOW_DEPRECATED_HEADERS -DBOOST_TIMER_ENABLE_DEPRECATED"
 NOWERR_DIR="$(mktemp -d)"
 REAL_CC="$(command -v gcc)"
 REAL_CXX="$(command -v g++)"
@@ -82,7 +88,7 @@ for a in "\$@"; do
     *) args+=("\$a") ;;
   esac
 done
-exec ${real} "\${args[@]}" -Wno-error
+exec ${real} "\${args[@]}" ${EXTRA_CFLAGS}
 EOF
     chmod +x "${NOWERR_DIR}/${name}"
 done
