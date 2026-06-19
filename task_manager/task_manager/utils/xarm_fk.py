@@ -95,16 +95,42 @@ def bisect(
 
 
 def _solve_j5_horizontal(j1: float, j2: float, j3: float, j4: float, j6: float) -> float:
-    """j5 such that gripper approach axis is horizontal (T[2,2] == 0)."""
+    """j5 such that gripper approach axis is horizontal AND points forward.
 
-    def f(j5: float) -> float:
-        return fk_grasp_frame(j1, j2, j3, j4, j5, j6)[2, 2]
+    The constraint T[2,2] == 0 has two solutions in [J5_MIN, J5_MAX]: one with
+    approach axis pointing +X of base (forward, desired) and one pointing -X /
+    -Z (backward/down). We sweep the range, score each candidate by
+    `score = (T[0,2] > 0) * 1 - |T[2,2]|`, and pick the best — so the
+    forward-pointing branch wins even when both are near-horizontal.
+    """
 
-    j5 = bisect(f, J5_MIN, J5_MAX, target=0.0)
-    if j5 is None:
-        sweep = np.linspace(J5_MIN, J5_MAX, 80)
-        j5 = float(sweep[int(np.argmin([abs(f(v)) for v in sweep]))])
-    return float(max(J5_MIN, min(J5_MAX, j5)))
+    def fk(j5: float) -> np.ndarray:
+        return fk_grasp_frame(j1, j2, j3, j4, j5, j6)
+
+    sweep = np.linspace(J5_MIN, J5_MAX, 121)
+    best_j5 = None
+    best_score = -math.inf
+    for v in sweep:
+        T = fk(float(v))
+        # Prefer forward-pointing approach axis (T[0,2] > 0) AND small |T[2,2]|.
+        # Heavy penalty if pointing backwards/down.
+        forward = 1.0 if T[0, 2] > 0.0 else -1.0
+        score = forward - abs(T[2, 2])
+        if score > best_score:
+            best_score = score
+            best_j5 = float(v)
+
+    # Refine around the best candidate by bisecting on T[2,2]=0 over a tight
+    # window — this keeps us on the chosen (forward) branch.
+    if best_j5 is not None:
+        window = math.radians(20.0)
+        lo = max(J5_MIN, best_j5 - window)
+        hi = min(J5_MAX, best_j5 + window)
+        refined = bisect(lambda v: fk(v)[2, 2], lo, hi, target=0.0)
+        if refined is not None and fk(refined)[0, 2] > 0.0:
+            best_j5 = refined
+
+    return float(max(J5_MIN, min(J5_MAX, best_j5)))
 
 
 def _solve_j2_for_height(

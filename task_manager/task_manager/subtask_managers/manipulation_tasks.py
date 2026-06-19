@@ -729,6 +729,32 @@ class ManipulationTasks:
         j5_seed = current["joint5"]
         j6 = current["joint6"]
 
+        # Calibrate analytic FK against the live TF tree: the URDF defaults
+        # don't always match the calibrated kinematics that the robot's
+        # firmware injects via `kinematics_params`. With joints 3/4/6 locked,
+        # the residual z-offset is roughly constant across the run.
+        z_bias = 0.0
+        try:
+            tf_pre = self._tf_buffer.lookup_transform(
+                frame,
+                "gripper_grasp_frame",
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            T_pre = fk_grasp_frame(j1, j2_seed, j3, j4, j5_seed, j6)
+            z_bias = tf_pre.transform.translation.z - T_pre[2, 3]
+            Logger.info(
+                self.node,
+                f"align_to_centroid_height: FK z={T_pre[2, 3]:.3f}, "
+                f"TF z={tf_pre.transform.translation.z:.3f}, "
+                f"z_bias={z_bias:+.3f} m",
+            )
+        except Exception as e:
+            Logger.warn(
+                self.node,
+                f"Could not calibrate z_bias against TF: {e} (using 0.0)",
+            )
+
         try:
             transform = self._tf_buffer.lookup_transform(
                 frame,
@@ -745,11 +771,12 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         cz = point_in.point.z
+        target_z_for_fk = cz - z_bias
         Logger.info(
             self.node,
             f"align_to_centroid_height: target z={cz:.3f} in {frame} "
             f"(centroid was {point.point.x:.3f},{point.point.y:.3f},{point.point.z:.3f} "
-            f"in {point.header.frame_id})",
+            f"in {point.header.frame_id}); FK-space target={target_z_for_fk:.3f}",
         )
 
         j2, j5, reached = solve_j2_j5_for_height(
@@ -757,7 +784,7 @@ class ManipulationTasks:
             j3=j3,
             j4=j4,
             j6=j6,
-            target_z=cz,
+            target_z=target_z_for_fk,
             j2_seed=max(J2_MIN, min(J2_MAX, j2_seed)),
             j5_seed=max(J5_MIN, min(J5_MAX, j5_seed)),
         )
@@ -772,7 +799,8 @@ class ManipulationTasks:
         Logger.info(
             self.node,
             f"Solved j2={j2:.3f} rad, j5={j5:.3f} rad -> FK z={T[2, 3]:.3f} "
-            f"(target {cz:.3f}, gripper-z·base-z={T[2, 2]:+.3f})",
+            f"(FK-target {target_z_for_fk:.3f}, world-target {cz:.3f}, "
+            f"approach_x={T[0, 2]:+.2f} approach_z={T[2, 2]:+.2f})",
         )
 
         target_joints = {

@@ -98,14 +98,11 @@ class TestMoveToWashingMachine(Node):
             f"({point.point.x:.3f}, {point.point.y:.3f}, {point.point.z:.3f})",
         )
 
-        # 4. Align using joints 2 and 5 only
-        status = self.manipulation.align_to_centroid_height(point, pre_pose=PRE_POSE)
-        if status != Status.EXECUTION_SUCCESS:
-            Logger.error(self, f"align_to_centroid_height failed: {status}")
-            return 2
-
-        # 5. Verify final wrist height vs target via TF
-        rclpy.spin_once(self, timeout_sec=0.5)
+        # Cache the centroid in base_link BEFORE the move. The ZED is mounted
+        # on the gripper, so its optical frame moves with the arm; transforming
+        # `point` from optical_frame AFTER the move gives a different world
+        # position, which makes the verification step meaningless.
+        cached_cz = None
         try:
             transform = self._tf_buffer.lookup_transform(
                 "base_link",
@@ -113,8 +110,21 @@ class TestMoveToWashingMachine(Node):
                 rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=2.0),
             )
-            point_base = do_transform_point(point, transform)
-            cz = point_base.point.z
+            cached_cz = do_transform_point(point, transform).point.z
+            Logger.info(self, f"Cached centroid z in base_link: {cached_cz:.3f}")
+        except Exception as e:
+            Logger.warn(self, f"Could not cache cz in base_link: {e}")
+
+        # 4. Align using joints 2 and 5 only
+        status = self.manipulation.align_to_centroid_height(point, pre_pose=PRE_POSE)
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.error(self, f"align_to_centroid_height failed: {status}")
+            return 2
+
+        # 5. Verify final wrist height against the CACHED target (NOT a fresh
+        # transform of `point`, because optical_frame moved with the arm).
+        rclpy.spin_once(self, timeout_sec=0.5)
+        try:
             tf_w = self._tf_buffer.lookup_transform(
                 "base_link",
                 WRIST_FRAME,
@@ -122,10 +132,14 @@ class TestMoveToWashingMachine(Node):
                 timeout=rclpy.duration.Duration(seconds=2.0),
             )
             wz = tf_w.transform.translation.z
-            Logger.info(
-                self,
-                f"Final wrist z={wz:.3f}, target z={cz:.3f}, " f"error={(wz - cz) * 100:+.1f} cm",
-            )
+            if cached_cz is not None:
+                Logger.info(
+                    self,
+                    f"Final wrist z={wz:.3f}, target z={cached_cz:.3f} (cached), "
+                    f"error={(wz - cached_cz) * 100:+.1f} cm",
+                )
+            else:
+                Logger.info(self, f"Final wrist z={wz:.3f} (no cached target)")
         except Exception as e:
             Logger.warn(self, f"Final TF verification failed: {e}")
 
