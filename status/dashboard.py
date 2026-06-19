@@ -34,7 +34,11 @@ REMOTE_AREAS = {"hri"}  # mirrors lib.sh ORIN_SERVER_AREAS — checked on remote
 REFRESH_SECONDS = 2.0
 HZ_WINDOW = 0.8
 LOGS_CONTAINER = "home2-integration"
-LOGS_TAIL_LINES = 12
+LOGS_TAIL_LINES = 8
+LOG_LINE_MAX = 140
+ACTIVITY_MAX_ROWS = 12
+ORPHAN_RED_MAX = 5
+ORPHAN_YELLOW_MAX = 3
 
 
 def _parse_args(argv: list[str]) -> tuple[list[str], str]:
@@ -97,14 +101,18 @@ def _fetch_logs(container: str, lines: int) -> str:
 
 
 def _colorize_log_line(line: str) -> Text:
+    if len(line) > LOG_LINE_MAX:
+        line = line[: LOG_LINE_MAX - 1] + "…"
     upper = line.upper()
     if "ERROR" in upper or "FATAL" in upper or "TRACEBACK" in upper:
-        return Text(line, style="red")
-    if "WARN" in upper:
-        return Text(line, style="yellow")
-    if "INFO" in upper:
-        return Text(line, style="dim cyan")
-    return Text(line, style="dim")
+        style = "red"
+    elif "WARN" in upper:
+        style = "yellow"
+    elif "INFO" in upper:
+        style = "dim cyan"
+    else:
+        style = "dim"
+    return Text(line, style=style, no_wrap=True, overflow="ellipsis")
 
 
 def _render_logs_panel() -> Panel:
@@ -118,17 +126,24 @@ def _render_logs_panel() -> Panel:
 
 
 # ── Panel 3: Live signals (Hz) ───────────────────────────────────────
+def _shorten(name: str, max_len: int = 30) -> str:
+    if len(name) <= max_len:
+        return name
+    # keep the tail (more informative for ROS names) with leading ellipsis
+    return "…" + name[-(max_len - 1) :]
+
+
 def _render_signals_panel(ros: ros_introspection.RosSnapshot) -> Panel:
     t = Table(show_header=True, header_style="bold cyan", box=None, expand=True)
-    t.add_column("Topic", overflow="fold")
-    t.add_column("Hz", justify="right")
-    t.add_column("")
+    t.add_column("Topic", no_wrap=True, overflow="ellipsis", ratio=3)
+    t.add_column("Hz", justify="right", no_wrap=True, width=6)
+    t.add_column("", no_wrap=True, width=2)
     if not ros.hz:
         t.add_row("(critical_topics.yaml empty)", "", "")
     else:
         for topic, hz in ros.hz.items():
             ok = hz > 0.5
-            t.add_row(topic, f"{hz:5.1f}", _icon(ok))
+            t.add_row(_shorten(topic, 28), f"{hz:5.1f}", _icon(ok))
     return Panel(t, title="Live signals", border_style="cyan")
 
 
@@ -136,17 +151,16 @@ def _render_signals_panel(ros: ros_introspection.RosSnapshot) -> Panel:
 def _render_containers_panel(
     infra: infra_checks.InfraSnapshot, area_states: dict[str, dict]
 ) -> Panel:
-    t = Table.grid(padding=(0, 1))
-    t.add_column()
-    t.add_column()
-    t.add_column(style="dim")
+    t = Table(box=None, show_header=False, expand=True, padding=(0, 1))
+    t.add_column(no_wrap=True, width=2)
+    t.add_column(no_wrap=True, overflow="ellipsis", ratio=2)
+    t.add_column(no_wrap=True, overflow="ellipsis", ratio=3, style="dim")
     if not infra.containers:
-        t.add_row(Text("•", style="dim"), "(no containers declared)", "")
+        t.add_row(Text("•", style="dim"), "(none declared)", "")
     else:
         for name, cs in sorted(infra.containers.items()):
-            t.add_row(_icon(cs.ok), name, cs.detail[:30])
+            t.add_row(_icon(cs.ok), name, cs.detail)
 
-    # Remote areas: signal we deliberately skip them locally.
     for area in REMOTE_AREAS:
         if area in area_states:
             t.add_row(
@@ -176,27 +190,48 @@ def _group_by_namespace(items: list[str]) -> dict[str, int]:
 def _render_activity_panel(
     ros: ros_introspection.RosSnapshot, area_states: dict[str, dict], task: str
 ) -> Panel:
+    # Filter ROS noise + our own probe node so the panel reflects user workload.
+    visible_nodes = [
+        n
+        for n in ros.nodes
+        if not n.endswith("/frida_status_probe") and not n.startswith("/launch_ros_")
+    ]
     visible_topics = [
         t
         for t in ros.topics
         if not t.startswith("/parameter_events") and not t.startswith("/rosout")
     ]
-    node_groups = _group_by_namespace(ros.nodes)
-    topic_groups = _group_by_namespace(visible_topics)
-    svc_groups = _group_by_namespace(ros.services)
+    visible_services = [
+        s
+        for s in ros.services
+        if "frida_status_probe" not in s and not s.startswith("/launch_ros_")
+    ]
 
-    all_ns = sorted(set(node_groups) | set(topic_groups) | set(svc_groups))
+    node_groups = _group_by_namespace(visible_nodes)
+    topic_groups = _group_by_namespace(visible_topics)
+    svc_groups = _group_by_namespace(visible_services)
+
+    all_ns = set(node_groups) | set(topic_groups) | set(svc_groups)
+    # Sort by total activity (most relevant first), then alphabetically.
+    ranked = sorted(
+        all_ns,
+        key=lambda ns: (
+            -(node_groups.get(ns, 0) + topic_groups.get(ns, 0) + svc_groups.get(ns, 0)),
+            ns,
+        ),
+    )
+    ranked = ranked[:ACTIVITY_MAX_ROWS]
 
     t = Table(show_header=True, header_style="bold cyan", box=None, expand=True)
-    t.add_column("Namespace", overflow="fold")
-    t.add_column("Nodes", justify="right")
-    t.add_column("Topics", justify="right")
-    t.add_column("Svcs", justify="right")
+    t.add_column("Namespace", no_wrap=True, overflow="ellipsis", ratio=3)
+    t.add_column("N", justify="right", no_wrap=True, width=4)
+    t.add_column("T", justify="right", no_wrap=True, width=4)
+    t.add_column("S", justify="right", no_wrap=True, width=4)
     if task:
-        t.add_column("Exp.", justify="right")
-        t.add_column("")
+        t.add_column("Exp.", justify="right", no_wrap=True, width=6)
+        t.add_column("", no_wrap=True, width=2)
 
-    for ns in all_ns:
+    for ns in ranked:
         n = node_groups.get(ns, 0)
         tp = topic_groups.get(ns, 0)
         sv = svc_groups.get(ns, 0)
@@ -211,52 +246,55 @@ def _render_activity_panel(
                 row += ["", ""]
         t.add_row(*row)
 
+    omitted = len(all_ns) - len(ranked)
     totals = (
-        f"Σ nodes={len(ros.nodes)}  topics={len(visible_topics)}  "
-        f"services={len(ros.services)}"
-        + (f"  · task={task}" if task else "  · (no task arg)")
+        f"Σ N={len(visible_nodes)} T={len(visible_topics)} S={len(visible_services)}"
+        + (f" · +{omitted} ns hidden" if omitted > 0 else "")
+        + (f" · task={task}" if task else " · (no task)")
     )
     return Panel(
-        Group(t, Text(totals, style="dim italic")),
-        title="ROS Activity (grouped by namespace)",
+        Group(t, Text(totals, style="dim italic", no_wrap=True, overflow="ellipsis")),
+        title="ROS Activity",
         border_style="cyan",
     )
 
 
 # ── Panel 6: Orphan topics ──────────────────────────────────────────
 def _render_orphans_panel(ros: ros_introspection.RosSnapshot) -> Panel:
-    t = Table.grid(padding=(0, 1))
-    t.add_column()
-    t.add_column(overflow="fold")
+    t = Table(box=None, show_header=False, expand=True, padding=(0, 1))
+    t.add_column(no_wrap=True, width=2)
+    t.add_column(no_wrap=True, overflow="ellipsis", ratio=1)
     rows_added = 0
-    if ros.orphans_no_pub:
-        for top in ros.orphans_no_pub[:6]:
-            info = ros.topics.get(top)
-            sub_count = info.sub_count if info else "?"
-            t.add_row(_icon(False), f"{top} (subs={sub_count}, pubs=0)")
-            rows_added += 1
-    if ros.orphans_no_sub:
-        for top in ros.orphans_no_sub[:4]:
-            info = ros.topics.get(top)
-            pub_count = info.pub_count if info else "?"
-            t.add_row(
-                Text("•", style="yellow"),
-                f"{top} (pubs={pub_count}, subs=0)",
-            )
-            rows_added += 1
+    for top in ros.orphans_no_pub[:ORPHAN_RED_MAX]:
+        info = ros.topics.get(top)
+        sub_count = info.sub_count if info else "?"
+        t.add_row(_icon(False), f"{_shorten(top, 32)}  s={sub_count} p=0")
+        rows_added += 1
+    for top in ros.orphans_no_sub[:ORPHAN_YELLOW_MAX]:
+        info = ros.topics.get(top)
+        pub_count = info.pub_count if info else "?"
+        t.add_row(
+            Text("•", style="yellow"),
+            f"{_shorten(top, 32)}  p={pub_count} s=0",
+        )
+        rows_added += 1
     if rows_added == 0:
         t.add_row(Text("✓", style="green"), "no orphan topics")
-    extra_red = max(0, len(ros.orphans_no_pub) - 6)
-    extra_yellow = max(0, len(ros.orphans_no_sub) - 4)
+    extra_red = max(0, len(ros.orphans_no_pub) - ORPHAN_RED_MAX)
+    extra_yellow = max(0, len(ros.orphans_no_sub) - ORPHAN_YELLOW_MAX)
     if extra_red or extra_yellow:
         t.add_row(
             Text("…", style="dim"),
-            Text(f"+{extra_red} red, +{extra_yellow} yellow not shown", style="dim"),
+            Text(f"+{extra_red} red · +{extra_yellow} yellow", style="dim"),
         )
     return Panel(t, title="Orphan topics", border_style="yellow")
 
 
 # ── Footer: Hints ───────────────────────────────────────────────────
+def _hint(msg: str, style: str) -> Text:
+    return Text(msg, style=style, no_wrap=True, overflow="ellipsis")
+
+
 def _render_hints(
     infra: infra_checks.InfraSnapshot,
     area_states: dict[str, dict],
@@ -265,9 +303,9 @@ def _render_hints(
     lines: list[Text] = []
     if not infra.dds.ok:
         lines.append(
-            Text(
+            _hint(
                 " ⨯ DDS host config incomplete → sudo bash scripts/setup_cyclonedds.sh",
-                style="red",
+                "red",
             )
         )
     for area, st in area_states.items():
@@ -280,21 +318,20 @@ def _render_hints(
         ]
         if down and st["missing"]:
             lines.append(
-                Text(
-                    f" ⨯ {area}: containers down + nodes missing → "
-                    f"./run.sh {area} --recreate",
-                    style="red",
+                _hint(
+                    f" ⨯ {area}: containers down + nodes missing → ./run.sh {area} --recreate",
+                    "red",
                 )
             )
     if not ros.rclpy_available:
-        lines.append(Text(f" ⨯ {ros.error}", style="red"))
+        lines.append(_hint(f" ⨯ {ros.error}", "red"))
     elif ros.error:
-        lines.append(Text(f" ⨯ rclpy: {ros.error}", style="red"))
+        lines.append(_hint(f" ⨯ rclpy: {ros.error}", "red"))
     for top in ros.orphans_no_pub[:2]:
-        lines.append(Text(f" ⨯ {top}: has subscribers but no publisher", style="red"))
+        lines.append(_hint(f" ⨯ {_shorten(top, 60)}: subs>0 but pubs=0", "red"))
     if not lines:
-        lines.append(Text(" ✓ everything green", style="green"))
-    return Panel(Group(*lines), title="Hints", border_style="magenta")
+        lines.append(_hint(" ✓ everything green", "green"))
+    return Panel(Group(*lines[:4]), title="Hints", border_style="magenta")
 
 
 # ── Layout ──────────────────────────────────────────────────────────
