@@ -135,6 +135,8 @@ set(srv_files
   "manipulation/srv/Test.srv"
   "manipulation/srv/ToggleServo.srv"
   "manipulation/srv/PlayTrayectory.srv"
+  "manipulation/srv/EstimateFlatGrasp.srv"
+  "manipulation/srv/FixedDistanceMove.srv"
   "task_manager/srv/FollowFace.srv"
   "task_manager/srv/PointTransformation.srv"
   "task_manager/srv/ReturnLocation.srv"
@@ -169,6 +171,7 @@ set(srv_files
   "vision/srv/SetTrashCategory.srv"
   "navigation/srv/MapAreas.srv"
   "navigation/srv/MoveLocation.srv"
+  "navigation/srv/DockTable.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

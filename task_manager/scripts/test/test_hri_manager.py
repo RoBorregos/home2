@@ -15,8 +15,6 @@ from typing import Union
 import rclpy
 from rclpy.node import Node
 from task_manager.subtask_managers.hri_tasks import HRITasks
-
-# from subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.task_manager.subtask_managers.nav_tasks import NavigationTasks
 from task_manager.task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks

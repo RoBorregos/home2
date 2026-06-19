@@ -20,6 +20,9 @@ AREAS_SERVICE = "/navigation/areas_json"
 
 ### Move to location service
 MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
+
+### Dock to table/shelf service (nav_central -> table_docker), with desired offset
+DOCK_TABLE_SERVICE = "/navigation/dock_table"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
 ### Initial pose topic
@@ -27,6 +30,17 @@ INITIAL_POSE_TOPIC = "/initialpose"
 
 ### Manual resume service (nav_central exposes this so the UI can unpause nav2+rtabmap)
 RESUME_NAV_SERVICE = "/navigation/resume_nav"
+
+### Table/shelf docking (perpendicular approach) — see table_docker.py
+DOCK_SERVICE = "/navigation/dock_to_surface"  # std_srvs/Trigger: align + approach
+UNDOCK_SERVICE = (
+    "/navigation/undock_from_surface"  # std_srvs/Trigger: back off so nav2 can plan
+)
+DOCK_PREVIEW_SERVICE = (
+    "/navigation/preview_dock"  # std_srvs/Trigger: detect + show markers, no motion
+)
+DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
+POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
 ### General Constants
 MONITOR_RATE = 1.0
@@ -64,6 +78,9 @@ FOLLOW_GOAL_UPDATE_TIMEOUT = (
     2.0  # Wait for first /goal_update before seeding initial goal
 )
 FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
+
+# Default docking offset (table_docker front_offset).
+DEFAULT_DOCK_OFFSET = 0.16
 
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"

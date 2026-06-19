@@ -29,6 +29,12 @@ def generate_launch_description():
                 executable="motion_planning_server.py",
             ),
             Node(
+                package="manipulation_general",
+                executable="manipulation_safeguard.py",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
                 package="task_manager",
                 executable="follow_face_node.py",
                 name="follow_face_node",

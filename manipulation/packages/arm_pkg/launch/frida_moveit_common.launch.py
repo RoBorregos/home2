@@ -55,7 +55,7 @@ def launch_setup(context, *args, **kwargs):
     prefix = LaunchConfiguration("prefix", default="")
     attach_to = LaunchConfiguration("attach_to", default="world")
     attach_xyz = LaunchConfiguration("attach_xyz", default='"0 0 0"')
-    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 0"')
+    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 1.5707963267948966"')
     no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
     show_rviz = LaunchConfiguration("show_rviz", default=True)
     use_sim_time = LaunchConfiguration("use_sim_time", default=False)
@@ -69,10 +69,13 @@ def launch_setup(context, *args, **kwargs):
 
     moveit_config_dump = moveit_config_dump.perform(context)
     moveit_config_dict = yaml.load(moveit_config_dump, Loader=yaml.FullLoader)
+
     moveit_config_package_name = "xarm_moveit_config"
 
     octomap_config = {
         "octomap_frame": "base_link",
+        # Restored to pre-#977 value: at 0.05 m, padded voxels cover small
+        # grasp goals (~6-7 cm objects) and FCL rejects the gripper pose.
         "octomap_resolution": 0.025,
         "max_range": 2.0,
     }
@@ -88,6 +91,12 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             moveit_config_dict,
             {"use_sim_time": use_sim_time},
+            {
+                "vamp.response_adapters": "default_planner_response_adapters/AddTimeOptimalParameterization"
+            },
+            {"vamp.check_solution_paths": False},
+            {"planning_scene_monitor_options": {"publish_planning_scene": True}},
+            {"check_solution_paths": False},
             octomap_config,
             octomap_updater_config,
         ],
@@ -139,6 +148,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Static TF
+    publish_attach_tf = LaunchConfiguration("publish_attach_tf", default="false")
     static_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -146,6 +156,7 @@ def launch_setup(context, *args, **kwargs):
         output="screen",
         arguments=args + log_args,
         parameters=[{"use_sim_time": use_sim_time}],
+        condition=IfCondition(publish_attach_tf),
     )
 
     robot_planner_node_launch = IncludeLaunchDescription(
