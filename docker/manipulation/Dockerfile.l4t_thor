@@ -74,7 +74,17 @@ RUN rm -r installs/
 # mechanism as the moveit line. Kept as its OWN layer so adding a package here
 # does NOT invalidate (and rebuild) the expensive moveit source build above.
 # Grow this list as `colcon build` reports more missing find_package() ROS deps.
-ARG ROS_EXTRA_PKGS="urdf_launch"
+# Resolved from the manipulation build set's package.xml build deps:
+#   urdf_launch        - frida_description / xarm_description
+#   pcl_ros            - perception_3d / place / arm_pkg (+ pcl_conversions, pcl_msgs)
+#   cv_bridge          - manipulation_general (+ vision_opencv / image_geometry)
+#   control_toolbox    - pick_and_place
+#   controller_manager - pick_and_place / xarm_controller (pulls the ros2_control
+#                        core: hardware_interface, controller_interface,
+#                        controller_manager_msgs, realtime_tools, ...)
+# --deps pulls each one's tree; --exclude-path skips whatever ros_base/moveit
+# already provide, so only the ~20-30 genuinely-missing packages get built.
+ARG ROS_EXTRA_PKGS="urdf_launch pcl_ros cv_bridge control_toolbox controller_manager"
 RUN ros_source_install.sh ${ROS_EXTRA_PKGS}
 
 # Copying GPD script and variables
