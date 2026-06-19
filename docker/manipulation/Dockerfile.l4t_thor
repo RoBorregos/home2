@@ -87,6 +87,15 @@ RUN rm -r installs/
 ARG ROS_EXTRA_PKGS="urdf_launch pcl_ros cv_bridge control_toolbox controller_manager"
 RUN ros_source_install.sh ${ROS_EXTRA_PKGS}
 
+# perception_3d hardcodes `#include <pcl-1.12/pcl/...>` (the Orin shipped PCL 1.12).
+# Noble ships PCL 1.14, so alias the versioned include dir the source expects to the
+# one actually installed. Kept here (late layer) so it doesn't rebuild PCL/moveit.
+# NOTE: the clean fix is to change those includes to <pcl/...> in the source, which
+# resolves correctly on every PCL version / platform.
+RUN real_pcl="$(ls -d /usr/include/pcl-1.* 2>/dev/null | head -n1)" \
+    && [ -n "${real_pcl}" ] && ln -sfn "${real_pcl}" /usr/include/pcl-1.12 \
+    && echo "aliased /usr/include/pcl-1.12 -> ${real_pcl}"
+
 # Copying GPD script and variables
 RUN echo ". /home/ros/setup_gpd.sh" >> /home/ros/.bashrc
 RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc
