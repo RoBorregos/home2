@@ -20,7 +20,7 @@ from builtin_interfaces.msg import Time
 from frida_interfaces.srv import CropQuery, Customer
 from frida_interfaces.msg import PersonList, Person
 from vision_general.utils.ros_utils import wait_for_future
-from pose_detection import PoseDetection
+from models.pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     TRACKER_IMAGE_TOPIC,

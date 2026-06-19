@@ -44,7 +44,7 @@ from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
 from frida_interfaces.srv import YoloDetect
 
-from pose_detection import PoseDetection
+from models.pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
 
