@@ -61,11 +61,14 @@ RUN apt-get update && apt-get install -y \
     && apt-get update && apt-get install -y ros-dev-tools \
     && rm -rf /var/lib/apt/lists/*
 
-# Pull the Humble source tree.
+# Pull the Humble source tree. ros2.repos has the core packages (incl. cyclonedds +
+# rmw_cyclonedds) but NOT the variant metapackages, so we add ros2/variants
+# separately to get the `ros_base` target used by --packages-up-to below.
 ENV ROS2_WS=/opt/ros2_humble
 RUN mkdir -p ${ROS2_WS}/src
 WORKDIR ${ROS2_WS}
-RUN vcs import --input https://raw.githubusercontent.com/ros2/ros2/${ROS_DISTRO}/ros2.repos src
+RUN vcs import --input https://raw.githubusercontent.com/ros2/ros2/${ROS_DISTRO}/ros2.repos src \
+    && git clone --depth 1 -b ${ROS_DISTRO} https://github.com/ros2/variants src/ros2/variants
 
 # Resolve system dependencies. `-r` keeps going if a non-core (e.g. desktop/GUI)
 # key has no Noble rule — we only build ros_base below, so those are irrelevant.
