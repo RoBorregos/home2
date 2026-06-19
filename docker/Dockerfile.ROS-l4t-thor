@@ -1,0 +1,127 @@
+# ROS 2 Humble compiled from source on Ubuntu 24.04 (Noble) for NVIDIA Jetson Thor.
+#
+# Why this exists: there is no dustynv / official container that ships ROS 2 Humble
+# for Thor. The NGC PyTorch image (nvcr.io/nvidia/pytorch:25.08-py3) gives us a
+# tested CUDA + PyTorch stack for Thor (aarch64 SBSA), but it is Ubuntu 24.04 and
+# Humble only has apt binaries for Ubuntu 22.04. So we compile Humble from source.
+#
+# We keep the same "contract" as Dockerfile.ROS-l4t so the downstream manipulation/
+# navigation images keep working: a passwordless-sudo `ros` user, ROS installed at
+# /opt/ros/humble, a /workspace dir, and CycloneDDS as the RMW.
+
+ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:25.08-py3
+FROM ${BASE_IMAGE}
+
+ARG USERNAME=ros
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+ENV ROS_DISTRO=humble
+ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-c"]
+
+# Install language
+RUN apt-get update && apt-get install -y \
+    locales \
+    && locale-gen en_US en_US.UTF-8 \
+    && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
+    && rm -rf /var/lib/apt/lists/*
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+# Install timezone
+RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
+    && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get install -y tzdata \
+    && dpkg-reconfigure --frontend noninteractive tzdata \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user (downstream images run as `ros`)
+RUN groupadd --gid $USER_GID $USERNAME 2>/dev/null || true \
+    && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    # Add sudo support for the non-root user
+    && apt-get update \
+    && apt-get install -y sudo \
+    && echo "$USERNAME ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/$USERNAME \
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    && rm -rf /var/lib/apt/lists/*
+
+# Core build tooling + the ROS 2 apt repo. The repo here is ONLY used to pull the
+# distro-agnostic developer tools (colcon, rosdep, vcstool, ...) via ros-dev-tools;
+# there are no Humble runtime binaries for Noble.
+RUN apt-get update && apt-get install -y \
+        curl gnupg lsb-release software-properties-common \
+        build-essential cmake git wget python3-pip python3-dev \
+    && add-apt-repository universe \
+    && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+        -o /usr/share/keyrings/ros-archive-keyring.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+        | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+    && apt-get update && apt-get install -y ros-dev-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pull the Humble source tree.
+ENV ROS2_WS=/opt/ros2_humble
+RUN mkdir -p ${ROS2_WS}/src
+WORKDIR ${ROS2_WS}
+RUN vcs import --input https://raw.githubusercontent.com/ros2/ros2/${ROS_DISTRO}/ros2.repos src
+
+# Resolve system dependencies. `-r` keeps going if a non-core (e.g. desktop/GUI)
+# key has no Noble rule — we only build ros_base below, so those are irrelevant.
+RUN apt-get update \
+    && (rosdep init || true) \
+    && rosdep update \
+    && rosdep install --from-paths src --ignore-src -r -y --rosdistro ${ROS_DISTRO} \
+        --skip-keys "fastcdr rti-connext-dds-6.0.1 urdfdom_headers" \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python build deps that are version-sensitive on Python 3.12:
+#   empy 3.3.x  -> Humble's ament/rosidl break on empy 4.x (changed API)
+#   setuptools  -> new enough for 3.12, old enough to keep `setup.py install`
+#   lark        -> rosidl message parser
+RUN pip3 install --no-cache-dir --break-system-packages \
+        "empy==3.3.4" "setuptools==69.5.1" "lark" "catkin_pkg" "lxml"
+
+# Some packages declare cmake_minimum_required < 3.5, which CMake 4.x rejects.
+# This shim lets those configure steps proceed on the newer CMake in the NGC image.
+ENV CMAKE_POLICY_VERSION_MINIMUM=3.5
+
+# Build ros_base + the CycloneDDS RMW and install into /opt/ros/humble using the
+# merged layout, so it looks just like an apt install (downstream sources
+# /opt/ros/humble/setup.bash). Then drop the source/build trees to shrink the image.
+RUN colcon build \
+        --merge-install \
+        --install-base /opt/ros/${ROS_DISTRO} \
+        --packages-up-to ros_base rmw_cyclonedds_cpp \
+        --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+    && rm -rf ${ROS2_WS}
+
+# Setup workspace directory
+RUN mkdir -p /workspace && chown -R $USERNAME:$USERNAME /workspace
+WORKDIR /workspace
+
+# Install general utilities (mirrors Dockerfile.ROS-l4t)
+RUN apt-get update -qq && apt-get install -y build-essential \
+    ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
+    terminator nano git wget iputils-ping \
+    libcanberra-gtk-module libcanberra-gtk3-module \
+    libx11-xcb1 libxkbcommon-x11-0 \
+    libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+    libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
+    libxcb-cursor0 libxcb-xkb1 \
+    git-core bash-completion \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up sourcing + autocompletion for the user
+RUN echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
+    && echo "if [ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash ]; then source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash; fi" >> /home/$USERNAME/.bashrc \
+    && echo "source /workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
+
+# CycloneDDS (built from source above as part of the workspace). cyclonedds_setup.sh
+# generates /etc/cyclonedds.xml. Network-only (no SHM); SHM is vision/ZED-only.
+COPY cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/$USERNAME/.bashrc

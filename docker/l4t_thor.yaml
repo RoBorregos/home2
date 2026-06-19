@@ -1,0 +1,10 @@
+services:
+  l4t_thor_base:
+    build:
+      context: .
+      dockerfile: Dockerfile.ROS-l4t-thor
+      args:
+        BASE_IMAGE: nvcr.io/nvidia/pytorch:25.08-py3
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
+    image: roborregos/home2:l4t_thor_base
