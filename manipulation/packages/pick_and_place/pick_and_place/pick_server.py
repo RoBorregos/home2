@@ -38,6 +38,8 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
     FixedDistanceMove,
 )
+from moveit_msgs.srv import GetPositionIK, GetStateValidity
+from moveit_msgs.msg import ContactInformation
 from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
@@ -83,6 +85,11 @@ MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 
 # Closed-loop fixed-distance descent constants
 DESCENT_TIMEOUT_FACTOR = 2.5
+
+# MoveIt planning group for the arm (see
+# frida_pymoveit2/frida_pymoveit2/robots/xarm6.py: MOVE_GROUP_ARM)
+ARM_GROUP_NAME = "xarm6"
+IK_TIMEOUT_SEC = 0.2
 
 
 class PickMotionServer(Node):
@@ -152,6 +159,12 @@ class PickMotionServer(Node):
         self._clear_octomap_client = self.create_client(
             Empty,
             "/clear_octomap",
+        )
+
+        # --- Robot self-collision validation (MoveIt) ---
+        self._compute_ik_client = self.create_client(GetPositionIK, "/compute_ik")
+        self._state_validity_client = self.create_client(
+            GetStateValidity, "/check_state_validity"
         )
 
         # --- Force-guarded descent service clients ---
@@ -459,6 +472,22 @@ class PickMotionServer(Node):
                         f"[Rim] Fixed-distance pick flow for pose {i}"
                     )
 
+                    # Validate the descent endpoint against the robot itself
+                    # BEFORE moving to the pre-grasp: the descent runs open-loop
+                    # (xArm mode 5, no MoveIt), so if the basket is too close the
+                    # gripper would crash into the robot base. Endpoint Z is the
+                    # pre-grasp Z minus the descent distance.
+                    descent_endpoint = copy.deepcopy(ee_link_pose)
+                    descent_endpoint.pose.position.z += (
+                        RIM_PRE_GRASP_HEIGHT - RIM_DESCENT_DISTANCE
+                    )
+                    if self._endpoint_self_collides(descent_endpoint):
+                        self.get_logger().warn(
+                            f"[Rim] Descent endpoint self-collides with robot, "
+                            f"skipping pose {i}"
+                        )
+                        continue
+
                     # Open gripper
                     self.get_logger().info("[Rim] Opening gripper...")
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
@@ -615,6 +644,88 @@ class PickMotionServer(Node):
 
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
+
+    # ==================================================================
+    # Robot self-collision validation
+    # ==================================================================
+
+    def _endpoint_self_collides(self, pose_stamped) -> bool:
+        """
+        Check whether the robot would be in self-collision at the given pose
+        (e.g. the gripper hitting the robot's own base/pedestal).
+
+        Uses MoveIt's /compute_ik (avoid_collisions=False so we still get a
+        kinematic solution even if it collides) followed by /check_state_validity,
+        filtering the reported contacts to ROBOT_LINK <-> ROBOT_LINK pairs only.
+        Collisions with WORLD_OBJECT (clothes/basket) are intentionally ignored.
+
+        Returns True if the pose should be skipped (self-collision or unreachable),
+        False if it is safe to attempt. Fails open (returns False) if the MoveIt
+        services are unavailable, to avoid blocking the pick.
+        """
+        if not self._compute_ik_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warn(
+                "[SelfCollision] /compute_ik unavailable, skipping check"
+            )
+            return False
+
+        ik_req = GetPositionIK.Request()
+        ik_req.ik_request.group_name = ARM_GROUP_NAME
+        ik_req.ik_request.ik_link_name = GRASP_LINK_FRAME
+        ik_req.ik_request.pose_stamped = pose_stamped
+        ik_req.ik_request.avoid_collisions = False
+        ik_req.ik_request.timeout.sec = 0
+        ik_req.ik_request.timeout.nanosec = int(IK_TIMEOUT_SEC * 1e9)
+        if self._latest_joint_state is not None:
+            ik_req.ik_request.robot_state.joint_state = self._latest_joint_state
+
+        ik_future = self._compute_ik_client.call_async(ik_req)
+        self.wait_for_future(ik_future)
+        ik_resp = ik_future.result()
+        if ik_resp is None or ik_resp.error_code.val != ik_resp.error_code.SUCCESS:
+            code = None if ik_resp is None else ik_resp.error_code.val
+            self.get_logger().warn(
+                f"[SelfCollision] IK failed (error_code={code}); treating endpoint "
+                "as unreachable"
+            )
+            return True
+
+        if not self._state_validity_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().warn(
+                "[SelfCollision] /check_state_validity unavailable, skipping check"
+            )
+            return False
+
+        sv_req = GetStateValidity.Request()
+        sv_req.robot_state = ik_resp.solution
+        sv_req.group_name = ARM_GROUP_NAME
+
+        sv_future = self._state_validity_client.call_async(sv_req)
+        self.wait_for_future(sv_future)
+        sv_resp = sv_future.result()
+        if sv_resp is None:
+            self.get_logger().warn(
+                "[SelfCollision] state validity call returned None, skipping check"
+            )
+            return False
+
+        if sv_resp.valid:
+            return False
+
+        # Not valid: only treat robot-robot contacts as a blocking self-collision.
+        for c in sv_resp.contacts:
+            if (
+                c.body_type_1 == ContactInformation.ROBOT_LINK
+                and c.body_type_2 == ContactInformation.ROBOT_LINK
+            ):
+                self.get_logger().warn(
+                    f"[SelfCollision] Robot self-collision between "
+                    f"'{c.contact_body_1}' and '{c.contact_body_2}'"
+                )
+                return True
+
+        # Invalid only due to world/attached objects (e.g. clothes) -> allowed.
+        return False
 
     # ==================================================================
     # Force-Guarded Descent
