@@ -41,6 +41,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libpcl-dev libopencv-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# The NGC base ships HPC-X OpenMPI, but its mpicc reports an include path
+# (/opt/hpcx/ompi/lib/<triplet>/openmpi/include) that does not exist on disk.
+# PCL -> VTK -> find_package(MPI) then refuses to configure (breaks gpd, which
+# pulls PCL's visualization component even though it never uses MPI). Point that
+# path at HPC-X's real MPI headers (discovered at build time) so config succeeds.
+RUN mpi_h="$(find /opt/hpcx -name mpi.h 2>/dev/null | head -n1)"; \
+    triplet="$(uname -m)-linux-gnu"; \
+    bogus="/opt/hpcx/ompi/lib/${triplet}/openmpi"; \
+    mkdir -p "${bogus}"; \
+    if [ -n "${mpi_h}" ]; then \
+        ln -sfn "$(dirname "${mpi_h}")" "${bogus}/include"; \
+    else \
+        mkdir -p "${bogus}/include"; \
+    fi
+
 # Install manipulation dependencies (system deps of the home2 packages).
 WORKDIR /installs
 RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
