@@ -528,14 +528,6 @@ class VisionTasks:
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, BBOX(classname="laundry_basket")))
-    def detect_laundry_basket(self, timeout: float = TIMEOUT) -> tuple[Status, BBOX]:
-        """Detect the laundry basket"""
-        status, detections = self.detect_objects(label="laundry_basket", timeout=timeout)
-        if status == Status.EXECUTION_SUCCESS and detections:
-            return Status.EXECUTION_SUCCESS, detections[0]
-        return Status.TARGET_NOT_FOUND, None
-
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
     @service_check("detect_person_action_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_person(self, timeout: float = TIMEOUT) -> int:
