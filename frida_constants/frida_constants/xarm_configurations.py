@@ -197,10 +197,10 @@ LOOK_SIDE_STARE = {
 LOOK_SIDE_LOW_STARE = {
     "joints": {
         "joint1": -180.0,
-        "joint2": -55.0,
-        "joint3": -60.0,
+        "joint2": 13.0,
+        "joint3": -47.0,
         "joint4": 0.0,
-        "joint5": 50.0,
+        "joint5": 30.0,
         "joint6": 45.0,
     },
     "degrees": True,
