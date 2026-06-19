@@ -30,4 +30,4 @@ else
     echo "Compiling completed continuing ..."
 fi
 
-cd "$INITIAL_FOLDER"
+cd "$INITIAL_FOLDER" && clear
