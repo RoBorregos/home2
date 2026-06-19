@@ -36,8 +36,10 @@ class DoingLaundryTM(Node):
 
     def __init__(self):
         super().__init__("doing_laundry_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=[""])
-        self.current_state = DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.DOING_LAUNDRY, mock_areas=["navigation", "hri"]
+        )
+        self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY
         self.running_task = True
         self.pick_attempts = 0
 
@@ -124,32 +126,15 @@ class DoingLaundryTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 # self.current_state = DoingLaundryTM.TaskStates.ROTATE_BEHIND_BASKET
-                self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN
+                self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY
             else:
                 Logger.error(self, f"Navigation failed: {error}. Retrying...")
-
-        elif self.current_state == DoingLaundryTM.TaskStates.ROTATE_BEHIND_BASKET:
-            Logger.info(self, "Rotating 180° so back faces basket.")
-            status = self._rotate_180()
-
-            if status == Status.EXECUTION_SUCCESS:
-                Logger.success(self, "Rotation complete. Back now faces basket.")
-                self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN
-            else:
-                Logger.error(self, "Rotation failed. Retrying...")
-
-        elif self.current_state == DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN:
-            Logger.info(self, "Moving to look_back_stare for basket pick.")
-            self.subtask_manager.manipulation.move_to_position("look_back_stare")
-            for _ in range(20):
-                rclpy.spin_once(self, timeout_sec=0.1)
-            self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_LAUNDRY:
             Logger.info(self, "Requesting integrated basket pick.")
             self.subtask_manager.hri.say("Picking up the laundry basket.", wait=False)
 
-            result = self.subtask_manager.manipulation.pick_object("aundry_basket")
+            result = self.subtask_manager.manipulation.pick_object("laundry_basket")
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Basket picked.")
@@ -165,7 +150,7 @@ class DoingLaundryTM(Node):
                         self,
                         f"Basket pick failed (attempt {self.pick_attempts}), re-scanning.",
                     )
-                    self.current_state = DoingLaundryTM.TaskStates.LOOK_BACK_AND_SCAN
+                    self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE:
             Logger.info(self, "Navigating to laundry table while holding basket.")
@@ -181,23 +166,18 @@ class DoingLaundryTM(Node):
             Logger.info(self, "Opening gripper to release basket at table.")
             self.subtask_manager.manipulation.open_gripper()
             self.subtask_manager.hri.say("Basket delivered to the table.", wait=False)
+            self.subtask_manager.manipulation.move_arm_vertical(
+                CLOTHES_BASKET_EXIT_HEIGHT, descend=False
+            )
+            self.subtask_manager.manipulation.move_to_position("look_side_low_stare")
+            for _ in range(20):
+                rclpy.spin_once(self, timeout_sec=0.1)
             self.current_state = DoingLaundryTM.TaskStates.PICK_CLOTHES
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_CLOTHES:
             Logger.info(self, "Requesting gap pick for clothes inside basket.")
             self.subtask_manager.hri.say("Picking clothes from the basket.", wait=False)
-            # Pre-pick approach: release, rise out of the basket workspace, then stage
-            # the arm so MoveIt does not plan a wild path into the pick pose.
-            self.subtask_manager.manipulation.open_gripper()
-            self.subtask_manager.manipulation.move_arm_vertical(
-                CLOTHES_BASKET_EXIT_HEIGHT, descend=False
-            )
-            self.subtask_manager.manipulation.move_to_position("look_side_low_stare")
-            self.subtask_manager.manipulation.move_to_position("look_side_stare")
-            for _ in range(20):
-                rclpy.spin_once(self, timeout_sec=0.1)
-
-            result = self.subtask_manager.manipulation.pick_object("clothes", in_configuration=True)
+            result = self.subtask_manager.manipulation.pick_object("clothes")
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked.")
