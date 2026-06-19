@@ -370,7 +370,7 @@ class FlatGraspEstimator(Node):
         # --- GRASP POSITION: aim at the HANDLE (thin end), not the centroid ---
         # Project on the long axis; the handle end has the smaller perpendicular
         # spread (narrower), so offset the grasp toward it.
-        handle_frac = 0.55  # fraction from center toward the handle tip (0..1)
+        handle_frac = 0.60  # fraction from center toward the handle tip (0..1)
         proj = points_2d_xy @ spoon_dir[:2]
         perp = points_2d_xy @ perp_dir
         pos = proj >= 0

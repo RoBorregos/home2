@@ -78,6 +78,9 @@ CUTLERY_EFFORT_CALIB_WINDOW = 0.3  # s
 CUTLERY_EFFORT_K = 5.0  # sigma multiplier for the per-joint trip level
 CUTLERY_EFFORT_MARGIN = 0.5  # N - added on top of K*sigma
 CUTLERY_EFFORT_MIN_TRIP = 1.5  # N - floor so a quiet joint does not trip on noise
+# J1 (base yaw) and J6 (tool roll) carry ~no vertical contact force on a top-down
+# grasp, so their effort drift causes false early trips. Exclude them from contact.
+CUTLERY_CONTACT_IGNORE_JOINTS = (0, 5)
 CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
@@ -416,9 +419,14 @@ class PickMotionServer(Node):
                         self.get_logger().info(
                             f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT * 1000:.1f}mm before closing gripper..."
                         )
+                        # Retract from the actual contact point (not the nominal target)
+                        # so we go up, never back down into the table.
+                        contact_z = (
+                            pre_grasp_pose.pose.position.z - self._last_descent_m
+                        )
                         retract_pose = copy.deepcopy(pre_grasp_pose)
                         retract_pose.pose.position.z = (
-                            ee_link_pose.pose.position.z + CUTLERY_POST_CONTACT_RETRACT
+                            contact_z + CUTLERY_POST_CONTACT_RETRACT
                         )
                         self.move_to_pose(retract_pose, velocity=0.1)
                         time.sleep(0.5)
@@ -618,6 +626,7 @@ class PickMotionServer(Node):
         Grace period ignores transient effort spikes from mode switching.
         """
         self.get_logger().info("[ForceGuard] Starting force-guarded descent")
+        self._last_descent_m = 0.0  # meters descended when contact/timeout fires
 
         # --- 1. Effort baseline ---
         if self._latest_joint_state is None:
@@ -737,14 +746,25 @@ class PickMotionServer(Node):
                     trip = np.minimum(
                         trip, CUTLERY_EFFORT_THRESHOLD
                     )  # never above ceiling
+                    for ij in CUTLERY_CONTACT_IGNORE_JOINTS:
+                        if ij < len(trip):
+                            trip[ij] = np.inf  # never trip on these joints
                     self.get_logger().info(
                         f"[ForceGuard] Adaptive trip per joint: {[f'{t:.2f}' for t in trip]}"
                     )
 
                 over = effort_delta > trip
-                if over.any() or float(np.max(effort_delta)) > CUTLERY_EFFORT_THRESHOLD:
+                considered_delta = effort_delta.copy()
+                for ij in CUTLERY_CONTACT_IGNORE_JOINTS:
+                    if ij < len(considered_delta):
+                        considered_delta[ij] = 0.0
+                if (
+                    over.any()
+                    or float(np.max(considered_delta)) > CUTLERY_EFFORT_THRESHOLD
+                ):
                     j = int(np.argmax(effort_delta - trip))
                     distance_mm = elapsed * CUTLERY_DESCENT_SPEED
+                    self._last_descent_m = distance_mm / 1000.0
                     self.get_logger().info(
                         f"[ForceGuard] CONTACT! Joint {j + 1} "
                         f"delta={effort_delta[j]:.2f}N > trip={trip[j]:.2f}N "
@@ -755,6 +775,7 @@ class PickMotionServer(Node):
 
             if not contact_detected:
                 elapsed = time.time() - start_time
+                self._last_descent_m = elapsed * CUTLERY_DESCENT_SPEED / 1000.0
                 self.get_logger().warn(
                     f"[ForceGuard] Timeout after {elapsed:.1f}s "
                     f"(~{elapsed * CUTLERY_DESCENT_SPEED:.1f}mm descended)"
