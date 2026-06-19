@@ -11,6 +11,15 @@ if [ -f /etc/nv_tegra_release ]; then
 elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
   ENV_TYPE=cuda
 fi
+
+# Jetson Thor needs its own stack (Ubuntu 24.04 + ROS Humble built from source),
+# so it uses the l4t_thor base/compose instead of the Orin l4t one. Opt in with
+# PLATFORM=thor in the repo-root .env (sourced by lib.sh) or the environment;
+# also auto-detected from the board model so a real Thor "just works".
+if [ "${PLATFORM:-}" = "thor" ] || \
+   { [ "$ENV_TYPE" = "l4t" ] && tr -d '\0' < /proc/device-tree/model 2>/dev/null | grep -qi thor; }; then
+  ENV_TYPE=l4t_thor
+fi
 echo "Detected environment: $ENV_TYPE"
 
 # Reset .env

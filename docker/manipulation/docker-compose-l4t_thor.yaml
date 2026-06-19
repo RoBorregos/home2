@@ -3,10 +3,10 @@ services:
     container_name: home2-manipulation
     build:
       context: ../..
-      dockerfile: docker/manipulation/Dockerfile.l4t-thor
+      dockerfile: docker/manipulation/Dockerfile.l4t_thor
       args:
         BASE_IMAGE: roborregos/home2:l4t_thor_base
-    image: roborregos/home2:manipulation-l4t-thor
+    image: roborregos/home2:manipulation-l4t_thor
     volumes:
       - ../../:/workspace/src/
       - /dev:/dev
