@@ -1,0 +1,5 @@
+# Move the TCP a fixed distance in Z using xArm mode 5 (closed-loop on TCP Z).
+float32 distance      # meters
+bool descend          # true = -Z (down), false = +Z (up)
+---
+bool success
