@@ -74,12 +74,17 @@ def generate_launch_description():
             'frequency': 30.0,
             'sensor_timeout': 0.2,   # telemetry is ~25-35 Hz; 0.2 s tolerates a few dropped frames
             'two_d_mode': True,      # planar base: zero Z / roll / pitch
-            'publish_tf': True,      # publishes odom -> base_link (do NOT also run odom_to_tf.py)
+            'publish_tf': True,      # publishes odom -> base_footprint (do NOT also run odom_to_tf.py)
 
             'map_frame': 'map',
             'odom_frame': 'odom',
-            'base_link_frame': 'base_link',
-            'world_frame': 'odom',   # estimate odom -> base_link only (no map yet)
+            # base_footprint is the URDF root (see FRIDA_Real.urdf.xacro). The EKF
+            # must drive the root so the TF tree stays connected: map -> odom ->
+            # base_footprint -> base_link -> arm. Driving base_link instead steals
+            # it from the URDF static base_footprint->base_link and splits TF in
+            # two, detaching MoveIt's planning frame (ghost robot / empty octomap).
+            'base_link_frame': 'base_footprint',
+            'world_frame': 'odom',   # estimate odom -> base_footprint only (no map yet)
 
             # --- Wheel odometry (mecanum): fuse body-frame vx, vy ONLY.
             # vx (index 6) and vy (index 7) are True; everything else False.
