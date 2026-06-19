@@ -1,0 +1,14 @@
+# RouDi (iceoryx shared-memory daemon) for NVIDIA Jetson Thor.
+#
+# Unlike the Orin RouDi (which rebuilds iceoryx to get the expanded limits), the Thor
+# base (Dockerfile.ROS-l4t-thor) already builds iceoryx with those limits and installs
+# iox-roudi into /opt/ros/humble. So RouDi just runs that binary — guaranteeing RouDi
+# and every SHM client (all derived from the same base) use the byte-for-byte identical
+# iceoryx. No rebuild needed here.
+
+ARG BASE_IMAGE=roborregos/home2:l4t_thor_base
+FROM ${BASE_IMAGE}
+
+COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
+
+CMD ["/opt/ros/humble/bin/iox-roudi", "-c", "/etc/iceoryx/roudi_config.toml"]

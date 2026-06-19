@@ -1,22 +1,25 @@
 #!/usr/bin/env bash
 # Install ROS 2 packages from source into the /opt/ros/$ROS_DISTRO overlay.
 #
-# Why this exists: Thor runs Ubuntu 24.04 (Noble) and our Humble is compiled from
-# source (see Dockerfile.ROS-l4t-thor). There are NO `ros-humble-*` apt binaries
-# for Noble, so anything the Orin images grabbed with `apt install ros-humble-<pkg>`
-# (e.g. ros-humble-moveit*, ros-humble-zed-msgs) has to be built from source here.
+# Thor runs Ubuntu 24.04 (Noble) and our Humble is compiled from source, so there
+# are NO `ros-humble-*` apt binaries. Anything the Orin images grabbed with
+# `apt install ros-humble-<pkg>` (moveit, zed_msgs, ros2 controllers, ...) is built
+# from source here and merge-installed into /opt/ros/humble, so a plain
+# `source /opt/ros/humble/setup.bash` picks it up exactly like apt would.
 #
-# Give this script the same package names. It uses rosinstall_generator to resolve
-# each package's full ROS dependency tree to source (skipping whatever is already
-# installed in /opt/ros/humble, e.g. ros_base), clones it, pulls the remaining
-# system deps with rosdep, and merge-installs everything into /opt/ros/humble so a
-# plain `source /opt/ros/humble/setup.bash` picks it all up — exactly like apt would.
+# It resolves each package's recursive ROS deps, then builds ONLY the packages not
+# already in /opt/ros/humble — everything else is satisfied from the existing
+# overlay at build time. So topping up (e.g. one controller) is cheap, and adding a
+# new subtree (e.g. moveit) compiles just the genuinely-new packages.
 #
 # Usage:   ros_source_install.sh <ros_pkg> [<ros_pkg> ...]
-# Example: ros_source_install.sh moveit zed_msgs
+# Examples:
+#   ros_source_install.sh moveit zed_msgs
+#   ros_source_install.sh joint_trajectory_controller joint_state_broadcaster tf_transformations
+# At runtime in a container, the `ros_install` alias wraps this with sudo.
 #
 # Env knobs:
-#   ROS_DISTRO        ROS distro to target (default: humble)
+#   ROS_DISTRO        ROS distro (default: humble)
 #   ROSDEP_SKIP_KEYS  extra space-separated rosdep keys to skip
 #   COLCON_JOBS       parallel colcon workers (default: all cores)
 set -eo pipefail
@@ -29,50 +32,68 @@ if [ "$#" -eq 0 ]; then
     exit 1
 fi
 
-# rosinstall_generator ships with ros-dev-tools, but install it if missing.
 command -v rosinstall_generator >/dev/null 2>&1 || \
     pip3 install --no-cache-dir --break-system-packages rosinstall-generator
+
+# Source the overlay first so we can (a) see what's already installed and
+# (b) let colcon resolve existing deps from it at build time.
+source "${ROS_INSTALL_BASE}/setup.bash"
+INSTALLED="$(ros2 pkg list 2>/dev/null | tr '\n' ' ' || true)"
 
 WS="$(mktemp -d)"
 mkdir -p "${WS}/src"
 
-echo ">>> [ros_source_install] resolving source tree for: $*"
-# --deps             : pull recursive ROS dependencies too
-# --exclude-path ... : skip packages already present in /opt/ros/humble (ros_base),
-#                      so we only build the genuinely missing ones
+echo ">>> [ros_source_install] resolving dependency tree for: $*"
 rosinstall_generator "$@" \
     --rosdistro "${ROS_DISTRO}" \
     --deps \
-    --exclude-path "${ROS_INSTALL_BASE}" \
-    --format repos > "${WS}/pkgs.repos"
+    --format repos > "${WS}/full.repos"
 
-echo ">>> [ros_source_install] importing sources"
+# rosinstall_generator --deps pulls the FULL tree (incl. ros_base), and its own
+# --exclude/--exclude-path do NOT reliably prune that tree against a real install.
+# So drop already-installed packages from the .repos here, by package name (the
+# basename of each repo key). This is what stops us from recloning + recompiling
+# all of ros_base on every call — only genuinely-missing packages remain.
+awk -v inst="${INSTALLED}" '
+    BEGIN { n = split(inst, a, " "); for (i = 1; i <= n; i++) skip[a[i]] = 1; keep = 1 }
+    /^repositories:[[:space:]]*$/ { print; next }
+    /^[[:space:]][[:space:]][^[:space:]].*:[[:space:]]*$/ {
+        key = $0; sub(/:[[:space:]]*$/, "", key); sub(/^[[:space:]]+/, "", key)
+        base = key; sub(/.*\//, "", base)
+        keep = (base in skip) ? 0 : 1
+        if (keep) print
+        next
+    }
+    { if (keep) print }
+' "${WS}/full.repos" > "${WS}/pkgs.repos"
+
+if ! grep -qE '^[[:space:]][[:space:]][^[:space:]].*:[[:space:]]*$' "${WS}/pkgs.repos"; then
+    echo ">>> [ros_source_install] nothing to build — all requested packages already in ${ROS_INSTALL_BASE}"
+    rm -rf "${WS}"
+    exit 0
+fi
+
+echo ">>> [ros_source_install] will build:"
+grep -E '^[[:space:]][[:space:]][^[:space:]].*:[[:space:]]*$' "${WS}/pkgs.repos" \
+    | sed -E 's/^[[:space:]]+//; s/:[[:space:]]*$//; s#.*/##' | sort -u | sed 's/^/      /'
+
 vcs import "${WS}/src" < "${WS}/pkgs.repos"
-
-# Source the base install so colcon finds the underlay (rclcpp, etc).
-source "${ROS_INSTALL_BASE}/setup.bash"
 
 echo ">>> [ros_source_install] resolving system dependencies"
 apt-get update
 rosdep init >/dev/null 2>&1 || true
 rosdep update
-# -r keeps going if a ROS key has no Noble apt rule (those are built from source
-# above); ROSDEP_SKIP_KEYS lets callers skip anything that still trips it up.
+# -r keeps going if a ROS key has no Noble apt rule (those are built from source);
+# ROSDEP_SKIP_KEYS lets callers skip anything that still trips it up.
 rosdep install --from-paths "${WS}/src" --ignore-src -r -y \
     --rosdistro "${ROS_DISTRO}" \
     --skip-keys "${ROSDEP_SKIP_KEYS:-}" || true
 
 # Make older ROS deps build under GCC 13 / Boost 1.83 (Noble). A thin compiler
-# wrapper does two things on every invocation:
-#   * strips any -Werror* token and appends -Wno-error, so deprecation *warnings*
-#     (octomap's std::iterator, moveit's std::random_shuffle, ...) stay warnings.
-#     The wrapper wins regardless of where a package injected -Werror, which a
-#     plain CMAKE_CXX_FLAGS override can't guarantee (the package's flags come
-#     later on the command line).
-#   * defines BOOST_ALLOW_DEPRECATED_HEADERS + BOOST_TIMER_ENABLE_DEPRECATED, so
-#     headers removed/`#error`-guarded in Boost 1.83 (boost/progress.hpp,
-#     boost/timer.hpp in moveit_ros_benchmarks, ...) still compile. These are hard
-#     preprocessor #errors, so -Wno-error does NOT help — only the define does.
+# wrapper strips -Werror* (so deprecation *warnings* stay warnings) and defines
+# BOOST_ALLOW_DEPRECATED_HEADERS / BOOST_TIMER_ENABLE_DEPRECATED (so Boost-1.83
+# #error-guarded headers still compile). The wrapper wins regardless of where a
+# package injected the flag.
 EXTRA_CFLAGS="-Wno-error -DBOOST_ALLOW_DEPRECATED_HEADERS -DBOOST_TIMER_ENABLE_DEPRECATED"
 NOWERR_DIR="$(mktemp -d)"
 REAL_CC="$(command -v gcc)"

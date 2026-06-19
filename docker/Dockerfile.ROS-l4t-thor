@@ -121,10 +121,56 @@ RUN echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${RO
     && echo "if [ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash ]; then source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash; fi" >> /home/$USERNAME/.bashrc \
     && echo "source /workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
-# CycloneDDS (built from source above as part of the workspace). cyclonedds_setup.sh
-# generates /etc/cyclonedds.xml. Network-only (no SHM); SHM is vision/ZED-only.
+# ---- Shared-memory (iceoryx zero-copy) support -------------------------------
+# colcon above installed a non-SHM CycloneDDS + default-limit iceoryx. Rebuild both
+# from source over /opt/ros/humble: iceoryx with RouDi-matching limits, and
+# CycloneDDS with ENABLE_SHM=ON so it actually uses it. Appended as their own layers
+# so the expensive ros_base colcon build stays cached on rebuild. Every derived image
+# then inherits zero-copy SHM (matching the RouDi container) with no further rebuild.
+RUN cd /tmp && \
+    git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
+    cd iceoryx && \
+    sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
+    cmake -S iceoryx_meta -B build \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DIOX_MAX_PUBLISHERS=20000 \
+        -DIOX_MAX_SUBSCRIBERS=20000 \
+        -DIOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048 \
+        -DBUILD_BINDING_C=ON \
+        -DBUILD_SHARED_LIBS=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build -j$(nproc) && \
+    cmake --install build && \
+    ldconfig && \
+    cd / && rm -rf /tmp/iceoryx
+
+RUN cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    cd cyclonedds && mkdir build && cd build && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && make install && \
+    cd / && rm -rf /tmp/cyclonedds
+
+# CycloneDDS is now SHM-capable (ENABLE_SHM=ON + iceoryx with RouDi-matching limits),
+# so derived images get zero-copy SHM with no rebuild. cyclonedds_setup.sh generates
+# /etc/cyclonedds.xml; it defaults to network-only and adds the <SharedMemory> section
+# only when CYCLONE_SHM=1. We do NOT force CYCLONE_SHM here: SHM is opt-in per area at
+# runtime (CYCLONE_SHM=1 + a running RouDi), so non-SHM images like manipulation stay
+# network-only and don't need RouDi.
 COPY cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_setup.sh
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
 RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/$USERNAME/.bashrc
+
+# Helper to source-build extra ROS packages into the overlay (Humble has no Noble
+# apt binaries). Derived images call it at build time; at runtime the `ros_install`
+# alias wraps it with sudo, e.g.:  ros_install joint_trajectory_controller tf_transformations
+COPY ros_source_install.sh /usr/local/bin/ros_source_install.sh
+RUN chmod +x /usr/local/bin/ros_source_install.sh \
+    && echo "alias ros_install='sudo -E /usr/local/bin/ros_source_install.sh'" >> /home/$USERNAME/.bashrc

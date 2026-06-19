@@ -23,12 +23,11 @@ RUN rm -r /workspace/requirements/
 RUN chown -R ros:ros /workspace
 
 # ROS packages from source (replaces `apt install ros-humble-zed-msgs ros-humble-moveit*`).
-# Edit ROS_SOURCE_PKGS to add/remove packages. NOTE: `moveit` is the full metapackage
-# and pulls a large dependency tree (incl. rviz-based visualization) from source — if
-# you only need planning headless, narrow this to e.g.
-#   "moveit_ros_planning_interface moveit_planners moveit_kinematics zed_msgs"
-COPY docker/ros_source_install.sh /usr/local/bin/ros_source_install.sh
-RUN chmod +x /usr/local/bin/ros_source_install.sh
+# ros_source_install.sh comes from the base image; it resolves deps and builds ONLY
+# the packages not already in /opt/ros/humble. Edit ROS_SOURCE_PKGS to add/remove
+# packages. NOTE: `moveit` is the full metapackage and pulls a large dependency tree
+# (incl. rviz-based visualization) from source — if you only need planning headless,
+# narrow this to e.g. "moveit_ros_planning_interface moveit_planners moveit_kinematics zed_msgs"
 ARG ROS_SOURCE_PKGS="moveit zed_msgs"
 RUN ros_source_install.sh ${ROS_SOURCE_PKGS}
 
@@ -68,24 +67,25 @@ RUN rosdep fix-permissions
 WORKDIR /
 RUN rm -r installs/
 
-# Extra ROS packages the manipulation workspace build-depends on (find_package /
-# ament build deps) that have no Noble apt binary, so the home2 rosdep step above
-# silently skips them. Build them from source into the overlay with the same
-# mechanism as the moveit line. Kept as its OWN layer so adding a package here
-# does NOT invalidate (and rebuild) the expensive moveit source build above.
-# Grow this list as `colcon build` reports more missing find_package() ROS deps.
-# Resolved from the manipulation build set's package.xml build deps:
-#   urdf_launch        - frida_description / xarm_description
-#   pcl_ros            - perception_3d / place / arm_pkg (+ pcl_conversions, pcl_msgs)
-#   cv_bridge          - manipulation_general (+ vision_opencv / image_geometry)
-#   control_toolbox    - pick_and_place
-#   controller_manager - pick_and_place / xarm_controller (pulls the ros2_control
-#                        core: hardware_interface, controller_interface,
-#                        controller_manager_msgs, realtime_tools, ...)
-#   nav2_msgs          - task_manager (cross-area coordinator pulled by manipulation_general)
-# --deps pulls each one's tree; --exclude-path skips whatever ros_base/moveit
-# already provide, so only the ~20-30 genuinely-missing packages get built.
-ARG ROS_EXTRA_PKGS="urdf_launch pcl_ros cv_bridge control_toolbox controller_manager nav2_msgs"
+# Extra ROS packages the manipulation workspace needs that have no Noble apt binary,
+# so the home2 rosdep step above silently skips them. ros_source_install.sh resolves
+# each one's deps and builds ONLY what's not already in /opt/ros/humble. Kept as its
+# OWN layer so growing this list does NOT rebuild the expensive moveit layer above.
+# Grow it as `colcon build` reports missing find_package() / runtime ROS deps.
+#
+# Build deps (find_package), from the build set's package.xml:
+#   urdf_launch          - frida_description / xarm_description
+#   pcl_ros              - perception_3d / place / arm_pkg (+ pcl_conversions, pcl_msgs)
+#   cv_bridge            - manipulation_general (+ vision_opencv / image_geometry)
+#   control_toolbox      - pick_and_place
+#   controller_manager   - pick_and_place / xarm_controller (pulls the ros2_control
+#                          core: hardware_interface, controller_interface, ...)
+#   nav2_msgs            - task_manager (pulled by manipulation_general)
+# Runtime deps (don't block colcon, but ppc needs them at launch):
+#   joint_trajectory_controller / joint_state_broadcaster - the controllers the xarm
+#                          spawner loads (ros2_controllers)
+#   tf_transformations   - pick_server.py / fix_position_to_plane.py (pure python)
+ARG ROS_EXTRA_PKGS="urdf_launch pcl_ros cv_bridge control_toolbox controller_manager nav2_msgs joint_trajectory_controller joint_state_broadcaster tf_transformations"
 RUN ros_source_install.sh ${ROS_EXTRA_PKGS}
 
 # perception_3d hardcodes `#include <pcl-1.12/pcl/...>` (the Orin shipped PCL 1.12).

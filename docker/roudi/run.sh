@@ -12,9 +12,19 @@ else
   ENV_TYPE=cpu
 fi
 
+# Jetson Thor uses the l4t_thor base + its own roudi Dockerfile (Noble/GCC 13).
+# Opt in with PLATFORM=thor (repo-root .env, sourced by lib.sh) or auto-detect.
+ROUDI_DOCKERFILE="docker/roudi/Dockerfile"
+if [ "${PLATFORM:-}" = "thor" ] || \
+   { [ "$ENV_TYPE" = "l4t" ] && tr -d '\0' < /proc/device-tree/model 2>/dev/null | grep -qi thor; }; then
+  ENV_TYPE=l4t_thor
+  ROUDI_DOCKERFILE="docker/roudi/Dockerfile.l4t_thor"
+fi
+
 echo "" > .env
 add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
 add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:roudi-${ENV_TYPE}"
+add_or_update_variable .env "ROUDI_DOCKERFILE" "$ROUDI_DOCKERFILE"
 
 case $ACTION in
   --down)

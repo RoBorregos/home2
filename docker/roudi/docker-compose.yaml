@@ -3,7 +3,7 @@ services:
     container_name: home2-roudi
     build:
       context: ../..
-      dockerfile: docker/roudi/Dockerfile
+      dockerfile: ${ROUDI_DOCKERFILE:-docker/roudi/Dockerfile}
       args:
         BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:l4t_base}
     image: ${IMAGE_NAME:-roborregos/home2:roudi-l4t}
