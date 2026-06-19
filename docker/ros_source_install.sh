@@ -62,17 +62,44 @@ rosdep install --from-paths "${WS}/src" --ignore-src -r -y \
     --rosdistro "${ROS_DISTRO}" \
     --skip-keys "${ROSDEP_SKIP_KEYS:-}" || true
 
+# Neutralize -Werror across every package. GCC 13 (Noble) promotes deprecation
+# warnings in older ROS deps (octomap's std::iterator, ...) to hard errors, and
+# those packages bake in -Werror themselves. A thin compiler wrapper strips any
+# -Werror* token and appends -Wno-error, so the final command line always wins no
+# matter where the flag was injected (a plain CMAKE_CXX_FLAGS override can't,
+# because the package's own flags come later on the command line).
+NOWERR_DIR="$(mktemp -d)"
+REAL_CC="$(command -v gcc)"
+REAL_CXX="$(command -v g++)"
+for pair in "cc:${REAL_CC}" "c++:${REAL_CXX}"; do
+    name="${pair%%:*}"; real="${pair#*:}"
+    cat > "${NOWERR_DIR}/${name}" <<EOF
+#!/usr/bin/env bash
+args=()
+for a in "\$@"; do
+  case "\$a" in
+    -Werror|-Werror=*) continue ;;
+    *) args+=("\$a") ;;
+  esac
+done
+exec ${real} "\${args[@]}" -Wno-error
+EOF
+    chmod +x "${NOWERR_DIR}/${name}"
+done
+
 echo ">>> [ros_source_install] building into ${ROS_INSTALL_BASE}"
 cd "${WS}"
 # CMake 4.x rejects the old cmake_minimum_required(<3.5) some packages still ship.
 export CMAKE_POLICY_VERSION_MINIMUM=3.5
+export CC="${NOWERR_DIR}/cc" CXX="${NOWERR_DIR}/c++"
 colcon build \
     --merge-install \
     --install-base "${ROS_INSTALL_BASE}" \
     --parallel-workers "${COLCON_JOBS:-$(nproc)}" \
-    --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+    --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+        -DCMAKE_C_COMPILER="${NOWERR_DIR}/cc" -DCMAKE_CXX_COMPILER="${NOWERR_DIR}/c++"
 
 cd /
-rm -rf "${WS}"
+rm -rf "${WS}" "${NOWERR_DIR}"
 apt-get clean && rm -rf /var/lib/apt/lists/*
 echo ">>> [ros_source_install] done: $*"
