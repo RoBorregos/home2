@@ -68,6 +68,15 @@ RUN rosdep fix-permissions
 WORKDIR /
 RUN rm -r installs/
 
+# Extra ROS packages the manipulation workspace build-depends on (find_package /
+# ament build deps) that have no Noble apt binary, so the home2 rosdep step above
+# silently skips them. Build them from source into the overlay with the same
+# mechanism as the moveit line. Kept as its OWN layer so adding a package here
+# does NOT invalidate (and rebuild) the expensive moveit source build above.
+# Grow this list as `colcon build` reports more missing find_package() ROS deps.
+ARG ROS_EXTRA_PKGS="urdf_launch"
+RUN ros_source_install.sh ${ROS_EXTRA_PKGS}
+
 # Copying GPD script and variables
 RUN echo ". /home/ros/setup_gpd.sh" >> /home/ros/.bashrc
 RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc
