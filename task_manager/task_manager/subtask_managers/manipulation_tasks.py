@@ -12,7 +12,6 @@ control and provides a simple interface for the task manager to use.
 
 import rclpy
 from rclpy.node import Node
-from std_srvs.srv import SetBool
 from task_manager.utils.logger import Logger
 
 # from geometry_msgs.msg import PoseStamped
@@ -23,6 +22,7 @@ from frida_interfaces.srv import (
     GetOptimalPositionForPlane,
     GetOptimalPoseForPlane,
     RemoveCollisionObject,
+    FixedDistanceMove,
 )
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
@@ -39,6 +39,7 @@ from xarm_msgs.srv import SetDigitalIO
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    FIXED_DISTANCE_MOVE_SERVICE,
 )
 import time as t
 
@@ -93,6 +94,9 @@ class ManipulationTasks:
         self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
+        self._fixed_distance_move_client = self.node.create_client(
+            FixedDistanceMove, FIXED_DISTANCE_MOVE_SERVICE
+        )
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
         self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
         self._remove_collision_object_client = self.node.create_client(
@@ -110,9 +114,6 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
-        self._flat_grasp_estimator_client = self.node.create_client(
-            SetBool, "/flat_grasp_estimator/enable"
-        )
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -252,6 +253,21 @@ class ManipulationTasks:
         print("Joint positions from service: ", result.joint_positions)
         return dict(zip(result.joint_names, result.joint_positions))
 
+    @service_check("_fixed_distance_move_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def move_arm_vertical(self, distance: float, descend: bool = False):
+        """Move the TCP a fixed distance in Z (xArm mode 5 closed-loop).
+        descend=False raises the arm (+Z); descend=True lowers it (-Z)."""
+        request = FixedDistanceMove.Request()
+        request.distance = float(distance)
+        request.descend = descend
+        future = self._fixed_distance_move_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
+        result = future.result()
+        if result is None or not result.success:
+            Logger.error(self.node, "move_arm_vertical failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
     # let the server pick the default values
     @service_check("_move_joints_action_client", -1, TIMEOUT)
     def _send_joint_goal(
@@ -366,39 +382,6 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         return Status.EXECUTION_SUCCESS
-
-    @mockable(return_value=Status.EXECUTION_SUCCESS)
-    @service_check(
-        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
-    )
-    def set_flat_grasp_estimator(self, enable: bool) -> int:
-        """Enable or disable the flat grasp estimator node."""
-        if not self._flat_grasp_estimator_client.wait_for_service(timeout_sec=5.0):
-            Logger.error(self.node, "Flat grasp estimator service not available")
-            return Status.EXECUTION_ERROR
-
-        req = SetBool.Request()
-        req.data = enable
-        future = self._flat_grasp_estimator_client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
-
-        if future.result() is not None and future.result().success:
-            state = "enabled" if enable else "disabled"
-            Logger.info(self.node, f"Flat grasp estimator {state}")
-            return Status.EXECUTION_SUCCESS
-
-        Logger.error(self.node, "Failed to set flat grasp estimator state")
-        return Status.EXECUTION_ERROR
-
-    def pick_cutlery(self, object_name: str) -> int:
-        """Pick a cutlery object (fork, knife, spoon).
-        Enables the flat grasp estimator, performs the pick, then disables it."""
-        self.set_flat_grasp_estimator(True)
-        try:
-            result = self.pick_object(object_name)
-        finally:
-            self.set_flat_grasp_estimator(False)
-        return result
 
     def place(self, close_to: str = "", special_request: str = ""):
         goal_msg = ManipulationAction.Goal()

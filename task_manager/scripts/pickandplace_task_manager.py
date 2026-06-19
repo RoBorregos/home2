@@ -637,14 +637,9 @@ class PickAndPlaceTM(Node):
 
             self.subtask_manager.hri.say(f"I will pick the {self.grasped_object.name}.", wait=False)
 
-            if self.grasped_object.category == ObjectCategory.CUTLERY:
-                status = self.subtask_manager.manipulation.pick_cutlery(
-                    self._to_yolo_name(self.grasped_object.name)
-                )
-            else:
-                status = self.subtask_manager.manipulation.pick_object(
-                    self._to_yolo_name(self.grasped_object.name)
-                )
+            status = self.subtask_manager.manipulation.pick_object(
+                self._to_yolo_name(self.grasped_object.name)
+            )
 
             # Verify gripper actually has the object
             if status == Status.EXECUTION_SUCCESS:
@@ -1075,12 +1070,9 @@ class PickAndPlaceTM(Node):
 
             yolo_name = self._to_yolo_name(item_name)
 
-            if self.categorize_object(item_name) == ObjectCategory.CUTLERY:
-                status = self.subtask_manager.manipulation.pick_cutlery(yolo_name)
-            else:
-                status = self.subtask_manager.manipulation.pick_object(
-                    yolo_name, scan_environment=is_cabinet
-                )
+            status = self.subtask_manager.manipulation.pick_object(
+                yolo_name, scan_environment=is_cabinet
+            )
 
             # Verify gripper actually has the object
             if status == Status.EXECUTION_SUCCESS:

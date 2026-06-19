@@ -12,9 +12,8 @@ MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
 # New model architecture (compatible deps) → new file in models/ + one entry here
 # Conflicting deps or exclusive GPU >4 GB → new gRPC container in docker/vision/
 MODEL_CONFIGS: dict[str, dict] = {
-    "yolo_finetuned": {"filename": "abril9.pt", "type": "yolo", "conf": 0.6},
+    "yolo_finetuned": {"filename": "RCP17.pt", "type": "yolo", "conf": 0.6},
     "yolo_generic": {"filename": "yolo26n.pt", "type": "yolo", "conf": 0.5},
-    "cutlery": {"filename": "cutlery.pt", "type": "yolo", "conf": 0.3},
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
 }
 
