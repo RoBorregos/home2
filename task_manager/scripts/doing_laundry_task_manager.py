@@ -3,11 +3,9 @@
 Task Manager for Doing Laundry Task
 """
 
-import math
 import rclpy
-from rclpy.duration import Duration
 from rclpy.node import Node
-from tf2_ros import Buffer, TransformListener, TransformException
+from tf2_ros import Buffer, TransformListener
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -69,35 +67,6 @@ class DoingLaundryTM(Node):
             Logger.info(self, f"Carrying basket to {location}")
             self.subtask_manager.hri.say(f"Carrying basket to {location}.", wait=False)
         return self.subtask_manager.nav.move_to_location(location, sublocation)
-
-    def _rotate_180(self):
-        """Rotate 180° in place so the robot's back faces the basket."""
-        try:
-            robot_tf = self.tf_buffer.lookup_transform(
-                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0)
-            )
-        except TransformException as e:
-            Logger.error(self, f"TF base_link→map failed for rotation: {e}")
-            return Status.EXECUTION_ERROR
-
-        rx = robot_tf.transform.translation.x
-        ry = robot_tf.transform.translation.y
-        q = robot_tf.transform.rotation
-        current_yaw = math.atan2(
-            2.0 * (q.w * q.z + q.x * q.y),
-            1.0 - 2.0 * (q.y**2 + q.z**2),
-        )
-        new_yaw = current_yaw + math.pi
-
-        Logger.info(
-            self,
-            f"Rotating 180°: {math.degrees(current_yaw):.1f}° → {math.degrees(new_yaw):.1f}°",
-        )
-        self.subtask_manager.hri.say("Turning to face basket.", wait=False)
-        status, error = self.subtask_manager.nav.navigate_to_pose(rx, ry, new_yaw)
-        if status != Status.EXECUTION_SUCCESS:
-            Logger.error(self, f"Rotation failed: {error}")
-        return status
 
     # ------------------------------------------------------------------ FSM
 
