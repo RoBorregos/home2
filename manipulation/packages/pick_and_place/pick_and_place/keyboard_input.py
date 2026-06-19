@@ -16,7 +16,14 @@ from frida_constants.vision_constants import (
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
 )
+from frida_interfaces.srv import GetOptimalPositionForPlane
 import json
+
+
+# Shelf level surface heights in base_link Z (match pickandplace_task_manager
+# shelf_level_heights; recalibrate per shelf with RViz Publish Point).
+SHELF_LEVEL_HEIGHTS = [0.475, 0.827, 1.201]
+SHELF_SCAN_TOLERANCE = 0.1
 
 
 class KeyboardInput(Node):
@@ -35,6 +42,11 @@ class KeyboardInput(Node):
             self,
             ManipulationAction,
             MANIPULATION_ACTION_SERVER,
+            callback_group=callback_group,
+        )
+        self._optimal_position_client = self.create_client(
+            GetOptimalPositionForPlane,
+            "/manipulation/get_optimal_position_for_plane",
             callback_group=callback_group,
         )
         self.objects = []  # Example list of objects
@@ -102,6 +114,29 @@ class KeyboardInput(Node):
         )
         future.add_done_callback(lambda f: self.goal_response_callback(f, object_name))
         self.get_logger().info(f"Pick request for {object_name} sent")
+
+    def scan_shelf_levels(self):
+        """Face each shelf level so the octomap/spheres build before a shelf pick or
+        place. Mirrors the task manager cabinet scan; run before option -4 or -11."""
+        if not self._optimal_position_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("get_optimal_position_for_plane not available!")
+            return
+        for height in SHELF_LEVEL_HEIGHTS:
+            req = GetOptimalPositionForPlane.Request()
+            req.plane_est_min_height = height - SHELF_SCAN_TOLERANCE
+            req.plane_est_max_height = height + SHELF_SCAN_TOLERANCE
+            req.table_or_shelf = False
+            req.approach_plane = True
+            self.get_logger().info(f"Scanning shelf level at {height:.3f} m")
+            future = self._optimal_position_client.call_async(req)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=30.0)
+            result = future.result()
+            if result is None or not result.is_valid:
+                self.get_logger().warning(f"Level {height:.3f} m: no valid position")
+            else:
+                self.get_logger().info(f"Level {height:.3f} m positioned")
+            time.sleep(2.0)
+        self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
 
     def send_place_request(
         self,
@@ -228,6 +263,7 @@ def main(args=None):
             print("-9. Special Request Place")
             print("-10. Pour (object already grasped)")
             print("-11. Pick from shelf (keep octomap)")
+            print("-12. Scan shelf levels (do before -4/-11)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -325,6 +361,9 @@ def main(args=None):
             elif choice == "-11":
                 object_name = input("Enter object name on shelf: ")
                 node.send_pick_request(object_name, scan_environment=True)
+
+            elif choice == "-12":
+                node.scan_shelf_levels()
 
             elif choice.isdigit():
                 try:
