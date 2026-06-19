@@ -29,7 +29,7 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.status import Status
-from frida_interfaces.action import ManipulationAction, GoToHand, MoveToPose
+from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
@@ -692,40 +692,6 @@ class ManipulationTasks:
             return Status.EXECUTION_SUCCESS
 
         Logger.error(self.node, "GoToHand failed to reach target pose")
-        return Status.EXECUTION_ERROR
-
-    @mockable(return_value=Status.EXECUTION_SUCCESS)
-    @service_check(
-        client="_move_to_pose_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
-    )
-    def move_arm_to_pose(self, pose: PoseStamped, velocity: float = 0.4) -> int:
-        """Move EEF to a target PoseStamped via MoveIt. Does NOT close gripper or retract."""
-        goal_msg = MoveToPose.Goal()
-        goal_msg.pose = pose
-        goal_msg.velocity = float(velocity)
-        goal_msg.acceleration = 0.15
-        goal_msg.planner_id = "RRTConnect"
-        goal_msg.target_link = "gripper_grasp_frame"
-        goal_msg.tolerance_position = 0.02
-        goal_msg.tolerance_orientation = 0.1
-
-        self._move_to_pose_action_client.wait_for_server()
-        future = self._move_to_pose_action_client.send_goal_async(goal_msg)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-
-        if future.result() is None or not future.result().accepted:
-            Logger.error(self.node, "move_arm_to_pose goal was rejected")
-            return Status.EXECUTION_ERROR
-
-        result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
-
-        result = result_future.result().result
-        if result.success:
-            Logger.success(self.node, "move_arm_to_pose completed successfully")
-            return Status.EXECUTION_SUCCESS
-
-        Logger.error(self.node, "move_arm_to_pose failed to reach target pose")
         return Status.EXECUTION_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
