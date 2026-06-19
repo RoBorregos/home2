@@ -47,6 +47,7 @@ class TopicInfo:
 class RosSnapshot:
     nodes: list[str] = field(default_factory=list)
     topics: dict[str, TopicInfo] = field(default_factory=dict)
+    services: list[str] = field(default_factory=list)
     orphans_no_pub: list[str] = field(default_factory=list)  # subs but no pubs
     orphans_no_sub: list[str] = field(default_factory=list)  # pubs but no subs
     hz: dict[str, float] = field(default_factory=dict)
@@ -126,6 +127,11 @@ def snapshot(hz_window: float = 1.0) -> RosSnapshot:
 
         critical = _load_critical_topics()
         hz_targets: dict[str, str] = {}
+
+        try:
+            snap.services = sorted(s for s, _ in node.get_service_names_and_types())
+        except Exception:
+            snap.services = []
 
         for tname, ttypes in node.get_topic_names_and_types():
             pubc = node.count_publishers(tname)

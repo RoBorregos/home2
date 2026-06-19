@@ -5,15 +5,22 @@ Usage:
     python3 -m status.dashboard --gpsr           # all areas, one task
     python3 -m status.dashboard vision --gpsr    # single area
 
+Layout: 6 panels + footer.
+    Row 1: Host DDS        | Integration Logs | Live signals
+    Row 2: Containers      | ROS Activity     | Orphan topics
+    Footer: Hints (correlates infra failures with missing nodes)
+
 Defaults: refreshes every 2s. Ctrl+C to exit cleanly."""
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import time
+from collections import Counter
 from datetime import datetime
 
-from rich.console import Console
+from rich.console import Console, Group
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
@@ -23,8 +30,11 @@ from rich.text import Text
 from status import area_config, infra_checks, ros_introspection
 
 ALL_AREAS = ("vision", "manipulation", "navigation", "hri", "integration")
+REMOTE_AREAS = {"hri"}  # mirrors lib.sh ORIN_SERVER_AREAS — checked on remote Orin
 REFRESH_SECONDS = 2.0
 HZ_WINDOW = 0.8
+LOGS_CONTAINER = "home2-integration"
+LOGS_TAIL_LINES = 12
 
 
 def _parse_args(argv: list[str]) -> tuple[list[str], str]:
@@ -42,6 +52,7 @@ def _icon(ok: bool) -> Text:
     return Text("✓", style="bold green") if ok else Text("⨯", style="bold red")
 
 
+# ── Panel 1: Host DDS ────────────────────────────────────────────────
 def _render_dds_panel(infra: infra_checks.InfraSnapshot) -> Panel:
     dds = infra.dds
     t = Table.grid(padding=(0, 1))
@@ -67,42 +78,49 @@ def _render_dds_panel(infra: infra_checks.InfraSnapshot) -> Panel:
     return Panel(t, title="Host DDS", border_style=style)
 
 
-def _render_containers_panel(infra: infra_checks.InfraSnapshot) -> Panel:
-    t = Table.grid(padding=(0, 1))
-    t.add_column()
-    t.add_column()
-    t.add_column(style="dim")
-    if not infra.containers:
-        t.add_row(Text("•", style="dim"), "(no containers declared)", "")
+# ── Panel 2: Integration logs ────────────────────────────────────────
+def _fetch_logs(container: str, lines: int) -> str:
+    try:
+        result = subprocess.run(
+            ["docker", "logs", "--tail", str(lines), container],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode != 0:
+            return f"(container '{container}' not running)"
+        # docker writes both stdout+stderr; combine
+        out = (result.stdout or "") + (result.stderr or "")
+        return out.strip() or "(no recent output)"
+    except (FileNotFoundError, subprocess.SubprocessError) as e:
+        return f"(error reading logs: {e})"
+
+
+def _colorize_log_line(line: str) -> Text:
+    upper = line.upper()
+    if "ERROR" in upper or "FATAL" in upper or "TRACEBACK" in upper:
+        return Text(line, style="red")
+    if "WARN" in upper:
+        return Text(line, style="yellow")
+    if "INFO" in upper:
+        return Text(line, style="dim cyan")
+    return Text(line, style="dim")
+
+
+def _render_logs_panel() -> Panel:
+    raw = _fetch_logs(LOGS_CONTAINER, LOGS_TAIL_LINES)
+    lines = [_colorize_log_line(line) for line in raw.splitlines()[-LOGS_TAIL_LINES:]]
+    if not lines:
+        body: Group | Text = Text("(empty)", style="dim")
     else:
-        for name, cs in sorted(infra.containers.items()):
-            t.add_row(_icon(cs.ok), name, cs.detail[:30])
-    any_bad = any(not c.ok for c in infra.containers.values())
-    return Panel(t, title="Containers", border_style="red" if any_bad else "green")
+        body = Group(*lines)
+    return Panel(body, title=f"Logs · {LOGS_CONTAINER}", border_style="cyan")
 
 
-def _render_areas_panel(area_states: dict[str, dict]) -> Panel:
-    t = Table(show_header=True, header_style="bold cyan", box=None)
-    t.add_column("Area")
-    t.add_column("Nodes", justify="right")
-    t.add_column("")
-    t.add_column("Missing", style="red")
-    for area, st in area_states.items():
-        running = st["running"]
-        expected = st["expected"]
-        missing = st["missing"]
-        ratio = f"{len(running)}/{len(expected)}" if expected else "—"
-        icon = _icon(not missing and bool(expected))
-        miss_txt = ", ".join(m.lstrip("/") for m in missing[:3])
-        if len(missing) > 3:
-            miss_txt += f" +{len(missing)-3}"
-        t.add_row(area.capitalize(), ratio, icon, miss_txt)
-    return Panel(t, title="Areas / Nodes", border_style="cyan")
-
-
+# ── Panel 3: Live signals (Hz) ───────────────────────────────────────
 def _render_signals_panel(ros: ros_introspection.RosSnapshot) -> Panel:
-    t = Table(show_header=True, header_style="bold cyan", box=None)
-    t.add_column("Topic")
+    t = Table(show_header=True, header_style="bold cyan", box=None, expand=True)
+    t.add_column("Topic", overflow="fold")
     t.add_column("Hz", justify="right")
     t.add_column("")
     if not ros.hz:
@@ -114,15 +132,109 @@ def _render_signals_panel(ros: ros_introspection.RosSnapshot) -> Panel:
     return Panel(t, title="Live signals", border_style="cyan")
 
 
-def _render_orphans_panel(ros: ros_introspection.RosSnapshot) -> Panel:
+# ── Panel 4: Containers ──────────────────────────────────────────────
+def _render_containers_panel(
+    infra: infra_checks.InfraSnapshot, area_states: dict[str, dict]
+) -> Panel:
     t = Table.grid(padding=(0, 1))
     t.add_column()
     t.add_column()
+    t.add_column(style="dim")
+    if not infra.containers:
+        t.add_row(Text("•", style="dim"), "(no containers declared)", "")
+    else:
+        for name, cs in sorted(infra.containers.items()):
+            t.add_row(_icon(cs.ok), name, cs.detail[:30])
+
+    # Remote areas: signal we deliberately skip them locally.
+    for area in REMOTE_AREAS:
+        if area in area_states:
+            t.add_row(
+                Text("⇄", style="magenta"),
+                f"home2-{area}",
+                Text("on remote Orin", style="magenta"),
+            )
+
+    any_bad = any(not c.ok for c in infra.containers.values())
+    return Panel(t, title="Containers", border_style="red" if any_bad else "green")
+
+
+# ── Panel 5: ROS Activity (grouped) ─────────────────────────────────
+def _group_by_namespace(items: list[str]) -> dict[str, int]:
+    """Group /<ns>/whatever → ns. Items with no namespace bucket under '(root)'."""
+    counts: Counter[str] = Counter()
+    for item in items:
+        parts = item.lstrip("/").split("/", 1)
+        ns = parts[0] if parts and parts[0] else "(root)"
+        # Skip ROS internal namespaces that pollute the view
+        if ns in {"parameter_events", "rosout"}:
+            ns = "(ros2 internal)"
+        counts[ns] += 1
+    return dict(counts.most_common())
+
+
+def _render_activity_panel(
+    ros: ros_introspection.RosSnapshot, area_states: dict[str, dict], task: str
+) -> Panel:
+    visible_topics = [
+        t
+        for t in ros.topics
+        if not t.startswith("/parameter_events") and not t.startswith("/rosout")
+    ]
+    node_groups = _group_by_namespace(ros.nodes)
+    topic_groups = _group_by_namespace(visible_topics)
+    svc_groups = _group_by_namespace(ros.services)
+
+    all_ns = sorted(set(node_groups) | set(topic_groups) | set(svc_groups))
+
+    t = Table(show_header=True, header_style="bold cyan", box=None, expand=True)
+    t.add_column("Namespace", overflow="fold")
+    t.add_column("Nodes", justify="right")
+    t.add_column("Topics", justify="right")
+    t.add_column("Svcs", justify="right")
+    if task:
+        t.add_column("Exp.", justify="right")
+        t.add_column("")
+
+    for ns in all_ns:
+        n = node_groups.get(ns, 0)
+        tp = topic_groups.get(ns, 0)
+        sv = svc_groups.get(ns, 0)
+        row = [ns, str(n) if n else "·", str(tp) if tp else "·", str(sv) if sv else "·"]
+        if task:
+            st = area_states.get(ns)
+            if st and st["expected"]:
+                ratio = f"{len(st['running'])}/{len(st['expected'])}"
+                icon = _icon(not st["missing"])
+                row += [ratio, icon]
+            else:
+                row += ["", ""]
+        t.add_row(*row)
+
+    totals = (
+        f"Σ nodes={len(ros.nodes)}  topics={len(visible_topics)}  "
+        f"services={len(ros.services)}"
+        + (f"  · task={task}" if task else "  · (no task arg)")
+    )
+    return Panel(
+        Group(t, Text(totals, style="dim italic")),
+        title="ROS Activity (grouped by namespace)",
+        border_style="cyan",
+    )
+
+
+# ── Panel 6: Orphan topics ──────────────────────────────────────────
+def _render_orphans_panel(ros: ros_introspection.RosSnapshot) -> Panel:
+    t = Table.grid(padding=(0, 1))
+    t.add_column()
+    t.add_column(overflow="fold")
+    rows_added = 0
     if ros.orphans_no_pub:
         for top in ros.orphans_no_pub[:6]:
             info = ros.topics.get(top)
             sub_count = info.sub_count if info else "?"
             t.add_row(_icon(False), f"{top} (subs={sub_count}, pubs=0)")
+            rows_added += 1
     if ros.orphans_no_sub:
         for top in ros.orphans_no_sub[:4]:
             info = ros.topics.get(top)
@@ -131,11 +243,20 @@ def _render_orphans_panel(ros: ros_introspection.RosSnapshot) -> Panel:
                 Text("•", style="yellow"),
                 f"{top} (pubs={pub_count}, subs=0)",
             )
-    if not ros.orphans_no_pub and not ros.orphans_no_sub:
+            rows_added += 1
+    if rows_added == 0:
         t.add_row(Text("✓", style="green"), "no orphan topics")
+    extra_red = max(0, len(ros.orphans_no_pub) - 6)
+    extra_yellow = max(0, len(ros.orphans_no_sub) - 4)
+    if extra_red or extra_yellow:
+        t.add_row(
+            Text("…", style="dim"),
+            Text(f"+{extra_red} red, +{extra_yellow} yellow not shown", style="dim"),
+        )
     return Panel(t, title="Orphan topics", border_style="yellow")
 
 
+# ── Footer: Hints ───────────────────────────────────────────────────
 def _render_hints(
     infra: infra_checks.InfraSnapshot,
     area_states: dict[str, dict],
@@ -150,6 +271,8 @@ def _render_hints(
             )
         )
     for area, st in area_states.items():
+        if area in REMOTE_AREAS:
+            continue
         down = [
             c
             for c, cs in infra.containers.items()
@@ -171,37 +294,38 @@ def _render_hints(
         lines.append(Text(f" ⨯ {top}: has subscribers but no publisher", style="red"))
     if not lines:
         lines.append(Text(" ✓ everything green", style="green"))
-    return Panel(Text("\n").join(lines), title="Hints", border_style="magenta")
+    return Panel(Group(*lines), title="Hints", border_style="magenta")
 
 
+# ── Layout ──────────────────────────────────────────────────────────
 def _build_layout() -> Layout:
     root = Layout()
     root.split_column(
         Layout(name="header", size=3),
-        Layout(name="body", ratio=1),
+        Layout(name="row1", ratio=1),
+        Layout(name="row2", ratio=1),
         Layout(name="footer", size=6),
     )
-    root["body"].split_row(
-        Layout(name="left", ratio=1),
-        Layout(name="middle", ratio=1),
-        Layout(name="right", ratio=1),
+    root["row1"].split_row(
+        Layout(name="dds", ratio=1),
+        Layout(name="logs", ratio=2),
+        Layout(name="signals", ratio=1),
     )
-    root["left"].split_column(
-        Layout(name="dds"),
-        Layout(name="containers"),
-    )
-    root["right"].split_column(
-        Layout(name="signals"),
-        Layout(name="orphans"),
+    root["row2"].split_row(
+        Layout(name="containers", ratio=1),
+        Layout(name="activity", ratio=2),
+        Layout(name="orphans", ratio=1),
     )
     return root
 
 
-def _header(env_type: str, iface: str) -> Panel:
+def _header(env_type: str, iface: str, task: str, areas: list[str]) -> Panel:
     ts = datetime.now().strftime("%H:%M:%S")
+    area_label = areas[0] if len(areas) == 1 else "all"
+    task_label = task or "(none)"
     msg = Text(
-        f"FRIDA STATUS · env={env_type} · iface={iface or 'autodetermine'} · {ts} "
-        f"· refresh {REFRESH_SECONDS:.0f}s",
+        f"FRIDA STATUS · env={env_type} · iface={iface or 'autodetermine'} "
+        f"· area={area_label} · task={task_label} · {ts} · refresh {REFRESH_SECONDS:.0f}s",
         style="bold white on blue",
     )
     return Panel(msg, border_style="blue")
@@ -210,7 +334,7 @@ def _header(env_type: str, iface: str) -> Panel:
 def _compute_area_states(
     areas: list[str], task: str, running_nodes: set[str]
 ) -> dict[str, dict]:
-    out = {}
+    out: dict[str, dict] = {}
     for area in areas:
         expected = area_config.load_area_nodes(area, task) if task else []
         running = [n for n in expected if n in running_nodes]
@@ -222,12 +346,12 @@ def _compute_area_states(
 def _collect_containers(areas: list[str]) -> list[str]:
     names: list[str] = []
     for area in areas:
+        if area in REMOTE_AREAS:
+            continue  # skip — checked on a different host
         names.extend(area_config.load_area_containers(area))
-    # Always include roudi if SHM expected somewhere
     if any(area_config.area_requires_shm(a) for a in areas):
         if "home2-roudi" not in names:
             names.append("home2-roudi")
-    # Dedup, preserve order
     seen = set()
     return [n for n in names if not (n in seen or seen.add(n))]
 
@@ -248,12 +372,19 @@ def main() -> int:
                 area_states = _compute_area_states(areas, task, running_nodes)
 
                 layout["header"].update(
-                    _header(infra_snap.env_type, infra_snap.dds.cyclone_iface)
+                    _header(
+                        infra_snap.env_type, infra_snap.dds.cyclone_iface, task, areas
+                    )
                 )
                 layout["dds"].update(_render_dds_panel(infra_snap))
-                layout["containers"].update(_render_containers_panel(infra_snap))
-                layout["middle"].update(_render_areas_panel(area_states))
+                layout["logs"].update(_render_logs_panel())
                 layout["signals"].update(_render_signals_panel(ros_snap))
+                layout["containers"].update(
+                    _render_containers_panel(infra_snap, area_states)
+                )
+                layout["activity"].update(
+                    _render_activity_panel(ros_snap, area_states, task)
+                )
                 layout["orphans"].update(_render_orphans_panel(ros_snap))
                 layout["footer"].update(
                     _render_hints(infra_snap, area_states, ros_snap)
