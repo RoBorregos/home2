@@ -264,8 +264,7 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
         result = future.result()
         if result is None or not result.success:
-            reason = result.message if result is not None else "no response"
-            Logger.error(self.node, f"move_arm_vertical failed: {reason}")
+            Logger.error(self.node, "move_arm_vertical failed")
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
