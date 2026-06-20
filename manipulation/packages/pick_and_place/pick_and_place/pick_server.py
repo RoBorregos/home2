@@ -548,6 +548,21 @@ class PickMotionServer(Node):
                         f"[Peak] Fixed-distance pick flow for pose {i}"
                     )
 
+                    # Validate the descent endpoint against the robot itself
+                    descent_endpoint = copy.deepcopy(ee_link_pose)
+                    if endpoint_self_collides(
+                        self._compute_ik_client,
+                        self._state_validity_client,
+                        descent_endpoint,
+                        latest_joint_state=self._latest_joint_state,
+                        logger=self.get_logger(),
+                    ):
+                        self.get_logger().warn(
+                            f"[Peak] Descent endpoint self-collides with robot, "
+                            f"skipping pose {i}"
+                        )
+                        continue
+
                     # Open gripper
                     self.get_logger().info("[Peak] Opening gripper...")
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
