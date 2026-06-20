@@ -305,7 +305,7 @@ class GPSRTM(Node):
             self._track_state_change(GPSRTM.TaskStates.START)
             status = self.subtask_manager.nav.check_door()
 
-            self.navigate_to("start_area", "", False)
+            self.navigate_to("entrance", "safe_place", False)
 
             self.subtask_manager.hri.say(
                 "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks. Please tell them to me one by one."
@@ -395,7 +395,7 @@ class GPSRTM(Node):
                 "I have finished executing your commands. I will return to the start position.",
                 wait=False,
             )
-            self.navigate_to("start_area", "", False)
+            self.navigate_to("entrance", "safe_place", False)
             self.subtask_manager.manipulation.move_to_position("front_stare")
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
 
@@ -443,7 +443,7 @@ class GPSRTM(Node):
                 "I have finished executing your command. I will return to the start position to await for new commands.",
                 wait=False,
             )
-            self.navigate_to("start_area", "", False)
+            self.navigate_to("entrance", "safe_place", False)
             self.executed_commands += 1
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
             self.subtask_manager.manipulation.move_to_position("front_stare")
