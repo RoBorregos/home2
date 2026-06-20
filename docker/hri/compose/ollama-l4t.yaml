@@ -1,6 +1,6 @@
 services:
   ollama:
-    profiles: [hric, carry, gpsr, storing, restaurant]
+    profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-ollama-l4t
     build:
       context: ..

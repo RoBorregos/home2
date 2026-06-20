@@ -70,21 +70,11 @@ def launch_function(context, *args, **kwargs):
         }.items(),
     )
 
-    # Adaptive goal publisher — adjusts goals that land inside obstacles
-    # (e.g., table centers) using radial sampling / BFS
-    adaptive_goal_node = Node(
-        package='nav_main',
-        executable='adaptive_goal_publisher.py',
-        name='adaptive_goal_publisher',
-        output='screen',
-    )
-
     return [
         nav_central_node,
         nav_ui_node,
         nav_basics,
         rtabmapnav,
-        adaptive_goal_node,
     ]
 
 
