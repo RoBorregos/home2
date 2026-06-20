@@ -75,6 +75,10 @@ CUTLERY_PRE_GRASP_HEIGHT = (
 )
 CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
 CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
+SHELF_RETRACT_DIST = 0.15  # m - fallback retract if the approach depth is unknown
+SHELF_RETRACT_MARGIN = 0.05  # m - extra beyond the measured approach depth
+SHELF_RETRACT_MIN = 0.08  # m - clamp
+SHELF_RETRACT_MAX = 0.30  # m - clamp
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
@@ -574,6 +578,13 @@ class PickMotionServer(Node):
                     return True, pick_result
 
                 else:
+                    # EE XY before reaching in, to size the retract dynamically.
+                    pre_state = self._latest_robot_state
+                    pre_xy = (
+                        (pre_state.pose[0] / 1000.0, pre_state.pose[1] / 1000.0)
+                        if pre_state is not None
+                        else None
+                    )
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
                         ee_link_pose
                     )
@@ -590,6 +601,43 @@ class PickMotionServer(Node):
 
                     if result:
                         self.get_logger().info("Object attached")
+                        # Shelf pick (frontal grasp): pull straight out toward the
+                        # robot in XY (Z constant, clears ceiling). Table unchanged.
+                        approach = quat2mat(
+                            [
+                                ee_link_pose.pose.orientation.w,
+                                ee_link_pose.pose.orientation.x,
+                                ee_link_pose.pose.orientation.y,
+                                ee_link_pose.pose.orientation.z,
+                            ]
+                        )[:, 2]
+                        if abs(float(approach[2])) < 0.5:
+                            retract_pose = copy.deepcopy(ee_link_pose)
+                            gx = ee_link_pose.pose.position.x
+                            gy = ee_link_pose.pose.position.y
+                            dist = SHELF_RETRACT_DIST
+                            post_state = self._latest_robot_state
+                            if pre_xy is not None and post_state is not None:
+                                depth = float(
+                                    np.hypot(
+                                        post_state.pose[0] / 1000.0 - pre_xy[0],
+                                        post_state.pose[1] / 1000.0 - pre_xy[1],
+                                    )
+                                )
+                                dist = min(
+                                    max(
+                                        depth + SHELF_RETRACT_MARGIN, SHELF_RETRACT_MIN
+                                    ),
+                                    SHELF_RETRACT_MAX,
+                                )
+                            n = float(np.hypot(gx, gy))
+                            if n > 1e-6:
+                                retract_pose.pose.position.x -= (gx / n) * dist
+                                retract_pose.pose.position.y -= (gy / n) * dist
+                            self.get_logger().info(
+                                f"Shelf retract: pull-out toward robot ({dist:.3f} m)"
+                            )
+                            self.move_to_pose(retract_pose, velocity=0.2)
                         pick_result.pick_pose = ee_link_pose
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
