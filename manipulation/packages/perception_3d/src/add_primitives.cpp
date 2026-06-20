@@ -589,11 +589,7 @@ public:
     if (request->is_plane) {
       RCLCPP_INFO(this->get_logger(), "Adding plane primitive");
 
-      // The plane cloud arrives in base_link. Instead of estimating the
-      // orientation statistically via PCA (RansacNormals), which was often
-      // wrong and produced a tilted plane, hardcode the orientation to the
-      // robot's orientation (identity in base_link) and size the box from an
-      // axis-aligned bounding box so the level slab covers the table.
+      // Hardcode the orientation to the robot's orientation
       pcl::PointXYZ min_pt, max_pt;
       pcl::getMinMax3D(*cloud, min_pt, max_pt);
 
