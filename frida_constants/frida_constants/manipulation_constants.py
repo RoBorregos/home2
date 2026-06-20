@@ -104,14 +104,6 @@ ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
 GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
 REMOVE_COLLISION_OBJECT_SERVICE = "/manipulation/remove_collision_object"
 
-# Shelf-cavity collision boxes added during shelf picks (anchored to the object,
-# in base_link) so MoveIt avoids the board above, back wall and side walls.
-SHELF_CAVITY_CEILING_GAP = 0.22  # m above the object point (board above)
-SHELF_CAVITY_BACK_OFFSET = 0.20  # m behind the object (back wall)
-SHELF_CAVITY_SIDE_HALFSPAN = 0.35  # m left/right of the object (side walls)
-SHELF_CAVITY_SPAN = 0.70  # m width of the ceiling/back boxes
-SHELF_CAVITY_DEPTH = 0.45  # m depth of the ceiling/side boxes (along approach)
-SHELF_CAVITY_WALL = 0.02  # m box thickness
 PICK_OBJECT_NAMESPACE = "frida_pick_object_"
 PLANE_NAMESPACE = "plane"
 PLANE_OBJECT_COLLISION_TOLERANCE = (
