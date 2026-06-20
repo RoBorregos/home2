@@ -652,16 +652,13 @@ class PickMotionServer(Node):
     def _endpoint_self_collides(self, pose_stamped) -> bool:
         """
         Check whether the robot would be in self-collision at the given pose
-        (e.g. the gripper hitting the robot's own base/pedestal).
 
-        Uses MoveIt's /compute_ik (avoid_collisions=False so we still get a
-        kinematic solution even if it collides) followed by /check_state_validity,
+        Uses MoveIt's /compute_ik followed by /check_state_validity,
         filtering the reported contacts to ROBOT_LINK <-> ROBOT_LINK pairs only.
         Collisions with WORLD_OBJECT (clothes/basket) are intentionally ignored.
 
         Returns True if the pose should be skipped (self-collision or unreachable),
-        False if it is safe to attempt. Fails open (returns False) if the MoveIt
-        services are unavailable, to avoid blocking the pick.
+        False if it is safe to attempt.
         """
         if not self._compute_ik_client.wait_for_service(timeout_sec=2.0):
             self.get_logger().warn(
