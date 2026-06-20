@@ -80,18 +80,6 @@
       <reference name="zed_camera_link"><body gravcomp="1"/></reference>
     </mujoco>
   </xacro:if>
-  <!-- Planning-frame / TF-root policy:
-       In MuJoCo there is no localization running, so the arm is pinned to a
-       fixed "world" root at identity and "world" is MoveIt's planning frame.
-       On the REAL robot, "base_footprint" is the URDF root and the EKF
-       (robot_localization) drives odom -> base_footprint dynamically. We must
-       NOT add a static world -> base_footprint here: it would give
-       base_footprint two parents (this static one and the EKF's), which TF
-       cannot represent. The EKF transform wins, the world branch is orphaned,
-       and MoveIt's planning frame ("world") gets detached from the live
-       map/odom tree -> ghost robot, place collisions, empty octomap. So on the
-       real robot base_footprint is both the URDF root and MoveIt's planning
-       frame, and it stays connected to map via the EKF. -->
   <xacro:if value="$(arg mujoco_plugin)">
     <link name="world" />
     <joint name="world_to_base" type="fixed">

@@ -78,11 +78,6 @@ def generate_launch_description():
 
             'map_frame': 'map',
             'odom_frame': 'odom',
-            # base_footprint is the URDF root (see FRIDA_Real.urdf.xacro). The EKF
-            # must drive the root so the TF tree stays connected: map -> odom ->
-            # base_footprint -> base_link -> arm. Driving base_link instead steals
-            # it from the URDF static base_footprint->base_link and splits TF in
-            # two, detaching MoveIt's planning frame (ghost robot / empty octomap).
             'base_link_frame': 'base_footprint',
             'world_frame': 'odom',   # estimate odom -> base_footprint only (no map yet)
 
