@@ -20,6 +20,7 @@
   <depend>nav2_bringup</depend>
   <depend>robot_localization</depend>
   <depend>sllidar_ros2</depend>
+  <depend>ira_laser_tools</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>rtabmap_slam</depend>
@@ -30,6 +31,7 @@
   <depend>frida_constants</depend>
   <depend>dashgo_driver</depend>
   <depend>map_context</depend>
+  <depend>omnidriver</depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
   <depend>nav2_msgs</depend>

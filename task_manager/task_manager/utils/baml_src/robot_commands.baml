@@ -12,18 +12,12 @@ class GoTo {
 class PickObject {
   action "pick_object"
   object_to_pick string @description("Name of the object to pick")
-  object_ref string? @description(#"Optional symbolic ID for the same object
-  across commands in a batch (e.g. 'obj1'). Leave empty if the object is not
-  referenced by any other command. Used by the planner for coreference."#)
   @@description(#"Use this command to pick a specific object"#)
 }
 
 class FindPersonByName {
   action "find_person_by_name"
   name string @description("Name of the person to find")
-  person_ref string? @description(#"Optional symbolic ID for the same person
-  across commands in a batch (e.g. 'p1'). Leave empty if no other command
-  refers to this person. Used by the planner for coreference."#)
   @@description(#"Use this command to find a person by name"#)
 }
 
@@ -31,9 +25,6 @@ class FindPerson {
   action "find_person"
   attribute_value "" | string @description(#"Can be a feature/pose (pointing to
   the left, standing, blue shirt, etc.). If just asked to find ANY person, leave empty"#)
-  person_ref string? @description(#"Optional symbolic ID for the same person
-  across commands in a batch (e.g. 'p1'). Leave empty if no other command
-  refers to this person. Used by the planner for coreference."#)
   @@description(#"Use this command to find a person whose name is not known,
   and an optional attribute is provided to identify the person"#)
 }
@@ -50,9 +41,6 @@ class GetPersonInfo {
   action "get_person_info"
   info_type "pose"|"gesture"|"name"|string @description(#"Information to be
   retrieved about the person (pose, gesture, name, clothing, age, etc.)"#)
-  person_ref string? @description(#"Optional symbolic ID matching a prior
-  find_person/find_person_by_name's person_ref. Used by the planner for
-  coreference."#)
   @@description(#"Use this command to get information about a person,
   info type is the type of information to be retrieved.
   Can only be used AFTER a person is found by the find_person action"#)
@@ -80,9 +68,6 @@ class FollowPersonUntil {
   destination "cancelled"|string @description(#"The destination location to which
   the robot will follow the person until, can be a room, furniture, etc. or
   'cancelled' if the robot is to follow the person until asked to stop"#)
-  person_ref string? @description(#"Optional symbolic ID matching a prior
-  find_person/find_person_by_name's person_ref. Used by the planner for
-  coreference."#)
   @@description(#"Use this command to follow a person until a specific
   destination or requested to stop"#)
 }
@@ -91,19 +76,11 @@ class GuidePersonTo {
   action "guide_person_to"
   destination_room string @description(#"The destination to guide or lead a person to
   can be a room, furniture, etc."#)
-  person_ref string? @description(#"Optional symbolic ID matching a prior
-  find_person/find_person_by_name's person_ref. Used by the planner for
-  coreference."#)
   @@description(#"Use this command to guide a person to a specific destination"#)
 }
 
 class GiveObject {
   action "give_object"
-  object_ref string? @description(#"Optional symbolic ID matching a prior
-  pick_object's object_ref. Used by the planner for coreference."#)
-  person_ref string? @description(#"Optional symbolic ID matching a prior
-  find_person/find_person_by_name's person_ref. Used by the planner for
-  coreference."#)
   @@description(#"Use this command to give the currently held object to a person
   this object is already stored in the system's memory, just use the command to
   trigger the action. It usually follows a 'pick_object' and 'go_to' command"#)
@@ -111,8 +88,6 @@ class GiveObject {
 
 class PlaceObject {
   action "place_object"
-  object_ref string? @description(#"Optional symbolic ID matching a prior
-  pick_object's object_ref. Used by the planner for coreference."#)
   @@description(#"Use this command to place the currently held object on the
   current location, the object and location are already stored in the system's memory,
   just use the command to trigger the action. It usually follows a 'pick_object'

@@ -2,6 +2,7 @@
 import os
 import shutil
 import time
+import json
 
 import numpy as np
 import openwakeword
@@ -103,8 +104,8 @@ class OpenWakeWordNode(Node):
                     self.get_logger().info(
                         f"Keyword '{keyword}' detected with score {scores[-1]:.2f}"
                     )
-                    detection_info = {"keyword": keyword, "score": scores[-1]}
-                    self.publisher.publish(String(data=str(detection_info)))
+                    detection_info = {"keyword": keyword, "score": float(scores[-1])}
+                    self.publisher.publish(String(data=json.dumps(detection_info)))
                     self.last_detection_time = current_time
                 break
 

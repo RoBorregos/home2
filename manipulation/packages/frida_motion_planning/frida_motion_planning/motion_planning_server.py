@@ -5,7 +5,8 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
-from std_srvs.srv import SetBool, Empty
+from std_msgs.msg import Bool
+from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
@@ -34,19 +35,18 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
+    ESTOP_TOPIC,
+    MANIPULATION_ENSURE_ARM_READY_SERVICE,
 )
 
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
-
-
 from frida_motion_planning.utils.XArmServices import XArmServices
 
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 from rclpy.qos import QoSProfile
-from controller_manager_msgs.srv import SwitchController
 
 
 class MotionPlanningServer(Node):
@@ -68,6 +68,9 @@ class MotionPlanningServer(Node):
         self.planner.set_acceleration(0.15)
         self.planner.set_planning_time(0.5)
         self.planner.set_planner(PICK_PLANNER)
+
+        self._in_estop = False
+        self.current_mode = -1
 
         self.servo = MoveItServo(
             self,
@@ -176,20 +179,23 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        self.reset_controller_client = self.create_service(
-            Empty,
-            "/manipulation/reset_xarm_controller",
-            self.reset_xarm_controller,
+        self._ensure_arm_ready_client = self.create_client(
+            Trigger,
+            MANIPULATION_ENSURE_ARM_READY_SERVICE,
             callback_group=self.callback_group,
         )
 
-        self.switch_controller_client = self.create_client(
-            SwitchController,
-            "/controller_manager/switch_controller",
-            callback_group=self.callback_group,
+        self._joint_goal_target_pub = self.create_publisher(
+            JointState, "/manipulation/joint_goal_target", 1
         )
 
-        self.current_mode = -1
+        self.create_subscription(
+            Bool,
+            ESTOP_TOPIC,
+            lambda msg: setattr(self, "_in_estop", msg.data),
+            10,
+            callback_group=self.callback_group,
+        )
 
         self.get_logger().info("Motion Planning Server has been started")
         self.get_collision_objects_service = self.create_service(
@@ -202,6 +208,12 @@ class MotionPlanningServer(Node):
 
     def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
+        if self._in_estop:
+            self.get_logger().warn("E-stop active — rejecting move_to_pose")
+            goal_handle.abort()
+            result = MoveToPose.Result()
+            result.success = False
+            return result
         self.get_logger().info("Executing pose goal...")
 
         # Initialize result
@@ -253,7 +265,9 @@ class MotionPlanningServer(Node):
                     "Trajectory file parsed successfully. Executing plan..."
                 )
                 # Step 2: Use the planner's execution function
-                response.success = self.planner.execute_plan(trajectory_msg)
+                response.success = self.planner.execute_plan(
+                    trajectory_msg, is_estop_active=lambda: self._in_estop
+                )
             else:
                 self.get_logger().error("Failed to parse trajectory file.")
                 response.success = False
@@ -272,6 +286,12 @@ class MotionPlanningServer(Node):
 
     def move_joints_execute_callback(self, goal_handle):
         """Manages the lifecycle of the MoveJoints action."""
+        if self._in_estop:
+            self.get_logger().warn("E-stop active — rejecting move_joints")
+            goal_handle.abort()
+            result = MoveJoints.Result()
+            result.success = False
+            return result
         self.get_logger().info("Executing joint goal action...")
         result = MoveJoints.Result()
         self.set_planning_settings(goal_handle)
@@ -302,6 +322,7 @@ class MotionPlanningServer(Node):
 
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
+        self._call_ensure_arm_ready()
         pose = goal_handle.request.pose
         target_link = goal_handle.request.target_link
         tolerance_position = (
@@ -342,7 +363,9 @@ class MotionPlanningServer(Node):
 
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            was_execution_successful = self.planner.execute_plan(trajectory_plan)
+            was_execution_successful = self.planner.execute_plan(
+                trajectory_plan, is_estop_active=lambda: self._in_estop
+            )
             return was_execution_successful
         else:
             self.get_logger().error("Cannot execute because planning failed.")
@@ -380,6 +403,11 @@ class MotionPlanningServer(Node):
             self.get_logger().error(str(e))
             return False
 
+        msg = JointState()
+        msg.name = list(joint_names)
+        msg.position = [float(p) for p in joint_positions]
+        self._joint_goal_target_pub.publish(msg)
+        self._call_ensure_arm_ready()
         self.get_logger().info("Planning joint goal...")
         original_planner = self.planner.moveit2.planner_id
         was_plan_successful, trajectory_plan = self.planner.plan_joint_goal(
@@ -405,7 +433,9 @@ class MotionPlanningServer(Node):
         self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            was_execution_successful = self.planner.execute_plan(trajectory_plan)
+            was_execution_successful = self.planner.execute_plan(
+                trajectory_plan, is_estop_active=lambda: self._in_estop
+            )
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
                 return True
@@ -683,35 +713,18 @@ class MotionPlanningServer(Node):
 
         return response
 
-    def reset_xarm_controller(self, request, response):
-        """Reactivate the xarm6_traj_controller via controller_manager."""
-        self.get_logger().info("Reactivating xarm6_traj_controller...")
-
-        if not self.switch_controller_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("switch_controller service not available")
-            return response
-
-        switch_req = SwitchController.Request()
-        switch_req.activate_controllers = ["xarm6_traj_controller"]
-        switch_req.deactivate_controllers = []
-        switch_req.strictness = SwitchController.Request.BEST_EFFORT
-
-        future = self.switch_controller_client.call_async(switch_req)
-
-        # Wait for the result
+    def _call_ensure_arm_ready(self) -> bool:
+        if not self._ensure_arm_ready_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().warn("ensure_arm_ready service not available, skipping")
+            return False
+        future = self._ensure_arm_ready_client.call_async(Trigger.Request())
         start = self.get_clock().now()
         while not future.done():
-            if (self.get_clock().now() - start).nanoseconds > 5e9:
-                self.get_logger().error("Timeout waiting for switch_controller")
-                return response
-
-        result = future.result()
-        if result and result.ok:
-            self.get_logger().info("xarm6_traj_controller reactivated successfully")
-        else:
-            self.get_logger().error("Failed to reactivate xarm6_traj_controller")
-
-        return response
+            if (self.get_clock().now() - start).nanoseconds > 15e9:
+                self.get_logger().error("ensure_arm_ready timed out")
+                return False
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        return future.result().success
 
     def joint_states_callback(self, msg: JointState):
         # TODO: make use of this information

@@ -41,8 +41,9 @@ def _wrap_action(
     handlers: Sequence[Any],
     on_complete: Optional[Callable[[PlanAction, Any, Any], None]],
     retry_count: int,
+    on_start: Optional[Callable[[PlanAction], None]] = None,
 ) -> py_trees.behaviour.Behaviour:
-    leaf = ActionLeaf(plan_action, handlers, on_complete=on_complete)
+    leaf = ActionLeaf(plan_action, handlers, on_complete=on_complete, on_start=on_start)
     kind = getattr(plan_action.action, "action", "")
     timeout = py_trees.decorators.Timeout(
         name=f"to({kind})",
@@ -63,6 +64,8 @@ def build_tree(
     retry_count: int = 2,
     global_budget_s: float = GLOBAL_BUDGET_S,
     on_fallback_entry: Optional[Callable[[], None]] = None,
+    is_completed: Optional[Callable[[PlanAction], bool]] = None,
+    on_action_start: Optional[Callable[[PlanAction], None]] = None,
 ) -> py_trees.behaviour.Behaviour:
     """Build the GPSR behaviour tree for ``plan``.
 
@@ -81,6 +84,16 @@ def build_tree(
             sequential-fallback branch — useful for debug announcements
             (on-screen text, log line, etc.). Only installed when the
             plan actually has fallback content to run.
+        is_completed: optional predicate ``(plan_action) -> bool`` used by the
+            sequential-fallback branch to resume rather than restart. Any
+            non-``go_to`` action it reports as already completed (typically
+            because the interleaved branch succeeded on it) is skipped instead
+            of re-executed, and a ``go_to`` is skipped when its whole segment of
+            following work is already done (so the robot doesn't drive to a
+            location with nothing left to do). ``None`` disables skipping (full
+            restart).
+        on_action_start: optional callback invoked before every action
+            with ``(plan_action)``.
 
     Returns:
         the root Selector behaviour ready for ``tick()``.
@@ -88,7 +101,9 @@ def build_tree(
     interleaved_seq = py_trees.composites.Sequence(name="interleaved", memory=True)
     for pa in plan.actions:
         interleaved_seq.add_child(
-            _wrap_action(pa, subtask_handlers, on_action_complete, retry_count)
+            _wrap_action(
+                pa, subtask_handlers, on_action_complete, retry_count, on_start=on_action_start
+            )
         )
 
     interleaved_branch = py_trees.decorators.Timeout(
@@ -109,6 +124,8 @@ def build_tree(
                 subtask_handlers,
                 on_complete=on_action_complete,
                 name=f"fallback_cmd{cmd_idx}",
+                is_completed=is_completed,
+                on_start=on_action_start,
             )
         )
 

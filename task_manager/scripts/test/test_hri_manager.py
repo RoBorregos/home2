@@ -10,21 +10,18 @@ import os
 import subprocess
 import time
 from datetime import datetime
-from types import SimpleNamespace
 from typing import Union
 
 import rclpy
 from rclpy.node import Node
 
 from _merger_helpers import (
-    fallback_preserves_all,
-    gripper_invariant_holds,
-    non_goto_actions_preserved,
-    per_command_order_preserved,
+    build_commands,
+    describe_plan,
+    evaluate_expectations,
+    make_locator,
 )
 from task_manager.subtask_managers.hri_tasks import HRITasks
-
-# from subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
@@ -86,7 +83,8 @@ TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
-TEST_MERGER = True
+TEST_MERGER = False
+TEST_FALLBACK_RESUME = False
 
 
 class TestHriManager(Node):
@@ -143,6 +141,9 @@ class TestHriManager(Node):
 
         if TEST_MERGER:
             self.test_merger()
+
+        if TEST_FALLBACK_RESUME:
+            self.test_fallback_resume()
 
         exit(0)
 
@@ -615,594 +616,143 @@ class TestHriManager(Node):
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
     def test_merger(self):
-        """Unit-test task_manager.gpsr.merger against several interleaving
-        scenarios. Pure-Python — does not depend on any ROS service. Mirrors
-        the in-tree convention: per-scenario PASS/FAIL log + CSV output."""
+        """Unit-test task_manager.gpsr.merger against the scenarios declared in
+        merger.json. Pure-Python — does not depend on any ROS service. Each case
+        provides commands + coords + origin + a declarative ``expect`` block that
+        evaluate_expectations checks. Mirrors the in-tree convention: per-scenario
+        PASS/FAIL log + CSV output."""
+        from task_manager.gpsr.merger import merge
 
-        # Per-scenario capture of the inputs the closures build internally, so
-        # the run loop can report the commands / theoretical positions without
-        # every scenario having to return them explicitly.
-        from task_manager.gpsr.merger import merge as _real_merge
-
-        cap = {"cmds": [], "coords": {}, "origins": []}
-
-        def _act(kind, **fields):
-            return SimpleNamespace(action=kind, **fields)
-
-        def _cmd(*actions):
-            c = SimpleNamespace(commands=list(actions))
-            cap["cmds"].append(c)
-            return c
-
-        def _make_locator(coords):
-            cap["coords"] = coords
-
-            def locator(name):
-                return coords.get(name)
-
-            return locator
-
-        def merge(commands, *args, **kwargs):
-            if "origin" in kwargs:
-                cap["origins"].append(kwargs["origin"])
-            return _real_merge(commands, *args, **kwargs)
-
-        def _gripper_walk(plan_actions):
-            """Stricter than gripper_invariant_holds: also asserts that
-            pick→drop is not crossed by another command's gripper action."""
-            held_by = None
-            for pa in plan_actions:
-                if pa.requires_gripper:
-                    if held_by is not None:
-                        return False
-                    held_by = pa.source_cmd
-                if pa.releases_gripper:
-                    if held_by is None or held_by != pa.source_cmd:
-                        return False
-                    held_by = None
-            return True
-
-        _ARG_FIELDS = (
-            "location_to_go",
-            "object_to_pick",
-            "name",
-            "attribute_value",
-            "destination",
-            "destination_room",
-            "info_type",
-            "target_to_count",
-            "object_category",
-        )
-
-        def _label(action):
-            kind = getattr(action, "action", "?")
-            for arg in _ARG_FIELDS:
-                v = getattr(action, arg, None)
-                if v:
-                    return f"{kind}({v})"
-            return kind
-
-        def _describe(pa):
-            return f"[c{pa.source_cmd}] {_label(pa.action)}"
-
-        def _describe_plan(plan_actions):
-            return " -> ".join(_describe(pa) for pa in plan_actions)
-
-        def _describe_cmd(cmd):
-            return " -> ".join(_label(a) for a in cmd.commands)
-
-        scenarios = []
-
-        # 1. Single command identity
-        def s_single():
-            cmd = _cmd(
-                _act("go_to", location_to_go="kitchen"),
-                _act("pick_object", object_to_pick="cup"),
-                _act("go_to", location_to_go="living_room"),
-                _act("find_person_by_name", name="Angel"),
-                _act("give_object"),
-            )
-            plan = merge([cmd], locator=_make_locator({}))
-            ok = (
-                [pa.source_idx for pa in plan.actions] == [0, 1, 2, 3, 4]
-                and all(pa.source_cmd == 0 for pa in plan.actions)
-                and gripper_invariant_holds(plan.actions)
-                and per_command_order_preserved(plan.actions, n_cmds=1)
-            )
-            return ok, plan
-
-        scenarios.append(("single_command_identity", s_single))
-
-        # 2. Two pick-deliver pairs — atomic blocks preserved
-        def s_two_blocks():
-            cmd_a = _cmd(
-                _act("go_to", location_to_go="kitchen"),
-                _act("pick_object", object_to_pick="cup"),
-                _act("go_to", location_to_go="bathroom"),
-                _act("find_person_by_name", name="Angel"),
-                _act("give_object"),
-            )
-            cmd_b = _cmd(
-                _act("go_to", location_to_go="bedroom"),
-                _act("pick_object", object_to_pick="book"),
-                _act("go_to", location_to_go="office"),
-                _act("find_person_by_name", name="Bob"),
-                _act("give_object"),
-            )
-            coords = {
-                "kitchen": (0.0, 0.0),
-                "bathroom": (1.0, 0.0),
-                "bedroom": (10.0, 0.0),
-                "office": (11.0, 0.0),
-            }
-            plan = merge([cmd_a, cmd_b], locator=_make_locator(coords))
-            delivers = [pa for pa in plan.actions if pa.action.action == "give_object"]
-            ok = (
-                _gripper_walk(plan.actions)
-                and per_command_order_preserved(plan.actions, n_cmds=2)
-                and len(delivers) == 2
-                and {pa.source_cmd for pa in delivers} == {0, 1}
-            )
-            return ok, plan
-
-        scenarios.append(("two_pick_deliver_blocks_atomic", s_two_blocks))
-
-        # 3. Shared waypoint visited efficiently — collapse pass dedups the
-        # redundant second go_to kitchen, leaving exactly one visit.
-        def s_shared_waypoint():
-            cmd_a = _cmd(
-                _act("go_to", location_to_go="kitchen"),
-                _act("count", target_to_count="apples"),
-            )
-            cmd_b = _cmd(
-                _act("go_to", location_to_go="kitchen"),
-                _act("count", target_to_count="oranges"),
-            )
-            cmd_c = _cmd(
-                _act("go_to", location_to_go="garage"),
-                _act("count", target_to_count="cars"),
-            )
-            coords = {"kitchen": (5.0, 5.0), "garage": (-5.0, -5.0)}
-            plan = merge([cmd_a, cmd_b, cmd_c], locator=_make_locator(coords))
-            kitchen_gotos = [
-                pa
-                for pa in plan.actions
-                if pa.action.action == "go_to" and pa.action.location_to_go == "kitchen"
-            ]
-            # Both counts (cmd0 apples + cmd1 oranges) should appear before
-            # the garage go_to, i.e. on the same kitchen trip.
-            try:
-                garage_idx = next(
-                    i
-                    for i, pa in enumerate(plan.actions)
-                    if pa.action.action == "go_to" and pa.action.location_to_go == "garage"
-                )
-            except StopIteration:
-                return False, plan
-            counts_before_garage = [
-                pa for pa in plan.actions[:garage_idx] if pa.action.action == "count"
-            ]
-            return (
-                len(kitchen_gotos) == 1
-                and len(counts_before_garage) == 2
-                and {pa.source_cmd for pa in counts_before_garage} == {0, 1}
-            ), plan
-
-        scenarios.append(("shared_waypoint_visited_efficiently", s_shared_waypoint))
-
-        # 4. find→get_info precedence preserved
-        def s_find_then_info():
-            cmd_a = _cmd(
-                _act("go_to", location_to_go="couch"),
-                _act("find_person", attribute_value="standing"),
-                _act("get_person_info", info_type="pose"),
-            )
-            cmd_b = _cmd(
-                _act("go_to", location_to_go="kitchen"),
-                _act("find_person_by_name", name="Bob"),
-                _act("get_person_info", info_type="name"),
-            )
-            coords = {"couch": (0.0, 0.0), "kitchen": (10.0, 10.0)}
-            plan = merge([cmd_a, cmd_b], locator=_make_locator(coords))
-            ok = True
-            for cmd_idx in (0, 1):
-                cmd_actions = [pa for pa in plan.actions if pa.source_cmd == cmd_idx]
-                find_pos = next(
-                    (
-                        i
-                        for i, pa in enumerate(cmd_actions)
-                        if pa.action.action.startswith("find_person")
-                    ),
-                    None,
-                )
-                info_pos = next(
-                    (
-                        i
-                        for i, pa in enumerate(cmd_actions)
-                        if pa.action.action == "get_person_info"
-                    ),
-                    None,
-                )
-                if find_pos is None or info_pos is None or find_pos >= info_pos:
-                    ok = False
-                    break
-            return ok, plan
-
-        scenarios.append(("find_then_get_info_precedence", s_find_then_info))
-
-        # 5. Pure-find commands interleave by NN
-        def s_no_gripper_interleave():
-            cmd_a = _cmd(
-                _act("go_to", location_to_go="A"),
-                _act("count", target_to_count="x"),
-            )
-            cmd_b = _cmd(
-                _act("go_to", location_to_go="B"),
-                _act("count", target_to_count="y"),
-            )
-            cmd_c = _cmd(
-                _act("go_to", location_to_go="C"),
-                _act("count", target_to_count="z"),
-            )
-            coords = {"A": (3.0, 0.0), "B": (1.0, 0.0), "C": (5.0, 0.0)}
-            plan = merge([cmd_a, cmd_b, cmd_c], locator=_make_locator(coords))
-            go_tos = [
-                pa.action.location_to_go for pa in plan.actions if pa.action.action == "go_to"
-            ]
-            ok = go_tos == ["B", "A", "C"] and per_command_order_preserved(plan.actions, n_cmds=3)
-            return ok, plan
-
-        scenarios.append(("no_gripper_commands_interleave_freely", s_no_gripper_interleave))
-
-        # 6. Auxiliary say-with-context command does not split a gripper block
-        def s_aux_say_does_not_split():
-            cmd_a = _cmd(
-                _act("go_to", location_to_go="kitchen"),
-                _act("pick_object", object_to_pick="snack"),
-                _act("go_to", location_to_go="lobby"),
-                _act("place_object"),
-            )
-            cmd_say = _cmd(
-                _act("go_to", location_to_go="start"),
-                _act("say_with_context", user_instruction="hello", previous_command_info=[]),
-            )
-            coords = {"kitchen": (0, 0), "lobby": (1, 0), "start": (0, 5)}
-            plan = merge([cmd_a, cmd_say], locator=_make_locator(coords))
-            cmd_a_positions = [i for i, pa in enumerate(plan.actions) if pa.source_cmd == 0]
-            contiguous = cmd_a_positions == list(
-                range(min(cmd_a_positions), max(cmd_a_positions) + 1)
-            )
-            return _gripper_walk(plan.actions) and contiguous, plan
-
-        scenarios.append(("say_with_context_does_not_split_block", s_aux_say_does_not_split))
-
-        # 7. Empty input → empty plan
-        def s_empty():
-            plan = merge([])
-            return plan.actions == [] and plan.fallback == [], plan
-
-        scenarios.append(("empty_commands", s_empty))
-
-        # 8. Fallback preserves original sequences
-        def s_fallback():
-            cmd_a = _cmd(
-                _act("go_to", location_to_go="kitchen"),
-                _act("count", target_to_count="apples"),
-            )
-            cmd_b = _cmd(_act("answer_question"))
-            plan = merge([cmd_a, cmd_b])
-            ok = (
-                len(plan.fallback) == 2
-                and [pa.source_idx for pa in plan.fallback[0]] == [0, 1]
-                and [pa.source_idx for pa in plan.fallback[1]] == [0]
-                and plan.fallback[0][0].action.action == "go_to"
-                and plan.fallback[1][0].action.action == "answer_question"
-            )
-            return ok, plan
-
-        scenarios.append(("fallback_preserves_original_sequences", s_fallback))
-
-        # 9. Option B: a neutral segment from another command interleaves
-        # inside an atomic block when geometry favors it.
-        def s_neutral_interleaves_atomic_block():
-            cmd_pick = _cmd(
-                _act("go_to", location_to_go="A"),
-                _act("pick_object", object_to_pick="cup"),
-                _act("go_to", location_to_go="B"),
-                _act("give_object"),
-            )
-            cmd_neutral = _cmd(
-                _act("go_to", location_to_go="C"),
-                _act("count", target_to_count="x"),
-            )
-            # C between A and B → A→C→B (10) cheaper than not-interleaving.
-            coords = {"A": (0.0, 0.0), "B": (10.0, 0.0), "C": (5.0, 0.0)}
-            plan = merge([cmd_pick, cmd_neutral], locator=_make_locator(coords))
-            kinds = [pa.action.action for pa in plan.actions]
-            # Expect: go_to A, pick, go_to C, count, go_to B, give_object.
-            ok = (
-                kinds
-                == [
-                    "go_to",
-                    "pick_object",
-                    "go_to",
-                    "count",
-                    "go_to",
-                    "give_object",
-                ]
-                and gripper_invariant_holds(plan.actions)
-                and per_command_order_preserved(plan.actions, n_cmds=2)
-            )
-            return ok, plan
-
-        scenarios.append(
-            ("option_b_neutral_interleaves_atomic_block", s_neutral_interleaves_atomic_block)
-        )
-
-        # 10. Collapse: redundant back-to-back go_to to the same location is
-        # dropped from the flat plan.
-        def s_collapse_redundant_go_to():
-            cmd_find = _cmd(
-                _act("go_to", location_to_go="A"),
-                _act("find_person", attribute_value="standing"),
-            )
-            cmd_pick = _cmd(
-                _act("go_to", location_to_go="A"),
-                _act("pick_object", object_to_pick="cup"),
-                _act("go_to", location_to_go="B"),
-                _act("give_object"),
-            )
-            coords = {"A": (0.0, 0.0), "B": (10.0, 0.0)}
-            plan = merge([cmd_find, cmd_pick], locator=_make_locator(coords))
-            go_to_a = [
-                pa
-                for pa in plan.actions
-                if pa.action.action == "go_to" and pa.action.location_to_go == "A"
-            ]
-            return len(go_to_a) == 1, plan
-
-        scenarios.append(("collapse_redundant_back_to_back_go_to", s_collapse_redundant_go_to))
-
-        # 11. Origin: with origin near A, A is scheduled first.
-        def s_origin_biases_first():
-            cmd_a = _cmd(_act("go_to", location_to_go="A"), _act("count", target_to_count="x"))
-            cmd_b = _cmd(_act("go_to", location_to_go="B"), _act("count", target_to_count="y"))
-            coords = {"A": (4.0, 0.0), "B": (20.0, 0.0)}
-            plan_near_a = merge([cmd_a, cmd_b], locator=_make_locator(coords), origin=(5.0, 0.0))
-            plan_near_b = merge([cmd_a, cmd_b], locator=_make_locator(coords), origin=(19.0, 0.0))
-            first_a = plan_near_a.actions[0].action.location_to_go
-            first_b = plan_near_b.actions[0].action.location_to_go
-            return first_a == "A" and first_b == "B", plan_near_a
-
-        scenarios.append(("origin_biases_first_segment", s_origin_biases_first))
-
-        # 12. origin=None: no origin bias; tiebreaker keeps cmd0 first when
-        # all real distances are equal.
-        def s_origin_none_no_bias():
-            cmd_a = _cmd(_act("go_to", location_to_go="A"), _act("count", target_to_count="x"))
-            cmd_b = _cmd(_act("go_to", location_to_go="B"), _act("count", target_to_count="y"))
-            # Mirror-image positions across the (hypothetical) (0,0); under
-            # origin=None the DP should not favour either based on map origin.
-            coords = {"A": (-5.0, 0.0), "B": (5.0, 0.0)}
-            plan = merge([cmd_a, cmd_b], locator=_make_locator(coords), origin=None)
-            return plan.actions[0].action.location_to_go == "A", plan
-
-        scenarios.append(("origin_none_no_map_origin_bias", s_origin_none_no_bias))
-
-        # 13. All-unknown locations → per-command sequential by tiebreaker.
-        def s_all_unknown_sequential():
-            cmd_a = _cmd(
-                _act("go_to", location_to_go="ghost1"),
-                _act("count", target_to_count="x"),
-            )
-            cmd_b = _cmd(
-                _act("go_to", location_to_go="ghost2"),
-                _act("count", target_to_count="y"),
-            )
-            plan = merge([cmd_a, cmd_b], locator=_make_locator({}))
-            order = [pa.source_cmd for pa in plan.actions if pa.action.action == "go_to"]
-            return order == [0, 1] and per_command_order_preserved(plan.actions, n_cmds=2), plan
-
-        scenarios.append(("all_unknown_locations_sequential", s_all_unknown_sequential))
-
-        # 14. LARGE_M penalty: known segments are not pushed behind unknowns.
-        def s_known_before_unknown():
-            cmd_known = _cmd(
-                _act("go_to", location_to_go="A"),
-                _act("count", target_to_count="x"),
-            )
-            cmd_unknown = _cmd(
-                _act("go_to", location_to_go="ghost"),
-                _act("count", target_to_count="y"),
-            )
-            coords = {"A": (0.0, 0.0)}  # ghost unresolved
-            plan = merge(
-                [cmd_known, cmd_unknown],
-                locator=_make_locator(coords),
-                origin=(0.0, 0.0),
-            )
-            first_loc = plan.actions[0].action.location_to_go
-            return first_loc == "A", plan
-
-        scenarios.append(("large_m_keeps_known_first", s_known_before_unknown))
-
-        # 15. M > 16 → fallback to per-command sequential without raising.
-        def s_m_cap_fallback():
-            cmds = [
-                _cmd(
-                    _act("go_to", location_to_go=f"loc{i}"),
-                    _act("count", target_to_count="x"),
-                )
-                for i in range(17)
-            ]
-            coords = {f"loc{i}": (float(i), 0.0) for i in range(17)}
-            plan = merge(cmds, locator=_make_locator(coords))
-            order = [pa.source_cmd for pa in plan.actions if pa.action.action == "go_to"]
-            return order == list(range(17)) and len(plan.actions) == 34, plan
-
-        scenarios.append(("m_cap_fallback_to_sequential", s_m_cap_fallback))
-
-        # 16. Regression: the three canonical GPSR utterances merged as a batch
-        # must not drop any command or any command's work. This guards the
-        # reported "loses the first part of the first command" symptom: the
-        # merger is deterministic and preserves every command, so a real loss
-        # can only come from upstream LLM decomposition, never from merge().
-        def _example_commands():
-            c_escort = _cmd(
-                _act("go_to", location_to_go="chairs"),
-                _act("find_person", attribute_value="wearing a black blouse"),
-                _act("guide_person_to", destination_room="bathroom"),
-            )
-            c_tell = _cmd(
-                _act("go_to", location_to_go="side_tables"),
-                _act("get_visual_info", measure="biggest", object_category="object"),
-                _act("go_to", location_to_go="start_location"),
-                _act(
-                    "say_with_context", user_instruction="biggest object", previous_command_info=[]
-                ),
-            )
-            c_meet = _cmd(
-                _act("go_to", location_to_go="entrance"),
-                _act("find_person_by_name", name="adel"),
-                _act("follow_person_until", destination="waste_basket"),
-            )
-            coords = {
-                "chairs": (0.0, 0.0),
-                "bathroom": (2.0, 1.0),
-                "side_tables": (5.0, 5.0),
-                "start_location": (0.0, 0.0),
-                "entrance": (-3.0, 2.0),
-                "waste_basket": (-5.0, 4.0),
-            }
-            return [c_escort, c_tell, c_meet], coords
-
-        def s_example_batch_no_loss():
-            cmds, coords = _example_commands()
-            plan = merge(cmds, locator=_make_locator(coords), origin=(0.0, 0.0))
-            ok = (
-                non_goto_actions_preserved(plan, cmds)
-                and fallback_preserves_all(plan, cmds)
-                and gripper_invariant_holds(plan.actions)
-                and per_command_order_preserved(plan.actions, n_cmds=len(cmds))
-                # the user's FIRST command's first action survives into the plan
-                and any(pa.source_cmd == 0 and pa.source_idx == 0 for pa in plan.actions)
-            )
-            return ok, plan
-
-        scenarios.append(("example_batch_no_command_lost", s_example_batch_no_loss))
-
-        # 17. Same three commands, origin=None. The schedule may reorder which
-        # command runs first (no map-origin bias), but still nothing is lost.
-        def s_example_batch_origin_none_no_loss():
-            cmds, coords = _example_commands()
-            plan = merge(cmds, locator=_make_locator(coords), origin=None)
-            ok = (
-                non_goto_actions_preserved(plan, cmds)
-                and fallback_preserves_all(plan, cmds)
-                and per_command_order_preserved(plan.actions, n_cmds=len(cmds))
-            )
-            return ok, plan
-
-        scenarios.append(("example_batch_origin_none_no_loss", s_example_batch_origin_none_no_loss))
-
-        # 18. Shared start location: the tiebreak must protect cmd0's leading
-        # go_to so it is the surviving visit and cmd0's first part is never the
-        # one collapsed away (only the later command's redundant go_to is).
-        def s_shared_start_first_command_protected():
-            cmd0 = _cmd(
-                _act("go_to", location_to_go="chairs"),
-                _act("find_person", attribute_value="black blouse"),
-                _act("guide_person_to", destination_room="bathroom"),
-            )
-            cmd1 = _cmd(
-                _act("go_to", location_to_go="chairs"),
-                _act("count", target_to_count="cups"),
-            )
-            coords = {"chairs": (10.0, 0.0), "bathroom": (50.0, 50.0)}
-            plan = merge([cmd0, cmd1], locator=_make_locator(coords), origin=(9.0, 0.0))
-            chairs_gotos = [
-                pa
-                for pa in plan.actions
-                if pa.action.action == "go_to" and pa.action.location_to_go == "chairs"
-            ]
-            first_goto = next((pa for pa in plan.actions if pa.action.action == "go_to"), None)
-            ok = (
-                non_goto_actions_preserved(plan, [cmd0, cmd1])
-                and len(chairs_gotos) == 1
-                # the one surviving go_to chairs belongs to cmd0, not cmd1
-                and chairs_gotos[0].source_cmd == 0
-                and first_goto is not None
-                and first_goto.source_cmd == 0
-            )
-            return ok, plan
-
-        scenarios.append(
-            ("shared_start_first_command_goto_protected", s_shared_start_first_command_protected)
-        )
+        test_cases_file = os.path.join(DATA_DIR, "merger.json")
+        with open(test_cases_file, "r") as f:
+            scenarios = json.load(f)
 
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_file = os.path.join(OUTPUT_DIR, f"merger_{date_str}.csv")
 
         results = []
         passed = 0
-        for name, fn in scenarios:
-            cap["cmds"] = []
-            cap["coords"] = {}
-            cap["origins"] = []
+        for sc in scenarios:
+            name = sc["name"]
             self.get_logger().info(f"Merger scenario: {name}")
 
+            commands = build_commands(sc["commands"])
+            kwargs = {}
+            if "coords" in sc:
+                kwargs["locator"] = make_locator(sc["coords"])
+            if "origin" in sc:
+                kwargs["origin"] = tuple(sc["origin"]) if sc["origin"] is not None else None
+
             plan = None
-            exc = None
             try:
-                ok, plan = fn()
+                plan = merge(commands, **kwargs)
+                ok, failures = evaluate_expectations(plan, commands, sc.get("expect", {}))
             except Exception as e:
-                ok = False
-                exc = e
+                ok, failures = False, [f"EXCEPTION: {e}"]
 
-            if cap["cmds"]:
-                self.get_logger().info("  commands:")
-                for i, c in enumerate(cap["cmds"]):
-                    self.get_logger().info(f"    c{i}: {_describe_cmd(c)}")
-                cmds_str = " | ".join(
-                    f"c{i}: {_describe_cmd(c)}" for i, c in enumerate(cap["cmds"])
-                )
-            else:
-                self.get_logger().info("  commands: (none)")
-                cmds_str = "(none)"
-
-            if cap["coords"]:
-                pos_str = ", ".join(f"{k}={v}" for k, v in cap["coords"].items())
-            else:
-                pos_str = "(no resolvable positions)"
-            if cap["origins"]:
-                origins = cap["origins"]
-                pos_str += f" | origin={origins[0] if len(origins) == 1 else origins}"
-            self.get_logger().info(f"  positions: {pos_str}")
-
-            if exc is not None:
-                self.get_logger().error(f"  EXCEPTION: {exc}")
-                results.append([name, False, "EXCEPTION", cmds_str, pos_str, str(exc)])
-                continue
-
-            ordering = _describe_plan(plan.actions) if plan and plan.actions else "(empty)"
+            ordering = describe_plan(plan) if plan is not None else "(no plan)"
             self.get_logger().info(f"  ordering: {ordering}")
             if ok:
                 passed += 1
-                self.get_logger().info(f"  PASS ({len(plan.actions)} actions)")
+                self.get_logger().info(f"  PASS ({len(plan.actions) if plan else 0} actions)")
             else:
-                self.get_logger().error(f"  FAIL ({len(plan.actions)} actions)")
-            results.append([name, ok, len(plan.actions), cmds_str, pos_str, ordering])
+                self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
+
+            results.append(
+                [
+                    name,
+                    ok,
+                    len(plan.actions) if plan else 0,
+                    "; ".join(failures),
+                    ordering,
+                ]
+            )
 
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         with open(output_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(
-                ["scenario", "passed", "plan_size", "commands", "positions", "ordering_or_error"]
-            )
+            writer.writerow(["scenario", "passed", "plan_size", "failures", "ordering"])
             writer.writerows(results)
 
         self.get_logger().info(f"Merger results: {passed}/{len(scenarios)} passed")
         self.get_logger().info(f"Saved to {output_file}")
+
+    def test_fallback_resume(self):
+        """Unit-test the interleaved->sequential resume safeguard. Pure-Python,
+        no ROS services. Builds a per-command fallback plan, marks some actions
+        as already completed by the interleaved branch, ticks a
+        SequentialFallbackLeaf, and asserts it resumes (skips completed non-go_to
+        actions) rather than restarting from the beginning."""
+        from task_manager.gpsr.leaf_behaviours import SequentialFallbackLeaf
+        from task_manager.gpsr.merger import merge
+
+        class RecordingHandler:
+            """Stub handler whose every attribute is a callable that records the
+            action kind it was invoked with and reports success."""
+
+            def __init__(self, calls):
+                self._calls = calls
+
+            def __getattr__(self, name):
+                def _call(action):
+                    self._calls.append(getattr(action, "action", name))
+                    return Status.EXECUTION_SUCCESS, None
+
+                return _call
+
+        commands = build_commands(
+            [
+                [
+                    {"action": "go_to", "location_to_go": "kitchen"},
+                    {"action": "pick_object", "object_to_pick": "apple"},
+                    {"action": "go_to", "location_to_go": "living_room"},
+                    {"action": "place_object"},
+                ]
+            ]
+        )
+        plan = merge(commands)
+        per_cmd = plan.fallback[0]
+
+        def run_leaf(completed):
+            """Tick a fallback leaf whose completed set is ``completed`` (a set
+            of (source_cmd, source_idx)); return the action kinds it dispatched."""
+            calls = []
+            is_completed = (
+                None
+                if completed is None
+                else (lambda pa: (pa.source_cmd, pa.source_idx) in completed)
+            )
+            leaf = SequentialFallbackLeaf(
+                per_cmd,
+                [RecordingHandler(calls)],
+                is_completed=is_completed,
+            )
+            leaf.update()
+            return calls
+
+        # The pick (idx 1) finished in the interleaved branch; the place (idx 3)
+        # did not. Resume must run only the living_room trip + place, and must
+        # NOT drive to the kitchen (its only work, the pick, is already done).
+        partial = run_leaf({(0, 1)})
+        # Every action finished: resume should do nothing at all (no wasted trips).
+        all_done = run_leaf({(0, 1), (0, 3)})
+        # No completion info: the full command runs from the beginning.
+        full = run_leaf(None)
+
+        failures = []
+        if partial != ["go_to", "place_object"]:
+            failures.append(
+                f"partial resume should skip the wasted kitchen trip + pick, got {partial}"
+            )
+        if all_done != []:
+            failures.append(f"fully-completed command should run nothing, got {all_done}")
+        if full != ["go_to", "pick_object", "go_to", "place_object"]:
+            failures.append(f"default (is_completed=None) must run all actions: {full}")
+
+        if failures:
+            self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
+        else:
+            self.get_logger().info(f"  PASS (partial={partial}, all_done={all_done}, full={full})")
 
     def test_command_interpreter_baml(self):
         # Prepare output file
