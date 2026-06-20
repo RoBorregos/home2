@@ -22,6 +22,7 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    MOVE_JOINTS_ACTION_SERVER,
     ESTOP_TOPIC,
     RIM_NAMES,
     RIM_PRE_GRASP_HEIGHT,
@@ -40,7 +41,8 @@ from frida_interfaces.srv import (
 )
 from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from pick_and_place.utils.self_collision_utils import endpoint_self_collides
-from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
+from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
+from frida_interfaces.action import PickMotion, MoveToPose, GoToHand, MoveJoints
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool
@@ -129,6 +131,13 @@ class PickMotionServer(Node):
             self,
             MoveToPose,
             MOVE_TO_POSE_ACTION_SERVER,
+        )
+
+        # Joint-space moves for the pre-grasp (nearest-IK, avoids ~360 base wrap)
+        self._move_joints_action_client = ActionClient(
+            self,
+            MoveJoints,
+            MOVE_JOINTS_ACTION_SERVER,
         )
 
         self._attach_collision_object_client = self.create_client(
@@ -506,11 +515,15 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
+                    if not move_to_pregrasp_nearest_ik(
+                        self._compute_ik_client,
+                        self._move_joints_action_client,
+                        pre_grasp_pose,
+                        latest_joint_state=self._latest_joint_state,
+                        velocity=0.3,
+                        fallback_move_to_pose=self.move_to_pose,
+                        logger=self.get_logger(),
+                    ):
                         self.get_logger().warn(
                             f"[Rim] Pre-grasp failed for pose {i}, trying next"
                         )
@@ -580,11 +593,15 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
+                    if not move_to_pregrasp_nearest_ik(
+                        self._compute_ik_client,
+                        self._move_joints_action_client,
+                        pre_grasp_pose,
+                        latest_joint_state=self._latest_joint_state,
+                        velocity=0.3,
+                        fallback_move_to_pose=self.move_to_pose,
+                        logger=self.get_logger(),
+                    ):
                         self.get_logger().warn(
                             f"[Peak] Pre-grasp failed for pose {i}, trying next"
                         )
