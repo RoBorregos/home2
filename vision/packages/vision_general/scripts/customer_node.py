@@ -27,7 +27,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
-    CENTROID_TOIC,
+    CENTROID_TOPIC,
     CROP_QUERY_TOPIC,
     CUSTOMER,
     GET_CUSTOMER_TOPIC,
@@ -71,7 +71,7 @@ class CustomerNode(Node):
         self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
         self.customer_publisher = self.create_publisher(Image, CUSTOMER, 10)
-        self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
+        self.centroid_publisher = self.create_publisher(Point, CENTROID_TOPIC, 10)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group

@@ -28,9 +28,9 @@ from sensor_msgs.msg import JointState
 from frida_interfaces.srv import FollowFace
 from frida_pymoveit2.robots import xarm6
 from xarm_msgs.srv import SetInt16, MoveVelocity
+from frida_constants.vision_constants import CENTROID_TOPIC
 
 # Topic / service names
-CENTROID_TOPIC = "/vision/tracker_centroid"
 CMD_VEL_TOPIC = "/cmd_vel"
 JOINT_STATES_TOPIC = "/joint_states"
 FOLLOW_SERVICE = "/follow_person"

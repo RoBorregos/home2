@@ -83,7 +83,7 @@ SET_TARGET_TOPIC = "/vision/set_tracking_target"
 SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
 RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
-CENTROID_TOIC = "/vision/tracker_centroid"
+CENTROID_TOPIC = "/vision/tracker_centroid"
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 FLIP_TRACKER_TOPIC = "/vision/tracking/flip_image"
 

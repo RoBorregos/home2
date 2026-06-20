@@ -184,8 +184,14 @@ class Nav_Central(Node):
             get_package_share_directory("nav_main"), "bt", "follow_dynamic_point.xml"
         )
         self._latest_goal_update = None  # Cached latest PoseStamped from person_goal_smoother
+        # Dedicated reentrant group: _start_follow_person() (on service_group, a
+        # MutuallyExclusive group) BLOCKS waiting for the first goal update. This
+        # sub MUST live in a different group so _goal_update_cb can run on another
+        # thread of the MultiThreadedExecutor and unblock it — otherwise deadlock.
+        self._follow_cb_group = ReentrantCallbackGroup()
         self._goal_update_sub = self.create_subscription(
-            PoseStamped, GOAL_UPDATE_TOPIC, self._goal_update_cb, 10
+            PoseStamped, GOAL_UPDATE_TOPIC, self._goal_update_cb, 10,
+            callback_group=self._follow_cb_group,
         )
 
         # Initial pose tracking

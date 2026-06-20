@@ -85,7 +85,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
-    CENTROID_TOIC,
+    CENTROID_TOPIC,
     CROP_QUERY_TOPIC,
     IS_TRACKING_TOPIC,
     FLIP_TRACKER_TOPIC,
@@ -174,7 +174,7 @@ class SingleTracker(Node):
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
-        self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
+        self.centroid_publisher = self.create_publisher(Point, CENTROID_TOPIC, 10)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group

@@ -38,15 +38,19 @@ from frida_constants.navigation_constants import MAP_TOPIC, GOAL_UPDATE_TOPIC, F
 
 
 # Which MPPI controller params to switch (dot-separated keys under controller_server.ros__parameters)
+# Keys absent from BOTH configs are silently skipped, so this single list covers
+# the omnibase (holonomic, has vy_max; no PreferForwardCritic) and the dashgo
+# (diff-drive, vy_max == 0; has PreferForwardCritic) alike.
 CONTROLLER_KEYS = [
     "FollowPath.vx_max",
     "FollowPath.vx_min",
+    "FollowPath.vy_max",                       # omnibase only — lateral limit
     "FollowPath.wz_max",
     "FollowPath.GoalCritic.cost_weight",
     "FollowPath.PathFollowCritic.cost_weight",
     "FollowPath.PathAlignCritic.cost_weight",
     "FollowPath.PathAngleCritic.cost_weight",
-    "FollowPath.PreferForwardCritic.cost_weight",
+    "FollowPath.PreferForwardCritic.cost_weight",  # dashgo only
     "FollowPath.CostCritic.cost_weight",
 ]
 
@@ -124,10 +128,14 @@ class PersonGoalSmoother(Node):
         # --- Parameters ---
         self.declare_parameter("alpha", 0.3)           # EMA smoothing (0=full smooth, 1=no smooth)
         self.declare_parameter("distance_gate", 0.25)    # Min distance (m) to publish new goal
-        self.declare_parameter("follow_distance", 0.3)  # Stay this far behind the person
+        self.declare_parameter("follow_distance", 0.8)  # Stay this far behind the person
         self.declare_parameter("timeout", 3.0)           # Seconds without tracker data to stop
         self.declare_parameter("map_frame", "map")
         self.declare_parameter("snap_radius", 20)        # Grid cells to search for free space
+        # Selects which (standard, follow) nav2 config PAIR to switch between:
+        #   "omnibase" -> omni_config/nav2_omni.yaml  + omni_config/nav2_omni_following.yaml
+        #   "dashgo"   -> nav2_standard.yaml          + nav2_following.yaml
+        self.declare_parameter("default_base", "omnibase")
 
         # --- State ---
         self.smooth_x = None
@@ -157,11 +165,20 @@ class PersonGoalSmoother(Node):
         # --- Publisher ---
         self.goal_pub = self.create_publisher(PoseStamped, GOAL_UPDATE_TOPIC, 10)
 
-        # --- Load both YAML configs ---
+        # --- Load the (standard, follow) YAML pair for the active base ---
+        base = self.get_parameter("default_base").value
+        if base == "omnibase":
+            standard_file = os.path.join("omni_config", "nav2_omni.yaml")
+            follow_file = os.path.join("omni_config", "nav2_omni_following.yaml")
+        else:
+            standard_file = "nav2_standard.yaml"
+            follow_file = "nav2_following.yaml"
         try:
-            self.follow_yaml = _load_nav_yaml("nav2_following.yaml")
-            self.standard_yaml = _load_nav_yaml("nav2_standard.yaml")
-            self.get_logger().info("Loaded nav2_following.yaml and nav2_standard.yaml")
+            self.follow_yaml = _load_nav_yaml(follow_file)
+            self.standard_yaml = _load_nav_yaml(standard_file)
+            self.get_logger().info(
+                f"[base={base}] Loaded follow='{follow_file}', standard='{standard_file}'"
+            )
         except Exception as e:
             self.get_logger().error(f"Failed to load YAML configs: {e}")
             self.follow_yaml = {}
@@ -328,7 +345,7 @@ class PersonGoalSmoother(Node):
         self._publish_goal()
 
     def _map_cb(self, msg: OccupancyGrid):
-        print("MAP OBTAINED")
+        self.get_logger().info("Occupancy grid received", once=True)
         self.map_data = np.array(msg.data, dtype=np.int8).reshape(
             (msg.info.height, msg.info.width)
         )
