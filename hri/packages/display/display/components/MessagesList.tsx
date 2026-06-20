@@ -128,15 +128,27 @@ export function MessagesList() {
       addMessage("spoken", msg.data);
     });
 
-    // Subscribe to keyword (oww)
-    const owwTopic = new Topic<{ data: string }>({
+    // Subscribe to keyword (kws)
+    const kwsTopic = new Topic<{ data: string }>({
       ros: rosClient,
-      name: "/hri/speech/oww",
+      name: "/hri/speech/kws",
       messageType: "std_msgs/String",
     });
 
-    owwTopic.subscribe((msg: { data: string }) => {
-      addMessage("keyword", msg.data);
+    kwsTopic.subscribe((msg: { data: string }) => {
+      try {
+        // The KWS node publishes stringified Python dicts like "{'keyword': 'Frida', 'score': 0.8}"
+        // We need to handle single quotes before parsing as JSON
+        const jsonStr = msg.data.replace(/'/g, '"');
+        const data = JSON.parse(jsonStr);
+        if (data.keyword) {
+          addMessage("keyword", data.keyword);
+        } else {
+          addMessage("keyword", msg.data);
+        }
+      } catch (e) {
+        addMessage("keyword", msg.data);
+      }
     });
 
     // Subscribe to answers
@@ -154,7 +166,7 @@ export function MessagesList() {
       audioStateTopic.unsubscribe();
       rawCommandTopic.unsubscribe();
       textSpokenTopic.unsubscribe();
-      owwTopic.unsubscribe();
+      kwsTopic.unsubscribe();
       answersTopic.unsubscribe();
     };
   }, []);
