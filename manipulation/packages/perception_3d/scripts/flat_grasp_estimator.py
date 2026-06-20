@@ -38,6 +38,11 @@ GRASP_SURFACE_OFFSET = 0.003
 # Minimum valid points in ROI for PCA orientation
 MIN_POINTS_FOR_PCA = 10
 
+# Min eigenvalue ratio (long/short variance) for a trustworthy long axis. Below
+# this the object looks square from this view, so the orientation is rejected.
+# Live-tunable via the 'elongation_min_ratio' ROS parameter.
+ELONGATION_MIN_RATIO = 2.0
+
 # Number of recent table height readings to average for stability
 TABLE_HEIGHT_BUFFER_SIZE = 15
 
@@ -63,6 +68,8 @@ FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
 class FlatGraspEstimator(Node):
     def __init__(self):
         super().__init__("flat_grasp_estimator")
+        # Live-tunable min long/short variance ratio to trust the PCA long axis.
+        self.declare_parameter("elongation_min_ratio", ELONGATION_MIN_RATIO)
         self.bridge = CvBridge()
 
         self.tf_buffer = Buffer()
@@ -342,9 +349,15 @@ class FlatGraspEstimator(Node):
             & (roi_depth < table_z_cam - 0.001)
             & (roi_depth > table_z_cam - 0.05)
         )
-        v_local, u_local = np.where(object_mask_roi)
+        # Keep the largest connected blob (the object body); drop scattered table
+        # noise. No whole-bbox fallback: a square bbox yields an arbitrary axis.
+        labeled, num = ndi.label(object_mask_roi)
+        if num == 0:
+            return
+        largest = int(np.argmax(np.bincount(labeled.ravel())[1:])) + 1
+        v_local, u_local = np.where(labeled == largest)
         if len(v_local) < MIN_POINTS_FOR_PCA:
-            v_local, u_local = np.where(valid_mask)
+            return
 
         points_3d_cam = self._deproject_pixels(
             u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
@@ -361,8 +374,13 @@ class FlatGraspEstimator(Node):
         centroid_xy = np.mean(points_base[:, :2], axis=0)
         points_2d_xy = points_base[:, :2] - centroid_xy
         cov_matrix = np.cov(points_2d_xy.T)
-        eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
-        principal_vector = eigenvectors[:, np.argmax(eigenvalues)]
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)  # ascending, real
+        # Reject near-square point sets: the long axis is unreliable there and
+        # would grasp parallel to the object instead of across it.
+        elongation_min = self.get_parameter("elongation_min_ratio").value
+        if eigenvalues[0] <= 1e-9 or eigenvalues[1] / eigenvalues[0] < elongation_min:
+            return
+        principal_vector = eigenvectors[:, 1]
         spoon_dir = np.array([principal_vector[0], principal_vector[1], 0.0])
         spoon_dir = spoon_dir / np.linalg.norm(spoon_dir)
         perp_dir = np.array([-spoon_dir[1], spoon_dir[0]])  # in-plane perpendicular

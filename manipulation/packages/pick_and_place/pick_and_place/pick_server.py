@@ -94,7 +94,7 @@ CUTLERY_JUMP_SUSTAIN = 3  # consecutive samples (~0.06s) the jump must hold
 # Effort drifts several N from rest during a clean descent, so an absolute-vs-rest
 # threshold false-trips; this high ceiling is only a last-resort stop.
 CUTLERY_CONTACT_HARD_CEILING = 15.0  # N
-CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
+CUTLERY_POST_CONTACT_RETRACT = 0.004  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
