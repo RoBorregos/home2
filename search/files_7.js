@@ -23,8 +23,9 @@ var searchData=
   ['grasp_5fdetection_5fexample_2epy_20',['grasp_detection_example.py',['../grasp__detection__example_8py.html',1,'']]],
   ['grasp_5fdetector_2epy_21',['grasp_detector.py',['../grasp__detector_8py.html',1,'']]],
   ['grasp_5fmarkers_2epy_22',['grasp_markers.py',['../grasp__markers_8py.html',1,'']]],
-  ['grasp_5futils_2epy_23',['grasp_utils.py',['../grasp__utils_8py.html',1,'']]],
-  ['graspdetection_2esrv_24',['GraspDetection.srv',['../GraspDetection_8srv.html',1,'']]],
-  ['grippergraspstate_2emsg_25',['GripperGraspState.msg',['../GripperGraspState_8msg.html',1,'']]],
-  ['guestinfo_2esrv_26',['GuestInfo.srv',['../GuestInfo_8srv.html',1,'']]]
+  ['grasp_5forientation_2epy_23',['grasp_orientation.py',['../grasp__orientation_8py.html',1,'']]],
+  ['grasp_5futils_2epy_24',['grasp_utils.py',['../grasp__utils_8py.html',1,'']]],
+  ['graspdetection_2esrv_25',['GraspDetection.srv',['../GraspDetection_8srv.html',1,'']]],
+  ['grippergraspstate_2emsg_26',['GripperGraspState.msg',['../GripperGraspState_8msg.html',1,'']]],
+  ['guestinfo_2esrv_27',['GuestInfo.srv',['../GuestInfo_8srv.html',1,'']]]
 ];

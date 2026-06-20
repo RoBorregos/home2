@@ -183,6 +183,10 @@ var namespaces_dup =
     [ "gpsr_task_manager", "namespacegpsr__task__manager.html", "namespacegpsr__task__manager" ],
     [ "grasp_detection_example", "namespacegrasp__detection__example.html", "namespacegrasp__detection__example" ],
     [ "grasp_markers", "namespacegrasp__markers.html", "namespacegrasp__markers" ],
+    [ "grasp_orientation", "namespacegrasp__orientation.html", [
+      [ "is_frontal_grasp", "namespacegrasp__orientation.html#a9aa2a0df6c7b8d7c41abd2549791d806", null ],
+      [ "FRONTAL_GRASP_MAX_VERTICAL", "namespacegrasp__orientation.html#a0b5cec196b34eb723a47fcc9da679f1a", null ]
+    ] ],
     [ "grasp_utils", "namespacegrasp__utils.html", [
       [ "fake_grasps", "namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6", null ],
       [ "get_grasps", "namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e", null ]

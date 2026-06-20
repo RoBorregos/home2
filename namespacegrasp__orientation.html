@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.6"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Roborregos @Home documentation: manipulation/packages/pick_and_place/pick_and_place/utils Directory Reference</title>
+<title>Roborregos @Home documentation: grasp_orientation Namespace Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -64,7 +64,7 @@ $(function() {
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
-$(document).ready(function(){initNavTree('dir_221cdd99a5d6ba62c6b39037e72cc29e.html',''); initResizable(); });
+$(document).ready(function(){initNavTree('namespacegrasp__orientation.html',''); initResizable(); });
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -90,25 +90,75 @@ $(document).ready(function(){initNavTree('dir_221cdd99a5d6ba62c6b39037e72cc29e.h
 </div>
 
 <div class="header">
-  <div class="headertitle"><div class="title">utils Directory Reference</div></div>
+  <div class="summary">
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
+  <div class="headertitle"><div class="title">grasp_orientation Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="files" name="files"></a>
-Files</h2></td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="grasp__orientation_8py.html">grasp_orientation.py</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="grasp__utils_8py.html">grasp_utils.py</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="perception__utils_8py.html">perception_utils.py</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a9aa2a0df6c7b8d7c41abd2549791d806"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__orientation.html#a9aa2a0df6c7b8d7c41abd2549791d806">is_frontal_grasp</a> (quat_xyzw, float max_vertical=<a class="el" href="namespacegrasp__orientation.html#a0b5cec196b34eb723a47fcc9da679f1a">FRONTAL_GRASP_MAX_VERTICAL</a>)</td></tr>
+<tr class="separator:a9aa2a0df6c7b8d7c41abd2549791d806"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a0b5cec196b34eb723a47fcc9da679f1a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__orientation.html#a0b5cec196b34eb723a47fcc9da679f1a">FRONTAL_GRASP_MAX_VERTICAL</a> = 0.5</td></tr>
+<tr class="separator:a0b5cec196b34eb723a47fcc9da679f1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><pre class="fragment">Frontal grasp check for shelf compartment picks (no ROS, unit-testable offline).
+Top-down hits the compartment ceiling; a frontal grasp reaches in and clears it.</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="a9aa2a0df6c7b8d7c41abd2549791d806" name="a9aa2a0df6c7b8d7c41abd2549791d806"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9aa2a0df6c7b8d7c41abd2549791d806">&#9670;&#160;</a></span>is_frontal_grasp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool grasp_orientation.is_frontal_grasp </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>quat_xyzw</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>max_vertical</em> = <code><a class="el" href="namespacegrasp__orientation.html#a0b5cec196b34eb723a47fcc9da679f1a">FRONTAL_GRASP_MAX_VERTICAL</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">True if the grasp approaches roughly horizontally (front grasp), not top-down.</pre> 
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="a0b5cec196b34eb723a47fcc9da679f1a" name="a0b5cec196b34eb723a47fcc9da679f1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b5cec196b34eb723a47fcc9da679f1a">&#9670;&#160;</a></span>FRONTAL_GRASP_MAX_VERTICAL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float grasp_orientation.FRONTAL_GRASP_MAX_VERTICAL = 0.5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_2d3b31f5269641a65ad69fd5e63e7c5f.html">manipulation</a></li><li class="navelem"><a class="el" href="dir_7789cadc33ffb2720130327e1e043559.html">packages</a></li><li class="navelem"><a class="el" href="dir_bb44dde2ef2e242adc1d06a241fda96b.html">pick_and_place</a></li><li class="navelem"><a class="el" href="dir_d89c5ea1f1635b650fa16423f2851ead.html">pick_and_place</a></li><li class="navelem"><a class="el" href="dir_221cdd99a5d6ba62c6b39037e72cc29e.html">utils</a></li>
+    <li class="navelem"><a class="el" href="namespacegrasp__orientation.html">grasp_orientation</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.6 </li>
   </ul>
 </div>

@@ -5,6 +5,7 @@ var dir_e8c3afd36eb723150a6e020a165b353e =
     [ "decorators.py", "decorators_8py.html", "decorators_8py" ],
     [ "exploration_planner.py", "exploration__planner_8py.html", "exploration__planner_8py" ],
     [ "logger.py", "logger_8py.html", "logger_8py" ],
+    [ "shelf_pick_logic.py", "shelf__pick__logic_8py.html", "shelf__pick__logic_8py" ],
     [ "status.py", "status_8py.html", "status_8py" ],
     [ "subtask_manager.py", "subtask__manager_8py.html", "subtask__manager_8py" ],
     [ "task.py", "task_8py.html", "task_8py" ]

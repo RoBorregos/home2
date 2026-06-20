@@ -208,6 +208,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:aea0bfa8140434f4dda1b22d942f89ccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e6a44eb17dec7afd4a1a061c96c6cad"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a2e6a44eb17dec7afd4a1a061c96c6cad">_scan_shelf_level</a> (self, float height)</td></tr>
 <tr class="separator:a2e6a44eb17dec7afd4a1a061c96c6cad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e9774b0d95938ab79e1ea1c6912fd21"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a7e9774b0d95938ab79e1ea1c6912fd21">_pick_from_shelf</a> (self, str object_name, dict level_heights)</td></tr>
+<tr class="separator:a7e9774b0d95938ab79e1ea1c6912fd21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a090153dbfce1e79be494faffa754edd3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a090153dbfce1e79be494faffa754edd3">_is_trash</a> (self, str logical_name)</td></tr>
 <tr class="separator:a090153dbfce1e79be494faffa754edd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93cc0aef2abbe99e28964d9972d02f1c"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a93cc0aef2abbe99e28964d9972d02f1c">_to_yolo_name</a> (self, str logical_name)</td></tr>
@@ -443,6 +445,49 @@ Returns an empty list if no shelves are configured.
 </table>
 </div><div class="memdoc">
 <pre class="fragment">True if object matches trash_category (as object name or as objects.json category).</pre> 
+</div>
+</div>
+<a id="a7e9774b0d95938ab79e1ea1c6912fd21" name="a7e9774b0d95938ab79e1ea1c6912fd21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e9774b0d95938ab79e1ea1c6912fd21">&#9670;&#160;</a></span>_pick_from_shelf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> int pickandplace_task_manager.PickAndPlaceTM._pick_from_shelf </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>object_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict&#160;</td>
+          <td class="paramname"><em>level_heights</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Detect the target at each shelf level and pick from the level that frames it.
+table_stare frames only the lower levels, so high-shelf objects were missed.</pre> 
 </div>
 </div>
 <a id="a2e6a44eb17dec7afd4a1a061c96c6cad" name="a2e6a44eb17dec7afd4a1a061c96c6cad"></a>

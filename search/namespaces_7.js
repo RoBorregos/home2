@@ -10,5 +10,6 @@ var searchData=
   ['gpsr_5ftask_5fmanager_7',['gpsr_task_manager',['../namespacegpsr__task__manager.html',1,'']]],
   ['grasp_5fdetection_5fexample_8',['grasp_detection_example',['../namespacegrasp__detection__example.html',1,'']]],
   ['grasp_5fmarkers_9',['grasp_markers',['../namespacegrasp__markers.html',1,'']]],
-  ['grasp_5futils_10',['grasp_utils',['../namespacegrasp__utils.html',1,'']]]
+  ['grasp_5forientation_10',['grasp_orientation',['../namespacegrasp__orientation.html',1,'']]],
+  ['grasp_5futils_11',['grasp_utils',['../namespacegrasp__utils.html',1,'']]]
 ];

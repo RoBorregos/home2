@@ -75,5 +75,6 @@ var searchData=
   ['front_5foffset_72',['front_offset',['../classtable__docker_1_1TableDocker.html#af4b830f3dcec79c5020f7564751d8782',1,'table_docker::TableDocker']]],
   ['front_5fstare_73',['FRONT_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd',1,'frida_constants::xarm_configurations']]],
   ['front_5fstare_5fcarry_5fbag_74',['FRONT_STARE_CARRY_BAG',['../namespacefrida__constants_1_1xarm__configurations.html#a11fb9768bb78ea1ba4ea84e0e587de48',1,'frida_constants::xarm_configurations']]],
-  ['frontal_5ffov_75',['frontal_fov',['../classtable__docker_1_1TableDocker.html#a638d89658475753f6e3c65d2e6da72fc',1,'table_docker::TableDocker']]]
+  ['frontal_5ffov_75',['frontal_fov',['../classtable__docker_1_1TableDocker.html#a638d89658475753f6e3c65d2e6da72fc',1,'table_docker::TableDocker']]],
+  ['frontal_5fgrasp_5fmax_5fvertical_76',['FRONTAL_GRASP_MAX_VERTICAL',['../namespacegrasp__orientation.html#a0b5cec196b34eb723a47fcc9da679f1a',1,'grasp_orientation']]]
 ];

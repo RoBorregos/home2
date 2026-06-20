@@ -7,6 +7,7 @@ var classpickandplace__task__manager_1_1PickAndPlaceTM =
     [ "_get_shelf_height_for_object", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a42e0aeda72c2ec32cff5609ece74eeea", null ],
     [ "_gripper_grasp_cb", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a1d7ce794c069e5eddfa946092fe13434", null ],
     [ "_is_trash", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a090153dbfce1e79be494faffa754edd3", null ],
+    [ "_pick_from_shelf", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a7e9774b0d95938ab79e1ea1c6912fd21", null ],
     [ "_scan_shelf_level", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a2e6a44eb17dec7afd4a1a061c96c6cad", null ],
     [ "_to_yolo_name", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a93cc0aef2abbe99e28964d9972d02f1c", null ],
     [ "_track_state_change", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#afb7622bc66ed0edb2fc61e269215871e", null ],
