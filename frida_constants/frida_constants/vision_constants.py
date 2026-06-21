@@ -101,6 +101,7 @@ CROP_QUERY_TOPIC = "/vision/crop_query"
 OBJECT_POINTS_TOPIC = "/vision/object_points"
 MOONDREAM_POINT_3D_TOPIC = "/vision/moondream_point_3d"
 MOONDREAM_POINT_3D_DEBUG_TOPIC = "/vision/moondream_point_3d_debug"
+MOONDREAM_BBOX_TOPIC = "/vision/moondream_bbox"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"

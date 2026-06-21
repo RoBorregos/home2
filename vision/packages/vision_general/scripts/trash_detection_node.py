@@ -4,6 +4,7 @@ Node exposing a service to filter YOLO detections by label_text.
 """
 
 import cv2
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -20,11 +21,20 @@ from frida_constants.vision_constants import (
     TRASHCAN_SERVICE,
     MOONDREAM_POINT_3D_TOPIC,
     MOONDREAM_POINT_3D_DEBUG_TOPIC,
+    MOONDREAM_BBOX_TOPIC,
 )
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
-from frida_interfaces.srv import ObjectPoints, TrashcanDetection, MoondreamPoint3D
+from frida_interfaces.srv import (
+    ObjectPoints,
+    TrashcanDetection,
+    MoondreamPoint3D,
+    MoondreamObjectBBox,
+)
 from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from vision_general.utils.ros_utils import wait_for_future
+
+# Minimum number of valid depth pixels in the ROI to trust the 3D centroid.
+MIN_VALID_DEPTH_PIXELS = 30
 
 TRASH_DEBUG_IMAGE_TOPIC = "/vision/trash_detection_debug"
 
@@ -64,6 +74,9 @@ class TrashDetectionNode(Node):
 
         self.moondream_point_client = self.create_client(
             ObjectPoints, OBJECT_POINTS_TOPIC
+        )
+        self.moondream_bbox_client = self.create_client(
+            MoondreamObjectBBox, MOONDREAM_BBOX_TOPIC
         )
 
         self.create_service(
@@ -195,50 +208,161 @@ class TrashDetectionNode(Node):
         return ps, point2d
 
     def get_moondream_point_3d(self, req, res):
-        """Average moondream points for `req.subject` and deproject the
-        centroid to a 3D PointStamped in CAMERA_FRAME.
+        """Ask moondream for a bounding box for `req.subject`, crop the depth
+        ROI, deproject every valid pixel inside the bbox to 3D, and return the
+        MEAN of that point cloud as a `PointStamped` in `CAMERA_FRAME`.
+
+        Hard failures (no detection, missing camera info / depth, too few
+        valid depth pixels in the ROI) return `success=False` and publish a
+        red "NO DETECTION" debug frame. There are NO silent fallbacks —
+        callers must abort the move rather than act on a bogus centroid.
         """
         res.success = False
 
         if self.imageInfo is None:
-            self.get_logger().warn("Cannot compute 3D point without camera info")
+            self.get_logger().warn("Cannot compute 3D centroid without camera info")
             return res
         if self.depth_image is None:
-            self.get_logger().warn("Cannot compute 3D point without depth image")
+            self.get_logger().warn("Cannot compute 3D centroid without depth image")
             return res
 
-        pts = self.get_moondream_points(req.subject)
-        if not pts:
-            self.get_logger().warn(f"No moondream points for subject '{req.subject}'")
+        bbox = self._call_moondream_bbox(req.subject)
+        if bbox is None:
+            self._publish_failure_debug(req.subject, "NO DETECTION")
             return res
 
-        cx = sum(p[0] for p in pts) / len(pts)
-        cy = sum(p[1] for p in pts) / len(pts)
-        res.point, point2d = self._deproject_normalized_optical(cx, cy)
+        # Clamp bbox (normalized) to both RGB and depth dims so we never index
+        # out of bounds on the depth image (which can be downsampled vs RGB).
+        depth_h, depth_w = self.depth_image.shape[:2]
+        w = min(self.imageInfo.width, depth_w)
+        h = min(self.imageInfo.height, depth_h)
+        xmin = int(max(0, min(w - 1, bbox["xmin"] * w)))
+        ymin = int(max(0, min(h - 1, bbox["ymin"] * h)))
+        xmax = int(max(xmin + 1, min(w, bbox["xmax"] * w)))
+        ymax = int(max(ymin + 1, min(h, bbox["ymax"] * h)))
+
+        roi = self.depth_image[ymin:ymax, xmin:xmax]
+        valid = (roi > 0) & np.isfinite(roi)
+        n_valid = int(np.count_nonzero(valid))
+        if n_valid < MIN_VALID_DEPTH_PIXELS:
+            self.get_logger().warn(
+                f"Only {n_valid} valid depth pixels in ROI "
+                f"({xmin},{ymin})->({xmax},{ymax}); need {MIN_VALID_DEPTH_PIXELS}."
+            )
+            self._publish_failure_debug(
+                req.subject,
+                f"INSUFFICIENT DEPTH (n={n_valid})",
+                bbox_px=(xmin, ymin, xmax, ymax),
+            )
+            return res
+
+        # Vectorised deprojection of every valid pixel in the ROI.
+        v_local, u_local = np.where(valid)
+        z = roi[v_local, u_local].astype(np.float64)
+        u_global = u_local.astype(np.float64) + xmin
+        v_global = v_local.astype(np.float64) + ymin
+        fx, fy = self.imageInfo.k[0], self.imageInfo.k[4]
+        cx_i, cy_i = self.imageInfo.k[2], self.imageInfo.k[5]
+        X = (u_global - cx_i) * z / fx
+        Y = (v_global - cy_i) * z / fy
+        # Mean in camera frame (optical convention: x=right, y=down, z=forward)
+        Xc, Yc, Zc = float(np.mean(X)), float(np.mean(Y)), float(np.mean(z))
+
+        ps = PointStamped()
+        ps.header.stamp = self.get_clock().now().to_msg()
+        ps.header.frame_id = CAMERA_FRAME
+        ps.point.x = Xc
+        ps.point.y = Yc
+        ps.point.z = Zc
+        res.point = ps
         res.success = True
-        self.get_logger().info(
-            f"Moondream 3D point for '{req.subject}': "
-            f"({res.point.point.x:.3f}, {res.point.point.y:.3f}, {res.point.point.z:.3f})"
-        )
 
-        self.publish_moondream_point_3d_debug(req.subject, point2d, res.point)
+        # Project the centroid back to a pixel for the debug marker.
+        u_centroid = int(round(Xc * fx / Zc + cx_i)) if Zc > 0 else (xmin + xmax) // 2
+        v_centroid = int(round(Yc * fy / Zc + cy_i)) if Zc > 0 else (ymin + ymax) // 2
+        self.get_logger().info(
+            f"Moondream 3D centroid for '{req.subject}': "
+            f"({Xc:.3f}, {Yc:.3f}, {Zc:.3f}) from {n_valid} px in ROI "
+            f"({xmin},{ymin})->({xmax},{ymax})"
+        )
+        self.publish_moondream_point_3d_debug(
+            req.subject, (u_centroid, v_centroid), ps, (xmin, ymin, xmax, ymax), n_valid
+        )
         return res
 
-    def publish_moondream_point_3d_debug(self, subject, center_px, point_stamped):
+    def _call_moondream_bbox(self, subject):
+        """Call `/vision/moondream_bbox` and return a dict
+        {xmin, ymin, xmax, ymax} normalized in [0, 1], or None on failure.
+        """
+        if not self.moondream_bbox_client.wait_for_service(timeout_sec=2.0):
+            self.get_logger().error("moondream_bbox service not available")
+            return None
+        req = MoondreamObjectBBox.Request()
+        req.subject = subject
+        future = self.moondream_bbox_client.call_async(req)
+        future = wait_for_future(future, 15)
+        if future is False or not future.done():
+            self.get_logger().error("moondream_bbox call timed out")
+            return None
+        result = future.result()
+        if result is None or not result.success:
+            self.get_logger().warn(f"moondream_bbox: no bbox for '{subject}'")
+            return None
+        return {
+            "xmin": float(result.xmin),
+            "ymin": float(result.ymin),
+            "xmax": float(result.xmax),
+            "ymax": float(result.ymax),
+        }
+
+    def _publish_failure_debug(self, subject, message, bbox_px=None):
+        """Publish a debug image marking the failure, so an operator can see
+        what the camera saw at the moment the centroid call failed."""
+        if self.image is None:
+            return
+        debug = self.image.copy()
+        if bbox_px is not None:
+            x0, y0, x1, y1 = bbox_px
+            cv2.rectangle(debug, (x0, y0), (x1, y1), (0, 0, 255), 2)
+        cv2.putText(
+            debug,
+            f"{message}: {subject[:50]}",
+            (10, 25),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (0, 0, 255),
+            2,
+        )
+        try:
+            self.moondream_point_3d_debug_pub.publish(
+                self.bridge.cv2_to_imgmsg(debug, "bgr8")
+            )
+        except Exception as e:
+            self.get_logger().error(f"Debug publish error: {e}")
+
+    def publish_moondream_point_3d_debug(
+        self, subject, center_px, point_stamped, bbox_px=None, n_valid=None
+    ):
         if self.image is None:
             return
 
         debug = self.image.copy()
+        if bbox_px is not None:
+            x0, y0, x1, y1 = bbox_px
+            cv2.rectangle(debug, (x0, y0), (x1, y1), (0, 255, 0), 2)
         u, v = center_px
         cv2.drawMarker(debug, (u, v), (0, 255, 0), cv2.MARKER_CROSS, 24, 2)
         cv2.circle(debug, (u, v), 14, (0, 255, 0), 2)
-        label = (
-            f"{subject[:40]}  "
+        label_parts = [
+            f"{subject[:40]}",
             f"xyz=({point_stamped.point.x:.2f},{point_stamped.point.y:.2f},"
-            f"{point_stamped.point.z:.2f})"
-        )
+            f"{point_stamped.point.z:.2f})",
+        ]
+        if n_valid is not None:
+            label_parts.append(f"N={n_valid}")
         cv2.putText(
-            debug, label, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1
+            debug, "  ".join(label_parts), (10, 25),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1,
         )
 
         try:

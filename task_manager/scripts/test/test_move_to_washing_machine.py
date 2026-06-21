@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 
-"""End-to-end test: get the washing-machine drum centroid via moondream and
-align the gripper to that height with joints 2 and 5.
+"""End-to-end test: locate the washing-machine drum opening with moondream
+from a LOOK pose where the ZED actually sees it, then move to a separate
+REACH pose where the arm can physically extend down to the drum height.
 
-Strategy (locked-joint, FK-based):
-  * Pre-pose: `front_low_stare` (gripper already horizontal toward +X).
-  * joints 1, 3, 4, 6: LOCKED at their pre-pose values.
-  * joint2: solved so gripper_grasp_frame.z == centroid.z.
-  * joint5: solved so the gripper approach axis stays horizontal.
+Strategy (split look + reach):
+  1. Pre-pose to `LOOK_POSE` — gripper high, ZED looks at the drum cleanly.
+  2. Call moondream → bbox → ROI depth → 3D centroid in the camera frame.
+  3. TF the centroid into `base_link` IMMEDIATELY (world-stable). The
+     ZED moves with the gripper, so once we move the arm again the camera's
+     view of the drum is gone — but the cached world point is invariant.
+  4. Hand the cached `base_link` point to `align_to_centroid_height(...,
+     pre_pose=REACH_POSE)`. That call moves the arm to the reach pose, runs
+     FK calibration vs TF, solves j2/j5 (locking j3/j4/j6 at the reach
+     pose values), and executes. The camera is irrelevant during the reach.
 
-The math lives in `task_manager.utils.xarm_fk` and is invoked through
-`ManipulationTasks.align_to_centroid_height`.
+joints 1, 3, 4, 6 are LOCKED at the reach pose values; joints 2 and 5 are
+the only ones the solver moves. The math lives in `task_manager.utils.xarm_fk`.
 """
 
 import sys
@@ -18,17 +24,22 @@ import sys
 import rclpy
 import tf2_ros
 from rclpy.node import Node
-from tf2_geometry_msgs import do_transform_point  # noqa: F401
+from tf2_geometry_msgs import do_transform_point
 
 from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
 from task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
-from task_manager.utils.xarm_fk import fk_grasp_frame
 
 CAMERA_FLIP = False
-PRE_POSE = "front_low_stare"
+# Pose where the ZED can actually see the drum cleanly enough for moondream
+# to return a meaningful bbox. (front_low_stare keeps the camera looking +X
+# at the scene with the gripper roughly horizontal.)
+LOOK_POSE = "front_low_stare"
+# Pose used as the LOCK reference for the reach. j3 is opened up so the
+# wrist-z range covers low targets; gripper ends up pointing ~horizontal +X.
+REACH_POSE = "washing_machine_reach_pose"
 WRIST_FRAME = "gripper_grasp_frame"
 SUBJECT = (
     "exact geometric center of the circular washing machine drum opening "
@@ -48,49 +59,22 @@ class TestMoveToWashingMachine(Node):
         self.vision.camera_upside_down(CAMERA_FLIP)
 
     def run(self) -> int:
-        # 1. Pre-pose
-        Logger.info(self, f"Pre-positioning to {PRE_POSE}...")
+        # 1. Look pose: where the camera can see the drum.
+        Logger.info(self, f"Moving to LOOK pose '{LOOK_POSE}'...")
         if (
-            self.manipulation.move_joint_positions(named_position=PRE_POSE, velocity=0.3)
+            self.manipulation.move_joint_positions(
+                named_position=LOOK_POSE, velocity=0.3
+            )
             != Status.EXECUTION_SUCCESS
         ):
+            Logger.error(self, "Failed to reach LOOK pose. Aborting.")
             return 3
 
-        # 2. FK vs TF sanity check at the pre-pose
-        rclpy.spin_once(self, timeout_sec=0.5)
-        current = self.manipulation.get_joint_positions()
-        if isinstance(current, dict) and "joint1" in current:
-            T = fk_grasp_frame(
-                current["joint1"],
-                current["joint2"],
-                current["joint3"],
-                current["joint4"],
-                current["joint5"],
-                current["joint6"],
-            )
-            fk_z = T[2, 3]
-            try:
-                tf = self._tf_buffer.lookup_transform(
-                    "base_link",
-                    WRIST_FRAME,
-                    rclpy.time.Time(),
-                    timeout=rclpy.duration.Duration(seconds=2.0),
-                )
-                tf_z = tf.transform.translation.z
-            except Exception as e:
-                tf_z = float("nan")
-                Logger.warn(self, f"TF lookup failed at pre-pose: {e}")
-            Logger.info(
-                self,
-                f"Pre-pose FK z={fk_z:.3f}, TF z={tf_z:.3f}, "
-                f"gripper-z·base-z={T[2, 2]:+.3f} (should be ~0 if horizontal)",
-            )
-
-        # 3. Get the centroid from vision
+        # 2. Centroid via moondream (bbox → ROI → mean of pointcloud).
         Logger.info(self, "Requesting washing-machine centroid from moondream...")
         point = self.vision.get_moondream_point_3d(SUBJECT)
         if point is None:
-            Logger.error(self, "No centroid. Aborting.")
+            Logger.error(self, "No centroid returned. Aborting.")
             return 1
         Logger.success(
             self,
@@ -98,11 +82,10 @@ class TestMoveToWashingMachine(Node):
             f"({point.point.x:.3f}, {point.point.y:.3f}, {point.point.z:.3f})",
         )
 
-        # Cache the centroid in base_link BEFORE the move. The ZED is mounted
-        # on the gripper, so its optical frame moves with the arm; transforming
-        # `point` from optical_frame AFTER the move gives a different world
-        # position, which makes the verification step meaningless.
-        cached_cz = None
+        # 3. TF the centroid to base_link RIGHT NOW (camera still in look pose).
+        # Once we move to REACH_POSE the ZED's view is gone, so we can't
+        # re-derive the world point — we use this cached one for the solver
+        # AND for the final verification.
         try:
             transform = self._tf_buffer.lookup_transform(
                 "base_link",
@@ -110,19 +93,34 @@ class TestMoveToWashingMachine(Node):
                 rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=2.0),
             )
-            cached_cz = do_transform_point(point, transform).point.z
-            Logger.info(self, f"Cached centroid z in base_link: {cached_cz:.3f}")
         except Exception as e:
-            Logger.warn(self, f"Could not cache cz in base_link: {e}")
+            Logger.error(self, f"TF {point.header.frame_id} -> base_link failed: {e}")
+            return 4
+        point_in_base = do_transform_point(point, transform)
+        # Re-stamp the frame so align_to_centroid_height's internal TF lookup
+        # is just identity (base_link -> base_link) and doesn't pick up the
+        # post-move ZED transform.
+        point_in_base.header.frame_id = "base_link"
+        cached_cz = point_in_base.point.z
+        Logger.info(
+            self,
+            f"Cached centroid in base_link: "
+            f"({point_in_base.point.x:.3f}, {point_in_base.point.y:.3f}, "
+            f"{cached_cz:.3f})",
+        )
 
-        # 4. Align using joints 2 and 5 only
-        status = self.manipulation.align_to_centroid_height(point, pre_pose=PRE_POSE)
+        # 4. Reach: move to REACH_POSE and solve j2/j5 to hit the cached z.
+        Logger.info(
+            self, f"Aligning to centroid via REACH pose '{REACH_POSE}'..."
+        )
+        status = self.manipulation.align_to_centroid_height(
+            point_in_base, pre_pose=REACH_POSE
+        )
         if status != Status.EXECUTION_SUCCESS:
             Logger.error(self, f"align_to_centroid_height failed: {status}")
             return 2
 
-        # 5. Verify final wrist height against the CACHED target (NOT a fresh
-        # transform of `point`, because optical_frame moved with the arm).
+        # 5. Verify final wrist height against the cached target.
         rclpy.spin_once(self, timeout_sec=0.5)
         try:
             tf_w = self._tf_buffer.lookup_transform(
@@ -132,14 +130,11 @@ class TestMoveToWashingMachine(Node):
                 timeout=rclpy.duration.Duration(seconds=2.0),
             )
             wz = tf_w.transform.translation.z
-            if cached_cz is not None:
-                Logger.info(
-                    self,
-                    f"Final wrist z={wz:.3f}, target z={cached_cz:.3f} (cached), "
-                    f"error={(wz - cached_cz) * 100:+.1f} cm",
-                )
-            else:
-                Logger.info(self, f"Final wrist z={wz:.3f} (no cached target)")
+            Logger.info(
+                self,
+                f"Final wrist z={wz:.3f}, target z={cached_cz:.3f} (cached), "
+                f"error={(wz - cached_cz) * 100:+.1f} cm",
+            )
         except Exception as e:
             Logger.warn(self, f"Final TF verification failed: {e}")
 

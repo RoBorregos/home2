@@ -5,7 +5,7 @@ import warnings
 
 import moondream_proto_pb2 as moondream__proto__pb2
 
-GRPC_GENERATED_VERSION = '1.71.0'
+GRPC_GENERATED_VERSION = '1.66.2'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in moondream_proto_pb2_grpc.py depends on'
+        + f' but the generated code in moondream_proto_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -49,6 +49,11 @@ class MoonDreamServiceStub(object):
                 request_serializer=moondream__proto__pb2.FindObjectPointsRequest.SerializeToString,
                 response_deserializer=moondream__proto__pb2.FindObjectPointsResponse.FromString,
                 _registered_method=True)
+        self.DetectObject = channel.unary_unary(
+                '/moondream.MoonDreamService/DetectObject',
+                request_serializer=moondream__proto__pb2.DetectObjectRequest.SerializeToString,
+                response_deserializer=moondream__proto__pb2.DetectObjectResponse.FromString,
+                _registered_method=True)
         self.Query = channel.unary_unary(
                 '/moondream.MoonDreamService/Query',
                 request_serializer=moondream__proto__pb2.QueryRequest.SerializeToString,
@@ -77,6 +82,12 @@ class MoonDreamServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def DetectObject(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Query(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -100,6 +111,11 @@ def add_MoonDreamServiceServicer_to_server(servicer, server):
                     servicer.FindObjectPoints,
                     request_deserializer=moondream__proto__pb2.FindObjectPointsRequest.FromString,
                     response_serializer=moondream__proto__pb2.FindObjectPointsResponse.SerializeToString,
+            ),
+            'DetectObject': grpc.unary_unary_rpc_method_handler(
+                    servicer.DetectObject,
+                    request_deserializer=moondream__proto__pb2.DetectObjectRequest.FromString,
+                    response_serializer=moondream__proto__pb2.DetectObjectResponse.SerializeToString,
             ),
             'Query': grpc.unary_unary_rpc_method_handler(
                     servicer.Query,
@@ -188,6 +204,33 @@ class MoonDreamService(object):
             '/moondream.MoonDreamService/FindObjectPoints',
             moondream__proto__pb2.FindObjectPointsRequest.SerializeToString,
             moondream__proto__pb2.FindObjectPointsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DetectObject(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/moondream.MoonDreamService/DetectObject',
+            moondream__proto__pb2.DetectObjectRequest.SerializeToString,
+            moondream__proto__pb2.DetectObjectResponse.FromString,
             options,
             channel_credentials,
             insecure,

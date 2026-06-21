@@ -193,6 +193,26 @@ LOOK_SIDE_STARE = {
     "degrees": True,
 }
 
+# EXECUTE-ONLY pose for `align_to_centroid_height` when reaching for a low
+# target like a washing-machine drum opening. j3 is opened up to -45° so the
+# wrist-z vs j2 curve covers a lower z range in base_link (~0.5–1.1 m). At
+# this configuration the ZED on the gripper ends up pointed away from the
+# scene — DO NOT try to capture the centroid here. The caller must capture
+# from a LOOK pose first (e.g., `front_low_stare`), TF the point to
+# `base_link`, and pass the world-stable point to `align_to_centroid_height`
+# along with `pre_pose="washing_machine_reach_pose"`.
+WASHING_MACHINE_REACH_POSE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -60.0,
+        "joint3": -30.0,
+        "joint4": 0.0,
+        "joint5": 0.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -210,4 +230,5 @@ XARM_CONFIGURATIONS = {
     "hand_bag_pose": HAND_BAG_POSE,
     "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
     "look_side_stare": LOOK_SIDE_STARE,
+    "washing_machine_reach_pose": WASHING_MACHINE_REACH_POSE,
 }

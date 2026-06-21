@@ -733,7 +733,7 @@ class ManipulationTasks:
         # don't always match the calibrated kinematics that the robot's
         # firmware injects via `kinematics_params`. With joints 3/4/6 locked,
         # the residual z-offset is roughly constant across the run.
-        z_bias = 0.0
+        # This calibration is REQUIRED — no z_bias=0.0 fallback.
         try:
             tf_pre = self._tf_buffer.lookup_transform(
                 frame,
@@ -750,10 +750,12 @@ class ManipulationTasks:
                 f"z_bias={z_bias:+.3f} m",
             )
         except Exception as e:
-            Logger.warn(
+            Logger.error(
                 self.node,
-                f"Could not calibrate z_bias against TF: {e} (using 0.0)",
+                f"align_to_centroid_height: TF lookup of gripper_grasp_frame "
+                f"failed ({e}); cannot calibrate z_bias. Aborting.",
             )
+            return Status.EXECUTION_ERROR
 
         try:
             transform = self._tf_buffer.lookup_transform(
@@ -788,12 +790,36 @@ class ManipulationTasks:
             j2_seed=max(J2_MIN, min(J2_MAX, j2_seed)),
             j5_seed=max(J5_MIN, min(J5_MAX, j5_seed)),
         )
-        if not reached:
-            Logger.warn(
+        if not reached or j2 is None or j5 is None:
+            # Re-run a one-off sweep to report the achievable range so the
+            # operator knows by how much we missed.
+            try:
+                import numpy as _np
+                _sweep = _np.linspace(J2_MIN, J2_MAX, 60)
+                _zs = [
+                    fk_grasp_frame(j1, float(v), j3, j4, j5_seed, j6)[2, 3] + z_bias
+                    for v in _sweep
+                ]
+                reachable_range = (min(_zs), max(_zs))
+            except Exception:
+                reachable_range = (float("nan"), float("nan"))
+            Logger.error(
                 self.node,
-                f"Target z={cz:.3f} unreachable with j3,j4,j6 locked; "
-                f"clamping to best j2 = {j2:.3f} rad",
+                f"align_to_centroid_height: target z={cz:.3f} m unreachable "
+                f"with j3,j4,j6 locked at pre-pose '{pre_pose}'. "
+                f"Reachable z range in base_link ≈ "
+                f"[{reachable_range[0]:.3f}, {reachable_range[1]:.3f}] m. "
+                "Aborting (no silent clamping).",
             )
+            return Status.EXECUTION_ERROR
+        if not (J2_MIN <= j2 <= J2_MAX and J5_MIN <= j5 <= J5_MAX):
+            Logger.error(
+                self.node,
+                f"align_to_centroid_height: solved joints out of soft limits "
+                f"j2={j2:.3f} rad (allowed [{J2_MIN:.3f}, {J2_MAX:.3f}]), "
+                f"j5={j5:.3f} rad (allowed [{J5_MIN:.3f}, {J5_MAX:.3f}]). Aborting.",
+            )
+            return Status.EXECUTION_ERROR
 
         T = fk_grasp_frame(j1, j2, j3, j4, j5, j6)
         Logger.info(

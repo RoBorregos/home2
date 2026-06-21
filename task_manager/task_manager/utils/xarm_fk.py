@@ -110,25 +110,32 @@ def _solve_j5_horizontal(j1: float, j2: float, j3: float, j4: float, j6: float) 
     sweep = np.linspace(J5_MIN, J5_MAX, 121)
     best_j5 = None
     best_score = -math.inf
+    has_forward = False
     for v in sweep:
         T = fk(float(v))
-        # Prefer forward-pointing approach axis (T[0,2] > 0) AND small |T[2,2]|.
-        # Heavy penalty if pointing backwards/down.
-        forward = 1.0 if T[0, 2] > 0.0 else -1.0
-        score = forward - abs(T[2, 2])
+        # Reject any candidate that does NOT point forward (T[0,2] > 0). No
+        # silent acceptance of a backwards/down gripper.
+        if T[0, 2] <= 0.0:
+            continue
+        has_forward = True
+        score = -abs(T[2, 2])
         if score > best_score:
             best_score = score
             best_j5 = float(v)
 
+    if not has_forward or best_j5 is None:
+        # Nothing in [J5_MIN, J5_MAX] yields a forward-pointing approach for
+        # this (j1, j2, j3, j4, j6) configuration. Caller must abort.
+        return None
+
     # Refine around the best candidate by bisecting on T[2,2]=0 over a tight
     # window — this keeps us on the chosen (forward) branch.
-    if best_j5 is not None:
-        window = math.radians(20.0)
-        lo = max(J5_MIN, best_j5 - window)
-        hi = min(J5_MAX, best_j5 + window)
-        refined = bisect(lambda v: fk(v)[2, 2], lo, hi, target=0.0)
-        if refined is not None and fk(refined)[0, 2] > 0.0:
-            best_j5 = refined
+    window = math.radians(20.0)
+    lo = max(J5_MIN, best_j5 - window)
+    hi = min(J5_MAX, best_j5 + window)
+    refined = bisect(lambda v: fk(v)[2, 2], lo, hi, target=0.0)
+    if refined is not None and fk(refined)[0, 2] > 0.0:
+        best_j5 = refined
 
     return float(max(J5_MIN, min(J5_MAX, best_j5)))
 
@@ -141,22 +148,39 @@ def _solve_j2_for_height(
     j6: float,
     target_z: float,
 ) -> Tuple[float, bool]:
-    """j2 such that gripper_grasp_frame.z == target_z. Returns (j2, reached)."""
+    """j2 such that gripper_grasp_frame.z == target_z. Returns (j2, reached).
+
+    The wrist-z vs j2 curve has a peak (around j2 ≈ -45° for j3=-90° locked).
+    For any target below the peak there are TWO roots: one on the
+    "arm folded back" side (smaller j2) and one on the "arm extended forward"
+    side (larger j2). We always pick the LARGER-j2 root so the brazo extends
+    forward instead of folding back.
+    """
 
     def f(j2: float) -> float:
         return fk_grasp_frame(j1, j2, j3, j4, j5, j6)[2, 3]
 
-    sweep = np.linspace(J2_MIN, J2_MAX, 40)
+    sweep = np.linspace(J2_MIN, J2_MAX, 60)
     zs = [f(v) for v in sweep]
-    bracket = None
+
+    brackets = []
     for i in range(len(sweep) - 1):
         if (zs[i] - target_z) * (zs[i + 1] - target_z) <= 0:
-            bracket = (sweep[i], sweep[i + 1])
-            break
-    if bracket is None:
-        j2 = float(sweep[int(np.argmin([abs(z - target_z) for z in zs]))])
-        return float(max(J2_MIN, min(J2_MAX, j2))), False
+            brackets.append((float(sweep[i]), float(sweep[i + 1])))
+
+    if not brackets:
+        # Target height unreachable with these locked joints. Caller MUST abort
+        # — no silent clamping to the closest point.
+        return None, False
+
+    # Prefer the bracket with the LARGEST j2 (forward-extended side of the
+    # wrist-z peak).
+    bracket = max(brackets, key=lambda b: b[1])
     j2 = bisect(f, bracket[0], bracket[1], target=target_z)
+    if j2 is None:
+        # bisect couldn't refine despite the sign change — fall back to
+        # midpoint of the bracket (still within the valid forward range).
+        j2 = 0.5 * (bracket[0] + bracket[1])
     return float(max(J2_MIN, min(J2_MAX, j2))), True
 
 
@@ -170,18 +194,23 @@ def solve_j2_j5_for_height(
     j5_seed: float,
     iterations: int = 4,
     convergence_tol: float = 1e-4,
-) -> Tuple[float, float, bool]:
+) -> Tuple[Optional[float], Optional[float], bool]:
     """Jointly resolve (j2, j5) so the grasp frame reaches `target_z`
     with the gripper horizontal. j1, j3, j4, j6 stay locked.
 
-    Returns (j2, j5, reached_target). `reached_target` is False when the
-    requested height is outside the achievable range with those locked joints.
+    Returns (j2, j5, reached_target). On failure (no forward j5 exists or
+    target_z is outside the achievable range), returns (None, None, False).
+    There is NO silent clamping.
     """
     j2, j5 = j2_seed, j5_seed
     reached = False
     for _ in range(iterations):
         j5_new = _solve_j5_horizontal(j1, j2, j3, j4, j6)
+        if j5_new is None:
+            return None, None, False
         j2_new, reached = _solve_j2_for_height(j1, j3, j4, j5_new, j6, target_z)
+        if j2_new is None:
+            return None, None, False
         if abs(j2_new - j2) < convergence_tol and abs(j5_new - j5) < convergence_tol:
             j2, j5 = j2_new, j5_new
             break

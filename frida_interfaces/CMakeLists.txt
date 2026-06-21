@@ -157,6 +157,7 @@ set(srv_files
   "vision/srv/Query.srv"
   "vision/srv/ObjectPoints.srv"
   "vision/srv/MoondreamPoint3D.srv"
+  "vision/srv/MoondreamObjectBBox.srv"
   "vision/srv/SaveName.srv"
   "vision/srv/SetDetectorClasses.srv"
   "vision/srv/SetPointingObjectClasses.srv"
