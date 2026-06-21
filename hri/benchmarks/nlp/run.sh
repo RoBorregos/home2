@@ -1,59 +1,73 @@
 #!/bin/bash
-# NLP multi-model benchmark orchestrator.
+# NLP benchmark model manager.
 #
-# Reads model registry from models.json, lets the user pick which to benchmark,
-# downloads GGUFs to hri/packages/nlp/assets/, spins up a temporary
-# llama-server per model, and drives the existing integration tests
-# (task_manager/scripts/test/test_hri_manager.py in TEST_NLP mode) inside
-# the integration container.
+# Two-step flow:
+#   1. Pick model(s) here → downloads GGUFs, optionally launches the production
+#      llamacpp service (docker/hri/compose/llamacpp-l4t.yaml) with a single
+#      cached model.
+#   2. Run the benchmark via the integration container:
+#        TEST_NLP=true NLP_MODEL_ALIAS=<alias> NLP_OLLAMA_URL=http://localhost:11434/v1 \
+#          NLP_TASKS=is_positive,is_negative,extract_data \
+#          ./run.sh integration --test-hri --build
+#
+# Selection rules:
+#   "1 2 3"             → download only (no container).
+#   single, not cached  → download only.
+#   single, cached      → start production llamacpp with that GGUF, exit.
+#   -1                  → delete-cached menu.
+#   (empty)             → no-op message.
 #
 # Flags:
-#   --models "1 3 5"   Model selection by index (skip interactive menu)
-#   --all              Benchmark every model in the registry
-#   --tasks LIST       Comma-separated: is_positive,is_negative,extract_data
-#   --runs N           Perf timing runs per task (default 3)
-#   --ephemeral        Delete each GGUF after its benchmark (saves disk)
-#   --delete           Open the delete-cached-models menu instead of running
-#   --env l4t|cuda|cpu Override ENV_TYPE for integration run (default l4t)
-#
-# All output is tee'd to hri/benchmarks/nlp/results/logs/<timestamp>.log.
+#   --models "N..."   Skip menu, treat as the selection.
+#   --all             Download every model in models.json (no container).
+#   --delete          Jump straight to delete menu.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(realpath "$SCRIPT_DIR/../../..")"
 ASSETS_DIR="$REPO_ROOT/hri/packages/nlp/assets"
-INTEGRATION_RUN="$REPO_ROOT/docker/integration/run.sh"
 REGISTRY="$SCRIPT_DIR/models.json"
-
-LLAMA_IMAGE="ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin"
-LLAMA_CONTAINER="benchmark-llama-tmp"
-LIVE_CONTAINER="home2-hri-llamacpp-l4t"
+HRI_COMPOSE_DIR="$REPO_ROOT/docker/hri/compose"
+COMPOSE_FILE="$HRI_COMPOSE_DIR/docker-compose-l4t.yml"
+COMPOSE_ENV="$HRI_COMPOSE_DIR/.env"
 PORT=11434
+LIVE_CONTAINER="home2-hri-llamacpp-l4t"
 
-EPHEMERAL=false
-RUNS=3
 MODEL_SELECT=""
 SELECT_ALL=false
 DELETE_MODE=false
-TASKS_CSV="is_positive,is_negative,extract_data"
-ENV_TYPE_ARG="${ENV_TYPE:-l4t}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --models)     MODEL_SELECT="$2"; shift 2 ;;
-        --all)        SELECT_ALL=true; shift ;;
-        --tasks)      TASKS_CSV="$2"; shift 2 ;;
-        --runs)       RUNS="$2"; shift 2 ;;
-        --ephemeral)  EPHEMERAL=true; shift ;;
-        --delete)     DELETE_MODE=true; shift ;;
-        --env)        ENV_TYPE_ARG="$2"; shift 2 ;;
-        -h|--help)    sed -n '2,21p' "$0"; exit 0 ;;
+        --models)  MODEL_SELECT="$2"; shift 2 ;;
+        --all)     SELECT_ALL=true; shift ;;
+        --delete)  DELETE_MODE=true; shift ;;
+        -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
 
 mkdir -p "$ASSETS_DIR" "$SCRIPT_DIR/results/logs"
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
+upsert_env() {
+    local file="$1" key="$2" value="$3"
+    touch "$file"
+    if grep -q "^${key}=" "$file" 2>/dev/null; then
+        # Cross-platform in-place: use a tmp file.
+        grep -v "^${key}=" "$file" > "$file.tmp"
+        mv "$file.tmp" "$file"
+    fi
+    echo "${key}=${value}" >> "$file"
+}
+
+download_model() {
+    local url="$1" dest="$2"
+    [[ -f "$dest" ]] && { echo "  Already cached: $(basename "$dest")"; return 0; }
+    echo "  Downloading $(basename "$dest")..."
+    curl -L --fail --progress-bar "$url" -o "$dest.partial" && mv "$dest.partial" "$dest"
+}
 
 run_delete_menu() {
     echo "Cached GGUFs in $ASSETS_DIR:"
@@ -77,42 +91,30 @@ run_delete_menu() {
     done
 }
 
-# ── Delete-only mode (--delete flag) ──────────────────────────────────────────
+# ── Delete-only mode ─────────────────────────────────────────────────────────
 if $DELETE_MODE; then
     run_delete_menu
     exit 0
 fi
 
-# ── Logging ───────────────────────────────────────────────────────────────────
+# ── Logging ──────────────────────────────────────────────────────────────────
 TS="$(date +%Y%m%d-%H%M%S)"
-LOG_FILE="$SCRIPT_DIR/results/logs/benchmark-$TS.log"
-echo "Logging to: $LOG_FILE"
+LOG_FILE="$SCRIPT_DIR/results/logs/manager-$TS.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "── FRIDA NLP benchmark ── $(date) ──"
+echo "── FRIDA NLP benchmark manager ── $(date) ──"
 
-# Conflict check: production llama-server can't be up
-if docker ps --format '{{.Names}}' | grep -qx "$LIVE_CONTAINER"; then
-    echo "ERROR: $LIVE_CONTAINER is running. Stop it first: docker stop $LIVE_CONTAINER"
-    exit 1
-fi
+command -v jq >/dev/null 2>&1 || { echo "ERROR: jq required."; exit 1; }
+[[ -f "$REGISTRY" ]] || { echo "ERROR: $REGISTRY not found."; exit 1; }
 
-# Require jq for JSON registry parsing
-if ! command -v jq >/dev/null 2>&1; then
-    echo "ERROR: jq is required to parse $REGISTRY"; exit 1
-fi
-[[ -f "$REGISTRY" ]] || { echo "ERROR: registry not found at $REGISTRY"; exit 1; }
-
-# ── Parse registry ────────────────────────────────────────────────────────────
+# ── Parse registry ───────────────────────────────────────────────────────────
 mapfile -t MODEL_NAMES < <(jq -r '.models[].name' "$REGISTRY")
 mapfile -t MODEL_URLS  < <(jq -r '.models[].hf_url' "$REGISTRY")
 mapfile -t MODEL_FILES < <(jq -r '.models[].filename' "$REGISTRY")
-mapfile -t MODEL_CTXS  < <(jq -r '.models[].ctx_size' "$REGISTRY")
-mapfile -t MODEL_ARGS  < <(jq -r '.models[].extra_llama_args // ""' "$REGISTRY")
 
 [[ ${#MODEL_NAMES[@]} -eq 0 ]] && { echo "ERROR: registry empty."; exit 1; }
 
-# ── Model selection ──────────────────────────────────────────────────────────
+# ── Menu ─────────────────────────────────────────────────────────────────────
 echo "Available models:"
 for i in "${!MODEL_NAMES[@]}"; do
     f="$ASSETS_DIR/${MODEL_FILES[$i]}"
@@ -121,22 +123,23 @@ for i in "${!MODEL_NAMES[@]}"; do
 done
 printf "  %2s) %-22s\n" "-1" "delete cached models"
 
-declare -a SELECTED
+declare -a SELECTED=()
 if $SELECT_ALL; then
     for i in "${!MODEL_NAMES[@]}"; do SELECTED+=("$i"); done
 elif [[ -n "$MODEL_SELECT" ]]; then
     for n in $MODEL_SELECT; do SELECTED+=("$((n-1))"); done
 else
-    printf "Select models (space-separated nums, -1=delete menu, empty=all): "
+    printf "Select (space-separated nums, -1=delete, empty=cancel): "
     read -r selection </dev/tty
     if [[ -z "$selection" ]]; then
-        for i in "${!MODEL_NAMES[@]}"; do SELECTED+=("$i"); done
+        echo "No selection. Nothing to do."
+        exit 0
     elif [[ "$selection" =~ ^[[:space:]]*-1[[:space:]]*$ ]]; then
         run_delete_menu
         exit 0
     else
         for n in $selection; do
-            if ! [[ "$n" =~ ^-?[0-9]+$ ]] || (( n < 1 || n > ${#MODEL_NAMES[@]} )); then
+            if ! [[ "$n" =~ ^[0-9]+$ ]] || (( n < 1 || n > ${#MODEL_NAMES[@]} )); then
                 echo "Invalid selection: $n"; exit 1
             fi
             SELECTED+=("$((n-1))")
@@ -144,107 +147,76 @@ else
     fi
 fi
 
-echo "Will benchmark ${#SELECTED[@]} model(s): ${SELECTED[*]/#/idx-}"
-echo "Tasks: $TASKS_CSV   Runs: $RUNS   Ephemeral: $EPHEMERAL"
+# ── Dispatch: download-only vs. launch ───────────────────────────────────────
+single_cached=false
+if [[ ${#SELECTED[@]} -eq 1 ]] && [[ -f "$ASSETS_DIR/${MODEL_FILES[${SELECTED[0]}]}" ]]; then
+    single_cached=true
+fi
 
-# Preflight: HRI services container must be up for integration tests
-if ! docker ps --format '{{.Names}}' | grep -q 'hri-ros'; then
-    echo "ERROR: hri-ros container is not running."
-    echo "       Start it first:  ./run.sh hri $ENV_TYPE_ARG"
+if ! $single_cached; then
+    echo "Download mode (${#SELECTED[@]} model(s); no container will be started)."
+    for idx in "${SELECTED[@]}"; do
+        download_model "${MODEL_URLS[$idx]}" "$ASSETS_DIR/${MODEL_FILES[$idx]}" \
+            || echo "  Failed: ${MODEL_NAMES[$idx]}"
+    done
+    echo "Done. Re-run with a single cached model to start llama-server."
+    exit 0
+fi
+
+# Single + cached → launch the production llamacpp service with overrides
+idx=${SELECTED[0]}
+name="${MODEL_NAMES[$idx]}"
+file="${MODEL_FILES[$idx]}"
+alias_name="${file%.gguf}"
+
+echo "Launch mode: $name ($file)"
+
+# Stop existing llamacpp regardless of profile (same port, same container name)
+if docker ps --format '{{.Names}}' | grep -qx "$LIVE_CONTAINER"; then
+    echo "  Stopping existing $LIVE_CONTAINER..."
+    docker stop "$LIVE_CONTAINER" >/dev/null
+    docker rm "$LIVE_CONTAINER" 2>/dev/null || true
+fi
+
+upsert_env "$COMPOSE_ENV" "ROLE" "bench"
+upsert_env "$COMPOSE_ENV" "LLAMA_MODEL_FILE" "$file"
+upsert_env "$COMPOSE_ENV" "LLAMA_ALIAS" "$alias_name"
+upsert_env "$COMPOSE_ENV" "COMPOSE_PROFILES" "bench"
+
+echo "  docker compose up -d llama (profile=bench)..."
+(cd "$HRI_COMPOSE_DIR" && docker compose -f docker-compose-l4t.yml --profile bench up -d llama)
+
+echo -n "  Waiting for llama-server health on port $PORT"
+for _ in $(seq 1 60); do
+    if curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1; then
+        echo " — OK"
+        break
+    fi
+    echo -n "."
+    sleep 3
+done
+if ! curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1; then
+    echo
+    echo "ERROR: llama-server failed to come up. Logs:"
+    docker logs "$LIVE_CONTAINER" 2>&1 | tail -30
     exit 1
 fi
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-cleanup_llama() {
-    docker stop "$LLAMA_CONTAINER" 2>/dev/null || true
-    docker rm   "$LLAMA_CONTAINER" 2>/dev/null || true
-}
-trap cleanup_llama EXIT
+cat <<EOF
 
-start_llama() {
-    local model_file="$1" alias="$2" ctx="$3" extra="$4"
-    cleanup_llama
-    local docker_args=(-d --name "$LLAMA_CONTAINER" --network host -v "$ASSETS_DIR:/models")
-    if docker info 2>/dev/null | grep -qi "nvidia"; then
-        docker_args+=(--runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=all -e NVIDIA_DRIVER_CAPABILITIES=compute,utility)
-    fi
-    local tegra_dir="/usr/lib/aarch64-linux-gnu/tegra"
-    [[ -d "$tegra_dir" ]] && docker_args+=(-v "$tegra_dir:$tegra_dir" -e "LD_LIBRARY_PATH=$tegra_dir")
-    # shellcheck disable=SC2086
-    docker run "${docker_args[@]}" "$LLAMA_IMAGE" \
-        llama-server --model "/models/$model_file" --host 0.0.0.0 --port "$PORT" \
-        --ctx-size "$ctx" -ngl 99 --parallel 1 --alias "$alias" $extra >/dev/null
-}
+✓ llama-server is up.
+   Container: $LIVE_CONTAINER
+   Model:     $file   (alias: $alias_name)
+   Port:      $PORT
 
-wait_for_health() {
-    for _ in $(seq 1 60); do
-        curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1 && return 0
-        sleep 3
-        docker ps -q -f name="$LLAMA_CONTAINER" | grep -q . || {
-            echo "  llama-server died. Logs:"; docker logs "$LLAMA_CONTAINER" 2>&1 | tail -20; return 1
-        }
-    done
-    echo "  TIMEOUT waiting for llama-server"; return 1
-}
+Next step — run the benchmark:
 
-download_model() {
-    local url="$1" dest="$2"
-    [[ -f "$dest" ]] && return 0
-    echo "  Downloading $(basename "$dest")..."
-    curl -L --fail --progress-bar "$url" -o "$dest.partial" && mv "$dest.partial" "$dest"
-}
+  TEST_NLP=true \\
+  NLP_MODEL_ALIAS=$alias_name \\
+  NLP_OLLAMA_URL=http://localhost:$PORT/v1 \\
+  NLP_TASKS=is_positive,is_negative,extract_data \\
+  ./run.sh integration --test-hri --build
 
-# ── Main loop ────────────────────────────────────────────────────────────────
-SUCCESSES=(); FAILURES=()
-INTEGRATION_DIR="$(dirname "$INTEGRATION_RUN")"
-
-for idx in "${SELECTED[@]}"; do
-    name="${MODEL_NAMES[$idx]}"
-    file="${MODEL_FILES[$idx]}"
-    path="$ASSETS_DIR/$file"
-    alias_name="${file%.gguf}"
-    was_cached=false; [[ -f "$path" ]] && was_cached=true
-
-    echo ""
-    echo "══ Model: $name ── $(date +%H:%M:%S) ══"
-
-    if ! download_model "${MODEL_URLS[$idx]}" "$path"; then
-        echo "  Download failed."; FAILURES+=("$name (download)"); continue
-    fi
-
-    if ! start_llama "$file" "$alias_name" "${MODEL_CTXS[$idx]}" "${MODEL_ARGS[$idx]}"; then
-        echo "  llama-server start failed."; FAILURES+=("$name (server-start)")
-        $EPHEMERAL && ! $was_cached && rm -f "$path"; continue
-    fi
-    if ! wait_for_health; then
-        FAILURES+=("$name (health)"); cleanup_llama
-        $EPHEMERAL && ! $was_cached && rm -f "$path"; continue
-    fi
-
-    echo "  Running integration tests (TEST_NLP=true)..."
-    if (
-        cd "$INTEGRATION_DIR" && \
-        TEST_NLP=true \
-        NLP_MODEL_ALIAS="$alias_name" \
-        NLP_OLLAMA_URL="http://localhost:$PORT/v1" \
-        NLP_TASKS="$TASKS_CSV" \
-        NLP_RUNS="$RUNS" \
-        NLP_RESULTS_DIR="/workspace/src/hri/benchmarks/nlp/results" \
-        bash "$INTEGRATION_RUN" --test-hri "$ENV_TYPE_ARG"
-    ); then
-        SUCCESSES+=("$name")
-    else
-        echo "  Benchmark errored."; FAILURES+=("$name (benchmark)")
-    fi
-
-    cleanup_llama
-    if $EPHEMERAL && ! $was_cached; then
-        echo "  Removing $file (--ephemeral)"; rm -f "$path"
-    fi
-done
-
-echo ""
-echo "── Done. $(date) ──"
-echo "  Succeeded (${#SUCCESSES[@]}): ${SUCCESSES[*]:-none}"
-echo "  Failed    (${#FAILURES[@]}): ${FAILURES[*]:-none}"
-echo "  Reports: $SCRIPT_DIR/results/   Log: $LOG_FILE"
+To stop this server:
+  docker compose -f $COMPOSE_FILE stop llama
+EOF
