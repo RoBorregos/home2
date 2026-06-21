@@ -193,6 +193,19 @@ LOOK_SIDE_STARE = {
     "degrees": True,
 }
 
+# Intermediate waypoint between the deep-in-basket peak grasp and look_side_stare
+LOOK_SIDE_LOW_STARE = {
+    "joints": {
+        "joint1": -180.0,
+        "joint2": 13.0,
+        "joint3": -47.0,
+        "joint4": 0.0,
+        "joint5": 30.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
@@ -210,4 +223,5 @@ XARM_CONFIGURATIONS = {
     "hand_bag_pose": HAND_BAG_POSE,
     "scan_floor_carry_bag_pose": SCAN_FLOOR_CARRY_BAG_POSE,
     "look_side_stare": LOOK_SIDE_STARE,
+    "look_side_low_stare": LOOK_SIDE_LOW_STARE,
 }
