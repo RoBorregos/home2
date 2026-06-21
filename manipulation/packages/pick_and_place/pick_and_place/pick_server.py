@@ -477,10 +477,6 @@ class PickMotionServer(Node):
                     )
 
                     # Validate the descent endpoint against the robot itself
-                    # BEFORE moving to the pre-grasp: the descent runs open-loop
-                    # (xArm mode 5, no MoveIt), so if the basket is too close the
-                    # gripper would crash into the robot base. Endpoint Z is the
-                    # pre-grasp Z minus the descent distance.
                     descent_endpoint = copy.deepcopy(ee_link_pose)
                     descent_endpoint.pose.position.z += (
                         RIM_PRE_GRASP_HEIGHT - RIM_DESCENT_DISTANCE
