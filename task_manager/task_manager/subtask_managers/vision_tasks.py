@@ -220,6 +220,10 @@ class VisionTasks:
                 },
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
             },
+            Task.DOING_LAUNDRY: {
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+            },
             Task.RESTAURANT: {
                 "customer_tables": {
                     "client": self.customer_table_client,

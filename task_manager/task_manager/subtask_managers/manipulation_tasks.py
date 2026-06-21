@@ -22,6 +22,7 @@ from frida_interfaces.srv import (
     GetOptimalPositionForPlane,
     GetOptimalPoseForPlane,
     RemoveCollisionObject,
+    FixedDistanceMove,
 )
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
@@ -38,6 +39,7 @@ from xarm_msgs.srv import SetDigitalIO
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    FIXED_DISTANCE_MOVE_SERVICE,
 )
 import time as t
 
@@ -92,6 +94,9 @@ class ManipulationTasks:
         self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
+        self._fixed_distance_move_client = self.node.create_client(
+            FixedDistanceMove, FIXED_DISTANCE_MOVE_SERVICE
+        )
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
         self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
         self._remove_collision_object_client = self.node.create_client(
@@ -249,6 +254,21 @@ class ManipulationTasks:
             result.joint_positions = [x * RAD_TO_DEG for x in result.joint_positions]
         print("Joint positions from service: ", result.joint_positions)
         return dict(zip(result.joint_names, result.joint_positions))
+
+    @service_check("_fixed_distance_move_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def move_arm_vertical(self, distance: float, descend: bool = False):
+        """Move the TCP a fixed distance in Z (xArm mode 5 closed-loop).
+        descend=False raises the arm (+Z); descend=True lowers it (-Z)."""
+        request = FixedDistanceMove.Request()
+        request.distance = float(distance)
+        request.descend = descend
+        future = self._fixed_distance_move_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
+        result = future.result()
+        if result is None or not result.success:
+            Logger.error(self.node, "move_arm_vertical failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
     # let the server pick the default values
     @service_check("_move_joints_action_client", -1, TIMEOUT)
