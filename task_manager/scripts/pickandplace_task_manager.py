@@ -124,6 +124,7 @@ class PickAndPlaceTM(Node):
         self.use_dishwasher = False  # cutlery/tableware → dishwasher
         self.use_side_table = False  # pick from side table (−20 pts/obj)
         self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
+        self.use_vision_confirmation = False  # vision re-look to confirm the pick
         self.max_cleanup_objects = 3  # how many to clean before breakfast
 
         # YOLO name mapping: logical → detection class (only differences)
@@ -345,6 +346,31 @@ class PickAndPlaceTM(Node):
         except Exception as e:
             CLog.vision(self, "TF", f"Error converting to height: {e}", level="error")
             return None
+
+    def _table_counts(self):
+        """Detect at the current pose and count detections per class."""
+        from task_manager.utils.grasp_confirmation import count_by_class
+
+        _, dets = self.subtask_manager.vision.detect_objects()
+        return count_by_class([d.classname for d in (dets or [])])
+
+    def _confirm_pick_by_vision(self, before_counts):
+        """Re-look at the table; fail only if the grasped object is clearly still there."""
+        from task_manager.utils.grasp_confirmation import picked_ok
+
+        name = self.grasped_object.name
+        target = self._to_yolo_name(name).lower()
+        if not before_counts or before_counts.get(target, 0) == 0:
+            return Status.EXECUTION_SUCCESS
+        self.subtask_manager.manipulation.move_to_position("table_stare")
+        after = self._table_counts()
+        if picked_ok(before_counts, after, target):
+            CLog.manip(
+                self, "PICK", f"Vision confirmed {name} removed.", level="success"
+            )
+            return Status.EXECUTION_SUCCESS
+        CLog.manip(self, "PICK", f"Vision: {name} still on the table.", level="warn")
+        return Status.EXECUTION_ERROR
 
     def _filter_detections_by_height(self, detections, target_height: float) -> list:
         """Filter detections to only include objects near the target shelf height."""
@@ -640,6 +666,10 @@ class PickAndPlaceTM(Node):
             self.navigate_to_location(table_location, say=False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
+            before_counts = None
+            if self.use_vision_confirmation:
+                before_counts = self._table_counts()
+
             self.subtask_manager.hri.say(f"I will pick the {self.grasped_object.name}.", wait=False)
 
             status = self.subtask_manager.manipulation.pick_object(
@@ -658,6 +688,9 @@ class PickAndPlaceTM(Node):
                     )
                     self.subtask_manager.hri.say("I did not grasp the object.", wait=False)
                     status = Status.EXECUTION_ERROR
+
+            if status == Status.EXECUTION_SUCCESS and self.use_vision_confirmation:
+                status = self._confirm_pick_by_vision(before_counts)
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_picked = True
