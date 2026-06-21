@@ -14,5 +14,6 @@ var searchData=
   ['query_11',['query',['../classmoondream__lib_1_1MoonDreamModel.html#a6cafaca1eec884eedf8c89d6384adc4d',1,'moondream_lib::MoonDreamModel']]],
   ['query_5fcallback_12',['query_callback',['../classmoondream__node_1_1MoondreamNode.html#a926cb087f4066df4c9473f7de5bae122',1,'moondream_node::MoondreamNode']]],
   ['query_5fcommand_5fhistory_13',['query_command_history',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a02d28510f034f3bd5f9340d49524af31',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['query_5flocation_14',['query_location',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4a938ab11119f6726ad1a7bf5517be86',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]]
+  ['query_5flocation_14',['query_location',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4a938ab11119f6726ad1a7bf5517be86',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['query_5fpath_15',['query_path',['../classnav__central_1_1Nav__Central.html#a84e083f3ffd0ddacb1108c48614afa55',1,'nav_central::Nav_Central']]]
 ];

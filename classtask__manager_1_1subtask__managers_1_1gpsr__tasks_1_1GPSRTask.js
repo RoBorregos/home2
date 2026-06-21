@@ -6,6 +6,7 @@ var classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask =
     [ "find_person", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a33bbbac57b5e0cb64658eb766f0ef185", null ],
     [ "find_person_by_name", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a46d9e2b6847437a6f2579dee53f71967", null ],
     [ "follow_person_until", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a88aede36b7bce4f0903eccd043198982", null ],
+    [ "get_path_info", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a134360a742be405cfcf73b461e3eab9c", null ],
     [ "get_person_info", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a63560fee8c3ef2c8987aaeafd9361495", null ],
     [ "give_object", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#afbf25c9277e9ec01fb030fdfd956d9f6", null ],
     [ "guide_person_to", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a10270c67004fea13c7a3c8db67649a1f", null ],

@@ -113,6 +113,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a59469de0b833fe860ed03758ee1e937a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add04716761d3a468bcf5408ec6830c0c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#add04716761d3a468bcf5408ec6830c0c">navigate_to</a> (self, location, str sublocation=&quot;&quot;, bool say=True)</td></tr>
 <tr class="separator:add04716761d3a468bcf5408ec6830c0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a134360a742be405cfcf73b461e3eab9c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a134360a742be405cfcf73b461e3eab9c">get_path_info</a> (self, location, str sublocation=&quot;&quot;, str from_location=&quot;&quot;, str from_sublocation=&quot;&quot;)</td></tr>
+<tr class="separator:a134360a742be405cfcf73b461e3eab9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbf25c9277e9ec01fb030fdfd956d9f6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#afbf25c9277e9ec01fb030fdfd956d9f6">give_object</a> (self, GiveObject command)</td></tr>
 <tr class="memdesc:afbf25c9277e9ec01fb030fdfd956d9f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">HRI, Manipulation.  <br /></td></tr>
 <tr class="separator:afbf25c9277e9ec01fb030fdfd956d9f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -410,6 +412,64 @@ Postconditions:
 Pseudocode:
     while not_in_room() or not_canceled():
         follow_person()</pre> 
+</div>
+</div>
+<a id="a134360a742be405cfcf73b461e3eab9c" name="a134360a742be405cfcf73b461e3eab9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a134360a742be405cfcf73b461e3eab9c">&#9670;&#160;</a></span>get_path_info()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.gpsr_tasks.GPSRTask.get_path_info </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>location</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>sublocation</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>from_location</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>from_sublocation</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Query the real path distance to a location without moving the
+robot, so HRI can use it to make decisions.
+
+Args:
+    location: Destination area name from areas.json.
+    sublocation: Destination sublocation (defaults to safe_place).
+    from_location: Origin area; empty means the robot's current pose.
+    from_sublocation: Origin sublocation (defaults to safe_place).
+
+Returns:
+    (Status, info): info is {"distance": meters} on success, or an
+    error string on failure.
+</pre> 
 </div>
 </div>
 <a id="a63560fee8c3ef2c8987aaeafd9361495" name="a63560fee8c3ef2c8987aaeafd9361495"></a>

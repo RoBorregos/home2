@@ -8,9 +8,10 @@ var searchData=
   ['nav_5ftasks_2epy_5',['nav_tasks.py',['../nav__tasks_8py.html',1,'']]],
   ['nav_5fui_2epy_6',['nav_ui.py',['../nav__ui_8py.html',1,'']]],
   ['navigation_5fconstants_2epy_7',['navigation_constants.py',['../navigation__constants_8py.html',1,'']]],
-  ['neon_2ehh_8',['neon.hh',['../neon_8hh.html',1,'']]],
-  ['nn_2ehh_9',['nn.hh',['../nn_8hh.html',1,'']]],
-  ['nn_5fmatching_2epy_10',['nn_matching.py',['../nn__matching_8py.html',1,'']]],
-  ['node_5fmonitor_2epy_11',['node_monitor.py',['../node__monitor_8py.html',1,'']]],
-  ['nodestatus_2emsg_12',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]]
+  ['navquery_2esrv_8',['NavQuery.srv',['../NavQuery_8srv.html',1,'']]],
+  ['neon_2ehh_9',['neon.hh',['../neon_8hh.html',1,'']]],
+  ['nn_2ehh_10',['nn.hh',['../nn_8hh.html',1,'']]],
+  ['nn_5fmatching_2epy_11',['nn_matching.py',['../nn__matching_8py.html',1,'']]],
+  ['node_5fmonitor_2epy_12',['node_monitor.py',['../node__monitor_8py.html',1,'']]],
+  ['nodestatus_2emsg_13',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]]
 ];

@@ -113,6 +113,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a03078902443e9c684ea6deddb7a33921"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af971c18c37a11bef89307e70ef8324f7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af971c18c37a11bef89307e70ef8324f7">move_to_location</a> (self, location, sublocation)</td></tr>
 <tr class="separator:af971c18c37a11bef89307e70ef8324f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78c8ac7379204c5f803320efb743d2fc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a78c8ac7379204c5f803320efb743d2fc">get_path_info</a> (self, location_b, sublocation_b, location_a=&quot;&quot;, sublocation_a=&quot;&quot;)</td></tr>
+<tr class="separator:a78c8ac7379204c5f803320efb743d2fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa979bd089810c5d4d3ba058eb7903826"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa979bd089810c5d4d3ba058eb7903826">dock_table</a> (self, offset=0.0)</td></tr>
 <tr class="separator:aa979bd089810c5d4d3ba058eb7903826"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -130,6 +132,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a59d67384fbd3a659f1adfdf01f07d041"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8211388e8c9d7842cf5cb6e1fc53b8e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ae8211388e8c9d7842cf5cb6e1fc53b8e">move_to_location_srv</a></td></tr>
 <tr class="separator:ae8211388e8c9d7842cf5cb6e1fc53b8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a68abe4bd415aead403c2811f3976e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a6a68abe4bd415aead403c2811f3976e5">nav_query_srv</a></td></tr>
+<tr class="separator:a6a68abe4bd415aead403c2811f3976e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6304e8324efdaa9ed0410434756ed2c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ad6304e8324efdaa9ed0410434756ed2c">dock_table_srv</a></td></tr>
 <tr class="separator:ad6304e8324efdaa9ed0410434756ed2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb76f11906ac09ebe43f8ae0c92a6daf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#adb76f11906ac09ebe43f8ae0c92a6daf">services</a></td></tr>
@@ -234,6 +238,54 @@ Static Public Attributes</h2></td></tr>
 
 offset: desired front offset in meters; 0.0 uses the docker default.
 </pre> 
+</div>
+</div>
+<a id="a78c8ac7379204c5f803320efb743d2fc" name="a78c8ac7379204c5f803320efb743d2fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78c8ac7379204c5f803320efb743d2fc">&#9670;&#160;</a></span>get_path_info()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.get_path_info </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>location_b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>sublocation_b</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>location_a</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>sublocation_a</em> = <code>&quot;&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Query the real path distance (m) to a map area without moving the
+robot. Empty location_a starts from the robot's current pose.
+Returns (Status, {"distance": float}).</pre> 
 </div>
 </div>
 <a id="af971c18c37a11bef89307e70ef8324f7" name="af971c18c37a11bef89307e70ef8324f7"></a>
@@ -411,6 +463,20 @@ offset: desired front offset in meters; 0.0 uses the docker default.
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.move_to_location_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6a68abe4bd415aead403c2811f3976e5" name="a6a68abe4bd415aead403c2811f3976e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a68abe4bd415aead403c2811f3976e5">&#9670;&#160;</a></span>nav_query_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.nav_query_srv</td>
         </tr>
       </table>
 </div><div class="memdoc">

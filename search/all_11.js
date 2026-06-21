@@ -20,10 +20,11 @@ var searchData=
   ['query_5fentry_5fservice_17',['query_entry_service',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a9e883130459dba2d08afd60436d00fa0',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['query_5fentry_5fservice_18',['QUERY_ENTRY_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd',1,'frida_constants::hri_constants']]],
   ['query_5flocation_19',['query_location',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a4a938ab11119f6726ad1a7bf5517be86',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['query_5fservice_20',['query_service',['../classmoondream__node_1_1MoondreamNode.html#a42c7acf94e367e93f2b6041d48cfabc0',1,'moondream_node::MoondreamNode']]],
-  ['query_5ftopic_21',['QUERY_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0',1,'frida_constants::vision_constants']]],
-  ['queryentry_2esrv_22',['QueryEntry.srv',['../QueryEntry_8srv.html',1,'']]],
-  ['questions_5fpublisher_23',['questions_publisher',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a1458c5a97e32e470c5d8eb49b369dcf3',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['queueedge_24',['QueueEdge',['../structvamp_1_1planning_1_1QueueEdge.html',1,'vamp::planning']]],
-  ['queuenode_25',['QueueNode',['../structvamp_1_1planning_1_1utils_1_1QueueNode.html',1,'vamp::planning::utils']]]
+  ['query_5fpath_20',['query_path',['../classnav__central_1_1Nav__Central.html#a84e083f3ffd0ddacb1108c48614afa55',1,'nav_central::Nav_Central']]],
+  ['query_5fservice_21',['query_service',['../classmoondream__node_1_1MoondreamNode.html#a42c7acf94e367e93f2b6041d48cfabc0',1,'moondream_node::MoondreamNode']]],
+  ['query_5ftopic_22',['QUERY_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0',1,'frida_constants::vision_constants']]],
+  ['queryentry_2esrv_23',['QueryEntry.srv',['../QueryEntry_8srv.html',1,'']]],
+  ['questions_5fpublisher_24',['questions_publisher',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a1458c5a97e32e470c5d8eb49b369dcf3',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['queueedge_25',['QueueEdge',['../structvamp_1_1planning_1_1QueueEdge.html',1,'vamp::planning']]],
+  ['queuenode_26',['QueueNode',['../structvamp_1_1planning_1_1utils_1_1QueueNode.html',1,'vamp::planning::utils']]]
 ];
