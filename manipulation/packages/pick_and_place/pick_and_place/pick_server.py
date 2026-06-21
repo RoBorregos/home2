@@ -26,6 +26,7 @@ from frida_constants.manipulation_constants import (
     ESTOP_TOPIC,
     RIM_NAMES,
     RIM_PRE_GRASP_HEIGHT,
+    RIM_GRASP_Z_TWEAK,
     RIM_DESCENT_SPEED,
     RIM_DESCENT_DISTANCE,
     PEAK_NAMES,
@@ -478,9 +479,7 @@ class PickMotionServer(Node):
 
                     # Validate the descent endpoint against the robot itself
                     descent_endpoint = copy.deepcopy(ee_link_pose)
-                    descent_endpoint.pose.position.z += (
-                        RIM_PRE_GRASP_HEIGHT - RIM_DESCENT_DISTANCE
-                    )
+                    descent_endpoint.pose.position.z += RIM_GRASP_Z_TWEAK
                     if endpoint_self_collides(
                         self._compute_ik_client,
                         self._state_validity_client,
