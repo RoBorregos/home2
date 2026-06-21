@@ -98,7 +98,7 @@ PROFILES=()
 RUN=""
 
 case $TASK in
-  "--restaurant"|"--hric"|"--storing-groceries"|"--gpsr"|"--ppc"|"--finals")
+  "--restaurant"|"--hric"|"--storing-groceries"|"--gpsr"|"--ppc"|"--dlc"|"--finals")
     PROFILES=("${TASK#--}")
     RUN="ros2 launch speech hri_launch.py"
     ;;
