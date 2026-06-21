@@ -8,6 +8,43 @@ from frida_pymoveit2.robots.xarm6 import MOVE_GROUP_ARM
 IK_TIMEOUT_SEC = 0.2
 
 
+def compute_ik(
+    compute_ik_client,
+    pose_stamped,
+    avoid_collisions: bool,
+    seed_joint_state=None,
+):
+    """
+    Solve inverse kinematics for `pose_stamped`
+
+    Args:
+        compute_ik_client: client for /compute_ik (GetPositionIK).
+        pose_stamped: target pose of GRASP_LINK_FRAME.
+        avoid_collisions: whether the IK solution must be collision-free.
+        seed_joint_state: optional JointState used as the IK seed.
+
+    Returns:
+        The GetPositionIK response (inspect `.error_code` / `.solution`), or
+        None if the service is unavailable or the call failed.
+    """
+    if not compute_ik_client.wait_for_service(timeout_sec=2.0):
+        return None
+
+    req = GetPositionIK.Request()
+    req.ik_request.group_name = MOVE_GROUP_ARM
+    req.ik_request.ik_link_name = GRASP_LINK_FRAME
+    req.ik_request.pose_stamped = pose_stamped
+    req.ik_request.avoid_collisions = avoid_collisions
+    req.ik_request.timeout.sec = 0
+    req.ik_request.timeout.nanosec = int(IK_TIMEOUT_SEC * 1e9)
+    if seed_joint_state is not None:
+        req.ik_request.robot_state.joint_state = seed_joint_state
+
+    future = compute_ik_client.call_async(req)
+    wait_for_future(future)
+    return future.result()
+
+
 def endpoint_self_collides(
     compute_ik_client,
     state_validity_client,
@@ -20,9 +57,7 @@ def endpoint_self_collides(
 
     Uses MoveIt's /compute_ik followed by /check_state_validity, filtering the
     reported contacts to ROBOT_LINK <-> ROBOT_LINK pairs only. Collisions with
-    WORLD_OBJECT (clothes/basket) are intentionally ignored, so callers that
-    legitimately push into the environment (e.g. peak picks into laundry) are
-    only blocked when the arm would hit itself.
+    WORLD_OBJECT (clothes/basket) are intentionally ignored.
 
     Args:
         compute_ik_client: client for /compute_ik (GetPositionIK).
@@ -41,28 +76,19 @@ def endpoint_self_collides(
         if logger is not None:
             logger.warn(msg)
 
-    if not compute_ik_client.wait_for_service(timeout_sec=2.0):
+    ik_resp = compute_ik(
+        compute_ik_client,
+        pose_stamped,
+        avoid_collisions=False,
+        seed_joint_state=latest_joint_state,
+    )
+    if ik_resp is None:
         _warn("[SelfCollision] /compute_ik unavailable, skipping check")
         return False
-
-    ik_req = GetPositionIK.Request()
-    ik_req.ik_request.group_name = MOVE_GROUP_ARM
-    ik_req.ik_request.ik_link_name = GRASP_LINK_FRAME
-    ik_req.ik_request.pose_stamped = pose_stamped
-    ik_req.ik_request.avoid_collisions = False
-    ik_req.ik_request.timeout.sec = 0
-    ik_req.ik_request.timeout.nanosec = int(IK_TIMEOUT_SEC * 1e9)
-    if latest_joint_state is not None:
-        ik_req.ik_request.robot_state.joint_state = latest_joint_state
-
-    ik_future = compute_ik_client.call_async(ik_req)
-    wait_for_future(ik_future)
-    ik_resp = ik_future.result()
-    if ik_resp is None or ik_resp.error_code.val != ik_resp.error_code.SUCCESS:
-        code = None if ik_resp is None else ik_resp.error_code.val
+    if ik_resp.error_code.val != ik_resp.error_code.SUCCESS:
         _warn(
-            f"[SelfCollision] IK failed (error_code={code}); treating endpoint "
-            "as unreachable"
+            f"[SelfCollision] IK failed (error_code={ik_resp.error_code.val}); "
+            "treating endpoint as unreachable"
         )
         return True
 
