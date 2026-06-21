@@ -71,7 +71,7 @@ class TestNavigationManager(Node):
             print(
                 f"  {Logger.GREEN}{passed} passed{Logger.RESET}, {Logger.RED}{failed} failed{Logger.RESET}\n"
             )
-    print(navigation_manager.get_path_info(location_b="entrance", sublocation_b=""))
+        print(self.navigation_manager.get_path_info(location_b="entrance", sublocation_b=""))
 
 def main(args=None):
     rclpy.init(args=args)
