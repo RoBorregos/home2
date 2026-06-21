@@ -1,5 +1,9 @@
 var NAVTREEINDEX32 =
 {
+"launch__nav_8py.html":[39,0,4,0,3,2,2],
+"launch__nav_8py.html#a030fad57712e00e24720791193679fbc":[39,0,4,0,3,2,2,17],
+"launch__nav_8py.html#a0d4772d90a1926c0d4403ecac96a8665":[39,0,4,0,3,2,2,2],
+"launch__nav_8py.html#a0f243d550a43b80aa507f845a9d4cf03":[39,0,4,0,3,2,2,18],
 "launch__nav_8py.html#a1eca33b263b3ea1e2b87696e1f9e71e3":[39,0,4,0,3,2,2,16],
 "launch__nav_8py.html#a246d97e0bb14d53dccb8a46a0ec8514e":[39,0,4,0,3,2,2,6],
 "launch__nav_8py.html#a2df0ee976d79351ff02d519353fc5231":[39,0,4,0,3,2,2,21],
@@ -245,9 +249,5 @@ var NAVTREEINDEX32 =
 "map__area__tagger_8py.html#a9c0f1fffca59ee4d50efdcc6d8995046":[39,0,4,0,2,3,0,7],
 "map__area__tagger_8py.html#aa51966e06f7d42b83f9394fc912a38ab":[39,0,4,0,2,3,0,4],
 "map__service_8cpp.html":[39,0,4,0,2,4,0],
-"map__service_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627":[39,0,4,0,2,4,0,2],
-"map__service_8cpp.html#aa016ff104ce1b9e5361e03e3dc22c0a0":[39,0,4,0,2,4,0,1],
-"mapping_8launch_8py.html":[39,0,4,0,3,0,2,2],
-"mapping_8launch_8py.html#a3a2ccf081850f9ede9e85ed58952fba0":[39,0,4,0,3,0,2,2,1],
-"mapping_8launch_8py.html#ac951e3077b2a262f96039858d7fa2b20":[39,0,4,0,3,0,2,2,0]
+"map__service_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627":[39,0,4,0,2,4,0,2]
 };

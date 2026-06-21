@@ -146,6 +146,14 @@ Variables</h2></td></tr>
 <tr class="separator:ac698bd68a90fa326c6d937effc00c9b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2cfff9ba919aceaae98b34eceebe33dd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceomnidriver_1_1odrive__dashboard.html#a2cfff9ba919aceaae98b34eceebe33dd">CFG_SET_INPUT_POS</a> = 0x30</td></tr>
 <tr class="separator:a2cfff9ba919aceaae98b34eceebe33dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98ab3fab860c1c133a39f693684afad2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceomnidriver_1_1odrive__dashboard.html#a98ab3fab860c1c133a39f693684afad2">CFG_SET_PARAM_FLOAT</a> = 0x31</td></tr>
+<tr class="separator:a98ab3fab860c1c133a39f693684afad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab20919cbb00d48f090ee97dd999ce970"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceomnidriver_1_1odrive__dashboard.html#ab20919cbb00d48f090ee97dd999ce970">TELEM_FIELDS</a></td></tr>
+<tr class="separator:ab20919cbb00d48f090ee97dd999ce970"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a785ceef3647ae926466696d493fa38"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceomnidriver_1_1odrive__dashboard.html#a6a785ceef3647ae926466696d493fa38">SM_STATE_LABELS</a></td></tr>
+<tr class="separator:a6a785ceef3647ae926466696d493fa38"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48e16463068643eb9e70b0302f18c5f2"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceomnidriver_1_1odrive__dashboard.html#a48e16463068643eb9e70b0302f18c5f2">FERR_DESCRIPTIONS</a></td></tr>
+<tr class="separator:a48e16463068643eb9e70b0302f18c5f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48a37c2309da06258ccb4115a1e5831e"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceomnidriver_1_1odrive__dashboard.html#a48a37c2309da06258ccb4115a1e5831e">DASHBOARD_HTML</a></td></tr>
 <tr class="separator:a48a37c2309da06258ccb4115a1e5831e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -171,6 +179,17 @@ The dashboard mirrors gui.odriverobotics.com/dashboard:
   - Manual velocity override sliders
   - Live Vx/Vy/Wz velocity chart
   - Activity log panel
+  - Firmware error log panel (separate from the activity log)
+  - Axis Lab tab (per-motor inspection/control/calibration -- UNTESTED,
+    not yet validated against real hardware, see status.txt)
+
+This package mirrors home-custom-base's `odrive_comm` package (same dashboard,
+hardened for production use on the home2 robot). For full design detail on
+the on-MCU EKF, the firmware error-reporting pipeline, and the CAN parameter
+(RxSdo) feature, see:
+  https://github.com/RoBorregos/home-custom-base/tree/main
+  firmware/STM32H7_OMNIBASE_CAN_BNO085/omnibase_documentation.md (sections
+  7, 10, 11 specifically)
 
 Install dependencies (only needed when enable_web_gui=True):
     pip install flask flask-socketio
@@ -191,6 +210,13 @@ Serial Protocol (PC -&gt; STM32)
               28 set_torque        &lt;torque&gt;
               29 stop
               30 set_input_pos     &lt;pos&gt; &lt;vel_ff&gt; &lt;torque_ff&gt;
+              31 set_param_float   &lt;endpoint_id&gt; &lt;value&gt;
+                    Arbitrary ODrive parameter write over CAN (RxSdo,
+                    OPCODE_WRITE). endpoint_id is firmware-build-specific --
+                    look it up in the flat_endpoints.json shipped with the
+                    ODrive's exact firmware release (e.g.
+                    axis0.controller.config.vel_ramp_rate). Only float32
+                    endpoints are supported by this command.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="ae7b743bd1a620042db5e01141402dca7" name="ae7b743bd1a620042db5e01141402dca7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae7b743bd1a620042db5e01141402dca7">&#9670;&#160;</a></span>_find_stm_port()</h2>
@@ -405,6 +431,20 @@ planar omnidirectional base.
 
 </div>
 </div>
+<a id="a98ab3fab860c1c133a39f693684afad2" name="a98ab3fab860c1c133a39f693684afad2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a98ab3fab860c1c133a39f693684afad2">&#9670;&#160;</a></span>CFG_SET_PARAM_FLOAT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int omnidriver.odrive_dashboard.CFG_SET_PARAM_FLOAT = 0x31</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a82476c2ef7b4153839aef0795c74769c" name="a82476c2ef7b4153839aef0795c74769c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a82476c2ef7b4153839aef0795c74769c">&#9670;&#160;</a></span>CFG_SET_POS_GAIN</h2>
 
@@ -520,6 +560,39 @@ planar omnidirectional base.
 </div><!-- fragment -->
 </div>
 </div>
+<a id="a48e16463068643eb9e70b0302f18c5f2" name="a48e16463068643eb9e70b0302f18c5f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48e16463068643eb9e70b0302f18c5f2">&#9670;&#160;</a></span>FERR_DESCRIPTIONS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict omnidriver.odrive_dashboard.FERR_DESCRIPTIONS</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
+<div class="line"><span class="lineno">    2</span>    0x01: <span class="stringliteral">&#39;CAN TX timeout&#39;</span>,</div>
+<div class="line"><span class="lineno">    3</span>    0x02: <span class="stringliteral">&#39;CAN bus-off recovered&#39;</span>,</div>
+<div class="line"><span class="lineno">    4</span>    0x03: <span class="stringliteral">&#39;CAN RX read fail&#39;</span>,</div>
+<div class="line"><span class="lineno">    5</span>    0x10: <span class="stringliteral">&#39;ODrive startup failed&#39;</span>,</div>
+<div class="line"><span class="lineno">    6</span>    0x20: <span class="stringliteral">&#39;Arm timeout (all retries failed)&#39;</span>,</div>
+<div class="line"><span class="lineno">    7</span>    0x21: <span class="stringliteral">&#39;Axis fell out of CLOSED_LOOP — auto-rearm issued&#39;</span>,</div>
+<div class="line"><span class="lineno">    8</span>    0x30: <span class="stringliteral">&#39;ODrive axis fault (AXIS_Error non-zero)&#39;</span>,</div>
+<div class="line"><span class="lineno">    9</span>    0x31: <span class="stringliteral">&#39;Command watchdog fired — no SET_VEL received&#39;</span>,</div>
+<div class="line"><span class="lineno">   10</span>    0x32: <span class="stringliteral">&#39;Heartbeat timeout — axis stopped responding&#39;</span>,</div>
+<div class="line"><span class="lineno">   11</span>    0x40: <span class="stringliteral">&#39;IMU sh2_open failed&#39;</span>,</div>
+<div class="line"><span class="lineno">   12</span>    0x41: <span class="stringliteral">&#39;IMU setSensorCallback failed&#39;</span>,</div>
+<div class="line"><span class="lineno">   13</span>    0x42: <span class="stringliteral">&#39;IMU setSensorConfig failed&#39;</span>,</div>
+<div class="line"><span class="lineno">   14</span>    0x43: <span class="stringliteral">&#39;IMU reset detected — re-configuring&#39;</span>,</div>
+<div class="line"><span class="lineno">   15</span>    0x50: <span class="stringliteral">&#39;BT queue full&#39;</span>,</div>
+<div class="line"><span class="lineno">   16</span>    0x51: <span class="stringliteral">&#39;BT parse fail&#39;</span>,</div>
+<div class="line"><span class="lineno">   17</span>    0x60: <span class="stringliteral">&#39;Stack watermark low&#39;</span>,</div>
+<div class="line"><span class="lineno">   18</span>    0x61: <span class="stringliteral">&#39;Stack overflow detected&#39;</span>,</div>
+<div class="line"><span class="lineno">   19</span>}</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="aac0c7ddfcfc7f7d519ea5a074586746c" name="aac0c7ddfcfc7f7d519ea5a074586746c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aac0c7ddfcfc7f7d519ea5a074586746c">&#9670;&#160;</a></span>INPUT_MODES</h2>
 
@@ -534,6 +607,41 @@ planar omnidirectional base.
 <b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {0: <span class="stringliteral">&quot;INACTIVE&quot;</span>, 1: <span class="stringliteral">&quot;PASSTHROUGH&quot;</span>, 2: <span class="stringliteral">&quot;VEL_RAMP&quot;</span>,</div>
 <div class="line"><span class="lineno">    2</span>                 3: <span class="stringliteral">&quot;POS_FILTER&quot;</span>, 5: <span class="stringliteral">&quot;TRAP_TRAJ&quot;</span>, 6: <span class="stringliteral">&quot;TORQUE_RAMP&quot;</span>}</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="a6a785ceef3647ae926466696d493fa38" name="a6a785ceef3647ae926466696d493fa38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a785ceef3647ae926466696d493fa38">&#9670;&#160;</a></span>SM_STATE_LABELS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict omnidriver.odrive_dashboard.SM_STATE_LABELS</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
+<div class="line"><span class="lineno">    2</span>    0: <span class="stringliteral">&#39;BOOT&#39;</span>,</div>
+<div class="line"><span class="lineno">    3</span>    1: <span class="stringliteral">&#39;STARTUP&#39;</span>,</div>
+<div class="line"><span class="lineno">    4</span>    2: <span class="stringliteral">&#39;RUNNING&#39;</span>,</div>
+<div class="line"><span class="lineno">    5</span>    3: <span class="stringliteral">&#39;IDLE&#39;</span>,</div>
+<div class="line"><span class="lineno">    6</span>    4: <span class="stringliteral">&#39;ESTOP&#39;</span>,</div>
+<div class="line"><span class="lineno">    7</span>}</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="ab20919cbb00d48f090ee97dd999ce970" name="ab20919cbb00d48f090ee97dd999ce970"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab20919cbb00d48f090ee97dd999ce970">&#9670;&#160;</a></span>TELEM_FIELDS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list omnidriver.odrive_dashboard.TELEM_FIELDS</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 </div><!-- contents -->

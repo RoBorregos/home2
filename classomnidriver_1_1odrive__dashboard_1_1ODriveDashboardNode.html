@@ -126,6 +126,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a893279396cef92b84e88fc6755125a34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acea9414fbbd41c4d3a66a779f9970e70"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#acea9414fbbd41c4d3a66a779f9970e70">send_set_vel_gains</a> (self, vg, vi, mask=0x0F)</td></tr>
 <tr class="separator:acea9414fbbd41c4d3a66a779f9970e70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae69d38739c1685108d0e12ed51ecec65"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#ae69d38739c1685108d0e12ed51ecec65">send_set_param_float</a> (self, endpoint_id, value, mask=0x0F)</td></tr>
+<tr class="separator:ae69d38739c1685108d0e12ed51ecec65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea97a25385e84b93552d4a37b0236c0e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#aea97a25385e84b93552d4a37b0236c0e">send_set_controller_mode</a> (self, cm, im, mask=0x0F)</td></tr>
 <tr class="separator:aea97a25385e84b93552d4a37b0236c0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -141,6 +143,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ada5ee93ac859c014d99f8189092d8d57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a846d98d007265a5fb4a1a1b8bc8f87da"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a846d98d007265a5fb4a1a1b8bc8f87da">imu_frame_id</a></td></tr>
 <tr class="separator:a846d98d007265a5fb4a1a1b8bc8f87da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad57bd6d9220a1623d7d162af7440a5bd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#ad57bd6d9220a1623d7d162af7440a5bd">publish_tf</a></td></tr>
+<tr class="separator:ad57bd6d9220a1623d7d162af7440a5bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a11cbcd4e0834492be292ae93bc236c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a0a11cbcd4e0834492be292ae93bc236c">ser</a></td></tr>
 <tr class="separator:a0a11cbcd4e0834492be292ae93bc236c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ed67141243401f520e9fcf3078ff441"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a4ed67141243401f520e9fcf3078ff441">pub_raw</a></td></tr>
@@ -222,8 +226,6 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a6a92c9f4469f4fc78861192fb5a7d4b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af643a76f9dd60cd2edfd2edcc742e931"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#af643a76f9dd60cd2edfd2edcc742e931">_tick_link_status</a> (self)</td></tr>
 <tr class="separator:af643a76f9dd60cd2edfd2edcc742e931"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a224ceaf299dec3d5fec92aeba2b9e29e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a224ceaf299dec3d5fec92aeba2b9e29e">_publish_imu_odom</a> (self, data, f)</td></tr>
-<tr class="separator:a224ceaf299dec3d5fec92aeba2b9e29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af054e1902b67b995f529cce9caafce92"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#af054e1902b67b995f529cce9caafce92">_parse_and_publish</a> (self, str line)</td></tr>
 <tr class="separator:af054e1902b67b995f529cce9caafce92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -238,6 +240,8 @@ Static Protected Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
+<tr class="memitem:a6c3f92d447185dbcc52596c3ec2bebf3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a6c3f92d447185dbcc52596c3ec2bebf3">_tf_broadcaster</a></td></tr>
+<tr class="separator:a6c3f92d447185dbcc52596c3ec2bebf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ae5ae40965046df4b6912a0b1629e85"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a5ae5ae40965046df4b6912a0b1629e85">_demo</a></td></tr>
 <tr class="separator:a5ae5ae40965046df4b6912a0b1629e85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6550bc13db61dd74454a88a2b72e6bcf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a6550bc13db61dd74454a88a2b72e6bcf">_baud</a></td></tr>
@@ -250,10 +254,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a18f46c0fd29e630fe2416abd4c4c35c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2114ec99a19e6f12cd033b9c1a2ecd09"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a2114ec99a19e6f12cd033b9c1a2ecd09">_last_imu_yaw</a></td></tr>
 <tr class="separator:a2114ec99a19e6f12cd033b9c1a2ecd09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44fc7b3ccc844de37be05711e0e6c857"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a44fc7b3ccc844de37be05711e0e6c857">_latest_esp32_age_ms</a></td></tr>
-<tr class="separator:a44fc7b3ccc844de37be05711e0e6c857"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea3cbcef1097868ce0a283b29db1cc43"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#aea3cbcef1097868ce0a283b29db1cc43">_latest_telem</a></td></tr>
 <tr class="separator:aea3cbcef1097868ce0a283b29db1cc43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44fc7b3ccc844de37be05711e0e6c857"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a44fc7b3ccc844de37be05711e0e6c857">_latest_esp32_age_ms</a></td></tr>
+<tr class="separator:a44fc7b3ccc844de37be05711e0e6c857"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
 Static Protected Attributes</h2></td></tr>
@@ -603,55 +607,6 @@ been observed (rendered as "unknown" on the dashboard).
 
 </div>
 </div>
-<a id="a224ceaf299dec3d5fec92aeba2b9e29e" name="a224ceaf299dec3d5fec92aeba2b9e29e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a224ceaf299dec3d5fec92aeba2b9e29e">&#9670;&#160;</a></span>_publish_imu_odom()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">def omnidriver.odrive_dashboard.ODriveDashboardNode._publish_imu_odom </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>f</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<pre class="fragment">Build and publish the two EKF inputs (/odrive/imu, /odrive/odom) from
-a parsed telemetry dict.
-
-Used by the FAST PATH in _parse_and_publish for the slim high-rate
-odom/IMU line. KEEP IN SYNC with the inline IMU/Odometry construction in
-the full-line path below: if you change the yaw sign, body-frame
-rotation, scale, or covariances, update BOTH places.
-</pre> 
-</div>
-</div>
 <a id="a0369f264d486197cd7ef4132fccde265" name="a0369f264d486197cd7ef4132fccde265"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0369f264d486197cd7ef4132fccde265">&#9670;&#160;</a></span>_receiver()</h2>
 
@@ -990,6 +945,48 @@ when the STM32 stops sending data.</pre>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="ae69d38739c1685108d0e12ed51ecec65" name="ae69d38739c1685108d0e12ed51ecec65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae69d38739c1685108d0e12ed51ecec65">&#9670;&#160;</a></span>send_set_param_float()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def omnidriver.odrive_dashboard.ODriveDashboardNode.send_set_param_float </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>endpoint_id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>value</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mask</em> = <code>0x0F</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Write an arbitrary ODrive float32 parameter over CAN (RxSdo).
+endpoint_id comes from the flat_endpoints.json matching the ODrive's
+exact firmware release (e.g. axis0.controller.config.vel_ramp_rate).</pre> 
 </div>
 </div>
 <a id="a893279396cef92b84e88fc6755125a34" name="a893279396cef92b84e88fc6755125a34"></a>
@@ -1361,6 +1358,28 @@ when the STM32 stops sending data.</pre>
 
 </div>
 </div>
+<a id="a6c3f92d447185dbcc52596c3ec2bebf3" name="a6c3f92d447185dbcc52596c3ec2bebf3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c3f92d447185dbcc52596c3ec2bebf3">&#9670;&#160;</a></span>_tf_broadcaster</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">omnidriver.odrive_dashboard.ODriveDashboardNode._tf_broadcaster</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ada5ee93ac859c014d99f8189092d8d57" name="ada5ee93ac859c014d99f8189092d8d57"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ada5ee93ac859c014d99f8189092d8d57">&#9670;&#160;</a></span>base_frame_id</h2>
 
@@ -1719,6 +1738,20 @@ when the STM32 stops sending data.</pre>
       <table class="memname">
         <tr>
           <td class="memname">omnidriver.odrive_dashboard.ODriveDashboardNode.pub_vel</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad57bd6d9220a1623d7d162af7440a5bd" name="ad57bd6d9220a1623d7d162af7440a5bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad57bd6d9220a1623d7d162af7440a5bd">&#9670;&#160;</a></span>publish_tf</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">omnidriver.odrive_dashboard.ODriveDashboardNode.publish_tf</td>
         </tr>
       </table>
 </div><div class="memdoc">

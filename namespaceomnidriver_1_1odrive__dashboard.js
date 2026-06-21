@@ -12,6 +12,7 @@ var namespaceomnidriver_1_1odrive__dashboard =
     [ "CFG_SET_CTRL_MODE", "namespaceomnidriver_1_1odrive__dashboard.html#a9c1b64aa76b22207e5814939b33e1c3c", null ],
     [ "CFG_SET_INPUT_POS", "namespaceomnidriver_1_1odrive__dashboard.html#a2cfff9ba919aceaae98b34eceebe33dd", null ],
     [ "CFG_SET_LIMITS", "namespaceomnidriver_1_1odrive__dashboard.html#a5658031f29d24184d7a962cb1a54aa9c", null ],
+    [ "CFG_SET_PARAM_FLOAT", "namespaceomnidriver_1_1odrive__dashboard.html#a98ab3fab860c1c133a39f693684afad2", null ],
     [ "CFG_SET_POS_GAIN", "namespaceomnidriver_1_1odrive__dashboard.html#a82476c2ef7b4153839aef0795c74769c", null ],
     [ "CFG_SET_STATE", "namespaceomnidriver_1_1odrive__dashboard.html#a8aba568a1ed458476dba43da58409824", null ],
     [ "CFG_SET_TORQUE", "namespaceomnidriver_1_1odrive__dashboard.html#a9b2a8b3ea3c40eba002ec840c31ef726", null ],
@@ -20,5 +21,8 @@ var namespaceomnidriver_1_1odrive__dashboard =
     [ "CFG_STOP", "namespaceomnidriver_1_1odrive__dashboard.html#ac698bd68a90fa326c6d937effc00c9b7", null ],
     [ "CONTROL_MODES", "namespaceomnidriver_1_1odrive__dashboard.html#a46059b700c6f3d7b921e8181e268a22e", null ],
     [ "DASHBOARD_HTML", "namespaceomnidriver_1_1odrive__dashboard.html#a48a37c2309da06258ccb4115a1e5831e", null ],
-    [ "INPUT_MODES", "namespaceomnidriver_1_1odrive__dashboard.html#aac0c7ddfcfc7f7d519ea5a074586746c", null ]
+    [ "FERR_DESCRIPTIONS", "namespaceomnidriver_1_1odrive__dashboard.html#a48e16463068643eb9e70b0302f18c5f2", null ],
+    [ "INPUT_MODES", "namespaceomnidriver_1_1odrive__dashboard.html#aac0c7ddfcfc7f7d519ea5a074586746c", null ],
+    [ "SM_STATE_LABELS", "namespaceomnidriver_1_1odrive__dashboard.html#a6a785ceef3647ae926466696d493fa38", null ],
+    [ "TELEM_FIELDS", "namespaceomnidriver_1_1odrive__dashboard.html#ab20919cbb00d48f090ee97dd999ce970", null ]
 ];

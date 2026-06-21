@@ -1,5 +1,9 @@
 var NAVTREEINDEX34 =
 {
+"md_vision_README.html":[17],
+"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html":[16],
+"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md149":[16,0],
+"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md150":[16,1],
 "md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md151":[16,2],
 "md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md152":[16,3],
 "merge__multi_8launch_8py.html":[39,0,4,0,1,0,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX34 =
 "namespacedoing__laundry__task__manager.html":[37,0,37],
 "namespacedoing__laundry__task__manager.html#a2bae9a5395b03b1a3230f16c3c809bf5":[37,0,37,4],
 "namespacedoing__laundry__task__manager.html#a7bb2438ef00c6e505f5b11c8355e1aa9":[37,0,37,1],
-"namespacedoing__laundry__task__manager.html#a8ab163e0bce0780df198e565ec65146d":[37,0,37,2],
-"namespacedoing__laundry__task__manager.html#ab1be158dc654ec760840aee94103fbb8":[37,0,37,3],
-"namespacedownsample__pc.html":[37,0,38],
-"namespacedownsample__pc.html#ac2b4cab7e9652eb5d6142f99b1981c55":[37,0,38,0],
-"namespaceds4__demo.html":[37,0,39]
+"namespacedoing__laundry__task__manager.html#a8ab163e0bce0780df198e565ec65146d":[37,0,37,2]
 };
