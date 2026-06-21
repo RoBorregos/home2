@@ -8,7 +8,7 @@ from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
 from nav2_msgs.srv import ManageLifecycleNodes
-from nav2_msgs.action import NavigateToPose  
+from nav2_msgs.action import NavigateToPose, ComputePathToPose
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
@@ -38,6 +38,9 @@ from frida_constants.navigation_constants import(
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
+        NAV_QUERY_SERVICE,
+        COMPUTE_PATH_ACTION_SERVER,
+        TIMEOUT_NAV_QUERY,
         UNDOCK_SERVICE,
         DOCK_SERVICE,
         DOCK_TABLE_SERVICE,
@@ -47,6 +50,7 @@ from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
         MoveLocation,
+        NavQuery,
         DockTable
         )
 from ament_index_python.packages import get_package_share_directory
@@ -158,6 +162,10 @@ class Nav_Central(Node):
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
         self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
+
+        # Path query service — distance/time between two areas without navigating
+        self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
+        self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
         self.resume_nav_srv = self.create_service(
@@ -533,7 +541,143 @@ class Nav_Central(Node):
         self.pause_slam()
         self.pause_nav2()
         return response
-        
+
+    def _pose_from_coords(self, coords):
+        """Build a map-frame PoseStamped from an areas.json coordinate array."""
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.pose.position.x = coords[0]
+        pose.pose.position.y = coords[1]
+        pose.pose.position.z = coords[2]
+        pose.pose.orientation.x = coords[3]
+        pose.pose.orientation.y = coords[4]
+        pose.pose.orientation.z = coords[5]
+        pose.pose.orientation.w = coords[6]
+        return pose
+
+    def _fetch_area_coords(self, location, sublocation):
+        if self.areas_data is None:
+            return None
+        return self.areas_data.get(location, {}).get(sublocation)
+
+    def _path_length(self, path):
+        """Sum of euclidean distances between consecutive path poses."""
+        total = 0.0
+        poses = path.poses
+        for i in range(1, len(poses)):
+            p0 = poses[i - 1].pose.position
+            p1 = poses[i].pose.position
+            total += math.hypot(p1.x - p0.x, p1.y - p0.y)
+        return total
+
+    def _compute_path(self, goal_pose, start_pose=None):
+        """Call nav2 ComputePathToPose action. Returns nav_msgs/Path or None.
+        If start_pose is None the planner uses the robot's current pose."""
+        goal_msg = ComputePathToPose.Goal()
+        goal_msg.goal = goal_pose
+        goal_msg.planner_id = "GridBased"
+        if start_pose is not None:
+            goal_msg.start = start_pose
+            goal_msg.use_start = True
+
+        elapsed = 0.0
+        while not self.compute_path_client.server_is_ready() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.2))
+            elapsed += 0.2
+        if not self.compute_path_client.server_is_ready():
+            self.nav_logger("error", "Query_Path -> ComputePathToPose server not available")
+            return None
+
+        send_future = self.compute_path_client.send_goal_async(goal_msg)
+        elapsed = 0.0
+        while not send_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not send_future.done():
+            self.nav_logger("error", "Query_Path -> Timeout sending goal to planner")
+            return None
+
+        goal_handle = send_future.result()
+        if not goal_handle.accepted:
+            self.nav_logger("error", "Query_Path -> Planner rejected the request")
+            return None
+
+        result_future = goal_handle.get_result_async()
+        elapsed = 0.0
+        while not result_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not result_future.done():
+            goal_handle.cancel_goal_async()
+            self.nav_logger("error", "Query_Path -> Timeout waiting for planner result")
+            return None
+
+        result = result_future.result().result
+        if result is None or len(result.path.poses) == 0:
+            return None
+        return result.path
+
+    def query_path(self, request, response):
+        """Callback: compute path distance/time between two areas without moving.
+        Empty location_a means start from the robot's current pose."""
+        self.nav_logger("info", f"Query_Path -> Service called ({request.location_a}/{request.sublocation_a} -> {request.location_b}/{request.sublocation_b})")
+        response.success = False
+        response.distance_meters = 0.0
+        response.error = ""
+
+        if self.mapping:
+            response.error = "Not available in mapping mode"
+            return response
+        if self.areas_data is None:
+            self.nav_logger("error", "Query_Path -> Areas not loaded")
+            response.error = "Areas not loaded"
+            return response
+
+        goal_coords = self._fetch_area_coords(request.location_b, request.sublocation_b)
+        if goal_coords is None:
+            self.nav_logger("error", "Query_Path -> Destination area not found")
+            response.error = f"Area not found: {request.location_b}/{request.sublocation_b}"
+            return response
+        goal_pose = self._pose_from_coords(goal_coords)
+
+        start_pose = None
+        if request.location_a:
+            start_coords = self._fetch_area_coords(request.location_a, request.sublocation_a)
+            if start_coords is None:
+                self.nav_logger("error", "Query_Path -> Start area not found")
+                response.error = f"Area not found: {request.location_a}/{request.sublocation_a}"
+                return response
+            start_pose = self._pose_from_coords(start_coords)
+
+        if not self.rtabmap_loaded:
+            self.nav_logger("error", "Query_Path -> Navigation not initialized")
+            response.error = "Navigation not initialized"
+            return response
+
+        # Planner needs nav2 active; remember prior state to restore it after
+        was_paused = self.nav2_paused
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused:
+            self.nav_logger("error", "Query_Path -> Could not resume nav2")
+            response.error = "Could not resume nav2"
+            return response
+
+        try:
+            path = self._compute_path(goal_pose, start_pose)
+            if path is None:
+                response.error = "Planner failed to compute path"
+                return response
+            distance = self._path_length(path)
+            response.success = True
+            response.distance_meters = distance
+            self.nav_logger("info", f"Query_Path -> Path found: {distance:.2f} m")
+        finally:
+            if was_paused:
+                self.pause_slam()
+                self.pause_nav2()
+        return response
+
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}
