@@ -29,6 +29,7 @@ from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
+from task_manager.utils.shelf_pick_logic import find_target_on_level
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 2
@@ -440,6 +441,50 @@ class PickAndPlaceTM(Node):
             height, tolerance=0.1, table_or_shelf=False, approach_plane=True
         )
         self.timeout(3.0)
+
+    def _pick_from_shelf(self, object_name: str, level_heights: dict) -> int:
+        """Find the target by detecting at each shelf level, then pick from that level.
+
+        table_stare frames only the lower levels, so an object on a high level (cereal
+        on L3) was missed. Here each level's own viewing pose detects + builds its
+        octomap; the pick keeps that pose via in_configuration. See
+        docs/ai/shelf_pick_plan.md.
+        """
+        found_level = None
+        before_counts = None
+        for height in sorted(level_heights.values()):
+            self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                height, tolerance=0.1, table_or_shelf=False, approach_plane=True
+            )
+            self.timeout(3.0)  # let the octomap settle at this level
+            status, detections = self.subtask_manager.vision.detect_objects()
+            retry = 0
+            while status != Status.EXECUTION_SUCCESS and retry < 3:
+                self.timeout(1.0)
+                status, detections = self.subtask_manager.vision.detect_objects()
+                retry += 1
+            if status != Status.EXECUTION_SUCCESS or not detections:
+                continue
+            candidates = [(det.classname, self.convert_to_height(det)) for det in detections]
+            if find_target_on_level(candidates, object_name, height) is not None:
+                CLog.manip(self, "PICK", f"Found {object_name} at shelf height {height:.3f}.")
+                found_level = height
+                before_counts = self._shelf_counts(detections, height)
+                break
+
+        if found_level is None:
+            CLog.manip(
+                self, "PICK", f"{object_name} not found on any shelf level.", level="error"
+            )
+            return Status.EXECUTION_ERROR
+
+        # Arm is at the found level's pose with a fresh octomap; keep it (in_configuration).
+        status = self.subtask_manager.manipulation.pick_object(
+            object_name, in_configuration=True, scan_environment=True
+        )
+        if status == Status.EXECUTION_SUCCESS and self.use_vision_confirmation:
+            status = self._confirm_pick_shelf(before_counts, object_name, found_level)
+        return status
 
     def categorize_object(self, obj_name: str) -> ObjectCategory:
         """Assign an object to a category based on its name"""
@@ -1127,27 +1172,19 @@ class PickAndPlaceTM(Node):
             item_location = self.current_breakfast_item["location"]
 
             is_cabinet = item_location == Location.CABINET
-            if is_cabinet:
-                if not self._cabinet_scan_fresh:
-                    CLog.manip(self, "PICK", "Scanning shelves for octomap before cabinet pick.")
-                    shelf_levels = sorted(self.shelf_level_heights.keys())
-                    for level in shelf_levels:
-                        self._scan_shelf_level(self.shelf_level_heights[level])
-                    self._cabinet_scan_fresh = True
-                else:
-                    CLog.manip(
-                        self, "PICK", "Reusing octomap from current visit (skipping shelf scan)."
-                    )
-            else:
-                self.subtask_manager.manipulation.move_to_position("table_stare")
-
+            yolo_name = self._to_yolo_name(item_name)
             self.subtask_manager.hri.say(f"I will pick the {item_name}.", wait=False)
 
-            yolo_name = self._to_yolo_name(item_name)
-
-            status = self.subtask_manager.manipulation.pick_object(
-                yolo_name, scan_environment=is_cabinet
-            )
+            if is_cabinet:
+                # Per-level detect-then-pick so a high-shelf object (e.g. cereal on L3)
+                # is framed and picked; table_stare frames only the lower levels.
+                status = self._pick_from_shelf(yolo_name, self.shelf_level_heights)
+                self._cabinet_scan_fresh = True  # the per-level scan refreshed the octomap
+            else:
+                self.subtask_manager.manipulation.move_to_position("table_stare")
+                status = self.subtask_manager.manipulation.pick_object(
+                    yolo_name, scan_environment=False
+                )
 
             # Verify gripper actually has the object
             if status == Status.EXECUTION_SUCCESS:
@@ -1270,6 +1307,13 @@ class PickAndPlaceTM(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = PickAndPlaceTM()
+    import os
+    if os.environ.get("SHELF_TEST"):
+        tgt = node._to_yolo_name(os.environ.get("SHELF_TARGET", "cereal"))
+        CLog.fsm(node, "SHELF_TEST", f"target={tgt} heights={node.shelf_level_heights}")
+        st = node._pick_from_shelf(tgt, node.shelf_level_heights)
+        CLog.fsm(node, "SHELF_TEST", f"RESULT _pick_from_shelf -> {st}")
+        node.destroy_node(); rclpy.shutdown(); return
 
     try:
         while rclpy.ok() and node.running_task:
