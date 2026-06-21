@@ -111,12 +111,15 @@ def move_to_pregrasp_nearest_ik(
             )
             arm_names = xarm6_joint_names()
             if all(n in sol for n in arm_names):
-                positions = [float(sol[n]) for n in arm_names]
+                # Pass the named-joint dict (not a bare list): move_joint_positions
+                # leaves joint_names empty for a list, and the planner then treats
+                # the goal as already-reached (0 delta) and never moves.
+                joints = {n: float(sol[n]) for n in arm_names}
                 _info("[PreGrasp] Moving via nearest-IK joint goal")
                 return bool(
                     move_joint_positions(
                         move_joints_action_client,
-                        joint_positions=positions,
+                        joint_positions={"joints": joints, "degrees": False},
                         velocity=velocity,
                         wait=True,
                     )
