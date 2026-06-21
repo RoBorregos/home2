@@ -131,9 +131,12 @@ class PickAndPlaceTM(Node):
             "milk": "yogurt",
         }
 
-        # Shelf heights in base_link Z (calibrate with RViz Publish Point)
-        self.shelf_level_heights = {1: 0.475, 2: 0.827, 3: 1.201}
-        self.default_shelf_height = 0.475
+        # Shelf heights in base_link Z from the calibrated config (xarm_utils/config/
+        # shelf_levels.json); falls back to these defaults if the file is absent.
+        self.shelf_level_heights = self._load_shelf_levels(
+            {1: 0.475, 2: 0.827, 3: 1.201}
+        )
+        self.default_shelf_height = min(self.shelf_level_heights.values())
 
         # ==========================================================
         # END COMPETITION CONFIG
@@ -314,6 +317,28 @@ class PickAndPlaceTM(Node):
         start_time = time.time()
         while (time.time() - start_time) < duration:
             rclpy.spin_once(self, timeout_sec=0.1)
+
+    def _load_shelf_levels(self, default):
+        """Load calibrated shelf heights from the monorepo config json, else `default`.
+        Never raises; a missing or malformed file falls back to `default`."""
+        rel = "manipulation/packages/xarm_utils/config/shelf_levels.json"
+        candidates = (
+            Path(__file__).resolve().parents[2] / rel,
+            Path("/workspace/src") / rel,
+        )
+        for path in candidates:
+            try:
+                data = json.loads(Path(path).read_text())
+                levels = {int(k): float(v) for k, v in data["levels"].items()}
+                if len(levels) == len(default):
+                    self.get_logger().info(
+                        f"Loaded shelf heights from {path}: {levels}"
+                    )
+                    return levels
+            except Exception:
+                continue
+        self.get_logger().warn(f"No shelf_levels.json found; using default {default}")
+        return default
 
     def convert_to_height(self, detection) -> float | None:
         """Transform a detection's 3D point to base_link frame via tf2 and return Z.
