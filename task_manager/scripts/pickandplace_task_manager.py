@@ -372,6 +372,43 @@ class PickAndPlaceTM(Node):
         CLog.manip(self, "PICK", f"Vision: {name} still on the table.", level="warn")
         return Status.EXECUTION_ERROR
 
+    def _shelf_counts(self, detections, level):
+        """Count detections at a shelf level (filtered by height) per class."""
+        from task_manager.utils.grasp_confirmation import count_by_class
+
+        dets = self._filter_detections_by_height(detections or [], level)
+        return count_by_class([d.classname for d in dets])
+
+    def _confirm_pick_shelf(self, before_counts, target_name, level):
+        """Re-look at the shelf level; fail only if the object is clearly still there."""
+        from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
+
+        target = self._to_yolo_name(target_name).lower()
+        if not before_counts or before_counts.get(target, 0) == 0:
+            return Status.EXECUTION_SUCCESS
+        self.subtask_manager.manipulation.get_optimal_position_for_plane(
+            level, tolerance=0.1, table_or_shelf=False, approach_plane=True
+        )
+        self.timeout(3.0)
+        _, dets = self.subtask_manager.vision.detect_objects()
+        dets = self._filter_detections_by_height(dets or [], level)
+        after = count_by_class([d.classname for d in dets])
+        if picked_ok(before_counts, after, target):
+            CLog.manip(
+                self,
+                "PICK",
+                f"Vision confirmed {target_name} removed.",
+                level="success",
+            )
+            return Status.EXECUTION_SUCCESS
+        CLog.manip(
+            self,
+            "PICK",
+            f"Vision: {target_name} still on the shelf.",
+            level="warn",
+        )
+        return Status.EXECUTION_ERROR
+
     def _filter_detections_by_height(self, detections, target_height: float) -> list:
         """Filter detections to only include objects near the target shelf height."""
         filtered = []
