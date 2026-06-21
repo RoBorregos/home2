@@ -56,6 +56,11 @@ class DoingLaundryTM(Node):
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "DoingLaundryTM has started.")
 
+    def set_state(self, new_state: str):
+        """Update current state and publish it for the display."""
+        self.current_state = new_state
+        self.subtask_manager.hri.publish_display_step(new_state.lower())
+
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to location, resetting arm to nav_pose first."""
         self.subtask_manager.vision.deactivate_face_recognition()
@@ -101,18 +106,18 @@ class DoingLaundryTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, Doing Laundry task will begin now")
-            self.current_state = DoingLaundryTM.TaskStates.START
+            self.set_state(DoingLaundryTM.TaskStates.START)
 
         elif self.current_state == DoingLaundryTM.TaskStates.START:
             Logger.state(self, "Starting Doing Laundry Task")
             self.navigate_to("laundry", "safe_place")
-            self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET
+            self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
             Logger.info(self, "Navigating to basket area")
             status, error = self.navigate_to("laundry", "laundry_basket")
             if status == Status.EXECUTION_SUCCESS:
-                self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET
+                self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
             else:
                 Logger.error(self, f"Navigation failed: {error}. Retrying...")
 
@@ -124,12 +129,12 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Basket picked.")
                 self.basket_pick_attempts = 0
-                self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE
+                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
             else:
                 self.basket_pick_attempts += 1
                 if self.basket_pick_attempts >= ATTEMPT_LIMIT:
                     Logger.error(self, "Basket pick failed after max attempts. Ending.")
-                    self.current_state = DoingLaundryTM.TaskStates.END
+                    self.set_state(DoingLaundryTM.TaskStates.END)
                 else:
                     Logger.warn(
                         self,
@@ -141,7 +146,7 @@ class DoingLaundryTM(Node):
             status, error = self.navigate_holding("laundry", "folding_surface")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry table with basket.")
-                self.current_state = DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY
+                self.set_state(DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY)
             else:
                 Logger.error(self, f"Navigation to table failed: {error}. Retrying...")
 
@@ -155,7 +160,7 @@ class DoingLaundryTM(Node):
             self.subtask_manager.manipulation.move_to_position("look_side_low_stare")
             for _ in range(20):
                 rclpy.spin_once(self, timeout_sec=0.1)
-            self.current_state = DoingLaundryTM.TaskStates.PICK_CLOTHES_BASKET
+            self.set_state(DoingLaundryTM.TaskStates.PICK_CLOTHES_BASKET)
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_CLOTHES_BASKET:
             Logger.info(
@@ -168,12 +173,12 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from basket.")
                 self.clothes_pick_attempts = 0
-                self.current_state = DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE
+                self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
                 self.clothes_pick_attempts += 1
                 if self.clothes_pick_attempts >= ATTEMPT_LIMIT:
                     Logger.error(self, "Clothes pick from basket failed. Ending.")
-                    self.current_state = DoingLaundryTM.TaskStates.END
+                    self.set_state(DoingLaundryTM.TaskStates.END)
                 else:
                     Logger.warn(
                         self,
@@ -199,17 +204,17 @@ class DoingLaundryTM(Node):
                         self,
                         f"WM→table done {self.wm_placed}/{WM_PLACE_ROUNDS}.",
                     )
-                self.current_state = self.next_state_after_place()
+                self.set_state(self.next_state_after_place())
             else:
                 Logger.error(self, "Place clothes failed. Ending task.")
-                self.current_state = DoingLaundryTM.TaskStates.END
+                self.set_state(DoingLaundryTM.TaskStates.END)
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE:
             Logger.info(self, "Navigating to laundry machine.")
             status, error = self.navigate_to("laundry", "laundry_machine")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry machine.")
-                self.current_state = DoingLaundryTM.TaskStates.PICK_CLOTHES_WM
+                self.set_state(DoingLaundryTM.TaskStates.PICK_CLOTHES_WM)
             else:
                 Logger.error(self, f"Navigation to laundry machine failed: {error}. Retrying...")
 
@@ -227,14 +232,14 @@ class DoingLaundryTM(Node):
                 # Close the door now while we are still in front of the machine,
                 # but only once we have finished all WM pick rounds.
                 if (self.wm_placed + 1) >= WM_PLACE_ROUNDS:
-                    self.current_state = DoingLaundryTM.TaskStates.CLOSE_LAUNDRY_MACHINE
+                    self.set_state(DoingLaundryTM.TaskStates.CLOSE_LAUNDRY_MACHINE)
                 else:
-                    self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES
+                    self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES)
             else:
                 self.clothes_pick_attempts += 1
                 if self.clothes_pick_attempts >= ATTEMPT_LIMIT:
                     Logger.error(self, "Clothes pick from WM failed. Ending.")
-                    self.current_state = DoingLaundryTM.TaskStates.END
+                    self.set_state(DoingLaundryTM.TaskStates.END)
                 else:
                     Logger.warn(
                         self,
@@ -249,13 +254,13 @@ class DoingLaundryTM(Node):
             # self.subtask_manager.manipulation.move_to_position("mid_close_laundry_pose")
             # self.subtask_manager.manipulation.move_to_position("end_close_laundry_pose")
             Logger.success(self, "Laundry machine door closed.")
-            self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES
+            self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES)
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES:
             Logger.info(self, "Navigating back to the laundry table with clothes.")
             status, error = self.navigate_holding("laundry", "folding_surface")
             if status == Status.EXECUTION_SUCCESS:
-                self.current_state = DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE
+                self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
                 Logger.error(self, f"Navigation back to table failed: {error}. Retrying...")
 
