@@ -5,8 +5,11 @@ from frida_interfaces.srv import GraspDetection
 from frida_constants.manipulation_constants import GRASP_LINK_FRAME, PICK_VELOCITY
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.service_utils import move_joint_positions
-from frida_pymoveit2.robots.xarm6 import joint_names as xarm6_joint_names
-from pick_and_place.utils.self_collision_utils import ARM_GROUP_NAME, IK_TIMEOUT_SEC
+from frida_pymoveit2.robots.xarm6 import (
+    joint_names as xarm6_joint_names,
+    MOVE_GROUP_ARM,
+)
+from pick_and_place.utils.self_collision_utils import IK_TIMEOUT_SEC
 
 
 def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
@@ -90,7 +93,7 @@ def move_to_pregrasp_nearest_ik(
 
     if compute_ik_client.wait_for_service(timeout_sec=2.0):
         ik_req = GetPositionIK.Request()
-        ik_req.ik_request.group_name = ARM_GROUP_NAME
+        ik_req.ik_request.group_name = MOVE_GROUP_ARM
         ik_req.ik_request.ik_link_name = GRASP_LINK_FRAME
         ik_req.ik_request.pose_stamped = pose_stamped
         ik_req.ik_request.avoid_collisions = True

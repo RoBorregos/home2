@@ -3,10 +3,8 @@ from moveit_msgs.srv import GetPositionIK, GetStateValidity
 from moveit_msgs.msg import ContactInformation
 from frida_constants.manipulation_constants import GRASP_LINK_FRAME
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from frida_pymoveit2.robots.xarm6 import MOVE_GROUP_ARM
 
-# MoveIt planning group for the arm (see
-# frida_pymoveit2/frida_pymoveit2/robots/xarm6.py: MOVE_GROUP_ARM)
-ARM_GROUP_NAME = "xarm6"
 IK_TIMEOUT_SEC = 0.2
 
 
@@ -48,7 +46,7 @@ def endpoint_self_collides(
         return False
 
     ik_req = GetPositionIK.Request()
-    ik_req.ik_request.group_name = ARM_GROUP_NAME
+    ik_req.ik_request.group_name = MOVE_GROUP_ARM
     ik_req.ik_request.ik_link_name = GRASP_LINK_FRAME
     ik_req.ik_request.pose_stamped = pose_stamped
     ik_req.ik_request.avoid_collisions = False
@@ -74,7 +72,7 @@ def endpoint_self_collides(
 
     sv_req = GetStateValidity.Request()
     sv_req.robot_state = ik_resp.solution
-    sv_req.group_name = ARM_GROUP_NAME
+    sv_req.group_name = MOVE_GROUP_ARM
 
     sv_future = state_validity_client.call_async(sv_req)
     wait_for_future(sv_future)
