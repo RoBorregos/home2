@@ -42,6 +42,26 @@ class GPSRTask(GenericTask):
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
         return result
 
+    def get_path_info(
+        self, location, sublocation: str = "", from_location: str = "", from_sublocation: str = ""
+    ):
+        """Query the real path distance to a location without moving the
+        robot, so HRI can use it to make decisions.
+
+        Args:
+            location: Destination area name from areas.json.
+            sublocation: Destination sublocation (defaults to safe_place).
+            from_location: Origin area; empty means the robot's current pose.
+            from_sublocation: Origin sublocation (defaults to safe_place).
+
+        Returns:
+            (Status, info): info is {"distance": meters} on success, or an
+            error string on failure.
+        """
+        return self.subtask_manager.nav.get_path_info(
+            location, sublocation, from_location, from_sublocation
+        )
+
     ## HRI, Manipulation
     def give_object(self, command: GiveObject):
         """

@@ -116,12 +116,14 @@ def generate_launch_description():
         executable='odrive_dashboard',
         name='odrive_dashboard_node',
         output='screen',
+        # Nav2 1.4.0 publishes geometry_msgs/TwistStamped on cmd_vel
+        # (enable_stamped_cmd_vel defaults true), so subscribe stamped.
+        parameters=[{'use_stamped_cmd_vel': True}],
         remappings=[('cmd_vel', cmd_vel_topic)],
     )
 
     return LaunchDescription([
         declare_cmd_vel_topic,
         dashboard_node,
-        ekf_node,
         lidar_setup,
     ])
