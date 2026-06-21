@@ -123,6 +123,7 @@ class PickAndPlaceTM(Node):
         self.trash_exceptions: list[str] = ["milk"]
         self.use_dishwasher = False  # cutlery/tableware → dishwasher
         self.use_side_table = False  # pick from side table (−20 pts/obj)
+        self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
         self.max_cleanup_objects = 3  # how many to clean before breakfast
 
         # YOLO name mapping: logical → detection class (only differences)
@@ -648,7 +649,7 @@ class PickAndPlaceTM(Node):
             # Verify gripper actually has the object
             if status == Status.EXECUTION_SUCCESS:
                 rclpy.spin_once(self, timeout_sec=0.5)
-                if not self._gripper_has_object:
+                if self.use_grasp_detector and not self._gripper_has_object:
                     CLog.manip(
                         self,
                         "PICK",
@@ -1081,7 +1082,7 @@ class PickAndPlaceTM(Node):
             # Verify gripper actually has the object
             if status == Status.EXECUTION_SUCCESS:
                 rclpy.spin_once(self, timeout_sec=0.5)
-                if not self._gripper_has_object:
+                if self.use_grasp_detector and not self._gripper_has_object:
                     CLog.manip(
                         self,
                         "PICK",
