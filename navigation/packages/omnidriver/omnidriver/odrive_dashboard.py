@@ -1001,7 +1001,12 @@ class ODriveDashboardNode(Node):
             odom_msg.twist.twist.linear.x  = vx_body
             odom_msg.twist.twist.linear.y  = vy_body
             odom_msg.twist.twist.linear.z  = 0.0
-            odom_msg.twist.twist.angular.z = o_w
+            # Negate: the wheel/firmware-derived yaw rate (o_w) has the opposite
+            # sign convention to REP-103 (the IMU / cmd_vel convention). Nav2 MPPI
+            # uses this field as velocity feedback (odom_topic=/odrive/odom), so a
+            # flipped sign breaks its yaw control (slow/non-converging final rotation).
+            # The EKF ignores this field (odom0_config vyaw=False; yaw rate from IMU).
+            odom_msg.twist.twist.angular.z = -o_w
 
             _LARGE = 1.0e9
             _pose_cov = [0.0] * 36

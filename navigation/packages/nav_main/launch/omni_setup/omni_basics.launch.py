@@ -116,6 +116,9 @@ def generate_launch_description():
         executable='odrive_dashboard',
         name='odrive_dashboard_node',
         output='screen',
+        # Nav2 1.4.0 publishes geometry_msgs/TwistStamped on cmd_vel
+        # (enable_stamped_cmd_vel defaults true), so subscribe stamped.
+        parameters=[{'use_stamped_cmd_vel': True}],
         remappings=[('cmd_vel', cmd_vel_topic)],
     )
 
