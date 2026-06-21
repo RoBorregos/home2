@@ -71,7 +71,7 @@ class TestNavigationManager(Node):
             print(
                 f"  {Logger.GREEN}{passed} passed{Logger.RESET}, {Logger.RED}{failed} failed{Logger.RESET}\n"
             )
-       
+
 
 def main(args=None):
     rclpy.init(args=args)
