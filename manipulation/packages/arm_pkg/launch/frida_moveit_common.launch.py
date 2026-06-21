@@ -55,7 +55,7 @@ def launch_setup(context, *args, **kwargs):
     prefix = LaunchConfiguration("prefix", default="")
     attach_to = LaunchConfiguration("attach_to", default="world")
     attach_xyz = LaunchConfiguration("attach_xyz", default='"0 0 0"')
-    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 0"')
+    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 1.5707963267948966"')
     no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
     show_rviz = LaunchConfiguration("show_rviz", default=True)
     use_sim_time = LaunchConfiguration("use_sim_time", default=False)
@@ -148,6 +148,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Static TF
+    publish_attach_tf = LaunchConfiguration("publish_attach_tf", default="false")
     static_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -155,6 +156,7 @@ def launch_setup(context, *args, **kwargs):
         output="screen",
         arguments=args + log_args,
         parameters=[{"use_sim_time": use_sim_time}],
+        condition=IfCondition(publish_attach_tf),
     )
 
     robot_planner_node_launch = IncludeLaunchDescription(

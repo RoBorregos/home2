@@ -22,8 +22,15 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from action_msgs.srv import CancelGoal
+from std_srvs.srv import Trigger
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import RTAB_MAPS_PATH, RESUME_NAV_SERVICE
+from frida_constants.navigation_constants import (
+    RTAB_MAPS_PATH,
+    RESUME_NAV_SERVICE,
+    AREAS_SERVICE,
+    MOVE_LOCATION_SERVICE,
+    DOCK_SERVICE,
+)
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -161,9 +168,13 @@ class NavRosNode(Node):
         self.cancel_nav_client = self.create_client(
             CancelGoal, '/navigate_to_pose/_action/cancel_goal')
 
-        # Navigation mode: resume nav service
+        # Navigation mode: resume nav + areas/move/dock clients
         if self.ui_mode == 'navigation':
             self._resume_nav_client = self.create_client(Empty, RESUME_NAV_SERVICE)
+            from frida_interfaces.srv import MapAreas, MoveLocation
+            self._areas_client = self.create_client(MapAreas, AREAS_SERVICE)
+            self._move_client = self.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+            self._dock_client = self.create_client(Trigger, DOCK_SERVICE)
 
         # Mapping mode: the map-save client depends on the SLAM backend.
         if self.ui_mode == 'mapping':
@@ -406,6 +417,82 @@ class NavRosNode(Node):
                     on_done(False, "Resume Nav service timed out")
                     return
                 on_done(True, "Nav resumed")
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def fetch_areas_async(self, on_done):
+        """Fetch areas.json (via nav_central AREAS_SERVICE) in a background thread.
+        on_done(areas_dict_or_None, message)."""
+        import time
+        import json
+        from frida_interfaces.srv import MapAreas
+
+        def _worker():
+            try:
+                if not self._areas_client.wait_for_service(timeout_sec=5.0):
+                    on_done(None, "Areas service not available")
+                    return
+                future = self._areas_client.call_async(MapAreas.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 5.0:
+                    time.sleep(0.05)
+                    elapsed += 0.05
+                if not future.done():
+                    on_done(None, "Areas service timed out")
+                    return
+                raw = future.result().areas
+                on_done(json.loads(raw) if raw else {}, "ok")
+            except Exception as e:
+                on_done(None, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def move_to_async(self, location, sublocation, on_done):
+        """Call MOVE_LOCATION_SERVICE (go_to_map_area) in a background thread."""
+        import time
+        from frida_interfaces.srv import MoveLocation
+
+        def _worker():
+            try:
+                if not self._move_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "Move service not available")
+                    return
+                req = MoveLocation.Request()
+                req.location = location
+                req.sublocation = sublocation
+                future = self._move_client.call_async(req)
+                elapsed = 0.0
+                while not future.done() and elapsed < 180.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                if not future.done():
+                    on_done(False, "Move timed out")
+                    return
+                res = future.result()
+                on_done(res.success, res.error)
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def dock_async(self, on_done):
+        """Call DOCK_SERVICE (table approach) in a background thread."""
+        import time
+
+        def _worker():
+            try:
+                if not self._dock_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "Dock service not available")
+                    return
+                future = self._dock_client.call_async(Trigger.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 90.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                if not future.done():
+                    on_done(False, "Dock timed out")
+                    return
+                res = future.result()
+                on_done(res.success, res.message)
             except Exception as e:
                 on_done(False, str(e))
         threading.Thread(target=_worker, daemon=True).start()
@@ -899,6 +986,28 @@ class NavUI(QMainWindow):
 
         panel_layout.addWidget(nav_group)
 
+        # Locations from areas.json — pick one and send the robot there (and
+        # trigger the table approach). Navigation mode only.
+        loc_group = QGroupBox("Locations")
+        loc_layout = QVBoxLayout(loc_group)
+        self.loc_combo = QComboBox()
+        loc_layout.addWidget(self.loc_combo)
+        loc_btn_row = QHBoxLayout()
+        self.btn_refresh_loc = QPushButton("Refresh")
+        self.btn_refresh_loc.clicked.connect(self._on_refresh_locations)
+        self.btn_go_loc = QPushButton("Go")
+        self.btn_go_loc.clicked.connect(self._on_go_location)
+        loc_btn_row.addWidget(self.btn_refresh_loc)
+        loc_btn_row.addWidget(self.btn_go_loc)
+        loc_layout.addLayout(loc_btn_row)
+        self.btn_approach = QPushButton("Approach Table")
+        self.btn_approach.setStyleSheet("QPushButton { background: #8e44ad; } QPushButton:hover { background: #9b59b6; }")
+        self.btn_approach.clicked.connect(self._on_approach)
+        loc_layout.addWidget(self.btn_approach)
+        nav_layout.addWidget(loc_group)
+        # Populate shortly after startup (services need a moment to come up).
+        QTimer.singleShot(1500, self._on_refresh_locations)
+
         # Mapping mode: hide nav controls, show only view mode
         if self.ui_mode == 'mapping':
             nav_group.setVisible(False)
@@ -1115,6 +1224,72 @@ class NavUI(QMainWindow):
         else:
             self.status.showMessage(f"Resume failed: {msg}")
             QMessageBox.warning(self, "Resume Failed", msg)
+
+    # ---- Locations: list, send-to, approach ----
+    def _on_refresh_locations(self):
+        self.status.showMessage("Loading locations ...")
+
+        def on_done(areas, msg):
+            self._areas_result = (areas, msg)
+            QTimer.singleShot(0, self._on_areas_loaded)
+
+        self.ros_node.fetch_areas_async(on_done)
+
+    def _on_areas_loaded(self):
+        areas, msg = self._areas_result
+        self.loc_combo.clear()
+        if not areas:
+            self.status.showMessage(f"No locations ({msg})")
+            return
+        count = 0
+        for location, subs in areas.items():
+            if not isinstance(subs, dict):
+                continue
+            for sub in subs:
+                if sub == 'polygon':
+                    continue
+                self.loc_combo.addItem(f"{location} / {sub}", (location, sub))
+                count += 1
+        self.status.showMessage(f"Loaded {count} locations")
+
+    def _on_go_location(self):
+        data = self.loc_combo.currentData()
+        if not data:
+            self.status.showMessage("No location selected")
+            return
+        location, sub = data
+        self.btn_go_loc.setEnabled(False)
+        self.status.showMessage(f"Navigating to {location} / {sub} ...")
+
+        def on_done(success, msg):
+            self._move_result = (success, msg)
+            QTimer.singleShot(0, self._on_move_done)
+
+        self.ros_node.move_to_async(location, sub, on_done)
+
+    def _on_move_done(self):
+        self.btn_go_loc.setEnabled(True)
+        success, msg = self._move_result
+        self.status.showMessage(("Arrived" if success else "Move failed") + (f": {msg}" if msg else ""))
+        if not success:
+            QMessageBox.warning(self, "Move Failed", msg or "unknown error")
+
+    def _on_approach(self):
+        self.btn_approach.setEnabled(False)
+        self.status.showMessage("Approaching surface ...")
+
+        def on_done(success, msg):
+            self._approach_result = (success, msg)
+            QTimer.singleShot(0, self._on_approach_done)
+
+        self.ros_node.dock_async(on_done)
+
+    def _on_approach_done(self):
+        self.btn_approach.setEnabled(True)
+        success, msg = self._approach_result
+        self.status.showMessage(("Docked" if success else "Approach failed") + (f": {msg}" if msg else ""))
+        if not success:
+            QMessageBox.warning(self, "Approach Failed", msg or "unknown error")
 
     def check_canvas_actions(self):
         # Check for pending goal send
