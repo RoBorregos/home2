@@ -10,19 +10,14 @@ from launch_ros.substitutions import FindPackageShare
 
 def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
-
-    # Mapping config — RTAB-Map builds a fresh map (delete_db_on_start=true)
     rtab_params_file = os.path.join(
         pkg_file_route, 'config', 'rtabmap', 'rtabmap_mapping_config.yaml'
     )
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_restaurant.yaml')
-
+    rtabmap_map_name = LaunchConfiguration('map_name', default='restaurant_session.db')
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-    rtabmap_map_name = LaunchConfiguration('map_name', default='restaurant_session.db')
 
-    # Nav Central — hybrid mode: mapping=True + use_nav2=True
-    # SLAM builds the map incrementally while Nav2 navigates within it
     nav_central_node = Node(
         package='nav_main',
         executable='nav_central.py',
@@ -56,7 +51,6 @@ def launch_function(context, *args, **kwargs):
         ),
     )
 
-    # RTAB-Map + Nav2 stack: mapping mode with Nav2 enabled
     rtabmapnav = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "rtabnav2.launch.py"])
@@ -76,7 +70,5 @@ def launch_function(context, *args, **kwargs):
         nav_basics,
         rtabmapnav,
     ]
-
-
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
