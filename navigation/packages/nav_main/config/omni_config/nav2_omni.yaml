@@ -57,7 +57,7 @@ controller_server:
     odom_topic: /odometry/filtered
     # These three were missing in the source file but are REQUIRED.
     controller_plugins: ["FollowPath"]
-    progress_checker_plugin: "progress_checker"
+    progress_checker_plugins: ["progress_checker"]   # Nav2 1.4.0 renamed the singular progress_checker_plugin -> plural list
     goal_checker_plugins: ["general_goal_checker"]
 
     progress_checker:
