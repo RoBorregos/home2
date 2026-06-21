@@ -127,7 +127,7 @@ class PersonGoalSmoother(Node):
 
         # --- Parameters ---
         self.declare_parameter("alpha", 0.3)           # EMA smoothing (0=full smooth, 1=no smooth)
-        self.declare_parameter("distance_gate", 0.25)    # Min distance (m) to publish new goal
+        self.declare_parameter("distance_gate", 0.1)     # Min distance (m) to publish new goal (lower = heading refreshes more continuously)
         self.declare_parameter("follow_distance", 0.8)  # Stay this far behind the person
         self.declare_parameter("timeout", 3.0)           # Seconds without tracker data to stop
         self.declare_parameter("map_frame", "map")
@@ -380,13 +380,14 @@ class PersonGoalSmoother(Node):
             return  # Too close, no meaningful direction
 
         # Goal is follow_dist meters behind the person (toward robot)
-        if dist > follow_dist:
-            ratio = (dist - follow_dist) / dist
-            goal_x = self.robot_x + dx * ratio
-            goal_y = self.robot_y + dy * ratio
-        else:
-            goal_x = self.robot_x
-            goal_y = self.robot_y
+        # Goal is ALWAYS follow_dist from the person, on the person->robot line.
+        #   dist > follow_dist -> goal is between them: robot drives forward.
+        #   dist < follow_dist -> goal is BEHIND the robot: robot backs up to
+        #   open the gap, instead of spinning in place while crowded at <0.8 m
+        #   (which is what made it lose the person when they circled in close).
+        ux, uy = dx / dist, dy / dist            # unit robot->person
+        goal_x = self.smooth_x - follow_dist * ux
+        goal_y = self.smooth_y - follow_dist * uy
 
         # Snap to free space on map
         goal_x, goal_y = self._snap_to_free(goal_x, goal_y)

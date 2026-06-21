@@ -35,6 +35,7 @@ from task_manager.utils.task import Task
 from task_manager.utils.logger import Logger
 from task_manager.subtask_managers.nav_tasks import NavigationTasks
 from task_manager.subtask_managers.vision_tasks import VisionTasks
+from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
 
 STOP_WORDS = {"stop", "s", "q", "quit", "exit"}
 
@@ -55,15 +56,30 @@ class TestFollowPerson(Node):
         # When True, this test also drives the vision tracker (track_person).
         # Set False if you select the target elsewhere (e.g. the vision UI).
         self.track = self.declare_parameter("track", True).value
+        # When True, also drive the xArm follow (follow_person_controller via
+        # the /follow_person service). Set False for base-only follow.
+        self.arm = self.declare_parameter("arm", True).value
+        # When True, drive the base/nav follow (nav_central). Set False to test
+        # the arm/tracker in isolation (no base motion; nav stack not needed).
+        self.nav_follow = self.declare_parameter("nav", True).value
 
         print(f"\n{Logger.BOLD}=== Follow-Person interactive test ==={Logger.RESET}")
-        print(f"  mocked={self.mocked}  track={self.track}")
+        print(f"  mocked={self.mocked}  track={self.track}  arm={self.arm}  nav={self.nav_follow}")
         print("  -> type 'stop' (or 'q') + Enter to stop, or press Ctrl-C\n")
 
-        self.nav = NavigationTasks(self, task=Task.DEBUG, mock_data=self.mocked)
+        self.nav = (
+            NavigationTasks(self, task=Task.DEBUG, mock_data=self.mocked)
+            if self.nav_follow
+            else None
+        )
         self.vision = (
             VisionTasks(self, task=Task.HELP_ME_CARRY, mock_data=self.mocked)
             if self.track
+            else None
+        )
+        self.manip = (
+            ManipulationTasks(self, task=Task.HELP_ME_CARRY, mock_data=self.mocked)
+            if self.arm
             else None
         )
 
@@ -72,6 +88,7 @@ class TestFollowPerson(Node):
     def run(self):
         following = False
         tracking = False
+        arm_following = False
         try:
             # 1. Start the vision tracker on the person in view (optional)
             if self.vision is not None:
@@ -86,17 +103,30 @@ class TestFollowPerson(Node):
                     return
                 tracking = True
 
-            # 2. Start nav follow
-            print(f"{Logger.BOLD}-> Starting follow...{Logger.RESET}")
-            res = self.nav.follow_person(True)
-            if not _ok(res):
-                print(f"{Logger.RED}Could not start follow ({res}).{Logger.RESET}")
-                return
-            following = True
-            print(
-                f"{Logger.GREEN}{Logger.BOLD}Following.{Logger.RESET} "
-                f"The robot is now chasing the tracked person."
-            )
+            # 2. Start nav follow (optional — skip with -p nav:=false)
+            if self.nav is not None:
+                print(f"{Logger.BOLD}-> Starting follow...{Logger.RESET}")
+                res = self.nav.follow_person(True)
+                if not _ok(res):
+                    print(f"{Logger.RED}Could not start follow ({res}).{Logger.RESET}")
+                    return
+                following = True
+                print(
+                    f"{Logger.GREEN}{Logger.BOLD}Following.{Logger.RESET} "
+                    f"The robot is now chasing the tracked person."
+                )
+
+            # 2b. Start the arm follow (xArm joint1 keeps the person centered)
+            if self.manip is not None:
+                print(f"{Logger.BOLD}-> Starting arm follow...{Logger.RESET}")
+                res = self.manip.follow_person(True)
+                if _ok(res):
+                    arm_following = True
+                else:
+                    print(
+                        f"{Logger.RED}Arm follow did not start ({res}); "
+                        f"continuing with base only.{Logger.RESET}"
+                    )
 
             # 3. Block until the user says stop
             while True:
@@ -112,9 +142,12 @@ class TestFollowPerson(Node):
             print("\n(Ctrl-C received) stopping...")
         finally:
             # 4. Always stop follow + tracking, best-effort
-            if following:
+            if following and self.nav is not None:
                 print(f"{Logger.BOLD}-> Stopping follow...{Logger.RESET}")
                 self.nav.follow_person(False)
+            if arm_following and self.manip is not None:
+                print(f"{Logger.BOLD}-> Stopping arm follow...{Logger.RESET}")
+                self.manip.follow_person(False)
             if tracking and self.vision is not None:
                 print(f"{Logger.BOLD}-> Stopping tracking...{Logger.RESET}")
                 self.vision.track_person(False)

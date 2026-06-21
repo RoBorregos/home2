@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-#!/usr/bin/env python3
-
 """
 Node to track a single person and re-id them if necessary.
 Requires 2 terminals minimum (3 if using pose/color detection via moondream).
@@ -52,6 +50,7 @@ from vision_general.utils.calculations import (
 )
 
 import copy
+import threading
 import rclpy
 from rclpy.node import Node
 from vision_general.utils.ros_utils import wait_for_future
@@ -192,6 +191,10 @@ class SingleTracker(Node):
         self.flip_image = False
         self.last_reid_extraction = time.time()
         self.timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        # 10 Hz tracking timer. Stage 0 uses ByteTrack (no per-frame ReID): each
+        # cycle is detector-bound and fast, so the realized rate is detector-limited
+        # (not timer-limited). 20 Hz was tried but the old per-frame SWIN ReID was
+        # the real bottleneck.
         self.create_timer(0.1, self.run, callback_group=self.timer_callback_group)
         self.create_timer(
             0.1, self.publish_image, callback_group=self.timer_callback_group
@@ -200,6 +203,9 @@ class SingleTracker(Node):
     def setup(self):
         """Load models and initial variables"""
         self.target_set = False
+        # Serializes the tracker timer (run) and the set_target service so they
+        # never touch the shared self.frame / TensorRT self.model concurrently.
+        self._infer_lock = threading.Lock()
         self.image = None
         self.image_time = None
         self.frame_id = "zed_left_camera_optical_frame"
@@ -215,37 +221,26 @@ class SingleTracker(Node):
         }
         self.depth_image_time = None
         self.last_depth = None
-        pbar = tqdm.tqdm(total=4, desc="Loading models")
+        pbar = tqdm.tqdm(total=2, desc="Loading models")
 
         # Load YOLO with TensorRT acceleration for Orin AGX
         self.model = load_yolo_trt("yolov8n.pt")
+        pbar.update(1)
         self.pose_detection = PoseDetection()
-
-        # Load the ReID model
-        structure = get_structure()
-        pbar.update(1)
-        self.model_reid = load_network(structure)
-        pbar.update(1)
-        self.model_reid.classifier.classifier = nn.Sequential()
-        pbar.update(1)
-        use_gpu = torch.cuda.is_available()
-        if use_gpu:
-            self.model_reid = self.model_reid.cuda()
         pbar.update(1)
 
-        # Initialize DeepSORT tracker
-        metric = NearestNeighborDistanceMetric(
-            "cosine", DEEPSORT_MAX_COSINE_DISTANCE, DEEPSORT_NN_BUDGET
-        )
-        self.deepsort_tracker = DeepSORTTracker(
-            metric, max_age=DEEPSORT_MAX_AGE, n_init=DEEPSORT_N_INIT
-        )
+        # Stage 0: per-frame tracking is ultralytics ByteTrack (self.model.track) —
+        # NO per-frame appearance ReID. The heavy SWIN ReID is NOT loaded at startup;
+        # Stage 1 will lazy-load a lightweight re-acquisition model (OSNet / face) on
+        # demand. DeepSORT is replaced by ByteTrack (see _track()).
+        self.model_reid = None
+        self.deepsort_tracker = None
 
         self.output_image = []
         self.depth_image = []
 
         pbar.close()
-        self.get_logger().info("Single Tracker Ready (DeepSORT)")
+        self.get_logger().info("Single Tracker Ready (ByteTrack, Stage 0)")
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
@@ -322,8 +317,47 @@ class SingleTracker(Node):
             embedding = extract_feature_from_img(pil_image, self.model_reid)
         return embedding.cpu().numpy().flatten()
 
+    def _track(self, frame):
+        """Per-frame multi-object tracking via ultralytics ByteTrack (Stage 0).
+
+        Appearance-free: no per-detection ReID embedding. persist=True keeps the
+        ByteTrack state (and thus the track-ids) across calls. Returns the SAME
+        structure the downstream consumers expect — a list of
+        {"track_id", "x1", "y1", "x2", "y2"} dicts (person class only).
+        """
+        frame_h, frame_w = frame.shape[:2]
+        results = self.model.track(
+            frame,
+            classes=0,
+            persist=True,
+            tracker="bytetrack.yaml",
+            verbose=False,
+        )
+        tracked = []
+        if not results:
+            return tracked
+        boxes = results[0].boxes
+        if boxes is None or boxes.id is None:
+            return tracked
+        ids = boxes.id.int().cpu().tolist()
+        xyxy = boxes.xyxy.cpu().tolist()
+        confs = boxes.conf.cpu().tolist()
+        for tid, (bx1, by1, bx2, by2), conf in zip(ids, xyxy, confs):
+            if conf < CONF_THRESHOLD:
+                continue
+            x1 = max(0, min(int(round(bx1)), frame_w - 1))
+            y1 = max(0, min(int(round(by1)), frame_h - 1))
+            x2 = max(0, min(int(round(bx2)), frame_w))
+            y2 = max(0, min(int(round(by2)), frame_h))
+            if x2 <= x1 or y2 <= y1:
+                continue
+            tracked.append(
+                {"track_id": int(tid), "x1": x1, "y1": y1, "x2": x2, "y2": y2}
+            )
+        return tracked
+
     def _run_deepsort(self, frame, yolo_results):
-        """Run DeepSORT on YOLO detections, returns list of confirmed tracks."""
+        """[Stage 0: UNUSED — replaced by _track()/ByteTrack] DeepSORT on YOLO dets."""
         frame_h, frame_w = frame.shape[:2]  # ✅ use distinct names
 
         detections = []
@@ -390,6 +424,13 @@ class SingleTracker(Node):
         self.last_depth = None
 
     def set_target(self, track_by="largest_person", value=""):
+        # Serialize against the run() timer: wait for any in-flight inference, then
+        # run exclusively, so self.frame / the TensorRT model aren't touched
+        # concurrently (was: AttributeError 'NoneType' has no attribute 'shape').
+        with self._infer_lock:
+            return self._set_target_impl(track_by, value)
+
+    def _set_target_impl(self, track_by="largest_person", value=""):
         """Set the target to track (Default: Largest person in frame)"""
         if self.image is None:
             self.get_logger().warn("No image available")
@@ -408,16 +449,10 @@ class SingleTracker(Node):
 
         self.output_image = self.frame.copy()
 
-        # Run YOLO + DeepSORT multiple times to allow track confirmation (n_init frames)
-        tracked_people = []
-        for _ in range(DEEPSORT_N_INIT + 1):
-            self.frame = copy.deepcopy(self.image)
-            yolo_results = self.model.predict(
-                self.frame,
-                classes=0,
-                verbose=False,
-            )
-            tracked_people = self._run_deepsort(self.frame, yolo_results)
+        # ByteTrack runs continuously; SELECT the operator from the CURRENT tracks
+        # (no DeepSORT n_init confirmation loop needed) — Stage 0. Track + crops all
+        # use the same (flipped, if enabled) self.frame for consistency.
+        tracked_people = self._track(self.frame)
 
         largest_person = {
             "id": None,
@@ -580,6 +615,22 @@ class SingleTracker(Node):
             return 1, result.result
 
     def run(self):
+        # Timer entry. Skip this tick if an inference is already in flight (another
+        # run() or a set_target): serializes access to the shared self.frame and the
+        # persistent ByteTrack state (self.model.track(persist=True)) so overlapping
+        # ticks can't stack up or race set_target (set_target was crashing on
+        # frame=None before this guard).
+        if not self.target_set:
+            self.is_tracking_result = False
+            return
+        if not self._infer_lock.acquire(blocking=False):
+            return
+        try:
+            self._run_impl()
+        finally:
+            self._infer_lock.release()
+
+    def _run_impl(self):
         """Main loop to run the tracker"""
 
         if not self.target_set:
@@ -596,10 +647,9 @@ class SingleTracker(Node):
 
         self.output_image = self.frame.copy()
 
-        # Run YOLO detection + DeepSORT tracking with ReID
+        # Per-frame detection + ByteTrack (motion-only, no per-frame ReID) — Stage 0
         start_time = time.time()
-        yolo_results = self.model.predict(self.frame, classes=0, verbose=False)
-        tracked_people = self._run_deepsort(self.frame, yolo_results)
+        tracked_people = self._track(self.frame)
         self.get_logger().info(
             f"Det+Tracking took {time.time() - start_time:.2f}s | People: {len(tracked_people)}"
         )
@@ -614,64 +664,16 @@ class SingleTracker(Node):
             x1, y1, x2, y2 = person["x1"], person["y1"], person["x2"], person["y2"]
             track_id = person["track_id"]
 
-            angle = None
-
             if track_id == self.person_data["id"]:
                 person_in_frame = True
                 self.person_data["coordinates"] = (x1, y1, x2, y2)
                 cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cropped_image = self.frame[y1:y2, x1:x2]
-                embedding = None
-                pil_image = PILImage.fromarray(cropped_image)
-
-                if self.person_data[
-                    "embeddings"
-                ] is None or time.time() - self.last_reid_extraction > (
-                    1 / REID_EXTRACT_FREQ
-                ):
-                    self.last_reid_extraction = time.time()
-                    with torch.no_grad():
-                        embedding = extract_feature_from_img(pil_image, self.model_reid)
-                    if self.person_data["embeddings"] is None:
-                        self.person_data["embeddings"] = torch.zeros(
-                            (MAX_EMBEDDINGS, embedding.shape[1]),
-                            device="cuda" if torch.cuda.is_available() else "cpu",
-                        )
-                        self.person_data["embeddings"][
-                            self.person_data["num_embeddings"]
-                        ] = embedding.squeeze()
-                        self.person_data["num_embeddings"] += 1
-                    else:
-                        embedding_exists = compare_images_batch(
-                            embedding,
-                            self.person_data["embeddings"],
-                            threshold=0.7,
-                        )
-                        if (
-                            not embedding_exists
-                            and self.person_data["num_embeddings"] < MAX_EMBEDDINGS
-                        ):
-                            self.person_data["embeddings"][
-                                self.person_data["num_embeddings"]
-                            ] = embedding.squeeze()
-                            self.person_data["num_embeddings"] += 1
-
-                angle = self.pose_detection.personAngle(cropped_image)
-                if angle is not None and self.person_data[angle] is None:
-                    if embedding is None:
-                        pil_image = PILImage.fromarray(cropped_image)
-                        with torch.no_grad():
-                            embedding = extract_feature_from_img(
-                                pil_image, self.model_reid
-                            )
-                    self.person_data[angle] = embedding
-
             else:
                 cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
             cv2.putText(
                 self.output_image,
-                f"person {track_id}, Angle: {angle}",
+                f"person {track_id}",
                 (x1, y1 - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.9,
@@ -679,82 +681,15 @@ class SingleTracker(Node):
                 2,
             )
 
-        # Re-identification if person lost
-        reid_start = None
-        if not person_in_frame and len(tracked_people) > 0:
-            reid_start = time.time()
-            img_list = []
-            for person in tracked_people:
-                cropped_image = self.frame[
-                    person["y1"] : person["y2"], person["x1"] : person["x2"]
-                ]
-                pil_image = PILImage.fromarray(cropped_image)
-                img_list.append(pil_image)
-
-            with torch.no_grad():
-                embeddings_batch = extract_feature_from_img_batch(
-                    img_list, self.model_reid
-                )
-
-            for i, person in enumerate(tracked_people):
-                cropped_image = self.frame[
-                    person["y1"] : person["y2"], person["x1"] : person["x2"]
-                ]
-                embedding = embeddings_batch[i]
-                person_angle = self.pose_detection.personAngle(cropped_image)
-
-                if person_angle is not None:
-                    if self.person_data[person_angle] is not None:
-                        if compare_images(
-                            embedding, self.person_data[person_angle], threshold=0.7
-                        ):
-                            # We need to reset the embeddings and angles because the person was reidentified
-                            self._reset_person_data()
-
-                            self.person_data["id"] = person["track_id"]
-                            self.person_data["coordinates"] = (
-                                person["x1"],
-                                person["y1"],
-                                person["x2"],
-                                person["y2"],
-                            )
-
-                            self.success(
-                                f"Person re-identified: {person['track_id']} with angle {person_angle}"
-                            )
-                            person_in_frame = True
-                            break
-                else:
-                    if (
-                        self.person_data["embeddings"] is not None
-                        and self.person_data["num_embeddings"] > 0
-                    ):
-                        embedding_exists = compare_images_batch(
-                            embedding,
-                            self.person_data["embeddings"],
-                            threshold=0.7,
-                        )
-                        if embedding_exists:
-                            self.success(
-                                f"Person re-identified: {person['track_id']} without angle"
-                            )
-                            self._reset_person_data()
-
-                            self.person_data["id"] = person["track_id"]
-                            self.person_data["coordinates"] = (
-                                person["x1"],
-                                person["y1"],
-                                person["x2"],
-                                person["y2"],
-                            )
-
-                            person_in_frame = True
-                            break
+        # TODO Stage 1: when the locked track-id disappears (person_in_frame is
+        # False but other tracks exist), run a LIGHTWEIGHT OSNet body-ReID and/or an
+        # InsightFace face match over the current tracks to re-acquire the SAME
+        # operator, then set self.person_data["id"] to the re-found track and
+        # person_in_frame = True. Stage 0 has NO per-frame / per-loss ReID: it relies
+        # purely on the ByteTrack track-id, which ultralytics persists across short
+        # occlusions.
 
         if person_in_frame:
-            print("Entro al frme")
-            if reid_start is not None:
-                self.get_logger().info(f"ReID took {time.time() - reid_start:.2f}s")
             self.is_tracking_result = True
             if self.depth_image_time is None or self.image_time is None:
                 self.get_logger().warn(

@@ -71,7 +71,7 @@ import rclpy
 from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, TwistStamped, Quaternion, TransformStamped
-from std_msgs.msg import Float32MultiArray, Int32MultiArray, String
+from std_msgs.msg import Float32MultiArray, Int32MultiArray, String, Float64
 from sensor_msgs.msg import Imu
 from nav_msgs.msg import Odometry
 from tf2_ros import TransformBroadcaster
@@ -304,6 +304,9 @@ class ODriveDashboardNode(Node):
 
         self.declare_parameter('demo_mode', False)
         self._demo = self.get_parameter('demo_mode').value
+        # Follow mode: add the reactive "unload-the-arm" base yaw published on
+        # /follow/base_yaw into the commanded wz (only while the value is fresh).
+        self.declare_parameter('follow_base_yaw_enabled', False)
         self._baud = baud
         self._ser_lock = threading.Lock()
         try:
@@ -319,6 +322,10 @@ class ODriveDashboardNode(Node):
         self.tx_vy: float = 0.0
         self.tx_wz: float = 0.0
         self.tx_count: int = 0
+        # Reactive base-yaw injected by the arm follow controller
+        # (/follow/base_yaw). Added to wz only while FRESH (<0.5 s old).
+        self._follow_base_yaw: float = 0.0
+        self._follow_base_yaw_time: float = 0.0
         self.discovered_node_ids: List[int] = []
         self._latest_telem: Dict[str, Any] = self._empty_telem()
         self._sio = None
@@ -373,6 +380,10 @@ class ODriveDashboardNode(Node):
                                      self._cb_cmd_vel_stamped, 10)
         else:
             self.create_subscription(Twist, 'cmd_vel', self._cb_cmd_vel, 10)
+
+        # Reactive base-yaw from the arm follow controller (unload-the-arm).
+        self.create_subscription(Float64, '/follow/base_yaw',
+                                 self._cb_follow_base_yaw, 10)
 
         self.create_subscription(String, 'odrive/config_cmd',
                                  self._cb_config_cmd, 10)
@@ -562,6 +573,11 @@ class ODriveDashboardNode(Node):
         self.tx_vx, self.tx_vy, self.tx_wz = \
             msg.twist.linear.x, msg.twist.linear.y, msg.twist.angular.z
 
+    def _cb_follow_base_yaw(self, msg: Float64):
+        # Reactive yaw from the arm follow controller; merged into wz at TX time.
+        self._follow_base_yaw = float(msg.data)
+        self._follow_base_yaw_time = time.monotonic()
+
     def _cb_config_cmd(self, msg: String):
         line = msg.data.strip()
         if not line.startswith('2 '):
@@ -572,8 +588,14 @@ class ODriveDashboardNode(Node):
     # ── periodic TX ───────────────────────────────────────────────────────────
 
     def _send_control_cmd(self):
+        wz = self.tx_wz
+        # Follow mode: add the reactive "unload-the-arm" base yaw if enabled and
+        # FRESH (<0.5 s). Stale or disabled -> normal driving is unchanged.
+        if self.get_parameter('follow_base_yaw_enabled').value and \
+                (time.monotonic() - self._follow_base_yaw_time) < 0.5:
+            wz += self._follow_base_yaw
         self._serial_write(
-            f"1 {self.tx_vx:.4f} {self.tx_vy:.4f} {self.tx_wz:.4f}")
+            f"1 {self.tx_vx:.4f} {self.tx_vy:.4f} {wz:.4f}")
         self.tx_count += 1
 
     # ── public helpers ────────────────────────────────────────────────────────

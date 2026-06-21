@@ -24,6 +24,7 @@ from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 
 from geometry_msgs.msg import Point, Twist
+from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from frida_interfaces.srv import FollowFace
 from frida_pymoveit2.robots import xarm6
@@ -55,12 +56,24 @@ class FollowPersonController(Node):
         self.declare_parameter("ki", 0.1)
         self.declare_parameter("kff", 1.0)
         self.declare_parameter("dead_zone", 0.05)
-        self.declare_parameter("max_velocity", 1.5)
+        self.declare_parameter("max_velocity", 0.8)
         self.declare_parameter("joint1_min", -2.8)
-        self.declare_parameter("joint1_max", -0.3)
+        self.declare_parameter("joint1_max", -0.5)
         self.declare_parameter("control_rate", 20.0)
         self.declare_parameter("centroid_timeout", 1.5)
         self.declare_parameter("integral_clamp", 0.5)
+        # Reactive "unload-the-arm" base yaw: when joint1 has panned off neutral
+        # (person to the side), rotate the BASE so joint1 returns toward neutral
+        # -> effectively unlimited pan and the person stays in the camera FOV.
+        # NOTE: verify the SIGN of base_yaw_kp on the robot (flip if the base
+        # turns the wrong way); joint1_neutral = forward-pointing joint1 value.
+        # OFF by default: the reactive base-yaw overshoots/oscillates with the
+        # current arm+base coupling — to be revisited (likely alongside re-acquisition).
+        # Tuned-down gains kept for when it's re-enabled.
+        self.declare_parameter("base_yaw_enabled", False)
+        self.declare_parameter("base_yaw_kp", 0.5)
+        self.declare_parameter("joint1_neutral", -1.5707)
+        self.declare_parameter("base_yaw_max", 0.25)
 
         # --- State ---
         self.active = False
@@ -92,6 +105,9 @@ class FollowPersonController(Node):
             10,
             callback_group=cb_group,
         )
+
+        # --- Base-yaw publisher (reactive unload-the-arm) ---
+        self.base_yaw_pub = self.create_publisher(Float64, "/follow/base_yaw", 10)
 
         # --- xArm service clients ---
         self.mode_client = self.create_client(
@@ -192,9 +208,11 @@ class FollowPersonController(Node):
 
     def _control_loop(self):
         if not self.active:
+            self._publish_base_yaw(0.0)
             return
 
         if TARGET_JOINT not in self.joint_positions:
+            self._publish_base_yaw(0.0)
             return
 
         current_j1 = self.joint_positions[TARGET_JOINT]
@@ -215,6 +233,7 @@ class FollowPersonController(Node):
         if self.centroid_time == 0.0 or age > timeout:
             self.error_integral = 0.0
             self._send_joint_velocity(0.0)
+            self._publish_base_yaw(0.0)
             self.get_logger().warn(
                 "No centroid data — sending zero velocity", throttle_duration_sec=2.0
             )
@@ -256,6 +275,23 @@ class FollowPersonController(Node):
             throttle_duration_sec=0.5,
         )
         self._send_joint_velocity(joint1_vel)
+
+        # Reactive base yaw: rotate the base to bring joint1 back toward neutral
+        # (unload the arm) so the person stays centred with unlimited pan range.
+        if self.get_parameter("base_yaw_enabled").value:
+            neutral = self.get_parameter("joint1_neutral").value
+            byaw_kp = self.get_parameter("base_yaw_kp").value
+            byaw_max = self.get_parameter("base_yaw_max").value
+            base_yaw = byaw_kp * (current_j1 - neutral)
+            base_yaw = max(-byaw_max, min(byaw_max, base_yaw))
+        else:
+            base_yaw = 0.0
+        self._publish_base_yaw(base_yaw)
+
+    def _publish_base_yaw(self, value: float):
+        msg = Float64()
+        msg.data = float(value)
+        self.base_yaw_pub.publish(msg)
 
     # ── Velocity command ───────────────────────────────────────
 
