@@ -3,7 +3,6 @@
 import math
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from std_msgs.msg import Bool
 from sensor_msgs.msg import JointState
@@ -11,7 +10,6 @@ from std_srvs.srv import Empty, Trigger
 from xarm_msgs.msg import RobotMsg
 from xarm_msgs.srv import SetInt16, SetInt16ById, Call as XArmCall, MoveJoint
 from controller_manager_msgs.srv import SwitchController
-from frida_interfaces.action import MoveJoints
 from frida_constants.manipulation_constants import (
     XARM_ROBOT_STATES_TOPIC,
     XARM_CLEAN_ERROR_SERVICE,
@@ -21,7 +19,6 @@ from frida_constants.manipulation_constants import (
     XARM_SET_SERVO_ANGLE_SERVICE,
     XARM_POSITION_MODE,
     ESTOP_TOPIC,
-    MOVE_JOINTS_ACTION_SERVER,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
     MOVEIT_MODE,
     XARM_STATE_READY,
@@ -29,9 +26,6 @@ from frida_constants.manipulation_constants import (
     XARM_STATE_PAUSED,
     XARM_STATE_STOPPED,
     XARM_ALL_JOINTS_ID,
-)
-from frida_motion_planning.utils.service_utils import (
-    move_joint_positions as send_joint_goal,
 )
 from frida_pymoveit2.robots.xarm6 import (
     JOINT_POSITION_LIMITS,
@@ -81,12 +75,6 @@ class ManipulationSafeguard(Node):
         self.switch_controller_client = self.create_client(
             SwitchController,
             "/controller_manager/switch_controller",
-            callback_group=self.callback_group,
-        )
-        self._move_joints_client = ActionClient(
-            self,
-            MoveJoints,
-            MOVE_JOINTS_ACTION_SERVER,
             callback_group=self.callback_group,
         )
         self._set_servo_angle_client = self.create_client(
@@ -156,15 +144,8 @@ class ManipulationSafeguard(Node):
                 and self._arm_state.err == 0
             ):
                 self._in_estop = False
-                self.get_logger().warn(
-                    "E-stop CLEARED — arm recovered, going to table_stare"
-                )
+                self.get_logger().warn("E-stop CLEARED — arm recovered")
                 self._estop_pub.publish(Bool(data=False))
-                send_joint_goal(
-                    move_joints_action_client=self._move_joints_client,
-                    named_position="table_stare",
-                    velocity=0.3,
-                )
                 self._call_svc(
                     self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
                 )
