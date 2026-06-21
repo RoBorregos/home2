@@ -29,8 +29,12 @@ def load_yolo_pose(model_name="yolo11m-pose.pt"):
 
 
 class PoseDetection:
+    _model_cache = {}
+
     def __init__(self):
-        self.yolo_pose = load_yolo_pose()
+        if "yolo11m-pose.pt" not in self._model_cache:
+            self._model_cache["yolo11m-pose.pt"] = load_yolo_pose()
+        self.yolo_pose = self._model_cache["yolo11m-pose.pt"]
         print("Pose Detection Ready (YOLO TensorRT)")
 
     # ── Full-image detection ──
@@ -139,6 +143,36 @@ class PoseDetection:
             else np.ones(17, dtype=np.float32)
         )
         return points, conf
+
+    def get_best_wrist_point(self, image):
+        """Return the most confident wrist pixel coordinate as (x, y) or None."""
+        results = self.yolo_pose(image, verbose=False)
+        if (
+            not results
+            or results[0].keypoints is None
+            or results[0].keypoints.xy is None
+            or len(results[0].keypoints.xy) == 0
+        ):
+            return None
+
+        points = results[0].keypoints.xy[0].cpu().numpy()
+        conf = (
+            results[0].keypoints.conf[0].cpu().numpy()
+            if results[0].keypoints.conf is not None
+            else np.ones(17, dtype=np.float32)
+        )
+
+        best_wrist = None
+        best_conf = 0.0
+        for idx in [LEFT_WRIST, RIGHT_WRIST]:
+            if conf[idx] > best_conf and conf[idx] > KP_CONF:
+                best_conf = conf[idx]
+                best_wrist = idx
+
+        if best_wrist is None:
+            return None
+
+        return int(points[best_wrist][0]), int(points[best_wrist][1])
 
     def detect(self, frame):
         """Run pose detection, return raw YOLO results."""

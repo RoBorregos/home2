@@ -18,12 +18,12 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
-from vision_general.utils.trt_utils import load_yolo_trt
 from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
+from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
     CAMERA_FRAME,
@@ -44,15 +44,6 @@ package_share_dir = get_package_share_directory("vision_general")
 
 constants = get_package_share_directory("frida_constants")
 _areas_file_path = os.path.join(constants, "map_areas/areas.json")
-
-# YOLO COCO keypoint indices for wrist (hand proxy)
-LEFT_WRIST_IDX = 9
-RIGHT_WRIST_IDX = 10
-KP_CONF = 0.3
-
-
-def _load_yolo_pose(model_name="yolo11m-pose.pt"):
-    return load_yolo_trt(model_name, task="pose")
 
 
 PERCENTAGE = 0.3
@@ -140,8 +131,7 @@ class HRICCommands(Node):
         with open(_areas_file_path, "r") as f:
             self.areas = json.load(f)
 
-        # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
-        self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
+        self.pose_detection = PoseDetection()
 
         self.detect_hand_service = self.create_service(
             DetectHand,
@@ -174,44 +164,17 @@ class HRICCommands(Node):
         self.camera_info = msg
 
     def run_hand_inference(self):
-        """Detect hand position using YOLO pose wrist keypoints (TensorRT accelerated)."""
+        """Detect hand position using the shared pose-detection helper."""
         if self.image is None:
             return
 
         h, w = self.image.shape[:2]
-        results = self.pose_model(self.image, verbose=False)
-
-        if (
-            not results
-            or results[0].keypoints is None
-            or results[0].keypoints.xy is None
-            or len(results[0].keypoints.xy) == 0
-        ):
+        wrist_point = self.pose_detection.get_best_wrist_point(self.image)
+        if wrist_point is None:
             self.get_logger().info("No hand detected")
             return None
 
-        points = results[0].keypoints.xy[0].cpu().numpy()  # pixel coords
-        conf = (
-            results[0].keypoints.conf[0].cpu().numpy()
-            if results[0].keypoints.conf is not None
-            else np.ones(17, dtype=np.float32)
-        )
-
-        # Pick the most confident wrist as the hand position
-        best_wrist = None
-        best_conf = 0.0
-        for idx in [LEFT_WRIST_IDX, RIGHT_WRIST_IDX]:
-            if conf[idx] > best_conf and conf[idx] > KP_CONF:
-                best_conf = conf[idx]
-                best_wrist = idx
-
-        if best_wrist is None:
-            self.get_logger().info("No hand detected")
-            return None
-
-        cx = int(points[best_wrist][0])
-        cy = int(points[best_wrist][1])
-
+        cx, cy = wrist_point
         if not (0 <= cx < w and 0 <= cy < h):
             self.get_logger().warn(f"Wrist outside image: ({cx}, {cy})")
             return None
