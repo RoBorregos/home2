@@ -19,7 +19,9 @@ services:
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     runtime: ${DOCKER_RUNTIME:-}
-    group_add: 
+    # Keep integration/task_manager off navigation's reserved cores (nav is pinned 0-3). Tunable via COMPUTE_CPUSET.
+    cpuset: "${COMPUTE_CPUSET:-4-11}"
+    group_add:
       - video
     environment:
       DISPLAY: ${DISPLAY}

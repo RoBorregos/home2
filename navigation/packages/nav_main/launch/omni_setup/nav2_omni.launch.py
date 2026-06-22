@@ -104,12 +104,9 @@ def launch_setup(context, *args, **kwargs):
                 name='bt_navigator',
                 parameters=[nav2_params],
             ),
-            ComposableNode(
-                package='nav2_velocity_smoother',
-                plugin='nav2_velocity_smoother::VelocitySmoother',
-                name='velocity_smoother',
-                parameters=[nav2_params],
-            ),
+            # velocity_smoother removed: the base subscribes to raw /cmd_vel and does its
+            # own acceleration ramp on the MCU, so the Nav2 smoother was bypassed (nothing
+            # consumed /cmd_vel_smoothed). Dropping it also speeds up the lifecycle resume.
             ComposableNode(
                 package='nav2_lifecycle_manager',
                 plugin='nav2_lifecycle_manager::LifecycleManager',
@@ -123,7 +120,6 @@ def launch_setup(context, *args, **kwargs):
                         'planner_server',
                         'behavior_server',
                         'bt_navigator',
-                        'velocity_smoother',
                     ]
                 }],
             ),
