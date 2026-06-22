@@ -350,6 +350,7 @@ var hierarchy =
       [ "pick_and_place.keyboard_input.KeyboardInput", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html", null ],
       [ "pick_and_place.manipulation_client.ManipulationClient", "classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html", null ],
       [ "pick_and_place.manipulation_core.ManipulationCore", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html", null ],
+      [ "pick_and_place.pick_benchmark.PickBenchmark", "classpick__and__place_1_1pick__benchmark_1_1PickBenchmark.html", null ],
       [ "pick_and_place.pick_server.PickMotionServer", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html", null ],
       [ "pick_and_place.place_server.PlaceMotionServer", "classpick__and__place_1_1place__server_1_1PlaceMotionServer.html", null ],
       [ "pick_and_place.pour_server.PourMotionServer", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html", null ],

@@ -115,6 +115,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a820801842f2c5e529b5672e18233d0f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab91cc3d5eca6290023572f17daaaef15"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#ab91cc3d5eca6290023572f17daaaef15">send_pick_request</a> (self, object_name, scan_environment=False)</td></tr>
 <tr class="separator:ab91cc3d5eca6290023572f17daaaef15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a28ff82325e0d7d75c70197a1ea6221"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a7a28ff82325e0d7d75c70197a1ea6221">scan_shelf_levels</a> (self)</td></tr>
+<tr class="separator:a7a28ff82325e0d7d75c70197a1ea6221"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a884647348f69f0954cab9d4cfe645c43"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a884647348f69f0954cab9d4cfe645c43">send_place_request</a> (self, is_shelf=False, table_height=None, table_height_tolerance=None, close_to=&quot;&quot;, special_request_position=None, special_request_object=None)</td></tr>
 <tr class="separator:a884647348f69f0954cab9d4cfe645c43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24a3edb39aae5187e6f2ff478ff877e1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a24a3edb39aae5187e6f2ff478ff877e1">send_pour_request</a> (self, object_name, bowl_name, object_already_grasped=False)</td></tr>
@@ -149,6 +151,8 @@ Public Attributes</h2></td></tr>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a7f84aec58c1875772973d0cc475e60b5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a7f84aec58c1875772973d0cc475e60b5">_action_client</a></td></tr>
 <tr class="separator:a7f84aec58c1875772973d0cc475e60b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ca4e3f89d7762012273c056ac4a7bad"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a4ca4e3f89d7762012273c056ac4a7bad">_optimal_position_client</a></td></tr>
+<tr class="separator:a4ca4e3f89d7762012273c056ac4a7bad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a97bdeacbcc8414b61b677987db11fd94" name="a97bdeacbcc8414b61b677987db11fd94"></a>
@@ -304,6 +308,25 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a7a28ff82325e0d7d75c70197a1ea6221" name="a7a28ff82325e0d7d75c70197a1ea6221"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a28ff82325e0d7d75c70197a1ea6221">&#9670;&#160;</a></span>scan_shelf_levels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.keyboard_input.KeyboardInput.scan_shelf_levels </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Face each shelf level so the octomap/spheres build before a shelf pick or
+place. Mirrors the task manager cabinet scan; run before option -4 or -11.</pre> 
 </div>
 </div>
 <a id="ab91cc3d5eca6290023572f17daaaef15" name="ab91cc3d5eca6290023572f17daaaef15"></a>
@@ -468,6 +491,28 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">pick_and_place.keyboard_input.KeyboardInput._action_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4ca4e3f89d7762012273c056ac4a7bad" name="a4ca4e3f89d7762012273c056ac4a7bad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ca4e3f89d7762012273c056ac4a7bad">&#9670;&#160;</a></span>_optimal_position_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.keyboard_input.KeyboardInput._optimal_position_client</td>
         </tr>
       </table>
   </td>

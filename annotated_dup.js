@@ -308,6 +308,9 @@ var annotated_dup =
       [ "manipulation_core", "namespacepick__and__place_1_1manipulation__core.html", [
         [ "ManipulationCore", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore" ]
       ] ],
+      [ "pick_benchmark", "namespacepick__and__place_1_1pick__benchmark.html", [
+        [ "PickBenchmark", "classpick__and__place_1_1pick__benchmark_1_1PickBenchmark.html", "classpick__and__place_1_1pick__benchmark_1_1PickBenchmark" ]
+      ] ],
       [ "pick_server", "namespacepick__and__place_1_1pick__server.html", [
         [ "PickMotionServer", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html", "classpick__and__place_1_1pick__server_1_1PickMotionServer" ]
       ] ],

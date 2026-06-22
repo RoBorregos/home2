@@ -2,6 +2,7 @@ var namespaceflat__grasp__estimator =
 [
     [ "FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", "classflat__grasp__estimator_1_1FlatGraspEstimator" ],
     [ "main", "namespaceflat__grasp__estimator.html#aaf5c78162382f1db1d6cd84d7aadfe12", null ],
+    [ "ELONGATION_MIN_RATIO", "namespaceflat__grasp__estimator.html#a6e1f20a8f5984d88299f47083c46810b", null ],
     [ "FLAT_GRASP_DEFAULT_SAMPLES", "namespaceflat__grasp__estimator.html#aa2b15d792dd0bf83db39f77ba85a5ed7", null ],
     [ "FLAT_GRASP_TIMEOUT", "namespaceflat__grasp__estimator.html#ad880e92d57f13eac7d52a1725da9afbb", null ],
     [ "GRASP_SURFACE_OFFSET", "namespaceflat__grasp__estimator.html#a8e8d4b2a05e97a82722e59f7a87e3273", null ],

@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classPickManager_1_1PickManager.html',
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classPickManager_1_1PickManager-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">PickManager.PickManager Class Reference</div></div>
@@ -125,10 +126,19 @@ Static Public Attributes</h2></td></tr>
 <tr class="memitem:af8d7c1dcc022e4399b014a89b22ce567"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#af8d7c1dcc022e4399b014a89b22ce567">node</a> = None</td></tr>
 <tr class="separator:af8d7c1dcc022e4399b014a89b22ce567"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a95a8cc710433137bd503f76740a35c89"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a95a8cc710433137bd503f76740a35c89">_clear_world_collision_objects</a> (self)</td></tr>
+<tr class="separator:a95a8cc710433137bd503f76740a35c89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a859d46bfedf0f9e3eeb99ccd12d8126c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a859d46bfedf0f9e3eeb99ccd12d8126c">_estimate_flat_grasp_client</a></td></tr>
 <tr class="separator:a859d46bfedf0f9e3eeb99ccd12d8126c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a466d57fd6797a88fae303608e43be5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a7a466d57fd6797a88fae303608e43be5">_get_scene_client</a></td></tr>
+<tr class="separator:a7a466d57fd6797a88fae303608e43be5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b25691dc7f5e3cf3d3745da25a6b543"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a2b25691dc7f5e3cf3d3745da25a6b543">_apply_scene_client</a></td></tr>
+<tr class="separator:a2b25691dc7f5e3cf3d3745da25a6b543"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="af11bed753b23e5394ba41226ae7036b1" name="af11bed753b23e5394ba41226ae7036b1"></a>
@@ -160,6 +170,33 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a95a8cc710433137bd503f76740a35c89" name="a95a8cc710433137bd503f76740a35c89"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95a8cc710433137bd503f76740a35c89">&#9670;&#160;</a></span>_clear_world_collision_objects()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def PickManager.PickManager._clear_world_collision_objects </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Remove accumulated world collision objects before perceiving fresh
+ones; stale per-attempt clutter blocks grasp goal sampling.</pre> 
+</div>
+</div>
 <a id="ae9d341ad79f3a64b44b263633b108f1d" name="ae9d341ad79f3a64b44b263633b108f1d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae9d341ad79f3a64b44b263633b108f1d">&#9670;&#160;</a></span>execute()</h2>
 
@@ -263,6 +300,28 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2b25691dc7f5e3cf3d3745da25a6b543" name="a2b25691dc7f5e3cf3d3745da25a6b543"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b25691dc7f5e3cf3d3745da25a6b543">&#9670;&#160;</a></span>_apply_scene_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">PickManager.PickManager._apply_scene_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a859d46bfedf0f9e3eeb99ccd12d8126c" name="a859d46bfedf0f9e3eeb99ccd12d8126c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a859d46bfedf0f9e3eeb99ccd12d8126c">&#9670;&#160;</a></span>_estimate_flat_grasp_client</h2>
 
@@ -274,6 +333,28 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">PickManager.PickManager._estimate_flat_grasp_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7a466d57fd6797a88fae303608e43be5" name="a7a466d57fd6797a88fae303608e43be5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a466d57fd6797a88fae303608e43be5">&#9670;&#160;</a></span>_get_scene_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">PickManager.PickManager._get_scene_client</td>
         </tr>
       </table>
   </td>

@@ -2,6 +2,7 @@ var classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningSe
 [
     [ "__init__", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aa69f12975b9c066e6e7995b83771f2f2", null ],
     [ "_call_ensure_arm_ready", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ac0586f778f07638f5e82561715603a79", null ],
+    [ "_slow_cartesian", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a090bb50d84fb10ddb351f28eeddc408c", null ],
     [ "add_collision_objects_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a6b385ee345581ea80a6d31e3559d560f", null ],
     [ "attach_collision_object_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a9288a7e5ffd3fbd01e042143f779d8b3", null ],
     [ "execute_trajectory", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a5caded65b309f80f5596a14c8dd31586", null ],

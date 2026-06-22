@@ -120,8 +120,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a445144c0f45236b2784c52fd0e56b7a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95e54f56a99ca671c44e33f67b79370e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a95e54f56a99ca671c44e33f67b79370e">fixed_distance_descent</a> (self, float distance_m, bool descend=True)</td></tr>
 <tr class="separator:a95e54f56a99ca671c44e33f67b79370e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74b845e25998b24f69c0842ee7c6ef77"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a74b845e25998b24f69c0842ee7c6ef77">move_to_pose</a> (self, pose, tolerance_position=0.005, tolerance_orientation=0.02, velocity=PICK_VELOCITY)</td></tr>
-<tr class="separator:a74b845e25998b24f69c0842ee7c6ef77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fe1a85e8fcd242eee4a5e7c0d57ea44"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a6fe1a85e8fcd242eee4a5e7c0d57ea44">move_to_pose</a> (self, pose, tolerance_position=0.005, tolerance_orientation=0.02, velocity=PICK_VELOCITY, planner_id=PICK_PLANNER)</td></tr>
+<tr class="separator:a6fe1a85e8fcd242eee4a5e7c0d57ea44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abde6189d163ae4c402503aedfe14ca1e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#abde6189d163ae4c402503aedfe14ca1e">move_to_pregrasp</a> (self, pose, velocity=PICK_VELOCITY)</td></tr>
 <tr class="separator:abde6189d163ae4c402503aedfe14ca1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae359b8f4aed36d0163036770d5089a27"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ae359b8f4aed36d0163036770d5089a27">wait_for_future</a> (self, future)</td></tr>
@@ -215,6 +215,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:afcce39ddf6633f014dde760e5ee8a9ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7d2703db507b2b777e43555cf804dfe"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ab7d2703db507b2b777e43555cf804dfe">_fixed_distance_move_srv</a></td></tr>
 <tr class="separator:ab7d2703db507b2b777e43555cf804dfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c12895ad084a4d8947cf723e0a83208"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a9c12895ad084a4d8947cf723e0a83208">_last_descent_m</a></td></tr>
+<tr class="separator:a9c12895ad084a4d8947cf723e0a83208"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad85c094307880912181b1cf5ebdd5174" name="ad85c094307880912181b1cf5ebdd5174"></a>
@@ -718,8 +720,8 @@ Grace period ignores transient effort spikes from mode switching.
 
 </div>
 </div>
-<a id="a74b845e25998b24f69c0842ee7c6ef77" name="a74b845e25998b24f69c0842ee7c6ef77"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74b845e25998b24f69c0842ee7c6ef77">&#9670;&#160;</a></span>move_to_pose()</h2>
+<a id="a6fe1a85e8fcd242eee4a5e7c0d57ea44" name="a6fe1a85e8fcd242eee4a5e7c0d57ea44"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fe1a85e8fcd242eee4a5e7c0d57ea44">&#9670;&#160;</a></span>move_to_pose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -752,7 +754,13 @@ Grace period ignores transient effort spikes from mode switching.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>velocity</em> = <code>PICK_VELOCITY</code>&#160;</td>
+          <td class="paramname"><em>velocity</em> = <code>PICK_VELOCITY</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>planner_id</em> = <code>PICK_PLANNER</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1117,6 +1125,28 @@ base wrap), falling back to a pose goal. Returns True if reached.</pre>
       <table class="memname">
         <tr>
           <td class="memname">pick_and_place.pick_server.PickMotionServer._joint_state_sub</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9c12895ad084a4d8947cf723e0a83208" name="a9c12895ad084a4d8947cf723e0a83208"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c12895ad084a4d8947cf723e0a83208">&#9670;&#160;</a></span>_last_descent_m</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._last_descent_m</td>
         </tr>
       </table>
   </td>

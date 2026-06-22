@@ -4,6 +4,7 @@ var namespacepick__and__place =
     [ "keyboard_input", "namespacepick__and__place_1_1keyboard__input.html", "namespacepick__and__place_1_1keyboard__input" ],
     [ "manipulation_client", "namespacepick__and__place_1_1manipulation__client.html", "namespacepick__and__place_1_1manipulation__client" ],
     [ "manipulation_core", "namespacepick__and__place_1_1manipulation__core.html", "namespacepick__and__place_1_1manipulation__core" ],
+    [ "pick_benchmark", "namespacepick__and__place_1_1pick__benchmark.html", "namespacepick__and__place_1_1pick__benchmark" ],
     [ "pick_server", "namespacepick__and__place_1_1pick__server.html", "namespacepick__and__place_1_1pick__server" ],
     [ "place_server", "namespacepick__and__place_1_1place__server.html", "namespacepick__and__place_1_1place__server" ],
     [ "pour_server", "namespacepick__and__place_1_1pour__server.html", "namespacepick__and__place_1_1pour__server" ],

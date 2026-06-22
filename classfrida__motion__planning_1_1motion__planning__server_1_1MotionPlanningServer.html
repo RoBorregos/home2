@@ -190,6 +190,8 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:a090bb50d84fb10ddb351f28eeddc408c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a090bb50d84fb10ddb351f28eeddc408c">_slow_cartesian</a> (self, traj, factor=3.0)</td></tr>
+<tr class="separator:a090bb50d84fb10ddb351f28eeddc408c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0586f778f07638f5e82561715603a79"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ac0586f778f07638f5e82561715603a79">_call_ensure_arm_ready</a> (self)</td></tr>
 <tr class="separator:ac0586f778f07638f5e82561715603a79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -252,6 +254,49 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a090bb50d84fb10ddb351f28eeddc408c" name="a090bb50d84fb10ddb351f28eeddc408c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a090bb50d84fb10ddb351f28eeddc408c">&#9670;&#160;</a></span>_slow_cartesian()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def frida_motion_planning.motion_planning_server.MotionPlanningServer._slow_cartesian </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>traj</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>factor</em> = <code>3.0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Humble GetCartesianPath ignores velocity scaling, so retime the
+cartesian trajectory: scale timing up, velocities/accels down.</pre> 
 </div>
 </div>
 <a id="a6b385ee345581ea80a6d31e3559d560f" name="a6b385ee345581ea80a6d31e3559d560f"></a>
