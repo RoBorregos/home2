@@ -1,12 +1,45 @@
 #!/usr/bin/env python3
 
+import json
+
 import rclpy
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import PointStamped
 from tf2_geometry_msgs import do_transform_point
 from tf2_ros import Buffer
 
+from frida_interfaces.srv import MapAreas
+
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
+from vision_general.utils.ros_utils import wait_for_future
+
+
+def fetch_map_areas(
+    areas_client,
+    logger,
+    service_timeout: float = 2.0,
+    call_timeout: float = 5.0,
+):
+    """
+    Fetch the active map's areas from nav_central's AREAS_SERVICE.
+
+    Returns the areas dict, or None if the service is unavailable / returns no
+    data (callers should treat None as "skip the house filter").
+    """
+    if not areas_client.wait_for_service(timeout_sec=service_timeout):
+        logger.warn("Areas service not available; skipping house filter.")
+        return None
+
+    future = areas_client.call_async(MapAreas.Request())
+    future = wait_for_future(future, call_timeout)
+    result = future.result() if future else None
+    if result is None or not result.areas:
+        logger.warn("Areas service returned no data; skipping house filter.")
+        return None
+
+    areas = json.loads(result.areas)
+    logger.info(f"Loaded areas for rooms: {list(areas.keys())}")
+    return areas
 
 
 def point_in_polygon(point, polygon):

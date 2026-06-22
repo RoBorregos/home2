@@ -15,13 +15,13 @@ RUN baml-cli generate
 
 WORKDIR /workspace
 
-COPY ./ /workspace/src
-RUN sudo apt update && sudo rosdep init && rosdep update
-RUN rosdep install --from-paths ./src/task_manager --ignore-src -y -r
+COPY task_manager /workspace/src/task_manager
+COPY frida_constants /workspace/src/frida_constants
+COPY frida_interfaces /workspace/src/frida_interfaces
+
+RUN sudo apt update && (sudo rosdep init || true) && rosdep update
+RUN rosdep install --from-paths /workspace/src --ignore-src -y -r
 RUN sudo rm -rf /workspace/src/
-# CV-bridge
-RUN apt update
-RUN apt install -y ros-humble-nav2-msgs
 
 # CycloneDDS
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \

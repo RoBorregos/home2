@@ -22,21 +22,28 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    MOVE_JOINTS_ACTION_SERVER,
     ESTOP_TOPIC,
     RIM_NAMES,
     RIM_PRE_GRASP_HEIGHT,
+    RIM_GRASP_Z_TWEAK,
     RIM_DESCENT_SPEED,
     RIM_DESCENT_DISTANCE,
     PEAK_NAMES,
     PEAK_PRE_GRASP_HEIGHT,
+    FIXED_DISTANCE_MOVE_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
     RemoveCollisionObject,
+    FixedDistanceMove,
 )
-from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
+from moveit_msgs.srv import GetPositionIK, GetStateValidity
+from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
+from frida_interfaces.action import PickMotion, MoveToPose, GoToHand, MoveJoints
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool
@@ -73,6 +80,10 @@ CUTLERY_PRE_GRASP_HEIGHT = (
 )
 CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
 CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
+SHELF_RETRACT_DIST = 0.15  # m - fallback retract if the approach depth is unknown
+SHELF_RETRACT_MARGIN = 0.05  # m - extra beyond the measured approach depth
+SHELF_RETRACT_MIN = 0.08  # m - clamp
+SHELF_RETRACT_MAX = 0.30  # m - clamp
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
@@ -127,6 +138,13 @@ class PickMotionServer(Node):
             MOVE_TO_POSE_ACTION_SERVER,
         )
 
+        # Joint-space moves for the pre-grasp (nearest-IK, avoids ~360 base wrap)
+        self._move_joints_action_client = ActionClient(
+            self,
+            MoveJoints,
+            MOVE_JOINTS_ACTION_SERVER,
+        )
+
         self._attach_collision_object_client = self.create_client(
             AttachCollisionObject,
             ATTACH_COLLISION_OBJECT_SERVICE,
@@ -150,6 +168,12 @@ class PickMotionServer(Node):
         self._clear_octomap_client = self.create_client(
             Empty,
             "/clear_octomap",
+        )
+
+        # --- Robot self-collision validation (MoveIt) ---
+        self._compute_ik_client = self.create_client(GetPositionIK, "/compute_ik")
+        self._state_validity_client = self.create_client(
+            GetStateValidity, "/check_state_validity"
         )
 
         # --- Force-guarded descent service clients ---
@@ -179,8 +203,21 @@ class PickMotionServer(Node):
             10,
         )
 
+        # Expose the closed-loop fixed-distance cartesian move
+        self._fixed_distance_move_srv = self.create_service(
+            FixedDistanceMove,
+            FIXED_DISTANCE_MOVE_SERVICE,
+            self._fixed_distance_move_cb,
+            callback_group=self.callback_group,
+        )
+
         self._move_to_pose_action_client.wait_for_server()
         self.get_logger().info("Pick Action Server has been started")
+
+    def _fixed_distance_move_cb(self, request, response):
+        reached = self.fixed_distance_descent(request.distance, descend=request.descend)
+        response.success = reached
+        return response
 
     def _joint_state_cb(self, msg: JointState):
         self._latest_joint_state = msg
@@ -444,6 +481,22 @@ class PickMotionServer(Node):
                         f"[Rim] Fixed-distance pick flow for pose {i}"
                     )
 
+                    # Validate the descent endpoint against the robot itself
+                    descent_endpoint = copy.deepcopy(ee_link_pose)
+                    descent_endpoint.pose.position.z += RIM_GRASP_Z_TWEAK
+                    if endpoint_self_collides(
+                        self._compute_ik_client,
+                        self._state_validity_client,
+                        descent_endpoint,
+                        latest_joint_state=self._latest_joint_state,
+                        logger=self.get_logger(),
+                    ):
+                        self.get_logger().warn(
+                            f"[Rim] Descent endpoint self-collides with robot, "
+                            f"skipping pose {i}"
+                        )
+                        continue
+
                     # Open gripper
                     self.get_logger().info("[Rim] Opening gripper...")
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
@@ -461,11 +514,7 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
+                    if not self.move_to_pregrasp(pre_grasp_pose, velocity=0.3):
                         self.get_logger().warn(
                             f"[Rim] Pre-grasp failed for pose {i}, trying next"
                         )
@@ -503,6 +552,21 @@ class PickMotionServer(Node):
                         f"[Peak] Fixed-distance pick flow for pose {i}"
                     )
 
+                    # Validate the descent endpoint against the robot itself
+                    descent_endpoint = copy.deepcopy(ee_link_pose)
+                    if endpoint_self_collides(
+                        self._compute_ik_client,
+                        self._state_validity_client,
+                        descent_endpoint,
+                        latest_joint_state=self._latest_joint_state,
+                        logger=self.get_logger(),
+                    ):
+                        self.get_logger().warn(
+                            f"[Peak] Descent endpoint self-collides with robot, "
+                            f"skipping pose {i}"
+                        )
+                        continue
+
                     # Open gripper
                     self.get_logger().info("[Peak] Opening gripper...")
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
@@ -520,11 +584,7 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
+                    if not self.move_to_pregrasp(pre_grasp_pose, velocity=0.3):
                         self.get_logger().warn(
                             f"[Peak] Pre-grasp failed for pose {i}, trying next"
                         )
@@ -559,6 +619,13 @@ class PickMotionServer(Node):
                     return True, pick_result
 
                 else:
+                    # EE XY before reaching in, to size the retract dynamically.
+                    pre_state = self._latest_robot_state
+                    pre_xy = (
+                        (pre_state.pose[0] / 1000.0, pre_state.pose[1] / 1000.0)
+                        if pre_state is not None
+                        else None
+                    )
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
                         ee_link_pose
                     )
@@ -575,6 +642,43 @@ class PickMotionServer(Node):
 
                     if result:
                         self.get_logger().info("Object attached")
+                        # Shelf pick (frontal grasp): pull straight out toward the
+                        # robot in XY (Z constant, clears ceiling). Table unchanged.
+                        approach = quat2mat(
+                            [
+                                ee_link_pose.pose.orientation.w,
+                                ee_link_pose.pose.orientation.x,
+                                ee_link_pose.pose.orientation.y,
+                                ee_link_pose.pose.orientation.z,
+                            ]
+                        )[:, 2]
+                        if abs(float(approach[2])) < 0.5:
+                            retract_pose = copy.deepcopy(ee_link_pose)
+                            gx = ee_link_pose.pose.position.x
+                            gy = ee_link_pose.pose.position.y
+                            dist = SHELF_RETRACT_DIST
+                            post_state = self._latest_robot_state
+                            if pre_xy is not None and post_state is not None:
+                                depth = float(
+                                    np.hypot(
+                                        post_state.pose[0] / 1000.0 - pre_xy[0],
+                                        post_state.pose[1] / 1000.0 - pre_xy[1],
+                                    )
+                                )
+                                dist = min(
+                                    max(
+                                        depth + SHELF_RETRACT_MARGIN, SHELF_RETRACT_MIN
+                                    ),
+                                    SHELF_RETRACT_MAX,
+                                )
+                            n = float(np.hypot(gx, gy))
+                            if n > 1e-6:
+                                retract_pose.pose.position.x -= (gx / n) * dist
+                                retract_pose.pose.position.y -= (gy / n) * dist
+                            self.get_logger().info(
+                                f"Shelf retract: pull-out toward robot ({dist:.3f} m)"
+                            )
+                            self.move_to_pose(retract_pose, velocity=0.2)
                         pick_result.pick_pose = ee_link_pose
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
@@ -741,13 +845,16 @@ class PickMotionServer(Node):
 
         return contact_detected
 
-    def fixed_distance_descent(self, distance_m: float) -> bool:
+    def fixed_distance_descent(self, distance_m: float, descend: bool = True) -> bool:
         """
-        Descend a fixed distance in -Z using xArm mode 5 (cartesian velocity control).
-        Closed-loop on /xarm/robot_states TCP Z.
+        Move a fixed distance in Z using xArm mode 5 (cartesian velocity control).
+        Closed-loop on /xarm/robot_states TCP Z. descend=True drives -Z (down),
+        descend=False drives +Z (up) reusing the same mechanism.
         """
+        sign = -1.0 if descend else 1.0
+        direction = "Descending" if descend else "Ascending"
         self.get_logger().info(
-            f"[FixedDescent] Descending {distance_m * 1000:.0f}mm at "
+            f"[FixedDescent] {direction} {distance_m * 1000:.0f}mm at "
             f"{RIM_DESCENT_SPEED:.1f} mm/s"
         )
 
@@ -761,7 +868,7 @@ class PickMotionServer(Node):
                 return False
             time.sleep(0.05)
         start_z = self._get_tcp_z()
-        target_z = start_z - distance_m
+        target_z = start_z + sign * distance_m
         self.get_logger().info(
             f"[FixedDescent] start_z={start_z * 1000:.1f}mm  "
             f"target_z={target_z * 1000:.1f}mm"
@@ -794,7 +901,7 @@ class PickMotionServer(Node):
                 return False
 
             vel_req = MoveVelocity.Request()
-            vel_req.speeds = [0.0, 0.0, -RIM_DESCENT_SPEED, 0.0, 0.0, 0.0]
+            vel_req.speeds = [0.0, 0.0, sign * RIM_DESCENT_SPEED, 0.0, 0.0, 0.0]
             vel_req.is_tool_coord = False
             vel_req.duration = 0.0
 
@@ -834,12 +941,12 @@ class PickMotionServer(Node):
                 if cur_z is None:
                     continue
 
-                descended = start_z - cur_z
+                moved = (start_z - cur_z) if descend else (cur_z - start_z)
 
                 # Reached target?
-                if descended >= distance_m:
+                if moved >= distance_m:
                     self.get_logger().info(
-                        f"[FixedDescent] Reached! descended={descended * 1000:.1f}mm "
+                        f"[FixedDescent] Reached! moved={moved * 1000:.1f}mm "
                         f"(target={distance_m * 1000:.0f}mm)"
                     )
                     reached = True
@@ -960,6 +1067,19 @@ class PickMotionServer(Node):
         self.wait_for_future(future)
         action_result = future.result().get_result()
         return future.result(), action_result
+
+    def move_to_pregrasp(self, pose, velocity=PICK_VELOCITY) -> bool:
+        """Move to a pre-grasp pose via the nearest IK solution (avoids the ~360
+        base wrap), falling back to a pose goal. Returns True if reached."""
+        return move_to_pregrasp_nearest_ik(
+            self._compute_ik_client,
+            self._move_joints_action_client,
+            pose,
+            latest_joint_state=self._latest_joint_state,
+            velocity=velocity,
+            fallback_move_to_pose=self.move_to_pose,
+            logger=self.get_logger(),
+        )
 
     def wait_for_future(self, future):
         if future is None:

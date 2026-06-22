@@ -7,15 +7,15 @@
 
 CYCLONE_XML="/etc/cyclonedds.xml"
 
-# At runtime (sourced from .bashrc), regenerate if CYCLONE_INTERFACE is set
+# At runtime (sourced from .bashrc), regenerate if CYCLONE_INTERFACE or CYCLONE_SHM is set
 if [ -n "${CYCLONE_INTERFACE:-}" ]; then
     IFACE_LINE="        <NetworkInterface name=\"$CYCLONE_INTERFACE\" priority=\"default\" multicast=\"true\" autodetermine=\"false\"/>"
 else
-    # If XML already exists and no override, skip
-    if [ -f "$CYCLONE_XML" ]; then
+    # If XML already exists and no SHM override, skip
+    if [ -f "$CYCLONE_XML" ] && [ -z "${CYCLONE_SHM:-}" ]; then
         return 0 2>/dev/null || exit 0
     fi
-    
+
     IFACE_LINE='        <NetworkInterface autodetermine="true" priority="default" multicast="default" />'
 fi
 

@@ -58,6 +58,9 @@ case $TASK in
     "--ppc")
         RUN="ros2 run task_manager pickandplace_task_manager.py"
         ;;
+    "--dlc")
+        RUN="ros2 run task_manager doing_laundry_task_manager.py"
+        ;;
     "--demo-becas")
         RUN="ros2 run task_manager demo_becas.py"
         ;;

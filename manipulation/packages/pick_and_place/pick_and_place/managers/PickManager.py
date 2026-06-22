@@ -28,6 +28,7 @@ from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 import numpy as np
 from pick_and_place.utils.perception_utils import get_object_point
+from pick_and_place.utils.grasp_orientation import is_frontal_grasp
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
@@ -322,6 +323,29 @@ class PickManager:
                 if len(new_grasp_poses) == 0:
                     self.node.get_logger().error("No grasp poses detected")
                     continue
+
+                # Shelf picks prefer a frontal grasp; a top-down approach hits the
+                # compartment ceiling. Fallback: unfiltered set. Table picks unchanged.
+                if is_shelf:
+                    kept_poses = []
+                    kept_scores = []
+                    for pose, score in zip(new_grasp_poses, new_grasp_scores):
+                        q = pose.pose.orientation
+                        if is_frontal_grasp((q.x, q.y, q.z, q.w)):
+                            kept_poses.append(pose)
+                            kept_scores.append(score)
+                    if kept_poses:
+                        self.node.get_logger().info(
+                            f"Frontal grasp filter kept "
+                            f"{len(kept_poses)}/{len(new_grasp_poses)} for {object_name}"
+                        )
+                        new_grasp_poses = kept_poses
+                        new_grasp_scores = kept_scores
+                    else:
+                        self.node.get_logger().warn(
+                            f"Frontal grasp filter removed all for {object_name}; "
+                            "using unfiltered set"
+                        )
 
                 goal_msg = PickMotion.Goal()
                 goal_msg.grasping_poses = new_grasp_poses
