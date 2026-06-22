@@ -730,7 +730,6 @@ class TestHriManager(Node):
         try:
             if BENCHMARK_DIR not in sys.path:
                 sys.path.insert(0, BENCHMARK_DIR)
-            from openai import OpenAI
             from tasks import TASK_REGISTRY, run_perf
         except ImportError as e:
             self.get_logger().warn(f"Perf side-channel skipped (missing dep): {e}")
@@ -742,9 +741,8 @@ class TestHriManager(Node):
             return {}
 
         try:
-            client = OpenAI(base_url=NLP_OLLAMA_URL, api_key="ollama")
             self.get_logger().info(f"   perf: {NLP_RUNS} run(s) against {NLP_OLLAMA_URL}")
-            perf = run_perf(client, NLP_MODEL_ALIAS, task_cls, NLP_RUNS)
+            perf = run_perf(NLP_OLLAMA_URL, NLP_MODEL_ALIAS, task_cls, NLP_RUNS)
             ttft = perf.get("avg_ttft_ms")
             tps = perf.get("avg_tokens_per_s")
             self.get_logger().info(

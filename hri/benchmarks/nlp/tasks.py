@@ -1,14 +1,15 @@
 """Perf side-channel: timed inferences against llama-server.
 
+Uses stdlib urllib so the integration container needs no extra dependency.
 Prompts are imported from the live NLP package (hri/packages/nlp/nlp/assets/dialogs.py)
 so model behavior stays in lockstep with production. Accuracy scoring happens in
 task_manager/scripts/test/test_hri_manager.py via the existing HRI pipeline.
 """
 
+import json
 import time
+import urllib.request
 from typing import Optional
-
-from openai import OpenAI
 
 from nlp.assets.dialogs import (
     get_extract_data_args,
@@ -18,39 +19,61 @@ from nlp.assets.dialogs import (
 
 
 def _messages_only(dialog_args):
-    """dialog functions return (messages, schema); we only need messages here."""
     return dialog_args[0]
 
 
-def _run_timed(
-    client: OpenAI, model: str, messages: list, max_tokens: int = 128
-) -> dict:
+def _stream_chat(url: str, model: str, messages: list, max_tokens: int):
+    """Yield parsed SSE events from llama-server /v1/chat/completions."""
+    payload = {
+        "model": model,
+        "messages": messages,
+        "stream": True,
+        "stream_options": {"include_usage": True},
+        "max_tokens": max_tokens,
+    }
+    req = urllib.request.Request(
+        url.rstrip("/") + "/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": "Bearer ollama",
+            "Accept": "text/event-stream",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        for raw in resp:
+            line = raw.decode("utf-8", errors="replace").strip()
+            if not line.startswith("data:"):
+                continue
+            data = line[len("data:") :].strip()
+            if data == "[DONE]":
+                return
+            try:
+                yield json.loads(data)
+            except json.JSONDecodeError:
+                continue
+
+
+def _run_timed(url: str, model: str, messages: list, max_tokens: int = 128) -> dict:
     t_start = time.perf_counter()
     t_first: Optional[float] = None
     t_end: Optional[float] = None
     completion_tokens = 0
 
-    stream = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        stream=True,
-        stream_options={"include_usage": True},
-        max_tokens=max_tokens,
-    )
-
-    for chunk in stream:
+    for chunk in _stream_chat(url, model, messages, max_tokens):
         now = time.perf_counter()
-        if chunk.choices:
-            d = chunk.choices[0].delta
-            any_content = (d.content or "") + (
-                getattr(d, "reasoning_content", None) or ""
-            )
-            if any_content and t_first is None:
+        choices = chunk.get("choices") or []
+        if choices:
+            delta = choices[0].get("delta", {}) or {}
+            text = (delta.get("content") or "") + (delta.get("reasoning_content") or "")
+            if text and t_first is None:
                 t_first = now
-            if chunk.choices[0].finish_reason in ("stop", "length"):
+            if choices[0].get("finish_reason") in ("stop", "length"):
                 t_end = now
-        if chunk.usage:
-            completion_tokens = chunk.usage.completion_tokens or 0
+        usage = chunk.get("usage")
+        if usage:
+            completion_tokens = usage.get("completion_tokens") or completion_tokens
 
     if t_first is None or t_end is None:
         return {
@@ -102,11 +125,11 @@ class IsNegativeTask:
         return _messages_only(get_is_answer_negative_args("No, that's wrong"))
 
 
-def run_perf(client: OpenAI, model: str, task_cls, runs: int) -> dict:
+def run_perf(url: str, model: str, task_cls, runs: int) -> dict:
     msgs = task_cls.perf_messages()
     ttft_list, tps_list, decode_tps_list = [], [], []
     for _ in range(runs):
-        r = _run_timed(client, model, msgs)
+        r = _run_timed(url, model, msgs)
         if r["ttft_ms"] is not None:
             ttft_list.append(r["ttft_ms"])
             tps_list.append(r["tokens_per_s"])
