@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.6"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Roborregos @Home documentation: grasp_utils Namespace Reference</title>
+<title>Roborregos @Home documentation: self_collision_utils Namespace Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -64,7 +64,7 @@ $(function() {
 </div>
 <script type="text/javascript">
 /* @license magnet:?xt=urn:btih:d3d9a9a6595521f9666a5e94cc830dab83b65699&amp;dn=expat.txt MIT */
-$(document).ready(function(){initNavTree('namespacegrasp__utils.html',''); initResizable(); });
+$(document).ready(function(){initNavTree('namespaceself__collision__utils.html',''); initResizable(); });
 /* @license-end */
 </script>
 <div id="doc-content">
@@ -91,90 +91,36 @@ $(document).ready(function(){initNavTree('namespacegrasp__utils.html',''); initR
 
 <div class="header">
   <div class="summary">
-<a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">grasp_utils Namespace Reference</div></div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
+  <div class="headertitle"><div class="title">self_collision_utils Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a9597ffd3c2a1573ab6036bd81117a64e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e">get_grasps</a> (grasp_detection_client, object_cloud, str cgf_path)</td></tr>
-<tr class="separator:a9597ffd3c2a1573ab6036bd81117a64e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66bfdc2901b1b5ef677a6921c55939d6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6">fake_grasps</a> (PointStamped object_point)</td></tr>
-<tr class="separator:a66bfdc2901b1b5ef677a6921c55939d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd739b812ccc2ca74c2903ecd1e851f4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacegrasp__utils.html#abd739b812ccc2ca74c2903ecd1e851f4">move_to_pregrasp_nearest_ik</a> (compute_ik_client, move_joints_action_client, pose_stamped, latest_joint_state=None, float velocity=PICK_VELOCITY, fallback_move_to_pose=None, logger=None)</td></tr>
-<tr class="separator:abd739b812ccc2ca74c2903ecd1e851f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adacc1b236355b90fa16f716b067a337d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceself__collision__utils.html#adacc1b236355b90fa16f716b067a337d">compute_ik</a> (compute_ik_client, pose_stamped, bool avoid_collisions, seed_joint_state=None)</td></tr>
+<tr class="separator:adacc1b236355b90fa16f716b067a337d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc0819160793aeeeaaf2e2880945f843"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceself__collision__utils.html#adc0819160793aeeeaaf2e2880945f843">endpoint_self_collides</a> (compute_ik_client, state_validity_client, PoseStamped pose_stamped, latest_joint_state=None, logger=None)</td></tr>
+<tr class="separator:adc0819160793aeeeaaf2e2880945f843"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:ad75c962b15bb9c25c399069936671bb1"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceself__collision__utils.html#ad75c962b15bb9c25c399069936671bb1">IK_TIMEOUT_SEC</a> = 0.2</td></tr>
+<tr class="separator:ad75c962b15bb9c25c399069936671bb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a66bfdc2901b1b5ef677a6921c55939d6" name="a66bfdc2901b1b5ef677a6921c55939d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a66bfdc2901b1b5ef677a6921c55939d6">&#9670;&#160;</a></span>fake_grasps()</h2>
+<a id="adacc1b236355b90fa16f716b067a337d" name="adacc1b236355b90fa16f716b067a337d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adacc1b236355b90fa16f716b067a337d">&#9670;&#160;</a></span>compute_ik()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def grasp_utils.fake_grasps </td>
-          <td>(</td>
-          <td class="paramtype">PointStamped&#160;</td>
-          <td class="paramname"><em>object_point</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a9597ffd3c2a1573ab6036bd81117a64e" name="a9597ffd3c2a1573ab6036bd81117a64e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9597ffd3c2a1573ab6036bd81117a64e">&#9670;&#160;</a></span>get_grasps()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def grasp_utils.get_grasps </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>grasp_detection_client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>object_cloud</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>cgf_path</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="abd739b812ccc2ca74c2903ecd1e851f4" name="abd739b812ccc2ca74c2903ecd1e851f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd739b812ccc2ca74c2903ecd1e851f4">&#9670;&#160;</a></span>move_to_pregrasp_nearest_ik()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"> bool grasp_utils.move_to_pregrasp_nearest_ik </td>
+          <td class="memname">def self_collision_utils.compute_ik </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>compute_ik_client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>move_joints_action_client</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -185,20 +131,65 @@ Functions</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>avoid_collisions</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>seed_joint_state</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Solve inverse kinematics for `pose_stamped`
+
+Args:
+    compute_ik_client: client for /compute_ik (GetPositionIK).
+    pose_stamped: target pose of GRASP_LINK_FRAME.
+    avoid_collisions: whether the IK solution must be collision-free.
+    seed_joint_state: optional JointState used as the IK seed.
+
+Returns:
+    The GetPositionIK response (inspect `.error_code` / `.solution`), or
+    None if the service is unavailable or the call failed.
+</pre> 
+</div>
+</div>
+<a id="adc0819160793aeeeaaf2e2880945f843" name="adc0819160793aeeeaaf2e2880945f843"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc0819160793aeeeaaf2e2880945f843">&#9670;&#160;</a></span>endpoint_self_collides()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool self_collision_utils.endpoint_self_collides </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>compute_ik_client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>state_validity_client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">PoseStamped&#160;</td>
+          <td class="paramname"><em>pose_stamped</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>latest_joint_state</em> = <code>None</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>velocity</em> = <code>PICK_VELOCITY</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>fallback_move_to_pose</em> = <code>None</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -213,28 +204,39 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Move to a pre-grasp pose planning in joint space toward the IK solution
-nearest to the current configuration.
+<pre class="fragment">Check whether the robot would be in self-collision at the given pose.
 
-A free pose goal lets the planner pick any IK solution of the goal region,
-which can wind joint1 (the base) almost 360 deg "around the back". Seeding
-compute_ik with the current joint state returns the closest collision-free
-config, and a joint goal to it keeps the motion short.
+Uses MoveIt's /compute_ik followed by /check_state_validity, filtering the
+reported contacts to ROBOT_LINK &lt;-&gt; ROBOT_LINK pairs only. Collisions with
+WORLD_OBJECT (clothes/basket) are intentionally ignored.
 
 Args:
     compute_ik_client: client for /compute_ik (GetPositionIK).
-    move_joints_action_client: action client for the joint-goal move.
-    pose_stamped: target pose of GRASP_LINK_FRAME.
+    state_validity_client: client for /check_state_validity (GetStateValidity).
+    pose_stamped: target pose of GRASP_LINK_FRAME to validate.
     latest_joint_state: optional JointState used as the IK seed.
-    velocity: motion velocity scaling.
-    fallback_move_to_pose: optional callable(pose, velocity=...) -&gt; (handle,
-        result) used when IK is unavailable/fails. Its result is expected to
-        expose `.result.success`.
     logger: optional rclpy logger for diagnostics.
 
 Returns:
-    True if the pre-grasp was reached.
+    True if the pose should be skipped (self-collision or unreachable),
+    False if it is safe to attempt. Fails open (False) if the MoveIt
+    services are unavailable.
 </pre> 
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="ad75c962b15bb9c25c399069936671bb1" name="ad75c962b15bb9c25c399069936671bb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad75c962b15bb9c25c399069936671bb1">&#9670;&#160;</a></span>IK_TIMEOUT_SEC</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float self_collision_utils.IK_TIMEOUT_SEC = 0.2</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 </div><!-- contents -->
@@ -242,7 +244,7 @@ Returns:
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="namespacegrasp__utils.html">grasp_utils</a></li>
+    <li class="navelem"><a class="el" href="namespaceself__collision__utils.html">self_collision_utils</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.6 </li>
   </ul>
 </div>

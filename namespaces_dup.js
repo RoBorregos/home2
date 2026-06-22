@@ -190,7 +190,8 @@ var namespaces_dup =
     ] ],
     [ "grasp_utils", "namespacegrasp__utils.html", [
       [ "fake_grasps", "namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6", null ],
-      [ "get_grasps", "namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e", null ]
+      [ "get_grasps", "namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e", null ],
+      [ "move_to_pregrasp_nearest_ik", "namespacegrasp__utils.html#abd739b812ccc2ca74c2903ecd1e851f4", null ]
     ] ],
     [ "hand_task_manager", "namespacehand__task__manager.html", "namespacehand__task__manager" ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", "namespaceheatmapPlace__Server" ],
@@ -463,6 +464,11 @@ var namespaces_dup =
     [ "run_while_hearing", "namespacerun__while__hearing.html", "namespacerun__while__hearing" ],
     [ "safety_task_manager", "namespacesafety__task__manager.html", "namespacesafety__task__manager" ],
     [ "scripts", "namespacescripts.html", "namespacescripts" ],
+    [ "self_collision_utils", "namespaceself__collision__utils.html", [
+      [ "compute_ik", "namespaceself__collision__utils.html#adacc1b236355b90fa16f716b067a337d", null ],
+      [ "endpoint_self_collides", "namespaceself__collision__utils.html#adc0819160793aeeeaaf2e2880945f843", null ],
+      [ "IK_TIMEOUT_SEC", "namespaceself__collision__utils.html#ad75c962b15bb9c25c399069936671bb1", null ]
+    ] ],
     [ "server", "namespaceserver.html", "namespaceserver" ],
     [ "service_utils", "namespaceservice__utils.html", [
       [ "close_gripper", "namespaceservice__utils.html#a479ef9705921d2c4e6c2549e4731ef57", null ],
