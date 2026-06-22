@@ -366,9 +366,7 @@ class PickAndPlaceTM(Node):
         self.subtask_manager.manipulation.move_to_position("table_stare")
         after = self._table_counts()
         if picked_ok(before_counts, after, target):
-            CLog.manip(
-                self, "PICK", f"Vision confirmed {name} removed.", level="success"
-            )
+            CLog.manip(self, "PICK", f"Vision confirmed {name} removed.", level="success")
             return Status.EXECUTION_SUCCESS
         CLog.manip(self, "PICK", f"Vision: {name} still on the table.", level="warn")
         return Status.EXECUTION_ERROR
@@ -473,9 +471,7 @@ class PickAndPlaceTM(Node):
                 break
 
         if found_level is None:
-            CLog.manip(
-                self, "PICK", f"{object_name} not found on any shelf level.", level="error"
-            )
+            CLog.manip(self, "PICK", f"{object_name} not found on any shelf level.", level="error")
             return Status.EXECUTION_ERROR
 
         # Arm is at the found level's pose with a fresh octomap; keep it (in_configuration).
@@ -1308,12 +1304,15 @@ def main(args=None):
     rclpy.init(args=args)
     node = PickAndPlaceTM()
     import os
+
     if os.environ.get("SHELF_TEST"):
         tgt = node._to_yolo_name(os.environ.get("SHELF_TARGET", "cereal"))
         CLog.fsm(node, "SHELF_TEST", f"target={tgt} heights={node.shelf_level_heights}")
         st = node._pick_from_shelf(tgt, node.shelf_level_heights)
         CLog.fsm(node, "SHELF_TEST", f"RESULT _pick_from_shelf -> {st}")
-        node.destroy_node(); rclpy.shutdown(); return
+        node.destroy_node()
+        rclpy.shutdown()
+        return
 
     try:
         while rclpy.ok() and node.running_task:
