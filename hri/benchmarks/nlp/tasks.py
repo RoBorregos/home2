@@ -1,9 +1,7 @@
-"""Perf side-channel: timed inferences against llama-server.
+"""Perf side-channel: timed inferences against llama-server using stdlib only.
 
-Uses stdlib urllib so the integration container needs no extra dependency.
-Prompts are imported from the live NLP package (hri/packages/nlp/nlp/assets/dialogs.py)
-so model behavior stays in lockstep with production. Accuracy scoring happens in
-task_manager/scripts/test/test_hri_manager.py via the existing HRI pipeline.
+Prompts come from hri/packages/nlp/nlp/assets/dialogs.py so the side-channel
+exercises the same system prompts production uses.
 """
 
 import json
@@ -13,9 +11,8 @@ import time
 import urllib.request
 from typing import Optional
 
-# The `nlp` Python package lives in hri/packages/nlp/nlp and is NOT colcon-built
-# inside the integration container. Add its parent dir so we can import the
-# canonical prompts (single source of truth shared with production).
+# nlp is a plain Python package (not colcon-built in the integration container),
+# so make its parent dir importable before pulling the canonical prompts.
 _NLP_PKG_PARENT = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "..", "packages", "nlp")
 )
@@ -34,7 +31,6 @@ def _messages_only(dialog_args):
 
 
 def _stream_chat(url: str, model: str, messages: list, max_tokens: int):
-    """Yield parsed SSE events from llama-server /v1/chat/completions."""
     payload = {
         "model": model,
         "messages": messages,

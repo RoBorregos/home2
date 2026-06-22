@@ -1,5 +1,4 @@
 {
-  "_comment": "Curated registry of llama.cpp-compatible GGUF models for NLP benchmarking. Vision/multimodal variants (Qwen-VL, Gemma-3-vision) are intentionally excluded — llama-server cannot serve them.",
   "models": [
     {
       "name": "qwen3-4b",

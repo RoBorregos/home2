@@ -69,9 +69,7 @@ case $TASK in
         ;;
 esac
 
-# Propagate TEST_NLP / NLP_* into the container for the --test-hri benchmark mode.
-# Both the `docker compose exec` path and the `docker compose up` path execute
-# the COMMAND string via bash -c, so embedding `export` calls here is enough.
+# Propagate TEST_NLP / NLP_* into the container for --test-hri benchmark mode.
 NLP_EXPORTS=""
 if [ -n "${TEST_NLP:-}" ]; then
     NLP_EXPORTS="export TEST_NLP=$(printf '%q' "$TEST_NLP")"

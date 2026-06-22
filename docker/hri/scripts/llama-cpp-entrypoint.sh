@@ -22,9 +22,8 @@ wait_for_server() {
     echo "Server on port $port is ready."
 }
 
-# Main model on port 11434 — hric, gpsr, bench
-# LLAMA_MODEL_FILE / LLAMA_ALIAS allow the benchmark flow to override the model
-# without touching the entrypoint. Defaults preserve production behavior.
+# Main model on port 11434. LLAMA_MODEL_FILE / LLAMA_ALIAS override the defaults
+# from the benchmark flow without changing this script.
 MAIN_MODEL="${LLAMA_MODEL_FILE:-qwen3-4b.Q4_K_M.gguf}"
 MAIN_ALIAS="${LLAMA_ALIAS:-qwen3}"
 
@@ -45,7 +44,7 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
     wait_for_server 11434
 fi
 
-# rbrgs on port 11435 — gpsr only
+# rbrgs on port 11435, gpsr only
 if [ "$ROLE" = "gpsr" ]; then
     echo "Starting rbrgs on port 11435..."
     llama-server \
@@ -64,5 +63,4 @@ if [ "$ROLE" = "gpsr" ]; then
 fi
 
 echo "All servers ready. Container running..."
-# Keep container alive and exit if any llama-server process dies
 wait

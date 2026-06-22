@@ -2,20 +2,18 @@
 # NLP benchmark model manager.
 #
 # Two-step flow:
-#   1. Pick model(s) here → downloads GGUFs, optionally launches the production
-#      llamacpp service (docker/hri/compose/llamacpp-l4t.yaml) with a single
-#      cached model.
-#   2. Run the benchmark via the integration container:
+#   1. Pick model(s) here to download GGUFs, or launch the production llamacpp
+#      service (docker/hri/compose/llamacpp-l4t.yaml) with a single cached model.
+#   2. Run the benchmark against that llama-server via the integration container:
 #        TEST_NLP=true NLP_MODEL_ALIAS=<alias> NLP_OLLAMA_URL=http://localhost:11434/v1 \
 #          NLP_TASKS=is_positive,is_negative,extract_data \
 #          ./run.sh integration --test-hri --build
 #
 # Selection rules:
-#   "1 2 3"             → download only (no container).
-#   single, not cached  → download only.
-#   single, cached      → start production llamacpp with that GGUF, exit.
-#   -1                  → delete-cached menu.
-#   (empty)             → no-op message.
+#   "1 2 3"             download only (no container).
+#   single, not cached  download only.
+#   single, cached      start the production llamacpp service with that GGUF.
+#   -1                  open the delete-cached menu.
 #
 # Flags:
 #   --models "N..."   Skip menu, treat as the selection.
@@ -43,19 +41,17 @@ while [[ $# -gt 0 ]]; do
         --models)  MODEL_SELECT="$2"; shift 2 ;;
         --all)     SELECT_ALL=true; shift ;;
         --delete)  DELETE_MODE=true; shift ;;
-        -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
 
 mkdir -p "$ASSETS_DIR" "$SCRIPT_DIR/results/logs"
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
 upsert_env() {
     local file="$1" key="$2" value="$3"
     touch "$file"
     if grep -q "^${key}=" "$file" 2>/dev/null; then
-        # Cross-platform in-place: use a tmp file.
         grep -v "^${key}=" "$file" > "$file.tmp"
         mv "$file.tmp" "$file"
     fi
@@ -84,37 +80,33 @@ run_delete_menu() {
     [[ -z "$selection" ]] && { echo "Cancelled."; return 0; }
     for n in $selection; do
         if ! [[ "$n" =~ ^[0-9]+$ ]] || (( n < 1 || n > ${#gguf_files[@]} )); then
-            echo "Invalid: $n — skipped"; continue
+            echo "Invalid: $n - skipped"; continue
         fi
         f="${gguf_files[$((n-1))]}"
         rm -f "$f" && echo "  Deleted: $(basename "$f")"
     done
 }
 
-# ── Delete-only mode ─────────────────────────────────────────────────────────
 if $DELETE_MODE; then
     run_delete_menu
     exit 0
 fi
 
-# ── Logging ──────────────────────────────────────────────────────────────────
 TS="$(date +%Y%m%d-%H%M%S)"
 LOG_FILE="$SCRIPT_DIR/results/logs/manager-$TS.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
-echo "── FRIDA NLP benchmark manager ── $(date) ──"
+echo "FRIDA NLP benchmark manager - $(date)"
 
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq required."; exit 1; }
 [[ -f "$REGISTRY" ]] || { echo "ERROR: $REGISTRY not found."; exit 1; }
 
-# ── Parse registry ───────────────────────────────────────────────────────────
 mapfile -t MODEL_NAMES < <(jq -r '.models[].name' "$REGISTRY")
 mapfile -t MODEL_URLS  < <(jq -r '.models[].hf_url' "$REGISTRY")
 mapfile -t MODEL_FILES < <(jq -r '.models[].filename' "$REGISTRY")
 
 [[ ${#MODEL_NAMES[@]} -eq 0 ]] && { echo "ERROR: registry empty."; exit 1; }
 
-# ── Menu ─────────────────────────────────────────────────────────────────────
 echo "Available models:"
 for i in "${!MODEL_NAMES[@]}"; do
     f="$ASSETS_DIR/${MODEL_FILES[$i]}"
@@ -147,7 +139,6 @@ else
     fi
 fi
 
-# ── Dispatch: download-only vs. launch ───────────────────────────────────────
 single_cached=false
 if [[ ${#SELECTED[@]} -eq 1 ]] && [[ -f "$ASSETS_DIR/${MODEL_FILES[${SELECTED[0]}]}" ]]; then
     single_cached=true
@@ -163,7 +154,6 @@ if ! $single_cached; then
     exit 0
 fi
 
-# Single + cached → launch the production llamacpp service with overrides
 idx=${SELECTED[0]}
 name="${MODEL_NAMES[$idx]}"
 file="${MODEL_FILES[$idx]}"
@@ -171,7 +161,6 @@ alias_name="${file%.gguf}"
 
 echo "Launch mode: $name ($file)"
 
-# Stop existing llamacpp regardless of profile (same port, same container name)
 if docker ps --format '{{.Names}}' | grep -qx "$LIVE_CONTAINER"; then
     echo "  Stopping existing $LIVE_CONTAINER..."
     docker stop "$LIVE_CONTAINER" >/dev/null
@@ -189,7 +178,7 @@ echo "  docker compose up -d llama (profile=bench)..."
 echo -n "  Waiting for llama-server health on port $PORT"
 for _ in $(seq 1 60); do
     if curl -sf "http://localhost:$PORT/health" >/dev/null 2>&1; then
-        echo " — OK"
+        echo " - OK"
         break
     fi
     echo -n "."
@@ -204,12 +193,12 @@ fi
 
 cat <<EOF
 
-✓ llama-server is up.
-   Container: $LIVE_CONTAINER
-   Model:     $file   (alias: $alias_name)
-   Port:      $PORT
+llama-server is up.
+  Container: $LIVE_CONTAINER
+  Model:     $file   (alias: $alias_name)
+  Port:      $PORT
 
-Next step — run the benchmark:
+Next step - run the benchmark:
 
   TEST_NLP=true \\
   NLP_MODEL_ALIAS=$alias_name \\

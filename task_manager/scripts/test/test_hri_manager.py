@@ -63,10 +63,9 @@ BENCHMARK_DIR = "/workspace/src/hri/benchmarks/nlp"
 
 COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
-# --- TEST_NLP mode: env-driven benchmark via the real HRI pipeline ---
 # When TEST_NLP=true, hardcoded TEST_* booleans below are ignored. Tasks come
-# from NLP_TASKS (comma-separated), and a benchmark-style JSON is emitted in
-# addition to the per-task CSVs.
+# from NLP_TASKS (comma-separated) and a benchmark JSON is emitted alongside
+# the per-task CSVs.
 TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
 NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
 NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
@@ -677,12 +676,6 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
 
-    # ─────────────────────────────────────────────────────────────────────
-    # TEST_NLP mode: drive selected tasks via the real HRI pipeline, then
-    # run a direct-HTTP perf side-channel against llama-server for tok/s,
-    # and emit a benchmark-style JSON via the existing benchmark/report.py.
-    # ─────────────────────────────────────────────────────────────────────
-
     _TASK_DISPATCH = {
         "is_positive": "test_is_positive",
         "is_negative": "test_is_negative",
@@ -707,11 +700,11 @@ class TestHriManager(Node):
             method_name = self._TASK_DISPATCH.get(task_name)
             if not method_name:
                 self.get_logger().warn(
-                    f"Unknown NLP task '{task_name}' — supported: "
+                    f"Unknown NLP task '{task_name}', supported: "
                     f"{list(self._TASK_DISPATCH.keys())}"
                 )
                 continue
-            self.get_logger().info(f"── Running accuracy: {task_name}")
+            self.get_logger().info(f"Running accuracy: {task_name}")
             cases = getattr(self, method_name)()
             task_r = {"cases": cases or []}
 
@@ -724,7 +717,6 @@ class TestHriManager(Node):
         self._emit_benchmark_report({NLP_MODEL_ALIAS: model_results})
 
     def _run_perf_side_channel(self, task_name: str) -> dict:
-        """Direct HTTP call to llama-server for tok/s + TTFT. Bypasses ROS."""
         if not NLP_OLLAMA_URL:
             return {}
         try:
