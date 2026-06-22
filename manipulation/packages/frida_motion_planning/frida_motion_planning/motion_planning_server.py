@@ -320,6 +320,20 @@ class MotionPlanningServer(Node):
 
         return result
 
+    def _slow_cartesian(self, traj, factor=3.0):
+        """Humble GetCartesianPath ignores velocity scaling, so retime the
+        cartesian trajectory: scale timing up, velocities/accels down."""
+        if traj is None or not getattr(traj, "points", None):
+            return
+        for pt in traj.points:
+            t = (pt.time_from_start.sec + pt.time_from_start.nanosec * 1e-9) * factor
+            pt.time_from_start.sec = int(t)
+            pt.time_from_start.nanosec = int(round((t - int(t)) * 1e9))
+            if pt.velocities:
+                pt.velocities = [v / factor for v in pt.velocities]
+            if pt.accelerations:
+                pt.accelerations = [a / (factor * factor) for a in pt.accelerations]
+
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
         self._call_ensure_arm_ready()
@@ -346,6 +360,8 @@ class MotionPlanningServer(Node):
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
         )
+        if was_plan_successful and goal_handle.request.planner_id == "cartesian":
+            self._slow_cartesian(trajectory_plan)
 
         # Fallback to RRTConnect if requested planner (e.g. VAMP) fails
         if not was_plan_successful and original_planner == "vamp":
@@ -717,7 +733,7 @@ class MotionPlanningServer(Node):
         return response
 
     def _call_ensure_arm_ready(self) -> bool:
-        if not self._ensure_arm_ready_client.wait_for_service(timeout_sec=5.0):
+        if not self._ensure_arm_ready_client.wait_for_service(timeout_sec=0.1):
             self.get_logger().warn("ensure_arm_ready service not available, skipping")
             return False
         future = self._ensure_arm_ready_client.call_async(Trigger.Request())
