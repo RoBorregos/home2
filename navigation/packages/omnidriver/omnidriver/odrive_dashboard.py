@@ -735,7 +735,11 @@ class ODriveDashboardNode(Node):
                     desc = FERR_DESCRIPTIONS.get(code, f'Unknown error 0x{code:02X}')
                     axis_s = 'sys' if axis == 255 else f'axis {axis}'
                     msg = f'[FW ERR] {desc} ({axis_s}, detail={detail})'
-                    self.get_logger().warn(msg)
+                    # TEMP (debug): suppress the heartbeat-timeout flood (code 0x32,
+                    # ~1900/run) — a known base CAN/firmware hardware issue — so it
+                    # does not drown out other logs. Delete this guard to restore it.
+                    if code != 0x32:
+                        self.get_logger().warn(msg)
                     if self._sio:
                         self._sio.emit('firmware_error', {
                             'code': code, 'axis': axis, 'detail': detail,
@@ -1001,7 +1005,12 @@ class ODriveDashboardNode(Node):
             odom_msg.twist.twist.linear.x  = vx_body
             odom_msg.twist.twist.linear.y  = vy_body
             odom_msg.twist.twist.linear.z  = 0.0
-            odom_msg.twist.twist.angular.z = o_w
+            # Negate: the wheel/firmware-derived yaw rate (o_w) has the opposite
+            # sign convention to REP-103 (the IMU / cmd_vel convention). Nav2 MPPI
+            # uses this field as velocity feedback (odom_topic=/odrive/odom), so a
+            # flipped sign breaks its yaw control (slow/non-converging final rotation).
+            # The EKF ignores this field (odom0_config vyaw=False; yaw rate from IMU).
+            odom_msg.twist.twist.angular.z = -o_w
 
             _LARGE = 1.0e9
             _pose_cov = [0.0] * 36

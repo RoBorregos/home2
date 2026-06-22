@@ -171,6 +171,7 @@ set(srv_files
   "vision/srv/SetTrashCategory.srv"
   "navigation/srv/MapAreas.srv"
   "navigation/srv/MoveLocation.srv"
+  "navigation/srv/NavQuery.srv"
   "navigation/srv/DockTable.srv"
 )
 
