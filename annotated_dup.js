@@ -625,6 +625,9 @@ var annotated_dup =
     [ "xarm_utils", "namespacexarm__utils.html", [
       [ "grasp_detector", "namespacexarm__utils_1_1grasp__detector.html", [
         [ "GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", "classxarm__utils_1_1grasp__detector_1_1GraspDetector" ]
+      ] ],
+      [ "shelf_height_calibrator", "namespacexarm__utils_1_1shelf__height__calibrator.html", [
+        [ "ShelfHeightCalibrator", "classxarm__utils_1_1shelf__height__calibrator_1_1ShelfHeightCalibrator.html", "classxarm__utils_1_1shelf__height__calibrator_1_1ShelfHeightCalibrator" ]
       ] ]
     ] ],
     [ "XArmServices", "namespaceXArmServices.html", [

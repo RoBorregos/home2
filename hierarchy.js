@@ -383,6 +383,7 @@ var hierarchy =
       [ "trash_detection_node.TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", null ],
       [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "xarm_utils.grasp_detector.GraspDetector", "classxarm__utils_1_1grasp__detector_1_1GraspDetector.html", null ],
+      [ "xarm_utils.shelf_height_calibrator.ShelfHeightCalibrator", "classxarm__utils_1_1shelf__height__calibrator_1_1ShelfHeightCalibrator.html", null ],
       [ "zed_simulator.ZedSimulator", "classzed__simulator_1_1ZedSimulator.html", null ]
     ] ],
     [ "ParameterBuilder", null, [
