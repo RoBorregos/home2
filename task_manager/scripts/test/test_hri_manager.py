@@ -71,8 +71,8 @@ TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
 NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
 NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
 NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
-NLP_RUNS = int(os.getenv("NLP_RUNS", "3"))
-NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR", OUTPUT_DIR)
+NLP_RUNS = int(os.getenv("NLP_RUNS") or "3")
+NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR") or OUTPUT_DIR
 
 # Choose which tests to perform (used only when TEST_NLP is unset)
 TEST_ASK_AND_CONFIRM = False
