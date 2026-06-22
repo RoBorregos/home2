@@ -6,11 +6,13 @@ from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
-from nav2_msgs.srv import ManageLifecycleNodes
-from nav2_msgs.action import NavigateToPose  
+from rcl_interfaces.srv import SetParameters
+from nav2_msgs.srv import ManageLifecycleNodes, ClearEntireCostmap
+from nav2_msgs.action import NavigateToPose, ComputePathToPose
+from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
@@ -37,15 +39,20 @@ from frida_constants.navigation_constants import(
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
-        GO_TO_POSE_SERVICE,
-        GET_ROBOT_POSE_SERVICE,
+        NAV_QUERY_SERVICE,
+        COMPUTE_PATH_ACTION_SERVER,
+        TIMEOUT_NAV_QUERY,
+        UNDOCK_SERVICE,
+        DOCK_SERVICE,
+        DOCK_TABLE_SERVICE,
+        DEFAULT_DOCK_OFFSET,
         )
 from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
         MoveLocation,
-        GoToPose,
-        GetRobotPose,
+        NavQuery,
+        DockTable
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -55,6 +62,11 @@ import math
 import yaml
 import re
 
+
+# Seconds to wait between NavigateToPose retries when a goal is rejected or
+# aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
+# the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
+NAV_GOAL_RETRY_DELAY = 2.0
 
 
 def make_param(name, value):
@@ -93,10 +105,25 @@ class Nav_Central(Node):
         self.mapping_config = self.declare_parameter('rtab_mapping_config', '').value
         self.localization_config = self.declare_parameter('rtab_localization_config', '').value
 
+        # Base + SLAM backend selection.
+        #   default_base: 'dashgo' (RTABMap RGBD SLAM) or 'omnibase' (slam_toolbox)
+        #   nav_type:     '2d' (slam_toolbox / lidar) or '3d' (RTABMap)
+        # Params absent -> legacy dashgo / RTABMap behaviour.
+        self.default_base = self.declare_parameter('default_base', 'dashgo').value
+        self.nav_type = self.declare_parameter('nav_type', '2d').value
+        self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
+        # Topic that proves the active SLAM backend is alive (setup + monitor use it).
+        self.slam_check_topic = '/map' if self.use_slam_toolbox else RTAB_CHECK_TOPIC
+
         self.tf_buffer = tf2_ros.Buffer()
-        self.tf_listener = None 
-        self.required_topics = {'/zed/zed_node/rgb/camera_info', '/cmd_vel','/scan'}
-        self.required_frames = {'link_eef'}
+        self.tf_listener = None
+        if self.use_slam_toolbox:
+            # slam_toolbox is lidar-only: no RGBD camera, and the omnibase has no arm.
+            self.required_topics = {'/cmd_vel', '/scan'}
+            self.required_frames = {'link_eef'}
+        else:
+            self.required_topics = {'/zed/zed_node/rgb/camera_info', '/cmd_vel', '/scan'}
+            self.required_frames = {'link_eef'}
         self.requirements_timeout = TIMEOUT_REQUIREMENTS
 
         self.rtabmap_remapping = [
@@ -119,6 +146,25 @@ class Nav_Central(Node):
             Empty, RTAB_PAUSE_SERVICE, callback_group=self.rtab_service_group)
         self.rtabmap_resume_client = self.create_client(
             Empty, RTAB_RESUME_SERVICE, callback_group=self.rtab_service_group)
+        # Undock (retreat) client — lets us back away from a docked surface before
+        # planning a new goal. No-op if the table_docker node isn't running.
+        self.undock_client = self.create_client(
+            Trigger, UNDOCK_SERVICE, callback_group=self.rtab_service_group)
+        # Dock (perpendicular approach) client + a parameter client to set the
+        # per-location front_offset on table_docker before approaching.
+        self.dock_client = self.create_client(
+            Trigger, DOCK_SERVICE, callback_group=self.rtab_service_group)
+        self.dock_param_client = self.create_client(
+            SetParameters, '/table_docker/set_parameters', callback_group=self.rtab_service_group)
+        # Costmap clear clients — wipe stale obstacle marks (e.g. from the parked/docked
+        # pose) before a new goal so the planner/MPPI start from a clean slate.
+        self.clear_local_costmap_client = self.create_client(
+            ClearEntireCostmap, '/local_costmap/clear_entirely_local_costmap',
+            callback_group=self.rtab_service_group)
+        self.clear_global_costmap_client = self.create_client(
+            ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap',
+            callback_group=self.rtab_service_group)
+
         self.lidar_msg = None
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
@@ -130,8 +176,13 @@ class Nav_Central(Node):
         self.sensor_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_SENSOR.value) # Timeout in seconds to wait for sensors
         self.door_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value) # Timeout in seconds to wait for sensors
         
-        self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group) 
+        self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
+        self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
+
+        # Path query service — distance/time between two areas without navigating
+        self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
+        self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
         self.resume_nav_srv = self.create_service(
@@ -208,10 +259,10 @@ class Nav_Central(Node):
         if self.tf_listener is None:
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        # Check if rtabmap crashed (was loaded but topic disappeared)
-        if self.rtabmap_loaded and not self.check_for_topics({RTAB_CHECK_TOPIC}):
+        # Check if the SLAM backend crashed (was loaded but its topic disappeared)
+        if self.rtabmap_loaded and not self.check_for_topics({self.slam_check_topic}):
             self.rtabmap_loaded = False
-            self.nav_logger("warn", "Monitor -> Rtabmap container crashed, will reload when requirements are met")
+            self.nav_logger("warn", "Monitor -> SLAM backend crashed, will reload when requirements are met")
 
         # Reload rtabmap if it crashed and requirements are available
         if not self.rtabmap_loaded and not self.rtabmap_reloading:
@@ -399,30 +450,123 @@ class Nav_Central(Node):
         feedback = feedback_msg.feedback
         self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
 
-    def send_nav_goal(self, pose, behavior_tree=None):
-        """Function to send goal to nav2 bt"""
+    def send_nav_goal(self, pose, behaivor_tree = None, max_attempts = None):
+        """Send a NavigateToPose goal and keep retrying until Nav2 reports the
+        goal SUCCEEDED.
+
+        A goal that is rejected, or that finishes with any status other than
+        STATUS_SUCCEEDED (ABORTED/CANCELED — e.g. the controller momentarily
+        loses TF and the BT exhausts its recoveries), is retried after a short
+        delay instead of being reported as success. max_attempts bounds the
+        retries; None (the default) means retry until the goal is reached."""
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
-        if behavior_tree is not None:
-            goal_msg.behavior_tree = behavior_tree
-        self.goal_action_client.wait_for_server()
+        if behaivor_tree is not None:
+            goal_msg.behaivor_tree = behaivor_tree
 
-        _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+        attempt = 0
+        while True:
+            attempt += 1
 
-        while not _goal_future.done():
+            # Action server may not be back yet right after a lifecycle resume.
+            if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
+                self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
+                if max_attempts is not None and attempt >= max_attempts:
+                    return (False, "Action server unavailable")
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                continue
+
+            _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+            while not _goal_future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            goal_handle = _goal_future.result()
+
+            if not goal_handle.accepted:
+                self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
+                if max_attempts is not None and attempt >= max_attempts:
+                    return (False, "Goal Rejected")
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                continue
+
+            result_future = goal_handle.get_result_async()
+            while not result_future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            result = result_future.result()
+
+            if result.status == GoalStatus.STATUS_SUCCEEDED:
+                self.nav_logger("info", "Goal_Handler -> Goal Reached")
+                return (True, "Goal Finished")
+
+            self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
+            if max_attempts is not None and attempt >= max_attempts:
+                return (False, f"Goal failed (status {result.status})")
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+
+    def _retreat_if_docked(self):
+        """Best-effort: ask the table_docker to back off if it's parked at a
+        surface. No-op (returns fast) when the docker node isn't running."""
+        if not self.undock_client.service_is_ready():
+            return
+        self.nav_logger("info", "Go_To_Area -> Undocking (retreat) before new goal ...")
+        ok = self._call_service_with_timeout(
+            self.undock_client, Trigger.Request(), TIMEOUT_NAV2_LIFECYCLE * 2, "Undock")
+        if not ok:
+            self.nav_logger("warn", "Go_To_Area -> Undock failed/timed out, continuing anyway")
+
+    def _approach_table(self, offset):
+        """Set the per-call front_offset on table_docker, then trigger the
+        perpendicular approach. Returns (success, message)."""
+        if not self.dock_client.service_is_ready():
+            self.nav_logger("warn", "Approach -> table_docker not available")
+            return (False, "table_docker not available")
+        if offset is None or offset <= 0.0:
+            offset = DEFAULT_DOCK_OFFSET
+        if self.dock_param_client.service_is_ready():
+            req = SetParameters.Request()
+            req.parameters = [make_param('front_offset', float(offset))]
+            self._call_service_with_timeout(
+                self.dock_param_client, req, TIMEOUT_RTAB_SERVICE, "Approach SetParam")
+        self.nav_logger("info", f"Approach -> docking to surface (front_offset={offset})")
+        # Bounded dock call, capturing the actual approach result.
+        future = self.dock_client.call_async(Trigger.Request())
+        elapsed = 0.0
+        while not future.done() and elapsed < 90.0:
             self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not future.done():
+            return (False, "dock timed out")
+        res = future.result()
+        return (res.success, res.message)
 
-        goal_handle = _goal_future.result()
-        if goal_handle.accepted:
-              result_future = goal_handle.get_result_async()                                                                                                                                                   
-              while not result_future.done():
-                  self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))                                                                                                                             
-              result = result_future.result()
-              self.nav_logger("info", f"Goal_Handler -> Goal Reached")
-              return (True, "Goal Finished")
+    def dock_table_callback(self, request, response):
+        """Service: dock to the table/shelf in front of the robot (with offset)."""
+        self.nav_logger("info", f"Dock_Table -> Service called (offset={request.offset})")
+        success, message = self._approach_table(request.offset)
+        response.success = success
+        response.error = message
+        if success:
+            self.nav_logger("info", "Dock_Table -> Docked")
         else:
-            return (False, "Goal Rejected")
+            self.nav_logger("error", f"Dock_Table -> Failed: {message}")
+        return response
+
+    def _clear_costmaps(self, settle_s=0.3):
+        """Clear local+global costmaps so the planner/MPPI start from a clean slate
+        (removes stale obstacle marks left from the parked/docked pose that can box-in
+        the planner), then settle so the layers repopulate from sensors before moving.
+        Best-effort + bounded — skips a costmap whose clear service isn't up yet."""
+        for client, label in ((self.clear_local_costmap_client,  "Clear local costmap"),
+                              (self.clear_global_costmap_client, "Clear global costmap")):
+            if client.service_is_ready():
+                self._call_service_with_timeout(
+                    client, ClearEntireCostmap.Request(), TIMEOUT_RTAB_SERVICE, label)
+            else:
+                self.nav_logger("warn", f"{label} -> service not ready, skipping")
+        # Let a sensor cycle repopulate before planning/driving. The omni base strafes
+        # and the forward camera won't re-see side/rear obstacles instantly, so don't
+        # command motion into the brief blind window right after the clear.
+        self.get_clock().sleep_for(rclpy.duration.Duration(seconds=settle_s))
 
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
@@ -440,7 +584,11 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Area not found"
             return response
-        
+
+        # If parked at a surface, back off first so nav2 plans from a clear pose
+        # (avoids the planner starting inside the inflation/lethal zone).
+        self._retreat_if_docked()
+
         self.resume_slam()
         self.resume_nav2()
         if self.nav2_paused or not self.rtabmap_loaded:
@@ -448,7 +596,11 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Navigation not initialized"
             return response 
-        goal_coord = PoseStamped() 
+        # Fresh costmaps before planning/driving (clears stale marks from the
+        # docked/retreated pose, then settles for sensor repopulation).
+        self._clear_costmaps()
+
+        goal_coord = PoseStamped()
         goal_coord.header.frame_id = "map"
         goal_coord.pose.position.x = fetch_coords[0]
         goal_coord.pose.position.y = fetch_coords[1]
@@ -458,148 +610,147 @@ class Nav_Central(Node):
         goal_coord.pose.orientation.z = fetch_coords[5]
         goal_coord.pose.orientation.w = fetch_coords[6]
 
-        future = self.send_nav_goal(goal_coord) 
+        future = self.send_nav_goal(goal_coord)
         response.success = future[0]
         response.error = future[1]
         self.pause_slam()
         self.pause_nav2()
         return response
 
-    def go_to_pose_callback(self, request, response):
-        """Navigate to an arbitrary PoseStamped goal."""
-        self.nav_logger("info", "GoToPose -> Service called")
+    def _pose_from_coords(self, coords):
+        """Build a map-frame PoseStamped from an areas.json coordinate array."""
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.pose.position.x = coords[0]
+        pose.pose.position.y = coords[1]
+        pose.pose.position.z = coords[2]
+        pose.pose.orientation.x = coords[3]
+        pose.pose.orientation.y = coords[4]
+        pose.pose.orientation.z = coords[5]
+        pose.pose.orientation.w = coords[6]
+        return pose
 
-        if not self.use_nav2 or not self.rtabmap_loaded:
-            self.nav_logger("error", "GoToPose -> Navigation not ready")
-            response.success = False
-            response.error = "Navigation not ready"
+    def _fetch_area_coords(self, location, sublocation):
+        if self.areas_data is None:
+            return None
+        return self.areas_data.get(location, {}).get(sublocation)
+
+    def _path_length(self, path):
+        """Sum of euclidean distances between consecutive path poses."""
+        total = 0.0
+        poses = path.poses
+        for i in range(1, len(poses)):
+            p0 = poses[i - 1].pose.position
+            p1 = poses[i].pose.position
+            total += math.hypot(p1.x - p0.x, p1.y - p0.y)
+        return total
+
+    def _compute_path(self, goal_pose, start_pose=None):
+        """Call nav2 ComputePathToPose action. Returns nav_msgs/Path or None.
+        If start_pose is None the planner uses the robot's current pose."""
+        goal_msg = ComputePathToPose.Goal()
+        goal_msg.goal = goal_pose
+        goal_msg.planner_id = "GridBased"
+        if start_pose is not None:
+            goal_msg.start = start_pose
+            goal_msg.use_start = True
+
+        elapsed = 0.0
+        while not self.compute_path_client.server_is_ready() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.2))
+            elapsed += 0.2
+        if not self.compute_path_client.server_is_ready():
+            self.nav_logger("error", "Query_Path -> ComputePathToPose server not available")
+            return None
+
+        send_future = self.compute_path_client.send_goal_async(goal_msg)
+        elapsed = 0.0
+        while not send_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not send_future.done():
+            self.nav_logger("error", "Query_Path -> Timeout sending goal to planner")
+            return None
+
+        goal_handle = send_future.result()
+        if not goal_handle.accepted:
+            self.nav_logger("error", "Query_Path -> Planner rejected the request")
+            return None
+
+        result_future = goal_handle.get_result_async()
+        elapsed = 0.0
+        while not result_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not result_future.done():
+            goal_handle.cancel_goal_async()
+            self.nav_logger("error", "Query_Path -> Timeout waiting for planner result")
+            return None
+
+        result = result_future.result().result
+        if result is None or len(result.path.poses) == 0:
+            return None
+        return result.path
+
+    def query_path(self, request, response):
+        """Callback: compute path distance/time between two areas without moving.
+        Empty location_a means start from the robot's current pose."""
+        self.nav_logger("info", f"Query_Path -> Service called ({request.location_a}/{request.sublocation_a} -> {request.location_b}/{request.sublocation_b})")
+        response.success = False
+        response.distance_meters = 0.0
+        response.error = ""
+
+        if self.mapping:
+            response.error = "Not available in mapping mode"
+            return response
+        if self.areas_data is None:
+            self.nav_logger("error", "Query_Path -> Areas not loaded")
+            response.error = "Areas not loaded"
             return response
 
-        # Resume SLAM and Nav2 for navigation (paused between goals to save CPU)
+        goal_coords = self._fetch_area_coords(request.location_b, request.sublocation_b)
+        if goal_coords is None:
+            self.nav_logger("error", "Query_Path -> Destination area not found")
+            response.error = f"Area not found: {request.location_b}/{request.sublocation_b}"
+            return response
+        goal_pose = self._pose_from_coords(goal_coords)
+
+        start_pose = None
+        if request.location_a:
+            start_coords = self._fetch_area_coords(request.location_a, request.sublocation_a)
+            if start_coords is None:
+                self.nav_logger("error", "Query_Path -> Start area not found")
+                response.error = f"Area not found: {request.location_a}/{request.sublocation_a}"
+                return response
+            start_pose = self._pose_from_coords(start_coords)
+
+        if not self.rtabmap_loaded:
+            self.nav_logger("error", "Query_Path -> Navigation not initialized")
+            response.error = "Navigation not initialized"
+            return response
+
+        # Planner needs nav2 active; remember prior state to restore it after
+        was_paused = self.nav2_paused
         self.resume_slam()
-        if self.use_nav2:
-            self.resume_nav2()
-
+        self.resume_nav2()
         if self.nav2_paused:
-            self.nav_logger("error", "GoToPose -> Nav2 is paused")
-            response.success = False
-            response.error = "Nav2 is paused"
+            self.nav_logger("error", "Query_Path -> Could not resume nav2")
+            response.error = "Could not resume nav2"
             return response
 
-        # Transform goal to map frame if it's in a different frame
-        target_pose = request.target_pose
-        if target_pose.header.frame_id and target_pose.header.frame_id != "map":
-            try:
-                if self.tf_listener is None:
-                    self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-                transform = self.tf_buffer.lookup_transform(
-                    'map', target_pose.header.frame_id,
-                    rclpy.time.Time(), timeout=Duration(seconds=2.0)
-                )
-                # Transform the position
-                from tf2_geometry_msgs import do_transform_pose_stamped
-                target_pose = do_transform_pose_stamped(target_pose, transform)
-                self.nav_logger("info",
-                    f"GoToPose -> Transformed to map frame: ({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f})")
-            except Exception as e:
-                self.nav_logger("error", f"GoToPose -> TF transform failed: {e}")
-                response.success = False
-                response.error = f"TF transform failed: {e}"
-                return response
-
-        # Flatten to 2D navigation (z=0)
-        target_pose.pose.position.z = 0.0
-
-        # Parse standoff distance from behavior_tree field (format: "bt_path|standoff=X.X")
-        bt_raw = request.behavior_tree if request.behavior_tree else ""
-        standoff = 0.0
-        if "|standoff=" in bt_raw:
-            parts = bt_raw.split("|standoff=")
-            bt_raw = parts[0]
-            try:
-                standoff = float(parts[1])
-            except ValueError:
-                pass
-
-        # Get robot position for standoff and clamping calculations
-        MAX_GOAL_DISTANCE = 2.5  # meters — stay within mapped area
         try:
-            robot_tf = self.tf_buffer.lookup_transform(
-                'map', 'base_link', rclpy.time.Time(), timeout=Duration(seconds=1.0)
-            )
-            rx = robot_tf.transform.translation.x
-            ry = robot_tf.transform.translation.y
-            dx = target_pose.pose.position.x - rx
-            dy = target_pose.pose.position.y - ry
-            dist = math.sqrt(dx * dx + dy * dy)
-
-            # Apply standoff: move goal back toward robot
-            if standoff > 0.0 and dist > standoff:
-                scale = (dist - standoff) / dist
-                target_pose.pose.position.x = rx + dx * scale
-                target_pose.pose.position.y = ry + dy * scale
-                # Orient robot to face the original target point
-                yaw = math.atan2(dy, dx)
-                target_pose.pose.orientation.x = 0.0
-                target_pose.pose.orientation.y = 0.0
-                target_pose.pose.orientation.z = math.sin(yaw / 2.0)
-                target_pose.pose.orientation.w = math.cos(yaw / 2.0)
-                new_dist = dist - standoff
-                self.nav_logger("info",
-                    f"GoToPose -> Standoff {standoff:.1f}m applied: goal at "
-                    f"({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f}), "
-                    f"{new_dist:.2f}m from robot, facing target")
-                dist = new_dist
-            elif standoff > 0.0 and dist <= standoff:
-                self.nav_logger("info",
-                    f"GoToPose -> Already within standoff ({dist:.2f}m <= {standoff:.1f}m), skipping nav")
-                response.success = True
-                response.error = ""
+            path = self._compute_path(goal_pose, start_pose)
+            if path is None:
+                response.error = "Planner failed to compute path"
                 return response
-
-            # Clamp to max distance for mapping mode
-            if dist > MAX_GOAL_DISTANCE:
-                clamp_scale = MAX_GOAL_DISTANCE / dist
-                target_pose.pose.position.x = rx + (target_pose.pose.position.x - rx) * clamp_scale
-                target_pose.pose.position.y = ry + (target_pose.pose.position.y - ry) * clamp_scale
-                self.nav_logger("info",
-                    f"GoToPose -> Clamped to {MAX_GOAL_DISTANCE}m: "
-                    f"({target_pose.pose.position.x:.2f}, {target_pose.pose.position.y:.2f})")
-        except Exception as e:
-            self.nav_logger("warn", f"GoToPose -> Could not compute standoff/clamp: {e}")
-
-        bt = bt_raw if bt_raw else None
-        result = self.send_nav_goal(target_pose, bt)
-        response.success = result[0]
-        response.error = result[1]
-
-        # Pause SLAM after navigation to reduce CPU and improve map quality
-        self.pause_slam()
-
-        return response
-
-    def get_robot_pose_callback(self, request, response):
-        """Return current robot pose via TF lookup (map -> base_link)."""
-        try:
-            if self.tf_listener is None:
-                self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
-            transform = self.tf_buffer.lookup_transform(
-                'map', 'base_link', rclpy.time.Time(), timeout=Duration(seconds=1.0)
-            )
-            pose = PoseStamped()
-            pose.header.frame_id = 'map'
-            pose.header.stamp = transform.header.stamp
-            pose.pose.position.x = transform.transform.translation.x
-            pose.pose.position.y = transform.transform.translation.y
-            pose.pose.position.z = transform.transform.translation.z
-            pose.pose.orientation = transform.transform.rotation
+            distance = self._path_length(path)
             response.success = True
-            response.pose = pose
-            response.error = ""
-        except Exception as e:
-            self.nav_logger("error", f"GetRobotPose -> TF lookup failed: {e}")
-            response.success = False
-            response.error = str(e)
+            response.distance_meters = distance
+            self.nav_logger("info", f"Query_Path -> Path found: {distance:.2f} m")
+        finally:
+            if was_paused:
+                self.pause_slam()
+                self.pause_nav2()
         return response
 
     def check_for_topics(self, topics):
@@ -631,7 +782,29 @@ class Nav_Central(Node):
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=self.requirements_timeout))
 
     def start_slam(self):
-        """Function to load slam nodes"""                                                                                                                                                                                        
+        """Bring up (or confirm) the active SLAM backend."""
+        if self.use_slam_toolbox:
+            self.start_slam_toolbox()
+        else:
+            self.start_rtabmap()
+
+    def start_slam_toolbox(self):
+        """slam_toolbox runs as its own externally-launched node (see
+        omni_setup/slam.launch.py). We don't load it into a container here — we
+        just wait until it is publishing the map."""
+        slam_topics = {self.slam_check_topic}
+        self.nav_logger("info", "Loading Slam -> Waiting for slam_toolbox map ...")
+        elapsed = 0.0
+        while not self.check_for_topics(slam_topics) and elapsed < self.rtab_load_timeout:
+            t.sleep(0.5)
+            elapsed += 0.5
+        if self.check_for_topics(slam_topics):
+            self.nav_logger("info", "Loading Slam -> slam_toolbox map available")
+        else:
+            self.nav_logger("warn", "Loading Slam -> slam_toolbox map not seen yet, continuing")
+
+    def start_rtabmap(self):
+        """Function to load slam nodes"""
         # Load a node into the container
 
         rtabmap_params = params_from_yaml(self.config_path, 'rtabmap')
@@ -714,6 +887,9 @@ class Nav_Central(Node):
 
     def pause_slam(self):
         """Pause Slam function"""
+        if self.use_slam_toolbox:
+            # slam_toolbox self-recovers (respawn) — nothing to pause.
+            return
         if not self.rtabmap_loaded:
             self.nav_logger("warn", "Pausing Slam -> Rtabmap not loaded, skipping")
             return
@@ -726,6 +902,8 @@ class Nav_Central(Node):
 
     def resume_slam(self):
         """Resuming Slam function"""
+        if self.use_slam_toolbox:
+            return
         if not self.rtabmap_loaded:
             self.nav_logger("warn", "Resuming Slam -> Rtabmap not loaded, skipping")
             return
