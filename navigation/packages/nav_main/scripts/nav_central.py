@@ -7,7 +7,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallb
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
-from nav2_msgs.srv import ManageLifecycleNodes
+from nav2_msgs.srv import ManageLifecycleNodes, ClearEntireCostmap
 from nav2_msgs.action import NavigateToPose, ComputePathToPose
 from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
@@ -153,6 +153,14 @@ class Nav_Central(Node):
             Trigger, DOCK_SERVICE, callback_group=self.rtab_service_group)
         self.dock_param_client = self.create_client(
             SetParameters, '/table_docker/set_parameters', callback_group=self.rtab_service_group)
+        # Costmap clear clients — wipe stale obstacle marks (e.g. from the parked/docked
+        # pose) before a new goal so the planner/MPPI start from a clean slate.
+        self.clear_local_costmap_client = self.create_client(
+            ClearEntireCostmap, '/local_costmap/clear_entirely_local_costmap',
+            callback_group=self.rtab_service_group)
+        self.clear_global_costmap_client = self.create_client(
+            ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap',
+            callback_group=self.rtab_service_group)
 
         self.lidar_msg = None
         self.lidar_reciever = None
@@ -531,6 +539,23 @@ class Nav_Central(Node):
             self.nav_logger("error", f"Dock_Table -> Failed: {message}")
         return response
 
+    def _clear_costmaps(self, settle_s=0.3):
+        """Clear local+global costmaps so the planner/MPPI start from a clean slate
+        (removes stale obstacle marks left from the parked/docked pose that can box-in
+        the planner), then settle so the layers repopulate from sensors before moving.
+        Best-effort + bounded — skips a costmap whose clear service isn't up yet."""
+        for client, label in ((self.clear_local_costmap_client,  "Clear local costmap"),
+                              (self.clear_global_costmap_client, "Clear global costmap")):
+            if client.service_is_ready():
+                self._call_service_with_timeout(
+                    client, ClearEntireCostmap.Request(), TIMEOUT_RTAB_SERVICE, label)
+            else:
+                self.nav_logger("warn", f"{label} -> service not ready, skipping")
+        # Let a sensor cycle repopulate before planning/driving. The omni base strafes
+        # and the forward camera won't re-see side/rear obstacles instantly, so don't
+        # command motion into the brief blind window right after the clear.
+        self.get_clock().sleep_for(rclpy.duration.Duration(seconds=settle_s))
+
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
 
@@ -559,6 +584,10 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Navigation not initialized"
             return response 
+        # Fresh costmaps before planning/driving (clears stale marks from the
+        # docked/retreated pose, then settles for sensor repopulation).
+        self._clear_costmaps()
+
         goal_coord = PoseStamped()
         goal_coord.header.frame_id = "map"
         goal_coord.pose.position.x = fetch_coords[0]
