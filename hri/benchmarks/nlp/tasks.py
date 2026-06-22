@@ -7,11 +7,22 @@ task_manager/scripts/test/test_hri_manager.py via the existing HRI pipeline.
 """
 
 import json
+import os
+import sys
 import time
 import urllib.request
 from typing import Optional
 
-from nlp.assets.dialogs import (
+# The `nlp` Python package lives in hri/packages/nlp/nlp and is NOT colcon-built
+# inside the integration container. Add its parent dir so we can import the
+# canonical prompts (single source of truth shared with production).
+_NLP_PKG_PARENT = os.path.normpath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "packages", "nlp")
+)
+if _NLP_PKG_PARENT not in sys.path:
+    sys.path.insert(0, _NLP_PKG_PARENT)
+
+from nlp.assets.dialogs import (  # noqa: E402
     get_extract_data_args,
     get_is_answer_negative_args,
     get_is_answer_positive_args,
