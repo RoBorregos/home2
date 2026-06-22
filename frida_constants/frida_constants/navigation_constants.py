@@ -78,10 +78,6 @@ class SUBTASK_MANAGER(Enum):
 DEFAULT_DOCK_OFFSET = 0.16
 
 
-# Default docking offset (table_docker front_offset).
-DEFAULT_DOCK_OFFSET = 0.16
-
-
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
 SCAN_TOPIC = "/scan"

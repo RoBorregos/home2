@@ -556,54 +556,6 @@ class Nav_Central(Node):
         # command motion into the brief blind window right after the clear.
         self.get_clock().sleep_for(rclpy.duration.Duration(seconds=settle_s))
 
-    def _retreat_if_docked(self):
-        """Best-effort: ask the table_docker to back off if it's parked at a
-        surface. No-op (returns fast) when the docker node isn't running."""
-        if not self.undock_client.service_is_ready():
-            return
-        self.nav_logger("info", "Go_To_Area -> Undocking (retreat) before new goal ...")
-        ok = self._call_service_with_timeout(
-            self.undock_client, Trigger.Request(), TIMEOUT_NAV2_LIFECYCLE * 2, "Undock")
-        if not ok:
-            self.nav_logger("warn", "Go_To_Area -> Undock failed/timed out, continuing anyway")
-
-    def _approach_table(self, offset):
-        """Set the per-call front_offset on table_docker, then trigger the
-        perpendicular approach. Returns (success, message)."""
-        if not self.dock_client.service_is_ready():
-            self.nav_logger("warn", "Approach -> table_docker not available")
-            return (False, "table_docker not available")
-        if offset is None or offset <= 0.0:
-            offset = DEFAULT_DOCK_OFFSET
-        if self.dock_param_client.service_is_ready():
-            req = SetParameters.Request()
-            req.parameters = [make_param('front_offset', float(offset))]
-            self._call_service_with_timeout(
-                self.dock_param_client, req, TIMEOUT_RTAB_SERVICE, "Approach SetParam")
-        self.nav_logger("info", f"Approach -> docking to surface (front_offset={offset})")
-        # Bounded dock call, capturing the actual approach result.
-        future = self.dock_client.call_async(Trigger.Request())
-        elapsed = 0.0
-        while not future.done() and elapsed < 90.0:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            elapsed += 0.1
-        if not future.done():
-            return (False, "dock timed out")
-        res = future.result()
-        return (res.success, res.message)
-
-    def dock_table_callback(self, request, response):
-        """Service: dock to the table/shelf in front of the robot (with offset)."""
-        self.nav_logger("info", f"Dock_Table -> Service called (offset={request.offset})")
-        success, message = self._approach_table(request.offset)
-        response.success = success
-        response.error = message
-        if success:
-            self.nav_logger("info", "Dock_Table -> Docked")
-        else:
-            self.nav_logger("error", f"Dock_Table -> Failed: {message}")
-        return response
-
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
 

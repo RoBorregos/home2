@@ -53,11 +53,11 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 20.0 # raised 15->20 for snappier control (nav now has dedicated cores)
+    controller_frequency: 20.0   # raised 15->20 for snappier control (nav now has dedicated cores)
     odom_topic: /odrive/odom
     # These three were missing in the source file but are REQUIRED.
     controller_plugins: ["FollowPath"]
-    progress_checker_plugins: ["progress_checker"] # Nav2 1.4.0 renamed the singular progress_checker_plugin -> plural list
+    progress_checker_plugins: ["progress_checker"]   # Nav2 1.4.0 renamed the singular progress_checker_plugin -> plural list
     goal_checker_plugins: ["general_goal_checker"]
 
     progress_checker:
@@ -68,17 +68,16 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance:
-        0.35 # area/safe_place waypoints are zones, not precise docks. Loosened so MPPI
-        # does not fail the final approach when a waypoint sits near inflation
-        # (e.g. office.safe_place ~0.3 m from a wall). Precise approaches use table_docker.
+      xy_goal_tolerance: 0.35      # area/safe_place waypoints are zones, not precise docks. Loosened so MPPI
+                                   # does not fail the final approach when a waypoint sits near inflation
+                                   # (e.g. office.safe_place ~0.3 m from a wall). Precise approaches use table_docker.
       yaw_goal_tolerance: 0.25
 
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 36
-      model_dt: 0.07 # 36 * 0.07 = 2.5 s prediction horizon
-      batch_size: 1200 # lower to ~600-800 if the robot CPU is maxed at 15 Hz
+      model_dt: 0.07               # 36 * 0.07 = 2.5 s prediction horizon
+      batch_size: 1200             # lower to ~600-800 if the robot CPU is maxed at 15 Hz
       # ---- Sampling std-devs: vy MUST be > 0 for the base to explore strafing ----
       vx_std: 0.2
       vy_std: 0.2
@@ -86,35 +85,26 @@ controller_server:
       # ---- Velocity limits (symmetric for a holonomic base) ----
       vx_max: 0.7
       vx_min: -0.35
-      vy_max: 0.7 # was 0.0 (diff drive) — lateral motion now allowed
+      vy_max: 0.7                  # was 0.0 (diff drive) — lateral motion now allowed
       wz_max: 1.5
       # ---- Acceleration limits ----
       ax_max: 2.2
       ax_min: -1.8
-      ay_max: 2.0 # was 0.0 — lateral accel now allowed
+      ay_max: 2.0                  # was 0.0 — lateral accel now allowed
       az_max: 2.5
       iteration_count: 2
       prune_distance: 1.7
       transform_tolerance: 0.2
       temperature: 0.3
       gamma: 0.015
-      motion_model: "Omni" # <-- the core change: holonomic model (vx, vy, wz)
+      motion_model: "Omni"         # <-- the core change: holonomic model (vx, vy, wz)
       visualize: false
       regenerate_noises: false
       TrajectoryVisualizer:
         trajectory_step: 5
         time_step: 3
       # ObstaclesCritic + PreferForwardCritic dropped (see header).
-      critics:
-        [
-          "ConstraintCritic",
-          "CostCritic",
-          "GoalCritic",
-          "GoalAngleCritic",
-          "PathAlignCritic",
-          "PathFollowCritic",
-          "PathAngleCritic",
-        ]
+      critics: ["ConstraintCritic", "CostCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic"]
       ConstraintCritic:
         enabled: true
         cost_power: 1
@@ -124,11 +114,10 @@ controller_server:
         cost_power: 1
         cost_weight: 4.0
         critical_cost: 300.0
-        consider_footprint: true # footprint-aware collision cost (set the real footprint below!)
+        consider_footprint: true   # footprint-aware collision cost (set the real footprint below!)
         collision_cost: 1000000.0
-        near_goal_distance:
-          0.8 # relax inflation cost over a larger zone near the goal so MPPI can
-          # approach waypoints close to walls/furniture without the optimizer failing
+        near_goal_distance: 0.8     # relax inflation cost over a larger zone near the goal so MPPI can
+                                    # approach waypoints close to walls/furniture without the optimizer failing
         trajectory_point_step: 3
       GoalCritic:
         enabled: true
@@ -143,7 +132,7 @@ controller_server:
       PathAlignCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 6.0 # keeps the robot ON the path (position) — important for omni
+        cost_weight: 6.0           # keeps the robot ON the path (position) — important for omni
         max_path_occupancy_ratio: 0.05
         trajectory_point_step: 4
         threshold_to_consider: 0.5
@@ -152,7 +141,7 @@ controller_server:
       PathFollowCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 6.0 # 5.0->6.0: push harder along the path (don't dawdle)
+        cost_weight: 6.0           # 5.0->6.0: push harder along the path (don't dawdle)
         offset_from_furthest: 5
         threshold_to_consider: 1.4
       PathAngleCritic:
@@ -185,8 +174,8 @@ local_costmap:
       # use_keepout:=true — see nav2_omni_keepout.yaml + nav2_omni.launch.py.
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0 # gentler than the source's 7.0 -> smoother cost gradient for MPPI
-        inflation_radius: 0.45 # MUST be > circumscribed radius (~0.424 = footprint + 0.01 padding); soft cost gradient, not a hard clearance
+        cost_scaling_factor: 3.0   # gentler than the source's 7.0 -> smoother cost gradient for MPPI
+        inflation_radius: 0.45     # MUST be > circumscribed radius (~0.424 = footprint + 0.01 padding); soft cost gradient, not a hard clearance
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -197,7 +186,7 @@ local_costmap:
           clearing: True
           marking: True
           data_type: "LaserScan"
-          raytrace_max_range: 4.0 # raised — C1 sees 12 m; this covers the 4x4 m local window
+          raytrace_max_range: 4.0  # raised — C1 sees 12 m; this covers the 4x4 m local window
           raytrace_min_range: 0.10
           obstacle_max_range: 3.0
           obstacle_min_range: 0.10
@@ -208,8 +197,8 @@ local_costmap:
         # "phantom points linger until the robot moves" problem.
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
         enabled: true
-        voxel_decay: 2.0 # s — lower for faster auto-clear of stale marks
-        decay_model: 0 # 0=linear, 1=exponential, -1=persistent
+        voxel_decay: 2.0           # s — lower for faster auto-clear of stale marks
+        decay_model: 0             # 0=linear, 1=exponential, -1=persistent
         voxel_size: 0.05
         track_unknown_space: true
         observation_persistence: 0.0
@@ -229,7 +218,7 @@ local_costmap:
           topic: /point_cloud
           marking: true
           clearing: false
-          min_obstacle_height: 0.30 # ignore the floor (raised from the old base's 0.15)
+          min_obstacle_height: 0.30   # ignore the floor (raised from the old base's 0.15)
           max_obstacle_height: 2.0
           expected_update_rate: 0.0
           observation_persistence: 0.0
@@ -263,13 +252,7 @@ global_costmap:
       footprint: "[ [0.325, 0.25], [0.325, -0.25], [-0.325, -0.25], [-0.325, 0.25] ]"
       resolution: 0.05
       track_unknown_space: true
-      plugins:
-        [
-          "static_layer",
-          "obstacle_layer",
-          "rgbd_obstacle_layer",
-          "inflation_layer",
-        ]
+      plugins: ["static_layer", "obstacle_layer", "rgbd_obstacle_layer", "inflation_layer"]
       # Keepout (virtual obstacles) is an OPT-IN overlay applied only when
       # use_keepout:=true — see nav2_omni_keepout.yaml + nav2_omni.launch.py.
       obstacle_layer:
@@ -334,7 +317,7 @@ global_costmap:
           model_type: 0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: True # slam_toolbox publishes /map latched
+        map_subscribe_transient_local: True   # slam_toolbox publishes /map latched
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
@@ -347,7 +330,7 @@ planner_server:
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "nav2_navfn_planner::NavfnPlanner" # Nav2 1.4.0 dropped the slash-style plugin name
+      plugin: "nav2_navfn_planner::NavfnPlanner"   # Nav2 1.4.0 dropped the slash-style plugin name
       tolerance: 0.5
       use_astar: true
       allow_unknown: true
@@ -368,7 +351,7 @@ behavior_server:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"] # dropped assisted_teleop (unused)
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]   # dropped assisted_teleop (unused)
     spin:
       plugin: "nav2_behaviors::Spin"
     backup:

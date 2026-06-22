@@ -7,7 +7,6 @@ available seats. Tasks for HRIC commands.
 
 import cv2
 import numpy as np
-import os
 import queue
 import time
 import rclpy
@@ -41,9 +40,6 @@ from ament_index_python.packages import get_package_share_directory
 from vision_general.utils.area_check import filter_detections_in_house, fetch_map_areas
 
 package_share_dir = get_package_share_directory("vision_general")
-
-constants = get_package_share_directory("frida_constants")
-_areas_file_path = os.path.join(constants, "map_areas/areas.json")
 
 # YOLO COCO keypoint indices for wrist (hand proxy)
 LEFT_WRIST_IDX = 9
