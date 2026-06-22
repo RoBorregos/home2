@@ -98,6 +98,8 @@ $(document).ready(function(){initNavTree('namespacearea__check.html',''); initRe
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a31e29e824132e00b763b97085ce29058"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacearea__check.html#a31e29e824132e00b763b97085ce29058">fetch_map_areas</a> (areas_client, logger, float service_timeout=2.0, float call_timeout=5.0)</td></tr>
+<tr class="separator:a31e29e824132e00b763b97085ce29058"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57f97085ecda9c86f7f750d44a2bf6ec"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacearea__check.html#a57f97085ecda9c86f7f750d44a2bf6ec">point_in_polygon</a> (point, polygon)</td></tr>
 <tr class="separator:a57f97085ecda9c86f7f750d44a2bf6ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adde7b9820374ec0867e3bcc9888ae56f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacearea__check.html#adde7b9820374ec0867e3bcc9888ae56f">is_point_in_room</a> (PointStamped point_stamped, str room_name, areas_json)</td></tr>
@@ -108,6 +110,50 @@ Functions</h2></td></tr>
 <tr class="separator:a2f9676eacc1c5466e43c74599c50c4fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a31e29e824132e00b763b97085ce29058" name="a31e29e824132e00b763b97085ce29058"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a31e29e824132e00b763b97085ce29058">&#9670;&#160;</a></span>fetch_map_areas()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def area_check.fetch_map_areas </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>areas_client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>logger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>service_timeout</em> = <code>2.0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>call_timeout</em> = <code>5.0</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Fetch the active map's areas from nav_central's AREAS_SERVICE.
+
+Returns the areas dict, or None if the service is unavailable / returns no
+data (callers should treat None as "skip the house filter").
+</pre> 
+</div>
+</div>
 <a id="a2f9676eacc1c5466e43c74599c50c4fa" name="a2f9676eacc1c5466e43c74599c50c4fa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2f9676eacc1c5466e43c74599c50c4fa">&#9670;&#160;</a></span>filter_detections_in_house()</h2>
 

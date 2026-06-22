@@ -1,5 +1,10 @@
 var NAVTREEINDEX36 =
 {
+"namespacefrida__constants_1_1manipulation__constants.html#a5e4ab2c20f0c0358ceb5107449be48b1":[37,0,60,2,40],
+"namespacefrida__constants_1_1manipulation__constants.html#a5ea55eae7fc712affd0e6fc30dcf8467":[37,0,60,2,47],
+"namespacefrida__constants_1_1manipulation__constants.html#a6038fba62b19224dfcafc0c052adbae6":[37,0,60,2,70],
+"namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d":[37,0,60,2,92],
+"namespacefrida__constants_1_1manipulation__constants.html#a65f44cfc928074d0f412e7f80a134307":[37,0,60,2,44],
 "namespacefrida__constants_1_1manipulation__constants.html#a68c18caff6eff36289422c67d0cce3dd":[37,0,60,2,91],
 "namespacefrida__constants_1_1manipulation__constants.html#a6aaf2e16c447f7ca03df763bd4a0f754":[37,0,60,2,76],
 "namespacefrida__constants_1_1manipulation__constants.html#a72d781c5768abe2b3250a2030220b1a3":[37,0,60,2,32],
@@ -223,10 +228,8 @@ var NAVTREEINDEX36 =
 "namespacegpsr.html":[37,0,69],
 "namespacegpsr.html#a757ec7f17f46a7b35bae9fe8fb05a58c":[37,0,69,0],
 "namespacegpsr__commands.html":[37,0,70],
-"namespacegpsr__commands.html#a2952d9e1982a9616ec9cb2269606703c":[37,0,70,3],
 "namespacegpsr__commands.html#a5783abd6bc09633fca3b65604586f3cb":[37,0,70,1],
-"namespacegpsr__commands.html#a7dce31766c14809575920f9d6ebe53a2":[37,0,70,4],
-"namespacegpsr__commands.html#aee6e17035d2da3b106824c088f5c9e06":[37,0,70,2],
+"namespacegpsr__commands.html#a7dce31766c14809575920f9d6ebe53a2":[37,0,70,2],
 "namespacegpsr__hric.html":[37,0,71],
 "namespacegpsr__hric.html#a5c3734bed2acde025d2bfdf537162a09":[37,0,71,1],
 "namespacegpsr__hric.html#a64ac670998564d5d0724b7205fb21eb5":[37,0,71,0],
@@ -246,8 +249,5 @@ var NAVTREEINDEX36 =
 "namespacegrasp__orientation.html#a0b5cec196b34eb723a47fcc9da679f1a":[37,0,76,1],
 "namespacegrasp__orientation.html#a9aa2a0df6c7b8d7c41abd2549791d806":[37,0,76,0],
 "namespacegrasp__utils.html":[37,0,77],
-"namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6":[37,0,77,0],
-"namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e":[37,0,77,1],
-"namespacehand__task__manager.html":[37,0,78],
-"namespacehand__task__manager.html#a91d2488b83a8d7b6e91bb400d9ff6b17":[37,0,78,1]
+"namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6":[37,0,77,0]
 };

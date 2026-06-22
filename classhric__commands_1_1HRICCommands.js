@@ -1,6 +1,7 @@
 var classhric__commands_1_1HRICCommands =
 [
     [ "__init__", "classhric__commands_1_1HRICCommands.html#a1029c3464953847fd7025551a18cb312", null ],
+    [ "_get_areas", "classhric__commands_1_1HRICCommands.html#a6af53ab019c3d1b4f27f93d1ade9fd16", null ],
     [ "_rotation_callback", "classhric__commands_1_1HRICCommands.html#a88c15899de6a2bfe806ed7d8ddf62743", null ],
     [ "camera_info_callback", "classhric__commands_1_1HRICCommands.html#abfe666ef29334b1c4aabd7e45b6540cd", null ],
     [ "check_chairs", "classhric__commands_1_1HRICCommands.html#a3465177147b53055bbc4fce2281b1773", null ],
@@ -18,6 +19,7 @@ var classhric__commands_1_1HRICCommands =
     [ "success", "classhric__commands_1_1HRICCommands.html#a8f6bb487ddfab3609b6c9f890fac7a12", null ],
     [ "_img_qos", "classhric__commands_1_1HRICCommands.html#a2b926f1d8d0d4d4ae524d31afb2cd879", null ],
     [ "areas", "classhric__commands_1_1HRICCommands.html#ab94a03ef3d9369d511e11f24f09bb36c", null ],
+    [ "areas_client", "classhric__commands_1_1HRICCommands.html#a43d82621cf203e4f11661e518f8b4f00", null ],
     [ "bridge", "classhric__commands_1_1HRICCommands.html#af9319783b15b7909c4240b292d44e8a4", null ],
     [ "callback_group", "classhric__commands_1_1HRICCommands.html#a81ff09a46f998935e82c20a093e9ce49", null ],
     [ "camera_info", "classhric__commands_1_1HRICCommands.html#a825cba9087d73bd72cb69bd63e81c3eb", null ],
