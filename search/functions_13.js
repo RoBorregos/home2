@@ -33,7 +33,7 @@ var searchData=
   ['send_5fjoint_5fvelocity_30',['send_joint_velocity',['../classtemp__follow_1_1FollowPersonNode.html#a5bd04e08b1456025be640bad4343e8e9',1,'temp_follow.FollowPersonNode.send_joint_velocity()'],['../classfollow__person__node_01copy_1_1FollowPersonNode.html#ac5836e668a7e29af9c96689dc483a057',1,'follow_person_node copy.FollowPersonNode.send_joint_velocity()']]],
   ['send_5flaser_5fdata_31',['send_laser_data',['../classpoint__transformer_1_1PointTransformer.html#abfd8ce0e921dcfb479f1b84001a09a19',1,'point_transformer::PointTransformer']]],
   ['send_5fmessage_32',['send_message',['../classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html#a673f2e70b8d124cd681079421ee81d79',1,'omnidriver::odrive_serial_twist::SerialCommNode']]],
-  ['send_5fnav_5fgoal_33',['send_nav_goal',['../classnav__central_1_1Nav__Central.html#a3c286df316f046d445e8c332656cb705',1,'nav_central::Nav_Central']]],
+  ['send_5fnav_5fgoal_33',['send_nav_goal',['../classnav__central_1_1Nav__Central.html#a0af14edfb44923cb02e840f7a802a344',1,'nav_central::Nav_Central']]],
   ['send_5fpick_5frequest_34',['send_pick_request',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#ab91cc3d5eca6290023572f17daaaef15',1,'pick_and_place::keyboard_input::KeyboardInput']]],
   ['send_5fplace_5fon_5fclicked_5fpoint_5frequest_35',['send_place_on_clicked_point_request',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a896603480a0198ee5a16d04c05e6e9df',1,'pick_and_place::keyboard_input::KeyboardInput']]],
   ['send_5fplace_5frequest_36',['send_place_request',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a884647348f69f0954cab9d4cfe645c43',1,'pick_and_place::keyboard_input::KeyboardInput']]],

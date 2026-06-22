@@ -1,5 +1,11 @@
 var NAVTREEINDEX34 =
 {
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md123":[11,6,0],
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md124":[11,6,1],
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md125":[11,6,2],
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md126":[11,6,3],
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md127":[11,6,4],
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md128":[11,6,5],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md129":[11,6,6],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md131":[11,7],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md133":[11,8],
@@ -243,11 +249,5 @@ var NAVTREEINDEX34 =
 "namespacedemo__ds4.html":[37,0,22],
 "namespacedemo__ds4.html#a3b92a5a114f0a71450f4b47c440d3352":[37,0,22,0],
 "namespacedemo__face.html":[37,0,23],
-"namespacedemo__face.html#ae3adde7c73c08762a4607a57106cd131":[37,0,23,0],
-"namespacedemo__manager.html":[37,0,24],
-"namespacedemo__manager.html#a2beab80f142431eb61e00531f3e19774":[37,0,24,3],
-"namespacedemo__manager.html#a44da8b44a149c1ac1cf0220e7c0fc227":[37,0,24,4],
-"namespacedemo__manager.html#a51e78fe12c7e5ee07d540e5f4bd46cf2":[37,0,24,2],
-"namespacedemo__manager.html#a62ce8766f52bf96b489df0459fec5928":[37,0,24,7],
-"namespacedemo__manager.html#a7d58cd5ab1fd7d95716325611205ed32":[37,0,24,5]
+"namespacedemo__face.html#ae3adde7c73c08762a4607a57106cd131":[37,0,23,0]
 };

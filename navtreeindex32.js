@@ -1,5 +1,11 @@
 var NAVTREEINDEX32 =
 {
+"imu__sensor_8cpp.html":[39,0,3,0,4,1,2,0],
+"imu__sensor_8hpp.html":[39,0,3,0,4,1,0,3,0],
+"imu__sensor_8hpp_source.html":[39,0,3,0,4,1,0,3,0],
+"index.html":[0],
+"index.html":[],
+"index.html#autotoc_md211":[0,0],
 "index.html#autotoc_md212":[0,0,0],
 "index.html#autotoc_md213":[0,0,1],
 "index.html#autotoc_md214":[0,0,2],
@@ -243,11 +249,5 @@ var NAVTREEINDEX32 =
 "manipulation__constants__cpp_8hpp.html#a57a57e167ef6ee79daa10a6773a7be5e":[39,0,1,2,0,0,3],
 "manipulation__constants__cpp_8hpp.html#a63e24b7b0629e3e1ecf9354882537a15":[39,0,1,2,0,0,0],
 "manipulation__constants__cpp_8hpp.html#a69a23044b6e0021de94086ac88132f47":[39,0,1,2,0,0,20],
-"manipulation__constants__cpp_8hpp.html#a6e0672792d696337a569110dc700735e":[39,0,1,2,0,0,18],
-"manipulation__constants__cpp_8hpp.html#a7333d1769dc72f42e6b2eaf8b9f8ec72":[39,0,1,2,0,0,34],
-"manipulation__constants__cpp_8hpp.html#a74f09d46b8d1cce7645ab1ead0245522":[39,0,1,2,0,0,38],
-"manipulation__constants__cpp_8hpp.html#a7715c4d5e3008fba78b62434fd95ef63":[39,0,1,2,0,0,19],
-"manipulation__constants__cpp_8hpp.html#a7fda70824eeee515a3228fce7ea850f7":[39,0,1,2,0,0,22],
-"manipulation__constants__cpp_8hpp.html#a82634a6daed3d1e8cb1166837194b724":[39,0,1,2,0,0,39],
-"manipulation__constants__cpp_8hpp.html#a8aa235aa477cfc5456a1969638abfa00":[39,0,1,2,0,0,10]
+"manipulation__constants__cpp_8hpp.html#a6e0672792d696337a569110dc700735e":[39,0,1,2,0,0,18]
 };

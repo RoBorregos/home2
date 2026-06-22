@@ -1,5 +1,11 @@
 var NAVTREEINDEX28 =
 {
+"classvamp_1_1transformations_1_1Arcball.html#ac6926833cdf6bad8efab24d44fe73586":[38,0,112,8,0,7],
+"classvamp_1_1transformations_1_1Arcball.html#ac79a9e29ff019c9bbee6433713c91ef4":[38,0,112,8,0,10],
+"classvamp_1_1transformations_1_1Arcball.html#ac79a9e29ff019c9bbee6433713c91ef4":[37,0,197,11,0,10],
+"classvamp_1_1transformations_1_1Arcball.html#ada999bca2616169fe75a3f4f79efd40e":[38,0,112,8,0,14],
+"classvamp_1_1transformations_1_1Arcball.html#ada999bca2616169fe75a3f4f79efd40e":[37,0,197,11,0,14],
+"classvamp__moveit__plugin_1_1VampPlannerManager.html":[38,0,113,0],
 "classvamp__moveit__plugin_1_1VampPlannerManager.html":[37,0,198,0],
 "classvamp__moveit__plugin_1_1VampPlannerManager.html#a04e15c69e93adfd516f6aa499064999f":[38,0,113,0,12],
 "classvamp__moveit__plugin_1_1VampPlannerManager.html#a04e15c69e93adfd516f6aa499064999f":[37,0,198,0,12],
@@ -243,11 +249,5 @@ var NAVTREEINDEX28 =
 "classzed__simulator_1_1ZedSimulator.html#a51ea3acb3de2294481c6d53d9cfd9f77":[38,0,120,0,5],
 "classzed__simulator_1_1ZedSimulator.html#ae467c97ec4f3740f01bb0cf76dadbb9e":[37,0,210,0,3],
 "classzed__simulator_1_1ZedSimulator.html#ae467c97ec4f3740f01bb0cf76dadbb9e":[38,0,120,0,3],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html":[37,0,211,0],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html":[38,0,121,0],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a13ec37ccf57ffa58b8ce5bba5625b615":[37,0,211,0,0],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a13ec37ccf57ffa58b8ce5bba5625b615":[38,0,121,0,0],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a5b22a06617b247e9ba8498812cd08a8e":[38,0,121,0,6],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a5b22a06617b247e9ba8498812cd08a8e":[37,0,211,0,6],
-"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html#a7ace8cada9db21e9cc100b633a45929c":[37,0,211,0,3]
+"classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html":[37,0,211,0]
 };

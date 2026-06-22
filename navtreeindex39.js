@@ -1,5 +1,12 @@
 var NAVTREEINDEX39 =
 {
+"namespacerestaurant__commands.html#a5ea91af67a635ddf952b6192faae79f9":[37,0,150,1],
+"namespacerestaurant__commands.html#afa1f039988c37fed4dd76bfde3725913":[37,0,150,2],
+"namespacerestaurant__launch.html":[37,0,151],
+"namespacerestaurant__launch.html#a8b652244d943c8e2e5d03bb2e33103e9":[37,0,151,0],
+"namespacerestaurant__task__manager.html":[37,0,152],
+"namespacerestaurant__task__manager.html#a2c2e24f675fbc879adf8114ce8a00d05":[37,0,152,2],
+"namespacerestaurant__task__manager.html#a35690b796f2e229dfef4e9a26221eb4a":[37,0,152,4],
 "namespacerestaurant__task__manager.html#a64f4ff8ab40ef3c92aeca08405b13856":[37,0,152,3],
 "namespacerestaurant__task__manager.html#a8a4e7ec8112c73020b24fd9ab05dc5d5":[37,0,152,1],
 "namespacerobometrics__to__pkl__json.html":[37,0,153],
@@ -242,12 +249,5 @@ var NAVTREEINDEX39 =
 "namespacetest__manipulation__manager.html":[37,0,181],
 "namespacetest__manipulation__manager.html#aa1d1240f6e1bf9a1472e8c9e914fcfb4":[37,0,181,1],
 "namespacetest__navigation__manager.html":[37,0,182],
-"namespacetest__navigation__manager.html#a6b0ab051435a3e31ac391bc143854e4e":[37,0,182,1],
-"namespacetest__pep257.html":[37,0,183],
-"namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f":[37,0,183,0],
-"namespacetest__plan__parser.html":[37,0,184],
-"namespacetest__plan__parser.html#a359b1c5cf111ce7512238234c40d0caa":[37,0,184,3],
-"namespacetest__plan__parser.html#a6328ea521913737fb0752f54aae1cc6d":[37,0,184,5],
-"namespacetest__plan__parser.html#a7c320a6064d3055f6213924d2437839a":[37,0,184,1],
-"namespacetest__plan__parser.html#acfb9fa5af06763a9136a23bf7d9e2c62":[37,0,184,4]
+"namespacetest__navigation__manager.html#a6b0ab051435a3e31ac391bc143854e4e":[37,0,182,1]
 };

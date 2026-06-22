@@ -122,8 +122,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4b554bc01e696e55b06183500aa95e62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad68df68fcda8235c85001cf80be8870a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#ad68df68fcda8235c85001cf80be8870a">goal_feedback</a> (self, feedback_msg)</td></tr>
 <tr class="separator:ad68df68fcda8235c85001cf80be8870a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3c286df316f046d445e8c332656cb705"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a3c286df316f046d445e8c332656cb705">send_nav_goal</a> (self, pose, behaivor_tree=None)</td></tr>
-<tr class="separator:a3c286df316f046d445e8c332656cb705"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0af14edfb44923cb02e840f7a802a344"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a0af14edfb44923cb02e840f7a802a344">send_nav_goal</a> (self, pose, behaivor_tree=None, max_attempts=None)</td></tr>
+<tr class="separator:a0af14edfb44923cb02e840f7a802a344"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07f7e52c6acc1080fd87d39335cbb4f6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a07f7e52c6acc1080fd87d39335cbb4f6">dock_table_callback</a> (self, request, response)</td></tr>
 <tr class="separator:a07f7e52c6acc1080fd87d39335cbb4f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05643775cd29c8e91e470d46907843d4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a05643775cd29c8e91e470d46907843d4">go_to_area</a> (self, request, response)</td></tr>
@@ -207,6 +207,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:aa01fb1751281e69d4e6cf2385dbde891"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd788fc67b78801eff73cb2413f18ca4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#acd788fc67b78801eff73cb2413f18ca4">dock_param_client</a></td></tr>
 <tr class="separator:acd788fc67b78801eff73cb2413f18ca4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0cee57574c10fb8053a36a4cb57ac64"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#aa0cee57574c10fb8053a36a4cb57ac64">clear_local_costmap_client</a></td></tr>
+<tr class="separator:aa0cee57574c10fb8053a36a4cb57ac64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9093cb4cc3740f56d75d8a8c5369261"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#ab9093cb4cc3740f56d75d8a8c5369261">clear_global_costmap_client</a></td></tr>
+<tr class="separator:ab9093cb4cc3740f56d75d8a8c5369261"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85a414c2b373883bef4aa80d150edc1d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a85a414c2b373883bef4aa80d150edc1d">lidar_msg</a></td></tr>
 <tr class="separator:a85a414c2b373883bef4aa80d150edc1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf862a2d597c2f5130a8e01ea7b54fbb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#acf862a2d597c2f5130a8e01ea7b54fbb">lidar_reciever</a></td></tr>
@@ -272,6 +276,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:ab3efc7a44c61f4b3db21148b44e300fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ae0f1b71b138859260019299d129756"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a4ae0f1b71b138859260019299d129756">_approach_table</a> (self, offset)</td></tr>
 <tr class="separator:a4ae0f1b71b138859260019299d129756"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80b137209d00021ceba876318e80e013"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a80b137209d00021ceba876318e80e013">_clear_costmaps</a> (self, settle_s=0.3)</td></tr>
+<tr class="separator:a80b137209d00021ceba876318e80e013"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a071fe41930bbf1574441e41b1a879543"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a071fe41930bbf1574441e41b1a879543">_pose_from_coords</a> (self, coords)</td></tr>
 <tr class="separator:a071fe41930bbf1574441e41b1a879543"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07fd38d079956d9bb780f0355ea920c8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a07fd38d079956d9bb780f0355ea920c8">_fetch_area_coords</a> (self, location, sublocation)</td></tr>
@@ -420,6 +426,45 @@ perpendicular approach. Returns (success, message).</pre>
 </div><div class="memdoc">
 <pre class="fragment">Bounded service call — waits up to TIMEOUT_RTAB_SERVICE for readiness and
 call_timeout for the response. Returns True on success, False on timeout.</pre> 
+</div>
+</div>
+<a id="a80b137209d00021ceba876318e80e013" name="a80b137209d00021ceba876318e80e013"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80b137209d00021ceba876318e80e013">&#9670;&#160;</a></span>_clear_costmaps()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central._clear_costmaps </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>settle_s</em> = <code>0.3</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Clear local+global costmaps so the planner/MPPI start from a clean slate
+(removes stale obstacle marks left from the parked/docked pose that can box-in
+the planner), then settle so the layers repopulate from sensors before moving.
+Best-effort + bounded — skips a costmap whose clear service isn't up yet.</pre> 
 </div>
 </div>
 <a id="af0a1a3b7a8a03d8926c04f767f2fe5b4" name="af0a1a3b7a8a03d8926c04f767f2fe5b4"></a>
@@ -1159,8 +1204,8 @@ Empty location_a means start from the robot's current pose.</pre>
 <pre class="fragment">Resuming Slam function</pre> 
 </div>
 </div>
-<a id="a3c286df316f046d445e8c332656cb705" name="a3c286df316f046d445e8c332656cb705"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c286df316f046d445e8c332656cb705">&#9670;&#160;</a></span>send_nav_goal()</h2>
+<a id="a0af14edfb44923cb02e840f7a802a344" name="a0af14edfb44923cb02e840f7a802a344"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0af14edfb44923cb02e840f7a802a344">&#9670;&#160;</a></span>send_nav_goal()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1181,7 +1226,13 @@ Empty location_a means start from the robot's current pose.</pre>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>behaivor_tree</em> = <code>None</code>&#160;</td>
+          <td class="paramname"><em>behaivor_tree</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>max_attempts</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1190,7 +1241,14 @@ Empty location_a means start from the robot's current pose.</pre>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Function to send goal to nav2 bt</pre> 
+<pre class="fragment">Send a NavigateToPose goal and keep retrying until Nav2 reports the
+goal SUCCEEDED.
+
+A goal that is rejected, or that finishes with any status other than
+STATUS_SUCCEEDED (ABORTED/CANCELED — e.g. the controller momentarily
+loses TF and the BT exhausts its recoveries), is retried after a short
+delay instead of being reported as success. max_attempts bounds the
+retries; None (the default) means retry until the goal is reached.</pre> 
 </div>
 </div>
 <a id="a79bec86ac038ef11eb49ed842cdeba43" name="a79bec86ac038ef11eb49ed842cdeba43"></a>
@@ -1472,6 +1530,34 @@ just wait until it is publishing the map.</pre>
       <table class="memname">
         <tr>
           <td class="memname">nav_central.Nav_Central.check_door_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab9093cb4cc3740f56d75d8a8c5369261" name="ab9093cb4cc3740f56d75d8a8c5369261"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9093cb4cc3740f56d75d8a8c5369261">&#9670;&#160;</a></span>clear_global_costmap_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central.clear_global_costmap_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa0cee57574c10fb8053a36a4cb57ac64" name="aa0cee57574c10fb8053a36a4cb57ac64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0cee57574c10fb8053a36a4cb57ac64">&#9670;&#160;</a></span>clear_local_costmap_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central.clear_local_costmap_client</td>
         </tr>
       </table>
 </div><div class="memdoc">
