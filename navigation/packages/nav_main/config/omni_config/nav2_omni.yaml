@@ -68,8 +68,10 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.15      # tighten for more precise stops (omni can hit ~0.1 cleanly)
-      yaw_goal_tolerance: 0.15
+      xy_goal_tolerance: 0.35      # area/safe_place waypoints are zones, not precise docks. Loosened so MPPI
+                                   # does not fail the final approach when a waypoint sits near inflation
+                                   # (e.g. office.safe_place ~0.3 m from a wall). Precise approaches use table_docker.
+      yaw_goal_tolerance: 0.25
 
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
@@ -114,7 +116,8 @@ controller_server:
         critical_cost: 300.0
         consider_footprint: true   # footprint-aware collision cost (set the real footprint below!)
         collision_cost: 1000000.0
-        near_goal_distance: 0.5
+        near_goal_distance: 0.8     # relax inflation cost over a larger zone near the goal so MPPI can
+                                    # approach waypoints close to walls/furniture without the optimizer failing
         trajectory_point_step: 3
       GoalCritic:
         enabled: true

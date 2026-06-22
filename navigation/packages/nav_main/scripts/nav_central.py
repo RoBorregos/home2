@@ -9,6 +9,7 @@ from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
 from nav2_msgs.srv import ManageLifecycleNodes
 from nav2_msgs.action import NavigateToPose, ComputePathToPose
+from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
@@ -61,6 +62,11 @@ import math
 import yaml
 import re
 
+
+# Seconds to wait between NavigateToPose retries when a goal is rejected or
+# aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
+# the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
+NAV_GOAL_RETRY_DELAY = 2.0
 
 
 def make_param(name, value):
@@ -424,30 +430,58 @@ class Nav_Central(Node):
         feedback = feedback_msg.feedback
         self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
 
-    def send_nav_goal(self, pose, behaivor_tree = None):
-        """Function to send goal to nav2 bt"""
+    def send_nav_goal(self, pose, behaivor_tree = None, max_attempts = None):
+        """Send a NavigateToPose goal and keep retrying until Nav2 reports the
+        goal SUCCEEDED.
+
+        A goal that is rejected, or that finishes with any status other than
+        STATUS_SUCCEEDED (ABORTED/CANCELED — e.g. the controller momentarily
+        loses TF and the BT exhausts its recoveries), is retried after a short
+        delay instead of being reported as success. max_attempts bounds the
+        retries; None (the default) means retry until the goal is reached."""
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
         if behaivor_tree is not None:
             goal_msg.behaivor_tree = behaivor_tree
-        self.goal_action_client.wait_for_server()
 
-        _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+        attempt = 0
+        while True:
+            attempt += 1
 
-        while not _goal_future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            # Action server may not be back yet right after a lifecycle resume.
+            if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
+                self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
+                if max_attempts is not None and attempt >= max_attempts:
+                    return (False, "Action server unavailable")
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                continue
 
-        goal_handle = _goal_future.result()
-        if goal_handle.accepted:
-              result_future = goal_handle.get_result_async()                                                                                                                                                   
-              while not result_future.done():
-                  self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))                                                                                                                             
-              result = result_future.result()
-              self.nav_logger("info", f"Goal_Handler -> Goal Reached")
-              return (True, "Goal Finished")
-        else:
-            return (False, "Goal Rejected")
+            _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+            while not _goal_future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            goal_handle = _goal_future.result()
+
+            if not goal_handle.accepted:
+                self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
+                if max_attempts is not None and attempt >= max_attempts:
+                    return (False, "Goal Rejected")
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                continue
+
+            result_future = goal_handle.get_result_async()
+            while not result_future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            result = result_future.result()
+
+            if result.status == GoalStatus.STATUS_SUCCEEDED:
+                self.nav_logger("info", "Goal_Handler -> Goal Reached")
+                return (True, "Goal Finished")
+
+            self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
+            if max_attempts is not None and attempt >= max_attempts:
+                return (False, f"Goal failed (status {result.status})")
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
 
     def _retreat_if_docked(self):
         """Best-effort: ask the table_docker to back off if it's parked at a
