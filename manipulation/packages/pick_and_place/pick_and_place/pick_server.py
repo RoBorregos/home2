@@ -99,7 +99,7 @@ CUTLERY_POST_CONTACT_RETRACT = 0.004  # m - retract upward after contact to reli
 SHELF_RETRACT_DIST = 0.15  # m - fallback retract if the approach depth is unknown
 SHELF_RETRACT_MARGIN = 0.05  # m - extra beyond the measured approach depth
 SHELF_RETRACT_MIN = 0.08  # m - clamp
-SHELF_RETRACT_MAX = 0.30  # m - clamp
+SHELF_RETRACT_MAX = 0.20  # m - clamp
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
@@ -638,9 +638,6 @@ class PickMotionServer(Node):
                             ]
                         )[:, 2]
                         if abs(float(approach[2])) < 0.5:
-                            retract_pose = copy.deepcopy(ee_link_pose)
-                            gx = ee_link_pose.pose.position.x
-                            gy = ee_link_pose.pose.position.y
                             dist = SHELF_RETRACT_DIST
                             post_state = self._latest_robot_state
                             if pre_xy is not None and post_state is not None:
@@ -656,14 +653,29 @@ class PickMotionServer(Node):
                                     ),
                                     SHELF_RETRACT_MAX,
                                 )
-                            n = float(np.hypot(gx, gy))
-                            if n > 1e-6:
-                                retract_pose.pose.position.x -= (gx / n) * dist
-                                retract_pose.pose.position.y -= (gy / n) * dist
-                            self.get_logger().info(
-                                f"Shelf retract: pull-out toward robot ({dist:.3f} m)"
-                            )
-                            self.move_to_pose(retract_pose, velocity=0.2)
+                            ax = float(approach[0])
+                            ay = float(approach[1])
+                            na = float(np.hypot(ax, ay))
+                            if na > 1e-6:
+                                ux, uy = ax / na, ay / na
+                                retracted = False
+                                for frac in (1.0, 0.6, 0.35):
+                                    rp = copy.deepcopy(ee_link_pose)
+                                    rp.pose.position.x -= ux * dist * frac
+                                    rp.pose.position.y -= uy * dist * frac
+                                    self.get_logger().info(
+                                        f"Shelf retract: cartesian along -approach ({dist * frac:.3f} m)"
+                                    )
+                                    _, _res = self.move_to_pose(
+                                        rp, velocity=0.1, planner_id="cartesian"
+                                    )
+                                    if _res and _res.result.success:
+                                        retracted = True
+                                        break
+                                if not retracted:
+                                    self.get_logger().warn(
+                                        "Shelf retract: cartesian failed (singularity/collision?), skipping"
+                                    )
                         pick_result.pick_pose = ee_link_pose
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
@@ -1077,12 +1089,13 @@ class PickMotionServer(Node):
         tolerance_position=0.005,
         tolerance_orientation=0.02,
         velocity=PICK_VELOCITY,
+        planner_id=PICK_PLANNER,
     ):
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = float(velocity)
         request.acceleration = float(PICK_ACCELERATION)
-        request.planner_id = PICK_PLANNER
+        request.planner_id = planner_id
         request.target_link = GRASP_LINK_FRAME
         request.tolerance_position = tolerance_position
         request.tolerance_orientation = tolerance_orientation

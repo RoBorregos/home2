@@ -22,7 +22,7 @@ import json
 
 # Shelf level surface heights in base_link Z (match pickandplace_task_manager
 # shelf_level_heights; recalibrate per shelf with RViz Publish Point).
-SHELF_LEVEL_HEIGHTS = [0.475, 0.827, 1.201]
+SHELF_LEVEL_HEIGHTS = [0.599, 0.946, 1.298]  # calibrated 2026-06-21 (L1,L2,L3)
 SHELF_SCAN_TOLERANCE = 0.1
 
 

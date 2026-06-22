@@ -6,6 +6,8 @@ from frida_interfaces.srv import (
 )
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
+from moveit_msgs.srv import GetPlanningScene, ApplyPlanningScene
+from moveit_msgs.msg import PlanningScene, PlanningSceneComponents, CollisionObject
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
 from frida_interfaces.action import PickMotion
@@ -100,11 +102,51 @@ class PickManager:
         self._estimate_flat_grasp_client = self.node.create_client(
             EstimateFlatGrasp, "/manipulation/estimate_flat_grasp"
         )
+        self._get_scene_client = self.node.create_client(
+            GetPlanningScene, "/get_planning_scene"
+        )
+        self._apply_scene_client = self.node.create_client(
+            ApplyPlanningScene, "/apply_planning_scene"
+        )
+
+    def _clear_world_collision_objects(self):
+        """Remove accumulated world collision objects before perceiving fresh
+        ones; stale per-attempt clutter blocks grasp goal sampling."""
+        try:
+            if not self._get_scene_client.wait_for_service(timeout_sec=2.0):
+                return
+            req = GetPlanningScene.Request()
+            req.components.components = PlanningSceneComponents.WORLD_OBJECT_NAMES
+            fut = wait_for_future(self._get_scene_client.call_async(req), timeout=5)
+            if fut is None or fut.result() is None:
+                return
+            objs = fut.result().scene.world.collision_objects
+            if not objs:
+                return
+            scene = PlanningScene()
+            scene.is_diff = True
+            for o in objs:
+                co = CollisionObject()
+                co.id = o.id
+                co.header = o.header
+                co.operation = CollisionObject.REMOVE
+                scene.world.collision_objects.append(co)
+            if not self._apply_scene_client.wait_for_service(timeout_sec=2.0):
+                return
+            areq = ApplyPlanningScene.Request()
+            areq.scene = scene
+            wait_for_future(self._apply_scene_client.call_async(areq), timeout=5)
+            self.node.get_logger().info(
+                f"Cleared {len(objs)} stale collision objects before pick"
+            )
+        except Exception as e:
+            self.node.get_logger().warn(f"Collision clear skipped: {e}")
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params, is_shelf: bool = False
     ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
+        self._clear_world_collision_objects()
         self.node.get_logger().info("Setting initial joint positions")
 
         is_rim_object = is_rim(object_name)

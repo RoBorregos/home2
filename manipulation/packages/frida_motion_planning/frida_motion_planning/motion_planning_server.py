@@ -342,6 +342,7 @@ class MotionPlanningServer(Node):
         was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
             pose=pose,
             target_link=target_link,
+            cartesian=(goal_handle.request.planner_id == "cartesian"),
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
         )
@@ -483,7 +484,9 @@ class MotionPlanningServer(Node):
 
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
-        self.planner.set_planner(planner_id)
+        self.planner.set_planner(
+            "RRTConnect" if planner_id == "cartesian" else planner_id
+        )
         self.get_logger().info(
             f"Planning settings: velocity={velocity}, acceleration={acceleration}, planner_id={planner_id}, planning_time={planning_time}"
         )
