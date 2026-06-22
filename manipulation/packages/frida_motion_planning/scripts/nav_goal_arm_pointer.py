@@ -1,128 +1,166 @@
 #!/usr/bin/env python3
-"""Aim the xArm6 camera at the Nav2 destination while the base drives there.
+"""Yaw the xArm6 (joint 1 only) to point at the Nav2 destination as the base drives.
 
-Listens to the nav goal published by nav_central (/nav/current_goal, frame map)
-and, while /nav/goal_active is True, continuously re-orients the camera to look
-at that destination via the MoveToPose action. Stops (keeps last pose) when the
-goal becomes inactive. Adapted from examples/look_at_example.py.
+While /nav/goal_active is True, computes the bearing from the arm base to the nav
+goal and drives joint 1 toward it with direct xArm joint-velocity commands (the
+same API follow_face uses), holding all other joints. No MoveIt / motion planning.
+Stops and returns the arm to MoveIt mode when the goal goes inactive.
 """
 
 import math
-import time
+import sys
 
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
 from geometry_msgs.msg import PoseStamped
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-
 from tf2_geometry_msgs import do_transform_pose
 
-from frida_interfaces.action import MoveToPose
-from frida_motion_planning.utils.tf_utils import look_at
+from frida_constants.manipulation_constants import (
+    MOVEIT_MODE,
+    JOINT_VELOCITY_MODE,
+    XARM_SETMODE_SERVICE,
+    XARM_SETSTATE_SERVICE,
+    XARM_MOVEVELOCITY_SERVICE,
+)
+from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_pymoveit2.robots import xarm6
+from xarm_msgs.srv import MoveVelocity, SetInt16
 
-# Plan in the arm's own base frame, not map: MoveIt's planning frame is fixed to
-# the robot and its TF tree is NOT connected to map. We resolve the world->base
-# part here and hand MoveIt a goal it can always plan (link_base).
 BASE_FRAME = xarm6.base_link_name()  # "link_base"
-TRACK_PERIOD = 1.0 / 1.5  # ~1.5 Hz
-MIN_DISTANCE = 0.05  # m; below this look_at would normalize a ~0 vector -> NaN
-VELOCITY = 0.3
-BUSY_TIMEOUT = 5.0  # s; if a MoveToPose never returns, recover and re-send
+JOINT1_NAME = xarm6.joint_names()[0]  # "joint1"
+JOINT1_LIMIT = math.pi * 0.99  # rad, matches xarm6 joint1 soft limit
+
+CONTROL_PERIOD = 0.1  # s (10 Hz)
+KP = 1.0  # rad/s per rad of error
+MAX_JOINT1_VEL = 0.5  # rad/s cap
+ANGLE_TOL = 0.02  # rad deadband (~1.1 deg) -> hold still
+VEL_DURATION = 0.3  # s; xArm auto-stops if we stop sending (safety if node dies)
+
+# ponytail: hardware calibration knobs. JOINT1_SIGN flips rotation direction;
+# JOINT1_OFFSET aligns joint1's zero with the base +x axis. Tune on the robot.
+JOINT1_SIGN = 1.0
+JOINT1_OFFSET = 0.0
+
+
+def wrap_angle(a: float) -> float:
+    """Wrap to [-pi, pi]."""
+    return math.atan2(math.sin(a), math.cos(a))
+
+
+def joint1_velocity(target: float, current: float) -> float:
+    """P controller for joint 1: returns clamped velocity, 0 inside the deadband."""
+    err = wrap_angle(target - current)
+    if abs(err) < ANGLE_TOL:
+        return 0.0
+    return max(-MAX_JOINT1_VEL, min(MAX_JOINT1_VEL, KP * err))
 
 
 class NavGoalArmPointer(Node):
     def __init__(self):
         super().__init__("nav_goal_arm_pointer")
-        self.callback_group = ReentrantCallbackGroup()
+        cbg = ReentrantCallbackGroup()
 
-        self.goal = None  # PoseStamped in map frame
+        self.goal = None  # PoseStamped (map)
         self.goal_active = False
-        self.busy = False  # an arm MoveToPose is in flight
-        self.busy_since = 0.0  # monotonic time the in-flight goal started
+        self.joint1_pos = None  # rad, from /joint_states
+        self.vel_mode_on = False  # whether the arm is currently in velocity mode
 
-        # transient_local to match nav_central's latched publishers, so we get
-        # the last goal even if we start after it was published.
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.create_subscription(
-            PoseStamped,
-            "/nav/current_goal",
-            self._goal_cb,
-            latched,
-            callback_group=self.callback_group,
+            PoseStamped, "/nav/current_goal", self._goal_cb, latched, callback_group=cbg
         )
         self.create_subscription(
-            Bool,
-            "/nav/goal_active",
-            self._active_cb,
-            latched,
-            callback_group=self.callback_group,
+            Bool, "/nav/goal_active", self._active_cb, latched, callback_group=cbg
         )
-
-        self.debug_pub = self.create_publisher(
-            PoseStamped, "/nav_goal_arm_pointer/debug_pose", 10
+        self.create_subscription(
+            JointState, "/joint_states", self._joint_cb, 10, callback_group=cbg
         )
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self._action_client = ActionClient(
-            self,
-            MoveToPose,
-            "/manipulation/move_to_pose_action_server",
-            callback_group=self.callback_group,
+        self.mode_client = self.create_client(
+            SetInt16, XARM_SETMODE_SERVICE, callback_group=cbg
+        )
+        self.state_client = self.create_client(
+            SetInt16, XARM_SETSTATE_SERVICE, callback_group=cbg
+        )
+        self.vel_client = self.create_client(
+            MoveVelocity, XARM_MOVEVELOCITY_SERVICE, callback_group=cbg
         )
 
-        self.create_timer(TRACK_PERIOD, self._track, callback_group=self.callback_group)
-        self.get_logger().info("nav_goal_arm_pointer ready")
+        for c, n in (
+            (self.mode_client, "set_mode"),
+            (self.state_client, "set_state"),
+            (self.vel_client, "vc_set_joint_velocity"),
+        ):
+            if not c.wait_for_service(timeout_sec=5.0):
+                self.get_logger().warn(f"xArm service {n} not available")
 
-    def _goal_cb(self, msg: PoseStamped):
+        self.create_timer(CONTROL_PERIOD, self._control, callback_group=cbg)
+        self.get_logger().info("nav_goal_arm_pointer ready (joint1 velocity control)")
+
+    def _goal_cb(self, msg):
         self.goal = msg
 
-    def _active_cb(self, msg: Bool):
+    def _active_cb(self, msg):
         self.goal_active = msg.data
 
-    def _track(self):
-        if not self.goal_active or self.goal is None:
+    def _joint_cb(self, msg):
+        if JOINT1_NAME in msg.name:
+            self.joint1_pos = msg.position[msg.name.index(JOINT1_NAME)]
+
+    # -- xArm mode --
+
+    def _set_mode(self, mode: int) -> bool:
+        """Set xArm mode then state 0 (active). Blocking, best-effort."""
+        ok = wait_for_future(self.mode_client.call_async(SetInt16.Request(data=mode)))
+        ok = ok and wait_for_future(
+            self.state_client.call_async(SetInt16.Request(data=0))
+        )
+        if not ok:
+            self.get_logger().error(f"Failed to set xArm mode {mode}")
+        return bool(ok)
+
+    def _send_joint1_vel(self, vel: float):
+        req = MoveVelocity.Request()
+        req.is_sync = True
+        req.duration = VEL_DURATION
+        req.speeds = [vel, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.vel_client.call_async(req)
+
+    # -- control loop --
+
+    def _control(self):
+        # Activation / deactivation edges.
+        if self.goal_active and not self.vel_mode_on:
+            if self._set_mode(JOINT_VELOCITY_MODE):
+                self.vel_mode_on = True
+        elif not self.goal_active and self.vel_mode_on:
+            self._send_joint1_vel(0.0)  # stop (holds current pose)
+            self._set_mode(MOVEIT_MODE)  # hand the arm back to MoveIt
+            self.vel_mode_on = False
+
+        if not self.goal_active or not self.vel_mode_on:
             return
-        if self.busy:
-            # Recover from a goal whose result never came back, else tracking
-            # would stall for the rest of the run.
-            if time.monotonic() - self.busy_since < BUSY_TIMEOUT:
-                return
-            self.get_logger().warn("arm goal timed out, re-sending")
-            self.busy = False
-
-        camera_frame = xarm6.camera_frame_name()
-        stamp = self.get_clock().now().to_msg()
-
-        # Camera pose in the arm base frame (arm-internal, always resolvable).
-        try:
-            cam_tf = self.tf_buffer.lookup_transform(
-                BASE_FRAME,
-                camera_frame,
-                rclpy.time.Time(),
-                rclpy.duration.Duration(seconds=0.5),
-            )
-        except TransformException as e:
-            self.get_logger().warn(f"TF {BASE_FRAME}->{camera_frame} unavailable: {e}")
+        if self.goal is None or self.joint1_pos is None:
             return
 
-        # Goal (in map) -> arm base frame. This is the world->robot part; needs
-        # localization (map->base) TF visible here. Skip the cycle if missing.
+        # Goal (map) -> arm base frame, then bearing in the base plane.
         try:
-            goal_tf = self.tf_buffer.lookup_transform(
+            tf = self.tf_buffer.lookup_transform(
                 BASE_FRAME,
                 self.goal.header.frame_id,
                 rclpy.time.Time(),
-                rclpy.duration.Duration(seconds=0.5),
+                rclpy.duration.Duration(seconds=0.2),
             )
         except TransformException as e:
             self.get_logger().warn(
@@ -130,81 +168,31 @@ class NavGoalArmPointer(Node):
                 f"(localization not bridged to the arm?): {e}"
             )
             return
-        goal_in_base = do_transform_pose(self.goal.pose, goal_tf)
+        g = do_transform_pose(self.goal.pose, tf)
+        bearing = math.atan2(g.position.y, g.position.x)
 
-        cam_x = cam_tf.transform.translation.x
-        cam_y = cam_tf.transform.translation.y
-        cam_z = cam_tf.transform.translation.z
+        target = JOINT1_SIGN * bearing + JOINT1_OFFSET
+        target = max(-JOINT1_LIMIT, min(JOINT1_LIMIT, wrap_angle(target)))
+        self._send_joint1_vel(joint1_velocity(target, self.joint1_pos))
 
-        camera_pose = PoseStamped()
-        camera_pose.header.frame_id = BASE_FRAME
-        camera_pose.header.stamp = stamp
-        camera_pose.pose.position.x = cam_x
-        camera_pose.pose.position.y = cam_y
-        camera_pose.pose.position.z = cam_z
 
-        # Target = goal x,y at camera height (aim horizontally, not at the floor).
-        target_pose = PoseStamped()
-        target_pose.header.frame_id = BASE_FRAME
-        target_pose.header.stamp = stamp
-        target_pose.pose.position.x = goal_in_base.position.x
-        target_pose.pose.position.y = goal_in_base.position.y
-        target_pose.pose.position.z = cam_z
-
-        # Skip if camera is basically on top of the destination (avoids NaN).
-        if (
-            math.hypot(
-                target_pose.pose.position.x - cam_x, target_pose.pose.position.y - cam_y
-            )
-            < MIN_DISTANCE
-        ):
-            return
-
-        try:
-            aimed = look_at(camera_pose, target_pose)
-        except Exception as e:
-            self.get_logger().warn(f"look_at failed: {e}")
-            return
-
-        self.debug_pub.publish(aimed)
-
-        goal = MoveToPose.Goal()
-        goal.pose = aimed
-        goal.velocity = VELOCITY
-        goal.target_link = camera_frame
-
-        if not self._action_client.server_is_ready():
-            self.get_logger().warn("move_to_pose action server not ready")
-            return
-
-        self.busy = True
-        self.busy_since = time.monotonic()
-        self._action_client.send_goal_async(goal).add_done_callback(self._sent_cb)
-
-    def _sent_cb(self, future):
-        try:
-            handle = future.result()
-        except Exception as e:
-            self.get_logger().warn(f"send goal failed: {e}")
-            self.busy = False
-            return
-        if not handle.accepted:
-            self.get_logger().warn("arm goal rejected")
-            self.busy = False
-            return
-        handle.get_result_async().add_done_callback(self._result_cb)
-
-    def _result_cb(self, future):
-        try:
-            future.result()
-        except Exception as e:
-            self.get_logger().warn(f"arm goal errored: {e}")
-        self.busy = False
+def _selftest():
+    assert abs(wrap_angle(math.pi + 0.1) - (-math.pi + 0.1)) < 1e-6
+    assert joint1_velocity(0.0, 0.0) == 0.0  # on target -> stop
+    assert joint1_velocity(1.0, 0.0) > 0.0  # need +rotation
+    assert joint1_velocity(-1.0, 0.0) < 0.0  # need -rotation
+    assert abs(joint1_velocity(10.0, 0.0)) == MAX_JOINT1_VEL  # clamped
+    # shortest path across the wrap: from near -pi, target near +pi -> go negative
+    assert joint1_velocity(math.pi - 0.05, -math.pi + 0.05) < 0.0
+    print("selftest OK")
 
 
 def main(args=None):
+    if "--selftest" in sys.argv:
+        _selftest()
+        return
     rclpy.init(args=args)
-    executor = rclpy.executors.MultiThreadedExecutor(2)
+    executor = rclpy.executors.MultiThreadedExecutor(3)
     node = NavGoalArmPointer()
     executor.add_node(node)
     try:
