@@ -22,11 +22,16 @@ from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
+from tf2_geometry_msgs import do_transform_pose
+
 from frida_interfaces.action import MoveToPose
 from frida_motion_planning.utils.tf_utils import look_at
 from frida_pymoveit2.robots import xarm6
 
-MAP_FRAME = "map"
+# Plan in the arm's own base frame, not map: MoveIt's planning frame is fixed to
+# the robot and its TF tree is NOT connected to map. We resolve the world->base
+# part here and hand MoveIt a goal it can always plan (link_base).
+BASE_FRAME = xarm6.base_link_name()  # "link_base"
 TRACK_PERIOD = 1.0 / 1.5  # ~1.5 Hz
 MIN_DISTANCE = 0.05  # m; below this look_at would normalize a ~0 vector -> NaN
 VELOCITY = 0.3
@@ -95,36 +100,55 @@ class NavGoalArmPointer(Node):
             self.get_logger().warn("arm goal timed out, re-sending")
             self.busy = False
 
-        # Camera pose in map frame.
         camera_frame = xarm6.camera_frame_name()
+        stamp = self.get_clock().now().to_msg()
+
+        # Camera pose in the arm base frame (arm-internal, always resolvable).
         try:
-            tf = self.tf_buffer.lookup_transform(
-                MAP_FRAME,
+            cam_tf = self.tf_buffer.lookup_transform(
+                BASE_FRAME,
                 camera_frame,
                 rclpy.time.Time(),
                 rclpy.duration.Duration(seconds=0.5),
             )
         except TransformException as e:
-            self.get_logger().warn(f"TF {MAP_FRAME}->{camera_frame} unavailable: {e}")
+            self.get_logger().warn(f"TF {BASE_FRAME}->{camera_frame} unavailable: {e}")
             return
 
-        cam_x = tf.transform.translation.x
-        cam_y = tf.transform.translation.y
-        cam_z = tf.transform.translation.z
+        # Goal (in map) -> arm base frame. This is the world->robot part; needs
+        # localization (map->base) TF visible here. Skip the cycle if missing.
+        try:
+            goal_tf = self.tf_buffer.lookup_transform(
+                BASE_FRAME,
+                self.goal.header.frame_id,
+                rclpy.time.Time(),
+                rclpy.duration.Duration(seconds=0.5),
+            )
+        except TransformException as e:
+            self.get_logger().warn(
+                f"TF {BASE_FRAME}->{self.goal.header.frame_id} unavailable "
+                f"(localization not bridged to the arm?): {e}"
+            )
+            return
+        goal_in_base = do_transform_pose(self.goal.pose, goal_tf)
+
+        cam_x = cam_tf.transform.translation.x
+        cam_y = cam_tf.transform.translation.y
+        cam_z = cam_tf.transform.translation.z
 
         camera_pose = PoseStamped()
-        camera_pose.header.frame_id = MAP_FRAME
-        camera_pose.header.stamp = self.get_clock().now().to_msg()
+        camera_pose.header.frame_id = BASE_FRAME
+        camera_pose.header.stamp = stamp
         camera_pose.pose.position.x = cam_x
         camera_pose.pose.position.y = cam_y
         camera_pose.pose.position.z = cam_z
 
         # Target = goal x,y at camera height (aim horizontally, not at the floor).
         target_pose = PoseStamped()
-        target_pose.header.frame_id = MAP_FRAME
-        target_pose.header.stamp = camera_pose.header.stamp
-        target_pose.pose.position.x = self.goal.pose.position.x
-        target_pose.pose.position.y = self.goal.pose.position.y
+        target_pose.header.frame_id = BASE_FRAME
+        target_pose.header.stamp = stamp
+        target_pose.pose.position.x = goal_in_base.position.x
+        target_pose.pose.position.y = goal_in_base.position.y
         target_pose.pose.position.z = cam_z
 
         # Skip if camera is basically on top of the destination (avoids NaN).
