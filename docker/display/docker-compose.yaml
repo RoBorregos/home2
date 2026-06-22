@@ -9,6 +9,8 @@ services:
         ENV_TYPE: ${ENV_TYPE:-cpu}
     image: roborregos/home2:display-${ENV_TYPE:-cpu}
     runtime: ${RUNTIME:-runc}
+    # Keep display (web_video_server/rosbridge/frontend) off navigation's reserved cores (nav is pinned 0-3).
+    cpuset: "${COMPUTE_CPUSET:-4-11}"
     volumes:
       - ../../:/workspace/src
       - /tmp:/tmp
