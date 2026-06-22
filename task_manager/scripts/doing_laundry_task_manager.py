@@ -53,8 +53,23 @@ class DoingLaundryTM(Node):
         self.basket_placed = 0
         self.wm_placed = 0
 
+        self.dock_offsets: dict[str, float] = {
+            "laundry_basket": 0.0,
+            "folding_surface": 0.0,
+            "laundry_machine": 0.0,
+        }
+
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "DoingLaundryTM has started.")
+
+    def _dock_if_surface(self, sublocation: str):
+        """Dock perpendicular to the surface if it's a known pick/place sublocation."""
+        if sublocation not in self.dock_offsets:
+            return
+        offset = self.dock_offsets[sublocation]
+        dock_status, dock_error = self.subtask_manager.nav.dock_table(offset=offset)
+        if dock_status != Status.EXECUTION_SUCCESS:
+            Logger.warn(self, f"Docking to {sublocation} failed: {dock_error}")
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to location, resetting arm to nav_pose first."""
@@ -64,7 +79,10 @@ class DoingLaundryTM(Node):
         if say:
             Logger.info(self, f"Moving to {sublocation} in {location}")
             self.subtask_manager.hri.say(f"Navigating to {sublocation}.", wait=False)
-        return self.subtask_manager.nav.move_to_location(location, sublocation)
+        result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        if result == Status.EXECUTION_SUCCESS:
+            self._dock_if_surface(sublocation)
+        return result, error
 
     def navigate_holding(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate while holding basket — does NOT reset arm to nav_pose."""
@@ -73,7 +91,10 @@ class DoingLaundryTM(Node):
         if say:
             Logger.info(self, f"Carrying basket to {sublocation} in {location}")
             self.subtask_manager.hri.say(f"Carrying basket to {sublocation}.", wait=False)
-        return self.subtask_manager.nav.move_to_location(location, sublocation)
+        result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        if result == Status.EXECUTION_SUCCESS:
+            self._dock_if_surface(sublocation)
+        return result, error
 
     def next_state_after_place(self):
         """Decide where to go after placing clothes on the table."""
