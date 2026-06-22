@@ -44,7 +44,7 @@ from rclpy.duration import Duration
 from rcl_interfaces.msg import SetParametersResult
 from std_srvs.srv import Trigger
 from std_msgs.msg import Bool
-from geometry_msgs.msg import Twist, Point
+from geometry_msgs.msg import Twist, TwistStamped, Point
 from sensor_msgs.msg import LaserScan, PointCloud2
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker, MarkerArray
@@ -212,7 +212,7 @@ class TableDocker(Node):
         self.create_subscription(PointCloud2, self.cloud_topic, self._cloud_cb, 1, callback_group=sensor_cb)
         self.create_subscription(Odometry, self.odom_topic, self._odom_cb, 10, callback_group=sensor_cb)
 
-        self.cmd_pub = self.create_publisher(Twist, self.cmd_vel_topic, 10)
+        self.cmd_pub = self.create_publisher(TwistStamped, self.cmd_vel_topic, 10)
         docked_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
                                 reliability=ReliabilityPolicy.RELIABLE)
         self.docked_pub = self.create_publisher(Bool, DOCKED_TOPIC, docked_qos)
@@ -272,10 +272,13 @@ class TableDocker(Node):
         self.docked_pub.publish(Bool(data=self.docked))
 
     def _publish_cmd(self, vx=0.0, vy=0.0, wz=0.0):
-        t = Twist()
-        t.linear.x = float(vx)
-        t.linear.y = float(vy)
-        t.angular.z = float(wz)
+        # Nav2 1.4.0 uses TwistStamped on cmd_vel (odrive_dashboard subscribes stamped).
+        t = TwistStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "base_link"
+        t.twist.linear.x = float(vx)
+        t.twist.linear.y = float(vy)
+        t.twist.angular.z = float(wz)
         self.cmd_pub.publish(t)
 
     def _stop(self):
