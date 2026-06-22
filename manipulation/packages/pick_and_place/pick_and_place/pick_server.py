@@ -510,15 +510,7 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    if not move_to_pregrasp_nearest_ik(
-                        self._compute_ik_client,
-                        self._move_joints_action_client,
-                        pre_grasp_pose,
-                        latest_joint_state=self._latest_joint_state,
-                        velocity=0.3,
-                        fallback_move_to_pose=self.move_to_pose,
-                        logger=self.get_logger(),
-                    ):
+                    if not self.move_to_pregrasp(pre_grasp_pose, velocity=0.3):
                         self.get_logger().warn(
                             f"[Rim] Pre-grasp failed for pose {i}, trying next"
                         )
@@ -588,15 +580,7 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    if not move_to_pregrasp_nearest_ik(
-                        self._compute_ik_client,
-                        self._move_joints_action_client,
-                        pre_grasp_pose,
-                        latest_joint_state=self._latest_joint_state,
-                        velocity=0.3,
-                        fallback_move_to_pose=self.move_to_pose,
-                        logger=self.get_logger(),
-                    ):
+                    if not self.move_to_pregrasp(pre_grasp_pose, velocity=0.3):
                         self.get_logger().warn(
                             f"[Peak] Pre-grasp failed for pose {i}, trying next"
                         )
@@ -1035,6 +1019,19 @@ class PickMotionServer(Node):
         self.wait_for_future(future)
         action_result = future.result().get_result()
         return future.result(), action_result
+
+    def move_to_pregrasp(self, pose, velocity=PICK_VELOCITY) -> bool:
+        """Move to a pre-grasp pose via the nearest IK solution (avoids the ~360
+        base wrap), falling back to a pose goal. Returns True if reached."""
+        return move_to_pregrasp_nearest_ik(
+            self._compute_ik_client,
+            self._move_joints_action_client,
+            pose,
+            latest_joint_state=self._latest_joint_state,
+            velocity=velocity,
+            fallback_move_to_pose=self.move_to_pose,
+            logger=self.get_logger(),
+        )
 
     def wait_for_future(self, future):
         if future is None:
