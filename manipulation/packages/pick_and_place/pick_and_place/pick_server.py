@@ -22,9 +22,11 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    MOVE_JOINTS_ACTION_SERVER,
     ESTOP_TOPIC,
     RIM_NAMES,
     RIM_PRE_GRASP_HEIGHT,
+    RIM_GRASP_Z_TWEAK,
     RIM_DESCENT_SPEED,
     RIM_DESCENT_DISTANCE,
     PEAK_NAMES,
@@ -38,7 +40,10 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
     FixedDistanceMove,
 )
-from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
+from moveit_msgs.srv import GetPositionIK, GetStateValidity
+from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
+from frida_interfaces.action import PickMotion, MoveToPose, GoToHand, MoveJoints
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Bool
@@ -154,6 +159,13 @@ class PickMotionServer(Node):
             MOVE_TO_POSE_ACTION_SERVER,
         )
 
+        # Joint-space moves for the pre-grasp (nearest-IK, avoids ~360 base wrap)
+        self._move_joints_action_client = ActionClient(
+            self,
+            MoveJoints,
+            MOVE_JOINTS_ACTION_SERVER,
+        )
+
         self._attach_collision_object_client = self.create_client(
             AttachCollisionObject,
             ATTACH_COLLISION_OBJECT_SERVICE,
@@ -177,6 +189,12 @@ class PickMotionServer(Node):
         self._clear_octomap_client = self.create_client(
             Empty,
             "/clear_octomap",
+        )
+
+        # --- Robot self-collision validation (MoveIt) ---
+        self._compute_ik_client = self.create_client(GetPositionIK, "/compute_ik")
+        self._state_validity_client = self.create_client(
+            GetStateValidity, "/check_state_validity"
         )
 
         # --- Force-guarded descent service clients ---
@@ -489,6 +507,22 @@ class PickMotionServer(Node):
                         f"[Rim] Fixed-distance pick flow for pose {i}"
                     )
 
+                    # Validate the descent endpoint against the robot itself
+                    descent_endpoint = copy.deepcopy(ee_link_pose)
+                    descent_endpoint.pose.position.z += RIM_GRASP_Z_TWEAK
+                    if endpoint_self_collides(
+                        self._compute_ik_client,
+                        self._state_validity_client,
+                        descent_endpoint,
+                        latest_joint_state=self._latest_joint_state,
+                        logger=self.get_logger(),
+                    ):
+                        self.get_logger().warn(
+                            f"[Rim] Descent endpoint self-collides with robot, "
+                            f"skipping pose {i}"
+                        )
+                        continue
+
                     # Open gripper
                     self.get_logger().info("[Rim] Opening gripper...")
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
@@ -506,11 +540,7 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
+                    if not self.move_to_pregrasp(pre_grasp_pose, velocity=0.3):
                         self.get_logger().warn(
                             f"[Rim] Pre-grasp failed for pose {i}, trying next"
                         )
@@ -548,6 +578,21 @@ class PickMotionServer(Node):
                         f"[Peak] Fixed-distance pick flow for pose {i}"
                     )
 
+                    # Validate the descent endpoint against the robot itself
+                    descent_endpoint = copy.deepcopy(ee_link_pose)
+                    if endpoint_self_collides(
+                        self._compute_ik_client,
+                        self._state_validity_client,
+                        descent_endpoint,
+                        latest_joint_state=self._latest_joint_state,
+                        logger=self.get_logger(),
+                    ):
+                        self.get_logger().warn(
+                            f"[Peak] Descent endpoint self-collides with robot, "
+                            f"skipping pose {i}"
+                        )
+                        continue
+
                     # Open gripper
                     self.get_logger().info("[Peak] Opening gripper...")
                     self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
@@ -565,11 +610,7 @@ class PickMotionServer(Node):
 
                     self._clear_octomap()
 
-                    pre_handler, pre_result = self.move_to_pose(
-                        pre_grasp_pose, velocity=0.3
-                    )
-
-                    if not pre_result.result.success:
+                    if not self.move_to_pregrasp(pre_grasp_pose, velocity=0.3):
                         self.get_logger().warn(
                             f"[Peak] Pre-grasp failed for pose {i}, trying next"
                         )
@@ -1103,6 +1144,19 @@ class PickMotionServer(Node):
         self.wait_for_future(future)
         action_result = future.result().get_result()
         return future.result(), action_result
+
+    def move_to_pregrasp(self, pose, velocity=PICK_VELOCITY) -> bool:
+        """Move to a pre-grasp pose via the nearest IK solution (avoids the ~360
+        base wrap), falling back to a pose goal. Returns True if reached."""
+        return move_to_pregrasp_nearest_ik(
+            self._compute_ik_client,
+            self._move_joints_action_client,
+            pose,
+            latest_joint_state=self._latest_joint_state,
+            velocity=velocity,
+            fallback_move_to_pose=self.move_to_pose,
+            logger=self.get_logger(),
+        )
 
     def wait_for_future(self, future):
         if future is None:

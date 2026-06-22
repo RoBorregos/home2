@@ -104,7 +104,9 @@ def generate_launch_description():
             Node(
                 package="manipulation_general",
                 executable="manipulation_safeguard.py",
-                condition=IfCondition(LaunchConfiguration("enable_safeguard", default="false")),
+                condition=IfCondition(
+                    LaunchConfiguration("enable_safeguard", default="false")
+                ),
                 output="screen",
                 emulate_tty=True,
                 parameters=[sim_time_param],
