@@ -463,7 +463,11 @@ class PickAndPlaceTM(Node):
                 retry += 1
             if status != Status.EXECUTION_SUCCESS or not detections:
                 continue
-            candidates = [(det.classname, self.convert_to_height(det)) for det in detections]
+            candidates = [
+                (det.classname, h)
+                for det in detections
+                if (h := self.convert_to_height(det)) is not None
+            ]
             if find_target_on_level(candidates, object_name, height) is not None:
                 CLog.manip(self, "PICK", f"Found {object_name} at shelf height {height:.3f}.")
                 found_level = height
