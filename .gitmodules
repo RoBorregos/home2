@@ -30,6 +30,3 @@
 [submodule "navigation/packages/ira_laser_tools"]
 	path = navigation/packages/ira_laser_tools
 	url = https://github.com/ryanpennings/ira_laser_tools
-[submodule "navigation/packages/ros2_laser_scan_merger"]
-	path = navigation/packages/ros2_laser_scan_merger
-	url = https://github.com/mich1342/ros2_laser_scan_merger.git
