@@ -1,5 +1,7 @@
 var NAVTREEINDEX39 =
 {
+"namespaceproblem__tar__to__pkl__json.html#a9754781bb2889a4657b97962fa0fc175":[37,0,141,1],
+"namespaceproblem__tar__to__pkl__json.html#ab1d9fd37727ec32935f28b4397f2e731":[37,0,141,2],
 "namespaceproblem__tar__to__pkl__json.html#ad316be76687b4bbfb11d59e893cfedf0":[37,0,141,3],
 "namespaceproblem__tar__to__pkl__json.html#af7ad160e11b2b69c3f904adeb6a852b3":[37,0,141,4],
 "namespacerandom__dance.html":[37,0,142],
@@ -247,7 +249,5 @@ var NAVTREEINDEX39 =
 "namespacetask__manager_1_1utils_1_1decorators.html#a026a1029f1cd63d148cea86009000db0":[37,0,172,1,1,0],
 "namespacetask__manager_1_1utils_1_1decorators.html#a71d32900d7390409fe37451aa09c2cf0":[37,0,172,1,1,1],
 "namespacetask__manager_1_1utils_1_1exploration__planner.html":[37,0,172,1,2],
-"namespacetask__manager_1_1utils_1_1logger.html":[37,0,172,1,3],
-"namespacetask__manager_1_1utils_1_1shelf__pick__logic.html":[37,0,172,1,4],
-"namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a1605b8ce3208c001ce1aa390c8e79457":[37,0,172,1,4,2]
+"namespacetask__manager_1_1utils_1_1logger.html":[37,0,172,1,3]
 };

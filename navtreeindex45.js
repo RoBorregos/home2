@@ -1,5 +1,7 @@
 var NAVTREEINDEX45 =
 {
+"structvamp_1_1VectorInterface.html#a9e97e9d411ea80bcffcf9bda0f5aa609":[38,0,112,16,96],
+"structvamp_1_1VectorInterface.html#aa231eff9a9a089c5c6f59460fb14385b":[37,0,198,21,58],
 "structvamp_1_1VectorInterface.html#aa231eff9a9a089c5c6f59460fb14385b":[38,0,112,16,58],
 "structvamp_1_1VectorInterface.html#aa6ce674a0f430a3d3b2bdf620300860d":[37,0,198,21,78],
 "structvamp_1_1VectorInterface.html#aa6ce674a0f430a3d3b2bdf620300860d":[38,0,112,16,78],
@@ -247,7 +249,5 @@ var NAVTREEINDEX45 =
 "structvamp_1_1collision_1_1Cuboid.html#a8a07f306da8018525ba6ba1602275fc9":[38,0,112,1,2,12],
 "structvamp_1_1collision_1_1Cuboid.html#adf7bb9721c731a4fe3dc2ddba7831bb4":[37,0,198,2,3,17],
 "structvamp_1_1collision_1_1Cuboid.html#adf7bb9721c731a4fe3dc2ddba7831bb4":[38,0,112,1,2,17],
-"structvamp_1_1collision_1_1Cuboid.html#ae85878a80b4071b164353f792aecdf99":[38,0,112,1,2,5],
-"structvamp_1_1collision_1_1Cuboid.html#ae85878a80b4071b164353f792aecdf99":[37,0,198,2,3,5],
-"structvamp_1_1collision_1_1Cuboid.html#af92ba3358f162187072c0b931f9ae7fd":[37,0,198,2,3,13]
+"structvamp_1_1collision_1_1Cuboid.html#ae85878a80b4071b164353f792aecdf99":[38,0,112,1,2,5]
 };

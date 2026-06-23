@@ -1,5 +1,7 @@
 var NAVTREEINDEX47 =
 {
+"structvamp_1_1planning_1_1FCITStarNeighborParams.html#aa77c4b4d9ba2616c3a51fa5618740a50":[38,0,112,3,8,0],
+"structvamp_1_1planning_1_1FCITStarNeighborParams.html#ac5208f0de829d2b4a1414ac10e76c9fa":[37,0,198,5,8,5],
 "structvamp_1_1planning_1_1FCITStarNeighborParams.html#ac5208f0de829d2b4a1414ac10e76c9fa":[38,0,112,3,8,5],
 "structvamp_1_1planning_1_1FCITStarNeighborParams.html#ada0d288a50ea3da4a879a611910aae3b":[38,0,112,3,8,6],
 "structvamp_1_1planning_1_1FCITStarNeighborParams.html#ada0d288a50ea3da4a879a611910aae3b":[37,0,198,5,8,6],
@@ -247,7 +249,5 @@ var NAVTREEINDEX47 =
 "structvamp_1_1planning_1_1utils_1_1QueueNode.html":[38,0,112,3,0,1],
 "structvamp_1_1planning_1_1utils_1_1QueueNode.html#ac8c3fc9e2c9eab6ea26483ede7ed99d8":[37,0,198,5,0,1,1],
 "structvamp_1_1planning_1_1utils_1_1QueueNode.html#ac8c3fc9e2c9eab6ea26483ede7ed99d8":[38,0,112,3,0,1,1],
-"structvamp_1_1planning_1_1utils_1_1QueueNode.html#ad7156df417d3aea42db3b8745a9696e6":[37,0,198,5,0,1,0],
-"structvamp_1_1planning_1_1utils_1_1QueueNode.html#ad7156df417d3aea42db3b8745a9696e6":[38,0,112,3,0,1,0],
-"structvamp_1_1planning_1_1utils_1_1QueueNode.html#af6b27028fb45ca6fc00dcc60a483ff51":[37,0,198,5,0,1,2]
+"structvamp_1_1planning_1_1utils_1_1QueueNode.html#ad7156df417d3aea42db3b8745a9696e6":[37,0,198,5,0,1,0]
 };

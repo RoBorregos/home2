@@ -1,5 +1,7 @@
 var NAVTREEINDEX36 =
 {
+"namespacefrida__constants_1_1hri__constants.html#a8991597884d20fbe00d82139b7026ebf":[37,0,60,0,15],
+"namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7":[37,0,60,0,21],
 "namespacefrida__constants_1_1hri__constants.html#aa04127dd3af14465c6ed0fdea141cd3c":[37,0,60,0,18],
 "namespacefrida__constants_1_1hri__constants.html#aaa486a9f7f79cd7c69c81ff85d8ba336":[37,0,60,0,8],
 "namespacefrida__constants_1_1hri__constants.html#aad077d27cdc2dc3fd88f06206a86437d":[37,0,60,0,39],
@@ -247,7 +249,5 @@ var NAVTREEINDEX36 =
 "namespacefrida__constants_1_1xarm__configurations.html#acd030439b63a120bde3ac743e5bab1f8":[37,0,60,8,9],
 "namespacefrida__constants_1_1xarm__configurations.html#ad38289acbba239b01fe845ab57a5026b":[37,0,60,8,10],
 "namespacefrida__constants_1_1xarm__configurations.html#adca6be045477cf1eaae672f79a1d5b6f":[37,0,60,8,7],
-"namespacefrida__driver.html":[37,0,61],
-"namespacefrida__driver.html#a7b2dcd48dd7fdcb70e23940fe7d4695b":[37,0,61,1],
-"namespacefrida__driver.html#aef5c72bf0e9a5f9cd51e0088acd02488":[37,0,61,0]
+"namespacefrida__driver.html":[37,0,61]
 };

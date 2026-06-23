@@ -1,5 +1,7 @@
 var NAVTREEINDEX32 =
 {
+"hri__dataclasses_8py.html":[39,0,6,2,0,5],
+"hri__hand_8py.html":[39,0,6,2,0,6],
 "hri__tasks_8py.html":[39,0,6,2,0,7],
 "hri__tasks_8py.html#a0a0bb2397299d3fff811cf842302b87d":[39,0,6,2,0,7,6],
 "hri__tasks_8py.html#a44f64af8d322961b668968e808f3d511":[39,0,6,2,0,7,5],
@@ -247,7 +249,5 @@ var NAVTREEINDEX32 =
 "manipulation__constants_8py.html#ab65c663bc0e5f75a060598e9e0c4a01a":[39,0,1,1,3,43],
 "manipulation__constants_8py.html#ab6d32e6ff959403c0f3f8f10aa6a1ab4":[39,0,1,1,3,23],
 "manipulation__constants_8py.html#ab75f80813165c558161e6506743bc531":[39,0,1,1,3,52],
-"manipulation__constants_8py.html#abc01e1600c8a6c791bc5edb33bbf2576":[39,0,1,1,3,14],
-"manipulation__constants_8py.html#ac2bfc14249e460c5ed0f5150ceda9e88":[39,0,1,1,3,7],
-"manipulation__constants_8py.html#ac3a0e78153e604056eb6b66a73f0f4f7":[39,0,1,1,3,22]
+"manipulation__constants_8py.html#abc01e1600c8a6c791bc5edb33bbf2576":[39,0,1,1,3,14]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX35 =
 {
+"namespacecall__pick__action.html":[37,0,11],
+"namespacecall__pick__action.html#ae27d3560abee2fba47da9ab2392e287b":[37,0,11,1],
 "namespacecall__pose__goal.html":[37,0,12],
 "namespacecall__pose__goal.html#a1a0ae8dac34aa7d93973551538edf185":[37,0,12,1],
 "namespacecall__pose__goal.html#a3e5772ace97806eb8ded90e8120cd98b":[37,0,12,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX35 =
 "namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29":[37,0,60,0,34],
 "namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8":[37,0,60,0,23],
 "namespacefrida__constants_1_1hri__constants.html#a6b6228c6ea413ec24c0b26890dac3fb5":[37,0,60,0,10],
-"namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd":[37,0,60,0,24],
-"namespacefrida__constants_1_1hri__constants.html#a8991597884d20fbe00d82139b7026ebf":[37,0,60,0,15],
-"namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7":[37,0,60,0,21]
+"namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd":[37,0,60,0,24]
 };

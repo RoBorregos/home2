@@ -33,6 +33,7 @@ var classpickandplace__task__manager_1_1PickAndPlaceTM =
     [ "default_shelf_height", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a1044d5de34265266624511b73f59ea7e", null ],
     [ "detected_objects", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#adabb9f59cd801a2dd109e96aafca38c3", null ],
     [ "dishwasher_open", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#ac5447d408f5d12bd9f2e4e1602b8b5bf", null ],
+    [ "display_pub", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#ae2d9bf9aa2b3243e7fe59e077cf95e0f", null ],
     [ "first_pick", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3c8a42748e8af9c81acf5d99498f4708", null ],
     [ "grasped_object", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a0bfea0858c7914cd7965a182d24ead7c", null ],
     [ "max_cleanup_objects", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a4f7d1eb6a7e6ada225bc5953447b57ab", null ],

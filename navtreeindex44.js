@@ -1,5 +1,7 @@
 var NAVTREEINDEX44 =
 {
+"structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a7a98d2676c9c2f94f0bbf7e66bc1fc44":[38,0,59,4,0],
+"structmujoco__ros2__sensors_1_1PoseSensorStruct.html#aba51a3f669ec68759b7232d2f0c79b75":[38,0,59,4,6],
 "structmujoco__ros2__sensors_1_1PoseSensorStruct.html#aba51a3f669ec68759b7232d2f0c79b75":[37,0,112,4,6],
 "structmujoco__ros2__sensors_1_1WrenchSensorStruct.html":[38,0,59,6],
 "structmujoco__ros2__sensors_1_1WrenchSensorStruct.html":[37,0,112,6],
@@ -247,7 +249,5 @@ var NAVTREEINDEX44 =
 "structvamp_1_1VectorInterface.html#a99c55a62d9505cab6a2099eb8de85f51":[37,0,198,21,8],
 "structvamp_1_1VectorInterface.html#a9d59e82347e1bac4b6f90cec5547e6af":[38,0,112,16,7],
 "structvamp_1_1VectorInterface.html#a9d59e82347e1bac4b6f90cec5547e6af":[37,0,198,21,7],
-"structvamp_1_1VectorInterface.html#a9e97e9d411ea80bcffcf9bda0f5aa609":[37,0,198,21,96],
-"structvamp_1_1VectorInterface.html#a9e97e9d411ea80bcffcf9bda0f5aa609":[38,0,112,16,96],
-"structvamp_1_1VectorInterface.html#aa231eff9a9a089c5c6f59460fb14385b":[37,0,198,21,58]
+"structvamp_1_1VectorInterface.html#a9e97e9d411ea80bcffcf9bda0f5aa609":[37,0,198,21,96]
 };

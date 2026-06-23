@@ -1,5 +1,7 @@
 var NAVTREEINDEX34 =
 {
+"md_manipulation_packages_mujoco_ros2_control_mujoco_ros2_control_README.html":[5],
+"md_manipulation_packages_mujoco_ros2_control_mujoco_ros2_control_README.html#autotoc_md8":[5,0],
 "md_manipulation_packages_mujoco_ros2_control_mujoco_ros2_control_README.html#autotoc_md9":[5,1],
 "md_manipulation_packages_vamp_README.html":[7],
 "md_manipulation_packages_vamp_README.html#autotoc_md47":[7,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX34 =
 "namespacecalibrate__ignore__laser.html":[37,0,9],
 "namespacecalibrate__ignore__laser.html#a34da9aa3d10276af312e54fdf65f548c":[37,0,9,1],
 "namespacecall__joint__goal.html":[37,0,10],
-"namespacecall__joint__goal.html#a91ac72d1495540e9a1a3d6b21ec0bf4b":[37,0,10,1],
-"namespacecall__pick__action.html":[37,0,11],
-"namespacecall__pick__action.html#ae27d3560abee2fba47da9ab2392e287b":[37,0,11,1]
+"namespacecall__joint__goal.html#a91ac72d1495540e9a1a3d6b21ec0bf4b":[37,0,10,1]
 };

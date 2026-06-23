@@ -1,5 +1,7 @@
 var NAVTREEINDEX48 =
 {
+"structvamp_1_1planning_1_1utils_1_1QueueNode.html#ad7156df417d3aea42db3b8745a9696e6":[38,0,112,3,0,1,0],
+"structvamp_1_1planning_1_1utils_1_1QueueNode.html#af6b27028fb45ca6fc00dcc60a483ff51":[37,0,198,5,0,1,2],
 "structvamp_1_1planning_1_1utils_1_1QueueNode.html#af6b27028fb45ca6fc00dcc60a483ff51":[38,0,112,3,0,1,2],
 "structvamp_1_1rng_1_1Distribution.html":[38,0,112,6,0],
 "structvamp_1_1rng_1_1Distribution.html":[37,0,198,9,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX48 =
 "test__face__rec_8py.html#adc13a1cf3498bee4d948f5fb0716c951":[39,0,6,1,1,1,1],
 "test__flake8_8py.html":[39,0,4,0,4,1,1],
 "test__flake8_8py.html#a19bfcf597a661a366225b7d0cedd123c":[39,0,4,0,4,1,1,0],
-"test__go__to__hand_8py.html":[39,0,6,1,1,2],
-"test__go__to__hand_8py.html#a3ca20cfb0712e3c352b732667062e707":[39,0,6,1,1,2,2],
-"test__go__to__hand_8py.html#abd8b77419619ff3e3e5e86d09cb72fdf":[39,0,6,1,1,2,1]
+"test__go__to__hand_8py.html":[39,0,6,1,1,2]
 };
