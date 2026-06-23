@@ -27,6 +27,7 @@ from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
 from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
+from std_srvs.srv import Empty
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.shelf_pick_logic import find_target_on_level
@@ -233,6 +234,9 @@ class PickAndPlaceTM(Node):
         self.state_times: dict = {}
         self.total_start_time = datetime.now()
         self.previous_state = None
+
+        # Octomap clearing: stale accumulation over-constrains tight shelf grasps
+        self._clear_octomap_client = self.create_client(Empty, "/clear_octomap")
 
         # Gripper grasp detection
         self._gripper_has_object = False
@@ -451,6 +455,18 @@ class PickAndPlaceTM(Node):
         )
         self.timeout(3.0)
 
+    def _clear_octomap(self):
+        """Clear the MoveIt octomap so points accumulated from prior picks and
+        level scans do not over-constrain the next grasp."""
+        try:
+            if self._clear_octomap_client.wait_for_service(timeout_sec=2.0):
+                self._clear_octomap_client.call_async(Empty.Request())
+                CLog.manip(self, "PICK", "Cleared octomap before shelf grasp.")
+            else:
+                CLog.manip(self, "PICK", "clear_octomap unavailable.", level="warn")
+        except Exception as e:
+            CLog.manip(self, "PICK", f"clear_octomap failed: {e}", level="warn")
+
     def _pick_from_shelf(self, object_name: str, level_heights: dict) -> int:
         """Find the target by detecting at each shelf level, then pick from that level.
 
@@ -489,7 +505,12 @@ class PickAndPlaceTM(Node):
             CLog.manip(self, "PICK", f"{object_name} not found on any shelf level.", level="error")
             return Status.EXECUTION_ERROR
 
-        # Arm is at the found level's pose with a fresh octomap; keep it (in_configuration).
+        # Clear the octomap so points accumulated from prior picks/levels do not
+        # over-constrain the grasp (stale octomap caused 99999 collisions on the
+        # tight low shelf levels); let it rebuild fresh at this level.
+        self._clear_octomap()
+        self.timeout(3.0)
+        # Arm is at the found level's pose; keep it (in_configuration).
         status = self.subtask_manager.manipulation.pick_object(
             object_name, in_configuration=True, scan_environment=True
         )
