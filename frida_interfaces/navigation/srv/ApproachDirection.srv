@@ -1,0 +1,10 @@
+# Request
+# Drive/strafe the holonomic omnibase in a commanded direction until the nearest
+# lidar reading in that direction is distance_cm away, then stop. No detection,
+# no alignment — the direction is given, not derived.
+string direction         # "forwards" | "backwards" | "left" | "right"
+float32 distance_cm      # stop when nearest reading in that direction <= this (cm)
+---
+# Response
+bool success
+string error

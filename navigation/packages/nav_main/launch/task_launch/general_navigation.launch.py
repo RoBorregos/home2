@@ -133,6 +133,15 @@ def launch_function(context, *args, **kwargs):
         output='screen',
     )
 
+    # Approach-direction worker (strafe/drive in a commanded direction to N cm).
+    # Omnibase-only, same as table_docker (left/right need holonomic strafing).
+    approach_direction = Node(
+        package='nav_main',
+        executable='approach_direction.py',
+        name='approach_direction',
+        output='screen',
+    )
+
     launch_actions = [
         nav_central_node,
         nav_ui_node,
@@ -147,6 +156,7 @@ def launch_function(context, *args, **kwargs):
             launch_actions.append(omni_localization)
         launch_actions.append(nav2_omni)
         launch_actions.append(table_docker)
+        launch_actions.append(approach_direction)
 
     return launch_actions
 

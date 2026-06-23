@@ -16,9 +16,17 @@ from frida_constants.navigation_constants import (
     MOVE_LOCATION_SERVICE,
     NAV_QUERY_SERVICE,
     DOCK_TABLE_SERVICE,
+    APPROACH_DIRECTION_SERVICE,
     SUBTASK_MANAGER,
 )
-from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation, NavQuery, DockTable
+from frida_interfaces.srv import (
+    CheckDoor,
+    MapAreas,
+    MoveLocation,
+    NavQuery,
+    DockTable,
+    ApproachDirection,
+)
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -40,6 +48,9 @@ class NavigationTasks:
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
         self.nav_query_srv = self.node.create_client(NavQuery, NAV_QUERY_SERVICE)
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
+        self.approach_direction_srv = self.node.create_client(
+            ApproachDirection, APPROACH_DIRECTION_SERVICE
+        )
 
         # Task Actions and Services check
         self.services = {
@@ -49,6 +60,7 @@ class NavigationTasks:
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
+                "approach_direction_srv": {"client": self.approach_direction_srv, "type": "service"},
             },
         }
 
@@ -234,6 +246,38 @@ class NavigationTasks:
                 return (Status.EXECUTION_SUCCESS, "")
             else:
                 CLog.nav(self.node, "ERROR", f"Docking failed: {result.error}")
+                return (Status.EXECUTION_ERROR, result.error)
+        else:
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check(
+        "approach_direction_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def approach_direction(self, direction, distance_cm=10.0):
+        """Strafe/drive forwards|backwards|left|right until the nearest lidar
+        reading in that direction is distance_cm away (omnibase only).
+
+        direction: "forwards" | "backwards" | "left" | "right"
+        distance_cm: target clearance in centimeters.
+        """
+        CLog.nav(self.node, "MOVE",
+                 f"Requesting approach {direction} until {distance_cm} cm")
+        request = ApproachDirection.Request()
+        request.direction = str(direction)
+        request.distance_cm = float(distance_cm)
+        future = self.approach_direction_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None:
+            if result.success:
+                CLog.nav(self.node, "SUCCESS", f"Approached {direction}")
+                return (Status.EXECUTION_SUCCESS, "")
+            else:
+                CLog.nav(self.node, "ERROR", f"Approach failed: {result.error}")
                 return (Status.EXECUTION_ERROR, result.error)
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")

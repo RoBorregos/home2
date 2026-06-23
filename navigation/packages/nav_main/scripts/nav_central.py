@@ -46,13 +46,16 @@ from frida_constants.navigation_constants import(
         DOCK_SERVICE,
         DOCK_TABLE_SERVICE,
         DEFAULT_DOCK_OFFSET,
+        APPROACH_DIRECTION_SERVICE,
+        APPROACH_DIRECTION_EXEC_SERVICE,
         )
 from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
         MoveLocation,
         NavQuery,
-        DockTable
+        DockTable,
+        ApproachDirection
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -153,6 +156,11 @@ class Nav_Central(Node):
             Trigger, DOCK_SERVICE, callback_group=self.rtab_service_group)
         self.dock_param_client = self.create_client(
             SetParameters, '/table_docker/set_parameters', callback_group=self.rtab_service_group)
+        # Approach-direction (strafe/drive in a commanded direction to N cm) client.
+        # No-op if the approach_direction worker node isn't running.
+        self.approach_direction_client = self.create_client(
+            ApproachDirection, APPROACH_DIRECTION_EXEC_SERVICE,
+            callback_group=self.rtab_service_group)
         # Costmap clear clients — wipe stale obstacle marks (e.g. from the parked/docked
         # pose) before a new goal so the planner/MPPI start from a clean slate.
         self.clear_local_costmap_client = self.create_client(
@@ -175,6 +183,7 @@ class Nav_Central(Node):
         
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
         self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
+        self.approach_direction_srv = self.create_service(ApproachDirection, APPROACH_DIRECTION_SERVICE, self.approach_direction_callback, callback_group=self.service_group)
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
 
         # Path query service — distance/time between two areas without navigating
@@ -537,6 +546,41 @@ class Nav_Central(Node):
             self.nav_logger("info", "Dock_Table -> Docked")
         else:
             self.nav_logger("error", f"Dock_Table -> Failed: {message}")
+        return response
+
+    def _approach_direction(self, direction, distance_cm):
+        """Relay a directional approach to the approach_direction worker node.
+        Returns (success, message). Thin orchestrator — the control loop lives in
+        the worker, same split as _approach_table/table_docker."""
+        if not self.approach_direction_client.service_is_ready():
+            self.nav_logger("warn", "ApproachDirection -> worker node not available")
+            return (False, "approach_direction node not available")
+        req = ApproachDirection.Request()
+        req.direction = str(direction)
+        req.distance_cm = float(distance_cm)
+        self.nav_logger("info", f"ApproachDirection -> {direction} until {distance_cm} cm")
+        future = self.approach_direction_client.call_async(req)
+        elapsed = 0.0
+        while not future.done() and elapsed < 90.0:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not future.done():
+            return (False, "approach_direction timed out")
+        res = future.result()
+        return (res.success, res.error)
+
+    def approach_direction_callback(self, request, response):
+        """Service: strafe/drive in a commanded direction until N cm away."""
+        self.nav_logger("info",
+                        f"ApproachDirection -> Service called "
+                        f"(direction={request.direction} distance_cm={request.distance_cm})")
+        success, message = self._approach_direction(request.direction, request.distance_cm)
+        response.success = success
+        response.error = message
+        if success:
+            self.nav_logger("info", "ApproachDirection -> Reached target")
+        else:
+            self.nav_logger("error", f"ApproachDirection -> Failed: {message}")
         return response
 
     def _clear_costmaps(self, settle_s=0.3):
