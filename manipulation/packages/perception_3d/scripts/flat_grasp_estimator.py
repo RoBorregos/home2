@@ -38,6 +38,11 @@ GRASP_SURFACE_OFFSET = 0.003
 # Minimum valid points in ROI for PCA orientation
 MIN_POINTS_FOR_PCA = 10
 
+# Min eigenvalue ratio (long/short variance) for a trustworthy long axis. Below
+# this the object looks square from this view, so the orientation is rejected.
+# Live-tunable via the 'elongation_min_ratio' ROS parameter.
+ELONGATION_MIN_RATIO = 2.0
+
 # Number of recent table height readings to average for stability
 TABLE_HEIGHT_BUFFER_SIZE = 15
 
@@ -63,6 +68,8 @@ FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
 class FlatGraspEstimator(Node):
     def __init__(self):
         super().__init__("flat_grasp_estimator")
+        # Live-tunable min long/short variance ratio to trust the PCA long axis.
+        self.declare_parameter("elongation_min_ratio", ELONGATION_MIN_RATIO)
         self.bridge = CvBridge()
 
         self.tf_buffer = Buffer()
@@ -342,9 +349,15 @@ class FlatGraspEstimator(Node):
             & (roi_depth < table_z_cam - 0.001)
             & (roi_depth > table_z_cam - 0.05)
         )
-        v_local, u_local = np.where(object_mask_roi)
+        # Keep the largest connected blob (the object body); drop scattered table
+        # noise. No whole-bbox fallback: a square bbox yields an arbitrary axis.
+        labeled, num = ndi.label(object_mask_roi)
+        if num == 0:
+            return
+        largest = int(np.argmax(np.bincount(labeled.ravel())[1:])) + 1
+        v_local, u_local = np.where(labeled == largest)
         if len(v_local) < MIN_POINTS_FOR_PCA:
-            v_local, u_local = np.where(valid_mask)
+            return
 
         points_3d_cam = self._deproject_pixels(
             u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
@@ -357,10 +370,38 @@ class FlatGraspEstimator(Node):
         if points_base is None:
             return
 
-        # --- GRASP POSITION ---
+        # --- LONG AXIS via PCA on the object's XY points ---
         centroid_xy = np.mean(points_base[:, :2], axis=0)
+        points_2d_xy = points_base[:, :2] - centroid_xy
+        cov_matrix = np.cov(points_2d_xy.T)
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)  # ascending, real
+        # Reject near-square point sets: the long axis is unreliable there and
+        # would grasp parallel to the object instead of across it.
+        elongation_min = self.get_parameter("elongation_min_ratio").value
+        if eigenvalues[0] <= 1e-9 or eigenvalues[1] / eigenvalues[0] < elongation_min:
+            return
+        principal_vector = eigenvectors[:, 1]
+        spoon_dir = np.array([principal_vector[0], principal_vector[1], 0.0])
+        spoon_dir = spoon_dir / np.linalg.norm(spoon_dir)
+        perp_dir = np.array([-spoon_dir[1], spoon_dir[0]])  # in-plane perpendicular
 
-        # Transform table surface point at bbox center to base frame
+        # --- GRASP POSITION: aim at the HANDLE (thin end), not the centroid ---
+        # Project on the long axis; the handle end has the smaller perpendicular
+        # spread (narrower), so offset the grasp toward it.
+        handle_frac = 0.60  # fraction from center toward the handle tip (0..1)
+        proj = points_2d_xy @ spoon_dir[:2]
+        perp = points_2d_xy @ perp_dir
+        pos = proj >= 0
+        spread_pos = perp[pos].std() if np.count_nonzero(pos) > 2 else np.inf
+        spread_neg = perp[~pos].std() if np.count_nonzero(~pos) > 2 else np.inf
+        handle_sign = 1.0 if spread_pos <= spread_neg else -1.0
+        side = pos if handle_sign > 0 else ~pos
+        handle_extent = np.percentile(np.abs(proj[side]), 90) if np.any(side) else 0.0
+        grasp_xy = (
+            centroid_xy + (handle_sign * handle_frac * handle_extent) * spoon_dir[:2]
+        )
+
+        # Table surface height at the bbox center -> grasp Z
         fx, fy = self.intrinsics["fx"], self.intrinsics["fy"]
         cx, cy = self.intrinsics["cx"], self.intrinsics["cy"]
         bbox_cu, bbox_cv = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0
@@ -375,25 +416,16 @@ class FlatGraspEstimator(Node):
         raw_table_height = (T_mat @ table_point_cam)[2]
         grasp_z = self.get_stable_table_height(raw_table_height) + GRASP_SURFACE_OFFSET
 
-        # --- GRASP ORIENTATION (PCA on XY to find long axis) ---
-        points_2d_xy = points_base[:, :2] - centroid_xy
-        cov_matrix = np.cov(points_2d_xy.T)
-        eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
-        principal_vector = eigenvectors[:, np.argmax(eigenvalues)]
-
-        spoon_dir = np.array([principal_vector[0], principal_vector[1], 0.0])
-        spoon_dir = spoon_dir / np.linalg.norm(spoon_dir)
-
+        # --- ORIENTATION: fingers close PERPENDICULAR to the long axis ---
         Z_grasp = np.array([0.0, 0.0, -1.0])
         Y_grasp = np.cross(Z_grasp, spoon_dir)
         Y_grasp = Y_grasp / np.linalg.norm(Y_grasp)
         X_grasp = np.cross(Y_grasp, Z_grasp)
-
         new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
         return self._make_grasp_pose(
-            float(centroid_xy[0]), float(centroid_xy[1]), float(grasp_z), new_quat
+            float(grasp_xy[0]), float(grasp_xy[1]), float(grasp_z), new_quat
         )
 
     def process_rim_object(self, detection: ObjectDetection):
