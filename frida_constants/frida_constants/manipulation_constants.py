@@ -136,3 +136,18 @@ AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]
 SHELF_MIN_REACH = 0.40
 SHELF_REACH_BASE = 0.75
 SHELF_REACH_SLOPE = 0.25
+
+# Level-aware shelf place (bands on calibrated plane Z: L1~0.599, L2~0.946, L3~1.298)
+SHELF_LEVEL_LOW_MAX = 0.75
+SHELF_LEVEL_HIGH_MIN = 1.10
+# Vertical clearance above the surface (LOW just clears, MID is today, HIGH below arm top)
+SHELF_PLACE_Z_OFFSET_LOW = 0.02
+SHELF_PLACE_Z_OFFSET_MID = 0.10
+SHELF_PLACE_Z_OFFSET_HIGH = 0.04
+# Retry search step (LOW down away from ceiling, MID up as today, HIGH barely moves)
+SHELF_PLACE_STEP_LOW = -0.015
+SHELF_PLACE_STEP_MID = 0.02
+SHELF_PLACE_STEP_HIGH = 0.01
+SHELF_N_POSES_HIGH = 2
+# Shallow insertion standoff for the reach-limited top level
+SHELF_POSITION_PREPLACE_POSE_HIGH = -0.12

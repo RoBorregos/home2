@@ -18,6 +18,13 @@ from frida_constants.manipulation_constants import (
     PLACE_MOTION_ACTION_SERVER,
     AIM_STRAIGHT_FRONT_QUAT,
     SHELF_POSITION_PREPLACE_POSE,
+    SHELF_POSITION_PREPLACE_POSE_HIGH,
+    SHELF_LEVEL_LOW_MAX,
+    SHELF_LEVEL_HIGH_MIN,
+    SHELF_PLACE_STEP_LOW,
+    SHELF_PLACE_STEP_MID,
+    SHELF_PLACE_STEP_HIGH,
+    SHELF_N_POSES_HIGH,
     GRIPPER_SET_STATE_SERVICE,
     GRASP_LINK_FRAME,
     ESTOP_TOPIC,
@@ -125,10 +132,16 @@ class PlaceMotionServer(Node):
                 "################ Placing on shelf ##################"
             )
 
-        # Shelf: fewer poses with smaller step to avoid collisions above.
+        # Shelf: level-aware pose search. LOW (tight) searches DOWN, HIGH (reach
+        # limit) barely moves, MID keeps the working upward search.
         if is_shelf:
-            n_poses = 3
-            poses_dist = 0.02
+            shelf_z = goal_handle.request.place_params.table_height
+            if shelf_z < SHELF_LEVEL_LOW_MAX:
+                n_poses, poses_dist = 2, SHELF_PLACE_STEP_LOW
+            elif shelf_z >= SHELF_LEVEL_HIGH_MIN:
+                n_poses, poses_dist = SHELF_N_POSES_HIGH, SHELF_PLACE_STEP_HIGH
+            else:
+                n_poses, poses_dist = 3, SHELF_PLACE_STEP_MID
         else:
             n_poses = 8
             poses_dist = 0.05
@@ -151,9 +164,13 @@ class PlaceMotionServer(Node):
                 self.target_link = (
                     EEF_LINK_NAME  # Set the orientation to aim straight front
                 )
-                # send it a little bit back, then forward
-                offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
-                offset_distance_half = SHELF_POSITION_PREPLACE_POSE * (1 / 2)
+                # send it back then forward (shallow at the reach-limited top)
+                offset_distance = (
+                    SHELF_POSITION_PREPLACE_POSE_HIGH
+                    if shelf_z >= SHELF_LEVEL_HIGH_MIN
+                    else SHELF_POSITION_PREPLACE_POSE
+                )
+                offset_distance_half = offset_distance * (1 / 2)
                 # Compute the offset along the local z-axis
                 quat = [
                     ee_link_pre_pose.pose.orientation.w,

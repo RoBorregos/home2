@@ -15,6 +15,11 @@ from frida_constants.manipulation_constants import (
     SHELF_MIN_REACH,
     SHELF_REACH_BASE,
     SHELF_REACH_SLOPE,
+    SHELF_LEVEL_LOW_MAX,
+    SHELF_LEVEL_HIGH_MIN,
+    SHELF_PLACE_Z_OFFSET_LOW,
+    SHELF_PLACE_Z_OFFSET_MID,
+    SHELF_PLACE_Z_OFFSET_HIGH,
 )
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
@@ -387,10 +392,19 @@ class PlaceManager:
                 f"Object height detected: {pick_result.object_pick_height}"
             )
 
-        # forget height if placing on shelf
-        result_pose.pose.position.z += (
-            pick_result.object_pick_height if not place_params.is_shelf else 0.1
-        )
+        # Level-aware shelf clearance: LOW (tight) barely clears the surface, MID
+        # keeps today's value, HIGH stays below the arm top.
+        if place_params.is_shelf:
+            sz = place_params.table_height
+            if sz < SHELF_LEVEL_LOW_MAX:
+                z_off = SHELF_PLACE_Z_OFFSET_LOW
+            elif sz >= SHELF_LEVEL_HIGH_MIN:
+                z_off = SHELF_PLACE_Z_OFFSET_HIGH
+            else:
+                z_off = SHELF_PLACE_Z_OFFSET_MID
+            result_pose.pose.position.z += z_off
+        else:
+            result_pose.pose.position.z += pick_result.object_pick_height
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 
         return result_pose
