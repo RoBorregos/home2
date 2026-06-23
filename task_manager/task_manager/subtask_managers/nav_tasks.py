@@ -7,19 +7,31 @@ Navigation Area SubTask Manager
 
 import json
 import os
+import math
+import copy
 import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Quaternion
 from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
     NAV_QUERY_SERVICE,
     DOCK_TABLE_SERVICE,
+    GO_TO_POSE_SERVICE,
+    GET_ROBOT_POSE_SERVICE,
     SUBTASK_MANAGER,
 )
-from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation, NavQuery, DockTable
+from frida_interfaces.srv import (
+    CheckDoor,
+    MapAreas,
+    MoveLocation,
+    NavQuery,
+    DockTable,
+    GoToPose,
+    GetRobotPose,
+)
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -67,6 +79,10 @@ class NavigationTasks:
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
         self.nav_query_srv = self.node.create_client(NavQuery, NAV_QUERY_SERVICE)
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
+        self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
+        self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
+        # Origin pose captured the first time get_current_pose() succeeds (return_to_origin)
+        self._origin_pose = None
 
         # Task Actions and Services check
         self.services = {
@@ -271,6 +287,115 @@ class NavigationTasks:
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
+
+    # ── New pose-based nav functions (omni: via nav_central GoToPose / GetRobotPose) ──
+    # Additive — these do NOT replace the area-based functions above.
+
+    @staticmethod
+    def _yaw_to_quaternion(yaw):
+        q = Quaternion()
+        q.z = math.sin(yaw / 2.0)
+        q.w = math.cos(yaw / 2.0)
+        return q
+
+    @staticmethod
+    def _yaw_from_quaternion(q):
+        return math.atan2(
+            2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        )
+
+    @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, _mock_pose()), delay=1)
+    @service_check(
+        "get_robot_pose_srv",
+        (Status.EXECUTION_ERROR, None),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def get_current_pose(self):
+        """Current robot pose (map frame) via nav_central GetRobotPose (TF map->base_link).
+        Captures the origin pose on first success (used by return_to_origin)."""
+        future = self.get_robot_pose_srv.call_async(GetRobotPose.Request())
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        )
+        result = future.result()
+        if result is None or not result.success:
+            CLog.nav(self.node, "ERROR", "get_current_pose failed")
+            return (Status.EXECUTION_ERROR, None)
+        if self._origin_pose is None:
+            self._origin_pose = result.pose
+            CLog.nav(self.node, "INFO", "Captured origin pose")
+        return (Status.EXECUTION_SUCCESS, result.pose)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check(
+        "go_to_pose_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_to_pose(self, pose, behavior_tree=""):
+        """Navigate to an arbitrary map-frame PoseStamped via nav_central GoToPose."""
+        CLog.nav(self.node, "MOVE", "Requesting navigation to pose")
+        request = GoToPose.Request()
+        request.target_pose = pose
+        request.behavior_tree = behavior_tree
+        future = self.go_to_pose_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", "Pose reached")
+            return (Status.EXECUTION_SUCCESS, "")
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"Pose goal failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    def move_to_point(self, point, standoff_distance=0.0):
+        """Navigate to an (x, y) point. With standoff_distance>0, stop that far short of
+        the point along the approach direction, facing the point."""
+        px, py = float(point[0]), float(point[1])
+        yaw = 0.0
+        status, cur = self.get_current_pose()
+        if status == Status.EXECUTION_SUCCESS and cur is not None:
+            dx, dy = px - cur.pose.position.x, py - cur.pose.position.y
+            dist = math.hypot(dx, dy)
+            if dist > 1e-3:
+                yaw = math.atan2(dy, dx)
+                if 0.0 < standoff_distance < dist:
+                    px -= (dx / dist) * standoff_distance
+                    py -= (dy / dist) * standoff_distance
+        goal = PoseStamped()
+        goal.header.frame_id = "map"
+        goal.pose.position.x = px
+        goal.pose.position.y = py
+        goal.pose.orientation = self._yaw_to_quaternion(yaw)
+        return self.move_to_pose(goal)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    def return_to_origin(self, inverse_orientation=False):
+        """Navigate back to the pose captured at task start (first get_current_pose)."""
+        if self._origin_pose is None:
+            CLog.nav(self.node, "ERROR", "return_to_origin: no origin captured yet")
+            return (Status.EXECUTION_ERROR, "No origin pose captured")
+        goal = copy.deepcopy(self._origin_pose)
+        goal.header.frame_id = goal.header.frame_id or "map"
+        if inverse_orientation:
+            yaw = self._yaw_from_quaternion(goal.pose.orientation) + math.pi
+            goal.pose.orientation = self._yaw_to_quaternion(yaw)
+        return self.move_to_pose(goal)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    def explore_zone(self, step):
+        """Move forward `step` meters along the current heading (incremental search)."""
+        status, cur = self.get_current_pose()
+        if status != Status.EXECUTION_SUCCESS or cur is None:
+            return (Status.EXECUTION_ERROR, "No current pose")
+        yaw = self._yaw_from_quaternion(cur.pose.orientation)
+        goal = PoseStamped()
+        goal.header.frame_id = "map"
+        goal.pose.position.x = cur.pose.position.x + step * math.cos(yaw)
+        goal.pose.position.y = cur.pose.position.y + step * math.sin(yaw)
+        goal.pose.orientation = cur.pose.orientation
+        return self.move_to_pose(goal)
 
 
 if __name__ == "__main__":

@@ -40,6 +40,8 @@ from frida_constants.navigation_constants import(
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
         NAV_QUERY_SERVICE,
+        GO_TO_POSE_SERVICE,
+        GET_ROBOT_POSE_SERVICE,
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
         UNDOCK_SERVICE,
@@ -52,7 +54,9 @@ from frida_interfaces.srv import (
         MapAreas,
         MoveLocation,
         NavQuery,
-        DockTable
+        DockTable,
+        GoToPose,
+        GetRobotPose,
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -615,6 +619,53 @@ class Nav_Central(Node):
         response.error = future[1]
         self.pause_slam()
         self.pause_nav2()
+        return response
+
+    def go_to_pose_callback(self, request, response):
+        """Navigate to an arbitrary map-frame pose, through the same omni goal
+        pipeline as go_to_area (retreat-if-docked, resume, clear costmaps, send goal)."""
+        self.nav_logger("info", "Go_To_Pose -> Starting navigation to pose")
+        self._retreat_if_docked()
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self.nav_logger("error", "Go_To_Pose -> Navigation not initialized")
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response
+        self._clear_costmaps()
+        goal = request.target_pose
+        if not goal.header.frame_id:
+            goal.header.frame_id = "map"
+        bt = request.behavior_tree if request.behavior_tree else None
+        ok, msg = self.send_nav_goal(goal, behaivor_tree=bt)
+        response.success = ok
+        response.error = msg
+        self.pause_slam()
+        self.pause_nav2()
+        return response
+
+    def get_robot_pose_callback(self, request, response):
+        """Return the current robot pose from TF (map -> base_link)."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(),
+                timeout=Duration(seconds=1.0))
+        except Exception as e:
+            self.nav_logger("warn", f"Get_Robot_Pose -> TF lookup failed: {e}")
+            response.success = False
+            response.error = f"TF lookup failed: {e}"
+            return response
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = tf.header.stamp
+        pose.pose.position.x = tf.transform.translation.x
+        pose.pose.position.y = tf.transform.translation.y
+        pose.pose.position.z = tf.transform.translation.z
+        pose.pose.orientation = tf.transform.rotation
+        response.success = True
+        response.pose = pose
+        response.error = ""
         return response
 
     def _pose_from_coords(self, coords):

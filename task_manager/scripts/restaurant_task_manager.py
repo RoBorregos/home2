@@ -195,15 +195,11 @@ class RestaurantTaskManager(Node):
 
         if self.current_state == RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON:
             self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
-            # Pause SLAM until the start button is pressed
-            self.subtask_manager.nav.pause_slam()
             Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.say("Waiting for start button to be pressed.")
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, restaurant task will begin now")
-            # Resume SLAM so it can start building the map
-            self.subtask_manager.nav.resume_slam()
             self.current_state = RestaurantTaskManager.TaskStates.START
 
         if self.current_state == RestaurantTaskManager.TaskStates.START:
