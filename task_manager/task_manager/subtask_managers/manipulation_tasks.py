@@ -11,7 +11,9 @@ control and provides a simple interface for the task manager to use.
 """
 
 import math
+from typing import Optional, Tuple
 
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from std_srvs.srv import SetBool
@@ -707,161 +709,6 @@ class ManipulationTasks:
         self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
-    def align_to_centroid_height(
-        self,
-        point: PointStamped,
-        pre_pose: str = "front_low_stare",
-        velocity: float = 0.2,
-        frame: str = "base_link",
-    ) -> int:
-        """Inclina joint2 hasta que `gripper_grasp_frame` quede a la z del
-        centroide 3D, y ajusta joint5 para mantener el eje de aproximación
-        horizontal. Joints 1, 3, 4 y 6 quedan lockeados en los valores de
-        `pre_pose` (por defecto `front_low_stare`).
-        """
-        from task_manager.utils.xarm_fk import (
-            J2_MAX,
-            J2_MIN,
-            J5_MAX,
-            J5_MIN,
-            fk_grasp_frame,
-            solve_j2_j5_for_height,
-        )
-
-        if point is None or point.header.frame_id == "":
-            Logger.error(self.node, "align_to_centroid_height: invalid point")
-            return Status.EXECUTION_ERROR
-
-        if (
-            self.move_joint_positions(named_position=pre_pose, velocity=0.3)
-            != Status.EXECUTION_SUCCESS
-        ):
-            Logger.error(self.node, f"Failed to move to pre-pose {pre_pose}")
-            return Status.EXECUTION_ERROR
-
-        rclpy.spin_once(self.node, timeout_sec=0.5)
-        current = self.get_joint_positions()
-        if not isinstance(current, dict) or "joint1" not in current:
-            Logger.error(self.node, f"align_to_centroid_height: bad joints {current}")
-            return Status.EXECUTION_ERROR
-        j1 = current["joint1"]
-        j2_seed = current["joint2"]
-        j3 = current["joint3"]
-        j4 = current["joint4"]
-        j5_seed = current["joint5"]
-        j6 = current["joint6"]
-
-        # Calibrate analytic FK against the live TF tree: the URDF defaults
-        # don't always match the calibrated kinematics that the robot's
-        # firmware injects via `kinematics_params`. With joints 3/4/6 locked,
-        # the residual z-offset is roughly constant across the run.
-        # This calibration is REQUIRED — no z_bias=0.0 fallback.
-        try:
-            tf_pre = self._tf_buffer.lookup_transform(
-                frame,
-                "gripper_grasp_frame",
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=2.0),
-            )
-            T_pre = fk_grasp_frame(j1, j2_seed, j3, j4, j5_seed, j6)
-            z_bias = tf_pre.transform.translation.z - T_pre[2, 3]
-            Logger.info(
-                self.node,
-                f"align_to_centroid_height: FK z={T_pre[2, 3]:.3f}, "
-                f"TF z={tf_pre.transform.translation.z:.3f}, "
-                f"z_bias={z_bias:+.3f} m",
-            )
-        except Exception as e:
-            Logger.error(
-                self.node,
-                f"align_to_centroid_height: TF lookup of gripper_grasp_frame "
-                f"failed ({e}); cannot calibrate z_bias. Aborting.",
-            )
-            return Status.EXECUTION_ERROR
-
-        try:
-            transform = self._tf_buffer.lookup_transform(
-                frame,
-                point.header.frame_id,
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=2.0),
-            )
-            point_in = do_transform_point(point, transform)
-        except Exception as e:
-            Logger.error(
-                self.node,
-                f"TF {point.header.frame_id} -> {frame} failed: {e}",
-            )
-            return Status.EXECUTION_ERROR
-
-        cz = point_in.point.z
-        target_z_for_fk = cz - z_bias
-        Logger.info(
-            self.node,
-            f"align_to_centroid_height: target z={cz:.3f} in {frame} "
-            f"(centroid was {point.point.x:.3f},{point.point.y:.3f},{point.point.z:.3f} "
-            f"in {point.header.frame_id}); FK-space target={target_z_for_fk:.3f}",
-        )
-
-        j2, j5, reached = solve_j2_j5_for_height(
-            j1=j1,
-            j3=j3,
-            j4=j4,
-            j6=j6,
-            target_z=target_z_for_fk,
-            j2_seed=max(J2_MIN, min(J2_MAX, j2_seed)),
-            j5_seed=max(J5_MIN, min(J5_MAX, j5_seed)),
-        )
-        if not reached or j2 is None or j5 is None:
-            # Re-run a one-off sweep to report the achievable range so the
-            # operator knows by how much we missed.
-            try:
-                import numpy as _np
-
-                _sweep = _np.linspace(J2_MIN, J2_MAX, 60)
-                _zs = [
-                    fk_grasp_frame(j1, float(v), j3, j4, j5_seed, j6)[2, 3] + z_bias for v in _sweep
-                ]
-                reachable_range = (min(_zs), max(_zs))
-            except Exception:
-                reachable_range = (float("nan"), float("nan"))
-            Logger.error(
-                self.node,
-                f"align_to_centroid_height: target z={cz:.3f} m unreachable "
-                f"with j3,j4,j6 locked at pre-pose '{pre_pose}'. "
-                f"Reachable z range in base_link ≈ "
-                f"[{reachable_range[0]:.3f}, {reachable_range[1]:.3f}] m. "
-                "Aborting (no silent clamping).",
-            )
-            return Status.EXECUTION_ERROR
-        if not (J2_MIN <= j2 <= J2_MAX and J5_MIN <= j5 <= J5_MAX):
-            Logger.error(
-                self.node,
-                f"align_to_centroid_height: solved joints out of soft limits "
-                f"j2={j2:.3f} rad (allowed [{J2_MIN:.3f}, {J2_MAX:.3f}]), "
-                f"j5={j5:.3f} rad (allowed [{J5_MIN:.3f}, {J5_MAX:.3f}]). Aborting.",
-            )
-            return Status.EXECUTION_ERROR
-
-        T = fk_grasp_frame(j1, j2, j3, j4, j5, j6)
-        Logger.info(
-            self.node,
-            f"Solved j2={j2:.3f} rad, j5={j5:.3f} rad -> FK z={T[2, 3]:.3f} "
-            f"(FK-target {target_z_for_fk:.3f}, world-target {cz:.3f}, "
-            f"approach_x={T[0, 2]:+.2f} approach_z={T[2, 2]:+.2f})",
-        )
-
-        target_joints = {
-            "joint1": j1,
-            "joint2": j2,
-            "joint3": j3,
-            "joint4": j4,
-            "joint5": j5,
-            "joint6": j6,
-        }
-        return self.move_joint_positions(joint_positions=target_joints, velocity=velocity)
-
-    @mockable(return_value=Status.EXECUTION_SUCCESS)
     def align_arm_toward_centroid(
         self,
         point: PointStamped,
@@ -869,20 +716,12 @@ class ManipulationTasks:
         velocity: float = 0.2,
         frame: str = "base_link",
     ) -> int:
-        """Move to `pre_pose` then rotate j1, j2 and j5 so the arm and gripper
-        approach axis both point at `point`. j3, j4, j6 stay locked at the
-        pre-pose values. Returns `EXECUTION_ERROR` if no positive-cosine
-        solution exists or if the solved joints exceed soft limits.
+        """Move to `pre_pose` then rotate j1, j2 and j5 so the arm shaft AND
+        the gripper approach axis both point at `point`. j3, j4, j6 stay
+        locked at the pre-pose values. Returns `EXECUTION_ERROR` if no
+        positive-cosine solution exists or if the solved joints would exceed
+        the soft joint limits.
         """
-        from task_manager.utils.xarm_fk import (
-            J2_MAX,
-            J2_MIN,
-            J5_MAX,
-            J5_MIN,
-            fk_grasp_frame,
-            point_arm_at_centroid,
-        )
-
         if point is None or point.header.frame_id == "":
             Logger.error(self.node, "align_arm_toward_centroid: invalid point")
             return Status.EXECUTION_ERROR
@@ -918,11 +757,7 @@ class ManipulationTasks:
             Logger.error(self.node, f"TF {point.header.frame_id} -> {frame} failed: {e}")
             return Status.EXECUTION_ERROR
 
-        cx, cy, cz = (
-            float(point_in.point.x),
-            float(point_in.point.y),
-            float(point_in.point.z),
-        )
+        cx, cy, cz = float(point_in.point.x), float(point_in.point.y), float(point_in.point.z)
         Logger.info(
             self.node,
             f"align_arm_toward_centroid: centroid in {frame} = "
@@ -930,7 +765,7 @@ class ManipulationTasks:
             f"(j3,j4,j5,j6) = ({j3:.2f}, {j4:.2f}, {j5:.2f}, {j6:.2f}) rad",
         )
 
-        j1, j2, j5_solved, info = point_arm_at_centroid(
+        j1, j2, j5_solved, info = _solve_arrow_alignment(
             (cx, cy, cz),
             j3_lock=j3,
             j4_lock=j4,
@@ -946,7 +781,6 @@ class ManipulationTasks:
             )
             return Status.EXECUTION_ERROR
 
-        # Wrap j1 into the xArm joint1 hardware range (~[-π, π]).
         if j1 > math.pi:
             j1 -= 2 * math.pi
         elif j1 < -math.pi:
@@ -955,31 +789,29 @@ class ManipulationTasks:
         if not (-math.pi <= j1 <= math.pi):
             Logger.error(self.node, f"j1={j1:.3f} rad out of [-π, π]. Aborting.")
             return Status.EXECUTION_ERROR
-        if not (J2_MIN <= j2 <= J2_MAX):
+        if not (_J2_MIN <= j2 <= _J2_MAX):
             Logger.error(
                 self.node,
-                f"j2={j2:.3f} rad out of [{J2_MIN:.3f}, {J2_MAX:.3f}]. Aborting.",
+                f"j2={j2:.3f} rad out of [{_J2_MIN:.3f}, {_J2_MAX:.3f}]. Aborting.",
             )
             return Status.EXECUTION_ERROR
-        if not (J5_MIN <= j5_solved <= J5_MAX):
+        if not (_J5_MIN <= j5_solved <= _J5_MAX):
             Logger.error(
                 self.node,
-                f"j5={j5_solved:.3f} rad out of [{J5_MIN:.3f}, {J5_MAX:.3f}]. Aborting.",
+                f"j5={j5_solved:.3f} rad out of [{_J5_MIN:.3f}, {_J5_MAX:.3f}]. Aborting.",
             )
             return Status.EXECUTION_ERROR
 
-        T = fk_grasp_frame(j1, j2, j3, j4, j5_solved, j6)
-        achieved = T[:3, 3]
-        approach = T[:3, 2]
+        T = _fk_grasp_frame(j1, j2, j3, j4, j5_solved, j6)
+        tip, approach = T[:3, 3], T[:3, 2]
         Logger.info(
             self.node,
             f"Solved arrow alignment: "
             f"j1={math.degrees(j1):+.1f}°, j2={math.degrees(j2):+.1f}°, "
             f"j5={math.degrees(j5_solved):+.1f}°; tip ~"
-            f"({achieved[0]:.3f}, {achieved[1]:.3f}, {achieved[2]:.3f}); "
+            f"({tip[0]:.3f}, {tip[1]:.3f}, {tip[2]:.3f}); "
             f"approach ({approach[0]:+.2f}, {approach[1]:+.2f}, {approach[2]:+.2f}); "
-            f"arm_cos={info['arm_cos']:.3f}, "
-            f"approach_cos={info['approach_cos']:.3f}",
+            f"arm_cos={info['arm_cos']:.3f}, approach_cos={info['approach_cos']:.3f}",
         )
 
         target_joints = {
@@ -1305,6 +1137,180 @@ class ManipulationTasks:
             return Status.EXECUTION_SUCCESS
         Logger.error(self.node, "Place in point failed")
         return Status.EXECUTION_ERROR
+
+
+# ---------------------------------------------------------------------------
+# Analytic xArm6 FK + arrow-shape alignment solver (used by
+# `align_arm_toward_centroid`). All constants come from the xArm6 URDF and
+# the FRIDA mount; predicting the grasp frame in `base_link` here avoids a
+# round-trip through MoveIt for every solver iteration.
+# ---------------------------------------------------------------------------
+
+_XARM_MOUNT_XYZ = (0.036105613, 0.0, 0.441)
+_XARM_MOUNT_YAW = math.pi / 2
+_J1_OFFSET = (0.0, 0.0, 0.267)
+_J3_OFFSET = (0.0535, -0.2845, 0.0)
+_J4_OFFSET = (0.0775, 0.3425, 0.0)
+_J6_OFFSET = (0.076, 0.097, 0.0)
+_GRASP_YAW = -math.pi / 4
+
+# Soft limits stay inside xArm6 hardware (j2 ∈ [-118°, +120°],
+# j5 ∈ [-97°, +178°]) so the solver never commands into a hard stop.
+_J2_MIN = math.radians(-110)
+_J2_MAX = math.radians(90)
+_J5_MIN = math.radians(-90)
+_J5_MAX = math.radians(115)
+
+# joint2 axis origin in base_link (xarm_base translation + joint1 z offset).
+_SHOULDER_IN_BASE = np.array(
+    [_XARM_MOUNT_XYZ[0], _XARM_MOUNT_XYZ[1], _XARM_MOUNT_XYZ[2] + _J1_OFFSET[2]]
+)
+
+
+def _trans(x: float, y: float, z: float) -> np.ndarray:
+    T = np.eye(4)
+    T[0, 3], T[1, 3], T[2, 3] = x, y, z
+    return T
+
+
+def _rot(axis: str, a: float) -> np.ndarray:
+    T = np.eye(4)
+    c, s = math.cos(a), math.sin(a)
+    if axis == "x":
+        T[1, 1], T[1, 2], T[2, 1], T[2, 2] = c, -s, s, c
+    elif axis == "y":
+        T[0, 0], T[0, 2], T[2, 0], T[2, 2] = c, s, -s, c
+    else:
+        T[0, 0], T[0, 1], T[1, 0], T[1, 1] = c, -s, s, c
+    return T
+
+
+def _fk_grasp_frame(j1: float, j2: float, j3: float, j4: float, j5: float, j6: float) -> np.ndarray:
+    """4x4 transform of `gripper_grasp_frame` expressed in `base_link`."""
+    T = _trans(*_XARM_MOUNT_XYZ) @ _rot("z", _XARM_MOUNT_YAW)
+    T = T @ _trans(*_J1_OFFSET) @ _rot("z", j1)
+    T = T @ _rot("x", -math.pi / 2) @ _rot("z", j2)
+    T = T @ _trans(*_J3_OFFSET) @ _rot("z", j3)
+    T = T @ _trans(*_J4_OFFSET) @ _rot("x", -math.pi / 2) @ _rot("z", j4)
+    T = T @ _rot("x", math.pi / 2) @ _rot("z", j5)
+    T = T @ _trans(*_J6_OFFSET) @ _rot("x", -math.pi / 2) @ _rot("z", j6)
+    T = T @ _rot("z", _GRASP_YAW)
+    return T
+
+
+def _best_alignment(direction_fn, target_unit: np.ndarray, lo: float, hi: float, samples: int):
+    """Pick the angle in [lo, hi] whose `direction_fn` has max cosine with
+    `target_unit`. Returns (best_angle, best_cos, best_dir, extra_metric).
+    """
+    best_v: Optional[float] = None
+    best_cos = -math.inf
+    best_dir = None
+    extra = 0.0
+    for v in np.linspace(lo, hi, samples):
+        direction, magnitude = direction_fn(float(v))
+        if direction is None:
+            continue
+        cos = float(np.dot(direction, target_unit))
+        if cos > best_cos:
+            best_cos = cos
+            best_v = float(v)
+            best_dir = direction
+            extra = magnitude
+    return best_v, best_cos, best_dir, extra
+
+
+def _solve_arrow_alignment(
+    centroid_xyz: Tuple[float, float, float],
+    j3_lock: float,
+    j4_lock: float,
+    j5_seed: float,
+    j6_lock: float,
+    sweep_points: int = 240,
+    iterations: int = 3,
+) -> Tuple[Optional[float], Optional[float], Optional[float], dict]:
+    """Solve (j1, j2, j5) so the arm shaft AND the gripper approach axis both
+    point at `centroid_xyz` (in `base_link`). j3, j4, j6 stay locked.
+
+    Iterates j2 ↔ j5 because changing j5 shifts the wrist by ~12 cm, which
+    desyncs the arm-shaft direction; re-solving j2 corrects it.
+    """
+    target_vec = np.array(centroid_xyz, dtype=float) - _SHOULDER_IN_BASE
+    target_dist = float(np.linalg.norm(target_vec))
+    if target_dist < 1e-6:
+        return None, None, None, {"error": "centroid coincides with shoulder"}
+    target_unit = target_vec / target_dist
+
+    azimuth = math.atan2(target_unit[1], target_unit[0])
+    j1 = -math.pi / 2 + azimuth
+
+    def arm_dir(j2: float, j5: float):
+        T = _fk_grasp_frame(j1, j2, j3_lock, j4_lock, j5, j6_lock)
+        v = T[:3, 3] - _SHOULDER_IN_BASE
+        d = float(np.linalg.norm(v))
+        return (v / d, d) if d > 1e-6 else (None, 0.0)
+
+    def approach_dir(j2: float, j5: float):
+        T = _fk_grasp_frame(j1, j2, j3_lock, j4_lock, j5, j6_lock)
+        n = float(np.linalg.norm(T[:3, 2]))
+        return (T[:3, 2] / n, 0.0) if n > 1e-6 else (None, 0.0)
+
+    j5_iter = float(j5_seed)
+    j2_iter: Optional[float] = None
+    arm_cos = approach_cos = -math.inf
+    arm_dir_v = approach_dir_v = None
+    arm_reach = 0.0
+
+    for _ in range(max(1, iterations)):
+        j2_iter, arm_cos, arm_dir_v, arm_reach = _best_alignment(
+            lambda v: arm_dir(v, j5_iter),
+            target_unit,
+            _J2_MIN,
+            _J2_MAX,
+            sweep_points,
+        )
+        if j2_iter is None or arm_cos < 0.0:
+            return (
+                None,
+                None,
+                None,
+                {
+                    "azimuth_deg": math.degrees(azimuth),
+                    "target_dist": target_dist,
+                    "arm_cos": arm_cos,
+                    "error": "no j2 gives forward arm alignment",
+                },
+            )
+        j5_iter, approach_cos, approach_dir_v, _ = _best_alignment(
+            lambda v: approach_dir(j2_iter, v),
+            target_unit,
+            _J5_MIN,
+            _J5_MAX,
+            sweep_points,
+        )
+        if j5_iter is None or approach_cos < 0.0:
+            return (
+                None,
+                None,
+                None,
+                {
+                    "azimuth_deg": math.degrees(azimuth),
+                    "target_dist": target_dist,
+                    "arm_cos": arm_cos,
+                    "approach_cos": approach_cos,
+                    "error": "no j5 gives forward gripper approach",
+                },
+            )
+
+    info = {
+        "azimuth_deg": math.degrees(azimuth),
+        "target_dist": target_dist,
+        "arm_cos": arm_cos,
+        "arm_reach_at_best": arm_reach,
+        "approach_cos": approach_cos,
+        "arm_dir": arm_dir_v.tolist() if arm_dir_v is not None else None,
+        "approach_dir": approach_dir_v.tolist() if approach_dir_v is not None else None,
+    }
+    return float(j1), float(j2_iter), float(j5_iter), info
 
 
 if __name__ == "__main__":
