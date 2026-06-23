@@ -51,7 +51,9 @@ POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 # nearest lidar reading in that direction is N cm away). Same layering as docking:
 #   task_manager -> APPROACH_DIRECTION_SERVICE (nav_central, public)
 #                -> APPROACH_DIRECTION_EXEC_SERVICE (approach_direction.py worker)
-APPROACH_DIRECTION_SERVICE = "/navigation/approach_direction"  # frida_interfaces/ApproachDirection (public)
+APPROACH_DIRECTION_SERVICE = (
+    "/navigation/approach_direction"  # frida_interfaces/ApproachDirection (public)
+)
 APPROACH_DIRECTION_EXEC_SERVICE = (
     "/navigation/approach_direction_exec"  # ApproachDirection: worker control loop
 )

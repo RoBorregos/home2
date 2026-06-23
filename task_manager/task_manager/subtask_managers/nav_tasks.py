@@ -60,7 +60,10 @@ class NavigationTasks:
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
-                "approach_direction_srv": {"client": self.approach_direction_srv, "type": "service"},
+                "approach_direction_srv": {
+                    "client": self.approach_direction_srv,
+                    "type": "service",
+                },
             },
         }
 
@@ -264,8 +267,7 @@ class NavigationTasks:
         direction: "forwards" | "backwards" | "left" | "right"
         distance_cm: target clearance in centimeters.
         """
-        CLog.nav(self.node, "MOVE",
-                 f"Requesting approach {direction} until {distance_cm} cm")
+        CLog.nav(self.node, "MOVE", f"Requesting approach {direction} until {distance_cm} cm")
         request = ApproachDirection.Request()
         request.direction = str(direction)
         request.distance_cm = float(distance_cm)
