@@ -177,13 +177,11 @@ class TrashDetectionNode(Node):
         return self.build_point_stamped(point3d), point2d
 
     def _deproject_normalized_optical(self, nx, ny):
-        """Same as `_deproject_normalized` but returns the PointStamped in the
-        raw optical-frame convention (x=right, y=down, z=forward) so TF lookups
-        from CAMERA_FRAME apply the correct rotation downstream.
+        """Deproject one normalized pixel and return a PointStamped in the
+        raw optical-frame convention (x=right, y=down, z=forward).
         """
-        # Camera_info and depth image can disagree on resolution (ZED reports
-        # camera_info at RGB size, but depth may be downsampled). Clamp to the
-        # smaller of the two so we never index out of bounds on the depth image.
+        # ZED publishes camera_info at the RGB resolution but the depth image
+        # can be downsampled; clamp to whichever is smaller.
         depth_h, depth_w = self.depth_image.shape[:2]
         max_w = min(self.imageInfo.width, depth_w) - 1
         max_h = min(self.imageInfo.height, depth_h) - 1
@@ -191,12 +189,7 @@ class TrashDetectionNode(Node):
             min(max(int(nx * self.imageInfo.width), 0), max_w),
             min(max(int(ny * self.imageInfo.height), 0), max_h),
         )
-        # NOTE: calculations.get_depth has an internal axis swap that causes it
-        # to use the input's first component as row and the second as column,
-        # which is the opposite of the (col, row) convention point2d uses. Pass
-        # it swapped here so the spiral search stays inside the depth image
-        # bounds for non-square frames (otherwise large col indices crash with
-        # IndexError on axis 0). deproject_pixel_to_point expects (col, row).
+        # calculations.get_depth swaps axes internally — pass (row, col).
         depth = get_depth(self.depth_image, (point2d[1], point2d[0]))
         point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
         ps = PointStamped()
@@ -208,22 +201,15 @@ class TrashDetectionNode(Node):
         return ps, point2d
 
     def get_moondream_point_3d(self, req, res):
-        """Ask moondream for a bounding box for `req.subject`, crop the depth
-        ROI, deproject every valid pixel inside the bbox to 3D, and return the
-        MEAN of that point cloud as a `PointStamped` in `CAMERA_FRAME`.
-
-        Hard failures (no detection, missing camera info / depth, too few
-        valid depth pixels in the ROI) return `success=False` and publish a
-        red "NO DETECTION" debug frame. There are NO silent fallbacks —
-        callers must abort the move rather than act on a bogus centroid.
+        """Ask moondream for a bbox, deproject every valid depth pixel inside
+        it, and return the mean of that pointcloud in `CAMERA_FRAME`.
+        Returns `success=False` (no silent fallback) and publishes a red
+        debug frame when the bbox is missing or the ROI has too few depth
+        samples.
         """
         res.success = False
-
-        if self.imageInfo is None:
-            self.get_logger().warn("Cannot compute 3D centroid without camera info")
-            return res
-        if self.depth_image is None:
-            self.get_logger().warn("Cannot compute 3D centroid without depth image")
+        if self.imageInfo is None or self.depth_image is None:
+            self.get_logger().warn("Centroid request before camera_info / depth ready")
             return res
 
         bbox = self._call_moondream_bbox(req.subject)
@@ -231,8 +217,6 @@ class TrashDetectionNode(Node):
             self._publish_failure_debug(req.subject, "NO DETECTION")
             return res
 
-        # Clamp bbox (normalized) to both RGB and depth dims so we never index
-        # out of bounds on the depth image (which can be downsampled vs RGB).
         depth_h, depth_w = self.depth_image.shape[:2]
         w = min(self.imageInfo.width, depth_w)
         h = min(self.imageInfo.height, depth_h)
@@ -256,7 +240,6 @@ class TrashDetectionNode(Node):
             )
             return res
 
-        # Vectorised deprojection of every valid pixel in the ROI.
         v_local, u_local = np.where(valid)
         z = roi[v_local, u_local].astype(np.float64)
         u_global = u_local.astype(np.float64) + xmin
@@ -265,7 +248,6 @@ class TrashDetectionNode(Node):
         cx_i, cy_i = self.imageInfo.k[2], self.imageInfo.k[5]
         X = (u_global - cx_i) * z / fx
         Y = (v_global - cy_i) * z / fy
-        # Mean in camera frame (optical convention: x=right, y=down, z=forward)
         Xc, Yc, Zc = float(np.mean(X)), float(np.mean(Y)), float(np.mean(z))
 
         ps = PointStamped()
@@ -277,7 +259,6 @@ class TrashDetectionNode(Node):
         res.point = ps
         res.success = True
 
-        # Project the centroid back to a pixel for the debug marker.
         u_centroid = int(round(Xc * fx / Zc + cx_i)) if Zc > 0 else (xmin + xmax) // 2
         v_centroid = int(round(Yc * fy / Zc + cy_i)) if Zc > 0 else (ymin + ymax) // 2
         self.get_logger().info(
@@ -291,9 +272,7 @@ class TrashDetectionNode(Node):
         return res
 
     def _call_moondream_bbox(self, subject):
-        """Call `/vision/moondream_bbox` and return a dict
-        {xmin, ymin, xmax, ymax} normalized in [0, 1], or None on failure.
-        """
+        """Return the bbox dict from `/vision/moondream_bbox`, or None."""
         if not self.moondream_bbox_client.wait_for_service(timeout_sec=2.0):
             self.get_logger().error("moondream_bbox service not available")
             return None
@@ -316,8 +295,6 @@ class TrashDetectionNode(Node):
         }
 
     def _publish_failure_debug(self, subject, message, bbox_px=None):
-        """Publish a debug image marking the failure, so an operator can see
-        what the camera saw at the moment the centroid call failed."""
         if self.image is None:
             return
         debug = self.image.copy()
@@ -361,8 +338,13 @@ class TrashDetectionNode(Node):
         if n_valid is not None:
             label_parts.append(f"N={n_valid}")
         cv2.putText(
-            debug, "  ".join(label_parts), (10, 25),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 1,
+            debug,
+            "  ".join(label_parts),
+            (10, 25),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.6,
+            (0, 255, 0),
+            1,
         )
 
         try:

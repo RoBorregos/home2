@@ -157,13 +157,9 @@ class MoonDreamModel:
         return points_out
 
     def find_object_bbox(self, encoded_image_data, subject):
-        """Run moondream `detect()` for `subject` and return the largest match
-        as a normalized bbox dict (x_min, y_min, x_max, y_max in [0, 1]).
-        Returns None if nothing is detected.
-        """
+        """Largest normalized bbox from moondream `detect()`, or None."""
         encoded_image = pickle.loads(encoded_image_data)
         result = self.model.detect(encoded_image, subject)
-
         objects = (
             result["objects"]
             if isinstance(result, dict) and "objects" in result
@@ -172,21 +168,21 @@ class MoonDreamModel:
         if not objects:
             return None
 
-        # Largest by area; the drum / target subject should dominate the bbox.
+        def _bounds(obj):
+            return (
+                obj.get("x_min", obj.get("xmin")),
+                obj.get("y_min", obj.get("ymin")),
+                obj.get("x_max", obj.get("xmax")),
+                obj.get("y_max", obj.get("ymax")),
+            )
+
         def _area(obj):
-            x_min = obj.get("x_min", obj.get("xmin"))
-            x_max = obj.get("x_max", obj.get("xmax"))
-            y_min = obj.get("y_min", obj.get("ymin"))
-            y_max = obj.get("y_max", obj.get("ymax"))
+            x_min, y_min, x_max, y_max = _bounds(obj)
             if None in (x_min, x_max, y_min, y_max):
                 return -1.0
             return float((x_max - x_min) * (y_max - y_min))
 
-        best = max(objects, key=_area)
-        x_min = best.get("x_min", best.get("xmin"))
-        x_max = best.get("x_max", best.get("xmax"))
-        y_min = best.get("y_min", best.get("ymin"))
-        y_max = best.get("y_max", best.get("ymax"))
+        x_min, y_min, x_max, y_max = _bounds(max(objects, key=_area))
         if None in (x_min, x_max, y_min, y_max):
             return None
         return {

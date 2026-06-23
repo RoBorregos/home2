@@ -10,6 +10,8 @@ This node abstracts away the low-level details of the robot's
 control and provides a simple interface for the task manager to use.
 """
 
+import math
+
 import rclpy
 from rclpy.node import Node
 from std_srvs.srv import SetBool
@@ -795,10 +797,10 @@ class ManipulationTasks:
             # operator knows by how much we missed.
             try:
                 import numpy as _np
+
                 _sweep = _np.linspace(J2_MIN, J2_MAX, 60)
                 _zs = [
-                    fk_grasp_frame(j1, float(v), j3, j4, j5_seed, j6)[2, 3] + z_bias
-                    for v in _sweep
+                    fk_grasp_frame(j1, float(v), j3, j4, j5_seed, j6)[2, 3] + z_bias for v in _sweep
                 ]
                 reachable_range = (min(_zs), max(_zs))
             except Exception:
@@ -835,6 +837,137 @@ class ManipulationTasks:
             "joint3": j3,
             "joint4": j4,
             "joint5": j5,
+            "joint6": j6,
+        }
+        return self.move_joint_positions(joint_positions=target_joints, velocity=velocity)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    def align_arm_toward_centroid(
+        self,
+        point: PointStamped,
+        pre_pose: str = "washing_machine_arrow_pose",
+        velocity: float = 0.2,
+        frame: str = "base_link",
+    ) -> int:
+        """Move to `pre_pose` then rotate j1, j2 and j5 so the arm and gripper
+        approach axis both point at `point`. j3, j4, j6 stay locked at the
+        pre-pose values. Returns `EXECUTION_ERROR` if no positive-cosine
+        solution exists or if the solved joints exceed soft limits.
+        """
+        from task_manager.utils.xarm_fk import (
+            J2_MAX,
+            J2_MIN,
+            J5_MAX,
+            J5_MIN,
+            fk_grasp_frame,
+            point_arm_at_centroid,
+        )
+
+        if point is None or point.header.frame_id == "":
+            Logger.error(self.node, "align_arm_toward_centroid: invalid point")
+            return Status.EXECUTION_ERROR
+
+        if (
+            self.move_joint_positions(named_position=pre_pose, velocity=0.3)
+            != Status.EXECUTION_SUCCESS
+        ):
+            Logger.error(self.node, f"Failed to move to pre-pose {pre_pose}")
+            return Status.EXECUTION_ERROR
+
+        rclpy.spin_once(self.node, timeout_sec=0.5)
+        current = self.get_joint_positions()
+        if not isinstance(current, dict) or "joint3" not in current:
+            Logger.error(self.node, f"align_arm_toward_centroid: bad joints {current}")
+            return Status.EXECUTION_ERROR
+        j3, j4, j5, j6 = (
+            current["joint3"],
+            current["joint4"],
+            current["joint5"],
+            current["joint6"],
+        )
+
+        try:
+            transform = self._tf_buffer.lookup_transform(
+                frame,
+                point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            point_in = do_transform_point(point, transform)
+        except Exception as e:
+            Logger.error(self.node, f"TF {point.header.frame_id} -> {frame} failed: {e}")
+            return Status.EXECUTION_ERROR
+
+        cx, cy, cz = (
+            float(point_in.point.x),
+            float(point_in.point.y),
+            float(point_in.point.z),
+        )
+        Logger.info(
+            self.node,
+            f"align_arm_toward_centroid: centroid in {frame} = "
+            f"({cx:.3f}, {cy:.3f}, {cz:.3f}); locked "
+            f"(j3,j4,j5,j6) = ({j3:.2f}, {j4:.2f}, {j5:.2f}, {j6:.2f}) rad",
+        )
+
+        j1, j2, j5_solved, info = point_arm_at_centroid(
+            (cx, cy, cz),
+            j3_lock=j3,
+            j4_lock=j4,
+            j5_seed=j5,
+            j6_lock=j6,
+        )
+        if j1 is None or j2 is None or j5_solved is None:
+            Logger.error(
+                self.node,
+                f"align_arm_toward_centroid: cannot align; "
+                f"arm_cos={info.get('arm_cos'):.3f}, "
+                f"approach_cos={info.get('approach_cos'):.3f}. Aborting.",
+            )
+            return Status.EXECUTION_ERROR
+
+        # Wrap j1 into the xArm joint1 hardware range (~[-π, π]).
+        if j1 > math.pi:
+            j1 -= 2 * math.pi
+        elif j1 < -math.pi:
+            j1 += 2 * math.pi
+
+        if not (-math.pi <= j1 <= math.pi):
+            Logger.error(self.node, f"j1={j1:.3f} rad out of [-π, π]. Aborting.")
+            return Status.EXECUTION_ERROR
+        if not (J2_MIN <= j2 <= J2_MAX):
+            Logger.error(
+                self.node,
+                f"j2={j2:.3f} rad out of [{J2_MIN:.3f}, {J2_MAX:.3f}]. Aborting.",
+            )
+            return Status.EXECUTION_ERROR
+        if not (J5_MIN <= j5_solved <= J5_MAX):
+            Logger.error(
+                self.node,
+                f"j5={j5_solved:.3f} rad out of [{J5_MIN:.3f}, {J5_MAX:.3f}]. Aborting.",
+            )
+            return Status.EXECUTION_ERROR
+
+        T = fk_grasp_frame(j1, j2, j3, j4, j5_solved, j6)
+        achieved = T[:3, 3]
+        approach = T[:3, 2]
+        Logger.info(
+            self.node,
+            f"Solved arrow alignment: "
+            f"j1={math.degrees(j1):+.1f}°, j2={math.degrees(j2):+.1f}°, "
+            f"j5={math.degrees(j5_solved):+.1f}°; tip ~"
+            f"({achieved[0]:.3f}, {achieved[1]:.3f}, {achieved[2]:.3f}); "
+            f"approach ({approach[0]:+.2f}, {approach[1]:+.2f}, {approach[2]:+.2f}); "
+            f"arm_cos={info['arm_cos']:.3f}, "
+            f"approach_cos={info['approach_cos']:.3f}",
+        )
+
+        target_joints = {
+            "joint1": j1,
+            "joint2": j2,
+            "joint3": j3,
+            "joint4": j4,
+            "joint5": j5_solved,
             "joint6": j6,
         }
         return self.move_joint_positions(joint_positions=target_joints, velocity=velocity)

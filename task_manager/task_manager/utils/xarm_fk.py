@@ -1,10 +1,9 @@
-"""Forward kinematics + bisection helpers for xArm6 + FRIDA mount.
+"""Analytic FK for the xArm6 mounted on the FRIDA base.
 
-Shared between the washing-machine alignment routine in
-`ManipulationTasks.align_to_centroid_height` and its integration / e2e tests.
-The transforms come straight from the URDF
-(robot_description/frida_description/urdf/xarm/spherized_xarm/xarm6.urdf
- + FRIDA mount + gripper_grasp_frame).
+All constants come from robot_description/.../xarm6.urdf (and the FRIDA mount
++ gripper_grasp_frame). Used by `align_to_centroid_height` and
+`align_arm_toward_centroid` to predict the grasp frame in `base_link` without
+round-tripping through MoveIt.
 """
 
 from __future__ import annotations
@@ -14,25 +13,19 @@ from typing import Callable, Optional, Tuple
 
 import numpy as np
 
-# base_link -> xarm_base: trans(0.0361, 0, 0.441), rpy=(0, 0, pi/2)
 XARM_MOUNT_XYZ = (0.036105613, 0.0, 0.441)
 XARM_MOUNT_YAW = math.pi / 2
-# xarm_base -> link1 (joint1 axis Z): trans(0, 0, 0.267)
 J1_OFFSET = (0.0, 0.0, 0.267)
-# link2 -> link3 (joint3 axis Z): trans(0.0535, -0.2845, 0)
 J3_OFFSET = (0.0535, -0.2845, 0.0)
-# link3 -> link4: trans(0.0775, 0.3425, 0), rpy=(-pi/2, 0, 0)
 J4_OFFSET = (0.0775, 0.3425, 0.0)
-# link5 -> link6: trans(0.076, 0.097, 0), rpy=(-pi/2, 0, 0)
 J6_OFFSET = (0.076, 0.097, 0.0)
-# link_eef -> gripper_grasp_frame: rpy=(0, 0, -pi/4)
 GRASP_YAW = -math.pi / 4
 
-# Soft limits keep the solver away from hard joint stops while still covering
-# the full reach needed for the washing-machine opening (~30 cm to ~110 cm).
+# Soft limits stay inside the xArm6 hardware range so the solver never
+# commands into a hard stop. Hardware: j2 ∈ [-118°, +120°], j5 ∈ [-97°, +178°].
 J2_MIN = math.radians(-110)
-J2_MAX = math.radians(20)
-J5_MIN = math.radians(-115)
+J2_MAX = math.radians(90)
+J5_MIN = math.radians(-90)
 J5_MAX = math.radians(115)
 
 
@@ -94,42 +87,31 @@ def bisect(
     return 0.5 * (lo + hi)
 
 
-def _solve_j5_horizontal(j1: float, j2: float, j3: float, j4: float, j6: float) -> float:
-    """j5 such that gripper approach axis is horizontal AND points forward.
+def _solve_j5_horizontal(j1: float, j2: float, j3: float, j4: float, j6: float) -> Optional[float]:
+    """j5 such that the gripper approach axis is horizontal AND forward.
 
-    The constraint T[2,2] == 0 has two solutions in [J5_MIN, J5_MAX]: one with
-    approach axis pointing +X of base (forward, desired) and one pointing -X /
-    -Z (backward/down). We sweep the range, score each candidate by
-    `score = (T[0,2] > 0) * 1 - |T[2,2]|`, and pick the best — so the
-    forward-pointing branch wins even when both are near-horizontal.
+    T[2,2] == 0 has two roots in [J5_MIN, J5_MAX]; the forward one (T[0,2] > 0)
+    is selected via a discrete sweep, then refined with a tight bisection so
+    the refinement cannot jump branches.
     """
 
     def fk(j5: float) -> np.ndarray:
         return fk_grasp_frame(j1, j2, j3, j4, j5, j6)
 
-    sweep = np.linspace(J5_MIN, J5_MAX, 121)
     best_j5 = None
     best_score = -math.inf
-    has_forward = False
-    for v in sweep:
+    for v in np.linspace(J5_MIN, J5_MAX, 121):
         T = fk(float(v))
-        # Reject any candidate that does NOT point forward (T[0,2] > 0). No
-        # silent acceptance of a backwards/down gripper.
         if T[0, 2] <= 0.0:
             continue
-        has_forward = True
         score = -abs(T[2, 2])
         if score > best_score:
             best_score = score
             best_j5 = float(v)
 
-    if not has_forward or best_j5 is None:
-        # Nothing in [J5_MIN, J5_MAX] yields a forward-pointing approach for
-        # this (j1, j2, j3, j4, j6) configuration. Caller must abort.
+    if best_j5 is None:
         return None
 
-    # Refine around the best candidate by bisecting on T[2,2]=0 over a tight
-    # window — this keeps us on the chosen (forward) branch.
     window = math.radians(20.0)
     lo = max(J5_MIN, best_j5 - window)
     hi = min(J5_MAX, best_j5 + window)
@@ -147,14 +129,12 @@ def _solve_j2_for_height(
     j5: float,
     j6: float,
     target_z: float,
-) -> Tuple[float, bool]:
-    """j2 such that gripper_grasp_frame.z == target_z. Returns (j2, reached).
+) -> Tuple[Optional[float], bool]:
+    """j2 such that gripper_grasp_frame.z == target_z.
 
-    The wrist-z vs j2 curve has a peak (around j2 ≈ -45° for j3=-90° locked).
-    For any target below the peak there are TWO roots: one on the
-    "arm folded back" side (smaller j2) and one on the "arm extended forward"
-    side (larger j2). We always pick the LARGER-j2 root so the brazo extends
-    forward instead of folding back.
+    With j3=-90° (typical lock), wrist-z vs j2 is unimodal with a peak around
+    j2≈-45°, so a target below the peak has two roots. We always pick the
+    higher j2 (arm extended forward, not folded back).
     """
 
     def f(j2: float) -> float:
@@ -162,24 +142,17 @@ def _solve_j2_for_height(
 
     sweep = np.linspace(J2_MIN, J2_MAX, 60)
     zs = [f(v) for v in sweep]
-
-    brackets = []
-    for i in range(len(sweep) - 1):
-        if (zs[i] - target_z) * (zs[i + 1] - target_z) <= 0:
-            brackets.append((float(sweep[i]), float(sweep[i + 1])))
-
+    brackets = [
+        (float(sweep[i]), float(sweep[i + 1]))
+        for i in range(len(sweep) - 1)
+        if (zs[i] - target_z) * (zs[i + 1] - target_z) <= 0
+    ]
     if not brackets:
-        # Target height unreachable with these locked joints. Caller MUST abort
-        # — no silent clamping to the closest point.
         return None, False
 
-    # Prefer the bracket with the LARGEST j2 (forward-extended side of the
-    # wrist-z peak).
     bracket = max(brackets, key=lambda b: b[1])
     j2 = bisect(f, bracket[0], bracket[1], target=target_z)
     if j2 is None:
-        # bisect couldn't refine despite the sign change — fall back to
-        # midpoint of the bracket (still within the valid forward range).
         j2 = 0.5 * (bracket[0] + bracket[1])
     return float(max(J2_MIN, min(J2_MAX, j2))), True
 
@@ -195,12 +168,9 @@ def solve_j2_j5_for_height(
     iterations: int = 4,
     convergence_tol: float = 1e-4,
 ) -> Tuple[Optional[float], Optional[float], bool]:
-    """Jointly resolve (j2, j5) so the grasp frame reaches `target_z`
-    with the gripper horizontal. j1, j3, j4, j6 stay locked.
-
-    Returns (j2, j5, reached_target). On failure (no forward j5 exists or
-    target_z is outside the achievable range), returns (None, None, False).
-    There is NO silent clamping.
+    """Resolve (j2, j5) so the grasp frame reaches `target_z` with the
+    gripper horizontal. Returns (None, None, False) if no forward-pointing
+    horizontal solution exists at this height.
     """
     j2, j5 = j2_seed, j5_seed
     reached = False
@@ -216,3 +186,146 @@ def solve_j2_j5_for_height(
             break
         j2, j5 = j2_new, j5_new
     return j2, j5, reached
+
+
+# Joint2 axis origin in base_link, derived from the URDF chain
+# base_link -> xarm_base (0.036, 0, 0.441) -> link1 (+z 0.267).
+SHOULDER_IN_BASE = np.array([0.036105613, 0.0, 0.441 + 0.267])
+
+
+def _best_alignment(
+    fk_axis,
+    fk_dir_fn,
+    target_unit: np.ndarray,
+    lo: float,
+    hi: float,
+    sweep_points: int,
+):
+    """Sweep an angle in [lo, hi] and return the value that maximises the
+    cosine between `fk_dir_fn(angle)` and `target_unit`.
+    """
+    best_value: Optional[float] = None
+    best_cos = -math.inf
+    best_dir = None
+    extra = 0.0
+    for v in np.linspace(lo, hi, sweep_points):
+        direction, magnitude = fk_dir_fn(float(v))
+        if direction is None:
+            continue
+        cos = float(np.dot(direction, target_unit))
+        if cos > best_cos:
+            best_cos = cos
+            best_value = float(v)
+            best_dir = direction
+            extra = magnitude
+    return best_value, best_cos, best_dir, extra
+
+
+def point_arm_at_centroid(
+    centroid_xyz: Tuple[float, float, float],
+    j3_lock: float,
+    j4_lock: float,
+    j5_seed: float,
+    j6_lock: float,
+    j2_min: float = J2_MIN,
+    j2_max: float = J2_MAX,
+    j5_min: float = J5_MIN,
+    j5_max: float = J5_MAX,
+    sweep_points: int = 240,
+    refinement_iters: int = 3,
+) -> Tuple[Optional[float], Optional[float], Optional[float], dict]:
+    """Solve (j1, j2, j5) so the arm reaches toward `centroid_xyz` AND the
+    gripper approach axis (T[:3,2]) points at the same target. j3, j4, j6 stay
+    locked at the supplied values.
+
+    Iterates j2 ↔ j5 so the position correction from j5 (the wrist offset is
+    ~12 cm from joint5) doesn't desync the arm direction. Returns
+    (None, None, None, info) when no positive cosine is reachable on either
+    axis.
+    """
+    target_vec = np.array(centroid_xyz, dtype=float) - SHOULDER_IN_BASE
+    target_dist = float(np.linalg.norm(target_vec))
+    if target_dist < 1e-6:
+        return None, None, None, {"error": "centroid coincides with shoulder"}
+    target_unit = target_vec / target_dist
+
+    azimuth = math.atan2(target_unit[1], target_unit[0])
+    j1 = -math.pi / 2 + azimuth
+
+    def arm_dir(j2: float, j5: float):
+        T = fk_grasp_frame(j1, j2, j3_lock, j4_lock, j5, j6_lock)
+        grasp_vec = T[:3, 3] - SHOULDER_IN_BASE
+        d = float(np.linalg.norm(grasp_vec))
+        return (grasp_vec / d, d) if d > 1e-6 else (None, 0.0)
+
+    def approach_dir(j2: float, j5: float):
+        T = fk_grasp_frame(j1, j2, j3_lock, j4_lock, j5, j6_lock)
+        ax = T[:3, 2]
+        n = float(np.linalg.norm(ax))
+        return (ax / n, 0.0) if n > 1e-6 else (None, 0.0)
+
+    current_j5 = float(j5_seed)
+    current_j2: Optional[float] = None
+    arm_cos = approach_cos = -math.inf
+    arm_dir_v = approach_dir_v = None
+    arm_reach = 0.0
+
+    for _ in range(max(1, refinement_iters)):
+        j2, arm_cos, arm_dir_v, arm_reach = _best_alignment(
+            "j2",
+            lambda v: arm_dir(v, current_j5),
+            target_unit,
+            j2_min,
+            j2_max,
+            sweep_points,
+        )
+        if j2 is None or arm_cos < 0.0:
+            return (
+                None,
+                None,
+                None,
+                {
+                    "azimuth_deg": math.degrees(azimuth),
+                    "target_dist": target_dist,
+                    "target_unit": target_unit.tolist(),
+                    "arm_cos": arm_cos,
+                    "error": "no j2 gives forward arm alignment",
+                },
+            )
+        current_j2 = j2
+
+        j5, approach_cos, approach_dir_v, _ = _best_alignment(
+            "j5",
+            lambda v: approach_dir(current_j2, v),
+            target_unit,
+            j5_min,
+            j5_max,
+            sweep_points,
+        )
+        if j5 is None or approach_cos < 0.0:
+            return (
+                None,
+                None,
+                None,
+                {
+                    "azimuth_deg": math.degrees(azimuth),
+                    "target_dist": target_dist,
+                    "target_unit": target_unit.tolist(),
+                    "arm_cos": arm_cos,
+                    "approach_cos": approach_cos,
+                    "error": "no j5 gives forward gripper approach",
+                },
+            )
+        current_j5 = j5
+
+    info = {
+        "azimuth_deg": math.degrees(azimuth),
+        "target_dist": target_dist,
+        "target_unit": target_unit.tolist(),
+        "arm_cos": arm_cos,
+        "arm_dir": arm_dir_v.tolist() if arm_dir_v is not None else None,
+        "arm_reach_at_best": arm_reach,
+        "approach_cos": approach_cos,
+        "approach_dir": approach_dir_v.tolist() if approach_dir_v is not None else None,
+    }
+    return float(j1), float(current_j2), float(current_j5), info

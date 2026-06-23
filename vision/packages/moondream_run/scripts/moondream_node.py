@@ -250,24 +250,20 @@ class MoondreamNode(Node):
         return response
 
     def bbox_callback(self, request, response):
-        """Callback to get a bounding box for `subject` via moondream.detect()."""
-        self.get_logger().info(f"Executing service MoondreamObjectBBox for: {request.subject}")
+        """Forward the request to moondream `DetectObject` and return the
+        largest normalized bbox for `subject`."""
+        self.get_logger().info(f"MoondreamObjectBBox: {request.subject}")
         response.success = False
-        response.xmin = 0.0
-        response.ymin = 0.0
-        response.xmax = 0.0
-        response.ymax = 0.0
+        response.xmin = response.ymin = response.xmax = response.ymax = 0.0
 
         if self.image is None:
             self.get_logger().warn("No image received yet.")
             return response
 
         _, image_bytes = cv2.imencode(".jpg", self.image)
-        image_bytes = image_bytes.tobytes()
-
         try:
             encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes.tobytes())
             )
             grpc_response = self.stub.DetectObject(
                 moondream_proto_pb2.DetectObjectRequest(
