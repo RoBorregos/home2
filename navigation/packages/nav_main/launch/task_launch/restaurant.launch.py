@@ -39,6 +39,7 @@ def launch_function(context, *args, **kwargs):
         parameters=[{
             'mapping': True,
             'localization': False,
+            'use_nav2': True,  # hybrid SLAM + nav: map live AND run nav2 (default is off in mapping mode)
             'map_name': rtabmap_map_name,
             'areas_map_name': areas_map_name,
             'rtab_mapping_config': rtab_params,
