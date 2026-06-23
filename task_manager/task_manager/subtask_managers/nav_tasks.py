@@ -12,7 +12,9 @@ import copy
 import rclpy
 from rclpy.node import Node
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import PoseStamped, Quaternion
+from geometry_msgs.msg import PoseStamped, Quaternion, PointStamped, Point
+import tf2_ros
+from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
@@ -81,6 +83,10 @@ class NavigationTasks:
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
+        # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
+        # camera-frame customer detection) and transform it to map before navigating.
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self.node)
         # Origin pose captured the first time get_current_pose() succeeds (return_to_origin)
         self._origin_pose = None
 
@@ -349,10 +355,36 @@ class NavigationTasks:
         return (Status.EXECUTION_ERROR, err)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    def _resolve_map_xy(self, point):
+        """Return map-frame (x, y) from a PointStamped (transformed to map via TF),
+        a geometry_msgs/Point, or an (x, y) sequence. Returns None if a stamped point
+        in another frame can't be transformed to map."""
+        if isinstance(point, PointStamped):
+            ps = point
+            frame = ps.header.frame_id
+            if frame and frame != "map":
+                try:
+                    tf = self.tf_buffer.lookup_transform(
+                        "map", frame, rclpy.time.Time(),
+                        timeout=rclpy.duration.Duration(seconds=1.0))
+                    ps = do_transform_point(ps, tf)
+                except Exception as e:
+                    CLog.nav(self.node, "ERROR",
+                             f"move_to_point: TF {frame}->map failed: {e}")
+                    return None
+            return float(ps.point.x), float(ps.point.y)
+        if isinstance(point, Point):
+            return float(point.x), float(point.y)
+        return float(point[0]), float(point[1])
+
     def move_to_point(self, point, standoff_distance=0.0):
-        """Navigate to an (x, y) point. With standoff_distance>0, stop that far short of
-        the point along the approach direction, facing the point."""
-        px, py = float(point[0]), float(point[1])
+        """Navigate to a point. `point` may be a PointStamped (any frame — transformed
+        to map), a geometry_msgs/Point, or an (x, y) sequence in the map frame. With
+        standoff_distance>0, stop that far short of the point, facing it."""
+        xy = self._resolve_map_xy(point)
+        if xy is None:
+            return (Status.EXECUTION_ERROR, "could not transform point to map frame")
+        px, py = xy
         yaw = 0.0
         status, cur = self.get_current_pose()
         if status == Status.EXECUTION_SUCCESS and cur is not None:
