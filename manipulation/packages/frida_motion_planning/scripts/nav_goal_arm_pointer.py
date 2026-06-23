@@ -55,6 +55,10 @@ def wrap_angle(a: float) -> float:
     return math.atan2(math.sin(a), math.cos(a))
 
 
+# Joint1 target that points the arm at the base front (+x). With offset 0 this is 0.
+FRONT_TARGET = max(-JOINT1_LIMIT, min(JOINT1_LIMIT, wrap_angle(JOINT1_OFFSET)))
+
+
 def joint1_velocity(target: float, current: float) -> float:
     """P controller for joint 1: returns clamped velocity, 0 inside the deadband."""
     err = wrap_angle(target - current)
@@ -72,6 +76,7 @@ class NavGoalArmPointer(Node):
         self.goal_active = False
         self.joint1_pos = None  # rad, from /joint_states
         self.vel_mode_on = False  # whether the arm is currently in velocity mode
+        self.homing = False  # returning joint1 to the base front after the goal ends
 
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.create_subscription(
@@ -141,17 +146,29 @@ class NavGoalArmPointer(Node):
 
     def _control(self):
         # Activation / deactivation edges.
-        if self.goal_active and not self.vel_mode_on:
-            if self._set_mode(JOINT_VELOCITY_MODE):
+        if self.goal_active:
+            if not self.vel_mode_on and self._set_mode(JOINT_VELOCITY_MODE):
                 self.vel_mode_on = True
-        elif not self.goal_active and self.vel_mode_on:
-            self._send_joint1_vel(0.0)  # stop (holds current pose)
-            self._set_mode(MOVEIT_MODE)  # hand the arm back to MoveIt
-            self.vel_mode_on = False
+            self.homing = False  # cancel any homing if a new goal arrives
+        elif self.vel_mode_on and not self.homing:
+            self.homing = True  # goal ended: return arm to base front before MoveIt
 
-        if not self.goal_active or not self.vel_mode_on:
+        if not self.vel_mode_on or self.joint1_pos is None:
             return
-        if self.goal is None or self.joint1_pos is None:
+
+        # Goal ended: drive joint1 back to the front, then hand the arm to MoveIt.
+        if self.homing:
+            vel = joint1_velocity(FRONT_TARGET, self.joint1_pos)
+            if vel == 0.0:  # at the front (within deadband)
+                self._send_joint1_vel(0.0)
+                self._set_mode(MOVEIT_MODE)
+                self.vel_mode_on = False
+                self.homing = False
+            else:
+                self._send_joint1_vel(vel)
+            return
+
+        if self.goal is None:
             return
 
         # Goal (map) -> arm base frame, then bearing in the base plane.
