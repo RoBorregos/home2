@@ -85,6 +85,11 @@ PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 PEAK_PRE_GRASP_HEIGHT = 0.05  # m
 PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
 
+# Fixed-distance cartesian move service
+FIXED_DISTANCE_MOVE_SERVICE = "/manipulation/fixed_distance_move"
+# Ascent used by the clothes pick to exit the basket workspace
+CLOTHES_BASKET_EXIT_HEIGHT = 0.1  # m
+
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
 HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
@@ -103,6 +108,7 @@ ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
 ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
 GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
 REMOVE_COLLISION_OBJECT_SERVICE = "/manipulation/remove_collision_object"
+
 PICK_OBJECT_NAMESPACE = "frida_pick_object_"
 PLANE_NAMESPACE = "plane"
 PLANE_OBJECT_COLLISION_TOLERANCE = (

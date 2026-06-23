@@ -7,8 +7,9 @@ from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallb
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
-from nav2_msgs.srv import ManageLifecycleNodes
-from nav2_msgs.action import NavigateToPose  
+from nav2_msgs.srv import ManageLifecycleNodes, ClearEntireCostmap
+from nav2_msgs.action import NavigateToPose, ComputePathToPose
+from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
@@ -38,6 +39,9 @@ from frida_constants.navigation_constants import(
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
+        NAV_QUERY_SERVICE,
+        COMPUTE_PATH_ACTION_SERVER,
+        TIMEOUT_NAV_QUERY,
         UNDOCK_SERVICE,
         DOCK_SERVICE,
         DOCK_TABLE_SERVICE,
@@ -47,6 +51,7 @@ from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
         MoveLocation,
+        NavQuery,
         DockTable
         )
 from ament_index_python.packages import get_package_share_directory
@@ -57,6 +62,11 @@ import math
 import yaml
 import re
 
+
+# Seconds to wait between NavigateToPose retries when a goal is rejected or
+# aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
+# the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
+NAV_GOAL_RETRY_DELAY = 2.0
 
 
 def make_param(name, value):
@@ -143,6 +153,14 @@ class Nav_Central(Node):
             Trigger, DOCK_SERVICE, callback_group=self.rtab_service_group)
         self.dock_param_client = self.create_client(
             SetParameters, '/table_docker/set_parameters', callback_group=self.rtab_service_group)
+        # Costmap clear clients — wipe stale obstacle marks (e.g. from the parked/docked
+        # pose) before a new goal so the planner/MPPI start from a clean slate.
+        self.clear_local_costmap_client = self.create_client(
+            ClearEntireCostmap, '/local_costmap/clear_entirely_local_costmap',
+            callback_group=self.rtab_service_group)
+        self.clear_global_costmap_client = self.create_client(
+            ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap',
+            callback_group=self.rtab_service_group)
 
         self.lidar_msg = None
         self.lidar_reciever = None
@@ -158,6 +176,10 @@ class Nav_Central(Node):
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
         self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
+
+        # Path query service — distance/time between two areas without navigating
+        self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
+        self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
 
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
         self.resume_nav_srv = self.create_service(
@@ -416,30 +438,58 @@ class Nav_Central(Node):
         feedback = feedback_msg.feedback
         self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
 
-    def send_nav_goal(self, pose, behaivor_tree = None):
-        """Function to send goal to nav2 bt"""
+    def send_nav_goal(self, pose, behaivor_tree = None, max_attempts = None):
+        """Send a NavigateToPose goal and keep retrying until Nav2 reports the
+        goal SUCCEEDED.
+
+        A goal that is rejected, or that finishes with any status other than
+        STATUS_SUCCEEDED (ABORTED/CANCELED — e.g. the controller momentarily
+        loses TF and the BT exhausts its recoveries), is retried after a short
+        delay instead of being reported as success. max_attempts bounds the
+        retries; None (the default) means retry until the goal is reached."""
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
         if behaivor_tree is not None:
             goal_msg.behaivor_tree = behaivor_tree
-        self.goal_action_client.wait_for_server()
 
-        _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+        attempt = 0
+        while True:
+            attempt += 1
 
-        while not _goal_future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            # Action server may not be back yet right after a lifecycle resume.
+            if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
+                self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
+                if max_attempts is not None and attempt >= max_attempts:
+                    return (False, "Action server unavailable")
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                continue
 
-        goal_handle = _goal_future.result()
-        if goal_handle.accepted:
-              result_future = goal_handle.get_result_async()                                                                                                                                                   
-              while not result_future.done():
-                  self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))                                                                                                                             
-              result = result_future.result()
-              self.nav_logger("info", f"Goal_Handler -> Goal Reached")
-              return (True, "Goal Finished")
-        else:
-            return (False, "Goal Rejected")
+            _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+            while not _goal_future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            goal_handle = _goal_future.result()
+
+            if not goal_handle.accepted:
+                self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
+                if max_attempts is not None and attempt >= max_attempts:
+                    return (False, "Goal Rejected")
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                continue
+
+            result_future = goal_handle.get_result_async()
+            while not result_future.done():
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            result = result_future.result()
+
+            if result.status == GoalStatus.STATUS_SUCCEEDED:
+                self.nav_logger("info", "Goal_Handler -> Goal Reached")
+                return (True, "Goal Finished")
+
+            self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
+            if max_attempts is not None and attempt >= max_attempts:
+                return (False, f"Goal failed (status {result.status})")
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
 
     def _retreat_if_docked(self):
         """Best-effort: ask the table_docker to back off if it's parked at a
@@ -489,6 +539,23 @@ class Nav_Central(Node):
             self.nav_logger("error", f"Dock_Table -> Failed: {message}")
         return response
 
+    def _clear_costmaps(self, settle_s=0.3):
+        """Clear local+global costmaps so the planner/MPPI start from a clean slate
+        (removes stale obstacle marks left from the parked/docked pose that can box-in
+        the planner), then settle so the layers repopulate from sensors before moving.
+        Best-effort + bounded — skips a costmap whose clear service isn't up yet."""
+        for client, label in ((self.clear_local_costmap_client,  "Clear local costmap"),
+                              (self.clear_global_costmap_client, "Clear global costmap")):
+            if client.service_is_ready():
+                self._call_service_with_timeout(
+                    client, ClearEntireCostmap.Request(), TIMEOUT_RTAB_SERVICE, label)
+            else:
+                self.nav_logger("warn", f"{label} -> service not ready, skipping")
+        # Let a sensor cycle repopulate before planning/driving. The omni base strafes
+        # and the forward camera won't re-see side/rear obstacles instantly, so don't
+        # command motion into the brief blind window right after the clear.
+        self.get_clock().sleep_for(rclpy.duration.Duration(seconds=settle_s))
+
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
 
@@ -517,6 +584,10 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Navigation not initialized"
             return response 
+        # Fresh costmaps before planning/driving (clears stale marks from the
+        # docked/retreated pose, then settles for sensor repopulation).
+        self._clear_costmaps()
+
         goal_coord = PoseStamped()
         goal_coord.header.frame_id = "map"
         goal_coord.pose.position.x = fetch_coords[0]
@@ -533,7 +604,143 @@ class Nav_Central(Node):
         self.pause_slam()
         self.pause_nav2()
         return response
-        
+
+    def _pose_from_coords(self, coords):
+        """Build a map-frame PoseStamped from an areas.json coordinate array."""
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.pose.position.x = coords[0]
+        pose.pose.position.y = coords[1]
+        pose.pose.position.z = coords[2]
+        pose.pose.orientation.x = coords[3]
+        pose.pose.orientation.y = coords[4]
+        pose.pose.orientation.z = coords[5]
+        pose.pose.orientation.w = coords[6]
+        return pose
+
+    def _fetch_area_coords(self, location, sublocation):
+        if self.areas_data is None:
+            return None
+        return self.areas_data.get(location, {}).get(sublocation)
+
+    def _path_length(self, path):
+        """Sum of euclidean distances between consecutive path poses."""
+        total = 0.0
+        poses = path.poses
+        for i in range(1, len(poses)):
+            p0 = poses[i - 1].pose.position
+            p1 = poses[i].pose.position
+            total += math.hypot(p1.x - p0.x, p1.y - p0.y)
+        return total
+
+    def _compute_path(self, goal_pose, start_pose=None):
+        """Call nav2 ComputePathToPose action. Returns nav_msgs/Path or None.
+        If start_pose is None the planner uses the robot's current pose."""
+        goal_msg = ComputePathToPose.Goal()
+        goal_msg.goal = goal_pose
+        goal_msg.planner_id = "GridBased"
+        if start_pose is not None:
+            goal_msg.start = start_pose
+            goal_msg.use_start = True
+
+        elapsed = 0.0
+        while not self.compute_path_client.server_is_ready() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.2))
+            elapsed += 0.2
+        if not self.compute_path_client.server_is_ready():
+            self.nav_logger("error", "Query_Path -> ComputePathToPose server not available")
+            return None
+
+        send_future = self.compute_path_client.send_goal_async(goal_msg)
+        elapsed = 0.0
+        while not send_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not send_future.done():
+            self.nav_logger("error", "Query_Path -> Timeout sending goal to planner")
+            return None
+
+        goal_handle = send_future.result()
+        if not goal_handle.accepted:
+            self.nav_logger("error", "Query_Path -> Planner rejected the request")
+            return None
+
+        result_future = goal_handle.get_result_async()
+        elapsed = 0.0
+        while not result_future.done() and elapsed < TIMEOUT_NAV_QUERY:
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            elapsed += 0.1
+        if not result_future.done():
+            goal_handle.cancel_goal_async()
+            self.nav_logger("error", "Query_Path -> Timeout waiting for planner result")
+            return None
+
+        result = result_future.result().result
+        if result is None or len(result.path.poses) == 0:
+            return None
+        return result.path
+
+    def query_path(self, request, response):
+        """Callback: compute path distance/time between two areas without moving.
+        Empty location_a means start from the robot's current pose."""
+        self.nav_logger("info", f"Query_Path -> Service called ({request.location_a}/{request.sublocation_a} -> {request.location_b}/{request.sublocation_b})")
+        response.success = False
+        response.distance_meters = 0.0
+        response.error = ""
+
+        if self.mapping:
+            response.error = "Not available in mapping mode"
+            return response
+        if self.areas_data is None:
+            self.nav_logger("error", "Query_Path -> Areas not loaded")
+            response.error = "Areas not loaded"
+            return response
+
+        goal_coords = self._fetch_area_coords(request.location_b, request.sublocation_b)
+        if goal_coords is None:
+            self.nav_logger("error", "Query_Path -> Destination area not found")
+            response.error = f"Area not found: {request.location_b}/{request.sublocation_b}"
+            return response
+        goal_pose = self._pose_from_coords(goal_coords)
+
+        start_pose = None
+        if request.location_a:
+            start_coords = self._fetch_area_coords(request.location_a, request.sublocation_a)
+            if start_coords is None:
+                self.nav_logger("error", "Query_Path -> Start area not found")
+                response.error = f"Area not found: {request.location_a}/{request.sublocation_a}"
+                return response
+            start_pose = self._pose_from_coords(start_coords)
+
+        if not self.rtabmap_loaded:
+            self.nav_logger("error", "Query_Path -> Navigation not initialized")
+            response.error = "Navigation not initialized"
+            return response
+
+        # Planner needs nav2 active; remember prior state to restore it after
+        was_paused = self.nav2_paused
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused:
+            self.nav_logger("error", "Query_Path -> Could not resume nav2")
+            response.error = "Could not resume nav2"
+            return response
+
+        try:
+            path = self._compute_path(goal_pose, start_pose)
+            if path is None:
+                response.error = "Planner failed to compute path"
+                return response
+            distance = self._path_length(path)
+            response.success = True
+            response.distance_meters = distance
+            self.nav_logger("info", f"Query_Path -> Path found: {distance:.2f} m")
+        finally:
+            if was_paused:
+                self.pause_slam()
+                self.pause_nav2()
+        return response
+
     def check_for_topics(self, topics):
         topic_names_and_types = self.get_topic_names_and_types()
         active_topics = {t[0] for t in topic_names_and_types}
