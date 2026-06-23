@@ -25,7 +25,7 @@ ATTEMPT_LIMIT = 3
 # Progressive customer search parameters
 SEARCH_STEP_SIZE = 0.9  # meters between each search position
 MAX_SEARCH_STEPS = 10  # total steps before returning to bar (~5 m coverage)
-CUSTOMER_CLOSE_DISTANCE = 3.0  # meters — re-approach if customer is farther than this
+CUSTOMER_CLOSE_DISTANCE = 3.5  # meters — re-approach if customer is farther than this
 MAX_APPROACH_RETRIES = 3  # max re-detection + approach attempts
 
 
@@ -253,7 +253,7 @@ class RestaurantTaskManager(Node):
                 self,
                 f"Navigating to customer (attempt {self.approach_attempts + 1}/{MAX_APPROACH_RETRIES})...",
             )
-            status, _ = self.subtask_manager.nav.move_to_point(point=self.target_person_point)
+            status, _ = self.subtask_manager.nav.move_to_point(point=self.target_person_point, standoff_distance=2.0)
 
             if status == Status.EXECUTION_SUCCESS:
                 # Re-detect customer to check if we're actually close enough
