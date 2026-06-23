@@ -34,6 +34,12 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 2
 
+# Stacking detection for pick ordering: object A sits on object B when A's
+# base_link Z is at least STACK_Z_MIN above B's and their XY are within
+# STACK_XY_MAX. Tunable; validate on the robot.
+STACK_Z_MIN = 0.03
+STACK_XY_MAX = 0.12
+
 SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
 
 
@@ -321,11 +327,11 @@ class PickAndPlaceTM(Node):
         while (time.time() - start_time) < duration:
             rclpy.spin_once(self, timeout_sec=0.1)
 
-    def convert_to_height(self, detection) -> float | None:
-        """Transform a detection's 3D point to base_link frame via tf2 and return Z.
+    def _detection_point(self, detection):
+        """base_link (x, y, z) of a detection's 3D point, or None on TF failure.
 
-        Uses tf2 directly (no external service) with a bounded timeout so the
-        task manager never hangs if a transform is temporarily unavailable.
+        Uses tf2 directly with a bounded timeout so the task manager never hangs
+        if a transform is temporarily unavailable.
         """
         try:
             stamped_point = PointStamped()
@@ -340,13 +346,18 @@ class PickAndPlaceTM(Node):
                 "base_link",
                 timeout=Duration(seconds=1.0),
             )
-            return transformed.point.z
+            return (transformed.point.x, transformed.point.y, transformed.point.z)
         except TransformException as e:
             CLog.vision(self, "TF", f"Transform failed: {e}", level="warn")
             return None
         except Exception as e:
-            CLog.vision(self, "TF", f"Error converting to height: {e}", level="error")
+            CLog.vision(self, "TF", f"Error converting point: {e}", level="error")
             return None
+
+    def convert_to_height(self, detection) -> float | None:
+        """base_link Z of a detection's 3D point, or None on TF failure."""
+        point = self._detection_point(detection)
+        return point[2] if point is not None else None
 
     def _table_counts(self):
         """Detect at the current pose and count detections per class."""
@@ -688,9 +699,12 @@ class PickAndPlaceTM(Node):
             # (50 base + 50 bonus) vs 50 for normal objects, and the first
             # pick awards an extra 100 pts.  OTHER goes to cabinet where
             # placing next to similar objects earns +20 bonus.
+            # Reliability-first: a box/can (OTHER, GPD ~90%) is a far safer first
+            # pick than cutlery (~30%), and the first successful pick earns the
+            # +100 bonus, so OTHER goes before CUTLERY.
             PRIORITY = {
-                ObjectCategory.CUTLERY: 0,
-                ObjectCategory.OTHER: 1,
+                ObjectCategory.OTHER: 0,
+                ObjectCategory.CUTLERY: 1,
                 ObjectCategory.TABLEWARE: 2,
                 ObjectCategory.TRASH: 3,
                 ObjectCategory.COMMON: 4,
@@ -705,7 +719,37 @@ class PickAndPlaceTM(Node):
             if skipped > 0:
                 CLog.fsm(self, "SORT", f"Skipping {skipped} plate(s) — not graspable.")
 
-            self.detected_objects.sort(key=lambda o: PRIORITY.get(o.category, 99))
+            # Stacking: never lift a base object (e.g. a bowl) while something
+            # (e.g. cutlery) still rests on it. Detect "A on B" by base_link Z and
+            # XY proximity, then sort so objects with nothing on top come first,
+            # ranked by reliability within that group.
+            points = {id(o): self._detection_point(o.bbox) for o in self.detected_objects}
+
+            def _has_object_on_top(obj):
+                po = points.get(id(obj))
+                if po is None:
+                    return False
+                for other in self.detected_objects:
+                    if other is obj:
+                        continue
+                    pa = points.get(id(other))
+                    if pa is None:
+                        continue
+                    dx, dy = pa[0] - po[0], pa[1] - po[1]
+                    planar = (dx * dx + dy * dy) ** 0.5
+                    if pa[2] - po[2] > STACK_Z_MIN and planar < STACK_XY_MAX:
+                        CLog.fsm(
+                            self,
+                            "SORT",
+                            f"{other.name} sits on {obj.name}; picking {other.name} first.",
+                        )
+                        return True
+                return False
+
+            on_top = {id(o): _has_object_on_top(o) for o in self.detected_objects}
+            self.detected_objects.sort(
+                key=lambda o: (1 if on_top[id(o)] else 0, PRIORITY.get(o.category, 99))
+            )
 
             for i, obj in enumerate(self.detected_objects):
                 CLog.fsm(self, "SORT", f"Priority {i}: {obj.name} ({obj.category.value})")
