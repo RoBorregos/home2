@@ -187,6 +187,7 @@ class RESTAURANTCommands(Node):
     def get_customers(self):
         """Get customers using the customer service, returns list of Person."""
         req = Customer.Request()
+        req.include_non_waving = True  # table scan: map seated customers, not just hand-raisers
         future = self.customer_client.call_async(req)
         future = wait_for_future(future, 15)
 
