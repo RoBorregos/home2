@@ -88,17 +88,26 @@ class PlaceManager:
 
         self.node.get_logger().info("Returning to position")
 
-        # return to configured position
-        for i in range(5):
-            back_res = send_joint_goal(
-                move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
-                velocity=0.5,
-            )
-            if back_res:
-                self.node.get_logger().info("Returned to position successfully")
-                break
-            self.node.get_logger().info("Retry sending return joint goal")
+        # The eye-in-hand octomap never sees the compartment ceiling, so add an explicit
+        # collision slab there (place surface + 0.34 m) before planning the return.
+        if place_params.is_shelf:
+            self.node.add_shelf_ceiling_guard(place_pose, place_params.table_height)
+
+        try:
+            for i in range(5):
+                back_res = send_joint_goal(
+                    move_joints_action_client=self.node._move_joints_client,
+                    named_position="table_stare",
+                    velocity=0.5,
+                )
+                if back_res:
+                    self.node.get_logger().info("Returned to position successfully")
+                    break
+                self.node.get_logger().info("Retry sending return joint goal")
+        finally:
+            # Always drop the guard so it does not constrain later motions.
+            if place_params.is_shelf:
+                self.node.remove_shelf_ceiling_guard()
 
         return return_result
 
