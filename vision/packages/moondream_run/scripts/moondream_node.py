@@ -248,12 +248,10 @@ class MoondreamNode(Node):
         return response
 
     def bbox_callback(self, request, response):
-        """Forward the request to moondream `DetectObject` and return the
-        largest normalized bbox for `subject`."""
+        """Largest normalized bbox for `subject` via moondream `DetectObject`."""
         self.get_logger().info(f"MoondreamObjectBBox: {request.subject}")
         response.success = False
         response.xmin = response.ymin = response.xmax = response.ymax = 0.0
-
         if self.image is None:
             self.get_logger().warn("No image received yet.")
             return response
@@ -263,7 +261,7 @@ class MoondreamNode(Node):
             encoded = self.stub.EncodeImage(
                 moondream_proto_pb2.ImageRequest(image_data=image_bytes.tobytes())
             )
-            grpc_response = self.stub.DetectObject(
+            grpc_resp = self.stub.DetectObject(
                 moondream_proto_pb2.DetectObjectRequest(
                     encoded_image=encoded.encoded_image,
                     subject=request.subject,
@@ -273,19 +271,16 @@ class MoondreamNode(Node):
             self.get_logger().error(f"DetectObject RPC error: {e}")
             return response
 
-        if not grpc_response.found:
-            self.get_logger().warn(f"No bbox found for '{request.subject}'")
+        if not grpc_resp.found:
+            self.get_logger().warn(f"No bbox for '{request.subject}'")
             return response
 
         response.success = True
-        response.xmin = float(grpc_response.x_min)
-        response.ymin = float(grpc_response.y_min)
-        response.xmax = float(grpc_response.x_max)
-        response.ymax = float(grpc_response.y_max)
+        response.xmin, response.ymin = float(grpc_resp.x_min), float(grpc_resp.y_min)
+        response.xmax, response.ymax = float(grpc_resp.x_max), float(grpc_resp.y_max)
         self.success(
-            f"BBox for '{request.subject}': "
-            f"({response.xmin:.3f}, {response.ymin:.3f}) -> "
-            f"({response.xmax:.3f}, {response.ymax:.3f})"
+            f"BBox '{request.subject}': "
+            f"({response.xmin:.3f}, {response.ymin:.3f})->({response.xmax:.3f}, {response.ymax:.3f})"
         )
         return response
 

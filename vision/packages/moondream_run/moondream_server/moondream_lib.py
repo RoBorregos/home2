@@ -158,32 +158,27 @@ class MoonDreamModel:
 
     def find_object_bbox(self, encoded_image_data, subject):
         """Largest normalized bbox from moondream `detect()`, or None."""
-        encoded_image = pickle.loads(encoded_image_data)
-        result = self.model.detect(encoded_image, subject)
-        objects = (
-            result["objects"]
-            if isinstance(result, dict) and "objects" in result
-            else result
-        )
+        result = self.model.detect(pickle.loads(encoded_image_data), subject)
+        objects = result.get("objects", result) if isinstance(result, dict) else result
         if not objects:
             return None
 
-        def _bounds(obj):
+        def _bounds(o):
             return (
-                obj.get("x_min", obj.get("xmin")),
-                obj.get("y_min", obj.get("ymin")),
-                obj.get("x_max", obj.get("xmax")),
-                obj.get("y_max", obj.get("ymax")),
+                o.get("x_min", o.get("xmin")),
+                o.get("y_min", o.get("ymin")),
+                o.get("x_max", o.get("xmax")),
+                o.get("y_max", o.get("ymax")),
             )
 
-        def _area(obj):
-            x_min, y_min, x_max, y_max = _bounds(obj)
-            if None in (x_min, x_max, y_min, y_max):
-                return -1.0
-            return float((x_max - x_min) * (y_max - y_min))
+        def _area(o):
+            x0, y0, x1, y1 = _bounds(o)
+            return (
+                float((x1 - x0) * (y1 - y0)) if None not in (x0, y0, x1, y1) else -1.0
+            )
 
         x_min, y_min, x_max, y_max = _bounds(max(objects, key=_area))
-        if None in (x_min, x_max, y_min, y_max):
+        if None in (x_min, y_min, x_max, y_max):
             return None
         return {
             "x_min": float(x_min),

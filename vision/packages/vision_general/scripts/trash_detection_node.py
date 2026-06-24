@@ -176,30 +176,6 @@ class TrashDetectionNode(Node):
         point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
         return self.build_point_stamped(point3d), point2d
 
-    def _deproject_normalized_optical(self, nx, ny):
-        """Deproject one normalized pixel and return a PointStamped in the
-        raw optical-frame convention (x=right, y=down, z=forward).
-        """
-        # ZED publishes camera_info at the RGB resolution but the depth image
-        # can be downsampled; clamp to whichever is smaller.
-        depth_h, depth_w = self.depth_image.shape[:2]
-        max_w = min(self.imageInfo.width, depth_w) - 1
-        max_h = min(self.imageInfo.height, depth_h) - 1
-        point2d = (
-            min(max(int(nx * self.imageInfo.width), 0), max_w),
-            min(max(int(ny * self.imageInfo.height), 0), max_h),
-        )
-        # calculations.get_depth swaps axes internally — pass (row, col).
-        depth = get_depth(self.depth_image, (point2d[1], point2d[0]))
-        point3d = deproject_pixel_to_point(self.imageInfo, point2d, depth)
-        ps = PointStamped()
-        ps.header.stamp = self.get_clock().now().to_msg()
-        ps.header.frame_id = CAMERA_FRAME
-        ps.point.x = float(point3d[0])
-        ps.point.y = float(point3d[1])
-        ps.point.z = float(point3d[2])
-        return ps, point2d
-
     def get_moondream_point_3d(self, req, res):
         """Ask moondream for a bbox, deproject every valid depth pixel inside
         it, and return the mean of that pointcloud in `CAMERA_FRAME`.
@@ -295,20 +271,35 @@ class TrashDetectionNode(Node):
         }
 
     def _publish_failure_debug(self, subject, message, bbox_px=None):
+        self._publish_debug_image(subject, message, bbox_px=bbox_px, ok=False)
+
+    def publish_moondream_point_3d_debug(
+        self, subject, center_px, point_stamped, bbox_px=None, n_valid=None
+    ):
+        p = point_stamped.point
+        label = f"{subject[:40]}  xyz=({p.x:.2f},{p.y:.2f},{p.z:.2f})"
+        if n_valid is not None:
+            label += f"  N={n_valid}"
+        self._publish_debug_image(
+            subject, label, bbox_px=bbox_px, ok=True, center_px=center_px
+        )
+
+    def _publish_debug_image(
+        self, subject, label, bbox_px=None, ok=True, center_px=None
+    ):
         if self.image is None:
             return
+        color = (0, 255, 0) if ok else (0, 0, 255)
         debug = self.image.copy()
         if bbox_px is not None:
             x0, y0, x1, y1 = bbox_px
-            cv2.rectangle(debug, (x0, y0), (x1, y1), (0, 0, 255), 2)
+            cv2.rectangle(debug, (x0, y0), (x1, y1), color, 2)
+        if center_px is not None:
+            u, v = center_px
+            cv2.drawMarker(debug, (u, v), color, cv2.MARKER_CROSS, 24, 2)
+            cv2.circle(debug, (u, v), 14, color, 2)
         cv2.putText(
-            debug,
-            f"{message}: {subject[:50]}",
-            (10, 25),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (0, 0, 255),
-            2,
+            debug, label, (10, 25), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 1 if ok else 2
         )
         try:
             self.moondream_point_3d_debug_pub.publish(
@@ -316,43 +307,6 @@ class TrashDetectionNode(Node):
             )
         except Exception as e:
             self.get_logger().error(f"Debug publish error: {e}")
-
-    def publish_moondream_point_3d_debug(
-        self, subject, center_px, point_stamped, bbox_px=None, n_valid=None
-    ):
-        if self.image is None:
-            return
-
-        debug = self.image.copy()
-        if bbox_px is not None:
-            x0, y0, x1, y1 = bbox_px
-            cv2.rectangle(debug, (x0, y0), (x1, y1), (0, 255, 0), 2)
-        u, v = center_px
-        cv2.drawMarker(debug, (u, v), (0, 255, 0), cv2.MARKER_CROSS, 24, 2)
-        cv2.circle(debug, (u, v), 14, (0, 255, 0), 2)
-        label_parts = [
-            f"{subject[:40]}",
-            f"xyz=({point_stamped.point.x:.2f},{point_stamped.point.y:.2f},"
-            f"{point_stamped.point.z:.2f})",
-        ]
-        if n_valid is not None:
-            label_parts.append(f"N={n_valid}")
-        cv2.putText(
-            debug,
-            "  ".join(label_parts),
-            (10, 25),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (0, 255, 0),
-            1,
-        )
-
-        try:
-            self.moondream_point_3d_debug_pub.publish(
-                self.bridge.cv2_to_imgmsg(debug, "bgr8")
-            )
-        except Exception as e:
-            self.get_logger().error(f"Debug image publish error: {e}")
 
     def get_moondream_points(self, subject) -> list[tuple[float, float]]:
         """Get object points from the MoonDream service."""
