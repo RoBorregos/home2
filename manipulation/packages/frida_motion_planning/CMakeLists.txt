@@ -24,6 +24,7 @@ install(PROGRAMS
     ${example_files}
     ${EXAMPLES_DIR}/ds4_demo.py
     ${SCRIPTS_DIR}/motion_planning_server.py
+    ${SCRIPTS_DIR}/align_arm_server.py
     ${UTIL_NODES}
     DESTINATION lib/${PROJECT_NAME}
 )

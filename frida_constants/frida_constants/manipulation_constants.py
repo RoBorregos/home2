@@ -58,6 +58,9 @@ ARM_LOWEST_0_0_HEIGHT = 0.95
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
 GO_TO_HAND_ACTION_SERVER = "/manipulation/go_to_hand_action_server"
+ALIGN_ARM_TO_CENTROID_ACTION_SERVER = (
+    "/manipulation/align_arm_to_centroid_action_server"
+)
 CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
 PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
