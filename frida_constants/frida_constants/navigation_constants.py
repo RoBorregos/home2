@@ -9,10 +9,16 @@ CHECK_DOOR_SERVICE = "/navigation/is_door_open"
 class DOOR_CHECK(Enum):
     TIMEOUT_SENSOR = 5.0
     TIMEOUT_TO_OPEN = 60.0  # Increase in case of required
-    LIDAR_RANGE_MIN = 670
-    LIDAR_RANGE_MAX = 70
+    # Beam index window into LaserScan.ranges[] that points at the door.
+    # Calibrated for the ~501-beam lidar (angle_increment ~0.01257 rad,
+    # idx 250 = 0 deg / straight ahead). Robot faces the door head-on:
+    # closed panel fills idx ~203-264 (~0.48 m); window inset to avoid frame edges.
+    LIDAR_RANGE_MIN = 210
+    LIDAR_RANGE_MAX = 255
     CHECKING_RATE = 0.5
-    DOOR_DISTANCE = 1.0
+    # Distance threshold (m): avg window reading above this -> door open.
+    # Closed door reads ~0.48 m; open reads 2-5 m+ / inf. 2.0 sits safely between.
+    DOOR_DISTANCE = 2.0
 
 
 ###Map areas service

@@ -37,23 +37,26 @@ class SafetyTaskManager(Node):
         # return self
 
     def nav_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
-        Logger.info(self, f"Navigating to {location} {sub_location} ")
+        Logger.info(self, f"Navigating to {location} {sub_location}")
         try:
-            if say:
-                self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=False)
+            self.subtask_manager.manipulation.follow_face(False)
+            self.subtask_manager.manipulation.clear_collision_objects()
             self.subtask_manager.manipulation.move_to_position("nav_pose")
+            if say:
+                self.subtask_manager.hri.say(
+                    text=f"Going to {location} {sub_location}", wait=False
+                )
+
             result = Status.EXECUTION_ERROR
             retry = 0
-            while result == Status.EXECUTION_ERROR and retry < Retries.NAVIGATION.value:
-                future = self.subtask_manager.nav.move_to_location(location, sub_location)
-                if "navigation" not in self.subtask_manager.get_mocked_areas():
-                    rclpy.spin_until_future_complete(self, future)
-                    result = future.result()
-                else:
-                    rclpy.spin_until_future_complete(self, future)
-                    result = future.result()
-                    if result.success:
-                        result = Status.EXECUTION_SUCCESS
+            while result != Status.EXECUTION_SUCCESS and retry < Retries.NAVIGATION.value:
+                result, error = self.subtask_manager.nav.move_to_location(location, sub_location)
+                if result != Status.EXECUTION_SUCCESS:
+                    Logger.warn(
+                        self,
+                        f"Navigation to {location} failed ({error}). "
+                        f"Retry {retry + 1}/{Retries.NAVIGATION.value}",
+                    )
                 retry += 1
             return result
         except Exception as e:
@@ -71,14 +74,13 @@ class SafetyTaskManager(Node):
 
         Logger.info(self, "Ready for open_door")
         self.state = ExecutionStates.WAIT_DOOR_OPEN
-        res = "closed"
-        while res == "closed":
-            time.sleep(1)
-            status, res = self.subtask_manager.nav.check_door()
+        while True:
+            status, _ = self.subtask_manager.nav.check_door()
             if status == Status.EXECUTION_SUCCESS:
-                Logger.info(self, f"Door status: {res}")
-            else:
-                Logger.error(self, "Failed to check door status")
+                Logger.success(self, "Door open")
+                break
+            rclpy.spin_once(self, timeout_sec=0.1)
+            time.sleep(1)
 
         Logger.info(self, "Door OPENED GOING TO NEXT STAT")
         hres: Status = self.nav_to("inspection_point")
