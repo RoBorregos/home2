@@ -8,5 +8,6 @@ var PickManager_8py =
     [ "is_rim", "PickManager_8py.html#a704752b1d0feb96cedbc4b0f55895588", null ],
     [ "CFG_PATHS", "PickManager_8py.html#a99b7b6f851b3ea9aa14340cda1585052", null ],
     [ "FLAT_GRASP_TIMEOUT", "PickManager_8py.html#afcfec5898dcc59164a20e8562b51f08d", null ],
-    [ "FLAT_GRASP_Z_TWEAK", "PickManager_8py.html#a6ebf5ef225508aaa23d867b6e5644785", null ]
+    [ "FLAT_GRASP_Z_TWEAK", "PickManager_8py.html#a6ebf5ef225508aaa23d867b6e5644785", null ],
+    [ "SHELF_CFG_PATHS", "PickManager_8py.html#abb0587c33bfc3f814df794fde223a6e1", null ]
 ];

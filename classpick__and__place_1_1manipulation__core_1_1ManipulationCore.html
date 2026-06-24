@@ -119,6 +119,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:adcd5d52f5b2a4743c98ec5c63bcb5403"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2452bc48f6fa9aa009ee7de0e7eb44f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac2452bc48f6fa9aa009ee7de0e7eb44f">remove_all_collision_object</a> (self, attached=False)</td></tr>
 <tr class="separator:ac2452bc48f6fa9aa009ee7de0e7eb44f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a859fad33f20b19698f492c70ca81f75f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a859fad33f20b19698f492c70ca81f75f">add_shelf_ceiling_guard</a> (self, place_pose, table_height)</td></tr>
+<tr class="separator:a859fad33f20b19698f492c70ca81f75f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae31850d682244edd596c43a01d939d8c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ae31850d682244edd596c43a01d939d8c">remove_shelf_ceiling_guard</a> (self)</td></tr>
+<tr class="separator:ae31850d682244edd596c43a01d939d8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae26b3b1d2227ce950969de8a26fb0877"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ae26b3b1d2227ce950969de8a26fb0877">clear_octomap</a> (self)</td></tr>
 <tr class="separator:ae26b3b1d2227ce950969de8a26fb0877"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3d8443292aa7c88404b7d19dc334ae3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ad3d8443292aa7c88404b7d19dc334ae3">scan_environment</a> (self)</td></tr>
@@ -171,6 +175,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:af24f12619bf5ba6265eb0a56e193149b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a65136601fe7fe980fcc978e41a495f82"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a65136601fe7fe980fcc978e41a495f82">_get_collision_objects_client</a></td></tr>
 <tr class="separator:a65136601fe7fe980fcc978e41a495f82"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af88f14b32f99295fe68957c6641647a7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#af88f14b32f99295fe68957c6641647a7">_add_collision_objects_client</a></td></tr>
+<tr class="separator:af88f14b32f99295fe68957c6641647a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac3979c3e0b2a665f7b7afcbd04e500d3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac3979c3e0b2a665f7b7afcbd04e500d3">_clear_octomap_client</a></td></tr>
 <tr class="separator:ac3979c3e0b2a665f7b7afcbd04e500d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6cf405e9879e49e8ebb3981b9de6d844"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a6cf405e9879e49e8ebb3981b9de6d844">_estop</a></td></tr>
@@ -196,6 +202,41 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a859fad33f20b19698f492c70ca81f75f" name="a859fad33f20b19698f492c70ca81f75f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a859fad33f20b19698f492c70ca81f75f">&#9670;&#160;</a></span>add_shelf_ceiling_guard()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.manipulation_core.ManipulationCore.add_shelf_ceiling_guard </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>place_pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>table_height</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Block the place return from routing the arm up into the compartment ceiling
+(the eye-in-hand octomap never sees it). Slab above the place surface.</pre> 
+</div>
+</div>
 <a id="ae26b3b1d2227ce950969de8a26fb0877" name="ae26b3b1d2227ce950969de8a26fb0877"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae26b3b1d2227ce950969de8a26fb0877">&#9670;&#160;</a></span>clear_octomap()</h2>
 
@@ -384,6 +425,24 @@ Protected Attributes</h2></td></tr>
 <pre class="fragment">Remove the collision object from the scene.</pre> 
 </div>
 </div>
+<a id="ae31850d682244edd596c43a01d939d8c" name="ae31850d682244edd596c43a01d939d8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae31850d682244edd596c43a01d939d8c">&#9670;&#160;</a></span>remove_shelf_ceiling_guard()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.manipulation_core.ManipulationCore.remove_shelf_ceiling_guard </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Remove the ceiling guard so it does not constrain later motions.</pre> 
+</div>
+</div>
 <a id="ad3d8443292aa7c88404b7d19dc334ae3" name="ad3d8443292aa7c88404b7d19dc334ae3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad3d8443292aa7c88404b7d19dc334ae3">&#9670;&#160;</a></span>scan_environment()</h2>
 
@@ -403,6 +462,28 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="af88f14b32f99295fe68957c6641647a7" name="af88f14b32f99295fe68957c6641647a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af88f14b32f99295fe68957c6641647a7">&#9670;&#160;</a></span>_add_collision_objects_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.manipulation_core.ManipulationCore._add_collision_objects_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ac3979c3e0b2a665f7b7afcbd04e500d3" name="ac3979c3e0b2a665f7b7afcbd04e500d3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac3979c3e0b2a665f7b7afcbd04e500d3">&#9670;&#160;</a></span>_clear_octomap_client</h2>
 

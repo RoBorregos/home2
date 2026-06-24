@@ -19,6 +19,7 @@ var classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafegua
     [ "_arm_state", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#ae6223f232c16d405ef5aaaac25ff903e", null ],
     [ "_clean_error_client", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a9dbeb4f32e93b11ccaa6f14639da3956", null ],
     [ "_clear_octomap_client", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a13294a81fec70694829211e74f97826a", null ],
+    [ "_enable_safeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a5ea72fca1b81113e95d0fd0519f97cdb", null ],
     [ "_estop_pub", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a781f5cc8c102fef72df73ab411154b20", null ],
     [ "_in_estop", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#aaafa7d063d348834e919d5089b662386", null ],
     [ "_motion_enable_client", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html#a55d2fd7671e47a991e9b9ce743f138c9", null ],

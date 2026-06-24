@@ -84,6 +84,7 @@ var NAVTREEINDEX0 =
 "PickManager_8py.html#a704752b1d0feb96cedbc4b0f55895588":[39,0,3,0,7,1,0,0,5],
 "PickManager_8py.html#a781c36bc7224c9bd2e246ceb618cc571":[39,0,3,0,7,1,0,0,2],
 "PickManager_8py.html#a99b7b6f851b3ea9aa14340cda1585052":[39,0,3,0,7,1,0,0,6],
+"PickManager_8py.html#abb0587c33bfc3f814df794fde223a6e1":[39,0,3,0,7,1,0,0,9],
 "PickManager_8py.html#ac0e45e8ce9752e5de1e8027188a97dc7":[39,0,3,0,7,1,0,0,3],
 "PickManager_8py.html#afcfec5898dcc59164a20e8562b51f08d":[39,0,3,0,7,1,0,0,7],
 "PickMotion_8action.html":[39,0,2,1,0,4],
@@ -145,12 +146,12 @@ var NAVTREEINDEX0 =
 "add__primitives_8cpp.html":[39,0,3,0,6,4,0],
 "add__primitives_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[39,0,3,0,6,4,0,5],
 "add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59":[39,0,3,0,6,4,0,3],
-"add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[39,0,3,0,6,4,0,3,0],
 "add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[39,0,3,0,6,4,0,3,3],
-"add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[39,0,3,0,6,4,0,3,5],
+"add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[39,0,3,0,6,4,0,3,0],
 "add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[39,0,3,0,6,4,0,3,2],
-"add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[39,0,3,0,6,4,0,3,4],
+"add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[39,0,3,0,6,4,0,3,5],
 "add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[39,0,3,0,6,4,0,3,1],
+"add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[39,0,3,0,6,4,0,3,4],
 "add__primitives_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[39,0,3,0,6,4,0,4],
 "annotated.html":[38,0],
 "aorrtc_8hh.html":[39,0,3,0,9,2,0,0,2,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX0 =
 "classIKSolver.html#a0d7c3270795003a7947ae93ba90b8335":[38,0,129,80],
 "classIKSolver.html#a19d1dfd6307ab991ba52a2508ca88ab9":[38,0,129,8],
 "classIKSolver.html#a19d64b2e1f7c33b7492420d74ff280a0":[38,0,129,13],
-"classIKSolver.html#a2059d93255027d204610a6818e5c45a6":[38,0,129,34],
-"classIKSolver.html#a2369487211ddd441625e3e7aed869467":[38,0,129,67]
+"classIKSolver.html#a2059d93255027d204610a6818e5c45a6":[38,0,129,34]
 };
