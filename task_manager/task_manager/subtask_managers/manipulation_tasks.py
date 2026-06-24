@@ -383,13 +383,16 @@ class ManipulationTasks:
 
         return Status.EXECUTION_SUCCESS
 
-    def place(self, close_to: str = "", special_request: str = ""):
+    def place(self, close_to: str = "", special_request: str = "", from_current: bool = False):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         if close_to:
             goal_msg.place_params.close_to = close_to
         if special_request:
             goal_msg.place_params.special_request = special_request
+        # Skip the server's initial "table_stare" move so the place happens from
+        # where the arm already is.
+        goal_msg.place_params.skip_initial_pose = from_current
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:

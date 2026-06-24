@@ -82,7 +82,7 @@ RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
 
 # Peak pick
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
-PEAK_PRE_GRASP_HEIGHT = 0.05  # m
+PEAK_PRE_GRASP_HEIGHT = 0.12  # m
 PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
 
 # Fixed-distance cartesian move service
@@ -108,7 +108,6 @@ ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
 ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
 GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
 REMOVE_COLLISION_OBJECT_SERVICE = "/manipulation/remove_collision_object"
-
 PICK_OBJECT_NAMESPACE = "frida_pick_object_"
 PLANE_NAMESPACE = "plane"
 PLANE_OBJECT_COLLISION_TOLERANCE = (
