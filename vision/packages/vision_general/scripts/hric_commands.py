@@ -515,8 +515,21 @@ class HRICCommands(Node):
         couches and return the angle of the largest space."""
         available_spaces = queue.PriorityQueue()
 
+        couches_in_room = filter_detections_in_house(
+            frame,
+            self.couches,
+            [57],
+            ["living_room"],
+            self.camera_info,
+            self.depth_image,
+            self.tf_buffer,
+            self._get_areas(),
+            CAMERA_FRAME,
+            rotation=self.rotation,
+        )
+
         # Check if there are couch spaces available
-        for couch in self.couches:
+        for couch in couches_in_room:
             couch_left = couch["bbox"][0]
             couch_right = couch["bbox"][2]
             space = np.zeros(frame.shape[1], dtype=int)
