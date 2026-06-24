@@ -6,7 +6,7 @@ var namespaces_dup =
       [ "main", "namespaceadd__collision__object.html#a4d453f8d2e963ce0e4c23e30c0f9b0bd", null ]
     ] ],
     [ "area_check", "namespacearea__check.html", [
-      [ "fetch_map_areas", "namespacearea__check.html#a31e29e824132e00b763b97085ce29058", null ],
+      [ "fetch_map_areas", "namespacearea__check.html#a6c483f65cdbb0f4d2866e5426e3e00c5", null ],
       [ "filter_detections_in_house", "namespacearea__check.html#a2f9676eacc1c5466e43c74599c50c4fa", null ],
       [ "is_point_in_house", "namespacearea__check.html#a96dc766a4c5632b741a45f3930ea3448", null ],
       [ "is_point_in_room", "namespacearea__check.html#adde7b9820374ec0867e3bcc9888ae56f", null ],
