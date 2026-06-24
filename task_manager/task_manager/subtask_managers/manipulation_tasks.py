@@ -491,6 +491,47 @@ class ManipulationTasks:
             Logger.warning(self.node, f"Error scanning {direction.value}: {e}")
             return True
 
+    def _sweep_floor_for_octomap(
+        self,
+        scan_named_position: str,
+        sweep_offset: float = 60.0,
+        tilt_down_offset: float = 15.0,
+        settle_time: float = 0.8,
+    ) -> None:
+        """Physically sweep the camera across the floor to populate the octomap
+        before plan-based collision checks. Without this the planner sees an
+        empty world and `_check_side_blocked` reports CLEAR even when blocked.
+
+        Pans joint1 left then right with joint5 tilted further down, pausing at
+        each end so the depth → octomap pipeline can integrate frames. Returns
+        the arm to the scan pose afterwards.
+        """
+        try:
+            current_joints = self.get_joint_positions(degrees=True)
+            if not isinstance(current_joints, dict):
+                Logger.warn(self.node, "Floor sweep skipped: could not read joints")
+                return
+
+            tilted = current_joints.copy()
+            tilted["joint5"] += tilt_down_offset
+            self.move_joint_positions(joint_positions=tilted, velocity=0.3, degrees=True)
+            t.sleep(settle_time)
+
+            left = tilted.copy()
+            left["joint1"] += sweep_offset
+            self.move_joint_positions(joint_positions=left, velocity=0.25, degrees=True)
+            t.sleep(settle_time)
+
+            right = tilted.copy()
+            right["joint1"] -= sweep_offset
+            self.move_joint_positions(joint_positions=right, velocity=0.25, degrees=True)
+            t.sleep(settle_time)
+
+            self.move_joint_positions(named_position=scan_named_position, velocity=0.3)
+            t.sleep(settle_time)
+        except Exception as e:
+            Logger.warn(self.node, f"Floor sweep failed: {e}")
+
     def place_on_floor(self, named_position: str = "pick_stare_at_table") -> int:
         try:
             Logger.info(self.node, f"Moving to {named_position}...")
@@ -499,6 +540,9 @@ class ManipulationTasks:
             if result != Status.EXECUTION_SUCCESS:
                 Logger.error(self.node, "Failed to reach start position")
                 return Status.EXECUTION_ERROR
+
+            Logger.info(self.node, "Sweeping floor to populate octomap...")
+            self._sweep_floor_for_octomap(scan_named_position=named_position)
 
             has_collision_left = self._check_side_blocked(self.Direction.LEFT)
 
