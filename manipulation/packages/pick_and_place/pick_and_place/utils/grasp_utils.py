@@ -105,13 +105,14 @@ def move_to_pregrasp_nearest_ik(
             # Pass the named-joint dict
             joints = {n: float(sol[n]) for n in arm_names}
             _info("[PreGrasp] Moving via nearest-IK joint goal")
-            if move_joint_positions(
-                move_joints_action_client,
-                joint_positions={"joints": joints, "degrees": False},
-                velocity=velocity,
-                wait=True,
-            ):
-                True
+            return bool(
+                move_joint_positions(
+                    move_joints_action_client,
+                    joint_positions={"joints": joints, "degrees": False},
+                    velocity=velocity,
+                    wait=True,
+                )
+            )
 
     _warn("[PreGrasp] Nearest-IK unavailable, falling back to pose goal")
     if fallback_move_to_pose is None:

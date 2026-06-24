@@ -82,7 +82,7 @@ RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
 
 # Peak pick
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
-PEAK_PRE_GRASP_HEIGHT = 0.12  # m
+PEAK_PRE_GRASP_HEIGHT = 0.15  # m
 PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
 
 # Fixed-distance cartesian move service
