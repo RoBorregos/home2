@@ -31,6 +31,11 @@ INITIAL_POSE_TOPIC = "/initialpose"
 ### Manual resume service (nav_central exposes this so the UI can unpause nav2+rtabmap)
 RESUME_NAV_SERVICE = "/navigation/resume_nav"
 
+### Path query service (distance between two map areas without moving)
+NAV_QUERY_SERVICE = "/navigation/query_path"
+COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
+TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
+
 ### Table/shelf docking (perpendicular approach) — see table_docker.py
 DOCK_SERVICE = "/navigation/dock_to_surface"  # std_srvs/Trigger: align + approach
 UNDOCK_SERVICE = (
@@ -64,6 +69,9 @@ NAV2_LIFECYCLE_SERVICE = "/lifecycle_manager_navigation/manage_nodes"
 class SUBTASK_MANAGER(Enum):
     SERVICE_TIMEOUT = 2.0
     AREAS_RETRIEVE_TIMEOUT = 2.0
+    # Path query may resume nav2 (up to TIMEOUT_NAV2_LIFECYCLE), plan
+    # (up to TIMEOUT_NAV_QUERY) and re-pause, so give it ample room
+    NAV_QUERY_TIMEOUT = 30.0
 
 
 # Default docking offset (table_docker front_offset).

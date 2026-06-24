@@ -6,8 +6,7 @@ Node for Moondream functions
 
 import grpc
 import rclpy
-import pathlib
-from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 import cv2
 import sys
 import os
@@ -40,7 +39,6 @@ sys.path.append(os.path.join(PATH, "moondream_server"))
 import moondream_proto_pb2  # noqa
 import moondream_proto_pb2_grpc  # noqa
 
-YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 NOT_FOUND = "not found"
 
 # MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
@@ -83,7 +81,7 @@ class MoondreamNode(Node):
             ObjectPoints, OBJECT_POINTS_TOPIC, self.object_points_callback
         )
 
-        self.yolo_model = YOLO(YOLO_LOCATION)
+        self.yolo_model = load_yolo_trt("yolov8n.pt")
         # self.moondream_model = MoonDreamModel()
 
         # gRPC client setup

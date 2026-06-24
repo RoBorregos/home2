@@ -11,7 +11,7 @@
 #   * Removed the charging-dock server (nova_carter_dock) — not on this robot.
 #   * Removed PreferForwardCritic (a diff-drive forward bias) and ObstaclesCritic
 #     (redundant with CostCritic, the modern footprint-aware obstacle critic).
-#   * odom_topic -> /odometry/filtered (the EKF output; see ekf.launch.py).
+#   * odom_topic -> /odrive/odom (raw ODrive wheel odometry, not the EKF output).
 #   * Added the controller_plugins / progress_checker / goal_checker that were
 #     missing from the source file (nav2 will not load FollowPath without them).
 #   * velocity_smoother + MPPI limits opened up on the Y (lateral) axis.
@@ -32,7 +32,7 @@ bt_navigator:
     use_sim_time: False
     global_frame: map
     robot_base_frame: base_link
-    odom_topic: /odometry/filtered
+    odom_topic: /odrive/odom
     bt_loop_duration: 50
     default_server_timeout: 20
     wait_for_service_timeout: 10000
@@ -53,11 +53,11 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    controller_frequency: 15.0
-    odom_topic: /odometry/filtered
+    controller_frequency: 20.0   # raised 15->20 for snappier control (nav now has dedicated cores)
+    odom_topic: /odrive/odom
     # These three were missing in the source file but are REQUIRED.
     controller_plugins: ["FollowPath"]
-    progress_checker_plugin: "progress_checker"
+    progress_checker_plugins: ["progress_checker"]   # Nav2 1.4.0 renamed the singular progress_checker_plugin -> plural list
     goal_checker_plugins: ["general_goal_checker"]
 
     progress_checker:
@@ -68,8 +68,10 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.15      # tighten for more precise stops (omni can hit ~0.1 cleanly)
-      yaw_goal_tolerance: 0.15
+      xy_goal_tolerance: 0.35      # area/safe_place waypoints are zones, not precise docks. Loosened so MPPI
+                                   # does not fail the final approach when a waypoint sits near inflation
+                                   # (e.g. office.safe_place ~0.3 m from a wall). Precise approaches use table_docker.
+      yaw_goal_tolerance: 0.25
 
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
@@ -81,10 +83,10 @@ controller_server:
       vy_std: 0.2
       wz_std: 0.3
       # ---- Velocity limits (symmetric for a holonomic base) ----
-      vx_max: 0.5
+      vx_max: 0.7
       vx_min: -0.35
-      vy_max: 0.5                  # was 0.0 (diff drive) — lateral motion now allowed
-      wz_max: 1.2
+      vy_max: 0.7                  # was 0.0 (diff drive) — lateral motion now allowed
+      wz_max: 1.5
       # ---- Acceleration limits ----
       ax_max: 2.2
       ax_min: -1.8
@@ -114,7 +116,8 @@ controller_server:
         critical_cost: 300.0
         consider_footprint: true   # footprint-aware collision cost (set the real footprint below!)
         collision_cost: 1000000.0
-        near_goal_distance: 0.5
+        near_goal_distance: 0.8     # relax inflation cost over a larger zone near the goal so MPPI can
+                                    # approach waypoints close to walls/furniture without the optimizer failing
         trajectory_point_step: 3
       GoalCritic:
         enabled: true
@@ -138,7 +141,7 @@ controller_server:
       PathFollowCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 5.0
+        cost_weight: 6.0           # 5.0->6.0: push harder along the path (don't dawdle)
         offset_from_furthest: 5
         threshold_to_consider: 1.4
       PathAngleCritic:
@@ -172,7 +175,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0   # gentler than the source's 7.0 -> smoother cost gradient for MPPI
-        inflation_radius: 0.40     # keep > robot circumscribed radius; lower it to fit tighter gaps
+        inflation_radius: 0.45     # MUST be > circumscribed radius (~0.424 = footprint + 0.01 padding); soft cost gradient, not a hard clearance
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -318,7 +321,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
-        inflation_radius: 0.40
+        inflation_radius: 0.45
       always_send_full_costmap: False
 
 planner_server:
@@ -327,7 +330,7 @@ planner_server:
     use_sim_time: False
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
+      plugin: "nav2_navfn_planner::NavfnPlanner"   # Nav2 1.4.0 dropped the slash-style plugin name
       tolerance: 0.5
       use_astar: true
       allow_unknown: true
@@ -350,13 +353,13 @@ behavior_server:
     cycle_frequency: 10.0
     behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]   # dropped assisted_teleop (unused)
     spin:
-      plugin: "nav2_behaviors/Spin"
+      plugin: "nav2_behaviors::Spin"
     backup:
-      plugin: "nav2_behaviors/BackUp"
+      plugin: "nav2_behaviors::BackUp"
     drive_on_heading:
-      plugin: "nav2_behaviors/DriveOnHeading"
+      plugin: "nav2_behaviors::DriveOnHeading"
     wait:
-      plugin: "nav2_behaviors/Wait"
+      plugin: "nav2_behaviors::Wait"
     global_frame: odom
     robot_base_frame: base_link
     transform_tolerance: 0.2
@@ -376,11 +379,11 @@ velocity_smoother:
     scale_velocities: False
     feedback: "OPEN_LOOP"
     # [vx, vy, wz] — Y axis opened up for the holonomic base.
-    max_velocity: [0.5, 0.5, 1.2]
+    max_velocity: [0.7, 0.7, 1.5]
     min_velocity: [-0.35, -0.5, -1.2]
     max_accel: [2.2, 2.0, 2.5]
     max_decel: [-2.2, -2.0, -2.5]
-    odom_topic: /odometry/filtered
+    odom_topic: /odrive/odom
     odom_duration: 0.1
     deadband_velocity: [0.05, 0.05, 0.05]
     velocity_timeout: 1.0
