@@ -124,10 +124,9 @@ class HRIC_TM(Node):
         """Navigate to the location"""
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
-        if not self.carrying_bag:
-            self.subtask_manager.manipulation.clear_collision_objects()
-            self.subtask_manager.manipulation.move_to_position("nav_pose")
-        else:
+        self.subtask_manager.manipulation.clear_collision_objects()
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        if self.carrying_bag:
             self.subtask_manager.manipulation.move_to_position("nav_carry_bag_pose")
         if say:
             Logger.info(self, f"Moving to {location}")
