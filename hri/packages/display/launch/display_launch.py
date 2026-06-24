@@ -18,6 +18,13 @@ def generate_launch_description():
         output="screen",
     )
 
+    display_ui_node = launch_ros.actions.Node(
+        package="display",
+        executable="display_ui.py",
+        name="display_ui",
+        output="screen",
+    )
+
     return LaunchDescription(
         [
             ExecuteProcess(
@@ -27,5 +34,6 @@ def generate_launch_description():
             ),
             rosbridge_node,
             web_video_node,
+            display_ui_node,
         ]
     )
