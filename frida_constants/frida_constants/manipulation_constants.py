@@ -108,6 +108,7 @@ ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
 ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
 GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
 REMOVE_COLLISION_OBJECT_SERVICE = "/manipulation/remove_collision_object"
+
 PICK_OBJECT_NAMESPACE = "frida_pick_object_"
 PLANE_NAMESPACE = "plane"
 PLANE_OBJECT_COLLISION_TOLERANCE = (

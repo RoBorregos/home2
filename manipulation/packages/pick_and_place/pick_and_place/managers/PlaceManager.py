@@ -49,8 +49,7 @@ class PlaceManager:
 
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
         self.node.get_logger().info("Executing Place Task")
-        # Set initial joint positions (unless asked to place from the current
-        # pose, e.g. right after a pick where we want to stay put).
+        # Set initial joint positions
         if not place_params.is_shelf and not place_params.skip_initial_pose:
             self.node.get_logger().info("Setting initial joint positions")
             send_joint_goal(

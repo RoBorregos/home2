@@ -38,9 +38,7 @@ class DoingLaundryTM(Node):
 
     def __init__(self):
         super().__init__("doing_laundry_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.DOING_LAUNDRY, mock_areas=["navigation", "hri"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.DOING_LAUNDRY, mock_areas=[])
         self.current_state = DoingLaundryTM.TaskStates.PICK_CLOTHES_BASKET
         self.running_task = True
 
