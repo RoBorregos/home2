@@ -6,6 +6,8 @@ from frida_interfaces.srv import (
 )
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
+from moveit_msgs.srv import GetPlanningScene, ApplyPlanningScene
+from moveit_msgs.msg import PlanningScene, PlanningSceneComponents, CollisionObject
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
 from frida_interfaces.action import PickMotion
@@ -92,7 +94,6 @@ class PickManager:
 
     def __init__(self, node):
         self.node = node
-
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
@@ -101,11 +102,51 @@ class PickManager:
         self._estimate_flat_grasp_client = self.node.create_client(
             EstimateFlatGrasp, "/manipulation/estimate_flat_grasp"
         )
+        self._get_scene_client = self.node.create_client(
+            GetPlanningScene, "/get_planning_scene"
+        )
+        self._apply_scene_client = self.node.create_client(
+            ApplyPlanningScene, "/apply_planning_scene"
+        )
+
+    def _clear_world_collision_objects(self):
+        """Remove accumulated world collision objects before perceiving fresh
+        ones; stale per-attempt clutter blocks grasp goal sampling."""
+        try:
+            if not self._get_scene_client.wait_for_service(timeout_sec=2.0):
+                return
+            req = GetPlanningScene.Request()
+            req.components.components = PlanningSceneComponents.WORLD_OBJECT_NAMES
+            fut = wait_for_future(self._get_scene_client.call_async(req), timeout=5)
+            if fut is None or fut.result() is None:
+                return
+            objs = fut.result().scene.world.collision_objects
+            if not objs:
+                return
+            scene = PlanningScene()
+            scene.is_diff = True
+            for o in objs:
+                co = CollisionObject()
+                co.id = o.id
+                co.header = o.header
+                co.operation = CollisionObject.REMOVE
+                scene.world.collision_objects.append(co)
+            if not self._apply_scene_client.wait_for_service(timeout_sec=2.0):
+                return
+            areq = ApplyPlanningScene.Request()
+            areq.scene = scene
+            wait_for_future(self._apply_scene_client.call_async(areq), timeout=5)
+            self.node.get_logger().info(
+                f"Cleared {len(objs)} stale collision objects before pick"
+            )
+        except Exception as e:
+            self.node.get_logger().warn(f"Collision clear skipped: {e}")
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params, is_shelf: bool = False
     ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
+        self._clear_world_collision_objects()
         self.node.get_logger().info("Setting initial joint positions")
 
         is_rim_object = is_rim(object_name)
@@ -233,9 +274,9 @@ class PickManager:
         print("Gripper Result:", result)
 
         if is_flat_object:
-            # Flat: 90° alternative (either short/long axis grip works).
-            # Rim/Peak: 180° flip about Z (top-down grasp is symmetric).
-            alt_angle = 180 if (is_rim_object or is_peak_object) else 90
+            # Always flip 180 (top-down symmetric). A 90 alt on flat cutlery would
+            # align the fingers with the long axis and collide with the object.
+            alt_angle = 180
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
                 [
@@ -269,6 +310,8 @@ class PickManager:
                     pick_result_success = True
 
         else:
+            # Shelf collision is handled by the sphere generation; the cavity boxes
+            # over-constrained the narrow grasp (OMPL found no plan), so leave them off.
             for CFG_PATH in CFG_PATHS:
                 cfg_path = CFG_PATH[0]
                 is_reversible = CFG_PATH[1]

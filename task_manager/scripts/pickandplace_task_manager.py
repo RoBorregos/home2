@@ -25,6 +25,7 @@ from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PointStamped
 from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
+from std_msgs.msg import String
 from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
 from task_manager.utils.colored_logger import CLog
@@ -234,6 +235,8 @@ class PickAndPlaceTM(Node):
             10,
         )
 
+        self.display_pub = self.create_publisher(String, "/pickandplace/display/task_step", 10)
+
         self.current_state = PickAndPlaceTM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         CLog.fsm(self, "STATE", "PickAndPlaceTaskManager has started.")
@@ -266,6 +269,8 @@ class PickAndPlaceTM(Node):
         if self.state_times:
             total_time = sum(self.state_times.values())
             CLog.fsm(self, "TIMER", f"Total time elapsed: {total_time:.2f}s")
+
+        self.display_pub.publish(String(data=new_state.lower()))
 
         CLog.fsm(
             self,
