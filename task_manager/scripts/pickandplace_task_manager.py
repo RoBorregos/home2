@@ -164,6 +164,13 @@ class PickAndPlaceTM(Node):
             Location.BREAKFAST_ITEMS: ("kitchen", "breakfast_items"),
         }
 
+        self.dock_offsets: dict[Location, float] = {
+            Location.DINING_TABLE: 0.0,
+            Location.SIDE_TABLE: 0.0,
+            Location.BREAKFAST_SURFACE: 0.0,
+            Location.CABINET: 0.0,
+        }
+
         # Object tracking
         self.detected_objects: list[ObjectInfo] = []
         self.current_object_index = 0
@@ -295,6 +302,11 @@ class PickAndPlaceTM(Node):
         result = self.navigate_to(room, sublocation, say=say)
         if result == Status.EXECUTION_SUCCESS:
             self.current_location = location
+            if location in self.dock_offsets:
+                offset = self.dock_offsets[location]
+                dock_status, dock_error = self.subtask_manager.nav.dock_table(offset=offset)
+                if dock_status != Status.EXECUTION_SUCCESS:
+                    CLog.nav(self, "WARN", f"Docking to {location.value} failed: {dock_error}")
         return result
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):

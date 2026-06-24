@@ -33,6 +33,20 @@ class GPSRSingleTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
 
+        self.dock_offsets: dict[str, float] = {
+            "dining_table": 0.0,
+            "side_table": 0.0,
+            "breakfast_surface": 0.0,
+            "cabinet": 0.0,
+        }
+
+    def _dock_if_surface(self, sublocation: str):
+        """Dock perpendicular to the surface if it's a known pick/place sublocation."""
+        if sublocation not in self.dock_offsets:
+            return
+        offset = self.dock_offsets[sublocation]
+        self.subtask_manager.nav.dock_table(offset=offset)
+
     ## Nav
     def go_to(self, command: GoTo):
         """
@@ -66,6 +80,8 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
         result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        if result == Status.EXECUTION_SUCCESS:
+            self._dock_if_surface(location.subarea)
         return result, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -78,6 +94,8 @@ class GPSRSingleTask(GenericTask):
             self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        if result == Status.EXECUTION_SUCCESS:
+            self._dock_if_surface(sublocation)
         return result
 
     ## Manipulation
