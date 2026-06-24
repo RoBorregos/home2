@@ -30,7 +30,7 @@ from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
 from std_srvs.srv import Empty
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
-from task_manager.utils.shelf_pick_logic import find_target_on_level
+from task_manager.utils.shelf_pick_logic import find_target_on_level, load_shelf_levels
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 2
@@ -141,9 +141,10 @@ class PickAndPlaceTM(Node):
             "milk": "yogurt",
         }
 
-        # Shelf heights in base_link Z (calibrate with RViz Publish Point)
-        self.shelf_level_heights = {1: 0.599, 2: 0.946, 3: 1.298}
-        self.default_shelf_height = 0.599
+        # Shelf heights in base_link Z: read the calibration JSON (re-measurable at
+        # competition via the calibrator), falling back to these calibrated values.
+        self.shelf_level_heights = load_shelf_levels({1: 0.599, 2: 0.946, 3: 1.298})
+        self.default_shelf_height = min(self.shelf_level_heights.values())
 
         # ==========================================================
         # END COMPETITION CONFIG
