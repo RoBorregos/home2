@@ -631,7 +631,7 @@ class FlatGraspEstimator(Node):
         if points_base is None:
             return
 
-        # --- FLOOR REJECTION (same as rim/peak) ---
+        # --- FLOOR REJECTION ---
         floor_z = np.percentile(points_base[:, 2], 5)
         bin_points = points_base[points_base[:, 2] > floor_z + RIM_MIN_HEIGHT]
         if len(bin_points) < MIN_POINTS_FOR_PCA:
@@ -647,7 +647,7 @@ class FlatGraspEstimator(Node):
         # Place pose: fixed offset above the rim top, centered over the bin.
         place_z = top_z + PLACE_TRASH_HEIGHT_OFFSET
 
-        # --- TOP-DOWN ORIENTATION (object just needs to face down) ---
+        # --- TOP-DOWN ORIENTATION ---
         Z_grasp = np.array([0.0, 0.0, -1.0])
         X_grasp = np.array([1.0, 0.0, 0.0])
         Y_grasp = np.cross(Z_grasp, X_grasp)

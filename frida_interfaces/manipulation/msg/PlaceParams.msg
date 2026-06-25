@@ -3,7 +3,7 @@ float32 table_height_tolerance
 
 bool is_shelf
 
-# When true, the place is into a trash bin (dedicated detect-and-drop flow)
+# When true, the place is into a trash bin
 bool is_trash
 
 string close_to
