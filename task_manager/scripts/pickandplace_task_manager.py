@@ -503,6 +503,7 @@ class PickAndPlaceTM(Node):
             ]
             if find_target_on_level(candidates, object_name, height) is not None:
                 CLog.manip(self, "PICK", f"Found {object_name} at shelf height {height:.3f}.")
+                self.announce_objects([object_name])
                 found_level = height
                 before_counts = self._shelf_counts(detections, height)
                 break
@@ -610,6 +611,14 @@ class PickAndPlaceTM(Node):
         fallbacks = [h for h in all_heights if abs(h - primary) > 1e-6]
         return [primary] + fallbacks
 
+    def announce_objects(self, names):
+        """Name each object for its recognize point. Recognize scores per object
+        instance, so a cleanup spoon and a separate breakfast spoon each count."""
+        for name in names:
+            if name and name != "unknown":
+                self.subtask_manager.hri.say(f"I see a {name}.")
+                self.timeout(0.3)
+
     # ------------------------------------------------------------------
     # Finite State Machine
     # ------------------------------------------------------------------
@@ -712,8 +721,7 @@ class PickAndPlaceTM(Node):
 
             for obj in self.detected_objects:
                 CLog.vision(self, "DETECT", f"Object: {obj.name}, Category: {obj.category.value}")
-                self.subtask_manager.hri.say(f"I see a {obj.name}.")
-                self.timeout(0.5)
+            self.announce_objects([obj.name for obj in self.detected_objects])
 
             self.current_object_index = 0
             self.current_state = PickAndPlaceTM.TaskStates.SORT_OBJECTS
@@ -1027,13 +1035,15 @@ class PickAndPlaceTM(Node):
                     f"Object placement: {dict(self.object_to_placing_shelf)}",
                 )
 
+                name_to_cat = {o.name: o.category.value for o in self.detected_objects}
                 for obj_name, shelf_idxs in self.object_to_placing_shelf.items():
                     if shelf_idxs:
                         shelf_idx = shelf_idxs[0]
                         level = shelf_levels[shelf_idx] if shelf_idx < len(shelf_levels) else 1
-                        height = self.shelf_level_heights.get(level, self.default_shelf_height)
+                        cat = name_to_cat.get(obj_name, "")
+                        where = f"shelf {level}" + (f", the {cat} shelf" if cat else "")
                         self.subtask_manager.hri.say(
-                            f"{obj_name} goes to shelf {level} at {height} metres.",
+                            f"The {obj_name} goes on {where}.",
                             wait=False,
                         )
                         self.timeout(0.5)
