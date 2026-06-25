@@ -16,9 +16,17 @@ from frida_constants.navigation_constants import (
     MOVE_LOCATION_SERVICE,
     NAV_QUERY_SERVICE,
     DOCK_TABLE_SERVICE,
+    RELATIVE_MOVE_SERVICE,
     SUBTASK_MANAGER,
 )
-from frida_interfaces.srv import CheckDoor, MapAreas, MoveLocation, NavQuery, DockTable
+from frida_interfaces.srv import (
+    CheckDoor,
+    MapAreas,
+    MoveLocation,
+    NavQuery,
+    DockTable,
+    RelativeMove,
+)
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -40,6 +48,7 @@ class NavigationTasks:
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
         self.nav_query_srv = self.node.create_client(NavQuery, NAV_QUERY_SERVICE)
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
+        self.relative_move_srv = self.node.create_client(RelativeMove, RELATIVE_MOVE_SERVICE)
 
         # Task Actions and Services check
         self.services = {
@@ -49,6 +58,7 @@ class NavigationTasks:
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
+                "relative_move_srv": {"client": self.relative_move_srv, "type": "service"},
             },
         }
 
@@ -238,6 +248,35 @@ class NavigationTasks:
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
+    @service_check(
+        "relative_move_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_relative(self, distance, backward=False):
+        """Odom-measured straight move of the base along base_link x.
+
+        distance: meters to travel (>= 0). backward: False -> forward, True -> backward.
+        Used to push the arm into / out of the washing machine.
+        """
+        direction = "backward" if backward else "forward"
+        CLog.nav(self.node, "MOVE", f"Relative move {direction} {distance:.2f} m")
+        request = RelativeMove.Request()
+        request.distance = float(abs(distance))
+        request.backward = bool(backward)
+        future = self.relative_move_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is None:
+            CLog.nav(self.node, "ERROR", "Service request failed (None result)")
+            return (Status.EXECUTION_ERROR, "Error with request")
+        if result.success:
+            CLog.nav(self.node, "SUCCESS", "Relative move done")
+            return (Status.EXECUTION_SUCCESS, "")
+        CLog.nav(self.node, "ERROR", f"Relative move failed: {result.error}")
+        return (Status.EXECUTION_ERROR, result.error)
 
 
 if __name__ == "__main__":

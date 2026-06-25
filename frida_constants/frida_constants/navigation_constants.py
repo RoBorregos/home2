@@ -25,6 +25,9 @@ MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 DOCK_TABLE_SERVICE = "/navigation/dock_table"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
+### Relative odom-measured straight move (table_docker): forward/backward by distance
+RELATIVE_MOVE_SERVICE = "/navigation/relative_move"
+
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"
 

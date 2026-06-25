@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-"""End-to-end test for the arrow-shape washing-machine alignment.
+"""End-to-end test for the washing-machine insert-and-pick.
 
-Look pose -> moondream bbox+ROI centroid -> snapshot in base_link -> arrow align.
-The ZED travels with the arm, so the centroid is snapshotted in `base_link`
-BEFORE moving — that frame is the only one that's still valid after the move.
+Look pose -> moondream centroid -> snapshot in base_link -> arrow align ->
+drive base in (odom RelativeMove) -> wrist down -> close -> wrist up -> base out.
+The ZED rides the arm, so the centroid is snapshotted in `base_link` BEFORE
+moving — that frame is the only one still valid after the arm moves.
 """
 
 import sys
@@ -15,15 +16,17 @@ from rclpy.node import Node
 from tf2_geometry_msgs import do_transform_point
 
 from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
+from task_manager.subtask_managers.nav_tasks import NavigationTasks
 from task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 
 LOOK_POSE = "front_low_stare"
-ARROW_POSE = "washing_machine_arrow_pose"
-WRIST_FRAME = "gripper_grasp_frame"
+GRIPPER_FRAME = "gripper_grasp_frame"
 SUBJECT = "round container entrance of color orange"
+INSERT_DEPTH = 0.10
+LOOKDOWN_DEG = 90.0
 
 
 class TestMoveToWashingMachine(Node):
@@ -31,6 +34,7 @@ class TestMoveToWashingMachine(Node):
         super().__init__("test_move_to_washing_machine")
         self.vision = VisionTasks(self, task=Task.DEBUG)
         self.manipulation = ManipulationTasks(self, task=Task.DEBUG)
+        self.nav = NavigationTasks(self, task=Task.DEBUG)
         self._tf_buffer = tf2_ros.Buffer()
         self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
         rclpy.spin_once(self, timeout_sec=1.0)
@@ -47,13 +51,9 @@ class TestMoveToWashingMachine(Node):
 
         Logger.info(self, "Requesting centroid from moondream...")
         point = self.vision.get_moondream_point_3d(SUBJECT)
-        if point is None:
+        if point is None or point.header.frame_id == "":
             Logger.error(self, "No centroid returned")
             return 1
-        p = point.point
-        Logger.success(
-            self, f"Centroid in {point.header.frame_id}: ({p.x:.3f}, {p.y:.3f}, {p.z:.3f})"
-        )
 
         try:
             tf = self._tf_buffer.lookup_transform(
@@ -62,36 +62,45 @@ class TestMoveToWashingMachine(Node):
                 rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=2.0),
             )
+            opening = do_transform_point(point, tf)
         except Exception as e:
             Logger.error(self, f"TF {point.header.frame_id} -> base_link failed: {e}")
             return 4
-        point_in_base = do_transform_point(point, tf)
-        point_in_base.header.frame_id = "base_link"
-        pb = point_in_base.point
-        Logger.info(self, f"Cached centroid in base_link: ({pb.x:.3f}, {pb.y:.3f}, {pb.z:.3f})")
+        pb = opening.point
+        Logger.info(self, f"Opening in base_link: ({pb.x:.3f}, {pb.y:.3f}, {pb.z:.3f})")
 
-        Logger.info(self, f"Pointing arrow at centroid via '{ARROW_POSE}'...")
-        if (
-            self.manipulation.align_arm_toward_centroid(point_in_base, pre_pose=ARROW_POSE)
-            != Status.EXECUTION_SUCCESS
-        ):
+        Logger.info(self, "Aligning arm toward opening...")
+        if self.manipulation.align_arm_toward_centroid(opening) != Status.EXECUTION_SUCCESS:
             Logger.error(self, "align_arm_toward_centroid failed")
             return 2
 
+        # Forward push = remaining gap to the opening + margin, from the aligned pose.
         rclpy.spin_once(self, timeout_sec=0.5)
         try:
-            w = self._tf_buffer.lookup_transform(
+            g = self._tf_buffer.lookup_transform(
                 "base_link",
-                WRIST_FRAME,
+                GRIPPER_FRAME,
                 rclpy.time.Time(),
                 timeout=rclpy.duration.Duration(seconds=2.0),
             ).transform.translation
-            Logger.info(
-                self,
-                f"Final wrist=({w.x:.3f}, {w.y:.3f}, {w.z:.3f}); centroid z={pb.z:.3f}",
-            )
         except Exception as e:
-            Logger.warn(self, f"Final TF verification failed: {e}")
+            Logger.error(self, f"TF base_link <- {GRIPPER_FRAME} failed: {e}")
+            return 5
+        forward = max(0.0, (pb.x - g.x) + INSERT_DEPTH)
+        Logger.info(self, f"Pushing base forward {forward:.3f} m")
+
+        self.manipulation.open_gripper()
+        if self.nav.move_relative(forward, backward=False)[0] != Status.EXECUTION_SUCCESS:
+            Logger.error(self, "Forward insert failed")
+            return 6
+
+        self.manipulation.rotate_wrist_pitch(LOOKDOWN_DEG)
+        self.manipulation.close_gripper()
+        self.manipulation.rotate_wrist_pitch(-LOOKDOWN_DEG)
+
+        if self.nav.move_relative(forward, backward=True)[0] != Status.EXECUTION_SUCCESS:
+            Logger.error(self, "Retreat failed")
+            return 7
 
         Logger.success(self, "Done.")
         return 0
