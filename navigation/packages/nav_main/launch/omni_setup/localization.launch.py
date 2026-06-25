@@ -51,29 +51,19 @@ def launch_setup(context, *args, **kwargs):
     params_file = LaunchConfiguration('params_file')
     map_name = LaunchConfiguration('map')
 
-    # Serialized pose-graph base path (no extension). The editable occupancy grid
-    # defaults to "<map>.yaml" right next to it (that is what nav_ui saves).
-    map_base = map_name.perform(context)
-    map_yaml = LaunchConfiguration('map_yaml').perform(context)
-    if not map_yaml:
-        map_yaml = map_base + '.yaml'
-
-    # Auto-enable the editable static map server when the grid YAML exists; an
-    # explicit use_static_map_server:=true|false overrides the auto-detection.
-    use_static_arg = LaunchConfiguration('use_static_map_server').perform(context)
-    if use_static_arg == '':
-        static_on = os.path.exists(map_yaml)
-    else:
-        static_on = use_static_arg.lower() in ('true', '1')
-
-    print(f"[localization] static map server: yaml '{map_yaml}' "
-          f"exists={os.path.exists(map_yaml)} -> use_static_map_server={static_on}")
+    # When the editable static map server is active (map_server is loaded INSIDE the
+    # nav2 container by nav2_omni.launch.py — co-located so the latched /map is
+    # delivered in-process and not dropped), move slam_toolbox's own rasterized grid
+    # off /map -> /slam_map so map_server owns the /map the costmap static_layer reads.
+    # slam_toolbox keeps doing pose localization (map->odom TF) either way.
+    static_on = LaunchConfiguration('use_static_map_server').perform(context).lower() in ('true', '1')
+    slam_remaps = [('/map', '/slam_map'), ('/map_metadata', '/slam_map_metadata')] if static_on else []
+    print(f"[localization] use_static_map_server={static_on} -> slam_toolbox "
+          + ("/map remapped to /slam_map (map_server owns /map)" if static_on
+             else "publishes /map directly"))
 
     # Dedicated localization node: rolling-buffer scan match against the loaded
     # graph, publishes map->odom. The map arg overrides map_file_name in the YAML.
-    # When the editable static map is on, move slam_toolbox's rasterized grid off
-    # /map (-> /slam_map) so map_server owns the /map the costmap static_layer reads.
-    slam_remaps = [('/map', '/slam_map'), ('/map_metadata', '/slam_map_metadata')] if static_on else []
     slam_node = Node(
         package='slam_toolbox',
         executable='localization_slam_toolbox_node',
@@ -92,40 +82,7 @@ def launch_setup(context, *args, **kwargs):
         remappings=slam_remaps,
     )
 
-    actions = [slam_node]
-
-    if static_on:
-        # Serve the editable occupancy grid as the latched /map. Co-aligned with
-        # the pose-graph because nav_ui exports both from the same SLAM session.
-        map_server = Node(
-            package='nav2_map_server',
-            executable='map_server',
-            name='map_server',
-            output='screen',
-            emulate_tty=True,
-            parameters=[{
-                'use_sim_time': use_sim_time,
-                'yaml_filename': map_yaml,
-                'topic_name': 'map',
-                'frame_id': 'map',
-            }],
-        )
-        # Brings map_server through configure->activate (autostart) so /map is
-        # published before the costmaps come up. Separate from nav2's own manager.
-        lifecycle_manager_map = Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_map',
-            output='screen',
-            parameters=[{
-                'use_sim_time': use_sim_time,
-                'autostart': True,
-                'node_names': ['map_server'],
-            }],
-        )
-        actions += [map_server, lifecycle_manager_map]
-
-    return actions
+    return [slam_node]
 
 
 def generate_launch_description():
@@ -143,22 +100,17 @@ def generate_launch_description():
         description='Serialized pose-graph map to localize against — absolute path '
                     'WITHOUT extension (loads <map>.posegraph + <map>.data). '
                     'Overrides map_file_name from the params YAML.')
-    declare_map_yaml = DeclareLaunchArgument(
-        'map_yaml', default_value='',
-        description='Occupancy-grid YAML served as the EDITABLE static /map via '
-                    'map_server. Default: <map>.yaml next to the serialized map. '
-                    'Edit its .pgm to add/erase obstacles in the planning grid.')
     declare_use_static = DeclareLaunchArgument(
-        'use_static_map_server', default_value='',
-        description='Serve <map>.yaml via map_server as /map instead of the grid '
-                    'slam_toolbox rasterizes from the pose-graph. Auto-enabled when '
-                    'the grid YAML exists; set true|false to override.')
+        'use_static_map_server', default_value='false',
+        description='If true, slam_toolbox stops owning /map (remapped to /slam_map) '
+                    'because map_server (loaded in the nav2 container by '
+                    'nav2_omni.launch.py) serves the editable <map>.pgm on /map. '
+                    'general_navigation.launch.py auto-sets this when <map>.yaml exists.')
 
     return LaunchDescription([
         declare_use_sim_time,
         declare_params_file,
         declare_map,
-        declare_map_yaml,
         declare_use_static,
         OpaqueFunction(function=launch_setup),
     ])
