@@ -85,6 +85,10 @@ PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 PEAK_PRE_GRASP_HEIGHT = 0.15  # m
 PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
 
+# Place-in-trash
+TRASH_BIN_NAME = "trash_bin"  # must match the label published by the main detector
+PLACE_TRASH_HEIGHT_OFFSET = 0.20  # m above the highest point of the bin
+
 # Fixed-distance cartesian move service
 FIXED_DISTANCE_MOVE_SERVICE = "/manipulation/fixed_distance_move"
 # Ascent used by the clothes pick to exit the basket workspace
