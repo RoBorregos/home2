@@ -129,8 +129,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af519b448d9abce041240c19af65bbada"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae646f09f6afb46729b6364bb7d53126d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ae646f09f6afb46729b6364bb7d53126d">pick_object</a> (self, str object_name, bool in_configuration=False, bool scan_environment=False)</td></tr>
 <tr class="separator:ae646f09f6afb46729b6364bb7d53126d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6744e3d0d1a3bb44547224140c4f6dd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#aa6744e3d0d1a3bb44547224140c4f6dd">place</a> (self, str close_to=&quot;&quot;, str special_request=&quot;&quot;, bool from_current=False)</td></tr>
-<tr class="separator:aa6744e3d0d1a3bb44547224140c4f6dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62750a231fe2c73e48f479acce6825ed"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a62750a231fe2c73e48f479acce6825ed">place</a> (self, str close_to=&quot;&quot;, str special_request=&quot;&quot;, bool from_current=False, bool is_trash=False)</td></tr>
+<tr class="separator:a62750a231fe2c73e48f479acce6825ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9a6d9d68759c72e9c82f727bf82a3bf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ab9a6d9d68759c72e9c82f727bf82a3bf">place_on_floor</a> (self, str named_position=&quot;pick_stare_at_table&quot;)</td></tr>
 <tr class="separator:ab9a6d9d68759c72e9c82f727bf82a3bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adda35d1a0ea061e53359e8eaa7d4158a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#adda35d1a0ea061e53359e8eaa7d4158a">place_on_shelf</a> (self, int plane_height, int tolerance)</td></tr>
@@ -1023,8 +1023,8 @@ in_configuration: True if the object is in the configuration
 scan_environment: True to scan environment before picking (useful for shelf picks)</pre> 
 </div>
 </div>
-<a id="aa6744e3d0d1a3bb44547224140c4f6dd" name="aa6744e3d0d1a3bb44547224140c4f6dd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6744e3d0d1a3bb44547224140c4f6dd">&#9670;&#160;</a></span>place()</h2>
+<a id="a62750a231fe2c73e48f479acce6825ed" name="a62750a231fe2c73e48f479acce6825ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62750a231fe2c73e48f479acce6825ed">&#9670;&#160;</a></span>place()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1051,7 +1051,13 @@ scan_environment: True to scan environment before picking (useful for shelf pick
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>from_current</em> = <code>False</code>&#160;</td>
+          <td class="paramname"><em>from_current</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>is_trash</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

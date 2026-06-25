@@ -24,7 +24,7 @@ var classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1Manipulati
     [ "open_gripper", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3d425f1ee7470428b878096464a00095", null ],
     [ "pan_to", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a0083860e231cd2fe8c16e2e776129dde", null ],
     [ "pick_object", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ae646f09f6afb46729b6364bb7d53126d", null ],
-    [ "place", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#aa6744e3d0d1a3bb44547224140c4f6dd", null ],
+    [ "place", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a62750a231fe2c73e48f479acce6825ed", null ],
     [ "place_in_point", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a4f50ca84fbd994fc7007facf098b8912", null ],
     [ "place_on_floor", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ab9a6d9d68759c72e9c82f727bf82a3bf", null ],
     [ "place_on_shelf", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#adda35d1a0ea061e53359e8eaa7d4158a", null ],

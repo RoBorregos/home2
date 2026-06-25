@@ -14,10 +14,12 @@ var classflat__grasp__estimator_1_1FlatGraspEstimator =
     [ "process_flat_object", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a5212316001796cadfeab3ec88336d925", null ],
     [ "process_peak_object", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a58bdcb704cb629465333fd2fc4f05d84", null ],
     [ "process_rim_object", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a58c18ee7d021bf770f26f16d23e340bd", null ],
+    [ "process_trash_bin", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a1029b8f8c0c7b8ea1ada570aa9e03bb3", null ],
     [ "_collecting", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a4b01ba7b4204d6e393a7abd4f8960987", null ],
     [ "_peak_mode", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a702781a57d84830ffe64b25aa045e919", null ],
     [ "_samples", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#afc5e4a7c38f04a38f0282eae03e6db87", null ],
     [ "_target_label", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a1f6a603f55e95f30397a5da2fcc528f2", null ],
+    [ "_trash_mode", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#ac6c8caf3169174621e88310048b83bb5", null ],
     [ "bridge", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a04576bd785e2b1cdaf4ef73abbcfa22b", null ],
     [ "depth_frame_id", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a021248ae6ecb3f84491719617b90a5ec", null ],
     [ "estimate_srv", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a7a173c228f24a566160f00b670dc04e2", null ],
@@ -32,5 +34,7 @@ var classflat__grasp__estimator_1_1FlatGraspEstimator =
     [ "target_classes", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a7f99dc251c2187f11249f37466eb8337", null ],
     [ "target_frame", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#ac9422dfda4ad604f6f35a2ab4b5d3a19", null ],
     [ "tf_buffer", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#ab968401142de7974859970019decda42", null ],
-    [ "tf_listener", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#ae3d1592d752a370f7804a4d73153bb62", null ]
+    [ "tf_listener", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#ae3d1592d752a370f7804a4d73153bb62", null ],
+    [ "trash_classes", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a81309ddd41945a050daa35caef7844a2", null ],
+    [ "trash_pose_pub", "classflat__grasp__estimator_1_1FlatGraspEstimator.html#a92fad5d45e79bddb624a5dd0efd2290e", null ]
 ];

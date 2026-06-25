@@ -94,6 +94,8 @@ $(document).ready(function(){initNavTree('classPlaceManager_1_1PlaceManager.html
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classPlaceManager_1_1PlaceManager-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">PlaceManager.PlaceManager Class Reference</div></div>
 </div><!--header-->
@@ -117,6 +119,16 @@ Public Attributes</h2></td></tr>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a626ed888bb91815f4acaa326a20a8d51"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPlaceManager_1_1PlaceManager.html#a626ed888bb91815f4acaa326a20a8d51">node</a> = None</td></tr>
 <tr class="separator:a626ed888bb91815f4acaa326a20a8d51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a1d8ea3623b1ae424517d1e9f374572d1"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPlaceManager_1_1PlaceManager.html#a1d8ea3623b1ae424517d1e9f374572d1">_get_trash_place_pose</a> (self)</td></tr>
+<tr class="separator:a1d8ea3623b1ae424517d1e9f374572d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:a2acdd160e580328e19e00d904d7a186b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPlaceManager_1_1PlaceManager.html#a2acdd160e580328e19e00d904d7a186b">_estimate_flat_grasp_client</a></td></tr>
+<tr class="separator:a2acdd160e580328e19e00d904d7a186b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ac3963ba1311aa33fb91d9b8867b522f9" name="ac3963ba1311aa33fb91d9b8867b522f9"></a>
@@ -148,6 +160,33 @@ Static Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a1d8ea3623b1ae424517d1e9f374572d1" name="a1d8ea3623b1ae424517d1e9f374572d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d8ea3623b1ae424517d1e9f374572d1">&#9670;&#160;</a></span>_get_trash_place_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> PoseStamped PlaceManager.PlaceManager._get_trash_place_pose </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Detect the trash bin via the flat-grasp estimator and return the
+ready-to-use place pose (already offset above the bin, top-down).</pre> 
+</div>
+</div>
 <a id="ae55baca7415625baca3d0b7aac83ccf5" name="ae55baca7415625baca3d0b7aac83ccf5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae55baca7415625baca3d0b7aac83ccf5">&#9670;&#160;</a></span>execute()</h2>
 
@@ -218,6 +257,28 @@ Static Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a2acdd160e580328e19e00d904d7a186b" name="a2acdd160e580328e19e00d904d7a186b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2acdd160e580328e19e00d904d7a186b">&#9670;&#160;</a></span>_estimate_flat_grasp_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">PlaceManager.PlaceManager._estimate_flat_grasp_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a626ed888bb91815f4acaa326a20a8d51" name="a626ed888bb91815f4acaa326a20a8d51"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a626ed888bb91815f4acaa326a20a8d51">&#9670;&#160;</a></span>node <span class="overload">[1/2]</span></h2>
 

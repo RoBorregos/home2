@@ -15,5 +15,6 @@ var flat__grasp__estimator_8py =
     [ "RIM_TOP_BAND", "flat__grasp__estimator_8py.html#abee2ddf8c9e4934f388285e4c63aaa4b", null ],
     [ "RIM_TOP_PERCENTILE", "flat__grasp__estimator_8py.html#a1c95e4d6e96aac5c04023c21a6e7915f", null ],
     [ "TABLE_HEIGHT_BUFFER_SIZE", "flat__grasp__estimator_8py.html#ab1e0fa225f7602b2477fb855e7253f2d", null ],
-    [ "TABLE_HEIGHT_OUTLIER_THRESH", "flat__grasp__estimator_8py.html#a9fb12447fb95e22a2c706b4280a7a008", null ]
+    [ "TABLE_HEIGHT_OUTLIER_THRESH", "flat__grasp__estimator_8py.html#a9fb12447fb95e22a2c706b4280a7a008", null ],
+    [ "TRASH_TOP_BBOX_FRACTION", "flat__grasp__estimator_8py.html#a668ecfa37fc8dbe8f1200936eb7cc7fb", null ]
 ];
