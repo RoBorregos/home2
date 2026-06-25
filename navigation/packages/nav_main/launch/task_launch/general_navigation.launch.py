@@ -131,6 +131,7 @@ def launch_function(context, *args, **kwargs):
         executable='table_docker.py',
         name='table_docker',
         output='screen',
+        parameters=[{'retreat_distance': 0.20}],
     )
 
     launch_actions = [
