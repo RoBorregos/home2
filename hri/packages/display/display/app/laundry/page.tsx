@@ -51,7 +51,7 @@ const TASK_STEPS: TaskStep[] = [
     icon: <Navigation className="h-4 w-4" />,
   },
   {
-    key: "pick_laundry",
+    key: "pick_laundry_basket",
     label: "Picking Basket",
     display: "camera",
     icon: <ShoppingBasket className="h-4 w-4" />,
@@ -69,10 +69,16 @@ const TASK_STEPS: TaskStep[] = [
     icon: <Table className="h-4 w-4" />,
   },
   {
-    key: "pick_clothes",
+    key: "pick_clothes_basket",
     label: "Picking Clothes",
     display: "camera",
     icon: <Shirt className="h-4 w-4" />,
+  },
+  {
+    key: "place_clothes_table",
+    label: "Placing Clothes on Table",
+    display: "camera",
+    icon: <Table className="h-4 w-4" />,
   },
   {
     key: "navigate_to_laundry_machine",
@@ -81,8 +87,8 @@ const TASK_STEPS: TaskStep[] = [
     icon: <Navigation className="h-4 w-4" />,
   },
   {
-    key: "unload_laundry_machine",
-    label: "Loading Machine",
+    key: "pick_clothes_wm",
+    label: "Picking from Machine",
     display: "camera",
     icon: <WashingMachine className="h-4 w-4" />,
   },
@@ -91,6 +97,12 @@ const TASK_STEPS: TaskStep[] = [
     label: "Closing Machine",
     display: "camera",
     icon: <DoorClosed className="h-4 w-4" />,
+  },
+  {
+    key: "navigate_to_table_with_clothes",
+    label: "Navigate to Table",
+    display: "camera",
+    icon: <Navigation className="h-4 w-4" />,
   },
   {
     key: "end",
@@ -135,7 +147,7 @@ export default function LaundryPage() {
   useEffect(() => {
     const taskTopic = new Topic<{ data: string }>({
       ros: rosClient,
-      name: "/laundry/display/task_step",
+      name: "/hri/display/task_step",
       messageType: "std_msgs/String",
     });
 
