@@ -27,6 +27,8 @@ from frida_constants.manipulation_constants import (
     RIM_NAMES,
     FLAT_OBJECT_NAMES,
     PEAK_NAMES,
+    TRASH_BIN_NAME,
+    PLACE_TRASH_HEIGHT_OFFSET,
 )
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
@@ -60,6 +62,10 @@ PEAK_GRID_RES = 0.05  # meters per cell of the elevation (height) grid
 PEAK_NBR = 3  # neighborhood size (cells) for local-maximum detection
 PEAK_MIN_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
 
+# --- Trash bin place estimation ---
+# Fraction of the bbox height (from the top) kept to estimate the bin center.
+TRASH_TOP_BBOX_FRACTION = 0.5
+
 # --- Service collection ---
 FLAT_GRASP_DEFAULT_SAMPLES = 10  # frames to median when the caller passes <= 0
 FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
@@ -84,12 +90,14 @@ class FlatGraspEstimator(Node):
         self.target_classes = [n.lower() for n in FLAT_OBJECT_NAMES]
         self.rim_classes = [n.lower() for n in RIM_NAMES]
         self.peak_classes = [n.lower() for n in PEAK_NAMES]
+        self.trash_classes = [TRASH_BIN_NAME.lower()]
 
         # Collection state. The node only does the heavy per-frame work while a
         # service request is collecting samples; it is idle otherwise (saves CPU).
         self._collecting = False
         self._target_label = None
         self._peak_mode = False
+        self._trash_mode = False
         self._samples = []
 
         # Rolling buffer for table height stabilization
@@ -125,6 +133,10 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/peak_grasp_pose", 10
         )
 
+        self.trash_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/trash_place_pose", 10
+        )
+
         self.estimate_srv = self.create_service(
             EstimateFlatGrasp,
             "/manipulation/estimate_flat_grasp",
@@ -141,13 +153,17 @@ class FlatGraspEstimator(Node):
         stabilized grasp pose (median position, latest PCA orientation)."""
         label = request.object_name.lower()
         is_peak = label in self.peak_classes
+        is_trash = label in self.trash_classes
         if (
             label not in self.target_classes
             and label not in self.rim_classes
             and not is_peak
+            and not is_trash
         ):
             response.success = False
-            response.message = f"'{request.object_name}' is not a flat/rim/peak object"
+            response.message = (
+                f"'{request.object_name}' is not a flat/rim/peak/trash object"
+            )
             return response
         if self.intrinsics is None:
             response.success = False
@@ -164,6 +180,7 @@ class FlatGraspEstimator(Node):
         self._samples = []
         self._target_label = label
         self._peak_mode = is_peak
+        self._trash_mode = is_trash
         self.table_height_buffer.clear()
         self.latest_depth = None
         self._collecting = True
@@ -214,7 +231,12 @@ class FlatGraspEstimator(Node):
             return
         for det in msg.detections:
             label = det.label_text.lower()
-            if self._peak_mode:
+            if self._trash_mode:
+                if label not in self.trash_classes:
+                    continue
+                pose = self.process_trash_bin(det)
+                pub = self.trash_pose_pub
+            elif self._peak_mode:
                 # Peak content (e.g. clothes) is found inside a basket/rim
                 # detection, so the requested label never matches directly.
                 if label not in self.rim_classes:
@@ -580,6 +602,62 @@ class FlatGraspEstimator(Node):
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
         return self._make_grasp_pose(peak_grasp_x, peak_grasp_y, peak_grasp_z, new_quat)
+
+    def process_trash_bin(self, detection: ObjectDetection):
+        """Place pose for dropping an object into a trash bin: centered in XY
+        over the bin, a fixed offset above its highest point, gripper top-down."""
+        bbox = self._parse_bbox(detection)
+        if bbox is None:
+            return
+        xmin, ymin, xmax, ymax = bbox
+
+        # Use only the upper part of the bbox: the front wall fills the lower
+        ymid = ymin + max(1, int((ymax - ymin) * TRASH_TOP_BBOX_FRACTION))
+
+        roi_depth = self.latest_depth[ymin:ymid, xmin:xmax]
+        valid_mask = (roi_depth > 0) & (~np.isnan(roi_depth))
+        if np.count_nonzero(valid_mask) < MIN_POINTS_FOR_PCA:
+            return
+
+        v_local, u_local = np.where(valid_mask)
+        points_3d_cam = self._deproject_pixels(
+            u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
+        )
+
+        T_mat = self._lookup_T_cam_to_base()
+        if T_mat is None:
+            return
+        points_base = self._apply_transform(points_3d_cam, T_mat)
+        if points_base is None:
+            return
+
+        # --- FLOOR REJECTION ---
+        floor_z = np.percentile(points_base[:, 2], 5)
+        bin_points = points_base[points_base[:, 2] > floor_z + RIM_MIN_HEIGHT]
+        if len(bin_points) < MIN_POINTS_FOR_PCA:
+            bin_points = points_base
+
+        xs, ys, zs = bin_points[:, 0], bin_points[:, 1], bin_points[:, 2]
+
+        # --- CENTER (XY) and HIGHEST POINT (Z) ---
+        center_x = float(np.median(xs))
+        center_y = float(np.median(ys))
+        top_z = float(np.percentile(zs, RIM_TOP_PERCENTILE))
+
+        # Place pose: fixed offset above the rim top, centered over the bin.
+        place_z = top_z + PLACE_TRASH_HEIGHT_OFFSET
+
+        # --- TOP-DOWN ORIENTATION ---
+        Z_grasp = np.array([0.0, 0.0, -1.0])
+        X_grasp = np.array([1.0, 0.0, 0.0])
+        Y_grasp = np.cross(Z_grasp, X_grasp)
+        Y_grasp = Y_grasp / np.linalg.norm(Y_grasp)
+        X_grasp = np.cross(Y_grasp, Z_grasp)
+
+        new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
+        new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
+
+        return self._make_grasp_pose(center_x, center_y, place_z, new_quat)
 
 
 def main(args=None):
