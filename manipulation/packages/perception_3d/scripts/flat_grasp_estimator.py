@@ -62,6 +62,10 @@ PEAK_GRID_RES = 0.05  # meters per cell of the elevation (height) grid
 PEAK_NBR = 3  # neighborhood size (cells) for local-maximum detection
 PEAK_MIN_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
 
+# --- Trash bin place estimation ---
+# Fraction of the bbox height (from the top) kept to estimate the bin center.
+TRASH_TOP_BBOX_FRACTION = 0.5
+
 # --- Service collection ---
 FLAT_GRASP_DEFAULT_SAMPLES = 10  # frames to median when the caller passes <= 0
 FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
@@ -607,7 +611,10 @@ class FlatGraspEstimator(Node):
             return
         xmin, ymin, xmax, ymax = bbox
 
-        roi_depth = self.latest_depth[ymin:ymax, xmin:xmax]
+        # Use only the upper part of the bbox: the front wall fills the lower
+        ymid = ymin + max(1, int((ymax - ymin) * TRASH_TOP_BBOX_FRACTION))
+
+        roi_depth = self.latest_depth[ymin:ymid, xmin:xmax]
         valid_mask = (roi_depth > 0) & (~np.isnan(roi_depth))
         if np.count_nonzero(valid_mask) < MIN_POINTS_FOR_PCA:
             return
