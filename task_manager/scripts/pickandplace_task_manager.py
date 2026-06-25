@@ -675,6 +675,7 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_TABLE)
             table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
             self.navigate_to_location(table_location, say=False)
+            self.subtask_manager.nav.dock_table()
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             status, detections = self.subtask_manager.vision.detect_objects(timeout=5)
@@ -825,6 +826,7 @@ class PickAndPlaceTM(Node):
 
             table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
             self.navigate_to_location(table_location, say=False)
+            self.subtask_manager.nav.dock_table()
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             before_counts = None
@@ -940,6 +942,8 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT)
             placement_loc = self.grasped_object.placement_location
             result = self.navigate_to_location(placement_loc)
+            if placement_loc == Location.CABINET:
+                self.subtask_manager.nav.dock_table()
 
             if result == Status.EXECUTION_SUCCESS:
                 if placement_loc == Location.CABINET and not self.shelf_scanned:
@@ -1233,6 +1237,7 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE)
             item_location = self.current_breakfast_item["location"]
             result = self.navigate_to_location(item_location)
+            self.subtask_manager.nav.dock_table()
 
             if result == Status.EXECUTION_SUCCESS:
                 self.current_state = PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM
@@ -1294,6 +1299,7 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING:
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING)
             result = self.navigate_to_location(Location.DINING_TABLE)
+            self.subtask_manager.nav.dock_table()
 
             if result == Status.EXECUTION_SUCCESS:
                 item_name = self.current_breakfast_item["name"]
