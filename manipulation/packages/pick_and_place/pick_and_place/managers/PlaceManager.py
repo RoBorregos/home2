@@ -15,11 +15,6 @@ from frida_constants.manipulation_constants import (
     SHELF_MIN_REACH,
     SHELF_REACH_BASE,
     SHELF_REACH_SLOPE,
-    SHELF_LEVEL_LOW_MAX,
-    SHELF_LEVEL_HIGH_MIN,
-    SHELF_PLACE_Z_OFFSET_LOW,
-    SHELF_PLACE_Z_OFFSET_MID,
-    SHELF_PLACE_Z_OFFSET_HIGH,
 )
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
@@ -54,9 +49,9 @@ class PlaceManager:
 
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
         self.node.get_logger().info("Executing Place Task")
-        self.node.get_logger().info("Setting initial joint positions")
         # Set initial joint positions
-        if not place_params.is_shelf:
+        if not place_params.is_shelf and not place_params.skip_initial_pose:
+            self.node.get_logger().info("Setting initial joint positions")
             send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
                 named_position="table_stare",
@@ -93,17 +88,26 @@ class PlaceManager:
 
         self.node.get_logger().info("Returning to position")
 
-        # return to configured position
-        for i in range(5):
-            back_res = send_joint_goal(
-                move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
-                velocity=0.5,
-            )
-            if back_res:
-                self.node.get_logger().info("Returned to position successfully")
-                break
-            self.node.get_logger().info("Retry sending return joint goal")
+        # The eye-in-hand octomap never sees the compartment ceiling, so add an explicit
+        # collision slab there (place surface + 0.34 m) before planning the return.
+        if place_params.is_shelf:
+            self.node.add_shelf_ceiling_guard(place_pose, place_params.table_height)
+
+        try:
+            for i in range(5):
+                back_res = send_joint_goal(
+                    move_joints_action_client=self.node._move_joints_client,
+                    named_position="table_stare",
+                    velocity=0.5,
+                )
+                if back_res:
+                    self.node.get_logger().info("Returned to position successfully")
+                    break
+                self.node.get_logger().info("Retry sending return joint goal")
+        finally:
+            # Always drop the guard so it does not constrain later motions.
+            if place_params.is_shelf:
+                self.node.remove_shelf_ceiling_guard()
 
         return return_result
 
@@ -392,19 +396,10 @@ class PlaceManager:
                 f"Object height detected: {pick_result.object_pick_height}"
             )
 
-        # Level-aware shelf clearance: LOW (tight) barely clears the surface, MID
-        # keeps today's value, HIGH stays below the arm top.
-        if place_params.is_shelf:
-            sz = place_params.table_height
-            if sz < SHELF_LEVEL_LOW_MAX:
-                z_off = SHELF_PLACE_Z_OFFSET_LOW
-            elif sz >= SHELF_LEVEL_HIGH_MIN:
-                z_off = SHELF_PLACE_Z_OFFSET_HIGH
-            else:
-                z_off = SHELF_PLACE_Z_OFFSET_MID
-            result_pose.pose.position.z += z_off
-        else:
-            result_pose.pose.position.z += pick_result.object_pick_height
+        # forget height if placing on shelf
+        result_pose.pose.position.z += (
+            pick_result.object_pick_height if not place_params.is_shelf else 0.1
+        )
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 
         return result_pose

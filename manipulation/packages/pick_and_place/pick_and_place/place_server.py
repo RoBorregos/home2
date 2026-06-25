@@ -18,13 +18,6 @@ from frida_constants.manipulation_constants import (
     PLACE_MOTION_ACTION_SERVER,
     AIM_STRAIGHT_FRONT_QUAT,
     SHELF_POSITION_PREPLACE_POSE,
-    SHELF_POSITION_PREPLACE_POSE_HIGH,
-    SHELF_LEVEL_LOW_MAX,
-    SHELF_LEVEL_HIGH_MIN,
-    SHELF_PLACE_STEP_LOW,
-    SHELF_PLACE_STEP_MID,
-    SHELF_PLACE_STEP_HIGH,
-    SHELF_N_POSES_HIGH,
     GRIPPER_SET_STATE_SERVICE,
     GRASP_LINK_FRAME,
     ESTOP_TOPIC,
@@ -44,6 +37,10 @@ import copy
 import numpy as np
 from transforms3d.quaternions import quat2mat
 import time
+
+# Shelf place: how far (m) to pull the place toward the front edge so the arm and
+# eye-in-hand camera do not jam against the short compartment ceiling on a deep reach.
+SHELF_PLACE_DEPTH_BACK = 0.07
 
 
 class PlaceMotionServer(Node):
@@ -132,16 +129,10 @@ class PlaceMotionServer(Node):
                 "################ Placing on shelf ##################"
             )
 
-        # Shelf: level-aware pose search. LOW (tight) searches DOWN, HIGH (reach
-        # limit) barely moves, MID keeps the working upward search.
+        # Shelf: fewer poses with smaller step to avoid collisions above.
         if is_shelf:
-            shelf_z = goal_handle.request.place_params.table_height
-            if shelf_z < SHELF_LEVEL_LOW_MAX:
-                n_poses, poses_dist = 2, SHELF_PLACE_STEP_LOW
-            elif shelf_z >= SHELF_LEVEL_HIGH_MIN:
-                n_poses, poses_dist = SHELF_N_POSES_HIGH, SHELF_PLACE_STEP_HIGH
-            else:
-                n_poses, poses_dist = 3, SHELF_PLACE_STEP_MID
+            n_poses = 3
+            poses_dist = 0.02
         else:
             n_poses = 8
             poses_dist = 0.05
@@ -149,6 +140,10 @@ class PlaceMotionServer(Node):
         for i in range(n_poses):
             ee_link_pose = copy.deepcopy(place_pose)
             ee_link_pose.pose.position.z += i * poses_dist
+            if is_shelf:
+                # The heatmap aims at the compartment center (deep), which jams the arm
+                # and camera against the ceiling; pull the place toward the front edge.
+                ee_link_pose.pose.position.x -= SHELF_PLACE_DEPTH_BACK
 
             ee_link_pre_pose = copy.deepcopy(ee_link_pose)
             ee_link_half_pose = copy.deepcopy(ee_link_pose)
@@ -164,13 +159,9 @@ class PlaceMotionServer(Node):
                 self.target_link = (
                     EEF_LINK_NAME  # Set the orientation to aim straight front
                 )
-                # send it back then forward (shallow at the reach-limited top)
-                offset_distance = (
-                    SHELF_POSITION_PREPLACE_POSE_HIGH
-                    if shelf_z >= SHELF_LEVEL_HIGH_MIN
-                    else SHELF_POSITION_PREPLACE_POSE
-                )
-                offset_distance_half = offset_distance * (1 / 2)
+                # send it a little bit back, then forward
+                offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
+                offset_distance_half = SHELF_POSITION_PREPLACE_POSE * (1 / 2)
                 # Compute the offset along the local z-axis
                 quat = [
                     ee_link_pre_pose.pose.orientation.w,
@@ -265,14 +256,8 @@ class PlaceMotionServer(Node):
             time.sleep(1)
             self.get_logger().info("Gripper opened")
 
-            if is_shelf:
-                self.get_logger().info(
-                    f"Going back to pre-place pose: {ee_link_pre_pose}"
-                )
-                place_pose_handler, place_pose_result = self.move_to_pose(
-                    ee_link_pre_pose
-                )
-                self.get_logger().info(f"Pre-place pose result: {place_pose_result}")
+            # No place retract (mirror the shelf pick): return straight from the place pose.
+            # The cartesian retract left the wrist wound, so table_stare then aborted.
             return True
         self.get_logger().error("Failed to reach any grasp pose")
         return False
