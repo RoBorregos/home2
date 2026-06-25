@@ -942,8 +942,7 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT)
             placement_loc = self.grasped_object.placement_location
             result = self.navigate_to_location(placement_loc)
-            if placement_loc == Location.CABINET:
-                self.subtask_manager.nav.dock_table()
+            # Cabinet/shelf: no dock; keep the nav-goal standoff (~0.5 m).
 
             if result == Status.EXECUTION_SUCCESS:
                 if placement_loc == Location.CABINET and not self.shelf_scanned:
@@ -1237,7 +1236,9 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE)
             item_location = self.current_breakfast_item["location"]
             result = self.navigate_to_location(item_location)
-            self.subtask_manager.nav.dock_table()
+            # No dock at the cabinet/shelf; only dock at table-height surfaces.
+            if item_location != Location.CABINET:
+                self.subtask_manager.nav.dock_table()
 
             if result == Status.EXECUTION_SUCCESS:
                 self.current_state = PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM
