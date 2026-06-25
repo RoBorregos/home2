@@ -64,7 +64,9 @@ from frida_constants.navigation_constants import (
     DOCKED_TOPIC,
     SCAN_TOPIC,
     POINT_CLOUD_TOPIC,
+    RELATIVE_MOVE_SERVICE,
 )
+from frida_interfaces.srv import RelativeMove
 
 
 def quat_to_rot(x, y, z, w):
@@ -226,6 +228,9 @@ class TableDocker(Node):
         self.create_service(Trigger, DOCK_SERVICE, self._dock_cb, callback_group=srv_cb)
         self.create_service(Trigger, UNDOCK_SERVICE, self._undock_cb, callback_group=srv_cb)
         self.create_service(Trigger, DOCK_PREVIEW_SERVICE, self._preview_cb, callback_group=srv_cb)
+        self.create_service(
+            RelativeMove, RELATIVE_MOVE_SERVICE, self._relative_move_cb, callback_group=srv_cb
+        )
 
         # Apply runtime parameter changes live (nav_central sets per-location
         # front_offset before approaching; also makes `ros2 param set` effective).
@@ -736,6 +741,62 @@ class TableDocker(Node):
         response.success = True
         response.message = f"Retreated {self.retreat_distance:.2f} m"
         self.log("info", response.message)
+        return response
+
+    # ------------------------------------------------------- relative move
+    def _relative_move_cb(self, request, response):
+        """Closed-loop, odom-measured straight move along base_link x.
+
+        Mirrors `_undock_cb` but takes the distance from the request and a
+        direction flag, and does NOT touch dock state. Used to push the base
+        forward so the gripper+joint5 enter the washing-machine drum, then to
+        back out the same distance afterwards.
+        """
+        distance = abs(float(request.distance))
+        sign = -1.0 if request.backward else 1.0
+        speed = self.retreat_speed  # reuse the gentle docking approach speed
+        direction = "backward" if request.backward else "forward"
+        self.log("info", f"Relative move {direction} {distance:.2f} m requested")
+
+        if distance < 1e-3:
+            response.success = True
+            response.traveled = 0.0
+            response.error = ""
+            return response
+
+        with self._lock:
+            start = self._odom
+        dt = 1.0 / self.control_rate
+        traveled = 0.0
+
+        if start is None:
+            self.log("warn", "No odometry; timed relative move")
+            t_end = time.time() + (distance / max(speed, 1e-3))
+            while rclpy.ok() and time.time() < t_end:
+                self._publish_cmd(sign * speed, 0.0, 0.0)
+                time.sleep(dt)
+            traveled = distance  # best-effort estimate without odom
+        else:
+            x0, y0 = start.pose.pose.position.x, start.pose.pose.position.y
+            deadline = time.time() + self.retreat_timeout
+            while rclpy.ok():
+                with self._lock:
+                    cur = self._odom
+                traveled = (
+                    math.hypot(cur.pose.pose.position.x - x0, cur.pose.pose.position.y - y0)
+                    if cur
+                    else 0.0
+                )
+                if traveled >= distance or time.time() > deadline:
+                    break
+                self._publish_cmd(sign * speed, 0.0, 0.0)
+                time.sleep(dt)
+
+        self._stop()
+        response.success = True
+        response.error = ""
+        response.traveled = float(traveled)
+        self.log("info", f"Relative move {direction} done: traveled {traveled:.2f} m")
         return response
 
 

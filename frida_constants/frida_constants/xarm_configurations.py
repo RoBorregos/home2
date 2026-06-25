@@ -206,7 +206,25 @@ LOOK_SIDE_LOW_STARE = {
     "degrees": True,
 }
 
+# Pre-pose for the washing-machine "arrow" alignment. The align_arm_server LOCKS
+# j3/j4/j6 (and seeds j5) from this pose, then solves j1/j2/j5 so the arm shaft and
+# the gripper approach axis both point at the drum opening. This must put the arm
+# extended forward with the wrist roughly horizontal so the solver can aim straight
+# into the machine. NOTE: joint values are a seed — TUNE ON THE ROBOT.
+WASHING_MACHINE_ARROW_POSE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -45.0,
+        "joint3": -90.0,
+        "joint4": 0.0,
+        "joint5": 0.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
+    "washing_machine_arrow_pose": WASHING_MACHINE_ARROW_POSE,
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
     "front_stare_carry_bag": FRONT_STARE_CARRY_BAG,

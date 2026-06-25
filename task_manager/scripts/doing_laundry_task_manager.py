@@ -6,6 +6,7 @@ Task Manager for Doing Laundry Task
 import rclpy
 from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener
+from tf2_geometry_msgs import do_transform_point
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -16,6 +17,22 @@ ATTEMPT_LIMIT = 3
 BASKET_PLACE_ROUNDS = 2
 # Pick clothes in Washing Machine and bring to the table.
 WM_PLACE_ROUNDS = 1
+
+# --- Washing-machine insert-and-pick parameters (tune on the robot) ---
+# Vision subject for the drum opening centroid.
+WM_SUBJECT = "round container entrance of color orange"
+# Look pose used to snapshot the centroid before aligning the arm.
+WM_LOOK_POSE = "front_low_stare"
+# Pre-pose handed to the arrow-alignment solver.
+WM_ARROW_POSE = "washing_machine_arrow_pose"
+# Gripper frame used to measure how far the arm reaches forward after aligning.
+WM_GRIPPER_FRAME = "gripper_grasp_frame"
+# Extra distance (m) past the opening so the gripper AND joint5 end up inside.
+WM_INSERT_DEPTH = 0.10
+# Safety clamp on the computed forward push (m).
+WM_MAX_INSERT = 0.40
+# Wrist pitch (deg) applied to look down into the drum, then undone to straighten.
+WM_LOOKDOWN_DEG = 90.0
 
 
 class DoingLaundryTM(Node):
@@ -91,6 +108,94 @@ class DoingLaundryTM(Node):
             return DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE
         Logger.success(self, "All place rounds completed.")
         return DoingLaundryTM.TaskStates.END
+
+    def _pick_clothes_in_washing_machine(self):
+        """Align the arm at the drum opening, drive the base in so the gripper and
+        joint5 enter the drum, rotate the wrist down, close to grab clothes, rotate
+        back to horizontal, then back the base out the same distance.
+
+        Returns Status.EXECUTION_SUCCESS / Status.EXECUTION_ERROR.
+        """
+        man = self.subtask_manager.manipulation
+        vis = self.subtask_manager.vision
+        nav = self.subtask_manager.nav
+
+        # 1. Look pose + snapshot the opening centroid BEFORE moving (the ZED
+        #    travels with the arm, so base_link is the only frame valid afterwards).
+        man.move_to_position(WM_LOOK_POSE)
+        vis.camera_upside_down(False)
+        point = vis.get_moondream_point_3d(WM_SUBJECT)
+        if point is None or point.header.frame_id == "":
+            Logger.error(self, "WM: no drum-opening centroid returned")
+            return Status.EXECUTION_ERROR
+
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "base_link",
+                point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            )
+            opening = do_transform_point(point, tf)
+            opening.header.frame_id = "base_link"
+        except Exception as e:
+            Logger.error(self, f"WM: TF {point.header.frame_id} -> base_link failed: {e}")
+            return Status.EXECUTION_ERROR
+        Logger.info(
+            self,
+            f"WM opening in base_link: ({opening.point.x:.3f}, "
+            f"{opening.point.y:.3f}, {opening.point.z:.3f})",
+        )
+
+        # 2. Aim the arm shaft + gripper approach axis at the opening.
+        if (
+            man.align_arm_toward_centroid(opening, pre_pose=WM_ARROW_POSE)
+            != Status.EXECUTION_SUCCESS
+        ):
+            Logger.error(self, "WM: align_arm_toward_centroid failed")
+            return Status.EXECUTION_ERROR
+
+        # 3. Forward push = how far the opening still is beyond the gripper, plus a
+        #    margin so the gripper AND joint5 clear the rim. Derived from the actual
+        #    aligned pose (scan pose differs from the insertion pose).
+        for _ in range(5):
+            rclpy.spin_once(self, timeout_sec=0.1)
+        try:
+            g = self.tf_buffer.lookup_transform(
+                "base_link",
+                WM_GRIPPER_FRAME,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=2.0),
+            ).transform.translation
+        except Exception as e:
+            Logger.error(self, f"WM: TF base_link <- {WM_GRIPPER_FRAME} failed: {e}")
+            return Status.EXECUTION_ERROR
+        forward = (opening.point.x - g.x) + WM_INSERT_DEPTH
+        forward = max(0.0, min(forward, WM_MAX_INSERT))
+        Logger.info(
+            self,
+            f"WM: gripper x={g.x:.3f}, opening x={opening.point.x:.3f} -> "
+            f"forward push {forward:.3f} m",
+        )
+
+        # 4. Open, drive in, look down, grab, straighten, drive back out.
+        man.open_gripper()
+        status, error = nav.move_relative(forward, backward=False)
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.error(self, f"WM: forward insert failed: {error}")
+            return Status.EXECUTION_ERROR
+
+        man.rotate_wrist_pitch(WM_LOOKDOWN_DEG)
+        man.close_gripper()
+        man.rotate_wrist_pitch(-WM_LOOKDOWN_DEG)
+
+        status, error = nav.move_relative(forward, backward=True)
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.error(self, f"WM: retreat failed: {error}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self, "WM: insert-and-pick sequence complete")
+        return Status.EXECUTION_SUCCESS
 
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
@@ -219,7 +324,7 @@ class DoingLaundryTM(Node):
                 f"Picking clothes from washing machine ({self.wm_placed + 1}/{WM_PLACE_ROUNDS}).",
             )
             self.subtask_manager.hri.say("Picking clothes from the washing machine.", wait=False)
-            result = self.subtask_manager.manipulation.pick_object("clothes")
+            result = self._pick_clothes_in_washing_machine()
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from washing machine.")

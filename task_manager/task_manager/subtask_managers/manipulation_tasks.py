@@ -713,6 +713,24 @@ class ManipulationTasks:
     def move_to_position(self, named_position: str, velocity: float = 0.75):
         self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
 
+    def rotate_wrist_pitch(self, degrees: float, velocity: float = 0.3):
+        """Rotate joint5 by `degrees` (relative) to pitch the wrist down/up.
+
+        Used inside the washing-machine drum to look down before grabbing
+        (positive) and to straighten back to horizontal afterwards (negative).
+        Keeps every other joint fixed so the gripper stays inside the opening.
+        """
+        joint_positions = self.get_joint_positions(degrees=True)
+        if not isinstance(joint_positions, dict):
+            Logger.error(
+                self.node, f"Failed to get joint positions in rotate_wrist_pitch: {joint_positions}"
+            )
+            return Status.EXECUTION_ERROR
+        joint_positions["joint5"] += degrees
+        return self.move_joint_positions(
+            joint_positions=joint_positions, velocity=velocity, degrees=True
+        )
+
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
         client="_align_arm_action_client",
