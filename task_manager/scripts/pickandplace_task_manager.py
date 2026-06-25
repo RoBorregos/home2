@@ -635,14 +635,14 @@ class PickAndPlaceTM(Node):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
             CLog.fsm(self, "STATE", "Start button pressed. Waiting for door to open...")
-            self.subtask_manager.hri.say("Waiting for the door to open.", wait=False)
-
-            # Wait until the door is detected open before starting the task
-            while True:
-                status, _ = self.subtask_manager.nav.check_door()
-                if status == Status.EXECUTION_SUCCESS:
-                    break
-                rclpy.spin_once(self, timeout_sec=0.1)
+            # Door wait commented out for now: check_door hangs when door_checking_srv
+            # is not running. Re-enable this block to wait for the door before starting.
+            # self.subtask_manager.hri.say("Waiting for the door to open.", wait=False)
+            # while True:
+            #     status, _ = self.subtask_manager.nav.check_door()
+            #     if status == Status.EXECUTION_SUCCESS:
+            #         break
+            #     rclpy.spin_once(self, timeout_sec=0.1)
 
             CLog.fsm(
                 self,
