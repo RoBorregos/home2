@@ -906,7 +906,7 @@ class PickAndPlaceTM(Node):
             if placement_loc == Location.DISHWASHER:
                 status = self.subtask_manager.manipulation.place()
             elif placement_loc == Location.TRASH_BIN:
-                status = self.subtask_manager.manipulation.place()
+                status = self.subtask_manager.manipulation.place(is_trash=True)
             elif placement_loc == Location.CABINET:
                 # Build the ordered fallback list the first time we enter
                 # PLACE_OBJECT for this grasped object. The list has the

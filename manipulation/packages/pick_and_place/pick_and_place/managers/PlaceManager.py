@@ -3,6 +3,7 @@ from frida_motion_planning.utils.tf_utils import transform_pose, transform_point
 from frida_interfaces.srv import (
     PlacePerceptionService,
     HeatmapPlace,
+    EstimateFlatGrasp,
 )
 from geometry_msgs.msg import PoseStamped
 from frida_interfaces.msg import PlaceParams
@@ -15,6 +16,7 @@ from frida_constants.manipulation_constants import (
     SHELF_MIN_REACH,
     SHELF_REACH_BASE,
     SHELF_REACH_SLOPE,
+    TRASH_BIN_NAME,
 )
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
@@ -45,6 +47,9 @@ class PlaceManager:
             PoseStamped,
             "/manipulator/place_ee_link_pose",
             10,
+        )
+        self._estimate_flat_grasp_client = self.node.create_client(
+            EstimateFlatGrasp, "/manipulation/estimate_flat_grasp"
         )
 
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
@@ -106,6 +111,9 @@ class PlaceManager:
         self, place_params: PlaceParams, pick_result: PickResult
     ) -> PoseStamped:
         result_pose = PoseStamped()
+
+        if place_params.is_trash:
+            return self._get_trash_place_pose()
 
         if place_params.forced_pose.header.frame_id != "":
             self.node.get_logger().info("Using forced place pose")
@@ -394,3 +402,28 @@ class PlaceManager:
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 
         return result_pose
+
+    def _get_trash_place_pose(self) -> PoseStamped:
+        """Detect the trash bin via the flat-grasp estimator and return the
+        ready-to-use place pose (already offset above the bin, top-down)."""
+        if not self._estimate_flat_grasp_client.wait_for_service(timeout_sec=5.0):
+            self.node.get_logger().error("estimate_flat_grasp service unavailable")
+            return None
+
+        request = EstimateFlatGrasp.Request()
+        request.object_name = TRASH_BIN_NAME
+        request.num_samples = 0  # let the estimator use its default
+        future = self._estimate_flat_grasp_client.call_async(request)
+        wait_for_future(future, timeout=15)
+        response = future.result() if future.done() else None
+
+        if response is None or not response.success:
+            reason = response.message if response is not None else "no response"
+            self.node.get_logger().error(f"Trash bin detection failed: {reason}")
+            return None
+
+        self.node.get_logger().info(
+            f"Trash place pose: {response.pose.pose.position.x}, "
+            f"{response.pose.pose.position.y}, {response.pose.pose.position.z}"
+        )
+        return response.pose
