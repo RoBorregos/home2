@@ -824,8 +824,10 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.PICK_OBJECT)
 
             table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
-            self.navigate_to_location(table_location, say=False)
-            self.subtask_manager.nav.dock_table()
+            # Navigate and dock only on the first attempt; retries reuse the dock.
+            if self.current_attempts == 0:
+                self.navigate_to_location(table_location, say=False)
+                self.subtask_manager.nav.dock_table()
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             before_counts = None
