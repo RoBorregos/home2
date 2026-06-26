@@ -9,7 +9,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def launch_function(context, *args, **kwargs):
-    from frida_constants.navigation_constants import RTAB_MAPS_PATH
+    from frida_constants.navigation_constants import RTAB_MAPS_PATH, RETREAT_DISTANCE
 
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
@@ -131,6 +131,7 @@ def launch_function(context, *args, **kwargs):
         executable='table_docker.py',
         name='table_docker',
         output='screen',
+        parameters=[{'retreat_distance': RETREAT_DISTANCE}],
     )
 
     launch_actions = [
