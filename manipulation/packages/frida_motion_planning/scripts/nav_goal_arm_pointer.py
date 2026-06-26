@@ -86,6 +86,10 @@ class NavGoalArmPointer(Node):
         self.homing = False  # returning joint1 to the base front after the goal ends
 
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        # True = arm idle / back to its normal pose; False = pointing or homing.
+        # Latched so a late subscriber (nav_central) reads the current value.
+        self.ready_pub = self.create_publisher(Bool, "/nav/arm_ready", latched)
+        self.ready_pub.publish(Bool(data=True))
         self.create_subscription(
             PoseStamped, "/nav/current_goal", self._goal_cb, latched, callback_group=cbg
         )
@@ -156,6 +160,7 @@ class NavGoalArmPointer(Node):
         if self.goal_active:
             if not self.vel_mode_on and self._set_mode(JOINT_VELOCITY_MODE):
                 self.vel_mode_on = True
+                self.ready_pub.publish(Bool(data=False))  # busy: pointing
             self.homing = False  # cancel any homing if a new goal arrives
         elif self.vel_mode_on and not self.homing:
             self.homing = True  # goal ended: return arm to base front before MoveIt
@@ -171,6 +176,7 @@ class NavGoalArmPointer(Node):
                 self._set_mode(MOVEIT_MODE)
                 self.vel_mode_on = False
                 self.homing = False
+                self.ready_pub.publish(Bool(data=True))  # back to normal pose
             else:
                 self._send_joint1_vel(vel)
             return

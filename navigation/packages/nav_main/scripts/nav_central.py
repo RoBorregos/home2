@@ -69,6 +69,9 @@ import re
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
+# Max time to wait for the arm pointer to home back to its normal pose before
+# returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
+ARM_HOME_TIMEOUT = 10.0
 
 
 def make_param(name, value):
@@ -186,6 +189,13 @@ class Nav_Central(Node):
         _latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.current_goal_pub = self.create_publisher(PoseStamped, "/nav/current_goal", _latched)
         self.goal_active_pub = self.create_publisher(Bool, "/nav/goal_active", _latched)
+        # Arm pointer reports when it's back to its normal pose after the goal ends.
+        # Default True so nav never blocks when the arm pointer node isn't running.
+        self.arm_ready = True
+        self.create_subscription(
+            Bool, "/nav/arm_ready",
+            lambda m: setattr(self, "arm_ready", m.data),
+            _latched, callback_group=self.lidar_group)
 
         # Path query service — distance/time between two areas without navigating
         self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
@@ -508,6 +518,14 @@ class Nav_Central(Node):
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
         finally:
             self.goal_active_pub.publish(Bool(data=False))
+            # Hold the result until the arm has homed back to its normal pose
+            # (arm_ready True), so callers don't act while the arm is still moving.
+            waited = 0.0
+            while not self.arm_ready and waited < ARM_HOME_TIMEOUT:
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                waited += 0.1
+            if not self.arm_ready:
+                self.nav_logger("warn", "Goal_Handler -> arm did not report ready before timeout")
 
     def _retreat_if_docked(self):
         """Best-effort: ask the table_docker to back off if it's parked at a
