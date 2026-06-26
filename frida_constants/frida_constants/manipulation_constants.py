@@ -81,6 +81,14 @@ RIM_GRASP_Z_TWEAK = -0.05  # m: target ~3 cm below rim top so fingers straddle t
 RIM_DESCENT_SPEED = 20.0  # mm/s
 RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
 
+# Bowl pick: reuses the rim straddle but with a much shorter descent. A bowl is
+# only ~8-9 cm tall, so the rim's fixed 0.15 m descent would plunge the inner
+# finger to the bottom. With this descent the fingers land ~3 cm below the rim.
+BOWL_PRE_GRASP_HEIGHT = RIM_PRE_GRASP_HEIGHT  # m
+BOWL_DESCENT_DISTANCE = 0.08  # m (tunable): fingers ~3 cm below the rim top
+# Keep validation endpoint == real descent endpoint (same relation as the rim).
+BOWL_GRASP_Z_TWEAK = BOWL_PRE_GRASP_HEIGHT - BOWL_DESCENT_DISTANCE  # = +0.02
+
 # Peak pick
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 PEAK_PRE_GRASP_HEIGHT = 0.15  # m

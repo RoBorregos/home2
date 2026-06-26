@@ -22,6 +22,7 @@ from frida_constants.manipulation_constants import (
     POUR_OBJECT_NAMES,
     RIM_NAMES,
     PEAK_NAMES,
+    BOWL_NAME,
 )
 from typing import Tuple
 import time
@@ -161,9 +162,10 @@ class PickManager:
         is_rim_object = is_rim(object_name)
         is_peak_object = is_peak(object_name)
         is_flat_object = is_flat_grasp(object_name) or is_rim_object or is_peak_object
+        is_bowl_object = object_name.lower() == BOWL_NAME
 
         if not pick_params.in_configuration:
-            if is_rim_object or is_peak_object:
+            if (is_rim_object or is_peak_object) and not is_bowl_object:
                 stare_position = "look_side_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"

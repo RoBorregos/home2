@@ -34,6 +34,9 @@ from frida_constants.manipulation_constants import (
     FIXED_DISTANCE_MOVE_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
     BOWL_NAME,
+    BOWL_PRE_GRASP_HEIGHT,
+    BOWL_GRASP_Z_TWEAK,
+    BOWL_DESCENT_DISTANCE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -133,7 +136,7 @@ class PickMotionServer(Node):
         self.rim_tip_offset = self.get_parameter("rim_tip_offset").value
         self.get_logger().info(f"Rim tip offset: {self.rim_tip_offset} m")
 
-        self.declare_parameter("bowl_tip_offset", -0.03)
+        self.declare_parameter("bowl_tip_offset", -0.12)
         self.bowl_tip_offset = self.get_parameter("bowl_tip_offset").value
         self.get_logger().info(f"Bowl tip offset: {self.bowl_tip_offset} m")
 
@@ -521,7 +524,9 @@ class PickMotionServer(Node):
 
                     # Validate the descent endpoint against the robot itself
                     descent_endpoint = copy.deepcopy(ee_link_pose)
-                    descent_endpoint.pose.position.z += RIM_GRASP_Z_TWEAK
+                    descent_endpoint.pose.position.z += (
+                        BOWL_GRASP_Z_TWEAK if is_bowl else RIM_GRASP_Z_TWEAK
+                    )
                     if endpoint_self_collides(
                         self._compute_ik_client,
                         self._state_validity_client,
@@ -543,7 +548,9 @@ class PickMotionServer(Node):
 
                     # Pre-grasp above the rim (MoveIt)
                     pre_grasp_pose = copy.deepcopy(ee_link_pose)
-                    pre_grasp_pose.pose.position.z += RIM_PRE_GRASP_HEIGHT
+                    pre_grasp_pose.pose.position.z += (
+                        BOWL_PRE_GRASP_HEIGHT if is_bowl else RIM_PRE_GRASP_HEIGHT
+                    )
 
                     self.get_logger().info(
                         f"[Rim] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
@@ -565,10 +572,13 @@ class PickMotionServer(Node):
                     self._clear_octomap()
 
                     # Fixed-distance descent (xArm cartesian velocity)
-                    self.get_logger().info(
-                        f"[Rim] Descending a fixed {RIM_DESCENT_DISTANCE * 1000:.0f}mm..."
+                    descent_distance = (
+                        BOWL_DESCENT_DISTANCE if is_bowl else RIM_DESCENT_DISTANCE
                     )
-                    descended = self.fixed_distance_descent(RIM_DESCENT_DISTANCE)
+                    self.get_logger().info(
+                        f"[Rim] Descending a fixed {descent_distance * 1000:.0f}mm..."
+                    )
+                    descended = self.fixed_distance_descent(descent_distance)
 
                     if not descended:
                         self.get_logger().warn(
