@@ -21,15 +21,6 @@
     <color rgba="0.792156862745098 0.819607843137255 0.933333333333333 1"/>
   </material>
 
-  <!-- =================== base_footprint (root) =================== -->
-  <link name="base_footprint"/>
-
-  <joint name="base_footprint_joint" type="fixed">
-    <origin xyz="0 0 0.0385" rpy="0 0 0"/>
-    <parent link="base_footprint"/>
-    <child link="base_link"/>
-  </joint>
-
   <!-- =================== base_link =================== -->
   <link name="base_link">
     <inertial>
