@@ -1,5 +1,17 @@
 var NAVTREEINDEX33 =
 {
+"launch__nav_8py.html#a57e87166d8c220a27ed62563585c7391":[39,0,4,0,3,2,2,9],
+"launch__nav_8py.html#a5adb043eb7a122398ac540c8c0aa36f4":[39,0,4,0,3,2,2,14],
+"launch__nav_8py.html#a75bd2855dafe96b1a39f361e973d957d":[39,0,4,0,3,2,2,0],
+"launch__nav_8py.html#a92f282f5c2ee5a69ea877067b626e46c":[39,0,4,0,3,2,2,19],
+"launch__nav_8py.html#a96af342b5bd59dd400aefda6b7532555":[39,0,4,0,3,2,2,22],
+"launch__nav_8py.html#abc760dc1ac36e19482c124398ae7dc45":[39,0,4,0,3,2,2,5],
+"launch__nav_8py.html#abfda763f2a6e7b9caafc056cc9aa1e4f":[39,0,4,0,3,2,2,3],
+"launch__nav_8py.html#ace16b89971ec24d4c2a83bfb2423d2fa":[39,0,4,0,3,2,2,13],
+"launch__nav_8py.html#ad5f0f2a140eea61ec2fce197123a1d64":[39,0,4,0,3,2,2,12],
+"launch__nav_8py.html#ad8f3f0a83ccae0a1f950b036873acdfd":[39,0,4,0,3,2,2,1],
+"launch__nav_8py.html#ae215736aa067f1294af81ef3dcafe6f9":[39,0,4,0,3,2,2,20],
+"launch__nav_8py.html#ae5ed452e73246c6a02445001d416e92e":[39,0,4,0,3,2,2,10],
 "launch__nav_8py.html#af0470fd800e1efdfd2e37f736994e4cc":[39,0,4,0,3,2,2,4],
 "lidar__setup_8launch_8py.html":[39,0,4,0,3,0,1,0],
 "lidar__setup_8launch_8py.html#a270b8733299546018e10198255b2f9bf":[39,0,4,0,3,0,1,0,0],
@@ -237,17 +249,5 @@ var NAVTREEINDEX33 =
 "map__service_8cpp.html#aa016ff104ce1b9e5361e03e3dc22c0a0":[39,0,4,0,2,4,0,1],
 "mapping_8launch_8py.html":[39,0,4,0,3,0,2,2],
 "mapping_8launch_8py.html#a3a2ccf081850f9ede9e85ed58952fba0":[39,0,4,0,3,0,2,2,1],
-"mapping_8launch_8py.html#ac951e3077b2a262f96039858d7fa2b20":[39,0,4,0,3,0,2,2,0],
-"masive__testin_8cpp.html":[39,0,3,0,6,4,2],
-"masive__testin_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97":[39,0,3,0,6,4,2,2],
-"masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[39,0,3,0,6,4,2,3],
-"md_docs_Run_Areas_Manipulation_manipulation.html":[29],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md228":[29,0],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md229":[29,1],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md238":[29,1,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html":[30],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md240":[30,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md241":[30,0,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md242":[30,0,1],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md243":[30,0,1,0]
+"mapping_8launch_8py.html#ac951e3077b2a262f96039858d7fa2b20":[39,0,4,0,3,0,2,2,0]
 };

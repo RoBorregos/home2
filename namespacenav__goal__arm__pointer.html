@@ -136,10 +136,14 @@ Variables</h2></td></tr>
 <tr class="separator:a9b7d55ec3aba91d7511c713f162c725b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1d3267274f8d3504e252b355b5e7787"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__goal__arm__pointer.html#af1d3267274f8d3504e252b355b5e7787">JOINT1_OFFSET</a> = 0.0</td></tr>
 <tr class="separator:af1d3267274f8d3504e252b355b5e7787"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca45f1563391b4c13c6018364a45da4b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__goal__arm__pointer.html#aca45f1563391b4c13c6018364a45da4b">FRONT_OFFSET</a> = -1.57</td></tr>
-<tr class="separator:aca45f1563391b4c13c6018364a45da4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66e79cabce490cccb5d95934172642c8"><td class="memItemLeft" align="right" valign="top">max&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__goal__arm__pointer.html#a66e79cabce490cccb5d95934172642c8">FRONT_TARGET</a> = max(-<a class="el" href="namespacenav__goal__arm__pointer.html#aa5f7d3e966841f15efea15587979ca48">JOINT1_LIMIT</a>, min(<a class="el" href="namespacenav__goal__arm__pointer.html#aa5f7d3e966841f15efea15587979ca48">JOINT1_LIMIT</a>, <a class="el" href="namespacenav__goal__arm__pointer.html#aaf7966aebe7a64396b221b03b569e7dc">wrap_angle</a>(<a class="el" href="namespacenav__goal__arm__pointer.html#aca45f1563391b4c13c6018364a45da4b">FRONT_OFFSET</a>)))</td></tr>
-<tr class="separator:a66e79cabce490cccb5d95934172642c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39d96ce479a9377df695d12989044cd1"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__goal__arm__pointer.html#a39d96ce479a9377df695d12989044cd1">MOVE_JOINTS_ACTION</a> = &quot;/manipulation/move_joints_action_server&quot;</td></tr>
+<tr class="separator:a39d96ce479a9377df695d12989044cd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a254575c2ecd7036db0563b724bd89618"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__goal__arm__pointer.html#a254575c2ecd7036db0563b724bd89618">NAV_POSE_VELOCITY</a> = 0.75</td></tr>
+<tr class="separator:a254575c2ecd7036db0563b724bd89618"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39cb551d980c42e73970bfafe5a5ae95"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__goal__arm__pointer.html#a39cb551d980c42e73970bfafe5a5ae95">NAV_POSE_NAMES</a> = list(NAV_POSE[&quot;joints&quot;].keys())</td></tr>
+<tr class="separator:a39cb551d980c42e73970bfafe5a5ae95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a799939219b7b2ef0df4cad790f9ed7c4"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__goal__arm__pointer.html#a799939219b7b2ef0df4cad790f9ed7c4">NAV_POSE_RADS</a></td></tr>
+<tr class="separator:a799939219b7b2ef0df4cad790f9ed7c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Yaw the xArm6 (joint 1 only) to point at the Nav2 destination as the base drives.
@@ -147,7 +151,8 @@ Variables</h2></td></tr>
 While /nav/goal_active is True, computes the bearing from the arm base to the nav
 goal and drives joint 1 toward it with direct xArm joint-velocity commands (the
 same API follow_face uses), holding all other joints. No MoveIt / motion planning.
-Stops and returns the arm to MoveIt mode when the goal goes inactive.
+When the goal goes inactive, hands the arm back to MoveIt and sends it to the named
+NAV_POSE (reliable front-facing pose) instead of velocity-homing joint1 by angle.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="a763bc746dee2d8802bcf574db1eae6cf" name="a763bc746dee2d8802bcf574db1eae6cf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a763bc746dee2d8802bcf574db1eae6cf">&#9670;&#160;</a></span>_selftest()</h2>
@@ -281,34 +286,6 @@ Stops and returns the arm to MoveIt mode when the goal goes inactive.
 
 </div>
 </div>
-<a id="aca45f1563391b4c13c6018364a45da4b" name="aca45f1563391b4c13c6018364a45da4b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca45f1563391b4c13c6018364a45da4b">&#9670;&#160;</a></span>FRONT_OFFSET</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">float nav_goal_arm_pointer.FRONT_OFFSET = -1.57</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a66e79cabce490cccb5d95934172642c8" name="a66e79cabce490cccb5d95934172642c8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a66e79cabce490cccb5d95934172642c8">&#9670;&#160;</a></span>FRONT_TARGET</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">max nav_goal_arm_pointer.FRONT_TARGET = max(-<a class="el" href="namespacenav__goal__arm__pointer.html#aa5f7d3e966841f15efea15587979ca48">JOINT1_LIMIT</a>, min(<a class="el" href="namespacenav__goal__arm__pointer.html#aa5f7d3e966841f15efea15587979ca48">JOINT1_LIMIT</a>, <a class="el" href="namespacenav__goal__arm__pointer.html#aaf7966aebe7a64396b221b03b569e7dc">wrap_angle</a>(<a class="el" href="namespacenav__goal__arm__pointer.html#aca45f1563391b4c13c6018364a45da4b">FRONT_OFFSET</a>)))</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="aa5f7d3e966841f15efea15587979ca48" name="aa5f7d3e966841f15efea15587979ca48"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa5f7d3e966841f15efea15587979ca48">&#9670;&#160;</a></span>JOINT1_LIMIT</h2>
 
@@ -387,6 +364,66 @@ Stops and returns the arm to MoveIt mode when the goal goes inactive.
       <table class="memname">
         <tr>
           <td class="memname">float nav_goal_arm_pointer.MAX_JOINT1_VEL = 0.5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a39d96ce479a9377df695d12989044cd1" name="a39d96ce479a9377df695d12989044cd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39d96ce479a9377df695d12989044cd1">&#9670;&#160;</a></span>MOVE_JOINTS_ACTION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">str nav_goal_arm_pointer.MOVE_JOINTS_ACTION = &quot;/manipulation/move_joints_action_server&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a39cb551d980c42e73970bfafe5a5ae95" name="a39cb551d980c42e73970bfafe5a5ae95"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39cb551d980c42e73970bfafe5a5ae95">&#9670;&#160;</a></span>NAV_POSE_NAMES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list nav_goal_arm_pointer.NAV_POSE_NAMES = list(NAV_POSE[&quot;joints&quot;].keys())</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a799939219b7b2ef0df4cad790f9ed7c4" name="a799939219b7b2ef0df4cad790f9ed7c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a799939219b7b2ef0df4cad790f9ed7c4">&#9670;&#160;</a></span>NAV_POSE_RADS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list nav_goal_arm_pointer.NAV_POSE_RADS</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  [</div>
+<div class="line"><span class="lineno">    2</span>    math.radians(v) <span class="keywordflow">if</span> NAV_POSE.get(<span class="stringliteral">&quot;degrees&quot;</span>) <span class="keywordflow">else</span> float(v)</div>
+<div class="line"><span class="lineno">    3</span>    <span class="keywordflow">for</span> v <span class="keywordflow">in</span> NAV_POSE[<span class="stringliteral">&quot;joints&quot;</span>].values()</div>
+<div class="line"><span class="lineno">    4</span>]</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="a254575c2ecd7036db0563b724bd89618" name="a254575c2ecd7036db0563b724bd89618"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a254575c2ecd7036db0563b724bd89618">&#9670;&#160;</a></span>NAV_POSE_VELOCITY</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float nav_goal_arm_pointer.NAV_POSE_VELOCITY = 0.75</td>
         </tr>
       </table>
 </div><div class="memdoc">
