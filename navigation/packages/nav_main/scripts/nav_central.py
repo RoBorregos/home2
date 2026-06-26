@@ -4,6 +4,7 @@ from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
+from rclpy.qos import qos_profile_sensor_data
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
@@ -378,7 +379,9 @@ class Nav_Central(Node):
     def check_door(self,request, response):
         self.nav_logger("info","Check_door -> Service called")
 
-        self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10,callback_group=self.lidar_group )
+        # /scan is published with SensorDataQoS (BEST_EFFORT) by laserscan_multi_merger;
+        # a default RELIABLE subscription is QoS-incompatible and receives nothing.
+        self.lidar_reciever = self.create_subscription(LaserScan, SCAN_TOPIC, self.lidar_callback, qos_profile_sensor_data, callback_group=self.lidar_group)
         self.lidar_msg = None  #Clean for cache msgs
         t.sleep(self.door_rate) #Wait for suscription to start
 
@@ -397,26 +400,36 @@ class Nav_Central(Node):
         start_time = self.get_clock().now()
         while (self.get_clock().now() - start_time) < self.door_timeout: #Timeout in case of absolute failure 
             self.nav_logger("info","Check_door -> Waiting for door to open")
-            door_points = []
-            inf_count = 0
-            point_count = 0
+            # Beams that find nothing (door open -> beam passes through) come back
+            # as inf; clamp them to the sensor max range so they always count as
+            # "far". Average every valid beam in the window each cycle instead of
+            # gating on the inf count.
+            far_value = self.lidar_msg.range_max if self.lidar_msg.range_max > 0.0 else 12.0
+            sensor_min = self.lidar_msg.range_min if self.lidar_msg.range_min > 0.0 else 0.0
 
+            door_points = []
             for count, r in enumerate(self.lidar_msg.ranges):
+                # Select only the beams pointing at the door (index window, with
+                # wrap-around support when range_min > range_max).
                 if self.range_min > self.range_max:
-                    if (count <= self.range_max and count >= 0 ) or (count >= self.range_min):
-                        door_points.append(r)
-                        if(math.isinf(r)):
-                            inf_count += 1
-                        point_count += 1
-                elif self.range_min <= count <= self.range_max:
+                    in_window = (0 <= count <= self.range_max) or (count >= self.range_min)
+                else:
+                    in_window = self.range_min <= count <= self.range_max
+                if not in_window:
+                    continue
+
+                if math.isinf(r) or r > far_value:
+                    door_points.append(far_value)  # nothing in range -> door open
+                elif math.isnan(r) or r < sensor_min:
+                    continue  # invalid reading -> ignore
+                else:
                     door_points.append(r)
 
-            if inf_count > 0: #Filter only if there is points
-                if inf_count < count / 3: #FIlter noise inf, only if is above 1/3 of the points
-                    door_points = [x for x in door_points if not math.isinf(x)]  
-                avg_points = sum(door_points)/ len(door_points)
+            if door_points:
+                avg_points = sum(door_points) / len(door_points)
+                self.nav_logger("info", f"Check_door -> Window avg distance: {avg_points:.2f} m")
 
-                if(avg_points > self.door_distance):
+                if avg_points > self.door_distance:
                     self.nav_logger("info", "Check_door -> Door opened")
                     self.destroy_subscription(self.lidar_reciever)
                     self.lidar_msg = None

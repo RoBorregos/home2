@@ -37,6 +37,18 @@ def launch_function(context, *args, **kwargs):
     omni_map_default = os.path.join(maps_dir, areas_map_name)
     omni_map = LaunchConfiguration('map', default=omni_map_default)
 
+    # Editable static map (Option A): serve <name>.yaml via a map_server inside the
+    # nav2 container (so the .pgm can be hand-edited in the map tagger) instead of the
+    # grid slam_toolbox rasterizes from the pose-graph. Auto-enabled when the grid
+    # yaml exists next to the posegraph; override with use_static_map_server:=true|false.
+    omni_map_yaml_default = omni_map_default + '.yaml'
+    omni_map_yaml = LaunchConfiguration('map_yaml', default=omni_map_yaml_default)
+    omni_map_yaml_value = omni_map_yaml.perform(context)
+    use_static_map_default = 'true' if os.path.exists(omni_map_yaml_value) else 'false'
+    use_static_map = LaunchConfiguration('use_static_map_server', default=use_static_map_default)
+    print(f"[general_navigation] static map '{omni_map_yaml_value}' "
+          f"exists={os.path.exists(omni_map_yaml_value)} -> use_static_map_server={use_static_map_default}")
+
     # Keepout (virtual obstacle) filter — AUTO-enabled when a mask named
     # "<MAP_NAME>_keepout_mask.yaml" exists next to the map (draw it in the map
     # tagger UI). Override with use_keepout:=true|false or keepout_mask:=/path.yaml.
@@ -110,6 +122,7 @@ def launch_function(context, *args, **kwargs):
         ),
         launch_arguments={
             'map': omni_map,
+            'use_static_map_server': use_static_map,
         }.items(),
     )
 
@@ -121,6 +134,8 @@ def launch_function(context, *args, **kwargs):
             'nav2': nav2_activate,
             'use_keepout': use_keepout,
             'keepout_mask': keepout_mask,
+            'use_static_map_server': use_static_map,
+            'map_yaml': omni_map_yaml,
         }.items(),
     )
 
