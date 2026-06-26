@@ -98,6 +98,8 @@ $(document).ready(function(){initNavTree('namespacelocalization.html',''); initR
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a76ffb350c3296b7397ddf5effc87c862"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacelocalization.html#a76ffb350c3296b7397ddf5effc87c862">launch_setup</a> (context, *args, **kwargs)</td></tr>
+<tr class="separator:a76ffb350c3296b7397ddf5effc87c862"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03aa809ae87723efe694476a74017b40"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacelocalization.html#a03aa809ae87723efe694476a74017b40">generate_launch_description</a> ()</td></tr>
 <tr class="separator:a03aa809ae87723efe694476a74017b40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -109,7 +111,18 @@ run this every round. slam_toolbox loads the saved pose-graph, localizes against
 it (replacing AMCL), and publishes the map-&gt;odom TF. It does NOT grow the map.
 
 Brings up:
-    slam_toolbox (localization)  ──&gt;  TF map-&gt;odom  +  /map  (localizes on the saved map)
+    slam_toolbox (localization)  ──&gt;  TF map-&gt;odom  (scan-match against the graph)
+    map_server (when a grid YAML exists)  ──&gt;  /map  (EDITABLE static occupancy grid)
+
+Editable static map (Option A)
+------------------------------
+By default slam_toolbox rasterizes /map from the serialized pose-graph, so you
+CANNOT hand-edit obstacles in it. Instead, when a "&lt;map&gt;.yaml" occupancy grid
+exists next to the serialized map, this launch serves THAT grid on /map via
+map_server and moves slam_toolbox's own grid to /slam_map. slam_toolbox still
+does pose localization (map-&gt;odom TF); the costmap static_layer reads the file.
+So to erase/add an obstacle: edit &lt;map&gt;.pgm (free=254, unknown=205, occupied=0),
+keep &lt;map&gt;.yaml, relaunch. Disable with use_static_map_server:=false.
 
 NOT started here (owned by omni_basics.launch.py / run separately):
     * odrive_dashboard + EKF (odom-&gt;base_link)
@@ -118,6 +131,7 @@ NOT started here (owned by omni_basics.launch.py / run separately):
 Prerequisite — a SERIALIZED map (.posegraph + .data), made while mapping:
     ros2 service call /slam_toolbox/serialize_map \
         slam_toolbox/srv/SerializePoseGraph "{filename: '/home/&lt;user&gt;/omnibase_maps/arena'}"
+    (nav_ui's save also exports &lt;name&gt;.yaml + &lt;name&gt;.pgm — the editable grid.)
 
 Usage
 -----
@@ -138,6 +152,40 @@ out and drop a "2D Pose Estimate" in RViz (publishes /initialpose).
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a76ffb350c3296b7397ddf5effc87c862" name="a76ffb350c3296b7397ddf5effc87c862"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a76ffb350c3296b7397ddf5effc87c862">&#9670;&#160;</a></span>launch_setup()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def localization.launch_setup </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>context</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">*&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">**&#160;</td>
+          <td class="paramname"><em>kwargs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">

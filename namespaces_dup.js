@@ -253,7 +253,8 @@ var namespaces_dup =
       [ "INFTY_COST", "namespacelinear__assignment.html#a4dc5d6dd36ab525c7eec56cb41e458e1", null ]
     ] ],
     [ "localization", "namespacelocalization.html", [
-      [ "generate_launch_description", "namespacelocalization.html#a03aa809ae87723efe694476a74017b40", null ]
+      [ "generate_launch_description", "namespacelocalization.html#a03aa809ae87723efe694476a74017b40", null ],
+      [ "launch_setup", "namespacelocalization.html#a76ffb350c3296b7397ddf5effc87c862", null ]
     ] ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
     [ "manipulation_general", "namespacemanipulation__general.html", "namespacemanipulation__general" ],
