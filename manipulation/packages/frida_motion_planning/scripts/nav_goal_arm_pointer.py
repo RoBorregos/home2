@@ -4,7 +4,8 @@
 While /nav/goal_active is True, computes the bearing from the arm base to the nav
 goal and drives joint 1 toward it with direct xArm joint-velocity commands (the
 same API follow_face uses), holding all other joints. No MoveIt / motion planning.
-Stops and returns the arm to MoveIt mode when the goal goes inactive.
+When the goal goes inactive, hands the arm back to MoveIt and sends it to the named
+NAV_POSE (reliable front-facing pose) instead of velocity-homing joint1 by angle.
 """
 
 import math
@@ -12,6 +13,7 @@ import sys
 
 import rclpy
 from rclpy.node import Node
+from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSProfile, DurabilityPolicy
 
@@ -30,6 +32,8 @@ from frida_constants.manipulation_constants import (
     XARM_SETSTATE_SERVICE,
     XARM_MOVEVELOCITY_SERVICE,
 )
+from frida_constants.xarm_configurations import NAV_POSE
+from frida_interfaces.action import MoveJoints
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_pymoveit2.robots import xarm6
 from xarm_msgs.srv import MoveVelocity, SetInt16
@@ -44,26 +48,26 @@ MAX_JOINT1_VEL = 0.5  # rad/s cap
 ANGLE_TOL = 0.02  # rad deadband (~1.1 deg) -> hold still
 VEL_DURATION = 0.3  # s; xArm auto-stops if we stop sending (safety if node dies)
 
-# ponytail: hardware calibration knobs, two INDEPENDENT angles. Tune on the robot.
-# JOINT1_SIGN flips rotation direction.
-# JOINT1_OFFSET aligns joint1's zero with the arm-base +x for GOAL TRACKING.
-#   0.0 is the value that made tracking point correctly. Do NOT change it to fix
-#   the homing pose -- that's what FRONT_OFFSET is for.
-# FRONT_OFFSET is the joint1 angle that faces the MOBILE-BASE FRONT, used only by
-#   the post-nav homing. Non-zero because the arm is mounted rotated vs the base.
-#   Tune this alone to fix where the arm ends after nav (here: -90deg).
+# ponytail: tracking calibration. JOINT1_SIGN flips rotation direction;
+# JOINT1_OFFSET aligns joint1's zero with the arm-base +x. 0.0 = tracking points
+# correctly. (The post-nav front pose is no longer tuned here -- see NAV_POSE.)
 JOINT1_SIGN = 1.0
 JOINT1_OFFSET = 0.0
-FRONT_OFFSET = -1.57
+
+# When the goal ends, instead of velocity-homing joint1 by angle (imprecise), hand
+# the arm to MoveIt and send it to the named NAV_POSE so it reliably faces front.
+MOVE_JOINTS_ACTION = "/manipulation/move_joints_action_server"
+NAV_POSE_VELOCITY = 0.75  # matches move_to_position default
+NAV_POSE_NAMES = list(NAV_POSE["joints"].keys())
+NAV_POSE_RADS = [
+    math.radians(v) if NAV_POSE.get("degrees") else float(v)
+    for v in NAV_POSE["joints"].values()
+]
 
 
 def wrap_angle(a: float) -> float:
     """Wrap to [-pi, pi]."""
     return math.atan2(math.sin(a), math.cos(a))
-
-
-# Joint1 target for the post-nav homing: faces the mobile-base front.
-FRONT_TARGET = max(-JOINT1_LIMIT, min(JOINT1_LIMIT, wrap_angle(FRONT_OFFSET)))
 
 
 def joint1_velocity(target: float, current: float) -> float:
@@ -83,10 +87,11 @@ class NavGoalArmPointer(Node):
         self.goal_active = False
         self.joint1_pos = None  # rad, from /joint_states
         self.vel_mode_on = False  # whether the arm is currently in velocity mode
-        self.homing = False  # returning joint1 to the base front after the goal ends
+        self.returning = False  # sending the arm to NAV_POSE after the goal ends
+        self.point_attempted = False  # tried to grab velocity mode for this goal
 
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
-        # True = arm idle / back to its normal pose; False = pointing or homing.
+        # True = arm idle / back to its normal pose; False = pointing or returning.
         # Latched so a late subscriber (nav_central) reads the current value.
         self.ready_pub = self.create_publisher(Bool, "/nav/arm_ready", latched)
         self.ready_pub.publish(Bool(data=True))
@@ -111,6 +116,9 @@ class NavGoalArmPointer(Node):
         )
         self.vel_client = self.create_client(
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE, callback_group=cbg
+        )
+        self.move_joints_client = ActionClient(
+            self, MoveJoints, MOVE_JOINTS_ACTION, callback_group=cbg
         )
 
         for c, n in (
@@ -153,32 +161,73 @@ class NavGoalArmPointer(Node):
         req.speeds = [vel, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.vel_client.call_async(req)
 
+    # -- return to NAV_POSE (MoveIt) when the goal ends --
+
+    def _arm_ready(self):
+        """Mark the arm back to its normal pose so nav can finish. Idempotent."""
+        if self.returning:
+            self.returning = False
+            self.ready_pub.publish(Bool(data=True))
+
+    def _send_nav_pose(self):
+        """Plan + move to the named NAV_POSE via MoveIt. Non-blocking."""
+        if not self.move_joints_client.server_is_ready():
+            self.get_logger().warn(
+                "move_joints action server unavailable; skipping NAV_POSE"
+            )
+            self._arm_ready()  # don't block nav waiting for an arm that can't move
+            return
+        goal = MoveJoints.Goal()
+        goal.joint_names = NAV_POSE_NAMES
+        goal.joint_positions = NAV_POSE_RADS
+        goal.velocity = NAV_POSE_VELOCITY
+        self.move_joints_client.send_goal_async(goal).add_done_callback(
+            self._nav_pose_sent
+        )
+
+    def _nav_pose_sent(self, future):
+        gh = future.result()
+        if gh is None or not gh.accepted:
+            self.get_logger().warn("NAV_POSE goal rejected")
+            self._arm_ready()
+            return
+        gh.get_result_async().add_done_callback(lambda _f: self._nav_pose_done())
+
+    def _nav_pose_done(self):
+        self.get_logger().info("arm returned to NAV_POSE")
+        self._arm_ready()
+
     # -- control loop --
 
     def _control(self):
         # Activation / deactivation edges.
         if self.goal_active:
-            if not self.vel_mode_on and self._set_mode(JOINT_VELOCITY_MODE):
-                self.vel_mode_on = True
-                self.ready_pub.publish(Bool(data=False))  # busy: pointing
-            self.homing = False  # cancel any homing if a new goal arrives
-        elif self.vel_mode_on and not self.homing:
-            self.homing = True  # goal ended: return arm to base front before MoveIt
-
-        if not self.vel_mode_on or self.joint1_pos is None:
-            return
-
-        # Goal ended: drive joint1 back to the front, then hand the arm to MoveIt.
-        if self.homing:
-            vel = joint1_velocity(FRONT_TARGET, self.joint1_pos)
-            if vel == 0.0:  # at the front (within deadband)
+            # Try to take velocity control ONCE per goal. Retrying every tick
+            # fights ros2_control for /xarm/set_mode and storms "Failed to set
+            # xArm mode 4" when manipulation owns the arm. This assumes
+            # manipulation doesn't move the arm during navigation; real fix is
+            # node coordination (see _send_nav_pose / module TODO).
+            if not self.vel_mode_on and not self.point_attempted:
+                self.point_attempted = True
+                if self._set_mode(JOINT_VELOCITY_MODE):
+                    self.vel_mode_on = True
+                    self.ready_pub.publish(Bool(data=False))  # busy: pointing
+                else:
+                    self.get_logger().warn(
+                        "could not take velocity mode (arm busy?); not pointing this goal"
+                    )
+            self.returning = False  # a new goal preempts an in-flight NAV_POSE return
+        else:
+            self.point_attempted = False  # reset for the next goal
+            if self.vel_mode_on:
+                # Goal ended: stop pointing, hand to MoveIt, send arm to NAV_POSE.
                 self._send_joint1_vel(0.0)
                 self._set_mode(MOVEIT_MODE)
                 self.vel_mode_on = False
-                self.homing = False
-                self.ready_pub.publish(Bool(data=True))  # back to normal pose
-            else:
-                self._send_joint1_vel(vel)
+                self.returning = True
+                self._send_nav_pose()
+
+        if not self.vel_mode_on or self.joint1_pos is None:
             return
 
         if self.goal is None:
