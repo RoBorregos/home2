@@ -1,5 +1,7 @@
 var NAVTREEINDEX49 =
 {
+"structvamp_1_1planning_1_1SimplifySettings.html":[38,0,113,3,31],
+"structvamp_1_1planning_1_1SimplifySettings.html#a06c61ef4273981d6035f27e457cd7cde":[37,0,200,5,31,4],
 "structvamp_1_1planning_1_1SimplifySettings.html#a06c61ef4273981d6035f27e457cd7cde":[38,0,113,3,31,4],
 "structvamp_1_1planning_1_1SimplifySettings.html#a17b539addb9fb50da3db7ac901c301aa":[38,0,113,3,31,2],
 "structvamp_1_1planning_1_1SimplifySettings.html#a17b539addb9fb50da3db7ac901c301aa":[37,0,200,5,31,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX49 =
 "task__manager_2task__manager_2____init_____8py.html":[39,0,6,2,2],
 "task__manager_2task__manager_2subtask__managers_2____init_____8py.html":[39,0,6,2,0,0],
 "task__manager_2task__manager_2utils_2____init_____8py.html":[39,0,6,2,1,0],
-"temp__follow_8py.html":[39,0,6,1,0,13],
-"temp__follow_8py.html#a027d977acaf4012fe97da3b05f6a746d":[39,0,6,1,0,13,7],
-"temp__follow_8py.html#a24e0bd389d3274839f801a5f6d7cf9b6":[39,0,6,1,0,13,4]
+"temp__follow_8py.html":[39,0,6,1,0,13]
 };

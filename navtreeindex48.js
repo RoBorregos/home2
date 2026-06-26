@@ -1,5 +1,7 @@
 var NAVTREEINDEX48 =
 {
+"structvamp_1_1planning_1_1FCITRoadmapNode.html#a5f83f626f37cd3fb95ff1aa20e6da1ab":[38,0,113,3,7,1],
+"structvamp_1_1planning_1_1FCITRoadmapNode.html#a8262c760dbc9ab7359347d8b7c378e4e":[37,0,200,5,7,5],
 "structvamp_1_1planning_1_1FCITRoadmapNode.html#a8262c760dbc9ab7359347d8b7c378e4e":[38,0,113,3,7,5],
 "structvamp_1_1planning_1_1FCITRoadmapNode.html#ab6e8b7fc32dbe4df7eca82e543ce6343":[37,0,200,5,7,7],
 "structvamp_1_1planning_1_1FCITRoadmapNode.html#ab6e8b7fc32dbe4df7eca82e543ce6343":[38,0,113,3,7,7],
@@ -247,7 +249,5 @@ var NAVTREEINDEX48 =
 "structvamp_1_1planning_1_1RoadmapSettings.html#afe254ed6040780e0ac8a65c84bfea3bf":[38,0,113,3,27,2],
 "structvamp_1_1planning_1_1ShortcutSettings.html":[37,0,200,5,30],
 "structvamp_1_1planning_1_1ShortcutSettings.html":[38,0,113,3,30],
-"structvamp_1_1planning_1_1SimplifySettings.html":[37,0,200,5,31],
-"structvamp_1_1planning_1_1SimplifySettings.html":[38,0,113,3,31],
-"structvamp_1_1planning_1_1SimplifySettings.html#a06c61ef4273981d6035f27e457cd7cde":[37,0,200,5,31,4]
+"structvamp_1_1planning_1_1SimplifySettings.html":[37,0,200,5,31]
 };

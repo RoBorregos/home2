@@ -1,5 +1,7 @@
 var NAVTREEINDEX36 =
 {
+"namespacedemo__roborregosday.html#aef364237443cdc672f0fdf820f1bf866":[37,0,25,1],
+"namespacedemo__roborregosday.html#af18329abe6c10ff0c8cbbd8bf2b0d922":[37,0,25,2],
 "namespacedetection.html":[37,0,26],
 "namespacedetectors.html":[37,0,27],
 "namespacedetectors_1_1base.html":[37,0,27,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX36 =
 "namespacefrida__constants_1_1manipulation__constants.html#a5165adc9e6beb3861d698108db605489":[37,0,60,2,62],
 "namespacefrida__constants_1_1manipulation__constants.html#a520f33abe220f0f53b58bc4a6087abae":[37,0,60,2,29],
 "namespacefrida__constants_1_1manipulation__constants.html#a5a5abd76d002b0c9d56e76f93bc1b3e5":[37,0,60,2,97],
-"namespacefrida__constants_1_1manipulation__constants.html#a5e4ab2c20f0c0358ceb5107449be48b1":[37,0,60,2,45],
-"namespacefrida__constants_1_1manipulation__constants.html#a5ea55eae7fc712affd0e6fc30dcf8467":[37,0,60,2,52],
-"namespacefrida__constants_1_1manipulation__constants.html#a5eb759b00b661c3ef19e217417323b4c":[37,0,60,2,83]
+"namespacefrida__constants_1_1manipulation__constants.html#a5e4ab2c20f0c0358ceb5107449be48b1":[37,0,60,2,45]
 };

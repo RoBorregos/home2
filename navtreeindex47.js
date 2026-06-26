@@ -1,5 +1,7 @@
 var NAVTREEINDEX47 =
 {
+"structvamp_1_1collision_1_1Cuboid.html#a293f2e580ca8cca26c14085b73fc77ab":[38,0,113,1,2,9],
+"structvamp_1_1collision_1_1Cuboid.html#a2b403d4cd83ad992f5f4a484d68dd298":[37,0,200,2,3,18],
 "structvamp_1_1collision_1_1Cuboid.html#a2b403d4cd83ad992f5f4a484d68dd298":[38,0,113,1,2,18],
 "structvamp_1_1collision_1_1Cuboid.html#a2ba566849cbd2ab1d179112a01d53f8a":[37,0,200,2,3,1],
 "structvamp_1_1collision_1_1Cuboid.html#a2ba566849cbd2ab1d179112a01d53f8a":[38,0,113,1,2,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX47 =
 "structvamp_1_1planning_1_1FCITRoadmapNode.html":[38,0,113,3,7],
 "structvamp_1_1planning_1_1FCITRoadmapNode.html#a299e65257c92f71bd5c85307718efb4b":[37,0,200,5,7,4],
 "structvamp_1_1planning_1_1FCITRoadmapNode.html#a299e65257c92f71bd5c85307718efb4b":[38,0,113,3,7,4],
-"structvamp_1_1planning_1_1FCITRoadmapNode.html#a5f83f626f37cd3fb95ff1aa20e6da1ab":[37,0,200,5,7,1],
-"structvamp_1_1planning_1_1FCITRoadmapNode.html#a5f83f626f37cd3fb95ff1aa20e6da1ab":[38,0,113,3,7,1],
-"structvamp_1_1planning_1_1FCITRoadmapNode.html#a8262c760dbc9ab7359347d8b7c378e4e":[37,0,200,5,7,5]
+"structvamp_1_1planning_1_1FCITRoadmapNode.html#a5f83f626f37cd3fb95ff1aa20e6da1ab":[37,0,200,5,7,1]
 };

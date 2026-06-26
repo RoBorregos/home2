@@ -1,5 +1,7 @@
 var NAVTREEINDEX50 =
 {
+"temp__follow_8py.html#a027d977acaf4012fe97da3b05f6a746d":[39,0,6,1,0,13,7],
+"temp__follow_8py.html#a24e0bd389d3274839f801a5f6d7cf9b6":[39,0,6,1,0,13,4],
 "temp__follow_8py.html#a425fcfab2ab004242e89772a9e92e0e8":[39,0,6,1,0,13,1],
 "temp__follow_8py.html#a63a3532037e8b4426a20510ab2b651d0":[39,0,6,1,0,13,6],
 "temp__follow_8py.html#a654c342546547d51f380e5d3b9f0bb36":[39,0,6,1,0,13,5],
@@ -247,7 +249,5 @@ var NAVTREEINDEX50 =
 "vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html#af7cdecddcac99f7c329b866f5ed79ed9":[39,0,7,0,1,2,0,3,0],
 "vision_2packages_2vision__general_2vision__general_2____init_____8py.html":[39,0,7,0,2,2,1],
 "vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html":[39,0,7,0,2,2,0,1,0,1],
-"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html#a4244883723c690b3712f5500eae7dfdc":[39,0,7,0,2,2,0,1,0,1,1],
-"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html#a43a1e41e013cee2dc8a50743353feba8":[39,0,7,0,2,2,0,1,0,1,2],
-"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html#a52385219b2478339270438294ebc5981":[39,0,7,0,2,2,0,1,0,1,3]
+"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html#a4244883723c690b3712f5500eae7dfdc":[39,0,7,0,2,2,0,1,0,1,1]
 };
