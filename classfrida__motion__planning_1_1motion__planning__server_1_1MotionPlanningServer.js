@@ -2,6 +2,7 @@ var classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningSe
 [
     [ "__init__", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aa69f12975b9c066e6e7995b83771f2f2", null ],
     [ "_call_ensure_arm_ready", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ac0586f778f07638f5e82561715603a79", null ],
+    [ "_publish_busy", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#af418b86ca0bf2207a06af78c8c728271", null ],
     [ "_slow_cartesian", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a090bb50d84fb10ddb351f28eeddc408c", null ],
     [ "add_collision_objects_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a6b385ee345581ea80a6d31e3559d560f", null ],
     [ "attach_collision_object_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a9288a7e5ffd3fbd01e042143f779d8b3", null ],
@@ -22,6 +23,8 @@ var classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningSe
     [ "set_joint_velocity_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab309a1aed6f3c29ca64781a19051d737", null ],
     [ "set_planning_settings", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ae289f407eb1e995556632bb2f0b9a7f2", null ],
     [ "toggle_servo_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ae9e7e44ee4643c054795b9d05a2fa4e1", null ],
+    [ "_arm_busy", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a013fa3e5368e2230a371e91e7abf3d47", null ],
+    [ "_arm_busy_pub", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a38e3a25e1e21d4d67e33a7459af1d3ee", null ],
     [ "_debug_pose_publisher", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a63360f21d53a97a9b8601075fdbbb138", null ],
     [ "_ensure_arm_ready_client", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab3fe3360f97a378cf202507819f0846a", null ],
     [ "_in_estop", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aed8551f6e76caddf73fc39527c17231d", null ],

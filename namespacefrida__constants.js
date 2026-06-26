@@ -44,6 +44,7 @@ var namespacefrida__constants =
       [ "JOINT_VELOCITY_MODE", "namespacefrida__constants_1_1manipulation__constants.html#a2b9fe2eb921dacceca8b4fd08e9eb64f", null ],
       [ "JOINTN_VELOCITY_MODE", "namespacefrida__constants_1_1manipulation__constants.html#aeea4aa8b33083068c17925172ed1bd2b", null ],
       [ "MANIPULATION_ACTION_SERVER", "namespacefrida__constants_1_1manipulation__constants.html#a72d781c5768abe2b3250a2030220b1a3", null ],
+      [ "MANIPULATION_ARM_BUSY_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#a98da067bb5c97d2e7b9c296be3cc893f", null ],
       [ "MANIPULATION_ENSURE_ARM_READY_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a3d27ed87794f2324a9105cd6423dea8b", null ],
       [ "MIN_CONFIGURATION_DISTANCE_TRESHOLD", "namespacefrida__constants_1_1manipulation__constants.html#a7980f88d789cc49a57a0fccd0bcec244", null ],
       [ "MOVE_JOINTS_ACTION_SERVER", "namespacefrida__constants_1_1manipulation__constants.html#ac9914bc1bd26dcc663e9755df8be60de", null ],
