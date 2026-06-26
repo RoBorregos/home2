@@ -14,6 +14,8 @@ from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from std_msgs.msg import Bool
+from rclpy.qos import QoSProfile, DurabilityPolicy
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -67,6 +69,9 @@ import re
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
+# Max time to wait for the arm pointer to home back to its normal pose before
+# returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
+ARM_HOME_TIMEOUT = 10.0
 
 
 def make_param(name, value):
@@ -176,6 +181,21 @@ class Nav_Central(Node):
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
         self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
+
+        # Expose the current nav goal + active flag so the arm pointer (manipulation)
+        # can aim the camera at the destination. transient_local so a late-joining
+        # subscriber still gets the last goal. ponytail: plain topics, no constants
+        # file — two strings, one consumer.
+        _latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.current_goal_pub = self.create_publisher(PoseStamped, "/nav/current_goal", _latched)
+        self.goal_active_pub = self.create_publisher(Bool, "/nav/goal_active", _latched)
+        # Arm pointer reports when it's back to its normal pose after the goal ends.
+        # Default True so nav never blocks when the arm pointer node isn't running.
+        self.arm_ready = True
+        self.create_subscription(
+            Bool, "/nav/arm_ready",
+            lambda m: setattr(self, "arm_ready", m.data),
+            _latched, callback_group=self.lidar_group)
 
         # Path query service — distance/time between two areas without navigating
         self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
@@ -453,43 +473,59 @@ class Nav_Central(Node):
         if behaivor_tree is not None:
             goal_msg.behaivor_tree = behaivor_tree
 
+        # Publish destination + active flag for the arm pointer; finally clears the
+        # flag on any exit (success, failure, or exception).
+        self.current_goal_pub.publish(pose)
+        self.goal_active_pub.publish(Bool(data=True))
+
         attempt = 0
-        while True:
-            attempt += 1
+        try:
+            while True:
+                attempt += 1
 
-            # Action server may not be back yet right after a lifecycle resume.
-            if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
-                self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
+                # Action server may not be back yet right after a lifecycle resume.
+                if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
+                    self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
+                    if max_attempts is not None and attempt >= max_attempts:
+                        return (False, "Action server unavailable")
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                    continue
+
+                _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+                while not _goal_future.done():
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                goal_handle = _goal_future.result()
+
+                if not goal_handle.accepted:
+                    self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
+                    if max_attempts is not None and attempt >= max_attempts:
+                        return (False, "Goal Rejected")
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                    continue
+
+                result_future = goal_handle.get_result_async()
+                while not result_future.done():
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                result = result_future.result()
+
+                if result.status == GoalStatus.STATUS_SUCCEEDED:
+                    self.nav_logger("info", "Goal_Handler -> Goal Reached")
+                    return (True, "Goal Finished")
+
+                self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
                 if max_attempts is not None and attempt >= max_attempts:
-                    return (False, "Action server unavailable")
+                    return (False, f"Goal failed (status {result.status})")
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
-                continue
-
-            _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
-            while not _goal_future.done():
+        finally:
+            self.goal_active_pub.publish(Bool(data=False))
+            # Hold the result until the arm has homed back to its normal pose
+            # (arm_ready True), so callers don't act while the arm is still moving.
+            waited = 0.0
+            while not self.arm_ready and waited < ARM_HOME_TIMEOUT:
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            goal_handle = _goal_future.result()
-
-            if not goal_handle.accepted:
-                self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
-                if max_attempts is not None and attempt >= max_attempts:
-                    return (False, "Goal Rejected")
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
-                continue
-
-            result_future = goal_handle.get_result_async()
-            while not result_future.done():
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            result = result_future.result()
-
-            if result.status == GoalStatus.STATUS_SUCCEEDED:
-                self.nav_logger("info", "Goal_Handler -> Goal Reached")
-                return (True, "Goal Finished")
-
-            self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
-            if max_attempts is not None and attempt >= max_attempts:
-                return (False, f"Goal failed (status {result.status})")
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                waited += 0.1
+            if not self.arm_ready:
+                self.nav_logger("warn", "Goal_Handler -> arm did not report ready before timeout")
 
     def _retreat_if_docked(self):
         """Best-effort: ask the table_docker to back off if it's parked at a
