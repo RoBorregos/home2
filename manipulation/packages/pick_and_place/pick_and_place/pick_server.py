@@ -33,6 +33,7 @@ from frida_constants.manipulation_constants import (
     PEAK_PRE_GRASP_HEIGHT,
     FIXED_DISTANCE_MOVE_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
+    BOWL_NAME,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -131,6 +132,10 @@ class PickMotionServer(Node):
         self.declare_parameter("rim_tip_offset", -0.12)
         self.rim_tip_offset = self.get_parameter("rim_tip_offset").value
         self.get_logger().info(f"Rim tip offset: {self.rim_tip_offset} m")
+
+        self.declare_parameter("bowl_tip_offset", -0.03)
+        self.bowl_tip_offset = self.get_parameter("bowl_tip_offset").value
+        self.get_logger().info(f"Bowl tip offset: {self.bowl_tip_offset} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
@@ -370,6 +375,7 @@ class PickMotionServer(Node):
         is_flat = goal_handle.request.object_name.lower() in FLAT_OBJECT_NAMES
         is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
         is_peak = goal_handle.request.object_name.lower() in PEAK_NAMES
+        is_bowl = goal_handle.request.object_name.lower() == BOWL_NAME
 
         if is_flat:
             num_grasping_alternatives = 6
@@ -393,7 +399,13 @@ class PickMotionServer(Node):
                     return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
                 # Rim: offset by full tip distance so fingers straddle the wall without descending too far.
-                offset_distance = self.rim_tip_offset if is_rim else self.ee_link_offset
+                if is_bowl:
+                    offset_distance = self.bowl_tip_offset
+                elif is_rim:
+                    offset_distance = self.rim_tip_offset
+                else:
+                    offset_distance = self.ee_link_offset
+
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [
