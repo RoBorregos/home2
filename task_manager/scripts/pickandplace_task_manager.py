@@ -512,7 +512,12 @@ class PickAndPlaceTM(Node):
                 break
 
         if found_level is None:
-            CLog.manip(self, "PICK", f"{object_name} not found on any shelf level.", level="error")
+            CLog.manip(
+                self,
+                "PICK",
+                f"{object_name} not found on any shelf level.",
+                level="error",
+            )
             return Status.EXECUTION_ERROR
 
         # Clear the octomap so points accumulated from prior picks/levels do not
@@ -702,7 +707,9 @@ class PickAndPlaceTM(Node):
                         )
                     )
                 CLog.vision(
-                    self, "DETECT", f"Detected {len(self.detected_objects)} objects on the table."
+                    self,
+                    "DETECT",
+                    f"Detected {len(self.detected_objects)} objects on the table.",
                 )
                 self.current_state = PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS
             else:
@@ -722,7 +729,11 @@ class PickAndPlaceTM(Node):
             )
 
             for obj in self.detected_objects:
-                CLog.vision(self, "DETECT", f"Object: {obj.name}, Category: {obj.category.value}")
+                CLog.vision(
+                    self,
+                    "DETECT",
+                    f"Object: {obj.name}, Category: {obj.category.value}",
+                )
             self.announce_objects([obj.name for obj in self.detected_objects])
 
             self.current_object_index = 0
@@ -934,10 +945,18 @@ class PickAndPlaceTM(Node):
                 wait_between_retries=10.0,
             )
             if answer == "yes":
-                CLog.hri(self, "CONFIRM", "Referee confirmed dishwasher is open.", level="success")
+                CLog.hri(
+                    self,
+                    "CONFIRM",
+                    "Referee confirmed dishwasher is open.",
+                    level="success",
+                )
             else:
                 CLog.hri(
-                    self, "CONFIRM", "No confirmation, assuming dishwasher is open.", level="warn"
+                    self,
+                    "CONFIRM",
+                    "No confirmation, assuming dishwasher is open.",
+                    level="warn",
                 )
             self.dishwasher_open = True
             self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
@@ -1023,9 +1042,7 @@ class PickAndPlaceTM(Node):
             # Only the shelf-bound "other" objects need shelf categorization;
             # cutlery/tableware go to the side table, trash to the bin.
             object_names_on_table = [
-                obj.name
-                for obj in self.detected_objects
-                if obj.category == ObjectCategory.OTHER
+                obj.name for obj in self.detected_objects if obj.category == ObjectCategory.OTHER
             ]
             CLog.vision(
                 self,
@@ -1148,7 +1165,10 @@ class PickAndPlaceTM(Node):
                 CLog.manip(self, "PLACE", "Moving arm to front_stare before place planning.")
                 self.subtask_manager.manipulation.move_to_position("front_stare")
                 opt_status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                    shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
+                    shelf_height,
+                    tolerance=0.1,
+                    table_or_shelf=False,
+                    approach_plane=False,
                 )
                 CLog.manip(self, "PLACE", f"get_optimal_position_for_plane → {opt_status}")
                 self.subtask_manager.hri.say(
@@ -1316,7 +1336,10 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING
             else:
                 CLog.manip(
-                    self, "PICK", f"Failed to pick breakfast item: {item_name}.", level="error"
+                    self,
+                    "PICK",
+                    f"Failed to pick breakfast item: {item_name}.",
+                    level="error",
                 )
                 self.current_breakfast_item["picked"] = True
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
@@ -1356,7 +1379,10 @@ class PickAndPlaceTM(Node):
                     break
                 elif attempt < pour_attempts:
                     CLog.manip(
-                        self, "POUR", f"Pour attempt {attempt} failed, retrying...", level="warn"
+                        self,
+                        "POUR",
+                        f"Pour attempt {attempt} failed, retrying...",
+                        level="warn",
                     )
                 else:
                     CLog.manip(
@@ -1378,13 +1404,10 @@ class PickAndPlaceTM(Node):
             # Only anchor to the reference if it was actually placed; the close_to
             # chain breaks (empty point, place fails) when an earlier item failed.
             ref_placed = any(
-                it["name"] == close_to_logical and it["placed"]
-                for it in self.breakfast_items
+                it["name"] == close_to_logical and it["placed"] for it in self.breakfast_items
             )
             close_to = (
-                self._to_yolo_name(close_to_logical)
-                if close_to_logical and ref_placed
-                else ""
+                self._to_yolo_name(close_to_logical) if close_to_logical and ref_placed else ""
             )
             status = self.subtask_manager.manipulation.place(close_to=close_to)
 
@@ -1392,10 +1415,18 @@ class PickAndPlaceTM(Node):
                 self.current_breakfast_item["placed"] = True
                 if item_name == "bowl":
                     self.bowl_placed = True
-                CLog.manip(self, "PLACE", f"Placed breakfast item: {item_name}.", level="success")
+                CLog.manip(
+                    self,
+                    "PLACE",
+                    f"Placed breakfast item: {item_name}.",
+                    level="success",
+                )
             else:
                 CLog.manip(
-                    self, "PLACE", f"Failed to place breakfast item: {item_name}.", level="error"
+                    self,
+                    "PLACE",
+                    f"Failed to place breakfast item: {item_name}.",
+                    level="error",
                 )
 
             self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
