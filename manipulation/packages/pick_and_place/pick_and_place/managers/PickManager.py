@@ -475,7 +475,7 @@ class PickManager:
                 velocity=0.3,
             )
 
-        if is_rim_object:
+        if is_rim_object and not is_bowl_object:
             # Hold the position where pick_server left the arm (lifted pre-grasp).
             self.node.get_logger().info(
                 "Rim pick: holding position (skipping return to stare)"
