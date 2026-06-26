@@ -521,6 +521,16 @@ var namespaces_dup =
       [ "test_flake8", "namespacetest__flake8.html#a19bfcf597a661a366225b7d0cedd123c", null ]
     ] ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", "namespacetest__go__to__hand" ],
+    [ "test_grasp_confirmation", "namespacetest__grasp__confirmation.html", [
+      [ "test_count_by_class", "namespacetest__grasp__confirmation.html#a28f70b5b93361f959019540e58c63d24", null ],
+      [ "test_not_confused_with_other_object", "namespacetest__grasp__confirmation.html#a7b0a9b877c3deaf75b99d28726992713", null ],
+      [ "test_pick_failed", "namespacetest__grasp__confirmation.html#a892e5c008ca0df145688474b5241eb99", null ],
+      [ "test_pick_with_duplicates", "namespacetest__grasp__confirmation.html#aab955bb486e19926aaa2e498fe709af8", null ],
+      [ "test_place", "namespacetest__grasp__confirmation.html#a8aea326198c7b1735bdfecfe12841f9f", null ],
+      [ "_MOD", "namespacetest__grasp__confirmation.html#a45bc7fa98dbca334104a7db7dfe97b73", null ],
+      [ "_spec", "namespacetest__grasp__confirmation.html#a8a43f5b9ba1246e4051802ef6e784ef9", null ],
+      [ "gc", "namespacetest__grasp__confirmation.html#ae6db20bc2ddc0c55e676f55ea5bc9562", null ]
+    ] ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],

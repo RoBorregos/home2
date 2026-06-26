@@ -5,5 +5,6 @@ var classpickandplace__task__manager_1_1ObjectInfo =
     [ "category", "classpickandplace__task__manager_1_1ObjectInfo.html#a8cade0cb375a7fe08da1b502f129401a", null ],
     [ "is_picked", "classpickandplace__task__manager_1_1ObjectInfo.html#a8e81e25b218cb27b78c3d99983729b63", null ],
     [ "is_placed", "classpickandplace__task__manager_1_1ObjectInfo.html#aca34e45df27a03d669c50b520db7c783", null ],
-    [ "name", "classpickandplace__task__manager_1_1ObjectInfo.html#a260ba579eb7b63be0ca72c8ad64ac66f", null ]
+    [ "name", "classpickandplace__task__manager_1_1ObjectInfo.html#a260ba579eb7b63be0ca72c8ad64ac66f", null ],
+    [ "skipped", "classpickandplace__task__manager_1_1ObjectInfo.html#ad306010a1f9c005dd57f5d4bcb550941", null ]
 ];

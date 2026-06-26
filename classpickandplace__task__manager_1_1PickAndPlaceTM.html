@@ -128,6 +128,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af60568ce5fddd995dd6f5dc0ba380c43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e44d2e622754e4abf7a89323dc5d8bb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classpickandplace__task__manager_1_1Location.html">Location</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a5e44d2e622754e4abf7a89323dc5d8bb">determine_placement_location</a> (self, <a class="el" href="classpickandplace__task__manager_1_1ObjectInfo.html">ObjectInfo</a> obj)</td></tr>
 <tr class="separator:a5e44d2e622754e4abf7a89323dc5d8bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1577249785ccadebc92a931cc1bdfe7a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a1577249785ccadebc92a931cc1bdfe7a">announce_objects</a> (self, names)</td></tr>
+<tr class="separator:a1577249785ccadebc92a931cc1bdfe7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a449c9e9cc1293aafad20d626d9c83315"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a449c9e9cc1293aafad20d626d9c83315">run</a> (self)</td></tr>
 <tr class="separator:a449c9e9cc1293aafad20d626d9c83315"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -141,6 +143,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:abf8a9d4227d20d14286469bf375433c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3416885d6aa2b236cda204e5c05788ee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3416885d6aa2b236cda204e5c05788ee">use_side_table</a></td></tr>
 <tr class="separator:a3416885d6aa2b236cda204e5c05788ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92cd27bb162974edbfb106e0f894c1d0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a92cd27bb162974edbfb106e0f894c1d0">use_grasp_detector</a></td></tr>
+<tr class="separator:a92cd27bb162974edbfb106e0f894c1d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87a220e385f8b97e0c72dcf8d6069617"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a87a220e385f8b97e0c72dcf8d6069617">use_vision_confirmation</a></td></tr>
+<tr class="separator:a87a220e385f8b97e0c72dcf8d6069617"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f7d1eb6a7e6ada225bc5953447b57ab"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a4f7d1eb6a7e6ada225bc5953447b57ab">max_cleanup_objects</a></td></tr>
 <tr class="separator:a4f7d1eb6a7e6ada225bc5953447b57ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3310f539e233db2c7ce7a8b6b05c6ec2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3310f539e233db2c7ce7a8b6b05c6ec2">yolo_names</a></td></tr>
@@ -206,12 +212,24 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a1d7ce794c069e5eddfa946092fe13434"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afb7622bc66ed0edb2fc61e269215871e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#afb7622bc66ed0edb2fc61e269215871e">_track_state_change</a> (self, str new_state)</td></tr>
 <tr class="separator:afb7622bc66ed0edb2fc61e269215871e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a815b7dcd35dfb9e703ddb037ba7847f5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a815b7dcd35dfb9e703ddb037ba7847f5">_detection_point</a> (self, detection)</td></tr>
+<tr class="separator:a815b7dcd35dfb9e703ddb037ba7847f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba2b13a1d08f24c05c686f6d0bffd85e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#aba2b13a1d08f24c05c686f6d0bffd85e">_table_counts</a> (self)</td></tr>
+<tr class="separator:aba2b13a1d08f24c05c686f6d0bffd85e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b5925f98ab10369687485e2eb6d59cb"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a4b5925f98ab10369687485e2eb6d59cb">_confirm_pick_by_vision</a> (self, before_counts)</td></tr>
+<tr class="separator:a4b5925f98ab10369687485e2eb6d59cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e658e9cfb7e073746399c0d9e4a0c94"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a9e658e9cfb7e073746399c0d9e4a0c94">_shelf_counts</a> (self, detections, level)</td></tr>
+<tr class="separator:a9e658e9cfb7e073746399c0d9e4a0c94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4e474eebbc1d0ba2f3c4ad9ff61eab5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#ae4e474eebbc1d0ba2f3c4ad9ff61eab5">_confirm_pick_shelf</a> (self, before_counts, target_name, level)</td></tr>
+<tr class="separator:ae4e474eebbc1d0ba2f3c4ad9ff61eab5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea0bfa8140434f4dda1b22d942f89ccd"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#aea0bfa8140434f4dda1b22d942f89ccd">_filter_detections_by_height</a> (self, detections, float target_height)</td></tr>
 <tr class="separator:aea0bfa8140434f4dda1b22d942f89ccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e6a44eb17dec7afd4a1a061c96c6cad"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a2e6a44eb17dec7afd4a1a061c96c6cad">_scan_shelf_level</a> (self, float height)</td></tr>
 <tr class="separator:a2e6a44eb17dec7afd4a1a061c96c6cad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e9774b0d95938ab79e1ea1c6912fd21"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a7e9774b0d95938ab79e1ea1c6912fd21">_pick_from_shelf</a> (self, str object_name, dict level_heights)</td></tr>
-<tr class="separator:a7e9774b0d95938ab79e1ea1c6912fd21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b72cef3c9dbc1a2303b04b0cbc26f27"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a4b72cef3c9dbc1a2303b04b0cbc26f27">_clear_octomap</a> (self)</td></tr>
+<tr class="separator:a4b72cef3c9dbc1a2303b04b0cbc26f27"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6335d58e53050b5cda3637daf0f2c08"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#af6335d58e53050b5cda3637daf0f2c08">_pick_from_shelf</a> (self, str object_name, dict level_heights, str say_name=None)</td></tr>
+<tr class="separator:af6335d58e53050b5cda3637daf0f2c08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a090153dbfce1e79be494faffa754edd3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a090153dbfce1e79be494faffa754edd3">_is_trash</a> (self, str logical_name)</td></tr>
 <tr class="separator:a090153dbfce1e79be494faffa754edd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93cc0aef2abbe99e28964d9972d02f1c"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a93cc0aef2abbe99e28964d9972d02f1c">_to_yolo_name</a> (self, str logical_name)</td></tr>
@@ -227,6 +245,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:ae0874661415eab02e03994f85094507d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7280f2c7ee67804b805b97cc6dc44aed"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a7280f2c7ee67804b805b97cc6dc44aed">_cabinet_scan_fresh</a></td></tr>
 <tr class="separator:a7280f2c7ee67804b805b97cc6dc44aed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a067c80d90c20160092bd38a5a1eefab3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a067c80d90c20160092bd38a5a1eefab3">_docked_at_table</a></td></tr>
+<tr class="separator:a067c80d90c20160092bd38a5a1eefab3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87a8c6f3fd86aaf8afabcb3c2dda227c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a87a8c6f3fd86aaf8afabcb3c2dda227c">_clear_octomap_client</a></td></tr>
+<tr class="separator:a87a8c6f3fd86aaf8afabcb3c2dda227c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94f1b3b9dd4ec08ebb288a45ddbebbb3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a94f1b3b9dd4ec08ebb288a45ddbebbb3">_gripper_has_object</a></td></tr>
 <tr class="separator:a94f1b3b9dd4ec08ebb288a45ddbebbb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad33492335b3f0914b4478055e7d79bb5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#ad33492335b3f0914b4478055e7d79bb5">_shelf_fallback_heights</a></td></tr>
@@ -296,6 +318,157 @@ Protected Attributes</h2></td></tr>
   to reach from the Dashgo base.
 
 Returns an empty list if no shelves are configured.
+</pre> 
+</div>
+</div>
+<a id="a4b72cef3c9dbc1a2303b04b0cbc26f27" name="a4b72cef3c9dbc1a2303b04b0cbc26f27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b72cef3c9dbc1a2303b04b0cbc26f27">&#9670;&#160;</a></span>_clear_octomap()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM._clear_octomap </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Clear the MoveIt octomap so points accumulated from prior picks and
+level scans do not over-constrain the next grasp.</pre> 
+</div>
+</div>
+<a id="a4b5925f98ab10369687485e2eb6d59cb" name="a4b5925f98ab10369687485e2eb6d59cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b5925f98ab10369687485e2eb6d59cb">&#9670;&#160;</a></span>_confirm_pick_by_vision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM._confirm_pick_by_vision </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>before_counts</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Re-look at the table; fail only if the grasped object is clearly still there.</pre> 
+</div>
+</div>
+<a id="ae4e474eebbc1d0ba2f3c4ad9ff61eab5" name="ae4e474eebbc1d0ba2f3c4ad9ff61eab5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4e474eebbc1d0ba2f3c4ad9ff61eab5">&#9670;&#160;</a></span>_confirm_pick_shelf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM._confirm_pick_shelf </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>before_counts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>target_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>level</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Re-look at the shelf level; fail only if the object is clearly still there.</pre> 
+</div>
+</div>
+<a id="a815b7dcd35dfb9e703ddb037ba7847f5" name="a815b7dcd35dfb9e703ddb037ba7847f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a815b7dcd35dfb9e703ddb037ba7847f5">&#9670;&#160;</a></span>_detection_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM._detection_point </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>detection</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">base_link (x, y, z) of a detection's 3D point, or None on TF failure.
+
+Uses tf2 directly with a bounded timeout so the task manager never hangs
+if a transform is temporarily unavailable.
 </pre> 
 </div>
 </div>
@@ -449,8 +622,8 @@ Returns an empty list if no shelves are configured.
 <pre class="fragment">True if object matches trash_category (as object name or as objects.json category).</pre> 
 </div>
 </div>
-<a id="a7e9774b0d95938ab79e1ea1c6912fd21" name="a7e9774b0d95938ab79e1ea1c6912fd21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e9774b0d95938ab79e1ea1c6912fd21">&#9670;&#160;</a></span>_pick_from_shelf()</h2>
+<a id="af6335d58e53050b5cda3637daf0f2c08" name="af6335d58e53050b5cda3637daf0f2c08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6335d58e53050b5cda3637daf0f2c08">&#9670;&#160;</a></span>_pick_from_shelf()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -474,7 +647,13 @@ Returns an empty list if no shelves are configured.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">dict&#160;</td>
-          <td class="paramname"><em>level_heights</em>&#160;</td>
+          <td class="paramname"><em>level_heights</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>say_name</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -488,8 +667,13 @@ Returns an empty list if no shelves are configured.
   </tr>
 </table>
 </div><div class="memdoc">
-<pre class="fragment">Detect the target at each shelf level and pick from the level that frames it.
-table_stare frames only the lower levels, so high-shelf objects were missed.</pre> 
+<pre class="fragment">Find the target by detecting at each shelf level, then pick from that level.
+
+table_stare frames only the lower levels, so an object on a high level (cereal
+on L3) was missed. Here each level's own viewing pose detects + builds its
+octomap; the pick keeps that pose via in_configuration. See
+docs/ai/shelf_pick_plan.md.
+</pre> 
 </div>
 </div>
 <a id="a2e6a44eb17dec7afd4a1a061c96c6cad" name="a2e6a44eb17dec7afd4a1a061c96c6cad"></a>
@@ -526,6 +710,74 @@ table_stare frames only the lower levels, so high-shelf objects were missed.</pr
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Scan a single shelf level: move arm, wait for octomap, detect objects.</pre> 
+</div>
+</div>
+<a id="a9e658e9cfb7e073746399c0d9e4a0c94" name="a9e658e9cfb7e073746399c0d9e4a0c94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e658e9cfb7e073746399c0d9e4a0c94">&#9670;&#160;</a></span>_shelf_counts()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM._shelf_counts </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>detections</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>level</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Count detections at a shelf level (filtered by height) per class.</pre> 
+</div>
+</div>
+<a id="aba2b13a1d08f24c05c686f6d0bffd85e" name="aba2b13a1d08f24c05c686f6d0bffd85e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba2b13a1d08f24c05c686f6d0bffd85e">&#9670;&#160;</a></span>_table_counts()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM._table_counts </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Detect at the current pose and count detections per class.</pre> 
 </div>
 </div>
 <a id="a93cc0aef2abbe99e28964d9972d02f1c" name="a93cc0aef2abbe99e28964d9972d02f1c"></a>
@@ -600,6 +852,35 @@ table_stare frames only the lower levels, so high-shelf objects were missed.</pr
 <pre class="fragment">Track time spent in each state and reset attempt counter</pre> 
 </div>
 </div>
+<a id="a1577249785ccadebc92a931cc1bdfe7a" name="a1577249785ccadebc92a931cc1bdfe7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1577249785ccadebc92a931cc1bdfe7a">&#9670;&#160;</a></span>announce_objects()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM.announce_objects </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>names</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Name each object for its recognize point. Recognize scores per object
+instance, so a cleanup spoon and a separate breakfast spoon each count.</pre> 
+</div>
+</div>
 <a id="af60568ce5fddd995dd6f5dc0ba380c43" name="af60568ce5fddd995dd6f5dc0ba380c43"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af60568ce5fddd995dd6f5dc0ba380c43">&#9670;&#160;</a></span>categorize_object()</h2>
 
@@ -653,11 +934,7 @@ table_stare frames only the lower levels, so high-shelf objects were missed.</pr
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Transform a detection's 3D point to base_link frame via tf2 and return Z.
-
-Uses tf2 directly (no external service) with a bounded timeout so the
-task manager never hangs if a transform is temporarily unavailable.
-</pre> 
+<pre class="fragment">base_link Z of a detection's 3D point, or None on TF failure.</pre> 
 </div>
 </div>
 <a id="a5e44d2e622754e4abf7a89323dc5d8bb" name="a5e44d2e622754e4abf7a89323dc5d8bb"></a>
@@ -820,6 +1097,50 @@ task manager never hangs if a transform is temporarily unavailable.
       <table class="memname">
         <tr>
           <td class="memname">pickandplace_task_manager.PickAndPlaceTM._cabinet_scan_fresh</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a87a8c6f3fd86aaf8afabcb3c2dda227c" name="a87a8c6f3fd86aaf8afabcb3c2dda227c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87a8c6f3fd86aaf8afabcb3c2dda227c">&#9670;&#160;</a></span>_clear_octomap_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pickandplace_task_manager.PickAndPlaceTM._clear_octomap_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a067c80d90c20160092bd38a5a1eefab3" name="a067c80d90c20160092bd38a5a1eefab3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a067c80d90c20160092bd38a5a1eefab3">&#9670;&#160;</a></span>_docked_at_table</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pickandplace_task_manager.PickAndPlaceTM._docked_at_table</td>
         </tr>
       </table>
   </td>
@@ -1339,6 +1660,20 @@ task manager never hangs if a transform is temporarily unavailable.
 
 </div>
 </div>
+<a id="a92cd27bb162974edbfb106e0f894c1d0" name="a92cd27bb162974edbfb106e0f894c1d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92cd27bb162974edbfb106e0f894c1d0">&#9670;&#160;</a></span>use_grasp_detector</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">pickandplace_task_manager.PickAndPlaceTM.use_grasp_detector</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a3416885d6aa2b236cda204e5c05788ee" name="a3416885d6aa2b236cda204e5c05788ee"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3416885d6aa2b236cda204e5c05788ee">&#9670;&#160;</a></span>use_side_table</h2>
 
@@ -1347,6 +1682,20 @@ task manager never hangs if a transform is temporarily unavailable.
       <table class="memname">
         <tr>
           <td class="memname">pickandplace_task_manager.PickAndPlaceTM.use_side_table</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a87a220e385f8b97e0c72dcf8d6069617" name="a87a220e385f8b97e0c72dcf8d6069617"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87a220e385f8b97e0c72dcf8d6069617">&#9670;&#160;</a></span>use_vision_confirmation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">pickandplace_task_manager.PickAndPlaceTM.use_vision_confirmation</td>
         </tr>
       </table>
 </div><div class="memdoc">

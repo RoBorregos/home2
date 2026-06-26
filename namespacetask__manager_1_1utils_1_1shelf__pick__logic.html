@@ -105,17 +105,29 @@ Functions</h2></td></tr>
 <tr class="separator:a728e602dc8899e799780ab275b540f61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3eec59f41f4d590d73db45552e7db4bd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a3eec59f41f4d590d73db45552e7db4bd">find_target_on_level</a> (candidates, target, level_height, float up_threshold=<a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a9bec751c42815403389251bc66be7d8a">LEVEL_UP_THRESHOLD</a>, float down_threshold=<a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a25bd3616227490a4a759d28c9e481dc4">LEVEL_DOWN_THRESHOLD</a>)</td></tr>
 <tr class="separator:a3eec59f41f4d590d73db45552e7db4bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a91d09201029807b3ebe743e108a79b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a5a91d09201029807b3ebe743e108a79b">levels_from_sorted_heights</a> (heights)</td></tr>
+<tr class="separator:a5a91d09201029807b3ebe743e108a79b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad27d6ab89a1f4bef9e45aa9cb0b74d3c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#ad27d6ab89a1f4bef9e45aa9cb0b74d3c">load_shelf_levels</a> (default, path=<a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a8a6369499680996a961c14ef2af05b30">SHELF_LEVELS_FILE</a>)</td></tr>
+<tr class="separator:ad27d6ab89a1f4bef9e45aa9cb0b74d3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a336d06af6805292b50d76d3348d6eee1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a336d06af6805292b50d76d3348d6eee1">save_shelf_levels</a> (levels, path=<a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a8a6369499680996a961c14ef2af05b30">SHELF_LEVELS_FILE</a>)</td></tr>
+<tr class="separator:a336d06af6805292b50d76d3348d6eee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
+<tr class="memitem:a8a6369499680996a961c14ef2af05b30"><td class="memItemLeft" align="right" valign="top">Path&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a8a6369499680996a961c14ef2af05b30">SHELF_LEVELS_FILE</a></td></tr>
+<tr class="separator:a8a6369499680996a961c14ef2af05b30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bec751c42815403389251bc66be7d8a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a9bec751c42815403389251bc66be7d8a">LEVEL_UP_THRESHOLD</a> = 0.20</td></tr>
 <tr class="separator:a9bec751c42815403389251bc66be7d8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25bd3616227490a4a759d28c9e481dc4"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a25bd3616227490a4a759d28c9e481dc4">LEVEL_DOWN_THRESHOLD</a> = 0.05</td></tr>
 <tr class="separator:a25bd3616227490a4a759d28c9e481dc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Pure decision logic for per-level shelf picking (no ROS, unit-testable offline).
-Mirrors the level-assignment rule used by storing_groceries.</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<div class="textblock"><pre class="fragment">Pure decision logic for per-level shelf picking.
+
+Mirrors the level-assignment rule used by storing_groceries so the shelf pick can
+detect the target at the level whose viewing pose actually frames it. No ROS imports,
+so it is unit-testable offline.
+</pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="a728e602dc8899e799780ab275b540f61" name="a728e602dc8899e799780ab275b540f61"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a728e602dc8899e799780ab275b540f61">&#9670;&#160;</a></span>_name_matches()</h2>
 
@@ -195,8 +207,12 @@ Mirrors the level-assignment rule used by storing_groceries.</pre> </div><h2 cla
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">First candidate matching target framed at level_height, else None.
-candidates: (name, height) pairs; height None skips the height check.</pre> 
+<pre class="fragment">Return the first candidate matching `target` framed at `level_height`, else None.
+
+candidates: iterable of (name, height) pairs. A candidate whose height is None
+(e.g. its TF lookup failed) is skipped: without a usable height a name-only match
+would anchor the target to the wrong (first-scanned) level.
+</pre> 
 </div>
 </div>
 <a id="a1605b8ce3208c001ce1aa390c8e79457" name="a1605b8ce3208c001ce1aa390c8e79457"></a>
@@ -239,6 +255,81 @@ candidates: (name, height) pairs; height None skips the height check.</pre>
 <pre class="fragment">True if a detection at `height` belongs to the shelf at `level_height`.</pre> 
 </div>
 </div>
+<a id="a5a91d09201029807b3ebe743e108a79b" name="a5a91d09201029807b3ebe743e108a79b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5a91d09201029807b3ebe743e108a79b">&#9670;&#160;</a></span>levels_from_sorted_heights()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.utils.shelf_pick_logic.levels_from_sorted_heights </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>heights</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Map measured surface heights to the {1,2,3} level dict (1 = lowest).</pre> 
+</div>
+</div>
+<a id="ad27d6ab89a1f4bef9e45aa9cb0b74d3c" name="ad27d6ab89a1f4bef9e45aa9cb0b74d3c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad27d6ab89a1f4bef9e45aa9cb0b74d3c">&#9670;&#160;</a></span>load_shelf_levels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.utils.shelf_pick_logic.load_shelf_levels </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>default</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>path</em> = <code><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a8a6369499680996a961c14ef2af05b30">SHELF_LEVELS_FILE</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Return the calibrated {level: height} dict from the JSON file, else `default`.
+Never raises; falls back to default on read/parse error or level-count mismatch.</pre> 
+</div>
+</div>
+<a id="a336d06af6805292b50d76d3348d6eee1" name="a336d06af6805292b50d76d3348d6eee1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a336d06af6805292b50d76d3348d6eee1">&#9670;&#160;</a></span>save_shelf_levels()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.utils.shelf_pick_logic.save_shelf_levels </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>levels</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>path</em> = <code><a class="el" href="namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a8a6369499680996a961c14ef2af05b30">SHELF_LEVELS_FILE</a></code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Write the {level: height} dict (base_link Z) to the JSON file; return the path.</pre> 
+</div>
+</div>
 <h2 class="groupheader">Variable Documentation</h2>
 <a id="a25bd3616227490a4a759d28c9e481dc4" name="a25bd3616227490a4a759d28c9e481dc4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a25bd3616227490a4a759d28c9e481dc4">&#9670;&#160;</a></span>LEVEL_DOWN_THRESHOLD</h2>
@@ -266,6 +357,23 @@ candidates: (name, height) pairs; height None skips the height check.</pre>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a8a6369499680996a961c14ef2af05b30" name="a8a6369499680996a961c14ef2af05b30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a6369499680996a961c14ef2af05b30">&#9670;&#160;</a></span>SHELF_LEVELS_FILE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Path task_manager.utils.shelf_pick_logic.SHELF_LEVELS_FILE</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  Path(</div>
+<div class="line"><span class="lineno">    2</span>    os.environ.get(<span class="stringliteral">&quot;FRIDA_SHELF_LEVELS_FILE&quot;</span>, Path.home() / <span class="stringliteral">&quot;frida_shelf_levels.json&quot;</span>)</div>
+<div class="line"><span class="lineno">    3</span>)</div>
+</div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->

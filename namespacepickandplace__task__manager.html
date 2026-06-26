@@ -116,8 +116,12 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a55f38380759b27b2b7d05391b1cab1aa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepickandplace__task__manager.html#a55f38380759b27b2b7d05391b1cab1aa">ATTEMPT_LIMIT</a> = 2</td></tr>
+<tr class="memitem:a55f38380759b27b2b7d05391b1cab1aa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepickandplace__task__manager.html#a55f38380759b27b2b7d05391b1cab1aa">ATTEMPT_LIMIT</a> = 3</td></tr>
 <tr class="separator:a55f38380759b27b2b7d05391b1cab1aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03e0fba6b5784ad7aeb39508c79437ce"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepickandplace__task__manager.html#a03e0fba6b5784ad7aeb39508c79437ce">STACK_Z_MIN</a> = 0.03</td></tr>
+<tr class="separator:a03e0fba6b5784ad7aeb39508c79437ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a241f0c9534c486125020deb651c27af6"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepickandplace__task__manager.html#a241f0c9534c486125020deb651c27af6">STACK_XY_MAX</a> = 0.12</td></tr>
+<tr class="separator:a241f0c9534c486125020deb651c27af6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45dea6735a5add12a179a99ef076dbde"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepickandplace__task__manager.html#a45dea6735a5add12a179a99ef076dbde">SHELF_LEVEL_NAMES</a> = {1: &quot;bottom&quot;, 2: &quot;middle&quot;, 3: &quot;top&quot;}</td></tr>
 <tr class="separator:a45dea6735a5add12a179a99ef076dbde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -129,7 +133,7 @@ Strategy: maximize pick+place score in 7 minutes.
 - Breakfast phase: bowl, cereal, milk, spoon placed on dining table with pour for cereal/milk.
 - Plates are skipped (GPD cannot grasp flat objects).
 - Dishwasher support controlled by use_dishwasher flag.
-- Cabinet shelf placement uses moondream perception to match categories.
+- Cabinet shelf placement uses an HRI categorize_objects call to match categories.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="a726ecc0a8d993c4881bcc4287b54bbdd" name="a726ecc0a8d993c4881bcc4287b54bbdd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a726ecc0a8d993c4881bcc4287b54bbdd">&#9670;&#160;</a></span>main()</h2>
@@ -157,7 +161,7 @@ Strategy: maximize pick+place score in 7 minutes.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int pickandplace_task_manager.ATTEMPT_LIMIT = 2</td>
+          <td class="memname">int pickandplace_task_manager.ATTEMPT_LIMIT = 3</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -172,6 +176,34 @@ Strategy: maximize pick+place score in 7 minutes.
       <table class="memname">
         <tr>
           <td class="memname">dict pickandplace_task_manager.SHELF_LEVEL_NAMES = {1: &quot;bottom&quot;, 2: &quot;middle&quot;, 3: &quot;top&quot;}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a241f0c9534c486125020deb651c27af6" name="a241f0c9534c486125020deb651c27af6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a241f0c9534c486125020deb651c27af6">&#9670;&#160;</a></span>STACK_XY_MAX</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float pickandplace_task_manager.STACK_XY_MAX = 0.12</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a03e0fba6b5784ad7aeb39508c79437ce" name="a03e0fba6b5784ad7aeb39508c79437ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03e0fba6b5784ad7aeb39508c79437ce">&#9670;&#160;</a></span>STACK_Z_MIN</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float pickandplace_task_manager.STACK_Z_MIN = 0.03</td>
         </tr>
       </table>
 </div><div class="memdoc">

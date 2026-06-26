@@ -6,13 +6,22 @@ var namespacetask__manager_1_1utils =
       [ "service_check", "namespacetask__manager_1_1utils_1_1decorators.html#a71d32900d7390409fe37451aa09c2cf0", null ]
     ] ],
     [ "exploration_planner", "namespacetask__manager_1_1utils_1_1exploration__planner.html", "namespacetask__manager_1_1utils_1_1exploration__planner" ],
+    [ "grasp_confirmation", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html", [
+      [ "count_by_class", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a0b0ea83c89356b143d30bdd16c3f9cb0", null ],
+      [ "picked_ok", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a1724a5c718a48965095e5db46e11be09", null ],
+      [ "placed_ok", "namespacetask__manager_1_1utils_1_1grasp__confirmation.html#a9c1f5a890db47e81cde48d2933c10c9e", null ]
+    ] ],
     [ "logger", "namespacetask__manager_1_1utils_1_1logger.html", "namespacetask__manager_1_1utils_1_1logger" ],
     [ "shelf_pick_logic", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html", [
       [ "_name_matches", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a728e602dc8899e799780ab275b540f61", null ],
       [ "find_target_on_level", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a3eec59f41f4d590d73db45552e7db4bd", null ],
       [ "height_matches_level", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a1605b8ce3208c001ce1aa390c8e79457", null ],
+      [ "levels_from_sorted_heights", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a5a91d09201029807b3ebe743e108a79b", null ],
+      [ "load_shelf_levels", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#ad27d6ab89a1f4bef9e45aa9cb0b74d3c", null ],
+      [ "save_shelf_levels", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a336d06af6805292b50d76d3348d6eee1", null ],
       [ "LEVEL_DOWN_THRESHOLD", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a25bd3616227490a4a759d28c9e481dc4", null ],
-      [ "LEVEL_UP_THRESHOLD", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a9bec751c42815403389251bc66be7d8a", null ]
+      [ "LEVEL_UP_THRESHOLD", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a9bec751c42815403389251bc66be7d8a", null ],
+      [ "SHELF_LEVELS_FILE", "namespacetask__manager_1_1utils_1_1shelf__pick__logic.html#a8a6369499680996a961c14ef2af05b30", null ]
     ] ],
     [ "status", "namespacetask__manager_1_1utils_1_1status.html", "namespacetask__manager_1_1utils_1_1status" ],
     [ "subtask_manager", "namespacetask__manager_1_1utils_1_1subtask__manager.html", "namespacetask__manager_1_1utils_1_1subtask__manager" ],
