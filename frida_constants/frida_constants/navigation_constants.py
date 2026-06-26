@@ -45,6 +45,7 @@ DOCK_PREVIEW_SERVICE = (
     "/navigation/preview_dock"  # std_srvs/Trigger: detect + show markers, no motion
 )
 DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
+RETREAT_DISTANCE = 0.2  # m the base backs off on undock (table_docker retreat_distance)
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
 ### General Constants
