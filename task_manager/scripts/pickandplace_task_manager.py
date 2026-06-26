@@ -941,7 +941,10 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT)
             placement_loc = self.grasped_object.placement_location
             result = self.navigate_to_location(placement_loc)
-            # Cabinet/shelf: no dock; keep the nav-goal standoff (~0.5 m).
+            # Cabinet/shelf: no dock (keep the nav-goal standoff ~0.5 m); the side
+            # table is a table, so dock for a precise place.
+            if placement_loc == Location.SIDE_TABLE:
+                self.subtask_manager.nav.dock_table()
 
             if result == Status.EXECUTION_SUCCESS:
                 if placement_loc == Location.CABINET and not self.shelf_scanned:
@@ -1355,7 +1358,17 @@ class PickAndPlaceTM(Node):
             self.subtask_manager.hri.say(f"Placing the {item_name}.", wait=False)
 
             close_to_logical = self.current_breakfast_item.get("close_to", "")
-            close_to = self._to_yolo_name(close_to_logical) if close_to_logical else ""
+            # Only anchor to the reference if it was actually placed; the close_to
+            # chain breaks (empty point, place fails) when an earlier item failed.
+            ref_placed = any(
+                it["name"] == close_to_logical and it["placed"]
+                for it in self.breakfast_items
+            )
+            close_to = (
+                self._to_yolo_name(close_to_logical)
+                if close_to_logical and ref_placed
+                else ""
+            )
             status = self.subtask_manager.manipulation.place(close_to=close_to)
 
             if status == Status.EXECUTION_SUCCESS:
