@@ -37,6 +37,7 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
     ESTOP_TOPIC,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
+    MANIPULATION_ARM_BUSY_TOPIC,
 )
 
 from frida_interfaces.msg import CollisionObject
@@ -46,7 +47,7 @@ from frida_motion_planning.utils.XArmServices import XArmServices
 
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
-from rclpy.qos import QoSProfile
+from rclpy.qos import QoSProfile, DurabilityPolicy
 
 
 class MotionPlanningServer(Node):
@@ -71,6 +72,16 @@ class MotionPlanningServer(Node):
 
         self._in_estop = False
         self.current_mode = -1
+
+        # Latched "arm in use" flag so nav_goal_arm_pointer yields the xArm mode
+        # while a MoveJoints/MoveToPose goal executes (no /xarm/set_mode fight).
+        self._arm_busy = False
+        self._arm_busy_pub = self.create_publisher(
+            Bool,
+            MANIPULATION_ARM_BUSY_TOPIC,
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+        )
+        self._publish_busy(False)
 
         self.servo = MoveItServo(
             self,
@@ -206,6 +217,11 @@ class MotionPlanningServer(Node):
 
         self.get_logger().info("Motion Planning Action Server has been started")
 
+    def _publish_busy(self, busy: bool):
+        """Latch whether the arm is executing a goal (consumed by the arm pointer)."""
+        self._arm_busy = busy
+        self._arm_busy_pub.publish(Bool(data=busy))
+
     def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
         if self._in_estop:
@@ -221,6 +237,7 @@ class MotionPlanningServer(Node):
         feedback = MoveToPose.Feedback()
         result = MoveToPose.Result()
         self.set_planning_settings(goal_handle)
+        self._publish_busy(True)
         try:
             was_successful = self.move_to_pose(goal_handle, feedback)
             self.get_logger().info(
@@ -244,6 +261,7 @@ class MotionPlanningServer(Node):
         finally:
             self.get_logger().info("Resetting planning settings...")
             self.reset_planning_settings(goal_handle)
+            self._publish_busy(False)
 
         return result
 
@@ -295,6 +313,7 @@ class MotionPlanningServer(Node):
         self.get_logger().info("Executing joint goal action...")
         result = MoveJoints.Result()
         self.set_planning_settings(goal_handle)
+        self._publish_busy(True)
 
         try:
             # Here we call the worker and get the final result (True or False)
@@ -317,6 +336,7 @@ class MotionPlanningServer(Node):
 
         finally:
             self.reset_planning_settings(goal_handle)
+            self._publish_busy(False)
 
         return result
 

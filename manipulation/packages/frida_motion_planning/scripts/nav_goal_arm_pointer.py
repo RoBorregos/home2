@@ -31,6 +31,7 @@ from frida_constants.manipulation_constants import (
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
     XARM_MOVEVELOCITY_SERVICE,
+    MANIPULATION_ARM_BUSY_TOPIC,
 )
 from frida_constants.xarm_configurations import NAV_POSE
 from frida_interfaces.action import MoveJoints
@@ -89,12 +90,22 @@ class NavGoalArmPointer(Node):
         self.vel_mode_on = False  # whether the arm is currently in velocity mode
         self.returning = False  # sending the arm to NAV_POSE after the goal ends
         self.point_attempted = False  # tried to grab velocity mode for this goal
+        self.arm_busy = False  # manipulation is executing a goal -> yield the arm
 
         latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         # True = arm idle / back to its normal pose; False = pointing or returning.
         # Latched so a late subscriber (nav_central) reads the current value.
         self.ready_pub = self.create_publisher(Bool, "/nav/arm_ready", latched)
         self.ready_pub.publish(Bool(data=True))
+        # While manipulation owns the arm we must not touch /xarm/set_mode. Default
+        # False so we still point if motion_planning_server isn't publishing.
+        self.create_subscription(
+            Bool,
+            MANIPULATION_ARM_BUSY_TOPIC,
+            lambda m: setattr(self, "arm_busy", m.data),
+            latched,
+            callback_group=cbg,
+        )
         self.create_subscription(
             PoseStamped, "/nav/current_goal", self._goal_cb, latched, callback_group=cbg
         )
@@ -120,6 +131,11 @@ class NavGoalArmPointer(Node):
         self.move_joints_client = ActionClient(
             self, MoveJoints, MOVE_JOINTS_ACTION, callback_group=cbg
         )
+        # Each set_state on a mode switch otherwise resets the tool GPIO and opens
+        # the gripper. Disable that reset so the gripper stays put (same as follow_face).
+        self.tgpio_reset_client = self.create_client(
+            SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=cbg
+        )
 
         for c, n in (
             (self.mode_client, "set_mode"),
@@ -128,6 +144,8 @@ class NavGoalArmPointer(Node):
         ):
             if not c.wait_for_service(timeout_sec=5.0):
                 self.get_logger().warn(f"xArm service {n} not available")
+
+        self._disable_gripper_reset()
 
         self.create_timer(CONTROL_PERIOD, self._control, callback_group=cbg)
         self.get_logger().info("nav_goal_arm_pointer ready (joint1 velocity control)")
@@ -143,6 +161,17 @@ class NavGoalArmPointer(Node):
             self.joint1_pos = msg.position[msg.name.index(JOINT1_NAME)]
 
     # -- xArm mode --
+
+    def _disable_gripper_reset(self):
+        """Tell the xArm driver not to reset tool GPIO (gripper) on state changes,
+        so our mode switches don't pop the gripper open. Best-effort, once."""
+        if not self.tgpio_reset_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().warn(
+                "config_tgpio_reset_when_stop unavailable; gripper may open on mode switches"
+            )
+            return
+        wait_for_future(self.tgpio_reset_client.call_async(SetInt16.Request(data=0)))
+        self.get_logger().info("TGPIO reset on stop disabled (gripper preserved)")
 
     def _set_mode(self, mode: int) -> bool:
         """Set xArm mode then state 0 (active). Blocking, best-effort."""
@@ -202,12 +231,20 @@ class NavGoalArmPointer(Node):
     def _control(self):
         # Activation / deactivation edges.
         if self.goal_active:
-            # Try to take velocity control ONCE per goal. Retrying every tick
-            # fights ros2_control for /xarm/set_mode and storms "Failed to set
-            # xArm mode 4" when manipulation owns the arm. This assumes
-            # manipulation doesn't move the arm during navigation; real fix is
-            # node coordination (see _send_nav_pose / module TODO).
-            if not self.vel_mode_on and not self.point_attempted:
+            self.returning = False  # a new goal preempts an in-flight NAV_POSE return
+            if self.arm_busy:
+                # Manipulation owns the arm: yield and never touch /xarm/set_mode.
+                # Its ensure_arm_ready reinits MoveIt mode for the motion; we just
+                # stop commanding. Relinquish so nav need not wait on us, and stay
+                # yielded for the rest of this goal (point_attempted stays set).
+                if self.vel_mode_on:
+                    self._send_joint1_vel(0.0)
+                    self.vel_mode_on = False
+                    self.ready_pub.publish(Bool(data=True))
+            elif not self.vel_mode_on and not self.point_attempted:
+                # Take velocity control ONCE per goal. Retrying every tick fights
+                # ros2_control for /xarm/set_mode and storms "Failed to set xArm
+                # mode 4"; the arm_busy gate keeps us off the arm during manipulation.
                 self.point_attempted = True
                 if self._set_mode(JOINT_VELOCITY_MODE):
                     self.vel_mode_on = True
@@ -216,7 +253,6 @@ class NavGoalArmPointer(Node):
                     self.get_logger().warn(
                         "could not take velocity mode (arm busy?); not pointing this goal"
                     )
-            self.returning = False  # a new goal preempts an in-flight NAV_POSE return
         else:
             self.point_attempted = False  # reset for the next goal
             if self.vel_mode_on:
