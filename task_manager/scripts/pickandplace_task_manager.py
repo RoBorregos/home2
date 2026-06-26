@@ -558,13 +558,12 @@ class PickAndPlaceTM(Node):
 
     def determine_placement_location(self, obj: ObjectInfo) -> Location:
         """Return the target furniture for an object."""
-        if self.use_dishwasher and obj.category in (
-            ObjectCategory.CUTLERY,
-            ObjectCategory.TABLEWARE,
-        ):
-            return Location.DISHWASHER
-        elif obj.category == ObjectCategory.TRASH:
+        if obj.category == ObjectCategory.TRASH:
             return Location.TRASH_BIN
+        elif obj.category in (ObjectCategory.CUTLERY, ObjectCategory.TABLEWARE):
+            # Dishwasher not implemented; drop on the side table (no points lost,
+            # lower risk than the shelf). Only "other" objects go on the shelf.
+            return Location.DISHWASHER if self.use_dishwasher else Location.SIDE_TABLE
         else:
             return Location.CABINET
 
@@ -1010,7 +1009,13 @@ class PickAndPlaceTM(Node):
             CLog.vision(self, "SHELF", f"All shelves scanned: {self.shelves}")
 
             # Categorize table objects against shelf contents
-            object_names_on_table = [obj.name for obj in self.detected_objects]
+            # Only the shelf-bound "other" objects need shelf categorization;
+            # cutlery/tableware go to the side table, trash to the bin.
+            object_names_on_table = [
+                obj.name
+                for obj in self.detected_objects
+                if obj.category == ObjectCategory.OTHER
+            ]
             CLog.vision(
                 self,
                 "CATEGORIZE",
