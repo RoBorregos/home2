@@ -265,6 +265,9 @@ var annotated_dup =
     [ "nav_central", "namespacenav__central.html", [
       [ "Nav_Central", "classnav__central_1_1Nav__Central.html", "classnav__central_1_1Nav__Central" ]
     ] ],
+    [ "nav_goal_arm_pointer", "namespacenav__goal__arm__pointer.html", [
+      [ "NavGoalArmPointer", "classnav__goal__arm__pointer_1_1NavGoalArmPointer.html", "classnav__goal__arm__pointer_1_1NavGoalArmPointer" ]
+    ] ],
     [ "nav_ui", "namespacenav__ui.html", [
       [ "NavCanvas", "classnav__ui_1_1NavCanvas.html", "classnav__ui_1_1NavCanvas" ],
       [ "NavRosNode", "classnav__ui_1_1NavRosNode.html", "classnav__ui_1_1NavRosNode" ],

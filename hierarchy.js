@@ -340,6 +340,7 @@ var hierarchy =
       [ "manipulation_general.manipulation_safeguard.ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", null ],
       [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
       [ "nav_central.Nav_Central", "classnav__central_1_1Nav__Central.html", null ],
+      [ "nav_goal_arm_pointer.NavGoalArmPointer", "classnav__goal__arm__pointer_1_1NavGoalArmPointer.html", null ],
       [ "nav_ui.NavRosNode", "classnav__ui_1_1NavRosNode.html", null ],
       [ "node_monitor.NodeMonitor", "classnode__monitor_1_1NodeMonitor.html", null ],
       [ "omnidriver.odrive_dashboard.ODriveDashboardNode", "classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html", null ],

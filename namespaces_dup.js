@@ -311,6 +311,7 @@ var namespaces_dup =
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
     ] ],
     [ "nav_central", "namespacenav__central.html", "namespacenav__central" ],
+    [ "nav_goal_arm_pointer", "namespacenav__goal__arm__pointer.html", "namespacenav__goal__arm__pointer" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
     [ "nn_matching", "namespacenn__matching.html", "namespacenn__matching" ],
     [ "node_monitor", "namespacenode__monitor.html", "namespacenode__monitor" ],

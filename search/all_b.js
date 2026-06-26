@@ -25,6 +25,7 @@ var searchData=
   ['kitchen_22',['KITCHEN',['../classpickandplace__task__manager_1_1Location.html#a6ab0cce169d528f361218a6cd167d583',1,'pickandplace_task_manager::Location']]],
   ['knowledge_5ftype_23',['KNOWLEDGE_TYPE',['../classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html',1,'frida_constants::hri_constants']]],
   ['known_5ffaces_5fpath_24',['KNOWN_FACES_PATH',['../namespaceface__recognition__node.html#a166e5b8323737530752db607917e635f',1,'face_recognition_node']]],
-  ['kp_5fconf_25',['KP_CONF',['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacepose__detection.html#a0fa4657c7964f252abb37457c48c64b9',1,'pose_detection.KP_CONF()']]],
-  ['kschedpriority_26',['kSchedPriority',['../mujoco__ros2__control__plugin_8cpp.html#ab8cbb74095b57cc8c140e6d92415f8a0',1,'mujoco_ros2_control_plugin.cpp']]]
+  ['kp_25',['KP',['../namespacenav__goal__arm__pointer.html#a41f08a8f198e639b5c2ca429e7d96881',1,'nav_goal_arm_pointer']]],
+  ['kp_5fconf_26',['KP_CONF',['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacepose__detection.html#a0fa4657c7964f252abb37457c48c64b9',1,'pose_detection.KP_CONF()']]],
+  ['kschedpriority_27',['kSchedPriority',['../mujoco__ros2__control__plugin_8cpp.html#ab8cbb74095b57cc8c140e6d92415f8a0',1,'mujoco_ros2_control_plugin.cpp']]]
 ];
