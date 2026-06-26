@@ -43,9 +43,7 @@ class SafetyTaskManager(Node):
             self.subtask_manager.manipulation.clear_collision_objects()
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             if say:
-                self.subtask_manager.hri.say(
-                    text=f"Going to {location} {sub_location}", wait=False
-                )
+                self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=False)
 
             result = Status.EXECUTION_ERROR
             retry = 0
