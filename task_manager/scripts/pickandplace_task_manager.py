@@ -34,7 +34,7 @@ from task_manager.utils.status import Status
 from task_manager.utils.shelf_pick_logic import find_target_on_level, load_shelf_levels
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-ATTEMPT_LIMIT = 2
+ATTEMPT_LIMIT = 3
 
 # Stacking detection for pick ordering: object A sits on object B when A's
 # base_link Z is at least STACK_Z_MIN above B's and their XY are within
@@ -172,7 +172,7 @@ class PickAndPlaceTM(Node):
             Location.CABINET: ("kitchen", "cabinet"),
             Location.TRASH_BIN: ("kitchen", "trash_bin"),
             Location.BREAKFAST_SURFACE: ("kitchen", "dining_table"),
-            Location.BREAKFAST_ITEMS: ("kitchen", "breakfast_surface"),
+            Location.BREAKFAST_ITEMS: ("kitchen", "breakfast_items"),
         }
 
         # Object tracking
