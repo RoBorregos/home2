@@ -1010,10 +1010,6 @@ class PickAndPlaceTM(Node):
             # that the upcoming place does not need its own per-level scan.
             self._cabinet_scan_fresh = True
             CLog.vision(self, "SHELF", f"All shelves scanned: {self.shelves}")
-            # Name what is on the shelf for the recognize points.
-            self.announce_objects(
-                [n for objs in self.shelves.values() for n in objs]
-            )
 
             # Categorize table objects against shelf contents
             # Only the shelf-bound "other" objects need shelf categorization;
