@@ -47,6 +47,17 @@ DOCK_PREVIEW_SERVICE = (
 DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
+# Approach-direction pipeline (strafe/drive in a commanded direction until the
+# nearest lidar reading in that direction is N cm away). Same layering as docking:
+#   task_manager -> APPROACH_DIRECTION_SERVICE (nav_central, public)
+#                -> APPROACH_DIRECTION_EXEC_SERVICE (approach_direction.py worker)
+APPROACH_DIRECTION_SERVICE = (
+    "/navigation/approach_direction"  # frida_interfaces/ApproachDirection (public)
+)
+APPROACH_DIRECTION_EXEC_SERVICE = (
+    "/navigation/approach_direction_exec"  # ApproachDirection: worker control loop
+)
+
 ### General Constants
 MONITOR_RATE = 1.0
 NO_TF_LIMIT = 2

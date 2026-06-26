@@ -173,6 +173,7 @@ set(srv_files
   "navigation/srv/MoveLocation.srv"
   "navigation/srv/NavQuery.srv"
   "navigation/srv/DockTable.srv"
+  "navigation/srv/ApproachDirection.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)
