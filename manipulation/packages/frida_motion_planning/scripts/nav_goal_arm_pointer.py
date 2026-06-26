@@ -44,10 +44,17 @@ MAX_JOINT1_VEL = 0.5  # rad/s cap
 ANGLE_TOL = 0.02  # rad deadband (~1.1 deg) -> hold still
 VEL_DURATION = 0.3  # s; xArm auto-stops if we stop sending (safety if node dies)
 
-# ponytail: hardware calibration knobs. JOINT1_SIGN flips rotation direction;
-# JOINT1_OFFSET aligns joint1's zero with the base +x axis. Tune on the robot.
+# ponytail: hardware calibration knobs, two INDEPENDENT angles. Tune on the robot.
+# JOINT1_SIGN flips rotation direction.
+# JOINT1_OFFSET aligns joint1's zero with the arm-base +x for GOAL TRACKING.
+#   0.0 is the value that made tracking point correctly. Do NOT change it to fix
+#   the homing pose -- that's what FRONT_OFFSET is for.
+# FRONT_OFFSET is the joint1 angle that faces the MOBILE-BASE FRONT, used only by
+#   the post-nav homing. Non-zero because the arm is mounted rotated vs the base.
+#   Tune this alone to fix where the arm ends after nav (here: -90deg).
 JOINT1_SIGN = 1.0
-JOINT1_OFFSET = -1.57
+JOINT1_OFFSET = 0.0
+FRONT_OFFSET = -1.57
 
 
 def wrap_angle(a: float) -> float:
@@ -55,8 +62,8 @@ def wrap_angle(a: float) -> float:
     return math.atan2(math.sin(a), math.cos(a))
 
 
-# Joint1 target that points the arm at the base front (+x). With offset 0 this is 0.
-FRONT_TARGET = max(-JOINT1_LIMIT, min(JOINT1_LIMIT, wrap_angle(JOINT1_OFFSET)))
+# Joint1 target for the post-nav homing: faces the mobile-base front.
+FRONT_TARGET = max(-JOINT1_LIMIT, min(JOINT1_LIMIT, wrap_angle(FRONT_OFFSET)))
 
 
 def joint1_velocity(target: float, current: float) -> float:
