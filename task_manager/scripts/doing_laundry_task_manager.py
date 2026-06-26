@@ -183,7 +183,8 @@ class DoingLaundryTM(Node):
         elif self.current_state == DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE:
             Logger.info(self, "Placing clothes on the laundry table.")
             self.subtask_manager.hri.say("Placing clothes on the table.", wait=False)
-            result = self.subtask_manager.manipulation.place()
+            self.subtask_manager.manipulation.move_to_position("nav_carry_bag_pose")
+            result = self.subtask_manager.manipulation.place(from_current=True)
 
             if result == Status.EXECUTION_SUCCESS:
                 # Attribute the placement to whichever loop we are currently in.

@@ -469,7 +469,7 @@ class GPSRCommands(Node):
     def _get_areas(self):
         """Fetch the active map's areas from nav_central (cached after first call)."""
         if self.areas is None:
-            self.areas = fetch_map_areas(self.areas_client, self.get_logger())
+            self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
         return self.areas
 
     def _filter_people(self, frame, people):
