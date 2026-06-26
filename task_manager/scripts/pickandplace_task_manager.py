@@ -133,7 +133,7 @@ class PickAndPlaceTM(Node):
         self.use_dishwasher = False  # cutlery/tableware → dishwasher
         self.use_side_table = False  # pick from side table (−20 pts/obj)
         self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
-        self.use_vision_confirmation = False  # vision re-look to confirm the pick
+        self.use_vision_confirmation = True  # vision re-look to confirm the pick
         self.max_cleanup_objects = 3  # how many to clean before breakfast
 
         # YOLO name mapping: logical → detection class (only differences)
@@ -746,7 +746,7 @@ class PickAndPlaceTM(Node):
                 ObjectCategory.COMMON: 4,
             }
 
-            skip_names = ["red_plate", "dish"]
+            skip_names = ["red_plate", "plate", "dish"]
             before = len(self.detected_objects)
             self.detected_objects = [
                 obj for obj in self.detected_objects if obj.name.lower() not in skip_names
