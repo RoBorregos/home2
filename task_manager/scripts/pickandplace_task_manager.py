@@ -473,7 +473,7 @@ class PickAndPlaceTM(Node):
         except Exception as e:
             CLog.manip(self, "PICK", f"clear_octomap failed: {e}", level="warn")
 
-    def _pick_from_shelf(self, object_name: str, level_heights: dict) -> int:
+    def _pick_from_shelf(self, object_name: str, level_heights: dict, say_name: str = None) -> int:
         """Find the target by detecting at each shelf level, then pick from that level.
 
         table_stare frames only the lower levels, so an object on a high level (cereal
@@ -504,6 +504,8 @@ class PickAndPlaceTM(Node):
             if find_target_on_level(candidates, object_name, height) is not None:
                 CLog.manip(self, "PICK", f"Found {object_name} at shelf height {height:.3f}.")
                 self.announce_objects([object_name])
+                if say_name:
+                    self.subtask_manager.hri.say(f"I will pick the {say_name}.", wait=False)
                 found_level = height
                 before_counts = self._shelf_counts(detections, height)
                 break
@@ -1270,18 +1272,20 @@ class PickAndPlaceTM(Node):
 
             is_cabinet = item_location == Location.CABINET
             yolo_name = self._to_yolo_name(item_name)
-            self.subtask_manager.hri.say(f"I will pick the {item_name}.", wait=False)
-
             if is_cabinet:
                 # Per-level detect-then-pick so a high-shelf object (e.g. cereal on L3)
                 # is framed and picked; table_stare frames only the lower levels.
-                status = self._pick_from_shelf(yolo_name, self.shelf_level_heights)
+                # say_name makes it announce the pick intent after the detection.
+                status = self._pick_from_shelf(
+                    yolo_name, self.shelf_level_heights, say_name=item_name
+                )
                 self._cabinet_scan_fresh = True  # the per-level scan refreshed the octomap
             else:
                 self.subtask_manager.manipulation.move_to_position("table_stare")
-                # Name what is at the breakfast surface for the recognize points.
+                # Name what is at the breakfast surface, then announce the pick intent.
                 _, bf_dets = self.subtask_manager.vision.detect_objects()
                 self.announce_objects([d.classname for d in (bf_dets or [])])
+                self.subtask_manager.hri.say(f"I will pick the {item_name}.", wait=False)
                 status = self.subtask_manager.manipulation.pick_object(
                     yolo_name, scan_environment=False
                 )
