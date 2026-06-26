@@ -38,6 +38,10 @@ JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
 ESTOP_TOPIC = "/manipulation/estop"
+# Latched Bool: True while motion_planning_server is executing a MoveJoints/
+# MoveToPose goal (arm in use). nav_goal_arm_pointer yields the xArm mode while
+# this is True so it never fights manipulation for /xarm/set_mode.
+MANIPULATION_ARM_BUSY_TOPIC = "/manipulation/arm_busy"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
