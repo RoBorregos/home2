@@ -1010,6 +1010,10 @@ class PickAndPlaceTM(Node):
             # that the upcoming place does not need its own per-level scan.
             self._cabinet_scan_fresh = True
             CLog.vision(self, "SHELF", f"All shelves scanned: {self.shelves}")
+            # Name what is on the shelf for the recognize points.
+            self.announce_objects(
+                [n for objs in self.shelves.values() for n in objs]
+            )
 
             # Categorize table objects against shelf contents
             # Only the shelf-bound "other" objects need shelf categorization;
@@ -1046,12 +1050,14 @@ class PickAndPlaceTM(Node):
                     f"Object placement: {dict(self.object_to_placing_shelf)}",
                 )
 
-                name_to_cat = {o.name: o.category.value for o in self.detected_objects}
                 for obj_name, shelf_idxs in self.object_to_placing_shelf.items():
                     if shelf_idxs:
                         shelf_idx = shelf_idxs[0]
                         level = shelf_levels[shelf_idx] if shelf_idx < len(shelf_levels) else 1
-                        cat = name_to_cat.get(obj_name, "")
+                        # Announce the SHELF's category (where it goes), not the
+                        # object's own category.
+                        shelf_cats = categorized_shelfs.get(shelf_idx, [])
+                        cat = " and ".join(shelf_cats)
                         where = f"shelf {level}" + (f", the {cat} shelf" if cat else "")
                         self.subtask_manager.hri.say(
                             f"The {obj_name} goes on {where}.",
@@ -1277,6 +1283,9 @@ class PickAndPlaceTM(Node):
                 self._cabinet_scan_fresh = True  # the per-level scan refreshed the octomap
             else:
                 self.subtask_manager.manipulation.move_to_position("table_stare")
+                # Name what is at the breakfast surface for the recognize points.
+                _, bf_dets = self.subtask_manager.vision.detect_objects()
+                self.announce_objects([d.classname for d in (bf_dets or [])])
                 status = self.subtask_manager.manipulation.pick_object(
                     yolo_name, scan_environment=False
                 )
