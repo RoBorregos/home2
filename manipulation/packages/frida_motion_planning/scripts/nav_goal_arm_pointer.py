@@ -47,7 +47,7 @@ VEL_DURATION = 0.3  # s; xArm auto-stops if we stop sending (safety if node dies
 # ponytail: hardware calibration knobs. JOINT1_SIGN flips rotation direction;
 # JOINT1_OFFSET aligns joint1's zero with the base +x axis. Tune on the robot.
 JOINT1_SIGN = 1.0
-JOINT1_OFFSET = 0.0
+JOINT1_OFFSET = 1.57
 
 
 def wrap_angle(a: float) -> float:
