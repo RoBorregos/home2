@@ -230,6 +230,7 @@ class PickAndPlaceTM(Node):
 
         # Runtime state
         self.current_attempts = 0
+        self._docked_at_table = False  # one dock per table visit
         self.current_location: Location = None
         self.running_task = True
         self.state_start_time = None
@@ -675,6 +676,7 @@ class PickAndPlaceTM(Node):
             table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
             self.navigate_to_location(table_location, say=False)
             self.subtask_manager.nav.dock_table()
+            self._docked_at_table = True
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             status, detections = self.subtask_manager.vision.detect_objects(timeout=5)
@@ -824,10 +826,12 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.PICK_OBJECT)
 
             table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
-            # Navigate and dock only on the first attempt; retries reuse the dock.
-            if self.current_attempts == 0:
+            # Dock once per table visit: skip if perceive or a prior object already
+            # docked here; retries reuse it.
+            if self.current_attempts == 0 and not self._docked_at_table:
                 self.navigate_to_location(table_location, say=False)
                 self.subtask_manager.nav.dock_table()
+                self._docked_at_table = True
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             before_counts = None
@@ -941,12 +945,14 @@ class PickAndPlaceTM(Node):
         # ==================== NAVIGATE TO PLACEMENT ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT:
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT)
+            self._docked_at_table = False  # left the table to place
             placement_loc = self.grasped_object.placement_location
             result = self.navigate_to_location(placement_loc)
-            # Cabinet/shelf: no dock (keep the nav-goal standoff ~0.5 m); the side
-            # table is a table, so dock for a precise place.
+            # Side table is a table -> default dock; cabinet -> stand off ~30 cm.
             if placement_loc == Location.SIDE_TABLE:
                 self.subtask_manager.nav.dock_table()
+            elif placement_loc == Location.CABINET:
+                self.subtask_manager.nav.dock_table(offset=0.30)
 
             if result == Status.EXECUTION_SUCCESS:
                 if placement_loc == Location.CABINET and not self.shelf_scanned:
@@ -1248,8 +1254,10 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE)
             item_location = self.current_breakfast_item["location"]
             result = self.navigate_to_location(item_location)
-            # No dock at the cabinet/shelf; only dock at table-height surfaces.
-            if item_location != Location.CABINET:
+            # Cabinet -> stand off ~30 cm; table-height surfaces -> default dock.
+            if item_location == Location.CABINET:
+                self.subtask_manager.nav.dock_table(offset=0.30)
+            else:
                 self.subtask_manager.nav.dock_table()
 
             if result == Status.EXECUTION_SUCCESS:
