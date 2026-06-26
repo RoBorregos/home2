@@ -645,13 +645,7 @@ class PickMotionServer(Node):
                     return True, pick_result
 
                 else:
-                    # EE XY before reaching in, to size the retract dynamically.
-                    pre_state = self._latest_robot_state
-                    pre_xy = (
-                        (pre_state.pose[0] / 1000.0, pre_state.pose[1] / 1000.0)
-                        if pre_state is not None
-                        else None
-                    )
+                    # Pure GPD reach (simple plan straight to the grasp, what grasped before).
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
                         ee_link_pose
                     )
@@ -668,55 +662,8 @@ class PickMotionServer(Node):
 
                     if result:
                         self.get_logger().info("Object attached")
-                        # Shelf pick (frontal grasp): pull straight out toward the
-                        # robot in XY (Z constant, clears ceiling). Table unchanged.
-                        approach = quat2mat(
-                            [
-                                ee_link_pose.pose.orientation.w,
-                                ee_link_pose.pose.orientation.x,
-                                ee_link_pose.pose.orientation.y,
-                                ee_link_pose.pose.orientation.z,
-                            ]
-                        )[:, 2]
-                        if abs(float(approach[2])) < 0.5:
-                            dist = SHELF_RETRACT_DIST
-                            post_state = self._latest_robot_state
-                            if pre_xy is not None and post_state is not None:
-                                depth = float(
-                                    np.hypot(
-                                        post_state.pose[0] / 1000.0 - pre_xy[0],
-                                        post_state.pose[1] / 1000.0 - pre_xy[1],
-                                    )
-                                )
-                                dist = min(
-                                    max(
-                                        depth + SHELF_RETRACT_MARGIN, SHELF_RETRACT_MIN
-                                    ),
-                                    SHELF_RETRACT_MAX,
-                                )
-                            ax = float(approach[0])
-                            ay = float(approach[1])
-                            na = float(np.hypot(ax, ay))
-                            if na > 1e-6:
-                                ux, uy = ax / na, ay / na
-                                retracted = False
-                                for frac in (1.0, 0.6, 0.35):
-                                    rp = copy.deepcopy(ee_link_pose)
-                                    rp.pose.position.x -= ux * dist * frac
-                                    rp.pose.position.y -= uy * dist * frac
-                                    self.get_logger().info(
-                                        f"Shelf retract: cartesian along -approach ({dist * frac:.3f} m)"
-                                    )
-                                    _, _res = self.move_to_pose(
-                                        rp, velocity=0.1, planner_id="cartesian"
-                                    )
-                                    if _res and _res.result.success:
-                                        retracted = True
-                                        break
-                                if not retracted:
-                                    self.get_logger().warn(
-                                        "Shelf retract: cartesian failed (singularity/collision?), skipping"
-                                    )
+                        # No shelf retract: switching to mode 5 with an object held opens the
+                        # gripper; let the front_stare return plan out collision-free instead.
                         pick_result.pick_pose = ee_link_pose
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
@@ -1170,28 +1117,25 @@ class PickMotionServer(Node):
         self.collision_objects = self.get_collision_objects()
 
     def attach_pick_object(self):
-        obj_lowest = None
-        obj_highest = None
-        for obj in self.collision_objects:
-            if PICK_OBJECT_NAMESPACE in obj.id:
+        pick_objs = [o for o in self.collision_objects if PICK_OBJECT_NAMESPACE in o.id]
+        if not pick_objs:
+            return True, None, None
+        obj_lowest = min(pick_objs, key=lambda o: o.pose.pose.position.z)
+        obj_highest = max(pick_objs, key=lambda o: o.pose.pose.position.z)
+        # Attach only ONE box and drop the rest: attaching the whole cluster cloud (~15 boxes
+        # ahead of the gripper) over-constrained the return; front_stare/table_stare failed (-2).
+        for obj in pick_objs:
+            if obj.id == obj_lowest.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
-                if obj_lowest is None:
-                    obj_lowest = obj
-                else:
-                    if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
-                        obj_lowest = obj
-                if obj_highest is None:
-                    obj_highest = obj
-                else:
-                    if obj.pose.pose.position.z > obj_highest.pose.pose.position.z:
-                        obj_highest = obj
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
                 self._attach_collision_object_client.wait_for_service()
                 future = self._attach_collision_object_client.call_async(request)
                 self.wait_for_future(future)
+            else:
+                self.remove_collision_object(obj.id)
         return True, obj_lowest, obj_highest
 
     def get_collision_objects(self):

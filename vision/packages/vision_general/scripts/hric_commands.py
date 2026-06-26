@@ -430,7 +430,7 @@ class HRICCommands(Node):
     def _get_areas(self):
         """Fetch the active map's areas from nav_central (cached after first call)."""
         if self.areas is None:
-            self.areas = fetch_map_areas(self.areas_client, self.get_logger())
+            self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
         return self.areas
 
     def check_chairs(self, frame) -> tuple[bool, float]:
@@ -515,8 +515,21 @@ class HRICCommands(Node):
         couches and return the angle of the largest space."""
         available_spaces = queue.PriorityQueue()
 
+        couches_in_room = filter_detections_in_house(
+            frame,
+            self.couches,
+            [57],
+            ["living_room"],
+            self.camera_info,
+            self.depth_image,
+            self.tf_buffer,
+            self._get_areas(),
+            CAMERA_FRAME,
+            rotation=self.rotation,
+        )
+
         # Check if there are couch spaces available
-        for couch in self.couches:
+        for couch in couches_in_room:
             couch_left = couch["bbox"][0]
             couch_right = couch["bbox"][2]
             space = np.zeros(frame.shape[1], dtype=int)

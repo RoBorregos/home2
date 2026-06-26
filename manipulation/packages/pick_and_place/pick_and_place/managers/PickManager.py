@@ -46,6 +46,15 @@ CFG_PATHS = [
     ],
 ]
 
+# Shelf picks use a frontal-biased cfg with a wider approach cone (the table 30deg cone
+# over-prunes the oblique shelf view); selected only when is_shelf.
+SHELF_CFG_PATHS = [
+    [
+        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_shelf.cfg",
+        False,
+    ],
+]
+
 
 # FINE HEIGHT ADJUSTMENT FOR CUTLERY
 # If it's floating, use negative values (e.g. -0.02)
@@ -312,7 +321,12 @@ class PickManager:
         else:
             # Shelf collision is handled by the sphere generation; the cavity boxes
             # over-constrained the narrow grasp (OMPL found no plan), so leave them off.
-            for CFG_PATH in CFG_PATHS:
+            # Retry the shelf detection a few times: GPD samples randomly, so re-detecting
+            # yields different grasps and recovers a round where all were unreachable.
+            cfg_list = SHELF_CFG_PATHS * 3 if is_shelf else CFG_PATHS
+            for CFG_PATH in cfg_list:
+                if pick_result_success:
+                    break
                 cfg_path = CFG_PATH[0]
                 is_reversible = CFG_PATH[1]
                 if is_reversible and height < 0.06:
@@ -327,7 +341,13 @@ class PickManager:
                 if len(grasp_poses) == 0:
                     continue
 
-                if len(grasp_poses) > 5:
+                if is_shelf:
+                    # Keep the highest-scored candidates (not a random 5) and try more of
+                    # them, so a reachable, higher-quality grasp wins over a marginal one.
+                    order = list(np.argsort(grasp_scores)[::-1][:8])
+                    grasp_poses = [grasp_poses[i] for i in order]
+                    grasp_scores = [grasp_scores[i] for i in order]
+                elif len(grasp_poses) > 5:
                     indices = np.random.choice(len(grasp_poses), size=5, replace=False)
                     grasp_poses = [grasp_poses[i] for i in indices]
                     grasp_scores = [grasp_scores[i] for i in indices]
@@ -389,6 +409,30 @@ class PickManager:
                             f"Frontal grasp filter removed all for {object_name}; "
                             "using unfiltered set"
                         )
+
+                    # The ZED hangs ~10cm below the gripper and physically grazes the shelf
+                    # surface on a low frontal grasp; flip 180 about approach to lift it (same grasp).
+                    zed = np.array([-0.096, 0.0, 0.041])
+                    for pose in new_grasp_poses:
+                        q = [
+                            pose.pose.orientation.x,
+                            pose.pose.orientation.y,
+                            pose.pose.orientation.z,
+                            pose.pose.orientation.w,
+                        ]
+                        Rg = R.from_quat(q)
+                        cam0 = pose.pose.position.z + float(Rg.apply(zed)[2])
+                        q_flip = (Rg * R.from_euler("z", 180, degrees=True)).as_quat()
+                        cam1 = pose.pose.position.z + float(
+                            R.from_quat(q_flip).apply(zed)[2]
+                        )
+                        if cam1 > cam0:
+                            (
+                                pose.pose.orientation.x,
+                                pose.pose.orientation.y,
+                                pose.pose.orientation.z,
+                                pose.pose.orientation.w,
+                            ) = q_flip
 
                 goal_msg = PickMotion.Goal()
                 goal_msg.grasping_poses = new_grasp_poses

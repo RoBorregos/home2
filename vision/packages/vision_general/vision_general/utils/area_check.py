@@ -11,10 +11,10 @@ from tf2_ros import Buffer
 from frida_interfaces.srv import MapAreas
 
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
-from vision_general.utils.ros_utils import wait_for_future
 
 
 def fetch_map_areas(
+    node,
     areas_client,
     logger,
     service_timeout: float = 2.0,
@@ -25,14 +25,17 @@ def fetch_map_areas(
 
     Returns the areas dict, or None if the service is unavailable / returns no
     data (callers should treat None as "skip the house filter").
+
+    Spins ``node`` while waiting so the response is processed even when called
+    from within another callback on a single-threaded executor.
     """
     if not areas_client.wait_for_service(timeout_sec=service_timeout):
         logger.warn("Areas service not available; skipping house filter.")
         return None
 
     future = areas_client.call_async(MapAreas.Request())
-    future = wait_for_future(future, call_timeout)
-    result = future.result() if future else None
+    rclpy.spin_until_future_complete(node, future, timeout_sec=call_timeout)
+    result = future.result() if future.done() else None
     if result is None or not result.areas:
         logger.warn("Areas service returned no data; skipping house filter.")
         return None
