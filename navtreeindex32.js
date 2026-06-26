@@ -1,5 +1,7 @@
 var NAVTREEINDEX32 =
 {
+"gpsr__test__commands_8py.html#af61153ac2e4af84cfaf1fcc0eca7f0e8":[39,0,6,2,0,4,22],
+"gpsr__test__commands_8py.html#afa65779f48b34fbe3d5ee7d4a3646899":[39,0,6,2,0,4,9],
 "gpsr__test__commands_8py.html#afb2081d78235f69ee43ea83db2d954ab":[39,0,6,2,0,4,8],
 "grasp__detection__example_8py.html":[39,0,3,0,0,1,0],
 "grasp__detection__example_8py.html#a40a8024a9f168af4327222571de3ea94":[39,0,3,0,0,1,0,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX32 =
 "manipulation_2packages_2vamp_2src_2vamp_2____init_____8py.html#aad7f5ed70166c04065c143c56397aa00":[39,0,3,0,9,2,1,1,0],
 "manipulation_2packages_2vamp_2src_2vamp_2____init_____8py.html#acf6508e61800f8f3f08c90c7ae129595":[39,0,3,0,9,2,1,1,1],
 "manipulation_2packages_2vamp_2src_2vamp_2__core_2____init_____8py.html":[39,0,3,0,9,2,1,0,0],
-"manipulation_2packages_2xarm__utils_2xarm__utils_2____init_____8py.html":[39,0,3,0,12,1,0],
-"manipulation__client_8py.html":[39,0,3,0,7,1,6],
-"manipulation__client_8py.html#a07257cb905504438e2be1b6aa9c7c4d8":[39,0,3,0,7,1,6,1]
+"manipulation_2packages_2xarm__utils_2xarm__utils_2____init_____8py.html":[39,0,3,0,12,1,0]
 };

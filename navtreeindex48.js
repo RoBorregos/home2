@@ -1,5 +1,15 @@
 var NAVTREEINDEX48 =
 {
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#abb275d0a53b71b687451664a094f004f":[37,0,199,5,22,0],
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#abb275d0a53b71b687451664a094f004f":[38,0,113,3,22,0],
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#acce2916c39f45c3afdf2225c89384e40":[38,0,113,3,22,3],
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#acce2916c39f45c3afdf2225c89384e40":[37,0,199,5,22,3],
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#aebf1a0731f47664080dcd47b5514e89b":[37,0,199,5,22,6],
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#aebf1a0731f47664080dcd47b5514e89b":[38,0,113,3,22,6],
+"structvamp_1_1planning_1_1QueueEdge.html":[37,0,199,5,23],
+"structvamp_1_1planning_1_1QueueEdge.html":[38,0,113,3,23],
+"structvamp_1_1planning_1_1QueueEdge.html#a08f4a6c8e760b9f08683ed1c3cf663d7":[37,0,199,5,23,0],
+"structvamp_1_1planning_1_1QueueEdge.html#a08f4a6c8e760b9f08683ed1c3cf663d7":[38,0,113,3,23,0],
 "structvamp_1_1planning_1_1QueueEdge.html#a3f92bae11bb1391e33d22af8d14c8f51":[37,0,199,5,23,1],
 "structvamp_1_1planning_1_1QueueEdge.html#a3f92bae11bb1391e33d22af8d14c8f51":[38,0,113,3,23,1],
 "structvamp_1_1planning_1_1QueueEdge.html#aa35287342881b602fc78f7dadfbc88e7":[38,0,113,3,23,3],
@@ -239,15 +249,5 @@ var NAVTREEINDEX48 =
 "structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html#a978aa27024664d4ff8a1c219a2f9dd8b":[37,0,199,10,2,1,2],
 "structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html#a978aa27024664d4ff8a1c219a2f9dd8b":[38,0,113,7,2,1,2],
 "structvamp_1_1robots_1_1Fetch.html":[37,0,199,10,1],
-"structvamp_1_1robots_1_1Fetch.html":[38,0,113,7,1],
-"structvamp_1_1robots_1_1Fetch.html#a5ead64b746e8203c253796f8cadac5e0":[37,0,199,10,1,5],
-"structvamp_1_1robots_1_1Fetch.html#a5ead64b746e8203c253796f8cadac5e0":[38,0,113,7,1,5],
-"structvamp_1_1robots_1_1Fetch.html#a9f103f8a35dad75131e40f9ca0df91d1":[38,0,113,7,1,2],
-"structvamp_1_1robots_1_1Fetch.html#a9f103f8a35dad75131e40f9ca0df91d1":[37,0,199,10,1,2],
-"structvamp_1_1robots_1_1Fetch.html#acc1ecf047b0d7a72f4eb00cb770dde6d":[38,0,113,7,1,3],
-"structvamp_1_1robots_1_1Fetch.html#acc1ecf047b0d7a72f4eb00cb770dde6d":[37,0,199,10,1,3],
-"structvamp_1_1robots_1_1Fetch.html#add66360bf3b9b511a5562882ea043479":[38,0,113,7,1,4],
-"structvamp_1_1robots_1_1Fetch.html#add66360bf3b9b511a5562882ea043479":[37,0,199,10,1,4],
-"structvamp_1_1robots_1_1Fetch_1_1ConfigurationBuffer.html":[38,0,113,7,1,0],
-"structvamp_1_1robots_1_1Fetch_1_1ConfigurationBuffer.html":[37,0,199,10,1,0]
+"structvamp_1_1robots_1_1Fetch.html":[38,0,113,7,1]
 };

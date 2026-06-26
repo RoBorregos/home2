@@ -43,6 +43,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "_set_state_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aefa4174812126a908bd1d2368d19717b", null ],
     [ "_state_validity_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a84af304a95632df0121d318badbd0228", null ],
     [ "_vc_set_cartesian_velocity_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aca949a492aaa3ddcd50f5fa0b226aa3f", null ],
+    [ "bowl_tip_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a888e1357a9ed686984ca866a3ec06545", null ],
     [ "callback_group", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a2879eb64419c48c3bbe2ea3deb634d51", null ],
     [ "collision_objects", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a0ee3e4f5cd7c8acb4ddc48cf1c8ebaac", null ],
     [ "ee_link_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a73261575260ca74ddf9ed56972d8f582", null ],

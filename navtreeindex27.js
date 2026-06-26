@@ -1,5 +1,7 @@
 var NAVTREEINDEX27 =
 {
+"classtracker__node_1_1SingleTracker.html#a1a3f8d719e9e0c1c1cb2996e1e3d7e6c":[37,0,193,0,12],
+"classtracker__node_1_1SingleTracker.html#a1a3f8d719e9e0c1c1cb2996e1e3d7e6c":[38,0,109,0,12],
 "classtracker__node_1_1SingleTracker.html#a1b9951fa3e08730f4bbbbee4117e0de9":[38,0,109,0,26],
 "classtracker__node_1_1SingleTracker.html#a1b9951fa3e08730f4bbbbee4117e0de9":[37,0,193,0,26],
 "classtracker__node_1_1SingleTracker.html#a20d3d06992d5585d124f7c8f12ced1dc":[38,0,109,0,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX27 =
 "classvamp_1_1planning_1_1ProlateHyperspheroid.html#a117bbc4a7a8c3ebd4c954c4b1cbfd11f":[37,0,199,5,21,5],
 "classvamp_1_1planning_1_1ProlateHyperspheroid.html#a117bbc4a7a8c3ebd4c954c4b1cbfd11f":[38,0,113,3,21,5],
 "classvamp_1_1planning_1_1ProlateHyperspheroid.html#a86e3801dd9f4407fa2e5271c55dfb17d":[37,0,199,5,21,7],
-"classvamp_1_1planning_1_1ProlateHyperspheroid.html#a86e3801dd9f4407fa2e5271c55dfb17d":[38,0,113,3,21,7],
-"classvamp_1_1planning_1_1ProlateHyperspheroid.html#a8d330a76391cb2a7e89abaa5180bc35d":[38,0,113,3,21,1],
-"classvamp_1_1planning_1_1ProlateHyperspheroid.html#a8d330a76391cb2a7e89abaa5180bc35d":[37,0,199,5,21,1]
+"classvamp_1_1planning_1_1ProlateHyperspheroid.html#a86e3801dd9f4407fa2e5271c55dfb17d":[38,0,113,3,21,7]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX28 =
 {
+"classvamp_1_1planning_1_1ProlateHyperspheroid.html#a8d330a76391cb2a7e89abaa5180bc35d":[38,0,113,3,21,1],
+"classvamp_1_1planning_1_1ProlateHyperspheroid.html#a8d330a76391cb2a7e89abaa5180bc35d":[37,0,199,5,21,1],
 "classvamp_1_1planning_1_1ProlateHyperspheroid.html#a8f28449406342748d1537c2c3dd65bf5":[38,0,113,3,21,3],
 "classvamp_1_1planning_1_1ProlateHyperspheroid.html#a8f28449406342748d1537c2c3dd65bf5":[37,0,199,5,21,3],
 "classvamp_1_1planning_1_1ProlateHyperspheroid.html#ad7cd79c29e04a1ee02ddce113fc45288":[38,0,113,3,21,6],
@@ -247,7 +249,5 @@ var NAVTREEINDEX28 =
 "classvisualization_1_1NoVisualization.html#aaf735f8ce9b26cf01bda6160fc019f82":[37,0,203,0,6],
 "classvisualization_1_1NoVisualization.html#aaf735f8ce9b26cf01bda6160fc019f82":[38,0,116,0,6],
 "classvisualization_1_1NoVisualization.html#ab6a84233abf588d981410bd4af50f35b":[37,0,203,0,7],
-"classvisualization_1_1NoVisualization.html#ab6a84233abf588d981410bd4af50f35b":[38,0,116,0,7],
-"classvisualization_1_1Visualization.html":[37,0,203,1],
-"classvisualization_1_1Visualization.html":[38,0,116,1]
+"classvisualization_1_1NoVisualization.html#ab6a84233abf588d981410bd4af50f35b":[38,0,116,0,7]
 };

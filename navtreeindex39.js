@@ -1,5 +1,15 @@
 var NAVTREEINDEX39 =
 {
+"namespacepick__and__place_1_1manipulation__core.html":[37,0,130,3],
+"namespacepick__and__place_1_1manipulation__core.html#a8186701a4f2197fd8462d338e413ed97":[37,0,130,3,1],
+"namespacepick__and__place_1_1pick__benchmark.html":[37,0,130,4],
+"namespacepick__and__place_1_1pick__benchmark.html#a39c283c7e3017e82805552f7bc242ea9":[37,0,130,4,2],
+"namespacepick__and__place_1_1pick__benchmark.html#a81f331a3ea0ad61b1c9adc14f6c9e345":[37,0,130,4,1],
+"namespacepick__and__place_1_1pick__benchmark.html#a9dc82845ac94f5b62a8f28e052afc2df":[37,0,130,4,3],
+"namespacepick__and__place_1_1pick__server.html":[37,0,130,5],
+"namespacepick__and__place_1_1pick__server.html#a2777c53383a35615a465c854f7227640":[37,0,130,5,6],
+"namespacepick__and__place_1_1pick__server.html#a3fda5fc76652cbe6816ae2218a9f9016":[37,0,130,5,9],
+"namespacepick__and__place_1_1pick__server.html#a50574aad2920dbb5c32c8b4cd96ac272":[37,0,130,5,8],
 "namespacepick__and__place_1_1pick__server.html#a63bbc160e6b9673f125d3019fc830f15":[37,0,130,5,11],
 "namespacepick__and__place_1_1pick__server.html#a67722b5dcce8e3171a92c7a72382fe91":[37,0,130,5,23],
 "namespacepick__and__place_1_1pick__server.html#a71024b2f324610f4c5859069e84d3e7f":[37,0,130,5,7],
@@ -239,15 +249,5 @@ var NAVTREEINDEX39 =
 "namespacesetup.html#ab3a7a0638d76a01367c5bc3cc699447f":[37,0,165,7],
 "namespacesetup.html#abead4f26b530856f858f0d44c7cf2588":[37,0,165,3],
 "namespacesetup.html#ad027a8e9452da003dca32bf7467bd16e":[37,0,165,0],
-"namespacesetup.html#ada7058afc98897f073d3f3b8b9157059":[37,0,165,2],
-"namespacesetup.html#aedf461ec52a946bda975938ba0b93ec0":[37,0,165,1],
-"namespacesetup.html#aff2375a361fd5865c77bd9aa093be747":[37,0,165,9],
-"namespacesimple__launch.html":[37,0,166],
-"namespacesimple__launch.html#a5d04ad2f05ecb05c26ddc7a741b23fab":[37,0,166,4],
-"namespacesimple__launch.html#a9448fb07fd4f1ccede887e90ae14d233":[37,0,166,2],
-"namespacesimple__launch.html#af4d94c93de638c46af7dec98fbb938eb":[37,0,166,3],
-"namespacesimulate__map.html":[37,0,167],
-"namespacesimulate__map.html#ad6149f6889b194fc6ef401af9ad4a40b":[37,0,167,0],
-"namespacesimulate__position.html":[37,0,168],
-"namespacesimulate__position.html#a4774094fc5f57595a2d52ed9441d87c6":[37,0,168,1]
+"namespacesetup.html#ada7058afc98897f073d3f3b8b9157059":[37,0,165,2]
 };

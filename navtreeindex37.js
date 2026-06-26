@@ -1,5 +1,15 @@
 var NAVTREEINDEX37 =
 {
+"namespacefrida__constants_1_1vision__constants.html#a0f1e21b2876c5aff0a6ce0bb081cd000":[37,0,60,6,48],
+"namespacefrida__constants_1_1vision__constants.html#a14b244fc490c19ebfc44d3b8f4cdcbc5":[37,0,60,6,12],
+"namespacefrida__constants_1_1vision__constants.html#a15b691c9b0f78ffb57bf59f0907fd2c7":[37,0,60,6,10],
+"namespacefrida__constants_1_1vision__constants.html#a181ff6edba78fa4bcb8532368721f561":[37,0,60,6,24],
+"namespacefrida__constants_1_1vision__constants.html#a1a7dd349184716ff0e10091fae59c7b4":[37,0,60,6,67],
+"namespacefrida__constants_1_1vision__constants.html#a1b8c2598e96be264210806cb30ddc703":[37,0,60,6,55],
+"namespacefrida__constants_1_1vision__constants.html#a209bd7a5d2cd38304ef377743a1bc1d1":[37,0,60,6,3],
+"namespacefrida__constants_1_1vision__constants.html#a255b2b0fb358a3fa07177abf65415c99":[37,0,60,6,36],
+"namespacefrida__constants_1_1vision__constants.html#a28ae7767028a1fb6be896bcdef1aae7e":[37,0,60,6,45],
+"namespacefrida__constants_1_1vision__constants.html#a3291271c82f20dc1ed484aa46aac41b8":[37,0,60,6,27],
 "namespacefrida__constants_1_1vision__constants.html#a34990348c9c206559e830f9c3a79a560":[37,0,60,6,19],
 "namespacefrida__constants_1_1vision__constants.html#a36dd44d3155495112c9e8ccff83938c9":[37,0,60,6,38],
 "namespacefrida__constants_1_1vision__constants.html#a3aa821dd699a5d43dbd7a32417a38d95":[37,0,60,6,54],
@@ -229,8 +239,8 @@ var NAVTREEINDEX37 =
 "namespacemapping.html":[37,0,98],
 "namespacemapping.html#a3a2ccf081850f9ede9e85ed58952fba0":[37,0,98,1],
 "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20":[37,0,98,0],
-"namespacemembers.html":[37,1,0,0],
 "namespacemembers.html":[37,1,0],
+"namespacemembers.html":[37,1,0,0],
 "namespacemembers_a.html":[37,1,0,1],
 "namespacemembers_b.html":[37,1,0,2],
 "namespacemembers_c.html":[37,1,0,3],
@@ -239,15 +249,5 @@ var NAVTREEINDEX37 =
 "namespacemembers_enum.html":[37,1,4],
 "namespacemembers_eval.html":[37,1,5],
 "namespacemembers_f.html":[37,1,0,6],
-"namespacemembers_func.html":[37,1,1,0],
-"namespacemembers_func.html":[37,1,1],
-"namespacemembers_func_a.html":[37,1,1,1],
-"namespacemembers_func_b.html":[37,1,1,2],
-"namespacemembers_func_c.html":[37,1,1,3],
-"namespacemembers_func_d.html":[37,1,1,4],
-"namespacemembers_func_e.html":[37,1,1,5],
-"namespacemembers_func_f.html":[37,1,1,6],
-"namespacemembers_func_g.html":[37,1,1,7],
-"namespacemembers_func_h.html":[37,1,1,8],
-"namespacemembers_func_i.html":[37,1,1,9]
+"namespacemembers_func.html":[37,1,1,0]
 };
