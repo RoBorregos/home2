@@ -1,5 +1,7 @@
 var NAVTREEINDEX44 =
 {
+"simple__launch_8test_8py.html":[39,0,3,0,4,1,3,1],
+"simple__launch_8test_8py.html#a5d04ad2f05ecb05c26ddc7a741b23fab":[39,0,3,0,4,1,3,1,3],
 "simple__launch_8test_8py.html#a9448fb07fd4f1ccede887e90ae14d233":[39,0,3,0,4,1,3,1,2],
 "simple__rx_8py.html":[39,0,4,0,4,0,3],
 "simple__rx_8py.html#a161c9336bdb1c2a6836fea53df27d502":[39,0,4,0,4,0,3,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX44 =
 "structvamp_1_1VectorInterface.html#a17279cbbc17044fa9fcc2f23f7857f6e":[37,0,199,21,65],
 "structvamp_1_1VectorInterface.html#a17279cbbc17044fa9fcc2f23f7857f6e":[38,0,113,16,65],
 "structvamp_1_1VectorInterface.html#a188adff821e1367a5ace0ef8f4d8969c":[37,0,199,21,18],
-"structvamp_1_1VectorInterface.html#a188adff821e1367a5ace0ef8f4d8969c":[38,0,113,16,18],
-"structvamp_1_1VectorInterface.html#a1d4a57a2925d051f22ea92ea1614a7ed":[37,0,199,21,46],
-"structvamp_1_1VectorInterface.html#a1d4a57a2925d051f22ea92ea1614a7ed":[38,0,113,16,46]
+"structvamp_1_1VectorInterface.html#a188adff821e1367a5ace0ef8f4d8969c":[38,0,113,16,18]
 };

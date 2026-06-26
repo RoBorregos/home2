@@ -1,5 +1,7 @@
 var NAVTREEINDEX48 =
 {
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#aba33e2348102bdfbc4cc8840865bb72a":[37,0,199,5,22,1],
+"structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#aba33e2348102bdfbc4cc8840865bb72a":[38,0,113,3,22,1],
 "structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#abb275d0a53b71b687451664a094f004f":[37,0,199,5,22,0],
 "structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#abb275d0a53b71b687451664a094f004f":[38,0,113,3,22,0],
 "structvamp_1_1planning_1_1ProlateHyperspheroidRNG.html#acce2916c39f45c3afdf2225c89384e40":[38,0,113,3,22,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX48 =
 "structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html#a76e4ea637354b1f5a9cd571484ef6497":[38,0,113,7,2,1,1],
 "structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html#a76e4ea637354b1f5a9cd571484ef6497":[37,0,199,10,2,1,1],
 "structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html#a978aa27024664d4ff8a1c219a2f9dd8b":[37,0,199,10,2,1,2],
-"structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html#a978aa27024664d4ff8a1c219a2f9dd8b":[38,0,113,7,2,1,2],
-"structvamp_1_1robots_1_1Fetch.html":[37,0,199,10,1],
-"structvamp_1_1robots_1_1Fetch.html":[38,0,113,7,1]
+"structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html#a978aa27024664d4ff8a1c219a2f9dd8b":[38,0,113,7,2,1,2]
 };

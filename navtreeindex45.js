@@ -1,5 +1,7 @@
 var NAVTREEINDEX45 =
 {
+"structvamp_1_1VectorInterface.html#a1d4a57a2925d051f22ea92ea1614a7ed":[37,0,199,21,46],
+"structvamp_1_1VectorInterface.html#a1d4a57a2925d051f22ea92ea1614a7ed":[38,0,113,16,46],
 "structvamp_1_1VectorInterface.html#a1eb05993353828941bda40d69acf7e2e":[37,0,199,21,23],
 "structvamp_1_1VectorInterface.html#a1eb05993353828941bda40d69acf7e2e":[37,0,199,21,22],
 "structvamp_1_1VectorInterface.html#a1eb05993353828941bda40d69acf7e2e":[38,0,113,16,23],
@@ -247,7 +249,5 @@ var NAVTREEINDEX45 =
 "structvamp_1_1binding_1_1NDArrayInput.html":[38,0,113,0,2],
 "structvamp_1_1binding_1_1NDArrayInput.html":[37,0,199,1,2],
 "structvamp_1_1binding_1_1NDArrayInput.html#a14ca9a45b8ca2d10f31477cb77f72363":[37,0,199,1,2,3],
-"structvamp_1_1binding_1_1NDArrayInput.html#a14ca9a45b8ca2d10f31477cb77f72363":[38,0,113,0,2,3],
-"structvamp_1_1binding_1_1NDArrayInput.html#a18cb9c5e0f330a989aa038dd74e9d781":[38,0,113,0,2,2],
-"structvamp_1_1binding_1_1NDArrayInput.html#a18cb9c5e0f330a989aa038dd74e9d781":[37,0,199,1,2,2]
+"structvamp_1_1binding_1_1NDArrayInput.html#a14ca9a45b8ca2d10f31477cb77f72363":[38,0,113,0,2,3]
 };

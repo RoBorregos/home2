@@ -24,6 +24,7 @@ var navigation__constants_8py =
     [ "NO_TOPICS_LIMIT", "navigation__constants_8py.html#a4281b030aa146f66253524fa6e0096c3", null ],
     [ "POINT_CLOUD_TOPIC", "navigation__constants_8py.html#a2737a4f0e3f1c84b3201d173238dec32", null ],
     [ "RESUME_NAV_SERVICE", "navigation__constants_8py.html#aa5380c3fb996f841252cbac5e5841746", null ],
+    [ "RETREAT_DISTANCE", "navigation__constants_8py.html#af7df70f29ab383ddb7ba4b43157d8a8b", null ],
     [ "RTAB_CHECK_TOPIC", "navigation__constants_8py.html#a8b92de2f769fb1a6b93b0c409f9dd4c0", null ],
     [ "RTAB_CONTAINER_NODE", "navigation__constants_8py.html#a6f453750877d26465830a78223bfd93b", null ],
     [ "RTAB_MAPS_PATH", "navigation__constants_8py.html#a69e5f968a7d1a4621882e5e0cd1b4727", null ],
