@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 
 import rclpy
+from frida_constants.hri_constants import HRIC_DRINK_HOTWORDS, HRIC_NAME_HOTWORDS
 from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_HRIC
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
@@ -17,10 +18,6 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 ATTEMPT_LIMIT = 3
 FIRST_GUEST_IDX = 0
 SECOND_GUEST_IDX = 1
-HOT_NAMES = "Adel Angel Axel Charlie Jane Jules Morgan Paris Robin Simone"
-HOT_DRINKS = (
-    "fanta water lipton coca-cola soda lemonade pepsi orange juice milk cola sidral mundet iced tea"
-)
 
 
 class Guest:
@@ -66,6 +63,9 @@ class HRIC_TM(Node):
         self.current_attempts = 0
         self.running_task = True
         self.message = ""
+
+        self.drink_options = HRIC_DRINK_HOTWORDS
+        self.name_options = HRIC_NAME_HOTWORDS
 
         # State timing variables
         self.state_start_time = None
@@ -191,10 +191,10 @@ class HRIC_TM(Node):
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?",
                 query="name",
+                initial_prompt=f"What is your name? The name is likely one of: {', '.join(self.name_options)}",
                 context="The question 'What is your name?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your name?' was asked",
+                hotwords=", ".join(self.name_options),
                 retries=5,
-                hotwords=HOT_NAMES,
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -205,10 +205,10 @@ class HRIC_TM(Node):
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?",
                 query="LLM_drink",
+                initial_prompt=f"What is your favorite drink? The drink is likely one of: {', '.join(self.drink_options)}",
                 context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
-                initial_prompt="The question 'What is your favorite drink?' was asked",
+                hotwords=", ".join(self.drink_options),
                 retries=5,
-                hotwords=HOT_DRINKS,
             )
 
             if status == Status.EXECUTION_SUCCESS:

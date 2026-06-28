@@ -92,3 +92,42 @@ VOWEL_FREQ_HIGH = 255
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.7
 SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.7
 TIMEOUT = 5.0
+HRIC_DRINK_HOTWORDS = [
+    "water",
+    "coke",
+    "cola",
+    "diet coke",
+    "pepsi",
+    "sprite",
+    "lemonade",
+    "iced tea",
+    "coffee",
+    "tea",
+    "milk",
+    "hot chocolate",
+    "orange juice",
+    "apple juice",
+    "grape juice",
+    "latte",
+    "cappuccino",
+    "smoothie",
+    "green tea",
+    "barley tea",
+    "boba",
+    "bubble tea",
+    "soju",
+    "banana milk",
+    "strawberry milk",
+]
+
+HRIC_NAME_HOTWORDS = [
+    "Alex",
+    "Daniel",
+    "David",
+    "Emma",
+    "Emily",
+    "John",
+    "Luis",
+    "Maria",
+    "Sofia",
+]

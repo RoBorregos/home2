@@ -76,6 +76,7 @@ TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
+TEST_HRIC_HOTWORDS = True
 
 
 class TestHriManager(Node):
@@ -129,6 +130,9 @@ class TestHriManager(Node):
 
         if TEST_TAKE_ORDER:
             self.test_take_order()
+
+        if TEST_HRIC_HOTWORDS:
+            self.test_hric_hotwords()
 
         exit(0)
 
@@ -192,6 +196,37 @@ class TestHriManager(Node):
         )
 
         self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
+
+    def test_hric_hotwords(self):
+        from frida_constants.hri_constants import HRIC_DRINK_HOTWORDS, HRIC_NAME_HOTWORDS
+
+        self.get_logger().info("=== Testing HRIC Hotwords Strategy ===")
+
+        # Test Name Extraction with Hotwords
+        self.get_logger().info("Testing NAME extraction...")
+        s, name = self.hri_manager.ask_and_confirm(
+            question="What is your name?",
+            query="name",
+            initial_prompt=f"The user is telling their name. Expected names: {', '.join(HRIC_NAME_HOTWORDS)}",
+            context="The question 'What is your name?' was asked, full_text corresponds to the response.",
+            options=HRIC_NAME_HOTWORDS,
+            retries=3,
+            hotwords=" ".join(HRIC_NAME_HOTWORDS),
+        )
+        self.get_logger().info(f"Result Name: {name} (Status: {s})")
+
+        # Test Drink Extraction with Hotwords
+        self.get_logger().info("Testing DRINK extraction...")
+        s, drink = self.hri_manager.ask_and_confirm(
+            question="What is your favorite drink?",
+            query="LLM_drink",
+            initial_prompt=f"The user is choosing a drink. Options include: {', '.join(HRIC_DRINK_HOTWORDS)}",
+            context="The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
+            options=HRIC_DRINK_HOTWORDS,
+            retries=3,
+            hotwords=" ".join(HRIC_DRINK_HOTWORDS),
+        )
+        self.get_logger().info(f"Result Drink: {drink} (Status: {s})")
 
         s, interest1 = self.hri_manager.ask_and_confirm(
             "What is your main interest?",
