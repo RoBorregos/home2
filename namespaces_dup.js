@@ -515,6 +515,7 @@ var namespaces_dup =
     [ "test_copyright", "namespacetest__copyright.html", [
       [ "test_copyright", "namespacetest__copyright.html#a156f4f961887d49bfb4cc9f6e7f6af0a", null ]
     ] ],
+    [ "test_describe_person", "namespacetest__describe__person.html", "namespacetest__describe__person" ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
     [ "test_face_rec", "namespacetest__face__rec.html", "namespacetest__face__rec" ],
     [ "test_flake8", "namespacetest__flake8.html", [

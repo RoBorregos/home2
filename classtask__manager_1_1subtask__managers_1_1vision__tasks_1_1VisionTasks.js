@@ -16,7 +16,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "deactivate_object_detector", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6dde6d86b849ef211eb07bf8bd632398", null ],
     [ "describe_bag", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab0eac7b68007e1a89b61d029aec3c965", null ],
     [ "describe_bag_moondream", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae30c133c3a7b148f9322ebea7e4f94ba", null ],
-    [ "describe_person", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8b91583b99f6c7614fcf7f43ca06120", null ],
+    [ "describe_person", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa963b4bf35d3ee92a918a513ad4cb051", null ],
     [ "describe_shelf", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a967d58de79536f717cc98de9f796d279", null ],
     [ "detect_guest", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#abe52d45753474d37c9a7f13f08ac8267", null ],
     [ "detect_hand", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a3f7ecd2b17be44b00178eaf9b72d59f7", null ],

@@ -181,8 +181,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3f56259b13e7467bdd6360e314efddee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4bd3add43ce4c8e28d6a4b516f1c947"><td class="memItemLeft" align="right" valign="top">tuple[int, list[str]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af4bd3add43ce4c8e28d6a4b516f1c947">count_objects</a> (self, str object)</td></tr>
 <tr class="separator:af4bd3add43ce4c8e28d6a4b516f1c947"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8b91583b99f6c7614fcf7f43ca06120"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8b91583b99f6c7614fcf7f43ca06120">describe_person</a> (self, callback)</td></tr>
-<tr class="separator:ac8b91583b99f6c7614fcf7f43ca06120"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa963b4bf35d3ee92a918a513ad4cb051"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa963b4bf35d3ee92a918a513ad4cb051">describe_person</a> (self, callback=None)</td></tr>
+<tr class="separator:aa963b4bf35d3ee92a918a513ad4cb051"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad4e9e988ee7d81b9f25f2303256a263b"><td class="memItemLeft" align="right" valign="top">tuple[int, ObjectDetection]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad4e9e988ee7d81b9f25f2303256a263b">get_pointing_bag</a> (self, float timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>)</td></tr>
 <tr class="separator:ad4e9e988ee7d81b9f25f2303256a263b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0eac7b68007e1a89b61d029aec3c965"><td class="memItemLeft" align="right" valign="top">tuple[int, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab0eac7b68007e1a89b61d029aec3c965">describe_bag</a> (self, <a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a> bbox, timeout=<a class="el" href="namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995">TIMEOUT</a>)</td></tr>
@@ -745,8 +745,8 @@ compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
 <pre class="fragment">Describe the bag using only moondream</pre> 
 </div>
 </div>
-<a id="ac8b91583b99f6c7614fcf7f43ca06120" name="ac8b91583b99f6c7614fcf7f43ca06120"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac8b91583b99f6c7614fcf7f43ca06120">&#9670;&#160;</a></span>describe_person()</h2>
+<a id="aa963b4bf35d3ee92a918a513ad4cb051" name="aa963b4bf35d3ee92a918a513ad4cb051"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa963b4bf35d3ee92a918a513ad4cb051">&#9670;&#160;</a></span>describe_person()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -761,7 +761,7 @@ compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>callback</em>&#160;</td>
+          <td class="paramname"><em>callback</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -770,7 +770,7 @@ compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Describe the person in the image</pre> 
+<pre class="fragment">Describe the person in the image asynchronously.</pre> 
 </div>
 </div>
 <a id="a967d58de79536f717cc98de9f796d279" name="a967d58de79536f717cc98de9f796d279"></a>
