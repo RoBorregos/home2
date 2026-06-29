@@ -132,6 +132,9 @@ class CustomerNode(Node):
         res.found = False
         res.people = PersonList()
         res.people.list = []
+        # Table scan sets include_non_waving=True to map seated customers who are no
+        # longer waving; the WAIT_FOR_CALL search leaves it False (waving only).
+        include_non_waving = getattr(req, "include_non_waving", False)
 
         if self.image is None:
             self.get_logger().warn("No image available")
@@ -164,7 +167,7 @@ class CustomerNode(Node):
             self.customer_image = frame[ey1:ey2, ex1:ex2].copy()
 
             raising = self.pose_detection.is_waving_from_keypoints(points, kp_conf)
-            if not raising:
+            if not include_non_waving and not raising:
                 self.get_logger().info("Customer not raising hand")
                 continue
 
@@ -173,8 +176,11 @@ class CustomerNode(Node):
                 self.get_logger().info("Checking sitting with moondream")
                 sitting = self.is_sitting_moondream([ex1, ey1, ex2, ey2])
 
-            if raising and sitting:
-                self.get_logger().info("Customer raising hand and sitting detected")
+            # WAIT_FOR_CALL: require waving + sitting. Table scan: any seated person.
+            if sitting and (raising or include_non_waving):
+                self.get_logger().info(
+                    "Customer detected (sitting%s)" % (", raising" if raising else "")
+                )
                 cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
                 point2D = get2DCentroid((y1, x1, y2, x2), self.depth_image)

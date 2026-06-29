@@ -136,6 +136,7 @@ class RESTAURANTCommands(Node):
         response.success = True
 
         self.publish_table_customer_image(response.customer_tables, table_pixels)
+        self.get_logger().info(f"TABLES DETECTED {table_groups} -------")
         self.get_logger().info(
             f"Associated {assigned_customers}/{len(customer_people)} customers to tables"
         )
@@ -186,6 +187,9 @@ class RESTAURANTCommands(Node):
     def get_customers(self):
         """Get customers using the customer service, returns list of Person."""
         req = Customer.Request()
+        req.include_non_waving = (
+            True  # table scan: map seated customers, not just hand-raisers
+        )
         future = self.customer_client.call_async(req)
         future = wait_for_future(future, 15)
 

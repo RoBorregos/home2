@@ -31,6 +31,10 @@ MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 DOCK_TABLE_SERVICE = "/navigation/dock_table"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
+### Point-based navigation services
+GO_TO_POSE_SERVICE = "/navigation/go_to_pose"
+GET_ROBOT_POSE_SERVICE = "/navigation/get_robot_pose"
+
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"
 
