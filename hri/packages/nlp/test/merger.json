@@ -1,0 +1,1607 @@
+[
+  {
+    "name": "single_command_identity",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "cup"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "living_room"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Angel"
+        },
+        {
+          "action": "give_object"
+        }
+      ]
+    ],
+    "coords": {},
+    "expect": {
+      "source_idx_order": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "all_source_cmd": 0,
+      "gripper_invariant": true,
+      "per_command_order": true
+    }
+  },
+  {
+    "name": "two_pick_deliver_blocks_atomic",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "cup"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "bathroom"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Angel"
+        },
+        {
+          "action": "give_object"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "bedroom"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "book"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "office"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Bob"
+        },
+        {
+          "action": "give_object"
+        }
+      ]
+    ],
+    "coords": {
+      "kitchen": [
+        0,
+        0
+      ],
+      "bathroom": [
+        1,
+        0
+      ],
+      "bedroom": [
+        10,
+        0
+      ],
+      "office": [
+        11,
+        0
+      ]
+    },
+    "expect": {
+      "gripper_walk_strict": true,
+      "per_command_order": true,
+      "action_count": {
+        "give_object": 2
+      },
+      "action_source_cmds": {
+        "give_object": [
+          0,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "name": "shared_waypoint_visited_efficiently",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "count",
+          "target_to_count": "apples"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "count",
+          "target_to_count": "oranges"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "garage"
+        },
+        {
+          "action": "count",
+          "target_to_count": "cars"
+        }
+      ]
+    ],
+    "coords": {
+      "kitchen": [
+        5,
+        5
+      ],
+      "garage": [
+        -5,
+        -5
+      ]
+    },
+    "expect": {
+      "location_visit_counts": {
+        "kitchen": 1
+      },
+      "kinds_before_location": {
+        "location": "garage",
+        "kind": "count",
+        "count": 2,
+        "source_cmds": [
+          0,
+          1
+        ]
+      }
+    }
+  },
+  {
+    "name": "find_then_get_info_precedence",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "couch"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "standing"
+        },
+        {
+          "action": "get_person_info",
+          "info_type": "pose"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Bob"
+        },
+        {
+          "action": "get_person_info",
+          "info_type": "name"
+        }
+      ]
+    ],
+    "coords": {
+      "couch": [
+        0,
+        0
+      ],
+      "kitchen": [
+        10,
+        10
+      ]
+    },
+    "expect": {
+      "precedence_per_cmd": [
+        {
+          "cmd": 0,
+          "before": "find_person",
+          "after": "get_person_info"
+        },
+        {
+          "cmd": 1,
+          "before": "find_person_by_name",
+          "after": "get_person_info"
+        }
+      ]
+    }
+  },
+  {
+    "name": "no_gripper_commands_interleave_freely",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "count",
+          "target_to_count": "y"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "C"
+        },
+        {
+          "action": "count",
+          "target_to_count": "z"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        3,
+        0
+      ],
+      "B": [
+        1,
+        0
+      ],
+      "C": [
+        5,
+        0
+      ]
+    },
+    "expect": {
+      "go_to_order": [
+        "B",
+        "A",
+        "C"
+      ],
+      "per_command_order": true
+    }
+  },
+  {
+    "name": "say_with_context_does_not_split_block",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "snack"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "lobby"
+        },
+        {
+          "action": "place_object"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "start"
+        },
+        {
+          "action": "say_with_context",
+          "user_instruction": "hello",
+          "previous_command_info": []
+        }
+      ]
+    ],
+    "coords": {
+      "kitchen": [
+        0,
+        0
+      ],
+      "lobby": [
+        1,
+        0
+      ],
+      "start": [
+        0,
+        5
+      ]
+    },
+    "expect": {
+      "gripper_walk_strict": true,
+      "contiguous_source_cmd": 0
+    }
+  },
+  {
+    "name": "empty_commands",
+    "commands": [],
+    "expect": {
+      "empty_plan": true
+    }
+  },
+  {
+    "name": "fallback_preserves_original_sequences",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "kitchen"
+        },
+        {
+          "action": "count",
+          "target_to_count": "apples"
+        }
+      ],
+      [
+        {
+          "action": "answer_question"
+        }
+      ]
+    ],
+    "expect": {
+      "fallback_size": 2,
+      "fallback_source_idx": [
+        [
+          0,
+          1
+        ],
+        [
+          0
+        ]
+      ],
+      "fallback_first_kind": [
+        "go_to",
+        "answer_question"
+      ]
+    }
+  },
+  {
+    "name": "option_b_neutral_interleaves_atomic_block",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "cup"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "give_object"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "C"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        0,
+        0
+      ],
+      "B": [
+        10,
+        0
+      ],
+      "C": [
+        5,
+        0
+      ]
+    },
+    "expect": {
+      "plan_kinds": [
+        "go_to",
+        "pick_object",
+        "go_to",
+        "count",
+        "go_to",
+        "give_object"
+      ],
+      "gripper_invariant": true,
+      "per_command_order": true
+    }
+  },
+  {
+    "name": "collapse_redundant_back_to_back_go_to",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "standing"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "cup"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "give_object"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        0,
+        0
+      ],
+      "B": [
+        10,
+        0
+      ]
+    },
+    "expect": {
+      "location_visit_counts": {
+        "A": 1
+      }
+    }
+  },
+  {
+    "name": "origin_biases_first_segment_near_a",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "count",
+          "target_to_count": "y"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        4,
+        0
+      ],
+      "B": [
+        20,
+        0
+      ]
+    },
+    "origin": [
+      5,
+      0
+    ],
+    "expect": {
+      "first_go_to_location": "A"
+    }
+  },
+  {
+    "name": "origin_biases_first_segment_near_b",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "count",
+          "target_to_count": "y"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        4,
+        0
+      ],
+      "B": [
+        20,
+        0
+      ]
+    },
+    "origin": [
+      19,
+      0
+    ],
+    "expect": {
+      "first_go_to_location": "B"
+    }
+  },
+  {
+    "name": "origin_none_no_map_origin_bias",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "count",
+          "target_to_count": "y"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        -5,
+        0
+      ],
+      "B": [
+        5,
+        0
+      ]
+    },
+    "origin": null,
+    "expect": {
+      "first_go_to_location": "A"
+    }
+  },
+  {
+    "name": "all_unknown_locations_sequential",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "ghost1"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "ghost2"
+        },
+        {
+          "action": "count",
+          "target_to_count": "y"
+        }
+      ]
+    ],
+    "coords": {},
+    "expect": {
+      "go_to_source_cmds": [
+        0,
+        1
+      ],
+      "per_command_order": true
+    }
+  },
+  {
+    "name": "large_m_keeps_known_first",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "ghost"
+        },
+        {
+          "action": "count",
+          "target_to_count": "y"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        0,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "first_go_to_location": "A"
+    }
+  },
+  {
+    "name": "m_cap_fallback_to_sequential",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc0"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc1"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc2"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc3"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc4"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc5"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc6"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc7"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc8"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc9"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc10"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc11"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc12"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc13"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc14"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc15"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "loc16"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ]
+    ],
+    "coords": {
+      "loc0": [
+        0.0,
+        0.0
+      ],
+      "loc1": [
+        1.0,
+        0.0
+      ],
+      "loc2": [
+        2.0,
+        0.0
+      ],
+      "loc3": [
+        3.0,
+        0.0
+      ],
+      "loc4": [
+        4.0,
+        0.0
+      ],
+      "loc5": [
+        5.0,
+        0.0
+      ],
+      "loc6": [
+        6.0,
+        0.0
+      ],
+      "loc7": [
+        7.0,
+        0.0
+      ],
+      "loc8": [
+        8.0,
+        0.0
+      ],
+      "loc9": [
+        9.0,
+        0.0
+      ],
+      "loc10": [
+        10.0,
+        0.0
+      ],
+      "loc11": [
+        11.0,
+        0.0
+      ],
+      "loc12": [
+        12.0,
+        0.0
+      ],
+      "loc13": [
+        13.0,
+        0.0
+      ],
+      "loc14": [
+        14.0,
+        0.0
+      ],
+      "loc15": [
+        15.0,
+        0.0
+      ],
+      "loc16": [
+        16.0,
+        0.0
+      ]
+    },
+    "expect": {
+      "go_to_source_cmds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "plan_size": 34,
+      "per_command_order": true
+    }
+  },
+  {
+    "name": "example_batch_no_command_lost",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "wearing a black blouse"
+        },
+        {
+          "action": "guide_person_to",
+          "destination_room": "bathroom"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "side_tables"
+        },
+        {
+          "action": "get_visual_info",
+          "measure": "biggest",
+          "object_category": "object"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "start_location"
+        },
+        {
+          "action": "say_with_context",
+          "user_instruction": "biggest object",
+          "previous_command_info": []
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "entrance"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "adel"
+        },
+        {
+          "action": "follow_person_until",
+          "destination": "waste_basket"
+        }
+      ]
+    ],
+    "coords": {
+      "chairs": [
+        0,
+        0
+      ],
+      "bathroom": [
+        2,
+        1
+      ],
+      "side_tables": [
+        5,
+        5
+      ],
+      "start_location": [
+        0,
+        0
+      ],
+      "entrance": [
+        -3,
+        2
+      ],
+      "waste_basket": [
+        -5,
+        4
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "fallback_preserves_all": true,
+      "gripper_invariant": true,
+      "per_command_order": true,
+      "contains_source": [
+        [
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  {
+    "name": "example_batch_origin_none_no_loss",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "wearing a black blouse"
+        },
+        {
+          "action": "guide_person_to",
+          "destination_room": "bathroom"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "side_tables"
+        },
+        {
+          "action": "get_visual_info",
+          "measure": "biggest",
+          "object_category": "object"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "start_location"
+        },
+        {
+          "action": "say_with_context",
+          "user_instruction": "biggest object",
+          "previous_command_info": []
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "entrance"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "adel"
+        },
+        {
+          "action": "follow_person_until",
+          "destination": "waste_basket"
+        }
+      ]
+    ],
+    "coords": {
+      "chairs": [
+        0,
+        0
+      ],
+      "bathroom": [
+        2,
+        1
+      ],
+      "side_tables": [
+        5,
+        5
+      ],
+      "start_location": [
+        0,
+        0
+      ],
+      "entrance": [
+        -3,
+        2
+      ],
+      "waste_basket": [
+        -5,
+        4
+      ]
+    },
+    "origin": null,
+    "expect": {
+      "non_goto_preserved": true,
+      "fallback_preserves_all": true,
+      "per_command_order": true
+    }
+  },
+  {
+    "name": "shared_start_first_command_goto_protected",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "black blouse"
+        },
+        {
+          "action": "guide_person_to",
+          "destination_room": "bathroom"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "chairs"
+        },
+        {
+          "action": "count",
+          "target_to_count": "cups"
+        }
+      ]
+    ],
+    "coords": {
+      "chairs": [
+        10,
+        0
+      ],
+      "bathroom": [
+        50,
+        50
+      ]
+    },
+    "origin": [
+      9,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "location_visit_counts": {
+        "chairs": 1
+      },
+      "go_to_location_source_cmd": {
+        "chairs": 0
+      },
+      "first_go_to_source_cmd": 0
+    }
+  },
+  {
+    "name": "no_locator_distance_disabled",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "cup"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "C"
+        },
+        {
+          "action": "give_object"
+        }
+      ]
+    ],
+    "expect": {
+      "go_to_source_cmds": [
+        0,
+        1,
+        1
+      ],
+      "per_command_order": true,
+      "non_goto_preserved": true,
+      "gripper_walk_strict": true
+    }
+  },
+  {
+    "name": "gripper_block_not_crossed_by_other_pick",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "cup"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "D"
+        },
+        {
+          "action": "give_object"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "B"
+        },
+        {
+          "action": "pick_object",
+          "object_to_pick": "book"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "C"
+        },
+        {
+          "action": "give_object"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        0,
+        0
+      ],
+      "B": [
+        1,
+        0
+      ],
+      "C": [
+        2,
+        0
+      ],
+      "D": [
+        3,
+        0
+      ]
+    },
+    "expect": {
+      "gripper_walk_strict": true,
+      "per_command_order": true,
+      "action_count": {
+        "pick_object": 2,
+        "give_object": 2
+      }
+    }
+  },
+  {
+    "name": "command_without_leading_go_to",
+    "commands": [
+      [
+        {
+          "action": "answer_question"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "A"
+        },
+        {
+          "action": "count",
+          "target_to_count": "x"
+        }
+      ]
+    ],
+    "coords": {
+      "A": [
+        0,
+        0
+      ]
+    },
+    "expect": {
+      "non_goto_preserved": true,
+      "per_command_order": true,
+      "action_count": {
+        "answer_question": 1,
+        "count": 1
+      }
+    }
+  },
+  {
+    "name": "answer_with_context_single_preserves_order",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "bookshelf"
+        },
+        {
+          "action": "count",
+          "target_to_count": "foods"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "start_location"
+        },
+        {
+          "action": "say_with_context",
+          "user_instruction": "how many foods",
+          "previous_command_info": [
+            "count"
+          ]
+        }
+      ]
+    ],
+    "coords": {
+      "bookshelf": [
+        5,
+        5
+      ],
+      "start_location": [
+        0,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "source_idx_order": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "per_command_order": true,
+      "non_goto_preserved": true,
+      "action_count": {
+        "say_with_context": 1
+      },
+      "precedence_per_cmd": [
+        {
+          "cmd": 0,
+          "before": "count",
+          "after": "say_with_context"
+        }
+      ]
+    }
+  },
+  {
+    "name": "answer_with_context_person_info_preserves_order",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "waste_basket"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": ""
+        },
+        {
+          "action": "get_person_info",
+          "info_type": "gesture"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "start_location"
+        },
+        {
+          "action": "say_with_context",
+          "user_instruction": "the gesture",
+          "previous_command_info": [
+            "get_person_info"
+          ]
+        }
+      ]
+    ],
+    "coords": {
+      "waste_basket": [
+        3,
+        3
+      ],
+      "start_location": [
+        0,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "per_command_order": true,
+      "precedence_per_cmd": [
+        {
+          "cmd": 0,
+          "before": "find_person",
+          "after": "get_person_info"
+        },
+        {
+          "cmd": 0,
+          "before": "get_person_info",
+          "after": "say_with_context"
+        }
+      ]
+    }
+  },
+  {
+    "name": "answer_with_context_two_reports_share_start",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "bookshelf"
+        },
+        {
+          "action": "count",
+          "target_to_count": "foods"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "start_location"
+        },
+        {
+          "action": "say_with_context",
+          "user_instruction": "foods",
+          "previous_command_info": [
+            "count"
+          ]
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "counter"
+        },
+        {
+          "action": "count",
+          "target_to_count": "drinks"
+        },
+        {
+          "action": "go_to",
+          "location_to_go": "start_location"
+        },
+        {
+          "action": "say_with_context",
+          "user_instruction": "drinks",
+          "previous_command_info": [
+            "count"
+          ]
+        }
+      ]
+    ],
+    "coords": {
+      "bookshelf": [
+        5,
+        5
+      ],
+      "counter": [
+        6,
+        5
+      ],
+      "start_location": [
+        0,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "fallback_preserves_all": true,
+      "per_command_order": true,
+      "action_count": {
+        "say_with_context": 2,
+        "count": 2
+      },
+      "location_visit_counts": {
+        "start_location": 1
+      },
+      "precedence_per_cmd": [
+        {
+          "cmd": 0,
+          "before": "count",
+          "after": "say_with_context"
+        },
+        {
+          "cmd": 1,
+          "before": "count",
+          "after": "say_with_context"
+        }
+      ]
+    }
+  },
+  {
+    "name": "meet_follow_and_guide_interleave",
+    "commands": [
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "bedroom"
+        },
+        {
+          "action": "find_person",
+          "attribute_value": "pointing right"
+        },
+        {
+          "action": "follow_person_until",
+          "destination": "dishwasher"
+        }
+      ],
+      [
+        {
+          "action": "go_to",
+          "location_to_go": "office"
+        },
+        {
+          "action": "find_person_by_name",
+          "name": "Jane"
+        },
+        {
+          "action": "guide_person_to",
+          "destination_room": "exit"
+        }
+      ]
+    ],
+    "coords": {
+      "bedroom": [
+        0,
+        0
+      ],
+      "dishwasher": [
+        1,
+        0
+      ],
+      "office": [
+        10,
+        0
+      ],
+      "exit": [
+        11,
+        0
+      ]
+    },
+    "origin": [
+      0,
+      0
+    ],
+    "expect": {
+      "non_goto_preserved": true,
+      "per_command_order": true,
+      "precedence_per_cmd": [
+        {
+          "cmd": 0,
+          "before": "find_person",
+          "after": "follow_person_until"
+        },
+        {
+          "cmd": 1,
+          "before": "find_person_by_name",
+          "after": "guide_person_to"
+        }
+      ]
+    }
+  }
+]
