@@ -403,6 +403,18 @@ var annotated_dup =
       [ "TableDocker", "classtable__docker_1_1TableDocker.html", "classtable__docker_1_1TableDocker" ]
     ] ],
     [ "task_manager", "namespacetask__manager.html", [
+      [ "gpsr", "namespacetask__manager_1_1gpsr.html", [
+        [ "leaf_behaviours", "namespacetask__manager_1_1gpsr_1_1leaf__behaviours.html", [
+          [ "ActionLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1ActionLeaf.html", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1ActionLeaf" ],
+          [ "OneShotCallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1OneShotCallbackLeaf.html", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1OneShotCallbackLeaf" ],
+          [ "SequentialFallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1SequentialFallbackLeaf.html", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1SequentialFallbackLeaf" ]
+        ] ],
+        [ "merger", "namespacetask__manager_1_1gpsr_1_1merger.html", [
+          [ "_Segment", "classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html", null ],
+          [ "InterleavedPlan", "classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html", null ],
+          [ "PlanAction", "classtask__manager_1_1gpsr_1_1merger_1_1PlanAction.html", null ]
+        ] ]
+      ] ],
       [ "subtask_managers", "namespacetask__manager_1_1subtask__managers.html", [
         [ "generic_tasks", "namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html", [
           [ "GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask" ]

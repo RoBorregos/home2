@@ -93,6 +93,7 @@ $(document).ready(function(){initNavTree('classtest__hri__manager_1_1TestHriMana
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classtest__hri__manager_1_1TestHriManager-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">test_hri_manager.TestHriManager Class Reference</div></div>
 </div><!--header-->
@@ -136,6 +137,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac7b8e854452c4c97691ba34c48661e35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31b4ead34622ba59c45873059886afd7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a31b4ead34622ba59c45873059886afd7">test_command_interpreter</a> (self)</td></tr>
 <tr class="separator:a31b4ead34622ba59c45873059886afd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac612e2939530a3918c89a5f57ab90058"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#ac612e2939530a3918c89a5f57ab90058">test_merger</a> (self)</td></tr>
+<tr class="separator:ac612e2939530a3918c89a5f57ab90058"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfc0b414a94ea61512eda4e030ba2d9b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#acfc0b414a94ea61512eda4e030ba2d9b">test_fallback_resume</a> (self)</td></tr>
+<tr class="separator:acfc0b414a94ea61512eda4e030ba2d9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa699b42d8a441cfe496bfcf51549495e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#aa699b42d8a441cfe496bfcf51549495e">test_command_interpreter_baml</a> (self)</td></tr>
 <tr class="separator:aa699b42d8a441cfe496bfcf51549495e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -143,6 +148,11 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a24fdd546d6ff1fd85f6802baac27733b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b">hri_manager</a></td></tr>
 <tr class="separator:a24fdd546d6ff1fd85f6802baac27733b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:aba0825b2b3807faccbd6aff2f71f2f52"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#aba0825b2b3807faccbd6aff2f71f2f52">_calls</a></td></tr>
+<tr class="separator:aba0825b2b3807faccbd6aff2f71f2f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a36b0bf279c06e38b98a8fef5ef2c2e04" name="a36b0bf279c06e38b98a8fef5ef2c2e04"></a>
@@ -308,6 +318,28 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="acfc0b414a94ea61512eda4e030ba2d9b" name="acfc0b414a94ea61512eda4e030ba2d9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acfc0b414a94ea61512eda4e030ba2d9b">&#9670;&#160;</a></span>test_fallback_resume()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def test_hri_manager.TestHriManager.test_fallback_resume </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Unit-test the interleaved-&gt;sequential resume safeguard. Pure-Python,
+no ROS services. Builds a per-command fallback plan, marks some actions
+as already completed by the interleaved branch, ticks a
+SequentialFallbackLeaf, and asserts it resumes (skips completed non-go_to
+actions) rather than restarting from the beginning.</pre> 
+</div>
+</div>
 <a id="a5ffc27f537aa91090fa44f0e715250e5" name="a5ffc27f537aa91090fa44f0e715250e5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5ffc27f537aa91090fa44f0e715250e5">&#9670;&#160;</a></span>test_is_negative()</h2>
 
@@ -361,6 +393,28 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 <pre class="fragment">Test the map functionality of the HRITasks.
 </pre> 
+</div>
+</div>
+<a id="ac612e2939530a3918c89a5f57ab90058" name="ac612e2939530a3918c89a5f57ab90058"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac612e2939530a3918c89a5f57ab90058">&#9670;&#160;</a></span>test_merger()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def test_hri_manager.TestHriManager.test_merger </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Unit-test task_manager.gpsr.merger against the scenarios declared in
+merger.json. Pure-Python — does not depend on any ROS service. Each case
+provides commands + coords + origin + a declarative ``expect`` block that
+evaluate_expectations checks. Mirrors the in-tree convention: per-scenario
+PASS/FAIL log + CSV output.</pre> 
 </div>
 </div>
 <a id="abc972947f62b9ac49382f61b0e245d6e" name="abc972947f62b9ac49382f61b0e245d6e"></a>
@@ -436,6 +490,28 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="aba0825b2b3807faccbd6aff2f71f2f52" name="aba0825b2b3807faccbd6aff2f71f2f52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba0825b2b3807faccbd6aff2f71f2f52">&#9670;&#160;</a></span>_calls</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">test_hri_manager.TestHriManager._calls</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a24fdd546d6ff1fd85f6802baac27733b" name="a24fdd546d6ff1fd85f6802baac27733b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a24fdd546d6ff1fd85f6802baac27733b">&#9670;&#160;</a></span>hri_manager</h2>
 

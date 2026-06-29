@@ -1,5 +1,6 @@
 var hierarchy =
 [
+    [ "task_manager.gpsr.merger._Segment", "classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html", null ],
     [ "detectors.yolo_e._SuppressStderr", "classdetectors_1_1yolo__e_1_1__SuppressStderr.html", null ],
     [ "vamp::collision::CAPT::AlignedAllocator< T >", "structvamp_1_1collision_1_1CAPT_1_1AlignedAllocator.html", null ],
     [ "vamp::planning::AORRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1AORRTC.html", null ],
@@ -18,6 +19,11 @@ var hierarchy =
     [ "vamp::robots::Baxter", "structvamp_1_1robots_1_1Baxter.html", null ],
     [ "detectors.base.BBOX", "classdetectors_1_1base_1_1BBOX.html", null ],
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
+    [ "py_trees.behaviour.Behaviour", null, [
+      [ "task_manager.gpsr.leaf_behaviours.ActionLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1ActionLeaf.html", null ],
+      [ "task_manager.gpsr.leaf_behaviours.OneShotCallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1OneShotCallbackLeaf.html", null ],
+      [ "task_manager.gpsr.leaf_behaviours.SequentialFallbackLeaf", "classtask__manager_1_1gpsr_1_1leaf__behaviours_1_1SequentialFallbackLeaf.html", null ]
+    ] ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
     [ "vamp::planning::BSplineSettings", "structvamp_1_1planning_1_1BSplineSettings.html", null ],
     [ "vamp::collision::CAPT::BuildFrame", "structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html", null ],
@@ -61,6 +67,7 @@ var hierarchy =
     [ "IKSolver", "classIKSolver.html", null ],
     [ "mujoco_ros2_sensors::ImuSensor", "classmujoco__ros2__sensors_1_1ImuSensor.html", null ],
     [ "mujoco_ros2_sensors::ImuSensorStruct", "structmujoco__ros2__sensors_1_1ImuSensorStruct.html", null ],
+    [ "task_manager.gpsr.merger.InterleavedPlan", "classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html", null ],
     [ "kinematics::KinematicsBase", null, [
       [ "xarm6_ikfast_plugin::IKFastKinematicsPlugin", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html", null ]
     ] ],
@@ -153,6 +160,7 @@ var hierarchy =
     ] ],
     [ "PickManager.PickManager", "classPickManager_1_1PickManager.html", null ],
     [ "PlaceManager.PlaceManager", "classPlaceManager_1_1PlaceManager.html", null ],
+    [ "task_manager.gpsr.merger.PlanAction", "classtask__manager_1_1gpsr_1_1merger_1_1PlanAction.html", null ],
     [ "vamp::binding::Helper< Robot, Input >::PlannerHelper< Planner, Settings >", "structvamp_1_1binding_1_1Helper_1_1PlannerHelper.html", null ],
     [ "planning_interface::PlannerManager", null, [
       [ "vamp_moveit_plugin::VampPlannerManager", "classvamp__moveit__plugin_1_1VampPlannerManager.html", null ]

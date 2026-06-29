@@ -9,7 +9,7 @@ var classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "add_location", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ace0fa2b123b35266018d54b477be1ec3", null ],
     [ "answer_question", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a3c06e98fa6b32a997e8f2ca1c62a4589", null ],
     [ "answer_with_context", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aed6c2190a5fea273abed063bd06648a3", null ],
-    [ "ask_and_confirm", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a9f416171c408457399815c3706f6d614", null ],
+    [ "ask_and_confirm", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a40899ed5d3de7545da4e3c11c06151a3", null ],
     [ "cancel_hear_action", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a73ac130dc34af9774383fa13ee83372f", null ],
     [ "categorize_objects", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#aae71d80a33694d63243002c22d71e8aa", null ],
     [ "check_coherence", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a20782dd42cdb74ea1f903692992afa56", null ],

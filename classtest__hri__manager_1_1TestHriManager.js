@@ -9,12 +9,15 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "test_command_interpreter", "classtest__hri__manager_1_1TestHriManager.html#a31b4ead34622ba59c45873059886afd7", null ],
     [ "test_command_interpreter_baml", "classtest__hri__manager_1_1TestHriManager.html#aa699b42d8a441cfe496bfcf51549495e", null ],
     [ "test_data_extractor", "classtest__hri__manager_1_1TestHriManager.html#ac7b8e854452c4c97691ba34c48661e35", null ],
+    [ "test_fallback_resume", "classtest__hri__manager_1_1TestHriManager.html#acfc0b414a94ea61512eda4e030ba2d9b", null ],
     [ "test_is_negative", "classtest__hri__manager_1_1TestHriManager.html#a5ffc27f537aa91090fa44f0e715250e5", null ],
     [ "test_is_positive", "classtest__hri__manager_1_1TestHriManager.html#a5e36aa8c1a7e0afb23ab8950f8ee5b1e", null ],
     [ "test_map", "classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6", null ],
+    [ "test_merger", "classtest__hri__manager_1_1TestHriManager.html#ac612e2939530a3918c89a5f57ab90058", null ],
     [ "test_object_location", "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e", null ],
     [ "test_streaming", "classtest__hri__manager_1_1TestHriManager.html#ada6686724ccf7d0d09899ff380ccebf6", null ],
     [ "test_take_order", "classtest__hri__manager_1_1TestHriManager.html#a9f91a7aad049a90f4a4e2e7790849802", null ],
     [ "test_word_confidences", "classtest__hri__manager_1_1TestHriManager.html#a9f50023c7e1734e13e81c2030137adb2", null ],
+    [ "_calls", "classtest__hri__manager_1_1TestHriManager.html#aba0825b2b3807faccbd6aff2f71f2f52", null ],
     [ "hri_manager", "classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b", null ]
 ];

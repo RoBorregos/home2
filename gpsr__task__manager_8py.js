@@ -6,5 +6,6 @@ var gpsr__task__manager_8py =
     [ "main", "gpsr__task__manager_8py.html#aa97f56f6506fa0133f9026a56277d8b7", null ],
     [ "search_command", "gpsr__task__manager_8py.html#acde48271012efc9388cf1370294e321d", null ],
     [ "ATTEMPT_LIMIT", "gpsr__task__manager_8py.html#a3082b3302b813b3c09b9f0d3da26865a", null ],
+    [ "BATCH_SIZE", "gpsr__task__manager_8py.html#afe950bb28e9c31e9da1943679f1c8a00", null ],
     [ "MAX_COMMANDS", "gpsr__task__manager_8py.html#acbd3cc051bcaa0355718e913a0b44e0e", null ]
 ];
