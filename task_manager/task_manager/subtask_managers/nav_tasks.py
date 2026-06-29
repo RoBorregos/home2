@@ -306,9 +306,7 @@ class NavigationTasks:
 
     @staticmethod
     def _yaw_from_quaternion(q):
-        return math.atan2(
-            2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
-        )
+        return math.atan2(2.0 * (q.w * q.z + q.x * q.y), 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
 
     @mockable(return_value=lambda self: (Status.EXECUTION_SUCCESS, _mock_pose()), delay=1)
     @service_check(
@@ -365,12 +363,14 @@ class NavigationTasks:
             if frame and frame != "map":
                 try:
                     tf = self.tf_buffer.lookup_transform(
-                        "map", frame, rclpy.time.Time(),
-                        timeout=rclpy.duration.Duration(seconds=1.0))
+                        "map",
+                        frame,
+                        rclpy.time.Time(),
+                        timeout=rclpy.duration.Duration(seconds=1.0),
+                    )
                     ps = do_transform_point(ps, tf)
                 except Exception as e:
-                    CLog.nav(self.node, "ERROR",
-                             f"move_to_point: TF {frame}->map failed: {e}")
+                    CLog.nav(self.node, "ERROR", f"move_to_point: TF {frame}->map failed: {e}")
                     return None
             return float(ps.point.x), float(ps.point.y)
         if isinstance(point, Point):

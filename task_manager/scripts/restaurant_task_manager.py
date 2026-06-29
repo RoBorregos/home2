@@ -253,7 +253,9 @@ class RestaurantTaskManager(Node):
                 self,
                 f"Navigating to customer (attempt {self.approach_attempts + 1}/{MAX_APPROACH_RETRIES})...",
             )
-            status, _ = self.subtask_manager.nav.move_to_point(point=self.target_person_point, standoff_distance=2.0)
+            status, _ = self.subtask_manager.nav.move_to_point(
+                point=self.target_person_point, standoff_distance=2.0
+            )
 
             if status == Status.EXECUTION_SUCCESS:
                 # Re-detect customer to check if we're actually close enough
