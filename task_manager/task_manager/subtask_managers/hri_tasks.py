@@ -279,7 +279,7 @@ class HRITasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> Status:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
         self.set_light_state(AudioStates.SAYING)
@@ -1257,12 +1257,15 @@ class HRITasks:
     # TODO: Make async
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def answer_with_context(self, question: str, context: str) -> str:
+    def answer_with_context(
+        self, question: str, context: str, is_async: bool = False
+    ) -> tuple[Status, str] | Future:
         """
         Method to answer a question with context.
         Args:
             question: the question to answer
             context: the context to use
+            is_async: If True, the method will return a Future object instead of waiting for the result.
         Returns:
             Status: the status of the execution
             str: the answer to the question
@@ -1270,6 +1273,21 @@ class HRITasks:
         self.node.get_logger().info(f"answer_with_context called with: {question}, {context}")
 
         request = LLMWrapper.Request(question=question, context=context)
+
+        if is_async:
+            future = Future()
+            answer_future = self.llm_wrapper_service.call_async(request)
+
+            def callback(f):
+                try:
+                    future.set_result((Status.EXECUTION_SUCCESS, f.result().answer))
+                except Exception as e:
+                    Logger.error(self.node, f"Error in answer_with_context async callback: {e}")
+                    future.set_result((Status.EXECUTION_ERROR, ""))
+
+            answer_future.add_done_callback(callback)
+            return future
+
         future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
