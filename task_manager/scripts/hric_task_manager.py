@@ -147,15 +147,29 @@ class HRIC_TM(Node):
 
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_BUTTON)
-            Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.say("Waiting for start button to be pressed.", wait=False)
-
-            # Wait for the start button to be pressed
-            while not self.subtask_manager.hri.start_button_clicked:
-                rclpy.spin_once(self, timeout_sec=0.1)
-            Logger.success(
-                self, "Start button pressed, Human Robot Interaction Challenge task will begin now"
+            Logger.state(self, "Waiting for start button, knock or doorbell...")
+            self.subtask_manager.hri.say(
+                "I am waiting inside. Knock, ring the doorbell, or press the start button to begin.",
+                wait=False,
             )
+
+            # Start on the start button OR a door event (knock / doorbell)
+            while (
+                not self.subtask_manager.hri.start_button_clicked
+                and not self.subtask_manager.hri.door_event_detected
+            ):
+                rclpy.spin_once(self, timeout_sec=0.1)
+
+            if self.subtask_manager.hri.door_event_detected:
+                trigger = self.subtask_manager.hri.last_door_event or "door event"
+                Logger.success(
+                    self, f"Heard a {trigger} at the door, HRI Challenge task will begin now"
+                )
+            else:
+                Logger.success(
+                    self,
+                    "Start button pressed, Human Robot Interaction Challenge task will begin now",
+                )
 
             self.current_state = HRIC_TM.TaskStates.START
 
