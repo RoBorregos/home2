@@ -3,6 +3,7 @@ var manipulation__tasks_8py =
     [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks" ],
     [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
     [ "DEG_TO_RAD", "manipulation__tasks_8py.html#a3e320762798f18c6f2596796454fb52f", null ],
+    [ "FORWARD_JOINT1_DEG", "manipulation__tasks_8py.html#a4e9caa3a914e5c290ca214e9c55d099a", null ],
     [ "Manipulation_tasks", "manipulation__tasks_8py.html#ad2c48d09d4fd7a7a4470eab00d2a31fa", null ],
     [ "node", "manipulation__tasks_8py.html#a18354872259448ef2be580869d23dc72", null ],
     [ "RAD_TO_DEG", "manipulation__tasks_8py.html#a15819095e4c3fb2c326672d8b2218181", null ],

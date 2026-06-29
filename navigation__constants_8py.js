@@ -13,6 +13,8 @@ var navigation__constants_8py =
     [ "DOCK_SERVICE", "navigation__constants_8py.html#a3c80a6ead538e958383d0773c2af1180", null ],
     [ "DOCK_TABLE_SERVICE", "navigation__constants_8py.html#a2c698b23712a1d344f2a4906cd03bb9e", null ],
     [ "DOCKED_TOPIC", "navigation__constants_8py.html#a051097ea78c5f327e8cfa2177d1780db", null ],
+    [ "GET_ROBOT_POSE_SERVICE", "navigation__constants_8py.html#a1c672da2577c7a1659b713e7d0d4a825", null ],
+    [ "GO_TO_POSE_SERVICE", "navigation__constants_8py.html#a3bfcdfffcbd5245e754047c8b65d174b", null ],
     [ "GOAL_NAV_ACTION_SERVER", "navigation__constants_8py.html#a846cf984a623a45260d78d001731f1dd", null ],
     [ "GOAL_TOPIC", "navigation__constants_8py.html#a19da80c20445976caecaecc96e78881f", null ],
     [ "INITIAL_POSE_TOPIC", "navigation__constants_8py.html#ac6a7f5f5abb49204b1b6a9107471b4da", null ],

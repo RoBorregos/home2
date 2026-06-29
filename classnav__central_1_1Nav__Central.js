@@ -17,7 +17,9 @@ var classnav__central_1_1Nav__Central =
     [ "check_door", "classnav__central_1_1Nav__Central.html#a580fee7c6f760c649791600581128b5d", null ],
     [ "check_for_topics", "classnav__central_1_1Nav__Central.html#a215639b315127ba798621370130772bc", null ],
     [ "dock_table_callback", "classnav__central_1_1Nav__Central.html#a07f7e52c6acc1080fd87d39335cbb4f6", null ],
+    [ "get_robot_pose_callback", "classnav__central_1_1Nav__Central.html#a00cbb3067c64d3b8f6ce48e825808d7f", null ],
     [ "go_to_area", "classnav__central_1_1Nav__Central.html#a05643775cd29c8e91e470d46907843d4", null ],
+    [ "go_to_pose_callback", "classnav__central_1_1Nav__Central.html#a261ed81ce9ef961b2f8be61bcde6d128", null ],
     [ "goal_feedback", "classnav__central_1_1Nav__Central.html#ad68df68fcda8235c85001cf80be8870a", null ],
     [ "lidar_callback", "classnav__central_1_1Nav__Central.html#add3003ab865d51d16b34ac99ae25d791", null ],
     [ "load_map_areas", "classnav__central_1_1Nav__Central.html#a76276d51f480a1a027c16c5c9e74b071", null ],
@@ -58,6 +60,8 @@ var classnav__central_1_1Nav__Central =
     [ "door_distance", "classnav__central_1_1Nav__Central.html#ae8bae6ba582ae70ea0df80c1e4323b0e", null ],
     [ "door_rate", "classnav__central_1_1Nav__Central.html#a5ee3f1a94ad695e8439250c5dade9e17", null ],
     [ "door_timeout", "classnav__central_1_1Nav__Central.html#abbd6c4f83ef903ef72e740ff30ac9168", null ],
+    [ "get_robot_pose_srv", "classnav__central_1_1Nav__Central.html#a07e4698ad9b10a58d52cbd14b37c5bf4", null ],
+    [ "go_to_pose_srv", "classnav__central_1_1Nav__Central.html#a3d954c58753b94292161843781841d35", null ],
     [ "goal_action_client", "classnav__central_1_1Nav__Central.html#a6d0404487281141079bd195c8c893f5d", null ],
     [ "goal_active_pub", "classnav__central_1_1Nav__Central.html#ace7fb3c6f17afa26cf922676802c8130", null ],
     [ "lidar_group", "classnav__central_1_1Nav__Central.html#a813ac5dee3cb6d1347165519fdaf6fb6", null ],
@@ -96,5 +100,6 @@ var classnav__central_1_1Nav__Central =
     [ "tf_buffer", "classnav__central_1_1Nav__Central.html#ad5c78c9248bd1cc4cd4ec89a1d7ef51d", null ],
     [ "tf_listener", "classnav__central_1_1Nav__Central.html#a30c262ad07f034b9c86491f022e6dbb2", null ],
     [ "undock_client", "classnav__central_1_1Nav__Central.html#a0cbb0f9419fd8901d91b1b150a5009ae", null ],
+    [ "use_nav2", "classnav__central_1_1Nav__Central.html#af5056b7ddd47cc934902d8ff5ee6e702", null ],
     [ "use_slam_toolbox", "classnav__central_1_1Nav__Central.html#a50b00fd3e9527372a29cfe44837d3614", null ]
 ];

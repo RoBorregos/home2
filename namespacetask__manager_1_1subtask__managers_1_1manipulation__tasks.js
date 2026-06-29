@@ -2,6 +2,7 @@ var namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks =
 [
     [ "ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks" ],
     [ "DEG_TO_RAD", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a3e320762798f18c6f2596796454fb52f", null ],
+    [ "FORWARD_JOINT1_DEG", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a4e9caa3a914e5c290ca214e9c55d099a", null ],
     [ "Manipulation_tasks", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#ad2c48d09d4fd7a7a4470eab00d2a31fa", null ],
     [ "node", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a18354872259448ef2be580869d23dc72", null ],
     [ "RAD_TO_DEG", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html#a15819095e4c3fb2c326672d8b2218181", null ],

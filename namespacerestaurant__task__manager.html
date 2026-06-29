@@ -112,10 +112,14 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a2c2e24f675fbc879adf8114ce8a00d05"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerestaurant__task__manager.html#a2c2e24f675fbc879adf8114ce8a00d05">ATTEMPT_LIMIT</a> = 3</td></tr>
 <tr class="separator:a2c2e24f675fbc879adf8114ce8a00d05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35690b796f2e229dfef4e9a26221eb4a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerestaurant__task__manager.html#a35690b796f2e229dfef4e9a26221eb4a">SEARCH_STEP_SIZE</a> = 1.0</td></tr>
+<tr class="memitem:a35690b796f2e229dfef4e9a26221eb4a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerestaurant__task__manager.html#a35690b796f2e229dfef4e9a26221eb4a">SEARCH_STEP_SIZE</a> = 0.9</td></tr>
 <tr class="separator:a35690b796f2e229dfef4e9a26221eb4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64f4ff8ab40ef3c92aeca08405b13856"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerestaurant__task__manager.html#a64f4ff8ab40ef3c92aeca08405b13856">MAX_SEARCH_STEPS</a> = 5</td></tr>
+<tr class="memitem:a64f4ff8ab40ef3c92aeca08405b13856"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerestaurant__task__manager.html#a64f4ff8ab40ef3c92aeca08405b13856">MAX_SEARCH_STEPS</a> = 10</td></tr>
 <tr class="separator:a64f4ff8ab40ef3c92aeca08405b13856"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a9b576a90d96086a77ecd43801ecc45"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerestaurant__task__manager.html#a8a9b576a90d96086a77ecd43801ecc45">CUSTOMER_CLOSE_DISTANCE</a> = 3.5</td></tr>
+<tr class="separator:a8a9b576a90d96086a77ecd43801ecc45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87a4dcc0066a523994eeaa2aec6555e8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacerestaurant__task__manager.html#a87a4dcc0066a523994eeaa2aec6555e8">MAX_APPROACH_RETRIES</a> = 3</td></tr>
+<tr class="separator:a87a4dcc0066a523994eeaa2aec6555e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Task Manager for Restaurant task of Robocup @Home 2026
@@ -153,6 +157,34 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a8a9b576a90d96086a77ecd43801ecc45" name="a8a9b576a90d96086a77ecd43801ecc45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8a9b576a90d96086a77ecd43801ecc45">&#9670;&#160;</a></span>CUSTOMER_CLOSE_DISTANCE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float restaurant_task_manager.CUSTOMER_CLOSE_DISTANCE = 3.5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a87a4dcc0066a523994eeaa2aec6555e8" name="a87a4dcc0066a523994eeaa2aec6555e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87a4dcc0066a523994eeaa2aec6555e8">&#9670;&#160;</a></span>MAX_APPROACH_RETRIES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int restaurant_task_manager.MAX_APPROACH_RETRIES = 3</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a64f4ff8ab40ef3c92aeca08405b13856" name="a64f4ff8ab40ef3c92aeca08405b13856"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a64f4ff8ab40ef3c92aeca08405b13856">&#9670;&#160;</a></span>MAX_SEARCH_STEPS</h2>
 
@@ -160,7 +192,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int restaurant_task_manager.MAX_SEARCH_STEPS = 5</td>
+          <td class="memname">int restaurant_task_manager.MAX_SEARCH_STEPS = 10</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -174,7 +206,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float restaurant_task_manager.SEARCH_STEP_SIZE = 1.0</td>
+          <td class="memname">float restaurant_task_manager.SEARCH_STEP_SIZE = 0.9</td>
         </tr>
       </table>
 </div><div class="memdoc">
