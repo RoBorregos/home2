@@ -39,6 +39,7 @@ from frida_constants.hri_constants import (
     TASK_STEP_TOPIC,
     TIMEOUT,
     KEYWORD_TOPIC,
+    EI_DETECTION_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
@@ -160,6 +161,9 @@ class HRITasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.start_button_clicked = False
+        # Set when a knock (DSP node) or doorbell (Edge Impulse) is heard.
+        self.door_event_detected = False
+        self.last_door_event = ""
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
@@ -182,6 +186,9 @@ class HRITasks:
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, KEYWORD_TOPIC, self._get_keyword, 10
+        )
+        self.ei_detection_sub = self.node.create_subscription(
+            String, EI_DETECTION_TOPIC, self._get_door_event, 10
         )
 
         self.current_transcription = ""
@@ -410,6 +417,15 @@ class HRITasks:
             self.node.get_logger().error(f"Error parsing KWS JSON: {e}")
             self.keyword = ""
 
+    def _get_door_event(self, msg: String) -> None:
+        """Knock (DSP) or doorbell (Edge Impulse) heard at the door."""
+        try:
+            data = json.loads(msg.data)
+            self.last_door_event = data.get("keyword", "")
+            self.door_event_detected = True
+        except Exception as e:
+            self.node.get_logger().error(f"Error parsing door event JSON: {e}")
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked speech", {}))
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
     def hear(
@@ -477,6 +493,7 @@ class HRITasks:
         initial_prompt: str = "",
         silence_time: float = 2.0,
         start_silence_time: float = 4.0,
+        play_chime: bool = True,
     ):
         """Method to hear streaming audio from the user.
 
@@ -488,10 +505,11 @@ class HRITasks:
             initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
+            play_chime (bool): If True (default), play the listening chime when starting to listen. Set to False to listen silently (e.g. when polling for the "stop" keyword while following a person).
         """
         # Cancel other actions if they are running
         self.cancel_hear_action()
-        self.set_light_state(AudioStates.LISTEN)
+        self.set_light_state(AudioStates.LISTEN, play_chime=play_chime)
 
         self.current_transcription = ""
 
@@ -534,14 +552,21 @@ class HRITasks:
         self.current_transcription = feedback_msg.feedback.current_transcription
         self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
 
-    def set_light_state(self, state: AudioStates):
+    def set_light_state(self, state: AudioStates, play_chime: bool = True):
         """
         Method to set the light state of the respeaker.
         Args:
             state: The state of the light.
+            play_chime: If True (default), publishing the LISTEN state triggers the
+                listening chime in the audio_feedback node. Set to False to update the
+                respeaker light to "listen" without playing the chime (e.g. when polling
+                for a keyword like "stop" repeatedly).
         """
         self.respeaker_light_publisher.publish(String(data=AudioStates.respeaker_light(state)))
-        self.audio_state_publisher.publish(String(data=state.value))
+        if state == AudioStates.LISTEN and not play_chime:
+            self.audio_state_publisher.publish(String(data="listening_silent"))
+        else:
+            self.audio_state_publisher.publish(String(data=state.value))
 
     def confirm(
         self,
@@ -775,10 +800,12 @@ class HRITasks:
         )
         return Status.TIMEOUT, None
 
-    def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
+    def interpret_keyword(
+        self, keywords: list[str], timeout: float, play_chime: bool = True
+    ) -> str:
         self.cancel_hear_action()
 
-        self.hear_streaming(timeout=timeout, silence_time=timeout)
+        self.hear_streaming(timeout=timeout, silence_time=timeout, play_chime=play_chime)
 
         start_time = self.node.get_clock().now()
         self.keyword = ""
@@ -1513,6 +1540,8 @@ class HRITasks:
         Reset the task status to idle and the start button clicked flag.
         """
         self.start_button_clicked = False
+        self.door_event_detected = False
+        self.last_door_event = ""
         self.task_status_publisher.publish(String(data="idle"))
 
 

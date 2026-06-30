@@ -41,6 +41,12 @@ install(DIRECTORY assets
   PATTERN "*.wav"
 )
 
+# DeepFilterNet checkpoints (not .onnx/.wav) for noise_cancellation.py, which
+# resolves them at lib/assets/downloads relative to the installed script.
+install(DIRECTORY assets/downloads
+  DESTINATION lib/assets
+)
+
 # Install JSON files
 # install(
 #   DIRECTORY assets/

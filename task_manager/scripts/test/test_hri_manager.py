@@ -85,6 +85,7 @@ TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
 TEST_MERGER = False
 TEST_FALLBACK_RESUME = False
+TEST_DOOR = True
 
 
 class TestHriManager(Node):
@@ -145,7 +146,46 @@ class TestHriManager(Node):
         if TEST_FALLBACK_RESUME:
             self.test_fallback_resume()
 
+        if TEST_DOOR:
+            self.test_door()
+
         exit(0)
+
+    def detect_door(self, timeout: float = 60.0) -> str:
+        """Block until the HRI subtask reports a door event (knock or doorbell).
+
+        Listens through HRITasks, which subscribes to the EI detection topic
+        (doorbell from Edge Impulse, knock from the DSP node) and sets
+        ``door_event_detected`` / ``last_door_event``. Returns the event label,
+        or "" on timeout.
+        """
+        self.hri_manager.door_event_detected = False
+        self.hri_manager.last_door_event = ""
+
+        self.get_logger().info(
+            f"Waiting up to {timeout:.0f}s for a knock or doorbell at the door..."
+        )
+        deadline = time.time() + timeout
+        while not self.hri_manager.door_event_detected and time.time() < deadline:
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+        if self.hri_manager.door_event_detected:
+            event = self.hri_manager.last_door_event or "door event"
+            self.get_logger().info(f"Detected door event: {event}")
+            return event
+
+        self.get_logger().warn("Timed out without detecting a door event.")
+        return ""
+
+    def test_door(self):
+        """Integration test: detect knock / doorbell through the HRI subtask."""
+        self.get_logger().info("Running test_door (knock / doorbell detection)...")
+        event = self.detect_door(timeout=60.0)
+        if event:
+            self.hri_manager.say(f"I heard a {event} at the door.", wait=True)
+            self.get_logger().info(f"test_door PASSED: heard '{event}'")
+        else:
+            self.get_logger().error("test_door FAILED: no door event detected.")
 
     def individual_functions(self):
         # Test say

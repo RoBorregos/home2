@@ -1,0 +1,21 @@
+knock_detection:
+  ros__parameters:
+    audio_topic: /hri/rawAudioChunk
+    KEYWORD_TOPIC: /hri/speech/ei_detection
+    knock_label: "knock"
+    sample_rate: 16000
+    # Confidence gate: only publish a knock when its score (0..1) is above this.
+    min_score: 0.55
+    # Energy / dB gate: skip frames quieter than this.
+    min_db: -40.0
+    # Onset detection
+    onset_ratio: 3.0
+    use_bandpass: true
+    bandpass_low_hz: 60.0
+    bandpass_high_hz: 1000.0
+    refractory_s: 0.08
+    # Temporal pattern (a knock burst = repeated transients)
+    min_onsets: 2
+    pattern_window_s: 1.5
+    min_onset_gap_s: 0.10
+    cooldown_s: 1.0

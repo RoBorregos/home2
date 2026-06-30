@@ -280,14 +280,14 @@ def launch_setup(context, *args, **kwargs):
 
     # Points joint1 at the Nav2 goal while the base drives, homes to base front
     # when the goal ends. Pure joint-velocity control, no MoveIt in the loop.
-    nav_goal_arm_pointer_node = Node(
-        package="frida_motion_planning",
-        executable="nav_goal_arm_pointer.py",
-        name="nav_goal_arm_pointer",
-        output="screen",
-        respawn=True,
-        respawn_delay=1.0,
-    )
+    # nav_goal_arm_pointer_node = Node(
+    #     package="frida_motion_planning",
+    #     executable="nav_goal_arm_pointer.py",
+    #     name="nav_goal_arm_pointer",
+    #     output="screen",
+    #     respawn=True,
+    #     respawn_delay=1.0,
+    # )
 
     return [
         SetEnvironmentVariable(name="ROS_LOG_LEVEL", value=log_level),
@@ -301,7 +301,7 @@ def launch_setup(context, *args, **kwargs):
         ros2_control_launch,
         control_node,
         downsample_pcd,
-        nav_goal_arm_pointer_node,
+        # nav_goal_arm_pointer_node,
     ]
 
 
