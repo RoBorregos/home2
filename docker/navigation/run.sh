@@ -127,7 +127,7 @@ case $TASK in
     "--mapping")
         RUN="ros2 launch nav_main mapping.launch.py"
         ;;
-    "--hric |--ppc"|"--dlc" | "--gpsr" )
+    "--hric" | "--ppc" | "--dlc" | "--gpsr" )
         RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
     "--tagger")
