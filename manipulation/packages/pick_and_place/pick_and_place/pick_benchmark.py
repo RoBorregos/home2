@@ -24,8 +24,8 @@ from rclpy.node import Node
 from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import GetOptimalPositionForPlane
-from frida_constants.manipulation_constants import (
-    MANIPULATION_ACTION_SERVER,
+from frida_constants.manipulation_constants import MANIPULATION_ACTION_SERVER
+from xarm_utils.shelf_levels import (
     SHELF_SCAN_TOLERANCE,
     get_shelf_levels,
 )

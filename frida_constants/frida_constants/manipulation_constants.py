@@ -150,19 +150,3 @@ AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]
 SHELF_MIN_REACH = 0.40
 SHELF_REACH_BASE = 0.75
 SHELF_REACH_SLOPE = 0.25
-
-# Shelf level surface heights in base_link Z, per competition arena.
-# All 3 sets start equal; recalibrate each one on site with
-# `ros2 run xarm_utils shelf_height_calibrator.py` (RViz Publish Point).
-SHELF_LEVELS_BY_ARENA = {
-    1: [0.599, 0.946, 1.298],  # TODO recalibrate arena 1
-    2: [0.599, 0.946, 1.298],  # TODO recalibrate arena 2
-    3: [0.599, 0.946, 1.298],  # TODO recalibrate arena 3
-}
-SHELF_SCAN_TOLERANCE = 0.1
-
-
-def get_shelf_levels(arena: int) -> list:
-    """Return the 3 heights for the selected arena; fall back to arena 1 if the
-    index does not exist."""
-    return SHELF_LEVELS_BY_ARENA.get(int(arena), SHELF_LEVELS_BY_ARENA[1])

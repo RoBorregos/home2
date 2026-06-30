@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Calibrate the 3 cabinet shelf heights by clicking them in RViz Publish Point.
-Run: ros2 run xarm_utils shelf_height_calibrator.py (writes config/shelf_levels.json)."""
+Run: ros2 run xarm_utils shelf_height_calibrator.py --arena N (writes the heights
+for arena N into config/shelf_levels.json; no recompile needed)."""
 
 import argparse
 import json
-import os
 import threading
 from pathlib import Path
 
@@ -15,35 +15,26 @@ from rclpy.executors import MultiThreadedExecutor
 from geometry_msgs.msg import PointStamped
 from tf2_ros import Buffer, TransformListener
 import tf2_geometry_msgs  # noqa: F401  registers PointStamped for tf2 Buffer.transform
-from ament_index_python.packages import get_package_share_directory
+from xarm_utils.shelf_levels import levels_file
 
 LEVEL_NAMES = ["BOTTOM (lowest)", "MIDDLE", "TOP (highest)"]
 
 
-def levels_file():
-    """Resolve the shelf levels path: FRIDA_SHELF_LEVELS_FILE env, else package config."""
-    env = os.environ.get("FRIDA_SHELF_LEVELS_FILE")
-    if env:
-        return Path(env)
-    try:
-        share = Path(get_package_share_directory("xarm_utils"))
-        return share / "config" / "shelf_levels.json"
-    except Exception:
-        return Path.home() / "frida_shelf_levels.json"
-
-
-def levels_from_sorted_heights(heights):
-    ordered = sorted(float(h) for h in heights)
-    return {i + 1: h for i, h in enumerate(ordered)}
-
-
-def save_shelf_levels(levels, path):
-    payload = {
-        "frame": "base_link",
-        "levels": {str(k): float(v) for k, v in levels.items()},
-    }
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(payload, indent=2))
+def save_shelf_levels(arena, heights, path):
+    """Write the 3 sorted heights for `arena` into the JSON levels file,
+    preserving any other arenas already stored there."""
+    path = Path(path)
+    data = {}
+    if path.exists():
+        try:
+            data = json.loads(path.read_text())
+        except Exception:
+            data = {}
+    data.setdefault("frame", "base_link")
+    arenas = data.setdefault("arenas", {})
+    arenas[str(arena)] = [float(h) for h in sorted(heights)]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2))
     return path
 
 
@@ -97,9 +88,9 @@ def main():
     parser.add_argument(
         "--arena",
         type=int,
-        default=None,
-        help="Arena (1/2/3) to print the ready-to-paste block for "
-        "SHELF_LEVELS_BY_ARENA.",
+        default=1,
+        help="Arena (1/2/3) whose heights are calibrated and written into "
+        "shelf_levels.json (default: 1).",
     )
     args, _ = parser.parse_known_args()
 
@@ -116,19 +107,11 @@ def main():
             while z is None:
                 z = node.take_level(name)
             heights.append(z)
-        levels = levels_from_sorted_heights(heights)
-        save_shelf_levels(levels, path)
-        print("\nCalibrated shelf levels (base_link Z):")
-        for k in sorted(levels):
-            print(f"  level {k}: {levels[k]:.3f} m")
+        save_shelf_levels(args.arena, heights, path)
+        print(f"\nCalibrated shelf levels for arena {args.arena} (base_link Z):")
+        for i, h in enumerate(sorted(heights), start=1):
+            print(f"  level {i}: {h:.3f} m")
         print(f"\nSaved to: {path}")
-        if args.arena is not None:
-            heights_str = ", ".join(f"{levels[k]:.3f}" for k in sorted(levels))
-            print(
-                "\nPaste this into frida_constants/manipulation_constants.py "
-                "(SHELF_LEVELS_BY_ARENA):\n"
-                f"    {args.arena}: [{heights_str}],  # arena {args.arena}"
-            )
     except (KeyboardInterrupt, EOFError):
         print("\nAborted; nothing written.")
     finally:

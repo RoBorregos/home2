@@ -15,6 +15,8 @@ from frida_constants.vision_constants import (
 )
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
+)
+from xarm_utils.shelf_levels import (
     SHELF_SCAN_TOLERANCE,
     get_shelf_levels,
 )
