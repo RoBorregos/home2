@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 import rclpy
-from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_HRIC
+from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_ORIENTED_TOPIC
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -29,6 +29,7 @@ HOT_DRINKS = (
 FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
 FOLLOW_LISTEN_TIMEOUT = 5.0
 FOLLOW_MAX_DURATION = 180.0
+DOOR_WAIT_TIMEOUT = 15.0
 
 
 class Guest:
@@ -50,6 +51,7 @@ class HRIC_TM(Node):
 
     class TaskStates:
         WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
+        WAIT_FOR_DOOR = "WAIT_FOR_DOOR"
         START = "START"
         WAIT_FOR_GUEST = "WAIT_FOR_GUEST"
         GREETING = "GREETING"
@@ -177,17 +179,32 @@ class HRIC_TM(Node):
 
         if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_BUTTON:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_BUTTON)
-            Logger.state(self, "Waiting for start button, knock or doorbell...")
+            Logger.state(self, "Waiting for start button...")
             self.subtask_manager.hri.say(
-                "I am waiting inside. Knock, ring the doorbell, or press the start button to begin.",
+                "I am waiting inside. Press the start button to begin.",
                 wait=False,
             )
 
-            # Start on the start button OR a door event (knock / doorbell)
-            while (
-                not self.subtask_manager.hri.start_button_clicked
-                and not self.subtask_manager.hri.door_event_detected
-            ):
+            while not self.subtask_manager.hri.start_button_clicked:
+                rclpy.spin_once(self, timeout_sec=0.1)
+
+            Logger.success(self, "Start button pressed, now waiting for a door event")
+            self.current_state = HRIC_TM.TaskStates.WAIT_FOR_DOOR
+
+        elif self.current_state == HRIC_TM.TaskStates.WAIT_FOR_DOOR:
+            self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_DOOR)
+            Logger.state(self, "Waiting for a knock or doorbell at the door...")
+            # Clear any door event heard before the button was pressed.
+            self.subtask_manager.hri.door_event_detected = False
+            self.subtask_manager.hri.last_door_event = ""
+            self.subtask_manager.hri.say(
+                "I will wait for the door to be knocked or ring the doorbell.",
+                wait=True,
+            )
+
+            # Safety timeout: if no knock/doorbell is heard, continue anyway
+            deadline = time.time() + DOOR_WAIT_TIMEOUT
+            while not self.subtask_manager.hri.door_event_detected and time.time() < deadline:
                 rclpy.spin_once(self, timeout_sec=0.1)
 
             if self.subtask_manager.hri.door_event_detected:
@@ -195,12 +212,20 @@ class HRIC_TM(Node):
                 Logger.success(
                     self, f"Heard a {trigger} at the door, HRI Challenge task will begin now"
                 )
-            else:
-                Logger.success(
-                    self,
-                    "Start button pressed, Human Robot Interaction Challenge task will begin now",
+                self.subtask_manager.hri.say(
+                    "I heard you at the door. Please open the door, come in, and walk towards me.",
+                    wait=True,
                 )
-
+            else:
+                Logger.warn(
+                    self,
+                    f"No door event after {DOOR_WAIT_TIMEOUT:.0f} seconds, continuing with the task",
+                )
+                self.subtask_manager.hri.say(
+                    "I did not hear a knock or doorbell, but I will continue. "
+                    "Please come in and walk towards me.",
+                    wait=True,
+                )
             self.current_state = HRIC_TM.TaskStates.START
 
         elif self.current_state == HRIC_TM.TaskStates.START:
@@ -215,7 +240,7 @@ class HRIC_TM(Node):
             self.subtask_manager.vision.deactivate_face_recognition()
             self.subtask_manager.manipulation.move_to_position("front_stare")
             self.timeout(1)
-            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+            self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
             result = self.subtask_manager.vision.detect_person(timeout=10)
 
             if result == Status.EXECUTION_SUCCESS:
@@ -367,7 +392,7 @@ class HRIC_TM(Node):
             self._track_state_change(HRIC_TM.TaskStates.FIND_SEAT)
             self.subtask_manager.vision.deactivate_face_recognition()
             self.timeout(1)
-            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+            self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare_carry_bag" if self.carrying_bag else "front_low_stare",
                 velocity=0.5,
