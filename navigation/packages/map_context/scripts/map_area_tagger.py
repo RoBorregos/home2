@@ -49,32 +49,32 @@ ROBOT_FOOTPRINT = [
     [0.32, 0.21], [0.32, -0.21], [-0.17, -0.21], [-0.17, 0.21]
 ]
 
+# Areas/locations follow the RoboCup arena map (Laundry, Bedroom, Living room,
+# Kitchen). safe_place + the abstract framing areas (start/exit/inspection) are
+# referee-defined nav poses, not furniture, so they stay alongside the rooms.
 ROBOCUP_TASKS = {
     "General": {
         "start_location": ["safe_place"],
         "start_area": ["safe_place"],
         "inspection_point": ["safe_place"],
         "exit": ["safe_place"],
-        "living_room": [ "safe_place", "couches"],
-        "kitchen": ["safe_place","dining_table", "trash_bin", "side_table","cabinet","dishwasher","breakfast_surface", "breakfast_items"],
         "entrance": ["safe_place"],
+        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trash"],
         "bedroom": ["safe_place", "bed"],
-        "office": ["safe_place"], 
-        "laundry": ["safe_place", "laundry_basket", "washing_machine", "folding_surface"]
+        "living_room": ["safe_place", "tv_stand", "sofa", "coffee_table"],
+        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "trash", "dinner_table"],
     },
     "1. Pick and Place": {
-        "kitchen": ["safe_place","dining_table", "trash_bin", "side_table","cabinet","dishwasher","breakfast_surface", "breakfast_items"]
+        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "kitchen_trash_bin", "dinner_table"]
     },
     "2. Human Robot Interaction": {
-        "living_room": [ "safe_place", "couches"],
+        "living_room": ["safe_place", "tv_stand", "sofa", "coffee_table"],
         "entrance": ["safe_place"]
     },
     "3.Doing Laundry": {
         "start_location": ["safe_place"],
-        "laundry": ["safe_place", "laundry_basket", "washing_machine", "folding_surface"]
-
+        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trash"],
     },
-
 }
 
 class MapCanvas(QWidget):
