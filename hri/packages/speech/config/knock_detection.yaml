@@ -5,7 +5,7 @@ knock_detection:
     knock_label: "knock"
     sample_rate: 16000
     # Confidence gate: only publish a knock when its score (0..1) is above this.
-    min_score: 0.6
+    min_score: 0.55
     # Energy / dB gate: skip frames quieter than this.
     min_db: -40.0
     # Onset detection

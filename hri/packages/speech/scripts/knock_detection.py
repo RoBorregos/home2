@@ -35,7 +35,7 @@ class KnockDetectionNode(Node):
         self.declare_parameter("knock_label", "knock")
         self.declare_parameter("sample_rate", 16000)
         # Only publish a knock when its confidence score exceeds this value.
-        self.declare_parameter("min_score", 0.6)
+        self.declare_parameter("min_score", 0.55)
         # Stage 1 — energy / dB gate ("filtro 1")
         self.declare_parameter("min_db", -40.0)
         # Stage 2 — onset detection
