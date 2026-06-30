@@ -176,7 +176,12 @@ set(srv_files
   "navigation/srv/MoveLocation.srv"
   "navigation/srv/NavQuery.srv"
   "navigation/srv/DockTable.srv"
-  "navigation/srv/RelativeMove.srv"
+  "navigation/srv/GetRobotPose.srv"
+  "navigation/srv/GoToPose.srv"
+  "manipulation/srv/DockToHandle.srv"
+  "task_manager/srv/PositionGet.srv"
+  "vision/srv/PersonInside.srv"
+  "vision/srv/PersonInsideReq.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

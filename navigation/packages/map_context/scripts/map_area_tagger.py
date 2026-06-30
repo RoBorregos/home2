@@ -9,6 +9,7 @@ import sys
 import os
 import json
 import math
+import shutil
 import yaml
 import numpy as np
 from PyQt5.QtWidgets import (
@@ -17,7 +18,7 @@ from PyQt5.QtWidgets import (
     QListWidgetItem, QComboBox, QGroupBox, QSplitter, QMessageBox,
     QInputDialog, QScrollArea, QToolBar, QAction, QStatusBar,
     QFrame, QStyle, QMenu, QTreeWidget, QTreeWidgetItem, QHeaderView,
-    QDoubleSpinBox, QDialog, QDialogButtonBox, QFormLayout
+    QDoubleSpinBox, QSpinBox, QDialog, QDialogButtonBox, QFormLayout
 )
 from PyQt5.QtCore import Qt, QPointF, QRectF, pyqtSignal, QSize
 from PyQt5.QtGui import (
@@ -48,32 +49,32 @@ ROBOT_FOOTPRINT = [
     [0.32, 0.21], [0.32, -0.21], [-0.17, -0.21], [-0.17, 0.21]
 ]
 
+# Areas/locations follow the RoboCup arena map (Laundry, Bedroom, Living room,
+# Kitchen). safe_place + the abstract framing areas (start/exit/inspection) are
+# referee-defined nav poses, not furniture, so they stay alongside the rooms.
 ROBOCUP_TASKS = {
     "General": {
         "start_location": ["safe_place"],
         "start_area": ["safe_place"],
         "inspection_point": ["safe_place"],
         "exit": ["safe_place"],
-        "living_room": [ "safe_place", "couches"],
-        "kitchen": ["safe_place","dining_table", "trash_bin", "side_table","cabinet","dishwasher","breakfast_surface", "breakfast_items"],
         "entrance": ["safe_place"],
+        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trash"],
         "bedroom": ["safe_place", "bed"],
-        "office": ["safe_place"], 
-        "laundry": ["safe_place", "laundry_basket", "washing_machine", "folding_surface"]
+        "living_room": ["safe_place", "tv_stand", "sofa", "coffee_table"],
+        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "trash", "dinner_table"],
     },
     "1. Pick and Place": {
-        "kitchen": ["safe_place","dining_table", "trash_bin", "side_table","cabinet","dishwasher","breakfast_surface", "breakfast_items"]
+        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "kitchen_trash_bin", "dinner_table"]
     },
     "2. Human Robot Interaction": {
-        "living_room": [ "safe_place", "couches"],
+        "living_room": ["safe_place", "tv_stand", "sofa", "coffee_table"],
         "entrance": ["safe_place"]
     },
     "3.Doing Laundry": {
         "start_location": ["safe_place"],
-        "laundry": ["safe_place", "laundry_basket", "washing_machine", "folding_surface"]
-
+        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trash"],
     },
-
 }
 
 class MapCanvas(QWidget):
@@ -95,9 +96,20 @@ class MapCanvas(QWidget):
         self.panning = False
         self.areas = {}
         self.current_area = None
-        self.mode = 'location'  # 'location', 'polygon' or 'keepout'
+        self.mode = 'location'  # 'location', 'polygon', 'keepout' or 'obstacle'
         self.temp_polygon = []
         self.keepout_zones = []  # list of polygons (each a list of [mx, my]) -> keepout mask
+        # Obstacle painting (direct edit of the occupancy grid)
+        self.map_image = None        # editable grayscale QImage backing the pixmap
+        self.map_meta = {}           # yaml metadata of the loaded map (for save)
+        self.brush_value = 254       # paint value: 254=free, 0=occupied, 205=unknown
+        self.brush_radius = 4        # brush radius in map pixels
+        self.painting = False
+        self._last_paint = None      # last (px, py) painted in the current stroke
+        self.cursor_px = None        # cursor pos in image pixels (brush preview)
+        self.cursor_py = None
+        self.undo_stack = []         # snapshots of map_image for undo
+        self.obstacle_dirty = False  # unsaved obstacle edits present
         # Drag-to-orient state
         self.dragging_orientation = False
         self.drag_start_map = None  # (mx, my) where click started
@@ -110,6 +122,7 @@ class MapCanvas(QWidget):
         """Load map image and metadata from yaml."""
         with open(yaml_path, 'r') as f:
             meta = yaml.safe_load(f)
+        self.map_meta = meta or {}
         self.resolution = meta.get('resolution', 0.05)
         origin = meta.get('origin', [0.0, 0.0, 0.0])
         self.origin_x = origin[0]
@@ -118,8 +131,12 @@ class MapCanvas(QWidget):
         img = QImage(image_path)
         if img.isNull():
             return False
-        self.map_height = img.height()
-        self.pixmap = QPixmap.fromImage(img)
+        # Keep an editable grayscale copy so obstacle painting writes exact values.
+        self.map_image = img.convertToFormat(QImage.Format_Grayscale8)
+        self.map_height = self.map_image.height()
+        self.pixmap = QPixmap.fromImage(self.map_image)
+        self.undo_stack = []
+        self.obstacle_dirty = False
         self.fit_to_view()
         self.update()
         return True
@@ -159,6 +176,60 @@ class MapCanvas(QWidget):
         sy = py * self.zoom + self.pan_offset.y()
         return sx, sy
 
+    # ---- Obstacle painting (direct grid edit) ------------------------------
+    def _refresh_pixmap(self):
+        if self.map_image is not None:
+            self.pixmap = QPixmap.fromImage(self.map_image)
+
+    def push_undo(self):
+        """Snapshot the grid before a stroke so it can be undone."""
+        if self.map_image is None:
+            return
+        self.undo_stack.append(self.map_image.copy())
+        if len(self.undo_stack) > 20:
+            self.undo_stack.pop(0)
+
+    def undo(self):
+        if not self.undo_stack:
+            return False
+        self.map_image = self.undo_stack.pop()
+        self.map_height = self.map_image.height()
+        self._refresh_pixmap()
+        self.update()
+        return True
+
+    def _paint_dab(self, px, py):
+        """Paint a single filled circle of brush_value at image pixel (px, py)."""
+        if self.map_image is None:
+            return
+        painter = QPainter(self.map_image)
+        painter.setRenderHint(QPainter.Antialiasing, False)  # crisp 0/205/254 values
+        painter.setPen(Qt.NoPen)
+        v = self.brush_value
+        painter.setBrush(QBrush(QColor(v, v, v)))
+        r = max(0.5, self.brush_radius)
+        painter.drawEllipse(QPointF(px, py), r, r)
+        painter.end()
+
+    def paint_to(self, px, py):
+        """Paint a stroke segment from the last point to (px, py) (no gaps)."""
+        if self.map_image is None:
+            return
+        if self._last_paint is None:
+            self._paint_dab(px, py)
+        else:
+            lx, ly = self._last_paint
+            dist = math.hypot(px - lx, py - ly)
+            step = max(1.0, self.brush_radius * 0.5)
+            n = max(1, int(dist / step))
+            for i in range(n + 1):
+                t = i / n
+                self._paint_dab(lx + (px - lx) * t, ly + (py - ly) * t)
+        self._last_paint = (px, py)
+        self.obstacle_dirty = True
+        self._refresh_pixmap()
+        self.update()
+
     def wheelEvent(self, event: QWheelEvent):
         old_zoom = self.zoom
         factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
@@ -185,8 +256,19 @@ class MapCanvas(QWidget):
                     self.drag_yaw = 0.0
                 elif self.mode in ('polygon', 'keepout'):
                     self.polygon_clicked.emit(mx, my)
+                elif self.mode == 'obstacle':
+                    self.push_undo()
+                    self.painting = True
+                    self._last_paint = None
+                    self.paint_to(px, py)
 
     def mouseMoveEvent(self, event: QMouseEvent):
+        if self.painting and self.pixmap and self.mode == 'obstacle':
+            px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
+            self.cursor_px, self.cursor_py = px, py
+            self.paint_to(px, py)
+            self.mouse_moved.emit(*self.pixel_to_map(px, py))
+            return
         if self.panning and self.last_mouse_pos:
             delta = event.pos() - self.last_mouse_pos
             self.pan_offset += delta
@@ -202,11 +284,19 @@ class MapCanvas(QWidget):
             self.update()
         if self.pixmap:
             px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
+            self.cursor_px, self.cursor_py = px, py
             if 0 <= px < self.pixmap.width() and 0 <= py < self.pixmap.height():
                 mx, my = self.pixel_to_map(px, py)
                 self.mouse_moved.emit(mx, my)
+            if self.mode == 'obstacle':
+                self.update()  # keep the brush cursor preview following the mouse
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        if self.painting:
+            self.painting = False
+            self._last_paint = None
+            self.update()
+            return
         if self.dragging_orientation and self.drag_start_map:
             mx, my = self.drag_start_map
             self.location_placed.emit(mx, my, self.drag_yaw)
@@ -370,6 +460,20 @@ class MapCanvas(QWidget):
             if len(self.temp_polygon) > 1:
                 painter.drawPolyline(poly)
 
+        # Obstacle brush cursor preview (color-coded by paint value)
+        if self.mode == 'obstacle' and self.cursor_px is not None and self.map_image is not None:
+            v = self.brush_value
+            if v == 254:
+                outline = QColor(0, 200, 255)    # free
+            elif v == 0:
+                outline = QColor(255, 80, 80)    # obstacle
+            else:
+                outline = QColor(220, 200, 60)   # unknown
+            painter.setPen(QPen(outline, 1.5 / self.zoom))
+            painter.setBrush(QBrush(QColor(outline.red(), outline.green(), outline.blue(), 50)))
+            painter.drawEllipse(QPointF(self.cursor_px, self.cursor_py),
+                                self.brush_radius, self.brush_radius)
+
         painter.restore()
 
 
@@ -473,9 +577,13 @@ class MapAreaTagger(QMainWindow):
         self.btn_keepout_mode = QPushButton("Keepout")
         self.btn_keepout_mode.setCheckable(True)
         self.btn_keepout_mode.clicked.connect(lambda: self.set_mode('keepout'))
+        self.btn_obstacle_mode = QPushButton("Edit Map")
+        self.btn_obstacle_mode.setCheckable(True)
+        self.btn_obstacle_mode.clicked.connect(lambda: self.set_mode('obstacle'))
         mode_layout.addWidget(self.btn_location_mode)
         mode_layout.addWidget(self.btn_polygon_mode)
         mode_layout.addWidget(self.btn_keepout_mode)
+        mode_layout.addWidget(self.btn_obstacle_mode)
         panel_layout.addWidget(mode_group)
 
         # Area management
@@ -525,6 +633,55 @@ class MapAreaTagger(QMainWindow):
         self.btn_finish_polygon.clicked.connect(self.finish_polygon)
         self.btn_finish_polygon.setVisible(False)
         panel_layout.addWidget(self.btn_finish_polygon)
+
+        # Obstacle editing -> paints directly on the occupancy grid (.pgm).
+        # Unlike keepout (which only ADDS virtual obstacles), this edits the real
+        # map: paint Free to ERASE an obstacle, Obstacle to add, Unknown to clear.
+        obst_group = QGroupBox("Edit Map (Obstacles)")
+        obst_layout = QVBoxLayout(obst_group)
+
+        paint_layout = QHBoxLayout()
+        self.btn_paint_free = QPushButton("Free")
+        self.btn_paint_free.setCheckable(True)
+        self.btn_paint_free.setChecked(True)
+        self.btn_paint_free.clicked.connect(lambda: self.set_brush_value(254))
+        self.btn_paint_occ = QPushButton("Obstacle")
+        self.btn_paint_occ.setCheckable(True)
+        self.btn_paint_occ.clicked.connect(lambda: self.set_brush_value(0))
+        self.btn_paint_unknown = QPushButton("Unknown")
+        self.btn_paint_unknown.setCheckable(True)
+        self.btn_paint_unknown.clicked.connect(lambda: self.set_brush_value(205))
+        paint_layout.addWidget(self.btn_paint_free)
+        paint_layout.addWidget(self.btn_paint_occ)
+        paint_layout.addWidget(self.btn_paint_unknown)
+        obst_layout.addLayout(paint_layout)
+
+        brush_layout = QHBoxLayout()
+        brush_layout.addWidget(QLabel("Brush:"))
+        self.brush_spin = QSpinBox()
+        self.brush_spin.setRange(1, 80)
+        self.brush_spin.setValue(4)
+        self.brush_spin.setSuffix(" px")
+        self.brush_spin.valueChanged.connect(self.set_brush_size)
+        brush_layout.addWidget(self.brush_spin)
+        self.lbl_brush_m = QLabel("")
+        brush_layout.addWidget(self.lbl_brush_m)
+        brush_layout.addStretch()
+        obst_layout.addLayout(brush_layout)
+
+        obst_btn_layout = QHBoxLayout()
+        self.btn_undo_obst = QPushButton("Undo")
+        self.btn_undo_obst.clicked.connect(self.undo_obstacle)
+        self.btn_revert_map = QPushButton("Revert")
+        self.btn_revert_map.clicked.connect(self.revert_map)
+        obst_btn_layout.addWidget(self.btn_undo_obst)
+        obst_btn_layout.addWidget(self.btn_revert_map)
+        obst_layout.addLayout(obst_btn_layout)
+
+        self.btn_save_map = QPushButton("Save Map (.pgm)")
+        self.btn_save_map.clicked.connect(self.save_map)
+        obst_layout.addWidget(self.btn_save_map)
+        panel_layout.addWidget(obst_group)
 
         # Keepout zones -> nav2 keepout mask (virtual obstacles, planning only)
         keepout_group = QGroupBox("Keepout Zones")
@@ -593,6 +750,7 @@ class MapAreaTagger(QMainWindow):
         self.btn_location_mode.setChecked(mode == 'location')
         self.btn_polygon_mode.setChecked(mode == 'polygon')
         self.btn_keepout_mode.setChecked(mode == 'keepout')
+        self.btn_obstacle_mode.setChecked(mode == 'obstacle')
         self.btn_finish_polygon.setVisible(mode == 'polygon')
         # Reset any in-progress outline when switching modes.
         self.temp_polygon = []
@@ -602,8 +760,12 @@ class MapAreaTagger(QMainWindow):
             self.status.showMessage("Click on the map to add a location")
         elif mode == 'polygon':
             self.status.showMessage("Click vertices to define area polygon. Click 'Finish Polygon' (or Enter) when done.")
-        else:
+        elif mode == 'keepout':
             self.status.showMessage("Click vertices to outline a keepout zone. Click 'Finish Zone' (or Enter) when done.")
+        else:  # obstacle
+            self.status.showMessage(
+                "Edit Map: left-drag = paint, Shift+drag/middle = pan, "
+                "Ctrl+Z = undo. Pick Free to erase obstacles, then Save Map.")
 
     def new_project(self):
         reply = QMessageBox.question(
@@ -640,6 +802,7 @@ class MapAreaTagger(QMainWindow):
             QMessageBox.warning(self, "Error", f"Map image not found: {image_path}")
             return
         if self.canvas.load_map(image_path, path):
+            self._update_brush_label()
             self.status.showMessage(f"Loaded: {os.path.basename(path)} | Resolution: {self.canvas.resolution}m/px")
         else:
             QMessageBox.warning(self, "Error", "Failed to load map image")
@@ -926,6 +1089,121 @@ class MapAreaTagger(QMainWindow):
             f"Wrote:\n{pgm_path}\n{path}\n\nLaunch nav2 with:\n"
             f"use_keepout:=true keepout_mask:={path}")
 
+    # ---- Obstacle editing --------------------------------------------------
+    def set_brush_value(self, value):
+        """Choose what the brush paints: 254=free (erase), 0=obstacle, 205=unknown."""
+        self.canvas.brush_value = value
+        self.btn_paint_free.setChecked(value == 254)
+        self.btn_paint_occ.setChecked(value == 0)
+        self.btn_paint_unknown.setChecked(value == 205)
+        if self.mode != 'obstacle':
+            self.set_mode('obstacle')
+        self.canvas.update()
+        label = {254: "free (erase)", 0: "obstacle", 205: "unknown"}.get(value, "")
+        self.status.showMessage(f"Brush: painting {label}")
+
+    def set_brush_size(self, size):
+        self.canvas.brush_radius = size
+        self._update_brush_label()
+        self.canvas.update()
+
+    def _update_brush_label(self):
+        diam_m = (self.canvas.brush_radius * 2) * self.canvas.resolution
+        self.lbl_brush_m.setText(f"⌀{diam_m:.2f} m")
+
+    def undo_obstacle(self):
+        if self.canvas.undo():
+            self.status.showMessage("Undid last map edit")
+        else:
+            self.status.showMessage("Nothing to undo")
+
+    def revert_map(self):
+        """Discard unsaved obstacle edits and reload the map from disk."""
+        if not self.map_yaml_path:
+            self.status.showMessage("No map loaded to revert")
+            return
+        reply = QMessageBox.question(
+            self, "Revert Map",
+            "Discard all unsaved map edits and reload from disk?",
+            QMessageBox.Yes | QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            return
+        map_dir = os.path.dirname(self.map_yaml_path)
+        with open(self.map_yaml_path) as f:
+            meta = yaml.safe_load(f)
+        image_path = os.path.join(map_dir, meta.get('image', ''))
+        if self.canvas.load_map(image_path, self.map_yaml_path):
+            self.canvas.update()
+            self._update_brush_label()
+            self.status.showMessage("Reverted map to the saved version")
+
+    def save_map(self):
+        """Write the edited occupancy grid back to a .pgm (+ .yaml), preserving the
+        original map metadata. Defaults to overwriting the loaded map (with a
+        one-time .bak of the original .pgm)."""
+        if self.canvas.map_image is None:
+            QMessageBox.warning(self, "No map", "Open a map first.")
+            return
+
+        default_path = self.map_yaml_path if self.map_yaml_path else "edited_map.yaml"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save Map", default_path, "Map YAML (*.yaml)")
+        if not path:
+            return
+        if not path.endswith(".yaml"):
+            path += ".yaml"
+        pgm_path = path[:-5] + ".pgm"
+
+        # Back up the original .pgm once before the first overwrite.
+        if os.path.exists(pgm_path) and not os.path.exists(pgm_path + ".bak"):
+            try:
+                shutil.copy2(pgm_path, pgm_path + ".bak")
+            except Exception:
+                pass
+
+        img = self.canvas.map_image
+        w, h = img.width(), img.height()
+        # Extract grayscale bytes (handle row stride) into a (h, w) array.
+        bpl = img.bytesPerLine()
+        ptr = img.constBits()
+        ptr.setsize(h * bpl)
+        arr = np.frombuffer(ptr, np.uint8).reshape((h, bpl))[:, :w]
+
+        # Preserve the loaded map's metadata; only the image bytes change.
+        meta = dict(self.canvas.map_meta) if self.canvas.map_meta else {}
+        resolution = meta.get('resolution', self.canvas.resolution)
+        origin = meta.get('origin', [self.canvas.origin_x, self.canvas.origin_y, 0.0])
+        oz = origin[2] if len(origin) > 2 else 0.0
+        negate = meta.get('negate', 0)
+        occ = meta.get('occupied_thresh', 0.65)
+        free = meta.get('free_thresh', 0.25)
+        mode = meta.get('mode', 'trinary')
+
+        try:
+            with open(pgm_path, "wb") as f:
+                f.write(f"P5\n{w} {h}\n255\n".encode())
+                f.write(arr.tobytes())
+            with open(path, "w") as f:
+                f.write(f"image: {os.path.basename(pgm_path)}\n")
+                f.write(f"resolution: {resolution}\n")
+                f.write(f"origin: [{origin[0]}, {origin[1]}, {oz}]\n")
+                f.write(f"negate: {negate}\n")
+                f.write(f"occupied_thresh: {occ}\n")
+                f.write(f"free_thresh: {free}\n")
+                f.write(f"mode: {mode}\n")
+        except Exception as e:
+            QMessageBox.warning(self, "Save failed", str(e))
+            return
+
+        self.canvas.obstacle_dirty = False
+        self.map_yaml_path = path
+        self.status.showMessage(f"Saved map: {os.path.basename(pgm_path)} + .yaml")
+        QMessageBox.information(
+            self, "Map saved",
+            f"Wrote:\n{pgm_path}\n{path}\n\n"
+            "Rebuild + relaunch nav for the static map to pick up the edits "
+            "(map_server serves this .pgm on /map).")
+
     def on_mouse_move(self, mx, my):
         self.coord_label.setText(f"x: {mx:.3f}  y: {my:.3f}")
 
@@ -1055,7 +1333,9 @@ class MapAreaTagger(QMainWindow):
             self.delete_tree_item(item)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key_Z and (event.modifiers() & Qt.ControlModifier):
+            self.undo_obstacle()
+        elif event.key() == Qt.Key_Escape:
             if self.mode in ('polygon', 'keepout') and self.temp_polygon:
                 self.temp_polygon = []
                 self.canvas.temp_polygon = []
@@ -1086,6 +1366,7 @@ def main():
             if os.path.exists(image_path):
                 window.canvas.load_map(image_path, yaml_path)
                 window.map_yaml_path = yaml_path
+                window._update_brush_label()
 
     sys.exit(app.exec_())
 

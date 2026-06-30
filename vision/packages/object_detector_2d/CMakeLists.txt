@@ -55,6 +55,12 @@ install(PROGRAMS ${MODEL_WEIGHTS}
   DESTINATION lib/${PROJECT_NAME}/detectors
 )
 
+# Label-translation maps — resolved against MODELS_PATH at runtime
+file(GLOB TRANSLATION_MAPS scripts/detectors/*.json)
+install(FILES ${TRANSLATION_MAPS}
+  DESTINATION lib/${PROJECT_NAME}/detectors
+)
+
 ######################### Testing  #########################
 ##For testing
 if(BUILD_TESTING)

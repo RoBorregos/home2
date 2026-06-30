@@ -102,6 +102,11 @@ case $TASK in
     PROFILES=("${TASK#--}")
     RUN="ros2 launch speech hri_launch.py"
     ;;
+  "--safety")
+    # Safety routine reuses the Pick & Place HRI profile.
+    PROFILES=("ppc")
+    RUN="ros2 launch speech hri_launch.py"
+    ;;
   *)
     PROFILES=("*")
     RUN="bash"

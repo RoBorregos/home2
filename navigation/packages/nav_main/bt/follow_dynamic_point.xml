@@ -3,13 +3,13 @@
     <PipelineSequence name="NavigateWithReplanning">
       <ControllerSelector selected_controller="{selected_controller}" default_controller="FollowPath" topic_name="controller_selector"/>
       <PlannerSelector selected_planner="{selected_planner}" default_planner="GridBased" topic_name="planner_selector"/>
-      <RateController hz="2.0">
+      <RateController hz="1.0">
         <RetryUntilSuccessful num_attempts="3" name="PlanningRetry">
           <Sequence>
             <GoalUpdater input_goal="{goal}" output_goal="{updated_goal}">
               <ComputePathToPose goal="{updated_goal}" path="{path}" planner_id="{selected_planner}"/>
             </GoalUpdater>
-           <TruncatePath distance="0.3" input_path="{path}" output_path="{truncated_path}"/>
+           <TruncatePath distance="0.4" input_path="{path}" output_path="{truncated_path}"/>
           </Sequence>
         </RetryUntilSuccessful>
       </RateController>

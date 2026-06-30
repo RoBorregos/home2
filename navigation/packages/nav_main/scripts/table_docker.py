@@ -9,6 +9,12 @@ so it ends up PERPENDICULAR to the face, centered on it, and as close as the arm
 can safely get. Locking the orientation kills the per-frame jitter you get from
 re-fitting every tick; the live lidar is still used as a safety stop.
 
+Round tables are supported too: set the `table_shape` param to 'circle' (or 'auto')
+and the front face is fit as a CIRCLE instead of a line. The circle is collapsed to
+its tangent at the point nearest the robot, so the approach reuses the exact same
+perpendicular-drive machinery — the robot ends up on the table's radius, facing the
+centre, at target_distance from the rim.
+
 Flow
 ----
   1. nav2 -> static near pose (existing go_to_area).
@@ -128,6 +134,74 @@ def ransac_line(pts, iters, thresh, min_inliers):
             "mask": best_mask, "count": best_count}
 
 
+def circle_from_3(p1, p2, p3):
+    """Exact circle through 3 points. Returns (cx, cy, r) or None if collinear."""
+    ax, ay = p1
+    bx, by = p2
+    cx, cy = p3
+    d = 2.0 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+    if abs(d) < 1e-9:
+        return None
+    a2, b2, c2 = ax * ax + ay * ay, bx * bx + by * by, cx * cx + cy * cy
+    ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / d
+    uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / d
+    return ux, uy, math.hypot(ax - ux, ay - uy)
+
+
+def fit_circle_lsq(pts):
+    """Algebraic (Kåsa) least-squares circle refit. pts: Nx2. Returns (cx, cy, r)
+    or None."""
+    x, y = pts[:, 0], pts[:, 1]
+    A = np.column_stack([2.0 * x, 2.0 * y, np.ones(len(pts))])
+    b = x * x + y * y
+    try:
+        sol, *_ = np.linalg.lstsq(A, b, rcond=None)
+    except np.linalg.LinAlgError:
+        return None
+    cx, cy, c0 = sol
+    r2 = c0 + cx * cx + cy * cy
+    if r2 <= 0:
+        return None
+    return float(cx), float(cy), math.sqrt(r2)
+
+
+def ransac_circle(pts, iters, thresh, min_inliers, rmin, rmax):
+    """RANSAC 2D circle fit from random 3-point samples (radius gated to
+    [rmin, rmax]). pts: Nx2. Returns dict (center, radius, mask, count) or None."""
+    n = len(pts)
+    if n < max(3, min_inliers):
+        return None
+    best_mask = None
+    best_count = 0
+    best_center = None
+    best_radius = 0.0
+    for _ in range(iters):
+        i, j, k = np.random.randint(0, n, size=3)
+        if i == j or j == k or i == k:
+            continue
+        c = circle_from_3(pts[i], pts[j], pts[k])
+        if c is None:
+            continue
+        cx, cy, r = c
+        if r < rmin or r > rmax:
+            continue
+        dist = np.abs(np.hypot(pts[:, 0] - cx, pts[:, 1] - cy) - r)
+        mask = dist < thresh
+        cnt = int(mask.sum())
+        if cnt > best_count:
+            best_count, best_mask = cnt, mask
+            best_center, best_radius = np.array([cx, cy]), r
+    if best_mask is None or best_count < min_inliers:
+        return None
+    # Least-squares refit on the inliers for a stable centre/radius.
+    refit = fit_circle_lsq(pts[best_mask])
+    if refit is not None and rmin <= refit[2] <= rmax:
+        best_center = np.array([refit[0], refit[1]])
+        best_radius = refit[2]
+    return {"center": best_center, "radius": float(best_radius),
+            "mask": best_mask, "count": best_count}
+
+
 class TableDocker(Node):
     def __init__(self):
         super().__init__("table_docker")
@@ -161,15 +235,26 @@ class TableDocker(Node):
         self.use_front_contour = self.declare_parameter("use_front_contour", True).value
         self.contour_bin_deg = self.declare_parameter("contour_bin_deg", 1.0).value
 
+        # --- Surface shape -------------------------------------------------------
+        # 'auto' (default — fit both, pick the better inlier support), 'line' (flat
+        # face: table edge / shelf, RANSAC line) or 'circle' (round table — RANSAC
+        # circle, approached along its radius). nav_central can pin this per-location
+        # with `ros2 param set`, the same way it sets front_offset.
+        self.table_shape = self.declare_parameter("table_shape", "auto").value
+        # Round table is ~0.40 m radius; gate the RANSAC circle to [0.20, 0.90] m so
+        # noise/legs/walls can't masquerade as a plausible table.
+        self.circle_min_radius = self.declare_parameter("circle_min_radius", 0.20).value
+        self.circle_max_radius = self.declare_parameter("circle_max_radius", 0.90).value
+
         # --- Geometry: forward reach of the robot's FRONT-MOST part (the arm) ---
         # Distance from base_link to whatever would hit the table first (arm tip in
         # its docking posture). MEASURE this and set it — the stop distances below
         # are clearances measured from THIS point, not from base_link.
-        self.front_offset = self.declare_parameter("front_offset", 0.16).value          # base_link -> arm front (m)
+        self.front_offset = self.declare_parameter("front_offset", 0.27).value          # base_link -> arm front (m)
 
         # --- Approach targets / safety (clearances from the arm front) ---
         self.target_distance = self.declare_parameter("target_distance", 0.10).value   # desired arm-front -> surface gap (m)
-        self.min_safe = self.declare_parameter("min_safe", 0.05).value                 # hard floor arm-front -> nearest point (m)
+        self.min_safe = self.declare_parameter("min_safe", 0.16).value                 # hard floor arm-front -> nearest point (m)
         self.yaw_tol = self.declare_parameter("yaw_tol", 0.03).value
         self.y_tol = self.declare_parameter("y_tol", 0.03).value
         self.dist_tol = self.declare_parameter("dist_tol", 0.03).value
@@ -238,7 +323,8 @@ class TableDocker(Node):
 
         self.log("info", f"table_docker ready. dock={DOCK_SERVICE} preview={DOCK_PREVIEW_SERVICE} "
                          f"samples={self.num_samples} front_offset={self.front_offset}m "
-                         f"target={self.target_distance}m source={self.detect_source}")
+                         f"target={self.target_distance}m source={self.detect_source} "
+                         f"shape={self.table_shape}")
 
     def _on_set_params(self, params):
         """Sync runtime param changes into the cached attributes used by the loop."""
@@ -405,7 +491,8 @@ class TableDocker(Node):
 
     def _fit_face(self):
         """One stable fit from the accumulated samples. Returns base_link geometry
-        dict {normal, centroid, direction, p1, p2, pts, contour, nearest} or None."""
+        dict {normal, centroid, direction, p1, p2, pts, contour, nearest, count}
+        (a flat 'face' usable by the approach loop regardless of shape) or None."""
         pts = self._accumulate_points()
         if len(pts) < self.ransac_min_inliers:
             return None
@@ -413,6 +500,23 @@ class TableDocker(Node):
         fit_pts = self._front_contour(pts, self.contour_bin_deg) if self.use_front_contour else pts
         if len(fit_pts) < self.ransac_min_inliers:
             fit_pts = pts
+        shape = str(self.table_shape).lower()
+        if shape in ("circle", "circular", "round"):
+            return self._fit_circle_face(fit_pts, pts)
+        if shape == "auto":
+            line = self._fit_line_face(fit_pts, pts)
+            circ = self._fit_circle_face(fit_pts, pts)
+            if line is None:
+                return circ
+            if circ is None:
+                return line
+            # Prefer the shape with stronger inlier support; bias toward the line so
+            # a flat table isn't mistaken for a large-radius circle on a tie.
+            return circ if circ["count"] > line["count"] * 1.15 else line
+        return self._fit_line_face(fit_pts, pts)
+
+    def _fit_line_face(self, fit_pts, pts):
+        """Flat face (table edge / shelf): RANSAC line -> perpendicular approach."""
         fit = ransac_line(fit_pts, self.ransac_iters, self.ransac_thresh, self.ransac_min_inliers)
         if fit is None:
             return None
@@ -425,7 +529,34 @@ class TableDocker(Node):
         p2 = centroid + direction * float(t.max())
         nearest = float(np.min(np.hypot(pts[:, 0], pts[:, 1])))
         return {"normal": normal, "centroid": centroid, "direction": direction,
-                "p1": p1, "p2": p2, "pts": pts, "contour": fit_pts, "nearest": nearest}
+                "p1": p1, "p2": p2, "pts": pts, "contour": fit_pts, "nearest": nearest,
+                "count": fit["count"]}
+
+    def _fit_circle_face(self, fit_pts, pts):
+        """Round table: RANSAC circle -> approach along the radius. The circle is
+        reduced to the TANGENT line at the point nearest the robot, so the rest of
+        the pipeline (lock + perpendicular approach + centring) is identical to the
+        flat-face case: driving perpendicular to that tangent and centring on the
+        tangent point puts the robot on the radial line, facing the table centre."""
+        fit = ransac_circle(fit_pts, self.ransac_iters, self.ransac_thresh,
+                            self.ransac_min_inliers, self.circle_min_radius,
+                            self.circle_max_radius)
+        if fit is None:
+            return None
+        center, radius = fit["center"], fit["radius"]
+        d = float(np.hypot(center[0], center[1]))     # robot -> circle centre
+        if d < 1e-6 or d <= radius:                   # robot must be outside the table
+            return None
+        normal = center / d                           # toward the centre == toward the face
+        centroid = center - normal * radius           # nearest point on the circle
+        direction = np.array([-normal[1], normal[0]])  # tangent at that point
+        half = float(min(radius, 0.30))               # short tangent segment (viz)
+        p1 = centroid - direction * half
+        p2 = centroid + direction * half
+        nearest = float(np.min(np.hypot(pts[:, 0], pts[:, 1])))
+        return {"normal": normal, "centroid": centroid, "direction": direction,
+                "p1": p1, "p2": p2, "pts": pts, "contour": fit_pts, "nearest": nearest,
+                "count": fit["count"], "center": center, "radius": radius}
 
     def _lock_face(self, fit):
         """Store the fitted face in the odom frame so it stays world-fixed while
@@ -605,8 +736,9 @@ class TableDocker(Node):
         self._publish_markers(face, self._live_nearest(), pts=fit["pts"], contour=fit["contour"])
         e_yaw = reduce_angle_mod_pi(math.atan2(fit["normal"][1], fit["normal"][0]))
         distance = abs(float(fit["normal"] @ fit["centroid"]))
+        shape_txt = f"circle r={fit['radius']:.3f}m " if "radius" in fit else "line "
         response.success = True
-        response.message = (f"Detected: yaw_err={math.degrees(e_yaw):.1f}deg "
+        response.message = (f"Detected ({shape_txt.strip()}): yaw_err={math.degrees(e_yaw):.1f}deg "
                             f"dist={distance:.3f}m points={len(fit['pts'])}")
         self.log("info", response.message)
         return response
@@ -623,7 +755,8 @@ class TableDocker(Node):
             return response
 
         e0 = reduce_angle_mod_pi(math.atan2(fit["normal"][1], fit["normal"][0]))
-        self.log("info", f"Locked face: yaw_err={math.degrees(e0):.1f}deg "
+        shape_txt = f"circle r={fit['radius']:.3f}m" if "radius" in fit else "line"
+        self.log("info", f"Locked face ({shape_txt}): yaw_err={math.degrees(e0):.1f}deg "
                          f"dist={abs(float(fit['normal'] @ fit['centroid'])):.3f}m — approaching")
 
         dt = 1.0 / self.control_rate

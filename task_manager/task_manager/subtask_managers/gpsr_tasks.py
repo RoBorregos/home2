@@ -4,6 +4,7 @@ from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     DETECTIONS_IMAGE_TOPIC,
     CAMERA_TOPIC,
+    IMAGE_TOPIC_HRIC,
 )
 from task_manager.utils.baml_client.types import (
     Count,
@@ -93,9 +94,7 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_to_position(named_position="receive_object")
 
         while True:
-            s, res = self.subtask_manager.hri.confirm(
-                "Have you grabbed the object?", use_keyword=False
-            )
+            s, res = self.subtask_manager.hri.confirm("Have you grabbed the object?")
             if res == "yes":
                 break
             else:
@@ -144,6 +143,8 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FollowPersonUntil(**command)
 
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+
         # TODO: fix this, now follow person until only has destination because
         # it can only be triggered after a find_person action, my suggestion for
         # all is to read the hri subtask manager log to find
@@ -168,7 +169,6 @@ class GPSRTask(GenericTask):
             status, loc = self.subtask_manager.hri.ask_and_confirm(
                 question="Please tell me where to go.",
                 query="location",
-                use_keyword=False,
                 context="The user was asked to say the location. We want to infer the location from the response",
             )
 
@@ -320,7 +320,6 @@ class GPSRTask(GenericTask):
                 s, response = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_keyword=False,
                     context="The user was asked to say their name. We want to infer his name from the response",
                 )
                 if s == Status.EXECUTION_SUCCESS:
@@ -447,6 +446,7 @@ class GPSRTask(GenericTask):
             value = f"{cache_color} {cache_cloth}s"
             command.target_to_count = value
 
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.hri.say(
             f"I am going to count the {value}.",
         )
@@ -479,6 +479,7 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
@@ -571,6 +572,7 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for retry in range(3):
             self.subtask_manager.hri.node.get_logger().info(f"Retry {retry}.")
@@ -597,7 +599,6 @@ class GPSRTask(GenericTask):
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
-                    use_keyword=False,
                     hotwords=command.name,
                 )
                 new_name = self.subtask_manager.hri.remove_punctuation(new_name)

@@ -292,6 +292,10 @@ run_task() {
   local remote_first=true
 
   for area in ${AREAS}; do
+    # The safety routine intentionally does not bring up vision.
+    if [ "$1" = "--safety" ] && [ "$area" = "vision" ]; then
+      continue
+    fi
     CMD="bash run.sh $area $*"
     if is_orin_area "${area}"; then
       if [ "$remote_first" = true ]; then

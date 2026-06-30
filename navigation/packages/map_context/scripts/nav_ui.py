@@ -16,6 +16,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from nav_msgs.msg import OccupancyGrid, Path
+from nav_msgs.srv import GetMap
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from std_srvs.srv import Empty
 from tf2_ros import TransformException
@@ -159,6 +160,20 @@ class NavRosNode(Node):
             OccupancyGrid, '/global_costmap/costmap',
             self.global_costmap_callback, costmap_qos)
 
+        # Static map fetch (editable map, "Option A"): when nav2_omni.launch.py serves
+        # /map from a map_server loaded INSIDE the nav2 container, that latched /map is
+        # delivered in-process to the costmaps but is DROPPED cross-process to this
+        # out-of-process nav_ui (transient_local over shared memory). So the /map topic
+        # sub above never fires here. Pull the map reliably via the map_server GetMap
+        # service instead (request/response is immune to the latch drop). When the
+        # static server is OFF, slam_toolbox publishes /map directly, the topic sub
+        # fills map_data first, and this self-cancels without ever calling the service.
+        self._static_map_client = None
+        self._static_map_pending = False
+        if self.ui_mode == 'navigation':
+            self._static_map_client = self.create_client(GetMap, '/map_server/map')
+            self._static_map_timer = self.create_timer(1.0, self._fetch_static_map)
+
         # Publishers
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
         self.initialpose_pub = self.create_publisher(
@@ -203,6 +218,40 @@ class NavRosNode(Node):
     def map_callback(self, msg):
         self.map_data = msg
         self.signals.map_updated.emit()
+
+    def _fetch_static_map(self):
+        """Retry the map_server GetMap service until we have a map, then stop.
+
+        Covers the case where the in-container map_server's latched /map never
+        reaches this cross-process node over the topic. No-op once map_data is set
+        (e.g. slam_toolbox publishes /map directly when the static server is off).
+        """
+        if self.map_data is not None:
+            self._static_map_timer.cancel()
+            return
+        if self._static_map_pending:
+            return  # a call is already in flight
+        if self._static_map_client is None or not self._static_map_client.service_is_ready():
+            return  # map_server not up yet — try again next tick
+        self._static_map_pending = True
+        future = self._static_map_client.call_async(GetMap.Request())
+        future.add_done_callback(self._on_static_map)
+
+    def _on_static_map(self, future):
+        self._static_map_pending = False
+        try:
+            grid = future.result().map
+        except Exception as e:  # noqa: BLE001 - log and retry on any service error
+            self.get_logger().warn(f"nav_ui: GetMap (/map_server/map) call failed: {e}")
+            return
+        if grid.info.width * grid.info.height == 0:
+            return  # empty map, keep retrying
+        self.map_data = grid
+        self.signals.map_updated.emit()
+        self.get_logger().info(
+            f"nav_ui: loaded static map via /map_server/map service "
+            f"({grid.info.width}x{grid.info.height} @ {grid.info.resolution} m/px)")
+        self._static_map_timer.cancel()
 
     def path_callback(self, msg):
         self.path_data = msg
