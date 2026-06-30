@@ -59,7 +59,9 @@ class Location(Enum):
 
     DINING_TABLE = "dining_table"  # dinner table (16): clean up + set breakfast
     EXTRA_SURFACE = "extra_surface"  # counter (11): 2 common objects (source, -20/obj)
-    DISHWASHER = "dishwasher"  # (14): cutlery/plate/cup placed INSIDE; bowl+spoon picked from ON TOP
+    DISHWASHER = (
+        "dishwasher"  # (14): cutlery/plate/cup placed INSIDE; bowl+spoon picked from ON TOP
+    )
     DISHWASHER_TAB = "dishwasher_tab"  # nav: cooking_table (13): dishwasher tab source
     CABINET = "cabinet"  # (9, left wall): place "other"; milk + cereal source
     TRASH_BIN = "trash_bin"  # nav: trash (15): fruits (trash) go here
@@ -150,8 +152,8 @@ class PickAndPlaceTM(Node):
         # combined detector (object_detector_node runs multiple YOLO models). No `fork` label exists
         # in either model. See docs/task_manager/ppc/time_strategy_2026.md.
         self.yolo_names = {
-            "cereal": "blue_cereal_box",
-            "milk": "chocomilk_box",
+            "cereal": "cornflakes",
+            "milk": "milk",
         }
 
         # Shelf heights in base_link Z: read the calibration JSON (re-measurable at
