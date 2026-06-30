@@ -1,5 +1,6 @@
 var NAVTREEINDEX36 =
 {
+"md_docs_ai_architecture.html#autotoc_md163":[22,0],
 "md_docs_ai_architecture.html#autotoc_md164":[22,1],
 "md_docs_ai_architecture.html#autotoc_md165":[22,1,0],
 "md_docs_ai_architecture.html#autotoc_md166":[22,2],
@@ -248,6 +249,5 @@ var NAVTREEINDEX36 =
 "moondream__lib_8py.html#a7a93bbfb0f1d7131b55cfd161a52f340":[39,0,7,0,0,1,1,5],
 "moondream__lib_8py.html#a8d8bb5f069489653e33e9848b85dad40":[39,0,7,0,0,1,1,4],
 "moondream__lib_8py.html#a92853496cf2484aa703bdf5a8402bc73":[39,0,7,0,0,1,1,11],
-"moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[39,0,7,0,0,1,1,1],
-"moondream__lib_8py.html#a96f271e464064797e7edcff4e9851282":[39,0,7,0,0,1,1,7]
+"moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[39,0,7,0,0,1,1,1]
 };

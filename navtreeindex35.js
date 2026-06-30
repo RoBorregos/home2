@@ -1,5 +1,6 @@
 var NAVTREEINDEX35 =
 {
+"macros_8hpp_source.html":[39,0,3,0,6,0,0,0],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2____init_____8py.html":[39,0,3,0,0,0,0],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html":[39,0,3,0,0,0,3],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#a3ae85e33595c84274bc8d8fd016a62c7":[39,0,3,0,0,0,3,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX35 =
 "md_docs_Setup.html#autotoc_md277":[34,1],
 "md_docs_Setup.html#autotoc_md278":[34,1,0],
 "md_docs_Setup.html#autotoc_md279":[34,1,1],
-"md_docs_ai_architecture.html":[22],
-"md_docs_ai_architecture.html#autotoc_md163":[22,0]
+"md_docs_ai_architecture.html":[22]
 };

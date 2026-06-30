@@ -1,5 +1,7 @@
 var NAVTREEINDEX43 =
 {
+"namespacetask__manager_1_1utils_1_1colored__logger.html":[37,0,176,2,0],
+"namespacetask__manager_1_1utils_1_1colored__logger.html#a2e9693062dcffe46a119336e7741f3fc":[37,0,176,2,0,4],
 "namespacetask__manager_1_1utils_1_1colored__logger.html#a416192077f1be5e35474b8dbe599de8f":[37,0,176,2,0,3],
 "namespacetask__manager_1_1utils_1_1colored__logger.html#acf7155779537a3153bce705c38d79b02":[37,0,176,2,0,2],
 "namespacetask__manager_1_1utils_1_1colored__logger.html#af39bc6f616ad2b1e6beb51d91fd5539b":[37,0,176,2,0,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX43 =
 "namespacevamp_1_1collision.html#afc39af0a1c3b44c15d294299479c17b5":[37,0,205,2,15],
 "namespacevamp_1_1collision_1_1factory.html":[37,0,205,2,0],
 "namespacevamp_1_1collision_1_1factory.html#a772df934a0c6589a0611b4ab1d7f17ac":[37,0,205,2,0,5],
-"namespacevamp_1_1collision_1_1factory.html#aa00d3da74232f0c047b40f181d5f7fc9":[37,0,205,2,0,7],
-"namespacevamp_1_1collision_1_1factory.html#ae02f967af890732b1b0f3428a750ea2e":[37,0,205,2,0,6],
-"namespacevamp_1_1collision_1_1factory_1_1capsule.html":[37,0,205,2,0,0]
+"namespacevamp_1_1collision_1_1factory.html#aa00d3da74232f0c047b40f181d5f7fc9":[37,0,205,2,0,7]
 };

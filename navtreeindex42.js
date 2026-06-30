@@ -1,5 +1,7 @@
 var NAVTREEINDEX42 =
 {
+"namespacereid__model.html#a9d2fa5cd96d1d77a54412fa812689833":[37,0,151,3],
+"namespacereid__model.html#aa3618009d6e7524b0bc74f1995eec942":[37,0,151,8],
 "namespacereid__model.html#aa51284f7e83456e804bdfabfb93c06fd":[37,0,151,1],
 "namespacereid__model.html#abc26ab485ddf76983b7f06561ebdb8ca":[37,0,151,10],
 "namespacereid__model.html#ac0854462968e1d652883a22511988c48":[37,0,151,18],
@@ -247,7 +249,5 @@ var NAVTREEINDEX42 =
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#ab304cd6fe5f54fe06d682e757d70edb9":[37,0,176,1,9,2],
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#acc2ee6161006865e51a5b980585f620b":[37,0,176,1,9,5],
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#add8920b2469d6bc25ce6aceb7b0fe0b3":[37,0,176,1,9,1],
-"namespacetask__manager_1_1utils.html":[37,0,176,2],
-"namespacetask__manager_1_1utils_1_1colored__logger.html":[37,0,176,2,0],
-"namespacetask__manager_1_1utils_1_1colored__logger.html#a2e9693062dcffe46a119336e7741f3fc":[37,0,176,2,0,4]
+"namespacetask__manager_1_1utils.html":[37,0,176,2]
 };
