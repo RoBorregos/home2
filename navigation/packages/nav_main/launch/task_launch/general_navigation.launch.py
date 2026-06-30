@@ -159,9 +159,25 @@ def launch_function(context, *args, **kwargs):
         parameters=[{'retreat_distance': RETREAT_DISTANCE}],
     )
 
+    # Person-following bridge: forwards the vision tracker's target to the Nav2
+    # GoalUpdater and switches nav2 between the standard/follow param sets when
+    # nav_central calls /navigation/set_follow_mode. Idle until follow is requested,
+    # so it is safe to run for every task (gpsr/ppc/dlc/hric).
+    person_goal_smoother_node = Node(
+        package='nav_main',
+        executable='person_goal_smoother.py',
+        name='person_goal_smoother',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{
+            'default_base': default_base,
+        }],
+    )
+
     launch_actions = [
         nav_central_node,
         nav_ui_node,
+        person_goal_smoother_node,
     ]
 
     if default_base_value != 'omnibase':

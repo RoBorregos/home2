@@ -432,6 +432,17 @@ class Nav_Central(Node):
 
     def _start_follow_person(self):
         """Activate smoother follow mode and send the initial goal."""
+        # 0. Resume Nav2/SLAM FIRST. After a stationary phase (e.g. the HRIC
+        # introduction) the idle monitor pauses Nav2, so bt_navigator is INACTIVE
+        # and rejects the follow goal ("Action server is inactive"). Mirror the
+        # go_to_pose/go_to_area path so the lifecycle is active before we send.
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self.nav_logger("error", "Follow Person -> Navigation not initialized; cannot follow")
+            return
+        self._clear_costmaps()
+
         # 1. Tell person_goal_smoother to switch Nav2 params to follow mode
         if self.follow_mode_client.wait_for_service(timeout_sec=FOLLOW_MODE_SERVICE_TIMEOUT):
             req = SetBool.Request()
