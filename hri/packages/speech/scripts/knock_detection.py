@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 """
-Knock detection node — mathematical (DSP) detector, no Edge Impulse.
+Knock detection node — DSP detector (no Edge Impulse).
 
-Subscribes to the raw audio stream and publishes a knock detection in the same
-JSON format and on the same topic as the Edge Impulse door node
-(``ei_audio_node.py`` / ``door_eim``), so downstream consumers (e.g. the task
-manager) only need a single subscription:
-
-    {"keyword": "knock", "score": <float>}
-
-Detection logic lives in ``speech.knock_detection_utils.KnockDetector``; this
-node is a thin ROS wrapper around it. It runs in every environment (it is pure
-signal processing), unlike the EI nodes which are Jetson/``l4t`` only.
+Thin ROS wrapper around ``speech.knock_detection_utils.KnockDetector``. Publishes
+``{"keyword": "knock", "score": <float>}`` on the same topic as the EI door node
+so the task manager needs only one subscription. Pure DSP, so it runs in every
+environment (unlike the EI nodes, which are l4t only).
 """
 
 import json
@@ -34,17 +28,17 @@ class KnockDetectionNode(Node):
         self.declare_parameter("KEYWORD_TOPIC", "/hri/speech/ei_detection")
         self.declare_parameter("knock_label", "knock")
         self.declare_parameter("sample_rate", 16000)
-        # Only publish a knock when its confidence score exceeds this value.
+        # Only publish a knock scoring above this value.
         self.declare_parameter("min_score", 0.55)
-        # Stage 1 — energy / dB gate ("filtro 1")
+        # filtro 1: energy / dB gate
         self.declare_parameter("min_db", -40.0)
-        # Stage 2 — onset detection
+        # Onset detection
         self.declare_parameter("onset_ratio", 3.0)
         self.declare_parameter("use_bandpass", True)
         self.declare_parameter("bandpass_low_hz", 60.0)
         self.declare_parameter("bandpass_high_hz", 1000.0)
         self.declare_parameter("refractory_s", 0.08)
-        # Stage 3 — temporal pattern
+        # Temporal pattern
         self.declare_parameter("min_onsets", 2)
         self.declare_parameter("pattern_window_s", 1.5)
         self.declare_parameter("min_onset_gap_s", 0.10)

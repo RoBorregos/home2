@@ -1,24 +1,14 @@
 #!/usr/bin/env python3
 """
-knock_test.py — live-microphone test for the mathematical (DSP) knock detector.
+knock_test.py — live-mic test for the DSP knock detector.
 
-Runs fully standalone (no ROS, no Edge Impulse server). Open a terminal on your
-Mac, plug in / use the built-in mic and run:
+Fully standalone (no ROS, no EI server). Run it, then knock on a desk/door; each
+confirmed burst prints a line and a live dBFS meter helps tune ``--min-db``
+(filtro 1). Speech and steady noise should stay quiet.
 
-    cd hri/packages/speech/debug
     python3 knock_test.py
-
-Then knock on a desk or door. Each confirmed knock burst prints a line. While
-listening, a live dBFS level meter is shown so you can tune ``--min-db``
-("filtro 1") to your room. Speech and steady background noise should stay quiet.
-
-Useful flags:
-    python3 knock_test.py --list-devices         # show input devices + indices
-    python3 knock_test.py --device 2             # pick an input device
-    python3 knock_test.py --min-db -45           # lower the energy gate
-    python3 knock_test.py --onsets 1             # fire on a single knock
-    python3 knock_test.py --no-bandpass          # disable the band-pass stage
-    python3 knock_test.py --no-meter             # hide the live level meter
+    python3 knock_test.py --list-devices | --device 2
+    python3 knock_test.py --min-db -45 --onsets 1 --no-bandpass --no-meter
 
 Requires: numpy, pyaudio (scipy optional, enables the band-pass stage).
 """
@@ -34,8 +24,7 @@ import time
 import numpy as np
 import pyaudio
 
-# Import the shared detector from the speech package without needing a built
-# ROS workspace: add the package root (which contains the ``speech`` module).
+# Import the speech package without a built ROS workspace: add the package root.
 _PKG_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _PKG_ROOT not in sys.path:
     sys.path.insert(0, _PKG_ROOT)

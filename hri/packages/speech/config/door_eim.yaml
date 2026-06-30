@@ -4,22 +4,15 @@ door_eim:
     KEYWORD_TOPIC: /hri/speech/ei_detection
     ei_server_url: "http://localhost:1337"
     sample_rate: 16000
-    # The 2-class (noise/doorBell) EI model expects 32000 input features
-    # (2.0 s @ 16 kHz). A shorter window makes /api/features return 400.
+    # EI model needs 32000 features (2.0 s @ 16 kHz); shorter returns 400.
     window_size_s: 2.0
     hop_ratio: 1.0
-    # Doorbell confidence gate. Independent from the KWS node (kws_eim.yaml):
-    # this only affects the doorbell detector, so a stricter 0.9 here does not
-    # touch the keyword thresholds.
     sensitivity_threshold: 0.9
     detection_cooldown: 0.0
     audio_gain: 1.0
     noise_label: "noise"
-    # "Filtro 1": only run EI inference on windows above this dBFS level.
-    min_db: -45.0
-    # Knock is now handled by the dedicated DSP node (knock_detection.py);
-    # the EI model only emits the doorbell here. Update if the model's label
-    # differs from "doorbell".
+    min_db: -45.0 # skip EI inference below this dBFS
+    # Knock handled by knock_detection.py; EI emits only the doorbell label.
     target_labels: ["doorbell"]
     save_detection_audio: False
     audio_save_dir: /workspace/src/hri/packages/speech/assets/event_detections

@@ -34,10 +34,9 @@ class EIAudioNode(Node):
         self.declare_parameter("detection_cooldown", 0.0)
         self.declare_parameter("audio_gain", 1.0)
         self.declare_parameter("noise_label", "noise")
-        # "Filtro 1": only run inference on windows louder than this dBFS level.
-        # Default -120.0 ~ effectively off, preserving prior behaviour.
+        # skip inference below this dBFS. -120.0 ~ off (prior behaviour).
         self.declare_parameter("min_db", -120.0)
-        # Optional allow-list of labels to emit. Empty = emit any non-noise label.
+        # Allow-list of labels to emit. Empty = any non-noise label.
         self.declare_parameter("target_labels", [""])
         self.declare_parameter("save_detection_audio", False)
         self.declare_parameter(
@@ -76,7 +75,7 @@ class EIAudioNode(Node):
             self.get_parameter("noise_label").get_parameter_value().string_value
         )
         self.min_db = self.get_parameter("min_db").get_parameter_value().double_value
-        # Drop empty placeholder entries (yaml needs a non-empty default list).
+        # Drop the empty placeholder (yaml needs a non-empty default list).
         self.target_labels = [
             label.lower()
             for label in self.get_parameter("target_labels")
@@ -149,7 +148,7 @@ class EIAudioNode(Node):
             self.classify(window)
 
     def classify(self, audio_window: np.ndarray):
-        # "Filtro 1": skip inference on windows quieter than min_db (dBFS).
+        # filtro 1: skip inference on windows quieter than min_db.
         rms = float(np.sqrt(np.mean(audio_window.astype(np.float64) ** 2)) + 1e-9)
         level_db = 20.0 * np.log10(max(rms, 1e-9) / np.iinfo(np.int16).max)
         if level_db < self.min_db:
@@ -187,8 +186,7 @@ class EIAudioNode(Node):
         for label, score in classification.items():
             if label.lower() == self.noise_label.lower():
                 continue
-            # Optional allow-list: e.g. door_eim emits only "doorbell" so the
-            # knock class is handled by the dedicated DSP node instead.
+            # Allow-list: door_eim emits only "doorbell"; knock is the DSP node.
             if self.target_labels and label.lower() not in self.target_labels:
                 continue
             if score > best_score:

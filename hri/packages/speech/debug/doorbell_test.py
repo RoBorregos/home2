@@ -1,25 +1,14 @@
 #!/usr/bin/env python3
 """
-doorbell_test.py — live-microphone test for the Edge Impulse doorbell detector.
+doorbell_test.py — live-mic test for the Edge Impulse doorbell detector.
 
-The doorbell stays in the Edge Impulse model (unlike the knock, which is now
-pure DSP). This standalone test mirrors the inference logic of
-``scripts/ei_audio_node.py`` so you can validate the doorbell model from a
-laptop mic, and also exercises "filtro 1": the dB/energy gate that skips
-inference on quiet windows.
+Mirrors ``scripts/ei_audio_node.py`` to validate the doorbell model (and filtro
+1, the dB gate) from a laptop mic. Needs a reachable EI inference server, e.g.
+http://localhost:1337.
 
-It needs a reachable Edge Impulse inference server (the same one the
-``door_eim`` node uses), e.g. running locally at http://localhost:1337.
-
-    cd hri/packages/speech/debug
     python3 doorbell_test.py --ei-url http://localhost:1337
-
-Useful flags:
-    python3 doorbell_test.py --list-devices
-    python3 doorbell_test.py --device 2
-    python3 doorbell_test.py --min-db -45        # energy gate (filtro 1)
-    python3 doorbell_test.py --threshold 0.8     # detection sensitivity
-    python3 doorbell_test.py --noise-label noise
+    python3 doorbell_test.py --list-devices | --device 2
+    python3 doorbell_test.py --min-db -45 --threshold 0.8
 
 Requires: numpy, pyaudio, requests.
 """
@@ -170,7 +159,7 @@ def main() -> None:
                 audio_buffer = audio_buffer[hop_samples:]
 
                 level = dbfs(window)
-                # Stage 1 — energy gate ("filtro 1"): skip inference on quiet audio.
+                # filtro 1: skip inference on quiet audio.
                 if level < args.min_db:
                     gated += 1
                     print(

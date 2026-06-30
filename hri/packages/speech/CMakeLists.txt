@@ -41,11 +41,8 @@ install(DIRECTORY assets
   PATTERN "*.wav"
 )
 
-# Install the DeepFilterNet model into the location noise_cancellation.py
-# resolves at runtime: <install>/speech/lib/assets/downloads/DeepFilterNet3.
-# The node computes its model dir relative to the installed script (lib/speech
-# -> ../assets/downloads), and the checkpoint files are not .onnx/.wav, so the
-# rule above does not cover them.
+# DeepFilterNet checkpoints (not .onnx/.wav) for noise_cancellation.py, which
+# resolves them at lib/assets/downloads relative to the installed script.
 install(DIRECTORY assets/downloads
   DESTINATION lib/assets
 )

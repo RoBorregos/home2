@@ -1,26 +1,17 @@
 #!/usr/bin/env python3
 """
-Mathematical (DSP) knock detector — no machine learning, no ROS dependency.
+Streaming DSP knock detector — no ML, no ROS dependency.
 
-A knock is an impulsive, broadband-but-low-frequency transient: a sharp energy
-onset that decays quickly, usually repeated 2-4 times within a second or two.
-This module detects it purely with signal processing so it can run anywhere
-(standalone on a laptop mic, or inside a ROS node) without an Edge Impulse
-server.
+A knock is an impulsive low-frequency transient, usually repeated 2-4 times in a
+second or two. Pipeline:
+  1. filtro 1: per-frame dBFS gate; quiet frames are ignored.
+  2. Onset: optional band-pass (~60-1000 Hz) then an energy-envelope onset that
+     fires on a sharp rise above an adaptive baseline; a refractory period stops
+     one knock counting as several.
+  3. Temporal pattern: confirm when >= min_onsets fall inside pattern_window_s;
+     a cooldown avoids re-emitting the same burst.
 
-Pipeline (mirrors the stages described in the plan):
-  1. Energy / dB gate ("filtro 1"): per-frame RMS -> dBFS; frames quieter than
-     ``min_db`` are ignored before any further analysis.
-  2. Transient / onset detection: optional band-pass (knock energy ~ 60-1000 Hz)
-     then an energy-envelope onset detector that fires when a frame's energy
-     jumps sharply above an adaptive baseline. A refractory period prevents a
-     single knock from registering as several onsets.
-  3. Temporal pattern: a knock is *confirmed* when at least ``min_onsets`` onsets
-     occur inside ``pattern_window_s`` (spaced at least ``min_onset_gap_s``
-     apart). A cooldown avoids re-emitting the same knock burst.
-
-The detector is streaming: feed it arbitrary-length int16 mono chunks via
-``process()`` and it returns any knock events confirmed during that chunk.
+Feed int16 mono chunks to ``process()``; it returns the events confirmed there.
 """
 
 from __future__ import annotations
