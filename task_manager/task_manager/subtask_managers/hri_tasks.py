@@ -154,6 +154,9 @@ def format_transcription(text: str) -> str:
 class HRITasks:
     """Class to manage the HRI tasks"""
 
+    remove_punctuation = staticmethod(remove_punctuation)
+    format_transcription = staticmethod(format_transcription)
+
     def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
         self.mock_data = mock_data
@@ -286,7 +289,7 @@ class HRITasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> Status:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
         self.set_light_state(AudioStates.SAYING)
@@ -490,6 +493,7 @@ class HRITasks:
         initial_prompt: str = "",
         silence_time: float = 2.0,
         start_silence_time: float = 4.0,
+        play_chime: bool = True,
     ):
         """Method to hear streaming audio from the user.
 
@@ -501,10 +505,11 @@ class HRITasks:
             initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
+            play_chime (bool): If True (default), play the listening chime when starting to listen. Set to False to listen silently (e.g. when polling for the "stop" keyword while following a person).
         """
         # Cancel other actions if they are running
         self.cancel_hear_action()
-        self.set_light_state(AudioStates.LISTEN)
+        self.set_light_state(AudioStates.LISTEN, play_chime=play_chime)
 
         self.current_transcription = ""
 
@@ -547,14 +552,21 @@ class HRITasks:
         self.current_transcription = feedback_msg.feedback.current_transcription
         self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
 
-    def set_light_state(self, state: AudioStates):
+    def set_light_state(self, state: AudioStates, play_chime: bool = True):
         """
         Method to set the light state of the respeaker.
         Args:
             state: The state of the light.
+            play_chime: If True (default), publishing the LISTEN state triggers the
+                listening chime in the audio_feedback node. Set to False to update the
+                respeaker light to "listen" without playing the chime (e.g. when polling
+                for a keyword like "stop" repeatedly).
         """
         self.respeaker_light_publisher.publish(String(data=AudioStates.respeaker_light(state)))
-        self.audio_state_publisher.publish(String(data=state.value))
+        if state == AudioStates.LISTEN and not play_chime:
+            self.audio_state_publisher.publish(String(data="listening_silent"))
+        else:
+            self.audio_state_publisher.publish(String(data=state.value))
 
     def confirm(
         self,
@@ -656,6 +668,7 @@ class HRITasks:
         remap: dict = None,
         initial_prompt: str = "",
         silence_time: float = 1.0,
+        max_audio_length: float = 13.0,
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -670,6 +683,7 @@ class HRITasks:
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
             silence_time: the time to wait for silence before considering the speech complete
+            max_audio_length: the maximum length of seconds to listen to the user
         Returns:
             Status: the status of the execution
             str: answer to the question
@@ -682,7 +696,10 @@ class HRITasks:
 
             self.say(question)
             hear_status, interpreted_text, word_confidences = self.hear(
-                hotwords=hotwords, initial_prompt=initial_prompt, silence_time=silence_time
+                hotwords=hotwords,
+                initial_prompt=initial_prompt,
+                silence_time=silence_time,
+                max_audio_length=max_audio_length,
             )
 
             if hear_status == Status.EXECUTION_SUCCESS:
@@ -783,10 +800,12 @@ class HRITasks:
         )
         return Status.TIMEOUT, None
 
-    def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
+    def interpret_keyword(
+        self, keywords: list[str], timeout: float, play_chime: bool = True
+    ) -> str:
         self.cancel_hear_action()
 
-        self.hear_streaming(timeout=timeout, silence_time=timeout)
+        self.hear_streaming(timeout=timeout, silence_time=timeout, play_chime=play_chime)
 
         start_time = self.node.get_clock().now()
         self.keyword = ""
@@ -1273,12 +1292,15 @@ class HRITasks:
     # TODO: Make async
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def answer_with_context(self, question: str, context: str) -> str:
+    def answer_with_context(
+        self, question: str, context: str, is_async: bool = False
+    ) -> tuple[Status, str] | Future:
         """
         Method to answer a question with context.
         Args:
             question: the question to answer
             context: the context to use
+            is_async: If True, the method will return a Future object instead of waiting for the result.
         Returns:
             Status: the status of the execution
             str: the answer to the question
@@ -1286,6 +1308,21 @@ class HRITasks:
         self.node.get_logger().info(f"answer_with_context called with: {question}, {context}")
 
         request = LLMWrapper.Request(question=question, context=context)
+
+        if is_async:
+            future = Future()
+            answer_future = self.llm_wrapper_service.call_async(request)
+
+            def callback(f):
+                try:
+                    future.set_result((Status.EXECUTION_SUCCESS, f.result().answer))
+                except Exception as e:
+                    Logger.error(self.node, f"Error in answer_with_context async callback: {e}")
+                    future.set_result((Status.EXECUTION_ERROR, ""))
+
+            answer_future.add_done_callback(callback)
+            return future
+
         future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer

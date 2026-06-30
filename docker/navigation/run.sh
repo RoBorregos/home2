@@ -127,23 +127,14 @@ case $TASK in
     "--mapping")
         RUN="ros2 launch nav_main mapping.launch.py"
         ;;
-    "--gpsr")
-        RUN="ros2 launch nav_main gpsr_hric.launch.py"
-        ;;
-    "--hric")
-        RUN="ros2 launch nav_main gpsr_hric.launch.py"
-        ;;
-    "--restaurant")
-        RUN="ros2 launch nav_main restaurant.launch.py"
-        ;;
-    "--ppc"|"--dlc")
+    "--hric" | "--ppc" | "--dlc" | "--gpsr" )
         RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
     "--tagger")
         RUN="ros2 run map_context map_area_tagger.py"
         ;;
     "--move")
-        RUN="ros2 launch nav_main nav_basics.launch.py"
+        RUN="ros2 launch nav_main omni_basics.launch.py"
         ;;
     *)
         RUN="bash"

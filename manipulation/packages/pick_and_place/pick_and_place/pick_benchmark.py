@@ -25,15 +25,17 @@ from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.srv import GetOptimalPositionForPlane
 from frida_constants.manipulation_constants import MANIPULATION_ACTION_SERVER
-
-# Shelf level surface heights in base_link Z (match pickandplace_task_manager).
-SHELF_LEVEL_HEIGHTS = [0.475, 0.827, 1.201]
-SHELF_SCAN_TOLERANCE = 0.1
+from xarm_utils.shelf_levels import (
+    SHELF_SCAN_TOLERANCE,
+    get_shelf_levels,
+)
 
 
 class PickBenchmark(Node):
     def __init__(self):
         super().__init__("pick_benchmark")
+        self.declare_parameter("arena", 1)
+        self.arena = self.get_parameter("arena").value
         self._action_client = ActionClient(
             self, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
@@ -46,7 +48,7 @@ class PickBenchmark(Node):
         if not self._optimal_client.wait_for_service(timeout_sec=5.0):
             self.get_logger().error("get_optimal_position_for_plane not available!")
             return
-        for height in SHELF_LEVEL_HEIGHTS:
+        for height in get_shelf_levels(self.arena):
             req = GetOptimalPositionForPlane.Request()
             req.plane_est_min_height = height - SHELF_SCAN_TOLERANCE
             req.plane_est_max_height = height + SHELF_SCAN_TOLERANCE

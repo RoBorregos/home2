@@ -38,6 +38,10 @@ JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
 ESTOP_TOPIC = "/manipulation/estop"
+# Latched Bool: True while motion_planning_server is executing a MoveJoints/
+# MoveToPose goal (arm in use). nav_goal_arm_pointer yields the xArm mode while
+# this is True so it never fights manipulation for /xarm/set_mode.
+MANIPULATION_ARM_BUSY_TOPIC = "/manipulation/arm_busy"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
@@ -74,11 +78,17 @@ POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Rim pick
-RIM_NAMES = ["basket", "laundry_basket"]
+BOWL_NAME = "bowl"
+RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
 RIM_PRE_GRASP_HEIGHT = 0.10
 RIM_GRASP_Z_TWEAK = -0.05  # m: target ~3 cm below rim top so fingers straddle the wall
 RIM_DESCENT_SPEED = 20.0  # mm/s
 RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
+
+# Bowl pick: reuses the rim straddle but with a much shorter descent.
+BOWL_PRE_GRASP_HEIGHT = RIM_PRE_GRASP_HEIGHT  # m
+BOWL_DESCENT_DISTANCE = 0.08  # m fingers ~3 cm below the rim top
+BOWL_GRASP_Z_TWEAK = BOWL_PRE_GRASP_HEIGHT - BOWL_DESCENT_DISTANCE
 
 # Peak pick
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases

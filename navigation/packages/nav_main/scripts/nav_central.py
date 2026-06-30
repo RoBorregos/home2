@@ -4,6 +4,7 @@ from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
+from rclpy.qos import qos_profile_sensor_data
 from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
@@ -14,6 +15,8 @@ from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from std_msgs.msg import Bool
+from rclpy.qos import QoSProfile, DurabilityPolicy
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -39,7 +42,15 @@ from frida_constants.navigation_constants import(
         GOAL_NAV_ACTION_SERVER,
         INITIAL_POSE_TOPIC,
         RESUME_NAV_SERVICE,
+        FOLLOW_MODE_SERVICE,
+        FOLLOW_PERSON_NAV_SERVICE,
+        GOAL_UPDATE_TOPIC,
+        FOLLOW_MODE_SERVICE_TIMEOUT,
+        FOLLOW_GOAL_UPDATE_TIMEOUT,
+        FOLLOW_ACTION_SERVER_TIMEOUT,
         NAV_QUERY_SERVICE,
+        GO_TO_POSE_SERVICE,
+        GET_ROBOT_POSE_SERVICE,
         COMPUTE_PATH_ACTION_SERVER,
         TIMEOUT_NAV_QUERY,
         UNDOCK_SERVICE,
@@ -47,12 +58,17 @@ from frida_constants.navigation_constants import(
         DOCK_TABLE_SERVICE,
         DEFAULT_DOCK_OFFSET,
         )
+from std_srvs.srv import SetBool
+from ament_index_python.packages import get_package_share_directory
+import os
 from frida_interfaces.srv import (
         CheckDoor,
         MapAreas,
         MoveLocation,
         NavQuery,
-        DockTable
+        DockTable,
+        GoToPose,
+        GetRobotPose,
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -67,6 +83,9 @@ import re
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
+# Max time to wait for the arm pointer to home back to its normal pose before
+# returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
+ARM_HOME_TIMEOUT = 10.0
 
 
 def make_param(name, value):
@@ -98,6 +117,9 @@ class Nav_Central(Node):
         self.nav_logger("info", "NAV_CENTRAL STARTED") 
         self.localization = self.declare_parameter('localization', False).value
         self.mapping = self.declare_parameter('mapping', False).value
+        # use_nav2: enable Nav2 even in mapping mode (hybrid SLAM+navigation)
+        # Defaults to True when not in pure-mapping mode (backward compatible)
+        self.use_nav2 = self.declare_parameter('use_nav2', not self.mapping).value
         self.map_name= self.declare_parameter('map_name', 'rtabmap_map.db').value
         self.mapping_config = self.declare_parameter('rtab_mapping_config', '').value
         self.localization_config = self.declare_parameter('rtab_localization_config', '').value
@@ -177,6 +199,21 @@ class Nav_Central(Node):
         self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
         self.goal_action_client = ActionClient(self,NavigateToPose ,GOAL_NAV_ACTION_SERVER)
 
+        # Expose the current nav goal + active flag so the arm pointer (manipulation)
+        # can aim the camera at the destination. transient_local so a late-joining
+        # subscriber still gets the last goal. ponytail: plain topics, no constants
+        # file — two strings, one consumer.
+        _latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+        self.current_goal_pub = self.create_publisher(PoseStamped, "/nav/current_goal", _latched)
+        self.goal_active_pub = self.create_publisher(Bool, "/nav/goal_active", _latched)
+        # Arm pointer reports when it's back to its normal pose after the goal ends.
+        # Default True so nav never blocks when the arm pointer node isn't running.
+        self.arm_ready = True
+        self.create_subscription(
+            Bool, "/nav/arm_ready",
+            lambda m: setattr(self, "arm_ready", m.data),
+            _latched, callback_group=self.lidar_group)
+
         # Path query service — distance/time between two areas without navigating
         self.nav_query_srv = self.create_service(NavQuery, NAV_QUERY_SERVICE, self.query_path, callback_group=self.service_group)
         self.compute_path_client = ActionClient(self, ComputePathToPose, COMPUTE_PATH_ACTION_SERVER)
@@ -184,6 +221,35 @@ class Nav_Central(Node):
         # Manual resume service — lets the UI unpause nav2 + RTABMap on demand
         self.resume_nav_srv = self.create_service(
             Empty, RESUME_NAV_SERVICE, self._resume_nav_callback,
+            callback_group=self.service_group)
+
+        # Follow person: orchestrates person_goal_smoother + initial NavigateToPose goal
+        self.follow_person_srv = self.create_service(
+            SetBool, FOLLOW_PERSON_NAV_SERVICE, self._follow_person_callback,
+            callback_group=self.service_group)
+        self.follow_mode_client = self.create_client(
+            SetBool, FOLLOW_MODE_SERVICE, callback_group=self.service_group)
+        self._follow_goal_handle = None  # Track active follow goal for cancellation
+        self._follow_bt_xml = os.path.join(
+            get_package_share_directory("nav_main"), "bt", "follow_dynamic_point.xml"
+        )
+        self._latest_goal_update = None  # Cached latest PoseStamped from person_goal_smoother
+        # Dedicated reentrant group: _start_follow_person() (on service_group, a
+        # MutuallyExclusive group) BLOCKS waiting for the first goal update. This
+        # sub MUST live in a different group so _goal_update_cb can run on another
+        # thread of the MultiThreadedExecutor and unblock it — otherwise deadlock.
+        self._follow_cb_group = ReentrantCallbackGroup()
+        self._goal_update_sub = self.create_subscription(
+            PoseStamped, GOAL_UPDATE_TOPIC, self._goal_update_cb, 10,
+            callback_group=self._follow_cb_group,
+        )
+
+        # Point-based navigation services
+        self.go_to_pose_srv = self.create_service(
+            GoToPose, GO_TO_POSE_SERVICE, self.go_to_pose_callback,
+            callback_group=self.service_group)
+        self.get_robot_pose_srv = self.create_service(
+            GetRobotPose, GET_ROBOT_POSE_SERVICE, self.get_robot_pose_callback,
             callback_group=self.service_group)
 
         # Initial pose tracking
@@ -213,7 +279,7 @@ class Nav_Central(Node):
             return
         self._setup_done = True
         self.destroy_timer(self._setup_timer)
-        if not self.mapping:
+        if self.use_nav2:
             # Create lifecycle client early so DDS has time to match endpoints
             self._lifecycle_cb_group = ReentrantCallbackGroup()
             self.lifecycle_client = self.create_client(
@@ -228,13 +294,14 @@ class Nav_Central(Node):
         self.nav_logger("info", "Requirements Completed, Starting Slam ...")
         self.start_slam()
         self.rtabmap_loaded = True
-        if not self.mapping:
+        if self.use_nav2:
             self.nav_logger("info", "Slam completed, Starting nav2 ...")
             self.load_nav2()
             self.nav_logger("info", "Nav2 completed")
-            self._wait_for_initial_pose()
+            if not self.mapping:
+                self._wait_for_initial_pose()
         else:
-            self.nav_logger("info", "Mapping mode: nav2 skipped")
+            self.nav_logger("info", "Nav2 not enabled, skipped")
         self.nav_logger("info", "Finished Setup, Starting monitoring ...")
         self.nodes_status = True
         self.baseline_tf_static_publishers = len(self.get_publishers_info_by_topic('/tf_static'))
@@ -307,14 +374,14 @@ class Nav_Central(Node):
             self.nodes_status = False
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, {'Topics not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, pausing nodes ...")
             self.pause_slam()
-            if not self.mapping:
+            if self.use_nav2:
                 self.pause_nav2()
         elif (self.no_topics_count == 0) and (self.no_tf_count == 0):
             if self.nodes_status == False:
                 self.nodes_status = True
                 self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
                 self.resume_slam()
-                if not self.mapping:
+                if self.use_nav2:
                     self.resume_nav2()
         
 
@@ -332,12 +399,144 @@ class Nav_Central(Node):
         """Service callback: manually resume RTABMap and nav2 from the UI."""
         self.nav_logger("info", "Resume Nav Service -> Manual resume requested")
         self.resume_slam()
-        if not self.mapping:
+        if self.use_nav2:
             self.resume_nav2()
         self.nodes_status = True
         self.no_topics_count = 0
         self.no_tf_count = 0
         return response
+
+    def _follow_person_callback(self, request, response):
+        """Service callback: activate/deactivate person-following navigation.
+
+        On True:  switches person_goal_smoother to follow mode AND sends a
+                  NavigateToPose goal with the follow BT so Nav2 starts
+                  tracking the moving goal from /goal_update.
+        On False: cancels the active goal AND switches smoother back to
+                  standard mode.
+        """
+        self.nav_logger("info", f"Follow Person Service -> follow={request.data}")
+        if request.data:
+            self._start_follow_person()
+            response.success = True
+            response.message = "Follow person started"
+        else:
+            self._stop_follow_person()
+            response.success = True
+            response.message = "Follow person stopped"
+        return response
+
+    def _goal_update_cb(self, msg):
+        """Cache latest goal from person_goal_smoother for initial-goal seeding."""
+        self._latest_goal_update = msg
+
+    def _start_follow_person(self):
+        """Activate smoother follow mode and send the initial goal."""
+        # 0. Resume Nav2/SLAM FIRST. After a stationary phase (e.g. the HRIC
+        # introduction) the idle monitor pauses Nav2, so bt_navigator is INACTIVE
+        # and rejects the follow goal ("Action server is inactive"). Mirror the
+        # go_to_pose/go_to_area path so the lifecycle is active before we send.
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self.nav_logger("error", "Follow Person -> Navigation not initialized; cannot follow")
+            return
+        self._clear_costmaps()
+
+        # 1. Tell person_goal_smoother to switch Nav2 params to follow mode
+        if self.follow_mode_client.wait_for_service(timeout_sec=FOLLOW_MODE_SERVICE_TIMEOUT):
+            req = SetBool.Request()
+            req.data = True
+            self.follow_mode_client.call_async(req)
+            self.nav_logger("info", "Follow Person -> smoother set to follow mode")
+        else:
+            self.nav_logger("warn", "Follow Person -> smoother service not available")
+
+        # 2. Wait briefly for the goal smoother to publish the first goal
+        wait_start = self.get_clock().now()
+        while self._latest_goal_update is None:
+            elapsed = (self.get_clock().now() - wait_start).nanoseconds / 1e9
+            if elapsed > FOLLOW_GOAL_UPDATE_TIMEOUT:
+                self.nav_logger("warn", "Follow Person -> no goal update yet, using dummy pose")
+                break
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+
+        # 3. Build initial goal: use latest smoothed goal if available, else dummy
+        if self._latest_goal_update is not None:
+            initial_pose = self._latest_goal_update
+            self.nav_logger(
+                "info",
+                f"Follow Person -> seeding initial goal "
+                f"({initial_pose.pose.position.x:.2f}, {initial_pose.pose.position.y:.2f})"
+            )
+        else:
+            # No smoothed goal yet: seed with the robot's CURRENT pose (always
+            # reachable) so the planner doesn't abort the follow BT before the
+            # GoalUpdater swaps in the real /goal_update target. The old map-origin
+            # (0,0) seed was usually unreachable -> "Failed to create plan" -> the
+            # whole follow goal aborted and the base never moved.
+            initial_pose = PoseStamped()
+            initial_pose.header.frame_id = "map"
+            initial_pose.header.stamp = self.get_clock().now().to_msg()
+            initial_pose.pose.orientation.w = 1.0
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0)
+                )
+                initial_pose.pose.position.x = tf.transform.translation.x
+                initial_pose.pose.position.y = tf.transform.translation.y
+                initial_pose.pose.orientation = tf.transform.rotation
+                self.nav_logger(
+                    "warn",
+                    f"Follow Person -> no goal update yet, seeding current pose "
+                    f"({initial_pose.pose.position.x:.2f}, {initial_pose.pose.position.y:.2f})",
+                )
+            except Exception as e:
+                self.nav_logger(
+                    "warn", f"Follow Person -> no goal update and no TF ({e}); using origin"
+                )
+
+        goal_msg = NavigateToPose.Goal()
+        goal_msg.pose = initial_pose
+        goal_msg.behavior_tree = self._follow_bt_xml
+
+        if not self.goal_action_client.wait_for_server(timeout_sec=FOLLOW_ACTION_SERVER_TIMEOUT):
+            self.nav_logger("error", "Follow Person -> NavigateToPose action not available")
+            return
+
+        goal_future = self.goal_action_client.send_goal_async(goal_msg)
+        goal_future.add_done_callback(self._follow_goal_response_cb)
+        self.nav_logger("info", "Follow Person -> sent initial goal with follow BT")
+
+    def _follow_goal_response_cb(self, future):
+        """Store goal handle so we can cancel it later."""
+        try:
+            handle = future.result()
+            if handle.accepted:
+                self._follow_goal_handle = handle
+                self.nav_logger("info", "Follow Person -> goal accepted")
+            else:
+                self.nav_logger("warn", "Follow Person -> goal rejected by Nav2")
+        except Exception as e:
+            self.nav_logger("error", f"Follow Person -> goal callback error: {e}")
+
+    def _stop_follow_person(self):
+        """Cancel the active follow goal and restore standard nav params."""
+        # 1. Cancel the running goal (robot stops)
+        if self._follow_goal_handle is not None:
+            try:
+                self._follow_goal_handle.cancel_goal_async()
+                self.nav_logger("info", "Follow Person -> goal cancelled")
+            except Exception as e:
+                self.nav_logger("warn", f"Follow Person -> cancel error: {e}")
+            self._follow_goal_handle = None
+
+        # 2. Restore standard Nav2 params
+        if self.follow_mode_client.wait_for_service(timeout_sec=FOLLOW_MODE_SERVICE_TIMEOUT):
+            req = SetBool.Request()
+            req.data = False
+            self.follow_mode_client.call_async(req)
+            self.nav_logger("info", "Follow Person -> smoother restored to standard mode")
 
     def _initialpose_callback(self, msg):
         if not self._initial_pose_set:
@@ -358,7 +557,9 @@ class Nav_Central(Node):
     def check_door(self,request, response):
         self.nav_logger("info","Check_door -> Service called")
 
-        self.lidar_reciever = self.create_subscription(LaserScan,SCAN_TOPIC, self.lidar_callback, 10,callback_group=self.lidar_group )
+        # /scan is published with SensorDataQoS (BEST_EFFORT) by laserscan_multi_merger;
+        # a default RELIABLE subscription is QoS-incompatible and receives nothing.
+        self.lidar_reciever = self.create_subscription(LaserScan, SCAN_TOPIC, self.lidar_callback, qos_profile_sensor_data, callback_group=self.lidar_group)
         self.lidar_msg = None  #Clean for cache msgs
         t.sleep(self.door_rate) #Wait for suscription to start
 
@@ -377,26 +578,36 @@ class Nav_Central(Node):
         start_time = self.get_clock().now()
         while (self.get_clock().now() - start_time) < self.door_timeout: #Timeout in case of absolute failure 
             self.nav_logger("info","Check_door -> Waiting for door to open")
-            door_points = []
-            inf_count = 0
-            point_count = 0
+            # Beams that find nothing (door open -> beam passes through) come back
+            # as inf; clamp them to the sensor max range so they always count as
+            # "far". Average every valid beam in the window each cycle instead of
+            # gating on the inf count.
+            far_value = self.lidar_msg.range_max if self.lidar_msg.range_max > 0.0 else 12.0
+            sensor_min = self.lidar_msg.range_min if self.lidar_msg.range_min > 0.0 else 0.0
 
+            door_points = []
             for count, r in enumerate(self.lidar_msg.ranges):
+                # Select only the beams pointing at the door (index window, with
+                # wrap-around support when range_min > range_max).
                 if self.range_min > self.range_max:
-                    if (count <= self.range_max and count >= 0 ) or (count >= self.range_min):
-                        door_points.append(r)
-                        if(math.isinf(r)):
-                            inf_count += 1
-                        point_count += 1
-                elif self.range_min <= count <= self.range_max:
+                    in_window = (0 <= count <= self.range_max) or (count >= self.range_min)
+                else:
+                    in_window = self.range_min <= count <= self.range_max
+                if not in_window:
+                    continue
+
+                if math.isinf(r) or r > far_value:
+                    door_points.append(far_value)  # nothing in range -> door open
+                elif math.isnan(r) or r < sensor_min:
+                    continue  # invalid reading -> ignore
+                else:
                     door_points.append(r)
 
-            if inf_count > 0: #Filter only if there is points
-                if inf_count < count / 3: #FIlter noise inf, only if is above 1/3 of the points
-                    door_points = [x for x in door_points if not math.isinf(x)]  
-                avg_points = sum(door_points)/ len(door_points)
+            if door_points:
+                avg_points = sum(door_points) / len(door_points)
+                self.nav_logger("info", f"Check_door -> Window avg distance: {avg_points:.2f} m")
 
-                if(avg_points > self.door_distance):
+                if avg_points > self.door_distance:
                     self.nav_logger("info", "Check_door -> Door opened")
                     self.destroy_subscription(self.lidar_reciever)
                     self.lidar_msg = None
@@ -453,43 +664,59 @@ class Nav_Central(Node):
         if behaivor_tree is not None:
             goal_msg.behaivor_tree = behaivor_tree
 
+        # Publish destination + active flag for the arm pointer; finally clears the
+        # flag on any exit (success, failure, or exception).
+        self.current_goal_pub.publish(pose)
+        self.goal_active_pub.publish(Bool(data=True))
+
         attempt = 0
-        while True:
-            attempt += 1
+        try:
+            while True:
+                attempt += 1
 
-            # Action server may not be back yet right after a lifecycle resume.
-            if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
-                self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
+                # Action server may not be back yet right after a lifecycle resume.
+                if not self.goal_action_client.wait_for_server(timeout_sec=TIMEOUT_NAV2_LIFECYCLE):
+                    self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
+                    if max_attempts is not None and attempt >= max_attempts:
+                        return (False, "Action server unavailable")
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                    continue
+
+                _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
+                while not _goal_future.done():
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                goal_handle = _goal_future.result()
+
+                if not goal_handle.accepted:
+                    self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
+                    if max_attempts is not None and attempt >= max_attempts:
+                        return (False, "Goal Rejected")
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                    continue
+
+                result_future = goal_handle.get_result_async()
+                while not result_future.done():
+                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                result = result_future.result()
+
+                if result.status == GoalStatus.STATUS_SUCCEEDED:
+                    self.nav_logger("info", "Goal_Handler -> Goal Reached")
+                    return (True, "Goal Finished")
+
+                self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
                 if max_attempts is not None and attempt >= max_attempts:
-                    return (False, "Action server unavailable")
+                    return (False, f"Goal failed (status {result.status})")
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
-                continue
-
-            _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
-            while not _goal_future.done():
+        finally:
+            self.goal_active_pub.publish(Bool(data=False))
+            # Hold the result until the arm has homed back to its normal pose
+            # (arm_ready True), so callers don't act while the arm is still moving.
+            waited = 0.0
+            while not self.arm_ready and waited < ARM_HOME_TIMEOUT:
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            goal_handle = _goal_future.result()
-
-            if not goal_handle.accepted:
-                self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
-                if max_attempts is not None and attempt >= max_attempts:
-                    return (False, "Goal Rejected")
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
-                continue
-
-            result_future = goal_handle.get_result_async()
-            while not result_future.done():
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            result = result_future.result()
-
-            if result.status == GoalStatus.STATUS_SUCCEEDED:
-                self.nav_logger("info", "Goal_Handler -> Goal Reached")
-                return (True, "Goal Finished")
-
-            self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
-            if max_attempts is not None and attempt >= max_attempts:
-                return (False, f"Goal failed (status {result.status})")
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                waited += 0.1
+            if not self.arm_ready:
+                self.nav_logger("warn", "Goal_Handler -> arm did not report ready before timeout")
 
     def _retreat_if_docked(self):
         """Best-effort: ask the table_docker to back off if it's parked at a
@@ -603,6 +830,53 @@ class Nav_Central(Node):
         response.error = future[1]
         self.pause_slam()
         self.pause_nav2()
+        return response
+
+    def go_to_pose_callback(self, request, response):
+        """Navigate to an arbitrary map-frame pose, through the same omni goal
+        pipeline as go_to_area (retreat-if-docked, resume, clear costmaps, send goal)."""
+        self.nav_logger("info", "Go_To_Pose -> Starting navigation to pose")
+        self._retreat_if_docked()
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self.nav_logger("error", "Go_To_Pose -> Navigation not initialized")
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response
+        self._clear_costmaps()
+        goal = request.target_pose
+        if not goal.header.frame_id:
+            goal.header.frame_id = "map"
+        bt = request.behavior_tree if request.behavior_tree else None
+        ok, msg = self.send_nav_goal(goal, behaivor_tree=bt)
+        response.success = ok
+        response.error = msg
+        self.pause_slam()
+        self.pause_nav2()
+        return response
+
+    def get_robot_pose_callback(self, request, response):
+        """Return the current robot pose from TF (map -> base_link)."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(),
+                timeout=Duration(seconds=1.0))
+        except Exception as e:
+            self.nav_logger("warn", f"Get_Robot_Pose -> TF lookup failed: {e}")
+            response.success = False
+            response.error = f"TF lookup failed: {e}"
+            return response
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.header.stamp = tf.header.stamp
+        pose.pose.position.x = tf.transform.translation.x
+        pose.pose.position.y = tf.transform.translation.y
+        pose.pose.position.z = tf.transform.translation.z
+        pose.pose.orientation = tf.transform.rotation
+        response.success = True
+        response.pose = pose
+        response.error = ""
         return response
 
     def _pose_from_coords(self, coords):
