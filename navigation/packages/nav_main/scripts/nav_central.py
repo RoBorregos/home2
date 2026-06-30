@@ -470,10 +470,31 @@ class Nav_Central(Node):
                 f"({initial_pose.pose.position.x:.2f}, {initial_pose.pose.position.y:.2f})"
             )
         else:
+            # No smoothed goal yet: seed with the robot's CURRENT pose (always
+            # reachable) so the planner doesn't abort the follow BT before the
+            # GoalUpdater swaps in the real /goal_update target. The old map-origin
+            # (0,0) seed was usually unreachable -> "Failed to create plan" -> the
+            # whole follow goal aborted and the base never moved.
             initial_pose = PoseStamped()
             initial_pose.header.frame_id = "map"
             initial_pose.header.stamp = self.get_clock().now().to_msg()
             initial_pose.pose.orientation.w = 1.0
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0)
+                )
+                initial_pose.pose.position.x = tf.transform.translation.x
+                initial_pose.pose.position.y = tf.transform.translation.y
+                initial_pose.pose.orientation = tf.transform.rotation
+                self.nav_logger(
+                    "warn",
+                    f"Follow Person -> no goal update yet, seeding current pose "
+                    f"({initial_pose.pose.position.x:.2f}, {initial_pose.pose.position.y:.2f})",
+                )
+            except Exception as e:
+                self.nav_logger(
+                    "warn", f"Follow Person -> no goal update and no TF ({e}); using origin"
+                )
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = initial_pose

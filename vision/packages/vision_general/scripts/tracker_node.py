@@ -231,9 +231,10 @@ class SingleTracker(Node):
         }
         self.depth_image_time = None
         self.last_depth = None
-        # Re-acquisition state: lazy ReID-model load (best-effort), and throttles for
-        # gallery extraction / re-acquire attempts.
+        # Re-acquisition state: ReID model loads in a BACKGROUND thread (best-effort),
+        # plus throttles for gallery extraction / re-acquire attempts.
         self.reid_failed = False
+        self._reid_loading = False
         self.last_reacq_attempt = 0.0
         pbar = tqdm.tqdm(total=2, desc="Loading models")
 
@@ -464,15 +465,25 @@ class SingleTracker(Node):
 
     # ----------------------------------------------------------- re-acquisition
     def _ensure_reid_model(self):
-        """Lazy-load the SWIN appearance model the first time re-acquisition needs
-        it (kept out of startup so Stage-0 tracking stays light). Best-effort: on
-        failure, latch reid_failed and fall back to ByteTrack-only tracking."""
+        """True only once the SWIN model is loaded. The load takes several seconds,
+        so it runs in a BACKGROUND thread — doing it inline here would block the
+        tracker timer, stall RESULTS_TOPIC, and make person_goal_smoother miss the
+        follow goal (the base then never moves). Until it finishes, re-acquisition is
+        simply unavailable; ByteTrack tracking keeps running uninterrupted."""
         if self.model_reid is not None:
             return True
         if self.reid_failed:
             return False
+        if not self._reid_loading:
+            self._reid_loading = True
+            threading.Thread(target=self._load_reid_model, daemon=True).start()
+        return False
+
+    def _load_reid_model(self):
+        """Background worker: build + load the SWIN ReID model. Best-effort — on
+        failure latch reid_failed and fall back to ByteTrack-only tracking."""
         try:
-            self.get_logger().info("Loading ReID model (SWIN) for re-acquisition ...")
+            self.get_logger().info("Loading ReID model (SWIN) in background ...")
             model = load_network(get_structure())
             model.classifier.classifier = torch.nn.Sequential()
             model.eval()
@@ -480,11 +491,11 @@ class SingleTracker(Node):
                 model = model.cuda()
             self.model_reid = model
             self.get_logger().info("ReID model ready")
-            return True
         except Exception as e:
             self.get_logger().error(f"ReID load failed ({e}); re-acquisition disabled")
             self.reid_failed = True
-            return False
+        finally:
+            self._reid_loading = False
 
     def _embed_crop(self, crop_bgr):
         """Normalized ReID embedding (1-D tensor) for a BGR person crop, or None."""
@@ -693,11 +704,11 @@ class SingleTracker(Node):
         if largest_person["id"] is not None:
             self.person_data["id"] = largest_person["id"]
             self.success(f"Target set: {largest_person['id']}")
-            # Gallery building (and the lazy ReID-model load) happens in the run loop,
-            # NOT here: loading SWIN synchronously could outlast the set-target service
-            # timeout and make track_person() report a false failure. Force the first
-            # gallery extraction to fire on the very next run tick.
+            # Kick off the ReID-model load NOW (non-blocking, background thread) so it
+            # is ready soon after follow starts, and force the first gallery extraction
+            # on the next run tick. The load never blocks the service or the tracker.
             self.last_reid_extraction = 0.0
+            self._ensure_reid_model()
             cv2.rectangle(
                 self.output_image,
                 largest_person["bbox"][:2],
