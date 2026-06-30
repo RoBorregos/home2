@@ -39,6 +39,7 @@ from frida_constants.hri_constants import (
     TASK_STEP_TOPIC,
     TIMEOUT,
     KEYWORD_TOPIC,
+    EI_DETECTION_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
@@ -160,6 +161,9 @@ class HRITasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.start_button_clicked = False
+        # Set when a knock (DSP node) or doorbell (Edge Impulse) is heard.
+        self.door_event_detected = False
+        self.last_door_event = ""
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
@@ -182,6 +186,9 @@ class HRITasks:
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, KEYWORD_TOPIC, self._get_keyword, 10
+        )
+        self.ei_detection_sub = self.node.create_subscription(
+            String, EI_DETECTION_TOPIC, self._get_door_event, 10
         )
 
         self.current_transcription = ""
@@ -409,6 +416,15 @@ class HRITasks:
         except Exception as e:
             self.node.get_logger().error(f"Error parsing KWS JSON: {e}")
             self.keyword = ""
+
+    def _get_door_event(self, msg: String) -> None:
+        """Knock (DSP) or doorbell (Edge Impulse) heard at the door."""
+        try:
+            data = json.loads(msg.data)
+            self.last_door_event = data.get("keyword", "")
+            self.door_event_detected = True
+        except Exception as e:
+            self.node.get_logger().error(f"Error parsing door event JSON: {e}")
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked speech", {}))
     @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
@@ -1524,6 +1540,8 @@ class HRITasks:
         Reset the task status to idle and the start button clicked flag.
         """
         self.start_button_clicked = False
+        self.door_event_detected = False
+        self.last_door_event = ""
         self.task_status_publisher.publish(String(data="idle"))
 
 
