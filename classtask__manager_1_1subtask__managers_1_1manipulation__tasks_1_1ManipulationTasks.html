@@ -115,8 +115,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3d425f1ee7470428b878096464a00095"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d960421f2da5e97c3e5aba73b6bae0e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a7d960421f2da5e97c3e5aba73b6bae0e">close_gripper</a> (self)</td></tr>
 <tr class="separator:a7d960421f2da5e97c3e5aba73b6bae0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a224f2d5ecac38a0245e334169d8c1563"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a224f2d5ecac38a0245e334169d8c1563">follow_person</a> (self, bool follow)</td></tr>
-<tr class="separator:a224f2d5ecac38a0245e334169d8c1563"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adaeb275a6d4d0f812239e5338c3ae354"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#adaeb275a6d4d0f812239e5338c3ae354">follow_person</a> (self, bool follow=True)</td></tr>
+<tr class="separator:adaeb275a6d4d0f812239e5338c3ae354"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2240523eee77c44fc5b6b590d68848c8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a2240523eee77c44fc5b6b590d68848c8">move_joint_positions</a> (self, Union[List[float], dict] joint_positions=None, str named_position=None, float velocity=0.1, degrees=False)</td></tr>
 <tr class="separator:a2240523eee77c44fc5b6b590d68848c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbf59eb45c43409ffb363830439484a7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#acbf59eb45c43409ffb363830439484a7">get_named_target</a> (self, str target_name)</td></tr>
@@ -601,8 +601,8 @@ collision objects left in the scene by perception.</pre>
 <pre class="fragment">Activate or deactivate face following on the arm.</pre> 
 </div>
 </div>
-<a id="a224f2d5ecac38a0245e334169d8c1563" name="a224f2d5ecac38a0245e334169d8c1563"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a224f2d5ecac38a0245e334169d8c1563">&#9670;&#160;</a></span>follow_person()</h2>
+<a id="adaeb275a6d4d0f812239e5338c3ae354" name="adaeb275a6d4d0f812239e5338c3ae354"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adaeb275a6d4d0f812239e5338c3ae354">&#9670;&#160;</a></span>follow_person()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -616,8 +616,8 @@ collision objects left in the scene by perception.</pre>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>follow</em>&#160;</td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>follow</em> = <code>True</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -626,7 +626,11 @@ collision objects left in the scene by perception.</pre>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Save the name of the person detected</pre> 
+<pre class="fragment">Enable/disable arm tracking of a person via follow_person_controller.
+
+When True, the xArm joint1 rotates to keep the tracked person
+centered in the camera image (PI + base-velocity feedforward).
+</pre> 
 </div>
 </div>
 <a id="a3f4b877e33afbdc634e567c33f35db8b" name="a3f4b877e33afbdc634e567c33f35db8b"></a>

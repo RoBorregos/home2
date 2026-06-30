@@ -112,12 +112,16 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:a4f09fb58504d2b95f1a827ae612f045b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a4f09fb58504d2b95f1a827ae612f045b">CONF_THRESHOLD</a> = 0.6</td></tr>
 <tr class="separator:a4f09fb58504d2b95f1a827ae612f045b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92bbfa214a690f290f9c0ef5e891393d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a92bbfa214a690f290f9c0ef5e891393d">DEPTH_THRESHOLD</a> = 100</td></tr>
-<tr class="separator:a92bbfa214a690f290f9c0ef5e891393d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09af44594ddde27aa9e4a61ff302a480"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a09af44594ddde27aa9e4a61ff302a480">DEPTH_THRESHOLD_NS</a> = 50_000_000</td></tr>
+<tr class="separator:a09af44594ddde27aa9e4a61ff302a480"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afaa1a3ce7a55d5f70514688ebd3cbec8"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#afaa1a3ce7a55d5f70514688ebd3cbec8">REID_EXTRACT_FREQ</a> = 0.3</td></tr>
 <tr class="separator:afaa1a3ce7a55d5f70514688ebd3cbec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31ff474623ba03e3fc97d08114c58089"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a31ff474623ba03e3fc97d08114c58089">MAX_EMBEDDINGS</a> = 128</td></tr>
 <tr class="separator:a31ff474623ba03e3fc97d08114c58089"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae23d1f1deb79d7758009c12310a17d5c"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#ae23d1f1deb79d7758009c12310a17d5c">REID_MATCH_THRESHOLD</a> = 0.6</td></tr>
+<tr class="separator:ae23d1f1deb79d7758009c12310a17d5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a33ef26bab63873181829f182dd058358"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a33ef26bab63873181829f182dd058358">REID_REACQUIRE_FREQ</a> = 0.3</td></tr>
+<tr class="separator:a33ef26bab63873181829f182dd058358"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa34171b8180001c3b26771ff9efd5ed4"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#aa34171b8180001c3b26771ff9efd5ed4">DEEPSORT_MAX_COSINE_DISTANCE</a> = 0.3</td></tr>
 <tr class="separator:aa34171b8180001c3b26771ff9efd5ed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1019ff64cd9459d9a26b3a73dd0ed134"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a1019ff64cd9459d9a26b3a73dd0ed134">DEEPSORT_NN_BUDGET</a> = 100</td></tr>
@@ -126,6 +130,8 @@ Variables</h2></td></tr>
 <tr class="separator:ae5cd4fdc4c259a30ac947a0d640be9d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38d9efff05ec11f578a18bf6f8e067cf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a38d9efff05ec11f578a18bf6f8e067cf">DEEPSORT_N_INIT</a> = 3</td></tr>
 <tr class="separator:a38d9efff05ec11f578a18bf6f8e067cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a91ecfb767c39de2c712186e8af64373a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetracker__node.html#a91ecfb767c39de2c712186e8af64373a">DEPTH_JUMP_THRESHOLD</a> = 0.5</td></tr>
+<tr class="separator:a91ecfb767c39de2c712186e8af64373a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Node to track a single person and re-id them if necessary.
@@ -252,14 +258,28 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
 
 </div>
 </div>
-<a id="a92bbfa214a690f290f9c0ef5e891393d" name="a92bbfa214a690f290f9c0ef5e891393d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92bbfa214a690f290f9c0ef5e891393d">&#9670;&#160;</a></span>DEPTH_THRESHOLD</h2>
+<a id="a91ecfb767c39de2c712186e8af64373a" name="a91ecfb767c39de2c712186e8af64373a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a91ecfb767c39de2c712186e8af64373a">&#9670;&#160;</a></span>DEPTH_JUMP_THRESHOLD</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int tracker_node.DEPTH_THRESHOLD = 100</td>
+          <td class="memname">float tracker_node.DEPTH_JUMP_THRESHOLD = 0.5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a09af44594ddde27aa9e4a61ff302a480" name="a09af44594ddde27aa9e4a61ff302a480"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09af44594ddde27aa9e4a61ff302a480">&#9670;&#160;</a></span>DEPTH_THRESHOLD_NS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int tracker_node.DEPTH_THRESHOLD_NS = 50_000_000</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -288,6 +308,34 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
       <table class="memname">
         <tr>
           <td class="memname">float tracker_node.REID_EXTRACT_FREQ = 0.3</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae23d1f1deb79d7758009c12310a17d5c" name="ae23d1f1deb79d7758009c12310a17d5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae23d1f1deb79d7758009c12310a17d5c">&#9670;&#160;</a></span>REID_MATCH_THRESHOLD</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float tracker_node.REID_MATCH_THRESHOLD = 0.6</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a33ef26bab63873181829f182dd058358" name="a33ef26bab63873181829f182dd058358"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a33ef26bab63873181829f182dd058358">&#9670;&#160;</a></span>REID_REACQUIRE_FREQ</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float tracker_node.REID_REACQUIRE_FREQ = 0.3</td>
         </tr>
       </table>
 </div><div class="memdoc">

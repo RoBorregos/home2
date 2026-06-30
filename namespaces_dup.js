@@ -141,6 +141,7 @@ var namespaces_dup =
     ] ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", "namespacefollow__face__node__copt" ],
+    [ "follow_person_controller", "namespacefollow__person__controller.html", "namespacefollow__person__controller" ],
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],
     [ "follow_person_node copy", "namespacefollow__person__node_01copy.html", "namespacefollow__person__node_01copy" ],
     [ "follow_person_v2", "namespacefollow__person__v2.html", "namespacefollow__person__v2" ],
@@ -210,7 +211,8 @@ var namespaces_dup =
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", "namespaceheatmapPlace__Server" ],
     [ "help_me_carry", "namespacehelp__me__carry.html", "namespacehelp__me__carry" ],
     [ "hric", "namespacehric.html", [
-      [ "generate_launch_description", "namespacehric.html#a6ba4e2587b8b923faea3b8b23fdb037d", null ]
+      [ "generate_launch_description", "namespacehric.html#ad1dd056eac0c72bace8a6fdd839dd77d", null ],
+      [ "launch_function", "namespacehric.html#a9ba344eaf004b5e2b4032d983f068469", null ]
     ] ],
     [ "hric_commands", "namespacehric__commands.html", "namespacehric__commands" ],
     [ "hric_launch", "namespacehric__launch.html", [
@@ -345,6 +347,7 @@ var namespaces_dup =
       [ "get_object_point", "namespaceperception__utils.html#adf7d95078b4cecc224d75c0f20109553", null ],
       [ "point_in_range", "namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69", null ]
     ] ],
+    [ "person_goal_smoother", "namespaceperson__goal__smoother.html", "namespaceperson__goal__smoother" ],
     [ "person_in_map", "namespaceperson__in__map.html", "namespaceperson__in__map" ],
     [ "pick_and_place", "namespacepick__and__place.html", "namespacepick__and__place" ],
     [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", "namespacepickandplace__task__manager" ],
@@ -534,6 +537,7 @@ var namespaces_dup =
     [ "test_flake8", "namespacetest__flake8.html", [
       [ "test_flake8", "namespacetest__flake8.html#a19bfcf597a661a366225b7d0cedd123c", null ]
     ] ],
+    [ "test_follow_person", "namespacetest__follow__person.html", "namespacetest__follow__person" ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", "namespacetest__go__to__hand" ],
     [ "test_grasp_confirmation", "namespacetest__grasp__confirmation.html", [
       [ "test_count_by_class", "namespacetest__grasp__confirmation.html#a28f70b5b93361f959019540e58c63d24", null ],

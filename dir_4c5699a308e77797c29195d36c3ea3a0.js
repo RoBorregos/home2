@@ -6,6 +6,7 @@ var dir_4c5699a308e77797c29195d36c3ea3a0 =
     [ "demo_roborregosday.py", "demo__roborregosday_8py.html", "demo__roborregosday_8py" ],
     [ "egsr_cut.py", "egsr__cut_8py.html", "egsr__cut_8py" ],
     [ "follow_face_node_copt.py", "follow__face__node__copt_8py.html", "follow__face__node__copt_8py" ],
+    [ "follow_person_controller.py", "follow__person__controller_8py.html", "follow__person__controller_8py" ],
     [ "follow_person_node copy.py", "follow__person__node_01copy_8py.html", "follow__person__node_01copy_8py" ],
     [ "follow_person_node.py", "follow__person__node_8py.html", "follow__person__node_8py" ],
     [ "follow_person_v2.py", "follow__person__v2_8py.html", "follow__person__v2_8py" ],

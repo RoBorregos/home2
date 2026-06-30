@@ -12,7 +12,7 @@ var classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1Manipulati
     [ "clear_collision_objects", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a62ddf96c70e22e422fba1bf781cb58a0", null ],
     [ "close_gripper", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a7d960421f2da5e97c3e5aba73b6bae0e", null ],
     [ "follow_face", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af519b448d9abce041240c19af65bbada", null ],
-    [ "follow_person", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a224f2d5ecac38a0245e334169d8c1563", null ],
+    [ "follow_person", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#adaeb275a6d4d0f812239e5338c3ae354", null ],
     [ "get_joint_positions", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3f4b877e33afbdc634e567c33f35db8b", null ],
     [ "get_named_target", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#acbf59eb45c43409ffb363830439484a7", null ],
     [ "get_optimal_pose_for_plane", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ad7caad03143d77a04f5f94a3bd14a253", null ],

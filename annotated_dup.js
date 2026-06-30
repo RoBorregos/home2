@@ -112,6 +112,9 @@ var annotated_dup =
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", [
       [ "FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", "classfollow__face__node__copt_1_1FollowFaceNode" ]
     ] ],
+    [ "follow_person_controller", "namespacefollow__person__controller.html", [
+      [ "FollowPersonController", "classfollow__person__controller_1_1FollowPersonController.html", "classfollow__person__controller_1_1FollowPersonController" ]
+    ] ],
     [ "follow_person_node", "namespacefollow__person__node.html", [
       [ "FollowPersonNode", "classfollow__person__node_1_1FollowPersonNode.html", "classfollow__person__node_1_1FollowPersonNode" ]
     ] ],
@@ -293,6 +296,9 @@ var annotated_dup =
       [ "simple_rx", "namespaceomnidriver_1_1simple__rx.html", [
         [ "RawSerialReceiver", "classomnidriver_1_1simple__rx_1_1RawSerialReceiver.html", "classomnidriver_1_1simple__rx_1_1RawSerialReceiver" ]
       ] ]
+    ] ],
+    [ "person_goal_smoother", "namespaceperson__goal__smoother.html", [
+      [ "PersonGoalSmoother", "classperson__goal__smoother_1_1PersonGoalSmoother.html", "classperson__goal__smoother_1_1PersonGoalSmoother" ]
     ] ],
     [ "person_in_map", "namespaceperson__in__map.html", [
       [ "PersonLocation", "classperson__in__map_1_1PersonLocation.html", "classperson__in__map_1_1PersonLocation" ]
@@ -483,6 +489,9 @@ var annotated_dup =
     ] ],
     [ "test_face_rec", "namespacetest__face__rec.html", [
       [ "TestHRICFaceSave", "classtest__face__rec_1_1TestHRICFaceSave.html", "classtest__face__rec_1_1TestHRICFaceSave" ]
+    ] ],
+    [ "test_follow_person", "namespacetest__follow__person.html", [
+      [ "TestFollowPerson", "classtest__follow__person_1_1TestFollowPerson.html", "classtest__follow__person_1_1TestFollowPerson" ]
     ] ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", [
       [ "TestGoToHand", "classtest__go__to__hand_1_1TestGoToHand.html", "classtest__go__to__hand_1_1TestGoToHand" ]

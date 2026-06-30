@@ -98,12 +98,29 @@ $(document).ready(function(){initNavTree('namespacehric.html',''); initResizable
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a6ba4e2587b8b923faea3b8b23fdb037d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacehric.html#a6ba4e2587b8b923faea3b8b23fdb037d">generate_launch_description</a> ()</td></tr>
-<tr class="separator:a6ba4e2587b8b923faea3b8b23fdb037d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1dd056eac0c72bace8a6fdd839dd77d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacehric.html#ad1dd056eac0c72bace8a6fdd839dd77d">generate_launch_description</a> ()</td></tr>
+<tr class="separator:ad1dd056eac0c72bace8a6fdd839dd77d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9ba344eaf004b5e2b4032d983f068469"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacehric.html#a9ba344eaf004b5e2b4032d983f068469">launch_function</a> (context, *args, **kwargs)</td></tr>
+<tr class="separator:a9ba344eaf004b5e2b4032d983f068469"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a6ba4e2587b8b923faea3b8b23fdb037d" name="a6ba4e2587b8b923faea3b8b23fdb037d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ba4e2587b8b923faea3b8b23fdb037d">&#9670;&#160;</a></span>generate_launch_description()</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><pre class="fragment">HRI follow-person bringup — OMNIBASE by default (dashgo still selectable).
+
+Same base-selection convention as general_navigation.launch.py, plus the
+person_goal_smoother that bridges the vision tracker to the Nav2 GoalUpdater.
+
+  omnibase (default): omni_basics + slam_toolbox localization + nav2_omni
+  dashgo            : nav_basics + RTABMap localization + nav2 (nav2_standard)
+
+The actual "follow person" trigger is the /navigation/follow_person service on
+nav_central; it switches person_goal_smoother to follow mode (which swaps in the
+nav2_omni_following.yaml params) and sends a NavigateToPose goal with the
+follow_dynamic_point.xml behaviour tree.
+
+Override the base:   ros2 launch nav_main hric.launch.py default_base:=dashgo
+</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="ad1dd056eac0c72bace8a6fdd839dd77d" name="ad1dd056eac0c72bace8a6fdd839dd77d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1dd056eac0c72bace8a6fdd839dd77d">&#9670;&#160;</a></span>generate_launch_description()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -113,6 +130,40 @@ Functions</h2></td></tr>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9ba344eaf004b5e2b4032d983f068469" name="a9ba344eaf004b5e2b4032d983f068469"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9ba344eaf004b5e2b4032d983f068469">&#9670;&#160;</a></span>launch_function()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def hric.launch_function </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>context</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">*&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">**&#160;</td>
+          <td class="paramname"><em>kwargs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">

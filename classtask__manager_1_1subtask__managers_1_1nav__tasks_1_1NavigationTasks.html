@@ -116,6 +116,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a03078902443e9c684ea6deddb7a33921"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af971c18c37a11bef89307e70ef8324f7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af971c18c37a11bef89307e70ef8324f7">move_to_location</a> (self, location, sublocation)</td></tr>
 <tr class="separator:af971c18c37a11bef89307e70ef8324f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9be959e78a1de1f952fbe07f9e09c1f6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a9be959e78a1de1f952fbe07f9e09c1f6">follow_person</a> (self, bool follow=True)</td></tr>
+<tr class="separator:a9be959e78a1de1f952fbe07f9e09c1f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78c8ac7379204c5f803320efb743d2fc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a78c8ac7379204c5f803320efb743d2fc">get_path_info</a> (self, location_b, sublocation_b, location_a=&quot;&quot;, sublocation_a=&quot;&quot;)</td></tr>
 <tr class="separator:a78c8ac7379204c5f803320efb743d2fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa979bd089810c5d4d3ba058eb7903826"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa979bd089810c5d4d3ba058eb7903826">dock_table</a> (self, offset=0.0)</td></tr>
@@ -145,6 +147,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a59d67384fbd3a659f1adfdf01f07d041"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae8211388e8c9d7842cf5cb6e1fc53b8e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ae8211388e8c9d7842cf5cb6e1fc53b8e">move_to_location_srv</a></td></tr>
 <tr class="separator:ae8211388e8c9d7842cf5cb6e1fc53b8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a711b7591b876b443c98392fab63d9eba"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a711b7591b876b443c98392fab63d9eba">follow_person_srv</a></td></tr>
+<tr class="separator:a711b7591b876b443c98392fab63d9eba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a68abe4bd415aead403c2811f3976e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a6a68abe4bd415aead403c2811f3976e5">nav_query_srv</a></td></tr>
 <tr class="separator:a6a68abe4bd415aead403c2811f3976e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6304e8324efdaa9ed0410434756ed2c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ad6304e8324efdaa9ed0410434756ed2c">dock_table_srv</a></td></tr>
@@ -394,6 +398,40 @@ offset: desired front offset in meters; 0.0 uses the docker default.
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Move forward `step` meters along the current heading (incremental search).</pre> 
+</div>
+</div>
+<a id="a9be959e78a1de1f952fbe07f9e09c1f6" name="a9be959e78a1de1f952fbe07f9e09c1f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9be959e78a1de1f952fbe07f9e09c1f6">&#9670;&#160;</a></span>follow_person()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.follow_person </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>follow</em> = <code>True</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Activate/deactivate person-following navigation.
+
+When True: nav_central sends NavigateToPose with the follow BT using
+the latest /goal_update pose, and person_goal_smoother switches Nav2
+to follow-mode params.
+When False: the active goal is cancelled and nav params are restored.
+</pre> 
 </div>
 </div>
 <a id="aaf7596f84ae56e1471a2670e9d79d41f" name="aaf7596f84ae56e1471a2670e9d79d41f"></a>
@@ -730,6 +768,20 @@ standoff_distance&gt;0, stop that far short of the point, facing it.</pre>
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.door_checking_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a711b7591b876b443c98392fab63d9eba" name="a711b7591b876b443c98392fab63d9eba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a711b7591b876b443c98392fab63d9eba">&#9670;&#160;</a></span>follow_person_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.follow_person_srv</td>
         </tr>
       </table>
 </div><div class="memdoc">
