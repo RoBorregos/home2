@@ -46,19 +46,29 @@ def launch_function(context, *args, **kwargs):
     omni_map_yaml_value = omni_map_yaml.perform(context)
     use_static_map_default = 'true' if os.path.exists(omni_map_yaml_value) else 'false'
     use_static_map = LaunchConfiguration('use_static_map_server', default=use_static_map_default)
+    static_on = use_static_map.perform(context).lower() in ('true', '1')
     print(f"[general_navigation] static map '{omni_map_yaml_value}' "
           f"exists={os.path.exists(omni_map_yaml_value)} -> use_static_map_server={use_static_map_default}")
 
     # Keepout (virtual obstacle) filter — AUTO-enabled when a mask named
     # "<MAP_NAME>_keepout_mask.yaml" exists next to the map (draw it in the map
     # tagger UI). Override with use_keepout:=true|false or keepout_mask:=/path.yaml.
+    # Skipped while the static map server owns /map: with the editable .pgm you paint
+    # obstacles straight into the map, so the keepout filter is redundant there (and it
+    # avoids the extra filter servers/topics). Force it back on with use_keepout:=true.
     keepout_mask_default = os.path.join(maps_dir, f'{areas_map_name}_keepout_mask.yaml')
     keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
     keepout_mask_value = keepout_mask.perform(context)
-    use_keepout_default = 'true' if os.path.exists(keepout_mask_value) else 'false'
+    keepout_exists = os.path.exists(keepout_mask_value)
+    use_keepout_default = 'true' if (keepout_exists and not static_on) else 'false'
     use_keepout = LaunchConfiguration('use_keepout', default=use_keepout_default)
-    print(f"[general_navigation] keepout mask '{keepout_mask_value}' "
-          f"exists={os.path.exists(keepout_mask_value)} -> use_keepout={use_keepout_default}")
+    if keepout_exists and static_on:
+        print(f"[general_navigation] keepout mask '{keepout_mask_value}' exists but "
+              f"use_static_map_server=true -> keepout DISABLED "
+              f"(paint obstacles into the static .pgm; use_keepout:=true to force on)")
+    else:
+        print(f"[general_navigation] keepout mask '{keepout_mask_value}' "
+              f"exists={keepout_exists} -> use_keepout={use_keepout_default}")
 
     nav_central_node = Node(
         package='nav_main',
