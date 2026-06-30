@@ -11,10 +11,17 @@ from typing import List, Tuple
 
 
 class ExplorationPlanner:
-    def __init__(self, areas_json_path: str):
-        """Initialize the exploration planner with areas data"""
-        with open(areas_json_path, "r") as file:
-            self.areas = json.load(file)
+    def __init__(self, areas_json_path):
+        """Initialize the exploration planner with areas data.
+
+        Accepts either a filesystem path to areas.json or a pre-loaded dict
+        (e.g. nav.areas_backup or the result of nav.retrieve_areas()).
+        """
+        if isinstance(areas_json_path, dict):
+            self.areas = areas_json_path
+        else:
+            with open(areas_json_path, "r") as file:
+                self.areas = json.load(file)
 
         # Extract valid exploration areas (exclude start_area and entrance)
         self.exploration_areas = {

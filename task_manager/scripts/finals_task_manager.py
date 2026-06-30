@@ -16,6 +16,7 @@ from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
 # from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from task_manager.utils.baml_client.types import CommandListLLM
+from task_manager.utils.exploration_planner import ExplorationPlanner
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -25,17 +26,39 @@ from frida_constants.vision_classes import BBOX
 from frida_constants.vision_enums import DetectBy
 
 
-import json
 from collections import deque
-
-import os
-from ament_index_python.packages import get_package_share_directory
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
 MAX_TRASH_SOLVED = 1
 MAX_OBJECTS_PLACED = 1
+
+# Subarea names that exist in areas.json but are not real placement surfaces —
+# they are pure navigation waypoints or special spots. Anything else is a
+# candidate placement location.
+NON_PLACEMENT_SUBAREAS = {
+    "safe_place",
+    "polygon",
+    "trashbin",
+    "house_entry",
+    "entrance",
+}
+
+# Objects the gripper struggles to handle; skip during misplaced-object cleanup.
+IGNORE_PICK = ["orange_juice", "cornflakes", "tuna_can"]
+
+# Fallback when hri.query_location cannot resolve a category to a location.
+# Used only as a safety net so the task does not abort if the locations
+# collection is unseeded or returns junk.
+FALLBACK_CATEGORY_TO_LOCATION = {
+    "snack": ("bedroom", "side_table"),
+    "dish": ("kitchen", "table"),
+    "cleaning_supply": ("kitchen", "dishwasher"),
+    "fruit": ("office", "desk"),
+    "drink": ("office", "bar"),
+    "food": ("living_room", "cabinet"),
+}
 
 
 def confirm_command(interpreted_text, target_info):
@@ -89,78 +112,15 @@ class FINALS_TM(Node):
         self.pick_count = 0
         self.curr_location = "start_area"
         self.curr_sublocation = "safe_place"
-        self.ignore_pick = ["orange_juice", "cornflakes", "tuna_can"]
         self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
 
-        self.LOCATION_TO_CATEGORY = {
-            ("bedroom", "side_table"): "snack",
-            ("kitchen", "table"): "dish",
-            ("kitchen", "dishwasher"): "cleaning_supply",
-            ("office", "desk"): "fruit",
-            ("office", "bar"): "drink",
-            ("living_room", "cabinet"): "food",
-        }
-
-        self.CATEGORY_TO_LOCATION = {
-            "snack": ("bedroom", "side_table"),
-            "dish": ("kitchen", "table"),
-            "cleaning_supply": ("kitchen", "dishwasher"),
-            "fruit": ("office", "desk"),
-            "drink": ("office", "bar"),
-            "food": ("living_room", "cabinet"),
-        }
-        self.PLACEMENT_LOCATIONS = [
-            ("bedroom", "bedside_table"),
-            ("bedroom", "side_table"),
-            ("bedroom", "bed"),
-            ("kitchen", "table"),
-            ("kitchen", "dishwasher"),
-            ("kitchen", "sink"),
-            ("kitchen", "shelf"),
-            ("kitchen", "refrigerator"),
-            ("office", "desk"),
-            ("office", "bar"),
-            ("living_room", "tv_stand"),
-            ("living_room", "cabinet"),
-            ("living_room", "sofa"),
-        ]
-        self.exploration_locations = [
-            ["living_room", "house_entry"],
-            ["living_room", "sofa"],
-            ["living_room", "tv_stand"],
-            ["office", "safe_place"],
-            ["office", "desk"],
-            ["office", "bar"],
-            ["bedroom", "safe_place"],
-            ["bedroom", "side_table"],
-            ["bedroom", "bed"],
-            ["bedroom", "bedside_table"],
-            ["kitchen", "safe_place"],
-            ["kitchen", "dishwasher"],
-            ["kitchen", "sink"],
-            ["kitchen", "table"],
-            ["kitchen", "shelf"],
-            ["living_room", "cabinet"],
-            # ["exit", "safe_place"], # Uncomment to enable Welcome Guest task
-        ]
-
-        package_share_directory = get_package_share_directory("frida_constants")
-        # Load areas from the JSON file
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-        with open(file_path, "r") as file:
-            self.areas = json.load(file)
-
-        for loc in self.PLACEMENT_LOCATIONS:
-            if loc[0] not in self.areas:
-                raise ValueError(f"{loc[0]} {loc[1]} not in areas.json")
-            elif loc[1] not in self.areas[loc[0]]:
-                raise ValueError(f"{loc[0]} not in {loc[1]} in areas.json")
-
-        for loc in self.exploration_locations:
-            if loc[0] not in self.areas:
-                raise ValueError(f"{loc[0]} {loc[1]} not in areas.json")
-            elif loc[1] not in self.areas[loc[0]]:
-                raise ValueError(f"{loc[0]} not in {loc[1]} in areas.json")
+        # Areas / route are loaded dynamically on START so the task picks up
+        # whatever map the navigation stack is currently using (matches the
+        # pattern in gpsr_task_manager.py: nav.retrieve_areas() with
+        # nav.areas_backup as fallback).
+        self._areas: dict | None = None
+        self.exploration_locations: list[tuple[str, str]] = []
+        self.placement_locations: set[tuple[str, str]] = set()
 
         self.commands = deque()
         if isinstance(self.commands, dict):
@@ -170,6 +130,93 @@ class FINALS_TM(Node):
 
     def timeout(self, timeout: int = 2):
         time.sleep(timeout)
+
+    def _get_areas(self) -> dict:
+        """Fetch the live areas map. Prefers the retrieve_areas service so
+        poses reflect the current map; falls back to nav.areas_backup
+        (loaded from areas.json at package init) when the service is
+        unavailable or returns junk."""
+        if self._areas is not None:
+            return self._areas
+        areas = None
+        try:
+            status, data = self.subtask_manager.nav.retrieve_areas()
+            if status == Status.EXECUTION_SUCCESS and isinstance(data, dict) and data:
+                areas = data
+            else:
+                Logger.warn(self, f"retrieve_areas returned status={status}; using backup map")
+        except Exception as e:
+            Logger.warn(self, f"retrieve_areas failed: {e}; using backup map")
+        if areas is None:
+            backup = getattr(self.subtask_manager.nav, "areas_backup", None)
+            areas = backup if isinstance(backup, dict) else {}
+        self._areas = areas
+        return self._areas
+
+    def _build_route_from_areas(self, areas: dict) -> None:
+        """Populate self.exploration_locations and self.placement_locations
+        from the live areas map. Exploration order uses ExplorationPlanner
+        (nearest-neighbor over rooms) and within each room visits its
+        subareas in the order they appear in the map."""
+        if not areas:
+            Logger.error(self, "No areas available; exploration route will be empty")
+            self.exploration_locations = []
+            self.placement_locations = set()
+            return
+
+        try:
+            planner = ExplorationPlanner(areas)
+            room_order = planner.plan_exploration_order(start_area=self.curr_location)
+        except Exception as e:
+            Logger.warn(self, f"ExplorationPlanner failed ({e}); falling back to insertion order")
+            room_order = [r for r in areas.keys() if r not in ("start_area", "entrance")]
+
+        route: list[tuple[str, str]] = []
+        placement: set[tuple[str, str]] = set()
+        for room in room_order:
+            subareas = areas.get(room, {})
+            if not isinstance(subareas, dict):
+                continue
+            for sub, pose in subareas.items():
+                if sub in NON_PLACEMENT_SUBAREAS:
+                    continue
+                if not isinstance(pose, list) or len(pose) < 2:
+                    continue
+                route.append((room, sub))
+                placement.add((room, sub))
+            # If the room has a safe_place, visit it once at the start of the
+            # room so the robot has a known anchor before sweeping surfaces.
+            if "safe_place" in subareas and (room, "safe_place") not in route:
+                route.insert(
+                    next((i for i, loc in enumerate(route) if loc[0] == room), len(route)),
+                    (room, "safe_place"),
+                )
+
+        self.exploration_locations = route
+        self.placement_locations = placement
+        Logger.info(
+            self,
+            f"Built exploration route ({len(route)} waypoints, "
+            f"{len(placement)} placement spots): {route}",
+        )
+
+    def _resolve_category_location(self, category: str) -> tuple[str, str] | None:
+        """Resolve a category name (e.g. 'snack') to (area, subarea) using
+        hri.query_location, with FALLBACK_CATEGORY_TO_LOCATION as safety net."""
+        try:
+            hits = self.subtask_manager.hri.query_location(category, top_k=1)
+            if hits:
+                hit = hits[0]
+                area = getattr(hit, "area", None)
+                sub = getattr(hit, "subarea", None) or "safe_place"
+                if area:
+                    return (area, sub)
+        except Exception as e:
+            Logger.warn(self, f"query_location('{category}') failed: {e}")
+        fallback = FALLBACK_CATEGORY_TO_LOCATION.get(category)
+        if fallback:
+            Logger.info(self, f"Using fallback location for category '{category}': {fallback}")
+        return fallback
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location and update current position"""
@@ -197,7 +244,7 @@ class FINALS_TM(Node):
             try:
                 time.sleep(2)
                 status, detections = self.subtask_manager.vision.detect_objects(
-                    timeout=timeout, ignore_labels=[] if not ignore else self.ignore_pick
+                    timeout=timeout, ignore_labels=[] if not ignore else IGNORE_PICK
                 )
             except Exception as e:
                 self.get_logger().error(f"Error detecting objects: {e}")
@@ -310,6 +357,12 @@ class FINALS_TM(Node):
                 else:
                     Logger.error(self, "Failed to check door status")
                 time.sleep(4)
+            # Build the exploration route from the live map before we start
+            # moving. This replaces the previous hardcoded location list.
+            self._build_route_from_areas(self._get_areas())
+            if not self.exploration_locations:
+                Logger.error(self, "Empty exploration route; cannot proceed with exploration")
+
             self.navigate_to("living_room", "house_entry", False)
             self.subtask_manager.hri.say(
                 "I will start now. Referee please stay close to me in case I need help.", wait=False
@@ -351,7 +404,7 @@ class FINALS_TM(Node):
 
         elif self.current_state == FINALS_TM.States.CHECK_TRASH:
             location = tuple(self.exploration_locations[self.index])
-            if location not in self.PLACEMENT_LOCATIONS:
+            if location not in self.placement_locations:
                 """Handle trash objects on the floor"""
                 if self.problems_solved["trash"] < 2:
                     res = self.objects_on_floor(below_z=0.1, retries=4, timeout=10)
@@ -374,7 +427,7 @@ class FINALS_TM(Node):
 
         elif self.current_state == FINALS_TM.States.CHECK_OBJECTS:
             location = tuple(self.exploration_locations[self.index])
-            if location in self.PLACEMENT_LOCATIONS:
+            if location in self.placement_locations:
                 """Handle objects that are not in their correct location"""
                 if self.problems_solved["misplaced_objects"] < 2:
                     self.subtask_manager.manipulation.move_to_position("table_stare")
@@ -391,9 +444,16 @@ class FINALS_TM(Node):
                         category = self.subtask_manager.hri.deterministic_categorization(
                             i.classname
                         )
-                        if location != self.CATEGORY_TO_LOCATION.get(category):
+                        correct_loc = self._resolve_category_location(category)
+                        if correct_loc is None:
+                            Logger.warn(
+                                self,
+                                f"No location resolved for category '{category}'; skipping {i.classname}",
+                            )
+                            continue
+                        if location != correct_loc:
                             self.subtask_manager.hri.say(
-                                f"I have detected a {i.classname} on the {location[0]} {location[1]} which is not its correct location. I will try to pick it up and place it on the {self.CATEGORY_TO_LOCATION[category][0]} {self.CATEGORY_TO_LOCATION[category][1]}."
+                                f"I have detected a {i.classname} on the {location[0]} {location[1]} which is not its correct location. I will try to pick it up and place it on the {correct_loc[0]} {correct_loc[1]}."
                             )
                             s, a = self.gpsr_individual_tasks.pick_object(
                                 {"action": "pick_object", "object_to_pick": i.classname}
@@ -402,7 +462,6 @@ class FINALS_TM(Node):
                             if s == Status.TARGET_NOT_FOUND:
                                 continue
 
-                            correct_loc = self.CATEGORY_TO_LOCATION[category]
                             self.navigate_to(correct_loc[0], correct_loc[1])
                             self.subtask_manager.manipulation.move_to_position("table_stare")
                             self.subtask_manager.hri.say(
