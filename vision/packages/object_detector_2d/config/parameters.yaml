@@ -12,6 +12,7 @@ ObjectDetect2D:
     TARGET_FRAME: base_link
     models:
       - yolo_finetuned
+      - yolo_finetunedRC
     USE_ACTIVE_FLAG: False
     DEPTH_ACTIVE: True
     VERBOSE: False
