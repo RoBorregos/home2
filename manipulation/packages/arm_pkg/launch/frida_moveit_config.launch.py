@@ -301,7 +301,7 @@ def launch_setup(context, *args, **kwargs):
         ros2_control_launch,
         control_node,
         downsample_pcd,
-        nav_goal_arm_pointer_node,
+        #nav_goal_arm_pointer_node,
     ]
 
 
