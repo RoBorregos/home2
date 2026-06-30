@@ -2,6 +2,7 @@
 """Calibrate the 3 cabinet shelf heights by clicking them in RViz Publish Point.
 Run: ros2 run xarm_utils shelf_height_calibrator.py (writes config/shelf_levels.json)."""
 
+import argparse
 import json
 import os
 import threading
@@ -92,6 +93,16 @@ class ShelfHeightCalibrator(Node):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--arena",
+        type=int,
+        default=None,
+        help="Arena (1/2/3) to print the ready-to-paste block for "
+        "SHELF_LEVELS_BY_ARENA.",
+    )
+    args, _ = parser.parse_known_args()
+
     rclpy.init()
     node = ShelfHeightCalibrator()
     executor = MultiThreadedExecutor()
@@ -111,6 +122,13 @@ def main():
         for k in sorted(levels):
             print(f"  level {k}: {levels[k]:.3f} m")
         print(f"\nSaved to: {path}")
+        if args.arena is not None:
+            heights_str = ", ".join(f"{levels[k]:.3f}" for k in sorted(levels))
+            print(
+                "\nPaste this into frida_constants/manipulation_constants.py "
+                "(SHELF_LEVELS_BY_ARENA):\n"
+                f"    {args.arena}: [{heights_str}],  # arena {args.arena}"
+            )
     except (KeyboardInterrupt, EOFError):
         print("\nAborted; nothing written.")
     finally:

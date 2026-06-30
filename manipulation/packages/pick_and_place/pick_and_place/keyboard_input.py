@@ -15,16 +15,12 @@ from frida_constants.vision_constants import (
 )
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
+    SHELF_SCAN_TOLERANCE,
+    get_shelf_levels,
 )
 from frida_interfaces.srv import GetOptimalPositionForPlane
 from std_srvs.srv import Empty
 import json
-
-
-# Shelf level surface heights in base_link Z (match pickandplace_task_manager
-# shelf_level_heights; recalibrate per shelf with RViz Publish Point).
-SHELF_LEVEL_HEIGHTS = [0.599, 0.946, 1.298]  # calibrated 2026-06-21 (L1,L2,L3)
-SHELF_SCAN_TOLERANCE = 0.1
 
 
 class KeyboardInput(Node):
@@ -34,8 +30,11 @@ class KeyboardInput(Node):
         self.declare_parameter("min_distance", 0.0)
         self.declare_parameter("max_distance", float("inf"))
 
+        self.declare_parameter("arena", 1)
+
         self.min_distance = self.get_parameter("min_distance").value
         self.max_distance = self.get_parameter("max_distance").value
+        self.arena = self.get_parameter("arena").value
 
         callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -154,7 +153,7 @@ class KeyboardInput(Node):
     def scan_shelf_levels(self):
         """Face each shelf level so the octomap/spheres build before a shelf pick or
         place. Mirrors the task manager cabinet scan; run before option -4 or -11."""
-        for height in SHELF_LEVEL_HEIGHTS:
+        for height in get_shelf_levels(self.arena):
             self._position_at_level(height)
             time.sleep(2.0)
         self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
@@ -381,14 +380,15 @@ def main(args=None):
 
             elif choice == "-11":
                 object_name = input("Enter object name on shelf: ")
+                levels = get_shelf_levels(node.arena)
                 lvl = input(
-                    f"Shelf level 1-{len(SHELF_LEVEL_HEIGHTS)} (Enter = keep current pose): "
+                    f"Shelf level 1-{len(levels)} (Enter = keep current pose): "
                 ).strip()
                 if lvl:
                     try:
                         idx = int(lvl) - 1
-                        if 0 <= idx < len(SHELF_LEVEL_HEIGHTS):
-                            node._position_at_level(SHELF_LEVEL_HEIGHTS[idx])
+                        if 0 <= idx < len(levels):
+                            node._position_at_level(levels[idx])
                         else:
                             print("Level out of range; keeping current pose.")
                     except ValueError:
