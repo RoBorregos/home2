@@ -11,6 +11,11 @@ from pathlib import Path
 
 SHELF_SCAN_TOLERANCE = 0.1
 
+# Fallback shelf level-to-ceiling (compartment) height, in meters. Only used if
+# the JSON levels file cannot be read; the live value comes from
+# config/shelf_levels.json ("compartment_height").
+COMPARTMENT_HEIGHT_FALLBACK = 0.34
+
 # Fallback shelf level surface heights in base_link Z, per competition arena.
 # Only used if the JSON levels file cannot be read; the live values come from
 # config/shelf_levels.json.
@@ -50,3 +55,17 @@ def get_shelf_levels(arena: int) -> list:
     except Exception:
         pass
     return SHELF_LEVELS_BY_ARENA_FALLBACK.get(arena, SHELF_LEVELS_BY_ARENA_FALLBACK[1])
+
+
+def get_compartment_height() -> float:
+    """Return the shelf level-to-ceiling (compartment) height, read live from the
+    JSON levels file (no recompile needed). Falls back to the hardcoded default if
+    the file or the "compartment_height" entry is missing."""
+    try:
+        data = json.loads(levels_file().read_text())
+        height = data.get("compartment_height")
+        if height is not None:
+            return float(height)
+    except Exception:
+        pass
+    return COMPARTMENT_HEIGHT_FALLBACK
