@@ -153,6 +153,9 @@ def format_transcription(text: str) -> str:
 class HRITasks:
     """Class to manage the HRI tasks"""
 
+    remove_punctuation = staticmethod(remove_punctuation)
+    format_transcription = staticmethod(format_transcription)
+
     def __init__(self, task_manager: Node, task: Task.HRIC, mock_data=False) -> None:
         self.node = task_manager
         self.mock_data = mock_data
@@ -279,7 +282,7 @@ class HRITasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> Status:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
         self.set_light_state(AudioStates.SAYING)
@@ -640,6 +643,7 @@ class HRITasks:
         remap: dict = None,
         initial_prompt: str = "",
         silence_time: float = 1.0,
+        max_audio_length: float = 13.0,
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -654,6 +658,7 @@ class HRITasks:
             min_wait_between_retries: the minimum amount of time to wait between retries
             initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
             silence_time: the time to wait for silence before considering the speech complete
+            max_audio_length: the maximum length of seconds to listen to the user
         Returns:
             Status: the status of the execution
             str: answer to the question
@@ -666,7 +671,10 @@ class HRITasks:
 
             self.say(question)
             hear_status, interpreted_text, word_confidences = self.hear(
-                hotwords=hotwords, initial_prompt=initial_prompt, silence_time=silence_time
+                hotwords=hotwords,
+                initial_prompt=initial_prompt,
+                silence_time=silence_time,
+                max_audio_length=max_audio_length,
             )
 
             if hear_status == Status.EXECUTION_SUCCESS:
@@ -1257,12 +1265,15 @@ class HRITasks:
     # TODO: Make async
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def answer_with_context(self, question: str, context: str) -> str:
+    def answer_with_context(
+        self, question: str, context: str, is_async: bool = False
+    ) -> tuple[Status, str] | Future:
         """
         Method to answer a question with context.
         Args:
             question: the question to answer
             context: the context to use
+            is_async: If True, the method will return a Future object instead of waiting for the result.
         Returns:
             Status: the status of the execution
             str: the answer to the question
@@ -1270,6 +1281,21 @@ class HRITasks:
         self.node.get_logger().info(f"answer_with_context called with: {question}, {context}")
 
         request = LLMWrapper.Request(question=question, context=context)
+
+        if is_async:
+            future = Future()
+            answer_future = self.llm_wrapper_service.call_async(request)
+
+            def callback(f):
+                try:
+                    future.set_result((Status.EXECUTION_SUCCESS, f.result().answer))
+                except Exception as e:
+                    Logger.error(self.node, f"Error in answer_with_context async callback: {e}")
+                    future.set_result((Status.EXECUTION_ERROR, ""))
+
+            answer_future.add_done_callback(callback)
+            return future
+
         future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer

@@ -66,7 +66,7 @@ class AnswerQuestion {
 class FollowPersonUntil {
   action "follow_person_until"
   destination "cancelled"|string @description(#"The destination location to which
-  the robot will follow the person until, can be a room, furniture, etc. or 
+  the robot will follow the person until, can be a room, furniture, etc. or
   'cancelled' if the robot is to follow the person until asked to stop"#)
   @@description(#"Use this command to follow a person until a specific
   destination or requested to stop"#)

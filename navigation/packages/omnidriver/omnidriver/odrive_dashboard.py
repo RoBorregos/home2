@@ -757,7 +757,11 @@ class ODriveDashboardNode(Node):
                     desc = FERR_DESCRIPTIONS.get(code, f'Unknown error 0x{code:02X}')
                     axis_s = 'sys' if axis == 255 else f'axis {axis}'
                     msg = f'[FW ERR] {desc} ({axis_s}, detail={detail})'
-                    self.get_logger().warn(msg)
+                    # TEMP (debug): suppress the heartbeat-timeout flood (code 0x32,
+                    # ~1900/run) — a known base CAN/firmware hardware issue — so it
+                    # does not drown out other logs. Delete this guard to restore it.
+                    if code != 0x32:
+                        self.get_logger().warn(msg)
                     if self._sio:
                         self._sio.emit('firmware_error', {
                             'code': code, 'axis': axis, 'detail': detail,

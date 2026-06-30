@@ -55,6 +55,9 @@ TIMEOUT = 5.0
 RAD_TO_DEG = 180 / 3.14159265359
 DEG_TO_RAD = 3.14159265359 / 180
 
+# Front reference
+FORWARD_JOINT1_DEG = -90.0
+
 
 class ManipulationTasks:
     """Class to manage the vision tasks"""
@@ -385,13 +388,23 @@ class ManipulationTasks:
 
         return Status.EXECUTION_SUCCESS
 
-    def place(self, close_to: str = "", special_request: str = ""):
+    def place(
+        self,
+        close_to: str = "",
+        special_request: str = "",
+        from_current: bool = False,
+        is_trash: bool = False,
+    ):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         if close_to:
             goal_msg.place_params.close_to = close_to
         if special_request:
             goal_msg.place_params.special_request = special_request
+        # Skip the server's initial "table_stare" pose
+        goal_msg.place_params.skip_initial_pose = from_current
+        # Trash bin: dedicated detect-and-drop flow
+        goal_msg.place_params.is_trash = is_trash
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
@@ -634,7 +647,7 @@ class ManipulationTasks:
         if not isinstance(joint_positions, dict):
             Logger.error(self.node, f"Failed to get joint positions in pan_to: {joint_positions}")
             return Status.EXECUTION_ERROR
-        joint_positions["joint1"] = joint_positions["joint1"] - degrees
+        joint_positions["joint1"] = FORWARD_JOINT1_DEG - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def point(self, degrees: float):

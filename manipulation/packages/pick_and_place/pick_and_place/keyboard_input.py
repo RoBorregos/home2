@@ -16,7 +16,15 @@ from frida_constants.vision_constants import (
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
 )
+from frida_interfaces.srv import GetOptimalPositionForPlane
+from std_srvs.srv import Empty
 import json
+
+
+# Shelf level surface heights in base_link Z (match pickandplace_task_manager
+# shelf_level_heights; recalibrate per shelf with RViz Publish Point).
+SHELF_LEVEL_HEIGHTS = [0.599, 0.946, 1.298]  # calibrated 2026-06-21 (L1,L2,L3)
+SHELF_SCAN_TOLERANCE = 0.1
 
 
 class KeyboardInput(Node):
@@ -36,6 +44,14 @@ class KeyboardInput(Node):
             ManipulationAction,
             MANIPULATION_ACTION_SERVER,
             callback_group=callback_group,
+        )
+        self._optimal_position_client = self.create_client(
+            GetOptimalPositionForPlane,
+            "/manipulation/get_optimal_position_for_plane",
+            callback_group=callback_group,
+        )
+        self._clear_octomap_client = self.create_client(
+            Empty, "/clear_octomap", callback_group=callback_group
         )
         self.objects = []  # Example list of objects
 
@@ -83,7 +99,9 @@ class KeyboardInput(Node):
             ):
                 self.objects.append(detection.label_text)
 
-    def send_pick_request(self, object_name, scan_environment=False):
+    def send_pick_request(
+        self, object_name, scan_environment=False, in_configuration=False
+    ):
         self.get_logger().warning(f"Sending pick request for: {object_name}")
 
         if not self._action_client.wait_for_server(timeout_sec=5.0):
@@ -96,12 +114,50 @@ class KeyboardInput(Node):
         goal_msg.pick_params.min_distance = self.min_distance
         goal_msg.pick_params.max_distance = self.max_distance
         goal_msg.scan_environment = scan_environment
+        goal_msg.pick_params.in_configuration = in_configuration
         self.get_logger().info(f"Sending pick request for: {object_name}")
         future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
         future.add_done_callback(lambda f: self.goal_response_callback(f, object_name))
         self.get_logger().info(f"Pick request for {object_name} sent")
+
+    def _position_at_level(self, height):
+        """Face one shelf level (build octomap/spheres at that Z). Returns True if valid."""
+        if not self._optimal_position_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("get_optimal_position_for_plane not available!")
+            return False
+        req = GetOptimalPositionForPlane.Request()
+        req.plane_est_min_height = height - SHELF_SCAN_TOLERANCE
+        req.plane_est_max_height = height + SHELF_SCAN_TOLERANCE
+        req.table_or_shelf = False
+        req.approach_plane = True
+        self.get_logger().info(f"Positioning at shelf level {height:.3f} m")
+        future = self._optimal_position_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=30.0)
+        result = future.result()
+        ok = result is not None and result.is_valid
+        if not ok:
+            self.get_logger().warning(f"Level {height:.3f} m: no valid position")
+        return ok
+
+    def _clear_octomap(self, settle=2.0):
+        """Clear the accumulated octomap (arm captured as obstacle, stale voxels) so a
+        deep/tight shelf grasp is not over-restricted; mirrors the FSM before a pick."""
+        if self._clear_octomap_client.wait_for_service(timeout_sec=2.0):
+            self._clear_octomap_client.call_async(Empty.Request())
+            self.get_logger().info("Cleared octomap; settling before pick")
+            time.sleep(settle)
+        else:
+            self.get_logger().warning("clear_octomap unavailable")
+
+    def scan_shelf_levels(self):
+        """Face each shelf level so the octomap/spheres build before a shelf pick or
+        place. Mirrors the task manager cabinet scan; run before option -4 or -11."""
+        for height in SHELF_LEVEL_HEIGHTS:
+            self._position_at_level(height)
+            time.sleep(2.0)
+        self.get_logger().info("Shelf scan done; now pick (-11) or place (-4).")
 
     def send_place_request(
         self,
@@ -228,6 +284,7 @@ def main(args=None):
             print("-9. Special Request Place")
             print("-10. Pour (object already grasped)")
             print("-11. Pick from shelf (keep octomap)")
+            print("-12. Scan shelf levels (do before -4/-11)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -324,7 +381,29 @@ def main(args=None):
 
             elif choice == "-11":
                 object_name = input("Enter object name on shelf: ")
-                node.send_pick_request(object_name, scan_environment=True)
+                lvl = input(
+                    f"Shelf level 1-{len(SHELF_LEVEL_HEIGHTS)} (Enter = keep current pose): "
+                ).strip()
+                if lvl:
+                    try:
+                        idx = int(lvl) - 1
+                        if 0 <= idx < len(SHELF_LEVEL_HEIGHTS):
+                            node._position_at_level(SHELF_LEVEL_HEIGHTS[idx])
+                        else:
+                            print("Level out of range; keeping current pose.")
+                    except ValueError:
+                        print("Invalid level; keeping current pose.")
+                # Clear the accumulated octomap (FSM does this) so the deep grasp's IK
+                # config is not over-restricted by stale/arm voxels.
+                node._clear_octomap()
+                # in_configuration=True keeps the frontal level pose (else PickManager
+                # re-stares to table_stare and GPD sees the wrong view).
+                node.send_pick_request(
+                    object_name, scan_environment=True, in_configuration=True
+                )
+
+            elif choice == "-12":
+                node.scan_shelf_levels()
 
             elif choice.isdigit():
                 try:

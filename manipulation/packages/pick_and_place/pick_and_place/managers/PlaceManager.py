@@ -3,6 +3,7 @@ from frida_motion_planning.utils.tf_utils import transform_pose, transform_point
 from frida_interfaces.srv import (
     PlacePerceptionService,
     HeatmapPlace,
+    EstimateFlatGrasp,
 )
 from geometry_msgs.msg import PoseStamped
 from frida_interfaces.msg import PlaceParams
@@ -15,6 +16,7 @@ from frida_constants.manipulation_constants import (
     SHELF_MIN_REACH,
     SHELF_REACH_BASE,
     SHELF_REACH_SLOPE,
+    TRASH_BIN_NAME,
 )
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
@@ -46,12 +48,15 @@ class PlaceManager:
             "/manipulator/place_ee_link_pose",
             10,
         )
+        self._estimate_flat_grasp_client = self.node.create_client(
+            EstimateFlatGrasp, "/manipulation/estimate_flat_grasp"
+        )
 
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
         self.node.get_logger().info("Executing Place Task")
-        self.node.get_logger().info("Setting initial joint positions")
         # Set initial joint positions
-        if not place_params.is_shelf:
+        if not place_params.is_shelf and not place_params.skip_initial_pose:
+            self.node.get_logger().info("Setting initial joint positions")
             send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
                 named_position="table_stare",
@@ -88,17 +93,26 @@ class PlaceManager:
 
         self.node.get_logger().info("Returning to position")
 
-        # return to configured position
-        for i in range(5):
-            back_res = send_joint_goal(
-                move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
-                velocity=0.5,
-            )
-            if back_res:
-                self.node.get_logger().info("Returned to position successfully")
-                break
-            self.node.get_logger().info("Retry sending return joint goal")
+        # The eye-in-hand octomap never sees the compartment ceiling, so add an explicit
+        # collision slab there (place surface + 0.34 m) before planning the return.
+        if place_params.is_shelf:
+            self.node.add_shelf_ceiling_guard(place_pose, place_params.table_height)
+
+        try:
+            for i in range(5):
+                back_res = send_joint_goal(
+                    move_joints_action_client=self.node._move_joints_client,
+                    named_position="table_stare",
+                    velocity=0.5,
+                )
+                if back_res:
+                    self.node.get_logger().info("Returned to position successfully")
+                    break
+                self.node.get_logger().info("Retry sending return joint goal")
+        finally:
+            # Always drop the guard so it does not constrain later motions.
+            if place_params.is_shelf:
+                self.node.remove_shelf_ceiling_guard()
 
         return return_result
 
@@ -106,6 +120,9 @@ class PlaceManager:
         self, place_params: PlaceParams, pick_result: PickResult
     ) -> PoseStamped:
         result_pose = PoseStamped()
+
+        if place_params.is_trash:
+            return self._get_trash_place_pose()
 
         if place_params.forced_pose.header.frame_id != "":
             self.node.get_logger().info("Using forced place pose")
@@ -394,3 +411,28 @@ class PlaceManager:
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 
         return result_pose
+
+    def _get_trash_place_pose(self) -> PoseStamped:
+        """Detect the trash bin via the flat-grasp estimator and return the
+        ready-to-use place pose (already offset above the bin, top-down)."""
+        if not self._estimate_flat_grasp_client.wait_for_service(timeout_sec=5.0):
+            self.node.get_logger().error("estimate_flat_grasp service unavailable")
+            return None
+
+        request = EstimateFlatGrasp.Request()
+        request.object_name = TRASH_BIN_NAME
+        request.num_samples = 0  # let the estimator use its default
+        future = self._estimate_flat_grasp_client.call_async(request)
+        wait_for_future(future, timeout=15)
+        response = future.result() if future.done() else None
+
+        if response is None or not response.success:
+            reason = response.message if response is not None else "no response"
+            self.node.get_logger().error(f"Trash bin detection failed: {reason}")
+            return None
+
+        self.node.get_logger().info(
+            f"Trash place pose: {response.pose.pose.position.x}, "
+            f"{response.pose.pose.position.y}, {response.pose.pose.position.z}"
+        )
+        return response.pose

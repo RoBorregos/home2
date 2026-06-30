@@ -10,8 +10,6 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from vision_general.utils.ros_utils import wait_for_future
-import os
-import json
 
 from frida_interfaces.srv import (
     CountBy,
@@ -19,6 +17,7 @@ from frida_interfaces.srv import (
     PersonPoseGesture,
     CropQuery,
     CountByColor,
+    MapAreas,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -37,7 +36,8 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURE_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
-from vision_general.utils.area_check import filter_detections_in_house
+from frida_constants.navigation_constants import AREAS_SERVICE
+from vision_general.utils.area_check import filter_detections_in_house, fetch_map_areas
 from tf2_ros import Buffer, TransformListener
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
@@ -47,9 +47,6 @@ from frida_interfaces.srv import YoloDetect
 from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
-
-constants = get_package_share_directory("frida_constants")
-file_path = os.path.join(constants, "map_areas/areas.json")
 
 
 class GPSRCommands(Node):
@@ -139,9 +136,11 @@ class GPSRCommands(Node):
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
 
-        # Load areas from the JSON file
-        with open(file_path, "r") as file:
-            self.areas = json.load(file)
+        # Areas of the active map
+        self.areas = None
+        self.areas_client = self.create_client(
+            MapAreas, AREAS_SERVICE, callback_group=self.callback_group
+        )
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -467,6 +466,12 @@ class GPSRCommands(Node):
             msgs.append(msg)
         return msgs
 
+    def _get_areas(self):
+        """Fetch the active map's areas from nav_central (cached after first call)."""
+        if self.areas is None:
+            self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
+        return self.areas
+
     def _filter_people(self, frame, people):
         return filter_detections_in_house(
             frame,
@@ -476,7 +481,7 @@ class GPSRCommands(Node):
             self.camera_info,
             self.depth_image,
             self.tf_buffer,
-            self.areas,
+            self._get_areas(),
             CAMERA_FRAME,
         )
 

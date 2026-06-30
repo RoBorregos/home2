@@ -124,7 +124,7 @@ class FaceRecognition(Node):
 
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
-        self.vision_active = True
+        self.vision_active = False
         self.is_processing = False
 
         self.create_subscription(
@@ -341,7 +341,6 @@ class FaceRecognition(Node):
         person_seen = String()
         person_seen.data = largest_face_name
         self.name_publisher.publish(person_seen)
-        self.person_list_publisher.publish(self.face_list)
 
     def _active_callback(self, msg):
         if msg.data == self.vision_active:
@@ -485,6 +484,9 @@ class FaceRecognition(Node):
                 detected = False
 
         self.prev_faces = self.curr_faces
+
+        # Always publish the full list of recognized faces.
+        self.person_list_publisher.publish(self.face_list)
 
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)

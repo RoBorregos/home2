@@ -9,10 +9,16 @@ CHECK_DOOR_SERVICE = "/navigation/is_door_open"
 class DOOR_CHECK(Enum):
     TIMEOUT_SENSOR = 5.0
     TIMEOUT_TO_OPEN = 60.0  # Increase in case of required
-    LIDAR_RANGE_MIN = 670
-    LIDAR_RANGE_MAX = 70
+    # Beam index window into LaserScan.ranges[] that points at the door.
+    # Calibrated for the ~501-beam lidar (angle_increment ~0.01257 rad,
+    # idx 250 = 0 deg / straight ahead). Robot faces the door head-on:
+    # closed panel fills idx ~203-264 (~0.48 m); window inset to avoid frame edges.
+    LIDAR_RANGE_MIN = 210
+    LIDAR_RANGE_MAX = 255
     CHECKING_RATE = 0.5
-    DOOR_DISTANCE = 1.0
+    # Distance threshold (m): avg window reading above this -> door open.
+    # Closed door reads ~0.48 m; open reads 2-5 m+ / inf. 2.0 sits safely between.
+    DOOR_DISTANCE = 2.0
 
 
 ###Map areas service
@@ -25,11 +31,20 @@ MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 DOCK_TABLE_SERVICE = "/navigation/dock_table"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 
+### Point-based navigation services
+GO_TO_POSE_SERVICE = "/navigation/go_to_pose"
+GET_ROBOT_POSE_SERVICE = "/navigation/get_robot_pose"
+
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"
 
 ### Manual resume service (nav_central exposes this so the UI can unpause nav2+rtabmap)
 RESUME_NAV_SERVICE = "/navigation/resume_nav"
+
+### Path query service (distance between two map areas without moving)
+NAV_QUERY_SERVICE = "/navigation/query_path"
+COMPUTE_PATH_ACTION_SERVER = "/compute_path_to_pose"
+TIMEOUT_NAV_QUERY = 10.0  # seconds to wait for ComputePathToPose result
 
 ### Table/shelf docking (perpendicular approach) — see table_docker.py
 DOCK_SERVICE = "/navigation/dock_to_surface"  # std_srvs/Trigger: align + approach
@@ -40,6 +55,7 @@ DOCK_PREVIEW_SERVICE = (
     "/navigation/preview_dock"  # std_srvs/Trigger: detect + show markers, no motion
 )
 DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
+RETREAT_DISTANCE = 0.2  # m the base backs off on undock (table_docker retreat_distance)
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
 ### General Constants
@@ -64,6 +80,9 @@ NAV2_LIFECYCLE_SERVICE = "/lifecycle_manager_navigation/manage_nodes"
 class SUBTASK_MANAGER(Enum):
     SERVICE_TIMEOUT = 2.0
     AREAS_RETRIEVE_TIMEOUT = 2.0
+    # Path query may resume nav2 (up to TIMEOUT_NAV2_LIFECYCLE), plan
+    # (up to TIMEOUT_NAV_QUERY) and re-pause, so give it ample room
+    NAV_QUERY_TIMEOUT = 30.0
 
 
 # Follow person node constants

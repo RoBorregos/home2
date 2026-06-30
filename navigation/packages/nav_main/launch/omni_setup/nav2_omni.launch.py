@@ -39,6 +39,14 @@ def launch_setup(context, *args, **kwargs):
         nav_src, 'packages', 'map_context', 'maps', 'keepout_mask.yaml')
     keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
 
+    # Editable static map (Option A): when on, serve the editable <map>.pgm/.yaml on
+    # /map from a map_server loaded INSIDE this container — co-located with the
+    # costmaps so the latched /map is delivered in-process (a standalone map_server's
+    # cross-process transient-local message can be dropped). slam_toolbox is remapped
+    # off /map by localization.launch.py when this is on.
+    use_static_map = LaunchConfiguration('use_static_map_server', default='false').perform(context).lower() in ('true', '1')
+    map_yaml = LaunchConfiguration('map_yaml', default='').perform(context)
+
     # Build the nav2 param file. When keepout is on, deep-merge the keepout overlay
     # into the nav2 params and write ONE merged file. Passing a single file is the
     # reliable way to get the filter into the composed costmap sub-nodes — extra
@@ -104,12 +112,9 @@ def launch_setup(context, *args, **kwargs):
                 name='bt_navigator',
                 parameters=[nav2_params],
             ),
-            ComposableNode(
-                package='nav2_velocity_smoother',
-                plugin='nav2_velocity_smoother::VelocitySmoother',
-                name='velocity_smoother',
-                parameters=[nav2_params],
-            ),
+            # velocity_smoother removed: the base subscribes to raw /cmd_vel and does its
+            # own acceleration ramp on the MCU, so the Nav2 smoother was bypassed (nothing
+            # consumed /cmd_vel_smoothed). Dropping it also speeds up the lifecycle resume.
             ComposableNode(
                 package='nav2_lifecycle_manager',
                 plugin='nav2_lifecycle_manager::LifecycleManager',
@@ -123,7 +128,6 @@ def launch_setup(context, *args, **kwargs):
                         'planner_server',
                         'behavior_server',
                         'bt_navigator',
-                        'velocity_smoother',
                     ]
                 }],
             ),
@@ -173,6 +177,40 @@ def launch_setup(context, *args, **kwargs):
             }],
         )
 
+    # Editable static map: map_server loaded INTO this container so its latched /map
+    # reaches the costmap static_layer in-process (reliable, unlike cross-process).
+    map_lifecycle = None
+    if use_static_map and map_yaml:
+        map_server_nodes = LoadComposableNodes(
+            target_container='nav2_container',
+            composable_node_descriptions=[
+                ComposableNode(
+                    package='nav2_map_server',
+                    plugin='nav2_map_server::MapServer',
+                    name='map_server',
+                    parameters=[nav2_params, {
+                        'yaml_filename': map_yaml,
+                        'topic_name': 'map',
+                        'frame_id': 'map',
+                    }],
+                ),
+            ],
+        )
+        on_start_actions.append(TimerAction(period=2.0, actions=[map_server_nodes]))
+        # Dedicated lifecycle manager (autostart) brings map_server up so the latched
+        # /map is published before nav_central activates the costmaps.
+        map_lifecycle = Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_map',
+            output=log_output,
+            parameters=[{
+                'use_sim_time': False,
+                'autostart': True,
+                'node_names': ['map_server'],
+            }],
+        )
+
     # Delay node loading until container process is running
     delayed_nav2_load = RegisterEventHandler(
         condition=IfCondition(nav2_activate),
@@ -185,6 +223,8 @@ def launch_setup(context, *args, **kwargs):
     actions = [nav2_container, delayed_nav2_load]
     if keepout_lifecycle is not None:
         actions.append(keepout_lifecycle)
+    if map_lifecycle is not None:
+        actions.append(map_lifecycle)
 
     return actions
 

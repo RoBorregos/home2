@@ -38,6 +38,11 @@ class TestNavigationManager(Node):
                 "func": self.navigation_manager.follow_person,
                 "follow": False,
             },
+            "Get Path Info": {
+                "func": self.navigation_manager.get_path_info,
+                "location_b": "entrance",
+                "sublocation_b": "",
+            },
         }
 
         print(f"\n{Logger.BOLD}Testing {len(self.tests_funcs)} available subtaks..... \n")
