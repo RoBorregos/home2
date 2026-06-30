@@ -42,7 +42,6 @@ import time
 import numpy as np
 from PIL import Image as PILImage
 import tqdm
-import torch.nn as nn
 import torch
 from vision_general.utils.calculations import (
     get2DCentroid,
@@ -60,17 +59,10 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
 
 from vision_general.utils.reid_model import (
-    load_network,
-    compare_images,
-    compare_images_batch,
     extract_feature_from_img,
-    extract_feature_from_img_batch,
-    get_structure,
 )
 
-from vision_general.utils.deep_sort.tracker import Tracker as DeepSORTTracker
 from vision_general.utils.deep_sort.detection import Detection as DeepSORTDetection
-from vision_general.utils.deep_sort.nn_matching import NearestNeighborDistanceMetric
 from vision_general.utils.trt_utils import load_yolo_trt
 
 from std_srvs.srv import SetBool, Trigger
