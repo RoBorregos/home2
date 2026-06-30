@@ -1,6 +1,8 @@
 var classnav__ui_1_1NavRosNode =
 [
     [ "__init__", "classnav__ui_1_1NavRosNode.html#a9a066dd0d797138a430d036e0b28ebee", null ],
+    [ "_fetch_static_map", "classnav__ui_1_1NavRosNode.html#adda9754192faf3a57cf2faa8a6c12f4e", null ],
+    [ "_on_static_map", "classnav__ui_1_1NavRosNode.html#ac361fb258fd87b20c807b3c2c53deba0", null ],
     [ "_save_map_rtabmap", "classnav__ui_1_1NavRosNode.html#aa7bd2e91ff9c89bdc26f6475fa183c70", null ],
     [ "_save_map_slamtoolbox", "classnav__ui_1_1NavRosNode.html#aad02b24336afff61312f9fe6f0bc40f5", null ],
     [ "_write_map_files", "classnav__ui_1_1NavRosNode.html#ac431fac90ac1a8850a287e2b758f2566", null ],
@@ -24,6 +26,9 @@ var classnav__ui_1_1NavRosNode =
     [ "_rtab_backup_client", "classnav__ui_1_1NavRosNode.html#abf4a1faf4a5aebde7294aa1cdbad63f6", null ],
     [ "_slam_save_map_client", "classnav__ui_1_1NavRosNode.html#abdf0b798dafba234631e1cf0eca7a8ab", null ],
     [ "_slam_serialize_client", "classnav__ui_1_1NavRosNode.html#a4fb6aeaaee12f1b4a0b54dd324dbcd93", null ],
+    [ "_static_map_client", "classnav__ui_1_1NavRosNode.html#a3b573c1c7a58972620d809163de5828e", null ],
+    [ "_static_map_pending", "classnav__ui_1_1NavRosNode.html#ae1133c00782f87ca1f06e5a47e24080c", null ],
+    [ "_static_map_timer", "classnav__ui_1_1NavRosNode.html#a029ccd4e0807fef42be4bcf966757a3b", null ],
     [ "cancel_nav_client", "classnav__ui_1_1NavRosNode.html#a3b9223066786d8c661ce24ea56fc74b7", null ],
     [ "default_base", "classnav__ui_1_1NavRosNode.html#ac200a4efc235ec7715e0000c157154d9", null ],
     [ "global_costmap_data", "classnav__ui_1_1NavRosNode.html#a705411a4fb5962d7d6a426ace6ebe1d5", null ],

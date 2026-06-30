@@ -1,5 +1,15 @@
 var NAVTREEINDEX34 =
 {
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caaebebbb844ff2f348a2e038508132f403":[39,0,3,0,6,0,0,0,7,10],
+"macros_8hpp.html#aa99f2147b3f775316d89971291dbf174":[39,0,3,0,6,0,0,0,0],
+"macros_8hpp.html#ac0a53cb5ed7356485105c7adf5dff4bf":[39,0,3,0,6,0,0,0,3],
+"macros_8hpp.html#acceb21363936fb79d3fe63e9d00a5500":[39,0,3,0,6,0,0,0,5],
+"macros_8hpp.html#acea63f67b814167fbfea2bf8eb6d69db":[39,0,3,0,6,0,0,0,2],
+"macros_8hpp.html#ad8f1e5a99ab940794a5a94f8d3f74299":[39,0,3,0,6,0,0,0,4],
+"macros_8hpp_source.html":[39,0,3,0,6,0,0,0],
+"manipulation_2packages_2arm__pkg_2arm__pkg_2____init_____8py.html":[39,0,3,0,0,0,0],
+"manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html":[39,0,3,0,0,0,3],
+"manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#a3ae85e33595c84274bc8d8fd016a62c7":[39,0,3,0,0,0,3,1],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#a7c0b33dacd672c3d3e9838e099c94994":[39,0,3,0,0,0,3,0],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#ae9eb22e558e6f2b39ff28482a2960667":[39,0,3,0,0,0,3,2],
 "manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2____init_____8py.html":[39,0,3,0,1,1,2],
@@ -239,15 +249,5 @@ var NAVTREEINDEX34 =
 "md_docs_Run_Areas_vision.html#autotoc_md269":[32,2],
 "md_docs_Run_Areas_vision.html#autotoc_md270":[32,3],
 "md_docs_Setup.html":[34],
-"md_docs_Setup.html#autotoc_md276":[34,0],
-"md_docs_Setup.html#autotoc_md277":[34,1],
-"md_docs_Setup.html#autotoc_md278":[34,1,0],
-"md_docs_Setup.html#autotoc_md279":[34,1,1],
-"md_docs_ai_architecture.html":[22],
-"md_docs_ai_architecture.html#autotoc_md163":[22,0],
-"md_docs_ai_architecture.html#autotoc_md164":[22,1],
-"md_docs_ai_architecture.html#autotoc_md165":[22,1,0],
-"md_docs_ai_architecture.html#autotoc_md166":[22,2],
-"md_docs_ai_coding_standards.html":[23],
-"md_docs_ai_coding_standards.html#autotoc_md168":[23,0]
+"md_docs_Setup.html#autotoc_md276":[34,0]
 };
