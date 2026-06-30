@@ -19,6 +19,7 @@ from frida_constants.navigation_constants import (
     AREAS_SERVICE,
     CHECK_DOOR_SERVICE,
     MOVE_LOCATION_SERVICE,
+    FOLLOW_PERSON_NAV_SERVICE,
     NAV_QUERY_SERVICE,
     DOCK_TABLE_SERVICE,
     GO_TO_POSE_SERVICE,
@@ -34,6 +35,7 @@ from frida_interfaces.srv import (
     GoToPose,
     GetRobotPose,
 )
+from std_srvs.srv import SetBool
 
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.colored_logger import CLog
@@ -79,6 +81,7 @@ class NavigationTasks:
         self.door_checking_srv = self.node.create_client(CheckDoor, CHECK_DOOR_SERVICE)
         self.retrieve_areas_srv = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.move_to_location_srv = self.node.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+        self.follow_person_srv = self.node.create_client(SetBool, FOLLOW_PERSON_NAV_SERVICE)
         self.nav_query_srv = self.node.create_client(NavQuery, NAV_QUERY_SERVICE)
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
@@ -96,6 +99,7 @@ class NavigationTasks:
                 "door_checking_srv": {"client": self.door_checking_srv, "type": "service"},
                 "retrieve_areas_srv": {"client": self.retrieve_areas_srv, "type": "service"},
                 "move_to_location_srv": {"client": self.move_to_location_srv, "type": "service"},
+                "follow_person_srv": {"client": self.follow_person_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
             },
@@ -222,6 +226,32 @@ class NavigationTasks:
         else:
             CLog.nav(self.node, "ERROR", "Service request failed (None result)")
             return (Status.EXECUTION_ERROR, "Error with request")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=1)
+    @service_check(
+        "follow_person_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def follow_person(self, follow: bool = True):
+        """Activate/deactivate person-following navigation.
+
+        When True: nav_central sends NavigateToPose with the follow BT using
+        the latest /goal_update pose, and person_goal_smoother switches Nav2
+        to follow-mode params.
+        When False: the active goal is cancelled and nav params are restored.
+        """
+        CLog.nav(self.node, "MOVE", f"Follow person: {follow}")
+        request = SetBool.Request()
+        request.data = follow
+        future = self.follow_person_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", f"Follow person: {result.message}")
+            return (Status.EXECUTION_SUCCESS, result.message)
+        CLog.nav(self.node, "ERROR", "Follow person service failed")
+        return (Status.EXECUTION_ERROR, "Follow person failed")
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, {"distance": 5.0}), delay=1)
     @service_check(

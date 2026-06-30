@@ -1,3 +1,19 @@
+"""HRI follow-person bringup — OMNIBASE by default (dashgo still selectable).
+
+Same base-selection convention as general_navigation.launch.py, plus the
+person_goal_smoother that bridges the vision tracker to the Nav2 GoalUpdater.
+
+  omnibase (default): omni_basics + slam_toolbox localization + nav2_omni
+  dashgo            : nav_basics + RTABMap localization + nav2 (nav2_standard)
+
+The actual "follow person" trigger is the /navigation/follow_person service on
+nav_central; it switches person_goal_smoother to follow mode (which swaps in the
+nav2_omni_following.yaml params) and sends a NavigateToPose goal with the
+follow_dynamic_point.xml behaviour tree.
+
+Override the base:   ros2 launch nav_main hric.launch.py default_base:=dashgo
+"""
+
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -9,7 +25,7 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def launch_function(context, *args, **kwargs):
-    from frida_constants.navigation_constants import RTAB_MAPS_PATH, RETREAT_DISTANCE
+    from frida_constants.navigation_constants import RTAB_MAPS_PATH
 
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
@@ -21,7 +37,7 @@ def launch_function(context, *args, **kwargs):
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
-    # Values to select base (same convention as mapping.launch.py)
+    # Values to select base (same convention as general_navigation.launch.py)
     default_base = LaunchConfiguration('default_base', default='omnibase')  # Other option "dashgo"
     default_base_value = default_base.perform(context)
     nav_type = LaunchConfiguration('nav_type', default='2d')  # Other 3d
@@ -30,45 +46,21 @@ def launch_function(context, *args, **kwargs):
     areas_map_name = context.perform_substitution(rtabmap_map_name).replace('.db', '')
 
     # slam_toolbox serialized map for the omnibase localization (absolute path,
-    # WITHOUT extension) — matches where nav_ui saves it:
-    #   <workspace>/packages/map_context/maps/<name>(.posegraph + .data)
+    # WITHOUT extension) — same location nav_ui saves it to.
     nav_src = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
     maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
     omni_map_default = os.path.join(maps_dir, areas_map_name)
     omni_map = LaunchConfiguration('map', default=omni_map_default)
 
-    # Editable static map (Option A): serve <name>.yaml via a map_server inside the
-    # nav2 container (so the .pgm can be hand-edited in the map tagger) instead of the
-    # grid slam_toolbox rasterizes from the pose-graph. Auto-enabled when the grid
-    # yaml exists next to the posegraph; override with use_static_map_server:=true|false.
-    omni_map_yaml_default = omni_map_default + '.yaml'
-    omni_map_yaml = LaunchConfiguration('map_yaml', default=omni_map_yaml_default)
-    omni_map_yaml_value = omni_map_yaml.perform(context)
-    use_static_map_default = 'true' if os.path.exists(omni_map_yaml_value) else 'false'
-    use_static_map = LaunchConfiguration('use_static_map_server', default=use_static_map_default)
-    static_on = use_static_map.perform(context).lower() in ('true', '1')
-    print(f"[general_navigation] static map '{omni_map_yaml_value}' "
-          f"exists={os.path.exists(omni_map_yaml_value)} -> use_static_map_server={use_static_map_default}")
-
     # Keepout (virtual obstacle) filter — AUTO-enabled when a mask named
-    # "<MAP_NAME>_keepout_mask.yaml" exists next to the map (draw it in the map
-    # tagger UI). Override with use_keepout:=true|false or keepout_mask:=/path.yaml.
-    # Skipped while the static map server owns /map: with the editable .pgm you paint
-    # obstacles straight into the map, so the keepout filter is redundant there (and it
-    # avoids the extra filter servers/topics). Force it back on with use_keepout:=true.
+    # "<MAP_NAME>_keepout_mask.yaml" exists next to the map.
     keepout_mask_default = os.path.join(maps_dir, f'{areas_map_name}_keepout_mask.yaml')
     keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
     keepout_mask_value = keepout_mask.perform(context)
-    keepout_exists = os.path.exists(keepout_mask_value)
-    use_keepout_default = 'true' if (keepout_exists and not static_on) else 'false'
+    use_keepout_default = 'true' if os.path.exists(keepout_mask_value) else 'false'
     use_keepout = LaunchConfiguration('use_keepout', default=use_keepout_default)
-    if keepout_exists and static_on:
-        print(f"[general_navigation] keepout mask '{keepout_mask_value}' exists but "
-              f"use_static_map_server=true -> keepout DISABLED "
-              f"(paint obstacles into the static .pgm; use_keepout:=true to force on)")
-    else:
-        print(f"[general_navigation] keepout mask '{keepout_mask_value}' "
-              f"exists={keepout_exists} -> use_keepout={use_keepout_default}")
+    print(f"[hric] keepout mask '{keepout_mask_value}' "
+          f"exists={os.path.exists(keepout_mask_value)} -> use_keepout={use_keepout_default}")
 
     nav_central_node = Node(
         package='nav_main',
@@ -96,6 +88,20 @@ def launch_function(context, *args, **kwargs):
             'map_name': rtabmap_map_name,
             'default_base': default_base,
             'nav_type': nav_type,
+        }],
+    )
+
+    # Bridges the vision tracker -> Nav2 GoalUpdater, and switches nav2 between the
+    # standard and follow param sets for the active base (default_base picks the
+    # config pair: omnibase -> nav2_omni(_following).yaml, dashgo -> nav2_(standard|following).yaml).
+    person_goal_smoother_node = Node(
+        package='nav_main',
+        executable='person_goal_smoother.py',
+        name='person_goal_smoother',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{
+            'default_base': default_base,
         }],
     )
 
@@ -132,7 +138,6 @@ def launch_function(context, *args, **kwargs):
         ),
         launch_arguments={
             'map': omni_map,
-            'use_static_map_server': use_static_map,
         }.items(),
     )
 
@@ -144,34 +149,7 @@ def launch_function(context, *args, **kwargs):
             'nav2': nav2_activate,
             'use_keepout': use_keepout,
             'keepout_mask': keepout_mask,
-            'use_static_map_server': use_static_map,
-            'map_yaml': omni_map_yaml,
         }.items(),
-    )
-
-    # Table/shelf docking — perpendicular approach using the holonomic base + the
-    # lidar/cloud. nav_central calls its undock service before each new goal.
-    table_docker = Node(
-        package='nav_main',
-        executable='table_docker.py',
-        name='table_docker',
-        output='screen',
-        parameters=[{'retreat_distance': RETREAT_DISTANCE}],
-    )
-
-    # Person-following bridge: forwards the vision tracker's target to the Nav2
-    # GoalUpdater and switches nav2 between the standard/follow param sets when
-    # nav_central calls /navigation/set_follow_mode. Idle until follow is requested,
-    # so it is safe to run for every task (gpsr/ppc/dlc/hric).
-    person_goal_smoother_node = Node(
-        package='nav_main',
-        executable='person_goal_smoother.py',
-        name='person_goal_smoother',
-        output='screen',
-        emulate_tty=True,
-        parameters=[{
-            'default_base': default_base,
-        }],
     )
 
     launch_actions = [
@@ -188,7 +166,6 @@ def launch_function(context, *args, **kwargs):
         if nav_type_value == '2d':
             launch_actions.append(omni_localization)
         launch_actions.append(nav2_omni)
-        launch_actions.append(table_docker)
 
     return launch_actions
 
