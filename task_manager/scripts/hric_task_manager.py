@@ -436,23 +436,45 @@ class HRIC_TM(Node):
             self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
             self.subtask_manager.vision.deactivate_face_recognition()
 
-            # Ask the guest to position themselves so the tracker can lock on.
+            # Ask the guest to stand in view, then START the tracker. Use
+            # track_person(True/False) — the start/stop command the canonical
+            # test_follow_person.py uses — NOT get_track_person(), which is only a
+            # status query and never starts tracking. The tracker publishes the
+            # person's 3D point on RESULTS_TOPIC; person_goal_smoother turns it into
+            # the moving Nav2 goal that nav.follow_person chases.
             self.subtask_manager.hri.say("Please stand in front of me so I can see you.", wait=True)
+            tracking = False
             for attempt in range(ATTEMPT_LIMIT):
-                if self.subtask_manager.vision.get_track_person() == Status.EXECUTION_SUCCESS:
+                if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
+                    tracking = True
                     break
                 if attempt < ATTEMPT_LIMIT - 1:
                     self.subtask_manager.hri.say(
                         "I cannot see you yet. Please stand right in front of me."
                     )
 
+            if not tracking:
+                # No locked target -> there is no goal to follow; skip rather than
+                # chase the smoother's dummy pose.
+                self.subtask_manager.hri.say(
+                    "I could not lock onto you, so I will skip following and continue."
+                )
+                self.subtask_manager.vision.track_person(False)
+                self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
+                return
+
             self.subtask_manager.hri.say(
                 "I will start following you now. Say stop whenever you want me to stop.",
                 wait=True,
             )
 
-            # Start arm + base person-following (vision feeds the moving goal).
-            self.subtask_manager.manipulation.follow_person(True)
+            # Base-only follow. While carrying the bag the wrist camera is UPSIDE DOWN
+            # (the carry pose flips joint5/6, hence camera_upside_down(True) in
+            # FIND_SEAT). The tracker runs on the raw frame, so its 2D pixel centroid
+            # is mirrored — arm-follow pans joint1 from that centroid and would steer
+            # the WRONG way and lose the person. The base/nav follow stays correct:
+            # the 3D goal is deprojected in the camera optical frame and TF already
+            # accounts for the physical flip. So drive nav-follow only here.
             self.subtask_manager.nav.follow_person(True)
 
             # Keep following until the guest says a stop keyword. The duration cap is
@@ -468,9 +490,9 @@ class HRIC_TM(Node):
                     Logger.warn(self, "Follow person timed out without a stop keyword")
                     break
 
-            # Stop following before leaving the bag.
+            # Stop nav-follow AND the tracker before leaving the bag.
             self.subtask_manager.nav.follow_person(False)
-            self.subtask_manager.manipulation.follow_person(False)
+            self.subtask_manager.vision.track_person(False)
             self.subtask_manager.manipulation.move_to_position(
                 "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
             )
