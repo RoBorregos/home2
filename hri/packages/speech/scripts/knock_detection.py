@@ -34,6 +34,8 @@ class KnockDetectionNode(Node):
         self.declare_parameter("KEYWORD_TOPIC", "/hri/speech/ei_detection")
         self.declare_parameter("knock_label", "knock")
         self.declare_parameter("sample_rate", 16000)
+        # Only publish a knock when its confidence score exceeds this value.
+        self.declare_parameter("min_score", 0.6)
         # Stage 1 — energy / dB gate ("filtro 1")
         self.declare_parameter("min_db", -40.0)
         # Stage 2 — onset detection
@@ -55,6 +57,7 @@ class KnockDetectionNode(Node):
         result_topic = g("KEYWORD_TOPIC")
         self.knock_label = g("knock_label")
         self.sample_rate = g("sample_rate")
+        self.min_score = g("min_score")
 
         cfg = KnockDetectorConfig(
             sample_rate=self.sample_rate,
@@ -82,6 +85,12 @@ class KnockDetectionNode(Node):
     def audio_callback(self, msg):
         chunk = np.frombuffer(bytes(msg.data), dtype=np.int16)
         for event in self.detector.process(chunk):
+            if event.score < self.min_score:
+                self.get_logger().info(
+                    f"Knock below threshold ({event.score:.2f} < {self.min_score:.2f}) "
+                    f"| onsets={event.num_onsets} peak={event.peak_db:.1f} dBFS — ignored"
+                )
+                continue
             self.get_logger().info(
                 f"Detection: {self.knock_label} ({event.score:.2f}) | "
                 f"onsets={event.num_onsets} peak={event.peak_db:.1f} dBFS"
