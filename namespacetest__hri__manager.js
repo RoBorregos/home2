@@ -13,6 +13,7 @@ var namespacetest__hri__manager =
     [ "TEST_COMMAND_INTERPRETER", "namespacetest__hri__manager.html#a6126879bbfe70d91a45d5c99e98ac3f9", null ],
     [ "TEST_COMMAND_INTERPRETER_BAML", "namespacetest__hri__manager.html#acba16bc04fcf4b594f5c4335ff8f9239", null ],
     [ "TEST_DATA_EXTRACTOR", "namespacetest__hri__manager.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
+    [ "TEST_DOOR", "namespacetest__hri__manager.html#aa088235952c6afdf84049733a3d8e6d7", null ],
     [ "TEST_FALLBACK_RESUME", "namespacetest__hri__manager.html#ad1afdc4bd1aac351029411361b8c7f38", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
     [ "TEST_IS_NEGATIVE", "namespacetest__hri__manager.html#a0badb875d731e79a361252aae7631ac1", null ],

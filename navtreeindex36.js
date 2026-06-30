@@ -1,5 +1,10 @@
 var NAVTREEINDEX36 =
 {
+"md_docs_ai_architecture.html#autotoc_md164":[22,1],
+"md_docs_ai_architecture.html#autotoc_md165":[22,1,0],
+"md_docs_ai_architecture.html#autotoc_md166":[22,2],
+"md_docs_ai_coding_standards.html":[23],
+"md_docs_ai_coding_standards.html#autotoc_md168":[23,0],
 "md_docs_ai_coding_standards.html#autotoc_md169":[23,0,0],
 "md_docs_ai_coding_standards.html#autotoc_md170":[23,1],
 "md_docs_ai_coding_standards.html#autotoc_md171":[23,2],
@@ -244,10 +249,5 @@ var NAVTREEINDEX36 =
 "moondream__lib_8py.html#a8d8bb5f069489653e33e9848b85dad40":[39,0,7,0,0,1,1,4],
 "moondream__lib_8py.html#a92853496cf2484aa703bdf5a8402bc73":[39,0,7,0,0,1,1,11],
 "moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[39,0,7,0,0,1,1,1],
-"moondream__lib_8py.html#a96f271e464064797e7edcff4e9851282":[39,0,7,0,0,1,1,7],
-"moondream__lib_8py.html#a982a539331047f39736ef58952c3e722":[39,0,7,0,0,1,1,13],
-"moondream__lib_8py.html#abe40f656e14ad3a830e4548b2a3f436d":[39,0,7,0,0,1,1,8],
-"moondream__lib_8py.html#ac84395d9ed2025a9e954251124789ae7":[39,0,7,0,0,1,1,10],
-"moondream__lib_8py.html#adb038b52a38e3ae02b1571585802ebb8":[39,0,7,0,0,1,1,2],
-"moondream__lib_8py.html#ae20e70a8e9b4400517bdbee89022d0bd":[39,0,7,0,0,1,1,12]
+"moondream__lib_8py.html#a96f271e464064797e7edcff4e9851282":[39,0,7,0,0,1,1,7]
 };

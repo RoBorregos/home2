@@ -2,6 +2,7 @@ var classtest__hri__manager_1_1TestHriManager =
 [
     [ "__init__", "classtest__hri__manager_1_1TestHriManager.html#a36b0bf279c06e38b98a8fef5ef2c2e04", null ],
     [ "async_llm_test", "classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1", null ],
+    [ "detect_door", "classtest__hri__manager_1_1TestHriManager.html#ac324c102215af351f72106b28ae3be8c", null ],
     [ "individual_functions", "classtest__hri__manager_1_1TestHriManager.html#a71aa05a56df14e610a5a43647e27180c", null ],
     [ "run", "classtest__hri__manager_1_1TestHriManager.html#aed2c5bfb3ae73cb7c694cb6d4d3508f5", null ],
     [ "test_ask_and_confirm", "classtest__hri__manager_1_1TestHriManager.html#a073f31152fdd2f070dcef4e2dfa9dc8d", null ],
@@ -9,8 +10,8 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "test_command_interpreter", "classtest__hri__manager_1_1TestHriManager.html#a31b4ead34622ba59c45873059886afd7", null ],
     [ "test_command_interpreter_baml", "classtest__hri__manager_1_1TestHriManager.html#aa699b42d8a441cfe496bfcf51549495e", null ],
     [ "test_data_extractor", "classtest__hri__manager_1_1TestHriManager.html#ac7b8e854452c4c97691ba34c48661e35", null ],
+    [ "test_door", "classtest__hri__manager_1_1TestHriManager.html#a3fbc09ad3d5b24cd3235ce28454edd74", null ],
     [ "test_fallback_resume", "classtest__hri__manager_1_1TestHriManager.html#acfc0b414a94ea61512eda4e030ba2d9b", null ],
-    [ "test_follow", "classtest__hri__manager_1_1TestHriManager.html#a6a0636c611346a80cc10485c3fcae803", null ],
     [ "test_is_negative", "classtest__hri__manager_1_1TestHriManager.html#a5ffc27f537aa91090fa44f0e715250e5", null ],
     [ "test_is_positive", "classtest__hri__manager_1_1TestHriManager.html#a5e36aa8c1a7e0afb23ab8950f8ee5b1e", null ],
     [ "test_map", "classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6", null ],
@@ -20,8 +21,5 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "test_take_order", "classtest__hri__manager_1_1TestHriManager.html#a9f91a7aad049a90f4a4e2e7790849802", null ],
     [ "test_word_confidences", "classtest__hri__manager_1_1TestHriManager.html#a9f50023c7e1734e13e81c2030137adb2", null ],
     [ "_calls", "classtest__hri__manager_1_1TestHriManager.html#aba0825b2b3807faccbd6aff2f71f2f52", null ],
-    [ "hri_manager", "classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b", null ],
-    [ "manipulation_manager", "classtest__hri__manager_1_1TestHriManager.html#acf9fa0bcea7d27d30a1e87bc0565234c", null ],
-    [ "navigation_manager", "classtest__hri__manager_1_1TestHriManager.html#a71962a3fac35e3ddc50000120183166a", null ],
-    [ "vision_manager", "classtest__hri__manager_1_1TestHriManager.html#a6afe8ad10365cd747b2a14d0b13a1830", null ]
+    [ "hri_manager", "classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b", null ]
 ];

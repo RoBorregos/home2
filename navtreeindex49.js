@@ -1,5 +1,12 @@
 var NAVTREEINDEX49 =
 {
+"structvamp_1_1collision_1_1CAPT.html#a1bc20198c96dec9fa0d11cc8abbb2bcf":[37,0,205,2,2,4],
+"structvamp_1_1collision_1_1CAPT.html#a1bc20198c96dec9fa0d11cc8abbb2bcf":[38,0,117,1,1,4],
+"structvamp_1_1collision_1_1CAPT.html#a33523d5b1b112979c1f901b772648700":[37,0,205,2,2,12],
+"structvamp_1_1collision_1_1CAPT.html#a33523d5b1b112979c1f901b772648700":[38,0,117,1,1,12],
+"structvamp_1_1collision_1_1CAPT.html#a3e32d5b5fae1c6abefa1abcb1a3c85b9":[37,0,205,2,2,10],
+"structvamp_1_1collision_1_1CAPT.html#a3e32d5b5fae1c6abefa1abcb1a3c85b9":[38,0,117,1,1,10],
+"structvamp_1_1collision_1_1CAPT.html#a6018dc8e2c7e7bc51c8674f3dbfcd1ef":[38,0,117,1,1,3],
 "structvamp_1_1collision_1_1CAPT.html#a6018dc8e2c7e7bc51c8674f3dbfcd1ef":[37,0,205,2,2,3],
 "structvamp_1_1collision_1_1CAPT.html#a667c25af70f7886d0c7bb8345214e9d6":[38,0,117,1,1,5],
 "structvamp_1_1collision_1_1CAPT.html#a667c25af70f7886d0c7bb8345214e9d6":[37,0,205,2,2,5],
@@ -242,12 +249,5 @@ var NAVTREEINDEX49 =
 "structvamp_1_1planning_1_1AORRTCSettings.html#a017f0a7b2eacecd7031586dd90750648":[38,0,117,3,2,3],
 "structvamp_1_1planning_1_1AORRTCSettings.html#a017f0a7b2eacecd7031586dd90750648":[37,0,205,5,2,3],
 "structvamp_1_1planning_1_1AORRTCSettings.html#a028123ad4b25032e8bac5633cfcc4b06":[37,0,205,5,2,0],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a028123ad4b25032e8bac5633cfcc4b06":[38,0,117,3,2,0],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a0e3063259f46e11d695b5b6c07441c3e":[38,0,117,3,2,2],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a0e3063259f46e11d695b5b6c07441c3e":[37,0,205,5,2,2],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a2dc528c8fafc58b4be0ab627ee82c73b":[38,0,117,3,2,8],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a2dc528c8fafc58b4be0ab627ee82c73b":[37,0,205,5,2,8],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a5e37eb5ee6f2431ee3a0884436272ca5":[38,0,117,3,2,6],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a5e37eb5ee6f2431ee3a0884436272ca5":[37,0,205,5,2,6],
-"structvamp_1_1planning_1_1AORRTCSettings.html#a639747a2cea08a97f1721aeaae86ac47":[38,0,117,3,2,1]
+"structvamp_1_1planning_1_1AORRTCSettings.html#a028123ad4b25032e8bac5633cfcc4b06":[38,0,117,3,2,0]
 };
