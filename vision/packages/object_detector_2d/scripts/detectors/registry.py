@@ -13,6 +13,7 @@ MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
 # Conflicting deps or exclusive GPU >4 GB → new gRPC container in docker/vision/
 MODEL_CONFIGS: dict[str, dict] = {
     "yolo_finetuned": {"filename": "RCP17.pt", "type": "yolo", "conf": 0.6},
+    "yolo_finetunedRC": {"filename": "RCWUP2026.pt", "type": "yolo", "conf": 0.6},
     "yolo_generic": {"filename": "yolo26n.pt", "type": "yolo", "conf": 0.5},
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
 }
