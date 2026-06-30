@@ -1,5 +1,7 @@
 var NAVTREEINDEX35 =
 {
+"md_docs_Setup.html":[34],
+"md_docs_Setup.html#autotoc_md276":[34,0],
 "md_docs_Setup.html#autotoc_md277":[34,1],
 "md_docs_Setup.html#autotoc_md278":[34,1,0],
 "md_docs_Setup.html#autotoc_md279":[34,1,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX35 =
 "monitor_8launch_8py.html#a89ffacc2739b9bf0e8a294482eeff9a1":[39,0,4,0,3,0,0,1,0],
 "moondream__lib_8py.html":[39,0,7,0,0,1,1],
 "moondream__lib_8py.html#a3e80178be0f550fe0c9f3ba9acae5445":[39,0,7,0,0,1,1,15],
-"moondream__lib_8py.html#a4bd3748d658dedbd9710d61c47840b69":[39,0,7,0,0,1,1,14],
-"moondream__lib_8py.html#a58d7af6b0a7d591311a301111c890ba8":[39,0,7,0,0,1,1,3],
-"moondream__lib_8py.html#a773941f5062b211dc408f7760ba8c37e":[39,0,7,0,0,1,1,16]
+"moondream__lib_8py.html#a4bd3748d658dedbd9710d61c47840b69":[39,0,7,0,0,1,1,14]
 };

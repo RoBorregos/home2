@@ -16,6 +16,7 @@ var classpick__and__place_1_1keyboard__input_1_1KeyboardInput =
     [ "_action_client", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a7f84aec58c1875772973d0cc475e60b5", null ],
     [ "_clear_octomap_client", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a59d582523a93994972bd13229af84b4a", null ],
     [ "_optimal_position_client", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a4ca4e3f89d7762012273c056ac4a7bad", null ],
+    [ "arena", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a66b0a21150be37b41546ff546641741c", null ],
     [ "clicked_point", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a628e15df859d1b4449eb694b7f657f2e", null ],
     [ "clicked_point_subscription", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#aef2e351e8adfdaeef220ee1714bb925c", null ],
     [ "max_distance", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#aec58b84038489fbeb837dc5561500862", null ],

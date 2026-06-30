@@ -1,5 +1,9 @@
 var NAVTREEINDEX33 =
 {
+"gpsr__task__manager_8py.html#aa97f56f6506fa0133f9026a56277d8b7":[39,0,6,1,6,3],
+"gpsr__task__manager_8py.html#acbd3cc051bcaa0355718e913a0b44e0e":[39,0,6,1,6,7],
+"gpsr__task__manager_8py.html#acde48271012efc9388cf1370294e321d":[39,0,6,1,6,4],
+"gpsr__task__manager_8py.html#afe950bb28e9c31e9da1943679f1c8a00":[39,0,6,1,6,6],
 "gpsr__tasks_8py.html":[39,0,6,2,1,3],
 "gpsr__test__commands_8py.html":[39,0,6,2,1,4],
 "gpsr__test__commands_8py.html#a006ca904dfde847a2b6aa1ba96d44872":[39,0,6,2,1,4,12],
@@ -144,8 +148,8 @@ var NAVTREEINDEX33 =
 "imu__sensor_8cpp.html":[39,0,3,0,4,1,2,0],
 "imu__sensor_8hpp.html":[39,0,3,0,4,1,0,3,0],
 "imu__sensor_8hpp_source.html":[39,0,3,0,4,1,0,3,0],
-"index.html":[],
 "index.html":[0],
+"index.html":[],
 "index.html#autotoc_md211":[0,0],
 "index.html#autotoc_md212":[0,0,0],
 "index.html#autotoc_md213":[0,0,1],
@@ -186,8 +190,6 @@ var NAVTREEINDEX33 =
 "kalman__filter_8py.html#a5c1eb7c1bf433282be1265e5e74ccb45":[39,0,7,0,2,2,0,0,2,1],
 "keyboard__input_8py.html":[39,0,3,0,7,1,5],
 "keyboard__input_8py.html#a75c5218d453855e7723dea12b1c7fc4c":[39,0,3,0,7,1,5,1],
-"keyboard__input_8py.html#ac6a53840cda6368185c95c24b896647a":[39,0,3,0,7,1,5,2],
-"keyboard__input_8py.html#ae79cdd79a3d087f1a0079a25fd1c1241":[39,0,3,0,7,1,5,3],
 "laserscan__multi__merger_8cpp.html":[39,0,4,0,1,1,0],
 "laserscan__multi__merger_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627":[39,0,4,0,1,1,0,1],
 "laserscan__virtualizer_8cpp.html":[39,0,4,0,1,1,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX33 =
 "macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa5862b0dc44370f8a1c9307d585f594e6":[39,0,3,0,6,0,0,0,7,9],
 "macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa715d9759e1ae3d8e787545343fd5c487":[39,0,3,0,6,0,0,0,7,7],
 "macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa71606ff428139cad1446cdcf33059204":[39,0,3,0,6,0,0,0,7,5],
-"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa778ae3a676cd97471a82cd7f2a47853e":[39,0,3,0,6,0,0,0,7,8],
-"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa9fce61393e29bd19881f49d3acd8a24e":[39,0,3,0,6,0,0,0,7,6],
-"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caaa65f9a19a43b17c5c4f822f6daf5a4cf":[39,0,3,0,6,0,0,0,7,3]
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa778ae3a676cd97471a82cd7f2a47853e":[39,0,3,0,6,0,0,0,7,8]
 };

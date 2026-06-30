@@ -1,7 +1,5 @@
 var NAVTREEINDEX41 =
 {
-"namespacerestaurant__task__manager.html#a2c2e24f675fbc879adf8114ce8a00d05":[37,0,154,2],
-"namespacerestaurant__task__manager.html#a35690b796f2e229dfef4e9a26221eb4a":[37,0,154,6],
 "namespacerestaurant__task__manager.html#a64f4ff8ab40ef3c92aeca08405b13856":[37,0,154,5],
 "namespacerestaurant__task__manager.html#a87a4dcc0066a523994eeaa2aec6555e8":[37,0,154,4],
 "namespacerestaurant__task__manager.html#a8a4e7ec8112c73020b24fd9ab05dc5d5":[37,0,154,1],
@@ -249,5 +247,7 @@ var NAVTREEINDEX41 =
 "namespacetask__manager_1_1utils_1_1task.html":[37,0,174,2,8],
 "namespacetemp__follow.html":[37,0,175],
 "namespacetemp__follow.html#a027d977acaf4012fe97da3b05f6a746d":[37,0,175,7],
-"namespacetemp__follow.html#a24e0bd389d3274839f801a5f6d7cf9b6":[37,0,175,4]
+"namespacetemp__follow.html#a24e0bd389d3274839f801a5f6d7cf9b6":[37,0,175,4],
+"namespacetemp__follow.html#a425fcfab2ab004242e89772a9e92e0e8":[37,0,175,1],
+"namespacetemp__follow.html#a63a3532037e8b4426a20510ab2b651d0":[37,0,175,6]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX37 =
 {
+"namespacedualshock__cmd__vel.html#a432ab17ac92da4fc48450236583614a3":[37,0,41,0],
+"namespaceegsr__cut.html":[37,0,42],
 "namespaceegsr__cut.html#a0e686aa3fb80c3b83bd276c99727c65e":[37,0,42,4],
 "namespaceegsr__cut.html#a1b8f9dabccf41a8d821d7cb2b32afd76":[37,0,42,7],
 "namespaceegsr__cut.html#a1ca23f555a40c8aa0974151fc2c06366":[37,0,42,8],
@@ -247,7 +249,5 @@ var NAVTREEINDEX37 =
 "namespacefrida__constants_1_1manipulation__constants.html#ab4838123d991b807498fcf075a6d4928":[37,0,61,2,55],
 "namespacefrida__constants_1_1manipulation__constants.html#ab65c663bc0e5f75a060598e9e0c4a01a":[37,0,61,2,48],
 "namespacefrida__constants_1_1manipulation__constants.html#ab6d32e6ff959403c0f3f8f10aa6a1ab4":[37,0,61,2,27],
-"namespacefrida__constants_1_1manipulation__constants.html#ab75f80813165c558161e6506743bc531":[37,0,61,2,57],
-"namespacefrida__constants_1_1manipulation__constants.html#abc01e1600c8a6c791bc5edb33bbf2576":[37,0,61,2,18],
-"namespacefrida__constants_1_1manipulation__constants.html#abe42c1d53374543f7954f09710de631d":[37,0,61,2,7]
+"namespacefrida__constants_1_1manipulation__constants.html#ab75f80813165c558161e6506743bc531":[37,0,61,2,57]
 };

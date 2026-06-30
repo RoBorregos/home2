@@ -1,5 +1,7 @@
 var NAVTREEINDEX39 =
 {
+"namespaceinflate__body__spheres.html":[37,0,88],
+"namespaceinflate__body__spheres.html#a1f90a775b7c2e98642874f82cef30e18":[37,0,88,2],
 "namespaceinflate__body__spheres.html#a616cda5cdffc4a2453f7755c4717ac4b":[37,0,88,0],
 "namespaceinflate__body__spheres.html#a9cd297cc022b9e6ed4bd24e40cedcd45":[37,0,88,1],
 "namespaceiou__matching.html":[37,0,89],
@@ -247,7 +249,5 @@ var NAVTREEINDEX39 =
 "namespacenav__ui.html#a64ce8c70de6ed85629d910d470d1ec88":[37,0,121,11],
 "namespacenav__ui.html#a689ea44630e0cf55e5c9ffe9d4306e86":[37,0,121,15],
 "namespacenav__ui.html#a81727c4c26971c1c8fe814bf77fad539":[37,0,121,13],
-"namespacenav__ui.html#a96c0451b2505bdf41e332ed08eefeb45":[37,0,121,8],
-"namespacenav__ui.html#a9c46380b372dee62877d099b65c01599":[37,0,121,14],
-"namespacenav__ui.html#a9f04dd826a5a9a56582830cc49df5efb":[37,0,121,9]
+"namespacenav__ui.html#a96c0451b2505bdf41e332ed08eefeb45":[37,0,121,8]
 };

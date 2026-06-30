@@ -1,5 +1,11 @@
 var NAVTREEINDEX52 =
 {
+"vamp__server_8launch_8py.html#a422ea43584028219c2363bd771f9bc6a":[39,0,3,0,10,1,0,1],
+"vamp__server_8launch_8py.html#a4fa7368d4827ac760aae537addc51d41":[39,0,3,0,10,1,0,3],
+"vamp__server_8launch_8py.html#aaf93c9047766704dcdf2f04679249bfe":[39,0,3,0,10,1,0,2],
+"vamp__server_8launch_8py.html#ab8a02fbb5dc8cce1c29d1ccbd029adb8":[39,0,3,0,10,1,0,0],
+"vamp__server_8py.html":[39,0,3,0,10,3,3],
+"vamp__server_8py.html#a2cb08d1fa999a56f5d4beb09dcbf264e":[39,0,3,0,10,3,3,3],
 "vamp__server_8py.html#a6deaf50e2d0665a8506deade12845c54":[39,0,3,0,10,3,3,6],
 "vamp__server_8py.html#a6e86e144085a3f0aec76d304506adfeb":[39,0,3,0,10,3,3,5],
 "vamp__server_8py.html#a904010a1707c149cef750b58ee7abe15":[39,0,3,0,10,3,3,4],
@@ -243,11 +249,5 @@ var NAVTREEINDEX52 =
 "xarm__configurations_8py.html#a9bf638907a515f7a982e0735f1a1d6de":[39,0,1,1,9,12],
 "xarm__configurations_8py.html#a9eb785a1b94b7fb277bc12ed1644044b":[39,0,1,1,9,15],
 "xarm__configurations_8py.html#ab65d3bbb022f09a17bbe258ad7d3d377":[39,0,1,1,9,16],
-"xarm__configurations_8py.html#acd030439b63a120bde3ac743e5bab1f8":[39,0,1,1,9,9],
-"xarm__configurations_8py.html#ad38289acbba239b01fe845ab57a5026b":[39,0,1,1,9,10],
-"xarm__configurations_8py.html#adca6be045477cf1eaae672f79a1d5b6f":[39,0,1,1,9,7],
-"xarm__gripper__mujoco__bridge_8cpp.html":[39,0,3,0,5,1,0],
-"xarm__gripper__mujoco__bridge_8cpp.html#a3c04138a5bfe5d72780bb7e82a18e627":[39,0,3,0,5,1,0,1],
-"xarm__launch_8launch_8py.html":[39,0,5,0,1,9],
-"xarm__launch_8launch_8py.html#a12ed068b87932217931e30a0ae5d9bb6":[39,0,5,0,1,9,1]
+"xarm__configurations_8py.html#acd030439b63a120bde3ac743e5bab1f8":[39,0,1,1,9,9]
 };

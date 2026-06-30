@@ -105,12 +105,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ad1c192a12e574998275a83ac12723032"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacexarm__utils_1_1shelf__height__calibrator.html#ad1c192a12e574998275a83ac12723032">levels_file</a> ()</td></tr>
-<tr class="separator:ad1c192a12e574998275a83ac12723032"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0d9aac777d40e911653f8b967bb909e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacexarm__utils_1_1shelf__height__calibrator.html#aa0d9aac777d40e911653f8b967bb909e">levels_from_sorted_heights</a> (heights)</td></tr>
-<tr class="separator:aa0d9aac777d40e911653f8b967bb909e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03ca934197fe41dbf9118249c5605a6f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacexarm__utils_1_1shelf__height__calibrator.html#a03ca934197fe41dbf9118249c5605a6f">save_shelf_levels</a> (levels, path)</td></tr>
-<tr class="separator:a03ca934197fe41dbf9118249c5605a6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1ff2eed93eba81adc00033899b64e892"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacexarm__utils_1_1shelf__height__calibrator.html#a1ff2eed93eba81adc00033899b64e892">save_shelf_levels</a> (arena, heights, path)</td></tr>
+<tr class="separator:a1ff2eed93eba81adc00033899b64e892"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af082bd2cfb984d883eedeb05460c22a6"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacexarm__utils_1_1shelf__height__calibrator.html#af082bd2cfb984d883eedeb05460c22a6">main</a> ()</td></tr>
 <tr class="separator:af082bd2cfb984d883eedeb05460c22a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -121,42 +117,8 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Calibrate the 3 cabinet shelf heights by clicking them in RViz Publish Point.
-Run: ros2 run xarm_utils shelf_height_calibrator.py (writes config/shelf_levels.json).</pre> </div><h2 class="groupheader">Function Documentation</h2>
-<a id="ad1c192a12e574998275a83ac12723032" name="ad1c192a12e574998275a83ac12723032"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad1c192a12e574998275a83ac12723032">&#9670;&#160;</a></span>levels_file()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def xarm_utils.shelf_height_calibrator.levels_file </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Resolve the shelf levels path: FRIDA_SHELF_LEVELS_FILE env, else package config.</pre> 
-</div>
-</div>
-<a id="aa0d9aac777d40e911653f8b967bb909e" name="aa0d9aac777d40e911653f8b967bb909e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0d9aac777d40e911653f8b967bb909e">&#9670;&#160;</a></span>levels_from_sorted_heights()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def xarm_utils.shelf_height_calibrator.levels_from_sorted_heights </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>heights</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
+Run: ros2 run xarm_utils shelf_height_calibrator.py --arena N (writes the heights
+for arena N into config/shelf_levels.json; no recompile needed).</pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="af082bd2cfb984d883eedeb05460c22a6" name="af082bd2cfb984d883eedeb05460c22a6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af082bd2cfb984d883eedeb05460c22a6">&#9670;&#160;</a></span>main()</h2>
 
@@ -174,8 +136,8 @@ Run: ros2 run xarm_utils shelf_height_calibrator.py (writes config/shelf_levels.
 
 </div>
 </div>
-<a id="a03ca934197fe41dbf9118249c5605a6f" name="a03ca934197fe41dbf9118249c5605a6f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a03ca934197fe41dbf9118249c5605a6f">&#9670;&#160;</a></span>save_shelf_levels()</h2>
+<a id="a1ff2eed93eba81adc00033899b64e892" name="a1ff2eed93eba81adc00033899b64e892"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ff2eed93eba81adc00033899b64e892">&#9670;&#160;</a></span>save_shelf_levels()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -184,7 +146,13 @@ Run: ros2 run xarm_utils shelf_height_calibrator.py (writes config/shelf_levels.
           <td class="memname">def xarm_utils.shelf_height_calibrator.save_shelf_levels </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>levels</em>, </td>
+          <td class="paramname"><em>arena</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>heights</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -199,7 +167,8 @@ Run: ros2 run xarm_utils shelf_height_calibrator.py (writes config/shelf_levels.
         </tr>
       </table>
 </div><div class="memdoc">
-
+<pre class="fragment">Write the 3 sorted heights for `arena` into the JSON levels file,
+preserving any other arenas already stored there.</pre> 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
