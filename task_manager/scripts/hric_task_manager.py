@@ -482,7 +482,7 @@ class HRIC_TM(Node):
             follow_start = time.time()
             while self.running_task:
                 status, _ = self.subtask_manager.hri.interpret_keyword(
-                    FOLLOW_STOP_KEYWORDS, timeout=FOLLOW_LISTEN_TIMEOUT
+                    FOLLOW_STOP_KEYWORDS, timeout=FOLLOW_LISTEN_TIMEOUT, play_chime=False
                 )
                 if status == Status.EXECUTION_SUCCESS:
                     break
