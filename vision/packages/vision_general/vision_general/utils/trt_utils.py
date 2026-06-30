@@ -45,9 +45,24 @@ def load_yolo_trt(model_path: str, task: str = "detect", imgsz: int = 640) -> YO
     """
     engine_path = _get_engine_path(model_path)
 
+    # Check cache dir first, then original location for engine
     if os.path.exists(engine_path):
         print(f"[TRT] Loading cached engine: {engine_path}")
         return YOLO(engine_path, task=task)
+
+    # Also check for engine next to original model path (e.g. /workspace/yolo11m-pose.engine)
+    local_engine = model_path.replace(".pt", ".engine")
+    if local_engine != engine_path and os.path.exists(local_engine):
+        print(f"[TRT] Loading engine from model dir: {local_engine}")
+        return YOLO(local_engine, task=task)
+
+    # If .pt not found in CWD, check TENSORRT_CACHE_DIR
+    if not os.path.exists(model_path):
+        cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
+        if cache_dir:
+            cached_pt = os.path.join(cache_dir, os.path.basename(model_path))
+            if os.path.exists(cached_pt):
+                model_path = cached_pt
 
     model = YOLO(model_path)
 

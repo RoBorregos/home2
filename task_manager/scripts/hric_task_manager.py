@@ -25,6 +25,14 @@ HOT_DRINKS = (
     "fanta water lipton coca-cola soda lemonade pepsi orange juice milk cola sidral mundet iced tea"
 )
 
+# Person-following (runs between the introduction and leaving the bag): the robot
+# follows the guest until they say one of these stop keywords. FOLLOW_LISTEN_TIMEOUT
+# is the length of each speech-listening window; FOLLOW_MAX_DURATION is a safety cap
+# so a missed "stop" can never trap the robot in follow mode forever.
+FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
+FOLLOW_LISTEN_TIMEOUT = 5.0
+FOLLOW_MAX_DURATION = 180.0
+
 
 class Guest:
     """Class to manage the guest information"""
@@ -54,6 +62,7 @@ class HRIC_TM(Node):
         FIND_SEAT = "FIND_SEAT"
         INTRODUCTION = "INTRODUCTION"
         NAVIGATE_TO_ENTRANCE = "NAVIGATE_TO_ENTRANCE"
+        FOLLOW_PERSON = "FOLLOW_PERSON"
         LEAVE_BAG = "LEAVE_BAG"
         END = "END"
         DEBUG = "DEBUG"
@@ -418,13 +427,82 @@ class HRIC_TM(Node):
             )
             self.subtask_manager.manipulation.follow_face(False)
 
-            self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
+            self.current_state = HRIC_TM.TaskStates.FOLLOW_PERSON
 
         elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE)
             self.current_guest_idx = SECOND_GUEST_IDX
             self.navigate_to("entrance", say=False)
             self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
+
+        elif self.current_state == HRIC_TM.TaskStates.FOLLOW_PERSON:
+            self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
+            self.subtask_manager.vision.deactivate_face_recognition()
+
+            # Ask the guest to stand in view, then START the tracker. Use
+            # track_person(True/False) — the start/stop command the canonical
+            # test_follow_person.py uses — NOT get_track_person(), which is only a
+            # status query and never starts tracking. The tracker publishes the
+            # person's 3D point on RESULTS_TOPIC; person_goal_smoother turns it into
+            # the moving Nav2 goal that nav.follow_person chases.
+            self.subtask_manager.hri.say("Please stand in front of me so I can see you.", wait=True)
+            tracking = False
+            for attempt in range(ATTEMPT_LIMIT):
+                if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
+                    tracking = True
+                    break
+                if attempt < ATTEMPT_LIMIT - 1:
+                    self.subtask_manager.hri.say(
+                        "I cannot see you yet. Please stand right in front of me."
+                    )
+
+            if not tracking:
+                # No locked target -> there is no goal to follow; skip rather than
+                # chase the smoother's dummy pose.
+                self.subtask_manager.hri.say(
+                    "I could not lock onto you, so I will skip following and continue."
+                )
+                self.subtask_manager.vision.track_person(False)
+                self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
+                return
+
+            self.subtask_manager.hri.say(
+                "I will start following you now. Say stop whenever you want me to stop.",
+                wait=True,
+            )
+
+            # Base + arm follow. Even though the bag-carry pose inverts the wrist
+            # camera (camera_upside_down(True) in FIND_SEAT), the tracker now flips the
+            # frame for upright detection and publishes an upright-correct centroid, so
+            # arm-follow (joint1 pan to keep the person centered) steers the right way.
+            # Running the arm-follow keeps the person in frame as the base maneuvers,
+            # which reduces losses.
+            self.subtask_manager.nav.follow_person(True)
+            self.subtask_manager.manipulation.follow_person(True)
+
+            # Keep following until the guest says a stop keyword. The duration cap is
+            # a safety net so a missed "stop" never traps the robot in follow mode.
+            follow_start = time.time()
+            while self.running_task:
+                status, _ = self.subtask_manager.hri.interpret_keyword(
+                    FOLLOW_STOP_KEYWORDS, timeout=FOLLOW_LISTEN_TIMEOUT, play_chime=False
+                )
+                if status == Status.EXECUTION_SUCCESS:
+                    break
+                if time.time() - follow_start > FOLLOW_MAX_DURATION:
+                    Logger.warn(self, "Follow person timed out without a stop keyword")
+                    break
+
+            # Stop arm-follow, nav-follow AND the tracker before leaving the bag.
+            self.subtask_manager.nav.follow_person(False)
+            self.subtask_manager.manipulation.follow_person(False)
+            self.subtask_manager.vision.track_person(False)
+            self.subtask_manager.manipulation.move_to_position(
+                "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
+            )
+            self.subtask_manager.hri.say("Okay, I will stop following you.", wait=False)
+
+            self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
 
         elif self.current_state == HRIC_TM.TaskStates.LEAVE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.LEAVE_BAG)

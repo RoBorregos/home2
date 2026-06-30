@@ -22,6 +22,9 @@ from _merger_helpers import (
     make_locator,
 )
 from task_manager.subtask_managers.hri_tasks import HRITasks
+from task_manager.task_manager.subtask_managers.nav_tasks import NavigationTasks
+from task_manager.task_manager.subtask_managers.vision_tasks import VisionTasks
+from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
@@ -91,6 +94,10 @@ class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
         self.hri_manager = HRITasks(self, task=Task.DEBUG, mock_data=False)
+        self.vision_manager = VisionTasks(self, task=Task.DEBUG, mock_data=False)
+        self.navigation_manager = NavigationTasks(self, task=Task.DEBUG, mock_data=False)
+        self.manipulation_manager = ManipulationTasks(self, task=Task.DEBUG, mock_data=False)
+
         rclpy.spin_once(self, timeout_sec=1.0)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
@@ -139,6 +146,8 @@ class TestHriManager(Node):
         if TEST_TAKE_ORDER:
             self.test_take_order()
 
+        self.test_follow()
+
         if TEST_MERGER:
             self.test_merger()
 
@@ -146,6 +155,11 @@ class TestHriManager(Node):
             self.test_fallback_resume()
 
         exit(0)
+
+    def test_follow(self):
+        self.vision_manager.get_track_person()
+        self.manipulation_manager.follow_person(True)
+        self.navigation_manager.follow_person(True)
 
     def individual_functions(self):
         # Test say
