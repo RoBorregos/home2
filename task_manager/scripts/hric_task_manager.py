@@ -468,14 +468,14 @@ class HRIC_TM(Node):
                 wait=True,
             )
 
-            # Base-only follow. While carrying the bag the wrist camera is UPSIDE DOWN
-            # (the carry pose flips joint5/6, hence camera_upside_down(True) in
-            # FIND_SEAT). The tracker runs on the raw frame, so its 2D pixel centroid
-            # is mirrored — arm-follow pans joint1 from that centroid and would steer
-            # the WRONG way and lose the person. The base/nav follow stays correct:
-            # the 3D goal is deprojected in the camera optical frame and TF already
-            # accounts for the physical flip. So drive nav-follow only here.
+            # Base + arm follow. Even though the bag-carry pose inverts the wrist
+            # camera (camera_upside_down(True) in FIND_SEAT), the tracker now flips the
+            # frame for upright detection and publishes an upright-correct centroid, so
+            # arm-follow (joint1 pan to keep the person centered) steers the right way.
+            # Running the arm-follow keeps the person in frame as the base maneuvers,
+            # which reduces losses.
             self.subtask_manager.nav.follow_person(True)
+            self.subtask_manager.manipulation.follow_person(True)
 
             # Keep following until the guest says a stop keyword. The duration cap is
             # a safety net so a missed "stop" never traps the robot in follow mode.
@@ -490,8 +490,9 @@ class HRIC_TM(Node):
                     Logger.warn(self, "Follow person timed out without a stop keyword")
                     break
 
-            # Stop nav-follow AND the tracker before leaving the bag.
+            # Stop arm-follow, nav-follow AND the tracker before leaving the bag.
             self.subtask_manager.nav.follow_person(False)
+            self.subtask_manager.manipulation.follow_person(False)
             self.subtask_manager.vision.track_person(False)
             self.subtask_manager.manipulation.move_to_position(
                 "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"

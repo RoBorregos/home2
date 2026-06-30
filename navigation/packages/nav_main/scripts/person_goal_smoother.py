@@ -128,7 +128,7 @@ class PersonGoalSmoother(Node):
         # --- Parameters ---
         self.declare_parameter("alpha", 0.3)           # EMA smoothing (0=full smooth, 1=no smooth)
         self.declare_parameter("distance_gate", 0.1)     # Min distance (m) to publish new goal (lower = heading refreshes more continuously)
-        self.declare_parameter("follow_distance", 0.8)  # Stay this far behind the person
+        self.declare_parameter("follow_distance", 0.6)  # Stay this far (m) behind the person (lower = robot ends up closer)
         self.declare_parameter("timeout", 3.0)           # Seconds without tracker data to stop
         self.declare_parameter("map_frame", "map")
         self.declare_parameter("snap_radius", 20)        # Grid cells to search for free space
