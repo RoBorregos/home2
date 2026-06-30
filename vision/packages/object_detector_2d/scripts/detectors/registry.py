@@ -1,5 +1,6 @@
 """MODEL_CONFIGS catalog and ModelRegistry: maps model names to loaded singleton instances."""
 
+import json
 import pathlib
 
 # .pt files live in scripts/models/ alongside this file
@@ -11,12 +12,33 @@ MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
 #
 # New model architecture (compatible deps) → new file in models/ + one entry here
 # Conflicting deps or exclusive GPU >4 GB → new gRPC container in docker/vision/
+#
+# Optional "translation" key: a JSON file (resolved against MODELS_PATH) mapping
+
 MODEL_CONFIGS: dict[str, dict] = {
-    "yolo_finetuned": {"filename": "RCP17.pt", "type": "yolo", "conf": 0.6},
-    "yolo_finetunedRC": {"filename": "RCWUP2026.pt", "type": "yolo", "conf": 0.6},
+    "yolo_finetuned": {
+        "filename": "robocup2026_v1.pt",
+        "type": "yolo",
+        "conf": 0.6,
+        "translation": "robocup2026_translation.json",
+    },
     "yolo_generic": {"filename": "yolo26n.pt", "type": "yolo", "conf": 0.5},
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
 }
+
+
+def _load_translation(config: dict) -> dict[str, str]:
+    """Load the optional label-translation map for a model config."""
+    filename = config.get("translation")
+    if not filename:
+        return {}
+    path = MODELS_PATH + filename
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"[ModelRegistry] translation file not found: {path}")
+        return {}
 
 
 class ModelRegistry:
@@ -50,5 +72,6 @@ class ModelRegistry:
                 )
             instance = cls._type_registry[type_name](name)
             instance.load(config)
+            instance.set_translation(_load_translation(config))
             cls._instances[name] = instance
         return cls._instances[name]
