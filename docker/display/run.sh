@@ -64,6 +64,8 @@ wait_and_launch_display() {
   done
   chmod +x open-display.bash
   local task_route="${TASK#--}"
+  # The safety routine reuses the HRIC display page.
+  [ "$task_route" = "safety" ] && task_route="hric"
   bash open-display.bash "$task_route"
 }
 
