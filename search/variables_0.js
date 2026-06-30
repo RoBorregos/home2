@@ -216,13 +216,14 @@ var searchData=
   ['_5ftf_5fbroadcaster_213',['_tf_broadcaster',['../classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a6c3f92d447185dbcc52596c3ec2bebf3',1,'omnidriver::odrive_dashboard::ODriveDashboardNode']]],
   ['_5ftiebreak_5fepsilon_214',['_TIEBREAK_EPSILON',['../namespacetask__manager_1_1gpsr_1_1merger.html#ac23db6ebb9c83277ffa851ff040007bc',1,'task_manager::gpsr::merger']]],
   ['_5ftm_5fmod_215',['_tm_mod',['../namespacetest__ppc__cabinet__place.html#a3377e0767316b621cf95027c66c791d0',1,'test_ppc_cabinet_place']]],
-  ['_5ftrash_5fmode_216',['_trash_mode',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#ac6c8caf3169174621e88310048b83bb5',1,'flat_grasp_estimator::FlatGraspEstimator']]],
-  ['_5ftuple2axes_217',['_TUPLE2AXES',['../namespacevamp_1_1transformations.html#a9085793a6b025ed66e4337826292b946',1,'vamp::transformations']]],
-  ['_5ftype_5fregistry_218',['_type_registry',['../classdetectors_1_1registry_1_1ModelRegistry.html#a520b83b54bf56d90f4674a9728e372b1',1,'detectors::registry::ModelRegistry']]],
-  ['_5fupdate_5fmat_219',['_update_mat',['../classkalman__filter_1_1KalmanFilter.html#affa4ed0105c8d6cee7cc8f72665dbc82',1,'kalman_filter::KalmanFilter']]],
-  ['_5fvbasesol_220',['_vbasesol',['../classikfast_1_1IkSolution.html#ac1b4c9612cee58a2b98388454b1054d7',1,'ikfast::IkSolution']]],
-  ['_5fvc_5fset_5fcartesian_5fvelocity_5fclient_221',['_vc_set_cartesian_velocity_client',['../classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aca949a492aaa3ddcd50f5fa0b226aa3f',1,'pick_and_place::pick_server::PickMotionServer']]],
-  ['_5fvdown_222',['_vdown',['../classvamp_1_1transformations_1_1Arcball.html#ab45c81e43252bd0dd0cbb919431d839d',1,'vamp::transformations::Arcball']]],
-  ['_5fversion_5fnot_5fsupported_223',['_version_not_supported',['../namespacemoondream__proto__pb2__grpc.html#ab74109a22860ed8e9341570644b60c2f',1,'moondream_proto_pb2_grpc']]],
-  ['_5fvfree_224',['_vfree',['../classikfast_1_1IkSolution.html#a3c552543a66e39e127bed5a5c085b1bb',1,'ikfast::IkSolution']]]
+  ['_5ftranslation_216',['_translation',['../classdetectors_1_1base_1_1DetectorModel.html#aa5f42cf88b646121671537a7b7441f59',1,'detectors::base::DetectorModel']]],
+  ['_5ftrash_5fmode_217',['_trash_mode',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#ac6c8caf3169174621e88310048b83bb5',1,'flat_grasp_estimator::FlatGraspEstimator']]],
+  ['_5ftuple2axes_218',['_TUPLE2AXES',['../namespacevamp_1_1transformations.html#a9085793a6b025ed66e4337826292b946',1,'vamp::transformations']]],
+  ['_5ftype_5fregistry_219',['_type_registry',['../classdetectors_1_1registry_1_1ModelRegistry.html#a520b83b54bf56d90f4674a9728e372b1',1,'detectors::registry::ModelRegistry']]],
+  ['_5fupdate_5fmat_220',['_update_mat',['../classkalman__filter_1_1KalmanFilter.html#affa4ed0105c8d6cee7cc8f72665dbc82',1,'kalman_filter::KalmanFilter']]],
+  ['_5fvbasesol_221',['_vbasesol',['../classikfast_1_1IkSolution.html#ac1b4c9612cee58a2b98388454b1054d7',1,'ikfast::IkSolution']]],
+  ['_5fvc_5fset_5fcartesian_5fvelocity_5fclient_222',['_vc_set_cartesian_velocity_client',['../classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aca949a492aaa3ddcd50f5fa0b226aa3f',1,'pick_and_place::pick_server::PickMotionServer']]],
+  ['_5fvdown_223',['_vdown',['../classvamp_1_1transformations_1_1Arcball.html#ab45c81e43252bd0dd0cbb919431d839d',1,'vamp::transformations::Arcball']]],
+  ['_5fversion_5fnot_5fsupported_224',['_version_not_supported',['../namespacemoondream__proto__pb2__grpc.html#ab74109a22860ed8e9341570644b60c2f',1,'moondream_proto_pb2_grpc']]],
+  ['_5fvfree_225',['_vfree',['../classikfast_1_1IkSolution.html#a3c552543a66e39e127bed5a5c085b1bb',1,'ikfast::IkSolution']]]
 ];

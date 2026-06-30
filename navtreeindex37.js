@@ -1,5 +1,11 @@
 var NAVTREEINDEX37 =
 {
+"moondream__lib_8py.html#a58d7af6b0a7d591311a301111c890ba8":[39,0,7,0,0,1,1,3],
+"moondream__lib_8py.html#a773941f5062b211dc408f7760ba8c37e":[39,0,7,0,0,1,1,16],
+"moondream__lib_8py.html#a7a93bbfb0f1d7131b55cfd161a52f340":[39,0,7,0,0,1,1,5],
+"moondream__lib_8py.html#a8d8bb5f069489653e33e9848b85dad40":[39,0,7,0,0,1,1,4],
+"moondream__lib_8py.html#a92853496cf2484aa703bdf5a8402bc73":[39,0,7,0,0,1,1,11],
+"moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[39,0,7,0,0,1,1,1],
 "moondream__lib_8py.html#a96f271e464064797e7edcff4e9851282":[39,0,7,0,0,1,1,7],
 "moondream__lib_8py.html#a982a539331047f39736ef58952c3e722":[39,0,7,0,0,1,1,13],
 "moondream__lib_8py.html#abe40f656e14ad3a830e4548b2a3f436d":[39,0,7,0,0,1,1,8],
@@ -202,8 +208,9 @@ var NAVTREEINDEX37 =
 "namespacedetectors.html":[37,0,28],
 "namespacedetectors_1_1base.html":[37,0,28,0],
 "namespacedetectors_1_1registry.html":[37,0,28,1],
-"namespacedetectors_1_1registry.html#a51e496b6760bdd844d1c44addc8d5e78":[37,0,28,1,1],
-"namespacedetectors_1_1registry.html#aff6ab07af9f7f2e55d84ade3c61d6e48":[37,0,28,1,2],
+"namespacedetectors_1_1registry.html#a51e496b6760bdd844d1c44addc8d5e78":[37,0,28,1,2],
+"namespacedetectors_1_1registry.html#ab29beb337204e36fa21507816aad50c3":[37,0,28,1,1],
+"namespacedetectors_1_1registry.html#aff6ab07af9f7f2e55d84ade3c61d6e48":[37,0,28,1,3],
 "namespacedetectors_1_1utils.html":[37,0,28,2],
 "namespacedetectors_1_1utils.html#a518bb5f2252ac2f0372fdbb596bee6bf":[37,0,28,2,1],
 "namespacedetectors_1_1utils.html#af7cdecddcac99f7c329b866f5ed79ed9":[37,0,28,2,0],
@@ -242,12 +249,5 @@ var NAVTREEINDEX37 =
 "namespaceds4__demo.html":[37,0,40],
 "namespaceds4__demo.html#a4c6991237427da870d97ade2a44fdfec":[37,0,40,3],
 "namespaceds4__demo.html#a9537b385d440de90c55689e7d09e9b5d":[37,0,40,2],
-"namespaceds4__demo.html#a9ee64277947c3be58860b6df419273bd":[37,0,40,1],
-"namespacedualshock__cmd__vel.html":[37,0,41],
-"namespacedualshock__cmd__vel.html#a432ab17ac92da4fc48450236583614a3":[37,0,41,0],
-"namespaceegsr__cut.html":[37,0,42],
-"namespaceegsr__cut.html#a0e686aa3fb80c3b83bd276c99727c65e":[37,0,42,4],
-"namespaceegsr__cut.html#a1b8f9dabccf41a8d821d7cb2b32afd76":[37,0,42,7],
-"namespaceegsr__cut.html#a1ca23f555a40c8aa0974151fc2c06366":[37,0,42,8],
-"namespaceegsr__cut.html#a4aeb00c58259adbdc77b491d53265b82":[37,0,42,1]
+"namespaceds4__demo.html#a9ee64277947c3be58860b6df419273bd":[37,0,40,1]
 };

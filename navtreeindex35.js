@@ -1,5 +1,11 @@
 var NAVTREEINDEX35 =
 {
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caaebebbb844ff2f348a2e038508132f403":[39,0,3,0,6,0,0,0,7,10],
+"macros_8hpp.html#aa99f2147b3f775316d89971291dbf174":[39,0,3,0,6,0,0,0,0],
+"macros_8hpp.html#ac0a53cb5ed7356485105c7adf5dff4bf":[39,0,3,0,6,0,0,0,3],
+"macros_8hpp.html#acceb21363936fb79d3fe63e9d00a5500":[39,0,3,0,6,0,0,0,5],
+"macros_8hpp.html#acea63f67b814167fbfea2bf8eb6d69db":[39,0,3,0,6,0,0,0,2],
+"macros_8hpp.html#ad8f1e5a99ab940794a5a94f8d3f74299":[39,0,3,0,6,0,0,0,4],
 "macros_8hpp_source.html":[39,0,3,0,6,0,0,0],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2____init_____8py.html":[39,0,3,0,0,0,0],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html":[39,0,3,0,0,0,3],
@@ -243,11 +249,5 @@ var NAVTREEINDEX35 =
 "md_docs_Run_Areas_vision.html#autotoc_md265":[32,0],
 "md_docs_Run_Areas_vision.html#autotoc_md266":[32,1],
 "md_docs_Run_Areas_vision.html#autotoc_md269":[32,2],
-"md_docs_Run_Areas_vision.html#autotoc_md270":[32,3],
-"md_docs_Setup.html":[34],
-"md_docs_Setup.html#autotoc_md276":[34,0],
-"md_docs_Setup.html#autotoc_md277":[34,1],
-"md_docs_Setup.html#autotoc_md278":[34,1,0],
-"md_docs_Setup.html#autotoc_md279":[34,1,1],
-"md_docs_ai_architecture.html":[22]
+"md_docs_Run_Areas_vision.html#autotoc_md270":[32,3]
 };

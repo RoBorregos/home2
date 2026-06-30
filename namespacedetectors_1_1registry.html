@@ -92,6 +92,7 @@ $(document).ready(function(){initNavTree('namespacedetectors_1_1registry.html','
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
+<a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">detectors.registry Namespace Reference</div></div>
 </div><!--header-->
@@ -102,6 +103,11 @@ Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdetectors_1_1registry_1_1ModelRegistry.html">ModelRegistry</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ab29beb337204e36fa21507816aad50c3"><td class="memItemLeft" align="right" valign="top">dict[str, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedetectors_1_1registry.html#ab29beb337204e36fa21507816aad50c3">_load_translation</a> (dict config)</td></tr>
+<tr class="separator:ab29beb337204e36fa21507816aad50c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:aff6ab07af9f7f2e55d84ade3c61d6e48"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedetectors_1_1registry.html#aff6ab07af9f7f2e55d84ade3c61d6e48">MODELS_PATH</a> = str(pathlib.Path(__file__).parent) + &quot;/&quot;</td></tr>
@@ -110,7 +116,34 @@ Variables</h2></td></tr>
 <tr class="separator:a51e496b6760bdd844d1c44addc8d5e78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">MODEL_CONFIGS catalog and ModelRegistry: maps model names to loaded singleton instances.</pre> </div><h2 class="groupheader">Variable Documentation</h2>
+<div class="textblock"><pre class="fragment">MODEL_CONFIGS catalog and ModelRegistry: maps model names to loaded singleton instances.</pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="ab29beb337204e36fa21507816aad50c3" name="ab29beb337204e36fa21507816aad50c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab29beb337204e36fa21507816aad50c3">&#9670;&#160;</a></span>_load_translation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> dict[str, str] detectors.registry._load_translation </td>
+          <td>(</td>
+          <td class="paramtype">dict&#160;</td>
+          <td class="paramname"><em>config</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Load the optional label-translation map for a model config.</pre> 
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
 <a id="a51e496b6760bdd844d1c44addc8d5e78" name="a51e496b6760bdd844d1c44addc8d5e78"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a51e496b6760bdd844d1c44addc8d5e78">&#9670;&#160;</a></span>MODEL_CONFIGS</h2>
 
@@ -123,11 +156,15 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
-<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;yolo_finetuned&quot;</span>: {<span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;RCP17.pt&quot;</span>, <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo&quot;</span>, <span class="stringliteral">&quot;conf&quot;</span>: 0.6},</div>
-<div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;yolo_finetunedRC&quot;</span>: {<span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;RCWUP2026.pt&quot;</span>, <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo&quot;</span>, <span class="stringliteral">&quot;conf&quot;</span>: 0.6},</div>
-<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;yolo_generic&quot;</span>: {<span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;yolo26n.pt&quot;</span>, <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo&quot;</span>, <span class="stringliteral">&quot;conf&quot;</span>: 0.5},</div>
-<div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;zero_shot&quot;</span>: {<span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;yoloe-11l-seg.pt&quot;</span>, <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo_e&quot;</span>, <span class="stringliteral">&quot;conf&quot;</span>: 0.25},</div>
-<div class="line"><span class="lineno">    6</span>}</div>
+<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;yolo_finetuned&quot;</span>: {</div>
+<div class="line"><span class="lineno">    3</span>        <span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;robocup2026_v1.pt&quot;</span>,</div>
+<div class="line"><span class="lineno">    4</span>        <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo&quot;</span>,</div>
+<div class="line"><span class="lineno">    5</span>        <span class="stringliteral">&quot;conf&quot;</span>: 0.6,</div>
+<div class="line"><span class="lineno">    6</span>        <span class="stringliteral">&quot;translation&quot;</span>: <span class="stringliteral">&quot;robocup2026_translation.json&quot;</span>,</div>
+<div class="line"><span class="lineno">    7</span>    },</div>
+<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;yolo_generic&quot;</span>: {<span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;yolo26n.pt&quot;</span>, <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo&quot;</span>, <span class="stringliteral">&quot;conf&quot;</span>: 0.5},</div>
+<div class="line"><span class="lineno">    9</span>    <span class="stringliteral">&quot;zero_shot&quot;</span>: {<span class="stringliteral">&quot;filename&quot;</span>: <span class="stringliteral">&quot;yoloe-11l-seg.pt&quot;</span>, <span class="stringliteral">&quot;type&quot;</span>: <span class="stringliteral">&quot;yolo_e&quot;</span>, <span class="stringliteral">&quot;conf&quot;</span>: 0.25},</div>
+<div class="line"><span class="lineno">   10</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
