@@ -154,6 +154,12 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a19c5b45f81e98a3ec06dfd2d495738f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7aac08c03d4811c0e343c62cd151d079"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#a7aac08c03d4811c0e343c62cd151d079">contour_bin_deg</a></td></tr>
 <tr class="separator:a7aac08c03d4811c0e343c62cd151d079"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c93e47d9b4d06eed574efce6838f6dd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#a2c93e47d9b4d06eed574efce6838f6dd">table_shape</a></td></tr>
+<tr class="separator:a2c93e47d9b4d06eed574efce6838f6dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e102fce976b6f26f38005102d0de353"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#a1e102fce976b6f26f38005102d0de353">circle_min_radius</a></td></tr>
+<tr class="separator:a1e102fce976b6f26f38005102d0de353"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab555bbef2aa7ae60c1e86d1b2f23e57e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#ab555bbef2aa7ae60c1e86d1b2f23e57e">circle_max_radius</a></td></tr>
+<tr class="separator:ab555bbef2aa7ae60c1e86d1b2f23e57e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4b830f3dcec79c5020f7564751d8782"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#af4b830f3dcec79c5020f7564751d8782">front_offset</a></td></tr>
 <tr class="separator:af4b830f3dcec79c5020f7564751d8782"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad78fb03156e128a15c54fc252bd6a6aa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#ad78fb03156e128a15c54fc252bd6a6aa">target_distance</a></td></tr>
@@ -241,6 +247,10 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:ac256eb3b359e21fe8647a08f02c63aa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2d783d9bf01ace8e2778962149d1f434"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#a2d783d9bf01ace8e2778962149d1f434">_fit_face</a> (self)</td></tr>
 <tr class="separator:a2d783d9bf01ace8e2778962149d1f434"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74d09c75b0c6fb3d37b5836fcd51682b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#a74d09c75b0c6fb3d37b5836fcd51682b">_fit_line_face</a> (self, fit_pts, pts)</td></tr>
+<tr class="separator:a74d09c75b0c6fb3d37b5836fcd51682b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad428cc7ec47f294a6bb0a133ba066efc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#ad428cc7ec47f294a6bb0a133ba066efc">_fit_circle_face</a> (self, fit_pts, pts)</td></tr>
+<tr class="separator:ad428cc7ec47f294a6bb0a133ba066efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06042e6ad74253077bb801f0abbcdb04"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#a06042e6ad74253077bb801f0abbcdb04">_lock_face</a> (self, fit)</td></tr>
 <tr class="separator:a06042e6ad74253077bb801f0abbcdb04"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43cd47c9b1d7e17237ce1564792719b1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtable__docker_1_1TableDocker.html#a43cd47c9b1d7e17237ce1564792719b1">_face_in_base</a> (self)</td></tr>
@@ -530,6 +540,52 @@ Protected Attributes</h2></td></tr>
 <pre class="fragment">Transform the locked (odom) face into the CURRENT base_link frame.</pre> 
 </div>
 </div>
+<a id="ad428cc7ec47f294a6bb0a133ba066efc" name="ad428cc7ec47f294a6bb0a133ba066efc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad428cc7ec47f294a6bb0a133ba066efc">&#9670;&#160;</a></span>_fit_circle_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def table_docker.TableDocker._fit_circle_face </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>fit_pts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pts</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Round table: RANSAC circle -&gt; approach along the radius. The circle is
+reduced to the TANGENT line at the point nearest the robot, so the rest of
+the pipeline (lock + perpendicular approach + centring) is identical to the
+flat-face case: driving perpendicular to that tangent and centring on the
+tangent point puts the robot on the radial line, facing the table centre.</pre> 
+</div>
+</div>
 <a id="a2d783d9bf01ace8e2778962149d1f434" name="a2d783d9bf01ace8e2778962149d1f434"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2d783d9bf01ace8e2778962149d1f434">&#9670;&#160;</a></span>_fit_face()</h2>
 
@@ -554,7 +610,50 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <pre class="fragment">One stable fit from the accumulated samples. Returns base_link geometry
-dict {normal, centroid, direction, p1, p2, pts, contour, nearest} or None.</pre> 
+dict {normal, centroid, direction, p1, p2, pts, contour, nearest, count}
+(a flat 'face' usable by the approach loop regardless of shape) or None.</pre> 
+</div>
+</div>
+<a id="a74d09c75b0c6fb3d37b5836fcd51682b" name="a74d09c75b0c6fb3d37b5836fcd51682b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74d09c75b0c6fb3d37b5836fcd51682b">&#9670;&#160;</a></span>_fit_line_face()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def table_docker.TableDocker._fit_line_face </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>fit_pts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pts</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Flat face (table edge / shelf): RANSAC line -&gt; perpendicular approach.</pre> 
 </div>
 </div>
 <a id="ac256eb3b359e21fe8647a08f02c63aa7" name="ac256eb3b359e21fe8647a08f02c63aa7"></a>
@@ -1387,6 +1486,34 @@ the robot drives (no per-cycle re-fit -&gt; no orientation jitter).</pre>
 
 </div>
 </div>
+<a id="ab555bbef2aa7ae60c1e86d1b2f23e57e" name="ab555bbef2aa7ae60c1e86d1b2f23e57e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab555bbef2aa7ae60c1e86d1b2f23e57e">&#9670;&#160;</a></span>circle_max_radius</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">table_docker.TableDocker.circle_max_radius</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1e102fce976b6f26f38005102d0de353" name="a1e102fce976b6f26f38005102d0de353"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e102fce976b6f26f38005102d0de353">&#9670;&#160;</a></span>circle_min_radius</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">table_docker.TableDocker.circle_min_radius</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a188e319c6eda7e27f147650d2a184521" name="a188e319c6eda7e27f147650d2a184521"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a188e319c6eda7e27f147650d2a184521">&#9670;&#160;</a></span>cloud_topic</h2>
 
@@ -1927,6 +2054,20 @@ the robot drives (no per-cycle re-fit -&gt; no orientation jitter).</pre>
       <table class="memname">
         <tr>
           <td class="memname">table_docker.TableDocker.settle_cycles</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2c93e47d9b4d06eed574efce6838f6dd" name="a2c93e47d9b4d06eed574efce6838f6dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c93e47d9b4d06eed574efce6838f6dd">&#9670;&#160;</a></span>table_shape</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">table_docker.TableDocker.table_shape</td>
         </tr>
       </table>
 </div><div class="memdoc">

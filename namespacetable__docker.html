@@ -111,6 +111,12 @@ Functions</h2></td></tr>
 <tr class="separator:a85c266909bb125eff94f29c5605bf4d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a240a5a65b21f69bebbc4d49c14738b4f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetable__docker.html#a240a5a65b21f69bebbc4d49c14738b4f">ransac_line</a> (pts, iters, thresh, min_inliers)</td></tr>
 <tr class="separator:a240a5a65b21f69bebbc4d49c14738b4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a64d91c72fd64c23dac54534fbe97e1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetable__docker.html#a4a64d91c72fd64c23dac54534fbe97e1">circle_from_3</a> (p1, p2, p3)</td></tr>
+<tr class="separator:a4a64d91c72fd64c23dac54534fbe97e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3ee1f8f368f4d2f5637b2319b0f4f94"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetable__docker.html#ac3ee1f8f368f4d2f5637b2319b0f4f94">fit_circle_lsq</a> (pts)</td></tr>
+<tr class="separator:ac3ee1f8f368f4d2f5637b2319b0f4f94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afca04db1c5ba4a082ef81fed1cf99e18"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetable__docker.html#afca04db1c5ba4a082ef81fed1cf99e18">ransac_circle</a> (pts, iters, thresh, min_inliers, rmin, rmax)</td></tr>
+<tr class="separator:afca04db1c5ba4a082ef81fed1cf99e18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ae8e280ada13d3005402a0da3c37972"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetable__docker.html#a4ae8e280ada13d3005402a0da3c37972">main</a> (args=None)</td></tr>
 <tr class="separator:a4ae8e280ada13d3005402a0da3c37972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -132,6 +138,12 @@ so it ends up PERPENDICULAR to the face, centered on it, and as close as the arm
 can safely get. Locking the orientation kills the per-frame jitter you get from
 re-fitting every tick; the live lidar is still used as a safety stop.
 
+Round tables are supported too: set the `table_shape` param to 'circle' (or 'auto')
+and the front face is fit as a CIRCLE instead of a line. The circle is collapsed to
+its tangent at the point nearest the robot, so the approach reuses the exact same
+perpendicular-drive machinery — the robot ends up on the table's radius, facing the
+centre, at target_distance from the rim.
+
 Flow
 ----
   1. nav2 -&gt; static near pose (existing go_to_area).
@@ -148,6 +160,59 @@ nearest thing the lidar sees. MEASURE front_offset.
 
 Detection runs only when a service is called — there is no free-running timer.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="a4a64d91c72fd64c23dac54534fbe97e1" name="a4a64d91c72fd64c23dac54534fbe97e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a64d91c72fd64c23dac54534fbe97e1">&#9670;&#160;</a></span>circle_from_3()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def table_docker.circle_from_3 </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>p1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>p2</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>p3</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Exact circle through 3 points. Returns (cx, cy, r) or None if collinear.</pre> 
+</div>
+</div>
+<a id="ac3ee1f8f368f4d2f5637b2319b0f4f94" name="ac3ee1f8f368f4d2f5637b2319b0f4f94"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3ee1f8f368f4d2f5637b2319b0f4f94">&#9670;&#160;</a></span>fit_circle_lsq()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def table_docker.fit_circle_lsq </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pts</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Algebraic (Kåsa) least-squares circle refit. pts: Nx2. Returns (cx, cy, r)
+or None.</pre> 
+</div>
+</div>
 <a id="a4ae8e280ada13d3005402a0da3c37972" name="a4ae8e280ada13d3005402a0da3c37972"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ae8e280ada13d3005402a0da3c37972">&#9670;&#160;</a></span>main()</h2>
 
@@ -204,6 +269,59 @@ Detection runs only when a service is called — there is no free-running timer.
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Quaternion -&gt; 3x3 rotation matrix.</pre> 
+</div>
+</div>
+<a id="afca04db1c5ba4a082ef81fed1cf99e18" name="afca04db1c5ba4a082ef81fed1cf99e18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afca04db1c5ba4a082ef81fed1cf99e18">&#9670;&#160;</a></span>ransac_circle()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def table_docker.ransac_circle </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>iters</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>thresh</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>min_inliers</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>rmin</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>rmax</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">RANSAC 2D circle fit from random 3-point samples (radius gated to
+[rmin, rmax]). pts: Nx2. Returns dict (center, radius, mask, count) or None.</pre> 
 </div>
 </div>
 <a id="a240a5a65b21f69bebbc4d49c14738b4f" name="a240a5a65b21f69bebbc4d49c14738b4f"></a>
