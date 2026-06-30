@@ -33,7 +33,7 @@
       <xacro:property name="bottom_slope" value="0.05" />
       <xacro:property name="screw_offset_x" value="0.0" />
       <xacro:property name="screw_offset_z" value="0.0" />
-      <xacro:property name="optical_offset_x" value="-0.01" />
+      <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="false" />
     </xacro:if>
     <xacro:if value="${model == 'zedm'}">
@@ -51,16 +51,16 @@
       <xacro:property name="bottom_slope" value="0.05" />
       <xacro:property name="screw_offset_x" value="0.0" />
       <xacro:property name="screw_offset_z" value="0.0" />
-      <xacro:property name="optical_offset_x" value="-0.01" />
+      <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="false" />
     </xacro:if>
     <xacro:if value="${model == 'zed2i'}">
       <xacro:property name="baseline" value="0.12" />
       <xacro:property name="height" value="0.03" />
       <xacro:property name="bottom_slope" value="0.0" />
-      <xacro:property name="screw_offset_x" value="-0.01" />
+      <xacro:property name="screw_offset_x" value="0.0" />
       <xacro:property name="screw_offset_z" value="0.0" />
-      <xacro:property name="optical_offset_x" value="-0.01" />
+      <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="false" />
     </xacro:if>
     <xacro:if value="${model == 'zedx'}">
@@ -68,8 +68,8 @@
       <xacro:property name="height" value="0.032" />
       <xacro:property name="bottom_slope" value="0.0" />
       <xacro:property name="screw_offset_x" value="0.0" />
-      <xacro:property name="screw_offset_z" value="-0.016" />
-      <xacro:property name="optical_offset_x" value="-0.01" />
+      <xacro:property name="screw_offset_z" value="0.0" />
+      <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="false" />
     </xacro:if>
     <xacro:if value="${model == 'zedxm'}">
@@ -77,8 +77,8 @@
       <xacro:property name="height" value="0.032" />
       <xacro:property name="bottom_slope" value="0.0" />
       <xacro:property name="screw_offset_x" value="0.0" />
-      <xacro:property name="screw_offset_z" value="-0.016" />
-      <xacro:property name="optical_offset_x" value="-0.01" />
+      <xacro:property name="screw_offset_z" value="0.0" />
+      <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="false" />
     </xacro:if>
     <xacro:if value="${model == 'virtual'}">
@@ -86,7 +86,7 @@
       <xacro:property name="height" value="0.031" />
       <xacro:property name="bottom_slope" value="0.0" />
       <xacro:property name="screw_offset_x" value="0.00" />
-      <xacro:property name="screw_offset_z" value="-0.0155" />
+      <xacro:property name="screw_offset_z" value="0.0" />
       <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="false" />
     </xacro:if>
@@ -95,7 +95,7 @@
       <xacro:property name="height" value="0.031" />
       <xacro:property name="bottom_slope" value="0.0" />
       <xacro:property name="screw_offset_x" value="0.0" />
-      <xacro:property name="screw_offset_z" value="-0.0155" />
+      <xacro:property name="screw_offset_z" value="0.0" />
       <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="true" />
     </xacro:if>
@@ -104,7 +104,7 @@
       <xacro:property name="height" value="0.031" />
       <xacro:property name="bottom_slope" value="0.0" />
       <xacro:property name="screw_offset_x" value="0.00" />
-      <xacro:property name="screw_offset_z" value="-0.0155" />
+      <xacro:property name="screw_offset_z" value="0.0" />
       <xacro:property name="optical_offset_x" value="0.0" />
       <xacro:property name="mono" value="true" />
     </xacro:if>
@@ -136,14 +136,14 @@
       </inertial>
       <xacro:unless value="${model == 'virtual'}">
         <visual>
-          <origin xyz="${screw_offset_x} 0 ${screw_offset_z}" rpy="0 0 0"/>
+          <origin xyz="-0.03 0 0.01404" rpy="0 0 0"/>
           <geometry>
 <mesh filename="file://$(find zed_msgs)/meshes/${model}.stl"/>
           </geometry>
           <material name="${model}_mat" />
         </visual>      
         <collision>
-          <origin xyz="${screw_offset_x} 0 ${screw_offset_z}" rpy="0 0 0"/>
+          <origin xyz="-0.03 0 0.01404" rpy="0 0 0"/>
           <geometry>
 <mesh filename="file://$(find zed_msgs)/meshes/${model}.stl"/>
           </geometry>
@@ -167,14 +167,14 @@
         </inertial>
         <xacro:if value="${model == 'virtual' and not simulation}">
           <visual>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <origin xyz="-0.03 0 0.01404" rpy="0 0 0"/>
             <geometry>
   <mesh filename="file://$(find zed_msgs)/meshes/${model}.stl"/>
             </geometry>
             <material name="${model}_mat" />
           </visual>
           <collision>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <origin xyz="-0.03 0 0.01404" rpy="0 0 0"/>
             <geometry>
   <mesh filename="file://$(find zed_msgs)/meshes/${model}.stl"/>
             </geometry>
@@ -221,14 +221,14 @@
         </inertial>
         <xacro:if value="${model == 'virtual' and not simulation}">
           <visual>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <origin xyz="-0.03 0 0.01404" rpy="0 0 0"/>
             <geometry>
   <mesh filename="file://$(find zed_msgs)/meshes/${model}.stl"/>
             </geometry>
             <material name="${model}_mat" />
           </visual>      
           <collision>
-            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <origin xyz="-0.03 0 0.01404" rpy="0 0 0"/>
             <geometry>
   <mesh filename="file://$(find zed_msgs)/meshes/${model}.stl"/>
             </geometry>
