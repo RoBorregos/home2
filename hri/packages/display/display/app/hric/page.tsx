@@ -5,7 +5,6 @@ import {
   MessageCircle,
   Camera,
   MessageSquare,
-  Columns2,
   Flame,
   Eye,
   Navigation,
@@ -193,43 +192,41 @@ export default function HRICPage() {
       </div>
 
       {/* ── MAIN CONTENT ── */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {/* BUTTON mode: centered start button */}
+      <div className="flex-1 min-h-0 overflow-hidden relative">
+        {/* BUTTON mode */}
         {displayMode === "button" && (
-          <div className="h-full flex items-center justify-center p-8">
+          <div className="absolute inset-0 flex items-center justify-center p-8">
             <div className="w-full max-w-lg">
               <StartButton size="xl" />
             </div>
           </div>
         )}
 
-        {/* CAMERA mode: full-width camera feed */}
-        {displayMode === "camera" && (
-          <div className="h-full flex items-center justify-center p-4">
-            <VideoFeed />
-          </div>
-        )}
-
-        {/* LOGS mode: full-width messages */}
-        {displayMode === "logs" && (
-          <div className="h-full overflow-y-auto">
+        {/* Messages panel — visible in logs and both modes */}
+        {(displayMode === "logs" || displayMode === "both") && (
+          <div
+            className={`absolute top-0 left-0 h-full overflow-y-auto ${
+              displayMode === "both"
+                ? "w-1/2 border-r border-(--border-light)"
+                : "w-full"
+            }`}
+          >
             <MessagesList />
           </div>
         )}
 
-        {/* BOTH mode: split view */}
-        {displayMode === "both" && (
-          <div className="grid grid-cols-2 h-full overflow-hidden">
-            {/* Left - Messages */}
-            <div className="border-r border-(--border-light) overflow-y-auto">
-              <MessagesList />
-            </div>
-            {/* Right - Camera */}
-            <div className="flex items-center justify-center p-4">
-              <VideoFeed />
-            </div>
-          </div>
-        )}
+        {/* VideoFeed — always mounted to keep stream alive, repositioned via CSS */}
+        <div
+          className={`absolute top-0 h-full ${
+            displayMode === "camera"
+              ? "inset-0"
+              : displayMode === "both"
+                ? "right-0 w-1/2"
+                : "hidden"
+          }`}
+        >
+          <VideoFeed />
+        </div>
       </div>
 
       {/* ── MODALS ── */}
