@@ -102,6 +102,7 @@ class NavigationTasks:
                 "follow_person_srv": {"client": self.follow_person_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
+                "relative_move_srv": {"client": self.relative_move_srv, "type": "service"},
             },
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},

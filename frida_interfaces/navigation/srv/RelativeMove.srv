@@ -1,0 +1,10 @@
+# Request
+
+# Meters to travel along base_link x (>= 0).
+float32 distance
+# false = forward (+x), true = backward (-x).
+bool backward
+---
+# Response
+bool success
+string error
