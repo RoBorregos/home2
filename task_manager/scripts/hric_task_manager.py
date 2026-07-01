@@ -202,7 +202,7 @@ class HRIC_TM(Node):
                 "I will wait for the door to be knocked or ring the doorbell.",
                 wait=True,
             )
-
+            time.sleep(1)
             # Safety timeout: if no knock/doorbell is heard, continue anyway
             deadline = time.time() + DOOR_WAIT_TIMEOUT
             while not self.subtask_manager.hri.door_event_detected and time.time() < deadline:
@@ -227,6 +227,7 @@ class HRIC_TM(Node):
                     "Referee, please open the door.",
                     wait=True,
                 )
+            time.sleep(3)
             self.current_state = HRIC_TM.TaskStates.START
 
         elif self.current_state == HRIC_TM.TaskStates.START:
