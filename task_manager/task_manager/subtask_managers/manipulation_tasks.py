@@ -699,7 +699,10 @@ class ManipulationTasks:
 
         Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+        # Block until the arm actually finishes. The server tries several
+        # approach angles, so a fixed client timeout could return while the arm
+        # is still moving.
+        rclpy.spin_until_future_complete(self.node, result_future)
 
         result = result_future.result().result
         if result.success:
