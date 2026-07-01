@@ -43,6 +43,11 @@ STACK_XY_MAX = 0.12
 
 SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
 
+# Stand-off (m) when docking at the dishwasher and cooking_table (dishwasher-tab zone). Their front
+# sits closer than a normal table, so docking flush bumps the base into them; a small offset stops
+# the base short. Larger = shorter approach (stops further back). Tune on the robot.
+DISHWASHER_DOCK_OFFSET = 0.50
+
 
 class ObjectCategory(Enum):
     """Object categories for placement decisions"""
@@ -997,13 +1002,12 @@ class PickAndPlaceTM(Node):
             self._docked_at_table = False  # left the table to place
             placement_loc = self.grasped_object.placement_location
             result = self.navigate_to_location(placement_loc)
-            # Table-height surfaces (extra surface, dishwasher top, dishwasher-tab zone) -> default
-            # dock; cabinet -> stand off ~30 cm. Trash bin uses its own detect-and-drop flow.
-            if placement_loc in (
-                Location.EXTRA_SURFACE,
-                Location.DISHWASHER,
-                Location.DISHWASHER_TAB,
-            ):
+            # dishwasher / cooking_table -> short approach (they bump if docked flush);
+            # extra surface -> default dock; cabinet -> stand off ~30 cm.
+            # Trash bin uses its own detect-and-drop flow.
+            if placement_loc in (Location.DISHWASHER, Location.DISHWASHER_TAB):
+                self.subtask_manager.nav.dock_table(offset=DISHWASHER_DOCK_OFFSET)
+            elif placement_loc == Location.EXTRA_SURFACE:
                 self.subtask_manager.nav.dock_table()
             elif placement_loc == Location.CABINET:
                 self.subtask_manager.nav.dock_table(offset=0.30)
@@ -1313,9 +1317,12 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE)
             item_location = self.current_breakfast_item["location"]
             result = self.navigate_to_location(item_location)
-            # Cabinet -> stand off ~30 cm; table-height surfaces -> default dock.
+            # Cabinet -> stand off ~30 cm; dishwasher top (bowl+spoon source) -> short approach so
+            # the base does not bump it; other table-height surfaces -> default dock.
             if item_location == Location.CABINET:
                 self.subtask_manager.nav.dock_table(offset=0.30)
+            elif item_location == Location.BREAKFAST_ITEMS:
+                self.subtask_manager.nav.dock_table(offset=DISHWASHER_DOCK_OFFSET)
             else:
                 self.subtask_manager.nav.dock_table()
 
