@@ -699,7 +699,7 @@ class ManipulationTasks:
 
         Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
         result_future = future.result().get_result_async()
-    
+
         rclpy.spin_until_future_complete(self.node, result_future)
 
         result = result_future.result().result
