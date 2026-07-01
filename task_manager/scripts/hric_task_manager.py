@@ -481,7 +481,9 @@ class HRIC_TM(Node):
             # status query and never starts tracking. The tracker publishes the
             # person's 3D point on RESULTS_TOPIC; person_goal_smoother turns it into
             # the moving Nav2 goal that nav.follow_person chases.
-            self.subtask_manager.hri.say("Host, Please stand in front of me so i can start following you.", wait=True)
+            self.subtask_manager.hri.say(
+                "Host, Please stand in front of me so i can start following you.", wait=True
+            )
             tracking = False
             for attempt in range(ATTEMPT_LIMIT):
                 if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
