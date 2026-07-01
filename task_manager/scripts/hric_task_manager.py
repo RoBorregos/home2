@@ -17,7 +17,7 @@ from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-ATTEMPT_LIMIT = 3
+ATTEMPT_LIMIT = 5
 FIRST_GUEST_IDX = 0
 SECOND_GUEST_IDX = 1
 HOT_NAMES = "Adel Angel Axel Charlie Jane Jules Morgan Paris Robin Simone"
@@ -484,7 +484,9 @@ class HRIC_TM(Node):
             # status query and never starts tracking. The tracker publishes the
             # person's 3D point on RESULTS_TOPIC; person_goal_smoother turns it into
             # the moving Nav2 goal that nav.follow_person chases.
-            self.subtask_manager.hri.say("Please stand in front of me so I can see you.", wait=True)
+            self.subtask_manager.hri.say(
+                "Host, Please stand in front of me so i can start following you.", wait=True
+            )
             tracking = False
             for attempt in range(ATTEMPT_LIMIT):
                 if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
@@ -506,7 +508,7 @@ class HRIC_TM(Node):
                 return
 
             self.subtask_manager.hri.say(
-                "I will start following you now. Say stop whenever you want me to stop.",
+                "I will start following you now, you can start walking. Please Say stop whenever you want me to stop.",
                 wait=True,
             )
 
