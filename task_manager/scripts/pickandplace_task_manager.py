@@ -241,6 +241,7 @@ class PickAndPlaceTM(Node):
         self.current_breakfast_item: dict = None
         self.bowl_placed = False
         self.dishwasher_open = False
+        self.carrying = None
 
         # Shelf scanning state
         self.shelves: dict[int, list[str]] = {}
@@ -654,6 +655,47 @@ class PickAndPlaceTM(Node):
                 self.subtask_manager.hri.say(f"I see a {name}.")
                 self.timeout(0.3)
 
+    def _carrying_name(self) -> str:
+        """Human name of whatever is currently held (ObjectInfo or breakfast dict)."""
+        c = self.carrying
+        if c is None:
+            return ""
+        if isinstance(c, dict):
+            return c.get("name", "object")
+        return getattr(c, "name", "object")
+
+    def _ensure_gripper_empty(self) -> bool:
+        """Anti-drop guard. Call right before any pick, once the robot is at the pick surface.
+
+        If the gripper still holds an object (a previous place failed), place it (controlled) at the
+        CURRENT location to free the gripper — never open the gripper for a new pick while holding
+        something (that drops the held object and risks a -40 penalty). Returns True if the gripper
+        is (now) empty, False if it could not be freed.
+        """
+        if self.carrying is None:
+            return True
+        name = self._carrying_name()
+        CLog.manip(
+            self,
+            "PICK",
+            f"Still holding {name}; placing it here before the next pick.",
+            level="warn",
+        )
+        self.subtask_manager.hri.say("First I will put down the object I am holding.", wait=False)
+        for _ in range(2):
+            if self.subtask_manager.manipulation.place() == Status.EXECUTION_SUCCESS:
+                self.carrying = None
+                CLog.manip(self, "PICK", f"Freed the gripper (placed {name}).", level="success")
+                return True
+            self.timeout(1.0)
+        CLog.manip(
+            self,
+            "PICK",
+            f"Could not put down {name}; will not open the gripper (skipping this pick).",
+            level="error",
+        )
+        return False
+
     # ------------------------------------------------------------------
     # Finite State Machine
     # ------------------------------------------------------------------
@@ -875,6 +917,12 @@ class PickAndPlaceTM(Node):
                 self.navigate_to_location(table_location, say=False)
                 self.subtask_manager.nav.dock_table()
                 self._docked_at_table = True
+
+            if not self._ensure_gripper_empty():
+                self.current_object_index += 1
+                self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
+                return
+
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             before_counts = None
@@ -905,6 +953,7 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_picked = True
+                self.carrying = self.grasped_object  # gripper now physically holds it
                 if self.first_pick:
                     CLog.manip(self, "PICK", "FIRST PICK BONUS achieved!", level="success")
                     self.first_pick = False
@@ -1228,6 +1277,7 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_placed = True
+                self.carrying = None  # gripper released the object
                 CLog.manip(
                     self,
                     "PLACE",
@@ -1344,6 +1394,12 @@ class PickAndPlaceTM(Node):
             item_name = self.current_breakfast_item["name"]
             item_location = self.current_breakfast_item["location"]
 
+            # Anti-drop: never open the gripper for this pick while still holding a prior item.
+            if not self._ensure_gripper_empty():
+                self.current_breakfast_item["picked"] = True  # skip; could not free the gripper
+                self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
+                return
+
             is_cabinet = item_location == Location.CABINET
             yolo_name = self._to_yolo_name(item_name)
             if is_cabinet:
@@ -1379,6 +1435,7 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["picked"] = True
+                self.carrying = self.current_breakfast_item  # gripper now physically holds it
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING
             else:
                 CLog.manip(
@@ -1459,6 +1516,7 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["placed"] = True
+                self.carrying = None  # gripper released the object
                 if item_name == "bowl":
                     self.bowl_placed = True
                 CLog.manip(
