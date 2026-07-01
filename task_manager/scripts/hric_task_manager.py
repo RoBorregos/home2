@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 import rclpy
-from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_ORIENTED_TOPIC
+from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_HRIC
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -239,7 +239,7 @@ class HRIC_TM(Node):
             self.subtask_manager.vision.deactivate_face_recognition()
             self.subtask_manager.manipulation.move_to_position("front_stare")
             self.timeout(1)
-            self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
+            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
             result = self.subtask_manager.vision.detect_person(timeout=10)
 
             if result == Status.EXECUTION_SUCCESS:
@@ -389,7 +389,7 @@ class HRIC_TM(Node):
             self._track_state_change(HRIC_TM.TaskStates.FIND_SEAT)
             self.subtask_manager.vision.deactivate_face_recognition()
             self.timeout(1)
-            self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
+            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare_carry_bag" if self.carrying_bag else "front_low_stare",
                 velocity=0.5,
