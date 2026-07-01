@@ -58,7 +58,7 @@ class HRIC_TM(Node):
         NAVIGATE_TO_LIVING_ROOM = "NAVIGATE_TO_LIVING_ROOM"
         FIND_SEAT = "FIND_SEAT"
         INTRODUCTION = "INTRODUCTION"
-        NAVIGATE_TO_ENTRANCE = "NAVIGATE_TO_ENTRANCE"
+        NAVIGATE_TO_LIVING_ROOM = "NAVIGATE_TO_LIVING_ROOM"
         FOLLOW_PERSON = "FOLLOW_PERSON"
         LEAVE_BAG = "LEAVE_BAG"
         END = "END"
@@ -410,7 +410,7 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.say("Please take a seat where my arm points at.", wait=False)
             self.subtask_manager.manipulation.point(15)
             if self.current_guest_idx == FIRST_GUEST_IDX:
-                self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE
+                self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
             else:
                 self.current_state = HRIC_TM.TaskStates.INTRODUCTION
 
@@ -461,11 +461,11 @@ class HRIC_TM(Node):
 
             self.current_state = HRIC_TM.TaskStates.FOLLOW_PERSON
 
-        elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE:
-            self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE)
+        elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM:
+            self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM)
             self.current_guest_idx = SECOND_GUEST_IDX
-            self.navigate_to("entrance", say=False)
-            self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
+            self.navigate_to("living_room", say=False)
+            self.current_state = HRIC_TM.TaskStates.WAIT_FOR_DOOR
 
         elif self.current_state == HRIC_TM.TaskStates.FOLLOW_PERSON:
             self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
