@@ -18,9 +18,7 @@ ATTEMPT_LIMIT = 5
 FIRST_GUEST_IDX = 0
 SECOND_GUEST_IDX = 1
 HOT_NAMES = "Adel Angel Axel Charlie Jane Jules Morgan Paris Robin Simone"
-HOT_DRINKS = (
-    "fanta water lipton coca-cola soda lemonade pepsi orange juice milk cola sidral mundet iced tea"
-)
+HOT_DRINKS = "fanta water lipton coca-cola soda lemonade pepsi orange juice milk sidral mundet iced tea coke red bull soju"
 
 # Person-following (runs between the introduction and leaving the bag): the robot
 # follows the guest until they say one of these stop keywords. FOLLOW_LISTEN_TIMEOUT
@@ -213,7 +211,7 @@ class HRIC_TM(Node):
                     self, f"Heard a {trigger} at the door, HRI Challenge task will begin now"
                 )
                 self.subtask_manager.hri.say(
-                    "I heard you at the door. Please open the door, come in, and walk towards me.",
+                    "I heard you're at the door. Referee, please open the door.",
                     wait=True,
                 )
             else:
@@ -222,8 +220,8 @@ class HRIC_TM(Node):
                     f"No door event after {DOOR_WAIT_TIMEOUT:.0f} seconds, continuing with the task",
                 )
                 self.subtask_manager.hri.say(
-                    "I did not hear a knock or doorbell, but I will continue. "
-                    "Please come in and walk towards me.",
+                    "I did not hear a knock or doorbell, but I will continue with the task. "
+                    "Referee, please open the door.",
                     wait=True,
                 )
             self.current_state = HRIC_TM.TaskStates.START
@@ -383,9 +381,7 @@ class HRIC_TM(Node):
 
         elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM)
-            self.navigate_to(
-                "living_room", "couches", say=self.current_guest_idx == FIRST_GUEST_IDX
-            )
+            self.navigate_to("living_room", "sofa", say=self.current_guest_idx == FIRST_GUEST_IDX)
             self.current_state = HRIC_TM.TaskStates.FIND_SEAT
 
         elif self.current_state == HRIC_TM.TaskStates.FIND_SEAT:
