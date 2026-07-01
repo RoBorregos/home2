@@ -9,7 +9,7 @@ var namespacehric__task__manager =
     [ "FOLLOW_LISTEN_TIMEOUT", "namespacehric__task__manager.html#a382ad48d04ed621895853369210133ab", null ],
     [ "FOLLOW_MAX_DURATION", "namespacehric__task__manager.html#ac12f36533bcb7be4ccad68cde48d4b1d", null ],
     [ "FOLLOW_STOP_KEYWORDS", "namespacehric__task__manager.html#afe29454cac4d776a3d6dfd69da36c8d5", null ],
-    [ "HOT_DRINKS", "namespacehric__task__manager.html#a16ee23a8745eeae885471515a85ff39b", null ],
+    [ "HOT_DRINKS", "namespacehric__task__manager.html#a390be6ea37c37215e8d5901f4e30624c", null ],
     [ "HOT_NAMES", "namespacehric__task__manager.html#abf8ecaf594e477f96fd128e375a3ea48", null ],
     [ "SECOND_GUEST_IDX", "namespacehric__task__manager.html#a47e62ea973b9e0d2952107bd649b1933", null ]
 ];

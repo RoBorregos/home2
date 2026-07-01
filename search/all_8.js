@@ -55,7 +55,7 @@ var searchData=
   ['highs_52',['highs',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#a41915b169eb444b029f6bf928fe7d5d5',1,'vamp::pybullet_interface::PyBulletSimulator']]],
   ['hits_53',['hits',['../classtrack_1_1Track.html#a913ded41e8b6f3939f691fedd715cc2f',1,'track::Track']]],
   ['home_20navigation_54',['Home Navigation',['../md_navigation_README.html',1,'']]],
-  ['hot_5fdrinks_55',['HOT_DRINKS',['../namespacehric__task__manager.html#a16ee23a8745eeae885471515a85ff39b',1,'hric_task_manager']]],
+  ['hot_5fdrinks_55',['HOT_DRINKS',['../namespacehric__task__manager.html#a390be6ea37c37215e8d5901f4e30624c',1,'hric_task_manager']]],
   ['hot_5fnames_56',['HOT_NAMES',['../namespacehric__task__manager.html#abf8ecaf594e477f96fd128e375a3ea48',1,'hric_task_manager']]],
   ['hotword_5fservice_5fname_57',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],
   ['how_5fmany_5fpoints_58',['how_many_points',['../structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a2d4b3848c1bfdf2f223c06cc8fb5ee20',1,'vamp::collision::CAPT::BuildFrame']]],
