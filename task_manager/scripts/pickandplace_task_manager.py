@@ -35,7 +35,7 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 # Per-zone attempt limits — tune each independently. 2 (not 3) wastes less time on hard grasps,
 PICK_ATTEMPTS_TABLE = 2  # cleanup picks from the dining table
-PICK_ATTEMPTS_CABINET = 2  # cereal/milk picks from the cabinet (each retry re-scans levels → slower)
+PICK_ATTEMPTS_CABINET = 2
 PICK_ATTEMPTS_BOWL_SPOON = 2  # bowl/spoon picks from the dishwasher top
 PLACE_ATTEMPTS = 2  # place attempts (all placement zones)
 
@@ -252,7 +252,7 @@ class PickAndPlaceTM(Node):
         self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
         self.shelf_scanned = False
         self._cabinet_scan_fresh = False
-        
+
         self.use_shelf_cache = True
         self._shelf_level_cache: dict = {}
         self._shelf_fallback_heights: list[float] = []
