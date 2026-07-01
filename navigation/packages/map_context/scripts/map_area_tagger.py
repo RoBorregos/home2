@@ -60,7 +60,7 @@ ROBOCUP_TASKS = {
         "exit": ["safe_place"],
         "entrance": ["safe_place"],
         "laundry": ["safe_place", "table", "washing_machine", "shelf", "trash"],
-        "bedroom": ["safe_place", "bed"],
+        "bedroom": ["safe_place", "bed", "bedside_table", "coat_rack"],
         "living_room": ["safe_place", "tv_stand", "sofa", "coffee_table"],
         "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "trash", "dinner_table"],
     },
