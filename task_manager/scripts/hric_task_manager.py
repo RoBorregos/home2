@@ -337,13 +337,13 @@ class HRIC_TM(Node):
                         )
                     continue
 
-                self.subtask_manager.hri.say("Please hand me the bag.", wait=False)
                 go_result = self.subtask_manager.manipulation.go_to_hand(
                     point=hand_point,
                     hand_offset=0.1,
                 )
 
                 if go_result == Status.EXECUTION_SUCCESS:
+                    self.subtask_manager.hri.say("Please hand me the bag.", wait=False)
                     hand_reached = True
                     break
                 else:

@@ -72,8 +72,8 @@ class GPSRTM(Node):
         self._command_index_pub = self.create_publisher(Int32, GPSR_COMMAND_INDEX_TOPIC, 10)
 
         self.current_state = (
-            GPSRTM.TaskStates.START
-            # GPSRTM.TaskStates.WAITING_FOR_BUTTON
+            # GPSRTM.TaskStates.START
+            GPSRTM.TaskStates.WAITING_FOR_BUTTON
             # GPSRTM.TaskStates.WAITING_FOR_COMMAND
             # GPSRTM.TaskStates.EXECUTING_COMMAND
         )
