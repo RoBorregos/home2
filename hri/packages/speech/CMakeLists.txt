@@ -54,7 +54,7 @@ install(DIRECTORY assets/downloads
 #   FILES_MATCHING PATTERN "*.json"
 # )
 
-file(GLOB PYTHON_SCRIPTS scripts/*.py)
+file(GLOB PYTHON_SCRIPTS CONFIGURE_DEPENDS scripts/*.py)
 
 # Install python scripts
 install(PROGRAMS
