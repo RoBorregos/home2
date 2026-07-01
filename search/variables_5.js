@@ -38,7 +38,7 @@ var searchData=
   ['example_5fsubscriber_35',['example_subscriber',['../classexample__node_1_1ExampleNode.html#a1d9a18177725eb7a4d11628484e48e6f',1,'example_node::ExampleNode']]],
   ['except_36',['except',['../namespacevisualize__ompl.html#ae245427310db70d41aee97ceb1927fc2',1,'visualize_ompl']]],
   ['execute_5fcommand_37',['EXECUTE_COMMAND',['../classegsr__cut_1_1EGPSRTM_1_1States.html#a5a383cdc082f1afb2236f7a80255c94d',1,'egsr_cut::EGPSRTM::States']]],
-  ['executed_5fcommands_38',['executed_commands',['../classdemo__manager_1_1DemoTM.html#a301449195d1cc2fe36110a9be7cff638',1,'demo_manager.DemoTM.executed_commands()'],['../classgpsr__task__manager_1_1GPSRTM.html#acb531c8fe459394ab090c6282404ce03',1,'gpsr_task_manager.GPSRTM.executed_commands()']]],
+  ['executed_5fcommands_38',['executed_commands',['../classgpsr__task__manager_1_1GPSRTM.html#acb531c8fe459394ab090c6282404ce03',1,'gpsr_task_manager.GPSRTM.executed_commands()'],['../classdemo__manager_1_1DemoTM.html#a301449195d1cc2fe36110a9be7cff638',1,'demo_manager.DemoTM.executed_commands()']]],
   ['executing_5fcommand_39',['EXECUTING_COMMAND',['../classegsr__cut_1_1EGPSRTM_1_1States.html#aa4fa9aa8f4fbfd49e3a88b5dfebf5e85',1,'egsr_cut.EGPSRTM.States.EXECUTING_COMMAND()'],['../classdemo__manager_1_1DemoTM_1_1States.html#a453aad471db96ae5f49347ee4a8d4587',1,'demo_manager.DemoTM.States.EXECUTING_COMMAND()'],['../classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html#ad9fe676fa10368e94bc372e625939413',1,'gpsr_task_manager.GPSRTM.TaskStates.EXECUTING_COMMAND()']]],
   ['execution_5ferror_40',['EXECUTION_ERROR',['../classtask__manager_1_1utils_1_1status_1_1Status.html#a7e7bee4268265cbdd86a8ea89c32813d',1,'task_manager::utils::status::Status']]],
   ['execution_5fsuccess_41',['EXECUTION_SUCCESS',['../classtask__manager_1_1utils_1_1status_1_1Status.html#aff91a499e14ce9e3467b266845da744f',1,'task_manager::utils::status::Status']]],
@@ -47,7 +47,8 @@ var searchData=
   ['exploration_5fareas_44',['exploration_areas',['../classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html#a447b6b3054a33b386c728a9018aa7fe9',1,'task_manager::utils::exploration_planner::ExplorationPlanner']]],
   ['exploration_5fcomplete_45',['exploration_complete',['../classegsr__cut_1_1EGPSRTM.html#ae8b845fe49ed3e58e2a816abd1d4928a',1,'egsr_cut::EGPSRTM']]],
   ['exploration_5flocations_46',['exploration_locations',['../classegsr__cut_1_1EGPSRTM.html#a7966f6d7a6d8a5affb47500396e563a4',1,'egsr_cut::EGPSRTM']]],
-  ['extract_5fdata_5fservice_47',['extract_data_service',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a034c2802fed0aab16f50ac298eb63ef7',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['extract_5fdata_5fservice_48',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
-  ['extract_5finfo_5frequested_49',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ab04c700ba61f8a4ed5826126968006a9',1,'frida_constants::hri_constants::MODEL']]]
+  ['extra_5fsurface_47',['EXTRA_SURFACE',['../classpickandplace__task__manager_1_1Location.html#a5902a008c7ad88402aa88237bacccfe7',1,'pickandplace_task_manager::Location']]],
+  ['extract_5fdata_5fservice_48',['extract_data_service',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a034c2802fed0aab16f50ac298eb63ef7',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['extract_5fdata_5fservice_49',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
+  ['extract_5finfo_5frequested_50',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ab04c700ba61f8a4ed5826126968006a9',1,'frida_constants::hri_constants::MODEL']]]
 ];

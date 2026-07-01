@@ -1,5 +1,7 @@
 var NAVTREEINDEX39 =
 {
+"namespacefrida__constants_1_1manipulation__constants.html#a9aa59c02eb03093c8a80605a387b9f8d":[37,0,62,2,88],
+"namespacefrida__constants_1_1manipulation__constants.html#a9b1b384133b9135e786071e6e8b1b441":[37,0,62,2,46],
 "namespacefrida__constants_1_1manipulation__constants.html#a9b9987aeceb6769406e0b2598f23bd4e":[37,0,62,2,56],
 "namespacefrida__constants_1_1manipulation__constants.html#a9c36ec5285b01c3cdf0e12e28d9a4320":[37,0,62,2,43],
 "namespacefrida__constants_1_1manipulation__constants.html#a9d76d5cfead1632343520928ce472249":[37,0,62,2,93],
@@ -247,7 +249,5 @@ var NAVTREEINDEX39 =
 "namespacehric.html":[37,0,83],
 "namespacehric.html#a9ba344eaf004b5e2b4032d983f068469":[37,0,83,1],
 "namespacehric.html#ad1dd056eac0c72bace8a6fdd839dd77d":[37,0,83,0],
-"namespacehric__commands.html":[37,0,84],
-"namespacehric__commands.html#a19297de37a6bae70e0adcd79a9f3d19e":[37,0,84,8],
-"namespacehric__commands.html#a1a0e3f0c859c7561246de2440181ff63":[37,0,84,1]
+"namespacehric__commands.html":[37,0,84]
 };

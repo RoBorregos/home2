@@ -1,5 +1,8 @@
 var NAVTREEINDEX43 =
 {
+"namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html#acc890b29dfb4b801e928d25ae0b12452":[37,0,176,1,8,3],
+"namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html":[37,0,176,1,9],
+"namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a487ed937fcdfff5c5bea256543493678":[37,0,176,1,9,6],
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a49cfba4f063b64b58df1700773fd7995":[37,0,176,1,9,4],
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#a66ff213d20092d5fa520cffdc25d0588":[37,0,176,1,9,7],
 "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#aabac25d44d3bf88f72a6d58600e79b89":[37,0,176,1,9,3],
@@ -246,8 +249,5 @@ var NAVTREEINDEX43 =
 "namespacevamp_1_1collision.html#a99dd4e4de0d6b76af72cba47a5430b7e":[37,0,205,2,33],
 "namespacevamp_1_1collision.html#a9c63fa97673badf424b586682c39aafd":[37,0,205,2,29],
 "namespacevamp_1_1collision.html#aa54fb62f32e035fad8a917625e96e384":[37,0,205,2,12],
-"namespacevamp_1_1collision.html#ab125376ce22f043cf5abe02e05048c9d":[37,0,205,2,20],
-"namespacevamp_1_1collision.html#ac775b341f4d2e30d8048ac88276b5a78":[37,0,205,2,18],
-"namespacevamp_1_1collision.html#ad9ad9b6e5e0f4c6e1e061f205989deea":[37,0,205,2,26],
-"namespacevamp_1_1collision.html#adc62bb95b604b55a25abbdefa1e9c6ff":[37,0,205,2,36]
+"namespacevamp_1_1collision.html#ab125376ce22f043cf5abe02e05048c9d":[37,0,205,2,20]
 };

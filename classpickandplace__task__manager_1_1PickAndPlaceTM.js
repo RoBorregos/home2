@@ -48,6 +48,7 @@ var classpickandplace__task__manager_1_1PickAndPlaceTM =
     [ "max_cleanup_objects", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a4f7d1eb6a7e6ada225bc5953447b57ab", null ],
     [ "nav_locations", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#aea3fb54c254f0cd7a36e000013a6c83b", null ],
     [ "object_to_placing_shelf", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a24615d041884f8d6871bb2235ec44a7f", null ],
+    [ "place_dishwasher_at_tab", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#afd63ba2ebec3b4d899dc370c06e9c5e0", null ],
     [ "previous_state", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#ac5d22b04232b2d7e339e297105cf0aee", null ],
     [ "running_task", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a33d983d346c04c0a9433cbf84f598115", null ],
     [ "shelf_level_down_threshold", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a4446f1387c1452f42301eff25e1246a7", null ],
@@ -62,8 +63,8 @@ var classpickandplace__task__manager_1_1PickAndPlaceTM =
     [ "total_start_time", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a868866f1a708d5bc18ff57ea19261e55", null ],
     [ "trash_category", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a9b9d8f2d8e454b78918bc4e6f7a0425b", null ],
     [ "use_dishwasher", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#abf8a9d4227d20d14286469bf375433c9", null ],
+    [ "use_extra_surface", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a6354ef2769e4119bf08d15b9e115c5ea", null ],
     [ "use_grasp_detector", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a92cd27bb162974edbfb106e0f894c1d0", null ],
-    [ "use_side_table", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3416885d6aa2b236cda204e5c05788ee", null ],
     [ "use_vision_confirmation", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a87a220e385f8b97e0c72dcf8d6069617", null ],
     [ "yolo_names", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3310f539e233db2c7ce7a8b6b05c6ec2", null ],
     [ "yolo_to_logical", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a752e100668e27a0bce3f6862d7e617f0", null ]
