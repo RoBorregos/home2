@@ -33,7 +33,11 @@ from task_manager.utils.status import Status
 from task_manager.utils.shelf_pick_logic import find_target_on_level, load_shelf_levels
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-ATTEMPT_LIMIT = 3
+# Per-zone attempt limits — tune each independently. 2 (not 3) wastes less time on hard grasps,
+PICK_ATTEMPTS_TABLE = 2  # cleanup picks from the dining table
+PICK_ATTEMPTS_CABINET = 2  # cereal/milk picks from the cabinet (each retry re-scans levels → slower)
+PICK_ATTEMPTS_BOWL_SPOON = 2  # bowl/spoon picks from the dishwasher top
+PLACE_ATTEMPTS = 2  # place attempts (all placement zones)
 
 # Stacking detection for pick ordering: object A sits on object B when A's
 # base_link Z is at least STACK_Z_MIN above B's and their XY are within
@@ -248,6 +252,9 @@ class PickAndPlaceTM(Node):
         self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
         self.shelf_scanned = False
         self._cabinet_scan_fresh = False
+        
+        self.use_shelf_cache = True
+        self._shelf_level_cache: dict = {}
         self._shelf_fallback_heights: list[float] = []
         self._shelf_fallback_idx: int = 0
         self.shelf_level_threshold = 0.20
@@ -437,7 +444,7 @@ class PickAndPlaceTM(Node):
         self.subtask_manager.manipulation.get_optimal_position_for_plane(
             level, tolerance=0.1, table_or_shelf=False, approach_plane=True
         )
-        self.timeout(3.0)
+        self.timeout(2.0)
         _, dets = self.subtask_manager.vision.detect_objects()
         dets = self._filter_detections_by_height(dets or [], level)
         after = count_by_class([d.classname for d in dets])
@@ -487,7 +494,7 @@ class PickAndPlaceTM(Node):
         self.subtask_manager.manipulation.get_optimal_position_for_plane(
             height, tolerance=0.1, table_or_shelf=False, approach_plane=True
         )
-        self.timeout(3.0)
+        self.timeout(2.0)
 
     def _clear_octomap(self):
         """Clear the MoveIt octomap so points accumulated from prior picks and
@@ -501,6 +508,37 @@ class PickAndPlaceTM(Node):
         except Exception as e:
             CLog.manip(self, "PICK", f"clear_octomap failed: {e}", level="warn")
 
+    def _visit_shelf_level(self, height: float, object_name: str):
+        """Move to a shelf level, settle, detect, and cache what's there.
+
+        Returns (found, before_counts): whether object_name is on this level and, if so, the
+        per-class counts for the vision confirmation. Every detected class is cached
+        (classname -> height) so later picks can jump straight to the right level.
+        """
+        self.subtask_manager.manipulation.get_optimal_position_for_plane(
+            height, tolerance=0.1, table_or_shelf=False, approach_plane=True
+        )
+        self.timeout(2.0)  # let the octomap settle at this level
+        status, detections = self.subtask_manager.vision.detect_objects()
+        retry = 0
+        while status != Status.EXECUTION_SUCCESS and retry < 3:
+            self.timeout(1.0)
+            status, detections = self.subtask_manager.vision.detect_objects()
+            retry += 1
+        if status != Status.EXECUTION_SUCCESS or not detections:
+            return (False, None)
+        for det in detections:  # learn the whole level for future picks
+            if det.classname:
+                self._shelf_level_cache[det.classname.lower()] = height
+        candidates = [
+            (det.classname, h)
+            for det in detections
+            if (h := self.convert_to_height(det)) is not None
+        ]
+        if find_target_on_level(candidates, object_name, height) is not None:
+            return (True, self._shelf_counts(detections, height))
+        return (False, None)
+
     def _pick_from_shelf(self, object_name: str, level_heights: dict, say_name: str = None) -> int:
         """Find the target by detecting at each shelf level, then pick from that level.
 
@@ -508,35 +546,38 @@ class PickAndPlaceTM(Node):
         on L3) was missed. Here each level's own viewing pose detects + builds its
         octomap; the pick keeps that pose via in_configuration. See
         docs/ai/shelf_pick_plan.md.
+
+        Fast path: if an earlier scan already located this object, jump straight to that level
+        (one confirm detect) instead of re-scanning every level — saves the wasted level sweep on
+        the 2nd+ shelf pick. The octomap clear + settle before the grasp is kept either way.
         """
         found_level = None
         before_counts = None
-        for height in sorted(level_heights.values()):
-            self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                height, tolerance=0.1, table_or_shelf=False, approach_plane=True
+
+        cached = self._shelf_level_cache.get(object_name.lower()) if self.use_shelf_cache else None
+        if cached is not None:
+            CLog.manip(
+                self, "PICK", f"Cached shelf level {cached:.3f} for {object_name} — no re-scan."
             )
-            self.timeout(3.0)  # let the octomap settle at this level
-            status, detections = self.subtask_manager.vision.detect_objects()
-            retry = 0
-            while status != Status.EXECUTION_SUCCESS and retry < 3:
-                self.timeout(1.0)
-                status, detections = self.subtask_manager.vision.detect_objects()
-                retry += 1
-            if status != Status.EXECUTION_SUCCESS or not detections:
-                continue
-            candidates = [
-                (det.classname, h)
-                for det in detections
-                if (h := self.convert_to_height(det)) is not None
-            ]
-            if find_target_on_level(candidates, object_name, height) is not None:
-                CLog.manip(self, "PICK", f"Found {object_name} at shelf height {height:.3f}.")
-                self.announce_objects([object_name])
-                if say_name:
-                    self.subtask_manager.hri.say(f"I will pick the {say_name}.", wait=False)
-                found_level = height
-                before_counts = self._shelf_counts(detections, height)
-                break
+            found, before_counts = self._visit_shelf_level(cached, object_name)
+            if found:
+                found_level = cached
+            else:
+                CLog.manip(
+                    self,
+                    "PICK",
+                    f"{object_name} not at cached level; falling back to a full scan.",
+                    level="warn",
+                )
+                self._shelf_level_cache.pop(object_name.lower(), None)
+
+        if found_level is None:
+            for height in sorted(level_heights.values()):
+                found, before = self._visit_shelf_level(height, object_name)
+                if found:
+                    found_level = height
+                    before_counts = before
+                    break
 
         if found_level is None:
             CLog.manip(
@@ -547,11 +588,16 @@ class PickAndPlaceTM(Node):
             )
             return Status.EXECUTION_ERROR
 
+        CLog.manip(self, "PICK", f"Found {object_name} at shelf height {found_level:.3f}.")
+        self.announce_objects([object_name])
+        if say_name:
+            self.subtask_manager.hri.say(f"I will pick the {say_name}.", wait=False)
+
         # Clear the octomap so points accumulated from prior picks/levels do not
         # over-constrain the grasp (stale octomap caused 99999 collisions on the
         # tight low shelf levels); let it rebuild fresh at this level.
         self._clear_octomap()
-        self.timeout(3.0)
+        self.timeout(2.0)
         # Arm is at the found level's pose; keep it (in_configuration).
         status = self.subtask_manager.manipulation.pick_object(
             object_name, in_configuration=True, scan_environment=True
@@ -964,14 +1010,15 @@ class PickAndPlaceTM(Node):
                 CLog.manip(
                     self,
                     "PICK",
-                    f"Failed to pick {self.grasped_object.name} — attempt {self.current_attempts}/{ATTEMPT_LIMIT}",
+                    f"Failed to pick {self.grasped_object.name} — attempt "
+                    f"{self.current_attempts}/{PICK_ATTEMPTS_TABLE}",
                     level="error",
                 )
-                if self.current_attempts >= ATTEMPT_LIMIT:
+                if self.current_attempts >= PICK_ATTEMPTS_TABLE:
                     CLog.manip(
                         self,
                         "PICK",
-                        f"Skipping {self.grasped_object.name} after {ATTEMPT_LIMIT} attempts.",
+                        f"Skipping {self.grasped_object.name} after {PICK_ATTEMPTS_TABLE} attempts.",
                         level="warn",
                     )
                     self.current_attempts = 0
@@ -1295,10 +1342,11 @@ class PickAndPlaceTM(Node):
                 CLog.manip(
                     self,
                     "PLACE",
-                    f"Failed to place {self.grasped_object.name} — attempt {self.current_attempts}/{ATTEMPT_LIMIT}",
+                    f"Failed to place {self.grasped_object.name} — attempt "
+                    f"{self.current_attempts}/{PLACE_ATTEMPTS}",
                     level="error",
                 )
-                if self.current_attempts < ATTEMPT_LIMIT:
+                if self.current_attempts < PLACE_ATTEMPTS:
                     # Retry the same placement on the same shelf level.
                     CLog.manip(self, "PLACE", "Retrying place on the same shelf level...")
                     self.timeout(1.0)
@@ -1313,7 +1361,7 @@ class PickAndPlaceTM(Node):
                     CLog.manip(
                         self,
                         "PLACE",
-                        f"All {ATTEMPT_LIMIT} attempts on {shelf_height}m failed; "
+                        f"All {PLACE_ATTEMPTS} attempts on {shelf_height}m failed; "
                         f"falling back to shelf at {next_height}m.",
                         level="warn",
                     )
@@ -1326,7 +1374,7 @@ class PickAndPlaceTM(Node):
                         "PLACE",
                         f"Giving up on {self.grasped_object.name} after exhausting "
                         f"{len(self._shelf_fallback_heights) or 1} shelf level(s) "
-                        f"with {ATTEMPT_LIMIT} attempts each.",
+                        f"with {PLACE_ATTEMPTS} attempts each.",
                         level="warn",
                     )
                     self.current_attempts = 0
@@ -1434,18 +1482,31 @@ class PickAndPlaceTM(Node):
                     status = Status.EXECUTION_ERROR
 
             if status == Status.EXECUTION_SUCCESS:
+                self.current_attempts = 0
                 self.current_breakfast_item["picked"] = True
                 self.carrying = self.current_breakfast_item  # gripper now physically holds it
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING
             else:
+                zone_limit = PICK_ATTEMPTS_CABINET if is_cabinet else PICK_ATTEMPTS_BOWL_SPOON
+                self.current_attempts += 1
                 CLog.manip(
                     self,
                     "PICK",
-                    f"Failed to pick breakfast item: {item_name}.",
+                    f"Failed to pick breakfast item {item_name} — "
+                    f"attempt {self.current_attempts}/{zone_limit}",
                     level="error",
                 )
-                self.current_breakfast_item["picked"] = True
-                self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
+                if self.current_attempts >= zone_limit:
+                    CLog.manip(
+                        self,
+                        "PICK",
+                        f"Skipping {item_name} after {zone_limit} attempts.",
+                        level="warn",
+                    )
+                    self.current_attempts = 0
+                    self.current_breakfast_item["picked"] = True  # give up; continue with next item
+                    self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
+                # else: stay in PICK_BREAKFAST_ITEM to retry (gripper empty, nothing dropped)
 
         # ==================== NAVIGATE TO DINING ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING:
