@@ -88,27 +88,29 @@ controller_server:
       xy_goal_tolerance: 0.35      # area/safe_place waypoints are zones, not precise docks. Loosened so MPPI
                                    # does not fail the final approach when a waypoint sits near inflation
                                    # (e.g. office.safe_place ~0.3 m from a wall). Precise approaches use table_docker.
-      yaw_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.15     # 0.25(~14deg)->0.15(~8.6deg): finish closer to the commanded heading
+                                   # (paired with higher wz_max/std + GoalAngleCritic weight so it can reach it)
 
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 36
       model_dt: 0.07               # 36 * 0.07 = 2.5 s prediction horizon
       batch_size: 1200             # lower to ~600-800 if the robot CPU is maxed at 15 Hz
-      # ---- Sampling std-devs: narrowed for low-speed 3-wheel crawl ----
-      vx_std: 0.1
-      vy_std: 0.1
-      wz_std: 0.15
-      # ---- Velocity limits (LIMP: 3-wheel crawl, well under the ODrive vel_limit) ----
-      vx_max: 0.3                  # limp crawl (was 0.5 general / 0.7 stock)
-      vx_min: -0.2
-      vy_max: 0.25                 # strafe is weakest on 3 wheels — keep it lowest; set 0.0 to disable
-      wz_max: 0.7                  # gentle turns (was 1.1 general / 1.5 stock)
-      # ---- Acceleration limits (softened to limit wheel slip on 3-wheel starts) ----
-      ax_max: 1.0
-      ax_min: -1.0
-      ay_max: 1.0
-      az_max: 1.2
+      # ---- Sampling std-devs (wz restored so MPPI explores real rotation) ----
+      vx_std: 0.24                 # wider linear sampling -> commits to speed more readily (stock 0.2)
+      vy_std: 0.24
+      wz_std: 0.3
+      # ---- Velocity limits (LIMP: reduced vs stock, but no longer over-throttled;
+      #      3-wheel IK spins wheels at normal speed, so this is well within limits) ----
+      vx_max: 0.45                 # was 0.3 (too slow); stock 0.7, general 0.5
+      vx_min: -0.3
+      vy_max: 0.35                 # strafe is weakest on 3 wheels — kept below vx; set 0.0 to disable
+      wz_max: 1.2                  # was 0.7 — faster final orientation spin (stock 1.5)
+      # ---- Acceleration limits (raised so it is not sluggish; az up for a snappy spin) ----
+      ax_max: 1.5
+      ax_min: -1.5
+      ay_max: 1.2
+      az_max: 2.0
       iteration_count: 2
       prune_distance: 1.7
       transform_tolerance: 0.2
@@ -144,8 +146,8 @@ controller_server:
       GoalAngleCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 3.0
-        threshold_to_consider: 0.5
+        cost_weight: 6.0             # 3.0->6.0: drive the final heading harder (3-wheel spin has more stiction)
+        threshold_to_consider: 1.0   # 0.5->1.0: start aligning heading earlier so the end spin is smaller
       PathAlignCritic:
         enabled: true
         cost_power: 1
@@ -399,11 +401,13 @@ velocity_smoother:
     feedback: "OPEN_LOOP"
     # [vx, vy, wz] — LIMP 3-wheel crawl; must stay consistent with the MPPI limits above.
     # (set vy entries to 0.0 to disable strafing if it proves unreliable on 3 wheels)
-    max_velocity: [0.3, 0.25, 0.7]
-    min_velocity: [-0.2, -0.25, -0.7]
-    max_accel: [1.0, 1.0, 1.2]
-    max_decel: [-1.0, -1.0, -1.2]
+    max_velocity: [0.45, 0.35, 1.2]
+    min_velocity: [-0.3, -0.35, -1.2]
+    max_accel: [1.5, 1.2, 2.0]
+    max_decel: [-1.5, -1.2, -2.0]
     odom_topic: /odrive/odom
     odom_duration: 0.1
-    deadband_velocity: [0.05, 0.05, 0.05]
+    # wz deadband lowered 0.05->0.02: 0.05 rad/s (~3 deg/s) was zeroing the small
+    # final-orientation corrections, so the spin never quite completed on 3 wheels.
+    deadband_velocity: [0.05, 0.05, 0.02]
     velocity_timeout: 1.0
