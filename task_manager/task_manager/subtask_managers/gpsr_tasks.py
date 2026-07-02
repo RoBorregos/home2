@@ -18,6 +18,17 @@ from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
+# Person-following (ported from the HRIC FOLLOW_PERSON state): the robot follows
+# the tracked person until a stop keyword, arrival at the destination, or the
+# safety cap. FOLLOW_LISTEN_TIMEOUT is the length of each speech-listening
+# window; FOLLOW_MAX_DURATION keeps a missed "stop" from trapping the robot in
+# follow mode and from blowing the GPSR interleaved-plan global budget (300 s).
+FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
+FOLLOW_LISTEN_TIMEOUT = 5.0
+FOLLOW_MAX_DURATION = 120.0
+FOLLOW_ARRIVED_DISTANCE = 1.5
+FOLLOW_TRACK_ATTEMPTS = 5
+
 
 class GPSRTask(GenericTask):
     """Class to manage the GPSR task"""
@@ -108,83 +119,151 @@ class GPSRTask(GenericTask):
 
         return Status.EXECUTION_SUCCESS, "object given"
 
-    ## HRI, Nav
+    def _teardown_follow(self):
+        """Restore camera orientation and arm pose after a follow."""
+        self.subtask_manager.vision.camera_upside_down(False)
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+
+    ## HRI, Nav, Vision, Manipulation
     def follow_person_until(self, command: FollowPersonUntil):
         """
-        Follow a person until a specific condition is triggered.
+        Follow a person until a stop condition is met (HRIC FOLLOW_PERSON port).
 
         Args:
-            complement (str): The condition to stop following. If it is a location,
-                the robot will follow the person until it arrives at the location.
-                If it is 'canceled', the robot will follow the person until the
-                person cancels the follow.
-            characteristic (str): name of the person to follow or empty if unavilable. Can be used to improve interaction.
+            destination (str): Where to stop following. A location name means
+                the robot follows the person until it arrives there;
+                'cancelled' means it follows until the person says a stop
+                keyword (FOLLOW_STOP_KEYWORDS).
 
         Preconditions:
-            - The robot is in front of the person it will follow.
+            - The robot is in front of the person it will follow (the
+              interpreter guarantees a find_person action precedes this one).
 
         Behavior:
-            - If the complement is a location, the robot follows the person until
-              it reaches the specified location.
-            - If the complement is 'canceled', the robot follows the person until
-              the person cancels the follow.
+            - Moves the arm to the carry pose and announces the camera flip to
+              vision. Following always runs in this configuration — no matter
+              how a previous action left the camera — because the tracker
+              flips the frame for upright detection and publishes an
+              upright-correct centroid (same setup HRIC follows with).
+            - Locks the person tracker (track_person), then starts base-follow
+              (nav) and arm-follow (manipulation, keeps the person in frame).
+            - Follows until a stop keyword is heard, the destination is reached
+              (path distance below FOLLOW_ARRIVED_DISTANCE), or the safety cap
+              FOLLOW_MAX_DURATION expires.
+            - If the tracker never locks, degrades to plain navigation to the
+              destination (asking for one when following until cancelled).
 
         Postconditions:
-            - The robot is in the room where the user canceled the operation or in
-              the target room.
-            - Store command execution status in the database.
-
-
-        Pseudocode:
-            while not_in_room() or not_canceled():
-                follow_person()
-
+            - Follow, tracking and the camera flip are all off; the arm is back
+              in nav_pose. The robot is where the person stopped it or at the
+              target location.
         """
         if isinstance(command, dict):
             command = FollowPersonUntil(**command)
 
         self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        self.subtask_manager.vision.deactivate_face_recognition()
 
-        # TODO: fix this, now follow person until only has destination because
-        # it can only be triggered after a find_person action, my suggestion for
-        # all is to read the hri subtask manager log to find
-        # if characteristic == "":
-        #   self.subtask_manager.hri.say(
-        #       "I will now follow you.",
-        #   )
-        # status = self.subtask_manager.vision.track_person(True)
-        # else:
-        #   self.subtask_manager.hri.say(
-        #       f"I will now follow you, {characteristic}.",
-        #   )
-        # status = self.subtask_manager.vision.follow_by_name(characteristic)
-        #   self.subtask_manager.nav.follow_person()
+        # Resolve the stop condition up front. BAML emits 'cancelled' (see
+        # robot_commands.baml FollowPersonUntil), but tolerate the US spelling.
+        destination = (command.destination or "").strip().lower()
+        until_cancelled = destination in ("", "cancelled", "canceled")
+        location = None
+        if not until_cancelled:
+            try:
+                location = self.subtask_manager.hri.query_location(command.destination)[0]
+            except Exception:
+                location = None
 
-        # TODO (@nav, hri): fix conditions to stop
+        # Follow always runs in the carry pose with the camera flipped: it is
+        # the exact camera configuration the person tracker is tuned for.
+        self.subtask_manager.manipulation.move_to_position("front_stare_carry_bag")
+        self.subtask_manager.vision.camera_upside_down(True)
+        time.sleep(1.0)  # let the pose settle and the flip reach the tracker
 
-        loc = command.destination
+        # Lock the tracker on the person. track_person(True) is the start/stop
+        # command — get_track_person() is only a status query and never starts
+        # tracking. The tracker publishes the person's 3D point that
+        # person_goal_smoother turns into the moving Nav2 goal.
+        self.subtask_manager.hri.say(
+            "Please stand in front of me so I can start following you.", wait=True
+        )
+        tracking = False
+        for attempt in range(FOLLOW_TRACK_ATTEMPTS):
+            if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
+                tracking = True
+                break
+            if attempt < FOLLOW_TRACK_ATTEMPTS - 1:
+                self.subtask_manager.hri.say(
+                    "I cannot see you yet. Please stand right in front of me."
+                )
 
-        if command.destination == "canceled":
-            self.subtask_manager.hri.say("I'm sorry, I can't follow you.")
-            status, loc = self.subtask_manager.hri.ask_and_confirm(
-                question="Please tell me where to go.",
-                query="location",
-                context="The user was asked to say the location. We want to infer the location from the response",
+        if not tracking:
+            # No locked target -> there is no goal to follow; degrade to plain
+            # navigation instead of chasing the smoother's dummy pose.
+            self.subtask_manager.vision.track_person(False)
+            self._teardown_follow()
+            loc_text = command.destination
+            if until_cancelled:
+                self.subtask_manager.hri.say("I could not lock onto you, so I cannot follow you.")
+                status, loc_text = self.subtask_manager.hri.ask_and_confirm(
+                    question="Please tell me where to go instead.",
+                    query="location",
+                    context="The user was asked to say the location. We want to infer the location from the response",
+                )
+                if status != Status.EXECUTION_SUCCESS or not loc_text:
+                    return Status.TARGET_NOT_FOUND, "could not lock on person to follow"
+            else:
+                self.subtask_manager.hri.say(
+                    f"I could not lock onto you, but I will go to the {command.destination}.",
+                )
+            location = self.subtask_manager.hri.query_location(loc_text)[0]
+            result, _ = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+            return result, "could not follow, navigated to " + str(loc_text)
+
+        self.subtask_manager.hri.say(
+            "I will start following you now, you can start walking. "
+            "Say stop whenever you want me to stop.",
+            wait=True,
+        )
+
+        # Base + arm follow. Arm-follow (joint1 pan keeping the person centered)
+        # keeps the person in frame as the base maneuvers, reducing losses.
+        self.subtask_manager.nav.follow_person(True)
+        self.subtask_manager.manipulation.follow_person(True)
+
+        follow_start = time.time()
+        stop_reason = "safety timeout"
+        while True:
+            status, _ = self.subtask_manager.hri.interpret_keyword(
+                FOLLOW_STOP_KEYWORDS, timeout=FOLLOW_LISTEN_TIMEOUT, play_chime=False
             )
+            if status == Status.EXECUTION_SUCCESS:
+                stop_reason = "stop requested"
+                break
+            if location is not None:
+                s, info = self.subtask_manager.nav.get_path_info(location.area, location.subarea)
+                if (
+                    s == Status.EXECUTION_SUCCESS
+                    and isinstance(info, dict)
+                    and info.get("distance", float("inf")) <= FOLLOW_ARRIVED_DISTANCE
+                ):
+                    stop_reason = f"arrived at {command.destination}"
+                    break
+            if time.time() - follow_start > FOLLOW_MAX_DURATION:
+                self.subtask_manager.hri.node.get_logger().warning(
+                    "follow_person_until: timed out without a stop condition"
+                )
+                break
 
-        else:
-            self.subtask_manager.hri.say(
-                f"I'm sorry, I can't follow you, but I'll go to the {command.destination}",
-            )
+        # Stop nav-follow, arm-follow AND the tracker, then restore camera/pose.
+        self.subtask_manager.nav.follow_person(False)
+        self.subtask_manager.manipulation.follow_person(False)
+        self.subtask_manager.vision.track_person(False)
+        self._teardown_follow()
+        self.subtask_manager.hri.say("Okay, I will stop following you.", wait=False)
 
-        location = self.subtask_manager.hri.query_location(loc)[0]
-
-        target = location.subarea if location.subarea else location.area
-        pretty_target = target.replace("_", " ")
-        self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
-
-        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
-        return result, "arrived to:" + command.destination
+        return Status.EXECUTION_SUCCESS, "followed person until " + stop_reason
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
