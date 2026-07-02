@@ -490,7 +490,9 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.FOLLOW_PERSON:
             self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
             self.subtask_manager.vision.deactivate_face_recognition()
-            self._move_arm_cleared("nav_carry_bag_pose" if self.carrying_bag else "nav_pose")
+            self._move_arm_cleared(
+                "front_stare_carry_bag" if self.carrying_bag else "front_low_stare"
+            )
             # Ask the guest to stand in view, then START the tracker. Use
             # track_person(True/False) — the start/stop command the canonical
             # test_follow_person.py uses — NOT get_track_person(), which is only a
