@@ -4,6 +4,9 @@ Display UI - PyQt5 replacement for the Next.js HRI display.
 Shows speech/interaction messages, audio state, camera feed, map and
 question modals. Subscribes directly to ROS2 topics (no rosbridge /
 web_video_server) to cut CPU usage vs the browser-based version.
+
+The `task` ROS parameter selects the view, mirroring the Next.js routes:
+default (/), gpsr, hric, laundry, ppc, restaurant, storing_groceries.
 """
 
 import json
@@ -13,7 +16,7 @@ from datetime import datetime
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Empty, Float32, String
+from std_msgs.msg import Empty, Float32, Int32, String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 
@@ -22,17 +25,32 @@ from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
 DEFAULT_VIDEO_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+
+# Per-task default video topic (VideoFeed defaultTopic prop in the web app).
+TASK_DEFAULT_VIDEO = {
+    "ppc": "/vision/detections_image",
+}
+
+# Where each task's manager publishes its FSM step.
+TASK_STEP_TOPICS = {
+    "gpsr": "/gpsr/display/task_step",
+    "hric": "/hri/display/task_step",
+    "laundry": "/hri/display/task_step",
+    "ppc": "/pickandplace/display/task_step",
+}
 
 # Colors lifted from the original Next.js app's globals.css (--bg-dark, --blue, etc).
 BG_DARK = "#0a0a0a"
@@ -44,6 +62,8 @@ BLUE = "#3b6fe0"
 BLUE_HOVER = "#5a8aea"
 ORANGE = "#e8895a"
 PURPLE = "#9d5fd6"
+EMERALD = "#34d399"
+AMBER = "#fbbf24"
 
 MESSAGE_COLORS = {
     "heard": BLUE,
@@ -95,6 +115,125 @@ MESSAGE_ICONS = {
 
 AUDIO_STATE_TIMEOUT_MS = 10_000
 
+# Display modes shared by the GPSR/HRIC step machines.
+MODE_BUTTON = "button"
+MODE_CAMERA = "camera"
+MODE_LOGS = "logs"
+MODE_BOTH = "both"
+
+# (key, label, icon) — same order as FSM_STEPS in gpsr/page.tsx.
+GPSR_FSM_STEPS = [
+    ("waiting_for_button", "Wait Start", "\U0001f525"),
+    ("start", "Start", "\U0001f916"),
+    ("wait_button_command", "Ready", "\U0001f525"),
+    ("waiting_for_command", "Listening", "\U0001f3a4"),
+    ("plan_and_execute_batch", "Merged Plan", "\U0001f4ca"),
+    ("executing", "Executing", "▶️"),
+    ("done", "Done", "✅"),
+]
+
+GPSR_COMMAND_DISPLAY = {
+    "go_to": MODE_CAMERA,
+    "pick_object": MODE_CAMERA,
+    "place_object": MODE_CAMERA,
+    "say_with_context": MODE_LOGS,
+    "say": MODE_LOGS,
+    "answer_question": MODE_BOTH,
+    "get_visual_info": MODE_CAMERA,
+    "give_object": MODE_BOTH,
+    "follow_person_until": MODE_CAMERA,
+    "guide_person_to": MODE_CAMERA,
+    "get_person_info": MODE_CAMERA,
+    "count": MODE_CAMERA,
+    "find_person": MODE_CAMERA,
+    "find_person_by_name": MODE_CAMERA,
+}
+
+GPSR_COMMAND_INFO = {
+    "go_to": ("Go To", "\U0001f9ed"),
+    "pick_object": ("Pick Object", "\U0001f4e6"),
+    "place_object": ("Place Object", "\U0001f4e6"),
+    "say_with_context": ("Say", "\U0001f4ac"),
+    "say": ("Say", "\U0001f4ac"),
+    "answer_question": ("Answer", "\U0001f4ac"),
+    "get_visual_info": ("Visual Info", "\U0001f441"),
+    "give_object": ("Give Object", "\U0001f91d"),
+    "follow_person_until": ("Follow Person", "\U0001f9cd"),
+    "guide_person_to": ("Guide Person", "\U0001f9ed"),
+    "get_person_info": ("Person Info", "\U0001faaa"),
+    "count": ("Count", "\U0001f4ca"),
+    "find_person": ("Find Person", "\U0001f50d"),
+    "find_person_by_name": ("Find by Name", "\U0001faaa"),
+}
+
+# (key, label, icon, display_mode) — same order as TASK_STEPS in laundry/page.tsx.
+LAUNDRY_TASK_STEPS = [
+    ("wait_for_button", "Waiting for Start", "\U0001f525", MODE_BUTTON),
+    ("start", "Starting", "\U0001f916", MODE_CAMERA),
+    ("navigate_to_basket", "Navigate to Basket", "\U0001f9ed", MODE_CAMERA),
+    ("pick_laundry_basket", "Picking Basket", "\U0001f9fa", MODE_CAMERA),
+    ("navigate_to_laundry_table", "Navigate to Table", "\U0001f9ed", MODE_CAMERA),
+    ("unload_laundry", "Unloading Basket", "\U0001f9fa", MODE_CAMERA),
+    ("pick_clothes_basket", "Picking Clothes", "\U0001f455", MODE_CAMERA),
+    ("place_clothes_table", "Placing Clothes on Table", "\U0001f455", MODE_CAMERA),
+    ("navigate_to_laundry_machine", "Navigate to Machine", "\U0001f9ed", MODE_CAMERA),
+    ("pick_clothes_wm", "Picking from Machine", "\U0001f9fc", MODE_CAMERA),
+    ("close_laundry_machine", "Closing Machine", "\U0001f6aa", MODE_CAMERA),
+    ("navigate_to_table_with_clothes", "Navigate to Table", "\U0001f9ed", MODE_CAMERA),
+    ("end", "Finished", "✅", MODE_LOGS),
+]
+
+# (key, label, icon, display_mode) — same order as TASK_STEPS in ppc/page.tsx.
+PPC_TASK_STEPS = [
+    ("wait_for_button", "Wait Start", "\U0001f525", MODE_BUTTON),
+    ("start", "Starting", "▶️", MODE_CAMERA),
+    ("perceive_table", "Perceive Table", "\U0001f441", MODE_BOTH),
+    ("cleanup_phase", "Cleanup Phase", "\U0001f4e6", MODE_BOTH),
+    ("breakfast_phase", "Breakfast Phase", "☕", MODE_BOTH),
+    ("end", "Finished", "✅", MODE_LOGS),
+]
+
+# Raw FSM state -> macro step shown in the pill bar (getStepKey in ppc/page.tsx).
+PPC_STEP_KEYS = {
+    "wait_for_button": "wait_for_button",
+    "start": "start",
+    "perceive_table": "perceive_table",
+    "announce_objects": "perceive_table",
+    "sort_objects": "perceive_table",
+    "scan_cabinet_shelves": "cleanup_phase",
+    "cleanup_loop": "cleanup_phase",
+    "pick_object": "cleanup_phase",
+    "determine_placement": "cleanup_phase",
+    "check_dishwasher": "cleanup_phase",
+    "request_dishwasher_help": "cleanup_phase",
+    "navigate_to_placement": "cleanup_phase",
+    "place_object": "cleanup_phase",
+    "start_breakfast_prep": "breakfast_phase",
+    "get_breakfast_items": "breakfast_phase",
+    "navigate_to_item_source": "breakfast_phase",
+    "pick_breakfast_item": "breakfast_phase",
+    "navigate_to_dining": "breakfast_phase",
+    "pour_into_bowl": "breakfast_phase",
+    "place_breakfast_item": "breakfast_phase",
+    "end": "end",
+    "debug": "end",
+}
+
+# (key, label, icon, display_mode) — same order as TASK_STEPS in hric/page.tsx.
+HRIC_TASK_STEPS = [
+    ("wait_for_button", "Waiting for Start", "\U0001f525", MODE_BUTTON),
+    ("start", "Starting", "\U0001f4f7", MODE_CAMERA),
+    ("wait_for_guest", "Waiting for Guest", "\U0001f441", MODE_CAMERA),
+    ("greeting", "Greeting", "\U0001f4ac", MODE_BOTH),
+    ("save_face", "Saving Face", "\U0001faaa", MODE_CAMERA),
+    ("take_bag", "Taking Bag", "\U0001f6cd", MODE_BOTH),
+    ("navigate_to_living_room", "Navigate to Living Room", "\U0001f9ed", MODE_CAMERA),
+    ("find_seat", "Finding Seat", "\U0001fa91", MODE_CAMERA),
+    ("navigate_to_entrance", "Navigate to Entrance", "\U0001f9ed", MODE_CAMERA),
+    ("introduction", "Introduction", "\U0001f9cd", MODE_BOTH),
+    ("take_bag_deliver", "Deliver Bag", "\U0001f91d", MODE_BOTH),
+]
+
 
 class DisplaySignals(QObject):
     """Bridge between ROS callbacks (spin thread) and Qt widgets (main thread)."""
@@ -107,6 +246,8 @@ class DisplaySignals(QObject):
     map_received = pyqtSignal(dict)
     video_topic_changed = pyqtSignal(str)
     frame_received = pyqtSignal(QImage)
+    task_step_changed = pyqtSignal(str)
+    command_index_changed = pyqtSignal(int)
 
 
 class DisplayRosNode(Node):
@@ -114,9 +255,11 @@ class DisplayRosNode(Node):
         super().__init__("display_ui")
         self.signals = signals
         self.bridge = CvBridge()
-        self.video_topic = self.declare_parameter(
-            "default_video_topic", DEFAULT_VIDEO_TOPIC
-        ).value
+        self.task = self.declare_parameter("task", "default").value
+        video_param = self.declare_parameter("default_video_topic", "").value
+        self.video_topic = video_param or TASK_DEFAULT_VIDEO.get(
+            self.task, DEFAULT_VIDEO_TOPIC
+        )
         self._video_sub = None
 
         self.create_subscription(String, "/AudioState", self._on_audio_state, 10)
@@ -141,6 +284,14 @@ class DisplayRosNode(Node):
         self.create_subscription(
             String, "/hri/display/change_video", self._on_change_video, 10
         )
+
+        step_topic = TASK_STEP_TOPICS.get(self.task)
+        if step_topic is not None:
+            self.create_subscription(String, step_topic, self._on_task_step, 10)
+        if self.task == "gpsr":
+            self.create_subscription(
+                Int32, "/gpsr/display/command_index", self._on_command_index, 10
+            )
 
         self.button_pub = self.create_publisher(Empty, "/hri/display/button_press", 10)
         self.answer_pub = self.create_publisher(String, "/hri/display/answers", 10)
@@ -177,6 +328,12 @@ class DisplayRosNode(Node):
 
     def _on_task_status(self, msg: String):
         self.signals.task_status_changed.emit(msg.data == "active")
+
+    def _on_task_step(self, msg: String):
+        self.signals.task_step_changed.emit(msg.data.strip().lower())
+
+    def _on_command_index(self, msg: Int32):
+        self.signals.command_index_changed.emit(msg.data)
 
     def _on_map(self, msg: String):
         try:
@@ -305,14 +462,90 @@ class AudioOverlay(QWidget):
         self.hide()
 
 
+class AudioPill(QLabel):
+    """Small header pill mirroring AudioStateIndicator's idle/saying chips."""
+
+    def __init__(self, signals: DisplaySignals):
+        super().__init__()
+        signals.audio_state_changed.connect(self.set_state)
+        self.set_state("idle")
+
+    def set_state(self, state: str):
+        if state == "saying":
+            self.setText("\U0001f50a Speaking")
+            self.setStyleSheet(
+                f"color: {PURPLE}; background-color: rgba(157,95,214,50);"
+                "border-radius: 12px; padding: 4px 12px; font-weight: bold;"
+            )
+            self.show()
+        elif state == "idle":
+            self.setText("\U0001f507 Idle")
+            self.setStyleSheet(
+                f"color: {TEXT_GRAY}; background-color: transparent;"
+                "border-radius: 12px; padding: 4px 12px;"
+            )
+            self.show()
+        else:
+            # listening/thinking/loading are shown by the full-window overlay.
+            self.hide()
+
+
+class StartButton(QPushButton):
+    """Publishes /hri/display/button_press; disabled while a task is active."""
+
+    def __init__(self, ros_node: DisplayRosNode, xl: bool = False):
+        super().__init__("\U0001f525 Start")
+        self.setFixedHeight(128 if xl else 60)
+        font = self.font()
+        font.setPointSize(24 if xl else 12)
+        font.setBold(True)
+        self.setFont(font)
+        self.clicked.connect(ros_node.publish_button_press)
+        ros_node.signals.task_status_changed.connect(
+            lambda active: self.setEnabled(not active)
+        )
+
+
+class VideoView(QWidget):
+    """Topic label + live frame, fed by the shared ROS video subscription."""
+
+    def __init__(self, signals: DisplaySignals, initial_topic: str):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        self.topic_label = QLabel(f"Video feed at {initial_topic}")
+        self.topic_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.topic_label)
+
+        self.video_label = QLabel()
+        self.video_label.setAlignment(Qt.AlignCenter)
+        self.video_label.setMinimumSize(480, 360)
+        self.video_label.setStyleSheet(
+            f"background-color: {BG_DARKER}; border: 1px solid {BORDER_LIGHT}; border-radius: 8px;"
+        )
+        layout.addWidget(self.video_label, 1)
+
+        signals.video_topic_changed.connect(
+            lambda topic: self.topic_label.setText(f"Video feed at {topic}")
+        )
+        signals.frame_received.connect(self._on_frame)
+
+    def _on_frame(self, qimg: QImage):
+        pixmap = QPixmap.fromImage(qimg).scaled(
+            self.video_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+        )
+        self.video_label.setPixmap(pixmap)
+
+
 class MessagesPanel(QScrollArea):
-    def __init__(self):
+    def __init__(self, signals: DisplaySignals = None):
         super().__init__()
         self.setWidgetResizable(True)
         self._container = QWidget()
         self._layout = QVBoxLayout(self._container)
         self._layout.setAlignment(Qt.AlignTop)
         self.setWidget(self._container)
+        if signals is not None:
+            signals.message_received.connect(self.add_message)
 
     def add_message(self, msg_type: str, content: str):
         color = MESSAGE_COLORS.get(msg_type, "#9ca3af")
@@ -331,61 +564,142 @@ class MessagesPanel(QScrollArea):
         self._layout.insertWidget(0, entry)
 
 
-class DisplayWindow(QMainWindow):
-    def __init__(self, ros_node: DisplayRosNode):
+class StepPillBar(QWidget):
+    """Horizontal done/active/pending progress pills (StepPill in the web app)."""
+
+    def __init__(self, steps):
+        super().__init__()
+        self._pills = []
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(8, 6, 8, 6)
+        layout.setSpacing(6)
+        for _key, label, icon in steps:
+            pill = QLabel(f"{icon} {label}")
+            self._pills.append(pill)
+            layout.addWidget(pill)
+        layout.addStretch()
+        self.set_active_index(-1)
+
+    def set_active_index(self, active: int):
+        for i, pill in enumerate(self._pills):
+            if active >= 0 and i < active:
+                style = f"color: {EMERALD}; background-color: rgba(16,185,129,50);"
+            elif i == active:
+                style = (
+                    f"color: {BLUE_HOVER}; background-color: rgba(59,111,224,50);"
+                    f"border: 1px solid {BLUE};"
+                )
+            else:
+                style = "color: rgba(180,180,180,150); background-color: rgba(255,255,255,13);"
+            pill.setStyleSheet(
+                style + "border-radius: 11px; padding: 3px 10px; font-size: 11px;"
+            )
+
+
+class CommandBadge(QLabel):
+    """Amber chip naming the GPSR command currently executing."""
+
+    def __init__(self):
+        super().__init__()
+        self.setStyleSheet(
+            f"color: {AMBER}; background-color: rgba(245,158,11,38);"
+            "border: 1px solid rgba(245,158,11,77); border-radius: 11px;"
+            "padding: 3px 10px; font-size: 11px; font-weight: bold;"
+        )
+        self.set_command(None)
+
+    def set_command(self, command):
+        info = GPSR_COMMAND_INFO.get(command) if command else None
+        if info is None:
+            self.hide()
+        else:
+            label, icon = info
+            self.setText(f"{icon} {label}")
+            self.show()
+
+
+class CommandCounter(QWidget):
+    """CMD 1-2-3 progress circles for the GPSR command index."""
+
+    def __init__(self, count: int = 3):
+        super().__init__()
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        caption = QLabel("CMD")
+        caption.setStyleSheet(f"color: {TEXT_GRAY}; font-size: 10px;")
+        layout.addWidget(caption)
+        self._circles = []
+        for i in range(count):
+            circle = QLabel(str(i + 1))
+            circle.setFixedSize(22, 22)
+            circle.setAlignment(Qt.AlignCenter)
+            self._circles.append(circle)
+            layout.addWidget(circle)
+        self.set_index(0)
+
+    def set_index(self, index: int):
+        for i, circle in enumerate(self._circles):
+            if i < index:
+                style = f"color: {EMERALD}; background-color: rgba(16,185,129,50);"
+            elif i == index:
+                style = (
+                    f"color: {BLUE_HOVER}; background-color: rgba(59,111,224,50);"
+                    f"border: 1px solid {BLUE};"
+                )
+            else:
+                style = "color: rgba(180,180,180,100); background-color: rgba(255,255,255,13);"
+            circle.setStyleSheet(
+                style + "border-radius: 11px; font-size: 10px; font-weight: bold;"
+            )
+
+
+def horizontal_separator():
+    line = QFrame()
+    line.setFrameShape(QFrame.HLine)
+    line.setStyleSheet(f"color: {BORDER_LIGHT};")
+    return line
+
+
+class BaseWindow(QMainWindow):
+    """Common wiring: audio overlay + timeout, optional map/question dialogs."""
+
+    def __init__(self, ros_node: DisplayRosNode, title: str, with_dialogs: bool = True):
         super().__init__()
         self.ros_node = ros_node
-        self.setWindowTitle("Display UI")
+        self.setWindowTitle(title)
         self.resize(1100, 700)
 
-        central = QWidget()
-        self.setCentralWidget(central)
-        root = QHBoxLayout(central)
+        self._central = QWidget()
+        self.setCentralWidget(self._central)
 
-        self.messages_panel = MessagesPanel()
-        root.addWidget(self.messages_panel, 1)
-
-        right = QVBoxLayout()
-        self.start_button = QPushButton("Start")
-        self.start_button.setFixedHeight(60)
-        self.start_button.clicked.connect(self._on_start_clicked)
-        right.addWidget(self.start_button)
-
-        self.video_topic_label = QLabel(f"Video feed at {ros_node.video_topic}")
-        right.addWidget(self.video_topic_label)
-
-        self.video_label = QLabel()
-        self.video_label.setAlignment(Qt.AlignCenter)
-        self.video_label.setMinimumSize(480, 360)
-        self.video_label.setStyleSheet(
-            f"background-color: {BG_DARKER}; border: 1px solid {BORDER_LIGHT}; border-radius: 8px;"
-        )
-        right.addWidget(self.video_label, 1)
-
-        root.addLayout(right, 1)
-
-        self.audio_overlay = AudioOverlay(central)
-        self.map_dialog = MapDialog(self)
-        self.question_dialog = QuestionDialog(self)
-        self.question_dialog.answered.connect(self.ros_node.publish_answer)
-
+        self.audio_overlay = AudioOverlay(self._central)
         self._audio_timeout_timer = QTimer(self)
         self._audio_timeout_timer.setSingleShot(True)
         self._audio_timeout_timer.timeout.connect(lambda: self._on_audio_state("idle"))
+        ros_node.signals.audio_state_changed.connect(self._on_audio_state)
 
-        signals = ros_node.signals
-        signals.audio_state_changed.connect(self._on_audio_state)
-        signals.message_received.connect(self.messages_panel.add_message)
-        signals.question_received.connect(self._on_question)
-        signals.task_status_changed.connect(self._on_task_status)
-        signals.map_received.connect(self.map_dialog.show_map)
-        signals.video_topic_changed.connect(
-            lambda topic: self.video_topic_label.setText(f"Video feed at {topic}")
-        )
-        signals.frame_received.connect(self._on_frame)
+        if with_dialogs:
+            self.map_dialog = MapDialog(self)
+            self.question_dialog = QuestionDialog(self)
+            self.question_dialog.answered.connect(ros_node.publish_answer)
+            ros_node.signals.map_received.connect(self.map_dialog.show_map)
+            ros_node.signals.question_received.connect(self._on_question)
 
-    def _on_start_clicked(self):
-        self.ros_node.publish_button_press()
+    def make_header(self, title: str, extra_left=(), extra_right=()):
+        header = QWidget()
+        layout = QHBoxLayout(header)
+        layout.setContentsMargins(12, 8, 12, 8)
+        title_label = QLabel(title)
+        title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        layout.addWidget(title_label)
+        for widget in extra_left:
+            layout.addWidget(widget)
+        layout.addStretch()
+        for widget in extra_right:
+            layout.addWidget(widget)
+        layout.addWidget(AudioPill(self.ros_node.signals))
+        return header
 
     def _on_audio_state(self, state: str):
         if state in ("thinking", "loading", "listening"):
@@ -406,18 +720,199 @@ class DisplayWindow(QMainWindow):
         else:
             self.question_dialog.hide()
 
-    def _on_task_status(self, active: bool):
-        self.start_button.setEnabled(not active)
-
-    def _on_frame(self, qimg: QImage):
-        pixmap = QPixmap.fromImage(qimg).scaled(
-            self.video_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
-        )
-        self.video_label.setPixmap(pixmap)
-
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        self.audio_overlay.setGeometry(self.centralWidget().rect())
+        self.audio_overlay.setGeometry(self._central.rect())
+
+
+class SplitWindow(BaseWindow):
+    """Messages on the left, start button + video on the right.
+
+    Layout of the default (/), ppc and restaurant pages.
+    """
+
+    def __init__(self, ros_node: DisplayRosNode, title: str):
+        super().__init__(ros_node, title)
+        signals = ros_node.signals
+
+        root = QVBoxLayout(self._central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+        root.addWidget(self.make_header(title))
+        root.addWidget(horizontal_separator())
+
+        content = QHBoxLayout()
+        content.addWidget(MessagesPanel(signals), 1)
+
+        right = QVBoxLayout()
+        right.addWidget(StartButton(ros_node))
+        right.addWidget(VideoView(signals, ros_node.video_topic), 1)
+        content.addLayout(right, 1)
+        root.addLayout(content, 1)
+
+
+class CenteredWindow(BaseWindow):
+    """Start button above a centered video feed (laundry / storing groceries)."""
+
+    def __init__(self, ros_node: DisplayRosNode, title: str):
+        super().__init__(ros_node, title, with_dialogs=False)
+        signals = ros_node.signals
+
+        root = QVBoxLayout(self._central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+        root.addWidget(self.make_header(title))
+        root.addWidget(horizontal_separator())
+
+        body = QVBoxLayout()
+        body.setContentsMargins(24, 24, 24, 24)
+        start = StartButton(ros_node)
+        start.setMaximumWidth(500)
+        body.addWidget(start, 0, Qt.AlignHCenter)
+        body.addWidget(VideoView(signals, ros_node.video_topic), 1)
+        root.addLayout(body, 1)
+
+
+class SteppedWindow(BaseWindow):
+    """Step pill bar + button/camera/logs/both stacked content (gpsr / hric)."""
+
+    MODES = (MODE_BUTTON, MODE_CAMERA, MODE_LOGS, MODE_BOTH)
+
+    def __init__(self, ros_node: DisplayRosNode, title: str, steps, extra_right=()):
+        super().__init__(ros_node, title)
+        signals = ros_node.signals
+        self.steps = steps
+
+        root = QVBoxLayout(self._central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+        root.addWidget(self.make_header(title, extra_right=extra_right))
+        root.addWidget(horizontal_separator())
+
+        self.pill_bar = StepPillBar(steps)
+        root.addWidget(self.pill_bar)
+        root.addWidget(horizontal_separator())
+
+        self.stack = QStackedWidget()
+
+        button_page = QWidget()
+        button_layout = QVBoxLayout(button_page)
+        start = StartButton(ros_node, xl=True)
+        start.setMaximumWidth(500)
+        button_layout.addWidget(start, 0, Qt.AlignCenter)
+        self.stack.addWidget(button_page)
+
+        self.stack.addWidget(VideoView(signals, ros_node.video_topic))
+        self.stack.addWidget(MessagesPanel(signals))
+
+        both_page = QWidget()
+        both_layout = QHBoxLayout(both_page)
+        both_layout.addWidget(MessagesPanel(signals), 1)
+        both_layout.addWidget(VideoView(signals, ros_node.video_topic), 1)
+        self.stack.addWidget(both_page)
+
+        root.addWidget(self.stack, 1)
+        signals.task_step_changed.connect(self._on_task_step)
+        self.set_mode(MODE_BUTTON)
+
+    def set_mode(self, mode: str):
+        self.stack.setCurrentIndex(self.MODES.index(mode))
+
+    def step_index(self, key: str) -> int:
+        for i, (step_key, _label, _icon) in enumerate(self.steps):
+            if step_key == key:
+                return i
+        return -1
+
+    def _on_task_step(self, step: str):
+        raise NotImplementedError
+
+
+class GpsrWindow(SteppedWindow):
+    def __init__(self, ros_node: DisplayRosNode):
+        self.command_badge = CommandBadge()
+        self.command_counter = CommandCounter()
+        super().__init__(
+            ros_node,
+            "\U0001f916 GPSR",
+            GPSR_FSM_STEPS,
+            extra_right=(self.command_badge, self.command_counter),
+        )
+        ros_node.signals.command_index_changed.connect(self.command_counter.set_index)
+
+    def _on_task_step(self, step: str):
+        # gpsr publishes "executing:<command>" while running a parsed command.
+        if step.startswith("executing:"):
+            fsm_state, command = "executing", step[len("executing:") :]
+        else:
+            fsm_state, command = step, None
+
+        self.command_badge.set_command(command)
+        self.pill_bar.set_active_index(self.step_index(fsm_state))
+        self.set_mode(self._display_mode(fsm_state, command))
+
+    @staticmethod
+    def _display_mode(fsm_state: str, command) -> str:
+        if fsm_state in ("waiting_for_button", "wait_button_command"):
+            return MODE_BUTTON
+        if fsm_state == "start":
+            return MODE_CAMERA
+        if fsm_state in (
+            "waiting_for_command",
+            "plan_and_execute_batch",
+            "finished_command",
+            "done",
+        ):
+            return MODE_LOGS
+        if fsm_state == "executing" and command:
+            return GPSR_COMMAND_DISPLAY.get(command, MODE_CAMERA)
+        return MODE_CAMERA
+
+
+class KeyedStepsWindow(SteppedWindow):
+    """Stepped view driven by exact step keys, ignoring unknown ones (hric / laundry)."""
+
+    def __init__(self, ros_node: DisplayRosNode, title: str, steps_with_modes):
+        self._modes = {key: mode for key, _l, _i, mode in steps_with_modes}
+        steps = [(key, label, icon) for key, label, icon, _mode in steps_with_modes]
+        super().__init__(ros_node, title, steps)
+
+    def _on_task_step(self, step: str):
+        if step not in self._modes:
+            return  # only accept valid step keys, like the web page
+        self.pill_bar.set_active_index(self.step_index(step))
+        self.set_mode(self._modes[step])
+
+
+class PpcWindow(SteppedWindow):
+    """PPC groups many FSM states into macro pill steps via PPC_STEP_KEYS."""
+
+    def __init__(self, ros_node: DisplayRosNode):
+        self._modes = {key: mode for key, _l, _i, mode in PPC_TASK_STEPS}
+        steps = [(key, label, icon) for key, label, icon, _mode in PPC_TASK_STEPS]
+        super().__init__(ros_node, "\U0001f4ac Pick and Place Challenge", steps)
+
+    def _on_task_step(self, step: str):
+        key = PPC_STEP_KEYS.get(step, "wait_for_button")
+        self.pill_bar.set_active_index(self.step_index(key))
+        self.set_mode(self._modes[key])
+
+
+TASK_WINDOWS = {
+    "default": lambda node: SplitWindow(node, "\U0001f4ac ROS2 Messages"),
+    "gpsr": GpsrWindow,
+    "hric": lambda node: KeyedStepsWindow(
+        node, "\U0001f4ac HRI Challenge", HRIC_TASK_STEPS
+    ),
+    "laundry": lambda node: KeyedStepsWindow(
+        node, "\U0001f9fa Doing Laundry", LAUNDRY_TASK_STEPS
+    ),
+    "ppc": PpcWindow,
+    "restaurant": lambda node: SplitWindow(node, "\U0001f4ac Restaurant Task"),
+    "storing_groceries": lambda node: CenteredWindow(
+        node, "\U0001f4ac Storing Groceries"
+    ),
+}
 
 
 def main():
@@ -431,7 +926,15 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Display UI")
     app.setStyleSheet(STYLESHEET)
-    window = DisplayWindow(ros_node)
+
+    factory = TASK_WINDOWS.get(ros_node.task)
+    if factory is None:
+        ros_node.get_logger().warn(
+            f"Unknown task '{ros_node.task}', falling back to default view. "
+            f"Valid tasks: {', '.join(TASK_WINDOWS)}"
+        )
+        factory = TASK_WINDOWS["default"]
+    window = factory(ros_node)
     window.show()
 
     ret = app.exec_()
