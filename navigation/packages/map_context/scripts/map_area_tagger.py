@@ -59,13 +59,13 @@ ROBOCUP_TASKS = {
         "inspection_point": ["safe_place"],
         "exit": ["safe_place"],
         "entrance": ["safe_place"],
-        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trash"],
-        "bedroom": ["safe_place", "bed"],
+        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trashbin"],
+        "bedroom": ["safe_place", "bed", "bedside_table", "coat_rack"],
         "living_room": ["safe_place", "tv_stand", "sofa", "coffee_table"],
-        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "trash", "dinner_table"],
+        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "trashbin", "dinner_table"],
     },
     "1. Pick and Place": {
-        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "kitchen_trash_bin", "dinner_table"]
+        "kitchen": ["safe_place", "cabinet", "refrigerator", "counter", "sink", "cooking_table", "dishwasher", "trashbin", "dinner_table"]
     },
     "2. Human Robot Interaction": {
         "living_room": ["safe_place", "tv_stand", "sofa", "coffee_table"],
@@ -73,7 +73,7 @@ ROBOCUP_TASKS = {
     },
     "3.Doing Laundry": {
         "start_location": ["safe_place"],
-        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trash"],
+        "laundry": ["safe_place", "table", "washing_machine", "shelf", "trashbin"],
     },
 }
 

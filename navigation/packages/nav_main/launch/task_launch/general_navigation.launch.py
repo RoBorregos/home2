@@ -14,10 +14,16 @@ def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
+    # --- LIMP 3-WHEEL MODE (rear-left ODrive / node 33 dead) -----------------
+    # The omnibase Nav2 defaults to the crawl-speed limp profile while the base
+    # runs on 3 wheels. Override at runtime with nav2_omni_config_file:=/path.yaml,
+    # or revert this default to 'nav2_omni.yaml' once the ODrive is replaced.
+    nav2_omni_limp_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
+    nav2_omni_params = LaunchConfiguration('nav2_omni_config_file', default=nav2_omni_limp_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
@@ -142,6 +148,7 @@ def launch_function(context, *args, **kwargs):
         ),
         launch_arguments={
             'nav2': nav2_activate,
+            'nav2_config_file': nav2_omni_params,
             'use_keepout': use_keepout,
             'keepout_mask': keepout_mask,
             'use_static_map_server': use_static_map,
@@ -163,15 +170,32 @@ def launch_function(context, *args, **kwargs):
     # GoalUpdater and switches nav2 between the standard/follow param sets when
     # nav_central calls /navigation/set_follow_mode. Idle until follow is requested,
     # so it is safe to run for every task (gpsr/ppc/dlc/hric).
+    #
+    # The smoother must switch between the SAME standard config Nav2 was launched
+    # with and its matching "<name>_following.yaml" overlay — otherwise leaving
+    # follow mode would restore nav2_omni.yaml speeds onto the limp profile.
+    smoother_params = {'default_base': default_base}
+    if default_base_value == 'omnibase':
+        nav2_omni_params_value = nav2_omni_params.perform(context)
+        follow_params_value = nav2_omni_params_value.replace('.yaml', '_following.yaml')
+        if not os.path.exists(follow_params_value):
+            print(f"[general_navigation] WARNING: follow overlay '{follow_params_value}' "
+                  f"not found; person_goal_smoother falls back to nav2_omni_following.yaml")
+            follow_params_value = os.path.join(
+                pkg_file_route, 'config', 'omni_config', 'nav2_omni_following.yaml')
+        print(f"[general_navigation] follow-mode config pair -> "
+              f"standard={os.path.basename(nav2_omni_params_value)}, "
+              f"follow={os.path.basename(follow_params_value)}")
+        smoother_params['standard_config_file'] = nav2_omni_params_value
+        smoother_params['follow_config_file'] = follow_params_value
+
     person_goal_smoother_node = Node(
         package='nav_main',
         executable='person_goal_smoother.py',
         name='person_goal_smoother',
         output='screen',
         emulate_tty=True,
-        parameters=[{
-            'default_base': default_base,
-        }],
+        parameters=[smoother_params],
     )
 
     launch_actions = [
@@ -187,6 +211,8 @@ def launch_function(context, *args, **kwargs):
         launch_actions.append(omni_basics)
         if nav_type_value == '2d':
             launch_actions.append(omni_localization)
+        print(f"[general_navigation] omnibase Nav2 config -> "
+              f"{nav2_omni_params.perform(context)}")
         launch_actions.append(nav2_omni)
         launch_actions.append(table_docker)
 

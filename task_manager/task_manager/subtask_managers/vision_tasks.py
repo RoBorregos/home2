@@ -17,6 +17,7 @@ from frida_constants.vision_constants import (
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    COUNT_BY_PERSON_TOPIC,
     COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
@@ -42,6 +43,7 @@ from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
+    CountBy,
     CountByColor,
     CountByPose,
     CropQuery,
@@ -138,6 +140,7 @@ class VisionTasks:
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
+        self.count_person_client = self.node.create_client(CountBy, COUNT_BY_PERSON_TOPIC)
 
         self.count_by_gesture_client = self.node.create_client(CountByPose, COUNT_BY_GESTURE_TOPIC)
 
@@ -191,6 +194,10 @@ class VisionTasks:
                 },
                 "read_qr_client": {
                     "client": self.read_qr_client,
+                    "type": "service",
+                },
+                "count_person": {
+                    "client": self.count_person_client,
                     "type": "service",
                 },
                 "count_by_gesture": {
@@ -814,6 +821,31 @@ class VisionTasks:
             return Status.EXECUTION_ERROR, 300
 
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
+        return Status.EXECUTION_SUCCESS, result.count
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @service_check("count_person_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    def count_person(self) -> tuple[int, int]:
+        """Count ALL people currently in frame (no pose/gesture/clothes filter)."""
+
+        Logger.info(self.node, "Counting people in frame")
+        request = CountBy.Request()
+        request.request = True
+
+        try:
+            future = self.count_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "Count person service failed")
+                return Status.TARGET_NOT_FOUND, 300
+
+        except Exception as e:
+            Logger.error(self.node, f"Error counting people: {e}")
+            return Status.EXECUTION_ERROR, 300
+
+        Logger.success(self.node, f"People counted: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))

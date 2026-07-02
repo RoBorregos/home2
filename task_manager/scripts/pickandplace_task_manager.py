@@ -7,7 +7,6 @@ Strategy: maximize pick+place score in 7 minutes.
 - Cleanup phase: up to max_cleanup_objects from dining table, sorted by pick reliability.
 - Breakfast phase: bowl, cereal, milk, spoon placed on dining table with pour for cereal/milk.
 - Plates are skipped (GPD cannot grasp flat objects).
-- Dishwasher support controlled by use_dishwasher flag.
 - Cabinet shelf placement uses an HRI categorize_objects call to match categories.
 """
 
@@ -34,7 +33,7 @@ from task_manager.utils.status import Status
 from task_manager.utils.shelf_pick_logic import find_target_on_level, load_shelf_levels
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-ATTEMPT_LIMIT = 3
+ATTEMPT_LIMIT = 2
 
 # Stacking detection for pick ordering: object A sits on object B when A's
 # base_link Z is at least STACK_Z_MIN above B's and their XY are within
@@ -43,6 +42,11 @@ STACK_Z_MIN = 0.03
 STACK_XY_MAX = 0.12
 
 SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
+
+# Stand-off (m) when docking at the dishwasher and cooking_table (dishwasher-tab zone). Their front
+# sits closer than a normal table, so docking flush bumps the base into them; a small offset stops
+# the base short. Larger = shorter approach (stops further back). Tune on the robot.
+DISHWASHER_DOCK_OFFSET = 0.32
 
 
 class ObjectCategory(Enum):
@@ -56,15 +60,18 @@ class ObjectCategory(Enum):
 
 
 class Location(Enum):
-    """Known furniture locations in the arena"""
+    """Known furniture locations in the Incheon 2026 kitchen (PPC test location)."""
 
-    DINING_TABLE = "dining_table"
-    SIDE_TABLE = "side_table"
-    DISHWASHER = "dishwasher"
-    CABINET = "cabinet"
-    TRASH_BIN = "trash_bin"
+    DINING_TABLE = "dining_table"  # dinner table (16): clean up + set breakfast
+    EXTRA_SURFACE = "extra_surface"  # counter (11): 2 common objects (source, -20/obj)
+    DISHWASHER = (
+        "dishwasher"  # (14): cutlery/plate/cup placed INSIDE; bowl+spoon picked from ON TOP
+    )
+    DISHWASHER_TAB = "dishwasher_tab"  # nav: cooking_table (13): dishwasher tab source
+    CABINET = "cabinet"  # (9, left wall): place "other"; milk + cereal source
+    TRASH_BIN = "trash_bin"  # nav: trash (15): fruits (trash) go here
     BREAKFAST_SURFACE = "breakfast_surface"
-    BREAKFAST_ITEMS = "breakfast_items"
+    BREAKFAST_ITEMS = "breakfast_items"  # nav: dishwasher top — bowl + spoon picked from on top
     KITCHEN = "kitchen"
 
 
@@ -128,23 +135,35 @@ class PickAndPlaceTM(Node):
         # ==========================================================
         # Trash rule: category from objects.json or a specific object name.
         # trash_exceptions excludes logical names from the match.
-        self.trash_category = "drink"
-        self.trash_exceptions: list[str] = ["milk"]
-        self.use_dishwasher = False  # cutlery/tableware → dishwasher
-        self.use_side_table = False  # pick from side table (−20 pts/obj)
+        # Incheon 2026: FRUITS are the announced trash category (P&P map).
+        self.trash_category = "fruit"
+        self.trash_exceptions: list[str] = []  # milk is a drink, never trash; no exceptions needed
+        # use_dishwasher gates the OPEN-the-dishwasher flow. False -> place cutlery/tableware on TOP
+        # of the dishwasher (banks base place pts). True -> ask for help to open + place inside.
+        self.use_dishwasher = False
+        # TEMP: no inside-the-dishwasher place primitive yet. While True, cutlery/plate/cup that are
+        # designated for the dishwasher are instead placed (normal top place) at the dishwasher-tab
+        # zone (cooking_table). Flip to False once the inside-dishwasher place exists.
+        self.place_dishwasher_at_tab = True
+        self.use_extra_surface = False  # pick the 2 common objects from the counter (−20 pts/obj)
         self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
         self.use_vision_confirmation = True  # vision re-look to confirm the pick
         self.max_cleanup_objects = 3  # how many to clean before breakfast
 
-        # YOLO name mapping: logical → detection class (only differences)
+        # YOLO name mapping: logical → detection class (the model's actual labels).
+        # Incheon 2026: the cereal box is detected as blue_cereal_box (the model also has
+        # brown_cereal_box — TODO confirm WHICH at Setup Days); breakfast milk is chocomilk_box.
+        # NOTE: dishes/cutlery (bowl, spoon, cup, red_plate, knife) come from the OLD model in the
+        # combined detector (object_detector_node runs multiple YOLO models). No `fork` label exists
+        # in either model. See docs/task_manager/ppc/time_strategy_2026.md.
         self.yolo_names = {
-            "cereal": "blue_cereal_box",
-            "milk": "yogurt",
+            "cereal": "cornflakes",
+            "milk": "milk",
         }
 
         # Shelf heights in base_link Z: read the calibration JSON (re-measurable at
         # competition via the calibrator), falling back to these calibrated values.
-        self.shelf_level_heights = load_shelf_levels({1: 0.599, 2: 0.946, 3: 1.298})
+        self.shelf_level_heights = load_shelf_levels({1: 0.39, 2: 0.68, 3: 1.05})
         self.default_shelf_height = min(self.shelf_level_heights.values())
 
         # ==========================================================
@@ -163,16 +182,23 @@ class PickAndPlaceTM(Node):
         except Exception:
             self._object_to_category = {}
 
-        # Navigation mapping
+        # Navigation mapping: logical role -> raw kitchen waypoint as named in the arena map
+        # (areas.json), i.e. the LocationsNames furniture. Nav records the literal furniture
+        # names; WE map our roles onto them here. Confirm these strings match areas.json exactly.
+        #   counter -> extra_surface (2 common objects)   cooking_table -> dishwasher tab source
+        #   dinner_table -> dining table                  trash -> kitchen trash bin (fruits)
+        #   dishwasher  -> place cutlery/plate/cup INSIDE; bowl+spoon are picked from ON TOP of it
         self.nav_locations = {
             Location.KITCHEN: ("kitchen", "safe_place"),
-            Location.DINING_TABLE: ("kitchen", "dining_table"),
-            Location.SIDE_TABLE: ("kitchen", "side_table"),
+            Location.DINING_TABLE: ("kitchen", "dinner_table"),
+            Location.EXTRA_SURFACE: ("kitchen", "counter"),
             Location.DISHWASHER: ("kitchen", "dishwasher"),
+            Location.DISHWASHER_TAB: ("kitchen", "cooking_table"),
             Location.CABINET: ("kitchen", "cabinet"),
-            Location.TRASH_BIN: ("kitchen", "trash_bin"),
-            Location.BREAKFAST_SURFACE: ("kitchen", "dining_table"),
-            Location.BREAKFAST_ITEMS: ("kitchen", "breakfast_items"),
+            Location.TRASH_BIN: ("kitchen", "trash"),
+            Location.BREAKFAST_SURFACE: ("kitchen", "dinner_table"),
+            # bowl + spoon are picked from ON TOP of the dishwasher (normal top pick).
+            Location.BREAKFAST_ITEMS: ("kitchen", "dishwasher"),
         }
 
         # Object tracking
@@ -569,10 +595,12 @@ class PickAndPlaceTM(Node):
         if obj.category == ObjectCategory.TRASH:
             return Location.TRASH_BIN
         elif obj.category in (ObjectCategory.CUTLERY, ObjectCategory.TABLEWARE):
-            # Dishwasher not implemented; drop on the side table (no points lost,
-            # lower risk than the shelf). Only "other" objects go on the shelf.
-            return Location.DISHWASHER if self.use_dishwasher else Location.SIDE_TABLE
+            # Designated location is INSIDE the dishwasher. Until that place primitive exists,
+            # place_dishwasher_at_tab routes these to the dishwasher-tab zone (cooking_table) for a
+            # normal top place so the run is testable. Flip the flag off to use the real dishwasher.
+            return Location.DISHWASHER_TAB if self.place_dishwasher_at_tab else Location.DISHWASHER
         else:
+            # "other" objects -> cabinet, grouped with similar items.
             return Location.CABINET
 
     def _get_shelf_height_for_object(self, obj: ObjectInfo) -> float:
@@ -667,9 +695,9 @@ class PickAndPlaceTM(Node):
             )
             self.timeout(5.0)
 
-            if self.use_side_table:
-                CLog.fsm(self, "STATE", "Using side table (common objects).")
-                self.subtask_manager.hri.say("I will clean the side table.", wait=False)
+            if self.use_extra_surface:
+                CLog.fsm(self, "STATE", "Using extra surface (common objects).")
+                self.subtask_manager.hri.say("I will clean the extra surface.", wait=False)
             else:
                 self.subtask_manager.hri.say("I will clean the dining table.", wait=False)
 
@@ -678,7 +706,9 @@ class PickAndPlaceTM(Node):
         # ==================== PERCEIVE TABLE ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.PERCEIVE_TABLE:
             self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_TABLE)
-            table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
+            table_location = (
+                Location.EXTRA_SURFACE if self.use_extra_surface else Location.DINING_TABLE
+            )
             self.navigate_to_location(table_location, say=False)
             self.subtask_manager.nav.dock_table()
             self._docked_at_table = True
@@ -696,7 +726,7 @@ class PickAndPlaceTM(Node):
                     obj_name = self.yolo_to_logical.get(raw_name, raw_name)
                     category = (
                         ObjectCategory.COMMON
-                        if self.use_side_table
+                        if self.use_extra_surface
                         else self.categorize_object(obj_name)
                     )
                     self.detected_objects.append(
@@ -836,7 +866,9 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.PICK_OBJECT:
             self._track_state_change(PickAndPlaceTM.TaskStates.PICK_OBJECT)
 
-            table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
+            table_location = (
+                Location.EXTRA_SURFACE if self.use_extra_surface else Location.DINING_TABLE
+            )
             # Dock once per table visit: skip if perceive or a prior object already
             # docked here; retries reuse it.
             if self.current_attempts == 0 and not self._docked_at_table:
@@ -912,8 +944,11 @@ class PickAndPlaceTM(Node):
 
             if (
                 self.grasped_object.placement_location == Location.DISHWASHER
+                and self.use_dishwasher
                 and not self.dishwasher_open
             ):
+                # Only run the open-the-dishwasher flow when explicitly enabled; otherwise
+                # place on top of the dishwasher (default).
                 self.current_state = PickAndPlaceTM.TaskStates.CHECK_DISHWASHER
             else:
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
@@ -967,8 +1002,12 @@ class PickAndPlaceTM(Node):
             self._docked_at_table = False  # left the table to place
             placement_loc = self.grasped_object.placement_location
             result = self.navigate_to_location(placement_loc)
-            # Side table is a table -> default dock; cabinet -> stand off ~30 cm.
-            if placement_loc == Location.SIDE_TABLE:
+            # dishwasher / cooking_table -> short approach (they bump if docked flush);
+            # extra surface -> default dock; cabinet -> stand off ~30 cm.
+            # Trash bin uses its own detect-and-drop flow.
+            if placement_loc in (Location.DISHWASHER, Location.DISHWASHER_TAB):
+                self.subtask_manager.nav.dock_table(offset=DISHWASHER_DOCK_OFFSET)
+            elif placement_loc == Location.EXTRA_SURFACE:
                 self.subtask_manager.nav.dock_table()
             elif placement_loc == Location.CABINET:
                 self.subtask_manager.nav.dock_table(offset=0.30)
@@ -1040,7 +1079,7 @@ class PickAndPlaceTM(Node):
 
             # Categorize table objects against shelf contents
             # Only the shelf-bound "other" objects need shelf categorization;
-            # cutlery/tableware go to the side table, trash to the bin.
+            # cutlery/tableware go to the dishwasher, trash to the bin.
             object_names_on_table = [
                 obj.name for obj in self.detected_objects if obj.category == ObjectCategory.OTHER
             ]
@@ -1105,6 +1144,10 @@ class PickAndPlaceTM(Node):
             )
 
             if placement_loc == Location.DISHWASHER:
+                # TODO(dishwasher-inside): cutlery/plate/cup must be placed INSIDE the dishwasher
+                # (open the door — ask for help, 0 pts/0 penalty — then lower into the rack), NOT on
+                # top. place() below is a generic top-place placeholder until the inside-place
+                # primitive exists. The open flow is gated by use_dishwasher (DETERMINE_PLACEMENT).
                 status = self.subtask_manager.manipulation.place()
             elif placement_loc == Location.TRASH_BIN:
                 status = self.subtask_manager.manipulation.place(is_trash=True)
@@ -1274,9 +1317,12 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE)
             item_location = self.current_breakfast_item["location"]
             result = self.navigate_to_location(item_location)
-            # Cabinet -> stand off ~30 cm; table-height surfaces -> default dock.
+            # Cabinet -> stand off ~30 cm; dishwasher top (bowl+spoon source) -> short approach so
+            # the base does not bump it; other table-height surfaces -> default dock.
             if item_location == Location.CABINET:
                 self.subtask_manager.nav.dock_table(offset=0.30)
+            elif item_location == Location.BREAKFAST_ITEMS:
+                self.subtask_manager.nav.dock_table(offset=DISHWASHER_DOCK_OFFSET)
             else:
                 self.subtask_manager.nav.dock_table()
 
