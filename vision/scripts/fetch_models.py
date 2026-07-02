@@ -142,11 +142,21 @@ def warmup(dest: Path):
         load_yolo_trt(str(dest / name), task=task)
 
     try:
+        import numpy as np
         from insightface.app import FaceAnalysis
 
         print("[warmup] preparing insightface buffalo_sc ...")
         app = FaceAnalysis(name="buffalo_sc")
         app.prepare(ctx_id=0, det_size=(640, 640))
+        # prepare() only creates the sessions — the onnxruntime-TRT engines
+        # compile on FIRST INFERENCE (~8 min stall on the Orin, during which
+        # face_recognition_node never becomes Ready). Force the builds now.
+        print("[warmup] building face TRT engines (first time can take ~10 min) ...")
+        app.get(np.zeros((640, 640, 3), dtype=np.uint8))
+        rec = app.models.get("recognition")
+        if rec is not None:
+            rec.get_feat(np.zeros((112, 112, 3), dtype=np.uint8))
+        print("[warmup] insightface engines ready")
     except Exception as e:
         print(f"[warmup] insightface skipped: {e}")
 

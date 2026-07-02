@@ -47,6 +47,10 @@ package_share_dir = get_package_share_directory("vision_general")
 LEFT_WRIST_IDX = 9
 RIGHT_WRIST_IDX = 10
 KP_CONF = 0.3
+# Wrist selection: reject deprojected points closer than this (invalid depth),
+# and treat wrists within this depth difference as a tie (pick the higher one).
+HAND_MIN_DEPTH = 0.15
+HAND_DEPTH_TIE_M = 0.15
 
 
 def _load_yolo_pose(model_name="yolo11m-pose.pt"):
@@ -185,8 +189,9 @@ class HRICCommands(Node):
         if self.image is None:
             return
 
-        h, w = self.image.shape[:2]
-        results = self.pose_model(self.image, verbose=False)
+        frame = self.image
+        h, w = frame.shape[:2]
+        results = self.pose_model(frame, verbose=False)
 
         if (
             not results
@@ -197,47 +202,43 @@ class HRICCommands(Node):
             self.get_logger().info("No hand detected")
             return None
 
-        points = results[0].keypoints.xy[0].cpu().numpy()  # pixel coords
+        if self.depth_image is None or self.camera_info is None:
+            self.get_logger().warn("Depth image or camera info not available")
+            return None
+
+        # The guest interacting with the robot is the LARGEST person in frame,
+        # not whichever detection the network happens to list first.
+        person_idx = 0
+        boxes = results[0].boxes
+        if boxes is not None and len(boxes) > 1:
+            xyxy = boxes.xyxy.cpu().numpy()
+            areas = (xyxy[:, 2] - xyxy[:, 0]) * (xyxy[:, 3] - xyxy[:, 1])
+            person_idx = int(areas.argmax())
+
+        points = results[0].keypoints.xy[person_idx].cpu().numpy()  # pixel coords
         conf = (
-            results[0].keypoints.conf[0].cpu().numpy()
+            results[0].keypoints.conf[person_idx].cpu().numpy()
             if results[0].keypoints.conf is not None
             else np.ones(17, dtype=np.float32)
         )
 
-        # Pick the most confident wrist as the hand position
-        best_wrist = None
-        best_conf = 0.0
-        for idx in [LEFT_WRIST_IDX, RIGHT_WRIST_IDX]:
-            if conf[idx] > best_conf and conf[idx] > KP_CONF:
-                best_conf = conf[idx]
-                best_wrist = idx
+        # Candidate wrists: confident enough and inside the image.
+        candidates = []
+        for idx in (LEFT_WRIST_IDX, RIGHT_WRIST_IDX):
+            cx, cy = int(points[idx][0]), int(points[idx][1])
+            if conf[idx] > KP_CONF and 0 <= cx < w and 0 <= cy < h:
+                candidates.append((cx, cy))
 
-        if best_wrist is None:
+        if not candidates:
             self.get_logger().info("No hand detected")
             return None
 
-        cx = int(points[best_wrist][0])
-        cy = int(points[best_wrist][1])
-
-        if not (0 <= cx < w and 0 <= cy < h):
-            self.get_logger().warn(f"Wrist outside image: ({cx}, {cy})")
-            return None
-
-        # Annotate for the display (TAKE_BAG shows IMAGE_TOPIC_HRIC)
-        annotated = self.image.copy()
-        cv2.circle(annotated, (cx, cy), 10, (0, 255, 0), 3)
-        cv2.putText(
-            annotated,
-            f"hand {best_conf:.2f}",
-            (cx + 14, cy - 14),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 255, 0),
-            2,
-        )
-        self.output_image = annotated
-
-        if self.depth_image is not None and self.camera_info is not None:
+        # The extended (bag) hand is the wrist NEAREST the robot. Deproject
+        # every candidate and keep only valid 3D points — never pick by
+        # keypoint confidence: a relaxed hanging hand often scores higher
+        # than the extended one.
+        valid = []  # (dist, cy, cx, stamped)
+        for cx, cy in candidates:
             stamped = point2d_to_ros_point_stamped(
                 self.camera_info,
                 self.depth_image,
@@ -246,10 +247,45 @@ class HRICCommands(Node):
                 Time(sec=0, nanosec=0),
                 rotation=self.rotation,
             )
-            return stamped
-        else:
-            self.get_logger().warn("Depth image or camera info not available")
+            p = stamped.point
+            dist = float(np.sqrt(p.x**2 + p.y**2 + p.z**2))
+            if np.isfinite(dist) and dist > HAND_MIN_DEPTH:
+                valid.append((dist, cy, cx, stamped))
+
+        annotated = frame.copy()
+        for cx, cy in candidates:
+            cv2.circle(annotated, (cx, cy), 8, (160, 160, 160), 2)
+
+        if not valid:
+            # A depth-invalid point would send the arm toward the camera
+            # origin — report no hand and let the task retry.
+            self.output_image = annotated
+            self.get_logger().warn(
+                "Wrist depth invalid for all candidates; no hand point"
+            )
             return None
+
+        valid.sort()
+        chosen = valid[0]
+        if len(valid) > 1 and valid[1][0] - valid[0][0] < HAND_DEPTH_TIE_M:
+            # Depths are too close to discriminate (nobody clearly extending a
+            # hand forward) — take the HIGHER wrist (raised hand; image y is
+            # smaller upward).
+            chosen = min(valid, key=lambda c: c[1])
+
+        dist, cy, cx, stamped = chosen
+        cv2.circle(annotated, (cx, cy), 10, (0, 255, 0), 3)
+        cv2.putText(
+            annotated,
+            f"hand {dist:.2f}m",
+            (cx + 14, cy - 14),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 0),
+            2,
+        )
+        self.output_image = annotated
+        return stamped
 
     def detect_hand_callback(self, request, response):
         hand_point = self.run_hand_inference()
