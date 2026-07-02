@@ -22,6 +22,7 @@ from frida_constants.manipulation_constants import (
     POUR_OBJECT_NAMES,
     RIM_NAMES,
     PEAK_NAMES,
+    HANDLE_NAMES,
     BOWL_NAME,
 )
 from typing import Tuple
@@ -65,6 +66,11 @@ FLAT_GRASP_Z_TWEAK = 0.076
 # Max time to wait for the flat_grasp_estimator service to respond (seconds)
 FLAT_GRASP_TIMEOUT = 5.0
 
+# Handle estimation is slower (one Moondream query + depth snapshots)
+HANDLE_GRASP_TIMEOUT = 20.0
+# Handle pick motion is slower (two mode-5 switches + slow MoveIt moves)
+HANDLE_PICK_MOTION_TIMEOUT = 120.0
+
 
 def is_cutlery(object_name: str) -> bool:
     if object_name is None:
@@ -97,6 +103,13 @@ def is_pour_object(object_name: str) -> bool:
     if object_name is None:
         return False
     return object_name.lower() in POUR_OBJECT_NAMES
+
+
+def is_handle(object_name: str) -> bool:
+    """Door handles: horizontal grasp + lever-down + pull ajar (open door)."""
+    if object_name is None:
+        return False
+    return object_name.lower() in HANDLE_NAMES
 
 
 class PickManager:
@@ -161,11 +174,19 @@ class PickManager:
 
         is_rim_object = is_rim(object_name)
         is_peak_object = is_peak(object_name)
-        is_flat_object = is_flat_grasp(object_name) or is_rim_object or is_peak_object
+        is_handle_object = is_handle(object_name)
+        is_flat_object = (
+            is_flat_grasp(object_name)
+            or is_rim_object
+            or is_peak_object
+            or is_handle_object
+        )
         is_bowl_object = object_name.lower() == BOWL_NAME
 
         if not pick_params.in_configuration:
-            if (is_rim_object or is_peak_object) and not is_bowl_object:
+            if is_handle_object:
+                stare_position = "front_stare"
+            elif (is_rim_object or is_peak_object) and not is_bowl_object:
                 stare_position = "look_side_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
@@ -192,8 +213,11 @@ class PickManager:
             request = EstimateFlatGrasp.Request()
             request.object_name = object_name
             request.num_samples = 0  # let the estimator use its default
+            estimator_timeout = (
+                HANDLE_GRASP_TIMEOUT if is_handle_object else FLAT_GRASP_TIMEOUT + 3.0
+            )
             future = self._estimate_flat_grasp_client.call_async(request)
-            future = wait_for_future(future, timeout=FLAT_GRASP_TIMEOUT + 3.0)
+            future = wait_for_future(future, timeout=estimator_timeout)
             response = future.result() if future else None
 
             if response is None or not response.success:
@@ -203,9 +227,13 @@ class PickManager:
                 )
                 return False, None
 
-            # Rim/Peak: pose Z as-is (pick_server applies its own offset).
+            # Rim/Peak/Handle: pose Z as-is (their servers/estimators own the tuning).
             # Flat: apply the table-tuned FLAT_GRASP_Z_TWEAK here.
-            z_tweak = 0.0 if (is_rim_object or is_peak_object) else FLAT_GRASP_Z_TWEAK
+            z_tweak = (
+                0.0
+                if (is_rim_object or is_peak_object or is_handle_object)
+                else FLAT_GRASP_Z_TWEAK
+            )
             grasp_pose = response.pose
             grasp_pose.pose.position.z += z_tweak
             self.node.get_logger().info(
@@ -312,7 +340,10 @@ class PickManager:
                 "Sending Pick Motion goal (flat grasp estimator)..."
             )
             future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-            future = wait_for_future(future, timeout=30)
+            future = wait_for_future(
+                future,
+                timeout=HANDLE_PICK_MOTION_TIMEOUT if is_handle_object else 30,
+            )
 
             if future:
                 pick_result = future.result().get_result().result
@@ -456,6 +487,23 @@ class PickManager:
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
             return False, None
+
+        if is_handle_object:
+            # pick_server's handle branch already released the handle with the
+            # door ajar; just retract to a safe named configuration.
+            self.node.get_logger().info(
+                "Handle pick: door ajar, returning to front_stare"
+            )
+            self.node.clear_octomap()
+            for _ in range(5):
+                if send_joint_goal(
+                    move_joints_action_client=self.node._move_joints_client,
+                    named_position="front_stare",
+                    velocity=0.5,
+                ):
+                    break
+            self.node.get_logger().info("Open door task completed successfully")
+            return True, pick_result.pick_result
 
         # close gripper
         gripper_request = SetBool.Request()

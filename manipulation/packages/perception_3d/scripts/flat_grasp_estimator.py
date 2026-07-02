@@ -22,17 +22,19 @@ from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
+    MOONDREAM_DETECTION_TOPIC,
 )
 from frida_constants.manipulation_constants import (
     RIM_NAMES,
     FLAT_OBJECT_NAMES,
     PEAK_NAMES,
+    HANDLE_NAMES,
     TRASH_BIN_NAME,
     PLACE_TRASH_HEIGHT_OFFSET,
 )
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
-from frida_interfaces.srv import EstimateFlatGrasp
+from frida_interfaces.srv import EstimateFlatGrasp, MoondreamDetection
 
 # Fixed offset above table surface for grasp contact point (meters)
 GRASP_SURFACE_OFFSET = 0.003
@@ -66,6 +68,18 @@ PEAK_MIN_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
 # Fraction of the bbox height (from the top) kept to estimate the bin center.
 TRASH_TOP_BBOX_FRACTION = 0.5
 
+# --- Handle (door lever) grasp estimation ---
+# Horizontal-approach grasp on a lever handle: the bbox comes from a single
+# Moondream open-vocabulary query (too slow for the per-frame YOLO loop).
+HANDLE_DETECT_PROMPT = "door handle"  # Moondream subject
+HANDLE_DETECT_TIMEOUT = 12.0  # s - Moondream is ~1-3 s per query
+HANDLE_DEPTH_SAMPLES = 5  # depth frames to median for stability
+HANDLE_DEPTH_TIMEOUT = 3.0  # s - max wait to collect the depth samples
+HANDLE_PROTRUSION_MIN = 0.02  # m closer than the door plane to count as handle
+HANDLE_PROTRUSION_MAX = 0.12  # m - reject spurious near returns
+HANDLE_BAR_MAX_TILT_DEG = 30.0  # PCA long axis must be near-horizontal, else fallback
+HANDLE_GRASP_Z_TWEAK = 0.0  # m fine height tuning (analog of FLAT_GRASP_Z_TWEAK)
+
 # --- Service collection ---
 FLAT_GRASP_DEFAULT_SAMPLES = 10  # frames to median when the caller passes <= 0
 FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
@@ -90,6 +104,7 @@ class FlatGraspEstimator(Node):
         self.target_classes = [n.lower() for n in FLAT_OBJECT_NAMES]
         self.rim_classes = [n.lower() for n in RIM_NAMES]
         self.peak_classes = [n.lower() for n in PEAK_NAMES]
+        self.handle_classes = [n.lower() for n in HANDLE_NAMES]
         self.trash_classes = [TRASH_BIN_NAME.lower()]
 
         # Collection state. The node only does the heavy per-frame work while a
@@ -137,6 +152,15 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/trash_place_pose", 10
         )
 
+        self.handle_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/handle_grasp_pose", 10
+        )
+
+        # Handle bboxes come from Moondream (open vocabulary), not the YOLO stream.
+        self._moondream_detect_client = self.create_client(
+            MoondreamDetection, MOONDREAM_DETECTION_TOPIC, callback_group=cb_group
+        )
+
         self.estimate_srv = self.create_service(
             EstimateFlatGrasp,
             "/manipulation/estimate_flat_grasp",
@@ -154,21 +178,28 @@ class FlatGraspEstimator(Node):
         label = request.object_name.lower()
         is_peak = label in self.peak_classes
         is_trash = label in self.trash_classes
+        is_handle = label in self.handle_classes
         if (
             label not in self.target_classes
             and label not in self.rim_classes
             and not is_peak
             and not is_trash
+            and not is_handle
         ):
             response.success = False
             response.message = (
-                f"'{request.object_name}' is not a flat/rim/peak/trash object"
+                f"'{request.object_name}' is not a flat/rim/peak/trash/handle object"
             )
             return response
         if self.intrinsics is None:
             response.success = False
             response.message = "camera intrinsics not received yet"
             return response
+
+        # Handles bypass the per-frame YOLO collection loop: a single Moondream
+        # query provides the bbox, then a few depth frames are snapshotted.
+        if is_handle:
+            return self._estimate_handle_grasp(request, response)
 
         n = (
             request.num_samples
@@ -207,6 +238,79 @@ class FlatGraspEstimator(Node):
         response.success = True
         response.samples_collected = len(samples)
         response.message = f"averaged {len(samples)} samples"
+        return response
+
+    def _estimate_handle_grasp(self, request, response):
+        """Handle mode: one Moondream bbox + a few depth frames -> a single
+        horizontal-approach grasp pose on the handle bar."""
+        if not self._moondream_detect_client.wait_for_service(timeout_sec=2.0):
+            response.success = False
+            response.message = "moondream detect service unavailable"
+            return response
+
+        det_req = MoondreamDetection.Request()
+        det_req.subject = HANDLE_DETECT_PROMPT
+        future = self._moondream_detect_client.call_async(det_req)
+        deadline = time.time() + HANDLE_DETECT_TIMEOUT
+        while time.time() < deadline and not future.done():
+            time.sleep(0.05)
+        det_resp = future.result() if future.done() else None
+        if det_resp is None or not det_resp.success or not det_resp.detections:
+            response.success = False
+            response.message = (
+                f"moondream found no '{HANDLE_DETECT_PROMPT}' "
+                f"within {HANDLE_DETECT_TIMEOUT}s"
+            )
+            return response
+
+        # Largest-area bbox wins when several handles are visible.
+        detection = max(
+            det_resp.detections,
+            key=lambda d: max(0.0, d.xmax - d.xmin) * max(0.0, d.ymax - d.ymin),
+        )
+
+        n = request.num_samples if request.num_samples > 0 else HANDLE_DEPTH_SAMPLES
+
+        # Reactivate depth_callback only: with no target label set, the YOLO
+        # detections_callback matches nothing while we snapshot depth frames.
+        self._samples = []
+        self._target_label = None
+        self._peak_mode = False
+        self._trash_mode = False
+        self.latest_depth = None
+        self._collecting = True
+        try:
+            deadline = time.time() + HANDLE_DEPTH_TIMEOUT
+            while time.time() < deadline and len(self._samples) < n:
+                if self.latest_depth is None:
+                    time.sleep(0.02)
+                    continue
+                pose = self.process_handle_object(detection)
+                self.latest_depth = None  # force a fresh frame per sample
+                if pose is not None:
+                    self._samples.append(pose)
+                    self.handle_pose_pub.publish(pose)  # debug viz
+        finally:
+            self._collecting = False
+
+        samples = list(self._samples)
+        self.get_logger().info(
+            f"Collected {len(samples)} handle grasp samples for "
+            f"'{request.object_name}'"
+        )
+        if not samples:
+            response.success = False
+            response.message = f"no handle grasp samples within {HANDLE_DEPTH_TIMEOUT}s"
+            return response
+
+        pose = copy.deepcopy(samples[-1])  # latest orientation
+        pose.pose.position.x = float(np.median([s.pose.position.x for s in samples]))
+        pose.pose.position.y = float(np.median([s.pose.position.y for s in samples]))
+        pose.pose.position.z = float(np.median([s.pose.position.z for s in samples]))
+        response.pose = pose
+        response.success = True
+        response.samples_collected = len(samples)
+        response.message = f"averaged {len(samples)} handle samples"
         return response
 
     def depth_callback(self, msg):
@@ -658,6 +762,93 @@ class FlatGraspEstimator(Node):
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
         return self._make_grasp_pose(center_x, center_y, place_z, new_quat)
+
+    def process_handle_object(self, detection: ObjectDetection):
+        """Horizontal-approach grasp on a door lever handle: approach axis
+        points from the robot base at the door, fingers close vertically over
+        the (near-horizontal) handle bar."""
+        bbox = self._parse_bbox(detection)
+        if bbox is None:
+            return
+        xmin, ymin, xmax, ymax = bbox
+
+        roi_depth = self.latest_depth[ymin:ymax, xmin:xmax]
+        valid_mask = (roi_depth > 0) & (~np.isnan(roi_depth))
+        valid_roi = roi_depth[valid_mask]
+        if len(valid_roi) < MIN_POINTS_FOR_PCA:
+            return
+
+        # Door plane depth: the door fills the bbox background (same trick as
+        # the table in process_flat_object); the handle protrudes toward us.
+        door_z_cam = np.percentile(valid_roi, 85)
+        handle_mask = (
+            valid_mask
+            & (roi_depth < door_z_cam - HANDLE_PROTRUSION_MIN)
+            & (roi_depth > door_z_cam - HANDLE_PROTRUSION_MAX)
+        )
+        labeled, num = ndi.label(handle_mask)
+        if num == 0:
+            return
+        largest = int(np.argmax(np.bincount(labeled.ravel())[1:])) + 1
+        v_local, u_local = np.where(labeled == largest)
+        if len(v_local) < MIN_POINTS_FOR_PCA:
+            return
+
+        points_3d_cam = self._deproject_pixels(
+            u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
+        )
+
+        T_mat = self._lookup_T_cam_to_base()
+        if T_mat is None:
+            return
+        points_base = self._apply_transform(points_3d_cam, T_mat)
+        if points_base is None:
+            return
+
+        # Bar center: median is robust to specular depth holes on metal.
+        hx = float(np.median(points_base[:, 0]))
+        hy = float(np.median(points_base[:, 1]))
+        hz = float(np.median(points_base[:, 2]))
+
+        # --- APPROACH AXIS: horizontal base->handle ray. The robot docks
+        # facing the door, so this approximates the door normal. ---
+        approach = np.array([hx, hy, 0.0])
+        approach_norm = np.linalg.norm(approach)
+        if approach_norm < 1e-6:
+            return
+        approach = approach / approach_norm
+
+        # --- BAR DIRECTION via PCA in the door plane (tangent, up) basis ---
+        z_up = np.array([0.0, 0.0, 1.0])
+        tangent = np.cross(z_up, approach)
+        tangent = tangent / np.linalg.norm(tangent)
+        centered = points_base - np.array([hx, hy, hz])
+        plane_2d = np.column_stack((centered @ tangent, centered[:, 2]))
+        cov_matrix = np.cov(plane_2d.T)
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
+        elongation_min = self.get_parameter("elongation_min_ratio").value
+        bar_dir = tangent  # fallback: assume a horizontal bar
+        if eigenvalues[0] > 1e-9 and eigenvalues[1] / eigenvalues[0] >= elongation_min:
+            long_axis = eigenvectors[:, 1]  # in (tangent, up) coords
+            tilt = np.degrees(np.arctan2(abs(long_axis[1]), abs(long_axis[0])))
+            if tilt <= HANDLE_BAR_MAX_TILT_DEG:
+                bar_dir = long_axis[0] * tangent + long_axis[1] * z_up
+                bar_dir = bar_dir / np.linalg.norm(bar_dir)
+
+        # --- ORIENTATION: approach horizontally, fingers close over the bar ---
+        Z_grasp = approach
+        X_grasp = bar_dir - (bar_dir @ Z_grasp) * Z_grasp
+        x_norm = np.linalg.norm(X_grasp)
+        if x_norm < 1e-6:
+            return
+        X_grasp = X_grasp / x_norm
+        Y_grasp = np.cross(Z_grasp, X_grasp)
+        if Y_grasp[2] > 0:  # deterministic roll; the alt candidate flips it
+            X_grasp, Y_grasp = -X_grasp, -Y_grasp
+        new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
+        new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
+
+        return self._make_grasp_pose(hx, hy, hz + HANDLE_GRASP_Z_TWEAK, new_quat)
 
 
 def main(args=None):

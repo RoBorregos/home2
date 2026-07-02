@@ -31,6 +31,7 @@ from frida_constants.manipulation_constants import (
     RIM_DESCENT_DISTANCE,
     PEAK_NAMES,
     PEAK_PRE_GRASP_HEIGHT,
+    HANDLE_NAMES,
     FIXED_DISTANCE_MOVE_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
     BOWL_NAME,
@@ -109,6 +110,18 @@ SHELF_RETRACT_DIST = 0.15  # m - fallback retract if the approach depth is unkno
 SHELF_RETRACT_MARGIN = 0.05  # m - extra beyond the measured approach depth
 SHELF_RETRACT_MIN = 0.08  # m - clamp
 SHELF_RETRACT_MAX = 0.20  # m - clamp
+
+# =============================================================================
+# Door-handle pick constants (open door via lever handle; all tunable)
+# =============================================================================
+HANDLE_PRE_GRASP_DISTANCE = 0.12  # m back from the grasp along the horizontal approach
+HANDLE_APPROACH_VELOCITY = 0.1  # MoveIt velocity for the advance & pull moves
+HANDLE_GRIPPER_CLOSE_WAIT = 2.0  # s - thin bar, let the fingers seat
+HANDLE_DESCENT_SPEED = 10.0  # mm/s lever-down
+HANDLE_DESCENT_TIMEOUT = 9.0  # s - hard cap ~0.09 m of lever travel
+HANDLE_MIN_CONTACT_DESCENT = 0.015  # m - lever stop expected at ~0.03-0.06 m
+HANDLE_CONTACT_SETTLE = 0.6  # s - the stop can come earlier than table contact
+HANDLE_RELEASE_RETREAT = 0.10  # m - straight-back disengage after opening gripper
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
@@ -378,12 +391,13 @@ class PickMotionServer(Node):
         is_flat = goal_handle.request.object_name.lower() in FLAT_OBJECT_NAMES
         is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
         is_peak = goal_handle.request.object_name.lower() in PEAK_NAMES
+        is_handle = goal_handle.request.object_name.lower() in HANDLE_NAMES
         is_bowl = goal_handle.request.object_name.lower() == BOWL_NAME
 
         if is_flat:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
-        elif is_rim or is_peak:
+        elif is_rim or is_peak or is_handle:
             # Each grasping_pose is already a distinct candidate;
             # no extra z-offset alternatives needed.
             num_grasping_alternatives = 1
@@ -666,6 +680,154 @@ class PickMotionServer(Node):
                     self.get_logger().info("[Peak] Pick complete!")
                     return True, pick_result
 
+                elif is_handle:
+                    self.get_logger().info(
+                        f"[Handle] Door-handle open flow for pose {i}"
+                    )
+
+                    # z_axis is the horizontal approach axis (unit, robot -> door)
+                    approach = z_axis
+
+                    # Validate the grasp endpoint against the robot itself
+                    if endpoint_self_collides(
+                        self._compute_ik_client,
+                        self._state_validity_client,
+                        ee_link_pose,
+                        latest_joint_state=self._latest_joint_state,
+                        logger=self.get_logger(),
+                    ):
+                        self.get_logger().warn(
+                            f"[Handle] Grasp endpoint self-collides with robot, "
+                            f"skipping pose {i}"
+                        )
+                        continue
+
+                    # Open gripper
+                    self.get_logger().info("[Handle] Opening gripper...")
+                    self._gripper_set_state_client.wait_for_service(timeout_sec=2.0)
+                    open_gripper(self._gripper_set_state_client)
+                    time.sleep(0.5)
+
+                    # Pre-grasp: back off along the horizontal approach axis
+                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                    pre_grasp_position = (
+                        np.array(
+                            [
+                                ee_link_pose.pose.position.x,
+                                ee_link_pose.pose.position.y,
+                                ee_link_pose.pose.position.z,
+                            ]
+                        )
+                        - approach * HANDLE_PRE_GRASP_DISTANCE
+                    )
+                    pre_grasp_pose.pose.position.x = pre_grasp_position[0]
+                    pre_grasp_pose.pose.position.y = pre_grasp_position[1]
+                    pre_grasp_pose.pose.position.z = pre_grasp_position[2]
+
+                    self._clear_octomap()
+
+                    if not self.move_to_pregrasp(pre_grasp_pose, velocity=0.3):
+                        self.get_logger().warn(
+                            f"[Handle] Pre-grasp failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    self.get_logger().info("[Handle] Pre-grasp reached")
+
+                    # Advance to the handle. MoveIt (collision-checked, closed
+                    # loop) instead of a mode-5 open-loop push toward the door.
+                    self._clear_octomap()
+                    _, advance_result = self.move_to_pose(
+                        ee_link_pose, velocity=HANDLE_APPROACH_VELOCITY
+                    )
+                    if not advance_result.result.success:
+                        self.get_logger().warn(
+                            f"[Handle] Advance failed for pose {i}, trying next"
+                        )
+                        continue
+
+                    # Close gripper on the bar
+                    self.get_logger().info("[Handle] Closing gripper on the bar...")
+                    close_gripper(self._gripper_set_state_client)
+                    time.sleep(HANDLE_GRIPPER_CLOSE_WAIT)
+
+                    # Lever-down: force-guarded descent until the handle stop
+                    self.get_logger().info(
+                        "[Handle] Pressing lever (force-guarded descent)..."
+                    )
+                    contact = self.force_guarded_descent(
+                        speed_mm_s=HANDLE_DESCENT_SPEED,
+                        timeout_s=HANDLE_DESCENT_TIMEOUT,
+                        min_contact_descent_m=HANDLE_MIN_CONTACT_DESCENT,
+                        settle_s=HANDLE_CONTACT_SETTLE,
+                    )
+
+                    if not contact:
+                        self.get_logger().warn(
+                            f"[Handle] No lever stop felt for pose {i}; "
+                            "releasing and retreating"
+                        )
+                        open_gripper(self._gripper_set_state_client)
+                        time.sleep(0.5)
+                        self._clear_octomap()
+                        self.move_to_pose(
+                            pre_grasp_pose, velocity=HANDLE_APPROACH_VELOCITY
+                        )
+                        continue
+
+                    # Pull the door ajar: pre-grasp X,Y at the post-descent Z,
+                    # still gripping. Z from the measured descent (same
+                    # reconciliation as the cutlery retract).
+                    post_descent_z = ee_link_pose.pose.position.z - self._last_descent_m
+                    pull_pose = copy.deepcopy(pre_grasp_pose)
+                    pull_pose.pose.position.z = post_descent_z
+                    self.get_logger().info(
+                        f"[Handle] Lever down (~{self._last_descent_m * 1000:.0f}mm). "
+                        "Pulling door ajar..."
+                    )
+                    self._clear_octomap()
+                    _, pull_result = self.move_to_pose(
+                        pull_pose, velocity=HANDLE_APPROACH_VELOCITY
+                    )
+                    if not pull_result.result.success:
+                        self.get_logger().warn(
+                            "[Handle] Pull failed; releasing so we never fight the door"
+                        )
+
+                    # Release + straight-back disengage so the sprung-back
+                    # lever cannot hook the fingers during the return.
+                    self.get_logger().info("[Handle] Releasing handle...")
+                    open_gripper(self._gripper_set_state_client)
+                    time.sleep(0.5)
+
+                    retreat_pose = copy.deepcopy(pull_pose)
+                    retreat_position = (
+                        np.array(
+                            [
+                                pull_pose.pose.position.x,
+                                pull_pose.pose.position.y,
+                                pull_pose.pose.position.z,
+                            ]
+                        )
+                        - approach * HANDLE_RELEASE_RETREAT
+                    )
+                    retreat_pose.pose.position.x = retreat_position[0]
+                    retreat_pose.pose.position.y = retreat_position[1]
+                    retreat_pose.pose.position.z = retreat_position[2]
+                    self._clear_octomap()
+                    self.move_to_pose(retreat_pose, velocity=HANDLE_APPROACH_VELOCITY)
+
+                    if not pull_result.result.success:
+                        continue
+
+                    pick_result.pick_pose = ee_link_pose
+                    pick_result.grasp_score = goal_handle.request.grasping_scores[i]
+                    pick_result.object_pick_height = 0.0
+                    pick_result.object_height = 0.0
+
+                    self.get_logger().info("[Handle] Door ajar!")
+                    return True, pick_result
+
                 else:
                     # Pure GPD reach (simple plan straight to the grasp, what grasped before).
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
@@ -716,11 +878,21 @@ class PickMotionServer(Node):
     # Force-Guarded Descent
     # ==================================================================
 
-    def force_guarded_descent(self) -> bool:
+    def force_guarded_descent(
+        self,
+        speed_mm_s: float = CUTLERY_DESCENT_SPEED,
+        timeout_s: float = CUTLERY_DESCENT_TIMEOUT,
+        min_contact_descent_m: float = CUTLERY_MIN_CONTACT_DESCENT,
+        settle_s: float = CUTLERY_CONTACT_SETTLE,
+        jump_trip_n: float = CUTLERY_JUMP_TRIP,
+        ignore_joints: tuple = CUTLERY_CONTACT_IGNORE_JOINTS,
+    ) -> bool:
         """
         Descend in -Z using xArm mode 5 (cartesian velocity control).
         Single velocity command (persists until zero-vel), monitor effort for contact.
         Grace period ignores transient effort spikes from mode switching.
+        Defaults preserve the cutlery table-contact behavior; the door-handle
+        flow passes shorter, lever-tuned values.
         """
         self.get_logger().info("[ForceGuard] Starting force-guarded descent")
         self._last_descent_m = 0.0  # meters descended when contact/timeout fires
@@ -790,7 +962,7 @@ class PickMotionServer(Node):
                 return False
 
             vel_req = MoveVelocity.Request()
-            vel_req.speeds = [0.0, 0.0, -CUTLERY_DESCENT_SPEED, 0.0, 0.0, 0.0]
+            vel_req.speeds = [0.0, 0.0, -speed_mm_s, 0.0, 0.0, 0.0]
             vel_req.is_tool_coord = False
             vel_req.duration = 0.0
 
@@ -803,7 +975,7 @@ class PickMotionServer(Node):
                 return False
 
             self.get_logger().info(
-                f"[ForceGuard] Descending at {CUTLERY_DESCENT_SPEED:.1f} mm/s "
+                f"[ForceGuard] Descending at {speed_mm_s:.1f} mm/s "
                 f"(threshold={CUTLERY_EFFORT_THRESHOLD}N, grace={CUTLERY_EFFORT_GRACE_PERIOD}s)"
             )
 
@@ -811,7 +983,7 @@ class PickMotionServer(Node):
             effort_hist = deque()  # (timestamp, effort) within JUMP_WINDOW, post-settle
             consecutive = 0
             last_log = 0.0
-            while (time.time() - start_time) < CUTLERY_DESCENT_TIMEOUT:
+            while (time.time() - start_time) < timeout_s:
                 time.sleep(0.02)  # 50Hz
 
                 elapsed = time.time() - start_time
@@ -822,7 +994,7 @@ class PickMotionServer(Node):
                 current_effort = np.array(self._latest_joint_state.effort)
 
                 # Skip the motion-onset transient before any detection.
-                if elapsed < CUTLERY_CONTACT_SETTLE:
+                if elapsed < settle_s:
                     continue
 
                 now = time.time()
@@ -833,10 +1005,10 @@ class PickMotionServer(Node):
                 ):
                     effort_hist.popleft()
 
-                descended = elapsed * CUTLERY_DESCENT_SPEED / 1000.0
+                descended = elapsed * speed_mm_s / 1000.0
                 abs_delta = np.abs(current_effort - effort_baseline)
                 jump_mag = np.abs(current_effort - effort_hist[0][1])
-                for ij in CUTLERY_CONTACT_IGNORE_JOINTS:
+                for ij in ignore_joints:
                     if ij < len(abs_delta):
                         abs_delta[ij] = 0.0
                         jump_mag[ij] = 0.0
@@ -850,13 +1022,11 @@ class PickMotionServer(Node):
                     )
                     last_log = elapsed
 
-                # Real table contact is deep; only honor a trip past the min descent.
-                if descended < CUTLERY_MIN_CONTACT_DESCENT:
+                # Real contact is deep enough; only honor a trip past the min descent.
+                if descended < min_contact_descent_m:
                     continue
 
-                consecutive = (
-                    consecutive + 1 if (jump_mag > CUTLERY_JUMP_TRIP).any() else 0
-                )
+                consecutive = consecutive + 1 if (jump_mag > jump_trip_n).any() else 0
                 hard = float(np.max(abs_delta)) > CUTLERY_CONTACT_HARD_CEILING
                 if consecutive >= CUTLERY_JUMP_SUSTAIN or hard:
                     by_jump = consecutive >= CUTLERY_JUMP_SUSTAIN
@@ -873,10 +1043,10 @@ class PickMotionServer(Node):
 
             if not contact_detected:
                 elapsed = time.time() - start_time
-                self._last_descent_m = elapsed * CUTLERY_DESCENT_SPEED / 1000.0
+                self._last_descent_m = elapsed * speed_mm_s / 1000.0
                 self.get_logger().warn(
                     f"[ForceGuard] Timeout after {elapsed:.1f}s "
-                    f"(~{elapsed * CUTLERY_DESCENT_SPEED:.1f}mm descended)"
+                    f"(~{elapsed * speed_mm_s:.1f}mm descended)"
                 )
 
         except Exception as e:

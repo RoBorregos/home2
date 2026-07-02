@@ -90,6 +90,10 @@ BOWL_PRE_GRASP_HEIGHT = RIM_PRE_GRASP_HEIGHT  # m
 BOWL_DESCENT_DISTANCE = 0.08  # m fingers ~3 cm below the rim top
 BOWL_GRASP_Z_TWEAK = BOWL_PRE_GRASP_HEIGHT - BOWL_DESCENT_DISTANCE
 
+# Door-handle pick (open door via handle). Deliberately no bare "handle":
+# the zero-shot detector uses that class for bag handles.
+HANDLE_NAMES = ["handlegrip", "door_handle"]
+
 # Peak pick
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 PEAK_PRE_GRASP_HEIGHT = 0.15  # m
