@@ -161,9 +161,10 @@ class VisionTasks:
                     "type": "service",
                 },
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
-                "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
                 "detect_hand": {"client": self.detect_hand_client, "type": "service"},
+                # FOLLOW_PERSON depends on the tracker's SET_TARGET service
+                "track_person": {"client": self.track_person_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},

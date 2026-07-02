@@ -8,7 +8,11 @@ import time
 from datetime import datetime
 
 import rclpy
-from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_HRIC
+from frida_constants.vision_constants import (
+    FACE_RECOGNITION_IMAGE,
+    IMAGE_TOPIC_HRIC,
+    TRACKER_IMAGE_TOPIC,
+)
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -330,6 +334,8 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
             self.subtask_manager.vision.deactivate_face_recognition()
+            # Show the hand detection (annotated by hric_commands) on the display
+            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
             if self.current_attempts == 0:
                 self.subtask_manager.hri.say(
                     "I see you brought a bag for the host. Let me take care of it for you.",
@@ -490,6 +496,8 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.FOLLOW_PERSON:
             self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
             self.subtask_manager.vision.deactivate_face_recognition()
+            # Show the tracker's annotated feed (tracked person bbox) while following
+            self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
             self._move_arm_cleared(
                 "front_stare_carry_bag" if self.carrying_bag else "front_low_stare"
             )

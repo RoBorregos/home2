@@ -223,6 +223,20 @@ class HRICCommands(Node):
             self.get_logger().warn(f"Wrist outside image: ({cx}, {cy})")
             return None
 
+        # Annotate for the display (TAKE_BAG shows IMAGE_TOPIC_HRIC)
+        annotated = self.image.copy()
+        cv2.circle(annotated, (cx, cy), 10, (0, 255, 0), 3)
+        cv2.putText(
+            annotated,
+            f"hand {best_conf:.2f}",
+            (cx + 14, cy - 14),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 0),
+            2,
+        )
+        self.output_image = annotated
+
         if self.depth_image is not None and self.camera_info is not None:
             stamped = point2d_to_ros_point_stamped(
                 self.camera_info,
