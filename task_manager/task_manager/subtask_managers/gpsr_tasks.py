@@ -21,13 +21,19 @@ from task_manager.subtask_managers.generic_tasks import GenericTask
 # Person-following (ported from the HRIC FOLLOW_PERSON state): the robot follows
 # the tracked person until a stop keyword, arrival at the destination, or the
 # safety cap. FOLLOW_LISTEN_TIMEOUT is the length of each speech-listening
-# window; FOLLOW_MAX_DURATION keeps a missed "stop" from trapping the robot in
-# follow mode and from blowing the GPSR interleaved-plan global budget (300 s).
+# window — it also bounds how fast the loop notices a lost tracker, so it is
+# kept short. FOLLOW_MAX_DURATION keeps a missed "stop" from trapping the robot
+# in follow mode and from blowing the GPSR interleaved-plan global budget (300 s).
 FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
-FOLLOW_LISTEN_TIMEOUT = 5.0
+FOLLOW_LISTEN_TIMEOUT = 2.5
 FOLLOW_MAX_DURATION = 120.0
 FOLLOW_ARRIVED_DISTANCE = 1.5
 FOLLOW_TRACK_ATTEMPTS = 5
+# Lost-person fallback: after this many seconds with the tracker reporting no
+# target (get_track_person != SUCCESS), pause the follow and try to re-lock.
+# person_goal_smoother independently halts the base goal on the same timeout.
+FOLLOW_LOST_TIMEOUT = 3.0
+FOLLOW_RELOCK_ATTEMPTS = 3
 
 
 class GPSRTask(GenericTask):
@@ -123,6 +129,33 @@ class GPSRTask(GenericTask):
         """Restore camera orientation and arm pose after a follow."""
         self.subtask_manager.vision.camera_upside_down(False)
         self.subtask_manager.manipulation.move_to_position("nav_pose")
+
+    def _recover_lost_person(self) -> bool:
+        """Try to re-lock the tracker after the person has been lost.
+
+        Pauses base+arm follow (person_goal_smoother has already frozen the
+        goal on its own timeout), re-centers the camera, asks the person to
+        come back and re-locks with track_person(True). The tracker's ReID
+        re-acquisition covers brief occlusions on its own — this handles the
+        long losses it couldn't recover from.
+
+        Returns True when tracking (and follow) resumed, False to give up.
+        """
+        self.subtask_manager.nav.follow_person(False)
+        self.subtask_manager.manipulation.follow_person(False)
+        # Re-center the camera: the arm may be panned far off after the chase.
+        self.subtask_manager.manipulation.move_to_position("front_stare_carry_bag")
+        self.subtask_manager.hri.say(
+            "I lost you. Please come back and stand in front of me.", wait=True
+        )
+        for _ in range(FOLLOW_RELOCK_ATTEMPTS):
+            if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say("I found you again, let's continue.", wait=False)
+                self.subtask_manager.nav.follow_person(True)
+                self.subtask_manager.manipulation.follow_person(True)
+                return True
+            time.sleep(1.0)
+        return False
 
     ## HRI, Nav, Vision, Manipulation
     def follow_person_until(self, command: FollowPersonUntil):
@@ -233,6 +266,7 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.follow_person(True)
 
         follow_start = time.time()
+        lost_since = None
         stop_reason = "safety timeout"
         while True:
             status, _ = self.subtask_manager.hri.interpret_keyword(
@@ -241,6 +275,22 @@ class GPSRTask(GenericTask):
             if status == Status.EXECUTION_SUCCESS:
                 stop_reason = "stop requested"
                 break
+
+            # Lost-person fallback: get_track_person reports whether the tracker
+            # currently has the target in frame (ReID re-acquisition included).
+            # Only after FOLLOW_LOST_TIMEOUT of continuous loss do we interrupt
+            # the follow and renegotiate — brief occlusions self-heal.
+            if self.subtask_manager.vision.get_track_person() == Status.EXECUTION_SUCCESS:
+                lost_since = None
+            else:
+                lost_since = lost_since or time.time()
+                if time.time() - lost_since > FOLLOW_LOST_TIMEOUT:
+                    if self._recover_lost_person():
+                        lost_since = None
+                    else:
+                        stop_reason = "person lost"
+                        break
+
             if location is not None:
                 s, info = self.subtask_manager.nav.get_path_info(location.area, location.subarea)
                 if (
@@ -261,8 +311,23 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.follow_person(False)
         self.subtask_manager.vision.track_person(False)
         self._teardown_follow()
-        self.subtask_manager.hri.say("Okay, I will stop following you.", wait=False)
 
+        if stop_reason == "person lost":
+            if location is not None:
+                # We know where the follow was headed — meet the person there.
+                self.subtask_manager.hri.say(
+                    f"I could not find you again, so I will meet you at the {command.destination}.",
+                    wait=False,
+                )
+                result, _ = self.subtask_manager.nav.move_to_location(
+                    location.area, location.subarea
+                )
+                return result, "lost person, navigated to " + str(command.destination)
+            self.subtask_manager.hri.say("I lost you and could not find you again.", wait=False)
+            # FAILURE lets the behaviour tree retry the follow (fresh lock-on).
+            return Status.EXECUTION_ERROR, "lost person while following"
+
+        self.subtask_manager.hri.say("Okay, I will stop following you.", wait=False)
         return Status.EXECUTION_SUCCESS, "followed person until " + stop_reason
 
     ## HRI, Nav
