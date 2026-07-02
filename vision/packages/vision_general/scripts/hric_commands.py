@@ -6,6 +6,7 @@ available seats. Tasks for HRIC commands.
 """
 
 import cv2
+import json
 import numpy as np
 import queue
 import time
@@ -37,7 +38,7 @@ from frida_constants.vision_constants import (
 )
 from tf2_ros import Buffer, TransformListener
 from ament_index_python.packages import get_package_share_directory
-from vision_general.utils.area_check import filter_detections_in_house, fetch_map_areas
+from vision_general.utils.area_check import filter_detections_in_house
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -132,10 +133,17 @@ class HRICCommands(Node):
         self.check = False
         self.rotation = 0
 
-        # Areas of the active map
+        # Areas of the active map. Fetched asynchronously by _poll_areas:
+        # blocking on the service future inside a callback can never complete
+        # on a single-threaded executor (see fetch_map_areas docstring), and
+        # the 2x5s timeouts pushed FindSeat past the task manager's deadline.
         self.areas = None
         self.areas_client = self.create_client(
             MapAreas, AREAS_SERVICE, callback_group=self.callback_group
+        )
+        self._areas_future = None
+        self._areas_timer = self.create_timer(
+            2.0, self._poll_areas, callback_group=self.callback_group
         )
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
@@ -432,10 +440,27 @@ class HRICCommands(Node):
                 cv2.LINE_AA,
             )
 
+    def _poll_areas(self):
+        """Fetch map areas without blocking the executor; stop once loaded."""
+        if self.areas is not None:
+            self._areas_timer.cancel()
+            return
+        if self._areas_future is None:
+            if self.areas_client.service_is_ready():
+                self._areas_future = self.areas_client.call_async(MapAreas.Request())
+        elif self._areas_future.done():
+            result = self._areas_future.result()
+            if result is not None and result.areas:
+                self.areas = json.loads(result.areas)
+                self.get_logger().info(
+                    f"Loaded areas for rooms: {list(self.areas.keys())}"
+                )
+            self._areas_future = None
+
     def _get_areas(self):
-        """Fetch the active map's areas from nav_central (cached after first call)."""
+        """Return the cached map areas (None until _poll_areas has loaded them)."""
         if self.areas is None:
-            self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
+            self.get_logger().warn("Map areas not loaded yet; skipping house filter.")
         return self.areas
 
     def check_chairs(self, frame) -> tuple[bool, float]:
