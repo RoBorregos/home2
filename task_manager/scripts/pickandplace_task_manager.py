@@ -836,7 +836,8 @@ class PickAndPlaceTM(Node):
             self.subtask_manager.hri.say("I am ready.", wait=False)
             self.navigate_to_location(Location.KITCHEN, say=False)
             self.subtask_manager.hri.say(
-                "Please remove the chairs from the dining table.", wait=True
+                "Please remove the two chairs closest to me from the dining table.",
+                wait=True,
             )
             self.timeout(5.0)
 
