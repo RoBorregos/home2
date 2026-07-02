@@ -587,7 +587,7 @@ class GPSRTask(GenericTask):
             s, color_match = self.subtask_manager.hri.find_closest(self.color_list, clothing[0])
             cache_color = color_match.results[0]
             s, cloth_match = self.subtask_manager.hri.find_closest(
-                self.clothe_list, " ".join(clothing[1:])
+                self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
             )
             cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
@@ -647,7 +647,7 @@ class GPSRTask(GenericTask):
             s, color_match = self.subtask_manager.hri.find_closest(self.color_list, clothing[0])
             cache_color = color_match.results[0]
             s, cloth_match = self.subtask_manager.hri.find_closest(
-                self.clothe_list, " ".join(clothing[1:])
+                self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
             )
             cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
@@ -668,12 +668,13 @@ class GPSRTask(GenericTask):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
                 if cache_color is None or cache_cloth is None:
+                    clothing = command.attribute_value.lower().strip().split(" ")
                     s, color_match = self.subtask_manager.hri.find_closest(
                         self.color_list, clothing[0]
                     )
                     cache_color = color_match.results[0]
                     s, cloth_match = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, " ".join(clothing[1:])
+                        self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
                     )
                     cache_cloth = cloth_match.results[0]
 
