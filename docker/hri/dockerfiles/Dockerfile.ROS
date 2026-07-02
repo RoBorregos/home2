@@ -26,5 +26,11 @@ RUN pip install -r requirements/speech.txt
 COPY hri/requirements/postgres.txt /workspace/requirements/postgres.txt
 RUN pip install -r requirements/postgres.txt
 
+# display_ui.py (PyQt5 desktop UI) deps
+RUN apt-get update && apt-get install -y \
+    ros-humble-cv-bridge \
+    python3-pyqt5 \
+    && rm -rf /var/lib/apt/lists/*
+
 USER ros
 RUN sudo usermod -aG audio ros
