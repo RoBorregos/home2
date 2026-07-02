@@ -54,7 +54,7 @@ class YoloEModel(DetectorModel):
                 if conf < self.conf:
                     continue
                 label_id = int(box.cls[0].item())
-                label_text = self.model.names[label_id]
+                label_text = self.translate(self.model.names[label_id])
                 det = Detection(label_text, label_id, conf)
                 x1, y1, x2, y2 = [round(v) for v in box.xyxy[0].tolist()]
                 det.bbox_.x1 = float(x1) / w

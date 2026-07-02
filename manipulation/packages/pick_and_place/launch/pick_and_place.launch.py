@@ -7,7 +7,6 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
-from launch.conditions import IfCondition
 
 
 def generate_launch_description():
@@ -104,9 +103,6 @@ def generate_launch_description():
             Node(
                 package="manipulation_general",
                 executable="manipulation_safeguard.py",
-                condition=IfCondition(
-                    LaunchConfiguration("enable_safeguard", default="false")
-                ),
                 output="screen",
                 emulate_tty=True,
                 parameters=[sim_time_param],

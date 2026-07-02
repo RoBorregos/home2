@@ -33,6 +33,10 @@ from frida_constants.manipulation_constants import (
     PEAK_PRE_GRASP_HEIGHT,
     FIXED_DISTANCE_MOVE_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
+    BOWL_NAME,
+    BOWL_PRE_GRASP_HEIGHT,
+    BOWL_GRASP_Z_TWEAK,
+    BOWL_DESCENT_DISTANCE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -128,9 +132,13 @@ class PickMotionServer(Node):
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
-        self.declare_parameter("rim_tip_offset", -0.12)
+        self.declare_parameter("rim_tip_offset", -0.18)
         self.rim_tip_offset = self.get_parameter("rim_tip_offset").value
         self.get_logger().info(f"Rim tip offset: {self.rim_tip_offset} m")
+
+        self.declare_parameter("bowl_tip_offset", -0.12)
+        self.bowl_tip_offset = self.get_parameter("bowl_tip_offset").value
+        self.get_logger().info(f"Bowl tip offset: {self.bowl_tip_offset} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
@@ -370,6 +378,7 @@ class PickMotionServer(Node):
         is_flat = goal_handle.request.object_name.lower() in FLAT_OBJECT_NAMES
         is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
         is_peak = goal_handle.request.object_name.lower() in PEAK_NAMES
+        is_bowl = goal_handle.request.object_name.lower() == BOWL_NAME
 
         if is_flat:
             num_grasping_alternatives = 6
@@ -393,7 +402,13 @@ class PickMotionServer(Node):
                     return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
                 # Rim: offset by full tip distance so fingers straddle the wall without descending too far.
-                offset_distance = self.rim_tip_offset if is_rim else self.ee_link_offset
+                if is_bowl:
+                    offset_distance = self.bowl_tip_offset
+                elif is_rim:
+                    offset_distance = self.rim_tip_offset
+                else:
+                    offset_distance = self.ee_link_offset
+
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [
@@ -509,7 +524,9 @@ class PickMotionServer(Node):
 
                     # Validate the descent endpoint against the robot itself
                     descent_endpoint = copy.deepcopy(ee_link_pose)
-                    descent_endpoint.pose.position.z += RIM_GRASP_Z_TWEAK
+                    descent_endpoint.pose.position.z += (
+                        BOWL_GRASP_Z_TWEAK if is_bowl else RIM_GRASP_Z_TWEAK
+                    )
                     if endpoint_self_collides(
                         self._compute_ik_client,
                         self._state_validity_client,
@@ -531,7 +548,9 @@ class PickMotionServer(Node):
 
                     # Pre-grasp above the rim (MoveIt)
                     pre_grasp_pose = copy.deepcopy(ee_link_pose)
-                    pre_grasp_pose.pose.position.z += RIM_PRE_GRASP_HEIGHT
+                    pre_grasp_pose.pose.position.z += (
+                        BOWL_PRE_GRASP_HEIGHT if is_bowl else RIM_PRE_GRASP_HEIGHT
+                    )
 
                     self.get_logger().info(
                         f"[Rim] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
@@ -553,10 +572,13 @@ class PickMotionServer(Node):
                     self._clear_octomap()
 
                     # Fixed-distance descent (xArm cartesian velocity)
-                    self.get_logger().info(
-                        f"[Rim] Descending a fixed {RIM_DESCENT_DISTANCE * 1000:.0f}mm..."
+                    descent_distance = (
+                        BOWL_DESCENT_DISTANCE if is_bowl else RIM_DESCENT_DISTANCE
                     )
-                    descended = self.fixed_distance_descent(RIM_DESCENT_DISTANCE)
+                    self.get_logger().info(
+                        f"[Rim] Descending a fixed {descent_distance * 1000:.0f}mm..."
+                    )
+                    descended = self.fixed_distance_descent(descent_distance)
 
                     if not descended:
                         self.get_logger().warn(
@@ -645,13 +667,7 @@ class PickMotionServer(Node):
                     return True, pick_result
 
                 else:
-                    # EE XY before reaching in, to size the retract dynamically.
-                    pre_state = self._latest_robot_state
-                    pre_xy = (
-                        (pre_state.pose[0] / 1000.0, pre_state.pose[1] / 1000.0)
-                        if pre_state is not None
-                        else None
-                    )
+                    # Pure GPD reach (simple plan straight to the grasp, what grasped before).
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
                         ee_link_pose
                     )
@@ -668,55 +684,8 @@ class PickMotionServer(Node):
 
                     if result:
                         self.get_logger().info("Object attached")
-                        # Shelf pick (frontal grasp): pull straight out toward the
-                        # robot in XY (Z constant, clears ceiling). Table unchanged.
-                        approach = quat2mat(
-                            [
-                                ee_link_pose.pose.orientation.w,
-                                ee_link_pose.pose.orientation.x,
-                                ee_link_pose.pose.orientation.y,
-                                ee_link_pose.pose.orientation.z,
-                            ]
-                        )[:, 2]
-                        if abs(float(approach[2])) < 0.5:
-                            dist = SHELF_RETRACT_DIST
-                            post_state = self._latest_robot_state
-                            if pre_xy is not None and post_state is not None:
-                                depth = float(
-                                    np.hypot(
-                                        post_state.pose[0] / 1000.0 - pre_xy[0],
-                                        post_state.pose[1] / 1000.0 - pre_xy[1],
-                                    )
-                                )
-                                dist = min(
-                                    max(
-                                        depth + SHELF_RETRACT_MARGIN, SHELF_RETRACT_MIN
-                                    ),
-                                    SHELF_RETRACT_MAX,
-                                )
-                            ax = float(approach[0])
-                            ay = float(approach[1])
-                            na = float(np.hypot(ax, ay))
-                            if na > 1e-6:
-                                ux, uy = ax / na, ay / na
-                                retracted = False
-                                for frac in (1.0, 0.6, 0.35):
-                                    rp = copy.deepcopy(ee_link_pose)
-                                    rp.pose.position.x -= ux * dist * frac
-                                    rp.pose.position.y -= uy * dist * frac
-                                    self.get_logger().info(
-                                        f"Shelf retract: cartesian along -approach ({dist * frac:.3f} m)"
-                                    )
-                                    _, _res = self.move_to_pose(
-                                        rp, velocity=0.1, planner_id="cartesian"
-                                    )
-                                    if _res and _res.result.success:
-                                        retracted = True
-                                        break
-                                if not retracted:
-                                    self.get_logger().warn(
-                                        "Shelf retract: cartesian failed (singularity/collision?), skipping"
-                                    )
+                        # No shelf retract: switching to mode 5 with an object held opens the
+                        # gripper; let the front_stare return plan out collision-free instead.
                         pick_result.pick_pose = ee_link_pose
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
@@ -1170,28 +1139,25 @@ class PickMotionServer(Node):
         self.collision_objects = self.get_collision_objects()
 
     def attach_pick_object(self):
-        obj_lowest = None
-        obj_highest = None
-        for obj in self.collision_objects:
-            if PICK_OBJECT_NAMESPACE in obj.id:
+        pick_objs = [o for o in self.collision_objects if PICK_OBJECT_NAMESPACE in o.id]
+        if not pick_objs:
+            return True, None, None
+        obj_lowest = min(pick_objs, key=lambda o: o.pose.pose.position.z)
+        obj_highest = max(pick_objs, key=lambda o: o.pose.pose.position.z)
+        # Attach only ONE box and drop the rest: attaching the whole cluster cloud (~15 boxes
+        # ahead of the gripper) over-constrained the return; front_stare/table_stare failed (-2).
+        for obj in pick_objs:
+            if obj.id == obj_lowest.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
-                if obj_lowest is None:
-                    obj_lowest = obj
-                else:
-                    if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
-                        obj_lowest = obj
-                if obj_highest is None:
-                    obj_highest = obj
-                else:
-                    if obj.pose.pose.position.z > obj_highest.pose.pose.position.z:
-                        obj_highest = obj
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
                 self._attach_collision_object_client.wait_for_service()
                 future = self._attach_collision_object_client.call_async(request)
                 self.wait_for_future(future)
+            else:
+                self.remove_collision_object(obj.id)
         return True, obj_lowest, obj_highest
 
     def get_collision_objects(self):

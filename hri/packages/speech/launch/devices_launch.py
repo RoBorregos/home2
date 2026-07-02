@@ -48,6 +48,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
 
+    knock_detection_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "knock_detection.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["knock_detection"]["ros__parameters"]
+
     env_type = os.environ.get("ENV_TYPE", "cpu")
 
     nodes = [
@@ -74,6 +81,14 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[voice_detection_config],
+        ),
+        Node(
+            package="speech",
+            executable="knock_detection.py",
+            name="knock_detection",
+            output="screen",
+            emulate_tty=True,
+            parameters=[knock_detection_config],
         ),
         Node(
             package="speech",

@@ -9,10 +9,16 @@ CHECK_DOOR_SERVICE = "/navigation/is_door_open"
 class DOOR_CHECK(Enum):
     TIMEOUT_SENSOR = 5.0
     TIMEOUT_TO_OPEN = 60.0  # Increase in case of required
-    LIDAR_RANGE_MIN = 670
-    LIDAR_RANGE_MAX = 70
+    # Beam index window into LaserScan.ranges[] that points at the door.
+    # Calibrated for the ~501-beam lidar (angle_increment ~0.01257 rad,
+    # idx 250 = 0 deg / straight ahead). Robot faces the door head-on:
+    # closed panel fills idx ~203-264 (~0.48 m); window inset to avoid frame edges.
+    LIDAR_RANGE_MIN = 210
+    LIDAR_RANGE_MAX = 255
     CHECKING_RATE = 0.5
-    DOOR_DISTANCE = 1.0
+    # Distance threshold (m): avg window reading above this -> door open.
+    # Closed door reads ~0.48 m; open reads 2-5 m+ / inf. 2.0 sits safely between.
+    DOOR_DISTANCE = 2.0
 
 
 ###Map areas service
@@ -24,6 +30,10 @@ MOVE_LOCATION_SERVICE = "/navigation/go_to_map_area"
 ### Dock to table/shelf service (nav_central -> table_docker), with desired offset
 DOCK_TABLE_SERVICE = "/navigation/dock_table"
 GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
+
+### Point-based navigation services
+GO_TO_POSE_SERVICE = "/navigation/go_to_pose"
+GET_ROBOT_POSE_SERVICE = "/navigation/get_robot_pose"
 
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"
@@ -45,6 +55,7 @@ DOCK_PREVIEW_SERVICE = (
     "/navigation/preview_dock"  # std_srvs/Trigger: detect + show markers, no motion
 )
 DOCKED_TOPIC = "/navigation/docked"  # std_msgs/Bool (latched): currently docked?
+RETREAT_DISTANCE = 0.2  # m the base backs off on undock (table_docker retreat_distance)
 POINT_CLOUD_TOPIC = "/point_cloud"  # filtered ZED cloud also used by nav2
 
 ### General Constants
@@ -74,9 +85,21 @@ class SUBTASK_MANAGER(Enum):
     NAV_QUERY_TIMEOUT = 30.0
 
 
+# Follow person node constants
+# -------------------------------------------------------------------
+GOAL_UPDATE_TOPIC = "/goal_update"
+FOLLOW_MODE_SERVICE = "/navigation/set_follow_mode"
+FOLLOW_PERSON_NAV_SERVICE = "/navigation/follow_person"
+
+# Timeouts for the follow-person orchestration
+FOLLOW_MODE_SERVICE_TIMEOUT = 2.0  # Wait for /navigation/set_follow_mode
+FOLLOW_GOAL_UPDATE_TIMEOUT = (
+    2.0  # Wait for first /goal_update before seeding initial goal
+)
+FOLLOW_ACTION_SERVER_TIMEOUT = 3.0  # Wait for NavigateToPose action server
+
 # Default docking offset (table_docker front_offset).
 DEFAULT_DOCK_OFFSET = 0.16
-
 
 # General constants
 GOAL_TOPIC = "/navigate_to_pose"
@@ -84,3 +107,4 @@ SCAN_TOPIC = "/scan"
 CAMERA_RGB_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 CAMERA_INFO_TOPIC = "/zed/zed_node/rgb/camera_info"
 CAMERA_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered"
+MAP_TOPIC = "/map"

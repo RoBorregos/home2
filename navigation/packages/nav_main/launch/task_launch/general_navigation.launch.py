@@ -9,15 +9,21 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def launch_function(context, *args, **kwargs):
-    from frida_constants.navigation_constants import RTAB_MAPS_PATH
+    from frida_constants.navigation_constants import RTAB_MAPS_PATH, RETREAT_DISTANCE
 
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
+    # --- LIMP 3-WHEEL MODE (rear-left ODrive / node 33 dead) -----------------
+    # The omnibase Nav2 defaults to the crawl-speed limp profile while the base
+    # runs on 3 wheels. Override at runtime with nav2_omni_config_file:=/path.yaml,
+    # or revert this default to 'nav2_omni.yaml' once the ODrive is replaced.
+    nav2_omni_limp_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
+    nav2_omni_params = LaunchConfiguration('nav2_omni_config_file', default=nav2_omni_limp_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
@@ -37,16 +43,38 @@ def launch_function(context, *args, **kwargs):
     omni_map_default = os.path.join(maps_dir, areas_map_name)
     omni_map = LaunchConfiguration('map', default=omni_map_default)
 
+    # Editable static map (Option A): serve <name>.yaml via a map_server inside the
+    # nav2 container (so the .pgm can be hand-edited in the map tagger) instead of the
+    # grid slam_toolbox rasterizes from the pose-graph. Auto-enabled when the grid
+    # yaml exists next to the posegraph; override with use_static_map_server:=true|false.
+    omni_map_yaml_default = omni_map_default + '.yaml'
+    omni_map_yaml = LaunchConfiguration('map_yaml', default=omni_map_yaml_default)
+    omni_map_yaml_value = omni_map_yaml.perform(context)
+    use_static_map_default = 'true' if os.path.exists(omni_map_yaml_value) else 'false'
+    use_static_map = LaunchConfiguration('use_static_map_server', default=use_static_map_default)
+    static_on = use_static_map.perform(context).lower() in ('true', '1')
+    print(f"[general_navigation] static map '{omni_map_yaml_value}' "
+          f"exists={os.path.exists(omni_map_yaml_value)} -> use_static_map_server={use_static_map_default}")
+
     # Keepout (virtual obstacle) filter — AUTO-enabled when a mask named
     # "<MAP_NAME>_keepout_mask.yaml" exists next to the map (draw it in the map
     # tagger UI). Override with use_keepout:=true|false or keepout_mask:=/path.yaml.
+    # Skipped while the static map server owns /map: with the editable .pgm you paint
+    # obstacles straight into the map, so the keepout filter is redundant there (and it
+    # avoids the extra filter servers/topics). Force it back on with use_keepout:=true.
     keepout_mask_default = os.path.join(maps_dir, f'{areas_map_name}_keepout_mask.yaml')
     keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
     keepout_mask_value = keepout_mask.perform(context)
-    use_keepout_default = 'true' if os.path.exists(keepout_mask_value) else 'false'
+    keepout_exists = os.path.exists(keepout_mask_value)
+    use_keepout_default = 'true' if (keepout_exists and not static_on) else 'false'
     use_keepout = LaunchConfiguration('use_keepout', default=use_keepout_default)
-    print(f"[general_navigation] keepout mask '{keepout_mask_value}' "
-          f"exists={os.path.exists(keepout_mask_value)} -> use_keepout={use_keepout_default}")
+    if keepout_exists and static_on:
+        print(f"[general_navigation] keepout mask '{keepout_mask_value}' exists but "
+              f"use_static_map_server=true -> keepout DISABLED "
+              f"(paint obstacles into the static .pgm; use_keepout:=true to force on)")
+    else:
+        print(f"[general_navigation] keepout mask '{keepout_mask_value}' "
+              f"exists={keepout_exists} -> use_keepout={use_keepout_default}")
 
     nav_central_node = Node(
         package='nav_main',
@@ -110,6 +138,7 @@ def launch_function(context, *args, **kwargs):
         ),
         launch_arguments={
             'map': omni_map,
+            'use_static_map_server': use_static_map,
         }.items(),
     )
 
@@ -119,8 +148,11 @@ def launch_function(context, *args, **kwargs):
         ),
         launch_arguments={
             'nav2': nav2_activate,
+            'nav2_config_file': nav2_omni_params,
             'use_keepout': use_keepout,
             'keepout_mask': keepout_mask,
+            'use_static_map_server': use_static_map,
+            'map_yaml': omni_map_yaml,
         }.items(),
     )
 
@@ -131,11 +163,45 @@ def launch_function(context, *args, **kwargs):
         executable='table_docker.py',
         name='table_docker',
         output='screen',
+        parameters=[{'retreat_distance': RETREAT_DISTANCE}],
+    )
+
+    # Person-following bridge: forwards the vision tracker's target to the Nav2
+    # GoalUpdater and switches nav2 between the standard/follow param sets when
+    # nav_central calls /navigation/set_follow_mode. Idle until follow is requested,
+    # so it is safe to run for every task (gpsr/ppc/dlc/hric).
+    #
+    # The smoother must switch between the SAME standard config Nav2 was launched
+    # with and its matching "<name>_following.yaml" overlay — otherwise leaving
+    # follow mode would restore nav2_omni.yaml speeds onto the limp profile.
+    smoother_params = {'default_base': default_base}
+    if default_base_value == 'omnibase':
+        nav2_omni_params_value = nav2_omni_params.perform(context)
+        follow_params_value = nav2_omni_params_value.replace('.yaml', '_following.yaml')
+        if not os.path.exists(follow_params_value):
+            print(f"[general_navigation] WARNING: follow overlay '{follow_params_value}' "
+                  f"not found; person_goal_smoother falls back to nav2_omni_following.yaml")
+            follow_params_value = os.path.join(
+                pkg_file_route, 'config', 'omni_config', 'nav2_omni_following.yaml')
+        print(f"[general_navigation] follow-mode config pair -> "
+              f"standard={os.path.basename(nav2_omni_params_value)}, "
+              f"follow={os.path.basename(follow_params_value)}")
+        smoother_params['standard_config_file'] = nav2_omni_params_value
+        smoother_params['follow_config_file'] = follow_params_value
+
+    person_goal_smoother_node = Node(
+        package='nav_main',
+        executable='person_goal_smoother.py',
+        name='person_goal_smoother',
+        output='screen',
+        emulate_tty=True,
+        parameters=[smoother_params],
     )
 
     launch_actions = [
         nav_central_node,
         nav_ui_node,
+        person_goal_smoother_node,
     ]
 
     if default_base_value != 'omnibase':
@@ -145,6 +211,8 @@ def launch_function(context, *args, **kwargs):
         launch_actions.append(omni_basics)
         if nav_type_value == '2d':
             launch_actions.append(omni_localization)
+        print(f"[general_navigation] omnibase Nav2 config -> "
+              f"{nav2_omni_params.perform(context)}")
         launch_actions.append(nav2_omni)
         launch_actions.append(table_docker)
 

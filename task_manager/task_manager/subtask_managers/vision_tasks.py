@@ -8,6 +8,7 @@ commands.
 
 import math
 import time
+import random
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
@@ -16,6 +17,7 @@ from frida_constants.vision_constants import (
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    COUNT_BY_PERSON_TOPIC,
     COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
@@ -41,6 +43,7 @@ from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
+    CountBy,
     CountByColor,
     CountByPose,
     CropQuery,
@@ -137,6 +140,7 @@ class VisionTasks:
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
+        self.count_person_client = self.node.create_client(CountBy, COUNT_BY_PERSON_TOPIC)
 
         self.count_by_gesture_client = self.node.create_client(CountByPose, COUNT_BY_GESTURE_TOPIC)
 
@@ -190,6 +194,10 @@ class VisionTasks:
                 },
                 "read_qr_client": {
                     "client": self.read_qr_client,
+                    "type": "service",
+                },
+                "count_person": {
+                    "client": self.count_person_client,
                     "type": "service",
                 },
                 "count_by_gesture": {
@@ -816,6 +824,31 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @service_check("count_person_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    def count_person(self) -> tuple[int, int]:
+        """Count ALL people currently in frame (no pose/gesture/clothes filter)."""
+
+        Logger.info(self.node, "Counting people in frame")
+        request = CountBy.Request()
+        request.request = True
+
+        try:
+            future = self.count_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "Count person service failed")
+                return Status.TARGET_NOT_FOUND, 300
+
+        except Exception as e:
+            Logger.error(self.node, f"Error counting people: {e}")
+            return Status.EXECUTION_ERROR, 300
+
+        Logger.success(self.node, f"People counted: {result.count}")
+        return Status.EXECUTION_SUCCESS, result.count
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
     @service_check("count_by_gesture_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_gesture(self, gesture: str) -> tuple[int, int]:
         """Count the number of people with the requested gesture"""
@@ -950,11 +983,57 @@ class VisionTasks:
         labels = [det.classname for det in detections]
         return Status.EXECUTION_SUCCESS, labels
 
-    def describe_person(self, callback):
-        """Describe the person in the image"""
+    def describe_person(self, callback=None):
+        """Describe the person in the image asynchronously."""
         Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses, etc. Don't mention if the person is looking directly at the camera."
-        self.moondream_query_async(prompt, query_person=True, callback=callback)
+        attributes = [
+            "describe the type of clothes and color the person in the front is wearing (dress, pants and shirt, skirt and shirt, shorts and shirt, etc.). Format: The person is wearing [description].",
+            "does the person in the front have glasses? (if not, respond only '0', if yes, describe the glasses).",
+            "does the person in the front have facial hair (if not, respond only '0', if yes, describe the facial hair).",
+            "describe the age group the person in the front belongs to (teenager, young adult, middle-aged, or elderly).",
+            "is the person in the front wearing jewelry? (if not, respond only '0', if yes, describe the jewelry).",
+            "describe the hair style and color of the person in the front (straight, wavy, curly, in a pony tail, etc.). Format: The person has [description] hair.",
+            "what is the build of the person in the front? (thin, average, athletic, robust, etc.). Format: Their build is [description].",
+        ]
+
+        seen = set()
+
+        state = {"index": random.randrange(len(attributes)), "count": 0, "parts": []}
+
+        def finish():
+            description = "; ".join(state["parts"])
+            if description:
+                description += ";"
+            if callback:
+                callback(Status.EXECUTION_SUCCESS, description)
+
+        def handle_result(status, answer):
+            seen.add(state["index"])
+            if status == Status.EXECUTION_SUCCESS and answer:
+                cleaned = answer.strip()
+                if cleaned and cleaned[0] != "0":
+                    state["parts"].append(cleaned)
+                    state["count"] += 1
+
+            while state["index"] in seen and len(seen) < len(attributes):
+                state["index"] = random.randrange(len(attributes))
+            if state["count"] >= 4 or len(seen) >= len(attributes):
+                finish()
+                return
+
+            self.moondream_query_async(
+                attributes[state["index"]],
+                query_person=True,
+                callback=handle_result,
+            )
+
+        if not attributes:
+            finish()
+            return
+
+        self.moondream_query_async(
+            attributes[state["index"]], query_person=True, callback=handle_result
+        )
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
         time.sleep(TIMEOUT)

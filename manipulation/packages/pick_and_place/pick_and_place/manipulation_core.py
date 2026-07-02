@@ -12,7 +12,7 @@ from frida_motion_planning.utils.service_utils import (
 from std_srvs.srv import SetBool, Empty
 from std_msgs.msg import Bool
 from frida_interfaces.action import MoveJoints
-from frida_interfaces.msg import ManipulationTask
+from frida_interfaces.msg import ManipulationTask, CollisionObject
 from frida_interfaces.action import (
     PickMotion,
     PlaceMotion,
@@ -24,6 +24,7 @@ from frida_interfaces.srv import (
     GraspDetection,
     DetectionHandler,
     RemoveCollisionObject,
+    AddCollisionObjects,
     PlacePerceptionService,
     HeatmapPlace,
     GetJoints,
@@ -132,6 +133,11 @@ class ManipulationCore(Node):
         self._get_collision_objects_client = self.create_client(
             GetCollisionObjects,
             GET_COLLISION_OBJECTS_SERVICE,
+        )
+
+        self._add_collision_objects_client = self.create_client(
+            AddCollisionObjects,
+            "/manipulation/add_collision_objects",
         )
 
         qos = rclpy.qos.QoSProfile(
@@ -309,6 +315,46 @@ class ManipulationCore(Node):
         future = self._remove_collision_object_client.call_async(request)
         wait_for_future(future)
         return future.result().success
+
+    def add_shelf_ceiling_guard(self, place_pose, table_height):
+        """Block the place return from routing the arm up into the compartment ceiling
+        (the eye-in-hand octomap never sees it). Slab above the place surface."""
+        compartment_h = (
+            0.26  # get_compartment_height() -  shelf level-to-ceiling height
+        )
+        co = CollisionObject()
+        co.id = "shelf_ceiling_guard"
+        co.type = "box"
+        co.pose.header.frame_id = place_pose.header.frame_id or "base_link"
+        co.pose.header.stamp = self.get_clock().now().to_msg()
+        co.pose.pose.position.x = float(place_pose.pose.position.x) + 0.10
+        co.pose.pose.position.y = float(place_pose.pose.position.y)
+        co.pose.pose.position.z = float(table_height) + compartment_h + 0.10
+        co.pose.pose.orientation.w = 1.0
+        co.dimensions.x = 0.40
+        co.dimensions.y = 0.80
+        co.dimensions.z = 0.20
+        request = AddCollisionObjects.Request()
+        request.collision_objects.append(co)
+        if not self._add_collision_objects_client.wait_for_service(timeout_sec=3.0):
+            self.get_logger().warn(
+                "add_collision_objects unavailable; no ceiling guard"
+            )
+            return
+        wait_for_future(
+            self._add_collision_objects_client.call_async(request), timeout=3.0
+        )
+        self.get_logger().info("Added shelf ceiling guard collision")
+
+    def remove_shelf_ceiling_guard(self):
+        """Remove the ceiling guard so it does not constrain later motions."""
+        request = RemoveCollisionObject.Request()
+        request.id = "shelf_ceiling_guard"
+        request.include_attached = False
+        if self._remove_collision_object_client.wait_for_service(timeout_sec=3.0):
+            wait_for_future(
+                self._remove_collision_object_client.call_async(request), timeout=3.0
+            )
 
     def clear_octomap(self):
         """Clear the octomap."""

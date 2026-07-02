@@ -4,6 +4,7 @@
 Node to handle GPSR commands.
 """
 
+import cv2
 import rclpy
 import rclpy.qos
 from rclpy.node import Node
@@ -469,11 +470,11 @@ class GPSRCommands(Node):
     def _get_areas(self):
         """Fetch the active map's areas from nav_central (cached after first call)."""
         if self.areas is None:
-            self.areas = fetch_map_areas(self.areas_client, self.get_logger())
+            self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
         return self.areas
 
     def _filter_people(self, frame, people):
-        return filter_detections_in_house(
+        filtered = filter_detections_in_house(
             frame,
             people,
             [0],
@@ -484,6 +485,26 @@ class GPSRCommands(Node):
             self._get_areas(),
             CAMERA_FRAME,
         )
+        self._draw_people(filtered)
+        return filtered
+
+    def _draw_people(self, people):
+        """Draw the filtered person detections on output_image so the display
+        (IMAGE_TOPIC via publish_image) shows what is actually being counted."""
+        if len(self.output_image) == 0:
+            return
+        for person in people:
+            x1, y1, x2, y2 = person["bbox"]
+            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(
+                self.output_image,
+                f"person {person['confidence']:.2f}",
+                (x1, max(y1 - 10, 12)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (0, 255, 0),
+                2,
+            )
 
     def get_detections(self, comp_class=None, timeout=5.0):
         """
@@ -491,9 +512,11 @@ class GPSRCommands(Node):
         comp_class: int or None (None = detect all classes)
         """
 
-        # Ensure YOLO service is available. We use a short timeout so the
-        # node can operate even if YOLO is not running at startup.
-        if not self.yolo_client.wait_for_service(timeout_sec=0.5):
+        # Ensure YOLO service is available. The TRT engine deserializes on the
+        # detector's first inference, so right after launch the service can
+        # take several seconds to answer — give it a real chance instead of
+        # instantly returning 0 detections (which reads as "0 people counted").
+        if not self.yolo_client.wait_for_service(timeout_sec=3.0):
             self.get_logger().warn(
                 "YOLO service not available, returning no detections."
             )
