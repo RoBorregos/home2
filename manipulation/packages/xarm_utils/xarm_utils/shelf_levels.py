@@ -22,7 +22,7 @@ COMPARTMENT_HEIGHT_FALLBACK = 0.34
 # so shelf level NUMBERING does not shift when falling back — the announced
 # level number scores points.
 SHELF_LEVELS_BY_ARENA_FALLBACK = {
-    1: [0.095, 0.39, 0.68, 1.05],
+    1: [0.095, 0.39, 0.70, 1.05],
     2: [0.095, 0.39, 0.68, 1.05],
     3: [0.095, 0.39, 0.68, 1.05],
 }
