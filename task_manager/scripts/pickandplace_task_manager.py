@@ -821,6 +821,9 @@ class PickAndPlaceTM(Node):
                 "Door open. Pick and Place Challenge begins.",
                 level="success",
             )
+            # The scored 420s window starts NOW (door open), not at node launch —
+            # without this reset the final report includes the button-wait time.
+            self.total_start_time = datetime.now()
             self.current_state = PickAndPlaceTM.TaskStates.START
 
         # ==================== START ====================
