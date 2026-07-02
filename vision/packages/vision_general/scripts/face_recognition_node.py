@@ -117,7 +117,9 @@ class FaceRecognition(Node):
         )
 
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
-        self.view_pub = DebugImagePublisher(self, FACE_RECOGNITION_IMAGE, "face_recognition")
+        self.view_pub = DebugImagePublisher(
+            self, FACE_RECOGNITION_IMAGE, "face_recognition"
+        )
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10

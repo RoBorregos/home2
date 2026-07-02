@@ -23,6 +23,8 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
-            IncludeLaunchDescription(PythonLaunchDescriptionSource(detector_launch_file)),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(detector_launch_file)
+            ),
         ]
     )
