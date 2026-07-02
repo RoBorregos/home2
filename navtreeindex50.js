@@ -1,5 +1,11 @@
 var NAVTREEINDEX50 =
 {
+"structvamp_1_1collision_1_1Shape.html#abbd88659f96ccc1283be1f431d0714ad":[38,0,117,1,6,3],
+"structvamp_1_1collision_1_1Shape.html#ad2bab8d54395fb72bf4cbbcd463ab71d":[38,0,117,1,6,0],
+"structvamp_1_1collision_1_1Shape.html#ad2bab8d54395fb72bf4cbbcd463ab71d":[37,0,205,2,7,0],
+"structvamp_1_1collision_1_1Sphere.html":[38,0,117,1,7],
+"structvamp_1_1collision_1_1Sphere.html":[37,0,205,2,8],
+"structvamp_1_1collision_1_1Sphere.html#a19f0cdc978aee45495a3973048f91bcc":[37,0,205,2,8,5],
 "structvamp_1_1collision_1_1Sphere.html#a19f0cdc978aee45495a3973048f91bcc":[38,0,117,1,7,5],
 "structvamp_1_1collision_1_1Sphere.html#a42e948d758cb291ed836c7304a16d548":[38,0,117,1,7,3],
 "structvamp_1_1collision_1_1Sphere.html#a42e948d758cb291ed836c7304a16d548":[37,0,205,2,8,3],
@@ -243,11 +249,5 @@ var NAVTREEINDEX50 =
 "structvamp_1_1planning_1_1PerturbSettings.html#a8db0864690114c0c3d72a53bba077d5a":[37,0,205,5,17,2],
 "structvamp_1_1planning_1_1PerturbSettings.html#af07e727c69cdea0cdb9a0b02b790a65a":[38,0,117,3,17,0],
 "structvamp_1_1planning_1_1PerturbSettings.html#af07e727c69cdea0cdb9a0b02b790a65a":[37,0,205,5,17,0],
-"structvamp_1_1planning_1_1PlanningResult.html":[37,0,205,5,18],
-"structvamp_1_1planning_1_1PlanningResult.html":[38,0,117,3,18],
-"structvamp_1_1planning_1_1PlanningResult.html#a3a9e9e84443f03f398d5e9a2740fdf31":[37,0,205,5,18,4],
-"structvamp_1_1planning_1_1PlanningResult.html#a3a9e9e84443f03f398d5e9a2740fdf31":[38,0,117,3,18,4],
-"structvamp_1_1planning_1_1PlanningResult.html#a47ef6e3ad8f68a05069c2295163a687e":[37,0,205,5,18,0],
-"structvamp_1_1planning_1_1PlanningResult.html#a47ef6e3ad8f68a05069c2295163a687e":[38,0,117,3,18,0],
-"structvamp_1_1planning_1_1PlanningResult.html#acbdbd57cfc83fc1f8f6242671dea4ba3":[38,0,117,3,18,3]
+"structvamp_1_1planning_1_1PlanningResult.html":[37,0,205,5,18]
 };

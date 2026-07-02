@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classdoing__laundry__task__manager_1_1
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classdoing__laundry__task__manager_1_1DoingLaundryTM-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">doing_laundry_task_manager.DoingLaundryTM Class Reference</div></div>
 </div><!--header-->
@@ -141,10 +142,19 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a8a769bcc27bbcdcc5cdd80db0c4dcc03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acdcbb40b603ddb6975584b3441c7a636"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdoing__laundry__task__manager_1_1DoingLaundryTM.html#acdcbb40b603ddb6975584b3441c7a636">clothes_pick_attempts</a></td></tr>
 <tr class="separator:acdcbb40b603ddb6975584b3441c7a636"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad334a1f3915d0d1c7bf9db1fddc8aa6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdoing__laundry__task__manager_1_1DoingLaundryTM.html#aad334a1f3915d0d1c7bf9db1fddc8aa6">basket_scan_attempts</a></td></tr>
+<tr class="separator:aad334a1f3915d0d1c7bf9db1fddc8aa6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9fa0c9148b31f1c5e6f1c591b377dec5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdoing__laundry__task__manager_1_1DoingLaundryTM.html#a9fa0c9148b31f1c5e6f1c591b377dec5">basket_sublocation</a></td></tr>
+<tr class="separator:a9fa0c9148b31f1c5e6f1c591b377dec5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9afd11a4dd21b7cd3b0f4bb69643cdf7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdoing__laundry__task__manager_1_1DoingLaundryTM.html#a9afd11a4dd21b7cd3b0f4bb69643cdf7">basket_placed</a></td></tr>
 <tr class="separator:a9afd11a4dd21b7cd3b0f4bb69643cdf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcbf3d1087669cf79a00c830bc3773ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdoing__laundry__task__manager_1_1DoingLaundryTM.html#afcbf3d1087669cf79a00c830bc3773ff">wm_placed</a></td></tr>
 <tr class="separator:afcbf3d1087669cf79a00c830bc3773ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a3066e778a989d6fa8143ce419988f0dc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdoing__laundry__task__manager_1_1DoingLaundryTM.html#a3066e778a989d6fa8143ce419988f0dc">_choose_nearest_basket</a> (self, detection)</td></tr>
+<tr class="separator:a3066e778a989d6fa8143ce419988f0dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Task Manager for Doing Laundry</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -167,6 +177,43 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a3066e778a989d6fa8143ce419988f0dc" name="a3066e778a989d6fa8143ce419988f0dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3066e778a989d6fa8143ce419988f0dc">&#9670;&#160;</a></span>_choose_nearest_basket()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def doing_laundry_task_manager.DoingLaundryTM._choose_nearest_basket </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>detection</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Transform the basket detection to map frame and return the nearer
+candidate sublocation ('basket_left' or 'basket_right').</pre> 
+</div>
+</div>
 <a id="abc44ef47a6989063bb997447a9138b4a" name="abc44ef47a6989063bb997447a9138b4a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abc44ef47a6989063bb997447a9138b4a">&#9670;&#160;</a></span>navigate_holding()</h2>
 
@@ -334,6 +381,34 @@ Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">doing_laundry_task_manager.DoingLaundryTM.basket_placed</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aad334a1f3915d0d1c7bf9db1fddc8aa6" name="aad334a1f3915d0d1c7bf9db1fddc8aa6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aad334a1f3915d0d1c7bf9db1fddc8aa6">&#9670;&#160;</a></span>basket_scan_attempts</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">doing_laundry_task_manager.DoingLaundryTM.basket_scan_attempts</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9fa0c9148b31f1c5e6f1c591b377dec5" name="a9fa0c9148b31f1c5e6f1c591b377dec5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9fa0c9148b31f1c5e6f1c591b377dec5">&#9670;&#160;</a></span>basket_sublocation</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">doing_laundry_task_manager.DoingLaundryTM.basket_sublocation</td>
         </tr>
       </table>
 </div><div class="memdoc">

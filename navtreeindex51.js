@@ -1,5 +1,11 @@
 var NAVTREEINDEX51 =
 {
+"structvamp_1_1planning_1_1PlanningResult.html":[38,0,117,3,18],
+"structvamp_1_1planning_1_1PlanningResult.html#a3a9e9e84443f03f398d5e9a2740fdf31":[37,0,205,5,18,4],
+"structvamp_1_1planning_1_1PlanningResult.html#a3a9e9e84443f03f398d5e9a2740fdf31":[38,0,117,3,18,4],
+"structvamp_1_1planning_1_1PlanningResult.html#a47ef6e3ad8f68a05069c2295163a687e":[37,0,205,5,18,0],
+"structvamp_1_1planning_1_1PlanningResult.html#a47ef6e3ad8f68a05069c2295163a687e":[38,0,117,3,18,0],
+"structvamp_1_1planning_1_1PlanningResult.html#acbdbd57cfc83fc1f8f6242671dea4ba3":[38,0,117,3,18,3],
 "structvamp_1_1planning_1_1PlanningResult.html#acbdbd57cfc83fc1f8f6242671dea4ba3":[37,0,205,5,18,3],
 "structvamp_1_1planning_1_1PlanningResult.html#aeb8b87483370d89be3c1ff0be5c988dd":[38,0,117,3,18,1],
 "structvamp_1_1planning_1_1PlanningResult.html#aeb8b87483370d89be3c1ff0be5c988dd":[37,0,205,5,18,1],
@@ -243,11 +249,5 @@ var NAVTREEINDEX51 =
 "structvamp_1_1robots_1_1Baxter_1_1Spheres.html#a9896ceb02952f90e4ec7db2a1d6693ad":[37,0,205,10,0,1,0],
 "structvamp_1_1robots_1_1Baxter_1_1Spheres.html#ac425162addb107eeab139dd8e4a16ff5":[38,0,117,7,0,1,2],
 "structvamp_1_1robots_1_1Baxter_1_1Spheres.html#ac425162addb107eeab139dd8e4a16ff5":[37,0,205,10,0,1,2],
-"structvamp_1_1robots_1_1FRIDA__Real.html":[37,0,205,10,2],
-"structvamp_1_1robots_1_1FRIDA__Real.html":[38,0,117,7,2],
-"structvamp_1_1robots_1_1FRIDA__Real.html#a14eaebed51e2f4519466c28f2d80d144":[37,0,205,10,2,2],
-"structvamp_1_1robots_1_1FRIDA__Real.html#a14eaebed51e2f4519466c28f2d80d144":[38,0,117,7,2,2],
-"structvamp_1_1robots_1_1FRIDA__Real.html#a66c9396e4fc670a2909bd5333f723d60":[37,0,205,10,2,3],
-"structvamp_1_1robots_1_1FRIDA__Real.html#a66c9396e4fc670a2909bd5333f723d60":[38,0,117,7,2,3],
-"structvamp_1_1robots_1_1FRIDA__Real.html#a9a177f0d180fd251bc86f441b727af61":[37,0,205,10,2,4]
+"structvamp_1_1robots_1_1FRIDA__Real.html":[37,0,205,10,2]
 };

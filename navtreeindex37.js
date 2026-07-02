@@ -1,5 +1,11 @@
 var NAVTREEINDEX37 =
 {
+"merger_8py.html#a3045ece173e7aeb7ef2575312470f018":[39,0,6,2,0,3,4],
+"merger_8py.html#a41828e11a9e27a359fa36032a81ea8d0":[39,0,6,2,0,3,10],
+"merger_8py.html#a478b6559d51d686336d903567b78fa09":[39,0,6,2,0,3,11],
+"merger_8py.html#a4d21e1132c2ec3130e45c3932fddcbfd":[39,0,6,2,0,3,18],
+"merger_8py.html#a4d3530201fbd44c5358ea3f3399d6252":[39,0,6,2,0,3,20],
+"merger_8py.html#a6497520c446eb0f1256f1a6077b01fa7":[39,0,6,2,0,3,6],
 "merger_8py.html#a6c82ef3cbcbb140092965676f4a24ed4":[39,0,6,2,0,3,7],
 "merger_8py.html#a80b7c89c3b1f6cea2b445f77493481b4":[39,0,6,2,0,3,21],
 "merger_8py.html#a821369fdc9d8991017c2ed4b24b73af3":[39,0,6,2,0,3,15],
@@ -243,11 +249,5 @@ var NAVTREEINDEX37 =
 "namespacedetectors_1_1yolo__e.html#a89ca4a7f0960a269b588337ecb421c6f":[37,0,28,4,2],
 "namespacedishwasher__node.html":[37,0,29],
 "namespacedishwasher__node.html#a050b8b560b1e413b37b298b6cb58901d":[37,0,29,1],
-"namespacedishwasher__node.html#ab33c3aee1b448d83b5b0c5a9ca137748":[37,0,29,2],
-"namespacedishwasher__node.html#af6c6b467f37b36d240098cb72a8f359d":[37,0,29,3],
-"namespacedisplay__gz.html":[37,0,30],
-"namespacedisplay__gz.html#a4f95fbbb9f34a1fd59c2387ed4123947":[37,0,30,0],
-"namespacedisplay__gz__tmr2025.html":[37,0,31],
-"namespacedisplay__gz__tmr2025.html#a153b0bab395c49b4a2223b915b400035":[37,0,31,0],
-"namespacedisplay__real.html":[37,0,32]
+"namespacedishwasher__node.html#ab33c3aee1b448d83b5b0c5a9ca137748":[37,0,29,2]
 };

@@ -1,5 +1,11 @@
 var NAVTREEINDEX54 =
 {
+"vision__tasks_8py.html":[39,0,6,2,1,10],
+"vision__tasks_8py.html#a487ed937fcdfff5c5bea256543493678":[39,0,6,2,1,10,6],
+"vision__tasks_8py.html#a49cfba4f063b64b58df1700773fd7995":[39,0,6,2,1,10,4],
+"vision__tasks_8py.html#a66ff213d20092d5fa520cffdc25d0588":[39,0,6,2,1,10,7],
+"vision__tasks_8py.html#aabac25d44d3bf88f72a6d58600e79b89":[39,0,6,2,1,10,3],
+"vision__tasks_8py.html#ab304cd6fe5f54fe06d682e757d70edb9":[39,0,6,2,1,10,2],
 "vision__tasks_8py.html#acc2ee6161006865e51a5b980585f620b":[39,0,6,2,1,10,5],
 "vision__tasks_8py.html#add8920b2469d6bc25ce6aceb7b0fe0b3":[39,0,6,2,1,10,1],
 "visualization_8py.html":[39,0,7,0,2,2,0,0,7],
