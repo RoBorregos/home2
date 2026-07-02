@@ -158,6 +158,10 @@ class PickAndPlaceTM(Node):
         self.use_extra_surface = False  # pick the 2 common objects from the counter (−20 pts/obj)
         self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
         self.use_vision_confirmation = True  # vision re-look to confirm the pick
+        # Octomap clearing before shelf grasps. OFF by design: a cleared octomap lets the
+        # planner route through shelf structure it can no longer see — a failed pick is
+        # recoverable, a collision is not. (Stability decision 2026-07-02.)
+        self.use_octomap_clearing = False
         self.max_cleanup_objects = 3  # how many to clean before breakfast
 
         # YOLO name mapping: logical → detection class (the model's actual labels).
@@ -207,7 +211,7 @@ class PickAndPlaceTM(Node):
         # (areas.json), i.e. the LocationsNames furniture. Nav records the literal furniture
         # names; WE map our roles onto them here. Confirm these strings match areas.json exactly.
         #   counter -> extra_surface (2 common objects)   cooking_table -> dishwasher tab source
-        #   dinner_table -> dining table                  trash -> kitchen trash bin (fruits)
+        #   dinner_table -> dining table                  trashbin -> kitchen trash bin (fruits)
         #   dishwasher  -> place cutlery/plate/cup INSIDE; bowl+spoon are picked from ON TOP of it
         self.nav_locations = {
             Location.KITCHEN: ("kitchen", "safe_place"),
@@ -216,7 +220,7 @@ class PickAndPlaceTM(Node):
             Location.DISHWASHER: ("kitchen", "dishwasher"),
             Location.DISHWASHER_TAB: ("kitchen", "cooking_table"),
             Location.CABINET: ("kitchen", "cabinet"),
-            Location.TRASH_BIN: ("kitchen", "trash"),
+            Location.TRASH_BIN: ("kitchen", "trashbin"),
             Location.BREAKFAST_SURFACE: ("kitchen", "dinner_table"),
             # bowl + spoon are picked from ON TOP of the dishwasher (normal top pick).
             Location.BREAKFAST_ITEMS: ("kitchen", "dishwasher"),
@@ -615,11 +619,11 @@ class PickAndPlaceTM(Node):
         if say_name:
             self.subtask_manager.hri.say(f"I will pick the {say_name}.", wait=False)
 
-        # Clear the octomap so points accumulated from prior picks/levels do not
-        # over-constrain the grasp (stale octomap caused 99999 collisions on the
-        # tight low shelf levels); let it rebuild fresh at this level.
-        self._clear_octomap()
-        self.timeout(3.0)
+        if self.use_octomap_clearing:
+            # Clear the octomap so points accumulated from prior picks/levels do not
+            # over-constrain the grasp; let it rebuild fresh at this level.
+            self._clear_octomap()
+            self.timeout(3.0)
         # Arm is at the found level's pose; keep it (in_configuration).
         status = self.subtask_manager.manipulation.pick_object(
             object_name, in_configuration=True, scan_environment=True
