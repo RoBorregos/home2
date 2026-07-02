@@ -125,9 +125,19 @@ MODE_LOGS = "logs"
 MODE_BOTH = "both"
 MODE_GALLERY = "gallery"  # end-of-task summary: logs + captured snapshots
 
-# Root folder for snapshots requested via /hri/display/capture.
-CAPTURES_ROOT = Path.home() / ".frida" / "captures"
 CAPTURE_FRAME_TIMEOUT_S = 3.0
+
+# The docker containers mount the repo checkout at /workspace/src, so captures
+# saved there survive `docker compose down` and are visible on the host.
+_WORKSPACE_SRC = Path("/workspace/src")
+
+
+def captures_root() -> Path:
+    """Root folder for snapshots requested via /hri/display/capture."""
+    if _WORKSPACE_SRC.is_dir():
+        return _WORKSPACE_SRC / "logs" / "captures"
+    return Path.home() / ".frida" / "captures"
+
 
 # (key, label, icon) — same order as FSM_STEPS in gpsr/page.tsx.
 GPSR_FSM_STEPS = [
@@ -271,7 +281,7 @@ class DisplayRosNode(Node):
         )
         self._video_sub = None
         self._last_qimg = None
-        self._captures_dir = CAPTURES_ROOT / (
+        self._captures_dir = captures_root() / (
             f"{self.task}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         )
 
