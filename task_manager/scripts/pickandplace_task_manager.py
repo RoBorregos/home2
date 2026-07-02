@@ -33,7 +33,7 @@ from task_manager.utils.status import Status
 from task_manager.utils.shelf_pick_logic import find_target_on_level, load_shelf_levels
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-ATTEMPT_LIMIT = 3
+ATTEMPT_LIMIT = 2
 
 # Stacking detection for pick ordering: object A sits on object B when A's
 # base_link Z is at least STACK_Z_MIN above B's and their XY are within
@@ -163,7 +163,7 @@ class PickAndPlaceTM(Node):
 
         # Shelf heights in base_link Z: read the calibration JSON (re-measurable at
         # competition via the calibrator), falling back to these calibrated values.
-        self.shelf_level_heights = load_shelf_levels({1: 0.599, 2: 0.946, 3: 1.298})
+        self.shelf_level_heights = load_shelf_levels({1: 0.39, 2: 0.68, 3: 1.05})
         self.default_shelf_height = min(self.shelf_level_heights.values())
 
         # ==========================================================
