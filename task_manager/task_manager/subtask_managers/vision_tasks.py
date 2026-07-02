@@ -673,8 +673,8 @@ class VisionTasks:
         if err is not None:
             return err
         if not result.success:
-            Logger.error(self.node, f"Error following face by: {name}")
-            return Status.EXECUTION_ERROR
+            Logger.warn(self.node, f"follow_by_name: no face found for '{name}'")
+            return Status.TARGET_NOT_FOUND
 
         Logger.success(self.node, f"Following face success: {name}")
         return Status.EXECUTION_SUCCESS
