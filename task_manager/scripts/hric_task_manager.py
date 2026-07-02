@@ -129,14 +129,25 @@ class HRIC_TM(Node):
 
         Logger.state(self, self.current_state)
 
+    def _move_arm_cleared(self, named_position: str) -> int:
+        """Clear the octomap before tucking the arm and retry once on failure:
+        voxels of the guest or the held bag next to the gripper block the plan."""
+        result = Status.EXECUTION_ERROR
+        for _ in range(2):
+            self.subtask_manager.manipulation.clear_octomap()
+            result = self.subtask_manager.manipulation.move_to_position(named_position)
+            if result == Status.EXECUTION_SUCCESS:
+                break
+        return result
+
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.clear_collision_objects()
-        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        self._move_arm_cleared("nav_pose")
         if self.carrying_bag:
-            self.subtask_manager.manipulation.move_to_position("nav_carry_bag_pose")
+            self._move_arm_cleared("nav_carry_bag_pose")
         if say:
             Logger.info(self, f"Moving to {location}")
             self.subtask_manager.hri.say(
@@ -358,7 +369,7 @@ class HRIC_TM(Node):
                     "Place the bag in my gripper.",
                     wait=False,
                 )
-                self.subtask_manager.manipulation.move_to_position("nav_pose")
+                self._move_arm_cleared("nav_pose")
 
             # TODO: Detect if the bag was placed in the gripper instead of timeout.
             self.timeout(5)
@@ -532,9 +543,7 @@ class HRIC_TM(Node):
             self.subtask_manager.nav.follow_person(False)
             self.subtask_manager.manipulation.follow_person(False)
             self.subtask_manager.vision.track_person(False)
-            self.subtask_manager.manipulation.move_to_position(
-                "nav_carry_bag_pose" if self.carrying_bag else "nav_pose"
-            )
+            self._move_arm_cleared("nav_carry_bag_pose" if self.carrying_bag else "nav_pose")
             self.subtask_manager.hri.say("Okay, I will stop following you.", wait=False)
 
             self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
