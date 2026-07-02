@@ -18,11 +18,13 @@ COMPARTMENT_HEIGHT_FALLBACK = 0.34
 
 # Fallback shelf level surface heights in base_link Z, per competition arena.
 # Only used if the JSON levels file cannot be read; the live values come from
-# config/shelf_levels.json.
+# config/shelf_levels.json. Must mirror that file (4 REAL levels, 1 = lowest)
+# so shelf level NUMBERING does not shift when falling back — the announced
+# level number scores points.
 SHELF_LEVELS_BY_ARENA_FALLBACK = {
-    1: [0.599, 0.946, 1.298],
-    2: [0.599, 0.946, 1.298],
-    3: [0.599, 0.946, 1.298],
+    1: [0.095, 0.39, 0.68, 1.05],
+    2: [0.095, 0.39, 0.68, 1.05],
+    3: [0.095, 0.39, 0.68, 1.05],
 }
 
 

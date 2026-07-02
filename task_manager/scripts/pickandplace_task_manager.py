@@ -11,6 +11,7 @@ Strategy: maximize pick+place score in 7 minutes.
 """
 
 import json
+import os
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -33,7 +34,7 @@ from task_manager.utils.status import Status
 from task_manager.utils.shelf_pick_logic import (
     find_target_on_level,
     height_matches_level,
-    load_shelf_levels,
+    levels_from_sorted_heights,
 )
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
@@ -45,7 +46,12 @@ ATTEMPT_LIMIT = 2
 STACK_Z_MIN = 0.03
 STACK_XY_MAX = 0.12
 
-SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
+SHELF_LEVEL_NAMES = {1: "bottom", 2: "second", 3: "third", 4: "top"}
+
+# The arm cannot pick or place below this base_link Z. The competition shelf's REAL
+# level 1 (0.095 m) is announce-only: categorization names it (that scores the points),
+# but places fall back to the lowest reachable level and pick sweeps skip it.
+MIN_REACHABLE_SHELF_Z = 0.20
 
 # Stand-off (m) when docking at the dishwasher and cooking_table (dishwasher-tab zone). Their front
 # sits closer than a normal table, so docking flush bumps the base into them; a small offset stops
@@ -165,10 +171,21 @@ class PickAndPlaceTM(Node):
             "milk": "milk",
         }
 
-        # Shelf heights in base_link Z: read the calibration JSON (re-measurable at
-        # competition via the calibrator), falling back to these calibrated values.
-        self.shelf_level_heights = load_shelf_levels({1: 0.39, 2: 0.68, 3: 1.05})
-        self.default_shelf_height = min(self.shelf_level_heights.values())
+        # Shelf heights in base_link Z: the REAL competition shelf levels (1 = lowest),
+        # read live from the arena calibration JSON in xarm_utils (recalibrate on site
+        # with `ros2 run xarm_utils shelf_height_calibrator.py --arena N`). Select the
+        # arena with FRIDA_ARENA=1|2|3. Level 1 (0.095) is below MIN_REACHABLE_SHELF_Z:
+        # announce-only, never placed on or picked from.
+        self.arena = int(os.environ.get("FRIDA_ARENA", "1"))
+        try:
+            from xarm_utils.shelf_levels import get_shelf_levels
+
+            self.shelf_level_heights = levels_from_sorted_heights(get_shelf_levels(self.arena))
+        except Exception as e:
+            self.get_logger().warn(f"Arena shelf JSON unavailable ({e}); using fallback heights.")
+            self.shelf_level_heights = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
+        reachable = [h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z]
+        self.default_shelf_height = min(reachable or self.shelf_level_heights.values())
 
         # ==========================================================
         # END COMPETITION CONFIG
@@ -577,6 +594,8 @@ class PickAndPlaceTM(Node):
 
         if found_level is None:
             for height in sorted(level_heights.values()):
+                if height < MIN_REACHABLE_SHELF_Z:
+                    continue  # real level 1: too low to grasp from, announce-only
                 found, before_counts = self._visit_shelf_level(height, object_name)
                 if found:
                     found_level = height
@@ -677,23 +696,43 @@ class PickAndPlaceTM(Node):
         )
         return self.default_shelf_height
 
+    def _level_number(self, height: float) -> int:
+        """Real shelf level number (1 = lowest) for a configured height."""
+        for lvl, h in sorted(self.shelf_level_heights.items()):
+            if abs(h - height) < 1e-6:
+                return lvl
+        return 1
+
     def _build_shelf_fallback_list(self, obj: ObjectInfo) -> list[float]:
         """Build the ordered list of shelf heights to try for this object.
 
         - First entry: the shelf picked by categorize_objects for this object.
-        - Remaining entries: the other shelves in ascending height order
-          (lowest first) because lower shelves are easier for the xArm6
+        - Remaining entries: the other REACHABLE shelves in ascending height
+          order (lowest first) because lower shelves are easier for the xArm6
           to reach from the Dashgo base.
+
+        A primary below MIN_REACHABLE_SHELF_Z (the real level 1) is announce-only:
+        the categorization already named it for the points, so say why and place on
+        the lowest reachable level instead.
 
         Returns an empty list if no shelves are configured.
         """
         if not self.shelf_level_heights:
             return []
         primary = self._get_shelf_height_for_object(obj)
-        # All configured heights, lowest first (most reachable first)
-        all_heights = sorted(self.shelf_level_heights.values())
+        reachable = sorted(
+            h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z
+        )
+        if primary < MIN_REACHABLE_SHELF_Z:
+            if reachable:
+                self.subtask_manager.hri.say(
+                    f"Shelf {self._level_number(primary)} is too low for my arm, so I "
+                    f"will place the {obj.name} on shelf {self._level_number(reachable[0])}.",
+                    wait=False,
+                )
+            return reachable
         # Keep primary at the front, drop it from the tail fallbacks
-        fallbacks = [h for h in all_heights if abs(h - primary) > 1e-6]
+        fallbacks = [h for h in reachable if abs(h - primary) > 1e-6]
         return [primary] + fallbacks
 
     def announce_objects(self, names):
@@ -1149,7 +1188,12 @@ class PickAndPlaceTM(Node):
                 CLog.vision(self, "SHELF", f"Scanning shelf level {level} at {height}m")
                 self.subtask_manager.hri.say(f"Scanning shelf number {idx + 1}.", wait=False)
 
-                self._scan_shelf_level(height)
+                # An unreachable level (real level 1) is viewed from the lowest reachable
+                # level's pose — the camera can frame it even though the arm cannot operate
+                # there; the height filter below still attributes detections to the real level.
+                self._scan_shelf_level(
+                    height if height >= MIN_REACHABLE_SHELF_Z else self.default_shelf_height
+                )
 
                 status, detections = self.subtask_manager.vision.detect_objects()
                 retry = 0

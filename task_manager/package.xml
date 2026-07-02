@@ -19,6 +19,8 @@
   <!-- Workspace dependencies -->
   <depend>frida_constants</depend>
   <depend>frida_interfaces</depend>
+  <!-- shelf level heights (arena calibration JSON) -->
+  <exec_depend>xarm_utils</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
