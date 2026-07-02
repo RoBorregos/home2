@@ -142,11 +142,12 @@ class DoingLaundryTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, Doing Laundry task will begin now")
+            status = self.subtask_manager.nav.check_door()
             self.set_state(DoingLaundryTM.TaskStates.START)
 
         elif self.current_state == DoingLaundryTM.TaskStates.START:
             Logger.state(self, "Starting Doing Laundry Task")
-            self.navigate_to("laundry", "safe_place")
+            self.navigate_to("laundry", "washing_machine")
             self.set_state(DoingLaundryTM.TaskStates.SCAN_FOR_BASKET)
 
         elif self.current_state == DoingLaundryTM.TaskStates.SCAN_FOR_BASKET:
@@ -214,6 +215,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE:
             Logger.info(self, "Navigating to laundry table while holding basket.")
+            status, error = self.navigate_holding("laundry", "basket_fix")
             status, error = self.navigate_holding("laundry", "table")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry table with basket.")
