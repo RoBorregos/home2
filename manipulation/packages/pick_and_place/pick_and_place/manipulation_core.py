@@ -320,7 +320,9 @@ class ManipulationCore(Node):
     def add_shelf_ceiling_guard(self, place_pose, table_height):
         """Block the place return from routing the arm up into the compartment ceiling
         (the eye-in-hand octomap never sees it). Slab above the place surface."""
-        compartment_h = 0.26  #get_compartment_height() -  shelf level-to-ceiling height
+        compartment_h = (
+            0.26  # get_compartment_height() -  shelf level-to-ceiling height
+        )
         co = CollisionObject()
         co.id = "shelf_ceiling_guard"
         co.type = "box"
