@@ -198,7 +198,7 @@ class HRIC_TM(Node):
                 rclpy.spin_once(self, timeout_sec=0.1)
 
             Logger.success(self, "Start button pressed, now waiting for a door event")
-            self.current_state = HRIC_TM.TaskStates.START
+            self.current_state = HRIC_TM.TaskStates.WAIT_FOR_DOOR
 
         elif self.current_state == HRIC_TM.TaskStates.WAIT_FOR_DOOR:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_DOOR)
@@ -484,8 +484,8 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_WAIT_AREA:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_WAIT_AREA)
             self.current_guest_idx = SECOND_GUEST_IDX
-            self.navigate_to("entrance", say=False)
-            self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
+            self.navigate_to("living_room", say=False)
+            self.current_state = HRIC_TM.TaskStates.WAIT_FOR_DOOR
 
         elif self.current_state == HRIC_TM.TaskStates.FOLLOW_PERSON:
             self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
