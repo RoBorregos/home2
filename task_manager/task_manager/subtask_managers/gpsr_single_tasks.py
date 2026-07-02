@@ -59,13 +59,20 @@ class GPSRSingleTask(GenericTask):
             command = GoTo(**command)
 
         self.subtask_manager.manipulation.move_to_position("nav_pose")
-        location = self.subtask_manager.hri.query_location(command.location_to_go)[0]
 
-        target = location.subarea if location.subarea else location.area
+        # start_location is a fixed map area, not a semantic place — skip the
+        # embedding lookup (which can mis-resolve it) and navigate directly.
+        if command.location_to_go.strip().lower().replace(" ", "_") == "start_location":
+            area, subarea = "start_location", ""
+        else:
+            location = self.subtask_manager.hri.query_location(command.location_to_go)[0]
+            area, subarea = location.area, location.subarea
+
+        target = subarea if subarea else area
         pretty_target = target.replace("_", " ")
         self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
 
-        result, error = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        result, error = self.subtask_manager.nav.move_to_location(area, subarea)
         return result, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
