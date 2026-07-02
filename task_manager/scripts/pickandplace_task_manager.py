@@ -43,6 +43,7 @@ STACK_XY_MAX = 0.12
 
 SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
 
+
 class ObjectCategory(Enum):
     """Object categories for placement decisions"""
 
