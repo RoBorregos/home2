@@ -38,6 +38,7 @@ from frida_constants.vision_constants import (
     DETECT_HAND_SERVICE,
     CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
+    MOONDREAM_POINT_3D_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
@@ -59,6 +60,7 @@ from frida_interfaces.srv import (
     TrackBy,
     DetectHand,
     CustomerTables,
+    MoondreamPoint3D,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -128,6 +130,10 @@ class VisionTasks:
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_hand_client = self.node.create_client(DetectHand, DETECT_HAND_SERVICE)
+
+        self.moondream_point_3d_client = self.node.create_client(
+            MoondreamPoint3D, MOONDREAM_POINT_3D_TOPIC
+        )
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
@@ -948,6 +954,37 @@ class VisionTasks:
             f"Hand detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
         )
         return Status.EXECUTION_SUCCESS, result.point
+
+    @mockable(return_value=PointStamped())
+    @service_check("moondream_point_3d_client", None, TIMEOUT)
+    def get_moondream_point_3d(self, subject: str, timeout: float = TIMEOUT) -> PointStamped:
+        """Get the 3D PointStamped at the center of a subject detected by
+        moondream point. The backing service averages moondream's returned
+        points and deprojects them with depth + camera info.
+        """
+        Logger.info(self.node, f"Getting moondream 3D point for: {subject}")
+        request = MoondreamPoint3D.Request()
+        request.subject = subject
+
+        try:
+            future = self.moondream_point_3d_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if result is None or not result.success:
+                Logger.warn(self.node, f"No 3D point found for '{subject}'")
+                return None
+
+        except Exception as e:
+            Logger.error(self.node, f"Error getting moondream 3D point: {e}")
+            return None
+
+        p = result.point.point
+        Logger.success(
+            self.node,
+            f"Moondream 3D point for '{subject}': ({p.x:.3f}, {p.y:.3f}, {p.z:.3f})",
+        )
+        return result.point
 
     def visual_info(self, description, object="object"):
         """Return the object matching the description"""

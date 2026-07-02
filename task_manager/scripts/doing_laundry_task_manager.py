@@ -21,6 +21,9 @@ BASKET_PLACE_ROUNDS = 2
 # Pick clothes in Washing Machine and bring to the table.
 WM_PLACE_ROUNDS = 1
 
+# Moondream subject used to locate the washing-machine drum opening (centroid).
+WM_SUBJECT = "round container entrance of color orange"  # TUNE ON THE ROBOT
+
 
 class DoingLaundryTM(Node):
     """Task Manager for Doing Laundry"""
@@ -132,6 +135,27 @@ class DoingLaundryTM(Node):
         dr = math.hypot(tp.point.x - right[0], tp.point.y - right[1])
         Logger.info(self, f"Basket dist left={dl:.2f} right={dr:.2f}")
         return "basket_left" if dl <= dr else "basket_right"
+
+    def pick_clothes_in_washing_machine(self):
+        """Snapshot the drum opening with moondream and aim the arm shaft +
+        gripper approach axis at that centroid. Stops once aligned — it does
+        NOT drive the base in, rotate joint5, or retreat. Returns a Status."""
+        man = self.subtask_manager.manipulation
+        vis = self.subtask_manager.vision
+
+        man.move_to_position("front_low_stare")
+        point = vis.get_moondream_point_3d(WM_SUBJECT)
+        if point is None or point.header.frame_id == "":
+            Logger.error(self, "WM: no drum-opening centroid")
+            return Status.EXECUTION_ERROR
+
+        # align_arm_server transforms the point to base_link internally.
+        if man.align_arm_toward_centroid(point) != Status.EXECUTION_SUCCESS:
+            Logger.error(self, "WM: alignment failed")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self, "WM: aligned to centroid (stopping here)")
+        return Status.EXECUTION_SUCCESS
 
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
@@ -296,7 +320,7 @@ class DoingLaundryTM(Node):
                 f"Picking clothes from washing machine ({self.wm_placed + 1}/{WM_PLACE_ROUNDS}).",
             )
             self.subtask_manager.hri.say("Picking clothes from the washing machine.", wait=False)
-            result = self.subtask_manager.manipulation.pick_object("clothes")
+            result = self.pick_clothes_in_washing_machine()
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from washing machine.")

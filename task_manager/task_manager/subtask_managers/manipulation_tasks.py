@@ -29,7 +29,7 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from task_manager.utils.decorators import mockable, service_check
 from task_manager.utils.status import Status
-from frida_interfaces.action import ManipulationAction, GoToHand
+from frida_interfaces.action import ManipulationAction, GoToHand, AlignArmToCentroid
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
@@ -39,6 +39,7 @@ from xarm_msgs.srv import SetDigitalIO
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    ALIGN_ARM_TO_CENTROID_ACTION_SERVER,
     FIXED_DISTANCE_MOVE_SERVICE,
 )
 import time as t
@@ -117,6 +118,56 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        self._align_arm_action_client = ActionClient(
+            self.node, AlignArmToCentroid, ALIGN_ARM_TO_CENTROID_ACTION_SERVER
+        )
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_align_arm_action_client",
+        return_value=Status.EXECUTION_ERROR,
+        timeout=TIMEOUT,
+    )
+    def align_arm_toward_centroid(
+        self,
+        point: PointStamped,
+        pre_pose: str = "washing_machine_arrow_pose",
+        velocity: float = 0.2,
+    ) -> int:
+        """Point the arm shaft AND gripper approach axis at `point`.
+
+        Thin client over the `AlignArmToCentroid` action — the FK, the
+        j1/j2/j5 solver and the soft-limit checks all live in the
+        `align_arm_server` node inside `frida_motion_planning`.
+        """
+        goal_msg = AlignArmToCentroid.Goal()
+        goal_msg.point = point
+        goal_msg.pre_pose = pre_pose
+        goal_msg.velocity = float(velocity)
+
+        self._align_arm_action_client.wait_for_server()
+        future = self._align_arm_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None or not future.result().accepted:
+            Logger.error(self.node, "AlignArmToCentroid goal was rejected")
+            return Status.EXECUTION_ERROR
+
+        Logger.info(self.node, "AlignArmToCentroid accepted, waiting for result...")
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=120.0)
+
+        result = result_future.result().result
+        if result.success:
+            Logger.success(
+                self.node,
+                f"AlignArmToCentroid OK (arm_cos={result.arm_cos:.3f}, "
+                f"approach_cos={result.approach_cos:.3f})",
+            )
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "AlignArmToCentroid failed")
+        return Status.EXECUTION_ERROR
 
     def open_gripper(self):
         """Opens the gripper"""

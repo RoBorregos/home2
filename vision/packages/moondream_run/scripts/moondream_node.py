@@ -17,7 +17,13 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import BeverageLocation
-from frida_interfaces.srv import PersonPosture, Query, CropQuery, ObjectPoints
+from frida_interfaces.srv import (
+    PersonPosture,
+    Query,
+    CropQuery,
+    ObjectPoints,
+    MoondreamObjectBBox,
+)
 from frida_interfaces.msg import Point2D
 
 from frida_constants.vision_constants import (
@@ -27,6 +33,7 @@ from frida_constants.vision_constants import (
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
     OBJECT_POINTS_TOPIC,
+    MOONDREAM_BBOX_TOPIC,
 )
 from enum import Enum
 
@@ -79,6 +86,9 @@ class MoondreamNode(Node):
         )
         self.object_points_service = self.create_service(
             ObjectPoints, OBJECT_POINTS_TOPIC, self.object_points_callback
+        )
+        self.bbox_service = self.create_service(
+            MoondreamObjectBBox, MOONDREAM_BBOX_TOPIC, self.bbox_callback
         )
 
         self.yolo_model = load_yolo_trt("yolov8n.pt")
@@ -235,6 +245,43 @@ class MoondreamNode(Node):
             response.location = ""
             response.success = False
 
+        return response
+
+    def bbox_callback(self, request, response):
+        """Largest normalized bbox for `subject` via moondream `DetectObject`."""
+        self.get_logger().info(f"MoondreamObjectBBox: {request.subject}")
+        response.success = False
+        response.xmin = response.ymin = response.xmax = response.ymax = 0.0
+        if self.image is None:
+            self.get_logger().warn("No image received yet.")
+            return response
+
+        _, image_bytes = cv2.imencode(".jpg", self.image)
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes.tobytes())
+            )
+            grpc_resp = self.stub.DetectObject(
+                moondream_proto_pb2.DetectObjectRequest(
+                    encoded_image=encoded.encoded_image,
+                    subject=request.subject,
+                )
+            )
+        except Exception as e:
+            self.get_logger().error(f"DetectObject RPC error: {e}")
+            return response
+
+        if not grpc_resp.found:
+            self.get_logger().warn(f"No bbox for '{request.subject}'")
+            return response
+
+        response.success = True
+        response.xmin, response.ymin = float(grpc_resp.x_min), float(grpc_resp.y_min)
+        response.xmax, response.ymax = float(grpc_resp.x_max), float(grpc_resp.y_max)
+        self.success(
+            f"BBox '{request.subject}': "
+            f"({response.xmin:.3f}, {response.ymin:.3f})->({response.xmax:.3f}, {response.ymax:.3f})"
+        )
         return response
 
     def object_points_callback(self, request, response):

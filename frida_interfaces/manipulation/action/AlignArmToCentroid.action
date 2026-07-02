@@ -1,0 +1,9 @@
+geometry_msgs/PointStamped point
+string pre_pose
+float32 velocity
+---
+bool success
+float32 arm_cos
+float32 approach_cos
+---
+string execution_state
