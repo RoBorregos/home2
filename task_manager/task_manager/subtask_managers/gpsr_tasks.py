@@ -560,7 +560,10 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = Count(**command)
 
-        possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
+        possibilities = (
+            [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"] + ["color"]
+        )
+        possibilities = [p for p in possibilities if p != "unknown"]
 
         status, closest = self.subtask_manager.hri.find_closest(
             possibilities, command.target_to_count
@@ -580,12 +583,11 @@ class GPSRTask(GenericTask):
         counter = 0
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color_match = self.subtask_manager.hri.find_closest(
-                self.color_list, command.target_to_count
-            )
+            clothing = command.target_to_count.lower().strip().split(" ")
+            s, color_match = self.subtask_manager.hri.find_closest(self.color_list, clothing[0])
             cache_color = color_match.results[0]
             s, cloth_match = self.subtask_manager.hri.find_closest(
-                self.clothe_list, command.target_to_count
+                self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
             )
             cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
@@ -627,7 +629,11 @@ class GPSRTask(GenericTask):
         self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
-        possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
+        possibilities = (
+            [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"] + ["color"]
+        )
+
+        possibilities = [p for p in possibilities if p != "unknown"]
 
         status, closest = self.subtask_manager.hri.find_closest(
             possibilities, command.attribute_value
@@ -636,21 +642,20 @@ class GPSRTask(GenericTask):
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
-        self.subtask_manager.hri.say(
-            f"Searching for {value}.",
-        )
-
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color_match = self.subtask_manager.hri.find_closest(
-                self.color_list, command.attribute_value
-            )
+            clothing = command.attribute_value.lower().strip().split(" ")
+            s, color_match = self.subtask_manager.hri.find_closest(self.color_list, clothing[0])
             cache_color = color_match.results[0]
             s, cloth_match = self.subtask_manager.hri.find_closest(
-                self.clothe_list, command.attribute_value
+                self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
             )
             cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
             command.attribute_value = value
+
+        self.subtask_manager.hri.say(
+            f"Searching for {value}.",
+        )
 
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -663,17 +668,19 @@ class GPSRTask(GenericTask):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
                 if cache_color is None or cache_cloth is None:
+                    clothing = command.attribute_value.lower().strip().split(" ")
                     s, color_match = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.attribute_value
+                        self.color_list, clothing[0]
                     )
                     cache_color = color_match.results[0]
                     s, cloth_match = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.attribute_value
+                        self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
                     )
                     cache_cloth = cloth_match.results[0]
 
                 status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
 
+            # If next command is "go_to" dont ask to approach robot
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
                     f"I found a {command.attribute_value}. Please approach me.",
