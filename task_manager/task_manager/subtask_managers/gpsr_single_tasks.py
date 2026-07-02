@@ -106,7 +106,7 @@ class GPSRSingleTask(GenericTask):
         """
         if isinstance(command, dict):
             command = PickObject(**command)
-
+        self.subtask_manager.nav.dock_table()
         self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
         self.subtask_manager.manipulation.move_to_position("table_stare")
         self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
