@@ -375,7 +375,7 @@ class GPSRTM(Node):
             self._track_state_change(GPSRTM.TaskStates.START)
             status = self.subtask_manager.nav.check_door()
 
-            self.navigate_to("start_location","" ,False)
+            self.navigate_to("start_location", "", False)
 
             self.subtask_manager.hri.say(
                 "Hi, my name is Frida and I am a general purpose robot. Please press the button on my screen to start telling me the commands one by one."
