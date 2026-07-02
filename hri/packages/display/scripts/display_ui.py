@@ -10,9 +10,11 @@ default (/), gpsr, hric, laundry, ppc, restaurant, storing_groceries.
 """
 
 import json
+import re
 import sys
 import threading
 from datetime import datetime
+from pathlib import Path
 
 import rclpy
 from rclpy.node import Node
@@ -26,6 +28,7 @@ from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -120,6 +123,11 @@ MODE_BUTTON = "button"
 MODE_CAMERA = "camera"
 MODE_LOGS = "logs"
 MODE_BOTH = "both"
+MODE_GALLERY = "gallery"  # end-of-task summary: logs + captured snapshots
+
+# Root folder for snapshots requested via /hri/display/capture.
+CAPTURES_ROOT = Path.home() / ".frida" / "captures"
+CAPTURE_FRAME_TIMEOUT_S = 3.0
 
 # (key, label, icon) — same order as FSM_STEPS in gpsr/page.tsx.
 GPSR_FSM_STEPS = [
@@ -180,7 +188,7 @@ LAUNDRY_TASK_STEPS = [
     ("pick_clothes_wm", "Picking from Machine", "\U0001f9fc", MODE_CAMERA),
     ("close_laundry_machine", "Closing Machine", "\U0001f6aa", MODE_CAMERA),
     ("navigate_to_table_with_clothes", "Navigate to Table", "\U0001f9ed", MODE_CAMERA),
-    ("end", "Finished", "✅", MODE_LOGS),
+    ("end", "Finished", "✅", MODE_GALLERY),
 ]
 
 # (key, label, icon, display_mode) — same order as TASK_STEPS in ppc/page.tsx.
@@ -190,7 +198,7 @@ PPC_TASK_STEPS = [
     ("perceive_table", "Perceive Table", "\U0001f441", MODE_BOTH),
     ("cleanup_phase", "Cleanup Phase", "\U0001f4e6", MODE_BOTH),
     ("breakfast_phase", "Breakfast Phase", "☕", MODE_BOTH),
-    ("end", "Finished", "✅", MODE_LOGS),
+    ("end", "Finished", "✅", MODE_GALLERY),
 ]
 
 # Raw FSM state -> macro step shown in the pill bar (getStepKey in ppc/page.tsx).
@@ -248,6 +256,7 @@ class DisplaySignals(QObject):
     frame_received = pyqtSignal(QImage)
     task_step_changed = pyqtSignal(str)
     command_index_changed = pyqtSignal(int)
+    capture_added = pyqtSignal(str, QImage)  # label, snapshot
 
 
 class DisplayRosNode(Node):
@@ -261,6 +270,10 @@ class DisplayRosNode(Node):
             self.task, DEFAULT_VIDEO_TOPIC
         )
         self._video_sub = None
+        self._last_qimg = None
+        self._captures_dir = CAPTURES_ROOT / (
+            f"{self.task}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
 
         self.create_subscription(String, "/AudioState", self._on_audio_state, 10)
         self.create_subscription(Float32, "/hri/speech/vad", self._on_vad, 10)
@@ -284,6 +297,7 @@ class DisplayRosNode(Node):
         self.create_subscription(
             String, "/hri/display/change_video", self._on_change_video, 10
         )
+        self.create_subscription(String, "/hri/display/capture", self._on_capture, 10)
 
         step_topic = TASK_STEP_TOPICS.get(self.task)
         if step_topic is not None:
@@ -311,7 +325,19 @@ class DisplayRosNode(Node):
     def _on_vad(self, msg: Float32):
         self.signals.vad_level_changed.emit(msg.data)
 
+    def _log_event(self, kind: str, text: str):
+        """Append one line to messages.log in this run's captures folder."""
+        try:
+            self._captures_dir.mkdir(parents=True, exist_ok=True)
+            with open(self._captures_dir / "messages.log", "a") as f:
+                f.write(
+                    f"{datetime.now().strftime('%H:%M:%S')} [{kind.upper()}] {text}\n"
+                )
+        except OSError as e:
+            self.get_logger().warn(f"Could not write messages.log: {e}")
+
     def _on_message(self, msg_type: str, msg: String):
+        self._log_event(msg_type, msg.data)
         self.signals.message_received.emit(msg_type, msg.data)
 
     def _on_kws(self, msg: String):
@@ -319,17 +345,21 @@ class DisplayRosNode(Node):
             data = json.loads(msg.data)
             keyword = data.get("keyword")
             if keyword:
+                self._log_event("keyword", str(keyword))
                 self.signals.message_received.emit("keyword", str(keyword))
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
     def _on_question(self, msg: String):
+        if msg.data.strip():
+            self._log_event("question", msg.data)
         self.signals.question_received.emit(msg.data)
 
     def _on_task_status(self, msg: String):
         self.signals.task_status_changed.emit(msg.data == "active")
 
     def _on_task_step(self, msg: String):
+        self._log_event("step", msg.data.strip().lower())
         self.signals.task_step_changed.emit(msg.data.strip().lower())
 
     def _on_command_index(self, msg: Int32):
@@ -346,15 +376,72 @@ class DisplayRosNode(Node):
     def _on_change_video(self, msg: String):
         self._subscribe_video(msg.data)
 
-    def _on_frame(self, msg: Image):
+    def _to_qimage(self, msg: Image):
         try:
             cv_img = self.bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
         except Exception as e:
             self.get_logger().warn(f"Error converting frame: {e}")
-            return
+            return None
         h, w, ch = cv_img.shape
-        qimg = QImage(cv_img.data, w, h, ch * w, QImage.Format_RGB888).copy()
+        return QImage(cv_img.data, w, h, ch * w, QImage.Format_RGB888).copy()
+
+    def _on_frame(self, msg: Image):
+        qimg = self._to_qimage(msg)
+        if qimg is None:
+            return
+        self._last_qimg = qimg
         self.signals.frame_received.emit(qimg)
+
+    def _on_capture(self, msg: String):
+        """Snapshot request: plain-text label, or JSON {"label", "topic"}.
+
+        With a topic, grab one frame from it (annotated feeds keep publishing
+        even when the display shows another topic); otherwise use the frame
+        currently on screen.
+        """
+        label, topic = msg.data, ""
+        try:
+            data = json.loads(msg.data)
+            label = data.get("label") or "capture"
+            topic = data.get("topic") or ""
+        except json.JSONDecodeError:
+            pass
+
+        if not topic or topic == self.video_topic:
+            self._finish_capture(label, self._last_qimg)
+            return
+
+        state = {"done": False}
+
+        def finish(qimg):
+            if state["done"]:
+                return
+            state["done"] = True
+            self.destroy_subscription(state["sub"])
+            state["timer"].cancel()
+            self._finish_capture(label, qimg)
+
+        # Fall back to the on-screen frame if the topic stays silent.
+        state["sub"] = self.create_subscription(
+            Image, topic, lambda m: finish(self._to_qimage(m)), 1
+        )
+        state["timer"] = self.create_timer(
+            CAPTURE_FRAME_TIMEOUT_S, lambda: finish(self._last_qimg)
+        )
+
+    def _finish_capture(self, label: str, qimg):
+        if qimg is None:
+            self.get_logger().warn(f"Capture '{label}' skipped: no frame available")
+            return
+        self._captures_dir.mkdir(parents=True, exist_ok=True)
+        slug = re.sub(r"[^\w-]+", "_", label).strip("_")[:40] or "capture"
+        path = self._captures_dir / (f"{datetime.now().strftime('%H%M%S')}_{slug}.png")
+        if not qimg.save(str(path)):
+            self.get_logger().warn(f"Could not save capture to {path}")
+        else:
+            self.get_logger().info(f"Saved capture: {path}")
+        self._log_event("capture", f"{label} -> {path.name}")
+        self.signals.capture_added.emit(label, qimg)
 
     def publish_button_press(self):
         self.button_pub.publish(Empty())
@@ -564,6 +651,91 @@ class MessagesPanel(QScrollArea):
         self._layout.insertWidget(0, entry)
 
 
+class GalleryPanel(QScrollArea):
+    """Grid of snapshots taken during the run via /hri/display/capture."""
+
+    COLUMNS = 3
+    THUMB_WIDTH = 320
+
+    def __init__(self, signals: DisplaySignals):
+        super().__init__()
+        self.setWidgetResizable(True)
+        self._container = QWidget()
+        self._grid = QGridLayout(self._container)
+        self._grid.setAlignment(Qt.AlignTop)
+        self._grid.setSpacing(10)
+        self.setWidget(self._container)
+
+        self._count = 0
+        self._placeholder = QLabel("\U0001f4f7 No captures yet")
+        self._placeholder.setAlignment(Qt.AlignCenter)
+        self._placeholder.setStyleSheet(
+            f"color: {TEXT_GRAY}; font-size: 14px; border: none;"
+        )
+        self._grid.addWidget(self._placeholder, 0, 0)
+        signals.capture_added.connect(self.add_capture)
+
+    def add_capture(self, label: str, qimg: QImage):
+        if self._count == 0:
+            self._placeholder.hide()
+
+        cell = QWidget()
+        cell.setStyleSheet(
+            f"background-color: {BG_DARKER}; border: 1px solid {BORDER_LIGHT};"
+            "border-radius: 8px;"
+        )
+        layout = QVBoxLayout(cell)
+
+        img_label = QLabel()
+        img_label.setAlignment(Qt.AlignCenter)
+        img_label.setPixmap(
+            QPixmap.fromImage(qimg).scaledToWidth(
+                self.THUMB_WIDTH, Qt.SmoothTransformation
+            )
+        )
+        img_label.setStyleSheet("border: none;")
+        layout.addWidget(img_label)
+
+        caption = QLabel(f"{label} — {datetime.now().strftime('%H:%M:%S')}")
+        caption.setAlignment(Qt.AlignCenter)
+        caption.setWordWrap(True)
+        caption.setStyleSheet(f"color: {TEXT_GRAY}; font-size: 11px; border: none;")
+        layout.addWidget(caption)
+
+        self._grid.addWidget(
+            cell, self._count // self.COLUMNS, self._count % self.COLUMNS
+        )
+        self._count += 1
+
+
+class GalleryDialog(QDialog):
+    def __init__(self, signals: DisplaySignals, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Captures")
+        self.resize(1100, 700)
+        layout = QVBoxLayout(self)
+        layout.addWidget(GalleryPanel(signals))
+
+
+class GalleryButton(QPushButton):
+    """Header chip counting captures; opens the gallery dialog."""
+
+    def __init__(self, signals: DisplaySignals, dialog: GalleryDialog):
+        super().__init__("\U0001f4f7 0")
+        self._count = 0
+        self.setStyleSheet(
+            f"color: {AMBER}; background-color: rgba(245,158,11,38);"
+            "border: 1px solid rgba(245,158,11,77); border-radius: 11px;"
+            "padding: 3px 10px; font-size: 11px; font-weight: bold;"
+        )
+        self.clicked.connect(lambda: (dialog.show(), dialog.raise_()))
+        signals.capture_added.connect(self._on_capture)
+
+    def _on_capture(self, _label: str, _qimg: QImage):
+        self._count += 1
+        self.setText(f"\U0001f4f7 {self._count}")
+
+
 class StepPillBar(QWidget):
     """Horizontal done/active/pending progress pills (StepPill in the web app)."""
 
@@ -679,6 +851,8 @@ class BaseWindow(QMainWindow):
         self._audio_timeout_timer.timeout.connect(lambda: self._on_audio_state("idle"))
         ros_node.signals.audio_state_changed.connect(self._on_audio_state)
 
+        self.gallery_dialog = GalleryDialog(ros_node.signals, self)
+
         if with_dialogs:
             self.map_dialog = MapDialog(self)
             self.question_dialog = QuestionDialog(self)
@@ -698,6 +872,7 @@ class BaseWindow(QMainWindow):
         layout.addStretch()
         for widget in extra_right:
             layout.addWidget(widget)
+        layout.addWidget(GalleryButton(self.ros_node.signals, self.gallery_dialog))
         layout.addWidget(AudioPill(self.ros_node.signals))
         return header
 
@@ -776,7 +951,7 @@ class CenteredWindow(BaseWindow):
 class SteppedWindow(BaseWindow):
     """Step pill bar + button/camera/logs/both stacked content (gpsr / hric)."""
 
-    MODES = (MODE_BUTTON, MODE_CAMERA, MODE_LOGS, MODE_BOTH)
+    MODES = (MODE_BUTTON, MODE_CAMERA, MODE_LOGS, MODE_BOTH, MODE_GALLERY)
 
     def __init__(self, ros_node: DisplayRosNode, title: str, steps, extra_right=()):
         super().__init__(ros_node, title)
@@ -810,6 +985,12 @@ class SteppedWindow(BaseWindow):
         both_layout.addWidget(MessagesPanel(signals), 1)
         both_layout.addWidget(VideoView(signals, ros_node.video_topic), 1)
         self.stack.addWidget(both_page)
+
+        gallery_page = QWidget()
+        gallery_layout = QHBoxLayout(gallery_page)
+        gallery_layout.addWidget(MessagesPanel(signals), 1)
+        gallery_layout.addWidget(GalleryPanel(signals), 2)
+        self.stack.addWidget(gallery_page)
 
         root.addWidget(self.stack, 1)
         signals.task_step_changed.connect(self._on_task_step)
@@ -857,11 +1038,12 @@ class GpsrWindow(SteppedWindow):
             return MODE_BUTTON
         if fsm_state == "start":
             return MODE_CAMERA
+        if fsm_state == "done":
+            return MODE_GALLERY
         if fsm_state in (
             "waiting_for_command",
             "plan_and_execute_batch",
             "finished_command",
-            "done",
         ):
             return MODE_LOGS
         if fsm_state == "executing" and command:
