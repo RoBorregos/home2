@@ -1,6 +1,8 @@
 var classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask =
 [
     [ "__init__", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a59469de0b833fe860ed03758ee1e937a", null ],
+    [ "_recover_lost_person", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#acf8d4de5b413d1a0cdbbfb34887b728c", null ],
+    [ "_teardown_follow", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a13ce05f6c374ee4753c3c81f8d87064a", null ],
     [ "count", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#adbb4f9b9dd1448b06ff6fc6f8ba05860", null ],
     [ "count_objects", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#aabfac22f48b437b68fd474565ddf2a40", null ],
     [ "find_person", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a33bbbac57b5e0cb64658eb766f0ef185", null ],

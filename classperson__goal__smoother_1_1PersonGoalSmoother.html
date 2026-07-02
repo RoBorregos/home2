@@ -130,6 +130,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:afb672944dfbcbd7444e9a9a9cb2f8d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad16369d46668c6fe1b0ed93cd41347b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#aad16369d46668c6fe1b0ed93cd41347b">map_info</a></td></tr>
 <tr class="separator:aad16369d46668c6fe1b0ed93cd41347b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcb65caed31c5717a65871660f442ffb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#adcb65caed31c5717a65871660f442ffb">lost_halt_active</a></td></tr>
+<tr class="separator:adcb65caed31c5717a65871660f442ffb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acaf5e64a512d7271d7f1dfda377bc525"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#acaf5e64a512d7271d7f1dfda377bc525">tf_buffer</a></td></tr>
 <tr class="separator:acaf5e64a512d7271d7f1dfda377bc525"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a110f83cc1a48550f90b17fd6e9b9a14a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#a110f83cc1a48550f90b17fd6e9b9a14a">tf_listener</a></td></tr>
@@ -163,6 +165,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:ae06ca7a43bde04be51e4ddfe0c544d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6738af20d3049544561eaca961864216"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#a6738af20d3049544561eaca961864216">_update_robot_pose</a> (self)</td></tr>
 <tr class="separator:a6738af20d3049544561eaca961864216"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84e8a2b62755f1c202b33c28bdf2de3b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#a84e8a2b62755f1c202b33c28bdf2de3b">_lost_person_watchdog</a> (self)</td></tr>
+<tr class="separator:a84e8a2b62755f1c202b33c28bdf2de3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7397202d636806bf23ab2a70746bff1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#af7397202d636806bf23ab2a70746bff1">_publish_goal</a> (self)</td></tr>
 <tr class="separator:af7397202d636806bf23ab2a70746bff1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5ccb0fa7bb8819202da826c654556d1"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#ac5ccb0fa7bb8819202da826c654556d1">_snap_to_free</a> (self, float wx, float wy)</td></tr>
@@ -318,6 +322,37 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Service to switch between follow and standard nav params.</pre> 
+</div>
+</div>
+<a id="a84e8a2b62755f1c202b33c28bdf2de3b" name="a84e8a2b62755f1c202b33c28bdf2de3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84e8a2b62755f1c202b33c28bdf2de3b">&#9670;&#160;</a></span>_lost_person_watchdog()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def person_goal_smoother.PersonGoalSmoother._lost_person_watchdog </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Freeze the goal at the robot's pose when tracker data stops.
+
+Fires once per loss: publishes the current robot pose (facing the last
+smoothed person position, so the camera keeps pointing where the person
+vanished) and re-arms when data resumes (_tracker_cb clears the flag).
+</pre> 
 </div>
 </div>
 <a id="ae06ca7a43bde04be51e4ddfe0c544d3f" name="ae06ca7a43bde04be51e4ddfe0c544d3f"></a>
@@ -649,6 +684,20 @@ Protected Member Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">person_goal_smoother.PersonGoalSmoother.last_tracker_time</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="adcb65caed31c5717a65871660f442ffb" name="adcb65caed31c5717a65871660f442ffb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcb65caed31c5717a65871660f442ffb">&#9670;&#160;</a></span>lost_halt_active</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">person_goal_smoother.PersonGoalSmoother.lost_halt_active</td>
         </tr>
       </table>
 </div><div class="memdoc">

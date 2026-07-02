@@ -165,6 +165,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5b99f58a0f668c0a6dd4a01921e51dca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8fd6bbd9e18caf416ec9e16212345afe"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8fd6bbd9e18caf416ec9e16212345afe">count_by_pose</a> (self, str pose)</td></tr>
 <tr class="separator:a8fd6bbd9e18caf416ec9e16212345afe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a155d53434af16603466430880decb752"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a155d53434af16603466430880decb752">count_person</a> (self)</td></tr>
+<tr class="separator:a155d53434af16603466430880decb752"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5b806d379f12dd981adb733c98df6a4"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac5b806d379f12dd981adb733c98df6a4">count_by_gesture</a> (self, str gesture)</td></tr>
 <tr class="separator:ac5b806d379f12dd981adb733c98df6a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaaf6264897eb235876f8deedb98dbbdc"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aaaf6264897eb235876f8deedb98dbbdc">count_by_color</a> (self, str color, str clothing)</td></tr>
@@ -262,6 +264,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:aadb75ddadd2e2a01a9147893447db639"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad1a6c6bb2d437840b4faee8e477b355b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad1a6c6bb2d437840b4faee8e477b355b">count_by_pose_client</a></td></tr>
 <tr class="separator:ad1a6c6bb2d437840b4faee8e477b355b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12a70beabbd70c1d720151f484a4599b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a12a70beabbd70c1d720151f484a4599b">count_person_client</a></td></tr>
+<tr class="separator:a12a70beabbd70c1d720151f484a4599b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d0360b97e5c551c537f71c6b7796f17"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a5d0360b97e5c551c537f71c6b7796f17">count_by_gesture_client</a></td></tr>
 <tr class="separator:a5d0360b97e5c551c537f71c6b7796f17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68b8ceaf79435bd7788de02df25c1158"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a68b8ceaf79435bd7788de02df25c1158">find_person_info_client</a></td></tr>
@@ -637,6 +641,24 @@ compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Count the number of objects in the image</pre> 
+</div>
+</div>
+<a id="a155d53434af16603466430880decb752" name="a155d53434af16603466430880decb752"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a155d53434af16603466430880decb752">&#9670;&#160;</a></span>count_person()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, int] task_manager.subtask_managers.vision_tasks.VisionTasks.count_person </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Count ALL people currently in frame (no pose/gesture/clothes filter).</pre> 
 </div>
 </div>
 <a id="aba437b8e8e524a4207b0011d9de3aba7" name="aba437b8e8e524a4207b0011d9de3aba7"></a>
@@ -1840,6 +1862,20 @@ compatibility, or an int in {0, 90, 180, 270} for explicit rotation.
       <table class="memname">
         <tr>
           <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks.count_by_pose_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a12a70beabbd70c1d720151f484a4599b" name="a12a70beabbd70c1d720151f484a4599b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12a70beabbd70c1d720151f484a4599b">&#9670;&#160;</a></span>count_person_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.vision_tasks.VisionTasks.count_person_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

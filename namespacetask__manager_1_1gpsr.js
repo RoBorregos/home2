@@ -12,6 +12,7 @@ var namespacetask__manager_1_1gpsr =
       [ "ACTION_TIMEOUTS", "namespacetask__manager_1_1gpsr_1_1timeouts.html#a9d242f0bd48955f26370b38db34533f9", null ],
       [ "DEFAULT_TIMEOUT_S", "namespacetask__manager_1_1gpsr_1_1timeouts.html#ab37f886bb955ec6563201ba81abe8202", null ],
       [ "FIND_TIMEOUT_S", "namespacetask__manager_1_1gpsr_1_1timeouts.html#ad5e188b80a0ad6f675fb7e17b29d87e2", null ],
+      [ "FOLLOW_TIMEOUT_S", "namespacetask__manager_1_1gpsr_1_1timeouts.html#aadd66796481be0e2776cb0cfc987dc57", null ],
       [ "GLOBAL_BUDGET_S", "namespacetask__manager_1_1gpsr_1_1timeouts.html#a08e26b074bed6ba96327b8070c821a05", null ],
       [ "NAVIGATE_TIMEOUT_S", "namespacetask__manager_1_1gpsr_1_1timeouts.html#a69e1a1c84004cc985fe3d59f01244417", null ],
       [ "PICK_TIMEOUT_S", "namespacetask__manager_1_1gpsr_1_1timeouts.html#a020a32041627835b5d9bb1c993760dda", null ],

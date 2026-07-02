@@ -70,8 +70,8 @@ var searchData=
   ['listen_67',['LISTEN',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html#a5d48becf5a2458c5e0d86cd4c09f4573',1,'task_manager::subtask_managers::hri_dataclasses::AudioStates']]],
   ['listen_5fhri_68',['listen_hri',['../classrun__while__hearing_1_1ServiceClientServerNode.html#ab8a8b542f8e5b29cfdb64f5364cbc55b',1,'run_while_hearing::ServiceClientServerNode']]],
   ['llm_5fwrapper_69',['LLM_WRAPPER',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ac037c0c904a9c5ba98831b96bf2ac3de',1,'frida_constants::hri_constants::MODEL']]],
-  ['llm_5fwrapper_5fservice_70',['LLM_WRAPPER_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f',1,'frida_constants::hri_constants']]],
-  ['llm_5fwrapper_5fservice_71',['llm_wrapper_service',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a926af91494d6147bb92fa0d447d669c0',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['llm_5fwrapper_5fservice_70',['llm_wrapper_service',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a926af91494d6147bb92fa0d447d669c0',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
+  ['llm_5fwrapper_5fservice_71',['LLM_WRAPPER_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f',1,'frida_constants::hri_constants']]],
   ['loading_72',['LOADING',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html#af42cb75a4698a3e2d501802e1b8f71b8',1,'task_manager::subtask_managers::hri_dataclasses::AudioStates']]],
   ['loc_5fcombo_73',['loc_combo',['../classnav__ui_1_1NavUI.html#a0ac482b2aec155eb7d568153a0ef217f',1,'nav_ui::NavUI']]],
   ['local_5fcamera_5ftopic_74',['LOCAL_CAMERA_TOPIC',['../vision__constants__cpp_8hpp.html#aa6c0a553bc732505f4366846b12ce40f',1,'LOCAL_CAMERA_TOPIC():&#160;vision_constants_cpp.hpp'],['../namespacefrida__constants_1_1vision__constants.html#a36dd44d3155495112c9e8ccff83938c9',1,'frida_constants.vision_constants.LOCAL_CAMERA_TOPIC()']]],
@@ -81,8 +81,8 @@ var searchData=
   ['local_5fcostmap_5fupdated_78',['local_costmap_updated',['../classnav__ui_1_1RosSignals.html#a4d9537dfff66991703587554216889d9',1,'nav_ui::RosSignals']]],
   ['localization_79',['localization',['../classnav__central_1_1Nav__Central.html#a8c10df22213e86ff1e582aac0e675a77',1,'nav_central::Nav_Central']]],
   ['localization_5fconfig_80',['localization_config',['../classnav__central_1_1Nav__Central.html#a924c1b8df87c7d62b0b071a92d67ca9c',1,'nav_central::Nav_Central']]],
-  ['location_81',['location',['../classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html#ad3c7b256791a651547a05f253575804d',1,'task_manager.gpsr.merger._Segment.location()'],['../classtask__manager_1_1gpsr_1_1merger_1_1PlanAction.html#a23edfa2ee44eb91c72e5099137034b84',1,'task_manager.gpsr.merger.PlanAction.location()']]],
-  ['location_82',['Location',['../namespacetest__ppc__cabinet__place.html#a25de5a1c2da948d45aeaa1be11fa5315',1,'test_ppc_cabinet_place']]],
+  ['location_81',['Location',['../namespacetest__ppc__cabinet__place.html#a25de5a1c2da948d45aeaa1be11fa5315',1,'test_ppc_cabinet_place']]],
+  ['location_82',['location',['../classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html#ad3c7b256791a651547a05f253575804d',1,'task_manager.gpsr.merger._Segment.location()'],['../classtask__manager_1_1gpsr_1_1merger_1_1PlanAction.html#a23edfa2ee44eb91c72e5099137034b84',1,'task_manager.gpsr.merger.PlanAction.location()']]],
   ['location_5fcolor_83',['LOCATION_COLOR',['../namespacemap__area__tagger.html#aa51966e06f7d42b83f9394fc912a38ab',1,'map_area_tagger']]],
   ['location_5fplaced_84',['location_placed',['../classmap__area__tagger_1_1MapCanvas.html#afd8938b2205b82bf39d5f7964c2c7ef1',1,'map_area_tagger::MapCanvas']]],
   ['location_5fto_5fcategory_85',['LOCATION_TO_CATEGORY',['../classegsr__cut_1_1EGPSRTM.html#af3ec00c5304030a8a49a64fef3b57ae7',1,'egsr_cut::EGPSRTM']]],
@@ -98,7 +98,8 @@ var searchData=
   ['look_5fdegrees_95',['look_degrees',['../classhand__task__manager_1_1HandTM.html#adcb4d6f3bcdc57921dfa44a40df6089c',1,'hand_task_manager::HandTM']]],
   ['look_5fside_5flow_5fstare_96',['LOOK_SIDE_LOW_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a8b1e396afc938cca2d0950696c816b6b',1,'frida_constants::xarm_configurations']]],
   ['look_5fside_5fstare_97',['LOOK_SIDE_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#adca6be045477cf1eaae672f79a1d5b6f',1,'frida_constants::xarm_configurations']]],
-  ['lower_98',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
-  ['lows_99',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
-  ['lying_5fdown_100',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
+  ['lost_5fhalt_5factive_98',['lost_halt_active',['../classperson__goal__smoother_1_1PersonGoalSmoother.html#adcb65caed31c5717a65871660f442ffb',1,'person_goal_smoother::PersonGoalSmoother']]],
+  ['lower_99',['lower',['../structvamp_1_1collision_1_1Volume.html#ac8d9f1866be7766e1a566e976458242f',1,'vamp::collision::Volume']]],
+  ['lows_100',['lows',['../classvamp_1_1pybullet__interface_1_1PyBulletSimulator.html#af98aa0c2af9ac53ab0cc79eb5e5f7cb3',1,'vamp::pybullet_interface::PyBulletSimulator']]],
+  ['lying_5fdown_101',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
 ];

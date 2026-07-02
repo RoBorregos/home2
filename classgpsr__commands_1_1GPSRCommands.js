@@ -2,6 +2,7 @@ var classgpsr__commands_1_1GPSRCommands =
 [
     [ "__init__", "classgpsr__commands_1_1GPSRCommands.html#ad0a01a65f3853e0eb55897d9c44b0aee", null ],
     [ "_dicts_to_detection_msgs", "classgpsr__commands_1_1GPSRCommands.html#af44da302fa693c7a99ba8d76ef97e751", null ],
+    [ "_draw_people", "classgpsr__commands_1_1GPSRCommands.html#acad5b9ee789f491d4587c6ec22bdaae0", null ],
     [ "_filter_people", "classgpsr__commands_1_1GPSRCommands.html#a8e841aa2f5943246de4c0b0c8f540412", null ],
     [ "_get_areas", "classgpsr__commands_1_1GPSRCommands.html#ad7734173cd66d7a0f0a9d7e43ddaad5d", null ],
     [ "camera_info_callback", "classgpsr__commands_1_1GPSRCommands.html#a64b8721e9a7a6dce509694f4ab033bef", null ],
