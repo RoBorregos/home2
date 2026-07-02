@@ -258,22 +258,27 @@ class HRICCommands(Node):
         self.chairs = []
         self.couches = []
 
-        self.get_detections(frame)
+        try:
+            self.get_detections(frame)
 
-        has_chair_seat, angle = self.check_chairs(frame)
+            has_chair_seat, angle = self.check_chairs(frame)
 
-        if has_chair_seat:
-            response.success = True
-            response.angle = angle
-            self.success(f"Seat found in chair at angle: {angle}")
-            return response
+            if has_chair_seat:
+                response.success = True
+                response.angle = angle
+                self.success(f"Seat found in chair at angle: {angle}")
+                return response
 
-        has_couch_seat, angle = self.check_couches(frame)
+            has_couch_seat, angle = self.check_couches(frame)
 
-        if has_couch_seat:
-            response.success = True
-            response.angle = angle
-            self.success(f"Seat found in couch at angle: {angle}")
+            if has_couch_seat:
+                response.success = True
+                response.angle = angle
+                self.success(f"Seat found in couch at angle: {angle}")
+                return response
+        except Exception as e:
+            self.get_logger().error(f"Find Seat failed: {e}")
+            response.success = False
             return response
 
         response.success = False
@@ -529,10 +534,12 @@ class HRICCommands(Node):
         )
 
         # Check if there are couch spaces available
+        width = frame.shape[1]
         for couch in couches_in_room:
-            couch_left = couch["bbox"][0]
-            couch_right = couch["bbox"][2]
-            space = np.zeros(frame.shape[1], dtype=int)
+            # YOLO can return x2 == image width; clamp to valid indices
+            couch_left = min(max(couch["bbox"][0], 0), width - 1)
+            couch_right = min(max(couch["bbox"][2], 0), width - 1)
+            space = np.zeros(width, dtype=int)
 
             # Fill the space with 1 if there is a person
             for person in self.people:
