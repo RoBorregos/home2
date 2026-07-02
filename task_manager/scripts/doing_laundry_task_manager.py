@@ -143,7 +143,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE:
             Logger.info(self, "Navigating to laundry table while holding basket.")
-            status, error = self.navigate_holding("laundry", "folding_surface")
+            status, error = self.navigate_holding("laundry", "table")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry table with basket.")
                 self.set_state(DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY)
@@ -259,7 +259,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES:
             Logger.info(self, "Navigating back to the laundry table with clothes.")
-            status, error = self.navigate_holding("laundry", "folding_surface")
+            status, error = self.navigate_holding("laundry", "table")
             if status == Status.EXECUTION_SUCCESS:
                 self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
