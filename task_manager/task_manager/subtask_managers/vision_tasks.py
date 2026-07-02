@@ -576,7 +576,9 @@ class VisionTasks:
         Logger.success(self.node, f"Found drink: {drink}")
         return Status.EXECUTION_SUCCESS, result.location
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @mockable(
+        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
+    )
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -595,7 +597,9 @@ class VisionTasks:
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @mockable(
+        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
+    )
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=60.0) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -619,7 +623,12 @@ class VisionTasks:
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    def _mock_moondream_async(self, callback=None, **kwargs):
+        """Mock for moondream_query_async: fire the callback like the real path."""
+        if callback:
+            callback(Status.EXECUTION_SUCCESS, "a mocked person description")
+
+    @mockable(_mock_callback=_mock_moondream_async)
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query_async(self, prompt: str, query_person: bool = False, callback=None):
         """Makes a query of the current image using moondream. Runs asynchronously."""
@@ -826,9 +835,9 @@ class VisionTasks:
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, None))
-    @service_check("detect_hand_client", [Status.EXECUTION_ERROR, None], TIMEOUT)
-    def detect_hand(self) -> tuple[int, PointStamped]:
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, PointStamped()))
+    @service_check("detect_hand_client", (Status.EXECUTION_ERROR, None), TIMEOUT)
+    def detect_hand(self) -> tuple[Status, PointStamped]:
         """Detect the hand and return its 3D position."""
         Logger.info(self.node, "Detecting hand")
         request = DetectHand.Request()
