@@ -27,6 +27,7 @@ from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transf
 from std_msgs.msg import String
 from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
+from frida_constants.vision_constants import CHAIR_REMOVAL_IMAGE_TOPIC, IMAGE_ORIENTED_TOPIC
 from std_srvs.srv import Empty
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
@@ -690,10 +691,32 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.START)
             self.subtask_manager.hri.say("I am ready.", wait=False)
             self.navigate_to_location(Location.KITCHEN, say=False)
-            self.subtask_manager.hri.say(
-                "Please remove the chairs from the dining table.", wait=True
-            )
-            self.timeout(5.0)
+
+            # Only ask to remove the chairs between the robot and the table
+            status, chairs = self.subtask_manager.vision.detect_chairs_to_remove()
+            if status == Status.EXECUTION_SUCCESS:
+                n = len(chairs)
+                if n == 0:
+                    CLog.fsm(self, "STATE", "No chairs blocking the table; skipping request.")
+                else:
+                    self.subtask_manager.hri.publish_display_topic(CHAIR_REMOVAL_IMAGE_TOPIC)
+                    self.subtask_manager.hri.say(
+                        f"Please remove the {n} chair{'s' if n > 1 else ''} shown on my screen.",
+                        wait=True,
+                    )
+                    self.timeout(5.0)
+                    self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
+            else:
+                CLog.fsm(
+                    self,
+                    "STATE",
+                    "Chair detection failed; generic removal request.",
+                    level="warn",
+                )
+                self.subtask_manager.hri.say(
+                    "Please remove the chairs from the dining table.", wait=True
+                )
+                self.timeout(5.0)
 
             if self.use_extra_surface:
                 CLog.fsm(self, "STATE", "Using extra surface (common objects).")

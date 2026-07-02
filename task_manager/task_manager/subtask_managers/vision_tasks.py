@@ -14,6 +14,7 @@ import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
 from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
+    CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
@@ -43,6 +44,7 @@ from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
+    ChairsToRemove,
     CountBy,
     CountByColor,
     CountByPose,
@@ -131,6 +133,10 @@ class VisionTasks:
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
+        )
+
+        self.chairs_to_remove_client = self.node.create_client(
+            ChairsToRemove, CHAIRS_TO_REMOVE_SERVICE
         )
 
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
@@ -227,6 +233,7 @@ class VisionTasks:
                     "type": "service",
                 },
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
+                "chairs_to_remove": {"client": self.chairs_to_remove_client, "type": "service"},
             },
             Task.DOING_LAUNDRY: {
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
@@ -246,6 +253,7 @@ class VisionTasks:
                     "client": self.moondream_crop_query_client,
                     "type": "service",
                 },
+                "chairs_to_remove": {"client": self.chairs_to_remove_client, "type": "service"},
             },
         }
 
@@ -659,6 +667,34 @@ class VisionTasks:
 
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
+    @service_check("chairs_to_remove_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
+    def detect_chairs_to_remove(self, timeout: float = 90.0) -> tuple[int, list[tuple]]:
+        """Chairs between the robot and the dining table (hric_commands).
+        Returns pixel (x1, y1, x2, y2) bboxes; the node keeps publishing the
+        annotated frame on CHAIR_REMOVAL_IMAGE_TOPIC for the display."""
+        Logger.info(self.node, "Requesting chairs to remove")
+        request = ChairsToRemove.Request()
+
+        try:
+            future = self.chairs_to_remove_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if result is None or not result.success:
+                Logger.warn(self.node, "Chairs to remove service failed")
+                return Status.EXECUTION_ERROR, []
+            if not result.table_found:
+                Logger.warn(self.node, "No dining table found")
+                return Status.TARGET_NOT_FOUND, []
+        except Exception as e:
+            Logger.error(self.node, f"Error requesting chairs to remove: {e}")
+            return Status.EXECUTION_ERROR, []
+
+        chairs = [(d.x1, d.y1, d.x2, d.y2) for d in result.chairs]
+        Logger.success(self.node, f"{len(chairs)}/{result.total_chairs} chair(s) to remove")
+        return Status.EXECUTION_SUCCESS, chairs
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)

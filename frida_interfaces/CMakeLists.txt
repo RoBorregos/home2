@@ -147,6 +147,7 @@ set(srv_files
   "vision/srv/CountByColor.srv"
   "vision/srv/CountByPose.srv"
   "vision/srv/CountBy.srv"
+  "vision/srv/ChairsToRemove.srv"
   "vision/srv/CropQuery.srv"
   "vision/srv/CustomerTables.srv"
   "vision/srv/DetectionHandler.srv"
