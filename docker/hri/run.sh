@@ -93,19 +93,26 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
-PACKAGES="speech nlp embeddings"
+PACKAGES="speech nlp embeddings display"
 PROFILES=()
 RUN=""
 
 case $TASK in
   "--restaurant"|"--hric"|"--storing-groceries"|"--gpsr"|"--ppc"|"--dlc"|"--finals")
     PROFILES=("${TASK#--}")
-    RUN="ros2 launch speech hri_launch.py"
+    # Map run.sh task flags to the PyQt display's task views
+    DISPLAY_TASK="${TASK#--}"
+    case "$DISPLAY_TASK" in
+      "dlc")               DISPLAY_TASK="laundry" ;;
+      "storing-groceries") DISPLAY_TASK="storing_groceries" ;;
+      "finals")            DISPLAY_TASK="default" ;;
+    esac
+    RUN="ros2 launch speech hri_launch.py display_task:=${DISPLAY_TASK}"
     ;;
   "--safety")
     # Safety routine reuses the Pick & Place HRI profile.
     PROFILES=("ppc")
-    RUN="ros2 launch speech hri_launch.py"
+    RUN="ros2 launch speech hri_launch.py display_task:=ppc"
     ;;
   *)
     PROFILES=("*")
