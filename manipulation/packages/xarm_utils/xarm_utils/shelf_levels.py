@@ -13,8 +13,10 @@ SHELF_SCAN_TOLERANCE = 0.1
 
 # Fallback shelf level-to-ceiling (compartment) height, in meters. Only used if
 # the JSON levels file cannot be read; the live value comes from
-# config/shelf_levels.json ("compartment_height").
-COMPARTMENT_HEIGHT_FALLBACK = 0.34
+# config/shelf_levels.json ("compartment_height"). Must mirror that file: a
+# too-large fallback puts the ceiling guard slab ABOVE the real ceiling,
+# disabling the protection.
+COMPARTMENT_HEIGHT_FALLBACK = 0.26
 
 # Fallback shelf level surface heights in base_link Z, per competition arena.
 # Only used if the JSON levels file cannot be read; the live values come from
