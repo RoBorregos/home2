@@ -18,7 +18,8 @@ from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import BeverageLocation
 from frida_interfaces.srv import PersonPosture, Query, CropQuery, ObjectPoints
-from frida_interfaces.msg import Point2D
+from frida_interfaces.srv import MoondreamDetection
+from frida_interfaces.msg import Point2D, ObjectDetection
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -27,6 +28,7 @@ from frida_constants.vision_constants import (
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
     OBJECT_POINTS_TOPIC,
+    MOONDREAM_DETECTION_TOPIC,
 )
 from enum import Enum
 
@@ -79,6 +81,9 @@ class MoondreamNode(Node):
         )
         self.object_points_service = self.create_service(
             ObjectPoints, OBJECT_POINTS_TOPIC, self.object_points_callback
+        )
+        self.detect_service = self.create_service(
+            MoondreamDetection, MOONDREAM_DETECTION_TOPIC, self.detect_callback
         )
 
         self.yolo_model = load_yolo_trt("yolov8n.pt")
@@ -300,6 +305,57 @@ class MoondreamNode(Node):
         #     response.success = True
         #     self.get_logger().info(f"Beverage found at: {response.location}")
         # return response
+
+    def detect_callback(self, request, response):
+        """Callback to detect a subject's bounding boxes (normalized) in the current image."""
+        self.get_logger().info(f"Executing service Detect for '{request.subject}'")
+
+        if self.image is None:
+            response.success = False
+            response.message = "No image received yet."
+            self.get_logger().warn("No image received yet.")
+            return response
+
+        _, image_bytes = cv2.imencode(".jpg", self.image)
+        image_bytes = image_bytes.tobytes()
+
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            )
+            grpc_response = self.stub.Detect(
+                moondream_proto_pb2.DetectRequest(
+                    encoded_image=encoded.encoded_image,
+                    subject=request.subject,
+                )
+            )
+
+            if not grpc_response.found:
+                response.success = False
+                response.message = f"No '{request.subject}' detected."
+                self.get_logger().warn(response.message)
+                return response
+
+            for obj in grpc_response.objects:
+                detection = ObjectDetection()
+                detection.label_text = obj.name
+                detection.score = 1.0
+                detection.xmin = obj.x_min
+                detection.ymin = obj.y_min
+                detection.xmax = obj.x_max
+                detection.ymax = obj.y_max
+                response.detections.append(detection)
+
+            response.success = True
+            response.message = f"Found {len(response.detections)} detections."
+            self.success(f"Detect found {len(response.detections)} '{request.subject}'")
+
+        except Exception as e:
+            self.get_logger().error(f"Error detecting object: {e}")
+            response.success = False
+            response.message = str(e)
+
+        return response
 
     def person_posture_callback(self, request, response):
         """Callback to determine the position of the person in the image."""
