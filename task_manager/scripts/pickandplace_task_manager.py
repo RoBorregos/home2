@@ -27,6 +27,7 @@ from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transf
 from std_msgs.msg import String
 from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
+from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
 from std_srvs.srv import Empty
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
@@ -740,6 +741,10 @@ class PickAndPlaceTM(Node):
                     self,
                     "DETECT",
                     f"Detected {len(self.detected_objects)} objects on the table.",
+                )
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Table scan: {len(self.detected_objects)} objects",
+                    DETECTIONS_IMAGE_TOPIC,
                 )
                 self.current_state = PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS
             else:

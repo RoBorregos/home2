@@ -302,6 +302,9 @@ class HRIC_TM(Node):
 
             if result == Status.EXECUTION_SUCCESS or self.current_attempts >= ATTEMPT_LIMIT:
                 self.subtask_manager.hri.say("I have saved your face.")
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Saved face: {self.get_current_guest().name}", FACE_RECOGNITION_IMAGE
+                )
                 self.subtask_manager.manipulation.follow_face(False)
                 if self.current_guest_idx == FIRST_GUEST_IDX:
                     self.subtask_manager.vision.describe_person(self.set_description)
