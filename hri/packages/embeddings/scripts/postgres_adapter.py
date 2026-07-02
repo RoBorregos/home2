@@ -114,6 +114,25 @@ class PostgresAdapter:
         top_k: int = 100,
         use_context: bool = False,
     ) -> list[Location]:
+        normalized_name = name.strip().lower()
+        if normalized_name == "start_location":
+            self.cursor.execute(
+                "SELECT id, area, subarea, context FROM locations WHERE lower(area) = %s ORDER BY CASE WHEN subarea = '' OR subarea IS NULL THEN 0 ELSE 1 END, id LIMIT %s",
+                (normalized_name, top_k),
+            )
+            rows = self.cursor.fetchall()
+            if rows:
+                return [
+                    Location(
+                        id=row[0],
+                        area=row[1],
+                        subarea=row[2],
+                        context=row[3],
+                        similarity=1.0,
+                    )
+                    for row in rows
+                ]
+
         embedding = self.embedding_model.encode(name, convert_to_tensor=True)
         command = (
             (
