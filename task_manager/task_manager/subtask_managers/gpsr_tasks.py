@@ -4,7 +4,9 @@ from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     DETECTIONS_IMAGE_TOPIC,
     CAMERA_TOPIC,
+    IMAGE_TOPIC,
     IMAGE_TOPIC_HRIC,
+    TRACKER_IMAGE_TOPIC,
 )
 from task_manager.utils.baml_client.types import (
     Count,
@@ -194,7 +196,8 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FollowPersonUntil(**command)
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        # Show the tracker's annotated frame (locked target box) while following.
+        self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
         self.subtask_manager.vision.deactivate_face_recognition()
 
         # Resolve the stop condition up front. BAML emits 'cancelled' (see
@@ -578,7 +581,16 @@ class GPSRTask(GenericTask):
 
         counter = 0
 
-        if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
+        # Plain "count the people" (no gesture/pose/clothes attribute): count
+        # EVERY detected person via the count_by_person service. Without this
+        # branch, find_closest matches "people" to the "unknown" gesture and
+        # anyone waving/pointing is silently excluded from the count.
+        target_words = set(command.target_to_count.lower().replace("the", " ").split())
+        plain_people = target_words <= {"people", "person", "persons", "in", "room", "a"}
+
+        if plain_people:
+            value = "people"
+        elif not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
             s, color_match = self.subtask_manager.hri.find_closest(
                 self.color_list, command.target_to_count
             )
@@ -590,7 +602,10 @@ class GPSRTask(GenericTask):
             value = f"{cache_color} {cache_cloth}s"
             command.target_to_count = value
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        # gpsr_commands publishes its annotated person detections on
+        # IMAGE_TOPIC (/vision/gpsr/img_detection) — IMAGE_TOPIC_HRIC belongs
+        # to hric_commands and stays empty during GPSR counting.
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC)
         self.subtask_manager.hri.say(
             f"I am going to count the {value}.",
         )
@@ -598,7 +613,9 @@ class GPSRTask(GenericTask):
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
 
-            if is_value_in_enum(value, Gestures):
+            if plain_people:
+                status, count = self.subtask_manager.vision.count_person()
+            elif is_value_in_enum(value, Gestures):
                 status, count = self.subtask_manager.vision.count_by_gesture(value)
             elif is_value_in_enum(value, Poses):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
@@ -623,7 +640,8 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        # find_person counts via gpsr_commands too — show its detection image.
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]

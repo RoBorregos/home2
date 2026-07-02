@@ -32,17 +32,10 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
-            # image_orienter feeds IMAGE_ORIENTED_TOPIC, which gpsr_commands,
-            # hric_commands and face_recognition all subscribe to. It also keeps
-            # detections upright while the wrist camera is flipped in the carry
-            # pose during follow_person_until (camera_upside_down(True)).
-            Node(
-                package="vision_general",
-                executable="image_orienter.py",
-                name="image_orienter",
-                output="screen",
-                emulate_tty=True,
-            ),
+            # image_orienter (feeds IMAGE_ORIENTED_TOPIC for gpsr_commands,
+            # hric_commands, face_recognition and the display's default video
+            # feed) is started by the included object_detector_node.launch.py —
+            # do NOT add it here again or two instances will run.
             Node(
                 package="vision_general",
                 executable="face_recognition_node.py",
