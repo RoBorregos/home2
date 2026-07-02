@@ -150,6 +150,7 @@ set(srv_files
   "vision/srv/CropQuery.srv"
   "vision/srv/CustomerTables.srv"
   "vision/srv/DetectionHandler.srv"
+  "vision/srv/MoondreamDetection.srv"
   "vision/srv/DishwasherDetection.srv"
   "vision/srv/DetectHand.srv"
   "vision/srv/DetectPointingObject.srv"
