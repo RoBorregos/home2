@@ -70,8 +70,11 @@ class DingDongEvent:
 @dataclass
 class DingDongDetectorConfig:
     sample_rate: int = 16000
-    frame_ms: float = 46.0  # autocorrelation frame (~2 periods of the lowest pitch)
-    hop_ms: float = 23.0  # 50% overlap
+    # Short frame/hop = fine time resolution so *fast, high-pitch* ding-dongs
+    # (notes down to ~50 ms) still register. 24 ms still holds ~5 periods of the
+    # lowest searched pitch (200 Hz), so pitch estimation stays reliable.
+    frame_ms: float = 24.0
+    hop_ms: float = 11.0  # ~50% overlap
 
     # Stage 1 — adaptive loudness gate (no fixed min_db)
     active_margin_db: float = 8.0  # a frame is active this far above the noise floor
@@ -85,8 +88,8 @@ class DingDongDetectorConfig:
 
     # Stage 3 — note grouping (relative, not fixed Hz)
     pitch_tol: float = 0.06  # frames within this fraction of pitch are one note
-    note_gap_ms: float = 120.0  # allowed dip inside one note before it ends
-    min_note_ms: float = 60.0  # a note must ring at least this long
+    note_gap_ms: float = 70.0  # allowed dip inside one note; low so fast notes split
+    min_note_ms: float = 35.0  # a note must ring at least this long (fast ding-dongs)
     max_note_ms: float = 1600.0  # ... and no longer (rejects steady hums)
 
     # Stage 4 — temporal + pitch pattern

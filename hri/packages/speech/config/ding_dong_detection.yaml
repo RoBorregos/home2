@@ -17,9 +17,10 @@ ding_dong_detection:
     pitch_max_hz: 4000.0
     clarity_min: 0.6
     # Stage 3 — grouping frames into a single ringing note.
+    # note_gap_ms low + min_note_ms low so fast, high-pitch ding-dongs register.
     pitch_tol: 0.06
-    note_gap_ms: 120.0
-    min_note_ms: 60.0
+    note_gap_ms: 70.0
+    min_note_ms: 35.0
     max_note_ms: 1600.0
     # Stage 4 — the ding-dong pattern (2 notes, second lower, within a window).
     min_tones: 2
