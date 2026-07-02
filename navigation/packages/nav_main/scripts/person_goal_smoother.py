@@ -93,9 +93,14 @@ def _resolve_yaml(yaml_data, dotted_key):
 
 
 def _load_nav_yaml(filename):
-    """Load a nav2 YAML config file from the nav_main package."""
-    config_dir = os.path.join(get_package_share_directory("nav_main"), "config")
-    path = os.path.join(config_dir, filename)
+    """Load a nav2 YAML config file. Relative names resolve inside the
+    nav_main config dir; absolute paths (as passed by the launch file when it
+    forwards the active nav2 config) are used as-is."""
+    if os.path.isabs(filename):
+        path = filename
+    else:
+        config_dir = os.path.join(get_package_share_directory("nav_main"), "config")
+        path = os.path.join(config_dir, filename)
     with open(path, "r") as f:
         return yaml.safe_load(f)
 
@@ -136,6 +141,13 @@ class PersonGoalSmoother(Node):
         #   "omnibase" -> omni_config/nav2_omni.yaml  + omni_config/nav2_omni_following.yaml
         #   "dashgo"   -> nav2_standard.yaml          + nav2_following.yaml
         self.declare_parameter("default_base", "omnibase")
+        # Explicit config-pair override (absolute paths or nav_main-config-relative).
+        # The launch file forwards the ACTUAL nav2 config it started Nav2 with
+        # (e.g. nav2_omni_limp.yaml while the base runs on 3 wheels) so that
+        # leaving follow mode restores THOSE values — otherwise this node would
+        # silently un-limp the controller by re-applying nav2_omni.yaml speeds.
+        self.declare_parameter("standard_config_file", "")
+        self.declare_parameter("follow_config_file", "")
 
         # --- State ---
         self.smooth_x = None
@@ -147,6 +159,9 @@ class PersonGoalSmoother(Node):
         self.robot_y = 0.0
         self.map_data = None
         self.map_info = None
+        # Lost-person watchdog: True once the goal has been frozen at the
+        # robot's pose after `timeout` seconds without tracker data.
+        self.lost_halt_active = False
 
         # --- TF ---
         self.tf_buffer = Buffer()
@@ -173,6 +188,14 @@ class PersonGoalSmoother(Node):
         else:
             standard_file = "nav2_standard.yaml"
             follow_file = "nav2_following.yaml"
+        # Launch-provided override wins (keeps standard-mode restore in sync
+        # with the config Nav2 actually launched with, e.g. the limp profile).
+        override_standard = self.get_parameter("standard_config_file").value
+        override_follow = self.get_parameter("follow_config_file").value
+        if override_standard:
+            standard_file = override_standard
+        if override_follow:
+            follow_file = override_follow
         try:
             self.follow_yaml = _load_nav_yaml(follow_file)
             self.standard_yaml = _load_nav_yaml(standard_file)
@@ -206,8 +229,15 @@ class PersonGoalSmoother(Node):
             SetBool, FOLLOW_MODE_SERVICE, self._follow_mode_cb, callback_group=cb,
         )
 
-        # --- Timer ---
+        # --- Timers ---
         self.create_timer(0.1, self._update_robot_pose, callback_group=cb)
+        # Lost-person watchdog: without this, the last /goal_update goal stays
+        # active after the tracker loses the person and Nav2 keeps driving to a
+        # stale point. After `timeout` seconds without tracker data the goal is
+        # frozen at the robot's own pose (a controlled halt) until either the
+        # tracker re-acquires (goals resume) or the task manager runs its own
+        # re-lock fallback and toggles follow mode.
+        self.create_timer(0.2, self._lost_person_watchdog, callback_group=cb)
 
         self.get_logger().info("Person Goal Smoother ready")
 
@@ -218,6 +248,10 @@ class PersonGoalSmoother(Node):
         if request.data:
             self._apply_nav_params(follow=True)
             self.follow_mode_active = True
+            # Fresh follow session: don't let a stale timestamp from a previous
+            # follow trip the lost-person watchdog before the tracker warms up.
+            self.last_tracker_time = time.time()
+            self.lost_halt_active = False
             response.message = "Follow mode activated"
         else:
             self._apply_nav_params(follow=False)
@@ -226,6 +260,7 @@ class PersonGoalSmoother(Node):
             self.smooth_y = None
             self.last_pub_x = None
             self.last_pub_y = None
+            self.lost_halt_active = False
             response.message = "Standard mode restored"
         response.success = True
         self.get_logger().info(response.message)
@@ -324,6 +359,9 @@ class PersonGoalSmoother(Node):
             return
 
         self.last_tracker_time = time.time()
+        if self.lost_halt_active:
+            self.lost_halt_active = False
+            self.get_logger().info("Tracker data resumed — leaving lost-person halt")
 
         # EMA smoothing
         alpha = self.get_parameter("alpha").value
@@ -363,6 +401,42 @@ class PersonGoalSmoother(Node):
             self.robot_y = t.transform.translation.y
         except Exception:
             pass
+
+    def _lost_person_watchdog(self):
+        """Freeze the goal at the robot's pose when tracker data stops.
+
+        Fires once per loss: publishes the current robot pose (facing the last
+        smoothed person position, so the camera keeps pointing where the person
+        vanished) and re-arms when data resumes (_tracker_cb clears the flag).
+        """
+        if not self.follow_mode_active or self.lost_halt_active:
+            return
+        timeout = self.get_parameter("timeout").value
+        if self.last_tracker_time <= 0.0:
+            return
+        elapsed = time.time() - self.last_tracker_time
+        if elapsed < timeout:
+            return
+
+        self.lost_halt_active = True
+        map_frame = self.get_parameter("map_frame").value
+        goal_msg = PoseStamped()
+        goal_msg.header.frame_id = map_frame
+        goal_msg.header.stamp = self.get_clock().now().to_msg()
+        goal_msg.pose.position.x = self.robot_x
+        goal_msg.pose.position.y = self.robot_y
+        # Keep facing the person's last known position while waiting.
+        if self.smooth_x is not None:
+            yaw = math.atan2(self.smooth_y - self.robot_y, self.smooth_x - self.robot_x)
+        else:
+            yaw = 0.0
+        goal_msg.pose.orientation.z = math.sin(yaw / 2.0)
+        goal_msg.pose.orientation.w = math.cos(yaw / 2.0)
+        self.goal_pub.publish(goal_msg)
+        self.get_logger().warn(
+            f"No tracker data for {elapsed:.1f}s (> {timeout:.1f}s) — "
+            f"halting at current pose until the person is re-acquired"
+        )
 
     # ── Goal publishing ────────────────────────────────────────
 

@@ -132,7 +132,7 @@ class PickMotionServer(Node):
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
-        self.declare_parameter("rim_tip_offset", -0.12)
+        self.declare_parameter("rim_tip_offset", -0.18)
         self.rim_tip_offset = self.get_parameter("rim_tip_offset").value
         self.get_logger().info(f"Rim tip offset: {self.rim_tip_offset} m")
 
