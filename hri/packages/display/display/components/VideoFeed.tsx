@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Topic } from "roslib";
 import { rosClient } from "../RosClient";
+import { setCurrentVideoTopic } from "./Captures";
 
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
@@ -15,6 +16,10 @@ export function VideoFeed({
   defaultTopic = "/vision/camera/image_oriented",
 }: VideoFeedProps) {
   const [videoTopic, setVideoTopic] = useState<string>(defaultTopic);
+
+  useEffect(() => {
+    setCurrentVideoTopic(videoTopic);
+  }, [videoTopic]);
 
   useEffect(() => {
     const changeVideoTopic = new Topic<{ data: string }>({

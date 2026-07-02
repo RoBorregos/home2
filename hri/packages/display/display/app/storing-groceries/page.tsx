@@ -5,8 +5,10 @@ import { AudioStateIndicator } from "../../components/InteractionIndicator";
 import { ConnectionStatus } from "../../components/ConnectionStatus";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";
+import { CapturesButton, useCaptures } from "../../components/Captures";
 
 export default function StoreGroceriesPage() {
+    const captures = useCaptures("storing_groceries");
     return (
         <div className="flex flex-col h-screen bg-(--bg-dark) text-(--text-light) overflow-hidden">
             {/* HEADER */}
@@ -17,6 +19,7 @@ export default function StoreGroceriesPage() {
                 </h1>
 
                 <div className="flex items-center gap-3">
+                    <CapturesButton captures={captures} />
                     <AudioStateIndicator />
                     <ConnectionStatus />
                 </div>

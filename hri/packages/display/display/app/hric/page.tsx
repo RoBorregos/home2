@@ -22,6 +22,11 @@ import { MapModal } from "../../components/MapModal";
 import { QuestionModal } from "../../components/QuestionModal";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";
+import {
+  CapturesButton,
+  logEvent,
+  useCaptures,
+} from "../../components/Captures";
 import { rosClient } from "../../RosClient";
 
 type DisplayMode = "button" | "camera" | "logs" | "both";
@@ -131,6 +136,7 @@ function StepPill({
 // ─── Main page ──
 export default function HRICPage() {
   const [currentStep, setCurrentStep] = useState<string>("wait_for_button");
+  const captures = useCaptures("hric");
 
   useEffect(() => {
     const taskTopic = new Topic<{ data: string }>({
@@ -143,6 +149,7 @@ export default function HRICPage() {
       const step = msg.data.trim().toLowerCase();
       // Only accept valid step keys
       if (TASK_STEPS.some((s) => s.key === step)) {
+        logEvent("step", step);
         setCurrentStep(step);
       }
     });
@@ -167,6 +174,7 @@ export default function HRICPage() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
+          <CapturesButton captures={captures} />
           <AudioStateIndicator />
           <ConnectionStatus />
         </div>

@@ -26,9 +26,15 @@ import { MapModal } from "../../components/MapModal";
 import { QuestionModal } from "../../components/QuestionModal";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";
+import {
+  CapturesButton,
+  CapturesGallery,
+  logEvent,
+  useCaptures,
+} from "../../components/Captures";
 import { rosClient } from "../../RosClient";
 
-type DisplayMode = "button" | "camera" | "logs" | "both";
+type DisplayMode = "button" | "camera" | "logs" | "both" | "gallery";
 
 interface FsmStep {
   key: string;
@@ -97,7 +103,8 @@ function getDisplayMode(fsmState: string, command: string | null): DisplayMode {
   if (fsmState === "start")                                                     return "camera";
   if (fsmState === "waiting_for_command")                                       return "logs";
   if (fsmState === "plan_and_execute_batch")                                    return "logs";
-  if (fsmState === "finished_command" || fsmState === "done")                   return "logs";
+  if (fsmState === "done")                                                      return "gallery";
+  if (fsmState === "finished_command")                                          return "logs";
   if (fsmState === "executing" && command) return COMMAND_DISPLAY[command] ?? "camera";
   return "camera";
 }
@@ -161,6 +168,7 @@ function CommandCounter({ index, max = 3 }: { index: number; max?: number }) {
 export default function GPSRPage() {
   const [taskStep,      setTaskStep]      = useState<string>("waiting_for_button");
   const [commandIndex,  setCommandIndex]  = useState<number>(0);
+  const captures = useCaptures("gpsr");
 
   useEffect(() => {
     const stepTopic = new Topic<{ data: string }>({
@@ -169,6 +177,7 @@ export default function GPSRPage() {
       messageType: "std_msgs/String",
     });
     stepTopic.subscribe((msg) => {
+      logEvent("step", msg.data.trim().toLowerCase());
       setTaskStep(msg.data.trim().toLowerCase());
     });
 
@@ -204,6 +213,7 @@ export default function GPSRPage() {
         </div>
         <div className="flex items-center gap-4">
           <CommandCounter index={commandIndex} />
+          <CapturesButton captures={captures} />
           <AudioStateIndicator />
           <ConnectionStatus />
         </div>
@@ -258,6 +268,16 @@ export default function GPSRPage() {
             <div className="flex items-center justify-center p-4">
               <VideoFeed />
             </div>
+          </div>
+        )}
+
+        {/* GALLERY mode (done): messages + captured snapshots */}
+        {displayMode === "gallery" && (
+          <div className="grid grid-cols-2 h-full overflow-hidden">
+            <div className="border-r border-(--border-light) overflow-y-auto">
+              <MessagesList />
+            </div>
+            <CapturesGallery captures={captures} />
           </div>
         )}
       </div>

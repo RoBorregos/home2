@@ -8,8 +8,10 @@ import { MapModal } from "../../components/MapModal";
 import { QuestionModal } from "../../components/QuestionModal";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";
+import { CapturesButton, useCaptures } from "../../components/Captures";
 
 export default function RestaurantPage() {
+  const captures = useCaptures("restaurant");
   return (
     <div className="flex flex-col h-screen bg-(--bg-dark) text-(--text-light) overflow-y-hidden">
       <div className="p-4 border-b border-(--border-light) flex items-center justify-between">
@@ -18,6 +20,7 @@ export default function RestaurantPage() {
           Restaurant Task
         </h1>
         <div className="flex items-center gap-3">
+          <CapturesButton captures={captures} />
           <AudioStateIndicator />
           <ConnectionStatus />
         </div>

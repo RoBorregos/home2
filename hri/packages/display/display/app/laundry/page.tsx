@@ -20,9 +20,15 @@ import { MapModal } from "../../components/MapModal";
 import { QuestionModal } from "../../components/QuestionModal";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";
+import {
+  CapturesButton,
+  CapturesGallery,
+  logEvent,
+  useCaptures,
+} from "../../components/Captures";
 import { rosClient } from "../../RosClient";
 
-type DisplayMode = "button" | "camera" | "logs" | "both";
+type DisplayMode = "button" | "camera" | "logs" | "both" | "gallery";
 
 interface TaskStep {
   key: string;
@@ -107,7 +113,7 @@ const TASK_STEPS: TaskStep[] = [
   {
     key: "end",
     label: "Finished",
-    display: "logs",
+    display: "gallery",
     icon: <CheckCircle2 className="h-4 w-4" />,
   },
 ];
@@ -143,6 +149,7 @@ function StepPill({
 // ─── Main page ──
 export default function LaundryPage() {
   const [currentStep, setCurrentStep] = useState<string>("wait_for_button");
+  const captures = useCaptures("laundry");
 
   useEffect(() => {
     const taskTopic = new Topic<{ data: string }>({
@@ -154,6 +161,7 @@ export default function LaundryPage() {
     taskTopic.subscribe((msg: { data: string }) => {
       const step = msg.data.trim().toLowerCase();
       if (TASK_STEPS.some((s) => s.key === step)) {
+        logEvent("step", step);
         setCurrentStep(step);
       }
     });
@@ -178,6 +186,7 @@ export default function LaundryPage() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
+          <CapturesButton captures={captures} />
           <AudioStateIndicator />
           <ConnectionStatus />
         </div>
@@ -236,6 +245,16 @@ export default function LaundryPage() {
             <div className="flex items-center justify-center p-4">
               <VideoFeed />
             </div>
+          </div>
+        )}
+
+        {/* GALLERY mode (end of task): messages + captured snapshots */}
+        {displayMode === "gallery" && (
+          <div className="grid grid-cols-2 h-full overflow-hidden">
+            <div className="border-r border-(--border-light) overflow-y-auto">
+              <MessagesList />
+            </div>
+            <CapturesGallery captures={captures} />
           </div>
         )}
       </div>

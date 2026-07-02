@@ -6,6 +6,7 @@ import { rosClient } from "../RosClient";
 import { Message } from "../types";
 import { MessageItem } from "./MessageItem";
 import { CurrentMessageOverlay } from "./CurrentMessageOverlay";
+import { logEvent } from "./Captures";
 
 export function MessagesList() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -65,6 +66,7 @@ export function MessagesList() {
   ) => {
     const timestamp = new Date();
     const newMessage: Message = { type, content, timestamp };
+    logEvent(type, content);
 
     if (type === "heard") {
       if (audioStateRef.current === "listening") {

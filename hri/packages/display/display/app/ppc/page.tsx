@@ -18,9 +18,15 @@ import { MapModal } from "../../components/MapModal";
 import { QuestionModal } from "../../components/QuestionModal";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";
+import {
+  CapturesButton,
+  CapturesGallery,
+  logEvent,
+  useCaptures,
+} from "../../components/Captures";
 import { rosClient } from "../../RosClient";
 
-type DisplayMode = "button" | "camera" | "logs" | "both";
+type DisplayMode = "button" | "camera" | "logs" | "both" | "gallery";
 
 interface TaskStep {
   key: string;
@@ -35,7 +41,7 @@ const TASK_STEPS: TaskStep[] = [
   { key: "perceive_table", label: "Perceive Table", display: "both", icon: <Eye className="h-4 w-4" /> },
   { key: "cleanup_phase", label: "Cleanup Phase", display: "both", icon: <Package className="h-4 w-4" /> },
   { key: "breakfast_phase", label: "Breakfast Phase", display: "both", icon: <Coffee className="h-4 w-4" /> },
-  { key: "end", label: "Finished", display: "logs", icon: <CheckCircle2 className="h-4 w-4" /> },
+  { key: "end", label: "Finished", display: "gallery", icon: <CheckCircle2 className="h-4 w-4" /> },
 ];
 
 function getStepKey(raw: string): string {
@@ -85,6 +91,7 @@ function StepPill({
 // ─── Main page ──
 export default function PPCPage() {
   const [currentRawStep, setCurrentRawStep] = useState<string>("wait_for_button");
+  const captures = useCaptures("ppc", "/vision/detections_image");
 
   useEffect(() => {
     const taskTopic = new Topic<{ data: string }>({
@@ -94,6 +101,7 @@ export default function PPCPage() {
     });
 
     taskTopic.subscribe((msg: { data: string }) => {
+      logEvent("step", msg.data.trim().toLowerCase());
       setCurrentRawStep(msg.data.trim().toLowerCase());
     });
 
@@ -118,6 +126,7 @@ export default function PPCPage() {
           </h1>
         </div>
         <div className="flex items-center gap-3">
+          <CapturesButton captures={captures} />
           <AudioStateIndicator />
           <ConnectionStatus />
         </div>
@@ -178,6 +187,16 @@ export default function PPCPage() {
             <div className="flex flex-col items-center justify-center p-4">
               <VideoFeed defaultTopic="/vision/detections_image" />
             </div>
+          </div>
+        )}
+
+        {/* GALLERY mode (end of task): messages + captured snapshots */}
+        {displayMode === "gallery" && (
+          <div className="grid grid-cols-2 h-full overflow-hidden">
+            <div className="border-r border-(--border-light) overflow-y-auto">
+              <MessagesList />
+            </div>
+            <CapturesGallery captures={captures} />
           </div>
         )}
       </div>
