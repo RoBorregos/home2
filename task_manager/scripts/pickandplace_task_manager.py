@@ -46,7 +46,7 @@ SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
 # Stand-off (m) when docking at the dishwasher and cooking_table (dishwasher-tab zone). Their front
 # sits closer than a normal table, so docking flush bumps the base into them; a small offset stops
 # the base short. Larger = shorter approach (stops further back). Tune on the robot.
-DISHWASHER_DOCK_OFFSET = 0.50
+DISHWASHER_DOCK_OFFSET = 0.32
 
 
 class ObjectCategory(Enum):
