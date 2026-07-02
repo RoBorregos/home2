@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import time
 
 import rclpy
 from builtin_interfaces.msg import Time
@@ -26,15 +27,26 @@ def fetch_map_areas(
     Returns the areas dict, or None if the service is unavailable / returns no
     data (callers should treat None as "skip the house filter").
 
-    Spins ``node`` while waiting so the response is processed even when called
-    from within another callback on a single-threaded executor.
+    NEVER spins a node that is already owned by an executor: calling
+    ``rclpy.spin_until_future_complete`` from inside a callback while the
+    node's own executor is spinning corrupts the shared wait set
+    ("IndexError: wait set index too big") and kills the process — this is
+    what crashed gpsr_commands mid-count. When the node has an executor we
+    just wait on the future (a MultiThreadedExecutor delivers the response
+    from another thread; on a single-threaded executor this times out and the
+    caller skips the house filter — degraded, but alive).
     """
     if not areas_client.wait_for_service(timeout_sec=service_timeout):
         logger.warn("Areas service not available; skipping house filter.")
         return None
 
     future = areas_client.call_async(MapAreas.Request())
-    rclpy.spin_until_future_complete(node, future, timeout_sec=call_timeout)
+    if node.executor is not None:
+        deadline = time.monotonic() + call_timeout
+        while not future.done() and time.monotonic() < deadline:
+            time.sleep(0.02)
+    else:
+        rclpy.spin_until_future_complete(node, future, timeout_sec=call_timeout)
     result = future.result() if future.done() else None
     if result is None or not result.areas:
         logger.warn("Areas service returned no data; skipping house filter.")
