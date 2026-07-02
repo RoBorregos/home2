@@ -89,7 +89,7 @@ class GPSRTM(Node):
             self.commands = self.commands.commands
 
         # Batch-mode state for the +200 pt interleaved-execution bonus.
-        self.declare_parameter("interleave_enabled", False)
+        self.declare_parameter("interleave_enabled", True)
         self.declare_parameter("batch_size", BATCH_SIZE)
         self.declare_parameter("test_mode", False)
         self.declare_parameter(
