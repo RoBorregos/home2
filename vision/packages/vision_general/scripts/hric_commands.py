@@ -39,6 +39,7 @@ from frida_constants.vision_constants import (
 from tf2_ros import Buffer, TransformListener
 from ament_index_python.packages import get_package_share_directory
 from vision_general.utils.area_check import filter_detections_in_house
+from vision_general.utils.debug_pub import DebugImagePublisher
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -105,8 +106,8 @@ class HRICCommands(Node):
             self.find_seat_callback,
             callback_group=self.callback_group,
         )
-        self.image_publisher = self.create_publisher(
-            Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
+        self.image_publisher = DebugImagePublisher(
+            self, IMAGE_TOPIC_HRIC, "hric_commands", callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -321,10 +322,7 @@ class HRICCommands(Node):
 
     def publish_image(self):
         """Publish the image with the detections if available."""
-        if len(self.output_image) != 0:
-            self.image_publisher.publish(
-                self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
-            )
+        self.image_publisher.publish(self.output_image)
 
     def getAngle(self, x, width):
         """Get the angle for the robot to point at the available seat."""
