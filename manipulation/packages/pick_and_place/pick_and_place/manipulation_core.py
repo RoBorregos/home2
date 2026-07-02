@@ -51,7 +51,6 @@ from frida_constants.manipulation_constants import (
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
 )
-from xarm_utils.shelf_levels import get_compartment_height
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
 from pick_and_place.managers.PourManager import PourManager
