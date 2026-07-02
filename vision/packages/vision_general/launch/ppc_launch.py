@@ -15,13 +15,8 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
-            Node(
-                package="vision_general",
-                executable="trash_detection_node.py",
-                name="trash_detection_node",
-                output="screen",
-                emulate_tty=True,
-            ),
+            # trash_detection_node removed: no task_manager client for its TRASHCAN
+            # service exists (detect_trash() uses moondream instead).
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(detector_launch_file)
             ),

@@ -6,6 +6,7 @@ available seats. Tasks for HRIC commands.
 """
 
 import cv2
+import json
 import numpy as np
 import queue
 import time
@@ -37,7 +38,8 @@ from frida_constants.vision_constants import (
 )
 from tf2_ros import Buffer, TransformListener
 from ament_index_python.packages import get_package_share_directory
-from vision_general.utils.area_check import filter_detections_in_house, fetch_map_areas
+from vision_general.utils.area_check import filter_detections_in_house
+from vision_general.utils.debug_pub import DebugImagePublisher
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -104,8 +106,8 @@ class HRICCommands(Node):
             self.find_seat_callback,
             callback_group=self.callback_group,
         )
-        self.image_publisher = self.create_publisher(
-            Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
+        self.image_publisher = DebugImagePublisher(
+            self, IMAGE_TOPIC_HRIC, "hric_commands", callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -132,10 +134,17 @@ class HRICCommands(Node):
         self.check = False
         self.rotation = 0
 
-        # Areas of the active map
+        # Areas of the active map. Fetched asynchronously by _poll_areas:
+        # blocking on the service future inside a callback can never complete
+        # on a single-threaded executor (see fetch_map_areas docstring), and
+        # the 2x5s timeouts pushed FindSeat past the task manager's deadline.
         self.areas = None
         self.areas_client = self.create_client(
             MapAreas, AREAS_SERVICE, callback_group=self.callback_group
+        )
+        self._areas_future = None
+        self._areas_timer = self.create_timer(
+            2.0, self._poll_areas, callback_group=self.callback_group
         )
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
@@ -258,22 +267,27 @@ class HRICCommands(Node):
         self.chairs = []
         self.couches = []
 
-        self.get_detections(frame)
+        try:
+            self.get_detections(frame)
 
-        has_chair_seat, angle = self.check_chairs(frame)
+            has_chair_seat, angle = self.check_chairs(frame)
 
-        if has_chair_seat:
-            response.success = True
-            response.angle = angle
-            self.success(f"Seat found in chair at angle: {angle}")
-            return response
+            if has_chair_seat:
+                response.success = True
+                response.angle = angle
+                self.success(f"Seat found in chair at angle: {angle}")
+                return response
 
-        has_couch_seat, angle = self.check_couches(frame)
+            has_couch_seat, angle = self.check_couches(frame)
 
-        if has_couch_seat:
-            response.success = True
-            response.angle = angle
-            self.success(f"Seat found in couch at angle: {angle}")
+            if has_couch_seat:
+                response.success = True
+                response.angle = angle
+                self.success(f"Seat found in couch at angle: {angle}")
+                return response
+        except Exception as e:
+            self.get_logger().error(f"Find Seat failed: {e}")
+            response.success = False
             return response
 
         response.success = False
@@ -308,10 +322,7 @@ class HRICCommands(Node):
 
     def publish_image(self):
         """Publish the image with the detections if available."""
-        if len(self.output_image) != 0:
-            self.image_publisher.publish(
-                self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
-            )
+        self.image_publisher.publish(self.output_image)
 
     def getAngle(self, x, width):
         """Get the angle for the robot to point at the available seat."""
@@ -427,10 +438,27 @@ class HRICCommands(Node):
                 cv2.LINE_AA,
             )
 
+    def _poll_areas(self):
+        """Fetch map areas without blocking the executor; stop once loaded."""
+        if self.areas is not None:
+            self._areas_timer.cancel()
+            return
+        if self._areas_future is None:
+            if self.areas_client.service_is_ready():
+                self._areas_future = self.areas_client.call_async(MapAreas.Request())
+        elif self._areas_future.done():
+            result = self._areas_future.result()
+            if result is not None and result.areas:
+                self.areas = json.loads(result.areas)
+                self.get_logger().info(
+                    f"Loaded areas for rooms: {list(self.areas.keys())}"
+                )
+            self._areas_future = None
+
     def _get_areas(self):
-        """Fetch the active map's areas from nav_central (cached after first call)."""
+        """Return the cached map areas (None until _poll_areas has loaded them)."""
         if self.areas is None:
-            self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
+            self.get_logger().warn("Map areas not loaded yet; skipping house filter.")
         return self.areas
 
     def check_chairs(self, frame) -> tuple[bool, float]:
@@ -529,10 +557,12 @@ class HRICCommands(Node):
         )
 
         # Check if there are couch spaces available
+        width = frame.shape[1]
         for couch in couches_in_room:
-            couch_left = couch["bbox"][0]
-            couch_right = couch["bbox"][2]
-            space = np.zeros(frame.shape[1], dtype=int)
+            # YOLO can return x2 == image width; clamp to valid indices
+            couch_left = min(max(couch["bbox"][0], 0), width - 1)
+            couch_right = min(max(couch["bbox"][2], 0), width - 1)
+            space = np.zeros(width, dtype=int)
 
             # Fill the space with 1 if there is a person
             for person in self.people:

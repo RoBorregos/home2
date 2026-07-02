@@ -37,6 +37,7 @@ from frida_constants.vision_constants import (
 )
 from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
+from vision_general.utils.debug_pub import DebugImagePublisher
 
 
 def _insightface_providers() -> list:
@@ -116,7 +117,7 @@ class FaceRecognition(Node):
         )
 
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
-        self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
+        self.view_pub = DebugImagePublisher(self, FACE_RECOGNITION_IMAGE, "face_recognition")
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
@@ -235,10 +236,7 @@ class FaceRecognition(Node):
 
     def publish_image(self) -> None:
         """Publish image with annotations"""
-        if len(self.annotated_frame) > 0:
-            self.view_pub.publish(
-                self.bridge.cv2_to_imgmsg(self.annotated_frame, "bgr8")
-            )
+        self.view_pub.publish(self.annotated_frame)
 
     def process_imgs(self) -> None:
         """Make encodings of known people images"""
