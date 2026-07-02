@@ -14,16 +14,16 @@ def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
-    # --- LIMP 3-WHEEL MODE (rear-left ODrive / node 33 dead) -----------------
-    # The omnibase Nav2 defaults to the crawl-speed limp profile while the base
-    # runs on 3 wheels. Override at runtime with nav2_omni_config_file:=/path.yaml,
-    # or revert this default to 'nav2_omni.yaml' once the ODrive is replaced.
-    nav2_omni_limp_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
+    # Omnibase Nav2 profile: full 4-wheel omni params (ODrive node 33 replaced,
+    # base is healthy again). If the base ever runs degraded on 3 wheels, point
+    # this at omni_config/nav2_omni_limp.yaml (runtime override:
+    # nav2_omni_config_file:=/path.yaml) — the follow overlay pair switches with it.
+    nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-    nav2_omni_params = LaunchConfiguration('nav2_omni_config_file', default=nav2_omni_limp_file)
+    nav2_omni_params = LaunchConfiguration('nav2_omni_config_file', default=nav2_omni_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
