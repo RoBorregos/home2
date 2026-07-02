@@ -627,7 +627,11 @@ class GPSRTask(GenericTask):
         self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
-        possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
+        possibilities = (
+            [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"] + ["color"]
+        )
+
+        possibilities = [p for p in possibilities if p != "unknown"]
 
         status, closest = self.subtask_manager.hri.find_closest(
             possibilities, command.attribute_value
@@ -635,10 +639,6 @@ class GPSRTask(GenericTask):
         value = closest.results[0]
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
-
-        self.subtask_manager.hri.say(
-            f"Searching for {value}.",
-        )
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
             s, color_match = self.subtask_manager.hri.find_closest(
@@ -651,6 +651,10 @@ class GPSRTask(GenericTask):
             cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
             command.attribute_value = value
+
+        self.subtask_manager.hri.say(
+            f"Searching for {value}.",
+        )
 
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -674,6 +678,7 @@ class GPSRTask(GenericTask):
 
                 status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
 
+            # If next command is "go_to" dont ask to approach robot
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
                     f"I found a {command.attribute_value}. Please approach me.",
