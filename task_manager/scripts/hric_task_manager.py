@@ -510,6 +510,7 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.say(
                 "Host, please stand in front of me so I can start following you.", wait=True
             )
+            self.timeout(5)
             tracking = False
             for attempt in range(ATTEMPT_LIMIT):
                 if self.subtask_manager.vision.track_person(True) == Status.EXECUTION_SUCCESS:
