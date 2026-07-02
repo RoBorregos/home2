@@ -126,7 +126,8 @@ class GPSRTask(GenericTask):
         return Status.EXECUTION_SUCCESS, "object given"
 
     def _teardown_follow(self):
-        """Restore camera orientation and arm pose after a follow."""
+        """Restore arm pose after a follow (camera flip stays cleared —
+        CARRY_POSE never rotates the camera)."""
         self.subtask_manager.vision.camera_upside_down(False)
         self.subtask_manager.manipulation.move_to_position("nav_pose")
 
@@ -144,7 +145,7 @@ class GPSRTask(GenericTask):
         self.subtask_manager.nav.follow_person(False)
         self.subtask_manager.manipulation.follow_person(False)
         # Re-center the camera: the arm may be panned far off after the chase.
-        self.subtask_manager.manipulation.move_to_position("front_stare_carry_bag")
+        self.subtask_manager.manipulation.move_to_position("carry_pose")
         self.subtask_manager.hri.say(
             "I lost you. Please come back and stand in front of me.", wait=True
         )
@@ -173,11 +174,10 @@ class GPSRTask(GenericTask):
               interpreter guarantees a find_person action precedes this one).
 
         Behavior:
-            - Moves the arm to the carry pose and announces the camera flip to
-              vision. Following always runs in this configuration — no matter
-              how a previous action left the camera — because the tracker
-              flips the frame for upright detection and publishes an
-              upright-correct centroid (same setup HRIC follows with).
+            - Moves the arm to CARRY_POSE (camera upright, tilted slightly
+              higher than nav_pose) and clears the camera-flip flag, so follow
+              starts from the same camera configuration no matter how a
+              previous action left the camera.
             - Locks the person tracker (track_person), then starts base-follow
               (nav) and arm-follow (manipulation, keeps the person in frame).
             - Follows until a stop keyword is heard, the destination is reached
@@ -187,9 +187,8 @@ class GPSRTask(GenericTask):
               destination (asking for one when following until cancelled).
 
         Postconditions:
-            - Follow, tracking and the camera flip are all off; the arm is back
-              in nav_pose. The robot is where the person stopped it or at the
-              target location.
+            - Follow and tracking are off; the arm is back in nav_pose. The
+              robot is where the person stopped it or at the target location.
         """
         if isinstance(command, dict):
             command = FollowPersonUntil(**command)
@@ -208,11 +207,13 @@ class GPSRTask(GenericTask):
             except Exception:
                 location = None
 
-        # Follow always runs in the carry pose with the camera flipped: it is
-        # the exact camera configuration the person tracker is tuned for.
-        self.subtask_manager.manipulation.move_to_position("front_stare_carry_bag")
-        self.subtask_manager.vision.camera_upside_down(True)
-        time.sleep(1.0)  # let the pose settle and the flip reach the tracker
+        # Follow always runs in CARRY_POSE (xarm_configurations): like nav_pose
+        # but with the camera tilted a bit higher, and the camera NOT rotated.
+        # Explicitly clear the flip flag so the tracker treats frames as
+        # upright no matter what orientation a previous action left announced.
+        self.subtask_manager.manipulation.move_to_position("carry_pose")
+        self.subtask_manager.vision.camera_upside_down(False)
+        time.sleep(1.0)  # let the pose settle before locking the tracker
 
         # Lock the tracker on the person. track_person(True) is the start/stop
         # command — get_track_person() is only a status query and never starts
@@ -732,7 +733,7 @@ class GPSRTask(GenericTask):
 
             # TODO: (@nav): approach the person
             self.subtask_manager.hri.node.get_logger().info(f"Found {name}.")
-            if name == None:
+            if name is None:
                 self.subtask_manager.hri.say("Hi, I'm Frida.")
                 status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
