@@ -128,6 +128,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a13764afe83bb2bd881ac4f7f153fa8b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af2789f229ade91ec4d554c8eec2b9e70"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af2789f229ade91ec4d554c8eec2b9e70">move_to_point</a> (self, point, standoff_distance=0.0)</td></tr>
 <tr class="separator:af2789f229ade91ec4d554c8eec2b9e70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ad8a0666219551db0baff734c01ad0d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4ad8a0666219551db0baff734c01ad0d">approach_point</a> (self, point, float standoff=0.65)</td></tr>
+<tr class="separator:a4ad8a0666219551db0baff734c01ad0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84facc22e82527f2ed6a2befb5243f7a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a84facc22e82527f2ed6a2befb5243f7a">return_to_origin</a> (self, inverse_orientation=False)</td></tr>
 <tr class="separator:a84facc22e82527f2ed6a2befb5243f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2da6bebf090fda1d2f45f96d9fda3664"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a2da6bebf090fda1d2f45f96d9fda3664">explore_zone</a> (self, step)</td></tr>
@@ -157,6 +159,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a39eb19668da1adb504d116c2fff3785d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a07f940d3a78c4e8c826a9f22c40ade"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a2a07f940d3a78c4e8c826a9f22c40ade">get_robot_pose_srv</a></td></tr>
 <tr class="separator:a2a07f940d3a78c4e8c826a9f22c40ade"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12343ec8a730594eb3e4a84299bd54ee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a12343ec8a730594eb3e4a84299bd54ee">approach_point_srv</a></td></tr>
+<tr class="separator:a12343ec8a730594eb3e4a84299bd54ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a03276f40d23b969019fdf3a434557910"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a03276f40d23b969019fdf3a434557910">tf_buffer</a></td></tr>
 <tr class="separator:a03276f40d23b969019fdf3a434557910"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a667582aa1ec14c0e04386a236cce035f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a667582aa1ec14c0e04386a236cce035f">tf_listener</a></td></tr>
@@ -321,6 +325,48 @@ in another frame can't be transformed to map.</pre>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a4ad8a0666219551db0baff734c01ad0d" name="a4ad8a0666219551db0baff734c01ad0d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ad8a0666219551db0baff734c01ad0d">&#9670;&#160;</a></span>approach_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.approach_point </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>standoff</em> = <code>0.65</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Approach a person or free-standing object seen by vision (e.g. GPSR
+"go to the person", approaching a bag on the floor).
+
+`point` may be a PointStamped in ANY TF frame (base_link, a camera
+frame...) or a map-frame Point / (x, y) pair. nav_central projects it
+onto the map, picks the nearest COSTMAP-FREE pose `standoff` meters
+from the target (robot side first, facing it) and navigates there; if
+the robot is already within `standoff`, it just turns to face the
+target.</pre> 
 </div>
 </div>
 <a id="a03078902443e9c684ea6deddb7a33921" name="a03078902443e9c684ea6deddb7a33921"></a>
@@ -706,6 +752,20 @@ standoff_distance&gt;0, stop that far short of the point, facing it.</pre>
 <span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a12343ec8a730594eb3e4a84299bd54ee" name="a12343ec8a730594eb3e4a84299bd54ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12343ec8a730594eb3e4a84299bd54ee">&#9670;&#160;</a></span>approach_point_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.nav_tasks.NavigationTasks.approach_point_srv</td>
+        </tr>
+      </table>
 </div><div class="memdoc">
 
 </div>

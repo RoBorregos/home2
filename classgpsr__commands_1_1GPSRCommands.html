@@ -185,10 +185,16 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:ad61c88ab073a46e431a99e109e0f491f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ad61c88ab073a46e431a99e109e0f491f">_highlight_person</a> (self, bbox, label)</td></tr>
+<tr class="separator:ad61c88ab073a46e431a99e109e0f491f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d6892e5029041591af7432831dce27e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a8d6892e5029041591af7432831dce27e">_person_point</a> (self, bbox)</td></tr>
+<tr class="separator:a8d6892e5029041591af7432831dce27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af44da302fa693c7a99ba8d76ef97e751"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#af44da302fa693c7a99ba8d76ef97e751">_dicts_to_detection_msgs</a> (self, list detections)</td></tr>
 <tr class="separator:af44da302fa693c7a99ba8d76ef97e751"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7734173cd66d7a0f0a9d7e43ddaad5d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#ad7734173cd66d7a0f0a9d7e43ddaad5d">_get_areas</a> (self)</td></tr>
 <tr class="separator:ad7734173cd66d7a0f0a9d7e43ddaad5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaafd47f481e85dad01f1760fc75ec544"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#aaafd47f481e85dad01f1760fc75ec544">_current_room</a> (self)</td></tr>
+<tr class="separator:aaafd47f481e85dad01f1760fc75ec544"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e841aa2f5943246de4c0b0c8f540412"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a8e841aa2f5943246de4c0b0c8f540412">_filter_people</a> (self, frame, <a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2">people</a>)</td></tr>
 <tr class="separator:a8e841aa2f5943246de4c0b0c8f540412"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acad5b9ee789f491d4587c6ec22bdaae0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__commands_1_1GPSRCommands.html#acad5b9ee789f491d4587c6ec22bdaae0">_draw_people</a> (self, <a class="el" href="classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2">people</a>)</td></tr>
@@ -214,6 +220,33 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aaafd47f481e85dad01f1760fc75ec544" name="aaafd47f481e85dad01f1760fc75ec544"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaafd47f481e85dad01f1760fc75ec544">&#9670;&#160;</a></span>_current_room()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands._current_room </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Name of the areas.json room whose polygon contains the robot's
+current map position, or None when outside every polygon / no TF.</pre> 
+</div>
+</div>
 <a id="af44da302fa693c7a99ba8d76ef97e751" name="af44da302fa693c7a99ba8d76ef97e751"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af44da302fa693c7a99ba8d76ef97e751">&#9670;&#160;</a></span>_dicts_to_detection_msgs()</h2>
 
@@ -353,6 +386,92 @@ Protected Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Fetch the active map's areas from nav_central (cached after first call).</pre> 
+</div>
+</div>
+<a id="ad61c88ab073a46e431a99e109e0f491f" name="ad61c88ab073a46e431a99e109e0f491f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad61c88ab073a46e431a99e109e0f491f">&#9670;&#160;</a></span>_highlight_person()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands._highlight_person </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bbox</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>label</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Highlight a MATCHED person on output_image (orange, thicker) so the
+referee display distinguishes them from plain person detections.</pre> 
+</div>
+</div>
+<a id="a8d6892e5029041591af7432831dce27e" name="a8d6892e5029041591af7432831dce27e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d6892e5029041591af7432831dce27e">&#9670;&#160;</a></span>_person_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def gpsr_commands.GPSRCommands._person_point </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>bbox</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Deproject a person to a camera-frame PointStamped (for approaching).
+
+The bbox CENTER often misses the body (between the legs, beside the
+torso with raised arms) and its depth belongs to the BACKGROUND — the
+person would project meters behind where they stand. Instead, sample a
+grid over the torso band of the bbox and deproject the pixel at the
+LOWER-QUARTILE depth: robustly on the body (nearer than background),
+while rejecting closer-than-person depth speckles.</pre> 
 </div>
 </div>
 <a id="a64b8721e9a7a6dce509694f4ab033bef" name="a64b8721e9a7a6dce509694f4ab033bef"></a>
@@ -544,7 +663,8 @@ Protected Member Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Count the gestures in the image and return a dictionary.</pre> 
+<pre class="fragment">Count the gestures in the image. Returns (counts, boxes): a dict of
+gesture -&gt; count and a dict of gesture -&gt; matched person bboxes.</pre> 
 </div>
 </div>
 <a id="a62e1125be804ee48c2d20c06c910eb11" name="a62e1125be804ee48c2d20c06c910eb11"></a>

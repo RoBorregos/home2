@@ -5,6 +5,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "_handle_moondream_response", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#afdd13fd658f056bcf41a534bac93d377", null ],
     [ "_mock_moondream_async", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6dd7ba7f8453595df8847da08ada94e7", null ],
     [ "_set_node_active", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2feee7ffb0e49ff71fe244249cdd63f", null ],
+    [ "_tracked_point_callback", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a96b0298e417afbdb20c071cd954f08ea", null ],
     [ "activate_face_recognition", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae904a386996cab8ca35793fba86a4de0", null ],
     [ "activate_object_detector", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ade52d6b1813d32f5677ffbd6db4511f7", null ],
     [ "camera_upside_down", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8bd86e922871000418c985e1d09a8996", null ],
@@ -39,9 +40,10 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "get_drink_position", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a95a08ab88940deee6aad3079e2930254", null ],
     [ "get_follow_face", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a21d6aacdc1e3e5b54ef833d8d42c0155", null ],
     [ "get_labels", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a54b000adf83011a478f4d0e7cb053cbd", null ],
-    [ "get_person_name", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#adb0ce640eb292723a44fb9f56a0dd16a", null ],
+    [ "get_person_name", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a01fcfc14ef39000aaeac51314566d044", null ],
     [ "get_pointing_bag", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aef3ae656eb6cc0d0f078f1898b19862a", null ],
     [ "get_track_person", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a4d0e1c0ef1ebed3fcfc874d3105d73e8", null ],
+    [ "get_tracked_person_point", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#adb62308dc79073ce56503165f00e12c4", null ],
     [ "isPerson", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac8507dfbfcb889d75f280a11a5fa2d2e", null ],
     [ "moondream_crop_query", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2b0156bc5305cb77eab0158147f79b2", null ],
     [ "moondream_query", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#abe086cf10881ea7d8a81285749ffe813", null ],
@@ -60,6 +62,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "_face_rec_pub", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#abd1dfcfa73d8c41980699544d304ffaa", null ],
     [ "_obj_det_active", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab9161600415858b9b4cbebeeae7643b9", null ],
     [ "_obj_det_pub", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a7244345ddcb8a1d0d4b6bf43b78290fa", null ],
+    [ "_tracked_point", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8f1c36f1e933e2cb0f2076d1d060a790", null ],
     [ "beverage_location_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aa8948a87273f7273851cd2850cb1f062", null ],
     [ "chairs_to_remove_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af2935515cd6e6208ca78db5c49caf58c", null ],
     [ "count_by_color_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a90204cacd38264cf4ff07b661926ce34", null ],
@@ -79,6 +82,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "follow_by_name_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a4c1a8df984180db70931d679e9f3d7d2", null ],
     [ "follow_face", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aed4347e937d9ede2d372e7c8d815b59c", null ],
     [ "get_track_person_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac2eb05a5f8e64423b856b20e40fc3b2d", null ],
+    [ "last_person_points", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a13afb91156c7998e31572b18c784f813", null ],
     [ "mock_data", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a9c2c5202b3c7c8959921e1a971f2d52c", null ],
     [ "moondream_crop_query_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad35f18dc2c82ab7dcb8f2013bb453f48", null ],
     [ "moondream_query_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ade58c5ad3f192f9259a00aa0a5e8a4a6", null ],
@@ -94,5 +98,6 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "shelf_detections_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a3a3a436ebb5182d48076efa03ea54645", null ],
     [ "task", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a832c3cdbc308c7c52449cc4cafdf6b92", null ],
     [ "track_person_by_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a4a844eea102e2cabc6e389ce9b956e9c", null ],
-    [ "track_person_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aef07ee627ac20f463af6feea3ae7d76e", null ]
+    [ "track_person_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aef07ee627ac20f463af6feea3ae7d76e", null ],
+    [ "tracked_point_subscriber", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6846003cf1d97f94e0b5fae780857e5a", null ]
 ];

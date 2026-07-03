@@ -2,6 +2,7 @@ var classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks =
 [
     [ "__init__", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ae48b688fd886f6960c0a544c749db476", null ],
     [ "_resolve_map_xy", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a335b8044871554eeecaf94faeae52914", null ],
+    [ "approach_point", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4ad8a0666219551db0baff734c01ad0d", null ],
     [ "check_door", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a03078902443e9c684ea6deddb7a33921", null ],
     [ "dock_table", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa979bd089810c5d4d3ba058eb7903826", null ],
     [ "explore_zone", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a2da6bebf090fda1d2f45f96d9fda3664", null ],
@@ -16,6 +17,7 @@ var classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "setup_backup_map", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac66cfb2c5e73cf1afe885a4b9884e576", null ],
     [ "setup_services", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#add19447e6e03896302af3f75705c8056", null ],
     [ "_origin_pose", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a95c445095f5e6ae4e1769978177615b8", null ],
+    [ "approach_point_srv", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a12343ec8a730594eb3e4a84299bd54ee", null ],
     [ "areas_backup", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#adb5617cba6233bcc2919ae885dd0a012", null ],
     [ "dock_table_srv", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ad6304e8324efdaa9ed0410434756ed2c", null ],
     [ "door_checking_srv", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa15303e63911886f96ee093e270f0a73", null ],

@@ -168,6 +168,14 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a13ce05f6c374ee4753c3c81f8d87064a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf8d4de5b413d1a0cdbbfb34887b728c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#acf8d4de5b413d1a0cdbbfb34887b728c">_recover_lost_person</a> (self)</td></tr>
 <tr class="separator:acf8d4de5b413d1a0cdbbfb34887b728c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68ff8ce69f30ebd881f939ad3f6ce11a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a68ff8ce69f30ebd881f939ad3f6ce11a">_approach_with_arm</a> (self, point)</td></tr>
+<tr class="separator:a68ff8ce69f30ebd881f939ad3f6ce11a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1c1ce70af935bad9c0b49dc0162f130a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a1c1ce70af935bad9c0b49dc0162f130a">_approach_found_person</a> (self, point=None)</td></tr>
+<tr class="separator:a1c1ce70af935bad9c0b49dc0162f130a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75a0a8d52c66fea38120237236035577"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a75a0a8d52c66fea38120237236035577">_back_to_safe</a> (self, safe_pose)</td></tr>
+<tr class="separator:a75a0a8d52c66fea38120237236035577"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea905f4eb012156eddcdfb2abe7eb2d5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#aea905f4eb012156eddcdfb2abe7eb2d5">_scan_persons_in_room</a> (self)</td></tr>
+<tr class="separator:aea905f4eb012156eddcdfb2abe7eb2d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Class to manage the GPSR task</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -202,6 +210,127 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a1c1ce70af935bad9c0b49dc0162f130a" name="a1c1ce70af935bad9c0b49dc0162f130a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1c1ce70af935bad9c0b49dc0162f130a">&#9670;&#160;</a></span>_approach_found_person()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool task_manager.subtask_managers.gpsr_tasks.GPSRTask._approach_found_person </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>point</em> = <code>None</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Walk up to a found person instead of asking them to come over.
+
+Preferred path: `point` is the MATCHED person's own 3D point (from
+vision.last_person_points, filled by count_by_pose/gesture/color), so
+the robot approaches exactly the person that matched the attribute —
+not just the largest one in frame. Without a point, falls back to
+locking the tracker (largest person) and reading its point. Returns
+False if every step failed (caller then asks the person to approach).</pre> 
+</div>
+</div>
+<a id="a68ff8ce69f30ebd881f939ad3f6ce11a" name="a68ff8ce69f30ebd881f939ad3f6ce11a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68ff8ce69f30ebd881f939ad3f6ce11a">&#9670;&#160;</a></span>_approach_with_arm()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool task_manager.subtask_managers.gpsr_tasks.GPSRTask._approach_with_arm </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>point</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Drive to a person point with the arm tucked (nav_pose), then look
+at them (front_stare) ready for the interaction that follows.
+
+The point is projected to the MAP frame FIRST: camera-frame points go
+stale the moment the arm moves (tucking changes the camera pose, and
+nav would project the point through the wrong transform).</pre> 
+</div>
+</div>
+<a id="a75a0a8d52c66fea38120237236035577" name="a75a0a8d52c66fea38120237236035577"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75a0a8d52c66fea38120237236035577">&#9670;&#160;</a></span>_back_to_safe()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.gpsr_tasks.GPSRTask._back_to_safe </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>safe_pose</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Return to the pose where the person search started (arm tucked for
+the drive, then front_stare to rescan for the next candidate).</pre> 
+</div>
+</div>
 <a id="acf8d4de5b413d1a0cdbbfb34887b728c" name="acf8d4de5b413d1a0cdbbfb34887b728c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acf8d4de5b413d1a0cdbbfb34887b728c">&#9670;&#160;</a></span>_recover_lost_person()</h2>
 
@@ -235,6 +364,40 @@ long losses it couldn't recover from.
 
 Returns True when tracking (and follow) resumed, False to give up.
 </pre> 
+</div>
+</div>
+<a id="aea905f4eb012156eddcdfb2abe7eb2d5" name="aea905f4eb012156eddcdfb2abe7eb2d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aea905f4eb012156eddcdfb2abe7eb2d5">&#9670;&#160;</a></span>_scan_persons_in_room()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.gpsr_tasks.GPSRTask._scan_persons_in_room </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Localize the people in the room via count_person: gpsr_commands
+detects persons with the GENERIC COCO model (YoloDetect class 0 — the
+detect_objects path runs the competition-object model, which has NO
+person class), filters them to the robot's current room polygon and
+deprojects each to a camera-frame 3D point. Those points are projected
+to the map HERE, while the camera still holds the scan pose, so they
+stay valid after the arm moves. Pans through self.pan_angles when
+nobody is in the front view. Returns map-frame PointStamped list,
+nearest person first.</pre> 
 </div>
 </div>
 <a id="a13ce05f6c374ee4753c3c81f8d87064a" name="a13ce05f6c374ee4753c3c81f8d87064a"></a>

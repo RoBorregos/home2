@@ -1,5 +1,6 @@
 var dir_87b6290cad74f26c76b51d85f69c3779 =
 [
+    [ "ApproachPoint.srv", "ApproachPoint_8srv.html", null ],
     [ "DockTable.srv", "DockTable_8srv.html", null ],
     [ "GetRobotPose.srv", "GetRobotPose_8srv.html", null ],
     [ "GoToPose.srv", "GoToPose_8srv.html", null ],

@@ -1,10 +1,13 @@
 var classgpsr__commands_1_1GPSRCommands =
 [
     [ "__init__", "classgpsr__commands_1_1GPSRCommands.html#ad0a01a65f3853e0eb55897d9c44b0aee", null ],
+    [ "_current_room", "classgpsr__commands_1_1GPSRCommands.html#aaafd47f481e85dad01f1760fc75ec544", null ],
     [ "_dicts_to_detection_msgs", "classgpsr__commands_1_1GPSRCommands.html#af44da302fa693c7a99ba8d76ef97e751", null ],
     [ "_draw_people", "classgpsr__commands_1_1GPSRCommands.html#acad5b9ee789f491d4587c6ec22bdaae0", null ],
     [ "_filter_people", "classgpsr__commands_1_1GPSRCommands.html#a8e841aa2f5943246de4c0b0c8f540412", null ],
     [ "_get_areas", "classgpsr__commands_1_1GPSRCommands.html#ad7734173cd66d7a0f0a9d7e43ddaad5d", null ],
+    [ "_highlight_person", "classgpsr__commands_1_1GPSRCommands.html#ad61c88ab073a46e431a99e109e0f491f", null ],
+    [ "_person_point", "classgpsr__commands_1_1GPSRCommands.html#a8d6892e5029041591af7432831dce27e", null ],
     [ "camera_info_callback", "classgpsr__commands_1_1GPSRCommands.html#a64b8721e9a7a6dce509694f4ab033bef", null ],
     [ "count_by_color_callback", "classgpsr__commands_1_1GPSRCommands.html#a26012972d777c04eed5e6049860b7be0", null ],
     [ "count_by_gestures_callback", "classgpsr__commands_1_1GPSRCommands.html#a9f94a1a2ca03d10d612141ea76e667be", null ],

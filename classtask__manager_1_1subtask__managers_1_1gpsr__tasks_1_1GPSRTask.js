@@ -1,7 +1,11 @@
 var classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask =
 [
     [ "__init__", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a59469de0b833fe860ed03758ee1e937a", null ],
+    [ "_approach_found_person", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a1c1ce70af935bad9c0b49dc0162f130a", null ],
+    [ "_approach_with_arm", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a68ff8ce69f30ebd881f939ad3f6ce11a", null ],
+    [ "_back_to_safe", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a75a0a8d52c66fea38120237236035577", null ],
     [ "_recover_lost_person", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#acf8d4de5b413d1a0cdbbfb34887b728c", null ],
+    [ "_scan_persons_in_room", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#aea905f4eb012156eddcdfb2abe7eb2d5", null ],
     [ "_teardown_follow", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a13ce05f6c374ee4753c3c81f8d87064a", null ],
     [ "count", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#adbb4f9b9dd1448b06ff6fc6f8ba05860", null ],
     [ "count_objects", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#aabfac22f48b437b68fd474565ddf2a40", null ],

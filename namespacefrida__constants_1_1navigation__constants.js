@@ -2,6 +2,7 @@ var namespacefrida__constants_1_1navigation__constants =
 [
     [ "DOOR_CHECK", "classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html", null ],
     [ "SUBTASK_MANAGER", "classfrida__constants_1_1navigation__constants_1_1SUBTASK__MANAGER.html", null ],
+    [ "APPROACH_POINT_SERVICE", "namespacefrida__constants_1_1navigation__constants.html#a7768a85085693d8811ac8cb075bf6c87", null ],
     [ "AREAS_SERVICE", "namespacefrida__constants_1_1navigation__constants.html#a419bb0cf24a0821a4a6004a9eba48301", null ],
     [ "CAMERA_DEPTH_TOPIC", "namespacefrida__constants_1_1navigation__constants.html#a4dd916438d5374c89cc5b4a661fb4d25", null ],
     [ "CAMERA_INFO_TOPIC", "namespacefrida__constants_1_1navigation__constants.html#ab949a4f98b0a3cbde3de8a4180b43464", null ],
@@ -19,6 +20,7 @@ var namespacefrida__constants_1_1navigation__constants =
     [ "FOLLOW_MODE_SERVICE_TIMEOUT", "namespacefrida__constants_1_1navigation__constants.html#a8ce168a80d86043608947a20b17f7f7d", null ],
     [ "FOLLOW_PERSON_NAV_SERVICE", "namespacefrida__constants_1_1navigation__constants.html#a6b3687e74596e1caff7408c2e856afaa", null ],
     [ "GET_ROBOT_POSE_SERVICE", "namespacefrida__constants_1_1navigation__constants.html#a1c672da2577c7a1659b713e7d0d4a825", null ],
+    [ "GLOBAL_COSTMAP_TOPIC", "namespacefrida__constants_1_1navigation__constants.html#a5a24985fc03c9e4a424378ac36c421cb", null ],
     [ "GO_TO_POSE_SERVICE", "namespacefrida__constants_1_1navigation__constants.html#a3bfcdfffcbd5245e754047c8b65d174b", null ],
     [ "GOAL_NAV_ACTION_SERVER", "namespacefrida__constants_1_1navigation__constants.html#a846cf984a623a45260d78d001731f1dd", null ],
     [ "GOAL_TOPIC", "namespacefrida__constants_1_1navigation__constants.html#a19da80c20445976caecaecc96e78881f", null ],

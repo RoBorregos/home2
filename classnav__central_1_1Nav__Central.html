@@ -132,6 +132,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a261ed81ce9ef961b2f8be61bcde6d128"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00cbb3067c64d3b8f6ce48e825808d7f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a00cbb3067c64d3b8f6ce48e825808d7f">get_robot_pose_callback</a> (self, request, response)</td></tr>
 <tr class="separator:a00cbb3067c64d3b8f6ce48e825808d7f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae85188640cc78ed58739988bef44d767"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#ae85188640cc78ed58739988bef44d767">approach_point_callback</a> (self, request, response)</td></tr>
+<tr class="separator:ae85188640cc78ed58739988bef44d767"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84e083f3ffd0ddacb1108c48614afa55"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a84e083f3ffd0ddacb1108c48614afa55">query_path</a> (self, request, response)</td></tr>
 <tr class="separator:a84e083f3ffd0ddacb1108c48614afa55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a215639b315127ba798621370130772bc"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a215639b315127ba798621370130772bc">check_for_topics</a> (self, topics)</td></tr>
@@ -263,6 +265,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a3d954c58753b94292161843781841d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07e4698ad9b10a58d52cbd14b37c5bf4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a07e4698ad9b10a58d52cbd14b37c5bf4">get_robot_pose_srv</a></td></tr>
 <tr class="separator:a07e4698ad9b10a58d52cbd14b37c5bf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a494b9835853db6d76f31d2b81d5d2bec"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a494b9835853db6d76f31d2b81d5d2bec">approach_point_srv</a></td></tr>
+<tr class="separator:a494b9835853db6d76f31d2b81d5d2bec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a365b125546ae4b74dff8d7b7d15b0dd3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a365b125546ae4b74dff8d7b7d15b0dd3">no_topics_count</a></td></tr>
 <tr class="separator:a365b125546ae4b74dff8d7b7d15b0dd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9089e4f1f61a287b53cefd0cc64d989"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#af9089e4f1f61a287b53cefd0cc64d989">no_tf_count</a></td></tr>
@@ -308,6 +312,14 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a4ae0f1b71b138859260019299d129756"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80b137209d00021ceba876318e80e013"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a80b137209d00021ceba876318e80e013">_clear_costmaps</a> (self, settle_s=0.3)</td></tr>
 <tr class="separator:a80b137209d00021ceba876318e80e013"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afa4854b3b129aa163555a8a1fddcbdd8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#afa4854b3b129aa163555a8a1fddcbdd8">_face_target</a> (self, tx, ty, tol=0.25)</td></tr>
+<tr class="separator:afa4854b3b129aa163555a8a1fddcbdd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a271581590fa2a1b982d23c78ad63cf6f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a271581590fa2a1b982d23c78ad63cf6f">_approach_pose</a> (self, gx, gy, tx, ty)</td></tr>
+<tr class="separator:a271581590fa2a1b982d23c78ad63cf6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaeb165b2e6e22c30f14e8f528893fb6f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#aaeb165b2e6e22c30f14e8f528893fb6f">_grid_cell_free</a> (self, grid, wx, wy, max_cost=50)</td></tr>
+<tr class="separator:aaeb165b2e6e22c30f14e8f528893fb6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78b2700c2007d80a8b4e0617ae37166d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a78b2700c2007d80a8b4e0617ae37166d">_find_free_approach</a> (self, tx, ty, rx, ry, standoff)</td></tr>
+<tr class="separator:a78b2700c2007d80a8b4e0617ae37166d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a071fe41930bbf1574441e41b1a879543"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a071fe41930bbf1574441e41b1a879543">_pose_from_coords</a> (self, coords)</td></tr>
 <tr class="separator:a071fe41930bbf1574441e41b1a879543"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07fd38d079956d9bb780f0355ea920c8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a07fd38d079956d9bb780f0355ea920c8">_fetch_area_coords</a> (self, location, sublocation)</td></tr>
@@ -331,6 +343,10 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:af3dcb4b7cf26da0730a218a6d960defe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff9f35e37138ab14adc7e46693c3c497"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#aff9f35e37138ab14adc7e46693c3c497">_goal_update_sub</a></td></tr>
 <tr class="separator:aff9f35e37138ab14adc7e46693c3c497"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac555db3c55c52d95101685191f512ad3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#ac555db3c55c52d95101685191f512ad3">_costmap_grid</a></td></tr>
+<tr class="separator:ac555db3c55c52d95101685191f512ad3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d9daa718a24ed03eda5015995e4ac22"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a7d9daa718a24ed03eda5015995e4ac22">_static_grid</a></td></tr>
+<tr class="separator:a7d9daa718a24ed03eda5015995e4ac22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a84cff7e6d0a164dca7e3dbef11fd9cca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a84cff7e6d0a164dca7e3dbef11fd9cca">_initial_pose_set</a></td></tr>
 <tr class="separator:a84cff7e6d0a164dca7e3dbef11fd9cca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08667350e7b34cd349e73a7c0067d305"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classnav__central_1_1Nav__Central.html#a08667350e7b34cd349e73a7c0067d305">_initial_pose_sub</a></td></tr>
@@ -376,6 +392,60 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a271581590fa2a1b982d23c78ad63cf6f" name="a271581590fa2a1b982d23c78ad63cf6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a271581590fa2a1b982d23c78ad63cf6f">&#9670;&#160;</a></span>_approach_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central._approach_pose </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>gx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>gy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>tx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>ty</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Map-frame PoseStamped at (gx, gy) facing (tx, ty).</pre> 
+</div>
+</div>
 <a id="a4ae0f1b71b138859260019299d129756" name="a4ae0f1b71b138859260019299d129756"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4ae0f1b71b138859260019299d129756">&#9670;&#160;</a></span>_approach_table()</h2>
 
@@ -550,6 +620,55 @@ Best-effort + bounded — skips a costmap whose clear service isn't up yet.</pre
 If start_pose is None the planner uses the robot's current pose.</pre> 
 </div>
 </div>
+<a id="afa4854b3b129aa163555a8a1fddcbdd8" name="afa4854b3b129aa163555a8a1fddcbdd8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa4854b3b129aa163555a8a1fddcbdd8">&#9670;&#160;</a></span>_face_target()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central._face_target </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>tx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>ty</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>tol</em> = <code>0.25</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Final in-place rotation toward (tx, ty) if the base ended up facing
+away after the approach goal (runs while nav2 is still resumed).</pre> 
+</div>
+</div>
 <a id="a07fd38d079956d9bb780f0355ea920c8" name="a07fd38d079956d9bb780f0355ea920c8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a07fd38d079956d9bb780f0355ea920c8">&#9670;&#160;</a></span>_fetch_area_coords()</h2>
 
@@ -590,6 +709,70 @@ If start_pose is None the planner uses the robot's current pose.</pre>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a78b2700c2007d80a8b4e0617ae37166d" name="a78b2700c2007d80a8b4e0617ae37166d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78b2700c2007d80a8b4e0617ae37166d">&#9670;&#160;</a></span>_find_free_approach()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central._find_free_approach </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>tx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>ty</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>rx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>ry</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>standoff</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Nearest free approach pose: walk a ring around the target at
+`standoff` (then slightly farther), starting on the robot's side and
+fanning out. Prefers the global costmap (inflation + live obstacles);
+falls back to the SLAM map; with no grid at all, trusts the direct
+robot-side pose and lets the planner decide.</pre> 
 </div>
 </div>
 <a id="a0e3f483b22c3e6812182ea5f0dc4979f" name="a0e3f483b22c3e6812182ea5f0dc4979f"></a>
@@ -711,6 +894,60 @@ On False: cancels the active goal AND switches smoother back to
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Cache latest goal from person_goal_smoother for initial-goal seeding.</pre> 
+</div>
+</div>
+<a id="aaeb165b2e6e22c30f14e8f528893fb6f" name="aaeb165b2e6e22c30f14e8f528893fb6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaeb165b2e6e22c30f14e8f528893fb6f">&#9670;&#160;</a></span>_grid_cell_free()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central._grid_cell_free </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>grid</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>wx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>wy</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>max_cost</em> = <code>50</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Whether world (wx, wy) lies on a known grid cell with cost &lt; max_cost.</pre> 
 </div>
 </div>
 <a id="a362d4ab9fb3c6d8d4c77368bfa18e6e7" name="a362d4ab9fb3c6d8d4c77368bfa18e6e7"></a>
@@ -1018,6 +1255,43 @@ surface. No-op (returns fast) when the docker node isn't running.</pre>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="ae85188640cc78ed58739988bef44d767" name="ae85188640cc78ed58739988bef44d767"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae85188640cc78ed58739988bef44d767">&#9670;&#160;</a></span>approach_point_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_central.Nav_Central.approach_point_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>response</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Approach a person/object seen by vision: transform the target to the
+map frame, pick the nearest costmap-free pose `standoff` meters from it
+(robot side first, facing the target) and navigate there through the
+same goal pipeline as go_to_pose.</pre> 
 </div>
 </div>
 <a id="a580fee7c6f760c649791600581128b5d" name="a580fee7c6f760c649791600581128b5d"></a>
@@ -1608,6 +1882,28 @@ just wait until it is publishing the map.</pre>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="ac555db3c55c52d95101685191f512ad3" name="ac555db3c55c52d95101685191f512ad3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac555db3c55c52d95101685191f512ad3">&#9670;&#160;</a></span>_costmap_grid</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central._costmap_grid</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a532b79dd368717730119f7795733e28d" name="a532b79dd368717730119f7795733e28d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a532b79dd368717730119f7795733e28d">&#9670;&#160;</a></span>_follow_bt_xml</h2>
 
@@ -1868,6 +2164,42 @@ just wait until it is publishing the map.</pre>
 <span class="mlabels"><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7d9daa718a24ed03eda5015995e4ac22" name="a7d9daa718a24ed03eda5015995e4ac22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d9daa718a24ed03eda5015995e4ac22">&#9670;&#160;</a></span>_static_grid</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central._static_grid</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a494b9835853db6d76f31d2b81d5d2bec" name="a494b9835853db6d76f31d2b81d5d2bec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a494b9835853db6d76f31d2b81d5d2bec">&#9670;&#160;</a></span>approach_point_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">nav_central.Nav_Central.approach_point_srv</td>
+        </tr>
+      </table>
 </div><div class="memdoc">
 
 </div>
