@@ -138,6 +138,30 @@ class MoonDreamModel:
         answer = self.model.query(encoded_image, query)["answer"]
         return answer
 
+    def detect(self, encoded_image_data, subject):
+        """Open-vocabulary detection: normalized bboxes for `subject`."""
+        encoded_image = pickle.loads(encoded_image_data)
+        detections = self.model.detect(encoded_image, subject)
+
+        objects = (
+            detections["objects"]
+            if isinstance(detections, dict) and "objects" in detections
+            else detections
+        )
+
+        objects_out = []
+        for obj in objects or []:
+            objects_out.append(
+                {
+                    "x_min": float(obj.get("x_min", obj.get("xmin", 0.0))),
+                    "y_min": float(obj.get("y_min", obj.get("ymin", 0.0))),
+                    "x_max": float(obj.get("x_max", obj.get("xmax", 0.0))),
+                    "y_max": float(obj.get("y_max", obj.get("ymax", 0.0))),
+                    "name": obj.get("name", obj.get("label", subject)),
+                }
+            )
+        return objects_out
+
     def find_object_points(self, encoded_image_data, subject):
         encoded_image = pickle.loads(encoded_image_data)
         result = self.model.point(encoded_image, subject)
