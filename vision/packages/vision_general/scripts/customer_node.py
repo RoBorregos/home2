@@ -267,6 +267,10 @@ class CustomerNode(Node):
             person = Person()
             person.x = (x1 + x2) // 2
             person.y = (y1 + y2) // 2
+            person.x1 = int(x1)
+            person.y1 = int(y1)
+            person.x2 = int(x2)
+            person.y2 = int(y2)
             person.point3d = coords
             diff = person.x - (image_width / 2)
             max_degree = 50.0

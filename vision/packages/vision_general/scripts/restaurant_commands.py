@@ -210,13 +210,25 @@ class RESTAURANTCommands(Node):
 
             for person in table.people.list:
                 try:
-                    px, py = int(person.x), int(person.y)
-                    # Draw person (Red)
-                    cv2.circle(debug_image, (px, py), 10, (0, 0, 255), -1)
+                    # Draw person bbox (Red); fall back to the center dot for
+                    # producers that don't fill the bbox fields.
+                    if person.x2 > person.x1 and person.y2 > person.y1:
+                        cv2.rectangle(
+                            debug_image,
+                            (int(person.x1), int(person.y1)),
+                            (int(person.x2), int(person.y2)),
+                            (0, 0, 255),
+                            2,
+                        )
+                        label_pos = (int(person.x1), max(int(person.y1) - 8, 20))
+                    else:
+                        px, py = int(person.x), int(person.y)
+                        cv2.circle(debug_image, (px, py), 10, (0, 0, 255), -1)
+                        label_pos = (px - 20, py - 20)
                     cv2.putText(
                         debug_image,
                         table_name,
-                        (px - 20, py - 20),
+                        label_pos,
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.8,
                         (0, 0, 255),
