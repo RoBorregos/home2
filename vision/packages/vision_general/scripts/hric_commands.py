@@ -6,6 +6,7 @@ available seats. Tasks for HRIC commands.
 """
 
 import cv2
+import json
 import numpy as np
 import queue
 import time
@@ -20,24 +21,35 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect, MapAreas
+from frida_interfaces.srv import (
+    ChairsToRemove,
+    DetectHand,
+    FindSeat,
+    MoondreamDetection,
+    YoloDetect,
+    MapAreas,
+)
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.navigation_constants import AREAS_SERVICE
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
     CAMERA_FRAME,
     CAMERA_INFO_TOPIC,
+    CHAIR_REMOVAL_IMAGE_TOPIC,
+    CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
     DEPTH_IMAGE_TOPIC,
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
     IMAGE_ORIENTED_TOPIC,
     IMAGE_TOPIC_HRIC,
+    MOONDREAM_DETECTION_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
 from tf2_ros import Buffer, TransformListener
 from ament_index_python.packages import get_package_share_directory
-from vision_general.utils.area_check import filter_detections_in_house, fetch_map_areas
+from vision_general.utils.area_check import filter_detections_in_house
+from vision_general.utils.debug_pub import DebugImagePublisher
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -45,6 +57,10 @@ package_share_dir = get_package_share_directory("vision_general")
 LEFT_WRIST_IDX = 9
 RIGHT_WRIST_IDX = 10
 KP_CONF = 0.3
+# Wrist selection: reject deprojected points closer than this (invalid depth),
+# and treat wrists within this depth difference as a tie (pick the higher one).
+HAND_MIN_DEPTH = 0.15
+HAND_DEPTH_TIE_M = 0.15
 
 
 def _load_yolo_pose(model_name="yolo11m-pose.pt"):
@@ -104,8 +120,8 @@ class HRICCommands(Node):
             self.find_seat_callback,
             callback_group=self.callback_group,
         )
-        self.image_publisher = self.create_publisher(
-            Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
+        self.image_publisher = DebugImagePublisher(
+            self, IMAGE_TOPIC_HRIC, "hric_commands", callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -132,10 +148,17 @@ class HRICCommands(Node):
         self.check = False
         self.rotation = 0
 
-        # Areas of the active map
+        # Areas of the active map. Fetched asynchronously by _poll_areas:
+        # blocking on the service future inside a callback can never complete
+        # on a single-threaded executor (see fetch_map_areas docstring), and
+        # the 2x5s timeouts pushed FindSeat past the task manager's deadline.
         self.areas = None
         self.areas_client = self.create_client(
             MapAreas, AREAS_SERVICE, callback_group=self.callback_group
+        )
+        self._areas_future = None
+        self._areas_timer = self.create_timer(
+            2.0, self._poll_areas, callback_group=self.callback_group
         )
 
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
@@ -148,9 +171,34 @@ class HRICCommands(Node):
             callback_group=self.callback_group,
         )
 
+        self.moondream_client = self.create_client(
+            MoondreamDetection,
+            MOONDREAM_DETECTION_TOPIC,
+            callback_group=self.callback_group,
+        )
+        self.chairs_to_remove_service = self.create_service(
+            ChairsToRemove,
+            CHAIRS_TO_REMOVE_SERVICE,
+            self.chairs_to_remove_callback,
+            callback_group=self.callback_group,
+        )
+        self.chair_image_publisher = DebugImagePublisher(
+            self,
+            CHAIR_REMOVAL_IMAGE_TOPIC,
+            "chair_removal",
+            max_hz=2.0,
+            callback_group=self.callback_group,
+        )
+        self.chair_image = None
+
         self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
+        # web_video_server subscribes only after the display switches topic, so
+        # keep re-publishing the last chair-removal frame.
+        self.create_timer(
+            0.5, self.publish_chair_image, callback_group=self.callback_group
+        )
 
     def _rotation_callback(self, msg):
         value = int(msg.data) % 360
@@ -176,8 +224,9 @@ class HRICCommands(Node):
         if self.image is None:
             return
 
-        h, w = self.image.shape[:2]
-        results = self.pose_model(self.image, verbose=False)
+        frame = self.image
+        h, w = frame.shape[:2]
+        results = self.pose_model(frame, verbose=False)
 
         if (
             not results
@@ -188,33 +237,43 @@ class HRICCommands(Node):
             self.get_logger().info("No hand detected")
             return None
 
-        points = results[0].keypoints.xy[0].cpu().numpy()  # pixel coords
+        if self.depth_image is None or self.camera_info is None:
+            self.get_logger().warn("Depth image or camera info not available")
+            return None
+
+        # The guest interacting with the robot is the LARGEST person in frame,
+        # not whichever detection the network happens to list first.
+        person_idx = 0
+        boxes = results[0].boxes
+        if boxes is not None and len(boxes) > 1:
+            xyxy = boxes.xyxy.cpu().numpy()
+            areas = (xyxy[:, 2] - xyxy[:, 0]) * (xyxy[:, 3] - xyxy[:, 1])
+            person_idx = int(areas.argmax())
+
+        points = results[0].keypoints.xy[person_idx].cpu().numpy()  # pixel coords
         conf = (
-            results[0].keypoints.conf[0].cpu().numpy()
+            results[0].keypoints.conf[person_idx].cpu().numpy()
             if results[0].keypoints.conf is not None
             else np.ones(17, dtype=np.float32)
         )
 
-        # Pick the most confident wrist as the hand position
-        best_wrist = None
-        best_conf = 0.0
-        for idx in [LEFT_WRIST_IDX, RIGHT_WRIST_IDX]:
-            if conf[idx] > best_conf and conf[idx] > KP_CONF:
-                best_conf = conf[idx]
-                best_wrist = idx
+        # Candidate wrists: confident enough and inside the image.
+        candidates = []
+        for idx in (LEFT_WRIST_IDX, RIGHT_WRIST_IDX):
+            cx, cy = int(points[idx][0]), int(points[idx][1])
+            if conf[idx] > KP_CONF and 0 <= cx < w and 0 <= cy < h:
+                candidates.append((cx, cy))
 
-        if best_wrist is None:
+        if not candidates:
             self.get_logger().info("No hand detected")
             return None
 
-        cx = int(points[best_wrist][0])
-        cy = int(points[best_wrist][1])
-
-        if not (0 <= cx < w and 0 <= cy < h):
-            self.get_logger().warn(f"Wrist outside image: ({cx}, {cy})")
-            return None
-
-        if self.depth_image is not None and self.camera_info is not None:
+        # The extended (bag) hand is the wrist NEAREST the robot. Deproject
+        # every candidate and keep only valid 3D points — never pick by
+        # keypoint confidence: a relaxed hanging hand often scores higher
+        # than the extended one.
+        valid = []  # (dist, cy, cx, stamped)
+        for cx, cy in candidates:
             stamped = point2d_to_ros_point_stamped(
                 self.camera_info,
                 self.depth_image,
@@ -223,10 +282,45 @@ class HRICCommands(Node):
                 Time(sec=0, nanosec=0),
                 rotation=self.rotation,
             )
-            return stamped
-        else:
-            self.get_logger().warn("Depth image or camera info not available")
+            p = stamped.point
+            dist = float(np.sqrt(p.x**2 + p.y**2 + p.z**2))
+            if np.isfinite(dist) and dist > HAND_MIN_DEPTH:
+                valid.append((dist, cy, cx, stamped))
+
+        annotated = frame.copy()
+        for cx, cy in candidates:
+            cv2.circle(annotated, (cx, cy), 8, (160, 160, 160), 2)
+
+        if not valid:
+            # A depth-invalid point would send the arm toward the camera
+            # origin — report no hand and let the task retry.
+            self.output_image = annotated
+            self.get_logger().warn(
+                "Wrist depth invalid for all candidates; no hand point"
+            )
             return None
+
+        valid.sort()
+        chosen = valid[0]
+        if len(valid) > 1 and valid[1][0] - valid[0][0] < HAND_DEPTH_TIE_M:
+            # Depths are too close to discriminate (nobody clearly extending a
+            # hand forward) — take the HIGHER wrist (raised hand; image y is
+            # smaller upward).
+            chosen = min(valid, key=lambda c: c[1])
+
+        dist, cy, cx, stamped = chosen
+        cv2.circle(annotated, (cx, cy), 10, (0, 255, 0), 3)
+        cv2.putText(
+            annotated,
+            f"hand {dist:.2f}m",
+            (cx + 14, cy - 14),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 0),
+            2,
+        )
+        self.output_image = annotated
+        return stamped
 
     def detect_hand_callback(self, request, response):
         hand_point = self.run_hand_inference()
@@ -258,22 +352,27 @@ class HRICCommands(Node):
         self.chairs = []
         self.couches = []
 
-        self.get_detections(frame)
+        try:
+            self.get_detections(frame)
 
-        has_chair_seat, angle = self.check_chairs(frame)
+            has_chair_seat, angle = self.check_chairs(frame)
 
-        if has_chair_seat:
-            response.success = True
-            response.angle = angle
-            self.success(f"Seat found in chair at angle: {angle}")
-            return response
+            if has_chair_seat:
+                response.success = True
+                response.angle = angle
+                self.success(f"Seat found in chair at angle: {angle}")
+                return response
 
-        has_couch_seat, angle = self.check_couches(frame)
+            has_couch_seat, angle = self.check_couches(frame)
 
-        if has_couch_seat:
-            response.success = True
-            response.angle = angle
-            self.success(f"Seat found in couch at angle: {angle}")
+            if has_couch_seat:
+                response.success = True
+                response.angle = angle
+                self.success(f"Seat found in couch at angle: {angle}")
+                return response
+        except Exception as e:
+            self.get_logger().error(f"Find Seat failed: {e}")
+            response.success = False
             return response
 
         response.success = False
@@ -308,10 +407,83 @@ class HRICCommands(Node):
 
     def publish_image(self):
         """Publish the image with the detections if available."""
-        if len(self.output_image) != 0:
-            self.image_publisher.publish(
-                self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
-            )
+        self.image_publisher.publish(self.output_image)
+
+    def publish_chair_image(self):
+        """Re-publish the last chair-removal annotated frame if available."""
+        if self.chair_image is not None:
+            self.chair_image_publisher.publish(self.chair_image)
+
+    def chairs_to_remove_callback(self, request, response):
+        """Chairs between the robot and the dining table (the ones to ask a
+        human to remove): a chair whose bbox bottom edge is lower in the image
+        than the table's bottom edge stands in front of the table. Chairs come
+        from the YOLO service, the table from moondream. Publishes the
+        annotated frame for the robot display."""
+        if self.image is None:
+            response.message = "No image received yet"
+            self.get_logger().warn(response.message)
+            return response
+        frame = self.image.copy()
+        img_h, img_w = frame.shape[:2]
+
+        req = YoloDetect.Request()
+        req.classes = [56]  # COCO chair
+        future = self.yolo_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=15.0)
+        if not future.done() or future.result() is None or not future.result().success:
+            response.message = "YOLO chair detection failed"
+            self.get_logger().error(response.message)
+            return response
+        chairs = list(future.result().detections)
+
+        response.total_chairs = len(chairs)
+        if not chairs:
+            response.success = True
+            response.table_found = True
+            response.message = "No chairs detected"
+            self.get_logger().info(response.message)
+            return response
+
+        tables = []
+        if self.moondream_client.wait_for_service(timeout_sec=3.0):
+            md_req = MoondreamDetection.Request()
+            md_req.subject = "dining table"
+            future = self.moondream_client.call_async(md_req)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=60.0)
+            result = future.result() if future.done() else None
+            if result is not None and result.success:
+                tables = result.detections
+        if not tables:
+            response.success = True
+            response.message = "No dining table found"
+            self.get_logger().warn(response.message)
+            return response
+
+        # Largest table bbox (moondream returns normalized coords)
+        table = max(tables, key=lambda d: (d.xmax - d.xmin) * (d.ymax - d.ymin))
+        table_bottom = table.ymax * img_h
+
+        cv2.rectangle(
+            frame,
+            (int(table.xmin * img_w), int(table.ymin * img_h)),
+            (int(table.xmax * img_w), int(table.ymax * img_h)),
+            (255, 0, 0),
+            2,
+        )
+        for det in chairs:
+            if det.y2 > table_bottom:
+                response.chairs.append(det)
+                cv2.rectangle(frame, (det.x1, det.y1), (det.x2, det.y2), (0, 0, 255), 3)
+            else:
+                cv2.rectangle(frame, (det.x1, det.y1), (det.x2, det.y2), (0, 255, 0), 1)
+        self.chair_image = frame  # DebugImagePublisher expects a raw bgr8 cv2 frame
+
+        response.success = True
+        response.table_found = True
+        response.message = f"{len(response.chairs)}/{len(chairs)} chair(s) to remove"
+        self.get_logger().info(response.message)
+        return response
 
     def getAngle(self, x, width):
         """Get the angle for the robot to point at the available seat."""
@@ -427,10 +599,27 @@ class HRICCommands(Node):
                 cv2.LINE_AA,
             )
 
+    def _poll_areas(self):
+        """Fetch map areas without blocking the executor; stop once loaded."""
+        if self.areas is not None:
+            self._areas_timer.cancel()
+            return
+        if self._areas_future is None:
+            if self.areas_client.service_is_ready():
+                self._areas_future = self.areas_client.call_async(MapAreas.Request())
+        elif self._areas_future.done():
+            result = self._areas_future.result()
+            if result is not None and result.areas:
+                self.areas = json.loads(result.areas)
+                self.get_logger().info(
+                    f"Loaded areas for rooms: {list(self.areas.keys())}"
+                )
+            self._areas_future = None
+
     def _get_areas(self):
-        """Fetch the active map's areas from nav_central (cached after first call)."""
+        """Return the cached map areas (None until _poll_areas has loaded them)."""
         if self.areas is None:
-            self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
+            self.get_logger().warn("Map areas not loaded yet; skipping house filter.")
         return self.areas
 
     def check_chairs(self, frame) -> tuple[bool, float]:
@@ -529,10 +718,12 @@ class HRICCommands(Node):
         )
 
         # Check if there are couch spaces available
+        width = frame.shape[1]
         for couch in couches_in_room:
-            couch_left = couch["bbox"][0]
-            couch_right = couch["bbox"][2]
-            space = np.zeros(frame.shape[1], dtype=int)
+            # YOLO can return x2 == image width; clamp to valid indices
+            couch_left = min(max(couch["bbox"][0], 0), width - 1)
+            couch_right = min(max(couch["bbox"][2], 0), width - 1)
+            space = np.zeros(width, dtype=int)
 
             # Fill the space with 1 if there is a person
             for person in self.people:

@@ -55,6 +55,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["knock_detection"]["ros__parameters"]
 
+    ding_dong_detection_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "ding_dong_detection.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["ding_dong_detection"]["ros__parameters"]
+
     env_type = os.environ.get("ENV_TYPE", "cpu")
 
     nodes = [
@@ -89,6 +96,14 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[knock_detection_config],
+        ),
+        Node(
+            package="speech",
+            executable="ding_dong_detection.py",
+            name="ding_dong_detection",
+            output="screen",
+            emulate_tty=True,
+            parameters=[ding_dong_detection_config],
         ),
         Node(
             package="speech",

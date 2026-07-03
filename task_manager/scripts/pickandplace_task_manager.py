@@ -11,6 +11,7 @@ Strategy: maximize pick+place score in 7 minutes.
 """
 
 import json
+import os
 import time
 from collections import defaultdict
 from datetime import datetime
@@ -27,10 +28,19 @@ from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transf
 from std_msgs.msg import String
 from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
+from frida_constants.vision_constants import (
+    CHAIR_REMOVAL_IMAGE_TOPIC,
+    DETECTIONS_IMAGE_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
+)
 from std_srvs.srv import Empty
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
-from task_manager.utils.shelf_pick_logic import find_target_on_level, load_shelf_levels
+from task_manager.utils.shelf_pick_logic import (
+    find_target_on_level,
+    height_matches_level,
+    levels_from_sorted_heights,
+)
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 2
@@ -41,12 +51,12 @@ ATTEMPT_LIMIT = 2
 STACK_Z_MIN = 0.03
 STACK_XY_MAX = 0.12
 
-SHELF_LEVEL_NAMES = {1: "bottom", 2: "middle", 3: "top"}
+SHELF_LEVEL_NAMES = {1: "bottom", 2: "second", 3: "third", 4: "top"}
 
-# Stand-off (m) when docking at the dishwasher and cooking_table (dishwasher-tab zone). Their front
-# sits closer than a normal table, so docking flush bumps the base into them; a small offset stops
-# the base short. Larger = shorter approach (stops further back). Tune on the robot.
-DISHWASHER_DOCK_OFFSET = 0.32
+# The arm cannot pick or place below this base_link Z. The competition shelf's REAL
+# level 1 (0.095 m) is announce-only: categorization names it (that scores the points),
+# but places fall back to the lowest reachable level and pick sweeps skip it.
+MIN_REACHABLE_SHELF_Z = 0.20
 
 
 class ObjectCategory(Enum):
@@ -73,6 +83,29 @@ class Location(Enum):
     BREAKFAST_SURFACE = "breakfast_surface"
     BREAKFAST_ITEMS = "breakfast_items"  # nav: dishwasher top — bowl + spoon picked from on top
     KITCHEN = "kitchen"
+
+
+# ==========================================================
+# DOCK OFFSETS — the ONE place to tune docking per location.
+# Stand-off (m) from the surface when docking after arriving:
+#   0.0  -> flush dock (docker default approach)
+#   >0.0 -> stop that far short of the surface (larger = further back). The
+#           dishwasher / cooking_table fronts sit closer than a normal table,
+#           so a flush dock bumps the base into them.
+#   None -> do NOT dock at this place.
+# Every dock in this task reads from this table. Tune on the robot.
+# ==========================================================
+DOCK_OFFSETS: dict[Location, float | None] = {
+    Location.KITCHEN: None,  # safe_place — start/announce spot, never docks
+    Location.DINING_TABLE: 0.0,  # dinner_table
+    Location.EXTRA_SURFACE: 0.0,  # counter
+    Location.DISHWASHER: 0.32,  # front sits close — stop short
+    Location.DISHWASHER_TAB: 0.32,  # cooking_table, same close front
+    Location.CABINET: 0.30,  # stand off so the arm reaches the shelves
+    Location.TRASH_BIN: None,  # trash — detect-and-drop flow, no dock
+    Location.BREAKFAST_SURFACE: 0.0,  # dinner_table
+    Location.BREAKFAST_ITEMS: 0.32,  # dishwasher top (bowl + spoon source)
+}
 
 
 class ObjectInfo:
@@ -148,6 +181,10 @@ class PickAndPlaceTM(Node):
         self.use_extra_surface = False  # pick the 2 common objects from the counter (−20 pts/obj)
         self.use_grasp_detector = False  # gate picks on the grasp bit; False ignores it
         self.use_vision_confirmation = True  # vision re-look to confirm the pick
+        # Octomap clearing before shelf grasps. OFF by design: a cleared octomap lets the
+        # planner route through shelf structure it can no longer see — a failed pick is
+        # recoverable, a collision is not. (Stability decision 2026-07-02.)
+        self.use_octomap_clearing = False
         self.max_cleanup_objects = 3  # how many to clean before breakfast
 
         # YOLO name mapping: logical → detection class (the model's actual labels).
@@ -161,10 +198,21 @@ class PickAndPlaceTM(Node):
             "milk": "milk",
         }
 
-        # Shelf heights in base_link Z: read the calibration JSON (re-measurable at
-        # competition via the calibrator), falling back to these calibrated values.
-        self.shelf_level_heights = load_shelf_levels({1: 0.39, 2: 0.68, 3: 1.05})
-        self.default_shelf_height = min(self.shelf_level_heights.values())
+        # Shelf heights in base_link Z: the REAL competition shelf levels (1 = lowest),
+        # read live from the arena calibration JSON in xarm_utils (recalibrate on site
+        # with `ros2 run xarm_utils shelf_height_calibrator.py --arena N`). Select the
+        # arena with FRIDA_ARENA=1|2|3. Level 1 (0.095) is below MIN_REACHABLE_SHELF_Z:
+        # announce-only, never placed on or picked from.
+        self.arena = int(os.environ.get("FRIDA_ARENA", "1"))
+        try:
+            from xarm_utils.shelf_levels import get_shelf_levels
+
+            self.shelf_level_heights = levels_from_sorted_heights(get_shelf_levels(self.arena))
+        except Exception as e:
+            self.get_logger().warn(f"Arena shelf JSON unavailable ({e}); using fallback heights.")
+            self.shelf_level_heights = {1: 0.095, 2: 0.39, 3: 0.68, 4: 1.05}
+        reachable = [h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z]
+        self.default_shelf_height = min(reachable or self.shelf_level_heights.values())
 
         # ==========================================================
         # END COMPETITION CONFIG
@@ -186,7 +234,7 @@ class PickAndPlaceTM(Node):
         # (areas.json), i.e. the LocationsNames furniture. Nav records the literal furniture
         # names; WE map our roles onto them here. Confirm these strings match areas.json exactly.
         #   counter -> extra_surface (2 common objects)   cooking_table -> dishwasher tab source
-        #   dinner_table -> dining table                  trash -> kitchen trash bin (fruits)
+        #   dinner_table -> dining table                  trashbin -> kitchen trash bin (fruits)
         #   dishwasher  -> place cutlery/plate/cup INSIDE; bowl+spoon are picked from ON TOP of it
         self.nav_locations = {
             Location.KITCHEN: ("kitchen", "safe_place"),
@@ -195,7 +243,7 @@ class PickAndPlaceTM(Node):
             Location.DISHWASHER: ("kitchen", "dishwasher"),
             Location.DISHWASHER_TAB: ("kitchen", "cooking_table"),
             Location.CABINET: ("kitchen", "cabinet"),
-            Location.TRASH_BIN: ("kitchen", "trash"),
+            Location.TRASH_BIN: ("kitchen", "trashbin"),
             Location.BREAKFAST_SURFACE: ("kitchen", "dinner_table"),
             # bowl + spoon are picked from ON TOP of the dishwasher (normal top pick).
             Location.BREAKFAST_ITEMS: ("kitchen", "dishwasher"),
@@ -241,12 +289,18 @@ class PickAndPlaceTM(Node):
         self.current_breakfast_item: dict = None
         self.bowl_placed = False
         self.dishwasher_open = False
+        # What the gripper physically holds (ObjectInfo or breakfast dict); anti-drop guard.
+        self.carrying = None
 
         # Shelf scanning state
         self.shelves: dict[int, list[str]] = {}
         self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
         self.shelf_scanned = False
         self._cabinet_scan_fresh = False
+        # Level cache learned during per-level scans (classname -> level height) so later
+        # cabinet picks jump straight to the right level instead of re-sweeping every level.
+        self.use_shelf_cache = True
+        self._shelf_level_cache: dict[str, float] = {}
         self._shelf_fallback_heights: list[float] = []
         self._shelf_fallback_idx: int = 0
         self.shelf_level_threshold = 0.20
@@ -357,6 +411,14 @@ class PickAndPlaceTM(Node):
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
 
         return result
+
+    def dock_at(self, location: Location):
+        """Dock at `location` with its DOCK_OFFSETS stand-off; skips places marked None."""
+        offset = DOCK_OFFSETS.get(location)
+        if offset is None:
+            CLog.nav(self, "DOCK", f"No dock configured for {location.value}, skipping.")
+            return
+        self.subtask_manager.nav.dock_table(offset=offset)
 
     def timeout(self, duration: float = 2.0):
         """Non-blocking wait that keeps spinning ROS"""
@@ -500,6 +562,39 @@ class PickAndPlaceTM(Node):
         except Exception as e:
             CLog.manip(self, "PICK", f"clear_octomap failed: {e}", level="warn")
 
+    def _visit_shelf_level(self, height: float, object_name: str):
+        """Move to a shelf level, settle, detect, and learn what sits there.
+
+        Returns (found, before_counts): whether object_name is framed at this level and,
+        if so, the per-class counts for the vision confirmation. Only detections whose
+        height actually matches this level are cached (classname -> height): the camera
+        also frames adjacent levels, and caching those would send later picks to the
+        wrong level first.
+        """
+        self.subtask_manager.manipulation.get_optimal_position_for_plane(
+            height, tolerance=0.1, table_or_shelf=False, approach_plane=True
+        )
+        self.timeout(3.0)  # let the octomap settle at this level
+        status, detections = self.subtask_manager.vision.detect_objects()
+        retry = 0
+        while status != Status.EXECUTION_SUCCESS and retry < 3:
+            self.timeout(1.0)
+            status, detections = self.subtask_manager.vision.detect_objects()
+            retry += 1
+        if status != Status.EXECUTION_SUCCESS or not detections:
+            return (False, None)
+        candidates = [
+            (det.classname, h)
+            for det in detections
+            if (h := self.convert_to_height(det)) is not None
+        ]
+        for name, h in candidates:
+            if name and height_matches_level(h, height):
+                self._shelf_level_cache[name.lower()] = height
+        if find_target_on_level(candidates, object_name, height) is not None:
+            return (True, self._shelf_counts(detections, height))
+        return (False, None)
+
     def _pick_from_shelf(self, object_name: str, level_heights: dict, say_name: str = None) -> int:
         """Find the target by detecting at each shelf level, then pick from that level.
 
@@ -507,35 +602,39 @@ class PickAndPlaceTM(Node):
         on L3) was missed. Here each level's own viewing pose detects + builds its
         octomap; the pick keeps that pose via in_configuration. See
         docs/ai/shelf_pick_plan.md.
+
+        Fast path: if an earlier level scan already located this object, jump straight
+        to that level (one confirm detect) instead of re-sweeping every level. A miss at
+        the cached level drops the entry and falls back to the full sweep.
         """
         found_level = None
         before_counts = None
-        for height in sorted(level_heights.values()):
-            self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                height, tolerance=0.1, table_or_shelf=False, approach_plane=True
+
+        cached = self._shelf_level_cache.get(object_name.lower()) if self.use_shelf_cache else None
+        if cached is not None:
+            CLog.manip(
+                self, "PICK", f"Cached shelf level {cached:.3f} for {object_name} — skipping sweep."
             )
-            self.timeout(3.0)  # let the octomap settle at this level
-            status, detections = self.subtask_manager.vision.detect_objects()
-            retry = 0
-            while status != Status.EXECUTION_SUCCESS and retry < 3:
-                self.timeout(1.0)
-                status, detections = self.subtask_manager.vision.detect_objects()
-                retry += 1
-            if status != Status.EXECUTION_SUCCESS or not detections:
-                continue
-            candidates = [
-                (det.classname, h)
-                for det in detections
-                if (h := self.convert_to_height(det)) is not None
-            ]
-            if find_target_on_level(candidates, object_name, height) is not None:
-                CLog.manip(self, "PICK", f"Found {object_name} at shelf height {height:.3f}.")
-                self.announce_objects([object_name])
-                if say_name:
-                    self.subtask_manager.hri.say(f"I will pick the {say_name}.", wait=False)
-                found_level = height
-                before_counts = self._shelf_counts(detections, height)
-                break
+            found, before_counts = self._visit_shelf_level(cached, object_name)
+            if found:
+                found_level = cached
+            else:
+                CLog.manip(
+                    self,
+                    "PICK",
+                    f"{object_name} not at cached level; falling back to a full sweep.",
+                    level="warn",
+                )
+                self._shelf_level_cache.pop(object_name.lower(), None)
+
+        if found_level is None:
+            for height in sorted(level_heights.values()):
+                if height < MIN_REACHABLE_SHELF_Z:
+                    continue  # real level 1: too low to grasp from, announce-only
+                found, before_counts = self._visit_shelf_level(height, object_name)
+                if found:
+                    found_level = height
+                    break
 
         if found_level is None:
             CLog.manip(
@@ -546,11 +645,16 @@ class PickAndPlaceTM(Node):
             )
             return Status.EXECUTION_ERROR
 
-        # Clear the octomap so points accumulated from prior picks/levels do not
-        # over-constrain the grasp (stale octomap caused 99999 collisions on the
-        # tight low shelf levels); let it rebuild fresh at this level.
-        self._clear_octomap()
-        self.timeout(3.0)
+        CLog.manip(self, "PICK", f"Found {object_name} at shelf height {found_level:.3f}.")
+        self.announce_objects([object_name])
+        if say_name:
+            self.subtask_manager.hri.say(f"I will pick the {say_name}.", wait=False)
+
+        if self.use_octomap_clearing:
+            # Clear the octomap so points accumulated from prior picks/levels do not
+            # over-constrain the grasp; let it rebuild fresh at this level.
+            self._clear_octomap()
+            self.timeout(3.0)
         # Arm is at the found level's pose; keep it (in_configuration).
         status = self.subtask_manager.manipulation.pick_object(
             object_name, in_configuration=True, scan_environment=True
@@ -627,23 +731,43 @@ class PickAndPlaceTM(Node):
         )
         return self.default_shelf_height
 
+    def _level_number(self, height: float) -> int:
+        """Real shelf level number (1 = lowest) for a configured height."""
+        for lvl, h in sorted(self.shelf_level_heights.items()):
+            if abs(h - height) < 1e-6:
+                return lvl
+        return 1
+
     def _build_shelf_fallback_list(self, obj: ObjectInfo) -> list[float]:
         """Build the ordered list of shelf heights to try for this object.
 
         - First entry: the shelf picked by categorize_objects for this object.
-        - Remaining entries: the other shelves in ascending height order
-          (lowest first) because lower shelves are easier for the xArm6
+        - Remaining entries: the other REACHABLE shelves in ascending height
+          order (lowest first) because lower shelves are easier for the xArm6
           to reach from the Dashgo base.
+
+        A primary below MIN_REACHABLE_SHELF_Z (the real level 1) is announce-only:
+        the categorization already named it for the points, so say why and place on
+        the lowest reachable level instead.
 
         Returns an empty list if no shelves are configured.
         """
         if not self.shelf_level_heights:
             return []
         primary = self._get_shelf_height_for_object(obj)
-        # All configured heights, lowest first (most reachable first)
-        all_heights = sorted(self.shelf_level_heights.values())
+        reachable = sorted(
+            h for h in self.shelf_level_heights.values() if h >= MIN_REACHABLE_SHELF_Z
+        )
+        if primary < MIN_REACHABLE_SHELF_Z:
+            if reachable:
+                self.subtask_manager.hri.say(
+                    f"Shelf {self._level_number(primary)} is too low for my arm, so I "
+                    f"will place the {obj.name} on shelf {self._level_number(reachable[0])}.",
+                    wait=False,
+                )
+            return reachable
         # Keep primary at the front, drop it from the tail fallbacks
-        fallbacks = [h for h in all_heights if abs(h - primary) > 1e-6]
+        fallbacks = [h for h in reachable if abs(h - primary) > 1e-6]
         return [primary] + fallbacks
 
     def announce_objects(self, names):
@@ -653,6 +777,55 @@ class PickAndPlaceTM(Node):
             if name and name != "unknown":
                 self.subtask_manager.hri.say(f"I see a {name}.")
                 self.timeout(0.3)
+
+    def _carrying_name(self) -> str:
+        """Human name of whatever is currently held (ObjectInfo or breakfast dict)."""
+        c = self.carrying
+        if c is None:
+            return ""
+        if isinstance(c, dict):
+            return c.get("name", "object")
+        return getattr(c, "name", "object")
+
+    def _ensure_gripper_empty(self) -> bool:
+        """Anti-drop guard. Call right before any pick, once the robot is at the pick surface.
+
+        If the gripper still holds an object (a previous place failed), place it (controlled)
+        at the CURRENT location to free the gripper — never open the gripper for a new pick
+        while holding something (that drops the held object: -40 penalty). Returns True if
+        the gripper is (now) empty, False if it could not be freed.
+        """
+        if self.carrying is None:
+            return True
+        if self.use_grasp_detector:
+            rclpy.spin_once(self, timeout_sec=0.5)
+            if not self._gripper_has_object:
+                # Stale bookkeeping (e.g. a place that timed out but physically finished):
+                # the gripper is really empty, so don't waste place attempts.
+                CLog.manip(self, "PICK", "Grasp bit reports empty gripper; clearing carry state.")
+                self.carrying = None
+                return True
+        name = self._carrying_name()
+        CLog.manip(
+            self,
+            "PICK",
+            f"Still holding {name}; placing it here before the next pick.",
+            level="warn",
+        )
+        self.subtask_manager.hri.say("First I will put down the object I am holding.", wait=False)
+        for _ in range(ATTEMPT_LIMIT):
+            if self.subtask_manager.manipulation.place() == Status.EXECUTION_SUCCESS:
+                self.carrying = None
+                CLog.manip(self, "PICK", f"Freed the gripper (placed {name}).", level="success")
+                return True
+            self.timeout(1.0)
+        CLog.manip(
+            self,
+            "PICK",
+            f"Could not put down {name}; will not open the gripper (skipping this pick).",
+            level="error",
+        )
+        return False
 
     # ------------------------------------------------------------------
     # Finite State Machine
@@ -683,6 +856,9 @@ class PickAndPlaceTM(Node):
                 "Door open. Pick and Place Challenge begins.",
                 level="success",
             )
+            # The scored 420s window starts NOW (door open), not at node launch —
+            # without this reset the final report includes the button-wait time.
+            self.total_start_time = datetime.now()
             self.current_state = PickAndPlaceTM.TaskStates.START
 
         # ==================== START ====================
@@ -690,10 +866,38 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.START)
             self.subtask_manager.hri.say("I am ready.", wait=False)
             self.navigate_to_location(Location.KITCHEN, say=False)
-            self.subtask_manager.hri.say(
-                "Please remove the chairs from the dining table.", wait=True
-            )
-            self.timeout(5.0)
+
+            # self.subtask_manager.hri.say(
+            #     "Please remove the two chairs closest to me from the dining table.",
+            #     wait=True,
+            # )
+            # self.timeout(5.0)
+
+            # Only ask to remove the chairs between the robot and the table
+            status, chairs = self.subtask_manager.vision.detect_chairs_to_remove()
+            if status == Status.EXECUTION_SUCCESS:
+                n = len(chairs)
+                if n == 0:
+                    CLog.fsm(self, "STATE", "No chairs blocking the table; skipping request.")
+                else:
+                    self.subtask_manager.hri.publish_display_topic(CHAIR_REMOVAL_IMAGE_TOPIC)
+                    self.subtask_manager.hri.say(
+                        f"Please remove the {n} chair{'s' if n > 1 else ''} shown on my screen.",
+                        wait=True,
+                    )
+                    self.timeout(5.0)
+                    self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
+            else:
+                CLog.fsm(
+                    self,
+                    "STATE",
+                    "Chair detection failed; generic removal request.",
+                    level="warn",
+                )
+                self.subtask_manager.hri.say(
+                    "Please remove the chairs from the dining table.", wait=True
+                )
+                self.timeout(5.0)
 
             if self.use_extra_surface:
                 CLog.fsm(self, "STATE", "Using extra surface (common objects).")
@@ -710,9 +914,11 @@ class PickAndPlaceTM(Node):
                 Location.EXTRA_SURFACE if self.use_extra_surface else Location.DINING_TABLE
             )
             self.navigate_to_location(table_location, say=False)
-            self.subtask_manager.nav.dock_table()
+            self.dock_at(table_location)
             self._docked_at_table = True
             self.subtask_manager.manipulation.move_to_position("table_stare")
+            # Show the annotated detector feed while perceiving the table
+            self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
 
             status, detections = self.subtask_manager.vision.detect_objects(timeout=5)
 
@@ -873,8 +1079,15 @@ class PickAndPlaceTM(Node):
             # docked here; retries reuse it.
             if self.current_attempts == 0 and not self._docked_at_table:
                 self.navigate_to_location(table_location, say=False)
-                self.subtask_manager.nav.dock_table()
+                self.dock_at(table_location)
                 self._docked_at_table = True
+
+            if not self._ensure_gripper_empty():
+                self.grasped_object.skipped = True
+                self.current_object_index += 1
+                self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
+                return
+
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             before_counts = None
@@ -905,6 +1118,7 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_picked = True
+                self.carrying = self.grasped_object  # gripper now physically holds it
                 if self.first_pick:
                     CLog.manip(self, "PICK", "FIRST PICK BONUS achieved!", level="success")
                     self.first_pick = False
@@ -1002,15 +1216,7 @@ class PickAndPlaceTM(Node):
             self._docked_at_table = False  # left the table to place
             placement_loc = self.grasped_object.placement_location
             result = self.navigate_to_location(placement_loc)
-            # dishwasher / cooking_table -> short approach (they bump if docked flush);
-            # extra surface -> default dock; cabinet -> stand off ~30 cm.
-            # Trash bin uses its own detect-and-drop flow.
-            if placement_loc in (Location.DISHWASHER, Location.DISHWASHER_TAB):
-                self.subtask_manager.nav.dock_table(offset=DISHWASHER_DOCK_OFFSET)
-            elif placement_loc == Location.EXTRA_SURFACE:
-                self.subtask_manager.nav.dock_table()
-            elif placement_loc == Location.CABINET:
-                self.subtask_manager.nav.dock_table(offset=0.30)
+            self.dock_at(placement_loc)
 
             if result == Status.EXECUTION_SUCCESS:
                 if placement_loc == Location.CABINET and not self.shelf_scanned:
@@ -1042,7 +1248,12 @@ class PickAndPlaceTM(Node):
                 CLog.vision(self, "SHELF", f"Scanning shelf level {level} at {height}m")
                 self.subtask_manager.hri.say(f"Scanning shelf number {idx + 1}.", wait=False)
 
-                self._scan_shelf_level(height)
+                # An unreachable level (real level 1) is viewed from the lowest reachable
+                # level's pose — the camera can frame it even though the arm cannot operate
+                # there; the height filter below still attributes detections to the real level.
+                self._scan_shelf_level(
+                    height if height >= MIN_REACHABLE_SHELF_Z else self.default_shelf_height
+                )
 
                 status, detections = self.subtask_manager.vision.detect_objects()
                 retry = 0
@@ -1228,6 +1439,7 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_placed = True
+                self.carrying = None  # gripper released the object
                 CLog.manip(
                     self,
                     "PLACE",
@@ -1317,14 +1529,7 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE)
             item_location = self.current_breakfast_item["location"]
             result = self.navigate_to_location(item_location)
-            # Cabinet -> stand off ~30 cm; dishwasher top (bowl+spoon source) -> short approach so
-            # the base does not bump it; other table-height surfaces -> default dock.
-            if item_location == Location.CABINET:
-                self.subtask_manager.nav.dock_table(offset=0.30)
-            elif item_location == Location.BREAKFAST_ITEMS:
-                self.subtask_manager.nav.dock_table(offset=DISHWASHER_DOCK_OFFSET)
-            else:
-                self.subtask_manager.nav.dock_table()
+            self.dock_at(item_location)
 
             if result == Status.EXECUTION_SUCCESS:
                 self.current_state = PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM
@@ -1343,6 +1548,12 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM)
             item_name = self.current_breakfast_item["name"]
             item_location = self.current_breakfast_item["location"]
+
+            # Anti-drop: never open the gripper for this pick while still holding a prior item.
+            if not self._ensure_gripper_empty():
+                self.current_breakfast_item["picked"] = True  # skip; could not free the gripper
+                self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
+                return
 
             is_cabinet = item_location == Location.CABINET
             yolo_name = self._to_yolo_name(item_name)
@@ -1378,23 +1589,36 @@ class PickAndPlaceTM(Node):
                     status = Status.EXECUTION_ERROR
 
             if status == Status.EXECUTION_SUCCESS:
+                self.current_attempts = 0
                 self.current_breakfast_item["picked"] = True
+                self.carrying = self.current_breakfast_item  # gripper now physically holds it
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING
             else:
+                self.current_attempts += 1
                 CLog.manip(
                     self,
                     "PICK",
-                    f"Failed to pick breakfast item: {item_name}.",
+                    f"Failed to pick breakfast item {item_name} — "
+                    f"attempt {self.current_attempts}/{ATTEMPT_LIMIT}",
                     level="error",
                 )
-                self.current_breakfast_item["picked"] = True
-                self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
+                if self.current_attempts >= ATTEMPT_LIMIT:
+                    CLog.manip(
+                        self,
+                        "PICK",
+                        f"Skipping {item_name} after {ATTEMPT_LIMIT} attempts.",
+                        level="warn",
+                    )
+                    self.current_attempts = 0
+                    self.current_breakfast_item["picked"] = True  # give up; continue with next item
+                    self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
+                # else: stay in PICK_BREAKFAST_ITEM to retry (gripper empty, nothing dropped)
 
         # ==================== NAVIGATE TO DINING ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING:
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING)
             result = self.navigate_to_location(Location.DINING_TABLE)
-            self.subtask_manager.nav.dock_table()
+            self.dock_at(Location.DINING_TABLE)
 
             if result == Status.EXECUTION_SUCCESS:
                 item_name = self.current_breakfast_item["name"]
@@ -1459,6 +1683,7 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["placed"] = True
+                self.carrying = None  # gripper released the object
                 if item_name == "bowl":
                     self.bowl_placed = True
                 CLog.manip(
