@@ -5,6 +5,10 @@ STT_SERVICE_NAME = "/hri/speech/STT"
 HOTWORD_SERVICE_NAME = "/hri/speech/hotword_service"
 KEYWORD_TOPIC = "/hri/speech/kws"
 EI_DETECTION_TOPIC = "/hri/speech/ei_detection"
+# Arms/disarms the door-event detectors (knock + doorbell). They only listen
+# while the robot waits at the door, so party speech outside that window and the
+# robot's own audio cannot trigger a false door event.
+DOORBELL_ARMED_TOPIC = "/hri/doorbell/armed"
 USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
 RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
 PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"

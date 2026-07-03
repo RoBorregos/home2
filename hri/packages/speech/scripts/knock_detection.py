@@ -14,7 +14,7 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from frida_interfaces.msg import AudioData
 from speech.knock_detection_utils import KnockDetector, KnockDetectorConfig
@@ -30,6 +30,13 @@ class KnockDetectionNode(Node):
         self.declare_parameter("sample_rate", 16000)
         # Only publish a knock scoring above this value.
         self.declare_parameter("min_score", 0.55)
+        # Gating: a knock is only a door signal while the robot waits at the door,
+        # and its own audio must not be mistaken for one. The task manager arms
+        # the detector; /saying mutes it while the robot speaks.
+        self.declare_parameter("arm_topic", "/hri/doorbell/armed")
+        self.declare_parameter("saying_topic", "/saying")
+        self.declare_parameter("require_arm", True)
+        self.declare_parameter("mute_while_speaking", True)
         # filtro 1: energy / dB gate
         self.declare_parameter("min_db", -40.0)
         # Onset detection
@@ -68,15 +75,41 @@ class KnockDetectionNode(Node):
         )
         self.detector = KnockDetector(cfg)
 
+        self.require_arm = g("require_arm")
+        self.mute_while_speaking = g("mute_while_speaking")
+        self._armed = not self.require_arm
+        self._speaking = False
+
         self.publisher = self.create_publisher(String, result_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
+        self.create_subscription(Bool, g("arm_topic"), self._arm_callback, 10)
+        if self.mute_while_speaking:
+            self.create_subscription(Bool, g("saying_topic"), self._saying_callback, 10)
 
         self.get_logger().info(
             f"KnockDetectionNode ready | in: {audio_topic} | out: {result_topic} | "
-            f"min_db: {cfg.min_db} dBFS | min_onsets: {cfg.min_onsets}"
+            f"min_db: {cfg.min_db} dBFS | min_onsets: {cfg.min_onsets} | "
+            f"require_arm: {self.require_arm}"
         )
 
+    def _arm_callback(self, msg):
+        if msg.data == self._armed:
+            return
+        self._armed = msg.data
+        # Drop any half-built burst so a stale onset can't leak across the boundary.
+        self.detector.reset()
+        self.get_logger().info(f"Knock detection {'ARMED' if msg.data else 'disarmed'}")
+
+    def _saying_callback(self, msg):
+        self._speaking = msg.data
+
+    @property
+    def _listening(self):
+        return self._armed and not (self.mute_while_speaking and self._speaking)
+
     def audio_callback(self, msg):
+        if not self._listening:
+            return
         chunk = np.frombuffer(bytes(msg.data), dtype=np.int16)
         for event in self.detector.process(chunk):
             if event.score < self.min_score:

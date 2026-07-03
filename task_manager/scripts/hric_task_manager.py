@@ -215,10 +215,18 @@ class HRIC_TM(Node):
                 wait=True,
             )
             time.sleep(2)
+            # Arm the knock/doorbell detectors only now, at the start position:
+            # this is the only moment the doorbell rings, so party speech and the
+            # robot's own audio outside this window cannot cause a false event.
+            self.subtask_manager.hri.arm_door_detection(True)
+            # Clear again: arming reset the detectors, ignore anything from before.
+            self.subtask_manager.hri.door_event_detected = False
+            self.subtask_manager.hri.last_door_event = ""
             # Safety timeout: if no knock/doorbell is heard, continue anyway
             deadline = time.time() + DOOR_WAIT_TIMEOUT
             while not self.subtask_manager.hri.door_event_detected and time.time() < deadline:
                 rclpy.spin_once(self, timeout_sec=0.1)
+            self.subtask_manager.hri.arm_door_detection(False)
 
             if self.subtask_manager.hri.door_event_detected:
                 trigger = self.subtask_manager.hri.last_door_event or "door event"

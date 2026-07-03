@@ -40,6 +40,7 @@ from frida_constants.hri_constants import (
     TIMEOUT,
     KEYWORD_TOPIC,
     EI_DETECTION_TOPIC,
+    DOORBELL_ARMED_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
@@ -60,7 +61,7 @@ from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
-from std_msgs.msg import Empty, String
+from std_msgs.msg import Bool, Empty, String
 
 from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
@@ -161,7 +162,7 @@ class HRITasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.start_button_clicked = False
-        # Set when a knock (DSP node) or doorbell (Edge Impulse) is heard.
+        # Set when a knock or doorbell (DSP nodes, or Edge Impulse on l4t) is heard.
         self.door_event_detected = False
         self.last_door_event = ""
         self.keyword = ""
@@ -190,6 +191,10 @@ class HRITasks:
         self.ei_detection_sub = self.node.create_subscription(
             String, EI_DETECTION_TOPIC, self._get_door_event, 10
         )
+        # Arms/disarms the door-event detectors (knock + doorbell). The detectors
+        # are brought up at system startup, long before a guest is awaited, so
+        # they are subscribed by the time we publish.
+        self.door_armed_publisher = self.node.create_publisher(Bool, DOORBELL_ARMED_TOPIC, 10)
 
         self.current_transcription = ""
         self.last_hotwords = ""
@@ -416,6 +421,15 @@ class HRITasks:
         except Exception as e:
             self.node.get_logger().error(f"Error parsing KWS JSON: {e}")
             self.keyword = ""
+
+    def arm_door_detection(self, armed: bool) -> None:
+        """Enable/disable the door-event detectors (knock + doorbell).
+
+        They only listen while armed, so the doorbell/knock can only fire in the
+        window where the robot waits at the door — party speech at any other time
+        cannot produce a false door event.
+        """
+        self.door_armed_publisher.publish(Bool(data=armed))
 
     def _get_door_event(self, msg: String) -> None:
         """Knock (DSP) or doorbell (Edge Impulse) heard at the door."""
