@@ -42,6 +42,14 @@ GLOBAL_COSTMAP_TOPIC = "/global_costmap/costmap"
 ### costmaps; for small deliberate sidesteps, not navigation.
 MOVE_RELATIVE_SERVICE = "/navigation/move_relative"
 
+### Washing-machine precision aligner (wall_aligner.py) — live-lidar servo,
+### independent of table_docker: align perpendicular to the NEAREST straight
+### segment the lidar sees in front (the machine's front panel, endpoints
+### visible), then close to an EXACT perpendicular distance while staying
+### square on the live fit. Direct cmd_vel, slow, cm-level.
+WALL_ALIGN_SERVICE = "/navigation/wall_align"  # AlignToWall
+WALL_CLOSE_SERVICE = "/navigation/wall_close"  # CloseToWall
+
 ### Toggle live obstacle marking (SetBool). data=False disables the lidar
 ### obstacle_layer + ZED rgbd_obstacle_layer on BOTH costmaps (static map still
 ### applies) so a bag/basket carried by the arm doesn't wall the robot in;

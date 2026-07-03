@@ -182,6 +182,8 @@ set(srv_files
   "navigation/srv/GoToPose.srv"
   "navigation/srv/ApproachPoint.srv"
   "navigation/srv/MoveRelative.srv"
+  "navigation/srv/AlignToWall.srv"
+  "navigation/srv/CloseToWall.srv"
   "manipulation/srv/DockToHandle.srv"
   "task_manager/srv/PositionGet.srv"
   "vision/srv/PersonInside.srv"
