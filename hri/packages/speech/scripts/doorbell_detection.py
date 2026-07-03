@@ -113,9 +113,6 @@ class DoorbellDetectionNode(Node):
         if msg.data == self._armed:
             return
         self._armed = msg.data
-        # Re-calibrate the ambient floor and drop any half-built event whenever we
-        # (dis)arm, so a stale event can't leak across the boundary.
-        self.detector.reset()
         self.get_logger().info(
             f"Doorbell detection {'ARMED' if msg.data else 'disarmed'}"
         )
@@ -130,10 +127,13 @@ class DoorbellDetectionNode(Node):
     # ── audio ────────────────────────────────────────────────────────────────
 
     def audio_callback(self, msg):
+        chunk = np.frombuffer(bytes(msg.data), dtype=np.int16)
+        events = self.detector.process(chunk)
+
         if not self._listening:
             return
-        chunk = np.frombuffer(bytes(msg.data), dtype=np.int16)
-        for event in self.detector.process(chunk):
+
+        for event in events:
             info = f"{event.margin_db:.0f}dB/{event.dur_ms:.0f}ms/{event.dominant_hz:.0f}Hz"
             sim = event.template_similarity
             # Confirm if the raw score passes, or if the fingerprint clearly
