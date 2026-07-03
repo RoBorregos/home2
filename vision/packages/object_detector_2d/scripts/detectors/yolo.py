@@ -44,7 +44,12 @@ def _load_yolo_trt(model_path: str):
 class YoloModel(DetectorModel):
     def load(self, config: dict):
         model_path = MODELS_PATH + config["filename"]
-        self.model = _load_yolo_trt(model_path)
+        if config.get("engine", True):
+            self.model = _load_yolo_trt(model_path)
+        else:
+            from ultralytics import YOLO
+
+            self.model = YOLO(model_path)
         self.conf = config.get("conf", 0.6)
         print(f"[YoloModel:{self.name}] loaded from {model_path}")
 

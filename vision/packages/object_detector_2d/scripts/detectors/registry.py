@@ -22,6 +22,13 @@ MODEL_CONFIGS: dict[str, dict] = {
         "conf": 0.6,
         "translation": "robocup2026_translation.json",
     },
+    # engine=False: run the raw .pt (skip the TensorRT export/cache path)
+    "yolo_handle": {
+        "filename": "door_handle.pt",
+        "type": "yolo",
+        "conf": 0.7,
+        "engine": False,
+    },
     "yolo_generic": {"filename": "yolo26n.pt", "type": "yolo", "conf": 0.5},
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
 }

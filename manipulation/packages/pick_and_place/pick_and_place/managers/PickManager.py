@@ -66,8 +66,6 @@ FLAT_GRASP_Z_TWEAK = 0.076
 # Max time to wait for the flat_grasp_estimator service to respond (seconds)
 FLAT_GRASP_TIMEOUT = 5.0
 
-# Handle estimation is slower (one Moondream query + depth snapshots)
-HANDLE_GRASP_TIMEOUT = 20.0
 # Handle pick motion is slower (two mode-5 switches + slow MoveIt moves)
 HANDLE_PICK_MOTION_TIMEOUT = 120.0
 
@@ -213,11 +211,8 @@ class PickManager:
             request = EstimateFlatGrasp.Request()
             request.object_name = object_name
             request.num_samples = 0  # let the estimator use its default
-            estimator_timeout = (
-                HANDLE_GRASP_TIMEOUT if is_handle_object else FLAT_GRASP_TIMEOUT + 3.0
-            )
             future = self._estimate_flat_grasp_client.call_async(request)
-            future = wait_for_future(future, timeout=estimator_timeout)
+            future = wait_for_future(future, timeout=FLAT_GRASP_TIMEOUT + 3.0)
             response = future.result() if future else None
 
             if response is None or not response.success:

@@ -16,6 +16,7 @@ XARM_MOTION_ENABLE_SERVICE = "/xarm/motion_enable"
 XARM_SET_SERVO_ANGLE_SERVICE = "/xarm/set_servo_angle"
 XARM_POSITION_MODE = 0  # mode 0: direct position control, bypasses MoveIt
 MOVEIT_MODE = 1
+XARM_MANUAL_MODE = 2
 JOINT_VELOCITY_MODE = 4
 
 # xArm arm state values (from xArm SDK)

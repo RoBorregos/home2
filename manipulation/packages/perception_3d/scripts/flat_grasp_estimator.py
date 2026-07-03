@@ -22,7 +22,6 @@ from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
-    MOONDREAM_DETECTION_TOPIC,
 )
 from frida_constants.manipulation_constants import (
     RIM_NAMES,
@@ -34,7 +33,7 @@ from frida_constants.manipulation_constants import (
 )
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
-from frida_interfaces.srv import EstimateFlatGrasp, MoondreamDetection
+from frida_interfaces.srv import EstimateFlatGrasp
 
 # Fixed offset above table surface for grasp contact point (meters)
 GRASP_SURFACE_OFFSET = 0.003
@@ -69,12 +68,8 @@ PEAK_MIN_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
 TRASH_TOP_BBOX_FRACTION = 0.5
 
 # --- Handle (door lever) grasp estimation ---
-# Horizontal-approach grasp on a lever handle: the bbox comes from a single
-# Moondream open-vocabulary query (too slow for the per-frame YOLO loop).
-HANDLE_DETECT_PROMPT = "door handle"  # Moondream subject
-HANDLE_DETECT_TIMEOUT = 12.0  # s - Moondream is ~1-3 s per query
-HANDLE_DEPTH_SAMPLES = 5  # depth frames to median for stability
-HANDLE_DEPTH_TIMEOUT = 3.0  # s - max wait to collect the depth samples
+# Horizontal-approach grasp on a lever handle: the bbox comes from the
+# dedicated YOLO door_handle model on the standard detections stream.
 HANDLE_PROTRUSION_MIN = 0.02  # m closer than the door plane to count as handle
 HANDLE_PROTRUSION_MAX = 0.12  # m - reject spurious near returns
 HANDLE_BAR_MAX_TILT_DEG = 30.0  # PCA long axis must be near-horizontal, else fallback
@@ -113,6 +108,7 @@ class FlatGraspEstimator(Node):
         self._target_label = None
         self._peak_mode = False
         self._trash_mode = False
+        self._handle_mode = False
         self._samples = []
 
         # Rolling buffer for table height stabilization
@@ -156,11 +152,6 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/handle_grasp_pose", 10
         )
 
-        # Handle bboxes come from Moondream (open vocabulary), not the YOLO stream.
-        self._moondream_detect_client = self.create_client(
-            MoondreamDetection, MOONDREAM_DETECTION_TOPIC, callback_group=cb_group
-        )
-
         self.estimate_srv = self.create_service(
             EstimateFlatGrasp,
             "/manipulation/estimate_flat_grasp",
@@ -196,11 +187,6 @@ class FlatGraspEstimator(Node):
             response.message = "camera intrinsics not received yet"
             return response
 
-        # Handles bypass the per-frame YOLO collection loop: a single Moondream
-        # query provides the bbox, then a few depth frames are snapshotted.
-        if is_handle:
-            return self._estimate_handle_grasp(request, response)
-
         n = (
             request.num_samples
             if request.num_samples > 0
@@ -212,6 +198,7 @@ class FlatGraspEstimator(Node):
         self._target_label = label
         self._peak_mode = is_peak
         self._trash_mode = is_trash
+        self._handle_mode = is_handle
         self.table_height_buffer.clear()
         self.latest_depth = None
         self._collecting = True
@@ -238,79 +225,6 @@ class FlatGraspEstimator(Node):
         response.success = True
         response.samples_collected = len(samples)
         response.message = f"averaged {len(samples)} samples"
-        return response
-
-    def _estimate_handle_grasp(self, request, response):
-        """Handle mode: one Moondream bbox + a few depth frames -> a single
-        horizontal-approach grasp pose on the handle bar."""
-        if not self._moondream_detect_client.wait_for_service(timeout_sec=2.0):
-            response.success = False
-            response.message = "moondream detect service unavailable"
-            return response
-
-        det_req = MoondreamDetection.Request()
-        det_req.subject = HANDLE_DETECT_PROMPT
-        future = self._moondream_detect_client.call_async(det_req)
-        deadline = time.time() + HANDLE_DETECT_TIMEOUT
-        while time.time() < deadline and not future.done():
-            time.sleep(0.05)
-        det_resp = future.result() if future.done() else None
-        if det_resp is None or not det_resp.success or not det_resp.detections:
-            response.success = False
-            response.message = (
-                f"moondream found no '{HANDLE_DETECT_PROMPT}' "
-                f"within {HANDLE_DETECT_TIMEOUT}s"
-            )
-            return response
-
-        # Largest-area bbox wins when several handles are visible.
-        detection = max(
-            det_resp.detections,
-            key=lambda d: max(0.0, d.xmax - d.xmin) * max(0.0, d.ymax - d.ymin),
-        )
-
-        n = request.num_samples if request.num_samples > 0 else HANDLE_DEPTH_SAMPLES
-
-        # Reactivate depth_callback only: with no target label set, the YOLO
-        # detections_callback matches nothing while we snapshot depth frames.
-        self._samples = []
-        self._target_label = None
-        self._peak_mode = False
-        self._trash_mode = False
-        self.latest_depth = None
-        self._collecting = True
-        try:
-            deadline = time.time() + HANDLE_DEPTH_TIMEOUT
-            while time.time() < deadline and len(self._samples) < n:
-                if self.latest_depth is None:
-                    time.sleep(0.02)
-                    continue
-                pose = self.process_handle_object(detection)
-                self.latest_depth = None  # force a fresh frame per sample
-                if pose is not None:
-                    self._samples.append(pose)
-                    self.handle_pose_pub.publish(pose)  # debug viz
-        finally:
-            self._collecting = False
-
-        samples = list(self._samples)
-        self.get_logger().info(
-            f"Collected {len(samples)} handle grasp samples for "
-            f"'{request.object_name}'"
-        )
-        if not samples:
-            response.success = False
-            response.message = f"no handle grasp samples within {HANDLE_DEPTH_TIMEOUT}s"
-            return response
-
-        pose = copy.deepcopy(samples[-1])  # latest orientation
-        pose.pose.position.x = float(np.median([s.pose.position.x for s in samples]))
-        pose.pose.position.y = float(np.median([s.pose.position.y for s in samples]))
-        pose.pose.position.z = float(np.median([s.pose.position.z for s in samples]))
-        response.pose = pose
-        response.success = True
-        response.samples_collected = len(samples)
-        response.message = f"averaged {len(samples)} handle samples"
         return response
 
     def depth_callback(self, msg):
@@ -347,6 +261,13 @@ class FlatGraspEstimator(Node):
                     continue
                 pose = self.process_peak_object(det)
                 pub = self.peak_pose_pub
+            elif self._handle_mode:
+                # Match any handle alias: the YOLO handle model's class name
+                # may differ from the requested object_name.
+                if label not in self.handle_classes:
+                    continue
+                pose = self.process_handle_object(det)
+                pub = self.handle_pose_pub
             elif label != self._target_label:
                 continue
             elif label in self.rim_classes:

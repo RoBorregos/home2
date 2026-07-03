@@ -1,5 +1,8 @@
 from enum import Enum
 
+# Base velocity command topic (omnidriver accepts Twist or TwistStamped)
+CMD_VEL_TOPIC = "/cmd_vel"
+
 # Navigation Central
 # -----------------------------------------------------------------
 ###Check door service
