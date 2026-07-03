@@ -309,9 +309,10 @@ class HRICCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-            self.image_publisher.publish(
-                self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
-            )
+            msg = self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
+            msg.header.stamp = self.get_clock().now().to_msg()
+            msg.header.frame_id = CAMERA_FRAME
+            self.image_publisher.publish(msg)
 
     def getAngle(self, x, width):
         """Get the angle for the robot to point at the available seat."""

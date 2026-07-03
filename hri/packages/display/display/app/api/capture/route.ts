@@ -5,7 +5,7 @@ import { appendLog, runDir, slugify, timeStamp } from "../../../lib/capturesServ
 
 // Single-frame endpoint of web_video_server (same process the /stream view uses).
 const SNAPSHOT_URL = "http://localhost:8080/snapshot";
-const SNAPSHOT_TIMEOUT_MS = 3000;
+const SNAPSHOT_TIMEOUT_MS = 10000;
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
