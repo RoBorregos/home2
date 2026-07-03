@@ -166,11 +166,18 @@ class FINALS_TM(Node):
             # ["exit", "safe_place"], # Uncomment to enable Welcome Guest task
         ]
 
-        package_share_directory = get_package_share_directory("frida_constants")
-        # Load areas from the JSON file
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-        with open(file_path, "r") as file:
-            self.areas = json.load(file)
+        status, retrieved_areas = self.subtask_manager.nav.retrieve_areas()
+        if status == Status.EXECUTION_SUCCESS and retrieved_areas:
+            self.areas = retrieved_areas
+        else:
+            Logger.warning(
+                self, "Failed to retrieve areas from service, falling back to direct file read"
+            )
+            package_share_directory = get_package_share_directory("frida_constants")
+            # Load areas from the JSON file
+            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            with open(file_path, "r") as file:
+                self.areas = json.load(file)
 
         for loc in self.PLACEMENT_LOCATIONS:
             if loc[0] not in self.areas:
