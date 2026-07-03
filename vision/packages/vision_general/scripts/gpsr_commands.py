@@ -38,7 +38,13 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from frida_constants.navigation_constants import AREAS_SERVICE
-from vision_general.utils.area_check import filter_detections_in_house, fetch_map_areas
+from vision_general.utils.area_check import (
+    filter_detections_in_house,
+    fetch_map_areas,
+    point_in_polygon,
+)
+from rclpy.time import Time as RclTime
+from rclpy.duration import Duration as RclDuration
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from vision_general.utils.debug_pub import DebugImagePublisher
 from builtin_interfaces.msg import Time as TimeMsg
@@ -525,12 +531,40 @@ class GPSRCommands(Node):
             self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
         return self.areas
 
+    def _current_room(self):
+        """Name of the areas.json room whose polygon contains the robot's
+        current map position, or None when outside every polygon / no TF."""
+        areas = self._get_areas()
+        if not areas:
+            return None
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", RclTime(), timeout=RclDuration(seconds=0.5)
+            )
+        except Exception:
+            return None
+        x = tf.transform.translation.x
+        y = tf.transform.translation.y
+        for room, data in areas.items():
+            polygon = (data or {}).get("polygon")
+            if polygon and point_in_polygon((x, y), polygon):
+                return room
+        return None
+
     def _filter_people(self, frame, people):
+        # GPSR rule: only consider people inside the SAME room the robot is in
+        # (a person seen through a doorway must not be counted/approached).
+        # Falls back to whole-house filtering when the robot is outside every
+        # polygon or areas/TF are unavailable.
+        room = self._current_room()
+        rooms = [room] if room else None
+        if room:
+            self.get_logger().info(f"Filtering people to room: {room}")
         filtered = filter_detections_in_house(
             frame,
             people,
             [0],
-            None,
+            rooms,
             self.camera_info,
             self.depth_image,
             self.tf_buffer,
