@@ -342,7 +342,7 @@ class HRIC_TM(Node):
                 )
 
             self.subtask_manager.hri.say(
-                "Please hold the bag with your hand and extend it so I can see it.", wait=False
+                "Please hold the bag with your hand in front of you so I can see it.", wait=False
             )
             self.subtask_manager.manipulation.move_to_position("hand_bag_pose")
             self.subtask_manager.hri.say(
@@ -357,7 +357,7 @@ class HRIC_TM(Node):
                     Logger.warn(self, f"Hand detection attempt {attempt + 1} failed")
                     if attempt < ATTEMPT_LIMIT - 1:
                         self.subtask_manager.hri.say(
-                            "I could not detect your hand. Please extend it."
+                            "I could not detect your hand. Please hold it in the general area in front of me."
                         )
                     continue
 
@@ -374,15 +374,15 @@ class HRIC_TM(Node):
                     Logger.warn(self, f"go_to_hand attempt {attempt + 1} failed")
                     if attempt < ATTEMPT_LIMIT - 1:
                         self.subtask_manager.hri.say(
-                            "I could not reach your hand. Reposition it and try again."
+                            "I could not reach your hand. Please hold it in the general area in front of me."
                         )
 
             if not hand_reached:
+                self._move_arm_cleared("nav_pose")
                 self.subtask_manager.hri.say(
-                    "Place the bag in my gripper.",
+                    "Please place the bag in my gripper.",
                     wait=False,
                 )
-                self._move_arm_cleared("nav_pose")
 
             # TODO: Detect if the bag was placed in the gripper instead of timeout.
             self.timeout(5)
@@ -533,7 +533,7 @@ class HRIC_TM(Node):
 
             self.subtask_manager.hri.say(
                 "I will start following you now, you can start walking. Please say stop whenever you want me to stop.",
-                wait=True,
+                wait=False,
             )
 
             # Base + arm follow. Even though the bag-carry pose inverts the wrist
