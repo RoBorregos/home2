@@ -762,7 +762,7 @@ class ManipulationTasks:
         result: GetOptimalPositionForPlane.Response
         if result.is_valid:
             Logger.success(self.node, f"Optimal position for plane: {result.pt1}")
-            return
+            return Status.EXECUTION_SUCCESS
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
 
