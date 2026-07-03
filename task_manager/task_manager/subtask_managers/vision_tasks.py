@@ -840,6 +840,7 @@ class VisionTasks:
         request = CountBy.Request()
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_person_client, request, name="count_person")
         if err is not None:
             return err, 300
@@ -847,6 +848,7 @@ class VisionTasks:
             Logger.warn(self.node, "Count person service failed")
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People counted: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 

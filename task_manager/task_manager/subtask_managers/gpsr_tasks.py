@@ -803,7 +803,7 @@ class GPSRTask(GenericTask):
             persons = self._scan_persons_in_room()
             if round_idx >= len(persons):
                 break
-            candidate, map_point = persons[round_idx]
+            map_point = persons[round_idx]
 
             if not self._approach_with_arm(map_point):
                 continue
@@ -859,73 +859,35 @@ class GPSRTask(GenericTask):
             self.subtask_manager.nav.move_to_pose(safe_pose)
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
-    @staticmethod
-    def _point_in_polygon(x, y, polygon):
-        """Ray-casting point-in-polygon (same as vision's area_check)."""
-        n = len(polygon)
-        inside = False
-        p1x, p1y = polygon[0]
-        for i in range(n + 1):
-            p2x, p2y = polygon[i % n]
-            if y > min(p1y, p2y) and y <= max(p1y, p2y) and x <= max(p1x, p2x):
-                if p1y != p2y:
-                    xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y + 1e-9) + p1x
-                if p1x == p2x or x <= xinters:
-                    inside = not inside
-            p1x, p1y = p2x, p2y
-        return inside
-
-    def _persons_in_my_room(self, persons):
-        """GPSR rule: only search people inside the SAME areas.json room the
-        robot is in — a person visible through a doorway must be ignored.
-
-        Projects each detection to the map IMMEDIATELY (the camera still has
-        the pose it detected from — the projection would be wrong after the
-        arm pans or tucks) and keeps those inside the robot's current room
-        polygon. Returns [(detection, map-frame PointStamped)]; without
-        areas/TF the room filter is skipped but points are still projected."""
-        room_poly = None
-        s, areas = self.subtask_manager.nav.retrieve_areas()
-        s2, cur = self.subtask_manager.nav.get_current_pose()
-        if isinstance(areas, dict) and s2 == Status.EXECUTION_SUCCESS and cur is not None:
-            rx, ry = cur.pose.position.x, cur.pose.position.y
-            for room, data in areas.items():
-                poly = (data or {}).get("polygon")
-                if poly and self._point_in_polygon(rx, ry, poly):
-                    room_poly = poly
-                    break
-        result = []
-        for d in persons:
-            xy = self.subtask_manager.nav._resolve_map_xy(d.point3d)
-            if xy is None:
-                continue  # unprojectable -> can't be approached reliably
-            if room_poly is not None and not self._point_in_polygon(xy[0], xy[1], room_poly):
-                continue
-            mp = PointStamped()
-            mp.header.frame_id = "map"
-            mp.point.x, mp.point.y = xy
-            result.append((d, mp))
-        return result
-
     def _scan_persons_in_room(self):
-        """Localize the people in the room: detect from the front view first,
-        and pan the camera through self.pan_angles when nobody is in front.
-        Points are map-projected at each pan pose (see _persons_in_my_room),
-        so they stay valid after the camera re-centers. Returns
-        [(detection, map PointStamped)] sorted nearest-first."""
+        """Localize the people in the room via count_person: gpsr_commands
+        detects persons with the GENERIC COCO model (YoloDetect class 0 — the
+        detect_objects path runs the competition-object model, which has NO
+        person class), filters them to the robot's current room polygon and
+        deprojects each to a camera-frame 3D point. Those points are projected
+        to the map HERE, while the camera still holds the scan pose, so they
+        stay valid after the arm moves. Pans through self.pan_angles when
+        nobody is in the front view. Returns map-frame PointStamped list,
+        nearest person first."""
         for pan in [0] + list(self.pan_angles):
             if pan:
                 self.subtask_manager.manipulation.pan_to(pan)
                 time.sleep(1.0)
-            s, dets = self.subtask_manager.vision.detect_objects()
-            persons = sorted(
-                (d for d in (dets or []) if d.classname == "person"),
-                key=lambda d: d.distance,
-            )
-            persons = self._persons_in_my_room(persons)
-            if persons:
+            s, _count = self.subtask_manager.vision.count_person()
+            points = list(self.subtask_manager.vision.last_person_points)
+            points.sort(key=lambda p: p.point.x**2 + p.point.y**2 + p.point.z**2)
+            map_points = []
+            for p in points:
+                xy = self.subtask_manager.nav._resolve_map_xy(p)
+                if xy is None:
+                    continue  # unprojectable -> can't be approached reliably
+                mp = PointStamped()
+                mp.header.frame_id = "map"
+                mp.point.x, mp.point.y = xy
+                map_points.append(mp)
+            if map_points:
                 if pan:
                     self.subtask_manager.manipulation.pan_to(0)
-                return persons
+                return map_points
         self.subtask_manager.manipulation.pan_to(0)
         return []
