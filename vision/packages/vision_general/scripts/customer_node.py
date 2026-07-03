@@ -141,7 +141,9 @@ class CustomerNode(Node):
             return res
 
         frame = self.image.copy()
-        self.output_image = frame.copy()
+        # Draw on a local buffer; publish_image() runs concurrently on a timer,
+        # so self.output_image must only ever hold a fully annotated frame.
+        output_image = frame.copy()
         image_width = frame.shape[1]
 
         people = self.pose_detection.detect_people(frame, conf=CONF_THRESHOLD)
@@ -161,10 +163,8 @@ class CustomerNode(Node):
             ex2 = min(w, x2 + pad_x)
             ey2 = min(h, y2 + pad_y)
 
-            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            self.pose_detection.draw_landmarks(self.output_image, points, kp_conf)
-
-            self.customer_image = frame[ey1:ey2, ex1:ex2].copy()
+            cv2.rectangle(output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+            self.pose_detection.draw_landmarks(output_image, points, kp_conf)
 
             raising = self.pose_detection.is_waving_from_keypoints(points, kp_conf)
             if not include_non_waving and not raising:
@@ -181,7 +181,8 @@ class CustomerNode(Node):
                 self.get_logger().info(
                     "Customer detected (sitting%s)" % (", raising" if raising else "")
                 )
-                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.rectangle(output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                self.customer_image = frame[ey1:ey2, ex1:ex2].copy()
 
                 point2D = get2DCentroid((y1, x1, y2, x2), self.depth_image)
                 coords = point2d_to_ros_point_stamped(
@@ -212,6 +213,7 @@ class CustomerNode(Node):
                     f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}, angle={angle:.1f}"
                 )
 
+        self.output_image = output_image
         self.get_logger().info(f"Customers detected: {len(res.people.list)}")
         return res
 

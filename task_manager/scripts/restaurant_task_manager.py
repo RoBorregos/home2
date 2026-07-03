@@ -13,6 +13,7 @@ from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointS
 from frida_constants.vision_constants import (
     RESTAURANT_TABLES_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
+    TRACKER_IMAGE_TOPIC,
 )
 
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -222,6 +223,7 @@ class RestaurantTaskManager(Node):
                 self,
                 f"Searching for waving customer (step {self.search_step}/{MAX_SEARCH_STEPS})...",
             )
+            self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
             status, person_point = self.subtask_manager.vision.get_customer()
 
             if status == Status.EXECUTION_SUCCESS and person_point.header.frame_id != "":
@@ -260,6 +262,7 @@ class RestaurantTaskManager(Node):
             if status == Status.EXECUTION_SUCCESS:
                 # Re-detect customer to check if we're actually close enough
                 Logger.info(self, "Arrived at goal. Re-checking customer distance...")
+                self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
                 re_status, re_point = self.subtask_manager.vision.get_customer()
 
                 if re_status == Status.EXECUTION_SUCCESS and re_point.header.frame_id != "":
