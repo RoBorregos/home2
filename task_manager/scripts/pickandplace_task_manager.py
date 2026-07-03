@@ -862,7 +862,7 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.START)
             self.subtask_manager.hri.say("I am ready.", wait=False)
             self.navigate_to_location(Location.KITCHEN, say=False)
-            
+
             # self.subtask_manager.hri.say(
             #     "Please remove the two chairs closest to me from the dining table.",
             #     wait=True,
