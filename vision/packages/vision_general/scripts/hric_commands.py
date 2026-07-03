@@ -21,19 +21,29 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect, MapAreas
+from frida_interfaces.srv import (
+    ChairsToRemove,
+    DetectHand,
+    FindSeat,
+    MoondreamDetection,
+    YoloDetect,
+    MapAreas,
+)
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.navigation_constants import AREAS_SERVICE
 from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
     CAMERA_FRAME,
     CAMERA_INFO_TOPIC,
+    CHAIR_REMOVAL_IMAGE_TOPIC,
+    CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
     DEPTH_IMAGE_TOPIC,
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
     IMAGE_ORIENTED_TOPIC,
     IMAGE_TOPIC_HRIC,
+    MOONDREAM_DETECTION_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
 from tf2_ros import Buffer, TransformListener
@@ -161,9 +171,30 @@ class HRICCommands(Node):
             callback_group=self.callback_group,
         )
 
+        self.moondream_client = self.create_client(
+            MoondreamDetection,
+            MOONDREAM_DETECTION_TOPIC,
+            callback_group=self.callback_group,
+        )
+        self.chairs_to_remove_service = self.create_service(
+            ChairsToRemove,
+            CHAIRS_TO_REMOVE_SERVICE,
+            self.chairs_to_remove_callback,
+            callback_group=self.callback_group,
+        )
+        self.chair_image_publisher = self.create_publisher(
+            Image, CHAIR_REMOVAL_IMAGE_TOPIC, 10, callback_group=self.callback_group
+        )
+        self.chair_image = None
+
         self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
+        # web_video_server subscribes only after the display switches topic, so
+        # keep re-publishing the last chair-removal frame.
+        self.create_timer(
+            0.5, self.publish_chair_image, callback_group=self.callback_group
+        )
 
     def _rotation_callback(self, msg):
         value = int(msg.data) % 360
@@ -373,6 +404,82 @@ class HRICCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         self.image_publisher.publish(self.output_image)
+
+    def publish_chair_image(self):
+        """Re-publish the last chair-removal annotated frame if available."""
+        if self.chair_image is not None:
+            self.chair_image_publisher.publish(self.chair_image)
+
+    def chairs_to_remove_callback(self, request, response):
+        """Chairs between the robot and the dining table (the ones to ask a
+        human to remove): a chair whose bbox bottom edge is lower in the image
+        than the table's bottom edge stands in front of the table. Chairs come
+        from the YOLO service, the table from moondream. Publishes the
+        annotated frame for the robot display."""
+        if self.image is None:
+            response.message = "No image received yet"
+            self.get_logger().warn(response.message)
+            return response
+        frame = self.image.copy()
+        img_h, img_w = frame.shape[:2]
+
+        req = YoloDetect.Request()
+        req.classes = [56]  # COCO chair
+        future = self.yolo_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=15.0)
+        if not future.done() or future.result() is None or not future.result().success:
+            response.message = "YOLO chair detection failed"
+            self.get_logger().error(response.message)
+            return response
+        chairs = list(future.result().detections)
+
+        response.total_chairs = len(chairs)
+        if not chairs:
+            response.success = True
+            response.table_found = True
+            response.message = "No chairs detected"
+            self.get_logger().info(response.message)
+            return response
+
+        tables = []
+        if self.moondream_client.wait_for_service(timeout_sec=3.0):
+            md_req = MoondreamDetection.Request()
+            md_req.subject = "dining table"
+            future = self.moondream_client.call_async(md_req)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=60.0)
+            result = future.result() if future.done() else None
+            if result is not None and result.success:
+                tables = result.detections
+        if not tables:
+            response.success = True
+            response.message = "No dining table found"
+            self.get_logger().warn(response.message)
+            return response
+
+        # Largest table bbox (moondream returns normalized coords)
+        table = max(tables, key=lambda d: (d.xmax - d.xmin) * (d.ymax - d.ymin))
+        table_bottom = table.ymax * img_h
+
+        cv2.rectangle(
+            frame,
+            (int(table.xmin * img_w), int(table.ymin * img_h)),
+            (int(table.xmax * img_w), int(table.ymax * img_h)),
+            (255, 0, 0),
+            2,
+        )
+        for det in chairs:
+            if det.y2 > table_bottom:
+                response.chairs.append(det)
+                cv2.rectangle(frame, (det.x1, det.y1), (det.x2, det.y2), (0, 0, 255), 3)
+            else:
+                cv2.rectangle(frame, (det.x1, det.y1), (det.x2, det.y2), (0, 255, 0), 1)
+        self.chair_image = self.bridge.cv2_to_imgmsg(frame, "bgr8")
+
+        response.success = True
+        response.table_found = True
+        response.message = f"{len(response.chairs)}/{len(chairs)} chair(s) to remove"
+        self.get_logger().info(response.message)
+        return response
 
     def getAngle(self, x, width):
         """Get the angle for the robot to point at the available seat."""

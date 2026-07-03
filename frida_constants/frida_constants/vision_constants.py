@@ -100,6 +100,7 @@ QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 CROP_QUERY_TOPIC = "/vision/crop_query"
 OBJECT_POINTS_TOPIC = "/vision/object_points"
+MOONDREAM_DETECTION_TOPIC = "/vision/moondream_detection"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"
@@ -142,6 +143,10 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 # Yolo detection node
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
+
+# Chair removal
+CHAIRS_TO_REMOVE_SERVICE = "/vision/chairs_to_remove"
+CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
 
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
