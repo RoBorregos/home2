@@ -2,6 +2,8 @@
 **/devel
 **/build
 **/log
+!packages/display/display/app/api/log/
+!packages/display/display/app/api/log/route.ts
 *.user
 **/.vscode/
 **/__pychache__/
