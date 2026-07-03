@@ -163,7 +163,7 @@ class FINALS_TM(Node):
             ["kitchen", "table"],
             ["kitchen", "shelf"],
             ["living_room", "cabinet"],
-            # ["exit", "safe_place"], # Uncomment to enable Welcome Guest task
+            ["exit", "safe_place"],  # Uncomment to enable Welcome Guest task
         ]
 
         status, retrieved_areas = self.subtask_manager.nav.retrieve_areas()
@@ -319,6 +319,13 @@ class FINALS_TM(Node):
             return False
         return False
 
+    def all_caps_reached(self):
+        return (
+            self.problems_solved["trash"] >= 2
+            and self.problems_solved["misplaced_objects"] >= 2
+            and self.problems_solved["commands"] >= 3
+        )
+
     def run(self):
         if self.current_state == FINALS_TM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
@@ -382,7 +389,7 @@ class FINALS_TM(Node):
             location = tuple(self.exploration_locations[self.index])
             if location not in self.PLACEMENT_LOCATIONS:
                 """Handle trash objects on the floor"""
-                if self.problems_solved["trash"] < 2:
+                if self.problems_solved["trash"] < 2 or self.all_caps_reached():
                     res = self.objects_on_floor(below_z=0.1, retries=4, timeout=10)
                     if len(res) > 0:
                         for i in res:
@@ -392,7 +399,10 @@ class FINALS_TM(Node):
                             )
                             if s == Status.EXECUTION_SUCCESS:
                                 self.problems_solved["trash"] += 1
-                                if self.problems_solved["trash"] >= 2:
+                                if (
+                                    self.problems_solved["trash"] >= 2
+                                    and not self.all_caps_reached()
+                                ):
                                     break
                     else:
                         self.subtask_manager.hri.say("I didn't find any trash objects on the floor")
@@ -405,7 +415,7 @@ class FINALS_TM(Node):
             location = tuple(self.exploration_locations[self.index])
             if location in self.PLACEMENT_LOCATIONS:
                 """Handle objects that are not in their correct location"""
-                if self.problems_solved["misplaced_objects"] < 2:
+                if self.problems_solved["misplaced_objects"] < 2 or self.all_caps_reached():
                     self.subtask_manager.manipulation.move_to_position("table_stare")
                     time.sleep(1)
                     objs = self.detect_objects(ignore=True)
@@ -448,7 +458,10 @@ class FINALS_TM(Node):
 
                             self.problems_solved["misplaced_objects"] += 1
                             self.pick_count += 1
-                            if self.problems_solved["misplaced_objects"] >= 2:
+                            if (
+                                self.problems_solved["misplaced_objects"] >= 2
+                                and not self.all_caps_reached()
+                            ):
                                 break
                 else:
                     self.get_logger().info("Already solved 2 misplaced object problems, skipping.")
@@ -457,7 +470,7 @@ class FINALS_TM(Node):
 
         elif self.current_state == FINALS_TM.States.CHECK_PERSON:
             """Handle waiting for and interpreting human commands"""
-            if self.problems_solved["commands"] < 3:  # Just a sane limit
+            if self.problems_solved["commands"] < 3 or self.all_caps_reached():  # Just a sane limit
                 self.subtask_manager.hri.say(
                     "If you have any tasks or commands for me, please raise your hand and keep it raised"
                 )
