@@ -20,6 +20,13 @@ ATTEMPT_LIMIT = 3
 BASKET_PLACE_ROUNDS = 2
 # Pick clothes in Washing Machine and bring to the table.
 WM_PLACE_ROUNDS = 1
+# Vision-driven basket approach: ring-approach the detected basket point to this
+# standoff, then finish PARALLEL to it, basket abeam on the RIGHT of the base,
+# strafing in until base_link is BASKET_SIDE_DISTANCE meters from the point.
+BASKET_APPROACH_STANDOFF = 0.65
+BASKET_SIDE_DISTANCE = 0.45
+# Frame assumed for a detection that arrives without one (older vision nodes).
+DEFAULT_CAMERA_FRAME = "zed_left_camera_optical_frame"
 
 
 class DoingLaundryTM(Node):
@@ -54,8 +61,12 @@ class DoingLaundryTM(Node):
         self.basket_pick_attempts = 0
         self.clothes_pick_attempts = 0
         self.basket_scan_attempts = 0
+        self.basket_nav_attempts = 0
 
-        # Chosen basket sublocation ("basket_left"/"basket_right"), decided by scanning.
+        # Detected basket projected to the MAP frame (PointStamped) — the primary
+        # navigation target. basket_sublocation is only the annotated fallback
+        # ("basket_left"/"basket_right") if the direct approach fails.
+        self.basket_map_point = None
         self.basket_sublocation = None
 
         # Round counters for the two place loops.
@@ -81,13 +92,22 @@ class DoingLaundryTM(Node):
         return self.subtask_manager.nav.move_to_location(location, sublocation)
 
     def navigate_holding(self, location: str, sublocation: str = "", say: bool = True):
-        """Navigate while holding basket — does NOT reset arm to nav_pose."""
+        """Navigate while holding basket/clothes — does NOT reset arm to nav_pose.
+
+        Live obstacle marking is disabled for the ride: the carried load hangs
+        in the lidar/ZED view and would be marked as an obstacle glued to the
+        robot, boxing the planner in. The static map still applies (walls and
+        furniture are avoided). Marking is ALWAYS restored right after."""
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         if say:
             Logger.info(self, f"Carrying basket to {sublocation} in {location}")
             self.subtask_manager.hri.say(f"Carrying basket to {sublocation}.", wait=False)
-        return self.subtask_manager.nav.move_to_location(location, sublocation)
+        self.subtask_manager.nav.set_obstacle_avoidance(False)
+        try:
+            return self.subtask_manager.nav.move_to_location(location, sublocation)
+        finally:
+            self.subtask_manager.nav.set_obstacle_avoidance(True)
 
     def next_state_after_place(self):
         """Decide where to go after placing clothes on the table."""
@@ -106,20 +126,27 @@ class DoingLaundryTM(Node):
         Logger.success(self, "All place rounds completed.")
         return DoingLaundryTM.TaskStates.END
 
-    def _choose_nearest_basket(self, detection):
-        """Transform the basket detection to map frame and return the nearer
-        candidate sublocation ('basket_left' or 'basket_right')."""
+    def _project_to_map(self, point_stamped):
+        """Project a stamped detection point to the MAP frame NOW — camera-frame
+        points go stale the moment the arm moves (GPSR pattern). Uses the
+        detection's own frame_id; zero stamp so TF resolves the latest transform."""
+        if point_stamped is None:
+            Logger.error(self, "Detection has no 3D point to project.")
+            return None
         ps = PointStamped()
-        ps.header.frame_id = "zed_left_camera_optical_frame"
-        ps.point.x = float(detection.px)
-        ps.point.y = float(detection.py)
-        ps.point.z = float(detection.pz)
+        ps.header.frame_id = point_stamped.header.frame_id or DEFAULT_CAMERA_FRAME
+        ps.point.x = float(point_stamped.point.x)
+        ps.point.y = float(point_stamped.point.y)
+        ps.point.z = float(point_stamped.point.z)
         try:
-            tp = self.tf_buffer.transform(ps, "map", timeout=Duration(seconds=1.0))
+            return self.tf_buffer.transform(ps, "map", timeout=Duration(seconds=1.0))
         except TransformException as e:
             Logger.error(self, f"Basket TF transform failed: {e}")
             return None
 
+    def _nearest_basket_sublocation(self, map_pt):
+        """Nearer annotated candidate ('basket_left'/'basket_right') to the
+        detected basket — only the FALLBACK if the direct approach fails."""
         _, areas = self.subtask_manager.nav.retrieve_areas()
         laundry = areas.get("laundry", {}) if isinstance(areas, dict) else {}
         left = laundry.get("basket_left")
@@ -128,8 +155,8 @@ class DoingLaundryTM(Node):
             Logger.error(self, "basket_left/basket_right missing from areas.")
             return None
 
-        dl = math.hypot(tp.point.x - left[0], tp.point.y - left[1])
-        dr = math.hypot(tp.point.x - right[0], tp.point.y - right[1])
+        dl = math.hypot(map_pt.point.x - left[0], map_pt.point.y - left[1])
+        dr = math.hypot(map_pt.point.x - right[0], map_pt.point.y - right[1])
         Logger.info(self, f"Basket dist left={dl:.2f} right={dr:.2f}")
         return "basket_left" if dl <= dr else "basket_right"
 
@@ -161,11 +188,16 @@ class DoingLaundryTM(Node):
 
             if status == Status.EXECUTION_SUCCESS and dets:
                 nearest = min(dets, key=lambda b: b.distance)
-                sublocation = self._choose_nearest_basket(nearest)
-                if sublocation is not None:
-                    self.basket_sublocation = sublocation
+                map_pt = self._project_to_map(nearest.point3d)
+                if map_pt is not None:
+                    self.basket_map_point = map_pt
+                    self.basket_sublocation = self._nearest_basket_sublocation(map_pt)
                     self.basket_scan_attempts = 0
-                    Logger.success(self, f"Basket located at {sublocation}.")
+                    Logger.success(
+                        self,
+                        f"Basket at map ({map_pt.point.x:.2f}, {map_pt.point.y:.2f}), "
+                        f"fallback {self.basket_sublocation}.",
+                    )
                     self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
                     return
 
@@ -175,6 +207,7 @@ class DoingLaundryTM(Node):
                     self,
                     "Basket scan failed after max attempts, defaulting to basket_left.",
                 )
+                self.basket_map_point = None
                 self.basket_sublocation = "basket_left"
                 self.basket_scan_attempts = 0
                 self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
@@ -185,8 +218,34 @@ class DoingLaundryTM(Node):
                 )
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
-            Logger.info(self, f"Navigating to basket at {self.basket_sublocation}")
-            status, error = self.navigate_to("laundry", self.basket_sublocation)
+            if self.basket_map_point is not None:
+                # Primary path: approach the DETECTED point, finishing parallel
+                # to it with the basket abeam on the right for the side pick.
+                Logger.info(self, "Approaching detected basket (parallel, basket on the right).")
+                self.subtask_manager.vision.deactivate_face_recognition()
+                self.subtask_manager.manipulation.follow_face(False)
+                self.subtask_manager.manipulation.move_to_position("nav_pose")
+                self.subtask_manager.hri.say("Approaching the laundry basket.", wait=False)
+                status, error = self.subtask_manager.nav.approach_point(
+                    self.basket_map_point,
+                    standoff=BASKET_APPROACH_STANDOFF,
+                    align="right",
+                    final_distance=BASKET_SIDE_DISTANCE,
+                )
+                if status == Status.EXECUTION_SUCCESS:
+                    self.basket_nav_attempts = 0
+                    self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
+                    return
+                self.basket_nav_attempts += 1
+                Logger.error(self, f"Basket approach failed: {error}.")
+                if self.basket_nav_attempts >= ATTEMPT_LIMIT:
+                    Logger.warn(self, "Falling back to the annotated basket sublocation.")
+                    self.basket_map_point = None
+                return
+
+            sublocation = self.basket_sublocation or "basket_left"
+            Logger.info(self, f"Navigating to basket at {sublocation}")
+            status, error = self.navigate_to("laundry", sublocation)
             if status == Status.EXECUTION_SUCCESS:
                 self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
             else:

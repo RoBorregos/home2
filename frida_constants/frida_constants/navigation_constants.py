@@ -37,6 +37,12 @@ GET_ROBOT_POSE_SERVICE = "/navigation/get_robot_pose"
 APPROACH_POINT_SERVICE = "/navigation/approach_point"
 GLOBAL_COSTMAP_TOPIC = "/global_costmap/costmap"
 
+### Toggle live obstacle marking (SetBool). data=False disables the lidar
+### obstacle_layer + ZED rgbd_obstacle_layer on BOTH costmaps (static map still
+### applies) so a bag/basket carried by the arm doesn't wall the robot in;
+### data=True restores them. Costmaps are cleared on every toggle.
+SET_OBSTACLE_AVOIDANCE_SERVICE = "/navigation/set_obstacle_avoidance"
+
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"
 

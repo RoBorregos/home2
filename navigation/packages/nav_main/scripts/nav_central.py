@@ -14,7 +14,7 @@ from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from std_msgs.msg import Bool
@@ -22,6 +22,7 @@ from rclpy.qos import QoSProfile, DurabilityPolicy
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         APPROACH_POINT_SERVICE,
+        SET_OBSTACLE_AVOIDANCE_SERVICE,
         GLOBAL_COSTMAP_TOPIC,
         MAP_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -189,6 +190,15 @@ class Nav_Central(Node):
         self.clear_global_costmap_client = self.create_client(
             ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap',
             callback_group=self.rtab_service_group)
+        # Costmap parameter clients — toggle the live obstacle layers (lidar +
+        # ZED cloud) when the arm carries something the sensors would otherwise
+        # mark as a wall right on top of the robot (set_obstacle_avoidance).
+        self.local_costmap_param_client = self.create_client(
+            SetParameters, '/local_costmap/local_costmap/set_parameters',
+            callback_group=self.rtab_service_group)
+        self.global_costmap_param_client = self.create_client(
+            SetParameters, '/global_costmap/global_costmap/set_parameters',
+            callback_group=self.rtab_service_group)
 
         self.lidar_msg = None
         self.lidar_reciever = None
@@ -260,6 +270,18 @@ class Nav_Central(Node):
         self.approach_point_srv = self.create_service(
             ApproachPoint, APPROACH_POINT_SERVICE, self.approach_point_callback,
             callback_group=self.service_group)
+
+        # Live-obstacle toggle: SetBool(False) disables obstacle_layer +
+        # rgbd_obstacle_layer on both costmaps (static map keeps applying) so a
+        # carried bag/basket can't box the planner in; SetBool(True) restores.
+        self._obstacle_avoidance_enabled = True
+        self.set_obstacle_avoidance_srv = self.create_service(
+            SetBool, SET_OBSTACLE_AVOIDANCE_SERVICE, self.set_obstacle_avoidance_callback,
+            callback_group=self.service_group)
+        # Direct base commands for the approach_point parallel alignment (same
+        # TwistStamped-on-/cmd_vel convention as table_docker; only published
+        # while no Nav2 goal is active, so there is no contention with MPPI).
+        self.cmd_vel_pub = self.create_publisher(TwistStamped, "/cmd_vel", 10)
 
         # Occupancy grids for approach_point free-space checks: prefer the
         # global costmap (static map + inflation + live obstacles, latched by
@@ -953,6 +975,7 @@ class Nav_Central(Node):
                 f"{goal.pose.position.y:.2f}) for target ({tx:.2f}, {ty:.2f})")
 
         response.goal = goal
+        align = (request.align or "").strip().lower()
         self._retreat_if_docked()
         self.resume_slam()
         self.resume_nav2()
@@ -963,9 +986,16 @@ class Nav_Central(Node):
         self._clear_costmaps()
         ok, msg = self.send_nav_goal(goal)
         if ok:
-            # The goal checker can succeed inside xy tolerance without settling
-            # yaw — make sure the base front actually points at the person.
-            self._face_target(tx, ty)
+            if align in ("left", "right"):
+                # Finish parallel to the target instead of facing it, target
+                # abeam on the requested side, optionally strafing in until
+                # base_link sits final_distance meters from it.
+                if not self._align_parallel(tx, ty, align, request.final_distance):
+                    ok, msg = False, "parallel alignment failed"
+            else:
+                # The goal checker can succeed inside xy tolerance without settling
+                # yaw — make sure the base front actually points at the person.
+                self._face_target(tx, ty)
         response.success = ok
         response.error = msg
         self.pause_slam()
@@ -991,6 +1021,123 @@ class Nav_Central(Node):
         self.nav_logger(
             "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
         self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
+
+    def _publish_cmd(self, vx=0.0, vy=0.0, wz=0.0):
+        """Direct base command (TwistStamped on /cmd_vel, same convention as
+        table_docker). Only used while no Nav2 goal is active."""
+        t = TwistStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "base_link"
+        t.twist.linear.x = float(vx)
+        t.twist.linear.y = float(vy)
+        t.twist.angular.z = float(wz)
+        self.cmd_vel_pub.publish(t)
+
+    def _align_parallel(self, tx, ty, side, final_distance, timeout=20.0, rate=0.05):
+        """Final alignment for approach_point(align=left/right): rotate in
+        place until the base is PARALLEL to the target (target abeam at ±90°),
+        then, if final_distance > 0, strafe until base_link sits that many
+        meters from the target, still abeam. Closed loop on map->base_link TF
+        with direct cmd_vel, so the costmaps cannot veto getting close to a
+        target that is itself marked as an obstacle (e.g. the laundry basket).
+        Holonomic base only — the strafe is a no-op on a diffdrive."""
+        # Desired bearing of the target in the base frame: -90° (right) / +90° (left)
+        offset = -math.pi / 2.0 if side == "right" else math.pi / 2.0
+        want_y = -final_distance if side == "right" else final_distance
+        MAX_V, MAX_W = 0.12, 0.5
+        K_LIN, K_ANG = 0.9, 1.5
+        TOL_LIN, TOL_ANG = 0.04, 0.06
+
+        self.nav_logger(
+            "info",
+            f"Approach_Point -> aligning parallel, target on the {side} "
+            f"(final_distance={final_distance:.2f})")
+        elapsed = 0.0
+        rotated = False
+        try:
+            while elapsed < timeout:
+                try:
+                    tf = self.tf_buffer.lookup_transform(
+                        "map", "base_link", rclpy.time.Time(),
+                        timeout=Duration(seconds=0.5))
+                except Exception as e:
+                    self.nav_logger("warn", f"Approach_Point -> align TF failed: {e}")
+                    return False
+                rx, ry = tf.transform.translation.x, tf.transform.translation.y
+                q = tf.transform.rotation
+                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                                 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                dx, dy = tx - rx, ty - ry
+                # Target in the base frame + yaw error vs the parallel heading.
+                # Both recomputed every cycle, so the base stays parallel while
+                # it strafes (the bearing changes as the robot moves).
+                xb = math.cos(yaw) * dx + math.sin(yaw) * dy
+                yb = -math.sin(yaw) * dx + math.cos(yaw) * dy
+                yaw_err = (math.atan2(dy, dx) - offset - yaw + math.pi) % (2.0 * math.pi) - math.pi
+
+                if not rotated:
+                    # Phase 1: pure in-place rotation until parallel.
+                    if abs(yaw_err) <= TOL_ANG:
+                        rotated = True
+                        if final_distance <= 0.0:
+                            break
+                        continue
+                    self._publish_cmd(wz=max(-MAX_W, min(MAX_W, K_ANG * yaw_err)))
+                else:
+                    # Phase 2: drive the target to (0, want_y) in the base
+                    # frame (abeam at the requested gap), holding yaw.
+                    ex, ey = xb, yb - want_y
+                    if abs(ex) <= TOL_LIN and abs(ey) <= TOL_LIN and abs(yaw_err) <= TOL_ANG:
+                        break
+                    self._publish_cmd(
+                        vx=max(-MAX_V, min(MAX_V, K_LIN * ex)),
+                        vy=max(-MAX_V, min(MAX_V, K_LIN * ey)),
+                        wz=max(-MAX_W, min(MAX_W, K_ANG * yaw_err)))
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=rate))
+                elapsed += rate
+            else:
+                self.nav_logger("warn", "Approach_Point -> parallel alignment timed out")
+                return False
+        finally:
+            self._publish_cmd()  # always leave the base stopped
+        self.nav_logger("info", f"Approach_Point -> parallel alignment done (target abeam {side})")
+        return True
+
+    def _set_obstacle_layers(self, enabled):
+        """Set `enabled` on the live obstacle layers (lidar obstacle_layer +
+        ZED rgbd_obstacle_layer) of BOTH costmaps. The static layer is left
+        untouched, so mapped walls/furniture still constrain the planner."""
+        req = SetParameters.Request()
+        req.parameters = [
+            make_param("obstacle_layer.enabled", bool(enabled)),
+            make_param("rgbd_obstacle_layer.enabled", bool(enabled)),
+        ]
+        all_ok = True
+        for client, label in ((self.local_costmap_param_client, "local costmap"),
+                              (self.global_costmap_param_client, "global costmap")):
+            if not self._call_service_with_timeout(
+                    client, req, TIMEOUT_RTAB_SERVICE, f"Set obstacle layers ({label})"):
+                all_ok = False
+        return all_ok
+
+    def set_obstacle_avoidance_callback(self, request, response):
+        """SetBool service: data=False stops marking live obstacles on both
+        costmaps so an object carried by the arm (bag/basket hanging in the
+        lidar/ZED view) doesn't wall the robot in while navigating; data=True
+        restores marking. Costmaps are cleared afterwards so marks already
+        laid down don't linger into the new mode."""
+        enabled = bool(request.data)
+        self.nav_logger(
+            "info",
+            f"Set_Obstacle_Avoidance -> {'enabling' if enabled else 'DISABLING'} live obstacle layers")
+        ok = self._set_obstacle_layers(enabled)
+        self._clear_costmaps()
+        self._obstacle_avoidance_enabled = enabled
+        response.success = ok
+        response.message = (
+            f"obstacle layers {'enabled' if enabled else 'disabled'}" if ok
+            else "some costmap parameter services did not respond")
+        return response
 
     def _approach_pose(self, gx, gy, tx, ty):
         """Map-frame PoseStamped at (gx, gy) facing (tx, ty)."""
