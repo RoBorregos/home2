@@ -128,12 +128,34 @@ class DoorbellDetectionNode(Node):
 
     def audio_callback(self, msg):
         chunk = np.frombuffer(bytes(msg.data), dtype=np.int16)
-        events = self.detector.process(chunk)
+
+        # High-pass filter to reject low-frequency loud sounds (thuds, slamming doors)
+        float_chunk = chunk.astype(np.float64)
+        if len(float_chunk) > 0:
+            if hasattr(self, "_last_audio_sample"):
+                last_val = self._last_audio_sample
+            else:
+                last_val = 0.0
+            filtered = np.empty_like(float_chunk)
+            filtered[0] = float_chunk[0] - 0.85 * last_val
+            filtered[1:] = float_chunk[1:] - 0.85 * float_chunk[:-1]
+            self._last_audio_sample = float_chunk[-1]
+        else:
+            filtered = float_chunk
+
+        events = self.detector.process(filtered)
 
         if not self._listening:
             return
 
         for event in events:
+            # Reject explicitly low-pitch sounds that still passed the energy threshold
+            if 0 < event.dominant_hz < 400.0:
+                self.get_logger().info(
+                    f"Rejected low-frequency sound: {event.dominant_hz:.0f}Hz"
+                )
+                continue
+
             info = f"{event.margin_db:.0f}dB/{event.dur_ms:.0f}ms/{event.dominant_hz:.0f}Hz"
             sim = event.template_similarity
             # Confirm if the raw score passes, or if the fingerprint clearly
