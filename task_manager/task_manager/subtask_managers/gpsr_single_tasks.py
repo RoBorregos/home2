@@ -27,7 +27,7 @@ from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
-RETRIES = 3
+RETRIES = 1
 
 # The arm cannot pick or place below this base_link Z
 MIN_REACHABLE_SHELF_Z = 0.20
