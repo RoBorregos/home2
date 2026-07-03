@@ -58,6 +58,7 @@ class HRIC_TM(Node):
         WAIT_FOR_GUEST = "WAIT_FOR_GUEST"
         GREETING = "GREETING"
         SAVE_FACE = "SAVE_FACE"
+        SHOW_VIDEO_TAKE_BAG = "SHOW_VIDEO_TAKE_BAG"
         TAKE_BAG = "TAKE_BAG"
         NAVIGATE_TO_LIVING_ROOM = "NAVIGATE_TO_LIVING_ROOM"
         FIND_SEAT = "FIND_SEAT"
@@ -326,20 +327,26 @@ class HRIC_TM(Node):
                     self.subtask_manager.vision.describe_person(self.set_description)
                     self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
                 else:
-                    self.current_state = HRIC_TM.TaskStates.TAKE_BAG
+                    self.current_state = HRIC_TM.TaskStates.SHOW_VIDEO_TAKE_BAG
             else:
                 self.current_attempts += 1
                 Logger.error(self, "Error saving face")
+
+        elif self.current_state == HRIC_TM.TaskStates.SHOW_VIDEO_TAKE_BAG:
+            self._track_state_change(HRIC_TM.TaskStates.SHOW_VIDEO_TAKE_BAG)
+            self.subtask_manager.hri.publish_display_topic("take_bag.mp4")
+            self.subtask_manager.hri.say(
+                "I see you brought a bag for the host. Let me take care of it for you. Please look at my display to see how to give me the bag.",
+                wait=True,
+            )
+            self.timeout(6)
+            self.current_state = HRIC_TM.TaskStates.TAKE_BAG
 
         elif self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
             self.subtask_manager.vision.deactivate_face_recognition()
             # Show the hand detection (annotated by hric_commands) on the display
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
-            if self.current_attempts == 0:
-                self.subtask_manager.hri.say(
-                    "I see you brought a bag for the host. Let me take care of it for you.",
-                )
 
             self.subtask_manager.hri.say(
                 "Please hold the bag with your hand and extend it so I can see it.", wait=False
