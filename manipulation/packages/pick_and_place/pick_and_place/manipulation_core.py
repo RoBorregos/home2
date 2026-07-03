@@ -11,6 +11,7 @@ from frida_motion_planning.utils.service_utils import (
 )
 from std_srvs.srv import SetBool, Empty
 from std_msgs.msg import Bool
+from xarm_utils.shelf_levels import get_compartment_height
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask, CollisionObject
 from frida_interfaces.action import (
@@ -51,7 +52,6 @@ from frida_constants.manipulation_constants import (
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
 )
-from xarm_utils.shelf_levels import get_compartment_height
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
 from pick_and_place.managers.PourManager import PourManager
@@ -320,7 +320,10 @@ class ManipulationCore(Node):
     def add_shelf_ceiling_guard(self, place_pose, table_height):
         """Block the place return from routing the arm up into the compartment ceiling
         (the eye-in-hand octomap never sees it). Slab above the place surface."""
-        compartment_h = get_compartment_height()  # shelf level-to-ceiling height
+        # Shelf level-to-ceiling height, read live from the calibration JSON
+        # (config/shelf_levels.json "compartment_height") so on-site recalibration
+        # moves this guard too.
+        compartment_h = get_compartment_height()
         co = CollisionObject()
         co.id = "shelf_ceiling_guard"
         co.type = "box"

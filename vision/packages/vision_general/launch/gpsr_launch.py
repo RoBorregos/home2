@@ -32,14 +32,10 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
-            # Node(
-            #     package="vision_general",
-            #     executable="tracker_node.py",
-            #     name="tracker_node",
-            #     output="screen",
-            #     emulate_tty=True,
-            #     # parameters=[config],
-            # ),
+            # image_orienter (feeds IMAGE_ORIENTED_TOPIC for gpsr_commands,
+            # hric_commands, face_recognition and the display's default video
+            # feed) is started by the included object_detector_node.launch.py —
+            # do NOT add it here again or two instances will run.
             Node(
                 package="vision_general",
                 executable="face_recognition_node.py",
@@ -48,13 +44,8 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
-            Node(
-                package="vision_general",
-                executable="trash_detection_node.py",
-                name="trash_detection_node",
-                output="screen",
-                emulate_tty=True,
-            ),
+            # trash_detection_node removed: no task_manager client for its TRASHCAN
+            # service exists (detect_trash() uses moondream instead).
             Node(
                 package="vision_general",
                 executable="tracker_node.py",

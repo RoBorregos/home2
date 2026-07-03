@@ -34,6 +34,7 @@ from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
+from std_srvs.srv import Empty
 from xarm_msgs.srv import SetDigitalIO
 
 from frida_constants.manipulation_constants import (
@@ -105,6 +106,7 @@ class ManipulationTasks:
         self._remove_collision_object_client = self.node.create_client(
             RemoveCollisionObject, "/manipulation/remove_collision_object"
         )
+        self._clear_octomap_client = self.node.create_client(Empty, "/clear_octomap")
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
@@ -642,6 +644,25 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error clearing collision objects: {e}")
             return Status.EXECUTION_ERROR
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    def clear_octomap(self) -> int:
+        """Clear the MoveIt octomap. Voxels of a guest or a held bag left next to
+        the gripper otherwise make planning the next arm motion fail."""
+        try:
+            if not self._clear_octomap_client.wait_for_service(timeout_sec=2.0):
+                Logger.warn(self.node, "clear_octomap service not available")
+                return Status.EXECUTION_ERROR
+            future = self._clear_octomap_client.call_async(Empty.Request())
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            if future.result() is None:
+                Logger.warn(self.node, "clear_octomap call timed out")
+                return Status.EXECUTION_ERROR
+            Logger.info(self.node, "Octomap cleared")
+            return Status.EXECUTION_SUCCESS
+        except Exception as e:
+            Logger.error(self.node, f"Error clearing octomap: {e}")
+            return Status.EXECUTION_ERROR
+
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         if not isinstance(joint_positions, dict):
@@ -669,7 +690,9 @@ class ManipulationTasks:
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
-        self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
+        return self.move_joint_positions(
+            named_position=named_position, velocity=velocity, degrees=True
+        )
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
@@ -699,7 +722,8 @@ class ManipulationTasks:
 
         Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+
+        rclpy.spin_until_future_complete(self.node, result_future)
 
         result = result_future.result().result
         if result.success:
@@ -738,7 +762,7 @@ class ManipulationTasks:
         result: GetOptimalPositionForPlane.Response
         if result.is_valid:
             Logger.success(self.node, f"Optimal position for plane: {result.pt1}")
-            return
+            return Status.EXECUTION_SUCCESS
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
 

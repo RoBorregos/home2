@@ -1,0 +1,7 @@
+# Moondream open-vocabulary detection on the current camera frame.
+string subject
+---
+# bbox fields are NORMALIZED [0, 1]; point3d is left unset.
+frida_interfaces/ObjectDetection[] detections
+bool success
+string message

@@ -1,0 +1,32 @@
+ding_dong_detection:
+  ros__parameters:
+    audio_topic: /hri/rawAudioChunk
+    KEYWORD_TOPIC: /hri/speech/ei_detection
+    doorbell_label: "doorbell"
+    sample_rate: 16000
+    # Confidence gate: only publish a ding-dong when its score (0..1) is above this.
+    min_score: 0.6
+    # --- Self-calibrating; the defaults below rarely need touching. ---
+    # Stage 1 — adaptive loudness gate (no fixed dB threshold): a frame is
+    # "active" this many dB above the learned ambient floor.
+    active_margin_db: 8.0
+    floor_alpha: 0.05
+    # Stage 2 — pitch + tonality. clarity_min is a scale-free autocorrelation
+    # score (0..1); pitch_min/max only bound the search, they are not a band.
+    pitch_min_hz: 200.0
+    pitch_max_hz: 4000.0
+    clarity_min: 0.6
+    # Stage 3 — grouping frames into a single ringing note.
+    # note_gap_ms low + min_note_ms low so fast, high-pitch ding-dongs register.
+    pitch_tol: 0.06
+    note_gap_ms: 70.0
+    min_note_ms: 35.0
+    max_note_ms: 1600.0
+    # Stage 4 — the ding-dong pattern (2 notes, second lower, within a window).
+    min_tones: 2
+    min_gap_s: 0.03
+    max_gap_s: 1.50
+    pattern_window_s: 3.5
+    require_descending: true
+    min_drop_ratio: 0.03
+    cooldown_s: 1.5
