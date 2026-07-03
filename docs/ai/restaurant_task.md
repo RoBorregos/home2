@@ -17,12 +17,12 @@ WAIT_FOR_BUTTON → START (save bar/origin pose)
                      immediately (robot moves later; camera-frame points would be
                      mis-transformed). Serve table = closest to the caller.
                      3 failed scans → fall back to serving the caller point itself.
-→ TAKE_ORDERS        approach_point(table, 0.75); per customer: look_at(map point)
+→ TAKE_ORDERS        approach_point(table, 0.6); per customer: look_at(map point)
                      then hri.take_order() (2 items, partial 1-item orders kept)
-→ NAVIGATE_TO_BAR    return_to_origin(inverse) + dock_table (perpendicular final)
+→ NAVIGATE_TO_BAR    return_to_origin(inverse) + dock (nav_pose first, offset 0.32)
 → SAY_ORDER_TO_BARMAN
 → DELIVER_ORDER      per item: pick at bar → carry_pose → saved approach_pose or
-                     approach_point → dock_table → place; bar round-trip between items
+                     approach_point → dock → place; bar round-trip between items
 → back to WAIT_FOR_CALL (cycle state reset) — loops until the operator stops it.
 ```
 
@@ -57,7 +57,12 @@ WAIT_FOR_BUTTON → START (save bar/origin pose)
    `nav2_overlay_file` arg of `nav2_omni.launch.py`).
 4. **Display is an MJPEG stream** (web_video_server): single-shot image publishes
    are invisible. `restaurant_commands` republishes the annotated tables image at
-   10 Hz; `customer_node` republishes the caller crop at 10 Hz on `/vision/customer`.
+   10 Hz; `customer_node` republishes at 10 Hz on `/vision/customer` a side-by-side
+   composite of ALL confirmed callers (scored: detect calling customer ×2), and
+   labels every caller in the full frame on the tracker topic.
+5. **Docking**: always through the task manager's `_dock_to_table()` — it tucks
+   the arm in `nav_pose` first (arm must be inside the footprint at the 0.32 m
+   dock offset), then `dock_table(offset=0.32)`.
 
 ## False-customer filtering (public raising phones in the recording zone)
 

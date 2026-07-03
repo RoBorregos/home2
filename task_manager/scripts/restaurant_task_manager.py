@@ -42,7 +42,8 @@ CONFIRM_MATCH_RADIUS = 0.8  # m between two detections to accept a caller (persi
 
 # ── Approach ──
 CUSTOMER_STANDOFF = 2.0  # m from the caller for the table scan
-TABLE_STANDOFF = 0.75  # m from the table point for order taking / delivery
+TABLE_STANDOFF = 0.6  # m from the table point for order taking / delivery
+DOCK_TABLE_OFFSET = 0.32  # m front offset for the perpendicular dock_table approach
 CUSTOMER_CLOSE_DISTANCE = 3.5  # m — re-approach if the caller is farther than this
 MAX_APPROACH_RETRIES = 3
 MAX_SCAN_ATTEMPTS = 3  # table scans before falling back to the caller point
@@ -325,6 +326,13 @@ class RestaurantTaskManager(Node):
 
         return Status.EXECUTION_ERROR
 
+    def _dock_to_table(self):
+        """Perpendicular-dock to the table/bar in front: tuck the arm first
+        (nav_pose keeps it inside the footprint at the 0.32 m offset)."""
+        self.subtask_manager.manipulation.move_to_position("nav_pose", velocity=0.5)
+        status, _ = self.subtask_manager.nav.dock_table(offset=DOCK_TABLE_OFFSET)
+        return status
+
     def _navigate_to_serve_table(self):
         """Go back to the caller's table: prefer the exact pose we reached when
         taking orders, else approach the map-frame table point."""
@@ -384,7 +392,7 @@ class RestaurantTaskManager(Node):
                 # if the table is never reached, per rulebook).
                 self.subtask_manager.hri.publish_display_topic(CUSTOMER)
                 self.subtask_manager.hri.say(
-                    "I see you! I am coming to take your order. "
+                    "I see you! I am coming to take your order. Please keep your hand raised "
                     "You can check my screen to confirm I detected you."
                 )
                 self.target_person_point = caller
@@ -627,7 +635,7 @@ class RestaurantTaskManager(Node):
             self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
             # Perpendicular final approach to the bar counter (lidar/cloud based);
             # nav_central auto-undocks before the next nav goal.
-            status, _ = self.subtask_manager.nav.dock_table()
+            status = self._dock_to_table()
             if status != Status.EXECUTION_SUCCESS:
                 Logger.warn(self, "Bar docking failed, staying at the origin pose.")
             self.current_state = RestaurantTaskManager.TaskStates.SAY_ORDER_TO_BARMAN
@@ -666,7 +674,7 @@ class RestaurantTaskManager(Node):
                         Logger.warn(self, "Return to table failed, delivering from here.")
                     # Final perpendicular docking so the place happens at a safe,
                     # repeatable distance from the tabletop.
-                    dock_status, _ = self.subtask_manager.nav.dock_table()
+                    dock_status = self._dock_to_table()
                     if dock_status != Status.EXECUTION_SUCCESS:
                         Logger.warn(self, "Table docking failed, placing from approach pose.")
                     self.subtask_manager.hri.say(f"Here is your {item}.")
@@ -686,7 +694,7 @@ class RestaurantTaskManager(Node):
                             "carry_pose", velocity=0.5
                         )
                         self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
-                        self.subtask_manager.nav.dock_table()
+                        self._dock_to_table()
                 else:
                     Logger.error(self, f"Failed to pick {item}")
                     self.current_delivery_item_index += 1

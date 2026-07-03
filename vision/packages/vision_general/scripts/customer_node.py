@@ -11,6 +11,7 @@ import time
 from datetime import datetime
 
 import cv2
+import numpy as np
 from vision_general.utils.calculations import (
     get2DCentroid,
     point2d_to_ros_point_stamped,
@@ -177,6 +178,7 @@ class CustomerNode(Node):
         people = self.pose_detection.detect_people(frame, conf=CONF_THRESHOLD)
         self.get_logger().info(f"Detected {len(people)} people")
 
+        confirmed_crops = []
         for person_data in people:
             x1, y1, x2, y2 = person_data["bbox"]
             points = person_data["keypoints"]
@@ -242,13 +244,20 @@ class CustomerNode(Node):
             self.get_logger().info(
                 "Customer detected (sitting%s)" % (", raising" if raising else "")
             )
-            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
-            # Publish/display the crop only for CONFIRMED customers, so the
-            # screen shows the actual caller and not a random bystander.
-            self.customer_image = frame[ey1:ey2, ex1:ex2].copy()
-            if raising and not include_non_waving:
-                self.save_run_images(self.output_image, self.customer_image)
+            # Mark every confirmed caller in the full frame (scored: "detect
+            # calling or waving customer" — referees see all of them at once).
+            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 3)
+            cv2.putText(
+                self.output_image,
+                f"CUSTOMER {len(confirmed_crops) + 1}"
+                + (" CALLING" if raising else ""),
+                (x1, max(y1 - 10, 25)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.9,
+                (0, 255, 0),
+                2,
+            )
+            confirmed_crops.append(frame[ey1:ey2, ex1:ex2].copy())
 
             self.results_publisher.publish(coords)
 
@@ -270,8 +279,37 @@ class CustomerNode(Node):
                 f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}, angle={angle:.1f}"
             )
 
+        # Show ALL confirmed callers side by side on the display crop topic,
+        # not just the last one.
+        if confirmed_crops:
+            self.customer_image = self._compose_crops(confirmed_crops)
+            if not include_non_waving:
+                self.save_run_images(self.output_image, self.customer_image)
+
         self.get_logger().info(f"Customers detected: {len(res.people.list)}")
         return res
+
+    def _compose_crops(self, crops, height=360, gap=8):
+        """Horizontal composite of all confirmed customer crops (same height,
+        black gaps) so the display shows every caller at once."""
+        resized = []
+        for crop in crops:
+            h, w = crop.shape[:2]
+            if h == 0 or w == 0:
+                continue
+            scale = height / float(h)
+            resized.append(cv2.resize(crop, (max(1, int(w * scale)), height)))
+        if not resized:
+            return []
+        if len(resized) == 1:
+            return resized[0]
+        spacer = np.zeros((height, gap, 3), dtype=resized[0].dtype)
+        parts = []
+        for i, img in enumerate(resized):
+            if i:
+                parts.append(spacer)
+            parts.append(img)
+        return cv2.hconcat(parts)
 
     def save_run_images(self, annotated_frame, crop):
         """Save the annotated frame + caller crop for post-run review and as
