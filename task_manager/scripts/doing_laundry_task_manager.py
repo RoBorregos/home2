@@ -25,6 +25,10 @@ WM_PLACE_ROUNDS = 1
 # strafing in until base_link is BASKET_SIDE_DISTANCE meters from the point.
 BASKET_APPROACH_STANDOFF = 0.65
 BASKET_SIDE_DISTANCE = 0.45
+# After grabbing the basket (held on the RIGHT), strafe this far LEFT before
+# normal navigation so the basket can't clip the washing machine when Nav2
+# starts turning. Direct sidestep — no Nav2/costmaps involved.
+BASKET_CLEARANCE_SIDESTEP = 1.0
 # Frame assumed for a detection that arrives without one (older vision nodes).
 DEFAULT_CAMERA_FRAME = "zed_left_camera_optical_frame"
 
@@ -168,7 +172,18 @@ class DoingLaundryTM(Node):
 
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
-            Logger.success(self, "Start button pressed, Doing Laundry task will begin now")
+
+            # Same door gate as the PPC task: the arena door opens when the
+            # task officially starts — don't drive into a closed door.
+            Logger.state(self, "Start button pressed. Waiting for the door to open...")
+            self.subtask_manager.hri.say("Waiting for the door to open.", wait=False)
+            while True:
+                status, _ = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    break
+                rclpy.spin_once(self, timeout_sec=0.1)
+
+            Logger.success(self, "Door open, Doing Laundry task will begin now")
             self.set_state(DoingLaundryTM.TaskStates.START)
 
         elif self.current_state == DoingLaundryTM.TaskStates.START:
@@ -259,6 +274,16 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Basket picked.")
                 self.basket_pick_attempts = 0
+                # The basket was grabbed on the RIGHT of the base — sidestep
+                # LEFT before regular navigation so it clears the washing
+                # machine when Nav2 starts turning. Best-effort: a failed
+                # sidestep shouldn't stop the delivery.
+                Logger.info(self, "Sidestepping left to clear the washing machine.")
+                status, error = self.subtask_manager.nav.move_relative(
+                    0.0, BASKET_CLEARANCE_SIDESTEP
+                )
+                if status != Status.EXECUTION_SUCCESS:
+                    Logger.warn(self, f"Sidestep failed ({error}), navigating anyway.")
                 self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
             else:
                 self.basket_pick_attempts += 1
@@ -276,6 +301,15 @@ class DoingLaundryTM(Node):
             status, error = self.navigate_holding("laundry", "table")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry table with basket.")
+                # Raise the held basket, then dock flush to the table so the
+                # basket is released ON it (and the clothes picks that follow
+                # start from a docked pose). A failed dock is not fatal — the
+                # robot is already at the table zone.
+                self.subtask_manager.manipulation.move_to_position("nav_pose")
+                self.subtask_manager.hri.say("Docking to the table.", wait=False)
+                dock_status, dock_error = self.subtask_manager.nav.dock_table()
+                if dock_status != Status.EXECUTION_SUCCESS:
+                    Logger.warn(self, f"Dock to table failed ({dock_error}), unloading anyway.")
                 self.set_state(DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY)
             else:
                 Logger.error(self, f"Navigation to table failed: {error}. Retrying...")

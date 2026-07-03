@@ -26,6 +26,7 @@ from frida_constants.navigation_constants import (
     GET_ROBOT_POSE_SERVICE,
     APPROACH_POINT_SERVICE,
     SET_OBSTACLE_AVOIDANCE_SERVICE,
+    MOVE_RELATIVE_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import (
@@ -37,6 +38,7 @@ from frida_interfaces.srv import (
     GoToPose,
     GetRobotPose,
     ApproachPoint,
+    MoveRelative,
 )
 from std_srvs.srv import SetBool
 
@@ -93,6 +95,7 @@ class NavigationTasks:
         self.set_obstacle_avoidance_srv = self.node.create_client(
             SetBool, SET_OBSTACLE_AVOIDANCE_SERVICE
         )
+        self.move_relative_srv = self.node.create_client(MoveRelative, MOVE_RELATIVE_SERVICE)
         # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
         # camera-frame customer detection) and transform it to map before navigating.
         self.tf_buffer = tf2_ros.Buffer()
@@ -511,6 +514,31 @@ class NavigationTasks:
             return (Status.EXECUTION_SUCCESS, result.message)
         err = result.message if result is not None else "Error with request"
         CLog.nav(self.node, "ERROR", f"set_obstacle_avoidance failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=1)
+    @service_check(
+        "move_relative_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_relative(self, dx: float = 0.0, dy: float = 0.0, dyaw: float = 0.0):
+        """Short displacement in the CURRENT base frame (dx fwd+, dy left+,
+        dyaw CCW rad), executed by nav_central as a direct cmd_vel closed loop
+        on odom TF. Bypasses Nav2 AND the costmaps — use for small deliberate
+        sidesteps (e.g. clearing the washing machine with the held basket),
+        never for real navigation."""
+        request = MoveRelative.Request()
+        request.dx, request.dy, request.dyaw = float(dx), float(dy), float(dyaw)
+        CLog.nav(self.node, "MOVE", f"Relative move dx={dx:.2f} dy={dy:.2f} dyaw={dyaw:.2f}")
+        future = self.move_relative_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", "Relative move done")
+            return (Status.EXECUTION_SUCCESS, "")
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"move_relative failed: {err}")
         return (Status.EXECUTION_ERROR, err)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)

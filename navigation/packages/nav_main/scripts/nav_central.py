@@ -23,6 +23,7 @@ from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         APPROACH_POINT_SERVICE,
         SET_OBSTACLE_AVOIDANCE_SERVICE,
+        MOVE_RELATIVE_SERVICE,
         GLOBAL_COSTMAP_TOPIC,
         MAP_TOPIC,
         CHECK_DOOR_SERVICE,
@@ -76,6 +77,7 @@ from frida_interfaces.srv import (
         GoToPose,
         GetRobotPose,
         ApproachPoint,
+        MoveRelative,
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -269,6 +271,11 @@ class Nav_Central(Node):
             callback_group=self.service_group)
         self.approach_point_srv = self.create_service(
             ApproachPoint, APPROACH_POINT_SERVICE, self.approach_point_callback,
+            callback_group=self.service_group)
+
+        # Short relative sidesteps (direct cmd_vel on odom TF, no Nav2/costmaps)
+        self.move_relative_srv = self.create_service(
+            MoveRelative, MOVE_RELATIVE_SERVICE, self.move_relative_callback,
             callback_group=self.service_group)
 
         # Live-obstacle toggle: SetBool(False) disables obstacle_layer +
@@ -1102,6 +1109,72 @@ class Nav_Central(Node):
             self._publish_cmd()  # always leave the base stopped
         self.nav_logger("info", f"Approach_Point -> parallel alignment done (target abeam {side})")
         return True
+
+    def move_relative_callback(self, request, response):
+        """Service: short relative displacement in the current base frame
+        (dx fwd+, dy left+, dyaw CCW). Direct cmd_vel — see MoveRelative.srv."""
+        ok, err = self._move_relative(request.dx, request.dy, request.dyaw)
+        response.success = ok
+        response.error = err
+        return response
+
+    def _move_relative(self, dx, dy, dyaw, rate=0.05):
+        """Closed-loop relative move on odom->base_link TF (odom: smooth, no
+        SLAM correction jumps over a short displacement). Same direct-cmd_vel
+        machinery as _align_parallel; nothing checks obstacles on the way, so
+        callers keep displacements short (e.g. the 1 m basket-clearing strafe)."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "odom", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0))
+        except Exception as e:
+            return False, f"odom TF failed: {e}"
+        x0, y0 = tf.transform.translation.x, tf.transform.translation.y
+        q = tf.transform.rotation
+        yaw0 = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                          1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        gx = x0 + math.cos(yaw0) * dx - math.sin(yaw0) * dy
+        gy = y0 + math.sin(yaw0) * dx + math.cos(yaw0) * dy
+        gyaw = yaw0 + dyaw
+
+        MAX_V, MAX_W = 0.2, 0.5
+        K_LIN, K_ANG = 1.2, 1.5
+        TOL_LIN, TOL_ANG = 0.03, 0.05
+        timeout = 10.0 + 10.0 * math.hypot(dx, dy)  # generous vs the 0.2 m/s cap
+
+        self.nav_logger(
+            "info",
+            f"Move_Relative -> dx={dx:.2f} dy={dy:.2f} dyaw={math.degrees(dyaw):.0f} deg")
+        elapsed = 0.0
+        try:
+            while elapsed < timeout:
+                try:
+                    tf = self.tf_buffer.lookup_transform(
+                        "odom", "base_link", rclpy.time.Time(),
+                        timeout=Duration(seconds=0.5))
+                except Exception as e:
+                    return False, f"odom TF failed mid-move: {e}"
+                rx, ry = tf.transform.translation.x, tf.transform.translation.y
+                q = tf.transform.rotation
+                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                                 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                ex_o, ey_o = gx - rx, gy - ry
+                # Remaining error expressed in the CURRENT base frame.
+                ex = math.cos(yaw) * ex_o + math.sin(yaw) * ey_o
+                ey = -math.sin(yaw) * ex_o + math.cos(yaw) * ey_o
+                eyaw = (gyaw - yaw + math.pi) % (2.0 * math.pi) - math.pi
+                if abs(ex) <= TOL_LIN and abs(ey) <= TOL_LIN and abs(eyaw) <= TOL_ANG:
+                    self.nav_logger("info", "Move_Relative -> done")
+                    return True, ""
+                self._publish_cmd(
+                    vx=max(-MAX_V, min(MAX_V, K_LIN * ex)),
+                    vy=max(-MAX_V, min(MAX_V, K_LIN * ey)),
+                    wz=max(-MAX_W, min(MAX_W, K_ANG * eyaw)))
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=rate))
+                elapsed += rate
+            self.nav_logger("warn", "Move_Relative -> timed out")
+            return False, "move_relative timed out"
+        finally:
+            self._publish_cmd()  # always leave the base stopped
 
     def _set_obstacle_layers(self, enabled):
         """Set `enabled` on the live obstacle layers (lidar obstacle_layer +

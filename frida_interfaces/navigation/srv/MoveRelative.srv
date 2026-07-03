@@ -1,0 +1,13 @@
+# Short relative displacement of the base in the CURRENT base frame, executed
+# as a direct cmd_vel closed loop on odom TF — bypasses Nav2 and the costmaps
+# entirely. For small deliberate sidesteps only (e.g. doing_laundry strafes
+# 1 m left after grabbing the basket so the held basket clears the washing
+# machine before normal navigation starts). Nothing checks for obstacles along
+# the way — keep displacements short and use MoveLocation/GoToPose for real
+# navigation.
+float32 dx     # forward (+) / backward (-) meters, in the base frame at start
+float32 dy     # left (+) / right (-) meters
+float32 dyaw   # final heading change (rad, CCW)
+---
+bool success
+string error
