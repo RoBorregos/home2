@@ -637,7 +637,6 @@ class VisionTasks:
         if callback:
             callback(Status.EXECUTION_SUCCESS, "a mocked person description")
 
-    @mockable(_mock_callback=_mock_moondream_async)
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("chairs_to_remove_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
     def detect_chairs_to_remove(self, timeout: float = 90.0) -> tuple[int, list[tuple]]:
@@ -666,7 +665,7 @@ class VisionTasks:
         Logger.success(self.node, f"{len(chairs)}/{result.total_chairs} chair(s) to remove")
         return Status.EXECUTION_SUCCESS, chairs
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @mockable(_mock_callback=_mock_moondream_async)
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query_async(self, prompt: str, query_person: bool = False, callback=None):
         """Makes a query of the current image using moondream. Runs asynchronously."""

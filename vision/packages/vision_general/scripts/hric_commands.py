@@ -182,8 +182,12 @@ class HRICCommands(Node):
             self.chairs_to_remove_callback,
             callback_group=self.callback_group,
         )
-        self.chair_image_publisher = self.create_publisher(
-            Image, CHAIR_REMOVAL_IMAGE_TOPIC, 10, callback_group=self.callback_group
+        self.chair_image_publisher = DebugImagePublisher(
+            self,
+            CHAIR_REMOVAL_IMAGE_TOPIC,
+            "chair_removal",
+            max_hz=2.0,
+            callback_group=self.callback_group,
         )
         self.chair_image = None
 

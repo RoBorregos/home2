@@ -28,7 +28,11 @@ from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transf
 from std_msgs.msg import String
 from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
-from frida_constants.vision_constants import CHAIR_REMOVAL_IMAGE_TOPIC, IMAGE_ORIENTED_TOPIC
+from frida_constants.vision_constants import (
+    CHAIR_REMOVAL_IMAGE_TOPIC,
+    DETECTIONS_IMAGE_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
+)
 from std_srvs.srv import Empty
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
@@ -913,6 +917,8 @@ class PickAndPlaceTM(Node):
             self.dock_at(table_location)
             self._docked_at_table = True
             self.subtask_manager.manipulation.move_to_position("table_stare")
+            # Show the annotated detector feed while perceiving the table
+            self.subtask_manager.hri.publish_display_topic(DETECTIONS_IMAGE_TOPIC)
 
             status, detections = self.subtask_manager.vision.detect_objects(timeout=5)
 
