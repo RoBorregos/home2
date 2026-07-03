@@ -962,11 +962,35 @@ class Nav_Central(Node):
             return response
         self._clear_costmaps()
         ok, msg = self.send_nav_goal(goal)
+        if ok:
+            # The goal checker can succeed inside xy tolerance without settling
+            # yaw — make sure the base front actually points at the person.
+            self._face_target(tx, ty)
         response.success = ok
         response.error = msg
         self.pause_slam()
         self.pause_nav2()
         return response
+
+    def _face_target(self, tx, ty, tol=0.25):
+        """Final in-place rotation toward (tx, ty) if the base ended up facing
+        away after the approach goal (runs while nav2 is still resumed)."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=0.5))
+        except Exception:
+            return
+        rx, ry = tf.transform.translation.x, tf.transform.translation.y
+        q = tf.transform.rotation
+        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                         1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        bearing = math.atan2(ty - ry, tx - rx)
+        err = (bearing - yaw + math.pi) % (2.0 * math.pi) - math.pi
+        if abs(err) <= tol:
+            return
+        self.nav_logger(
+            "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
+        self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
 
     def _approach_pose(self, gx, gy, tx, ty):
         """Map-frame PoseStamped at (gx, gy) facing (tx, ty)."""

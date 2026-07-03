@@ -5,6 +5,7 @@ Node to handle GPSR commands.
 """
 
 import cv2
+import math
 import rclpy
 import rclpy.qos
 from rclpy.node import Node
@@ -186,12 +187,36 @@ class GPSRCommands(Node):
         )
 
     def _person_point(self, bbox):
-        """Deproject a person's bbox center to a camera-frame PointStamped
-        (for nav approach_point). None if depth/camera info is unavailable."""
+        """Deproject a person to a camera-frame PointStamped (for approaching).
+
+        The bbox CENTER often misses the body (between the legs, beside the
+        torso with raised arms) and its depth belongs to the BACKGROUND — the
+        person would project meters behind where they stand. Instead, sample a
+        grid over the torso band of the bbox and deproject the pixel at the
+        LOWER-QUARTILE depth: robustly on the body (nearer than background),
+        while rejecting closer-than-person depth speckles."""
         if self.depth_image is None or self.camera_info is None:
             return None
         x1, y1, x2, y2 = bbox
-        cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
+        dh, dw = self.depth_image.shape[:2]
+
+        # Torso band: central 40% of the width, 25-60% of the height.
+        bw, bh = x2 - x1, y2 - y1
+        samples = []
+        for fy in (0.25, 0.35, 0.45, 0.6):
+            for fx in (0.3, 0.4, 0.5, 0.6, 0.7):
+                px, py = int(x1 + fx * bw), int(y1 + fy * bh)
+                if 0 <= px < dw and 0 <= py < dh:
+                    d = float(self.depth_image[py, px])
+                    if math.isfinite(d) and d > 0.1:
+                        samples.append((d, px, py))
+
+        if len(samples) >= 4:
+            samples.sort()
+            _, cx, cy = samples[len(samples) // 4]
+        else:
+            cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
+
         try:
             return point2d_to_ros_point_stamped(
                 self.camera_info,
@@ -369,6 +394,10 @@ class GPSRCommands(Node):
 
         # Count people detected
         people_count = len(self.people)
+        for person in self.people:
+            pt = self._person_point(person["bbox"])
+            if pt is not None:
+                response.points.append(pt)
 
         response.success = True
         response.count = people_count
