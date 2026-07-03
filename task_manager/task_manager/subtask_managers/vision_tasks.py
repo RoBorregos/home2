@@ -798,7 +798,10 @@ class VisionTasks:
         Logger.info(self.node, "Searching customer")
         request = Customer.Request()
 
-        err, result = self._call(self.customer_client, request, name="get_customer")
+        # customer_node may run a moondream check (~5 s) per waving candidate,
+        # so the client budget must exceed the node's worst case — a premature
+        # client timeout here reads as "no customer" and the robot drives away.
+        err, result = self._call(self.customer_client, request, timeout=20.0, name="get_customer")
         if err is not None:
             return err, PointStamped()
         if not result.found:
@@ -1151,8 +1154,11 @@ class VisionTasks:
     def customer_tables(self) -> tuple[Status, list[CustomerTable]]:
         """Detect the tables and the customers associated to them."""
         req = CustomerTables.Request()
+        # restaurant_commands internally waits on moondream table points (20 s)
+        # plus the customer service (25 s) — the client budget must cover both,
+        # or timed-out retries pile up concurrent scans on the GPU.
         err, result = self._call(
-            self.customer_table_client, req, timeout=20.0, name="customer_tables"
+            self.customer_table_client, req, timeout=60.0, name="customer_tables"
         )
         if err is not None:
             return err, []

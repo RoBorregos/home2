@@ -109,6 +109,8 @@ class NavigationTasks:
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
                 "get_robot_pose_srv": {"client": self.get_robot_pose_srv, "type": "service"},
+                "approach_point_srv": {"client": self.approach_point_srv, "type": "service"},
+                "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
             },
         }
 
@@ -217,7 +219,7 @@ class NavigationTasks:
         request.location = location
         request.sublocation = sublocation
         future = self.move_to_location_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None:
             if result.success:
@@ -314,7 +316,7 @@ class NavigationTasks:
         request = DockTable.Request()
         request.offset = float(offset)
         future = self.dock_table_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None:
             if result.success:
@@ -376,7 +378,7 @@ class NavigationTasks:
         request.target_pose = pose
         request.behavior_tree = behavior_tree
         future = self.go_to_pose_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None and result.success:
             CLog.nav(self.node, "SUCCESS", "Pose reached")
@@ -463,7 +465,7 @@ class NavigationTasks:
         request.standoff = float(standoff)
         CLog.nav(self.node, "MOVE", "Requesting approach to point")
         future = self.approach_point_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None and result.success:
             CLog.nav(self.node, "SUCCESS", "Approach point reached")
