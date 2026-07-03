@@ -24,6 +24,7 @@ from frida_constants.navigation_constants import (
     DOCK_TABLE_SERVICE,
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
+    APPROACH_POINT_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import (
@@ -34,6 +35,7 @@ from frida_interfaces.srv import (
     DockTable,
     GoToPose,
     GetRobotPose,
+    ApproachPoint,
 )
 from std_srvs.srv import SetBool
 
@@ -86,6 +88,7 @@ class NavigationTasks:
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
+        self.approach_point_srv = self.node.create_client(ApproachPoint, APPROACH_POINT_SERVICE)
         # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
         # camera-frame customer detection) and transform it to map before navigating.
         self.tf_buffer = tf2_ros.Buffer()
@@ -431,6 +434,43 @@ class NavigationTasks:
         goal.pose.position.y = py
         goal.pose.orientation = self._yaw_to_quaternion(yaw)
         return self.move_to_pose(goal)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=2)
+    @service_check(
+        "approach_point_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def approach_point(self, point, standoff: float = 0.65):
+        """Approach a person or free-standing object seen by vision (e.g. GPSR
+        "go to the person", approaching a bag on the floor).
+
+        `point` may be a PointStamped in ANY TF frame (base_link, a camera
+        frame...) or a map-frame Point / (x, y) pair. nav_central projects it
+        onto the map, picks the nearest COSTMAP-FREE pose `standoff` meters
+        from the target (robot side first, facing it) and navigates there; if
+        the robot is already within `standoff`, it just turns to face the
+        target."""
+        request = ApproachPoint.Request()
+        if isinstance(point, PointStamped):
+            request.target = point
+        else:
+            xy = self._resolve_map_xy(point)
+            if xy is None:
+                return (Status.EXECUTION_ERROR, "invalid point")
+            request.target.header.frame_id = "map"
+            request.target.point.x, request.target.point.y = xy
+        request.standoff = float(standoff)
+        CLog.nav(self.node, "MOVE", "Requesting approach to point")
+        future = self.approach_point_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", "Approach point reached")
+            return (Status.EXECUTION_SUCCESS, "")
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"approach_point failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     def return_to_origin(self, inverse_orientation=False):

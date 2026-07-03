@@ -32,6 +32,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     QUERY_TOPIC,
     READ_QR_TOPIC,
+    RESULTS_TOPIC,
     SAVE_NAME_TOPIC,
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
@@ -113,6 +114,14 @@ class VisionTasks:
         )
         self.face_name_subscriber = self.node.create_subscription(
             String, PERSON_NAME_TOPIC, self.person_name_callback, 10
+        )
+        # Camera-frame 3D points of the persons matched by the last
+        # count_by_pose/gesture/color call (for nav approach_point)
+        self.last_person_points = []
+        # Latest 3D point of the tracked person (tracker publishes while locked)
+        self._tracked_point = None
+        self.tracked_point_subscriber = self.node.create_subscription(
+            PointStamped, RESULTS_TOPIC, self._tracked_point_callback, 10
         )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
@@ -199,10 +208,8 @@ class VisionTasks:
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
-                "read_qr_client": {
-                    "client": self.read_qr_client,
-                    "type": "service",
-                },
+                # read_qr removed from startup checks: no server exists for
+                # READ_QR_TOPIC and no GPSR command calls it.
                 "count_person": {
                     "client": self.count_person_client,
                     "type": "service",
@@ -363,6 +370,26 @@ class VisionTasks:
 
         Logger.success(self.node, "Track person status success")
         return Status.EXECUTION_SUCCESS
+
+    def _tracked_point_callback(self, msg: PointStamped):
+        self._tracked_point = msg
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, PointStamped()))
+    def get_tracked_person_point(self, timeout: float = 3.0):
+        """Latest 3D point of the tracked person (tracker RESULTS topic).
+
+        Requires the tracker to be locked first (track_person(True) or
+        track_person_by). Waits up to `timeout` for a FRESH point published
+        after this call, so a stale point from a previous lock is never
+        returned. Meant to feed nav.approach_point()."""
+        self._tracked_point = None
+        start = time.time()
+        while time.time() - start < timeout:
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+            if self._tracked_point is not None:
+                return Status.EXECUTION_SUCCESS, self._tracked_point
+        Logger.warn(self.node, "No tracked person point received")
+        return Status.TARGET_NOT_FOUND, None
 
     def person_name_callback(self, msg: String):
         """Callback for the face name subscriber"""
@@ -783,12 +810,14 @@ class VisionTasks:
         request.pose_requested = pose
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_by_pose_client, request, name="count_by_pose")
         if err is not None:
             return err, 300
         if not result.success:
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -821,6 +850,7 @@ class VisionTasks:
         request.pose_requested = gesture
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_by_gesture_client, request, name="count_by_gesture")
         if err is not None:
             return err, 300
@@ -828,6 +858,7 @@ class VisionTasks:
             Logger.warn(self.node, "No gesture found")
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -842,6 +873,7 @@ class VisionTasks:
         request.clothing = clothing
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_by_color_client, request, name="count_by_color")
         if err is not None:
             return err, 300
@@ -849,6 +881,7 @@ class VisionTasks:
             Logger.warn(self.node, f"No {color} {clothing} found")
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with {color} {clothing}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 

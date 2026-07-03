@@ -177,6 +177,7 @@ set(srv_files
   "navigation/srv/DockTable.srv"
   "navigation/srv/GetRobotPose.srv"
   "navigation/srv/GoToPose.srv"
+  "navigation/srv/ApproachPoint.srv"
   "manipulation/srv/DockToHandle.srv"
   "task_manager/srv/PositionGet.srv"
   "vision/srv/PersonInside.srv"

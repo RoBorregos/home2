@@ -4,7 +4,8 @@ from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     DETECTIONS_IMAGE_TOPIC,
     CAMERA_TOPIC,
-    IMAGE_TOPIC_HRIC,
+    IMAGE_TOPIC,
+    TRACKER_IMAGE_TOPIC,
 )
 from task_manager.utils.baml_client.types import (
     Count,
@@ -193,7 +194,8 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FollowPersonUntil(**command)
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        # Show the tracker's annotated feed (locked-person bbox) while following
+        self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
         self.subtask_manager.vision.deactivate_face_recognition()
 
         # Resolve the stop condition up front. BAML emits 'cancelled' (see
@@ -591,7 +593,7 @@ class GPSRTask(GenericTask):
             value = f"{cache_color} {cache_cloth}s"
             command.target_to_count = value
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC)
         self.subtask_manager.hri.say(
             f"I am going to count the {value}.",
         )
@@ -620,11 +622,43 @@ class GPSRTask(GenericTask):
         )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
+    def _approach_found_person(self, point=None) -> bool:
+        """Walk up to a found person instead of asking them to come over.
+
+        Preferred path: `point` is the MATCHED person's own 3D point (from
+        vision.last_person_points, filled by count_by_pose/gesture/color), so
+        the robot approaches exactly the person that matched the attribute —
+        not just the largest one in frame. Without a point, falls back to
+        locking the tracker (largest person) and reading its point. Returns
+        False if every step failed (caller then asks the person to approach)."""
+        if point is None and self.subtask_manager.vision.last_person_points:
+            # Nearest matched person (camera-frame points: norm = distance)
+            point = min(
+                self.subtask_manager.vision.last_person_points,
+                key=lambda p: p.point.x**2 + p.point.y**2 + p.point.z**2,
+            )
+        if point is not None:
+            nav_status, _ = self.subtask_manager.nav.approach_point(point)
+            return nav_status == Status.EXECUTION_SUCCESS
+
+        if self.subtask_manager.vision.track_person(True) != Status.EXECUTION_SUCCESS:
+            return False
+        try:
+            status, tracked = self.subtask_manager.vision.get_tracked_person_point()
+            if status != Status.EXECUTION_SUCCESS or tracked is None:
+                return False
+            nav_status, _ = self.subtask_manager.nav.approach_point(tracked)
+            return nav_status == Status.EXECUTION_SUCCESS
+        finally:
+            self.subtask_manager.vision.track_person(False)
+
     def find_person(self, command: FindPersonByName):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        # GPSR's own annotated feed: person boxes + matched highlight from
+        # gpsr_commands (the counts run there, NOT in hric_commands)
+        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC)
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
@@ -676,8 +710,10 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
-                    f"I found a {command.attribute_value}. Please approach me.",
+                    f"I found a {command.attribute_value}.",
                 )
+                if not self._approach_found_person():
+                    self.subtask_manager.hri.say("Please approach me.")
                 break
 
             elif status == Status.TARGET_NOT_FOUND:
@@ -717,7 +753,8 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        # Face-recognition flow: show the annotated face feed
+        self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for retry in range(3):
             self.subtask_manager.hri.node.get_logger().info(f"Retry {retry}.")
@@ -731,7 +768,6 @@ class GPSRTask(GenericTask):
             time.sleep(5)
             status, name = self.subtask_manager.vision.get_person_name()
 
-            # TODO: (@nav): approach the person
             self.subtask_manager.hri.node.get_logger().info(f"Found {name}.")
             if name is None:
                 self.subtask_manager.hri.say("Hi, I'm Frida.")
@@ -746,6 +782,9 @@ class GPSRTask(GenericTask):
 
             if name == self.subtask_manager.hri.remove_punctuation(command.name):
                 self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
+                # Walk up to them for the follow-up interaction (give object,
+                # guide, describe...) instead of expecting them to come closer.
+                self._approach_found_person()
                 return Status.EXECUTION_SUCCESS, f"found {name}"
             else:
                 self.subtask_manager.hri.say(

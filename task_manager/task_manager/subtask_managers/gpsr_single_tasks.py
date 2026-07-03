@@ -1,7 +1,7 @@
 import time
 
 from frida_constants.hri_constants import GPSR_COMMANDS
-from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC, IMAGE_TOPIC_HRIC
+from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC, IMAGE_ORIENTED_TOPIC
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     GetVisualInfo,
@@ -407,7 +407,8 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = GetVisualInfo(**command)
 
-        self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+        # Moondream answers about the live image — show the camera feed
+        self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
 
         status, result = self.subtask_manager.vision.visual_info(
             command.measure, command.object_category
