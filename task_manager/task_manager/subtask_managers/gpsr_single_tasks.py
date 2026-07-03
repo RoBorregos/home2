@@ -10,6 +10,7 @@ from task_manager.utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
+from task_manager.utils.grasp_confirmation import count_by_class, picked_ok
 from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
@@ -81,6 +82,28 @@ class GPSRSingleTask(GenericTask):
         return result
 
     ## Manipulation
+    def _table_counts(self) -> dict:
+        """Detect at the current pose and count detections per class."""
+        _, dets = self.subtask_manager.vision.detect_objects()
+        return count_by_class([d.classname for d in (dets or [])])
+
+    def _confirm_pick_by_vision(self, target_label: str, before_counts: dict):
+        """Re-look at the table; fail only if the picked object is clearly still there.
+
+        Same feedback as the PPC task manager: the pick motion can report success
+        while holding air, so only trust it if the target class count dropped.
+        Returns (ok, after_counts) so a retry can reuse the fresh counts.
+        """
+        target = (target_label or "").lower()
+        if not before_counts or before_counts.get(target, 0) == 0:
+            # Nothing to compare against: stay lenient, trust the motion result.
+            return True, before_counts
+        self.subtask_manager.manipulation.move_to_position("table_stare")
+        after = self._table_counts()
+        if picked_ok(before_counts, after, target):
+            return True, after
+        return False, after
+
     def pick_object(self, command: PickObject):
         """
         Picks an object from a designated picking spot.
@@ -132,16 +155,28 @@ class GPSRSingleTask(GenericTask):
         labels = self.subtask_manager.vision.get_labels(detections)
         s, closest = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
         object_to_pick = closest.results[0]
+        before_counts = count_by_class(labels)
         current_try = 0
         while True:
             if current_try >= RETRIES:
                 return self.deus_pick(command)
             s = self.subtask_manager.manipulation.pick_object(object_to_pick)
             if s == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(
-                    f"I have picked the {command.object_to_pick}.", wait=True
+                # PPC-style feedback: verify with vision that the object actually
+                # left the table before claiming (and delivering) the pick.
+                confirmed, after_counts = self._confirm_pick_by_vision(
+                    object_to_pick, before_counts
                 )
-                return s, f"picked {command.object_to_pick}"
+                if confirmed:
+                    self.subtask_manager.hri.say(
+                        f"I have picked the {command.object_to_pick}.", wait=True
+                    )
+                    return s, f"picked {command.object_to_pick}"
+                self.subtask_manager.hri.say(
+                    f"The {command.object_to_pick} is still there. I will try again.",
+                    wait=True,
+                )
+                before_counts = after_counts  # fresh scene is the new baseline
             else:
                 self.subtask_manager.hri.say("My picking plan failed. I will try again", wait=True)
             current_try += 1
