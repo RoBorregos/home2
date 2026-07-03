@@ -94,7 +94,8 @@ class PlaceManager:
         self.node.get_logger().info("Returning to position")
 
         # The eye-in-hand octomap never sees the compartment ceiling, so add an explicit
-        # collision slab there (place surface + 0.34 m) before planning the return.
+        # collision slab there (place surface + compartment height from the calibration
+        # JSON) before planning the return.
         if place_params.is_shelf:
             self.node.add_shelf_ceiling_guard(place_pose, place_params.table_height)
 

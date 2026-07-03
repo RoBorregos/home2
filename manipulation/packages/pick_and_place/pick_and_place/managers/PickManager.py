@@ -315,9 +315,13 @@ class PickManager:
             future = wait_for_future(future, timeout=30)
 
             if future:
-                pick_result = future.result().get_result().result
+                # Every hop can be None when the action server stalls (slow Orin) —
+                # treat any missing piece as a failed attempt instead of crashing.
+                goal_handle = future.result()
+                wrapped = goal_handle.get_result() if goal_handle else None
+                pick_result = wrapped.result if wrapped else None
                 self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-                if pick_result.success != 0:
+                if pick_result is not None and pick_result.success != 0:
                     pick_result_success = True
 
         else:
@@ -445,9 +449,13 @@ class PickManager:
                 future = wait_for_future(future, timeout=30)
                 if not future:
                     break
-                pick_result = future.result().get_result().result
+                # Every hop can be None when the action server stalls (slow Orin) —
+                # treat any missing piece as a failed attempt and try the next config.
+                goal_handle = future.result()
+                wrapped = goal_handle.get_result() if goal_handle else None
+                pick_result = wrapped.result if wrapped else None
                 self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-                if pick_result.success != 0:
+                if pick_result is not None and pick_result.success != 0:
                     pick_result_success = True
                     break
                 else:
@@ -463,7 +471,10 @@ class PickManager:
         self.node.get_logger().info("Closing gripper")
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
-        result = future.result()
+        if not future or future.result() is None:
+            self.node.get_logger().warn(
+                "Gripper close got no service response; continuing (grasp already executed)."
+            )
         self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
 
         if is_shelf:
@@ -505,8 +516,7 @@ class PickManager:
                     break
 
         self.node.get_logger().info("Pick Task completed successfully")
-        result.success = True
-        return result.success, pick_result.pick_result
+        return True, pick_result.pick_result
 
     def get_object_point(self, object_name: str) -> PointStamped:
         request = DetectionHandler.Request()
