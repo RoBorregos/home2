@@ -24,6 +24,7 @@ TEST_FIND_SEAT = False
 TEST_GET_PERSON_NAME = False
 TEST_FOLLOW_FACE = False
 TEST_HAND_MARKER = False
+TEST_CHAIRS_TO_REMOVE = False  # needs hric_commands + yolo + moondream + camera
 
 FOLLOW_FACE_FLIP = False
 HAND_MARKER_FLIP = False
@@ -62,6 +63,9 @@ class TestVisionManager(Node):
 
         if TEST_HAND_MARKER:
             self.test_hand_marker()
+
+        if TEST_CHAIRS_TO_REMOVE:
+            self.test_chairs_to_remove()
 
         exit(0)
 
@@ -166,6 +170,24 @@ class TestVisionManager(Node):
             self.vision_manager.camera_upside_down(False)
             self.vision_manager.deactivate_face_recognition()
             Logger.info(self, f"follow_face test stopped ({count[0]} messages)")
+
+    def test_chairs_to_remove(self):
+        """Run the full pipeline via the hric_commands service."""
+        Logger.info(self, "=== Testing detect_chairs_to_remove ===")
+        status, chairs = self.vision_manager.detect_chairs_to_remove()
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"{len(chairs)} chair(s) to remove")
+            for x1, y1, x2, y2 in chairs:
+                Logger.info(self, f"  remove chair px bbox: ({x1}, {y1}) -> ({x2}, {y2})")
+            Logger.info(
+                self,
+                "hric_commands keeps publishing the annotated frame on "
+                "/vision/chair_removal_image (view it in rqt_image_view)",
+            )
+        elif status == Status.TARGET_NOT_FOUND:
+            Logger.warn(self, "No table found; would fall back to generic request")
+        else:
+            Logger.error(self, "detect_chairs_to_remove failed")
 
     def test_hand_marker(self):
         """Continuously call detect_hand and publish its 3D point as a Marker

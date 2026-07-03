@@ -66,6 +66,7 @@ from vision_general.utils.reid_model import (
 
 from vision_general.utils.deep_sort.detection import Detection as DeepSORTDetection
 from vision_general.utils.trt_utils import load_yolo_trt
+from vision_general.utils.debug_pub import DebugImagePublisher
 
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
@@ -171,7 +172,7 @@ class SingleTracker(Node):
 
         self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
-        self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
+        self.image_publisher = DebugImagePublisher(self, TRACKER_IMAGE_TOPIC, "tracker")
 
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOPIC, 10)
 
@@ -341,10 +342,7 @@ class SingleTracker(Node):
 
     def publish_image(self):
         """Publish the image to the camera topic"""
-        if len(self.output_image) != 0:
-            self.image_publisher.publish(
-                self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
-            )
+        self.image_publisher.publish(self.output_image)
 
     def success(self, message) -> None:
         """Print success message"""

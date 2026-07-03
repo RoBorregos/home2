@@ -41,6 +41,24 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
             points=proto_points, found=True
         )
 
+    def Detect(self, request, context):
+        objects = self.model.detect(request.encoded_image, request.subject)
+
+        proto_objects = [
+            moondream_proto_pb2.DetectedObject(
+                x_min=obj["x_min"],
+                y_min=obj["y_min"],
+                x_max=obj["x_max"],
+                y_max=obj["y_max"],
+                name=obj["name"],
+            )
+            for obj in objects
+        ]
+
+        return moondream_proto_pb2.DetectResponse(
+            objects=proto_objects, found=bool(proto_objects)
+        )
+
     def Query(self, request, context):
         print("Querying image...")
         answer = self.model.query(request.encoded_image, request.query)

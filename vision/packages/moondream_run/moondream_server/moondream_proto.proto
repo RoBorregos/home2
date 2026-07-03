@@ -7,6 +7,7 @@ service MoonDreamService {
   rpc FindBeverage (FindBeverageRequest) returns (BeveragePositionResponse);
   rpc FindObjectPoints (FindObjectPointsRequest) returns (FindObjectPointsResponse);
   rpc Query (QueryRequest) returns (QueryResponse);
+  rpc Detect (DetectRequest) returns (DetectResponse);
 }
 
 message ImageRequest {
@@ -47,5 +48,23 @@ message ObjectPoint {
 
 message FindObjectPointsResponse {
   repeated ObjectPoint points = 1;
+  bool found = 2;
+}
+
+message DetectRequest {
+  bytes encoded_image = 1;
+  string subject = 2;
+}
+
+message DetectedObject {
+  float x_min = 1;
+  float y_min = 2;
+  float x_max = 3;
+  float y_max = 4;
+  string name = 5;
+}
+
+message DetectResponse {
+  repeated DetectedObject objects = 1;
   bool found = 2;
 }
