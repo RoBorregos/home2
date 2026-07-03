@@ -82,7 +82,7 @@ class RestaurantTaskManager(Node):
         # the START orientation: 180 = turn around (default), 90 = face left,
         # -90 = face right, 0 = face as started. Set per venue depending on
         # where the barman stands relative to the start pose.
-        self.declare_parameter("bar_return_yaw_deg", 180.0)
+        self.declare_parameter("bar_return_yaw_deg", 90.0)
 
         self.running_task = True
 
