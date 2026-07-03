@@ -24,7 +24,7 @@ var searchData=
   ['odom_5fpose_5fcovariance_21',['ODOM_POSE_COVARIANCE',['../namespacedashgo__driver2.html#acc466769d2772016d37de4afb11ea7e1',1,'dashgo_driver2']]],
   ['odom_5fpose_5fcovariance2_22',['ODOM_POSE_COVARIANCE2',['../namespacedashgo__driver2.html#aadf359cf24f3f2b174deae106d37ef3f',1,'dashgo_driver2']]],
   ['odom_5fpub_23',['odom_pub',['../classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html#af0211ec0cc26ad840d3c26b569a0521f',1,'omnidriver::odrive_serial_twist::SerialCommNode']]],
-  ['odom_5fto_5fmap_5fx_24',['odom_to_map_x',['../classnav__ui_1_1NavRosNode.html#a4847bcb88725ea81c38d2b8db97faccc',1,'nav_ui.NavRosNode.odom_to_map_x()'],['../classnav__ui_1_1NavCanvas.html#a953a3696a7040c9ef505b6b598e2777d',1,'nav_ui.NavCanvas.odom_to_map_x()']]],
+  ['odom_5fto_5fmap_5fx_24',['odom_to_map_x',['../classnav__ui_1_1NavCanvas.html#a953a3696a7040c9ef505b6b598e2777d',1,'nav_ui.NavCanvas.odom_to_map_x()'],['../classnav__ui_1_1NavRosNode.html#a4847bcb88725ea81c38d2b8db97faccc',1,'nav_ui.NavRosNode.odom_to_map_x()']]],
   ['odom_5fto_5fmap_5fy_25',['odom_to_map_y',['../classnav__ui_1_1NavCanvas.html#a68670a67c83e25017163833df4b022d5',1,'nav_ui.NavCanvas.odom_to_map_y()'],['../classnav__ui_1_1NavRosNode.html#ae2f053928c07c4c099da0647b9ab3992',1,'nav_ui.NavRosNode.odom_to_map_y()']]],
   ['odom_5fto_5fmap_5fyaw_26',['odom_to_map_yaw',['../classnav__ui_1_1NavCanvas.html#a50f145ef8d2ad60015d17a73189c19ef',1,'nav_ui.NavCanvas.odom_to_map_yaw()'],['../classnav__ui_1_1NavRosNode.html#a015e96911a900223f68ef763635bf93c',1,'nav_ui.NavRosNode.odom_to_map_yaw()']]],
   ['odom_5ftopic_27',['odom_topic',['../classtable__docker_1_1TableDocker.html#a1201e1b18e228bfb4f8068bb820bbdcc',1,'table_docker::TableDocker']]],
@@ -44,11 +44,12 @@ var searchData=
   ['orientation_41',['orientation',['../structBoxPrimitiveParams.html#a2a1c8c02a364b1049cd2a22b1e9295c1',1,'BoxPrimitiveParams::orientation()'],['../structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a1176ab9537a5fb253ab9dc9ef4cd7744',1,'mujoco_ros2_sensors::PoseSensorStruct::orientation()']]],
   ['orientation2_42',['orientation2',['../structBoxPrimitiveParams.html#aa2b680c9803c758968211861559e4aa9',1,'BoxPrimitiveParams']]],
   ['orientation_5fsensor_5fadr_43',['orientation_sensor_adr',['../structmujoco__ros2__sensors_1_1PoseSensorStruct.html#a07d6f6120461733b09ee6ab67e2a1cc2',1,'mujoco_ros2_sensors::PoseSensorStruct']]],
-  ['origin_5fx_44',['origin_x',['../classmap__area__tagger_1_1MapCanvas.html#a241b12ed6b02c21cd4b79e50da9e6fe9',1,'map_area_tagger::MapCanvas']]],
-  ['origin_5fy_45',['origin_y',['../classmap__area__tagger_1_1MapCanvas.html#a8dd858b5e2e71127c2bd113be61bebc4',1,'map_area_tagger::MapCanvas']]],
-  ['original_5fgoal_46',['original_goal',['../classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html#a0d9d19fc875774dddc3ef4530461ec9c',1,'adaptive_goal_publisher::AdaptiveGoalPublisher']]],
-  ['other_47',['OTHER',['../classpickandplace__task__manager_1_1ObjectCategory.html#a92d1e2c45c974ef8482787913fc767e7',1,'pickandplace_task_manager::ObjectCategory']]],
-  ['output_48',['output',['../namespacemodel.html#a5bca4354e053d953c18cc9430074d2ba',1,'model']]],
-  ['output_5fdir_49',['OUTPUT_DIR',['../namespacetest__hri__manager.html#a0111244d1518203a96ff4932fbb6d4ef',1,'test_hri_manager']]],
-  ['output_5fimage_50',['output_image',['../classtracker__node_1_1SingleTracker.html#aadfa5cdb7aa7b68ca589211147f27b78',1,'tracker_node.SingleTracker.output_image()'],['../classhric__commands_1_1HRICCommands.html#a329e0997d6445297a73c54141635a303',1,'hric_commands.HRICCommands.output_image()'],['../classgpsr__commands_1_1GPSRCommands.html#a37658fa13c8e5d1f1f7685f1f3a1c27f',1,'gpsr_commands.GPSRCommands.output_image()'],['../classcustomer__node_1_1CustomerNode.html#a665a93c963d5d732c489b920c6277d39',1,'customer_node.CustomerNode.output_image()'],['../classmoondream__node_1_1MoondreamNode.html#ab2e0662c986d3e0fa046512296624931',1,'moondream_node.MoondreamNode.output_image()']]]
+  ['oriented_5fpub_44',['oriented_pub',['../classtest__chairs__to__remove_1_1TestChairsToRemove.html#a15c2bc2245a5213fdb0a055fece089be',1,'test_chairs_to_remove::TestChairsToRemove']]],
+  ['origin_5fx_45',['origin_x',['../classmap__area__tagger_1_1MapCanvas.html#a241b12ed6b02c21cd4b79e50da9e6fe9',1,'map_area_tagger::MapCanvas']]],
+  ['origin_5fy_46',['origin_y',['../classmap__area__tagger_1_1MapCanvas.html#a8dd858b5e2e71127c2bd113be61bebc4',1,'map_area_tagger::MapCanvas']]],
+  ['original_5fgoal_47',['original_goal',['../classadaptive__goal__publisher_1_1AdaptiveGoalPublisher.html#a0d9d19fc875774dddc3ef4530461ec9c',1,'adaptive_goal_publisher::AdaptiveGoalPublisher']]],
+  ['other_48',['OTHER',['../classpickandplace__task__manager_1_1ObjectCategory.html#a92d1e2c45c974ef8482787913fc767e7',1,'pickandplace_task_manager::ObjectCategory']]],
+  ['output_49',['output',['../namespacemodel.html#a5bca4354e053d953c18cc9430074d2ba',1,'model']]],
+  ['output_5fdir_50',['OUTPUT_DIR',['../namespacetest__hri__manager.html#a0111244d1518203a96ff4932fbb6d4ef',1,'test_hri_manager']]],
+  ['output_5fimage_51',['output_image',['../classtracker__node_1_1SingleTracker.html#aadfa5cdb7aa7b68ca589211147f27b78',1,'tracker_node.SingleTracker.output_image()'],['../classhric__commands_1_1HRICCommands.html#a329e0997d6445297a73c54141635a303',1,'hric_commands.HRICCommands.output_image()'],['../classgpsr__commands_1_1GPSRCommands.html#a37658fa13c8e5d1f1f7685f1f3a1c27f',1,'gpsr_commands.GPSRCommands.output_image()'],['../classcustomer__node_1_1CustomerNode.html#a665a93c963d5d732c489b920c6277d39',1,'customer_node.CustomerNode.output_image()'],['../classmoondream__node_1_1MoondreamNode.html#ab2e0662c986d3e0fa046512296624931',1,'moondream_node.MoondreamNode.output_image()']]]
 ];

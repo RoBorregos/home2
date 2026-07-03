@@ -546,6 +546,7 @@ var namespaces_dup =
     [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_basket_pick", "namespacetest__basket__pick.html", "namespacetest__basket__pick" ],
+    [ "test_chairs_to_remove", "namespacetest__chairs__to__remove.html", "namespacetest__chairs__to__remove" ],
     [ "test_copyright", "namespacetest__copyright.html", [
       [ "test_copyright", "namespacetest__copyright.html#a156f4f961887d49bfb4cc9f6e7f6af0a", null ]
     ] ],

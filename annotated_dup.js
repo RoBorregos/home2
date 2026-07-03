@@ -484,6 +484,9 @@ var annotated_dup =
     [ "test_basket_pick", "namespacetest__basket__pick.html", [
       [ "TestRimPick", "classtest__basket__pick_1_1TestRimPick.html", "classtest__basket__pick_1_1TestRimPick" ]
     ] ],
+    [ "test_chairs_to_remove", "namespacetest__chairs__to__remove.html", [
+      [ "TestChairsToRemove", "classtest__chairs__to__remove_1_1TestChairsToRemove.html", "classtest__chairs__to__remove_1_1TestChairsToRemove" ]
+    ] ],
     [ "test_describe_person", "namespacetest__describe__person.html", [
       [ "TestPersonDescription", "classtest__describe__person_1_1TestPersonDescription.html", "classtest__describe__person_1_1TestPersonDescription" ]
     ] ],
