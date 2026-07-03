@@ -364,6 +364,7 @@ class GPSRSingleTask(GenericTask):
             retries=3,
             min_wait_between_retries=5.0,
             skip_extract_data=True,
+            always_confirm=True,
         )
 
         if status != Status.EXECUTION_SUCCESS:
