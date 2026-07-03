@@ -17,6 +17,15 @@ def generate_launch_description():
         [
             # trash_detection_node removed: no task_manager client for its TRASHCAN
             # service exists (detect_trash() uses moondream instead).
+            # hric_commands serves CHAIRS_TO_REMOVE_SERVICE, which the
+            # pick-and-place TM calls before docking at the dining table.
+            Node(
+                package="vision_general",
+                executable="hric_commands.py",
+                name="hric_commands",
+                output="screen",
+                emulate_tty=True,
+            ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(detector_launch_file)
             ),

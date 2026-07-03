@@ -182,8 +182,12 @@ class HRICCommands(Node):
             self.chairs_to_remove_callback,
             callback_group=self.callback_group,
         )
-        self.chair_image_publisher = self.create_publisher(
-            Image, CHAIR_REMOVAL_IMAGE_TOPIC, 10, callback_group=self.callback_group
+        self.chair_image_publisher = DebugImagePublisher(
+            self,
+            CHAIR_REMOVAL_IMAGE_TOPIC,
+            "chair_removal",
+            max_hz=2.0,
+            callback_group=self.callback_group,
         )
         self.chair_image = None
 
@@ -473,7 +477,7 @@ class HRICCommands(Node):
                 cv2.rectangle(frame, (det.x1, det.y1), (det.x2, det.y2), (0, 0, 255), 3)
             else:
                 cv2.rectangle(frame, (det.x1, det.y1), (det.x2, det.y2), (0, 255, 0), 1)
-        self.chair_image = self.bridge.cv2_to_imgmsg(frame, "bgr8")
+        self.chair_image = frame  # DebugImagePublisher expects a raw bgr8 cv2 frame
 
         response.success = True
         response.table_found = True

@@ -34,9 +34,18 @@ export function VideoFeed({
 
   return (
     <div className="w-full h-full">
-      <MjpegStream
-        streamUrl={`http://localhost:8080/stream?topic=${videoTopic}`}
-      />
+      {videoTopic.endsWith(".mp4") || videoTopic.endsWith(".webm") ? (
+        <video
+          src={`/${videoTopic}`}
+          autoPlay
+          loop
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <MjpegStream
+          streamUrl={`http://localhost:8080/stream?topic=${videoTopic}`}
+        />
+      )}
     </div>
   );
 }
