@@ -363,7 +363,7 @@ class HRIC_TM(Node):
 
                 go_result = self.subtask_manager.manipulation.go_to_hand(
                     point=hand_point,
-                    hand_offset=0.1,
+                    hand_offset=0.2,
                 )
 
                 if go_result == Status.EXECUTION_SUCCESS:
