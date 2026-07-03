@@ -35,6 +35,9 @@ FOLLOW_TRACK_ATTEMPTS = 5
 # person_goal_smoother independently halts the base goal on the same timeout.
 FOLLOW_LOST_TIMEOUT = 3.0
 FOLLOW_RELOCK_ATTEMPTS = 3
+# find_person_by_name active search: max people the robot walks up to before
+# falling back to asking the target to come over.
+FIND_PERSON_MAX_ROUNDS = 4
 
 
 class GPSRTask(GenericTask):
@@ -624,6 +627,16 @@ class GPSRTask(GenericTask):
         )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
+    def _approach_with_arm(self, point) -> bool:
+        """Drive to a person point with the arm tucked (nav_pose), then look
+        at them (front_stare) ready for the interaction that follows."""
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        nav_status, _ = self.subtask_manager.nav.approach_point(point)
+        # Face the person even after a partial approach: every follow-up step
+        # (face rec, asking, giving) needs the camera looking front.
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+        return nav_status == Status.EXECUTION_SUCCESS
+
     def _approach_found_person(self, point=None) -> bool:
         """Walk up to a found person instead of asking them to come over.
 
@@ -640,8 +653,7 @@ class GPSRTask(GenericTask):
                 key=lambda p: p.point.x**2 + p.point.y**2 + p.point.z**2,
             )
         if point is not None:
-            nav_status, _ = self.subtask_manager.nav.approach_point(point)
-            return nav_status == Status.EXECUTION_SUCCESS
+            return self._approach_with_arm(point)
 
         if self.subtask_manager.vision.track_person(True) != Status.EXECUTION_SUCCESS:
             return False
@@ -649,8 +661,7 @@ class GPSRTask(GenericTask):
             status, tracked = self.subtask_manager.vision.get_tracked_person_point()
             if status != Status.EXECUTION_SUCCESS or tracked is None:
                 return False
-            nav_status, _ = self.subtask_manager.nav.approach_point(tracked)
-            return nav_status == Status.EXECUTION_SUCCESS
+            return self._approach_with_arm(tracked)
         finally:
             self.subtask_manager.vision.track_person(False)
 
@@ -762,40 +773,121 @@ class GPSRTask(GenericTask):
 
         # Face-recognition flow: show the annotated face feed
         self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
+        self.subtask_manager.vision.activate_face_recognition()
         self.subtask_manager.manipulation.move_to_position("front_stare")
-        for retry in range(3):
-            self.subtask_manager.hri.node.get_logger().info(f"Retry {retry}.")
-            # self.subtask_manager.manipulation.pan_to(degree)
-            self.subtask_manager.hri.say(
-                f"I'm looking for {command.name}.",
-            )
-            self.subtask_manager.hri.say(
-                "Please stand in front of me.",
-            )
-            time.sleep(5)
-            status, name = self.subtask_manager.vision.get_person_name()
+        target = self.subtask_manager.hri.remove_punctuation(command.name).lower()
+        self.subtask_manager.hri.say(f"I'm looking for {command.name}.", wait=False)
 
-            self.subtask_manager.hri.node.get_logger().info(f"Found {name}.")
-            if name is None:
+        # ACTIVE search: the robot walks up to each person in the room instead
+        # of asking the target to come. Between candidates it returns to this
+        # safe pose; faces are temp-saved so nobody is asked twice.
+        s, safe_pose = self.subtask_manager.nav.get_current_pose()
+        visited = set()
+
+        for round_idx in range(FIND_PERSON_MAX_ROUNDS):
+            # Re-scan every round: people move, and fresh detections avoid
+            # approaching stale camera-frame points after the base moved.
+            s, dets = self.subtask_manager.vision.detect_objects()
+            persons = sorted(
+                (d for d in (dets or []) if d.classname == "person"),
+                key=lambda d: d.distance,
+            )
+            persons = self._persons_in_my_room(persons)
+            if round_idx >= len(persons):
+                break
+            candidate = persons[round_idx]
+
+            if not self._approach_with_arm(candidate.point3d):
+                continue
+
+            status, name = self.subtask_manager.vision.get_person_name(fresh_timeout=4.0)
+            self.subtask_manager.hri.node.get_logger().info(f"Recognized: {name}.")
+            if name and name.lower() in visited:
+                # Already met this person this search — move on.
+                self._back_to_safe(safe_pose)
+                continue
+
+            if not name:
                 self.subtask_manager.hri.say("Hi, I'm Frida.")
-                status, new_name = self.subtask_manager.hri.ask_and_confirm(
+                status, heard = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
                     hotwords=command.name,
                 )
-                new_name = self.subtask_manager.hri.remove_punctuation(new_name)
-                self.subtask_manager.vision.save_face_name(new_name)
-                name = new_name
-
-            if name == self.subtask_manager.hri.remove_punctuation(command.name):
-                self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
-                # Walk up to them for the follow-up interaction (give object,
-                # guide, describe...) instead of expecting them to come closer.
-                self._approach_found_person()
-                return Status.EXECUTION_SUCCESS, f"found {name}"
-            else:
-                self.subtask_manager.hri.say(
-                    "Hi, " + name + ", nice to meet you but I am looking for " + command.name + "."
+                name = (
+                    self.subtask_manager.hri.remove_punctuation(heard)
+                    if heard
+                    else f"guest {round_idx}"
                 )
+                # Temp-save the face so this person is never asked twice.
                 self.subtask_manager.vision.save_face_name(name)
+
+            if name.lower() == target:
+                self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
+                return Status.EXECUTION_SUCCESS, f"found {name}"
+
+            visited.add(name.lower())
+            self.subtask_manager.hri.say(
+                "Nice to meet you " + name + ", but I am looking for " + command.name + "."
+            )
+            self._back_to_safe(safe_pose)
+
+        # Fallback (old behavior): ask the target to come to the robot.
+        self.subtask_manager.hri.say(
+            f"{command.name}, if you are here, please come and stand in front of me."
+        )
+        time.sleep(5)
+        status, name = self.subtask_manager.vision.get_person_name(fresh_timeout=5.0)
+        if name and self.subtask_manager.hri.remove_punctuation(name).lower() == target:
+            self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
+            return Status.EXECUTION_SUCCESS, f"found {name}"
         return Status.TARGET_NOT_FOUND, "person not found"
+
+    def _back_to_safe(self, safe_pose):
+        """Return to the pose where the person search started (arm tucked for
+        the drive, then front_stare to rescan for the next candidate)."""
+        if safe_pose is not None:
+            self.subtask_manager.manipulation.move_to_position("nav_pose")
+            self.subtask_manager.nav.move_to_pose(safe_pose)
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+
+    @staticmethod
+    def _point_in_polygon(x, y, polygon):
+        """Ray-casting point-in-polygon (same as vision's area_check)."""
+        n = len(polygon)
+        inside = False
+        p1x, p1y = polygon[0]
+        for i in range(n + 1):
+            p2x, p2y = polygon[i % n]
+            if y > min(p1y, p2y) and y <= max(p1y, p2y) and x <= max(p1x, p2x):
+                if p1y != p2y:
+                    xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y + 1e-9) + p1x
+                if p1x == p2x or x <= xinters:
+                    inside = not inside
+            p1x, p1y = p2x, p2y
+        return inside
+
+    def _persons_in_my_room(self, persons):
+        """GPSR rule: only search people inside the SAME areas.json room the
+        robot is in — a person visible through a doorway must be ignored.
+        Projects each detection to the map (nav's TF) and keeps those inside
+        the robot's current room polygon. No polygon/TF/areas -> no filtering."""
+        s, areas = self.subtask_manager.nav.retrieve_areas()
+        s2, cur = self.subtask_manager.nav.get_current_pose()
+        if not isinstance(areas, dict) or s2 != Status.EXECUTION_SUCCESS or cur is None:
+            return persons
+        rx, ry = cur.pose.position.x, cur.pose.position.y
+        room_poly = None
+        for room, data in areas.items():
+            poly = (data or {}).get("polygon")
+            if poly and self._point_in_polygon(rx, ry, poly):
+                room_poly = poly
+                break
+        if room_poly is None:
+            return persons
+        inside = []
+        for d in persons:
+            xy = self.subtask_manager.nav._resolve_map_xy(d.point3d)
+            if xy is not None and self._point_in_polygon(xy[0], xy[1], room_poly):
+                inside.append(d)
+        return inside

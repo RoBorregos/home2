@@ -403,8 +403,18 @@ class VisionTasks:
         else:
             return None, None
 
-    def get_person_name(self):
-        """Get the name of the person detected"""
+    def get_person_name(self, fresh_timeout: float = 0.0):
+        """Get the name of the person detected.
+
+        With fresh_timeout > 0, clears the cached name and waits up to that
+        long for a NEW recognition from face_recognition — required after
+        moving to a DIFFERENT person, since the cache is never cleared and
+        would return the previous person's name."""
+        if fresh_timeout > 0:
+            self.person_name = ""
+            start = time.time()
+            while time.time() - start < fresh_timeout and self.person_name == "":
+                rclpy.spin_once(self.node, timeout_sec=0.1)
         if self.person_name != "":
             return Status.EXECUTION_SUCCESS, self.person_name
         return Status.TARGET_NOT_FOUND, None
