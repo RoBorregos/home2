@@ -5,7 +5,7 @@ import warnings
 
 import moondream_proto_pb2 as moondream__proto__pb2
 
-GRPC_GENERATED_VERSION = '1.69.0'
+GRPC_GENERATED_VERSION = '1.66.2'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
@@ -49,15 +49,15 @@ class MoonDreamServiceStub(object):
                 request_serializer=moondream__proto__pb2.FindObjectPointsRequest.SerializeToString,
                 response_deserializer=moondream__proto__pb2.FindObjectPointsResponse.FromString,
                 _registered_method=True)
+        self.DetectObject = channel.unary_unary(
+                '/moondream.MoonDreamService/DetectObject',
+                request_serializer=moondream__proto__pb2.DetectObjectRequest.SerializeToString,
+                response_deserializer=moondream__proto__pb2.DetectObjectResponse.FromString,
+                _registered_method=True)
         self.Query = channel.unary_unary(
                 '/moondream.MoonDreamService/Query',
                 request_serializer=moondream__proto__pb2.QueryRequest.SerializeToString,
                 response_deserializer=moondream__proto__pb2.QueryResponse.FromString,
-                _registered_method=True)
-        self.Detect = channel.unary_unary(
-                '/moondream.MoonDreamService/Detect',
-                request_serializer=moondream__proto__pb2.DetectRequest.SerializeToString,
-                response_deserializer=moondream__proto__pb2.DetectResponse.FromString,
                 _registered_method=True)
 
 
@@ -82,13 +82,13 @@ class MoonDreamServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Query(self, request, context):
+    def DetectObject(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def Detect(self, request, context):
+    def Query(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -112,15 +112,15 @@ def add_MoonDreamServiceServicer_to_server(servicer, server):
                     request_deserializer=moondream__proto__pb2.FindObjectPointsRequest.FromString,
                     response_serializer=moondream__proto__pb2.FindObjectPointsResponse.SerializeToString,
             ),
+            'DetectObject': grpc.unary_unary_rpc_method_handler(
+                    servicer.DetectObject,
+                    request_deserializer=moondream__proto__pb2.DetectObjectRequest.FromString,
+                    response_serializer=moondream__proto__pb2.DetectObjectResponse.SerializeToString,
+            ),
             'Query': grpc.unary_unary_rpc_method_handler(
                     servicer.Query,
                     request_deserializer=moondream__proto__pb2.QueryRequest.FromString,
                     response_serializer=moondream__proto__pb2.QueryResponse.SerializeToString,
-            ),
-            'Detect': grpc.unary_unary_rpc_method_handler(
-                    servicer.Detect,
-                    request_deserializer=moondream__proto__pb2.DetectRequest.FromString,
-                    response_serializer=moondream__proto__pb2.DetectResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -215,6 +215,33 @@ class MoonDreamService(object):
             _registered_method=True)
 
     @staticmethod
+    def DetectObject(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/moondream.MoonDreamService/DetectObject',
+            moondream__proto__pb2.DetectObjectRequest.SerializeToString,
+            moondream__proto__pb2.DetectObjectResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def Query(request,
             target,
             options=(),
@@ -231,33 +258,6 @@ class MoonDreamService(object):
             '/moondream.MoonDreamService/Query',
             moondream__proto__pb2.QueryRequest.SerializeToString,
             moondream__proto__pb2.QueryResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def Detect(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/moondream.MoonDreamService/Detect',
-            moondream__proto__pb2.DetectRequest.SerializeToString,
-            moondream__proto__pb2.DetectResponse.FromString,
             options,
             channel_credentials,
             insecure,

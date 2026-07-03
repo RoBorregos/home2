@@ -516,27 +516,40 @@ class NavigationTasks:
         CLog.nav(self.node, "ERROR", f"set_obstacle_avoidance failed: {err}")
         return (Status.EXECUTION_ERROR, err)
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=1)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, {"traveled": 0.0}), delay=1)
     @service_check(
         "move_relative_srv",
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def move_relative(self, dx: float = 0.0, dy: float = 0.0, dyaw: float = 0.0):
+    def move_relative(
+        self,
+        dx: float = 0.0,
+        dy: float = 0.0,
+        dyaw: float = 0.0,
+        stop_at_front_distance: float = 0.0,
+    ):
         """Short displacement in the CURRENT base frame (dx fwd+, dy left+,
         dyaw CCW rad), executed by nav_central as a direct cmd_vel closed loop
         on odom TF. Bypasses Nav2 AND the costmaps — use for small deliberate
         sidesteps (e.g. clearing the washing machine with the held basket),
-        never for real navigation."""
+        never for real navigation.
+
+        With stop_at_front_distance > 0 and dx > 0, the drive additionally
+        stops (success) as soon as the front lidar sector reads at or below
+        that distance — the washing-machine arm insert uses this with dx as a
+        vision-derived cap. Returns (Status, {"traveled": meters}) on success
+        so the caller can back out symmetrically."""
         request = MoveRelative.Request()
         request.dx, request.dy, request.dyaw = float(dx), float(dy), float(dyaw)
+        request.stop_at_front_distance = float(stop_at_front_distance)
         CLog.nav(self.node, "MOVE", f"Relative move dx={dx:.2f} dy={dy:.2f} dyaw={dyaw:.2f}")
         future = self.move_relative_srv.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         result = future.result()
         if result is not None and result.success:
-            CLog.nav(self.node, "SUCCESS", "Relative move done")
-            return (Status.EXECUTION_SUCCESS, "")
+            CLog.nav(self.node, "SUCCESS", f"Relative move done ({result.traveled:.2f} m)")
+            return (Status.EXECUTION_SUCCESS, {"traveled": float(result.traveled)})
         err = result.error if result is not None else "Error with request"
         CLog.nav(self.node, "ERROR", f"move_relative failed: {err}")
         return (Status.EXECUTION_ERROR, err)

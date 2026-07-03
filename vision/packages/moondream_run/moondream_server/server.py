@@ -41,22 +41,17 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
             points=proto_points, found=True
         )
 
-    def Detect(self, request, context):
-        objects = self.model.detect(request.encoded_image, request.subject)
-
-        proto_objects = [
-            moondream_proto_pb2.DetectedObject(
-                x_min=obj["x_min"],
-                y_min=obj["y_min"],
-                x_max=obj["x_max"],
-                y_max=obj["y_max"],
-                name=obj["name"],
-            )
-            for obj in objects
-        ]
-
-        return moondream_proto_pb2.DetectResponse(
-            objects=proto_objects, found=bool(proto_objects)
+    def DetectObject(self, request, context):
+        print(f"DetectObject for subject: {request.subject}")
+        bbox = self.model.find_object_bbox(request.encoded_image, request.subject)
+        if bbox is None:
+            return moondream_proto_pb2.DetectObjectResponse(found=False)
+        return moondream_proto_pb2.DetectObjectResponse(
+            found=True,
+            x_min=float(bbox["x_min"]),
+            y_min=float(bbox["y_min"]),
+            x_max=float(bbox["x_max"]),
+            y_max=float(bbox["y_max"]),
         )
 
     def Query(self, request, context):

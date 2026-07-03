@@ -1113,21 +1113,49 @@ class Nav_Central(Node):
     def move_relative_callback(self, request, response):
         """Service: short relative displacement in the current base frame
         (dx fwd+, dy left+, dyaw CCW). Direct cmd_vel — see MoveRelative.srv."""
-        ok, err = self._move_relative(request.dx, request.dy, request.dyaw)
+        ok, err, traveled = self._move_relative(
+            request.dx, request.dy, request.dyaw,
+            stop_at_front_distance=request.stop_at_front_distance)
         response.success = ok
         response.error = err
+        response.traveled = float(traveled)
         return response
 
-    def _move_relative(self, dx, dy, dyaw, rate=0.05):
+    def _front_lidar_distance(self, scan, half_angle=math.radians(10.0)):
+        """Min valid range in the front sector (|beam angle| <= half_angle).
+        The merged /scan has 0 rad = straight ahead (see DOOR_CHECK calibration).
+        None when the scan has no valid beam in the sector."""
+        if scan is None:
+            return None
+        best = None
+        sensor_min = scan.range_min if scan.range_min > 0.0 else 0.0
+        for i, r in enumerate(scan.ranges):
+            ang = scan.angle_min + i * scan.angle_increment
+            if abs(ang) > half_angle:
+                continue
+            if math.isnan(r) or math.isinf(r) or r < sensor_min:
+                continue
+            if best is None or r < best:
+                best = r
+        return best
+
+    def _move_relative(self, dx, dy, dyaw, stop_at_front_distance=0.0, rate=0.05):
         """Closed-loop relative move on odom->base_link TF (odom: smooth, no
         SLAM correction jumps over a short displacement). Same direct-cmd_vel
         machinery as _align_parallel; nothing checks obstacles on the way, so
-        callers keep displacements short (e.g. the 1 m basket-clearing strafe)."""
+        callers keep displacements short (e.g. the 1 m basket-clearing strafe).
+
+        With stop_at_front_distance > 0 and a forward component (dx > 0), the
+        front lidar sector is monitored every cycle and the move ends EARLY
+        (success) as soon as it reads at or below that distance — the
+        washing-machine arm insert: dx caps the travel, the lidar reading
+        against the machine's front face decides the actual depth.
+        Returns (ok, error, traveled_meters)."""
         try:
             tf = self.tf_buffer.lookup_transform(
                 "odom", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0))
         except Exception as e:
-            return False, f"odom TF failed: {e}"
+            return False, f"odom TF failed: {e}", 0.0
         x0, y0 = tf.transform.translation.x, tf.transform.translation.y
         q = tf.transform.rotation
         yaw0 = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
@@ -1141,10 +1169,23 @@ class Nav_Central(Node):
         TOL_LIN, TOL_ANG = 0.03, 0.05
         timeout = 10.0 + 10.0 * math.hypot(dx, dy)  # generous vs the 0.2 m/s cap
 
+        # Lidar stop only makes sense while driving forward; /scan is BEST_EFFORT
+        # (see check_door), so the temp subscription must use sensor QoS.
+        lidar_stop = stop_at_front_distance > 0.0 and dx > 0.0
+        scan_sub = None
+        self._relmove_scan = None
+        if lidar_stop:
+            scan_sub = self.create_subscription(
+                LaserScan, SCAN_TOPIC,
+                lambda m: setattr(self, "_relmove_scan", m),
+                qos_profile_sensor_data, callback_group=self.lidar_group)
+
         self.nav_logger(
             "info",
-            f"Move_Relative -> dx={dx:.2f} dy={dy:.2f} dyaw={math.degrees(dyaw):.0f} deg")
+            f"Move_Relative -> dx={dx:.2f} dy={dy:.2f} dyaw={math.degrees(dyaw):.0f} deg"
+            + (f" (lidar stop @ {stop_at_front_distance:.2f} m)" if lidar_stop else ""))
         elapsed = 0.0
+        traveled = 0.0
         try:
             while elapsed < timeout:
                 try:
@@ -1152,19 +1193,28 @@ class Nav_Central(Node):
                         "odom", "base_link", rclpy.time.Time(),
                         timeout=Duration(seconds=0.5))
                 except Exception as e:
-                    return False, f"odom TF failed mid-move: {e}"
+                    return False, f"odom TF failed mid-move: {e}", traveled
                 rx, ry = tf.transform.translation.x, tf.transform.translation.y
+                traveled = math.hypot(rx - x0, ry - y0)
                 q = tf.transform.rotation
                 yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
                                  1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                if lidar_stop:
+                    front = self._front_lidar_distance(self._relmove_scan)
+                    if front is not None and front <= stop_at_front_distance:
+                        self.nav_logger(
+                            "info",
+                            f"Move_Relative -> lidar stop (front={front:.2f} m, "
+                            f"traveled={traveled:.2f} m)")
+                        return True, "", traveled
                 ex_o, ey_o = gx - rx, gy - ry
                 # Remaining error expressed in the CURRENT base frame.
                 ex = math.cos(yaw) * ex_o + math.sin(yaw) * ey_o
                 ey = -math.sin(yaw) * ex_o + math.cos(yaw) * ey_o
                 eyaw = (gyaw - yaw + math.pi) % (2.0 * math.pi) - math.pi
                 if abs(ex) <= TOL_LIN and abs(ey) <= TOL_LIN and abs(eyaw) <= TOL_ANG:
-                    self.nav_logger("info", "Move_Relative -> done")
-                    return True, ""
+                    self.nav_logger("info", f"Move_Relative -> done (traveled={traveled:.2f} m)")
+                    return True, "", traveled
                 self._publish_cmd(
                     vx=max(-MAX_V, min(MAX_V, K_LIN * ex)),
                     vy=max(-MAX_V, min(MAX_V, K_LIN * ey)),
@@ -1172,9 +1222,12 @@ class Nav_Central(Node):
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=rate))
                 elapsed += rate
             self.nav_logger("warn", "Move_Relative -> timed out")
-            return False, "move_relative timed out"
+            return False, "move_relative timed out", traveled
         finally:
             self._publish_cmd()  # always leave the base stopped
+            if scan_sub is not None:
+                self.destroy_subscription(scan_sub)
+                self._relmove_scan = None
 
     def _set_obstacle_layers(self, enabled):
         """Set `enabled` on the live obstacle layers (lidar obstacle_layer +

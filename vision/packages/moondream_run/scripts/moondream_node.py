@@ -17,9 +17,14 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import BeverageLocation
-from frida_interfaces.srv import PersonPosture, Query, CropQuery, ObjectPoints
-from frida_interfaces.srv import MoondreamDetection
-from frida_interfaces.msg import Point2D, ObjectDetection
+from frida_interfaces.srv import (
+    PersonPosture,
+    Query,
+    CropQuery,
+    ObjectPoints,
+    MoondreamObjectBBox,
+)
+from frida_interfaces.msg import Point2D
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -28,7 +33,7 @@ from frida_constants.vision_constants import (
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
     OBJECT_POINTS_TOPIC,
-    MOONDREAM_DETECTION_TOPIC,
+    MOONDREAM_BBOX_TOPIC,
 )
 from enum import Enum
 
@@ -82,8 +87,8 @@ class MoondreamNode(Node):
         self.object_points_service = self.create_service(
             ObjectPoints, OBJECT_POINTS_TOPIC, self.object_points_callback
         )
-        self.detect_service = self.create_service(
-            MoondreamDetection, MOONDREAM_DETECTION_TOPIC, self.detect_callback
+        self.bbox_service = self.create_service(
+            MoondreamObjectBBox, MOONDREAM_BBOX_TOPIC, self.bbox_callback
         )
 
         self.yolo_model = load_yolo_trt("yolov8n.pt")
@@ -242,6 +247,43 @@ class MoondreamNode(Node):
 
         return response
 
+    def bbox_callback(self, request, response):
+        """Largest normalized bbox for `subject` via moondream `DetectObject`."""
+        self.get_logger().info(f"MoondreamObjectBBox: {request.subject}")
+        response.success = False
+        response.xmin = response.ymin = response.xmax = response.ymax = 0.0
+        if self.image is None:
+            self.get_logger().warn("No image received yet.")
+            return response
+
+        _, image_bytes = cv2.imencode(".jpg", self.image)
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes.tobytes())
+            )
+            grpc_resp = self.stub.DetectObject(
+                moondream_proto_pb2.DetectObjectRequest(
+                    encoded_image=encoded.encoded_image,
+                    subject=request.subject,
+                )
+            )
+        except Exception as e:
+            self.get_logger().error(f"DetectObject RPC error: {e}")
+            return response
+
+        if not grpc_resp.found:
+            self.get_logger().warn(f"No bbox for '{request.subject}'")
+            return response
+
+        response.success = True
+        response.xmin, response.ymin = float(grpc_resp.x_min), float(grpc_resp.y_min)
+        response.xmax, response.ymax = float(grpc_resp.x_max), float(grpc_resp.y_max)
+        self.success(
+            f"BBox '{request.subject}': "
+            f"({response.xmin:.3f}, {response.ymin:.3f})->({response.xmax:.3f}, {response.ymax:.3f})"
+        )
+        return response
+
     def object_points_callback(self, request, response):
         """Callback to get the points of a subject in the current image."""
         self.get_logger().info("Executing service Object Points")
@@ -305,57 +347,6 @@ class MoondreamNode(Node):
         #     response.success = True
         #     self.get_logger().info(f"Beverage found at: {response.location}")
         # return response
-
-    def detect_callback(self, request, response):
-        """Callback to detect a subject's bounding boxes (normalized) in the current image."""
-        self.get_logger().info(f"Executing service Detect for '{request.subject}'")
-
-        if self.image is None:
-            response.success = False
-            response.message = "No image received yet."
-            self.get_logger().warn("No image received yet.")
-            return response
-
-        _, image_bytes = cv2.imencode(".jpg", self.image)
-        image_bytes = image_bytes.tobytes()
-
-        try:
-            encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
-            )
-            grpc_response = self.stub.Detect(
-                moondream_proto_pb2.DetectRequest(
-                    encoded_image=encoded.encoded_image,
-                    subject=request.subject,
-                )
-            )
-
-            if not grpc_response.found:
-                response.success = False
-                response.message = f"No '{request.subject}' detected."
-                self.get_logger().warn(response.message)
-                return response
-
-            for obj in grpc_response.objects:
-                detection = ObjectDetection()
-                detection.label_text = obj.name
-                detection.score = 1.0
-                detection.xmin = obj.x_min
-                detection.ymin = obj.y_min
-                detection.xmax = obj.x_max
-                detection.ymax = obj.y_max
-                response.detections.append(detection)
-
-            response.success = True
-            response.message = f"Found {len(response.detections)} detections."
-            self.success(f"Detect found {len(response.detections)} '{request.subject}'")
-
-        except Exception as e:
-            self.get_logger().error(f"Error detecting object: {e}")
-            response.success = False
-            response.message = str(e)
-
-        return response
 
     def person_posture_callback(self, request, response):
         """Callback to determine the position of the person in the image."""

@@ -10,6 +10,7 @@ from rclpy.node import Node
 from rclpy.duration import Duration
 from geometry_msgs.msg import PointStamped
 from tf2_ros import Buffer, TransformListener, TransformException
+from tf2_geometry_msgs import do_transform_point
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -31,6 +32,31 @@ BASKET_SIDE_DISTANCE = 0.45
 BASKET_CLEARANCE_SIDESTEP = 1.0
 # Frame assumed for a detection that arrives without one (older vision nodes).
 DEFAULT_CAMERA_FRAME = "zed_left_camera_optical_frame"
+
+# --- Washing-machine insert-and-pick (tune on the robot) ---
+# What moondream is asked to point at (the drum opening).
+WM_SUBJECT = "round container entrance of color orange"
+# Frame whose forward reach is measured against the opening (arm tip).
+WM_GRIPPER_FRAME = "gripper_grasp_frame"
+# Perpendicular-align standoff: dock_table front offset used to square up to
+# the machine WITHOUT approaching (alignment happens here, approach is the
+# straight lidar-monitored insert that follows).
+WM_ALIGN_OFFSET = 0.55
+# Extra push (m) past the opening so gripper + joint5 clear the rim — caps the
+# vision-derived forward travel.
+WM_INSERT_DEPTH = 0.10
+# PRIMARY depth stop: front lidar reading (m, base lidar -> machine front face)
+# at which the insert halts. CALIBRATE ON THE ROBOT: park the base with the arm
+# inserted at the perfect depth and read the front sector of /scan. <= 0
+# disables the lidar stop and trusts vision + odom alone.
+WM_TARGET_LIDAR_DISTANCE = 0.30
+# Skip the centering strafe when the opening is already within this lateral
+# error (m) of the base centerline.
+WM_CENTER_TOLERANCE = 0.03
+# Wrist pitch (deg) to look down into the drum before closing, undone after.
+WM_LOOKDOWN_DEG = 90.0
+# Seconds granted to the referee to open the machine door after being asked.
+WM_DOOR_OPEN_WAIT = 7.0
 
 
 class DoingLaundryTM(Node):
@@ -163,6 +189,129 @@ class DoingLaundryTM(Node):
         dr = math.hypot(map_pt.point.x - right[0], map_pt.point.y - right[1])
         Logger.info(self, f"Basket dist left={dl:.2f} right={dr:.2f}")
         return "basket_left" if dl <= dr else "basket_right"
+
+    def _wm_opening_in_base_link(self):
+        """Snapshot the drum opening in base_link NOW — the ZED rides the arm,
+        so base_link is the only frame still valid after the arm moves."""
+        point = self.subtask_manager.vision.get_moondream_point_3d(WM_SUBJECT)
+        if point is None or point.header.frame_id == "":
+            Logger.error(self, "WM: no drum-opening centroid from vision.")
+            return None
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "base_link",
+                point.header.frame_id,
+                rclpy.time.Time(),
+                timeout=Duration(seconds=2.0),
+            )
+            return do_transform_point(point, tf)
+        except Exception as e:
+            Logger.error(self, f"WM: TF {point.header.frame_id} -> base_link failed: {e}")
+            return None
+
+    def pick_clothes_in_washing_machine(self):
+        """Insert-and-pick from the washing machine drum.
+
+        1. Square up: dock_table aligns the base PERPENDICULAR to the machine
+           front at WM_ALIGN_OFFSET — alignment only, no approach yet.
+        2. Center: detect the drum opening, strafe until it sits on the base
+           centerline, so the arm can enter by driving STRAIGHT.
+        3. Aim: align_arm_toward_centroid points the arm shaft + gripper axis
+           into the opening (washing_machine_arrow_pose pre-pose).
+        4. Insert: drive straight with the vision-derived travel as CAP and the
+           front lidar reading against the machine face as the REAL depth stop
+           (WM_TARGET_LIDAR_DISTANCE) — this is what keeps the gripper off the
+           back of the drum.
+        5. Grab: wrist down, close, wrist up; back out exactly what was driven.
+        """
+        man = self.subtask_manager.manipulation
+        nav = self.subtask_manager.nav
+
+        Logger.info(self, "WM: squaring up to the machine (align, no approach).")
+        dock_status, dock_error = nav.dock_table(offset=WM_ALIGN_OFFSET)
+        if dock_status != Status.EXECUTION_SUCCESS:
+            Logger.warn(self, f"WM: align dock failed ({dock_error}), continuing unaligned.")
+
+        # The drum opening is only detectable with the door open — ask the
+        # referee and give them time before looking for the centroid.
+        self.subtask_manager.hri.say("Referee, please open the washing machine door.", wait=True)
+        Logger.info(self, f"WM: waiting {WM_DOOR_OPEN_WAIT:.0f} s for the door to be opened.")
+        for _ in range(int(WM_DOOR_OPEN_WAIT * 10)):
+            rclpy.spin_once(self, timeout_sec=0.1)
+        self.subtask_manager.hri.say("Thank you.", wait=False)
+
+        man.move_to_position("front_low_stare")
+        for _ in range(10):
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+        opening = self._wm_opening_in_base_link()
+        if opening is None:
+            return Status.EXECUTION_ERROR
+
+        # Center the drum on the base x-axis (arm shoulder sits on the
+        # centerline) so the insert is a pure straight drive.
+        if abs(opening.point.y) > WM_CENTER_TOLERANCE:
+            Logger.info(self, f"WM: centering strafe {opening.point.y:+.2f} m.")
+            status, _ = nav.move_relative(dy=opening.point.y)
+            if status != Status.EXECUTION_SUCCESS:
+                Logger.warn(self, "WM: centering strafe failed, aiming from here.")
+            else:
+                # Re-detect from the centered pose; fall back to shifting the
+                # old snapshot onto the centerline if the second look misses.
+                recheck = self._wm_opening_in_base_link()
+                if recheck is not None:
+                    opening = recheck
+                else:
+                    opening.point.y = 0.0
+
+        Logger.info(
+            self,
+            f"WM: opening in base_link ({opening.point.x:.2f}, "
+            f"{opening.point.y:.2f}, {opening.point.z:.2f}).",
+        )
+        if man.align_arm_toward_centroid(opening) != Status.EXECUTION_SUCCESS:
+            Logger.error(self, "WM: arm alignment failed.")
+            return Status.EXECUTION_ERROR
+
+        # Forward cap = remaining gap to the opening + margin, from the aligned pose.
+        rclpy.spin_once(self, timeout_sec=0.5)
+        try:
+            g = self.tf_buffer.lookup_transform(
+                "base_link",
+                WM_GRIPPER_FRAME,
+                rclpy.time.Time(),
+                timeout=Duration(seconds=2.0),
+            ).transform.translation
+        except Exception as e:
+            Logger.error(self, f"WM: gripper TF failed: {e}")
+            return Status.EXECUTION_ERROR
+        forward = max(0.0, (opening.point.x - g.x) + WM_INSERT_DEPTH)
+        Logger.info(
+            self,
+            f"WM: inserting (cap {forward:.2f} m, lidar stop {WM_TARGET_LIDAR_DISTANCE:.2f} m).",
+        )
+
+        man.open_gripper()
+        status, payload = nav.move_relative(
+            dx=forward, stop_at_front_distance=WM_TARGET_LIDAR_DISTANCE
+        )
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.error(self, "WM: forward insert failed.")
+            return Status.EXECUTION_ERROR
+        traveled = payload.get("traveled", forward) if isinstance(payload, dict) else forward
+
+        man.rotate_wrist_pitch(WM_LOOKDOWN_DEG)
+        man.close_gripper()
+        man.rotate_wrist_pitch(-WM_LOOKDOWN_DEG)
+
+        # Back out EXACTLY what was driven in, whatever stopped the insert.
+        status, _ = nav.move_relative(dx=-traveled)
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.error(self, "WM: retreat failed.")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self, "WM: insert-and-pick complete.")
+        return Status.EXECUTION_SUCCESS
 
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
@@ -336,18 +485,16 @@ class DoingLaundryTM(Node):
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from basket.")
-                self.clothes_pick_attempts = 0
                 self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
-                self.clothes_pick_attempts += 1
-                if self.clothes_pick_attempts >= ATTEMPT_LIMIT:
-                    Logger.error(self, "Clothes pick from basket failed. Ending.")
-                    self.set_state(DoingLaundryTM.TaskStates.END)
-                else:
-                    Logger.warn(
-                        self,
-                        f"Basket clothes pick failed (attempt {self.clothes_pick_attempts}), retrying.",
-                    )
+                # ONE try only: a failed basket pick abandons the basket phase
+                # entirely and moves on to the washing machine (normal nav).
+                Logger.warn(
+                    self,
+                    "Basket clothes pick failed — skipping basket, heading to the washing machine.",
+                )
+                self.basket_placed = BASKET_PLACE_ROUNDS
+                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE)
 
         elif self.current_state == DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE:
             Logger.info(self, "Placing clothes on the laundry table.")
@@ -389,7 +536,7 @@ class DoingLaundryTM(Node):
                 f"Picking clothes from washing machine ({self.wm_placed + 1}/{WM_PLACE_ROUNDS}).",
             )
             self.subtask_manager.hri.say("Picking clothes from the washing machine.", wait=False)
-            result = self.subtask_manager.manipulation.pick_object("clothes")
+            result = self.pick_clothes_in_washing_machine()
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from washing machine.")
