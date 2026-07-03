@@ -78,6 +78,11 @@ class RestaurantTaskManager(Node):
         # recording zone is usually behind the start pose). Off by default —
         # enable at the venue once the layout is known.
         self.declare_parameter("restrict_search_sector", False)
+        # Final heading when returning to the bar, in degrees CCW relative to
+        # the START orientation: 180 = turn around (default), 90 = face left,
+        # -90 = face right, 0 = face as started. Set per venue depending on
+        # where the barman stands relative to the start pose.
+        self.declare_parameter("bar_return_yaw_deg", 180.0)
 
         self.running_task = True
 
@@ -326,6 +331,13 @@ class RestaurantTaskManager(Node):
 
         return Status.EXECUTION_ERROR
 
+    def _return_to_bar(self):
+        """Go back to the start pose, ending at the venue-configured heading
+        (bar_return_yaw_deg param) so the robot faces the barman's side."""
+        return self.subtask_manager.nav.return_to_origin(
+            yaw_offset_deg=float(self.get_parameter("bar_return_yaw_deg").value)
+        )
+
     def _dock_to_table(self):
         """Perpendicular-dock to the table/bar in front: tuck the arm first
         (nav_pose keeps it inside the footprint at the 0.32 m offset)."""
@@ -422,7 +434,7 @@ class RestaurantTaskManager(Node):
                 )
                 self.base_rotations = 0
                 self.search_step = 0
-                self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
+                self._return_to_bar()
                 return
 
         if self.current_state == RestaurantTaskManager.TaskStates.APPROACH_CUSTOMER:
@@ -632,7 +644,7 @@ class RestaurantTaskManager(Node):
         if self.current_state == RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR:
             Logger.state(self, "Navigating to bar...")
             self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
-            self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
+            self._return_to_bar()
             # Perpendicular final approach to the bar counter (lidar/cloud based);
             # nav_central auto-undocks before the next nav goal.
             status = self._dock_to_table()
@@ -693,7 +705,7 @@ class RestaurantTaskManager(Node):
                         self.subtask_manager.manipulation.move_to_position(
                             "carry_pose", velocity=0.5
                         )
-                        self.subtask_manager.nav.return_to_origin(inverse_orientation=True)
+                        self._return_to_bar()
                         self._dock_to_table()
                 else:
                     Logger.error(self, f"Failed to pick {item}")

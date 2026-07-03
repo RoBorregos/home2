@@ -76,6 +76,14 @@ Layered in `customer_node.py` + task manager:
   detections behind the bar's initial facing (enable on site if the public zone
   is behind the start pose).
 
+## Venue tuning params (task manager node, set with `ros2 param set`)
+
+- `bar_return_yaw_deg` (default 180): heading when arriving back at the bar,
+  degrees CCW relative to the START orientation — 180 turn around, 90 face
+  left, -90 face right, 0 face as started. Pick per venue by where the barman
+  stands.
+- `restrict_search_sector` (default false): see above.
+
 ## Run images
 
 Confirmed-caller frames/crops and table-scan images are saved to
