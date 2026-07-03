@@ -117,9 +117,11 @@ case $TASK in
         PROFILES=("vision" "moondream")
         ;;
     "--dlc")
-        PACKAGES="vision_general object_detector_2d"
+        # moondream needed since the WM insert-and-pick locates the drum
+        # opening via MoondreamPoint3D (moondream_node + trash_detection_node).
+        PACKAGES="vision_general object_detector_2d moondream_run"
         RUN="ros2 launch vision_general dlc_launch.py"
-        PROFILES=("vision")
+        PROFILES=("vision" "moondream")
         ;;
     "--restaurant")
         PACKAGES="vision_general object_detector_2d object_detection_handler"

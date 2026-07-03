@@ -34,6 +34,27 @@ GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 ### Point-based navigation services
 GO_TO_POSE_SERVICE = "/navigation/go_to_pose"
 GET_ROBOT_POSE_SERVICE = "/navigation/get_robot_pose"
+APPROACH_POINT_SERVICE = "/navigation/approach_point"
+GLOBAL_COSTMAP_TOPIC = "/global_costmap/costmap"
+
+### Short relative base displacement (MoveRelative: dx/dy/dyaw in the current
+### base frame). Direct cmd_vel closed loop on odom TF — bypasses Nav2 and the
+### costmaps; for small deliberate sidesteps, not navigation.
+MOVE_RELATIVE_SERVICE = "/navigation/move_relative"
+
+### Washing-machine precision aligner (wall_aligner.py) — live-lidar servo,
+### independent of table_docker: align perpendicular to the NEAREST straight
+### segment the lidar sees in front (the machine's front panel, endpoints
+### visible), then close to an EXACT perpendicular distance while staying
+### square on the live fit. Direct cmd_vel, slow, cm-level.
+WALL_ALIGN_SERVICE = "/navigation/wall_align"  # AlignToWall
+WALL_CLOSE_SERVICE = "/navigation/wall_close"  # CloseToWall
+
+### Toggle live obstacle marking (SetBool). data=False disables the lidar
+### obstacle_layer + ZED rgbd_obstacle_layer on BOTH costmaps (static map still
+### applies) so a bag/basket carried by the arm doesn't wall the robot in;
+### data=True restores them. Costmaps are cleared on every toggle.
+SET_OBSTACLE_AVOIDANCE_SERVICE = "/navigation/set_obstacle_avoidance"
 
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"

@@ -44,11 +44,10 @@ from PIL import Image as PILImage
 import tqdm
 import torch
 from vision_general.utils.calculations import (
-    get2DCentroid,
     deproject_pixel_to_point,
 )
 
-import copy
+import queue
 import threading
 import rclpy
 from rclpy.node import Node
@@ -89,12 +88,15 @@ from frida_constants.vision_enums import DetectBy
 from std_msgs.msg import Bool, Int16
 
 CONF_THRESHOLD = 0.6
-DEPTH_THRESHOLD_NS = 50_000_000  # 50 ms in nanoseconds
+# RGB/depth pairing gate. The ZED publishes at ~15 Hz (~66 ms between frames);
+# a 50 ms gate rejected legitimate same-grab pairs and silently dropped 3D
+# publishes, so allow up to one frame period of skew.
+DEPTH_THRESHOLD_NS = 100_000_000  # 100 ms in nanoseconds
 REID_EXTRACT_FREQ = 0.3
 MAX_EMBEDDINGS = 128
 # Re-acquisition: cosine-similarity floor to accept a current track as the SAME
 # operator after the ByteTrack id is lost, and how often to attempt it (ReID
-# extraction is heavy, so don't run it every 10 Hz tick).
+# extraction is heavy, so don't run it every tick).
 REID_MATCH_THRESHOLD = 0.6
 REID_REACQUIRE_FREQ = 0.3
 DEEPSORT_MAX_COSINE_DISTANCE = 0.3
@@ -102,6 +104,11 @@ DEEPSORT_NN_BUDGET = 100
 DEEPSORT_MAX_AGE = 100
 DEEPSORT_N_INIT = 3
 DEPTH_JUMP_THRESHOLD = 0.5  # Max allowed depth change (meters) between frames
+# A depth jump can be REAL (the publisher skipped a few ticks while the person
+# kept walking). Accept the new depth after this many consecutive rejects —
+# otherwise one legit >threshold move wedges the 3D publisher silent forever
+# and the base halts on the smoother's lost-person watchdog.
+DEPTH_JUMP_MAX_REJECTS = 3
 
 
 class SingleTracker(Node):
@@ -202,11 +209,12 @@ class SingleTracker(Node):
         self.flip_image = False
         self.last_reid_extraction = time.time()
         self.timer_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-        # 10 Hz tracking timer. Stage 0 uses ByteTrack (no per-frame ReID): each
-        # cycle is detector-bound and fast, so the realized rate is detector-limited
-        # (not timer-limited). 20 Hz was tried but the old per-frame SWIN ReID was
-        # the real bottleneck.
-        self.create_timer(0.1, self.run, callback_group=self.timer_callback_group)
+        # 20 Hz tracking timer. The non-blocking _infer_lock skip makes the loop
+        # self-pacing: the realized rate is detector-limited, so a fast timer just
+        # removes the artificial cap. ReID (SWIN) no longer runs on this path —
+        # gallery embeds and re-acquisition matching happen on the background
+        # worker — so ticks stay at detector latency (~15-30 ms on the Orin).
+        self.create_timer(0.05, self.run, callback_group=self.timer_callback_group)
         self.create_timer(
             0.1, self.publish_image, callback_group=self.timer_callback_group
         )
@@ -232,11 +240,21 @@ class SingleTracker(Node):
         }
         self.depth_image_time = None
         self.last_depth = None
+        self._depth_reject_count = 0
         # Re-acquisition state: ReID model loads in a BACKGROUND thread (best-effort),
         # plus throttles for gallery extraction / re-acquire attempts.
         self.reid_failed = False
         self._reid_loading = False
         self.last_reacq_attempt = 0.0
+        # All SWIN forwards (gallery embeds + re-acquisition matching) run on this
+        # single worker so they never block the tracking tick. Jobs carry a target
+        # generation stamp; stale jobs from a previous target are discarded.
+        self._reid_jobs = queue.Queue(maxsize=4)
+        self._target_gen = 0
+        self._pending_reacquire = None
+        threading.Thread(target=self._reid_worker_loop, daemon=True).start()
+        # Whether debug annotation is drawn this tick (someone is watching).
+        self._draw_debug = False
         pbar = tqdm.tqdm(total=2, desc="Loading models")
 
         # Load YOLO with TensorRT acceleration for Orin AGX
@@ -460,6 +478,10 @@ class SingleTracker(Node):
         self.person_data["left"] = None
         self.person_data["right"] = None
         self.last_depth = None
+        self._depth_reject_count = 0
+        # Invalidate any queued/pending ReID work for the previous target.
+        self._target_gen += 1
+        self._pending_reacquire = None
 
     # ----------------------------------------------------------- re-acquisition
     def _ensure_reid_model(self):
@@ -510,20 +532,66 @@ class SingleTracker(Node):
             self.get_logger().warn(f"ReID embed failed: {e}")
             return None
 
+    def _reid_worker_loop(self):
+        """Background consumer for ALL ReID inference. A SWIN forward is 30-100 ms
+        on the Orin; running it here (instead of on the tracking timer, where it
+        used to run inline every REID_EXTRACT_FREQ) keeps the tick at detector
+        latency so RESULTS_TOPIC/centroid never stall. Jobs stamped with an old
+        target generation are dropped — they belong to a previous target."""
+        while True:
+            kind, gen, payload = self._reid_jobs.get()
+            try:
+                if gen != self._target_gen:
+                    continue
+                if kind == "gallery":
+                    feat = self._embed_crop(payload)
+                    if feat is None or gen != self._target_gen:
+                        continue
+                    gallery = self.person_data["embeddings"]
+                    gallery.append(feat)
+                    if len(gallery) > MAX_EMBEDDINGS:
+                        gallery.pop(0)
+                    self.person_data["num_embeddings"] = len(gallery)
+                elif kind == "reacquire":
+                    match = self._match_gallery(payload)
+                    if gen == self._target_gen:
+                        self._pending_reacquire = match
+            except Exception as e:
+                self.get_logger().warn(f"ReID worker error: {e}")
+
+    def _match_gallery(self, crops):
+        """Worker-side: best gallery match among [(track_id, crop), ...]; returns
+        the track id if its similarity clears REID_MATCH_THRESHOLD, else None."""
+        best_id, best_sim = None, 0.0
+        for tid, crop in crops:
+            feat = self._embed_crop(crop)
+            if feat is None:
+                continue
+            sim = self._max_similarity(feat)
+            if sim > best_sim:
+                best_sim, best_id = sim, tid
+        if best_id is not None and best_sim >= REID_MATCH_THRESHOLD:
+            self.get_logger().info(
+                f"ReID matched lost target to track {best_id} (sim={best_sim:.2f})"
+            )
+            return best_id
+        return None
+
     def _store_target_embedding(self, crop_bgr):
-        """While the target is visible, add its appearance to the gallery (throttled
-        to REID_EXTRACT_FREQ, capped at MAX_EMBEDDINGS, oldest dropped first)."""
+        """While the target is visible, queue its appearance for the gallery
+        (throttled to REID_EXTRACT_FREQ, capped at MAX_EMBEDDINGS in the worker).
+        The crop is copied because self.frame is reused next tick."""
         if time.time() - self.last_reid_extraction < REID_EXTRACT_FREQ:
             return
-        feat = self._embed_crop(crop_bgr)
-        if feat is None:
+        if crop_bgr is None or crop_bgr.size == 0:
+            return
+        if not self._ensure_reid_model():
             return
         self.last_reid_extraction = time.time()
-        gallery = self.person_data["embeddings"]
-        gallery.append(feat)
-        if len(gallery) > MAX_EMBEDDINGS:
-            gallery.pop(0)
-        self.person_data["num_embeddings"] = len(gallery)
+        try:
+            self._reid_jobs.put_nowait(("gallery", self._target_gen, crop_bgr.copy()))
+        except queue.Full:
+            pass
 
     def _max_similarity(self, feat):
         """Best cosine similarity of feat against the gallery (embeddings are already
@@ -535,29 +603,32 @@ class SingleTracker(Node):
         return float(torch.matmul(g, feat).max().item())
 
     def _try_reacquire(self, tracked_people, frame):
-        """The locked ByteTrack id is gone but other people are visible: match each
-        current track against the target gallery and return the track-id of the best
-        match above REID_MATCH_THRESHOLD (or None). Throttled — ReID is expensive."""
+        """The locked ByteTrack id is gone but other people are visible. Matching
+        runs on the ReID worker: this consumes a finished match (if its track id is
+        still live) and enqueues a new matching job, throttled. Never blocks."""
+        # Consume a match the worker finished since the last tick.
+        pending = self._pending_reacquire
+        if pending is not None:
+            self._pending_reacquire = None
+            if any(p["track_id"] == pending for p in tracked_people):
+                self.get_logger().info(f"Re-acquired target as track {pending}")
+                return pending
         if not self.person_data["embeddings"]:
             return None
         if time.time() - self.last_reacq_attempt < REID_REACQUIRE_FREQ:
             return None
         self.last_reacq_attempt = time.time()
-        best_id, best_sim = None, 0.0
-        for person in tracked_people:
-            feat = self._embed_crop(
-                frame[person["y1"] : person["y2"], person["x1"] : person["x2"]]
+        crops = [
+            (
+                p["track_id"],
+                frame[p["y1"] : p["y2"], p["x1"] : p["x2"]].copy(),
             )
-            if feat is None:
-                continue
-            sim = self._max_similarity(feat)
-            if sim > best_sim:
-                best_sim, best_id = sim, person["track_id"]
-        if best_id is not None and best_sim >= REID_MATCH_THRESHOLD:
-            self.get_logger().info(
-                f"Re-acquired target as track {best_id} (sim={best_sim:.2f})"
-            )
-            return best_id
+            for p in tracked_people
+        ]
+        try:
+            self._reid_jobs.put_nowait(("reacquire", self._target_gen, crops))
+        except queue.Full:
+            pass
         return None
 
     def set_target(self, track_by="largest_person", value=""):
@@ -579,8 +650,13 @@ class SingleTracker(Node):
         self.person_data["embeddings"] = []
         self.person_data["num_embeddings"] = 0
         self.last_reacq_attempt = 0.0
+        self.last_depth = None
+        self._depth_reject_count = 0
+        # New target: invalidate queued/pending ReID work from the previous one.
+        self._target_gen += 1
+        self._pending_reacquire = None
 
-        self.frame = copy.deepcopy(self.image)
+        self.frame = self.image.copy()
 
         if self.flip_image:
             self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
@@ -692,8 +768,7 @@ class SingleTracker(Node):
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
-                        # cv2.im(cropped_image)
-                        self.customer_image = copy.deepcopy(cropped_image)
+                        self.customer_image = cropped_image.copy()
                     else:
                         self.get_logger().warn(
                             f"Person detected with {track_by}: {response_clean} but not {value}"
@@ -780,21 +855,25 @@ class SingleTracker(Node):
             self.is_tracking_result = False
             return
 
-        self.frame = copy.deepcopy(self.image)
-        if self.frame is None:
+        if self.image is None:
             self.get_logger().error("No image available")
             return
+        self.frame = self.image.copy()
 
         if self.flip_image:
             self.frame = cv2.rotate(self.frame, cv2.ROTATE_180)
 
-        self.output_image = self.frame.copy()
+        # Annotation costs a full-frame copy + cv2 draws every tick; skip all of
+        # it unless something is actually watching the debug topics.
+        self._draw_debug = self.image_publisher.has_subscribers()
+        self.output_image = self.frame.copy() if self._draw_debug else []
 
         # Per-frame detection + ByteTrack (motion-only, no per-frame ReID) — Stage 0
         start_time = time.time()
         tracked_people = self._track(self.frame)
         self.get_logger().info(
-            f"Det+Tracking took {time.time() - start_time:.2f}s | People: {len(tracked_people)}"
+            f"Det+Tracking took {time.time() - start_time:.2f}s | People: {len(tracked_people)}",
+            throttle_duration_sec=2.0,
         )
 
         if self.person_data["id"] is None:
@@ -807,22 +886,23 @@ class SingleTracker(Node):
             x1, y1, x2, y2 = person["x1"], person["y1"], person["x2"], person["y2"]
             track_id = person["track_id"]
 
-            if track_id == self.person_data["id"]:
+            is_target = track_id == self.person_data["id"]
+            if is_target:
                 person_in_frame = True
                 self.person_data["coordinates"] = (x1, y1, x2, y2)
-                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            else:
-                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
-            cv2.putText(
-                self.output_image,
-                f"person {track_id}",
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.9,
-                (0, 255, 0),
-                2,
-            )
+            if self._draw_debug:
+                color = (0, 255, 0) if is_target else (255, 0, 0)
+                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(
+                    self.output_image,
+                    f"person {track_id}",
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9,
+                    (0, 255, 0),
+                    2,
+                )
 
         # Appearance ReID (Stage 1) closes the gap where ByteTrack drops the track-id
         # after a real loss (occlusion / out-of-frame) and assigns a NEW id when the
@@ -838,6 +918,7 @@ class SingleTracker(Node):
             if new_id is not None:
                 self.person_data["id"] = new_id
                 self.last_depth = None  # depth continuity broke across the loss
+                self._depth_reject_count = 0
                 for person in tracked_people:
                     if person["track_id"] == new_id:
                         x1, y1, x2, y2 = (
@@ -847,98 +928,104 @@ class SingleTracker(Node):
                             person["y2"],
                         )
                         self.person_data["coordinates"] = (x1, y1, x2, y2)
-                        cv2.rectangle(
-                            self.output_image, (x1, y1), (x2, y2), (0, 255, 255), 3
-                        )
+                        if self._draw_debug:
+                            cv2.rectangle(
+                                self.output_image, (x1, y1), (x2, y2), (0, 255, 255), 3
+                            )
                         person_in_frame = True
                         break
 
-        if person_in_frame:
-            self.is_tracking_result = True
-            if self.depth_image_time is None or self.image_time is None:
-                self.get_logger().warn(
-                    f"Depth image not available (depth_time={self.depth_image_time is not None}, "
-                    f"image_time={self.image_time is not None})"
-                )
-                self.frame = None
-                return
-            depth_stamp_ns = (
-                self.depth_image_time.sec * 1_000_000_000
-                + self.depth_image_time.nanosec
-            )
-            image_stamp_ns = (
-                self.image_time.sec * 1_000_000_000 + self.image_time.nanosec
-            )
-            stamp_diff_ns = abs(depth_stamp_ns - image_stamp_ns)
-            self.get_logger().debug(
-                f"Stamp diff: {stamp_diff_ns / 1e6:.1f} ms "
-                f"(depth={self.depth_image_time.sec}.{self.depth_image_time.nanosec:09d}, "
-                f"rgb={self.image_time.sec}.{self.image_time.nanosec:09d})"
-            )
-            if len(self.depth_image) > 0 and stamp_diff_ns < DEPTH_THRESHOLD_NS:
-                coords = PointStamped()
-                coords.header.frame_id = self.frame_id
-                coords.header.stamp = self.depth_image_time
-                frame_h, frame_w = self.frame.shape[:2]
-                point2D = get2DCentroid(
-                    self.person_data["coordinates"], self.depth_image
-                )
-                # Arm-follow centroid: the person's horizontal offset in the UPRIGHT
-                # detection frame, normalized to [-1, 1].
-                point2D_x_coord = float(point2D[1])
-                point2D_x_coord_normalized = (point2D_x_coord / (frame_w / 2)) - 1
-                point2Dpoint = Point()
-                point2Dpoint.x = float(point2D_x_coord_normalized)
-                point2Dpoint.y = 0.0
-                point2Dpoint.z = 0.0
-                self.centroid_publisher.publish(point2Dpoint)
-
-                # Depth + 3D use the RAW camera frame. The color frame may be flipped
-                # 180 deg for upright detection, but depth is never rotated, so map the
-                # detection-frame bbox/centroid back to raw pixels first — otherwise
-                # the depth ROI and the deprojected point come out mirrored.
-                x1, y1, x2, y2 = self.person_data["coordinates"]
-                rx1, ry1 = self._to_raw_coords(x1, y1, frame_w, frame_h)
-                rx2, ry2 = self._to_raw_coords(x2, y2, frame_w, frame_h)
-                rx1, rx2 = sorted((rx1, rx2))
-                ry1, ry2 = sorted((ry1, ry2))
-
-                # Robust depth: median from inner 50% of the (raw) bounding box
-                bw, bh = rx2 - rx1, ry2 - ry1
-                inner_x1 = rx1 + bw // 4
-                inner_x2 = rx2 - bw // 4
-                inner_y1 = ry1 + bh // 4
-                inner_y2 = ry2 - bh // 4
-                roi = self.depth_image[inner_y1:inner_y2, inner_x1:inner_x2]
-                valid = roi[np.isfinite(roi) & (roi > 0.0)]
-                if valid.size == 0:
-                    self.frame = None
-                    return
-                depth = float(np.median(valid))
-
-                # Reject sudden depth jumps
-                if (
-                    self.last_depth is not None
-                    and abs(depth - self.last_depth) > DEPTH_JUMP_THRESHOLD
-                ):
-                    self.frame = None
-                    return
-                self.last_depth = depth
-
-                raw_cx, raw_cy = self._to_raw_coords(
-                    int(point2D[1]), int(point2D[0]), frame_w, frame_h
-                )
-                point3D = deproject_pixel_to_point(
-                    self.imageInfo, (raw_cx, raw_cy), depth
-                )
-                coords.point.x = float(point3D[0])
-                coords.point.y = float(point3D[1])
-                coords.point.z = float(point3D[2])
-                self.results_publisher.publish(coords)
-            else:
-                self.get_logger().warn("Depth image not available")
-        else:
+        if not person_in_frame:
             self.is_tracking_result = False
+            self.frame = None
+            return
+
+        self.is_tracking_result = True
+        frame_h, frame_w = self.frame.shape[:2]
+        x1, y1, x2, y2 = self.person_data["coordinates"]
+        cx = (x1 + x2) // 2
+        cy = (y1 + y2) // 2
+
+        # Arm-follow centroid: the person's horizontal offset in the UPRIGHT
+        # detection frame, normalized to [-1, 1]. It needs NO depth, so publish it
+        # for EVERY tracked frame (it used to sit behind the depth gate below —
+        # a depth hiccup froze the arm, the person left the FOV, follow lost them).
+        point2Dpoint = Point()
+        point2Dpoint.x = float(cx / (frame_w / 2) - 1.0)
+        point2Dpoint.y = 0.0
+        point2Dpoint.z = 0.0
+        self.centroid_publisher.publish(point2Dpoint)
+
+        if self.depth_image_time is None or self.image_time is None:
+            self.get_logger().warn(
+                f"Depth image not available (depth_time={self.depth_image_time is not None}, "
+                f"image_time={self.image_time is not None})",
+                throttle_duration_sec=2.0,
+            )
+            self.frame = None
+            return
+        depth_stamp_ns = (
+            self.depth_image_time.sec * 1_000_000_000
+            + self.depth_image_time.nanosec
+        )
+        image_stamp_ns = self.image_time.sec * 1_000_000_000 + self.image_time.nanosec
+        stamp_diff_ns = abs(depth_stamp_ns - image_stamp_ns)
+        if len(self.depth_image) == 0 or stamp_diff_ns >= DEPTH_THRESHOLD_NS:
+            self.get_logger().warn(
+                f"Depth/RGB not paired (diff {stamp_diff_ns / 1e6:.0f} ms) — "
+                f"skipping 3D point this tick",
+                throttle_duration_sec=2.0,
+            )
+            self.frame = None
+            return
+
+        # Depth + 3D use the RAW camera frame. The color frame may be flipped
+        # 180 deg for upright detection, but depth is never rotated, so map the
+        # detection-frame bbox/centroid back to raw pixels first — otherwise
+        # the depth ROI and the deprojected point come out mirrored.
+        rx1, ry1 = self._to_raw_coords(x1, y1, frame_w, frame_h)
+        rx2, ry2 = self._to_raw_coords(x2, y2, frame_w, frame_h)
+        rx1, rx2 = sorted((rx1, rx2))
+        ry1, ry2 = sorted((ry1, ry2))
+
+        # Robust depth: median from inner 50% of the (raw) bounding box
+        bw, bh = rx2 - rx1, ry2 - ry1
+        inner_x1 = rx1 + bw // 4
+        inner_x2 = rx2 - bw // 4
+        inner_y1 = ry1 + bh // 4
+        inner_y2 = ry2 - bh // 4
+        roi = self.depth_image[inner_y1:inner_y2, inner_x1:inner_x2]
+        valid = roi[np.isfinite(roi) & (roi > 0.0)]
+        if valid.size == 0:
+            self.frame = None
+            return
+        depth = float(np.median(valid))
+
+        # Reject sudden depth jumps — but only DEPTH_JUMP_MAX_REJECTS times in a
+        # row. A persistent "jump" means the person really is at the new depth
+        # (they kept walking while publishes were skipped); without the counter
+        # one legit move >threshold rejected every frame after it forever, and
+        # the smoother's watchdog halted the base on a person we still tracked.
+        if (
+            self.last_depth is not None
+            and abs(depth - self.last_depth) > DEPTH_JUMP_THRESHOLD
+            and self._depth_reject_count < DEPTH_JUMP_MAX_REJECTS
+        ):
+            self._depth_reject_count += 1
+            self.frame = None
+            return
+        self._depth_reject_count = 0
+        self.last_depth = depth
+
+        coords = PointStamped()
+        coords.header.frame_id = self.frame_id
+        coords.header.stamp = self.depth_image_time
+        raw_cx, raw_cy = self._to_raw_coords(cx, cy, frame_w, frame_h)
+        point3D = deproject_pixel_to_point(self.imageInfo, (raw_cx, raw_cy), depth)
+        coords.point.x = float(point3D[0])
+        coords.point.y = float(point3D[1])
+        coords.point.z = float(point3D[2])
+        self.results_publisher.publish(coords)
 
         self.frame = None
 

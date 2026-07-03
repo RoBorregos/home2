@@ -24,6 +24,11 @@ from frida_constants.navigation_constants import (
     DOCK_TABLE_SERVICE,
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
+    APPROACH_POINT_SERVICE,
+    SET_OBSTACLE_AVOIDANCE_SERVICE,
+    MOVE_RELATIVE_SERVICE,
+    WALL_ALIGN_SERVICE,
+    WALL_CLOSE_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import (
@@ -34,6 +39,10 @@ from frida_interfaces.srv import (
     DockTable,
     GoToPose,
     GetRobotPose,
+    ApproachPoint,
+    MoveRelative,
+    AlignToWall,
+    CloseToWall,
 )
 from std_srvs.srv import SetBool
 
@@ -86,6 +95,13 @@ class NavigationTasks:
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
+        self.approach_point_srv = self.node.create_client(ApproachPoint, APPROACH_POINT_SERVICE)
+        self.set_obstacle_avoidance_srv = self.node.create_client(
+            SetBool, SET_OBSTACLE_AVOIDANCE_SERVICE
+        )
+        self.move_relative_srv = self.node.create_client(MoveRelative, MOVE_RELATIVE_SERVICE)
+        self.wall_align_srv = self.node.create_client(AlignToWall, WALL_ALIGN_SERVICE)
+        self.wall_close_srv = self.node.create_client(CloseToWall, WALL_CLOSE_SERVICE)
         # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
         # camera-frame customer detection) and transform it to map before navigating.
         self.tf_buffer = tf2_ros.Buffer()
@@ -431,6 +447,209 @@ class NavigationTasks:
         goal.pose.position.y = py
         goal.pose.orientation = self._yaw_to_quaternion(yaw)
         return self.move_to_pose(goal)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=2)
+    @service_check(
+        "approach_point_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def approach_point(
+        self, point, standoff: float = 0.65, align: str = "", final_distance: float = 0.0
+    ):
+        """Approach a person or free-standing object seen by vision (e.g. GPSR
+        "go to the person", approaching a bag on the floor).
+
+        `point` may be a PointStamped in ANY TF frame (base_link, a camera
+        frame...) or a map-frame Point / (x, y) pair. nav_central projects it
+        onto the map, picks the nearest COSTMAP-FREE pose `standoff` meters
+        from the target (robot side first, facing it) and navigates there; if
+        the robot is already within `standoff`, it just turns to face the
+        target.
+
+        `align`: "" or "face" keeps the default face-the-target finish;
+        "left"/"right" finishes with the base PARALLEL to the target, target
+        abeam on that side (doing_laundry side pick). With align left/right
+        and `final_distance` > 0, nav_central closed-loop strafes (direct
+        cmd_vel, ignoring costmaps) until base_link is that many meters from
+        the target."""
+        request = ApproachPoint.Request()
+        if isinstance(point, PointStamped):
+            request.target = point
+        else:
+            xy = self._resolve_map_xy(point)
+            if xy is None:
+                return (Status.EXECUTION_ERROR, "invalid point")
+            request.target.header.frame_id = "map"
+            request.target.point.x, request.target.point.y = xy
+        request.standoff = float(standoff)
+        request.align = str(align)
+        request.final_distance = float(final_distance)
+        CLog.nav(self.node, "MOVE", "Requesting approach to point")
+        future = self.approach_point_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", "Approach point reached")
+            return (Status.EXECUTION_SUCCESS, "")
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"approach_point failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=1)
+    @service_check(
+        "set_obstacle_avoidance_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def set_obstacle_avoidance(self, enabled: bool):
+        """Enable/disable live obstacle marking (lidar + ZED layers on both
+        costmaps). Disable it while the arm carries a bag/basket that hangs in
+        the sensors' view — otherwise it is marked as an obstacle glued to the
+        robot and navigation gets boxed in. The static map keeps applying, so
+        walls/furniture are still avoided. ALWAYS re-enable after the carry."""
+        request = SetBool.Request()
+        request.data = bool(enabled)
+        CLog.nav(
+            self.node, "INFO", f"{'Enabling' if enabled else 'Disabling'} live obstacle avoidance"
+        )
+        future = self.set_obstacle_avoidance_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            return (Status.EXECUTION_SUCCESS, result.message)
+        err = result.message if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"set_obstacle_avoidance failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, {"traveled": 0.0}), delay=1)
+    @service_check(
+        "move_relative_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_relative(
+        self,
+        dx: float = 0.0,
+        dy: float = 0.0,
+        dyaw: float = 0.0,
+        stop_at_front_distance: float = 0.0,
+    ):
+        """Short displacement in the CURRENT base frame (dx fwd+, dy left+,
+        dyaw CCW rad), executed by nav_central as a direct cmd_vel closed loop
+        on odom TF. Bypasses Nav2 AND the costmaps — use for small deliberate
+        sidesteps (e.g. clearing the washing machine with the held basket),
+        never for real navigation.
+
+        With stop_at_front_distance > 0 and dx > 0, the drive additionally
+        stops (success) as soon as the front lidar sector reads at or below
+        that distance — the washing-machine arm insert uses this with dx as a
+        vision-derived cap. Returns (Status, {"traveled": meters}) on success
+        so the caller can back out symmetrically."""
+        request = MoveRelative.Request()
+        request.dx, request.dy, request.dyaw = float(dx), float(dy), float(dyaw)
+        request.stop_at_front_distance = float(stop_at_front_distance)
+        CLog.nav(self.node, "MOVE", f"Relative move dx={dx:.2f} dy={dy:.2f} dyaw={dyaw:.2f}")
+        future = self.move_relative_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", f"Relative move done ({result.traveled:.2f} m)")
+            return (Status.EXECUTION_SUCCESS, {"traveled": float(result.traveled)})
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"move_relative failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(
+        return_value=(
+            Status.EXECUTION_SUCCESS,
+            {"distance": 0.55, "yaw_error": 0.0, "segment_length": 0.60},
+        ),
+        delay=2,
+    )
+    @service_check(
+        "wall_align_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def align_washing_machine(self, center: bool = False, max_range: float = 0.0):
+        """Square up to the washing machine on the LIVE lidar (wall_aligner):
+        rotate in place until the base +x axis is perpendicular to the nearest
+        straight segment in front (the machine's front panel). center=True also
+        strafes the panel midpoint onto the base centerline.
+
+        Returns (Status, {"distance", "yaw_error", "segment_length"}). The
+        reported perpendicular `distance` is the SAME measure
+        close_washing_machine servos on — park the robot at the perfect final
+        depth and call this to calibrate the close target."""
+        CLog.nav(self.node, "MOVE", "Aligning to washing machine (live lidar)")
+        request = AlignToWall.Request()
+        request.max_range = float(max_range)
+        request.center = bool(center)
+        future = self.wall_align_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(
+                self.node,
+                "SUCCESS",
+                f"Aligned: d={result.distance:.3f} m "
+                f"yaw={math.degrees(result.yaw_error):+.2f} deg "
+                f"face={result.segment_length:.2f} m",
+            )
+            return (
+                Status.EXECUTION_SUCCESS,
+                {
+                    "distance": float(result.distance),
+                    "yaw_error": float(result.yaw_error),
+                    "segment_length": float(result.segment_length),
+                },
+            )
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"align_washing_machine failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(
+        return_value=(Status.EXECUTION_SUCCESS, {"traveled": 0.2, "final_distance": 0.30}),
+        delay=2,
+    )
+    @service_check(
+        "wall_close_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def close_washing_machine(self, distance: float, max_travel: float = 0.0):
+        """Precision approach to the washing machine (wall_aligner): creep
+        straight until the perpendicular lidar distance to the live fitted
+        front panel equals `distance` (m), re-squaring yaw on the live fit
+        every cycle so the robot stays perpendicular the whole drive. Slow,
+        cm-level; requires align_washing_machine first (aborts if >~5 deg off).
+
+        Returns (Status, {"traveled", "final_distance"}) — traveled is signed,
+        so the caller can back out with move_relative(dx=-traveled)."""
+        CLog.nav(self.node, "MOVE", f"Closing on washing machine to {distance:.3f} m")
+        request = CloseToWall.Request()
+        request.distance = float(distance)
+        request.max_travel = float(max_travel)
+        future = self.wall_close_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(
+                self.node,
+                "SUCCESS",
+                f"Closed: d={result.final_distance:.3f} m (traveled {result.traveled:+.3f} m)",
+            )
+            return (
+                Status.EXECUTION_SUCCESS,
+                {
+                    "traveled": float(result.traveled),
+                    "final_distance": float(result.final_distance),
+                },
+            )
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"close_washing_machine failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     def return_to_origin(self, inverse_orientation=False):

@@ -1,0 +1,17 @@
+# Precision approach (wall_aligner.py): creep straight toward (or away from)
+# the face in front until the perpendicular distance to the LIVE fitted line
+# equals `distance`. Yaw is re-servoed square on the live lidar fit every
+# cycle — the robot stays perpendicular to the REAL surface the whole drive —
+# and lateral position is held on odom. Slow speeds, bidirectional final
+# correction and a stationary multi-scan verification give cm-level precision.
+#
+# Requires the robot to already be square (AlignToWall first); aborts if the
+# face reads more than ~5 deg off. Direct cmd_vel — bypasses Nav2 and the
+# costmaps, keep it short and use it only against the intended surface.
+float32 distance    # target perpendicular distance (m), same measure AlignToWall reports
+float32 max_travel  # m; > 0 caps the total displacement (safety), 0 = node default
+---
+bool success
+string error
+float32 traveled        # signed forward displacement actually driven (m)
+float32 final_distance  # stationary-verified distance at finish (m)

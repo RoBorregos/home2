@@ -166,6 +166,17 @@ def launch_function(context, *args, **kwargs):
         parameters=[{'retreat_distance': RETREAT_DISTANCE}],
     )
 
+    # Washing-machine precision aligner — live-lidar perpendicular align +
+    # exact-distance approach (nav_tasks.align_washing_machine /
+    # close_washing_machine). Independent of table_docker: nothing locked in
+    # odom, the face is re-fitted from the live scan every control cycle.
+    wall_aligner = Node(
+        package='nav_main',
+        executable='wall_aligner.py',
+        name='wall_aligner',
+        output='screen',
+    )
+
     # Person-following bridge: forwards the vision tracker's target to the Nav2
     # GoalUpdater and switches nav2 between the standard/follow param sets when
     # nav_central calls /navigation/set_follow_mode. Idle until follow is requested,
@@ -215,6 +226,7 @@ def launch_function(context, *args, **kwargs):
               f"{nav2_omni_params.perform(context)}")
         launch_actions.append(nav2_omni)
         launch_actions.append(table_docker)
+        launch_actions.append(wall_aligner)
 
     return launch_actions
 

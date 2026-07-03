@@ -101,6 +101,12 @@ def generate_launch_description():
                 parameters=[sim_time_param],
             ),
             Node(
+                package="frida_motion_planning",
+                executable="align_arm_server.py",
+                name="align_arm_server",
+                parameters=[sim_time_param],
+            ),
+            Node(
                 package="manipulation_general",
                 executable="manipulation_safeguard.py",
                 output="screen",

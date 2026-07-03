@@ -1,0 +1,22 @@
+# Approach a person/object seen by vision: the target point may be stamped in
+# any TF frame (base_link, a camera frame, map). nav_central transforms it to
+# the map frame, picks the nearest COSTMAP-FREE pose `standoff` meters from the
+# target (biased toward the robot's side, facing the target) and navigates
+# there through the standard goal pipeline.
+#
+# align selects the FINAL base orientation once the approach goal is reached:
+#   "" / "face"    -> face the target (default, original behavior)
+#   "left"/"right" -> finish PARALLEL to the target with it on that side of the
+#                     base (e.g. doing_laundry parks with the basket abeam on
+#                     the right for a side pick). With final_distance > 0,
+#                     nav_central then closed-loop strafes (direct cmd_vel,
+#                     costmap-independent) until base_link is that many meters
+#                     from the target, abeam — this is how "very near" is done.
+geometry_msgs/PointStamped target
+float32 standoff        # meters from the target; <= 0 uses the default (0.65)
+string align            # "", "face", "left" or "right" (see above)
+float32 final_distance  # align left/right only: final base_link<->target gap (m); <= 0 skips the close-in strafe
+---
+bool success
+string error
+geometry_msgs/PoseStamped goal   # the approach pose actually used

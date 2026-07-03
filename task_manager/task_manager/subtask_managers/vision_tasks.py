@@ -32,6 +32,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     QUERY_TOPIC,
     READ_QR_TOPIC,
+    RESULTS_TOPIC,
     SAVE_NAME_TOPIC,
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
@@ -39,6 +40,7 @@ from frida_constants.vision_constants import (
     DETECT_HAND_SERVICE,
     CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
+    MOONDREAM_POINT_3D_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import PersonList, CustomerTable
@@ -61,6 +63,7 @@ from frida_interfaces.srv import (
     TrackBy,
     DetectHand,
     CustomerTables,
+    MoondreamPoint3D,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -114,6 +117,14 @@ class VisionTasks:
         self.face_name_subscriber = self.node.create_subscription(
             String, PERSON_NAME_TOPIC, self.person_name_callback, 10
         )
+        # Camera-frame 3D points of the persons matched by the last
+        # count_by_pose/gesture/color call (for nav approach_point)
+        self.last_person_points = []
+        # Latest 3D point of the tracked person (tracker publishes while locked)
+        self._tracked_point = None
+        self.tracked_point_subscriber = self.node.create_subscription(
+            PointStamped, RESULTS_TOPIC, self._tracked_point_callback, 10
+        )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
         self.follow_by_name_client = self.node.create_client(SaveName, FOLLOW_BY_TOPIC)
@@ -130,6 +141,9 @@ class VisionTasks:
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_hand_client = self.node.create_client(DetectHand, DETECT_HAND_SERVICE)
+        self.moondream_point_3d_client = self.node.create_client(
+            MoondreamPoint3D, MOONDREAM_POINT_3D_TOPIC
+        )
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
@@ -199,10 +213,8 @@ class VisionTasks:
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
-                "read_qr_client": {
-                    "client": self.read_qr_client,
-                    "type": "service",
-                },
+                # read_qr removed from startup checks: no server exists for
+                # READ_QR_TOPIC and no GPSR command calls it.
                 "count_person": {
                     "client": self.count_person_client,
                     "type": "service",
@@ -364,6 +376,26 @@ class VisionTasks:
         Logger.success(self.node, "Track person status success")
         return Status.EXECUTION_SUCCESS
 
+    def _tracked_point_callback(self, msg: PointStamped):
+        self._tracked_point = msg
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, PointStamped()))
+    def get_tracked_person_point(self, timeout: float = 3.0):
+        """Latest 3D point of the tracked person (tracker RESULTS topic).
+
+        Requires the tracker to be locked first (track_person(True) or
+        track_person_by). Waits up to `timeout` for a FRESH point published
+        after this call, so a stale point from a previous lock is never
+        returned. Meant to feed nav.approach_point()."""
+        self._tracked_point = None
+        start = time.time()
+        while time.time() - start < timeout:
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+            if self._tracked_point is not None:
+                return Status.EXECUTION_SUCCESS, self._tracked_point
+        Logger.warn(self.node, "No tracked person point received")
+        return Status.TARGET_NOT_FOUND, None
+
     def person_name_callback(self, msg: String):
         """Callback for the face name subscriber"""
         self.person_name = msg.data
@@ -376,8 +408,18 @@ class VisionTasks:
         else:
             return None, None
 
-    def get_person_name(self):
-        """Get the name of the person detected"""
+    def get_person_name(self, fresh_timeout: float = 0.0):
+        """Get the name of the person detected.
+
+        With fresh_timeout > 0, clears the cached name and waits up to that
+        long for a NEW recognition from face_recognition — required after
+        moving to a DIFFERENT person, since the cache is never cleared and
+        would return the previous person's name."""
+        if fresh_timeout > 0:
+            self.person_name = ""
+            start = time.time()
+            while time.time() - start < fresh_timeout and self.person_name == "":
+                rclpy.spin_once(self.node, timeout_sec=0.1)
         if self.person_name != "":
             return Status.EXECUTION_SUCCESS, self.person_name
         return Status.TARGET_NOT_FOUND, None
@@ -783,12 +825,14 @@ class VisionTasks:
         request.pose_requested = pose
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_by_pose_client, request, name="count_by_pose")
         if err is not None:
             return err, 300
         if not result.success:
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -801,6 +845,7 @@ class VisionTasks:
         request = CountBy.Request()
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_person_client, request, name="count_person")
         if err is not None:
             return err, 300
@@ -808,6 +853,7 @@ class VisionTasks:
             Logger.warn(self.node, "Count person service failed")
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People counted: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -821,6 +867,7 @@ class VisionTasks:
         request.pose_requested = gesture
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_by_gesture_client, request, name="count_by_gesture")
         if err is not None:
             return err, 300
@@ -828,6 +875,7 @@ class VisionTasks:
             Logger.warn(self.node, "No gesture found")
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -842,6 +890,7 @@ class VisionTasks:
         request.clothing = clothing
         request.request = True
 
+        self.last_person_points = []
         err, result = self._call(self.count_by_color_client, request, name="count_by_color")
         if err is not None:
             return err, 300
@@ -849,6 +898,7 @@ class VisionTasks:
             Logger.warn(self.node, f"No {color} {clothing} found")
             return Status.TARGET_NOT_FOUND, 300
 
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with {color} {clothing}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -889,6 +939,38 @@ class VisionTasks:
             f"Hand detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
         )
         return Status.EXECUTION_SUCCESS, result.point
+
+    @mockable(return_value=PointStamped())
+    @service_check("moondream_point_3d_client", None, TIMEOUT)
+    def get_moondream_point_3d(self, subject: str, timeout: float = TIMEOUT) -> PointStamped:
+        """Get the 3D PointStamped at the center of a subject detected by
+        moondream point. The backing service (trash_detection_node) asks
+        moondream for a bbox, deprojects every valid depth pixel inside it,
+        and returns the mean of that cloud in the camera frame. None on miss.
+        """
+        Logger.info(self.node, f"Getting moondream 3D point for: {subject}")
+        request = MoondreamPoint3D.Request()
+        request.subject = subject
+
+        try:
+            future = self.moondream_point_3d_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if result is None or not result.success:
+                Logger.warn(self.node, f"No 3D point found for '{subject}'")
+                return None
+
+        except Exception as e:
+            Logger.error(self.node, f"Error getting moondream 3D point: {e}")
+            return None
+
+        p = result.point.point
+        Logger.success(
+            self.node,
+            f"Moondream 3D point for '{subject}': ({p.x:.3f}, {p.y:.3f}, {p.z:.3f})",
+        )
+        return result.point
 
     def visual_info(self, description, object="object"):
         """Return the object matching the description"""

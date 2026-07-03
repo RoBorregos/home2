@@ -1,0 +1,18 @@
+# Square up to the washing machine (wall_aligner.py): rotate in place until the
+# base +x axis is perpendicular to the NEAREST straight segment the lidar sees
+# in front — the machine's front panel, a bounded line whose two endpoints are
+# visible in the scan. Nothing is locked in odom: the segment is re-fitted from
+# the live scan every control cycle, and the result is verified with a
+# stationary multi-scan fit before reporting success.
+#
+# Calibration trick for CloseToWall: park the robot at the PERFECT final depth,
+# call this (it barely moves if already square) and read `distance` — that
+# number is the `distance` to request from CloseToWall.
+float32 max_range   # m; > 0 overrides the node's max_detect_range for the segment search
+bool center         # also strafe so the segment midpoint sits on the base centerline
+---
+bool success
+string error
+float32 distance        # verified perpendicular base_link -> face distance (m), minus front_offset
+float32 yaw_error       # residual yaw error at finish (rad)
+float32 segment_length  # detected face width (m) — sanity-check it matches the machine
