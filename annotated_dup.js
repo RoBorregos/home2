@@ -50,6 +50,9 @@ var annotated_dup =
     [ "dashgo_driver2", "namespacedashgo__driver2.html", [
       [ "DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", "classdashgo__driver2_1_1DashgoDriver" ]
     ] ],
+    [ "debug_pub", "namespacedebug__pub.html", [
+      [ "DebugImagePublisher", "classdebug__pub_1_1DebugImagePublisher.html", "classdebug__pub_1_1DebugImagePublisher" ]
+    ] ],
     [ "demo_becas", "namespacedemo__becas.html", [
       [ "DemoBecas", "classdemo__becas_1_1DemoBecas.html", "classdemo__becas_1_1DemoBecas" ]
     ] ],
@@ -498,6 +501,9 @@ var annotated_dup =
     ] ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", [
       [ "TestHriManager", "classtest__hri__manager_1_1TestHriManager.html", "classtest__hri__manager_1_1TestHriManager" ]
+    ] ],
+    [ "test_hric_vision", "namespacetest__hric__vision.html", [
+      [ "HRICVisionTest", "classtest__hric__vision_1_1HRICVisionTest.html", "classtest__hric__vision_1_1HRICVisionTest" ]
     ] ],
     [ "test_manager", "namespacetest__manager.html", [
       [ "TestTaskManager", "classtest__manager_1_1TestTaskManager.html", "classtest__manager_1_1TestTaskManager" ]

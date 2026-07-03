@@ -50,6 +50,7 @@ var classnav__ui_1_1NavUI =
     [ "lbl_robot_yaw", "classnav__ui_1_1NavUI.html#adabe75a1a1a73c26926f702bd4a8aa26", null ],
     [ "loc_combo", "classnav__ui_1_1NavUI.html#a0ac482b2aec155eb7d568153a0ef217f", null ],
     [ "ros_node", "classnav__ui_1_1NavUI.html#abfbadaf7e053ba7ee5918abc45fb5fd1", null ],
+    [ "spin_dock_offset", "classnav__ui_1_1NavUI.html#aa69a95d7b3dcd167b700e51571bbc84b", null ],
     [ "status", "classnav__ui_1_1NavUI.html#a322f035786db65802d11a943d3f24faf", null ],
     [ "ui_mode", "classnav__ui_1_1NavUI.html#a0ac601fab652644225fcfd0e70a28173", null ]
 ];

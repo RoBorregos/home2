@@ -2,6 +2,7 @@ var classhric__task__manager_1_1HRIC__TM =
 [
     [ "TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
     [ "__init__", "classhric__task__manager_1_1HRIC__TM.html#af03a488b3d18754adacc89a68e33227f", null ],
+    [ "_move_arm_cleared", "classhric__task__manager_1_1HRIC__TM.html#ae49108ac1919785d80eb4152caba7c38", null ],
     [ "_track_state_change", "classhric__task__manager_1_1HRIC__TM.html#a5787e863706372c66177382f6848fa96", null ],
     [ "get_current_guest", "classhric__task__manager_1_1HRIC__TM.html#aeb04de6393839a89c8147ca29bfe859d", null ],
     [ "navigate_to", "classhric__task__manager_1_1HRIC__TM.html#a8eb8cffe6df95e19284d446f5de9f1ef", null ],

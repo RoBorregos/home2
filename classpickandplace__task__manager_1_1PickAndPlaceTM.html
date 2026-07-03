@@ -120,6 +120,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a80f2b9057e4a5e741064ab5cd7ff9e7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1795a0a4a70ac692142e27fa868cd22a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a1795a0a4a70ac692142e27fa868cd22a">navigate_to</a> (self, str location, str sublocation=&quot;&quot;, bool say=True)</td></tr>
 <tr class="separator:a1795a0a4a70ac692142e27fa868cd22a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a599364357cdfa0b2aa9df120d2b5ef98"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a599364357cdfa0b2aa9df120d2b5ef98">dock_at</a> (self, <a class="el" href="classpickandplace__task__manager_1_1Location.html">Location</a> location)</td></tr>
+<tr class="separator:a599364357cdfa0b2aa9df120d2b5ef98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9307ee0507afc5d55ec15fcc3e9371cd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a9307ee0507afc5d55ec15fcc3e9371cd">timeout</a> (self, float duration=2.0)</td></tr>
 <tr class="separator:a9307ee0507afc5d55ec15fcc3e9371cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75bfbfcd4349ae3e5e4edfc3011e9b74"><td class="memItemLeft" align="right" valign="top">float|None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1PickAndPlaceTM.html#a75bfbfcd4349ae3e5e4edfc3011e9b74">convert_to_height</a> (self, detection)</td></tr>
@@ -965,6 +967,34 @@ instance, so a cleanup spoon and a separate breakfast spoon each count.</pre>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Return the target furniture for an object.</pre> 
+</div>
+</div>
+<a id="a599364357cdfa0b2aa9df120d2b5ef98" name="a599364357cdfa0b2aa9df120d2b5ef98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a599364357cdfa0b2aa9df120d2b5ef98">&#9670;&#160;</a></span>dock_at()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pickandplace_task_manager.PickAndPlaceTM.dock_at </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classpickandplace__task__manager_1_1Location.html">Location</a>&#160;</td>
+          <td class="paramname"><em>location</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Dock at `location` with its DOCK_OFFSETS stand-off; skips places marked None.</pre> 
 </div>
 </div>
 <a id="a1795a0a4a70ac692142e27fa868cd22a" name="a1795a0a4a70ac692142e27fa868cd22a"></a>

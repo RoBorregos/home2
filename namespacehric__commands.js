@@ -6,6 +6,8 @@ var namespacehric__commands =
     [ "AREA_PERCENTAGE_THRESHOLD", "namespacehric__commands.html#a41b7b67e4fc7415666f63955d8aa0b86", null ],
     [ "CHECK_TIMEOUT", "namespacehric__commands.html#a3cca12f77741a3bca2925462cc5e244c", null ],
     [ "CONF_THRESHOLD", "namespacehric__commands.html#a2ff6673c8134c479a43231dd19a5b8f1", null ],
+    [ "HAND_DEPTH_TIE_M", "namespacehric__commands.html#aa43f1e7d32293bebeb35cd05442e20ff", null ],
+    [ "HAND_MIN_DEPTH", "namespacehric__commands.html#aeaf88a67551199d69d4562b00d45e9d4", null ],
     [ "KP_CONF", "namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546", null ],
     [ "LEFT_WRIST_IDX", "namespacehric__commands.html#af03db957d9708f5ed4c50c673255fb0f", null ],
     [ "MAX_DEGREE", "namespacehric__commands.html#a19297de37a6bae70e0adcd79a9f3d19e", null ],

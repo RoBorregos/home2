@@ -123,6 +123,8 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:a4844d2c5719ea0aa674169fc4d77cbca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ab0cce169d528f361218a6cd167d583"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1Location.html#a6ab0cce169d528f361218a6cd167d583">KITCHEN</a> = &quot;kitchen&quot;</td></tr>
 <tr class="separator:a6ab0cce169d528f361218a6cd167d583"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeaf0d8d7bab96c30465fb249b3cdf639"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpickandplace__task__manager_1_1Location.html#aeaf0d8d7bab96c30465fb249b3cdf639">DOCK_OFFSETS</a></td></tr>
+<tr class="separator:aeaf0d8d7bab96c30465fb249b3cdf639"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Known furniture locations in the Incheon 2026 kitchen (PPC test location).</pre> </div><h2 class="groupheader">Member Data Documentation</h2>
@@ -259,6 +261,39 @@ Static Public Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="aeaf0d8d7bab96c30465fb249b3cdf639" name="aeaf0d8d7bab96c30465fb249b3cdf639"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeaf0d8d7bab96c30465fb249b3cdf639">&#9670;&#160;</a></span>DOCK_OFFSETS</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict pickandplace_task_manager.Location.DOCK_OFFSETS</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=  {</div>
+<div class="line">    Location.KITCHEN: <span class="keywordtype">None</span>,  <span class="comment"># safe_place — start/announce spot, never docks</span></div>
+<div class="line">    Location.DINING_TABLE: 0.0,  <span class="comment"># dinner_table</span></div>
+<div class="line">    Location.EXTRA_SURFACE: 0.0,  <span class="comment"># counter</span></div>
+<div class="line">    Location.DISHWASHER: 0.32,  <span class="comment"># front sits close — stop short</span></div>
+<div class="line">    Location.DISHWASHER_TAB: 0.32,  <span class="comment"># cooking_table, same close front</span></div>
+<div class="line">    Location.CABINET: 0.30,  <span class="comment"># stand off so the arm reaches the shelves</span></div>
+<div class="line">    Location.TRASH_BIN: <span class="keywordtype">None</span>,  <span class="comment"># trash — detect-and-drop flow, no dock</span></div>
+<div class="line">    Location.BREAKFAST_SURFACE: 0.0,  <span class="comment"># dinner_table</span></div>
+<div class="line">    Location.BREAKFAST_ITEMS: 0.32,  <span class="comment"># dishwasher top (bowl + spoon source)</span></div>
+<div class="line">}</div>
+</div><!-- fragment -->
 </div>
 </div>
 <a id="a5902a008c7ad88402aa88237bacccfe7" name="a5902a008c7ad88402aa88237bacccfe7"></a>

@@ -5,6 +5,7 @@ var namespacetest__vision__manager =
     [ "FOLLOW_FACE_FLIP", "namespacetest__vision__manager.html#a6e14626b0d579caa34fb251781dac471", null ],
     [ "HAND_MARKER_FLIP", "namespacetest__vision__manager.html#acc917c63b8ad5f534fc3a6ed0f57d266", null ],
     [ "HAND_MARKER_TOPIC", "namespacetest__vision__manager.html#ab1c842f0f6eb235068a57c75b622c134", null ],
+    [ "TEST_CHAIRS_TO_REMOVE", "namespacetest__vision__manager.html#a0ab980666ed8771ad9be9ab18e76a462", null ],
     [ "TEST_CUSTOMER_TABLES", "namespacetest__vision__manager.html#a5f1d20d8476bf2bfc6ca6aa05cd9e64f", null ],
     [ "TEST_DETECT_OBJECTS", "namespacetest__vision__manager.html#a536a3e59f6442113cd05d5249e26084d", null ],
     [ "TEST_DETECT_PERSON", "namespacetest__vision__manager.html#a0ac83c3be8619e480c385351b9f84b6b", null ],

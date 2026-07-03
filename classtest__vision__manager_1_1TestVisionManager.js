@@ -2,6 +2,7 @@ var classtest__vision__manager_1_1TestVisionManager =
 [
     [ "__init__", "classtest__vision__manager_1_1TestVisionManager.html#a85e73fa10cf3c4984e29d968f9c6d195", null ],
     [ "run", "classtest__vision__manager_1_1TestVisionManager.html#ae874f7cbd88ba0ec7570e9675217b584", null ],
+    [ "test_chairs_to_remove", "classtest__vision__manager_1_1TestVisionManager.html#aebfd53fd3fb3483624722ff17e6bc8c9", null ],
     [ "test_customer_tables", "classtest__vision__manager_1_1TestVisionManager.html#a0415c96f62267cbff9f3b99e1aec5f30", null ],
     [ "test_detect_objects", "classtest__vision__manager_1_1TestVisionManager.html#a7294d7a920096e0bc3e8a2802e1b9820", null ],
     [ "test_detect_person", "classtest__vision__manager_1_1TestVisionManager.html#a896e01c3300d493190d4e9f2fe16fa2e", null ],

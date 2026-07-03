@@ -1,6 +1,7 @@
 var classserver_1_1MoonDreamServicer =
 [
     [ "__init__", "classserver_1_1MoonDreamServicer.html#ab29994183f684f18560c975e90112fcb", null ],
+    [ "Detect", "classserver_1_1MoonDreamServicer.html#a623297852ebd66411f97eb9cb9dbd731", null ],
     [ "EncodeImage", "classserver_1_1MoonDreamServicer.html#a79f4c10761471a46b2c8f7bf6c4b0e83", null ],
     [ "FindBeverage", "classserver_1_1MoonDreamServicer.html#ae7f7a58f31356a2b42f64a48d4514b0d", null ],
     [ "FindObjectPoints", "classserver_1_1MoonDreamServicer.html#af6dda7fc0c09f03d53b9e7f0ac89b999", null ],

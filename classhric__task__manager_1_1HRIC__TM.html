@@ -159,6 +159,8 @@ Public Attributes</h2></td></tr>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a5787e863706372c66177382f6848fa96"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classhric__task__manager_1_1HRIC__TM.html#a5787e863706372c66177382f6848fa96">_track_state_change</a> (self, str new_state)</td></tr>
 <tr class="separator:a5787e863706372c66177382f6848fa96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae49108ac1919785d80eb4152caba7c38"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classhric__task__manager_1_1HRIC__TM.html#ae49108ac1919785d80eb4152caba7c38">_move_arm_cleared</a> (self, str named_position)</td></tr>
+<tr class="separator:ae49108ac1919785d80eb4152caba7c38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Human Robot Interaction Challenge Task Manager</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -181,6 +183,43 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ae49108ac1919785d80eb4152caba7c38" name="ae49108ac1919785d80eb4152caba7c38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae49108ac1919785d80eb4152caba7c38">&#9670;&#160;</a></span>_move_arm_cleared()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> int hric_task_manager.HRIC_TM._move_arm_cleared </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>named_position</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Clear the octomap before tucking the arm and retry once on failure:
+voxels of the guest or the held bag next to the gripper block the plan.</pre> 
+</div>
+</div>
 <a id="a5787e863706372c66177382f6848fa96" name="a5787e863706372c66177382f6848fa96"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5787e863706372c66177382f6848fa96">&#9670;&#160;</a></span>_track_state_change()</h2>
 

@@ -5,6 +5,7 @@ var test__vision__manager_8py =
     [ "FOLLOW_FACE_FLIP", "test__vision__manager_8py.html#a6e14626b0d579caa34fb251781dac471", null ],
     [ "HAND_MARKER_FLIP", "test__vision__manager_8py.html#acc917c63b8ad5f534fc3a6ed0f57d266", null ],
     [ "HAND_MARKER_TOPIC", "test__vision__manager_8py.html#ab1c842f0f6eb235068a57c75b622c134", null ],
+    [ "TEST_CHAIRS_TO_REMOVE", "test__vision__manager_8py.html#a0ab980666ed8771ad9be9ab18e76a462", null ],
     [ "TEST_CUSTOMER_TABLES", "test__vision__manager_8py.html#a5f1d20d8476bf2bfc6ca6aa05cd9e64f", null ],
     [ "TEST_DETECT_OBJECTS", "test__vision__manager_8py.html#a536a3e59f6442113cd05d5249e26084d", null ],
     [ "TEST_DETECT_PERSON", "test__vision__manager_8py.html#a0ac83c3be8619e480c385351b9f84b6b", null ],

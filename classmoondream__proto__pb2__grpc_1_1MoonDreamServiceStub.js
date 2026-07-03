@@ -1,6 +1,7 @@
 var classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub =
 [
     [ "__init__", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a81750701abb35ba6b4aadfbb87a91b74", null ],
+    [ "Detect", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a2fb5b44f42e5ab8bc71d5affe501cf6a", null ],
     [ "EncodeImage", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a7779d5cc16411a6b321e4c7652097c9a", null ],
     [ "FindBeverage", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a65aa505c0742fb0d87a2fe383f67b375", null ],
     [ "FindObjectPoints", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a359c94f22f46805208342de453514d2e", null ],

@@ -14,6 +14,8 @@ var classbase__detector__node_1_1BaseDetectorNode =
     [ "run", "classbase__detector__node_1_1BaseDetectorNode.html#ad1bab00c68635331ec961cf953a75c86", null ],
     [ "to_ros", "classbase__detector__node_1_1BaseDetectorNode.html#a64a4035b70b2bd703e3180b025d4c4b5", null ],
     [ "visualize", "classbase__detector__node_1_1BaseDetectorNode.html#ad1d9bcc306b4a3556cdb26f19a109846", null ],
+    [ "_img_pub_last", "classbase__detector__node_1_1BaseDetectorNode.html#af2c029fb23b207297da1ccee777783d8", null ],
+    [ "_img_pub_max_hz", "classbase__detector__node_1_1BaseDetectorNode.html#a3ab505128ded4f58950556d2e758044b", null ],
     [ "active_flag", "classbase__detector__node_1_1BaseDetectorNode.html#a6ae314e9b260b46193952c77dca106b1", null ],
     [ "bridge", "classbase__detector__node_1_1BaseDetectorNode.html#a0be37ba6089fb10aa408733d603d8d6f", null ],
     [ "camera_frame", "classbase__detector__node_1_1BaseDetectorNode.html#a05b4d2a6197ae59168a828f6a38ae024", null ],

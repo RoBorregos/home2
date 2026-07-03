@@ -1,6 +1,7 @@
 var namespacetask__manager_1_1subtask__managers_1_1vision__tasks =
 [
     [ "VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks" ],
+    [ "finally", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#ac6e675c9289634b4ed7ef6840b510f19", null ],
     [ "IS_TRACKING_TOPIC", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#add8920b2469d6bc25ce6aceb7b0fe0b3", null ],
     [ "node", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#ab304cd6fe5f54fe06d682e757d70edb9", null ],
     [ "order_labels", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html#aabac25d44d3bf88f72a6d58600e79b89", null ],

@@ -139,6 +139,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:abd10eee5ef86ae5074dd8f877251b4e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62ddf96c70e22e422fba1bf781cb58a0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a62ddf96c70e22e422fba1bf781cb58a0">clear_collision_objects</a> (self, bool include_attached=True)</td></tr>
 <tr class="separator:a62ddf96c70e22e422fba1bf781cb58a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a754f198c77bc20c9762b30cb796136b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a754f198c77bc20c9762b30cb796136b8">clear_octomap</a> (self)</td></tr>
+<tr class="separator:a754f198c77bc20c9762b30cb796136b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0083860e231cd2fe8c16e2e776129dde"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a0083860e231cd2fe8c16e2e776129dde">pan_to</a> (self, float degrees)</td></tr>
 <tr class="separator:a0083860e231cd2fe8c16e2e776129dde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e45ef3169470631c840f2e9cf8a4562"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a8e45ef3169470631c840f2e9cf8a4562">point</a> (self, float degrees)</td></tr>
@@ -201,6 +203,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a70b214bbe1bb4a16d6fac2d60688e093"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae2cef2a8b3755f05c522f2d0f53c0e21"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ae2cef2a8b3755f05c522f2d0f53c0e21">_remove_collision_object_client</a></td></tr>
 <tr class="separator:ae2cef2a8b3755f05c522f2d0f53c0e21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af5fb0718c35d2d9c7954f3039f314d6c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af5fb0718c35d2d9c7954f3039f314d6c">_clear_octomap_client</a></td></tr>
+<tr class="separator:af5fb0718c35d2d9c7954f3039f314d6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6cb30586f591e5740661c1a8e7cb429"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#aa6cb30586f591e5740661c1a8e7cb429">_manipulation_action_client</a></td></tr>
 <tr class="separator:aa6cb30586f591e5740661c1a8e7cb429"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6035cf9b959268874c19c20df1e96f64"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a6035cf9b959268874c19c20df1e96f64">_fix_position_to_plane_client</a></td></tr>
@@ -553,6 +557,25 @@ State: 'open' o 'close'
 <pre class="fragment">Remove all collision objects from the planning scene.
 Useful before movements that MoveIt would reject due to stale
 collision objects left in the scene by perception.</pre> 
+</div>
+</div>
+<a id="a754f198c77bc20c9762b30cb796136b8" name="a754f198c77bc20c9762b30cb796136b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a754f198c77bc20c9762b30cb796136b8">&#9670;&#160;</a></span>clear_octomap()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> int task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.clear_octomap </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Clear the MoveIt octomap. Voxels of a guest or a held bag left next to
+the gripper otherwise make planning the next arm motion fail.</pre> 
 </div>
 </div>
 <a id="a7d960421f2da5e97c3e5aba73b6bae0e" name="a7d960421f2da5e97c3e5aba73b6bae0e"></a>
@@ -1232,6 +1255,28 @@ scan_environment: True to scan environment before picking (useful for shelf pick
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="af5fb0718c35d2d9c7954f3039f314d6c" name="af5fb0718c35d2d9c7954f3039f314d6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5fb0718c35d2d9c7954f3039f314d6c">&#9670;&#160;</a></span>_clear_octomap_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">task_manager.subtask_managers.manipulation_tasks.ManipulationTasks._clear_octomap_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a6035cf9b959268874c19c20df1e96f64" name="a6035cf9b959268874c19c20df1e96f64"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6035cf9b959268874c19c20df1e96f64">&#9670;&#160;</a></span>_fix_position_to_plane_client</h2>
 

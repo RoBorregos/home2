@@ -68,6 +68,7 @@ var namespaces_dup =
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
+    [ "debug_pub", "namespacedebug__pub.html", "namespacedebug__pub" ],
     [ "demo_becas", "namespacedemo__becas.html", "namespacedemo__becas" ],
     [ "demo_ds4", "namespacedemo__ds4.html", [
       [ "generate_launch_description", "namespacedemo__ds4.html#a3b92a5a114f0a71450f4b47c440d3352", null ]
@@ -97,6 +98,9 @@ var namespaces_dup =
     ] ],
     [ "display_sim_tmr2025", "namespacedisplay__sim__tmr2025.html", [
       [ "generate_launch_description", "namespacedisplay__sim__tmr2025.html#aa678e8e2cd36d56ee50a024b3782ee92", null ]
+    ] ],
+    [ "dlc_launch", "namespacedlc__launch.html", [
+      [ "generate_launch_description", "namespacedlc__launch.html#a37ea668562076873e257090bfe0041b7", null ]
     ] ],
     [ "dock_to_handle", "namespacedock__to__handle.html", "namespacedock__to__handle" ],
     [ "doing_laundry", "namespacedoing__laundry.html", [
@@ -133,6 +137,20 @@ var namespaces_dup =
     ] ],
     [ "example_node", "namespaceexample__node.html", "namespaceexample__node" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
+    [ "fetch_models", "namespacefetch__models.html", [
+      [ "check_customs", "namespacefetch__models.html#adc2b1a4d6f420d55cdf89a4c97229587", null ],
+      [ "detector_dirs", "namespacefetch__models.html#a74db5d17737c5ccc9c9fdb46b5a5e186", null ],
+      [ "fetch_standard", "namespacefetch__models.html#a12426f016a212a03cf8484f0b02d7303", null ],
+      [ "main", "namespacefetch__models.html#ab617d7e23258dbb9627ab106c4ccee6d", null ],
+      [ "sha256", "namespacefetch__models.html#a6924629ba9641e142c0276959b623eea", null ],
+      [ "sync_detector_models", "namespacefetch__models.html#aced3e9edb4be47ca126674df3ff8521a", null ],
+      [ "warmup", "namespacefetch__models.html#a5360c5f687061c19e906deddc153e8a9", null ],
+      [ "weights_dir", "namespacefetch__models.html#af50874cba910187c5192111274e0c3d6", null ],
+      [ "CUSTOM_MODELS", "namespacefetch__models.html#a9276c046c78cbf4fb349a37ca158d04e", null ],
+      [ "DETECTOR_MODELS", "namespacefetch__models.html#ac892b069cde350920ef0b83cb23fe506", null ],
+      [ "REPO_ROOT", "namespacefetch__models.html#a3c270b382b139b429601360092212415", null ],
+      [ "STANDARD_MODELS", "namespacefetch__models.html#a56e10b2b63b27f2d3d42eea93b554d25", null ]
+    ] ],
     [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", "namespaceflat__grasp__estimator" ],
     [ "flying_sphere", "namespaceflying__sphere.html", [
       [ "main", "namespaceflying__sphere.html#a16e948a58bf363c63448a2e12fbfb72c", null ],
@@ -550,6 +568,7 @@ var namespaces_dup =
       [ "gc", "namespacetest__grasp__confirmation.html#ae6db20bc2ddc0c55e676f55ea5bc9562", null ]
     ] ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
+    [ "test_hric_vision", "namespacetest__hric__vision.html", "namespacetest__hric__vision" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
     [ "test_navigation_manager", "namespacetest__navigation__manager.html", "namespacetest__navigation__manager" ],

@@ -21,6 +21,7 @@ var classpickandplace__task__manager_1_1PickAndPlaceTM =
     [ "categorize_object", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#af60568ce5fddd995dd6f5dc0ba380c43", null ],
     [ "convert_to_height", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a75bfbfcd4349ae3e5e4edfc3011e9b74", null ],
     [ "determine_placement_location", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a5e44d2e622754e4abf7a89323dc5d8bb", null ],
+    [ "dock_at", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a599364357cdfa0b2aa9df120d2b5ef98", null ],
     [ "navigate_to", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a1795a0a4a70ac692142e27fa868cd22a", null ],
     [ "navigate_to_location", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a80f2b9057e4a5e741064ab5cd7ff9e7e", null ],
     [ "run", "classpickandplace__task__manager_1_1PickAndPlaceTM.html#a449c9e9cc1293aafad20d626d9c83315", null ],
