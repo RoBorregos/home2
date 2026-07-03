@@ -13,7 +13,7 @@ from frida_constants.hri_constants import (
     GPSR_TASK_STEP_TOPIC,
     ANSWER_PUBLISHER,
 )
-from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
+from frida_constants.vision_constants import IMAGE_ORIENTED_TOPIC, IMAGE_TOPIC_HRIC
 from rclpy.duration import Duration
 from rclpy.node import Node
 from std_msgs.msg import Int32
@@ -244,6 +244,10 @@ class GPSRTM(Node):
     def _on_action_complete(self, plan_action, status, result):
         if status == Status.EXECUTION_SUCCESS:
             self._completed.add((plan_action.source_cmd, plan_action.source_idx))
+            kind = getattr(plan_action.action, "action", "?")
+            self.subtask_manager.hri.publish_display_capture(
+                f"{kind} completed", IMAGE_ORIENTED_TOPIC
+            )
         try:
             self.subtask_manager.hri.add_command_history(plan_action.action, result, status)
         except Exception as e:  # noqa: BLE001
@@ -513,6 +517,10 @@ class GPSRTM(Node):
                         status, res = exec_commad(command)
                         self.get_logger().info(f"status-> {str(status)}")
                         self.get_logger().info(f"res-> {str(res)}")
+                        if status == Status.EXECUTION_SUCCESS:
+                            self.subtask_manager.hri.publish_display_capture(
+                                f"{command.action} completed", IMAGE_ORIENTED_TOPIC
+                            )
                         self.subtask_manager.hri.add_command_history(
                             command,
                             res,

@@ -227,6 +227,9 @@ class RestaurantTaskManager(Node):
             if status == Status.EXECUTION_SUCCESS and person_point.header.frame_id != "":
                 Logger.success(self, "Customer detected calling!")
                 self.subtask_manager.hri.say("I see you! I am coming to take your order.")
+                self.subtask_manager.hri.publish_display_capture(
+                    "Customer detected calling", DETECTIONS_IMAGE_TOPIC
+                )
                 self.target_person_point = person_point
                 self.search_step = 0
                 self.current_state = RestaurantTaskManager.TaskStates.MOVE_TO_TABLES_AREA
@@ -305,6 +308,9 @@ class RestaurantTaskManager(Node):
                 return
 
             Logger.info(self, f"Detected {len(customer_tables)} table(s)")
+            self.subtask_manager.hri.publish_display_capture(
+                f"Detected {len(customer_tables)} table(s)", RESTAURANT_TABLES_TOPIC
+            )
             table_idx = 0
             for table_msg in customer_tables:
                 if len(table_msg.people.list) == 0:

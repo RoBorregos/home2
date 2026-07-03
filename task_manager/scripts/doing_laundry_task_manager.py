@@ -14,6 +14,7 @@ from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 from frida_constants.manipulation_constants import CLOTHES_BASKET_EXIT_HEIGHT
+from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC
 
 ATTEMPT_LIMIT = 3
 # Pick clothes from the basket and place on the table.
@@ -166,6 +167,9 @@ class DoingLaundryTM(Node):
                     self.basket_sublocation = sublocation
                     self.basket_scan_attempts = 0
                     Logger.success(self, f"Basket located at {sublocation}.")
+                    self.subtask_manager.hri.publish_display_capture(
+                        f"Basket located at {sublocation}", DETECTIONS_IMAGE_TOPIC
+                    )
                     self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
                     return
 
@@ -200,6 +204,9 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Basket picked.")
                 self.basket_pick_attempts = 0
+                self.subtask_manager.hri.publish_display_capture(
+                    "Picked laundry basket", DETECTIONS_IMAGE_TOPIC
+                )
                 self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
             else:
                 self.basket_pick_attempts += 1
@@ -244,6 +251,9 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from basket.")
                 self.clothes_pick_attempts = 0
+                self.subtask_manager.hri.publish_display_capture(
+                    "Picked clothes from basket", DETECTIONS_IMAGE_TOPIC
+                )
                 self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
                 self.clothes_pick_attempts += 1
@@ -276,6 +286,9 @@ class DoingLaundryTM(Node):
                         self,
                         f"WM→table done {self.wm_placed}/{WM_PLACE_ROUNDS}.",
                     )
+                self.subtask_manager.hri.publish_display_capture(
+                    "Placed clothes on table", DETECTIONS_IMAGE_TOPIC
+                )
                 self.set_state(self.next_state_after_place())
             else:
                 Logger.error(self, "Place clothes failed. Ending task.")
@@ -301,6 +314,9 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from washing machine.")
                 self.clothes_pick_attempts = 0
+                self.subtask_manager.hri.publish_display_capture(
+                    "Picked clothes from washing machine", DETECTIONS_IMAGE_TOPIC
+                )
                 # Close the door now while we are still in front of the machine,
                 # but only once we have finished all WM pick rounds.
                 if (self.wm_placed + 1) >= WM_PLACE_ROUNDS:

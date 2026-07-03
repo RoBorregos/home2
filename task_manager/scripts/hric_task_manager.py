@@ -8,7 +8,11 @@ import time
 from datetime import datetime
 
 import rclpy
-from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_HRIC
+from frida_constants.vision_constants import (
+    FACE_RECOGNITION_IMAGE,
+    IMAGE_ORIENTED_TOPIC,
+    IMAGE_TOPIC_HRIC,
+)
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -243,6 +247,9 @@ class HRIC_TM(Node):
             result = self.subtask_manager.vision.detect_person(timeout=10)
 
             if result == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Guest {self.current_guest_idx + 1} detected", IMAGE_TOPIC_HRIC
+                )
                 self.current_state = HRIC_TM.TaskStates.GREETING
             else:
                 self.subtask_manager.hri.say("I am waiting for a guest.")
@@ -375,6 +382,9 @@ class HRIC_TM(Node):
             self.timeout(0.5)
             self.subtask_manager.manipulation.close_gripper()
             self.carrying_bag = True
+            self.subtask_manager.hri.publish_display_capture(
+                f"Bag taken from {self.get_current_guest().name}", IMAGE_ORIENTED_TOPIC
+            )
             self.timeout(3)
             guest_1 = self.guests[FIRST_GUEST_IDX]
             self.subtask_manager.hri.say(
@@ -408,6 +418,9 @@ class HRIC_TM(Node):
                 self.timeout(1)
                 status, angle = self.subtask_manager.vision.find_seat()
                 if status == Status.EXECUTION_SUCCESS:
+                    self.subtask_manager.hri.publish_display_capture(
+                        f"Seat found for {self.get_current_guest().name}", IMAGE_TOPIC_HRIC
+                    )
                     break
 
             self.subtask_manager.manipulation.pan_to(angle)
@@ -449,6 +462,9 @@ class HRIC_TM(Node):
                 for _ in range(ATTEMPT_LIMIT):
                     if self.subtask_manager.vision.isPerson(guest_1.name):
                         guest_1_found = True
+                        self.subtask_manager.hri.publish_display_capture(
+                            f"Identified {guest_1.name} for introduction", FACE_RECOGNITION_IMAGE
+                        )
                         break
 
                     self.timeout(1)

@@ -914,6 +914,9 @@ class PickAndPlaceTM(Node):
                     CLog.manip(self, "PICK", "FIRST PICK BONUS achieved!", level="success")
                     self.first_pick = False
                 self.current_attempts = 0
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Picked {self.grasped_object.name}", DETECTIONS_IMAGE_TOPIC
+                )
                 self.current_state = PickAndPlaceTM.TaskStates.DETERMINE_PLACEMENT
             else:
                 self.current_attempts += 1
@@ -1239,6 +1242,10 @@ class PickAndPlaceTM(Node):
                     f"Placed {self.grasped_object.name} at {placement_loc.value}.",
                     level="success",
                 )
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Placed {self.grasped_object.name} at {placement_loc.value}",
+                    DETECTIONS_IMAGE_TOPIC,
+                )
                 self.current_attempts = 0
                 self._shelf_fallback_heights = []
                 self._shelf_fallback_idx = 0
@@ -1384,6 +1391,9 @@ class PickAndPlaceTM(Node):
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["picked"] = True
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Picked breakfast item: {item_name}", DETECTIONS_IMAGE_TOPIC
+                )
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING
             else:
                 CLog.manip(
@@ -1427,6 +1437,9 @@ class PickAndPlaceTM(Node):
                 )
                 if status == Status.EXECUTION_SUCCESS:
                     CLog.manip(self, "POUR", f"Poured {item_name} into bowl.", level="success")
+                    self.subtask_manager.hri.publish_display_capture(
+                        f"Poured {item_name} into bowl", DETECTIONS_IMAGE_TOPIC
+                    )
                     break
                 elif attempt < pour_attempts:
                     CLog.manip(
@@ -1471,6 +1484,9 @@ class PickAndPlaceTM(Node):
                     "PLACE",
                     f"Placed breakfast item: {item_name}.",
                     level="success",
+                )
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Placed breakfast item: {item_name}", DETECTIONS_IMAGE_TOPIC
                 )
             else:
                 CLog.manip(
