@@ -74,7 +74,9 @@ class HRIC_TM(Node):
         super().__init__("hric_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.HRIC, mock_areas=[])
 
-        self.seat_angles = [0, -45, -45, -45, 180, 45, 45, 45, -180]
+        # past
+        # self.seat_angles = [0, -45, -45, -45, 180, 45, 45, 45, -180]
+        self.seat_angles = [0, -45, -90, -135, 45, 90, 135, 180]
         self.guests = [Guest() for _ in range(2)]
         self.current_guest_idx = 0
         self.current_attempts = 0
