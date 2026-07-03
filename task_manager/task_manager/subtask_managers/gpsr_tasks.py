@@ -1,4 +1,6 @@
 import time
+
+from geometry_msgs.msg import PointStamped
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
 from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
@@ -629,9 +631,19 @@ class GPSRTask(GenericTask):
 
     def _approach_with_arm(self, point) -> bool:
         """Drive to a person point with the arm tucked (nav_pose), then look
-        at them (front_stare) ready for the interaction that follows."""
+        at them (front_stare) ready for the interaction that follows.
+
+        The point is projected to the MAP frame FIRST: camera-frame points go
+        stale the moment the arm moves (tucking changes the camera pose, and
+        nav would project the point through the wrong transform)."""
+        xy = self.subtask_manager.nav._resolve_map_xy(point)
+        if xy is None:
+            return False
+        map_pt = PointStamped()
+        map_pt.header.frame_id = "map"
+        map_pt.point.x, map_pt.point.y = xy
         self.subtask_manager.manipulation.move_to_position("nav_pose")
-        nav_status, _ = self.subtask_manager.nav.approach_point(point)
+        nav_status, _ = self.subtask_manager.nav.approach_point(map_pt)
         # Face the person even after a partial approach: every follow-up step
         # (face rec, asking, giving) needs the camera looking front.
         self.subtask_manager.manipulation.move_to_position("front_stare")
@@ -787,17 +799,12 @@ class GPSRTask(GenericTask):
         for round_idx in range(FIND_PERSON_MAX_ROUNDS):
             # Re-scan every round: people move, and fresh detections avoid
             # approaching stale camera-frame points after the base moved.
-            s, dets = self.subtask_manager.vision.detect_objects()
-            persons = sorted(
-                (d for d in (dets or []) if d.classname == "person"),
-                key=lambda d: d.distance,
-            )
-            persons = self._persons_in_my_room(persons)
+            persons = self._scan_persons_in_room()
             if round_idx >= len(persons):
                 break
-            candidate = persons[round_idx]
+            candidate, map_point = persons[round_idx]
 
-            if not self._approach_with_arm(candidate.point3d):
+            if not self._approach_with_arm(map_point):
                 continue
 
             status, name = self.subtask_manager.vision.get_person_name(fresh_timeout=4.0)
@@ -870,24 +877,54 @@ class GPSRTask(GenericTask):
     def _persons_in_my_room(self, persons):
         """GPSR rule: only search people inside the SAME areas.json room the
         robot is in — a person visible through a doorway must be ignored.
-        Projects each detection to the map (nav's TF) and keeps those inside
-        the robot's current room polygon. No polygon/TF/areas -> no filtering."""
+
+        Projects each detection to the map IMMEDIATELY (the camera still has
+        the pose it detected from — the projection would be wrong after the
+        arm pans or tucks) and keeps those inside the robot's current room
+        polygon. Returns [(detection, map-frame PointStamped)]; without
+        areas/TF the room filter is skipped but points are still projected."""
+        room_poly = None
         s, areas = self.subtask_manager.nav.retrieve_areas()
         s2, cur = self.subtask_manager.nav.get_current_pose()
-        if not isinstance(areas, dict) or s2 != Status.EXECUTION_SUCCESS or cur is None:
-            return persons
-        rx, ry = cur.pose.position.x, cur.pose.position.y
-        room_poly = None
-        for room, data in areas.items():
-            poly = (data or {}).get("polygon")
-            if poly and self._point_in_polygon(rx, ry, poly):
-                room_poly = poly
-                break
-        if room_poly is None:
-            return persons
-        inside = []
+        if isinstance(areas, dict) and s2 == Status.EXECUTION_SUCCESS and cur is not None:
+            rx, ry = cur.pose.position.x, cur.pose.position.y
+            for room, data in areas.items():
+                poly = (data or {}).get("polygon")
+                if poly and self._point_in_polygon(rx, ry, poly):
+                    room_poly = poly
+                    break
+        result = []
         for d in persons:
             xy = self.subtask_manager.nav._resolve_map_xy(d.point3d)
-            if xy is not None and self._point_in_polygon(xy[0], xy[1], room_poly):
-                inside.append(d)
-        return inside
+            if xy is None:
+                continue  # unprojectable -> can't be approached reliably
+            if room_poly is not None and not self._point_in_polygon(xy[0], xy[1], room_poly):
+                continue
+            mp = PointStamped()
+            mp.header.frame_id = "map"
+            mp.point.x, mp.point.y = xy
+            result.append((d, mp))
+        return result
+
+    def _scan_persons_in_room(self):
+        """Localize the people in the room: detect from the front view first,
+        and pan the camera through self.pan_angles when nobody is in front.
+        Points are map-projected at each pan pose (see _persons_in_my_room),
+        so they stay valid after the camera re-centers. Returns
+        [(detection, map PointStamped)] sorted nearest-first."""
+        for pan in [0] + list(self.pan_angles):
+            if pan:
+                self.subtask_manager.manipulation.pan_to(pan)
+                time.sleep(1.0)
+            s, dets = self.subtask_manager.vision.detect_objects()
+            persons = sorted(
+                (d for d in (dets or []) if d.classname == "person"),
+                key=lambda d: d.distance,
+            )
+            persons = self._persons_in_my_room(persons)
+            if persons:
+                if pan:
+                    self.subtask_manager.manipulation.pan_to(0)
+                return persons
+        self.subtask_manager.manipulation.pan_to(0)
+        return []
