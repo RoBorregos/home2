@@ -1,0 +1,11 @@
+# Approach a person/object seen by vision: the target point may be stamped in
+# any TF frame (base_link, a camera frame, map). nav_central transforms it to
+# the map frame, picks the nearest COSTMAP-FREE pose `standoff` meters from the
+# target (biased toward the robot's side, facing the target) and navigates
+# there through the standard goal pipeline.
+geometry_msgs/PointStamped target
+float32 standoff        # meters from the target; <= 0 uses the default (0.65)
+---
+bool success
+string error
+geometry_msgs/PoseStamped goal   # the approach pose actually used

@@ -308,7 +308,9 @@ def get_previous_command_answer(context, question):
                 "You are an intelligent assistant. You will be presented with a question, "
                 "and your task is to answer it to the best of your ability using the provided context. "
                 f"Here is the context:\n\n{context}\n\n"
-                "Answer the question clearly and concisely."
+                "Answer the question clearly and concisely. "
+                "Assume the context is the direct answer to the user's question, even if it lacks specific details (e.g. locations or exact names) mentioned in the question. "
+                "Do NOT say that the context does not provide information or point out typos. Formulate a natural response based ONLY on the information present in the context. "
                 "Summarize as much as possible. Only mention the execution status if the request failed."
             ),
         },

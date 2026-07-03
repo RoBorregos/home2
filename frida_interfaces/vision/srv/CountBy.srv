@@ -1,4 +1,7 @@
-bool request 
+bool request
 ---
 bool success
 int32 count
+# Camera-frame 3D point of each (room-filtered) person detected;
+# find_person_by_name approaches these one by one.
+geometry_msgs/PointStamped[] points

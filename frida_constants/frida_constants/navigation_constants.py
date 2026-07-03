@@ -34,6 +34,8 @@ GOAL_NAV_ACTION_SERVER = "/navigate_to_pose"
 ### Point-based navigation services
 GO_TO_POSE_SERVICE = "/navigation/go_to_pose"
 GET_ROBOT_POSE_SERVICE = "/navigation/get_robot_pose"
+APPROACH_POINT_SERVICE = "/navigation/approach_point"
+GLOBAL_COSTMAP_TOPIC = "/global_costmap/costmap"
 
 ### Initial pose topic
 INITIAL_POSE_TOPIC = "/initialpose"

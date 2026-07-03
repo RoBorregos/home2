@@ -13,7 +13,7 @@ from frida_constants.hri_constants import (
     GPSR_TASK_STEP_TOPIC,
     ANSWER_PUBLISHER,
 )
-from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
+from frida_constants.vision_constants import IMAGE_ORIENTED_TOPIC
 from rclpy.duration import Duration
 from rclpy.node import Node
 from std_msgs.msg import Int32
@@ -498,7 +498,9 @@ class GPSRTM(Node):
                 self._publish_command_index(self.executed_commands)
 
                 self.get_logger().info(f"Executing command: {str(command)}")
-                self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
+                # Neutral default per command: live camera; vision commands
+                # switch to their own annotated feed when they start.
+                self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
 
                 try:
                     exec_commad = search_command(
