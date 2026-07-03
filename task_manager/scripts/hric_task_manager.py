@@ -206,7 +206,7 @@ class HRIC_TM(Node):
 
         elif self.current_state == HRIC_TM.TaskStates.WAIT_FOR_DOOR:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_DOOR)
-            Logger.state(self, "Waiting for a knock or doorbell at the door...")
+            Logger.state(self, "Waiting for the doorbell at the door...")
             # Clear any door event heard before the button was pressed.
             self.subtask_manager.hri.door_event_detected = False
             self.subtask_manager.hri.last_door_event = ""
@@ -215,14 +215,14 @@ class HRIC_TM(Node):
                 wait=True,
             )
             time.sleep(2)
-            # Arm the knock/doorbell detectors only now, at the start position:
-            # this is the only moment the doorbell rings, so party speech and the
-            # robot's own audio outside this window cannot cause a false event.
+            # Arm the doorbell detector only now, at the start position: this is
+            # the only moment the doorbell rings, so party speech and the robot's
+            # own audio outside this window cannot cause a false event.
             self.subtask_manager.hri.arm_door_detection(True)
-            # Clear again: arming reset the detectors, ignore anything from before.
+            # Clear again: arming reset the detector, ignore anything from before.
             self.subtask_manager.hri.door_event_detected = False
             self.subtask_manager.hri.last_door_event = ""
-            # Safety timeout: if no knock/doorbell is heard, continue anyway
+            # Safety timeout: if no doorbell is heard, continue anyway
             deadline = time.time() + DOOR_WAIT_TIMEOUT
             while not self.subtask_manager.hri.door_event_detected and time.time() < deadline:
                 rclpy.spin_once(self, timeout_sec=0.1)
@@ -243,7 +243,7 @@ class HRIC_TM(Node):
                     f"No door event after {DOOR_WAIT_TIMEOUT:.0f} seconds, continuing with the task",
                 )
                 self.subtask_manager.hri.say(
-                    "I did not hear a knock or doorbell, but I will continue with the task. "
+                    "I did not hear the doorbell, but I will continue with the task. "
                     "Referee, please open the door so that I can greet them.",
                     wait=True,
                 )

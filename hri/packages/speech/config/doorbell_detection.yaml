@@ -17,30 +17,28 @@ doorbell_detection:
     # --- Auto-enrollment: the bell is the same within a round; enroll the first
     # confident ring so the second guest's ring is recognised even if fainter. ---
     enroll: true
-    # A borderline ring whose fingerprint matches the enrolled bell at/above this
+    # A borderline event whose fingerprint matches the enrolled bell at/above this
     # cosine similarity is confirmed even if its raw score is below min_score.
     template_sim_confirm: 0.85
     # --- Self-calibrating; the defaults below rarely need touching. ---
-    # Stage 1 — adaptive loudness gate (dB above the learned ambient floor). A
-    # bell is meant to be heard, so this margin is deliberately generous.
-    active_margin_db: 10.0
+    # Detection is by LOUD SOUND EVENT, not tonal shape: every doorbell type
+    # (short buzzer, long chime, ding-dong) and the knock is a loud event, so
+    # confirming on that is uniform across all of them. Specificity comes from the
+    # gating above (armed only while waiting, muted while speaking), not the audio.
+    #
+    # Stage 1 — adaptive loudness floor.
+    active_margin_db: 8.0   # a frame joins an event this far above the floor
     floor_alpha: 0.05
-    # Stage 2 — pitch + purity. clarity_min high: a chime is a near-pure tone,
-    # which rejects the formant-rich, lower-clarity vowels of party speech.
-    pitch_min_hz: 200.0
-    pitch_max_hz: 4000.0
-    clarity_min: 0.80
-    # Stage 3 — grouping frames into one ringing note. The chime signature that
-    # speech does not produce: a pitch-stable tone SUSTAINED then DECAYING.
-    pitch_tol: 0.06
-    note_gap_ms: 80.0
-    sustain_min_ms: 140.0
-    max_note_ms: 2500.0
-    min_decay_ratio: 1.25
-    # Stage 4 — event confirmation. min_tones=1 accepts single-tone buzzers; the
-    # sustain/decay/purity gates above reject speech, not the note count.
-    min_tones: 1
-    min_gap_s: 0.03
-    max_gap_s: 2.0
-    pattern_window_s: 3.5
+    # Stage 2 — event confirmation: the peak must stand confirm_margin_db above the
+    # floor and the loud part must last min_event_ms. Raise confirm_margin_db if
+    # faint background sounds trigger it; lower it if quiet doorbells are missed.
+    confirm_margin_db: 12.0
+    event_gap_ms: 150.0     # a silence this long ends an event
+    min_event_ms: 120.0     # total loud time needed to confirm
+    max_event_ms: 4000.0    # cap so a continuous sound confirms once
     cooldown_s: 1.5
+    # Stage 3 — tonal features: score + fingerprint only, never reject. pitch_max
+    # bounds the doorbell band; clarity_min marks which frames count as tonal.
+    pitch_min_hz: 200.0
+    pitch_max_hz: 1600.0
+    clarity_min: 0.60

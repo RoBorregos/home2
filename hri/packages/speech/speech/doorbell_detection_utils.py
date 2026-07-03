@@ -1,37 +1,26 @@
 #!/usr/bin/env python3
 """
-Streaming DSP doorbell ("chime") detector — no ML, no ROS, round-independent.
+Streaming DSP doorbell detector — no ML, no ROS, round-independent.
 
-Unlike ``ding_dong_detection_utils`` (which required a *descending two-note*
-pattern and so both missed non-descending / single-tone bells and fired on the
-falling intonation of party speech), this detector confirms a bell from the
-acoustic *signature of a ringing tone*, which speech does not produce:
+Doorbells vary too much (short buzzer, long chime, ding-dong, knock) for any
+tonal signature to cover them all without also firing on room sounds. So this
+detector confirms on the one thing they share: a **loud sound event** — energy
+that rises clearly above the learned ambient floor and lasts a moment.
+Specificity comes not from the audio but from the caller's gating (the ROS node
+only listens while armed at the door and mutes itself while the robot speaks).
 
-  * a near-pure tone (high autocorrelation clarity),
-  * whose pitch stays stable for a sustained time (>= ``sustain_min_ms``) —
-    speech pitch drifts and is broken by consonants within ~100-200 ms, and
-  * whose energy then decays (ring-down) — a struck/electronic chime rings and
-    fades, a held vowel plateaus.
-
-Any number of tones, in any pitch order, confirms it, so single-tone buzzers,
-ascending and multi-note chimes all register. Everything is adaptive or
-scale-free (adaptive loudness floor, relative pitch tolerance), so no
-per-doorbell tuning is needed.
-
-Optional enrollment (see ``enroll_template`` / ``template_similarity``): the
-per-event log-magnitude spectrum is a compact fingerprint. In this task the
-bell is the *same within a round* (it rings for both guests), so the first
-confirmed ring can be enrolled and used to raise confidence on the second —
-handling a doorbell whose sound changes between rounds without any manual setup.
+Pipeline: (1) an EMA of quiet frames tracks the ambient floor; (2) frames a
+margin above it form an event, confirmed when it lasts >= ``min_event_ms`` with a
+peak >= ``confirm_margin_db`` above the floor; (3) tonal features (pitch, clarity,
+spectral fingerprint) feed the score and enrollment only, never rejecting.
 
 Feed int16 (or float) mono chunks to ``process()``; it returns confirmed events.
-Only numpy is required.
 """
 
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, Optional
 
 import numpy as np
@@ -40,35 +29,19 @@ INT16_MAX = 32768.0
 
 
 @dataclass
-class DoorbellTone:
-    """A single sustained, decaying near-pure tone (one chime note)."""
-
-    start_s: float
-    end_s: float
-    freq_hz: float
-    peak_db: float
-    clarity: float
-    decay_ratio: float  # early-RMS / late-RMS; > 1 means the tone rings down
-
-    @property
-    def duration_s(self) -> float:
-        return max(0.0, self.end_s - self.start_s)
-
-
-@dataclass
 class DoorbellEvent:
-    """A confirmed doorbell ring."""
+    """A confirmed doorbell / loud sound event."""
 
-    time_s: float
-    tones: List[DoorbellTone]
-    score: float
-    span_s: float
+    time_s: float  # detector time (s) at confirmation
+    score: float  # confidence in [0, 1]
+    dur_ms: float  # total loud time in the event
+    peak_db: float  # loudest frame, dBFS
+    margin_db: float  # peak above the ambient floor
+    dominant_hz: float  # pitch of the loudest frame (0 if not tonal)
+    clarity: float  # mean tonal clarity over the event, [0, 1]
+    span_s: float = 0.0  # kept for API compatibility
     spectrum: Optional[np.ndarray] = None  # L2-normalised fingerprint, for enrollment
     template_similarity: float = 0.0  # cosine to the enrolled template, if any
-
-    @property
-    def freqs(self) -> List[float]:
-        return [t.freq_hz for t in self.tones]
 
 
 @dataclass
@@ -77,81 +50,55 @@ class DoorbellDetectorConfig:
     frame_ms: float = 24.0  # ~5 periods of the lowest searched pitch (200 Hz)
     hop_ms: float = 12.0  # ~50% overlap
 
-    # Stage 1 — adaptive loudness gate (no fixed min_db). A bell is meant to be
-    # heard, so require a clear margin over the learned ambient floor.
-    active_margin_db: float = 10.0
-    floor_alpha: float = 0.05
-    silence_floor_db: float = -70.0
+    # Stage 1 — adaptive loudness floor (no fixed min_db).
+    active_margin_db: float = 8.0  # a frame joins an event this far above the floor
+    floor_alpha: float = 0.05  # EMA weight learning the ambient floor
+    silence_floor_db: float = -70.0  # ignore essentially-digital-silence frames
 
-    # Stage 2 — pitch + clarity (scale-free). clarity_min is high: a chime is a
-    # near-pure tone, which rejects the lower-clarity, formant-rich vowels of
-    # speech.
+    # Stage 2 — event confirmation by LOUDNESS, not tonal shape. This is what
+    # makes detection uniform across every doorbell type and the knock.
+    confirm_margin_db: float = 12.0  # the event peak must exceed the floor by this
+    event_gap_ms: float = 150.0  # a silence this long ends the event
+    min_event_ms: float = 120.0  # total loud time needed to confirm
+    max_event_ms: float = 4000.0  # cap so a continuous sound confirms once
+    cooldown_s: float = 1.5  # suppress re-confirmations for this long
+
+    # Stage 3 — tonal features, used ONLY for the confidence score and the
+    # spectral fingerprint (enrollment). They never reject an event.
     pitch_min_hz: float = 200.0
-    pitch_max_hz: float = 4000.0
-    clarity_min: float = 0.80
+    pitch_max_hz: float = 1600.0
+    clarity_min: float = 0.60  # a frame above this contributes to the tonal score
 
-    # Stage 3 — grouping frames into one ringing note.
-    pitch_tol: float = 0.06  # frames within this fraction of pitch are one note
-    note_gap_ms: float = 80.0  # tolerated dip inside one note
-    sustain_min_ms: float = 140.0  # a tone must ring this long (rejects speech)
-    max_note_ms: float = 2500.0  # ... and no longer (rejects steady hums)
-    min_decay_ratio: float = 1.25  # early/late RMS: the tone must fade, not plateau
-
-    # Stage 4 — event confirmation. min_tones=1 accepts single-tone buzzers; the
-    # sustain + decay + purity gates above are what reject speech, not the count.
-    min_tones: int = 1
-    min_gap_s: float = 0.03
-    max_gap_s: float = 2.0
-    pattern_window_s: float = 3.5
-    cooldown_s: float = 1.5
-
-    # Stage 5 — optional spectral fingerprint / enrollment (round-independent).
+    # Optional spectral fingerprint / enrollment (round-independent).
     template_bins: int = 64
     template_fmin: float = 150.0
     template_fmax: float = 6000.0
     # A borderline event whose fingerprint matches the enrolled template at or
-    # above this cosine similarity is confirmed even if its raw score is low.
+    # above this cosine similarity is confirmed even below the confidence gate.
     template_sim_confirm: float = 0.85
 
 
 @dataclass
-class _OpenTone:
-    """Mutable accumulator for the note currently being built."""
+class _OpenEvent:
+    """Mutable accumulator for the loud event currently being built."""
 
     start_s: float
-    last_s: float
-    freqs: List[float] = field(default_factory=list)
-    rms: List[float] = field(default_factory=list)
+    last_active_s: float
+    floor_db: float  # ambient floor when the event began
+    active_frames: int = 0
     peak_db: float = -120.0
+    peak_hz: float = 0.0
     clarity_sum: float = 0.0
-    n: int = 0
+    clarity_n: int = 0
     spec_sum: Optional[np.ndarray] = None
+    spec_n: int = 0
 
     def add_spectrum(self, mag: np.ndarray) -> None:
         if self.spec_sum is None:
             self.spec_sum = mag.astype(np.float64).copy()
         else:
             self.spec_sum += mag
-
-    def decay_ratio(self) -> float:
-        """early-RMS / late-RMS over the note; > 1 means it rings down."""
-        n = len(self.rms)
-        if n < 3:
-            return 1.0
-        third = max(1, n // 3)
-        early = float(np.mean(self.rms[:third]))
-        late = float(np.mean(self.rms[-third:]))
-        return early / max(late, 1e-9)
-
-    def finalize(self, decay: float) -> DoorbellTone:
-        return DoorbellTone(
-            start_s=self.start_s,
-            end_s=self.last_s,
-            freq_hz=float(np.median(self.freqs)) if self.freqs else 0.0,
-            peak_db=self.peak_db,
-            clarity=self.clarity_sum / max(1, self.n),
-            decay_ratio=decay,
-        )
+        self.spec_n += 1
 
 
 class DoorbellDetector:
@@ -174,8 +121,8 @@ class DoorbellDetector:
         )
         self._fft_size = 1 << int(np.ceil(np.log2(2 * self.frame_size)))
 
-        # Log-spaced bin edges mapping the rfft magnitude spectrum onto a compact,
-        # tuning-free fingerprint used for enrollment.
+        # Log-spaced bin edges mapping the rfft magnitude onto a compact, tuning-
+        # free fingerprint used for enrollment.
         freqs = np.fft.rfftfreq(self._fft_size, 1.0 / cfg.sample_rate)
         edges = np.geomspace(
             max(1.0, cfg.template_fmin), cfg.template_fmax, cfg.template_bins + 1
@@ -189,10 +136,16 @@ class DoorbellDetector:
         self._buf = np.zeros(0, dtype=np.float64)
         self._time = 0.0
         self._floor_db: Optional[float] = None
-        self._open: Optional[_OpenTone] = None
-        self._tones: List[DoorbellTone] = []
-        self._tone_specs: List[np.ndarray] = []  # fingerprint per accepted tone
+        self._event: Optional[_OpenEvent] = None
         self._cooldown_until = -1e9
+        # Diagnostics: every closed event (with why it was accepted/rejected) so a
+        # caller can see near-misses and tune. Drained by ``drain_debug()``.
+        self._debug: List[dict] = []
+
+    def drain_debug(self) -> List[dict]:
+        """Return and clear the event diagnostics gathered so far."""
+        out, self._debug = self._debug, []
+        return out
 
     # ── enrollment ───────────────────────────────────────────────────────────
 
@@ -230,7 +183,6 @@ class DoorbellDetector:
         spec = np.fft.rfft(x, self._fft_size)
         mag = np.abs(spec)
 
-        # Compact log-magnitude fingerprint (per-bin mean power, log-compressed).
         binned = np.zeros(self.cfg.template_bins, dtype=np.float64)
         counts = np.bincount(self._bin_idx, minlength=self.cfg.template_bins)
         np.add.at(binned, self._bin_idx, mag**2)
@@ -259,7 +211,7 @@ class DoorbellDetector:
         return max(0.0, clarity), float(pitch), binned
 
     def _analyze_frame(self, frame: np.ndarray):
-        """Return (is_tone, dbfs, rms, pitch_hz, clarity, spectrum)."""
+        """Return (active, dbfs, pitch_hz, clarity, spectrum)."""
         cfg = self.cfg
         rms = float(np.sqrt(np.mean(frame**2)) + 1e-9)
         db = self._to_dbfs(rms)
@@ -269,14 +221,14 @@ class DoorbellDetector:
 
         active = db > max(self._floor_db + cfg.active_margin_db, cfg.silence_floor_db)
         if not active:
+            # Learn the ambient floor only from quiet frames.
             self._floor_db = (
                 cfg.floor_alpha * db + (1.0 - cfg.floor_alpha) * self._floor_db
             )
-            return False, db, rms, 0.0, 0.0, None
+            return False, db, 0.0, 0.0, None
 
         clarity, pitch, spectrum = self._spectrum_features(frame)
-        is_tone = clarity >= cfg.clarity_min and pitch > 0.0
-        return is_tone, db, rms, pitch, clarity, spectrum
+        return True, db, pitch, clarity, spectrum
 
     # ── streaming entry point ────────────────────────────────────────────────
 
@@ -288,10 +240,9 @@ class DoorbellDetector:
         events: List[DoorbellEvent] = []
         while len(self._buf) >= self.frame_size:
             frame = self._buf[: self.frame_size]
-            t = self._time
-            is_tone, db, rms, pitch, clarity, spectrum = self._analyze_frame(frame)
+            active, db, pitch, clarity, spectrum = self._analyze_frame(frame)
 
-            ev = self._update_tones(is_tone, t, db, rms, pitch, clarity, spectrum)
+            ev = self._update_event(active, self._time, db, pitch, clarity, spectrum)
             if ev is not None:
                 events.append(ev)
 
@@ -300,146 +251,100 @@ class DoorbellDetector:
         return events
 
     def flush(self) -> List[DoorbellEvent]:
-        """Close any open note (e.g. at end of stream) and match once more."""
-        if self._open is not None:
-            ev = self._close_tone(self._time)
+        """Close any open event (e.g. at end of stream) and confirm once more."""
+        if self._event is not None:
+            ev = self._close_event(self._time)
             if ev is not None:
                 return [ev]
         return []
 
-    # ── note grouping + confirmation ─────────────────────────────────────────
+    # ── event building + confirmation ────────────────────────────────────────
 
-    def _update_tones(
-        self, is_tone, t, db, rms, pitch, clarity, spectrum
+    def _update_event(
+        self, active, t, db, pitch, clarity, spectrum
     ) -> Optional[DoorbellEvent]:
         cfg = self.cfg
-        note_gap_s = cfg.note_gap_ms / 1000.0
+        gap_s = cfg.event_gap_ms / 1000.0
 
-        if is_tone:
-            ref = np.median(self._open.freqs) if self._open else 0.0
-            same = (
-                self._open is not None
-                and (t - self._open.last_s) <= note_gap_s
-                and abs(pitch - ref) <= cfg.pitch_tol * max(ref, 1.0)
-            )
-            if not same and self._open is not None:
-                ev = self._close_tone(t)
-                if ev is not None:
-                    return ev
-            if self._open is None:
-                self._open = _OpenTone(start_s=t, last_s=t)
-            self._open.last_s = t
-            self._open.freqs.append(pitch)
-            self._open.rms.append(rms)
-            self._open.peak_db = max(self._open.peak_db, db)
-            self._open.clarity_sum += clarity
-            self._open.n += 1
+        if active:
+            if self._event is None:
+                self._event = _OpenEvent(
+                    start_s=t, last_active_s=t, floor_db=self._floor_db or db
+                )
+            e = self._event
+            e.last_active_s = t
+            e.active_frames += 1
+            if db > e.peak_db:
+                e.peak_db = db
+                e.peak_hz = pitch
+            if clarity >= cfg.clarity_min:
+                e.clarity_sum += clarity
+                e.clarity_n += 1
             if spectrum is not None:
-                self._open.add_spectrum(spectrum)
-        elif self._open is not None and (t - self._open.last_s) > note_gap_s:
-            return self._close_tone(t)
+                e.add_spectrum(spectrum)
+            # A continuous sound confirms once, then the cooldown suppresses it.
+            if (t - e.start_s) * 1000.0 >= cfg.max_event_ms:
+                return self._close_event(t)
+        elif self._event is not None and (t - self._event.last_active_s) > gap_s:
+            return self._close_event(t)
 
         return None
 
-    def _close_tone(self, now: float) -> Optional[DoorbellEvent]:
-        open_tone, self._open = self._open, None
-        if open_tone is None:
+    def _close_event(self, now: float) -> Optional[DoorbellEvent]:
+        e, self._event = self._event, None
+        if e is None:
             return None
         cfg = self.cfg
-        dur_ms = (open_tone.last_s - open_tone.start_s) * 1000.0
-        decay = open_tone.decay_ratio()
-        # A chime note must be sustained, bounded and ring down. These three are
-        # the discriminators against speech; a note that fails is discarded.
-        if (
-            dur_ms < cfg.sustain_min_ms
-            or dur_ms > cfg.max_note_ms
-            or decay < cfg.min_decay_ratio
-        ):
-            return None
+        dur_ms = e.active_frames * cfg.hop_ms
+        margin = e.peak_db - e.floor_db
+        clarity = e.clarity_sum / max(1, e.clarity_n)
 
-        self._tones.append(open_tone.finalize(decay))
-        n = max(1, open_tone.n)
-        self._tone_specs.append(
-            open_tone.spec_sum / n
-            if open_tone.spec_sum is not None
-            else np.zeros(cfg.template_bins)
+        reason = "ok"
+        if dur_ms < cfg.min_event_ms:
+            reason = "too_short"
+        elif margin < cfg.confirm_margin_db:
+            reason = "too_quiet"
+
+        self._debug.append(
+            {
+                "dur_ms": dur_ms,
+                "margin_db": margin,
+                "peak_db": e.peak_db,
+                "dominant_hz": e.peak_hz,
+                "clarity": clarity,
+                "reason": reason,
+            }
         )
-        return self._match_pattern(now)
-
-    def _match_pattern(self, now: float) -> Optional[DoorbellEvent]:
-        cfg = self.cfg
-        # Keep only tones whose onset is inside the pattern window.
-        keep = [
-            i
-            for i, t in enumerate(self._tones)
-            if now - t.start_s <= cfg.pattern_window_s
-        ]
-        self._tones = [self._tones[i] for i in keep]
-        self._tone_specs = [self._tone_specs[i] for i in keep]
-
-        if now < self._cooldown_until or len(self._tones) < cfg.min_tones:
+        if reason != "ok" or now < self._cooldown_until:
             return None
 
-        seq = self._tones[-cfg.min_tones :]
-        specs = self._tone_specs[-cfg.min_tones :]
-        onsets = [t.start_s for t in seq]
-        span = onsets[-1] - onsets[0]
-        if span > cfg.pattern_window_s:
-            return None
-        for prev, cur in zip(onsets, onsets[1:]):
-            gap = cur - prev
-            if not (cfg.min_gap_s <= gap <= cfg.max_gap_s):
-                return None
-
-        spectrum = self._event_fingerprint(specs)
+        spectrum = None
+        if e.spec_sum is not None and e.spec_n > 0:
+            vec = e.spec_sum / e.spec_n
+            norm = np.linalg.norm(vec)
+            spectrum = vec / norm if norm > 0 else vec
         sim = self.template_similarity(spectrum)
-        score = self._score(seq, sim)
+        score = self._score(margin, dur_ms, clarity, sim)
 
         self._cooldown_until = now + cfg.cooldown_s
-        self._tones = []
-        self._tone_specs = []
         return DoorbellEvent(
             time_s=now,
-            tones=list(seq),
             score=score,
-            span_s=span,
+            dur_ms=dur_ms,
+            peak_db=e.peak_db,
+            margin_db=margin,
+            dominant_hz=e.peak_hz,
+            clarity=clarity,
             spectrum=spectrum,
             template_similarity=sim,
         )
 
-    @staticmethod
-    def _event_fingerprint(specs: List[np.ndarray]) -> Optional[np.ndarray]:
-        if not specs:
-            return None
-        vec = np.mean(np.stack(specs, axis=0), axis=0)
-        norm = np.linalg.norm(vec)
-        return vec / norm if norm > 0 else vec
-
-    def _score(self, seq: List[DoorbellTone], template_sim: float) -> float:
-        """Confidence from tone purity, sustain, ring-down and template match."""
+    def _score(self, margin, dur_ms, clarity, template_sim) -> float:
+        """Confidence from loudness, duration and (as a bonus) tonal purity."""
         cfg = self.cfg
-        clarity = float(np.mean([t.clarity for t in seq]))
-        purity = float(
-            np.clip((clarity - cfg.clarity_min) / (1.0 - cfg.clarity_min), 0.0, 1.0)
-        )
-        sustain = float(
-            np.clip(
-                np.mean([t.duration_s for t in seq])
-                / (2.0 * cfg.sustain_min_ms / 1000.0),
-                0.0,
-                1.0,
-            )
-        )
-        decay = float(
-            np.clip(
-                (np.mean([t.decay_ratio for t in seq]) - 1.0)
-                / max(1e-6, cfg.min_decay_ratio - 1.0)
-                * 0.5,
-                0.0,
-                1.0,
-            )
-        )
-        base = 0.45 * purity + 0.35 * sustain + 0.20 * decay
-        # A confident template match lifts the score toward its similarity; it can
-        # only help (an unenrolled or non-matching bell keeps the DSP-only base).
-        return float(np.clip(max(base, 0.5 * base + 0.5 * template_sim), 0.0, 1.0))
+        loud = float(np.clip((margin - cfg.confirm_margin_db) / 18.0, 0.0, 1.0))
+        dur = float(np.clip(dur_ms / (2.0 * cfg.min_event_ms), 0.0, 1.0))
+        tonal = float(np.clip((clarity - 0.5) / 0.4, 0.0, 1.0))
+        base = float(np.clip(0.60 + 0.25 * loud + 0.10 * dur + 0.05 * tonal, 0.0, 1.0))
+        # A confident template match can only help.
+        return float(max(base, 0.5 * base + 0.5 * template_sim))

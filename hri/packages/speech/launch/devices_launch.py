@@ -48,13 +48,6 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
 
-    knock_detection_config = parse_ros_config(
-        os.path.join(
-            get_package_share_directory("speech"), "config", "knock_detection.yaml"
-        ),
-        [ModuleNames.HRI.value],
-    )["knock_detection"]["ros__parameters"]
-
     doorbell_detection_config = parse_ros_config(
         os.path.join(
             get_package_share_directory("speech"), "config", "doorbell_detection.yaml"
@@ -89,14 +82,8 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[voice_detection_config],
         ),
-        Node(
-            package="speech",
-            executable="knock_detection.py",
-            name="knock_detection",
-            output="screen",
-            emulate_tty=True,
-            parameters=[knock_detection_config],
-        ),
+        # Door-event detection: only the DSP doorbell node for now (knock and the
+        # Edge Impulse door model are intentionally not launched).
         Node(
             package="speech",
             executable="doorbell_detection.py",

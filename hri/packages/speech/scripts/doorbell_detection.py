@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
 """
-Doorbell (chime) detection node — robust DSP detector.
+Doorbell detection node — robust DSP detector.
 
 Thin ROS wrapper around ``speech.doorbell_detection_utils.DoorbellDetector``.
 Publishes ``{"keyword": "doorbell", "score": <float>}`` on the shared door-event
 topic (``/hri/speech/ei_detection``) so the task manager needs only one
-subscription. Round-independent (no per-doorbell tuning) and self-calibrating,
-so it runs in every environment (unlike the EI door node, which is l4t only).
+subscription. Self-calibrating and round-independent, so it runs everywhere.
 
-Two robustness features beyond the raw detector:
-
-  * Gating — the detector only publishes while *armed* and while the robot is
-    *not speaking*. The task manager arms it (``arm_topic``, std_msgs/Bool) only
-    while it is parked at the start position waiting for a guest, which is the
-    only moment the doorbell rings; the robot's own TTS is muted via ``/saying``.
-    This removes almost all false positives from party speech and self-audio.
-  * Auto-enrollment — the doorbell is the same within a round (it rings for both
-    guests). The first confident ring is enrolled as a spectral template so the
-    second guest's ring is recognised with higher confidence, even if the bell
-    sound changes between rounds.
+Adds two things around the raw detector:
+  * Gating — only publishes while *armed* (the task manager arms it via
+    ``arm_topic`` while waiting at the door) and while not speaking (muted via
+    ``/saying``), which is where the specificity comes from.
+  * Auto-enrollment — the first confident ring is enrolled as a spectral
+    template so a later, fainter ring of the same round's bell still matches.
 """
 
 import json
@@ -53,22 +47,18 @@ class DoorbellDetectionNode(Node):
         self.declare_parameter("mute_while_speaking", True)
         # Auto-enrollment (round-independent template matching).
         self.declare_parameter("enroll", True)
-        # Detector config.
-        self.declare_parameter("active_margin_db", 10.0)
+        # Detector config — event confirmation is by loudness, not tonal shape.
+        self.declare_parameter("active_margin_db", 8.0)
+        self.declare_parameter("confirm_margin_db", 12.0)
         self.declare_parameter("floor_alpha", 0.05)
-        self.declare_parameter("pitch_min_hz", 200.0)
-        self.declare_parameter("pitch_max_hz", 4000.0)
-        self.declare_parameter("clarity_min", 0.80)
-        self.declare_parameter("pitch_tol", 0.06)
-        self.declare_parameter("note_gap_ms", 80.0)
-        self.declare_parameter("sustain_min_ms", 140.0)
-        self.declare_parameter("max_note_ms", 2500.0)
-        self.declare_parameter("min_decay_ratio", 1.25)
-        self.declare_parameter("min_tones", 1)
-        self.declare_parameter("min_gap_s", 0.03)
-        self.declare_parameter("max_gap_s", 2.0)
-        self.declare_parameter("pattern_window_s", 3.5)
+        self.declare_parameter("event_gap_ms", 150.0)
+        self.declare_parameter("min_event_ms", 120.0)
+        self.declare_parameter("max_event_ms", 4000.0)
         self.declare_parameter("cooldown_s", 1.5)
+        # Tonal features below feed the score/fingerprint only; they never reject.
+        self.declare_parameter("pitch_min_hz", 200.0)
+        self.declare_parameter("pitch_max_hz", 1600.0)
+        self.declare_parameter("clarity_min", 0.60)
         self.declare_parameter("template_sim_confirm", 0.85)
 
         def g(name):
@@ -91,20 +81,15 @@ class DoorbellDetectionNode(Node):
         cfg = DoorbellDetectorConfig(
             sample_rate=self.sample_rate,
             active_margin_db=g("active_margin_db"),
+            confirm_margin_db=g("confirm_margin_db"),
             floor_alpha=g("floor_alpha"),
+            event_gap_ms=g("event_gap_ms"),
+            min_event_ms=g("min_event_ms"),
+            max_event_ms=g("max_event_ms"),
+            cooldown_s=g("cooldown_s"),
             pitch_min_hz=g("pitch_min_hz"),
             pitch_max_hz=g("pitch_max_hz"),
             clarity_min=g("clarity_min"),
-            pitch_tol=g("pitch_tol"),
-            note_gap_ms=g("note_gap_ms"),
-            sustain_min_ms=g("sustain_min_ms"),
-            max_note_ms=g("max_note_ms"),
-            min_decay_ratio=g("min_decay_ratio"),
-            min_tones=g("min_tones"),
-            min_gap_s=g("min_gap_s"),
-            max_gap_s=g("max_gap_s"),
-            pattern_window_s=g("pattern_window_s"),
-            cooldown_s=g("cooldown_s"),
             template_sim_confirm=self.template_sim_confirm,
         )
         self.detector = DoorbellDetector(cfg)
@@ -118,8 +103,8 @@ class DoorbellDetectionNode(Node):
         self.get_logger().info(
             f"DoorbellDetectionNode ready | in: {audio_topic} | out: {result_topic} | "
             f"require_arm: {self.require_arm} | enroll: {self.enroll} | "
-            f"self-calibrating (margin {cfg.active_margin_db} dB, "
-            f"sustain>={cfg.sustain_min_ms:.0f}ms)"
+            f"loud-event (confirm >={cfg.confirm_margin_db:.0f} dB over floor, "
+            f">={cfg.min_event_ms:.0f} ms)"
         )
 
     # ── gating ───────────────────────────────────────────────────────────────
@@ -128,8 +113,8 @@ class DoorbellDetectionNode(Node):
         if msg.data == self._armed:
             return
         self._armed = msg.data
-        # Re-calibrate the ambient floor and drop any half-built note whenever we
-        # (dis)arm, so a stale note can't leak across the boundary.
+        # Re-calibrate the ambient floor and drop any half-built event whenever we
+        # (dis)arm, so a stale event can't leak across the boundary.
         self.detector.reset()
         self.get_logger().info(
             f"Doorbell detection {'ARMED' if msg.data else 'disarmed'}"
@@ -149,7 +134,7 @@ class DoorbellDetectionNode(Node):
             return
         chunk = np.frombuffer(bytes(msg.data), dtype=np.int16)
         for event in self.detector.process(chunk):
-            notes = ", ".join(f"{t.freq_hz:.0f}Hz" for t in event.tones)
+            info = f"{event.margin_db:.0f}dB/{event.dur_ms:.0f}ms/{event.dominant_hz:.0f}Hz"
             sim = event.template_similarity
             # Confirm if the raw score passes, or if the fingerprint clearly
             # matches this round's enrolled bell (recovers quieter/degraded rings).
@@ -158,14 +143,14 @@ class DoorbellDetectionNode(Node):
             )
             if not confirmed:
                 self.get_logger().info(
-                    f"Ring below threshold (score={event.score:.2f} < "
-                    f"{self.min_score:.2f}, sim={sim:.2f}) | notes=[{notes}] — ignored"
+                    f"Event below threshold (score={event.score:.2f} < "
+                    f"{self.min_score:.2f}, sim={sim:.2f}) | {info} — ignored"
                 )
                 continue
 
             self.get_logger().info(
                 f"Detection: {self.doorbell_label} (score={event.score:.2f}, "
-                f"sim={sim:.2f}) | notes=[{notes}] span={event.span_s:.2f}s"
+                f"sim={sim:.2f}) | {info}"
             )
             # Enroll this round's bell from the first confident ring so later
             # rings match by template even if fainter.
