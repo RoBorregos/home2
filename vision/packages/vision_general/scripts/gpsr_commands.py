@@ -5,6 +5,7 @@ Node to handle GPSR commands.
 """
 
 import cv2
+import math
 import rclpy
 import rclpy.qos
 from rclpy.node import Node
@@ -38,7 +39,16 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from frida_constants.navigation_constants import AREAS_SERVICE
-from vision_general.utils.area_check import filter_detections_in_house, fetch_map_areas
+from vision_general.utils.area_check import (
+    filter_detections_in_house,
+    fetch_map_areas,
+    point_in_polygon,
+)
+from rclpy.time import Time as RclTime
+from rclpy.duration import Duration as RclDuration
+from vision_general.utils.calculations import point2d_to_ros_point_stamped
+from vision_general.utils.debug_pub import DebugImagePublisher
+from builtin_interfaces.msg import Time as TimeMsg
 from tf2_ros import Buffer, TransformListener
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
@@ -114,7 +124,7 @@ class GPSRCommands(Node):
             callback_group=self.callback_group,
         )
 
-        self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
+        self.image_publisher = DebugImagePublisher(self, IMAGE_TOPIC, "gpsr_commands")
 
         self.yolo_client = self.create_client(
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
@@ -158,6 +168,66 @@ class GPSRCommands(Node):
 
     def camera_info_callback(self, msg):
         self.camera_info = msg
+
+    def _highlight_person(self, bbox, label):
+        """Highlight a MATCHED person on output_image (orange, thicker) so the
+        referee display distinguishes them from plain person detections."""
+        if len(self.output_image) == 0:
+            return
+        x1, y1, x2, y2 = bbox
+        cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 140, 255), 3)
+        cv2.putText(
+            self.output_image,
+            label,
+            (x1, max(y1 - 12, 16)),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 140, 255),
+            2,
+        )
+
+    def _person_point(self, bbox):
+        """Deproject a person to a camera-frame PointStamped (for approaching).
+
+        The bbox CENTER often misses the body (between the legs, beside the
+        torso with raised arms) and its depth belongs to the BACKGROUND — the
+        person would project meters behind where they stand. Instead, sample a
+        grid over the torso band of the bbox and deproject the pixel at the
+        LOWER-QUARTILE depth: robustly on the body (nearer than background),
+        while rejecting closer-than-person depth speckles."""
+        if self.depth_image is None or self.camera_info is None:
+            return None
+        x1, y1, x2, y2 = bbox
+        dh, dw = self.depth_image.shape[:2]
+
+        # Torso band: central 40% of the width, 25-60% of the height.
+        bw, bh = x2 - x1, y2 - y1
+        samples = []
+        for fy in (0.25, 0.35, 0.45, 0.6):
+            for fx in (0.3, 0.4, 0.5, 0.6, 0.7):
+                px, py = int(x1 + fx * bw), int(y1 + fy * bh)
+                if 0 <= px < dw and 0 <= py < dh:
+                    d = float(self.depth_image[py, px])
+                    if math.isfinite(d) and d > 0.1:
+                        samples.append((d, px, py))
+
+        if len(samples) >= 4:
+            samples.sort()
+            _, cx, cy = samples[len(samples) // 4]
+        else:
+            cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
+
+        try:
+            return point2d_to_ros_point_stamped(
+                self.camera_info,
+                self.depth_image,
+                (cx, cy),
+                CAMERA_FRAME,
+                TimeMsg(sec=0, nanosec=0),
+            )
+        except Exception as e:
+            self.get_logger().warn(f"Person point deprojection failed: {e}")
+            return None
 
     def count_by_pose_callback(self, request, response):
         """Callback to count a specific pose in the image."""
@@ -214,6 +284,10 @@ class GPSRCommands(Node):
                 response_clean = response_q.strip()
                 if response_clean == "1":
                     pose_count[pose_requested_enum] += 1
+                    pt = self._person_point(person["bbox"])
+                    if pt is not None:
+                        response.points.append(pt)
+                    self._highlight_person(person["bbox"], pose_requested)
                     self.get_logger().info(f"Person is {pose_requested}.")
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
@@ -249,9 +323,14 @@ class GPSRCommands(Node):
             response.count = 0
             return response
 
-        gesture = self.count_gestures(frame)
+        gesture, gesture_boxes = self.count_gestures(frame)
 
         gesture_count = gesture.get(gesture_requested_enum, 0)
+        for bbox in gesture_boxes.get(gesture_requested_enum, []):
+            pt = self._person_point(bbox)
+            if pt is not None:
+                response.points.append(pt)
+            self._highlight_person(bbox, gesture_requested)
 
         response.success = True
         response.count = gesture_count
@@ -259,7 +338,8 @@ class GPSRCommands(Node):
         return response
 
     def count_gestures(self, frame):
-        """Count the gestures in the image and return a dictionary."""
+        """Count the gestures in the image. Returns (counts, boxes): a dict of
+        gesture -> count and a dict of gesture -> matched person bboxes."""
         gesture_count = {
             Gestures.UNKNOWN: 0,
             Gestures.WAVING: 0,
@@ -268,6 +348,7 @@ class GPSRCommands(Node):
             Gestures.POINTING_LEFT: 0,
             Gestures.POINTING_RIGHT: 0,
         }
+        gesture_boxes = {g: [] for g in gesture_count}
 
         self.people = self.get_detections(0)
 
@@ -275,7 +356,7 @@ class GPSRCommands(Node):
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
-            return gesture_count
+            return gesture_count, gesture_boxes
 
         # Detect gestures for each detected person
         for person in self.people:
@@ -289,11 +370,14 @@ class GPSRCommands(Node):
             # Increment the gesture count based on detected gesture
             if gesture in gesture_count:
                 gesture_count[gesture] += 1
+                gesture_boxes[gesture].append(person["bbox"])
                 if gesture == Gestures.WAVING:
                     gesture_count[Gestures.RAISING_LEFT_ARM] += 1
+                    gesture_boxes[Gestures.RAISING_LEFT_ARM].append(person["bbox"])
                     gesture_count[Gestures.RAISING_RIGHT_ARM] += 1
+                    gesture_boxes[Gestures.RAISING_RIGHT_ARM].append(person["bbox"])
 
-        return gesture_count
+        return gesture_count, gesture_boxes
 
     def count_by_person_callback(self, request, response):
         """Callback to count people in the image."""
@@ -310,6 +394,10 @@ class GPSRCommands(Node):
 
         # Count people detected
         people_count = len(self.people)
+        for person in self.people:
+            pt = self._person_point(person["bbox"])
+            if pt is not None:
+                response.points.append(pt)
 
         response.success = True
         response.count = people_count
@@ -354,6 +442,10 @@ class GPSRCommands(Node):
                 response_clean = response_q.strip()
                 if response_clean == "1":
                     count += 1
+                    pt = self._person_point(person["bbox"])
+                    if pt is not None:
+                        response.points.append(pt)
+                    self._highlight_person(person["bbox"], f"{color} {clothing}")
                     self.get_logger().info(
                         f"Person {count} is wearing a {color} {clothing}."
                     )
@@ -428,12 +520,7 @@ class GPSRCommands(Node):
 
     def publish_image(self):
         """Publish the image with the detections if available."""
-        if len(self.output_image) != 0:
-            # cv2.imshow("GPSR Commands", self.output_image)
-            # cv2.waitKey(1)
-            self.image_publisher.publish(
-                self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
-            )
+        self.image_publisher.publish(self.output_image)
 
     def detect_gesture(self, cropped_frame):
         """Detect the gesture in the image."""
@@ -473,12 +560,40 @@ class GPSRCommands(Node):
             self.areas = fetch_map_areas(self, self.areas_client, self.get_logger())
         return self.areas
 
+    def _current_room(self):
+        """Name of the areas.json room whose polygon contains the robot's
+        current map position, or None when outside every polygon / no TF."""
+        areas = self._get_areas()
+        if not areas:
+            return None
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", RclTime(), timeout=RclDuration(seconds=0.5)
+            )
+        except Exception:
+            return None
+        x = tf.transform.translation.x
+        y = tf.transform.translation.y
+        for room, data in areas.items():
+            polygon = (data or {}).get("polygon")
+            if polygon and point_in_polygon((x, y), polygon):
+                return room
+        return None
+
     def _filter_people(self, frame, people):
+        # GPSR rule: only consider people inside the SAME room the robot is in
+        # (a person seen through a doorway must not be counted/approached).
+        # Falls back to whole-house filtering when the robot is outside every
+        # polygon or areas/TF are unavailable.
+        room = self._current_room()
+        rooms = [room] if room else None
+        if room:
+            self.get_logger().info(f"Filtering people to room: {room}")
         filtered = filter_detections_in_house(
             frame,
             people,
             [0],
-            None,
+            rooms,
             self.camera_info,
             self.depth_image,
             self.tf_buffer,
