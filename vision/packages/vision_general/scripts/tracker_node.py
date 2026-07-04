@@ -965,8 +965,7 @@ class SingleTracker(Node):
             self.frame = None
             return
         depth_stamp_ns = (
-            self.depth_image_time.sec * 1_000_000_000
-            + self.depth_image_time.nanosec
+            self.depth_image_time.sec * 1_000_000_000 + self.depth_image_time.nanosec
         )
         image_stamp_ns = self.image_time.sec * 1_000_000_000 + self.image_time.nanosec
         stamp_diff_ns = abs(depth_stamp_ns - image_stamp_ns)

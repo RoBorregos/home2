@@ -63,10 +63,10 @@ SERVICE_TIMEOUT = 10.0
 # Thresholds the hints are judged against (matched to the current defaults of
 # tracker_node / person_goal_smoother / follow_person_controller).
 GOOD_CENTROID_HZ = 8.0
-RESULTS_VS_CENTROID = 0.6      # results rate should be >= this x centroid rate
-SMOOTHER_TIMEOUT_S = 2.0       # person_goal_smoother 'timeout' default
-ARM_ERR_LAGGY = 0.25           # mean |centroid| above this = arm lagging
-FLIPS_OSCILLATING = 1.5        # error sign flips/s above this = oscillating
+RESULTS_VS_CENTROID = 0.6  # results rate should be >= this x centroid rate
+SMOOTHER_TIMEOUT_S = 2.0  # person_goal_smoother 'timeout' default
+ARM_ERR_LAGGY = 0.25  # mean |centroid| above this = arm lagging
+FLIPS_OSCILLATING = 1.5  # error sign flips/s above this = oscillating
 J1_MIN, J1_MAX, J1_MARGIN = -3.05, -0.2, 0.35  # follow_person_controller defaults
 # Fallback only: the real cap is read from controller_server (FollowPath.vx_max)
 # once follow mode is active, so the saturation hint is judged against whatever
@@ -248,8 +248,10 @@ class FollowCalibration(Node):
             self.base_vx_cap = res.values[0].double_value
             print(f"   active base vx cap: {self.base_vx_cap:.2f} m/s")
         else:
-            print(f"   !! could not read FollowPath.vx_max — "
-                  f"assuming {self.base_vx_cap:.2f} m/s for the saturation hint")
+            print(
+                f"   !! could not read FollowPath.vx_max — "
+                f"assuming {self.base_vx_cap:.2f} m/s for the saturation hint"
+            )
 
     # -- summary ----------------------------------------------------------
 
@@ -264,20 +266,31 @@ class FollowCalibration(Node):
         limit_frac = self.j1_near_limit / self.j1_samples if self.j1_samples else 0.0
         c_rate, r_rate = self.centroid.rate(), self.results.rate()
 
-        print("\n=== Follow calibration summary "
-              f"(stage={self.stage}, {span:.0f}s) ===")
-        print(f"  tracker centroid : {c_rate:5.1f} Hz   max gap {self.centroid.max_gap:.2f}s  dropouts {self.centroid.dropouts}")
-        print(f"  3D points        : {r_rate:5.1f} Hz   max gap {self.results.max_gap:.2f}s  dropouts {self.results.dropouts}")
-        print(f"  nav goal updates : {self.goals.rate():5.1f} Hz   max gap {self.goals.max_gap:.2f}s")
+        print("\n=== Follow calibration summary " f"(stage={self.stage}, {span:.0f}s) ===")
+        print(
+            f"  tracker centroid : {c_rate:5.1f} Hz   max gap {self.centroid.max_gap:.2f}s  dropouts {self.centroid.dropouts}"
+        )
+        print(
+            f"  3D points        : {r_rate:5.1f} Hz   max gap {self.results.max_gap:.2f}s  dropouts {self.results.dropouts}"
+        )
+        print(
+            f"  nav goal updates : {self.goals.rate():5.1f} Hz   max gap {self.goals.max_gap:.2f}s"
+        )
         if self.dist_samples:
             ds = sorted(self.dist_samples)
             print(f"  person distance  : median {ds[len(ds)//2]:.2f} m   max {ds[-1]:.2f} m")
-        print(f"  arm error |cx|   : mean {mean_err:.2f}   p95 {p95:.2f}   sign flips {flips_per_s:.2f}/s")
+        print(
+            f"  arm error |cx|   : mean {mean_err:.2f}   p95 {p95:.2f}   sign flips {flips_per_s:.2f}/s"
+        )
         if self.j1_samples:
-            print(f"  joint1 range     : [{self.j1_lo_seen:.2f}, {self.j1_hi_seen:.2f}] rad   near-limit {100 * limit_frac:.0f}% of time")
+            print(
+                f"  joint1 range     : [{self.j1_lo_seen:.2f}, {self.j1_hi_seen:.2f}] rad   near-limit {100 * limit_frac:.0f}% of time"
+            )
         if self.cmd_ticks:
-            print(f"  base velocity    : max {self.vx_max_seen:.2f} m/s (cap {self.base_vx_cap})   "
-                  f"saturated {100 * self.vx_sat_ticks / self.cmd_ticks:.0f}% of ticks   max |wz| {self.wz_max_seen:.2f}")
+            print(
+                f"  base velocity    : max {self.vx_max_seen:.2f} m/s (cap {self.base_vx_cap})   "
+                f"saturated {100 * self.vx_sat_ticks / self.cmd_ticks:.0f}% of ticks   max |wz| {self.wz_max_seen:.2f}"
+            )
 
         print("\n--- Tuning hints ---")
         hints = []
@@ -306,9 +319,7 @@ class FollowCalibration(Node):
                     "(ros2 param set /follow_person_controller kp <val>) or max_velocity."
                 )
             if flips_per_s > FLIPS_OSCILLATING:
-                hints.append(
-                    f"Arm oscillates ({flips_per_s:.1f} flips/s): lower kp or raise kd."
-                )
+                hints.append(f"Arm oscillates ({flips_per_s:.1f} flips/s): lower kp or raise kd.")
             if limit_frac > 0.2:
                 hints.append(
                     "joint1 near a limit >20% of the time: the base isn't rotating "
