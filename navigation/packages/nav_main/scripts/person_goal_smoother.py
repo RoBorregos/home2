@@ -134,9 +134,23 @@ class PersonGoalSmoother(Node):
         self.declare_parameter("alpha", 0.3)           # EMA smoothing (0=full smooth, 1=no smooth)
         self.declare_parameter("distance_gate", 0.1)     # Min distance (m) to publish new goal (lower = heading refreshes more continuously)
         self.declare_parameter("follow_distance", 0.6)  # Stay this far (m) behind the person (lower = robot ends up closer)
-        self.declare_parameter("timeout", 3.0)           # Seconds without tracker data to stop
+        # Tracker publishes at a solid 10-20 Hz since the async-ReID rework, so a
+        # 2 s silence really means the person is lost (was 3.0 when publish gaps
+        # were common).
+        self.declare_parameter("timeout", 2.0)           # Seconds without tracker data to react
         self.declare_parameter("map_frame", "map")
         self.declare_parameter("snap_radius", 20)        # Grid cells to search for free space
+        # Aim the goal ahead of the person by lead_time * estimated velocity —
+        # cuts the lag on corners (the classic loss scenario) and keeps line of
+        # sight. 0.0 disables the lead.
+        self.declare_parameter("lead_time", 0.4)
+        self.declare_parameter("max_person_speed", 2.0)  # m/s clamp on the velocity estimate
+        # What to do when tracker data stops:
+        #   "last_position" — drive to the person's last-known position, facing
+        #        their direction of travel (regains line of sight around corners;
+        #        the tracker's ReID re-acquisition re-locks when they reappear).
+        #   "halt" — freeze at the robot's own pose (legacy behavior).
+        self.declare_parameter("lost_behavior", "last_position")
         # Selects which (standard, follow) nav2 config PAIR to switch between:
         #   "omnibase" -> omni_config/nav2_omni.yaml  + omni_config/nav2_omni_following.yaml
         #   "dashgo"   -> nav2_standard.yaml          + nav2_following.yaml
@@ -159,8 +173,13 @@ class PersonGoalSmoother(Node):
         self.robot_y = 0.0
         self.map_data = None
         self.map_info = None
-        # Lost-person watchdog: True once the goal has been frozen at the
-        # robot's pose after `timeout` seconds without tracker data.
+        # Person velocity estimate (EMA over finite differences of the smoothed
+        # position) — used to lead the goal and to orient the lost-person goal.
+        self.vel_x = 0.0
+        self.vel_y = 0.0
+        self._prev_smooth = None  # (x, y, t) of the previous smoothed sample
+        # Lost-person watchdog: True once the lost-person goal has been sent
+        # after `timeout` seconds without tracker data.
         self.lost_halt_active = False
 
         # --- TF ---
@@ -260,6 +279,9 @@ class PersonGoalSmoother(Node):
             self.smooth_y = None
             self.last_pub_x = None
             self.last_pub_y = None
+            self.vel_x = 0.0
+            self.vel_y = 0.0
+            self._prev_smooth = None
             self.lost_halt_active = False
             response.message = "Standard mode restored"
         response.success = True
@@ -372,6 +394,8 @@ class PersonGoalSmoother(Node):
             self.smooth_x = alpha * px + (1.0 - alpha) * self.smooth_x
             self.smooth_y = alpha * py + (1.0 - alpha) * self.smooth_y
 
+        self._update_velocity()
+
         # Distance gate: only publish if person moved significantly
         dist_gate = self.get_parameter("distance_gate").value
         if self.last_pub_x is not None:
@@ -381,6 +405,28 @@ class PersonGoalSmoother(Node):
                 return
 
         self._publish_goal()
+
+    def _update_velocity(self):
+        """EMA person-velocity estimate from the smoothed positions. Resets after
+        a data gap (stale finite difference would spike the lead)."""
+        now = time.time()
+        if self._prev_smooth is not None:
+            phx, phy, pht = self._prev_smooth
+            dt = now - pht
+            if 0.02 < dt < 0.5:
+                vx = (self.smooth_x - phx) / dt
+                vy = (self.smooth_y - phy) / dt
+                max_v = self.get_parameter("max_person_speed").value
+                speed = math.hypot(vx, vy)
+                if speed > max_v:
+                    vx *= max_v / speed
+                    vy *= max_v / speed
+                self.vel_x = 0.4 * vx + 0.6 * self.vel_x
+                self.vel_y = 0.4 * vy + 0.6 * self.vel_y
+            elif dt >= 0.5:
+                self.vel_x = 0.0
+                self.vel_y = 0.0
+        self._prev_smooth = (self.smooth_x, self.smooth_y, now)
 
     def _map_cb(self, msg: OccupancyGrid):
         self.get_logger().info("Occupancy grid received", once=True)
@@ -403,11 +449,19 @@ class PersonGoalSmoother(Node):
             pass
 
     def _lost_person_watchdog(self):
-        """Freeze the goal at the robot's pose when tracker data stops.
+        """React when tracker data stops (person lost).
 
-        Fires once per loss: publishes the current robot pose (facing the last
-        smoothed person position, so the camera keeps pointing where the person
-        vanished) and re-arms when data resumes (_tracker_cb clears the flag).
+        Fires once per loss and re-arms when data resumes (_tracker_cb clears
+        the flag). Behavior per the `lost_behavior` param:
+
+        - "last_position": send the goal follow_distance short of the person's
+          last-known position, oriented along their direction of travel (or at
+          them, if they weren't moving). The robot walks to where they vanished
+          — typically a doorway/corner — regains line of sight, and the
+          tracker's ReID re-acquisition re-locks. Falls back to halting if no
+          person position was ever received.
+        - "halt": freeze at the robot's own pose, facing the last known
+          person position (legacy behavior).
         """
         if not self.follow_mode_active or self.lost_halt_active:
             return
@@ -419,24 +473,55 @@ class PersonGoalSmoother(Node):
             return
 
         self.lost_halt_active = True
+        behavior = self.get_parameter("lost_behavior").value
         map_frame = self.get_parameter("map_frame").value
         goal_msg = PoseStamped()
         goal_msg.header.frame_id = map_frame
         goal_msg.header.stamp = self.get_clock().now().to_msg()
-        goal_msg.pose.position.x = self.robot_x
-        goal_msg.pose.position.y = self.robot_y
-        # Keep facing the person's last known position while waiting.
-        if self.smooth_x is not None:
-            yaw = math.atan2(self.smooth_y - self.robot_y, self.smooth_x - self.robot_x)
+
+        if behavior == "last_position" and self.smooth_x is not None:
+            follow_dist = self.get_parameter("follow_distance").value
+            dx = self.smooth_x - self.robot_x
+            dy = self.smooth_y - self.robot_y
+            dist = math.hypot(dx, dy)
+            if dist > follow_dist:
+                ux, uy = dx / dist, dy / dist
+                gx = self.smooth_x - follow_dist * ux
+                gy = self.smooth_y - follow_dist * uy
+            else:
+                gx, gy = self.robot_x, self.robot_y  # already at/near the spot
+            gx, gy = self._snap_to_free(gx, gy)
+            goal_msg.pose.position.x = gx
+            goal_msg.pose.position.y = gy
+            # Face where they went: direction of travel if they were moving,
+            # otherwise their last position.
+            if math.hypot(self.vel_x, self.vel_y) > 0.3:
+                yaw = math.atan2(self.vel_y, self.vel_x)
+            else:
+                yaw = math.atan2(self.smooth_y - gy, self.smooth_x - gx)
+            self.get_logger().warn(
+                f"No tracker data for {elapsed:.1f}s (> {timeout:.1f}s) — "
+                f"going to last-known person position ({gx:.2f}, {gy:.2f}) "
+                f"to re-acquire"
+            )
         else:
-            yaw = 0.0
+            goal_msg.pose.position.x = self.robot_x
+            goal_msg.pose.position.y = self.robot_y
+            # Keep facing the person's last known position while waiting.
+            if self.smooth_x is not None:
+                yaw = math.atan2(
+                    self.smooth_y - self.robot_y, self.smooth_x - self.robot_x
+                )
+            else:
+                yaw = 0.0
+            self.get_logger().warn(
+                f"No tracker data for {elapsed:.1f}s (> {timeout:.1f}s) — "
+                f"halting at current pose until the person is re-acquired"
+            )
+
         goal_msg.pose.orientation.z = math.sin(yaw / 2.0)
         goal_msg.pose.orientation.w = math.cos(yaw / 2.0)
         self.goal_pub.publish(goal_msg)
-        self.get_logger().warn(
-            f"No tracker data for {elapsed:.1f}s (> {timeout:.1f}s) — "
-            f"halting at current pose until the person is re-acquired"
-        )
 
     # ── Goal publishing ────────────────────────────────────────
 
@@ -445,29 +530,36 @@ class PersonGoalSmoother(Node):
         follow_dist = self.get_parameter("follow_distance").value
         map_frame = self.get_parameter("map_frame").value
 
-        # Compute goal: point between robot and person, follow_dist behind person
-        dx = self.smooth_x - self.robot_x
-        dy = self.smooth_y - self.robot_y
+        # Lead the target: aim where the person will be in lead_time seconds,
+        # not where they are — a walking person otherwise stays ahead of the
+        # goal by (their speed x pipeline latency) and turns corners out of FOV.
+        lead = self.get_parameter("lead_time").value
+        target_x = self.smooth_x + self.vel_x * lead
+        target_y = self.smooth_y + self.vel_y * lead
+
+        # Compute goal: point between robot and target, follow_dist behind target
+        dx = target_x - self.robot_x
+        dy = target_y - self.robot_y
         dist = math.sqrt(dx * dx + dy * dy)
 
         if dist < 0.1:
             return  # Too close, no meaningful direction
 
-        # Goal is follow_dist meters behind the person (toward robot)
-        # Goal is ALWAYS follow_dist from the person, on the person->robot line.
+        # Goal is follow_dist meters behind the (led) person, toward the robot.
+        # Goal is ALWAYS follow_dist from the target, on the target->robot line.
         #   dist > follow_dist -> goal is between them: robot drives forward.
         #   dist < follow_dist -> goal is BEHIND the robot: robot backs up to
         #   open the gap, instead of spinning in place while crowded at <0.8 m
         #   (which is what made it lose the person when they circled in close).
-        ux, uy = dx / dist, dy / dist            # unit robot->person
-        goal_x = self.smooth_x - follow_dist * ux
-        goal_y = self.smooth_y - follow_dist * uy
+        ux, uy = dx / dist, dy / dist            # unit robot->target
+        goal_x = target_x - follow_dist * ux
+        goal_y = target_y - follow_dist * uy
 
         # Snap to free space on map
         goal_x, goal_y = self._snap_to_free(goal_x, goal_y)
 
-        # Orientation: face toward the person
-        yaw = math.atan2(self.smooth_y - goal_y, self.smooth_x - goal_x)
+        # Orientation: face toward the (led) person
+        yaw = math.atan2(target_y - goal_y, target_x - goal_x)
 
         # Build PoseStamped
         goal_msg = PoseStamped()

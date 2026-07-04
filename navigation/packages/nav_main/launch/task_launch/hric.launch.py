@@ -30,6 +30,12 @@ def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
+    # Active omnibase Nav2 profile: 3-WHEEL LIMP (base running degraded, one
+    # wheel out — see nav2_omni_limp.yaml header). Single source for BOTH the
+    # nav2_omni include and the person_goal_smoother restore pair below; point
+    # back at nav2_omni.yaml once the base is healthy again.
+    nav2_omni_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
+    nav2_omni_follow_file = nav2_omni_file.replace('.yaml', '_following.yaml')
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
@@ -94,15 +100,20 @@ def launch_function(context, *args, **kwargs):
     # Bridges the vision tracker -> Nav2 GoalUpdater, and switches nav2 between the
     # standard and follow param sets for the active base (default_base picks the
     # config pair: omnibase -> nav2_omni(_following).yaml, dashgo -> nav2_(standard|following).yaml).
+    smoother_params = {'default_base': default_base}
+    if default_base_value == 'omnibase':
+        # Keep the smoother's restore pair in sync with the config Nav2 is
+        # launched with below — otherwise deactivating follow mode would
+        # re-apply healthy nav2_omni.yaml speeds onto the limp base.
+        smoother_params['standard_config_file'] = nav2_omni_file
+        smoother_params['follow_config_file'] = nav2_omni_follow_file
     person_goal_smoother_node = Node(
         package='nav_main',
         executable='person_goal_smoother.py',
         name='person_goal_smoother',
         output='screen',
         emulate_tty=True,
-        parameters=[{
-            'default_base': default_base,
-        }],
+        parameters=[smoother_params],
     )
 
     # ----- dashgo base: RTABMap RGBD localization + nav2 -----
@@ -147,6 +158,7 @@ def launch_function(context, *args, **kwargs):
         ),
         launch_arguments={
             'nav2': nav2_activate,
+            'nav2_config_file': nav2_omni_file,
             'use_keepout': use_keepout,
             'keepout_mask': keepout_mask,
         }.items(),
