@@ -21,9 +21,8 @@ import numpy as np
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Bool, Float32, String
+from std_msgs.msg import Bool, String
 
-from frida_constants.hri_constants import VAD_SCORE_TOPIC
 from frida_interfaces.msg import AudioData
 from speech.doorbell_detection_utils import DoorbellDetector, DoorbellDetectorConfig
 
@@ -41,9 +40,6 @@ class DoorbellDetectionNode(Node):
         # Gating.
         self.declare_parameter("arm_topic", "/hri/doorbell/armed")
         self.declare_parameter("saying_topic", "/saying")
-        self.declare_parameter("vad_topic", VAD_SCORE_TOPIC)
-        self.declare_parameter("vad_threshold", 0.5)
-        self.declare_parameter("vad_timeout", 2.0)
         # If True, publish nothing until an arm=True message is received. The task
         # manager arms only while waiting at the door. Set False to run always
         # (e.g. standalone debugging).
@@ -77,15 +73,10 @@ class DoorbellDetectionNode(Node):
         self.mute_while_speaking = g("mute_while_speaking")
         self.enroll = g("enroll")
         self.template_sim_confirm = g("template_sim_confirm")
-        self.vad_topic = g("vad_topic")
-        self.vad_threshold = g("vad_threshold")
-        self.vad_timeout = g("vad_timeout")
 
         # Armed unless we are told to wait for an explicit arm signal.
         self._armed = not self.require_arm
         self._speaking = False
-        self._last_vad_score = 0.0
-        self._last_vad_time = 0.0
 
         cfg = DoorbellDetectorConfig(
             sample_rate=self.sample_rate,
@@ -106,7 +97,6 @@ class DoorbellDetectionNode(Node):
         self.publisher = self.create_publisher(String, result_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
         self.create_subscription(Bool, g("arm_topic"), self._arm_callback, 10)
-        self.create_subscription(Float32, self.vad_topic, self._vad_callback, 10)
         if self.mute_while_speaking:
             self.create_subscription(Bool, g("saying_topic"), self._saying_callback, 10)
 
@@ -129,10 +119,6 @@ class DoorbellDetectionNode(Node):
 
     def _saying_callback(self, msg: Bool) -> None:
         self._speaking = msg.data
-
-    def _vad_callback(self, msg: Float32) -> None:
-        self._last_vad_score = msg.data
-        self._last_vad_time = self.get_clock().now().nanoseconds / 1e9
 
     @property
     def _listening(self) -> bool:
@@ -163,17 +149,6 @@ class DoorbellDetectionNode(Node):
             return
 
         for event in events:
-            # Reject if there is active voice/speech detected recently (VAD gating)
-            current_time = self.get_clock().now().nanoseconds / 1e9
-            if (current_time - self._last_vad_time < self.vad_timeout) and (
-                self._last_vad_score >= self.vad_threshold
-            ):
-                self.get_logger().info(
-                    f"Rejected doorbell detection due to high VAD score: {self._last_vad_score:.2f} "
-                    f"(recency: {current_time - self._last_vad_time:.2f}s)"
-                )
-                continue
-
             # Reject explicitly low-pitch sounds that still passed the energy threshold
             if 0 < event.dominant_hz < 400.0:
                 self.get_logger().info(

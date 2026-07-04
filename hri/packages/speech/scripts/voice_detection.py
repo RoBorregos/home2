@@ -8,15 +8,11 @@ import numpy as np
 import scipy.fft
 from scipy.spatial.distance import cosine as cosine_distance
 import rclpy
-from frida_constants.hri_constants import (
-    VOWEL_FREQ_LOW,
-    VOWEL_FREQ_HIGH,
-    VAD_SCORE_TOPIC,
-)
+from frida_constants.hri_constants import VOWEL_FREQ_LOW, VOWEL_FREQ_HIGH
 from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Bool, Float32
+from std_msgs.msg import Bool
 
 
 class VoiceDetection(Node):
@@ -26,7 +22,6 @@ class VoiceDetection(Node):
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("VAD_AUDIO_TOPIC", "/hri/vadAudioChunk")
         self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/hri/voice_activity")
-        self.declare_parameter("VAD_SCORE_TOPIC", VAD_SCORE_TOPIC)
         self.declare_parameter("ENABLE_VAD", True)
         self.declare_parameter("ENERGY_THRESHOLD", 1500.0)
         self.declare_parameter("CORRELATION_THRESHOLD", 0.5)
@@ -47,9 +42,6 @@ class VoiceDetection(Node):
             self.get_parameter("VOICE_ACTIVITY_TOPIC")
             .get_parameter_value()
             .string_value
-        )
-        vad_score_topic = (
-            self.get_parameter("VAD_SCORE_TOPIC").get_parameter_value().string_value
         )
         self.energy_threshold = (
             self.get_parameter("ENERGY_THRESHOLD").get_parameter_value().double_value
@@ -98,12 +90,10 @@ class VoiceDetection(Node):
 
         self._audio_pub = self.create_publisher(AudioData, vad_topic, 10)
         self._activity_pub = self.create_publisher(Bool, activity_topic, 10)
-        self._vad_score_pub = self.create_publisher(Float32, vad_score_topic, 10)
         self.create_subscription(AudioData, processed_topic, self._audio_cb, 10)
 
         if not self.enable_vad:
             self._activity_pub.publish(Bool(data=True))
-            self._vad_score_pub.publish(Float32(data=0.0))
             self.get_logger().info(
                 "ENABLE_VAD=False. Passing all audio through without filtering."
             )
@@ -243,7 +233,6 @@ class VoiceDetection(Node):
     def _audio_cb(self, msg: AudioData) -> None:
         if not self.enable_vad:
             self._audio_pub.publish(msg)
-            self._vad_score_pub.publish(Float32(data=0.0))
             return
 
         audio = np.frombuffer(bytes(msg.data), dtype=np.int16)
@@ -292,10 +281,6 @@ class VoiceDetection(Node):
                         )
                         self._save_debug_segment()
                     self._reset_speaker_lock()
-
-        # Publish Float32 VAD score (1.0 for active speech, 0.0 for silence/noise)
-        vad_score = 1.0 if self._speech_active else 0.0
-        self._vad_score_pub.publish(Float32(data=vad_score))
 
 
 def main(args=None):
