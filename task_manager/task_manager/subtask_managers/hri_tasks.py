@@ -112,7 +112,7 @@ InterpreterAvailableCommands = Union[
 
 
 def confirm_query(interpreted_text, target_info):
-    return f"Did you say {target_info}?"
+    return f"Did you say {target_info}? Yes or no?"
 
 
 def contains_any(text: List[str], keywords: List[str]) -> bool:
