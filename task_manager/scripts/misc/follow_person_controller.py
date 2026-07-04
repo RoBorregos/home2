@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
 
 """
-Follow Person Controller — PI + Base Velocity Feedforward
+Follow Person Controller — PID + Base Velocity Feedforward
 
 Rotates xArm6 joint1 to keep a tracked person centered in the camera image.
+The derivative term is computed at centroid rate (in the subscriber, not the
+control loop) and low-pass filtered — it anticipates a person walking across
+the frame instead of lagging them by error/kp.
 Compensates for base rotation via feedforward from /cmd_vel.
 Uses xArm velocity control mode (mode 4) for direct joint velocity commands.
+Near the joint1 limits the commanded velocity tapers linearly to zero
+(soft-limit) instead of cutting hard — that keeps the wide range usable
+without slamming the joint into its limit (the old xArm-fault mode).
+On centroid timeout the arm slowly recenters to joint1_neutral so the camera
+faces where the base (per person_goal_smoother's lost-person goal) is heading.
 
 Usage:
     ros2 run task_manager follow_person_controller.py
@@ -52,16 +60,29 @@ class FollowPersonController(Node):
         cb_group = ReentrantCallbackGroup()
 
         # --- Declare parameters ---
-        self.declare_parameter("kp", 1.0)
+        # Gains act on the normalized centroid error in [-1, 1]. Retuned for
+        # keeping up with a walking person (validate with follow_calibration.py):
+        # kp up 1.0->1.8, new kd (lead/damping), deadzone down, max_vel up.
+        self.declare_parameter("kp", 1.8)
         self.declare_parameter("ki", 0.1)
+        self.declare_parameter("kd", 0.12)
         self.declare_parameter("kff", 1.0)
-        self.declare_parameter("dead_zone", 0.05)
-        self.declare_parameter("max_velocity", 0.8)
-        self.declare_parameter("joint1_min", -2.8)
-        self.declare_parameter("joint1_max", -0.5)
+        self.declare_parameter("dead_zone", 0.03)
+        self.declare_parameter("max_velocity", 1.2)
+        # Wider pan range than the old -2.8..-0.5; safe because velocity now
+        # TAPERS over soft_limit_margin before a limit instead of cutting hard
+        # (it was the hard slam into the limit that faulted the xArm, not the
+        # range itself). Neutral (forward) is joint1_neutral = -1.5707.
+        self.declare_parameter("joint1_min", -3.05)
+        self.declare_parameter("joint1_max", -0.2)
+        self.declare_parameter("soft_limit_margin", 0.35)
         self.declare_parameter("control_rate", 20.0)
         self.declare_parameter("centroid_timeout", 1.5)
-        self.declare_parameter("integral_clamp", 0.5)
+        self.declare_parameter("integral_clamp", 0.3)
+        # On centroid timeout, slowly pan back to neutral so the camera faces
+        # forward (where the lost-person nav goal is taking the base).
+        self.declare_parameter("recenter_enabled", True)
+        self.declare_parameter("recenter_velocity", 0.3)
         # Reactive "unload-the-arm" base yaw: when joint1 has panned off neutral
         # (person to the side), rotate the BASE so joint1 returns toward neutral
         # -> effectively unlimited pan and the person stays in the camera FOV.
@@ -82,6 +103,10 @@ class FollowPersonController(Node):
         self.base_omega_z = 0.0
         self.joint_positions = {}
         self.error_integral = 0.0
+        # Centroid-rate derivative (filled by _centroid_cb, low-pass filtered).
+        # Computing it in the 20 Hz control loop would alternate spike/zero
+        # because the centroid arrives at its own rate.
+        self.error_deriv = 0.0
 
         # --- Subscribers ---
         self.create_subscription(
@@ -143,14 +168,26 @@ class FollowPersonController(Node):
             f"Follow Person Controller ready (rate={rate} Hz, "
             f"kp={self.get_parameter('kp').value}, "
             f"ki={self.get_parameter('ki').value}, "
-            f"kff={self.get_parameter('kff').value})"
+            f"kd={self.get_parameter('kd').value}, "
+            f"kff={self.get_parameter('kff').value}, "
+            f"j1=[{self.get_parameter('joint1_min').value}, "
+            f"{self.get_parameter('joint1_max').value}])"
         )
 
     # ── Callbacks ──────────────────────────────────────────────
 
     def _centroid_cb(self, msg: Point):
+        now = time.time()
+        if self.centroid_time > 0.0:
+            dt = now - self.centroid_time
+            if 0.005 < dt < 0.5:
+                d = (msg.x - self.centroid_x) / dt
+                # LPF (~1/3 weight on the new sample) tames per-frame bbox jitter
+                self.error_deriv = 0.35 * d + 0.65 * self.error_deriv
+            elif dt >= 0.5:
+                self.error_deriv = 0.0  # stale gap — a finite diff would spike
         self.centroid_x = msg.x
-        self.centroid_time = time.time()
+        self.centroid_time = now
         self.get_logger().info(f"Centroid: {msg.x:.3f}", once=True)
 
     def _cmd_vel_cb(self, msg: Twist):
@@ -167,15 +204,22 @@ class FollowPersonController(Node):
             )
 
     def _follow_service_cb(self, request, response):
-        self.active = request.follow_face
-        if self.active:
+        if request.follow_face:
             self.error_integral = 0.0
+            self.error_deriv = 0.0
+            self.centroid_time = 0.0  # don't act on a centroid from a past run
             self._set_arm_mode(VELOCITY_MODE)
+            # Activate only AFTER the mode switch: with the multithreaded
+            # executor the control loop keeps ticking during the sleeps above,
+            # and velocity commands before mode 4 error out on the xArm.
+            self.active = True
             self.get_logger().info("Following enabled (velocity mode)")
         else:
+            self.active = False
             self._send_joint_velocity(0.0)
             time.sleep(0.3)
             self.error_integral = 0.0
+            self.error_deriv = 0.0
             self._set_arm_mode(MOVEIT_MODE)
             self.get_logger().info("Following disabled (back to MoveIt mode)")
         response.success = True
@@ -220,11 +264,10 @@ class FollowPersonController(Node):
         # Read parameters
         kp = self.get_parameter("kp").value
         ki = self.get_parameter("ki").value
+        kd = self.get_parameter("kd").value
         kff = self.get_parameter("kff").value
         dead_zone = self.get_parameter("dead_zone").value
         max_vel = self.get_parameter("max_velocity").value
-        j1_min = self.get_parameter("joint1_min").value
-        j1_max = self.get_parameter("joint1_max").value
         timeout = self.get_parameter("centroid_timeout").value
         integral_clamp = self.get_parameter("integral_clamp").value
 
@@ -232,26 +275,24 @@ class FollowPersonController(Node):
 
         if self.centroid_time == 0.0 or age > timeout:
             self.error_integral = 0.0
-            self._send_joint_velocity(0.0)
+            self.error_deriv = 0.0
             self._publish_base_yaw(0.0)
-            self.get_logger().warn(
-                "No centroid data — sending zero velocity", throttle_duration_sec=2.0
-            )
+            self._recenter_or_stop(current_j1)
             return
 
         # Error: positive centroid_x = person right = positive error
         # Sign is flipped in _send_joint_velocity (matching temp_follow.py)
         error = self.centroid_x
 
-        # Dead zone
+        # Dead zone (P/I only — the derivative keeps damping inside it)
         if abs(error) < dead_zone:
             error = 0.0
 
-        # PI controller
+        # PID controller (derivative computed at centroid rate in _centroid_cb)
         self.error_integral += error * self.dt
         self.error_integral = max(-integral_clamp, min(integral_clamp, self.error_integral))
 
-        pid_output = kp * error + ki * self.error_integral
+        pid_output = kp * error + ki * self.error_integral + kd * self.error_deriv
 
         # Feedforward: compensate base rotation
         feedforward = self.base_omega_z * kff
@@ -260,13 +301,11 @@ class FollowPersonController(Node):
         joint1_vel = pid_output + feedforward
         joint1_vel = max(-max_vel, min(max_vel, joint1_vel))
 
-        # Soft stop near joint limits
-        # Actual joint velocity is -joint1_vel (negated in _send_joint_velocity)
-        if current_j1 <= j1_min and joint1_vel > 0:
-            joint1_vel = 0.0
-            self.error_integral = 0.0
-        if current_j1 >= j1_max and joint1_vel < 0:
-            joint1_vel = 0.0
+        # Soft limits: taper to zero across soft_limit_margin instead of a hard
+        # cutoff, so the wide joint1 range never ends in a full-speed slam
+        # (that slam was the old xArm fault mode).
+        joint1_vel, limited = self._apply_soft_limit(current_j1, joint1_vel)
+        if limited:
             self.error_integral = 0.0
 
         self.get_logger().info(
@@ -287,6 +326,49 @@ class FollowPersonController(Node):
         else:
             base_yaw = 0.0
         self._publish_base_yaw(base_yaw)
+
+    def _apply_soft_limit(self, current_j1: float, cmd_vel: float):
+        """Taper the commanded velocity to zero across soft_limit_margin before a
+        joint1 limit. Returns (scaled_vel, was_limited). Sign note: the actual
+        joint velocity is -cmd_vel (negated in _send_joint_velocity), so
+        cmd_vel > 0 moves joint1 NEGATIVE (toward joint1_min)."""
+        if cmd_vel == 0.0:
+            return 0.0, False
+        j1_min = self.get_parameter("joint1_min").value
+        j1_max = self.get_parameter("joint1_max").value
+        margin = self.get_parameter("soft_limit_margin").value
+        if cmd_vel > 0:  # actual motion toward j1_min
+            dist = current_j1 - j1_min
+        else:  # actual motion toward j1_max
+            dist = j1_max - current_j1
+        if dist >= margin:
+            return cmd_vel, False
+        scale = max(0.0, dist / margin)
+        return cmd_vel * scale, True
+
+    def _recenter_or_stop(self, current_j1: float):
+        """No centroid: either hold still (legacy) or pan slowly back to
+        joint1_neutral so the camera faces where the base is heading (the
+        smoother drives to the person's last-known position on loss)."""
+        if not self.get_parameter("recenter_enabled").value:
+            self._send_joint_velocity(0.0)
+            self.get_logger().warn(
+                "No centroid data — sending zero velocity", throttle_duration_sec=2.0
+            )
+            return
+        neutral = self.get_parameter("joint1_neutral").value
+        recenter_vel = self.get_parameter("recenter_velocity").value
+        err = neutral - current_j1  # desired actual joint displacement
+        if abs(err) < 0.05:
+            self._send_joint_velocity(0.0)
+            return
+        actual_vel = max(-recenter_vel, min(recenter_vel, err))
+        # command is negated by _send_joint_velocity => pass -actual_vel
+        self._send_joint_velocity(-actual_vel)
+        self.get_logger().warn(
+            f"No centroid data — recentering joint1 ({current_j1:.2f} -> {neutral:.2f})",
+            throttle_duration_sec=2.0,
+        )
 
     def _publish_base_yaw(self, value: float):
         msg = Float64()
@@ -322,11 +404,16 @@ class FollowPersonController(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = FollowPersonController()
+    # Multithreaded: the follow service's mode-switch sleeps (~1.5 s) must not
+    # stall the 20 Hz control loop or the centroid/cmd_vel subscribers.
+    executor = rclpy.executors.MultiThreadedExecutor(num_threads=4)
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
+        executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
 

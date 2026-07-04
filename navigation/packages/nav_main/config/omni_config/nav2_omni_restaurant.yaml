@@ -16,7 +16,8 @@ controller_server:
     FollowPath:
       vx_max: 0.4
       vx_min: -0.2
-      vy_max: 0.4
+      vy_max: 0.35   # ≤ the limp base strafe cap (0.35) while the base runs 3-wheel;
+                     # was 0.4 — restore once the base is healthy (nav2_omni.yaml base)
       wz_max: 1.0
 
 local_costmap:
