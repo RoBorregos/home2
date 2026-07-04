@@ -58,6 +58,7 @@ class HRIC_TM(Node):
         WAIT_FOR_GUEST = "WAIT_FOR_GUEST"
         GREETING = "GREETING"
         SAVE_FACE = "SAVE_FACE"
+        SHOW_VIDEO_TAKE_BAG = "SHOW_VIDEO_TAKE_BAG"
         TAKE_BAG = "TAKE_BAG"
         NAVIGATE_TO_LIVING_ROOM = "NAVIGATE_TO_LIVING_ROOM"
         FIND_SEAT = "FIND_SEAT"
@@ -73,7 +74,9 @@ class HRIC_TM(Node):
         super().__init__("hric_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.HRIC, mock_areas=[])
 
-        self.seat_angles = [0, -45, -45, -45, 180, 45, 45, 45, -180]
+        # past
+        # self.seat_angles = [0, -45, -45, -45, 180, 45, 45, 45, -180]
+        self.seat_angles = [0, -45, -90, -135, 45, 90, 135, 180]
         self.guests = [Guest() for _ in range(2)]
         self.current_guest_idx = 0
         self.current_attempts = 0
@@ -87,6 +90,7 @@ class HRIC_TM(Node):
         self.previous_state = None
 
         self.carrying_bag = False
+        self.should_follow_person = False
 
         self.current_state = HRIC_TM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
@@ -206,7 +210,7 @@ class HRIC_TM(Node):
 
         elif self.current_state == HRIC_TM.TaskStates.WAIT_FOR_DOOR:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_DOOR)
-            Logger.state(self, "Waiting for a knock or doorbell at the door...")
+            Logger.state(self, "Waiting for the doorbell at the door...")
             # Clear any door event heard before the button was pressed.
             self.subtask_manager.hri.door_event_detected = False
             self.subtask_manager.hri.last_door_event = ""
@@ -215,10 +219,18 @@ class HRIC_TM(Node):
                 wait=True,
             )
             time.sleep(2)
-            # Safety timeout: if no knock/doorbell is heard, continue anyway
+            # Arm the doorbell detector only now, at the start position: this is
+            # the only moment the doorbell rings, so party speech and the robot's
+            # own audio outside this window cannot cause a false event.
+            self.subtask_manager.hri.arm_door_detection(True)
+            # Clear again: arming reset the detector, ignore anything from before.
+            self.subtask_manager.hri.door_event_detected = False
+            self.subtask_manager.hri.last_door_event = ""
+            # Safety timeout: if no doorbell is heard, continue anyway
             deadline = time.time() + DOOR_WAIT_TIMEOUT
             while not self.subtask_manager.hri.door_event_detected and time.time() < deadline:
                 rclpy.spin_once(self, timeout_sec=0.1)
+            self.subtask_manager.hri.arm_door_detection(False)
 
             if self.subtask_manager.hri.door_event_detected:
                 trigger = self.subtask_manager.hri.last_door_event or "door event"
@@ -235,7 +247,7 @@ class HRIC_TM(Node):
                     f"No door event after {DOOR_WAIT_TIMEOUT:.0f} seconds, continuing with the task",
                 )
                 self.subtask_manager.hri.say(
-                    "I did not hear a knock or doorbell, but I will continue with the task. "
+                    "I did not hear the doorbell, but I will continue with the task. "
                     "Referee, please open the door so that I can greet them.",
                     wait=True,
                 )
@@ -326,20 +338,26 @@ class HRIC_TM(Node):
                     self.subtask_manager.vision.describe_person(self.set_description)
                     self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM
                 else:
-                    self.current_state = HRIC_TM.TaskStates.TAKE_BAG
+                    self.current_state = HRIC_TM.TaskStates.SHOW_VIDEO_TAKE_BAG
             else:
                 self.current_attempts += 1
                 Logger.error(self, "Error saving face")
+
+        elif self.current_state == HRIC_TM.TaskStates.SHOW_VIDEO_TAKE_BAG:
+            self._track_state_change(HRIC_TM.TaskStates.SHOW_VIDEO_TAKE_BAG)
+            self.subtask_manager.hri.publish_display_topic("take_bag.mp4")
+            self.subtask_manager.hri.say(
+                "I see you brought a bag for the host. Let me take care of it for you. Please look at my display to see how to give me the bag.",
+                wait=True,
+            )
+            self.timeout(6)
+            self.current_state = HRIC_TM.TaskStates.TAKE_BAG
 
         elif self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
             self.subtask_manager.vision.deactivate_face_recognition()
             # Show the hand detection (annotated by hric_commands) on the display
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
-            if self.current_attempts == 0:
-                self.subtask_manager.hri.say(
-                    "I see you brought a bag for the host. Let me take care of it for you.",
-                )
 
             self.subtask_manager.hri.say(
                 "Please hold the bag with your hand and extend it so I can see it.", wait=False
@@ -374,7 +392,7 @@ class HRIC_TM(Node):
                     Logger.warn(self, f"go_to_hand attempt {attempt + 1} failed")
                     if attempt < ATTEMPT_LIMIT - 1:
                         self.subtask_manager.hri.say(
-                            "I could not reach your hand. Reposition it and try again."
+                            "I could not reach your hand. Come a little closer and place your hand right in front of me."
                         )
 
             if not hand_reached:
@@ -496,6 +514,29 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.FOLLOW_PERSON:
             self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
             self.subtask_manager.vision.deactivate_face_recognition()
+
+            if not self.should_follow_person:
+                status, destination = self.subtask_manager.hri.ask_and_confirm(
+                    question="Where would you like me to go?",
+                    query="location",
+                    context="The question 'Where would you like me to go?' was asked, extract the location from the response.",
+                    initial_prompt="The question 'Where would you like me to go?' was asked",
+                    retries=3,
+                    always_confirm=True,
+                )
+                if status == Status.EXECUTION_SUCCESS and destination:
+                    self.subtask_manager.hri.say(
+                        f"Okay, I will navigate to the {destination}.", wait=False
+                    )
+                    self.navigate_to(destination, say=False)
+                else:
+                    self.subtask_manager.hri.say(
+                        "I could not understand the destination. I will stay here.", wait=False
+                    )
+
+                self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
+                return
+
             # Show the tracker's annotated feed (tracked person bbox) while following
             self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
             self._move_arm_cleared(
