@@ -530,9 +530,12 @@ The basket is within the 2 m direct range, so nav_central skips Nav2: rotate
 until the basket is abeam on the RIGHT, then a single closed-loop holonomic
 drive to 0.45 m (see "Direct near-target mode" above). After
 `pick_object("laundry_basket")` (grab on the right): `move_relative(dy=1.0)`
-sidestep LEFT to clear the machine, then the normal carry to the table.
-`basket_left`/`basket_right` annotations are FALLBACK-only now (used if the
-scan fails 3× or the approach fails 3×).
+sidestep LEFT to clear the machine, then `NAVIGATE_TO_BASKET_SIDE` — the
+nearer annotated `basket_left`/`basket_right` as an INTERMEDIATE waypoint
+(best-effort, skipped/abandoned gracefully) — then the carry to the table.
+The annotations are NOT a fallback: a scan that fails 3× recenters on the
+washing machine and rescans; an approach that fails 3× discards the point and
+rescans. The task only moves on the detected basket point.
 
 Vision side: `laundry_basket.point3d` comes from a **depth-cluster centroid**,
 not the bbox-center pixel (`get_cluster_point` in

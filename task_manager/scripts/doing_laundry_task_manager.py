@@ -45,6 +45,7 @@ class DoingLaundryTM(Node):
         SCAN_FOR_BASKET = "SCAN_FOR_BASKET"
         NAVIGATE_TO_BASKET = "NAVIGATE_TO_BASKET"
         PICK_LAUNDRY_BASKET = "PICK_LAUNDRY_BASKET"
+        NAVIGATE_TO_BASKET_SIDE = "NAVIGATE_TO_BASKET_SIDE"
         NAVIGATE_TO_LAUNDRY_TABLE = "NAVIGATE_TO_LAUNDRY_TABLE"
         UNLOAD_LAUNDRY = "UNLOAD_LAUNDRY"
         PICK_CLOTHES_BASKET = "PICK_CLOTHES_BASKET"
@@ -70,10 +71,11 @@ class DoingLaundryTM(Node):
         self.basket_scan_attempts = 0
         self.basket_nav_attempts = 0
 
-        # Detected basket projected to the MAP frame (PointStamped) — the primary
-        # navigation target for approach_point(align="right").
-        # basket_sublocation ("basket_left"/"basket_right") is only the
-        # FALLBACK goal if detection or the approach fails.
+        # Detected basket projected to the MAP frame (PointStamped) — the ONLY
+        # navigation target for approach_point(align="right"); scan/approach
+        # failures loop back to re-scanning, there is no annotated fallback.
+        # basket_sublocation ("basket_left"/"basket_right", nearer annotated
+        # side) is the POST-PICK intermediate waypoint on the way to the table.
         self.basket_map_point = None
         self.basket_sublocation = None
 
@@ -159,8 +161,8 @@ class DoingLaundryTM(Node):
 
     def _choose_basket_side(self, map_pt):
         """Nearer annotated candidate ('basket_left'/'basket_right') to the
-        detected basket — used only as the FALLBACK goal if the point approach
-        fails. Missing annotations are not fatal for the primary path."""
+        detected basket — the POST-PICK intermediate waypoint toward the
+        table. Missing annotations only skip that waypoint, nothing else."""
         laundry = self._laundry_sublocation_coords()
         left = laundry.get("basket_left")
         right = laundry.get("basket_right")
@@ -225,14 +227,16 @@ class DoingLaundryTM(Node):
 
             self.basket_scan_attempts += 1
             if self.basket_scan_attempts >= ATTEMPT_LIMIT:
+                # No annotated fallback: the approach only works from a real
+                # detection. Recenter on the washing machine (fresh viewpoint
+                # after any drift) and keep scanning.
                 Logger.warn(
                     self,
-                    "Basket scan failed after max attempts, defaulting to basket_left.",
+                    "Basket scan failed after max attempts, recentering and rescanning.",
                 )
-                self.basket_map_point = None
-                self.basket_sublocation = "basket_left"
+                self.subtask_manager.hri.say("I still cannot see the basket.", wait=False)
+                self.navigate_to("laundry", "washing_machine", say=False)
                 self.basket_scan_attempts = 0
-                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
             else:
                 Logger.warn(
                     self,
@@ -240,42 +244,41 @@ class DoingLaundryTM(Node):
                 )
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
-            if self.basket_map_point is not None:
-                # Primary path: approach the DETECTED point directly. The
-                # basket is right next to the washing machine (inside
-                # nav_central's direct range), so the base rotates until the
-                # basket sits abeam on the RIGHT and drives straight in
-                # holonomically until it is BASKET_SIDE_DISTANCE away —
-                # finishing parallel to it, ready for the side pick.
-                Logger.info(self, "Approaching detected basket (parallel, basket on the right).")
-                self.subtask_manager.vision.deactivate_face_recognition()
-                self.subtask_manager.manipulation.follow_face(False)
-                self.subtask_manager.manipulation.move_to_position("nav_pose")
-                self.subtask_manager.hri.say("Approaching the laundry basket.", wait=False)
-                status, error = self.subtask_manager.nav.approach_point(
-                    self.basket_map_point,
-                    standoff=BASKET_APPROACH_STANDOFF,
-                    align="right",
-                    final_distance=BASKET_SIDE_DISTANCE,
-                )
-                if status == Status.EXECUTION_SUCCESS:
-                    self.basket_nav_attempts = 0
-                    self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
-                    return
-                self.basket_nav_attempts += 1
-                Logger.error(self, f"Basket approach failed: {error}.")
-                if self.basket_nav_attempts >= ATTEMPT_LIMIT:
-                    Logger.warn(self, "Falling back to the annotated basket sublocation.")
-                    self.basket_map_point = None
+            if self.basket_map_point is None:
+                # No detection to approach (shouldn't happen — the scan only
+                # transitions here with a point). Go get one.
+                self.set_state(DoingLaundryTM.TaskStates.SCAN_FOR_BASKET)
                 return
-
-            sublocation = self.basket_sublocation or "basket_left"
-            Logger.info(self, f"Navigating to basket at {sublocation}")
-            status, error = self.navigate_to("laundry", sublocation)
+            # Approach the DETECTED point directly. The basket is right next
+            # to the washing machine (inside nav_central's direct range), so
+            # the base rotates until the basket sits abeam on the RIGHT and
+            # drives straight in holonomically until it is
+            # BASKET_SIDE_DISTANCE away — finishing parallel to it, ready for
+            # the side pick.
+            Logger.info(self, "Approaching detected basket (parallel, basket on the right).")
+            self.subtask_manager.vision.deactivate_face_recognition()
+            self.subtask_manager.manipulation.follow_face(False)
+            self.subtask_manager.manipulation.move_to_position("nav_pose")
+            self.subtask_manager.hri.say("Approaching the laundry basket.", wait=False)
+            status, error = self.subtask_manager.nav.approach_point(
+                self.basket_map_point,
+                standoff=BASKET_APPROACH_STANDOFF,
+                align="right",
+                final_distance=BASKET_SIDE_DISTANCE,
+            )
             if status == Status.EXECUTION_SUCCESS:
+                self.basket_nav_attempts = 0
                 self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
-            else:
-                Logger.error(self, f"Navigation failed: {error}. Retrying...")
+                return
+            self.basket_nav_attempts += 1
+            Logger.error(self, f"Basket approach failed: {error}.")
+            if self.basket_nav_attempts >= ATTEMPT_LIMIT:
+                # The stored point may be stale (bumped basket, TF drift) —
+                # discard it and re-detect instead of falling back blind.
+                Logger.warn(self, "Approach failed after max attempts, re-scanning.")
+                self.basket_map_point = None
+                self.basket_nav_attempts = 0
+                self.set_state(DoingLaundryTM.TaskStates.SCAN_FOR_BASKET)
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET:
             Logger.info(self, "Requesting integrated basket pick.")
@@ -290,12 +293,10 @@ class DoingLaundryTM(Node):
                 # machine when Nav2 starts turning. Best-effort: a failed
                 # sidestep shouldn't stop the delivery.
                 Logger.info(self, "Sidestepping left to clear the washing machine.")
-                status, error = self.subtask_manager.nav.move_relative(
-                    dy=BASKET_CLEARANCE_SIDESTEP
-                )
+                status, error = self.subtask_manager.nav.move_relative(dy=BASKET_CLEARANCE_SIDESTEP)
                 if status != Status.EXECUTION_SUCCESS:
                     Logger.warn(self, f"Sidestep failed ({error}), navigating anyway.")
-                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
+                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET_SIDE)
             else:
                 self.basket_pick_attempts += 1
                 if self.basket_pick_attempts >= ATTEMPT_LIMIT:
@@ -306,6 +307,29 @@ class DoingLaundryTM(Node):
                         self,
                         f"Basket pick failed (attempt {self.basket_pick_attempts}), re-scanning.",
                     )
+
+        elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET_SIDE:
+            # Intermediate waypoint on the way to the table: the annotated
+            # basket sublocation on the side the basket was detected. Gives a
+            # clean, repeatable exit from the machine corner while holding the
+            # basket. Best-effort: skipped when unknown, abandoned after
+            # ATTEMPT_LIMIT failures — the table leg happens regardless.
+            if self.basket_sublocation is None:
+                Logger.warn(self, "No basket side annotation, heading straight to the table.")
+                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
+                return
+            Logger.info(self, f"Waypoint {self.basket_sublocation} on the way to the table.")
+            status, error = self.navigate_holding("laundry", self.basket_sublocation, say=False)
+            if status == Status.EXECUTION_SUCCESS:
+                self.basket_nav_attempts = 0
+                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
+            else:
+                self.basket_nav_attempts += 1
+                Logger.error(self, f"Waypoint navigation failed: {error}.")
+                if self.basket_nav_attempts >= ATTEMPT_LIMIT:
+                    Logger.warn(self, "Skipping the waypoint, going straight to the table.")
+                    self.basket_nav_attempts = 0
+                    self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE:
             # Straight to the table with the basket: normal location navigation
