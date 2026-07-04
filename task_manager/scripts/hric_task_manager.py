@@ -90,6 +90,7 @@ class HRIC_TM(Node):
         self.previous_state = None
 
         self.carrying_bag = False
+        self.should_follow_person = False
 
         self.current_state = HRIC_TM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
@@ -513,6 +514,29 @@ class HRIC_TM(Node):
         elif self.current_state == HRIC_TM.TaskStates.FOLLOW_PERSON:
             self._track_state_change(HRIC_TM.TaskStates.FOLLOW_PERSON)
             self.subtask_manager.vision.deactivate_face_recognition()
+
+            if not self.should_follow_person:
+                status, destination = self.subtask_manager.hri.ask_and_confirm(
+                    question="Where would you like me to go?",
+                    query="location",
+                    context="The question 'Where would you like me to go?' was asked, extract the location from the response.",
+                    initial_prompt="The question 'Where would you like me to go?' was asked",
+                    retries=3,
+                    always_confirm=True,
+                )
+                if status == Status.EXECUTION_SUCCESS and destination:
+                    self.subtask_manager.hri.say(
+                        f"Okay, I will navigate to the {destination}.", wait=False
+                    )
+                    self.navigate_to(destination, say=False)
+                else:
+                    self.subtask_manager.hri.say(
+                        "I could not understand the destination. I will stay here.", wait=False
+                    )
+
+                self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
+                return
+
             # Show the tracker's annotated feed (tracked person bbox) while following
             self.subtask_manager.hri.publish_display_topic(TRACKER_IMAGE_TOPIC)
             self._move_arm_cleared(
