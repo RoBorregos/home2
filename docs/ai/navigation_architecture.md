@@ -413,6 +413,13 @@ Beyond the original 5-service contract, `nav_central` also serves (constants in
     costmap-independent, so it can get close to a target that is itself marked as
     an obstacle. Omnibase only (strafe). Task side:
     `nav.approach_point(pt, standoff=0.65, align="right", final_distance=0.45)`.
+  - **Direct near-target mode (2026-07-04)**: with align left/right and the target
+    within `APPROACH_DIRECT_ALIGN_RANGE` (2 m), the Nav2 ring-search leg is skipped
+    entirely — only SLAM is resumed (live map TF) and `_align_parallel` does the
+    whole thing: rotate in place until the target is abeam, then drive straight in
+    holonomically (vx+vy+wz, 0.12 m/s cap). This is the doing_laundry basket
+    approach from the washing machine: short clear corridor, and a ring goal next
+    to an obstacle-marked basket would get costmap-rejected anyway.
 
 - `MOVE_RELATIVE_SERVICE` (`MoveRelative`) — **short relative displacement in the
   CURRENT base frame** (`dx` fwd+, `dy` left+, `dyaw` CCW rad). Direct cmd_vel
@@ -431,6 +438,11 @@ Beyond the original 5-service contract, `nav_central` also serves (constants in
     keeps the gripper off the back of the drum.
 
 ## Addendum (2026-07-03): washing-machine insert-and-pick (doing_laundry)
+
+> **Branch note (2026-07-04, `laundry_robocup_final`)**: this flow lives on
+> `Doing_papu2` and was NOT ported here — this branch's WM pick is a plain
+> `manipulation.pick_object("clothes")`. `MoveRelative` itself (incl. the lidar
+> stop) IS on this branch.
 
 Ported/adapted from branch `move-centroid-newapr` (that branch's own
 `RelativeMove.srv` was never registered — superseded by `MoveRelative` above).
@@ -453,6 +465,11 @@ Calibrate `WM_TARGET_LIDAR_DISTANCE` on the robot (park at perfect depth, read
 the /scan front sector). Test: `task_manager/scripts/test/test_move_to_washing_machine.py`.
 
 ## Addendum (2026-07-03): wall_aligner — precision washing-machine align/close
+
+> **Branch note (2026-07-04, `laundry_robocup_final`)**: wall_aligner was NOT
+> ported to this branch (no `wall_aligner.py`, no AlignToWall/CloseToWall srvs,
+> no `nav.align_washing_machine`/`close_washing_machine`). It lives on
+> `Doing_papu2`.
 
 `navigation/packages/nav_main/scripts/wall_aligner.py` (launched with the
 omnibase set in `general_navigation.launch.py`). **Independent of
@@ -502,3 +519,33 @@ glued to the robot, boxing the planner in. Task side:
 try/finally). Changing `ApproachPoint.srv` fields requires rebuilding the
 interface cache: `./run.sh frida_interfaces`, then restart the nav + integration
 containers.
+
+## Addendum (2026-07-04): doing_laundry basket approach rework
+
+Flow (`doing_laundry_task_manager`): navigate to `laundry/washing_machine` →
+`vision.detect_objects("laundry_basket")` from there (both basket spots are in
+view) → project to map (`_project_to_map`, zero-stamp TF) →
+`nav.approach_point(pt, standoff=0.65, align="right", final_distance=0.45)`.
+The basket is within the 2 m direct range, so nav_central skips Nav2: rotate
+until the basket is abeam on the RIGHT, then a single closed-loop holonomic
+drive to 0.45 m (see "Direct near-target mode" above). After
+`pick_object("laundry_basket")` (grab on the right): `move_relative(dy=1.0)`
+sidestep LEFT to clear the machine, then the normal carry to the table.
+`basket_left`/`basket_right` annotations are FALLBACK-only now (used if the
+scan fails 3× or the approach fails 3×).
+
+Vision side: `laundry_basket.point3d` comes from a **depth-cluster centroid**,
+not the bbox-center pixel (`get_cluster_point` in
+`object_detector_2d/scripts/vision_3D_utils.py`, wired in
+`base_detector_node.extract_3d`, gated by param `CLUSTER_POINT3D_LABELS`,
+default `["laundry_basket"]`). It clusters the bbox depth ROI along depth
+(0.15 m gaps) and returns the pixel-centroid + median depth of the NEAREST
+cluster with ≥5 % support — the basket's front face — because the center pixel
+lands in the opening (clothes inside / floor behind the rim) and shifts the
+point tens of cm. `final_distance` is therefore base_link → **front face**,
+not basket center; calibrate 0.45 with that in mind.
+
+On-robot checks pending (2026-07-04): the limp-base `vy` strafe quality during
+`_align_parallel` phase 2 (capped at 0.12 m/s; loosen `TOL_LIN` if it
+oscillates), and the 0.45 m side-pick gap. New srv fields ⇒
+`./run.sh frida_interfaces` + restart nav & integration.

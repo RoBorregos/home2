@@ -14,7 +14,7 @@ from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from std_msgs.msg import Bool
@@ -24,6 +24,7 @@ from frida_constants.navigation_constants import(
         APPROACH_POINT_SERVICE,
         GLOBAL_COSTMAP_TOPIC,
         SET_OBSTACLE_AVOIDANCE_SERVICE,
+        MOVE_RELATIVE_SERVICE,
         MAP_TOPIC,
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
@@ -76,6 +77,7 @@ from frida_interfaces.srv import (
         GoToPose,
         GetRobotPose,
         ApproachPoint,
+        MoveRelative,
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -90,6 +92,12 @@ import re
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
+# approach_point(align=left/right): a target within this range is approached
+# DIRECTLY by _align_parallel (rotate until abeam + holonomic cmd_vel drive),
+# skipping the Nav2 ring-search leg — the ring goal near an obstacle-marked
+# target (the laundry basket) can be rejected by the costmap, and over a short
+# clear corridor the direct drive is both simpler and more precise.
+APPROACH_DIRECT_ALIGN_RANGE = 2.0
 # Max time to wait for the arm pointer to home back to its normal pose before
 # returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
 ARM_HOME_TIMEOUT = 10.0
@@ -271,6 +279,11 @@ class Nav_Central(Node):
             ApproachPoint, APPROACH_POINT_SERVICE, self.approach_point_callback,
             callback_group=self.service_group)
 
+        # Short relative sidesteps (direct cmd_vel on odom TF, no Nav2/costmaps)
+        self.move_relative_srv = self.create_service(
+            MoveRelative, MOVE_RELATIVE_SERVICE, self.move_relative_callback,
+            callback_group=self.service_group)
+
         # Live-obstacle toggle: SetBool(False) disables obstacle_layer +
         # rgbd_obstacle_layer on both costmaps (static map keeps applying) so a
         # carried bag/basket can't box the planner in; SetBool(True) restores.
@@ -278,6 +291,11 @@ class Nav_Central(Node):
         self.set_obstacle_avoidance_srv = self.create_service(
             SetBool, SET_OBSTACLE_AVOIDANCE_SERVICE, self.set_obstacle_avoidance_callback,
             callback_group=self.service_group)
+        # Direct base commands for the approach_point parallel alignment and
+        # move_relative (same TwistStamped-on-/cmd_vel convention as
+        # table_docker; only published while no Nav2 goal is active, so there
+        # is no contention with MPPI).
+        self.cmd_vel_pub = self.create_publisher(TwistStamped, "/cmd_vel", 10)
 
         # Occupancy grids for approach_point free-space checks: prefer the
         # global costmap (static map + inflation + live obstacles, latched by
@@ -954,7 +972,33 @@ class Nav_Central(Node):
             self.nav_logger("error", f"Approach_Point -> {response.error}")
             return response
 
-        if math.hypot(tx - rx, ty - ry) <= standoff + 0.05:
+        align = (request.align or "").strip().lower()
+        dist = math.hypot(tx - rx, ty - ry)
+
+        if align in ("left", "right") and dist <= APPROACH_DIRECT_ALIGN_RANGE:
+            # Direct holonomic approach (doing_laundry basket): the target is
+            # near, so skip the Nav2 ring-search leg entirely — _align_parallel
+            # rotates the target abeam on the requested side and drives
+            # straight in on direct cmd_vel (costmap-independent). Only SLAM is
+            # resumed, for live map->base_link TF during the move.
+            if not self.rtabmap_loaded:
+                response.success = False
+                response.error = "Navigation not initialized"
+                return response
+            self.nav_logger(
+                "info",
+                f"Approach_Point -> direct parallel approach "
+                f"({dist:.2f} m away, align={align})")
+            response.goal = self._approach_pose(rx, ry, tx, ty)
+            self._retreat_if_docked()
+            self.resume_slam()
+            ok = self._align_parallel(tx, ty, align, request.final_distance)
+            response.success = ok
+            response.error = "" if ok else "parallel alignment failed"
+            self.pause_slam()
+            return response
+
+        if dist <= standoff + 0.05:
             # Already close enough: face the target, never drive into it.
             goal = self._approach_pose(rx, ry, tx, ty)
             self.nav_logger("info", "Approach_Point -> already close, facing target")
@@ -981,9 +1025,16 @@ class Nav_Central(Node):
         self._clear_costmaps()
         ok, msg = self.send_nav_goal(goal)
         if ok:
-            # The goal checker can succeed inside xy tolerance without settling
-            # yaw — make sure the base front actually points at the person.
-            self._face_target(tx, ty)
+            if align in ("left", "right"):
+                # Finish parallel to the target instead of facing it, target
+                # abeam on the requested side, optionally strafing in until
+                # base_link sits final_distance meters from it.
+                if not self._align_parallel(tx, ty, align, request.final_distance):
+                    ok, msg = False, "parallel alignment failed"
+            else:
+                # The goal checker can succeed inside xy tolerance without settling
+                # yaw — make sure the base front actually points at the person.
+                self._face_target(tx, ty)
         response.success = ok
         response.error = msg
         self.pause_slam()
@@ -1009,6 +1060,206 @@ class Nav_Central(Node):
         self.nav_logger(
             "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
         self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
+
+    def _publish_cmd(self, vx=0.0, vy=0.0, wz=0.0):
+        """Direct base command (TwistStamped on /cmd_vel, same convention as
+        table_docker). Only used while no Nav2 goal is active."""
+        t = TwistStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "base_link"
+        t.twist.linear.x = float(vx)
+        t.twist.linear.y = float(vy)
+        t.twist.angular.z = float(wz)
+        self.cmd_vel_pub.publish(t)
+
+    def _align_parallel(self, tx, ty, side, final_distance, timeout=35.0, rate=0.05):
+        """Final alignment for approach_point(align=left/right): rotate in
+        place until the base is PARALLEL to the target (target abeam at ±90°),
+        then, if final_distance > 0, strafe until base_link sits that many
+        meters from the target, still abeam. Closed loop on map->base_link TF
+        with direct cmd_vel, so the costmaps cannot veto getting close to a
+        target that is itself marked as an obstacle (e.g. the laundry basket).
+        Holonomic base only — the strafe is a no-op on a diffdrive. The
+        timeout covers the direct-approach case too (up to ~2 m of drive at
+        the 0.12 m/s cap plus the initial rotation)."""
+        # Desired bearing of the target in the base frame: -90° (right) / +90° (left)
+        offset = -math.pi / 2.0 if side == "right" else math.pi / 2.0
+        want_y = -final_distance if side == "right" else final_distance
+        MAX_V, MAX_W = 0.12, 0.5
+        K_LIN, K_ANG = 0.9, 1.5
+        TOL_LIN, TOL_ANG = 0.04, 0.06
+
+        self.nav_logger(
+            "info",
+            f"Approach_Point -> aligning parallel, target on the {side} "
+            f"(final_distance={final_distance:.2f})")
+        elapsed = 0.0
+        rotated = False
+        try:
+            while elapsed < timeout:
+                try:
+                    tf = self.tf_buffer.lookup_transform(
+                        "map", "base_link", rclpy.time.Time(),
+                        timeout=Duration(seconds=0.5))
+                except Exception as e:
+                    self.nav_logger("warn", f"Approach_Point -> align TF failed: {e}")
+                    return False
+                rx, ry = tf.transform.translation.x, tf.transform.translation.y
+                q = tf.transform.rotation
+                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                                 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                dx, dy = tx - rx, ty - ry
+                # Target in the base frame + yaw error vs the parallel heading.
+                # Both recomputed every cycle, so the base stays parallel while
+                # it strafes (the bearing changes as the robot moves).
+                xb = math.cos(yaw) * dx + math.sin(yaw) * dy
+                yb = -math.sin(yaw) * dx + math.cos(yaw) * dy
+                yaw_err = (math.atan2(dy, dx) - offset - yaw + math.pi) % (2.0 * math.pi) - math.pi
+
+                if not rotated:
+                    # Phase 1: pure in-place rotation until parallel.
+                    if abs(yaw_err) <= TOL_ANG:
+                        rotated = True
+                        if final_distance <= 0.0:
+                            break
+                        continue
+                    self._publish_cmd(wz=max(-MAX_W, min(MAX_W, K_ANG * yaw_err)))
+                else:
+                    # Phase 2: drive the target to (0, want_y) in the base
+                    # frame (abeam at the requested gap), holding yaw.
+                    ex, ey = xb, yb - want_y
+                    if abs(ex) <= TOL_LIN and abs(ey) <= TOL_LIN and abs(yaw_err) <= TOL_ANG:
+                        break
+                    self._publish_cmd(
+                        vx=max(-MAX_V, min(MAX_V, K_LIN * ex)),
+                        vy=max(-MAX_V, min(MAX_V, K_LIN * ey)),
+                        wz=max(-MAX_W, min(MAX_W, K_ANG * yaw_err)))
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=rate))
+                elapsed += rate
+            else:
+                self.nav_logger("warn", "Approach_Point -> parallel alignment timed out")
+                return False
+        finally:
+            self._publish_cmd()  # always leave the base stopped
+        self.nav_logger("info", f"Approach_Point -> parallel alignment done (target abeam {side})")
+        return True
+
+    def move_relative_callback(self, request, response):
+        """Service: short relative displacement in the current base frame
+        (dx fwd+, dy left+, dyaw CCW). Direct cmd_vel — see MoveRelative.srv."""
+        ok, err, traveled = self._move_relative(
+            request.dx, request.dy, request.dyaw,
+            stop_at_front_distance=request.stop_at_front_distance)
+        response.success = ok
+        response.error = err
+        response.traveled = float(traveled)
+        return response
+
+    def _front_lidar_distance(self, scan, half_angle=math.radians(10.0)):
+        """Min valid range in the front sector (|beam angle| <= half_angle).
+        The merged /scan has 0 rad = straight ahead (see DOOR_CHECK
+        calibration). None when the scan has no valid beam in the sector."""
+        if scan is None:
+            return None
+        best = None
+        sensor_min = scan.range_min if scan.range_min > 0.0 else 0.0
+        for i, r in enumerate(scan.ranges):
+            ang = scan.angle_min + i * scan.angle_increment
+            if abs(ang) > half_angle:
+                continue
+            if math.isnan(r) or math.isinf(r) or r < sensor_min:
+                continue
+            if best is None or r < best:
+                best = r
+        return best
+
+    def _move_relative(self, dx, dy, dyaw, stop_at_front_distance=0.0, rate=0.05):
+        """Closed-loop relative move on odom->base_link TF (odom: smooth, no
+        SLAM correction jumps over a short displacement). Same direct-cmd_vel
+        machinery as _align_parallel; nothing checks obstacles on the way, so
+        callers keep displacements short (e.g. the 1 m basket-clearing strafe).
+
+        With stop_at_front_distance > 0 and a forward component (dx > 0), the
+        front lidar sector is monitored every cycle and the move ends EARLY
+        (success) as soon as it reads at or below that distance.
+        Returns (ok, error, traveled_meters)."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "odom", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0))
+        except Exception as e:
+            return False, f"odom TF failed: {e}", 0.0
+        x0, y0 = tf.transform.translation.x, tf.transform.translation.y
+        q = tf.transform.rotation
+        yaw0 = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                          1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        gx = x0 + math.cos(yaw0) * dx - math.sin(yaw0) * dy
+        gy = y0 + math.sin(yaw0) * dx + math.cos(yaw0) * dy
+        gyaw = yaw0 + dyaw
+
+        MAX_V, MAX_W = 0.2, 0.5
+        K_LIN, K_ANG = 1.2, 1.5
+        TOL_LIN, TOL_ANG = 0.03, 0.05
+        timeout = 10.0 + 10.0 * math.hypot(dx, dy)  # generous vs the 0.2 m/s cap
+
+        # Lidar stop only makes sense while driving forward; /scan is BEST_EFFORT
+        # (see check_door), so the temp subscription must use sensor QoS.
+        lidar_stop = stop_at_front_distance > 0.0 and dx > 0.0
+        scan_sub = None
+        self._relmove_scan = None
+        if lidar_stop:
+            scan_sub = self.create_subscription(
+                LaserScan, SCAN_TOPIC,
+                lambda m: setattr(self, "_relmove_scan", m),
+                qos_profile_sensor_data, callback_group=self.lidar_group)
+
+        self.nav_logger(
+            "info",
+            f"Move_Relative -> dx={dx:.2f} dy={dy:.2f} dyaw={math.degrees(dyaw):.0f} deg"
+            + (f" (lidar stop @ {stop_at_front_distance:.2f} m)" if lidar_stop else ""))
+        elapsed = 0.0
+        traveled = 0.0
+        try:
+            while elapsed < timeout:
+                try:
+                    tf = self.tf_buffer.lookup_transform(
+                        "odom", "base_link", rclpy.time.Time(),
+                        timeout=Duration(seconds=0.5))
+                except Exception as e:
+                    return False, f"odom TF failed mid-move: {e}", traveled
+                rx, ry = tf.transform.translation.x, tf.transform.translation.y
+                traveled = math.hypot(rx - x0, ry - y0)
+                q = tf.transform.rotation
+                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                                 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                if lidar_stop:
+                    front = self._front_lidar_distance(self._relmove_scan)
+                    if front is not None and front <= stop_at_front_distance:
+                        self.nav_logger(
+                            "info",
+                            f"Move_Relative -> lidar stop (front={front:.2f} m, "
+                            f"traveled={traveled:.2f} m)")
+                        return True, "", traveled
+                ex_o, ey_o = gx - rx, gy - ry
+                # Remaining error expressed in the CURRENT base frame.
+                ex = math.cos(yaw) * ex_o + math.sin(yaw) * ey_o
+                ey = -math.sin(yaw) * ex_o + math.cos(yaw) * ey_o
+                eyaw = (gyaw - yaw + math.pi) % (2.0 * math.pi) - math.pi
+                if abs(ex) <= TOL_LIN and abs(ey) <= TOL_LIN and abs(eyaw) <= TOL_ANG:
+                    self.nav_logger("info", f"Move_Relative -> done (traveled={traveled:.2f} m)")
+                    return True, "", traveled
+                self._publish_cmd(
+                    vx=max(-MAX_V, min(MAX_V, K_LIN * ex)),
+                    vy=max(-MAX_V, min(MAX_V, K_LIN * ey)),
+                    wz=max(-MAX_W, min(MAX_W, K_ANG * eyaw)))
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=rate))
+                elapsed += rate
+            self.nav_logger("warn", "Move_Relative -> timed out")
+            return False, "move_relative timed out", traveled
+        finally:
+            self._publish_cmd()  # always leave the base stopped
+            if scan_sub is not None:
+                self.destroy_subscription(scan_sub)
+                self._relmove_scan = None
 
     def _set_obstacle_layers(self, enabled):
         """Set `enabled` on the live obstacle layers (lidar obstacle_layer +

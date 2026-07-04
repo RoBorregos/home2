@@ -26,6 +26,7 @@ from frida_constants.navigation_constants import (
     GET_ROBOT_POSE_SERVICE,
     APPROACH_POINT_SERVICE,
     SET_OBSTACLE_AVOIDANCE_SERVICE,
+    MOVE_RELATIVE_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import (
@@ -37,6 +38,7 @@ from frida_interfaces.srv import (
     GoToPose,
     GetRobotPose,
     ApproachPoint,
+    MoveRelative,
 )
 from std_srvs.srv import SetBool
 
@@ -93,6 +95,7 @@ class NavigationTasks:
         self.set_obstacle_avoidance_srv = self.node.create_client(
             SetBool, SET_OBSTACLE_AVOIDANCE_SERVICE
         )
+        self.move_relative_srv = self.node.create_client(MoveRelative, MOVE_RELATIVE_SERVICE)
         # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
         # camera-frame customer detection) and transform it to map before navigating.
         self.tf_buffer = tf2_ros.Buffer()
@@ -447,7 +450,9 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def approach_point(self, point, standoff: float = 0.65):
+    def approach_point(
+        self, point, standoff: float = 0.65, align: str = "", final_distance: float = 0.0
+    ):
         """Approach a person or free-standing object seen by vision (e.g. GPSR
         "go to the person", approaching a bag on the floor).
 
@@ -456,7 +461,15 @@ class NavigationTasks:
         onto the map, picks the nearest COSTMAP-FREE pose `standoff` meters
         from the target (robot side first, facing it) and navigates there; if
         the robot is already within `standoff`, it just turns to face the
-        target."""
+        target.
+
+        `align`: "" or "face" keeps the default face-the-target finish;
+        "left"/"right" finishes with the base PARALLEL to the target, target
+        abeam on that side (doing_laundry side pick). With align left/right
+        and `final_distance` > 0, nav_central closed-loop strafes (direct
+        cmd_vel, ignoring costmaps) until base_link is that many meters from
+        the target — and when the target is already within ~2 m it skips the
+        Nav2 leg entirely and drives straight in holonomically."""
         request = ApproachPoint.Request()
         if isinstance(point, PointStamped):
             request.target = point
@@ -467,6 +480,8 @@ class NavigationTasks:
             request.target.header.frame_id = "map"
             request.target.point.x, request.target.point.y = xy
         request.standoff = float(standoff)
+        request.align = str(align)
+        request.final_distance = float(final_distance)
         CLog.nav(self.node, "MOVE", "Requesting approach to point")
         future = self.approach_point_srv.call_async(request)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
@@ -502,6 +517,43 @@ class NavigationTasks:
             return (Status.EXECUTION_SUCCESS, result.message)
         err = result.message if result is not None else "Error with request"
         CLog.nav(self.node, "ERROR", f"set_obstacle_avoidance failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, {"traveled": 0.0}), delay=1)
+    @service_check(
+        "move_relative_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def move_relative(
+        self,
+        dx: float = 0.0,
+        dy: float = 0.0,
+        dyaw: float = 0.0,
+        stop_at_front_distance: float = 0.0,
+    ):
+        """Short displacement in the CURRENT base frame (dx fwd+, dy left+,
+        dyaw CCW rad), executed by nav_central as a direct cmd_vel closed loop
+        on odom TF. Bypasses Nav2 AND the costmaps — use for small deliberate
+        sidesteps (e.g. clearing the washing machine with the held basket),
+        never for real navigation.
+
+        With stop_at_front_distance > 0 and dx > 0, the drive additionally
+        stops (success) as soon as the front lidar sector reads at or below
+        that distance. Returns (Status, {"traveled": meters}) on success so
+        the caller can back out symmetrically."""
+        request = MoveRelative.Request()
+        request.dx, request.dy, request.dyaw = float(dx), float(dy), float(dyaw)
+        request.stop_at_front_distance = float(stop_at_front_distance)
+        CLog.nav(self.node, "MOVE", f"Relative move dx={dx:.2f} dy={dy:.2f} dyaw={dyaw:.2f}")
+        future = self.move_relative_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", f"Relative move done ({result.traveled:.2f} m)")
+            return (Status.EXECUTION_SUCCESS, {"traveled": float(result.traveled)})
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"move_relative failed: {err}")
         return (Status.EXECUTION_ERROR, err)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)

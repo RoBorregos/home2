@@ -26,7 +26,12 @@ from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import Bool, Header
 from visualization_msgs.msg import Marker, MarkerArray
 import detectors  # noqa: F401
-from vision_3D_utils import deproject_pixel_to_point, get2DCentroid, get_depth
+from vision_3D_utils import (
+    deproject_pixel_to_point,
+    get2DCentroid,
+    get_cluster_point,
+    get_depth,
+)
 
 
 class BaseDetectorNode(rclpy.node.Node, ABC):
@@ -53,6 +58,15 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         self.max_depth = self.declare_param("MAX_DEPTH_THRESH", 2.0).double_value
         self.flip_image = self.declare_param("FLIP_IMAGE", False).bool_value
         self.verbose = self.declare_param("VERBOSE", False).bool_value
+        # Labels whose point3d comes from the nearest dominant depth CLUSTER in
+        # the bbox instead of the bbox-center pixel — for objects the robot
+        # docks against (laundry basket: the center pixel reads the clothes
+        # inside or the floor behind the rim, shifting the point tens of cm).
+        self.cluster_point3d_labels = set(
+            self.declare_param(
+                "CLUSTER_POINT3D_LABELS", ["laundry_basket"]
+            ).string_array_value
+        )
         use_active_flag = self.declare_param("USE_ACTIVE_FLAG", False).bool_value
         self.active_flag = not use_active_flag
 
@@ -184,11 +198,17 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         for det in detections:
             pt = PointStamped(header=Header(frame_id=self.camera_frame), point=Point())
             if has_depth:
-                p2d = get2DCentroid(
-                    [det.bbox_.y1, det.bbox_.x1, det.bbox_.y2, det.bbox_.x2],
-                    self.depth_image,
+                box = [det.bbox_.y1, det.bbox_.x1, det.bbox_.y2, det.bbox_.x2]
+                clustered = (
+                    get_cluster_point(self.depth_image, box)
+                    if det.label_ in self.cluster_point3d_labels
+                    else None
                 )
-                depth = get_depth(self.depth_image, p2d)
+                if clustered is not None:
+                    p2d, depth = clustered
+                else:
+                    p2d = get2DCentroid(box, self.depth_image)
+                    depth = get_depth(self.depth_image, p2d)
                 p3d = deproject_pixel_to_point(self.camera_info, p2d, depth)
                 pt.point.x, pt.point.y, pt.point.z = (
                     float(p3d[0]),

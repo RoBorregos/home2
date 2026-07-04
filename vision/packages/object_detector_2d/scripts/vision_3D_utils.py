@@ -4,6 +4,8 @@
 import math
 import sys
 
+import numpy as np
+
 FLT_EPSILON = sys.float_info.epsilon
 
 
@@ -99,6 +101,60 @@ def get_depth(depthframe_, pixel):
 
     # Get the median of the values around the depth pixel to avoid incorrect readings.
     return medianCalculation(x, y, widthDEPTH, heightDEPTH, depthframe_)
+
+
+def get_cluster_point(depthframe_, box, depth_gap=0.15, min_frac=0.05, shrink=0.10):
+    """Robust (pixel, depth) for a bbox via depth clustering — for objects
+    whose bbox-center depth lies through them (a laundry basket: the center
+    pixel reads the clothes inside or the floor behind the rim, which shifts
+    the 3D point tens of cm and ruins a close docking approach).
+
+    Takes the valid depths in the (slightly shrunk) bbox ROI, splits them into
+    clusters along the depth axis (sorted depths, break on gaps > depth_gap
+    meters) and keeps the NEAREST cluster with enough support (min_frac of the
+    valid pixels) — the object's front face. Returns ((px, py), median_depth)
+    with (px, py) the cluster's pixel centroid in full-image coordinates, or
+    None if the ROI has no usable cluster (caller falls back to
+    get2DCentroid + get_depth).
+
+    box = [ymin, xmin, ymax, xmax] normalized 0..1 (same as get2DCentroid)."""
+    h, w = depthframe_.shape[:2]
+    ymin, xmin = float(box[0]) * h, float(box[1]) * w
+    ymax, xmax = float(box[2]) * h, float(box[3]) * w
+    bw, bh = xmax - xmin, ymax - ymin
+    if bw < 4 or bh < 4:
+        return None
+    # Shrink the ROI margins: bbox edges bleed into the background.
+    x0 = max(0, int(xmin + bw * shrink))
+    x1 = min(w, int(xmax - bw * shrink))
+    y0 = max(0, int(ymin + bh * shrink))
+    y1 = min(h, int(ymax - bh * shrink))
+    if x1 - x0 < 2 or y1 - y0 < 2:
+        return None
+
+    roi = depthframe_[y0:y1, x0:x1]
+    valid = np.isfinite(roi) & (roi > 0.0)
+    n_valid = int(valid.sum())
+    if n_valid == 0:
+        return None
+
+    order = np.sort(roi[valid].ravel())
+    breaks = np.where(np.diff(order) > depth_gap)[0]
+    starts = np.concatenate(([0], breaks + 1))
+    ends = np.concatenate((breaks + 1, [order.size]))
+    min_support = max(50, int(n_valid * min_frac))
+
+    # Clusters come out sorted by depth — the first big one is the front face.
+    for s, e in zip(starts, ends):
+        if e - s < min_support:
+            continue
+        lo, hi = order[s], order[e - 1]
+        mask = valid & (roi >= lo) & (roi <= hi)
+        ys, xs = np.nonzero(mask)
+        px = int(x0 + xs.mean())
+        py = int(y0 + ys.mean())
+        return (px, py), float(np.median(roi[mask]))
+    return None
 
 
 def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):

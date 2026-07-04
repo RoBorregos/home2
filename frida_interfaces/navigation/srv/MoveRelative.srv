@@ -1,0 +1,21 @@
+# Short relative displacement of the base in the CURRENT base frame, executed
+# as a direct cmd_vel closed loop on odom TF — bypasses Nav2 and the costmaps
+# entirely. For small deliberate sidesteps only (e.g. doing_laundry strafes
+# 1 m left after grabbing the basket so the held basket clears the washing
+# machine before normal navigation starts). Nothing checks for obstacles along
+# the way — keep displacements short and use MoveLocation/GoToPose for real
+# navigation.
+#
+# stop_at_front_distance > 0 arms a LIDAR stop for forward drives (dx > 0):
+# the base halts as soon as the front lidar sector reads at or below that
+# distance, even if dx hasn't been fully traveled. This is how the arm is
+# inserted into the washing machine: dx is a vision-derived cap, the lidar
+# distance to the machine's front face is the ground-truth depth stop.
+float32 dx     # forward (+) / backward (-) meters, in the base frame at start
+float32 dy     # left (+) / right (-) meters
+float32 dyaw   # final heading change (rad, CCW)
+float32 stop_at_front_distance  # m; > 0 stops the forward drive when the front lidar reads <= this
+---
+bool success
+string error
+float32 traveled  # meters actually driven along the commanded direction (for symmetric back-out)

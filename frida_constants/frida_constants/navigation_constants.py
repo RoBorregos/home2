@@ -37,6 +37,11 @@ GET_ROBOT_POSE_SERVICE = "/navigation/get_robot_pose"
 APPROACH_POINT_SERVICE = "/navigation/approach_point"
 GLOBAL_COSTMAP_TOPIC = "/global_costmap/costmap"
 
+### Short relative base displacement (MoveRelative: dx/dy/dyaw in the current
+### base frame). Direct cmd_vel closed loop on odom TF — bypasses Nav2 and the
+### costmaps; for small deliberate sidesteps, not navigation.
+MOVE_RELATIVE_SERVICE = "/navigation/move_relative"
+
 ### Live-obstacle toggle: SetBool(False) disables obstacle marking on both
 ### costmaps (static map keeps applying) while the arm carries a bag/basket.
 SET_OBSTACLE_AVOIDANCE_SERVICE = "/navigation/set_obstacle_avoidance"
