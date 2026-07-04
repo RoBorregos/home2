@@ -21,6 +21,13 @@ from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
+# Competition switch: physical person-following is DISABLED for GPSR —
+# follow_person_until instead tells the person it cannot follow them, asks for
+# (or reuses) the destination, and guides them there. Flip to True to restore
+# the tracker-based follow (_follow_person_tracking); the constants below only
+# apply to that path.
+FOLLOW_PERSON_ENABLED = False
+
 # Person-following (ported from the HRIC FOLLOW_PERSON state): the robot follows
 # the tracked person until a stop keyword, arrival at the destination, or the
 # safety cap. FOLLOW_LISTEN_TIMEOUT is the length of each speech-listening
@@ -175,7 +182,70 @@ class GPSRTask(GenericTask):
     ## HRI, Nav, Vision, Manipulation
     def follow_person_until(self, command: FollowPersonUntil):
         """
+        GPSR follow command with physical following disabled
+        (FOLLOW_PERSON_ENABLED = False): the robot tells the person it cannot
+        follow them, asks for the location they want to go (or reuses the
+        commanded destination), and navigates there with the person walking
+        along — a guide in place of a follow.
+
+        Args:
+            destination (str): Where the person wanted to be followed to.
+                'cancelled' (follow until told to stop) carries no
+                destination, so the robot asks the person for one.
+
+        Postconditions:
+            - The robot (and, walking with it, the person) is at the
+              destination.
+        """
+        if isinstance(command, dict):
+            command = FollowPersonUntil(**command)
+
+        if FOLLOW_PERSON_ENABLED:
+            return self._follow_person_tracking(command)
+
+        self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
+
+        destination = (command.destination or "").strip().lower()
+        until_cancelled = destination in ("", "cancelled", "canceled")
+
+        loc_text = command.destination
+        if until_cancelled:
+            self.subtask_manager.hri.say(
+                "I am sorry, I cannot follow you right now.", wait=True
+            )
+            status, loc_text = self.subtask_manager.hri.ask_and_confirm(
+                question="Please tell me the location you want to go, and I will take you there.",
+                query="location",
+                context="The user was asked for the location they want to go to. "
+                "We want to infer the location from the response",
+            )
+            if status != Status.EXECUTION_SUCCESS or not loc_text:
+                self.subtask_manager.hri.say(
+                    "Sorry, I could not understand the location.", wait=False
+                )
+                return Status.TARGET_NOT_FOUND, "no destination to guide to"
+        else:
+            self.subtask_manager.hri.say(
+                "I am sorry, I cannot follow you right now, "
+                f"but I can take you to the {command.destination}.",
+                wait=True,
+            )
+
+        location = self.subtask_manager.hri.query_location(loc_text)[0]
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Please follow me to the {pretty_target}.", wait=True)
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        result, _ = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        if result == Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say(f"We have arrived to the {pretty_target}.", wait=False)
+        return result, f"guided person to {pretty_target} instead of following"
+
+    def _follow_person_tracking(self, command: FollowPersonUntil):
+        """
         Follow a person until a stop condition is met (HRIC FOLLOW_PERSON port).
+        Inactive while FOLLOW_PERSON_ENABLED is False — kept intact so the
+        tracker-based follow can be restored with the flag.
 
         Args:
             destination (str): Where to stop following. A location name means
