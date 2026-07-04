@@ -267,6 +267,13 @@ class TableDocker(Node):
         # Minimum forward speed while approaching (avoids the proportional crawl in
         # the last few cm). Gated by the safety stop, so it stays safe.
         self.min_vx = self.declare_parameter("min_vx", 0.04).value
+        # Same crawl problem on the yaw/strafe axes: commands go RAW to the base
+        # (no MPPI behind them to push through stiction), and on the 3-WHEEL limp
+        # base small commands stall against the dead corner's drag — the loop then
+        # sits just outside yaw_tol/y_tol until approach_timeout. Floors apply only
+        # while OUTSIDE tolerance, so they can't cause oscillation inside it.
+        self.min_wz = self.declare_parameter("min_wz", 0.06).value
+        self.min_vy = self.declare_parameter("min_vy", 0.04).value
         self.control_rate = self.declare_parameter("control_rate", 15.0).value
         self.approach_timeout = self.declare_parameter("approach_timeout", 40.0).value
         self.settle_cycles = int(self.declare_parameter("settle_cycles", 3).value)
@@ -792,7 +799,11 @@ class TableDocker(Node):
             safety_stop = scan_near is not None and (scan_near - self.front_offset) <= self.min_safe
 
             wz = self._clamp(self.k_yaw * e_yaw, self.max_wz)
+            if abs(e_yaw) > self.yaw_tol and 0.0 < abs(wz) < self.min_wz:
+                wz = math.copysign(self.min_wz, wz)
             vy = self._clamp(self.k_y * y_center, self.max_vy)
+            if abs(y_center) > self.y_tol and 0.0 < abs(vy) < self.min_vy:
+                vy = math.copysign(self.min_vy, vy)
             if e_x > 0:
                 vx = self._clamp(self.k_x * e_x, self.max_vx)
                 # Keep at least min_vx until within tolerance (no final-cm crawl).
