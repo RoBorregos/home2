@@ -244,7 +244,8 @@ class ManipulationTasks:
         """Get named target"""
         return XARM_CONFIGURATIONS[target_name]
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    # mock must be a dict (fresh copy, callers mutate it); values in degrees like front_stare
+    @mockable(return_value=lambda self: dict(XARM_CONFIGURATIONS["front_stare"]["joints"]))
     @service_check("_get_joints_client", Status.EXECUTION_ERROR, TIMEOUT)
     def get_joint_positions(
         self,

@@ -31,6 +31,11 @@ def launch_setup(context, *args, **kwargs):
 
     nav2_cfg_path = LaunchConfiguration('nav2_config_file', default=nav2_params_file).perform(context)
 
+    # Optional task overlay (e.g. nav2_omni_restaurant.yaml): deep-merged on top
+    # of the base params so task profiles carry only their deltas and never
+    # drift from base tuning.
+    overlay_path = LaunchConfiguration('nav2_overlay_file', default='').perform(context)
+
     # Keepout (virtual obstacle) filter — opt-in.
     use_keepout = LaunchConfiguration('use_keepout', default='false').perform(context)
     keepout_on = use_keepout.lower() in ('true', '1')
@@ -53,12 +58,16 @@ def launch_setup(context, *args, **kwargs):
     # param files do not merge cleanly there. When off, use the base params as-is,
     # so the costmaps never load the filter (no "mask not received" spam).
     params_path = nav2_cfg_path
-    if keepout_on:
+    if keepout_on or overlay_path:
         with open(nav2_cfg_path) as f:
             merged = yaml.safe_load(f)
-        with open(keepout_overlay_file) as f:
-            _deep_merge(merged, yaml.safe_load(f))
-        params_path = os.path.join(tempfile.gettempdir(), 'nav2_omni_keepout_merged.yaml')
+        if overlay_path:
+            with open(overlay_path) as f:
+                _deep_merge(merged, yaml.safe_load(f))
+        if keepout_on:
+            with open(keepout_overlay_file) as f:
+                _deep_merge(merged, yaml.safe_load(f))
+        params_path = os.path.join(tempfile.gettempdir(), 'nav2_omni_merged.yaml')
         with open(params_path, 'w') as f:
             yaml.safe_dump(merged, f, default_flow_style=False, sort_keys=False)
 

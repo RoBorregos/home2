@@ -97,12 +97,18 @@ def launch_function(context, *args, **kwargs):
         ),
     )
 
+    # Restaurant deltas (slow velocities, longer voxel persistence for
+    # camera-marked tabletops, wider inflation) deep-merged over nav2_omni.yaml.
+    nav2_restaurant_overlay = os.path.join(
+        pkg_file_route, 'config', 'omni_config', 'nav2_omni_restaurant.yaml'
+    )
     nav2_omni = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "omni_setup", "nav2_omni.launch.py"])
         ),
         launch_arguments={
             'nav2': 'true',
+            'nav2_overlay_file': nav2_restaurant_overlay,
         }.items(),
     )
 

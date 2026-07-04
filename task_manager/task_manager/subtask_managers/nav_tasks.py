@@ -109,6 +109,8 @@ class NavigationTasks:
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
                 "get_robot_pose_srv": {"client": self.get_robot_pose_srv, "type": "service"},
+                "approach_point_srv": {"client": self.approach_point_srv, "type": "service"},
+                "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
             },
         }
 
@@ -217,7 +219,7 @@ class NavigationTasks:
         request.location = location
         request.sublocation = sublocation
         future = self.move_to_location_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None:
             if result.success:
@@ -314,7 +316,7 @@ class NavigationTasks:
         request = DockTable.Request()
         request.offset = float(offset)
         future = self.dock_table_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None:
             if result.success:
@@ -376,7 +378,7 @@ class NavigationTasks:
         request.target_pose = pose
         request.behavior_tree = behavior_tree
         future = self.go_to_pose_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None and result.success:
             CLog.nav(self.node, "SUCCESS", "Pose reached")
@@ -463,7 +465,7 @@ class NavigationTasks:
         request.standoff = float(standoff)
         CLog.nav(self.node, "MOVE", "Requesting approach to point")
         future = self.approach_point_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None and result.success:
             CLog.nav(self.node, "SUCCESS", "Approach point reached")
@@ -473,15 +475,23 @@ class NavigationTasks:
         return (Status.EXECUTION_ERROR, err)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
-    def return_to_origin(self, inverse_orientation=False):
-        """Navigate back to the pose captured at task start (first get_current_pose)."""
+    def return_to_origin(self, inverse_orientation=False, yaw_offset_deg=None):
+        """Navigate back to the pose captured at task start (first get_current_pose).
+
+        yaw_offset_deg: final heading relative to the START orientation, in
+        degrees CCW — 0 = face as started, 90 = left, -90 = right, 180 = turn
+        around. When given it overrides inverse_orientation (kept for backward
+        compatibility, equivalent to 180).
+        """
         if self._origin_pose is None:
             CLog.nav(self.node, "ERROR", "return_to_origin: no origin captured yet")
             return (Status.EXECUTION_ERROR, "No origin pose captured")
         goal = copy.deepcopy(self._origin_pose)
         goal.header.frame_id = goal.header.frame_id or "map"
-        if inverse_orientation:
-            yaw = self._yaw_from_quaternion(goal.pose.orientation) + math.pi
+        if yaw_offset_deg is None and inverse_orientation:
+            yaw_offset_deg = 180.0
+        if yaw_offset_deg:
+            yaw = self._yaw_from_quaternion(goal.pose.orientation) + math.radians(yaw_offset_deg)
             goal.pose.orientation = self._yaw_to_quaternion(yaw)
         return self.move_to_pose(goal)
 
