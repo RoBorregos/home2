@@ -16,8 +16,9 @@ var searchData=
   ['vision_5fconstants_2epy_13',['vision_constants.py',['../vision__constants_8py.html',1,'']]],
   ['vision_5fconstants_5fcpp_2ehpp_14',['vision_constants_cpp.hpp',['../vision__constants__cpp_8hpp.html',1,'']]],
   ['vision_5fenums_2epy_15',['vision_enums.py',['../vision__enums_8py.html',1,'']]],
-  ['vision_5ftasks_2epy_16',['vision_tasks.py',['../vision__tasks_8py.html',1,'']]],
-  ['visualization_2epy_17',['visualization.py',['../visualization_8py.html',1,'']]],
-  ['visualize_5fmbm_2epy_18',['visualize_mbm.py',['../visualize__mbm_8py.html',1,'']]],
-  ['visualize_5fompl_2epy_19',['visualize_ompl.py',['../visualize__ompl_8py.html',1,'']]]
+  ['vision_5foptimization_5fplan_2emd_16',['vision_optimization_plan.md',['../vision__optimization__plan_8md.html',1,'']]],
+  ['vision_5ftasks_2epy_17',['vision_tasks.py',['../vision__tasks_8py.html',1,'']]],
+  ['visualization_2epy_18',['visualization.py',['../visualization_8py.html',1,'']]],
+  ['visualize_5fmbm_2epy_19',['visualize_mbm.py',['../visualize__mbm_8py.html',1,'']]],
+  ['visualize_5fompl_2epy_20',['visualize_ompl.py',['../visualize__ompl_8py.html',1,'']]]
 ];

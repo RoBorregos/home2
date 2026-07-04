@@ -13,7 +13,7 @@ var classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "move_to_point", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af2789f229ade91ec4d554c8eec2b9e70", null ],
     [ "move_to_pose", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a13764afe83bb2bd881ac4f7f153fa8b2", null ],
     [ "retrieve_areas", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a3741bd4168f432606adacf7f7709125d", null ],
-    [ "return_to_origin", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a84facc22e82527f2ed6a2befb5243f7a", null ],
+    [ "return_to_origin", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a8fac24fdc932fad1187f67a2c6377728", null ],
     [ "setup_backup_map", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac66cfb2c5e73cf1afe885a4b9884e576", null ],
     [ "setup_services", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#add19447e6e03896302af3f75705c8056", null ],
     [ "_origin_pose", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a95c445095f5e6ae4e1769978177615b8", null ],

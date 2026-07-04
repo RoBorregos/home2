@@ -96,7 +96,7 @@ $(document).ready(function(){initNavTree('md_docs_task_manager_ppc_time_strategy
 <div class="textblock"><blockquote class="doxtable">
 <p>&zwj;Plan escrito (NO implementado). Análisis 2026-06-30. Verificado contra el rulebook oficial "RoboCup@Home Rules / Final version for RoboCup 2026 (Revision 2026-06-19)", §5.2 (pág. 40-44). Task: <code><a class="el" href="pickandplace__task__manager_8py.html">task_manager/scripts/pickandplace_task_manager.py</a></code>. </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md298"></a>
+<h1><a class="anchor" id="autotoc_md359"></a>
 0. Resumen ejecutivo</h1>
 <ul>
 <li><b>Límite = 420 s (7:00). Muro duro pero los puntos ganados se quedan.</b> Hoy el run tarda ~14 min (happy path) → se queda sin tiempo <b>en breakfast</b>, justo donde están los puntos más densos.</li>
@@ -104,7 +104,7 @@ $(document).ready(function(){initNavTree('md_docs_task_manager_ppc_time_strategy
 <li><b>El FSM nunca mira el reloj.</b> Corre cleanup-completo (<code>max_cleanup_objects=3</code>) y luego breakfast. Resultado: los <b>2 pours (400 pts)</b> casi nunca se ejecutan.</li>
 <li><b>Decisión central: priorizar/proteger breakfast (sobre todo los pours) por encima del cleanup.</b></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md299"></a>
+<h2><a class="anchor" id="autotoc_md360"></a>
 Capacidades confirmadas del robot (2026-06-30, definen el routing)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -118,7 +118,7 @@ Capacidades confirmadas del robot (2026-06-30, definen el routing)</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">Flat-grasp del plato   </td><td class="markdownTableBodyNone">❌   </td><td class="markdownTableBodyNone"><b>Fuera este año.</b> Plato sigue skippeado (no apostar el pick de 150).   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md300"></a>
+<h1><a class="anchor" id="autotoc_md361"></a>
 0.bis Datos CONFIRMADOS de la sede (repo RoboCupAtHome/Incheon2026)</h1>
 <p><b>Reality check de puntajes</b> (scores.md del repo, referencia de evento comparable con top teams): <b>el mejor PP fue 170</b> (Tobi), luego 145/135/135/135/85/85/35/35/15/15, y muchos 0. Nadie se acerca a los 3515. → **~135-200 es puntaje GANADOR.** La estrategia óptima es <b>asegurar primero la base barata y confiable</b> (navigate + recognize de TODOS los objetos + first-pick + 1-2 picks), y <b>luego</b> ir por breakfast/pours como stretch. La base confiable sola ya es competitiva; un solo pour (+200) probablemente gana el reto.</p>
 <p><b>3 runs (1 por día), solo cuenta el mejor</b> → hacer un run SEGURO (banca ~200) y en otro día el run AGRESIVO (ir por los pours). Bajo riesgo para intentar el stretch.</p>
@@ -153,7 +153,7 @@ Capacidades confirmadas del robot (2026-06-30, definen el routing)</h2>
 </ol>
 <p><code><b>Calendario:</b> Arena Mapping Miér; <b>PP corre Jue/Vie 11:00-12:30 y Sáb 13:30-15:00</b> (3 slots).</code></p>
 <p><code></code></p>
-<h1><a class="anchor" id="autotoc_md301"></a>
+<h1><a class="anchor" id="autotoc_md362"></a>
 1. Scoring oficial (verificado) y lo realmente alcanzable</h1>
 <p><code> Total posible = <b>3515 pts</b>. Mesa = <b>6 objetos</b>: 1 cutlery, 1 plate, 1 mug/cup, 1 trash (categoría anunciada en setup-days), 2 other. Extra surface = 2 common (−20 pick / −20 place c/u). Breakfast: bowl+spoon (superficie de cocina), milk+cereal (DENTRO del cabinet; <b>milk cerrada, cereal abierto</b>).</code></p>
 <p><code></p><table class="markdownTable">
@@ -196,7 +196,7 @@ Capacidades confirmadas del robot (2026-06-30, definen el routing)</h2>
 <p></code></p>
 <p><code>→ <b>Breakfast (~760) supera con creces a limpiar la mesa.</b> El plan optimiza para que breakfast SÍ ocurra.</code></p>
 <p><code></code></p>
-<h1><a class="anchor" id="autotoc_md302"></a>
+<h1><a class="anchor" id="autotoc_md363"></a>
 2. A dónde se va el tiempo (time sinks rankeados)</h1>
 <p><code> </p><table class="markdownTable">
 <tr class="markdownTableHead">
@@ -219,10 +219,10 @@ Capacidades confirmadas del robot (2026-06-30, definen el routing)</h2>
 <p></code></p>
 <p><code><b>Causa raíz estructural:</b> no hay chequeo de reloj. <code>total_start_time</code> (<code>:238</code>) solo se usa en el reporte final (<code>:1439</code>). Además está fijado en <code>__init__</code>, ANTES de door-open (<code>:641-658</code>) → cualquier deadline basado en él cuenta de más la espera de puerta.</code></p>
 <p><code></code></p>
-<h1><a class="anchor" id="autotoc_md303"></a>
+<h1><a class="anchor" id="autotoc_md364"></a>
 3. Plan de cambios (por prioridad)</h1>
 <p><code> </code></p>
-<h2><a class="anchor" id="autotoc_md304"></a>
+<h2><a class="anchor" id="autotoc_md365"></a>
 TIER 0 — Cambio estructural (mayor impacto, bajo riesgo)</h2>
 <p><code> <b>0.1 Re-anclar el reloj en door-open</b> y añadir presupuesto de tiempo.</code></p>
 <p><code></p><div class="fragment"><div class="line"><span class="comment"># Near top, junto a ATTEMPT_LIMIT (~l.37)</span></div>
@@ -260,7 +260,7 @@ TIER 0 — Cambio estructural (mayor impacto, bajo riesgo)</h2>
 <p>&zwj;Nota: estos guards SOLO saltan trabajo; no agregan riesgo. Son la corrección de mayor impacto. </p>
 </blockquote>
 <p></code></p>
-<h2><a class="anchor" id="autotoc_md305"></a>
+<h2><a class="anchor" id="autotoc_md366"></a>
 TIER 1 — Tiempo gratis (0 pts en riesgo)</h2>
 <p><code> <b>1.1 Borrar el tramo a KITCHEN</b> en START (<code>:664</code>). Ir directo a la mesa; hacer la petición de "remover sillas" en el approach a <code>dining_table</code>. Ahorro ~23s.</code></p>
 <p><code><b>1.2 Recortar <code>timeout(5.0)</code>→<code>2.0</code></b> en START (<code>:668</code>). El <code>say(wait=True)</code> ya bloquea. Ahorro ~3s.</code></p>
@@ -268,7 +268,7 @@ TIER 1 — Tiempo gratis (0 pts en riesgo)</h2>
 <p><code><b>1.4 Dedup en <code><a class="el" href="namespacePlaceManager.html">PlaceManager</a></code> <code>close_to</code></b> (<code><a class="el" href="PlaceManager_8py.html">PlaceManager.py</a>:214-256</code> vs <code>:316-366</code>): reutilizar <code>result_pose</code> del primer bloque y saltar la 2ª percepción+heatmap. Ahorro ~2-4s por place de breakfast (todos usan close_to). ⚠️ verificar que <code>result_pose.header.frame_id</code> quede seteado tras el 1er bloque.</code></p>
 <p><code><b>1.5 Usar el layout cacheado en <code>_pick_from_shelf</code></b> (<code>:487-534</code>): si SCAN_CABINET_SHELVES ya encontró el nivel del cereal/leche, ir directo a ese nivel (1 detección de confirmación) en vez de re-escanear los 3 niveles. Ahorro ~6-15s por shelf-pick. ⚠️ mantener 1 detect de confirmación por si el objeto se movió.</code></p>
 <p><code></code></p>
-<h2><a class="anchor" id="autotoc_md306"></a>
+<h2><a class="anchor" id="autotoc_md367"></a>
 TIER 2 — Routing correcto al scoresheet (con nuestras capacidades)</h2>
 <p><code> <b>2.1 NO routear al dishwasher interior</b> (no es confiable). Para cutlery/mug: el <em>pick</em> se banca en la mesa (cutlery = 100, mug = 50); el place de esos a <code>side_table</code> da <b>0 pts</b> → no gastar un ciclo nav+place caro en ellos salvo que sobre reloj y solo para liberar el gripper sin tirar (−40 si se cae).</p><ul>
 <li>⚠️ <b>Confirmar con el TC en setup-days</b>: si colocar ENCIMA del dishwasher cuenta como "designated location" (base 40), entonces vale la pena dejar cutlery/mug encima del dishwasher (40 c/u) aunque no entren al rack.</li>
@@ -278,18 +278,18 @@ TIER 2 — Routing correcto al scoresheet (con nuestras capacidades)</h2>
 <p><code><b>2.3 Plato: sigue skippeado</b> (<code>:761</code>). No tocar (flat-grasp no confiable). No apostar el pick de 150.</code></p>
 <p><code><b>2.4 <code>trash_category</code></b> (<code>:131</code>): NO hardcodear "drink". Convertir en parámetro a fijar en setup-days (ver checklist §5). Mal-clasificar = 0 pts de place para ese objeto.</code></p>
 <p><code></code></p>
-<h2><a class="anchor" id="autotoc_md307"></a>
+<h2><a class="anchor" id="autotoc_md368"></a>
 TIER 3 — Tuning de primitivas (NO días antes de competir)</h2>
 <p><code> PICK_VELOCITY 0.5→0.8 · <code>planning_attempts</code> 5→2 · <code>timeout(3.0)</code>→1.5 · VAMP en picks · <code>place_on_shelf</code> cap a 1 intento. EV total ~20-40s pero cada uno puede regresar un grasp y quemar un ciclo completo, o causar colisión (que puede ANULAR el test). <b>Solo con un pase de regresión en el robot.</b> Lo único de aquí que sí recomiendo pronto: <b>capar el fallback de <code>place_on_shelf</code> de cleanup</b> (3×3) a 1 intento × 1 repisa fallback (<code>:1208-1244</code>) para defusar el costo de 60-180s y el <b>riesgo de inactividad-30s</b> (que SACA al robot).</code></p>
 <p><code></code></p>
-<h2><a class="anchor" id="autotoc_md308"></a>
+<h2><a class="anchor" id="autotoc_md369"></a>
 NO TOCAR</h2>
 <p><code></p><ul>
 <li><code>use_vision_confirmation=True</code>: es la única red anti air-grab (<code>use_grasp_detector=False</code>). Quitarla deja que un grab vacío gaste un ciclo nav+place entero por 0 pts. Si acaso, evaluar activar el grasp detector.</li>
 </ul>
 <p></code></p>
 <p><code></code></p>
-<h1><a class="anchor" id="autotoc_md309"></a>
+<h1><a class="anchor" id="autotoc_md370"></a>
 4. "Race plan" recomendado para 420 s</h1>
 <p><code> Orden greedy por densidad de puntos, capability-aware:</code></p>
 <p><code></p><ol type="1">
@@ -304,7 +304,7 @@ NO TOCAR</h2>
 <p>&zwj;El deadline guard (Tier 0) es lo que GARANTIZA que el paso 3 ocurra. Sin él, el robot se atora en cleanup. </p>
 </blockquote>
 <p></code></p>
-<h1><a class="anchor" id="autotoc_md310"></a>
+<h1><a class="anchor" id="autotoc_md371"></a>
 5. Checklist de Setup-Days (cosas a fijar/confirmar)</h1>
 <p><code></p><ul>
 <li>[ ] <b>Categoría de trash anunciada</b> → fijar <code>trash_category</code> (y <code>trash_exceptions</code> si aplica). Confirmar que "milk" no caiga en trash.</li>
@@ -318,7 +318,7 @@ NO TOCAR</h2>
 </ul>
 <p></code></p>
 <p><code></code></p>
-<h1><a class="anchor" id="autotoc_md311"></a>
+<h1><a class="anchor" id="autotoc_md372"></a>
 6.bis Mapa de roles PPC → waypoints raw de la cocina (LocationsNames)</h1>
 <p><code> <b>Plan acordado:</b> Nav graba los muebles de la cocina con sus <b>nombres literales de <code>LocationsNames.png</code></b>; NOSOTROS mapeamos los roles PPC a esos nombres en <code>nav_locations</code> (ya <b>APLICADO</b> en el código).</code></p>
 <p><code></p><table class="markdownTable">
@@ -353,11 +353,11 @@ NO TOCAR</h2>
 </ul>
 <p></code></p>
 <p><code></code></p>
-<h1><a class="anchor" id="autotoc_md312"></a>
+<h1><a class="anchor" id="autotoc_md373"></a>
 6.ter Lo que Nav debe grabar (Arena Mapping, Miér, 10 min/arena × 3)</h1>
 <p><code>Pedir a Nav: bajo room <code>kitchen</code>, grabar estos waypoints con los nombres de LocationsNames: <code>dinner_table</code>, <code>counter</code>, <code>cooking_table</code>, <code>cabinet</code>, <code>dishwasher</code>, <code>trash</code>, <code>safe_place</code> (YA mapeados en <code>nav_locations</code>; confirmados contra el mapa de Nav 2026-06-30). (La mesa puede moverse ±50 cm → re-grabar cada día. <code>dishwasher</code> sirve DOBLE: pick arriba + place adentro.)</code></p>
 <p><code></code></p>
-<h1><a class="anchor" id="autotoc_md313"></a>
+<h1><a class="anchor" id="autotoc_md374"></a>
 6. Riesgos / pendientes</h1>
 <p><code></p><ul>
 <li><b>Inactividad 30s</b>: <code>place_on_shelf</code> puede dejar el brazo quieto &gt;30s planeando → te SACAN. Capar intentos y/o pre-armar la extensión de inactividad (pedible 1 vez, ≤3 min).</li>

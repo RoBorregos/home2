@@ -1,12 +1,17 @@
 var classcustomer__node_1_1CustomerNode =
 [
     [ "__init__", "classcustomer__node_1_1CustomerNode.html#a99632b01300498756596ea2697bb528b", null ],
+    [ "_compose_crops", "classcustomer__node_1_1CustomerNode.html#a2d632512845003b208221079b1e26d2b", null ],
+    [ "_crop_query_yes", "classcustomer__node_1_1CustomerNode.html#afd9aefd8dba66ec5401138bedbc0ecde", null ],
     [ "depth_callback", "classcustomer__node_1_1CustomerNode.html#a2b0a404db6687ba1926f674f8b04f17c", null ],
     [ "get_customer_callback", "classcustomer__node_1_1CustomerNode.html#a181ca271216acbefb5972a2739cede4f", null ],
     [ "image_callback", "classcustomer__node_1_1CustomerNode.html#a0ebd7a872a5c013b7e4f3d2d4e7313e8", null ],
     [ "image_info_callback", "classcustomer__node_1_1CustomerNode.html#ac0ec3218ca7d66990e1f3ed7dce1e6f9", null ],
+    [ "is_calling_moondream", "classcustomer__node_1_1CustomerNode.html#ab7ccb53cc14975a4a8e0a7b1e1749ca4", null ],
     [ "is_sitting_moondream", "classcustomer__node_1_1CustomerNode.html#abbd4f02f544ebc705622d00dc610a41c", null ],
     [ "publish_image", "classcustomer__node_1_1CustomerNode.html#aa6ab1443766a43f16a6000711ab9592f", null ],
+    [ "save_run_images", "classcustomer__node_1_1CustomerNode.html#a1a57d1148a799a199428ab2f7d4c78eb", null ],
+    [ "_last_save_time", "classcustomer__node_1_1CustomerNode.html#a095461df412f7e8c7ef0aa10be4a6cc5", null ],
     [ "bridge", "classcustomer__node_1_1CustomerNode.html#aafb67c640e3fa8d96e65609d3e4bde32", null ],
     [ "callback_group", "classcustomer__node_1_1CustomerNode.html#a7cb81a4782fcd1393fa353c4ea3b10e3", null ],
     [ "centroid_publisher", "classcustomer__node_1_1CustomerNode.html#a4b2c72c5bd4473b4f3681ae2bf593b0f", null ],
@@ -24,5 +29,6 @@ var classcustomer__node_1_1CustomerNode =
     [ "moondream_client", "classcustomer__node_1_1CustomerNode.html#a8bf3075c279abe15b2c74214e38b9661", null ],
     [ "output_image", "classcustomer__node_1_1CustomerNode.html#a665a93c963d5d732c489b920c6277d39", null ],
     [ "pose_detection", "classcustomer__node_1_1CustomerNode.html#ab7cd6a16a49d1177e2e1d01821b71af1", null ],
-    [ "results_publisher", "classcustomer__node_1_1CustomerNode.html#a83c4164cabc46d72dbc0630f50d0fb87", null ]
+    [ "results_publisher", "classcustomer__node_1_1CustomerNode.html#a83c4164cabc46d72dbc0630f50d0fb87", null ],
+    [ "save_dir", "classcustomer__node_1_1CustomerNode.html#aab6812fe289092934d35b605580bd296", null ]
 ];

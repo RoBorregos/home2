@@ -130,8 +130,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af2789f229ade91ec4d554c8eec2b9e70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ad8a0666219551db0baff734c01ad0d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4ad8a0666219551db0baff734c01ad0d">approach_point</a> (self, point, float standoff=0.65)</td></tr>
 <tr class="separator:a4ad8a0666219551db0baff734c01ad0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a84facc22e82527f2ed6a2befb5243f7a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a84facc22e82527f2ed6a2befb5243f7a">return_to_origin</a> (self, inverse_orientation=False)</td></tr>
-<tr class="separator:a84facc22e82527f2ed6a2befb5243f7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8fac24fdc932fad1187f67a2c6377728"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a8fac24fdc932fad1187f67a2c6377728">return_to_origin</a> (self, inverse_orientation=False, yaw_offset_deg=None)</td></tr>
+<tr class="separator:a8fac24fdc932fad1187f67a2c6377728"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2da6bebf090fda1d2f45f96d9fda3664"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a2da6bebf090fda1d2f45f96d9fda3664">explore_zone</a> (self, step)</td></tr>
 <tr class="separator:a2da6bebf090fda1d2f45f96d9fda3664"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -669,8 +669,8 @@ standoff_distance&gt;0, stop that far short of the point, facing it.</pre>
 <pre class="fragment">Dump areas.json dynamically from areas service</pre> 
 </div>
 </div>
-<a id="a84facc22e82527f2ed6a2befb5243f7a" name="a84facc22e82527f2ed6a2befb5243f7a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a84facc22e82527f2ed6a2befb5243f7a">&#9670;&#160;</a></span>return_to_origin()</h2>
+<a id="a8fac24fdc932fad1187f67a2c6377728" name="a8fac24fdc932fad1187f67a2c6377728"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fac24fdc932fad1187f67a2c6377728">&#9670;&#160;</a></span>return_to_origin()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -685,7 +685,13 @@ standoff_distance&gt;0, stop that far short of the point, facing it.</pre>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>inverse_orientation</em> = <code>False</code>&#160;</td>
+          <td class="paramname"><em>inverse_orientation</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>yaw_offset_deg</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -694,7 +700,13 @@ standoff_distance&gt;0, stop that far short of the point, facing it.</pre>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Navigate back to the pose captured at task start (first get_current_pose).</pre> 
+<pre class="fragment">Navigate back to the pose captured at task start (first get_current_pose).
+
+yaw_offset_deg: final heading relative to the START orientation, in
+degrees CCW — 0 = face as started, 90 = left, -90 = right, 180 = turn
+around. When given it overrides inverse_orientation (kept for backward
+compatibility, equivalent to 180).
+</pre> 
 </div>
 </div>
 <a id="ac66cfb2c5e73cf1afe885a4b9884e576" name="ac66cfb2c5e73cf1afe885a4b9884e576"></a>

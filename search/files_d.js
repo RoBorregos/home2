@@ -8,11 +8,12 @@ var searchData=
   ['nav_5fgoal_5farm_5fpointer_2epy_5',['nav_goal_arm_pointer.py',['../nav__goal__arm__pointer_8py.html',1,'']]],
   ['nav_5ftasks_2epy_6',['nav_tasks.py',['../nav__tasks_8py.html',1,'']]],
   ['nav_5fui_2epy_7',['nav_ui.py',['../nav__ui_8py.html',1,'']]],
-  ['navigation_5fconstants_2epy_8',['navigation_constants.py',['../navigation__constants_8py.html',1,'']]],
-  ['navquery_2esrv_9',['NavQuery.srv',['../NavQuery_8srv.html',1,'']]],
-  ['neon_2ehh_10',['neon.hh',['../neon_8hh.html',1,'']]],
-  ['nn_2ehh_11',['nn.hh',['../nn_8hh.html',1,'']]],
-  ['nn_5fmatching_2epy_12',['nn_matching.py',['../nn__matching_8py.html',1,'']]],
-  ['node_5fmonitor_2epy_13',['node_monitor.py',['../node__monitor_8py.html',1,'']]],
-  ['nodestatus_2emsg_14',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]]
+  ['navigation_5farchitecture_2emd_8',['navigation_architecture.md',['../navigation__architecture_8md.html',1,'']]],
+  ['navigation_5fconstants_2epy_9',['navigation_constants.py',['../navigation__constants_8py.html',1,'']]],
+  ['navquery_2esrv_10',['NavQuery.srv',['../NavQuery_8srv.html',1,'']]],
+  ['neon_2ehh_11',['neon.hh',['../neon_8hh.html',1,'']]],
+  ['nn_2ehh_12',['nn.hh',['../nn_8hh.html',1,'']]],
+  ['nn_5fmatching_2epy_13',['nn_matching.py',['../nn__matching_8py.html',1,'']]],
+  ['node_5fmonitor_2epy_14',['node_monitor.py',['../node__monitor_8py.html',1,'']]],
+  ['nodestatus_2emsg_15',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]]
 ];

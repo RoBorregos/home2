@@ -8,6 +8,7 @@ var classrestaurant__commands_1_1RESTAURANTCommands =
     [ "image_callback", "classrestaurant__commands_1_1RESTAURANTCommands.html#ace77aa20bfcbb8bacf3e6743e5413337", null ],
     [ "image_info_callback", "classrestaurant__commands_1_1RESTAURANTCommands.html#a8db475e8a2aefb9cf2ac70beab958beb", null ],
     [ "publish_table_customer_image", "classrestaurant__commands_1_1RESTAURANTCommands.html#ad3d4d63cde1a791b5e2621ed4a71ad6f", null ],
+    [ "republish_debug_image", "classrestaurant__commands_1_1RESTAURANTCommands.html#a191a475c68c6362a87baccac8131ea9e", null ],
     [ "bridge", "classrestaurant__commands_1_1RESTAURANTCommands.html#a37cee705ff3e6f15af4afaeb8252947c", null ],
     [ "callback_group", "classrestaurant__commands_1_1RESTAURANTCommands.html#a0822e3409d60767f6d8aeeb129f6e1b9", null ],
     [ "client_debug_publisher", "classrestaurant__commands_1_1RESTAURANTCommands.html#a8ab685d9a2e5853f5c471ce1ab86c74b", null ],
@@ -16,5 +17,7 @@ var classrestaurant__commands_1_1RESTAURANTCommands =
     [ "depth_image", "classrestaurant__commands_1_1RESTAURANTCommands.html#aad9d17485becf91dd0a3b4d053efb95f", null ],
     [ "image", "classrestaurant__commands_1_1RESTAURANTCommands.html#ae719a43ba6b884d5b7978e885d0d19a2", null ],
     [ "imageInfo", "classrestaurant__commands_1_1RESTAURANTCommands.html#a9c1994adf75cd5c8b403f1b24f1c26d4", null ],
-    [ "moondream_point_client", "classrestaurant__commands_1_1RESTAURANTCommands.html#add99027fba133e0028a487bddff2aa48", null ]
+    [ "last_debug_image", "classrestaurant__commands_1_1RESTAURANTCommands.html#a40c9b34b619b72e9845495baf58d2fb3", null ],
+    [ "moondream_point_client", "classrestaurant__commands_1_1RESTAURANTCommands.html#add99027fba133e0028a487bddff2aa48", null ],
+    [ "save_dir", "classrestaurant__commands_1_1RESTAURANTCommands.html#aaa1f399d854050113b514866597becec", null ]
 ];

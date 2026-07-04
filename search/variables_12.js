@@ -109,7 +109,7 @@ var searchData=
   ['return_5fto_5foperator_106',['RETURN_TO_OPERATOR',['../classhand__task__manager_1_1HandTM_1_1TaskStates.html#ab24b4cb7b0eb49809f0a7484e246a95b',1,'hand_task_manager::HandTM::TaskStates']]],
   ['returning_107',['returning',['../classnav__goal__arm__pointer_1_1NavGoalArmPointer.html#a569e4994969c1b1701d951f4a46f3ff2',1,'nav_goal_arm_pointer::NavGoalArmPointer']]],
   ['revision_108',['revision',['../namespaceserver.html#a3c8df1657c541fd80fbb8ffef44e8451',1,'server']]],
-  ['right_109',['RIGHT',['../classmoondream__node_1_1Position.html#aed59ed97e18394603d8e8d4666300997',1,'moondream_node.Position.RIGHT()'],['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html#a0eef8750f26f51f4e014bbb1b7acff93',1,'task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction.RIGHT()']]],
+  ['right_109',['RIGHT',['../classmoondream__node_1_1Position.html#aed59ed97e18394603d8e8d4666300997',1,'moondream_node.Position.RIGHT()'],['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html#a746388fbd27b42395c987bbcdd527fc2',1,'task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction.RIGHT()']]],
   ['right_5fankle_110',['RIGHT_ANKLE',['../namespacepose__detection.html#a66420e3aec338d0e60054ff8016e8a12',1,'pose_detection']]],
   ['right_5felbow_111',['RIGHT_ELBOW',['../namespacepose__detection.html#ad12e8d9d4fcf22e3358b2906c5d6044b',1,'pose_detection']]],
   ['right_5fhip_112',['RIGHT_HIP',['../namespacepose__detection.html#ae3868a14fc820b79836a4f22bf7f1337',1,'pose_detection']]],
