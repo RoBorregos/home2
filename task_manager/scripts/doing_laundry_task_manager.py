@@ -8,8 +8,9 @@ import math
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from tf2_ros import Buffer, TransformListener, TransformException
+import tf2_geometry_msgs  # noqa: F401 (registers PointStamped support in Buffer.transform)
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -20,6 +21,13 @@ ATTEMPT_LIMIT = 3
 BASKET_PLACE_ROUNDS = 2
 # Pick clothes in Washing Machine and bring to the table.
 WM_PLACE_ROUNDS = 1
+# Dock-style basket approach: the goal pose sits this far back from the
+# vision-projected basket point, along the annotated sublocation's heading,
+# so the robot arrives ALIGNED and centered on the real basket (not offset to
+# a side like approach_point).
+BASKET_SAFE_DISTANCE = 0.60
+# Frame assumed for a detection that arrives without one (older vision nodes).
+DEFAULT_CAMERA_FRAME = "zed_left_camera_optical_frame"
 
 
 class DoingLaundryTM(Node):
@@ -54,8 +62,13 @@ class DoingLaundryTM(Node):
         self.basket_pick_attempts = 0
         self.clothes_pick_attempts = 0
         self.basket_scan_attempts = 0
+        self.basket_nav_attempts = 0
 
-        # Chosen basket sublocation ("basket_left"/"basket_right"), decided by scanning.
+        # Detected basket projected to the MAP frame (PointStamped) — the primary
+        # navigation target. basket_sublocation ("basket_left"/"basket_right")
+        # provides the approach HEADING and is the fallback goal if the
+        # dock-style approach fails.
+        self.basket_map_point = None
         self.basket_sublocation = None
 
         # Round counters for the two place loops.
@@ -81,13 +94,22 @@ class DoingLaundryTM(Node):
         return self.subtask_manager.nav.move_to_location(location, sublocation)
 
     def navigate_holding(self, location: str, sublocation: str = "", say: bool = True):
-        """Navigate while holding basket — does NOT reset arm to nav_pose."""
+        """Navigate while holding basket/clothes — does NOT reset arm to nav_pose.
+
+        Live obstacle marking is disabled for the ride: the carried load hangs
+        in the lidar/ZED view and would be marked as an obstacle glued to the
+        robot, boxing the planner in. The static map still applies (walls and
+        furniture are avoided). Marking is ALWAYS restored right after."""
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         if say:
             Logger.info(self, f"Carrying basket to {sublocation} in {location}")
             self.subtask_manager.hri.say(f"Carrying basket to {sublocation}.", wait=False)
-        return self.subtask_manager.nav.move_to_location(location, sublocation)
+        self.subtask_manager.nav.set_obstacle_avoidance(False)
+        try:
+            return self.subtask_manager.nav.move_to_location(location, sublocation)
+        finally:
+            self.subtask_manager.nav.set_obstacle_avoidance(True)
 
     def next_state_after_place(self):
         """Decide where to go after placing clothes on the table."""
@@ -106,32 +128,70 @@ class DoingLaundryTM(Node):
         Logger.success(self, "All place rounds completed.")
         return DoingLaundryTM.TaskStates.END
 
-    def _choose_nearest_basket(self, detection):
-        """Transform the basket detection to map frame and return the nearer
-        candidate sublocation ('basket_left' or 'basket_right')."""
+    def _project_to_map(self, point_stamped):
+        """Project a stamped detection point to the MAP frame NOW — camera-frame
+        points go stale the moment the arm moves. Uses the detection's own
+        frame_id; zero stamp so TF resolves the latest transform."""
+        if point_stamped is None:
+            Logger.error(self, "Detection has no 3D point to project.")
+            return None
         ps = PointStamped()
-        ps.header.frame_id = "zed_left_camera_optical_frame"
-        ps.point.x = float(detection.px)
-        ps.point.y = float(detection.py)
-        ps.point.z = float(detection.pz)
+        ps.header.frame_id = point_stamped.header.frame_id or DEFAULT_CAMERA_FRAME
+        ps.point.x = float(point_stamped.point.x)
+        ps.point.y = float(point_stamped.point.y)
+        ps.point.z = float(point_stamped.point.z)
         try:
-            tp = self.tf_buffer.transform(ps, "map", timeout=Duration(seconds=1.0))
+            return self.tf_buffer.transform(ps, "map", timeout=Duration(seconds=1.0))
         except TransformException as e:
             Logger.error(self, f"Basket TF transform failed: {e}")
             return None
 
+    def _laundry_sublocation_coords(self):
+        """Return the annotated laundry sublocation dict from the areas map."""
         _, areas = self.subtask_manager.nav.retrieve_areas()
-        laundry = areas.get("laundry", {}) if isinstance(areas, dict) else {}
+        return areas.get("laundry", {}) if isinstance(areas, dict) else {}
+
+    def _choose_basket_side(self, map_pt):
+        """Nearer annotated candidate ('basket_left'/'basket_right') to the
+        detected basket. Decides both the approach heading and the fallback."""
+        laundry = self._laundry_sublocation_coords()
         left = laundry.get("basket_left")
         right = laundry.get("basket_right")
         if not left or not right:
             Logger.error(self, "basket_left/basket_right missing from areas.")
             return None
 
-        dl = math.hypot(tp.point.x - left[0], tp.point.y - left[1])
-        dr = math.hypot(tp.point.x - right[0], tp.point.y - right[1])
+        dl = math.hypot(map_pt.point.x - left[0], map_pt.point.y - left[1])
+        dr = math.hypot(map_pt.point.x - right[0], map_pt.point.y - right[1])
         Logger.info(self, f"Basket dist left={dl:.2f} right={dr:.2f}")
         return "basket_left" if dl <= dr else "basket_right"
+
+    @staticmethod
+    def _yaw_from_coords(coords):
+        """Yaw of an annotated area pose [x, y, z, qx, qy, qz, qw]."""
+        qx, qy, qz, qw = coords[3], coords[4], coords[5], coords[6]
+        return math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+
+    def _basket_dock_goal(self):
+        """Dock-style goal for the detected basket: same heading as the chosen
+        annotated sublocation (so the arrival is ALIGNED, like dock_table), but
+        positioned BASKET_SAFE_DISTANCE back from the vision-projected point —
+        laterally centered on the real basket instead of the annotation."""
+        laundry = self._laundry_sublocation_coords()
+        coords = laundry.get(self.basket_sublocation)
+        if not coords or len(coords) < 7:
+            Logger.error(self, f"{self.basket_sublocation} missing from areas.")
+            return None
+        yaw = self._yaw_from_coords(coords)
+        goal = PoseStamped()
+        goal.header.frame_id = "map"
+        goal.pose.position.x = self.basket_map_point.point.x - BASKET_SAFE_DISTANCE * math.cos(yaw)
+        goal.pose.position.y = self.basket_map_point.point.y - BASKET_SAFE_DISTANCE * math.sin(yaw)
+        goal.pose.orientation.x = float(coords[3])
+        goal.pose.orientation.y = float(coords[4])
+        goal.pose.orientation.z = float(coords[5])
+        goal.pose.orientation.w = float(coords[6])
+        return goal
 
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
@@ -141,19 +201,28 @@ class DoingLaundryTM(Node):
 
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
-            Logger.success(self, "Start button pressed, Doing Laundry task will begin now")
+
+            # The arena door opens when the task officially starts — don't
+            # drive into a closed door.
+            Logger.state(self, "Start button pressed. Waiting for the door to open...")
+            self.subtask_manager.hri.say("Waiting for the door to open.", wait=False)
+            while True:
+                status, _ = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    break
+                rclpy.spin_once(self, timeout_sec=0.1)
+
+            Logger.success(self, "Door open, Doing Laundry task will begin now")
             self.set_state(DoingLaundryTM.TaskStates.START)
 
         elif self.current_state == DoingLaundryTM.TaskStates.START:
             Logger.state(self, "Starting Doing Laundry Task")
-            self.navigate_to("laundry", "safe_place")
+            # First stop: the washing machine — the basket sits next to it.
+            self.navigate_to("laundry", "washing_machine")
             self.set_state(DoingLaundryTM.TaskStates.SCAN_FOR_BASKET)
 
         elif self.current_state == DoingLaundryTM.TaskStates.SCAN_FOR_BASKET:
-            Logger.info(self, "Scanning for the laundry basket to pick a location.")
-
-            self.navigate_to("laundry", "washing_machine")
-
+            Logger.info(self, "Scanning for the laundry basket from the washing machine.")
             self.subtask_manager.hri.say("Looking for the laundry basket.", wait=False)
             status, dets = self.subtask_manager.vision.detect_objects(
                 label="laundry_basket", timeout=5
@@ -161,13 +230,20 @@ class DoingLaundryTM(Node):
 
             if status == Status.EXECUTION_SUCCESS and dets:
                 nearest = min(dets, key=lambda b: b.distance)
-                sublocation = self._choose_nearest_basket(nearest)
-                if sublocation is not None:
-                    self.basket_sublocation = sublocation
-                    self.basket_scan_attempts = 0
-                    Logger.success(self, f"Basket located at {sublocation}.")
-                    self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
-                    return
+                map_pt = self._project_to_map(nearest.point3d)
+                if map_pt is not None:
+                    side = self._choose_basket_side(map_pt)
+                    if side is not None:
+                        self.basket_map_point = map_pt
+                        self.basket_sublocation = side
+                        self.basket_scan_attempts = 0
+                        Logger.success(
+                            self,
+                            f"Basket at map ({map_pt.point.x:.2f}, {map_pt.point.y:.2f}), "
+                            f"side {side}.",
+                        )
+                        self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
+                        return
 
             self.basket_scan_attempts += 1
             if self.basket_scan_attempts >= ATTEMPT_LIMIT:
@@ -175,6 +251,7 @@ class DoingLaundryTM(Node):
                     self,
                     "Basket scan failed after max attempts, defaulting to basket_left.",
                 )
+                self.basket_map_point = None
                 self.basket_sublocation = "basket_left"
                 self.basket_scan_attempts = 0
                 self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
@@ -185,8 +262,38 @@ class DoingLaundryTM(Node):
                 )
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
-            Logger.info(self, f"Navigating to basket at {self.basket_sublocation}")
-            status, error = self.navigate_to("laundry", self.basket_sublocation)
+            if self.basket_map_point is not None:
+                # Primary path: dock-style approach to the DETECTED point —
+                # arrive aligned with the annotated heading, BASKET_SAFE_DISTANCE
+                # short of the basket, centered on it.
+                goal = self._basket_dock_goal()
+                if goal is not None:
+                    Logger.info(
+                        self,
+                        f"Dock-style approach to basket via {self.basket_sublocation} heading.",
+                    )
+                    self.subtask_manager.vision.deactivate_face_recognition()
+                    self.subtask_manager.manipulation.follow_face(False)
+                    self.subtask_manager.manipulation.move_to_position("nav_pose")
+                    self.subtask_manager.hri.say("Approaching the laundry basket.", wait=False)
+                    status, error = self.subtask_manager.nav.move_to_pose(goal)
+                    if status == Status.EXECUTION_SUCCESS:
+                        self.basket_nav_attempts = 0
+                        self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
+                        return
+                    self.basket_nav_attempts += 1
+                    Logger.error(self, f"Basket approach failed: {error}.")
+                    if self.basket_nav_attempts >= ATTEMPT_LIMIT:
+                        Logger.warn(self, "Falling back to the annotated basket sublocation.")
+                        self.basket_map_point = None
+                    return
+                # Missing annotation for the heading — fall through to the
+                # plain sublocation navigation below.
+                self.basket_map_point = None
+
+            sublocation = self.basket_sublocation or "basket_left"
+            Logger.info(self, f"Navigating to basket at {sublocation}")
+            status, error = self.navigate_to("laundry", sublocation)
             if status == Status.EXECUTION_SUCCESS:
                 self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
             else:
@@ -213,10 +320,21 @@ class DoingLaundryTM(Node):
                     )
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE:
+            # Straight to the table with the basket: normal location navigation
+            # with live obstacle marking OFF (the held basket would otherwise be
+            # marked as an obstacle glued to the robot). No relative/perpendicular
+            # moves involved.
             Logger.info(self, "Navigating to laundry table while holding basket.")
             status, error = self.navigate_holding("laundry", "table")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry table with basket.")
+                # Dock flush to the table so the basket is released ON it (and
+                # the clothes picks that follow start from a docked pose). A
+                # failed dock is not fatal — the robot is already at the table.
+                self.subtask_manager.hri.say("Docking to the table.", wait=False)
+                dock_status, dock_error = self.subtask_manager.nav.dock_table()
+                if dock_status != Status.EXECUTION_SUCCESS:
+                    Logger.warn(self, f"Dock to table failed ({dock_error}), unloading anyway.")
                 self.set_state(DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY)
             else:
                 Logger.error(self, f"Navigation to table failed: {error}. Retrying...")
@@ -248,8 +366,13 @@ class DoingLaundryTM(Node):
             else:
                 self.clothes_pick_attempts += 1
                 if self.clothes_pick_attempts >= ATTEMPT_LIMIT:
-                    Logger.error(self, "Clothes pick from basket failed. Ending.")
-                    self.set_state(DoingLaundryTM.TaskStates.END)
+                    Logger.warn(
+                        self,
+                        "Clothes pick from basket failed — skipping to the washing machine.",
+                    )
+                    self.clothes_pick_attempts = 0
+                    self.basket_placed = BASKET_PLACE_ROUNDS
+                    self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE)
                 else:
                     Logger.warn(
                         self,
@@ -283,7 +406,7 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE:
             Logger.info(self, "Navigating to laundry machine.")
-            status, error = self.navigate_to("laundry", "laundry_machine")
+            status, error = self.navigate_to("laundry", "washing_machine")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry machine.")
                 self.set_state(DoingLaundryTM.TaskStates.PICK_CLOTHES_WM)

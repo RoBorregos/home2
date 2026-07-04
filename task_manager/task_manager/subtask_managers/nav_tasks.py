@@ -25,6 +25,7 @@ from frida_constants.navigation_constants import (
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
     APPROACH_POINT_SERVICE,
+    SET_OBSTACLE_AVOIDANCE_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import (
@@ -89,6 +90,9 @@ class NavigationTasks:
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
         self.approach_point_srv = self.node.create_client(ApproachPoint, APPROACH_POINT_SERVICE)
+        self.set_obstacle_avoidance_srv = self.node.create_client(
+            SetBool, SET_OBSTACLE_AVOIDANCE_SERVICE
+        )
         # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
         # camera-frame customer detection) and transform it to map before navigating.
         self.tf_buffer = tf2_ros.Buffer()
@@ -472,6 +476,32 @@ class NavigationTasks:
             return (Status.EXECUTION_SUCCESS, "")
         err = result.error if result is not None else "Error with request"
         CLog.nav(self.node, "ERROR", f"approach_point failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=1)
+    @service_check(
+        "set_obstacle_avoidance_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def set_obstacle_avoidance(self, enabled: bool):
+        """Enable/disable live obstacle marking (lidar + ZED layers on both
+        costmaps). Disable it while the arm carries a bag/basket that hangs in
+        the sensors' view — otherwise it is marked as an obstacle glued to the
+        robot and navigation gets boxed in. The static map keeps applying, so
+        walls/furniture are still avoided. ALWAYS re-enable after the carry."""
+        request = SetBool.Request()
+        request.data = bool(enabled)
+        CLog.nav(
+            self.node, "INFO", f"{'Enabling' if enabled else 'Disabling'} live obstacle avoidance"
+        )
+        future = self.set_obstacle_avoidance_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is not None and result.success:
+            return (Status.EXECUTION_SUCCESS, result.message)
+        err = result.message if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"set_obstacle_avoidance failed: {err}")
         return (Status.EXECUTION_ERROR, err)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)

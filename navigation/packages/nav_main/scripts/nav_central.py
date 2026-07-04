@@ -23,6 +23,7 @@ from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         APPROACH_POINT_SERVICE,
         GLOBAL_COSTMAP_TOPIC,
+        SET_OBSTACLE_AVOIDANCE_SERVICE,
         MAP_TOPIC,
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
@@ -189,6 +190,15 @@ class Nav_Central(Node):
         self.clear_global_costmap_client = self.create_client(
             ClearEntireCostmap, '/global_costmap/clear_entirely_global_costmap',
             callback_group=self.rtab_service_group)
+        # Costmap parameter clients — toggle the live obstacle layers (lidar +
+        # ZED cloud) when the arm carries something the sensors would otherwise
+        # mark as a wall right on top of the robot (set_obstacle_avoidance).
+        self.local_costmap_param_client = self.create_client(
+            SetParameters, '/local_costmap/local_costmap/set_parameters',
+            callback_group=self.rtab_service_group)
+        self.global_costmap_param_client = self.create_client(
+            SetParameters, '/global_costmap/global_costmap/set_parameters',
+            callback_group=self.rtab_service_group)
 
         self.lidar_msg = None
         self.lidar_reciever = None
@@ -259,6 +269,14 @@ class Nav_Central(Node):
             callback_group=self.service_group)
         self.approach_point_srv = self.create_service(
             ApproachPoint, APPROACH_POINT_SERVICE, self.approach_point_callback,
+            callback_group=self.service_group)
+
+        # Live-obstacle toggle: SetBool(False) disables obstacle_layer +
+        # rgbd_obstacle_layer on both costmaps (static map keeps applying) so a
+        # carried bag/basket can't box the planner in; SetBool(True) restores.
+        self._obstacle_avoidance_enabled = True
+        self.set_obstacle_avoidance_srv = self.create_service(
+            SetBool, SET_OBSTACLE_AVOIDANCE_SERVICE, self.set_obstacle_avoidance_callback,
             callback_group=self.service_group)
 
         # Occupancy grids for approach_point free-space checks: prefer the
@@ -991,6 +1009,42 @@ class Nav_Central(Node):
         self.nav_logger(
             "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
         self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
+
+    def _set_obstacle_layers(self, enabled):
+        """Set `enabled` on the live obstacle layers (lidar obstacle_layer +
+        ZED rgbd_obstacle_layer) of BOTH costmaps. The static layer is left
+        untouched, so mapped walls/furniture still constrain the planner."""
+        req = SetParameters.Request()
+        req.parameters = [
+            make_param("obstacle_layer.enabled", bool(enabled)),
+            make_param("rgbd_obstacle_layer.enabled", bool(enabled)),
+        ]
+        all_ok = True
+        for client, label in ((self.local_costmap_param_client, "local costmap"),
+                              (self.global_costmap_param_client, "global costmap")):
+            if not self._call_service_with_timeout(
+                    client, req, TIMEOUT_RTAB_SERVICE, f"Set obstacle layers ({label})"):
+                all_ok = False
+        return all_ok
+
+    def set_obstacle_avoidance_callback(self, request, response):
+        """SetBool service: data=False stops marking live obstacles on both
+        costmaps so an object carried by the arm (bag/basket hanging in the
+        lidar/ZED view) doesn't wall the robot in while navigating; data=True
+        restores marking. Costmaps are cleared afterwards so marks already
+        laid down don't linger into the new mode."""
+        enabled = bool(request.data)
+        self.nav_logger(
+            "info",
+            f"Set_Obstacle_Avoidance -> {'enabling' if enabled else 'DISABLING'} live obstacle layers")
+        ok = self._set_obstacle_layers(enabled)
+        self._clear_costmaps()
+        self._obstacle_avoidance_enabled = enabled
+        response.success = ok
+        response.message = (
+            f"obstacle layers {'enabled' if enabled else 'disabled'}" if ok
+            else "some costmap parameter services did not respond")
+        return response
 
     def _approach_pose(self, gx, gy, tx, ty):
         """Map-frame PoseStamped at (gx, gy) facing (tx, ty)."""
