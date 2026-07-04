@@ -6,6 +6,10 @@ Node to handle GPSR commands.
 
 import cv2
 import math
+import os
+import time
+from datetime import datetime
+
 import rclpy
 import rclpy.qos
 from rclpy.node import Node
@@ -58,6 +62,11 @@ from frida_interfaces.srv import YoloDetect
 from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
+
+# After a count/detect service annotates output_image, keep showing that
+# annotated frame on IMAGE_TOPIC for this long; afterwards fall back to the
+# live camera so the display feed is never a stale frozen frame.
+ANNOTATION_HOLD_SECONDS = 6.0
 
 
 class GPSRCommands(Node):
@@ -139,6 +148,18 @@ class GPSRCommands(Node):
         self.pose_detection = PoseDetection()
         self.output_image = []
         self.people = []
+        # monotonic stamp of the last annotation drawn on output_image
+        self._annotated_at = 0.0
+
+        # Save every annotated detection result for post-run review (same
+        # pattern as restaurant_commands): one jpg per service call.
+        self.declare_parameter("save_dir", "/workspace/src/gpsr_runs")
+        self.save_dir = self.get_parameter("save_dir").value
+        try:
+            os.makedirs(self.save_dir, exist_ok=True)
+        except Exception as e:
+            self.get_logger().warn(f"Cannot create save dir {self.save_dir}: {e}")
+            self.save_dir = None
 
         self.get_logger().info("GPSRCommands Ready.")
         self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
@@ -174,6 +195,7 @@ class GPSRCommands(Node):
         referee display distinguishes them from plain person detections."""
         if len(self.output_image) == 0:
             return
+        self._annotated_at = time.monotonic()
         x1, y1, x2, y2 = bbox
         cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 140, 255), 3)
         cv2.putText(
@@ -266,6 +288,7 @@ class GPSRCommands(Node):
             self.get_logger().warn("No people detected in the image.")
             response.success = True
             response.count = 0
+            self._save_annotated("pose_no_people")
             return response
 
         # replace underscore with space in the pose_requested
@@ -295,6 +318,7 @@ class GPSRCommands(Node):
         response.success = True
         response.count = pose_count[pose_requested_enum]
         self.get_logger().info(f"People with pose {pose_requested}: {response.count}")
+        self._save_annotated(f"pose_{pose_requested_enum.value}_{response.count}")
         return response
 
     def count_by_gestures_callback(self, request, response):
@@ -335,6 +359,7 @@ class GPSRCommands(Node):
         response.success = True
         response.count = gesture_count
         self.get_logger().info(f"Gesture {gesture_requested} counted: {gesture_count}")
+        self._save_annotated(f"gesture_{gesture_requested}_{gesture_count}")
         return response
 
     def count_gestures(self, frame):
@@ -402,6 +427,7 @@ class GPSRCommands(Node):
         response.success = True
         response.count = people_count
         self.get_logger().info(f"People counted: {people_count}")
+        self._save_annotated(f"person_count_{people_count}")
         return response
 
     def count_by_color_callback(self, request, response):
@@ -426,6 +452,7 @@ class GPSRCommands(Node):
             self.get_logger().warn("No people detected in the image.")
             response.success = True
             response.count = 0
+            self._save_annotated("color_no_people")
             return response
 
         count = 0
@@ -455,6 +482,7 @@ class GPSRCommands(Node):
         response.success = True
         response.count = count
         self.get_logger().info(f"People wearing a {color} {clothing}: {count}")
+        self._save_annotated(f"color_{color}_{clothing}_{count}")
         return response
 
     def detect_pose_gesture_callback(self, request, response):
@@ -512,6 +540,7 @@ class GPSRCommands(Node):
 
         response.success = True
         self.get_logger().info(f"{type_requested} detected: {response_clean}")
+        self._save_annotated(f"detect_{type_requested}_{response_clean}")
         return response
 
     def success(self, message):
@@ -519,8 +548,33 @@ class GPSRCommands(Node):
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
     def publish_image(self):
-        """Publish the image with the detections if available."""
-        self.image_publisher.publish(self.output_image)
+        """Feed IMAGE_TOPIC for the display: the annotated detection frame
+        while it is fresh (ANNOTATION_HOLD_SECONDS), else the live camera.
+
+        Before this fallback the topic was black until the first count service
+        and a frozen stale frame forever after it — the display never showed a
+        live view of what vision was seeing."""
+        if (
+            len(self.output_image) > 0
+            and time.monotonic() - self._annotated_at < ANNOTATION_HOLD_SECONDS
+        ):
+            self.image_publisher.publish(self.output_image)
+        elif self.image is not None:
+            self.image_publisher.publish(self.image)
+
+    def _save_annotated(self, tag: str):
+        """Save the current annotated frame to save_dir for post-run review
+        (one jpg per detection service call, like restaurant_commands)."""
+        if self.save_dir is None or len(self.output_image) == 0:
+            return
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        safe_tag = tag.replace(" ", "_").replace("/", "_")
+        try:
+            cv2.imwrite(
+                os.path.join(self.save_dir, f"{safe_tag}_{stamp}.jpg"), self.output_image
+            )
+        except Exception as e:
+            self.get_logger().warn(f"Could not save detection image: {e}")
 
     def detect_gesture(self, cropped_frame):
         """Detect the gesture in the image."""
@@ -608,6 +662,7 @@ class GPSRCommands(Node):
         (IMAGE_TOPIC via publish_image) shows what is actually being counted."""
         if len(self.output_image) == 0:
             return
+        self._annotated_at = time.monotonic()
         for person in people:
             x1, y1, x2, y2 = person["bbox"]
             cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)

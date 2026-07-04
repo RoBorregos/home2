@@ -1476,6 +1476,20 @@ class HRITasks:
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
+        # The change_video topic is volatile: a display page that (re)connects
+        # after this publish (refresh, rosbridge reconnect, late start) never
+        # sees it and falls back to its default feed. Re-publishing the last
+        # topic at 1 Hz lets it recover; the page's setState is idempotent so
+        # repeats are free.
+        self._last_display_topic = topic
+        if not hasattr(self, "_display_refresh_timer"):
+            self._display_refresh_timer = self.node.create_timer(
+                1.0, self._republish_display_topic
+            )
+
+    def _republish_display_topic(self):
+        if getattr(self, "_last_display_topic", None):
+            self.display_publisher.publish(String(data=self._last_display_topic))
 
     def publish_display_step(self, step: str, topic: str = TASK_STEP_TOPIC) -> None:
         if topic == TASK_STEP_TOPIC:

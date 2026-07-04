@@ -252,7 +252,7 @@ class TableDocker(Node):
 
         # --- Approach targets / safety (clearances from the arm front) ---
         self.target_distance = self.declare_parameter("target_distance", 0.10).value   # desired arm-front -> surface gap (m)
-        self.min_safe = self.declare_parameter("min_safe", 0.16).value                 # hard floor arm-front -> nearest point (m)
+        self.min_safe = self.declare_parameter("min_safe", 0.19).value                 # hard floor arm-front -> nearest point (m)
         self.yaw_tol = self.declare_parameter("yaw_tol", 0.03).value
         self.y_tol = self.declare_parameter("y_tol", 0.03).value
         self.dist_tol = self.declare_parameter("dist_tol", 0.03).value
