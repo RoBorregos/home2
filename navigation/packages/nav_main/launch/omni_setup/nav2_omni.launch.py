@@ -25,7 +25,10 @@ def launch_setup(context, *args, **kwargs):
     from frida_constants.navigation_constants import RTAB_MAPS_PATH
 
     pkg_file_route = get_package_share_directory('nav_main')
-    nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
+    # Default omnibase profile: 3-WHEEL LIMP (base running degraded, one wheel
+    # out — see nav2_omni_limp.yaml header). Callers can still override with
+    # nav2_config_file:=; point back at nav2_omni.yaml once the base is healthy.
+    nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
     keepout_overlay_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_keepout.yaml')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
