@@ -391,7 +391,7 @@ class HRIC_TM(Node):
                     Logger.warn(self, f"go_to_hand attempt {attempt + 1} failed")
                     if attempt < ATTEMPT_LIMIT - 1:
                         self.subtask_manager.hri.say(
-                            "I could not reach your hand. Reposition it and try again."
+                            "I could not reach your hand. Come a little closer and place your hand right in front of me."
                         )
 
             if not hand_reached:
