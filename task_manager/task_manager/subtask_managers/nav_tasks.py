@@ -24,6 +24,7 @@ from frida_constants.navigation_constants import (
     DOCK_TABLE_SERVICE,
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
+    APPROACH_POINT_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import (
@@ -34,6 +35,7 @@ from frida_interfaces.srv import (
     DockTable,
     GoToPose,
     GetRobotPose,
+    ApproachPoint,
 )
 from std_srvs.srv import SetBool
 
@@ -86,6 +88,7 @@ class NavigationTasks:
         self.dock_table_srv = self.node.create_client(DockTable, DOCK_TABLE_SERVICE)
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
+        self.approach_point_srv = self.node.create_client(ApproachPoint, APPROACH_POINT_SERVICE)
         # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
         # camera-frame customer detection) and transform it to map before navigating.
         self.tf_buffer = tf2_ros.Buffer()
@@ -106,6 +109,8 @@ class NavigationTasks:
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
                 "get_robot_pose_srv": {"client": self.get_robot_pose_srv, "type": "service"},
+                "approach_point_srv": {"client": self.approach_point_srv, "type": "service"},
+                "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
             },
         }
 
@@ -214,7 +219,7 @@ class NavigationTasks:
         request.location = location
         request.sublocation = sublocation
         future = self.move_to_location_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None:
             if result.success:
@@ -311,7 +316,7 @@ class NavigationTasks:
         request = DockTable.Request()
         request.offset = float(offset)
         future = self.dock_table_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None:
             if result.success:
@@ -373,7 +378,7 @@ class NavigationTasks:
         request.target_pose = pose
         request.behavior_tree = behavior_tree
         future = self.go_to_pose_srv.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
         result = future.result()
         if result is not None and result.success:
             CLog.nav(self.node, "SUCCESS", "Pose reached")
@@ -432,16 +437,61 @@ class NavigationTasks:
         goal.pose.orientation = self._yaw_to_quaternion(yaw)
         return self.move_to_pose(goal)
 
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=2)
+    @service_check(
+        "approach_point_srv",
+        (Status.EXECUTION_ERROR, "Service not started"),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def approach_point(self, point, standoff: float = 0.65):
+        """Approach a person or free-standing object seen by vision (e.g. GPSR
+        "go to the person", approaching a bag on the floor).
+
+        `point` may be a PointStamped in ANY TF frame (base_link, a camera
+        frame...) or a map-frame Point / (x, y) pair. nav_central projects it
+        onto the map, picks the nearest COSTMAP-FREE pose `standoff` meters
+        from the target (robot side first, facing it) and navigates there; if
+        the robot is already within `standoff`, it just turns to face the
+        target."""
+        request = ApproachPoint.Request()
+        if isinstance(point, PointStamped):
+            request.target = point
+        else:
+            xy = self._resolve_map_xy(point)
+            if xy is None:
+                return (Status.EXECUTION_ERROR, "invalid point")
+            request.target.header.frame_id = "map"
+            request.target.point.x, request.target.point.y = xy
+        request.standoff = float(standoff)
+        CLog.nav(self.node, "MOVE", "Requesting approach to point")
+        future = self.approach_point_srv.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
+        result = future.result()
+        if result is not None and result.success:
+            CLog.nav(self.node, "SUCCESS", "Approach point reached")
+            return (Status.EXECUTION_SUCCESS, "")
+        err = result.error if result is not None else "Error with request"
+        CLog.nav(self.node, "ERROR", f"approach_point failed: {err}")
+        return (Status.EXECUTION_ERROR, err)
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
-    def return_to_origin(self, inverse_orientation=False):
-        """Navigate back to the pose captured at task start (first get_current_pose)."""
+    def return_to_origin(self, inverse_orientation=False, yaw_offset_deg=None):
+        """Navigate back to the pose captured at task start (first get_current_pose).
+
+        yaw_offset_deg: final heading relative to the START orientation, in
+        degrees CCW — 0 = face as started, 90 = left, -90 = right, 180 = turn
+        around. When given it overrides inverse_orientation (kept for backward
+        compatibility, equivalent to 180).
+        """
         if self._origin_pose is None:
             CLog.nav(self.node, "ERROR", "return_to_origin: no origin captured yet")
             return (Status.EXECUTION_ERROR, "No origin pose captured")
         goal = copy.deepcopy(self._origin_pose)
         goal.header.frame_id = goal.header.frame_id or "map"
-        if inverse_orientation:
-            yaw = self._yaw_from_quaternion(goal.pose.orientation) + math.pi
+        if yaw_offset_deg is None and inverse_orientation:
+            yaw_offset_deg = 180.0
+        if yaw_offset_deg:
+            yaw = self._yaw_from_quaternion(goal.pose.orientation) + math.radians(yaw_offset_deg)
             goal.pose.orientation = self._yaw_to_quaternion(yaw)
         return self.move_to_pose(goal)
 

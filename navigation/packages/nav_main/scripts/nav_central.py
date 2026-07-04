@@ -14,11 +14,16 @@ from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from nav_msgs.msg import OccupancyGrid
+from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from std_msgs.msg import Bool
 from rclpy.qos import QoSProfile, DurabilityPolicy
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
+        APPROACH_POINT_SERVICE,
+        GLOBAL_COSTMAP_TOPIC,
+        MAP_TOPIC,
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
         AREAS_SERVICE,
@@ -69,6 +74,7 @@ from frida_interfaces.srv import (
         DockTable,
         GoToPose,
         GetRobotPose,
+        ApproachPoint,
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -250,6 +256,25 @@ class Nav_Central(Node):
             callback_group=self.service_group)
         self.get_robot_pose_srv = self.create_service(
             GetRobotPose, GET_ROBOT_POSE_SERVICE, self.get_robot_pose_callback,
+            callback_group=self.service_group)
+        self.approach_point_srv = self.create_service(
+            ApproachPoint, APPROACH_POINT_SERVICE, self.approach_point_callback,
+            callback_group=self.service_group)
+
+        # Occupancy grids for approach_point free-space checks: prefer the
+        # global costmap (static map + inflation + live obstacles, latched by
+        # Nav2 even while its lifecycle is paused); fall back to the SLAM map.
+        self._costmap_grid = None
+        self._static_grid = None
+        costmap_qos = QoSProfile(depth=1)
+        costmap_qos.durability = DurabilityPolicy.TRANSIENT_LOCAL
+        self.create_subscription(
+            OccupancyGrid, GLOBAL_COSTMAP_TOPIC,
+            lambda msg: setattr(self, "_costmap_grid", msg), costmap_qos,
+            callback_group=self.service_group)
+        self.create_subscription(
+            OccupancyGrid, MAP_TOPIC,
+            lambda msg: setattr(self, "_static_grid", msg), 1,
             callback_group=self.service_group)
 
         # Initial pose tracking
@@ -878,6 +903,138 @@ class Nav_Central(Node):
         response.pose = pose
         response.error = ""
         return response
+
+    def approach_point_callback(self, request, response):
+        """Approach a person/object seen by vision: transform the target to the
+        map frame, pick the nearest costmap-free pose `standoff` meters from it
+        (robot side first, facing the target) and navigate there through the
+        same goal pipeline as go_to_pose."""
+        standoff = request.standoff if request.standoff > 0.0 else 0.65
+        response.goal = PoseStamped()
+
+        target = request.target
+        frame = target.header.frame_id or "map"
+        if frame != "map":
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    "map", frame, rclpy.time.Time(), timeout=Duration(seconds=1.0))
+                target = do_transform_point(target, tf)
+            except Exception as e:
+                response.success = False
+                response.error = f"TF {frame}->map failed: {e}"
+                self.nav_logger("error", f"Approach_Point -> {response.error}")
+                return response
+        tx, ty = target.point.x, target.point.y
+
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0))
+            rx, ry = tf.transform.translation.x, tf.transform.translation.y
+        except Exception as e:
+            response.success = False
+            response.error = f"robot pose TF failed: {e}"
+            self.nav_logger("error", f"Approach_Point -> {response.error}")
+            return response
+
+        if math.hypot(tx - rx, ty - ry) <= standoff + 0.05:
+            # Already close enough: face the target, never drive into it.
+            goal = self._approach_pose(rx, ry, tx, ty)
+            self.nav_logger("info", "Approach_Point -> already close, facing target")
+        else:
+            goal = self._find_free_approach(tx, ty, rx, ry, standoff)
+            if goal is None:
+                response.success = False
+                response.error = "no free approach pose found around target"
+                self.nav_logger("warn", f"Approach_Point -> {response.error}")
+                return response
+            self.nav_logger(
+                "info",
+                f"Approach_Point -> goal ({goal.pose.position.x:.2f}, "
+                f"{goal.pose.position.y:.2f}) for target ({tx:.2f}, {ty:.2f})")
+
+        response.goal = goal
+        self._retreat_if_docked()
+        self.resume_slam()
+        self.resume_nav2()
+        if self.nav2_paused or not self.rtabmap_loaded:
+            response.success = False
+            response.error = "Navigation not initialized"
+            return response
+        self._clear_costmaps()
+        ok, msg = self.send_nav_goal(goal)
+        if ok:
+            # The goal checker can succeed inside xy tolerance without settling
+            # yaw — make sure the base front actually points at the person.
+            self._face_target(tx, ty)
+        response.success = ok
+        response.error = msg
+        self.pause_slam()
+        self.pause_nav2()
+        return response
+
+    def _face_target(self, tx, ty, tol=0.25):
+        """Final in-place rotation toward (tx, ty) if the base ended up facing
+        away after the approach goal (runs while nav2 is still resumed)."""
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=0.5))
+        except Exception:
+            return
+        rx, ry = tf.transform.translation.x, tf.transform.translation.y
+        q = tf.transform.rotation
+        yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                         1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+        bearing = math.atan2(ty - ry, tx - rx)
+        err = (bearing - yaw + math.pi) % (2.0 * math.pi) - math.pi
+        if abs(err) <= tol:
+            return
+        self.nav_logger(
+            "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
+        self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
+
+    def _approach_pose(self, gx, gy, tx, ty):
+        """Map-frame PoseStamped at (gx, gy) facing (tx, ty)."""
+        yaw = math.atan2(ty - gy, tx - gx)
+        pose = PoseStamped()
+        pose.header.frame_id = "map"
+        pose.pose.position.x = float(gx)
+        pose.pose.position.y = float(gy)
+        pose.pose.orientation.z = math.sin(yaw / 2.0)
+        pose.pose.orientation.w = math.cos(yaw / 2.0)
+        return pose
+
+    def _grid_cell_free(self, grid, wx, wy, max_cost=50):
+        """Whether world (wx, wy) lies on a known grid cell with cost < max_cost."""
+        info = grid.info
+        mx = int((wx - info.origin.position.x) / info.resolution)
+        my = int((wy - info.origin.position.y) / info.resolution)
+        if not (0 <= mx < info.width and 0 <= my < info.height):
+            return False
+        cost = grid.data[my * info.width + mx]
+        return 0 <= cost < max_cost
+
+    def _find_free_approach(self, tx, ty, rx, ry, standoff):
+        """Nearest free approach pose: walk a ring around the target at
+        `standoff` (then slightly farther), starting on the robot's side and
+        fanning out. Prefers the global costmap (inflation + live obstacles);
+        falls back to the SLAM map; with no grid at all, trusts the direct
+        robot-side pose and lets the planner decide."""
+        base = math.atan2(ry - ty, rx - tx)  # target -> robot direction
+        grid = self._costmap_grid or self._static_grid
+        if grid is None:
+            self.nav_logger("warn", "Approach_Point -> no grid; using raw standoff pose")
+            gx = tx + standoff * math.cos(base)
+            gy = ty + standoff * math.sin(base)
+            return self._approach_pose(gx, gy, tx, ty)
+        for radius in (standoff, standoff + 0.15, standoff + 0.30):
+            for step in range(0, 19):  # 0°, then ±10° ... ±180° around the target
+                for sign in ((1,) if step == 0 else (1, -1)):
+                    ang = base + sign * math.radians(10 * step)
+                    gx = tx + radius * math.cos(ang)
+                    gy = ty + radius * math.sin(ang)
+                    if self._grid_cell_free(grid, gx, gy):
+                        return self._approach_pose(gx, gy, tx, ty)
+        return None
 
     def _pose_from_coords(self, coords):
         """Build a map-frame PoseStamped from an areas.json coordinate array."""

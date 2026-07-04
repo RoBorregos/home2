@@ -1135,8 +1135,10 @@ class HRITasks:
         )
 
         if s_second != Status.EXECUTION_SUCCESS or not second_item:
-            Logger.warn(self.node, "take_order: max retries reached, giving up")
-            return Status.TIMEOUT, []
+            # Keep the confirmed first item: delivering one object still scores.
+            Logger.warn(self.node, "take_order: second item failed, keeping partial order")
+            self.say(f"I will bring you the {first_item}.")
+            return Status.EXECUTION_SUCCESS, [first_item]
 
         raw_items = [first_item, second_item]
         Logger.success(self.node, f"take_order confirmed: {raw_items}")

@@ -130,6 +130,11 @@ case $TASK in
     "--hric" | "--ppc" | "--dlc" | "--gpsr" | "--safety" )
         RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
+    "--restaurant")
+        # Unknown venue: slam_toolbox mapping + nav2 with the restaurant overlay
+        # (slow speeds, long voxel persistence) + table docking.
+        RUN="ros2 launch nav_main restaurant.launch.py"
+        ;;
     "--tagger")
         RUN="ros2 run map_context map_area_tagger.py"
         ;;

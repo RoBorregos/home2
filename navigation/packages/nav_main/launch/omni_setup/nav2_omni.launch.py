@@ -25,11 +25,19 @@ def launch_setup(context, *args, **kwargs):
     from frida_constants.navigation_constants import RTAB_MAPS_PATH
 
     pkg_file_route = get_package_share_directory('nav_main')
-    nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
+    # Default omnibase profile: 3-WHEEL LIMP (base running degraded, one wheel
+    # out — see nav2_omni_limp.yaml header). Callers can still override with
+    # nav2_config_file:=; point back at nav2_omni.yaml once the base is healthy.
+    nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
     keepout_overlay_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_keepout.yaml')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
     nav2_cfg_path = LaunchConfiguration('nav2_config_file', default=nav2_params_file).perform(context)
+
+    # Optional task overlay (e.g. nav2_omni_restaurant.yaml): deep-merged on top
+    # of the base params so task profiles carry only their deltas and never
+    # drift from base tuning.
+    overlay_path = LaunchConfiguration('nav2_overlay_file', default='').perform(context)
 
     # Keepout (virtual obstacle) filter — opt-in.
     use_keepout = LaunchConfiguration('use_keepout', default='false').perform(context)
@@ -53,12 +61,16 @@ def launch_setup(context, *args, **kwargs):
     # param files do not merge cleanly there. When off, use the base params as-is,
     # so the costmaps never load the filter (no "mask not received" spam).
     params_path = nav2_cfg_path
-    if keepout_on:
+    if keepout_on or overlay_path:
         with open(nav2_cfg_path) as f:
             merged = yaml.safe_load(f)
-        with open(keepout_overlay_file) as f:
-            _deep_merge(merged, yaml.safe_load(f))
-        params_path = os.path.join(tempfile.gettempdir(), 'nav2_omni_keepout_merged.yaml')
+        if overlay_path:
+            with open(overlay_path) as f:
+                _deep_merge(merged, yaml.safe_load(f))
+        if keepout_on:
+            with open(keepout_overlay_file) as f:
+                _deep_merge(merged, yaml.safe_load(f))
+        params_path = os.path.join(tempfile.gettempdir(), 'nav2_omni_merged.yaml')
         with open(params_path, 'w') as f:
             yaml.safe_dump(merged, f, default_flow_style=False, sort_keys=False)
 
