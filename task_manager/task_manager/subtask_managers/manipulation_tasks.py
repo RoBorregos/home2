@@ -305,6 +305,9 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, future)
         goal_handle = future.result()
 
+        if goal_handle is None:
+            Logger.error(self.node, "Joint goal request failed (no goal handle)")
+            return False
         if not goal_handle.accepted:
             Logger.error(self.node, "Joint goal was rejected")
             return False
@@ -313,10 +316,13 @@ class ManipulationTasks:
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
 
-        result = result_future.result().result
-        if not result.success:
+        # A None result means the action timed out or the server died mid-goal
+        # (e.g. the arm stack still booting) — fail the call, don't crash the FSM.
+        wrapped = result_future.result()
+        if wrapped is None:
+            Logger.error(self.node, "Joint goal result timed out")
             return False
-        return True
+        return bool(wrapped.result.success)
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
     @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
