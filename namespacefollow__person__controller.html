@@ -130,11 +130,19 @@ Variables</h2></td></tr>
 <tr class="separator:ac96ed665be688a25b917251d11e2d38f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Follow Person Controller — PI + Base Velocity Feedforward
+<div class="textblock"><pre class="fragment">Follow Person Controller — PID + Base Velocity Feedforward
 
 Rotates xArm6 joint1 to keep a tracked person centered in the camera image.
+The derivative term is computed at centroid rate (in the subscriber, not the
+control loop) and low-pass filtered — it anticipates a person walking across
+the frame instead of lagging them by error/kp.
 Compensates for base rotation via feedforward from /cmd_vel.
 Uses xArm velocity control mode (mode 4) for direct joint velocity commands.
+Near the joint1 limits the commanded velocity tapers linearly to zero
+(soft-limit) instead of cutting hard — that keeps the wide range usable
+without slamming the joint into its limit (the old xArm-fault mode).
+On centroid timeout the arm slowly recenters to joint1_neutral so the camera
+faces where the base (per person_goal_smoother's lost-person goal) is heading.
 
 Usage:
     ros2 run task_manager follow_person_controller.py

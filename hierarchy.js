@@ -243,6 +243,7 @@ var hierarchy =
       [ "simple_launch.TestBringup", "classsimple__launch_1_1TestBringup.html", null ]
     ] ],
     [ "vamp_server.VampServer.Timer", "classvamp__server_1_1VampServer_1_1Timer.html", null ],
+    [ "follow_calibration.TopicStat", "classfollow__calibration_1_1TopicStat.html", null ],
     [ "track.Track", "classtrack_1_1Track.html", null ],
     [ "tracker.Tracker", "classtracker_1_1Tracker.html", null ],
     [ "track.TrackState", "classtrack_1_1TrackState.html", null ],
@@ -328,6 +329,7 @@ var hierarchy =
       [ "example_node.ExampleNode", "classexample__node_1_1ExampleNode.html", null ],
       [ "face_recognition_node.FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", null ],
       [ "flat_grasp_estimator.FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", null ],
+      [ "follow_calibration.FollowCalibration", "classfollow__calibration_1_1FollowCalibration.html", null ],
       [ "follow_face_node.FollowFaceNode", "classfollow__face__node_1_1FollowFaceNode.html", null ],
       [ "follow_face_node_copt.FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", null ],
       [ "follow_person_controller.FollowPersonController", "classfollow__person__controller_1_1FollowPersonController.html", null ],

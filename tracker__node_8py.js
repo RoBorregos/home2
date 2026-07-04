@@ -7,6 +7,7 @@ var tracker__node_8py =
     [ "DEEPSORT_MAX_COSINE_DISTANCE", "tracker__node_8py.html#aa34171b8180001c3b26771ff9efd5ed4", null ],
     [ "DEEPSORT_N_INIT", "tracker__node_8py.html#a38d9efff05ec11f578a18bf6f8e067cf", null ],
     [ "DEEPSORT_NN_BUDGET", "tracker__node_8py.html#a1019ff64cd9459d9a26b3a73dd0ed134", null ],
+    [ "DEPTH_JUMP_MAX_REJECTS", "tracker__node_8py.html#a89176292f54eff270e1dbeea7d2f9ab2", null ],
     [ "DEPTH_JUMP_THRESHOLD", "tracker__node_8py.html#a91ecfb767c39de2c712186e8af64373a", null ],
     [ "DEPTH_THRESHOLD_NS", "tracker__node_8py.html#a09af44594ddde27aa9e4a61ff302a480", null ],
     [ "MAX_EMBEDDINGS", "tracker__node_8py.html#a31ff474623ba03e3fc97d08114c58089", null ],

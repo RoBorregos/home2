@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classperson__goal__smoother_1_1PersonG
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classperson__goal__smoother_1_1PersonGoalSmoother-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">person_goal_smoother.PersonGoalSmoother Class Reference</div></div>
 </div><!--header-->
@@ -130,6 +131,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:afb672944dfbcbd7444e9a9a9cb2f8d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad16369d46668c6fe1b0ed93cd41347b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#aad16369d46668c6fe1b0ed93cd41347b">map_info</a></td></tr>
 <tr class="separator:aad16369d46668c6fe1b0ed93cd41347b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a71b14194f8beb18e0437962458717a04"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#a71b14194f8beb18e0437962458717a04">vel_x</a></td></tr>
+<tr class="separator:a71b14194f8beb18e0437962458717a04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae1ae467adeed26ce2a4883e4c9f00d27"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#ae1ae467adeed26ce2a4883e4c9f00d27">vel_y</a></td></tr>
+<tr class="separator:ae1ae467adeed26ce2a4883e4c9f00d27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adcb65caed31c5717a65871660f442ffb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#adcb65caed31c5717a65871660f442ffb">lost_halt_active</a></td></tr>
 <tr class="separator:adcb65caed31c5717a65871660f442ffb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acaf5e64a512d7271d7f1dfda377bc525"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#acaf5e64a512d7271d7f1dfda377bc525">tf_buffer</a></td></tr>
@@ -161,6 +166,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a651ea5ba677b0edda92b0ac66be467e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3ec8f56c3635248170f90169fedba45"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#aa3ec8f56c3635248170f90169fedba45">_tracker_cb</a> (self, PointStamped msg)</td></tr>
 <tr class="separator:aa3ec8f56c3635248170f90169fedba45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb75efc3980b7b0f2971424c7f6b79b8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#aeb75efc3980b7b0f2971424c7f6b79b8">_update_velocity</a> (self)</td></tr>
+<tr class="separator:aeb75efc3980b7b0f2971424c7f6b79b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae06ca7a43bde04be51e4ddfe0c544d3f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#ae06ca7a43bde04be51e4ddfe0c544d3f">_map_cb</a> (self, OccupancyGrid msg)</td></tr>
 <tr class="separator:ae06ca7a43bde04be51e4ddfe0c544d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6738af20d3049544561eaca961864216"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#a6738af20d3049544561eaca961864216">_update_robot_pose</a> (self)</td></tr>
@@ -171,6 +178,11 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:af7397202d636806bf23ab2a70746bff1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5ccb0fa7bb8819202da826c654556d1"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#ac5ccb0fa7bb8819202da826c654556d1">_snap_to_free</a> (self, float wx, float wy)</td></tr>
 <tr class="separator:ac5ccb0fa7bb8819202da826c654556d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:af5eaaa4995dfbc2ce166ac5f0bce3dd9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classperson__goal__smoother_1_1PersonGoalSmoother.html#af5eaaa4995dfbc2ce166ac5f0bce3dd9">_prev_smooth</a></td></tr>
+<tr class="separator:af5eaaa4995dfbc2ce166ac5f0bce3dd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a09d68461d3be6e6a5051e78bdc002039" name="a09d68461d3be6e6a5051e78bdc002039"></a>
@@ -347,11 +359,19 @@ Protected Member Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<pre class="fragment">Freeze the goal at the robot's pose when tracker data stops.
+<pre class="fragment">React when tracker data stops (person lost).
 
-Fires once per loss: publishes the current robot pose (facing the last
-smoothed person position, so the camera keeps pointing where the person
-vanished) and re-arms when data resumes (_tracker_cb clears the flag).
+Fires once per loss and re-arms when data resumes (_tracker_cb clears
+the flag). Behavior per the `lost_behavior` param:
+
+- "last_position": send the goal follow_distance short of the person's
+  last-known position, oriented along their direction of travel (or at
+  them, if they weren't moving). The robot walks to where they vanished
+  — typically a doorway/corner — regains line of sight, and the
+  tracker's ReID re-acquisition re-locks. Falls back to halting if no
+  person position was ever received.
+- "halt": freeze at the robot's own pose, facing the last known
+  person position (legacy behavior).
 </pre> 
 </div>
 </div>
@@ -605,7 +625,56 @@ vanished) and re-arms when data resumes (_tracker_cb clears the flag).
 <pre class="fragment">Get current robot position in map frame for orientation computation.</pre> 
 </div>
 </div>
+<a id="aeb75efc3980b7b0f2971424c7f6b79b8" name="aeb75efc3980b7b0f2971424c7f6b79b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb75efc3980b7b0f2971424c7f6b79b8">&#9670;&#160;</a></span>_update_velocity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def person_goal_smoother.PersonGoalSmoother._update_velocity </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">EMA person-velocity estimate from the smoothed positions. Resets after
+a data gap (stale finite difference would spike the lead).</pre> 
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="af5eaaa4995dfbc2ce166ac5f0bce3dd9" name="af5eaaa4995dfbc2ce166ac5f0bce3dd9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5eaaa4995dfbc2ce166ac5f0bce3dd9">&#9670;&#160;</a></span>_prev_smooth</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">person_goal_smoother.PersonGoalSmoother._prev_smooth</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ad8c55d713b6876c542f6304a9861ef48" name="ad8c55d713b6876c542f6304a9861ef48"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad8c55d713b6876c542f6304a9861ef48">&#9670;&#160;</a></span>follow_mode_active</h2>
 
@@ -838,6 +907,34 @@ vanished) and re-arms when data resumes (_tracker_cb clears the flag).
       <table class="memname">
         <tr>
           <td class="memname">person_goal_smoother.PersonGoalSmoother.tf_listener</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a71b14194f8beb18e0437962458717a04" name="a71b14194f8beb18e0437962458717a04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71b14194f8beb18e0437962458717a04">&#9670;&#160;</a></span>vel_x</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">person_goal_smoother.PersonGoalSmoother.vel_x</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae1ae467adeed26ce2a4883e4c9f00d27" name="ae1ae467adeed26ce2a4883e4c9f00d27"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae1ae467adeed26ce2a4883e4c9f00d27">&#9670;&#160;</a></span>vel_y</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">person_goal_smoother.PersonGoalSmoother.vel_y</td>
         </tr>
       </table>
 </div><div class="memdoc">

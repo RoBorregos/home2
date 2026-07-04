@@ -12,6 +12,8 @@ var classperson__goal__smoother_1_1PersonGoalSmoother =
     [ "_snap_to_free", "classperson__goal__smoother_1_1PersonGoalSmoother.html#ac5ccb0fa7bb8819202da826c654556d1", null ],
     [ "_tracker_cb", "classperson__goal__smoother_1_1PersonGoalSmoother.html#aa3ec8f56c3635248170f90169fedba45", null ],
     [ "_update_robot_pose", "classperson__goal__smoother_1_1PersonGoalSmoother.html#a6738af20d3049544561eaca961864216", null ],
+    [ "_update_velocity", "classperson__goal__smoother_1_1PersonGoalSmoother.html#aeb75efc3980b7b0f2971424c7f6b79b8", null ],
+    [ "_prev_smooth", "classperson__goal__smoother_1_1PersonGoalSmoother.html#af5eaaa4995dfbc2ce166ac5f0bce3dd9", null ],
     [ "follow_mode_active", "classperson__goal__smoother_1_1PersonGoalSmoother.html#ad8c55d713b6876c542f6304a9861ef48", null ],
     [ "follow_yaml", "classperson__goal__smoother_1_1PersonGoalSmoother.html#a8809d54eb96b95c10f8c8b404186471c", null ],
     [ "goal_pub", "classperson__goal__smoother_1_1PersonGoalSmoother.html#a7de1036668dfbc9f408fa61932282467", null ],
@@ -28,5 +30,7 @@ var classperson__goal__smoother_1_1PersonGoalSmoother =
     [ "smooth_y", "classperson__goal__smoother_1_1PersonGoalSmoother.html#ad454b4fc87db56521fc3cff84659313a", null ],
     [ "standard_yaml", "classperson__goal__smoother_1_1PersonGoalSmoother.html#a4638175f5e3742708f4190419e374891", null ],
     [ "tf_buffer", "classperson__goal__smoother_1_1PersonGoalSmoother.html#acaf5e64a512d7271d7f1dfda377bc525", null ],
-    [ "tf_listener", "classperson__goal__smoother_1_1PersonGoalSmoother.html#a110f83cc1a48550f90b17fd6e9b9a14a", null ]
+    [ "tf_listener", "classperson__goal__smoother_1_1PersonGoalSmoother.html#a110f83cc1a48550f90b17fd6e9b9a14a", null ],
+    [ "vel_x", "classperson__goal__smoother_1_1PersonGoalSmoother.html#a71b14194f8beb18e0437962458717a04", null ],
+    [ "vel_y", "classperson__goal__smoother_1_1PersonGoalSmoother.html#ae1ae467adeed26ce2a4883e4c9f00d27", null ]
 ];

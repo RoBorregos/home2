@@ -63,6 +63,8 @@ var classtable__docker_1_1TableDocker =
     [ "max_wz", "classtable__docker_1_1TableDocker.html#a231ba9e454fd06f33d632b50e107a945", null ],
     [ "min_safe", "classtable__docker_1_1TableDocker.html#a5658afcb270848f64c6a8ea4edecade9", null ],
     [ "min_vx", "classtable__docker_1_1TableDocker.html#a187d1957120f0e1aa2b0dd0919ca5572", null ],
+    [ "min_vy", "classtable__docker_1_1TableDocker.html#a5849c0d3d09b2652ca5a0ca3fe9cce41", null ],
+    [ "min_wz", "classtable__docker_1_1TableDocker.html#a24c70dc0d0517a5fa7d8fa38983eb844", null ],
     [ "num_samples", "classtable__docker_1_1TableDocker.html#acbb4025df90b3343267f055e60cc7301", null ],
     [ "odom_frame", "classtable__docker_1_1TableDocker.html#a0ee45f73a1c4c42e69407792b802c20a", null ],
     [ "odom_topic", "classtable__docker_1_1TableDocker.html#a1201e1b18e228bfb4f8068bb820bbdcc", null ],

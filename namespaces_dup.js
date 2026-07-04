@@ -157,6 +157,7 @@ var namespaces_dup =
       [ "goal_pos", "namespaceflying__sphere.html#acb69026d6e931da75e2e65186b913021", null ],
       [ "robot_initial_pos", "namespaceflying__sphere.html#a232fa5491ad98ffe851d7e60e220c279", null ]
     ] ],
+    [ "follow_calibration", "namespacefollow__calibration.html", "namespacefollow__calibration" ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", "namespacefollow__face__node__copt" ],
     [ "follow_person_controller", "namespacefollow__person__controller.html", "namespacefollow__person__controller" ],

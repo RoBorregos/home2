@@ -253,7 +253,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 </ul>
 <h1><a class="anchor" id="autotoc_md182"></a>
 7. Follow-person pipeline rework (2026-07-03)</h1>
-<p>Applied across tracker / smoother / arm controller to stop losing the person (validate on robot with <code>ros2 run <a class="el" href="namespacetask__manager.html">task_manager</a> follow_calibration.py</code>):</p>
+<p>Applied across tracker / smoother / arm controller to stop losing the person (validate on robot with <code>ros2 run <a class="el" href="namespacetask__manager.html">task_manager</a> <a class="el" href="follow__calibration_8py.html">follow_calibration.py</a></code>):</p>
 <ul>
 <li><b><a class="el" href="namespacetracker__node.html">tracker_node</a></b>: ALL SWIN ReID work (gallery embeds + re-acquisition matching) moved to a background worker thread with target-generation stamps — the 20 Hz (was 10 Hz) tracking tick never blocks on ReID. Arm centroid now publishes for EVERY tracked frame (used to sit behind the depth gate). Depth-jump rejection accepts after 3 consecutive rejects (a legit move used to wedge RESULTS_TOPIC silent forever). RGB/depth stamp gate 50→100 ms. Debug drawing skipped unless someone subscribes (<code>DebugImagePublisher.has_subscribers()</code>).</li>
 <li><b><a class="el" href="namespaceperson__goal__smoother.html">person_goal_smoother</a></b>: person-velocity estimate + <code>lead_time</code> (0.4 s) leads the goal ahead of a walking person; on tracker loss (<code>timeout</code> now 2.0 s) it drives to the person's LAST-KNOWN position facing their direction of travel (<code>lost_behavior:=halt</code> restores the old freeze-in-place).</li>
