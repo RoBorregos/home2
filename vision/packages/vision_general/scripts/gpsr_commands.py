@@ -571,7 +571,8 @@ class GPSRCommands(Node):
         safe_tag = tag.replace(" ", "_").replace("/", "_")
         try:
             cv2.imwrite(
-                os.path.join(self.save_dir, f"{safe_tag}_{stamp}.jpg"), self.output_image
+                os.path.join(self.save_dir, f"{safe_tag}_{stamp}.jpg"),
+                self.output_image,
             )
         except Exception as e:
             self.get_logger().warn(f"Could not save detection image: {e}")

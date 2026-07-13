@@ -1483,9 +1483,7 @@ class HRITasks:
         # repeats are free.
         self._last_display_topic = topic
         if not hasattr(self, "_display_refresh_timer"):
-            self._display_refresh_timer = self.node.create_timer(
-                1.0, self._republish_display_topic
-            )
+            self._display_refresh_timer = self.node.create_timer(1.0, self._republish_display_topic)
 
     def _republish_display_topic(self):
         if getattr(self, "_last_display_topic", None):

@@ -21,39 +21,19 @@ from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
-# Competition switch: physical person-following is DISABLED for GPSR —
-# follow_person_until instead tells the person it cannot follow them, asks for
-# (or reuses) the destination, and guides them there. Flip to True to restore
-# the tracker-based follow (_follow_person_tracking); the constants below only
-# apply to that path.
+# Physical person-following is disabled for GPSR; set True to restore the
+# tracker-based follow, which uses the constants below.
 FOLLOW_PERSON_ENABLED = False
 
-# Person-following (ported from the HRIC FOLLOW_PERSON state): the robot follows
-# the tracked person until a stop keyword, arrival at the destination, or the
-# safety cap. FOLLOW_LISTEN_TIMEOUT is the length of each speech-listening
-# window — it also bounds how fast the loop notices a lost tracker, so it is
-# kept short. FOLLOW_MAX_DURATION keeps a missed "stop" from trapping the robot
-# in follow mode and from blowing the GPSR interleaved-plan global budget (300 s).
 FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
 FOLLOW_LISTEN_TIMEOUT = 2.5
 FOLLOW_MAX_DURATION = 120.0
 FOLLOW_ARRIVED_DISTANCE = 1.5
 FOLLOW_TRACK_ATTEMPTS = 5
-# Lost-person fallback: after this many seconds with the tracker reporting no
-# target (get_track_person != SUCCESS), pause the follow and try to re-lock.
-# person_goal_smoother independently halts the base goal on the same timeout.
 FOLLOW_LOST_TIMEOUT = 3.0
 FOLLOW_RELOCK_ATTEMPTS = 3
-# find_person_by_name active search: max people the robot walks up to before
-# falling back to asking the target to come over.
 FIND_PERSON_MAX_ROUNDS = 4
-# Scan points closer than this (map frame, meters) count as the same person
-# across rounds. This spatial memory is the PRIMARY dedup: face-based dedup
-# alone fails whenever face_recognition reports "No face detected" at approach
-# distance, which made the robot walk up to and question the same person
-# repeatedly. Two people standing closer than this merge into one candidate —
-# acceptable, since skipping an adjacent candidate is cheaper than
-# interrogating the same one twice.
+# Scan points closer than this (map frame, meters) count as the same person across rounds.
 FIND_PERSON_VISITED_RADIUS = 0.75
 
 
@@ -210,9 +190,7 @@ class GPSRTask(GenericTask):
 
         loc_text = command.destination
         if until_cancelled:
-            self.subtask_manager.hri.say(
-                "I am sorry, I cannot follow you right now.", wait=True
-            )
+            self.subtask_manager.hri.say("I am sorry, I cannot follow you right now.", wait=True)
             status, loc_text = self.subtask_manager.hri.ask_and_confirm(
                 question="Please tell me the location you want to go, and I will take you there.",
                 query="location",

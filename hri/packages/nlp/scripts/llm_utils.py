@@ -49,7 +49,7 @@ IS_POSITIVE_MODEL_NAME = "tasksource/deberta-small-long-nli"
 
 
 def get_context():
-    timezone = pytz.timezone("Asia/Seoul")
+    timezone = pytz.timezone("America/Mexico_City")
     current_date = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
     return CURRENT_CONTEXT.format(CURRENT_DATE=current_date)
 
