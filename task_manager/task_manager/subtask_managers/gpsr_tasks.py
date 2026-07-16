@@ -5,7 +5,7 @@ from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_
 from frida_constants.vision_constants import (
     FACE_RECOGNITION_IMAGE,
     DETECTIONS_IMAGE_TOPIC,
-    CAMERA_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
     IMAGE_TOPIC,
     TRACKER_IMAGE_TOPIC,
 )
@@ -21,25 +21,20 @@ from task_manager.utils.status import Status
 
 from task_manager.subtask_managers.generic_tasks import GenericTask
 
-# Person-following (ported from the HRIC FOLLOW_PERSON state): the robot follows
-# the tracked person until a stop keyword, arrival at the destination, or the
-# safety cap. FOLLOW_LISTEN_TIMEOUT is the length of each speech-listening
-# window — it also bounds how fast the loop notices a lost tracker, so it is
-# kept short. FOLLOW_MAX_DURATION keeps a missed "stop" from trapping the robot
-# in follow mode and from blowing the GPSR interleaved-plan global budget (300 s).
+# Physical person-following is disabled for GPSR; set True to restore the
+# tracker-based follow, which uses the constants below.
+FOLLOW_PERSON_ENABLED = False
+
 FOLLOW_STOP_KEYWORDS = ["stop", "stop following", "halt", "you can stop"]
 FOLLOW_LISTEN_TIMEOUT = 2.5
 FOLLOW_MAX_DURATION = 120.0
 FOLLOW_ARRIVED_DISTANCE = 1.5
 FOLLOW_TRACK_ATTEMPTS = 5
-# Lost-person fallback: after this many seconds with the tracker reporting no
-# target (get_track_person != SUCCESS), pause the follow and try to re-lock.
-# person_goal_smoother independently halts the base goal on the same timeout.
 FOLLOW_LOST_TIMEOUT = 3.0
 FOLLOW_RELOCK_ATTEMPTS = 3
-# find_person_by_name active search: max people the robot walks up to before
-# falling back to asking the target to come over.
 FIND_PERSON_MAX_ROUNDS = 4
+# Scan points closer than this (map frame, meters) count as the same person across rounds.
+FIND_PERSON_VISITED_RADIUS = 0.75
 
 
 class GPSRTask(GenericTask):
@@ -167,7 +162,68 @@ class GPSRTask(GenericTask):
     ## HRI, Nav, Vision, Manipulation
     def follow_person_until(self, command: FollowPersonUntil):
         """
+        GPSR follow command with physical following disabled
+        (FOLLOW_PERSON_ENABLED = False): the robot tells the person it cannot
+        follow them, asks for the location they want to go (or reuses the
+        commanded destination), and navigates there with the person walking
+        along — a guide in place of a follow.
+
+        Args:
+            destination (str): Where the person wanted to be followed to.
+                'cancelled' (follow until told to stop) carries no
+                destination, so the robot asks the person for one.
+
+        Postconditions:
+            - The robot (and, walking with it, the person) is at the
+              destination.
+        """
+        if isinstance(command, dict):
+            command = FollowPersonUntil(**command)
+
+        if FOLLOW_PERSON_ENABLED:
+            return self._follow_person_tracking(command)
+
+        self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
+
+        destination = (command.destination or "").strip().lower()
+        until_cancelled = destination in ("", "cancelled", "canceled")
+
+        loc_text = command.destination
+        if until_cancelled:
+            self.subtask_manager.hri.say("I am sorry, I cannot follow you right now.", wait=True)
+            status, loc_text = self.subtask_manager.hri.ask_and_confirm(
+                question="Please tell me the location you want to go, and I will take you there.",
+                query="location",
+                context="The user was asked for the location they want to go to. "
+                "We want to infer the location from the response",
+            )
+            if status != Status.EXECUTION_SUCCESS or not loc_text:
+                self.subtask_manager.hri.say(
+                    "Sorry, I could not understand the location.", wait=False
+                )
+                return Status.TARGET_NOT_FOUND, "no destination to guide to"
+        else:
+            self.subtask_manager.hri.say(
+                "I am sorry, I cannot follow you right now, "
+                f"but I can take you to the {command.destination}.",
+                wait=True,
+            )
+
+        location = self.subtask_manager.hri.query_location(loc_text)[0]
+        target = location.subarea if location.subarea else location.area
+        pretty_target = target.replace("_", " ")
+        self.subtask_manager.hri.say(f"Please follow me to the {pretty_target}.", wait=True)
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        result, _ = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
+        if result == Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say(f"We have arrived to the {pretty_target}.", wait=False)
+        return result, f"guided person to {pretty_target} instead of following"
+
+    def _follow_person_tracking(self, command: FollowPersonUntil):
+        """
         Follow a person until a stop condition is met (HRIC FOLLOW_PERSON port).
+        Inactive while FOLLOW_PERSON_ENABLED is False — kept intact so the
+        tracker-based follow can be restored with the flag.
 
         Args:
             destination (str): Where to stop following. A location name means
@@ -420,6 +476,9 @@ class GPSRTask(GenericTask):
         self.subtask_manager.hri.say(f"I will search for the {command.info_type} of a person.")
 
         if command.info_type != "name":
+            # find_person_info -> PersonPoseGesture service on gpsr_commands,
+            # which annotates the GPSR feed (IMAGE_TOPIC) — show that feed.
+            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC)
             person_retries = 0
             while person_retries < 2:
                 self.timeout(1)
@@ -455,6 +514,10 @@ class GPSRTask(GenericTask):
         else:
             # get name
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
+            # Without this the face_recognition node stays idle (run() bails on
+            # vision_active False — e.g. after follow_person deactivates it):
+            # the displayed feed is black and get_person_name never updates.
+            self.subtask_manager.vision.activate_face_recognition()
             self.subtask_manager.hri.say(
                 "I will check if I know your name.",
             )
@@ -518,7 +581,9 @@ class GPSRTask(GenericTask):
         status, labels = self.subtask_manager.vision.count_objects(object_name)
         if status != Status.EXECUTION_SUCCESS or not labels:
             self.subtask_manager.hri.say(f"I didn't find any {object_name}.")
-            self.subtask_manager.hri.publish_display_topic(CAMERA_TOPIC)
+            # Back to the oriented live camera (the display default) — the raw
+            # ZED topic is unrotated and has no detections drawn on it.
+            self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
             return Status.TARGET_NOT_FOUND, f"0 ({object_name} counted)"
 
         # Use LLM to count matching objects from detections
@@ -528,7 +593,7 @@ class GPSRTask(GenericTask):
         else:
             self.subtask_manager.hri.say(f"I couldn't determine how many {object_name} there are.")
 
-        self.subtask_manager.hri.publish_display_topic(CAMERA_TOPIC)
+        self.subtask_manager.hri.publish_display_topic(IMAGE_ORIENTED_TOPIC)
         return status, str(count) + f" ({object_name} counted)"
 
     ## Manipulation, Vision
@@ -768,11 +833,18 @@ class GPSRTask(GenericTask):
             characteristic (str, optional): Always an empty string.
 
         Behavior:
-            - The robot searches for a person by scanning the area at different angles.
-            - For each detected person, it checks if the person is already known.
-            - If the person is unknown, the robot asks for their name and saves it.
-            - The robot approaches the person with the specified name once found.
-            - If the maximum number of retries is exceeded, a fallback mechanism (`deus_machina`) is triggered.
+            - The robot scans the room (people are filtered to the robot's
+              current room polygon by gpsr_commands) and walks up to each
+              not-yet-visited person, nearest first.
+            - Visited people are remembered by their map position
+              (FIND_PERSON_VISITED_RADIUS) and, best-effort, by face — so the
+              same person is never questioned twice even when face
+              recognition sees no face.
+            - Identification is a closed yes/no question ("Are you <name>?")
+              answered via the yes/no keyword spotter — no open-ended name
+              extraction, which broke on noisy transcriptions.
+            - If nobody matched after FIND_PERSON_MAX_ROUNDS, falls back to
+              asking the target to come over and confirming the same way.
 
         Preconditions:
             - The robot must be at a location where it can search for people.
@@ -793,51 +865,65 @@ class GPSRTask(GenericTask):
 
         # ACTIVE search: the robot walks up to each person in the room instead
         # of asking the target to come. Between candidates it returns to this
-        # safe pose; faces are temp-saved so nobody is asked twice.
+        # safe pose. Visited people are remembered by MAP POSITION (primary —
+        # works even when face recognition sees no face) and by face
+        # (best-effort backup that survives the person moving around).
         s, safe_pose = self.subtask_manager.nav.get_current_pose()
-        visited = set()
+        visited_names = set()
+        visited_points = []
+
+        def already_visited(p):
+            return any(
+                (p.point.x - v.point.x) ** 2 + (p.point.y - v.point.y) ** 2
+                < FIND_PERSON_VISITED_RADIUS**2
+                for v in visited_points
+            )
 
         for round_idx in range(FIND_PERSON_MAX_ROUNDS):
             # Re-scan every round: people move, and fresh detections avoid
             # approaching stale camera-frame points after the base moved.
             persons = self._scan_persons_in_room()
-            if round_idx >= len(persons):
+            candidates = [p for p in persons if not already_visited(p)]
+            if not candidates:
                 break
-            map_point = persons[round_idx]
+            map_point = candidates[0]
+            # Mark BEFORE approaching: a failed or partial approach must not
+            # burn later rounds re-trying the same detection.
+            visited_points.append(map_point)
 
             if not self._approach_with_arm(map_point):
                 continue
 
             status, name = self.subtask_manager.vision.get_person_name(fresh_timeout=4.0)
             self.subtask_manager.hri.node.get_logger().info(f"Recognized: {name}.")
-            if name and name.lower() in visited:
-                # Already met this person this search — move on.
-                self._back_to_safe(safe_pose)
-                continue
+            if name:
+                if name.lower() == target:
+                    self.subtask_manager.hri.say("There you are, " + command.name + ".")
+                    return Status.EXECUTION_SUCCESS, f"found {command.name}"
+                if name.lower() in visited_names:
+                    # Already met this person this search — move on.
+                    self._back_to_safe(safe_pose)
+                    continue
 
-            if not name:
-                self.subtask_manager.hri.say("Hi, I'm Frida.")
-                status, heard = self.subtask_manager.hri.ask_and_confirm(
-                    question="Can you please tell me your name?",
-                    query="name",
-                    hotwords=command.name,
-                )
-                name = (
-                    self.subtask_manager.hri.remove_punctuation(heard)
-                    if heard
-                    else f"guest {round_idx}"
-                )
-                # Temp-save the face so this person is never asked twice.
-                self.subtask_manager.vision.save_face_name(name)
-
-            if name.lower() == target:
-                self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
-                return Status.EXECUTION_SUCCESS, f"found {name}"
-
-            visited.add(name.lower())
-            self.subtask_manager.hri.say(
-                "Nice to meet you " + name + ", but I am looking for " + command.name + "."
+            # Closed yes/no question instead of asking for the name: name
+            # extraction broke on noisy transcriptions ("Yeah, I'll do."),
+            # while the yes/no keyword spotter is robust in competition noise.
+            s, answer = self.subtask_manager.hri.confirm(
+                f"Hi, I'm Frida. Are you {command.name}?", use_keyword=True, retries=2
             )
+            if answer == "yes":
+                # Save the face so later subtasks can recognize the target.
+                self.subtask_manager.vision.save_face_name(command.name)
+                self.subtask_manager.hri.say("Nice to meet you, " + command.name + ".")
+                return Status.EXECUTION_SUCCESS, f"found {command.name}"
+
+            # "no" or no answer: temp-save the face as backup dedup (fails
+            # harmlessly when no face is visible — visited_points covers it).
+            guest = name if name else f"guest {round_idx}"
+            if not name:
+                self.subtask_manager.vision.save_face_name(guest)
+            visited_names.add(guest.lower())
+            self.subtask_manager.hri.say("Sorry, I am looking for " + command.name + ".")
             self._back_to_safe(safe_pose)
 
         # Fallback (old behavior): ask the target to come to the robot.
@@ -845,10 +931,13 @@ class GPSRTask(GenericTask):
             f"{command.name}, if you are here, please come and stand in front of me."
         )
         time.sleep(5)
-        status, name = self.subtask_manager.vision.get_person_name(fresh_timeout=5.0)
-        if name and self.subtask_manager.hri.remove_punctuation(name).lower() == target:
-            self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
-            return Status.EXECUTION_SUCCESS, f"found {name}"
+        s, answer = self.subtask_manager.hri.confirm(
+            f"Are you {command.name}?", use_keyword=True, retries=2
+        )
+        if answer == "yes":
+            self.subtask_manager.vision.save_face_name(command.name)
+            self.subtask_manager.hri.say("Nice to meet you, " + command.name + ".")
+            return Status.EXECUTION_SUCCESS, f"found {command.name}"
         return Status.TARGET_NOT_FOUND, "person not found"
 
     def _back_to_safe(self, safe_pose):
