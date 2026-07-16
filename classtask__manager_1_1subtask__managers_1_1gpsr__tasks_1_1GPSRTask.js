@@ -4,6 +4,7 @@ var classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask =
     [ "_approach_found_person", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a1c1ce70af935bad9c0b49dc0162f130a", null ],
     [ "_approach_with_arm", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a68ff8ce69f30ebd881f939ad3f6ce11a", null ],
     [ "_back_to_safe", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a75a0a8d52c66fea38120237236035577", null ],
+    [ "_follow_person_tracking", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a729ee3b2a757277e8850b1f1da899b8e", null ],
     [ "_recover_lost_person", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#acf8d4de5b413d1a0cdbbfb34887b728c", null ],
     [ "_scan_persons_in_room", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#aea905f4eb012156eddcdfb2abe7eb2d5", null ],
     [ "_teardown_follow", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a13ce05f6c374ee4753c3c81f8d87064a", null ],

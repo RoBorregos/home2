@@ -1,6 +1,7 @@
 var classdebug__pub_1_1DebugImagePublisher =
 [
     [ "__init__", "classdebug__pub_1_1DebugImagePublisher.html#ae63cbf1816f85a254fee047d0da5e2b3", null ],
+    [ "has_subscribers", "classdebug__pub_1_1DebugImagePublisher.html#adf54ec2b789698a353396e8fc5402022", null ],
     [ "publish", "classdebug__pub_1_1DebugImagePublisher.html#a7a516ae69648c953191d28c2946b3532", null ],
     [ "_bridge", "classdebug__pub_1_1DebugImagePublisher.html#a212726ae033ded396df3888832929127", null ],
     [ "_encode_params", "classdebug__pub_1_1DebugImagePublisher.html#abc45d0ad897af71b4618291f62552eca", null ],

@@ -168,6 +168,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a13ce05f6c374ee4753c3c81f8d87064a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf8d4de5b413d1a0cdbbfb34887b728c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#acf8d4de5b413d1a0cdbbfb34887b728c">_recover_lost_person</a> (self)</td></tr>
 <tr class="separator:acf8d4de5b413d1a0cdbbfb34887b728c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a729ee3b2a757277e8850b1f1da899b8e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a729ee3b2a757277e8850b1f1da899b8e">_follow_person_tracking</a> (self, FollowPersonUntil command)</td></tr>
+<tr class="separator:a729ee3b2a757277e8850b1f1da899b8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68ff8ce69f30ebd881f939ad3f6ce11a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a68ff8ce69f30ebd881f939ad3f6ce11a">_approach_with_arm</a> (self, point)</td></tr>
 <tr class="separator:a68ff8ce69f30ebd881f939ad3f6ce11a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c1ce70af935bad9c0b49dc0162f130a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a1c1ce70af935bad9c0b49dc0162f130a">_approach_found_person</a> (self, point=None)</td></tr>
@@ -329,6 +331,72 @@ nav would project the point through the wrong transform).</pre>
 </div><div class="memdoc">
 <pre class="fragment">Return to the pose where the person search started (arm tucked for
 the drive, then front_stare to rescan for the next candidate).</pre> 
+</div>
+</div>
+<a id="a729ee3b2a757277e8850b1f1da899b8e" name="a729ee3b2a757277e8850b1f1da899b8e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a729ee3b2a757277e8850b1f1da899b8e">&#9670;&#160;</a></span>_follow_person_tracking()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.gpsr_tasks.GPSRTask._follow_person_tracking </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">FollowPersonUntil&#160;</td>
+          <td class="paramname"><em>command</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Follow a person until a stop condition is met (HRIC FOLLOW_PERSON port).
+Inactive while FOLLOW_PERSON_ENABLED is False — kept intact so the
+tracker-based follow can be restored with the flag.
+
+Args:
+    destination (str): Where to stop following. A location name means
+        the robot follows the person until it arrives there;
+        'cancelled' means it follows until the person says a stop
+        keyword (FOLLOW_STOP_KEYWORDS).
+
+Preconditions:
+    - The robot is in front of the person it will follow (the
+      interpreter guarantees a find_person action precedes this one).
+
+Behavior:
+    - Moves the arm to CARRY_POSE (camera upright, tilted slightly
+      higher than nav_pose) and clears the camera-flip flag, so follow
+      starts from the same camera configuration no matter how a
+      previous action left the camera.
+    - Locks the person tracker (track_person), then starts base-follow
+      (nav) and arm-follow (manipulation, keeps the person in frame).
+    - Follows until a stop keyword is heard, the destination is reached
+      (path distance below FOLLOW_ARRIVED_DISTANCE), or the safety cap
+      FOLLOW_MAX_DURATION expires.
+    - If the tracker never locks, degrades to plain navigation to the
+      destination (asking for one when following until cancelled).
+
+Postconditions:
+    - Follow and tracking are off; the arm is back in nav_pose. The
+      robot is where the person stopped it or at the target location.
+</pre> 
 </div>
 </div>
 <a id="acf8d4de5b413d1a0cdbbfb34887b728c" name="acf8d4de5b413d1a0cdbbfb34887b728c"></a>
@@ -576,11 +644,18 @@ Args:
     characteristic (str, optional): Always an empty string.
 
 Behavior:
-    - The robot searches for a person by scanning the area at different angles.
-    - For each detected person, it checks if the person is already known.
-    - If the person is unknown, the robot asks for their name and saves it.
-    - The robot approaches the person with the specified name once found.
-    - If the maximum number of retries is exceeded, a fallback mechanism (`deus_machina`) is triggered.
+    - The robot scans the room (people are filtered to the robot's
+      current room polygon by gpsr_commands) and walks up to each
+      not-yet-visited person, nearest first.
+    - Visited people are remembered by their map position
+      (FIND_PERSON_VISITED_RADIUS) and, best-effort, by face — so the
+      same person is never questioned twice even when face
+      recognition sees no face.
+    - Identification is a closed yes/no question ("Are you &lt;name&gt;?")
+      answered via the yes/no keyword spotter — no open-ended name
+      extraction, which broke on noisy transcriptions.
+    - If nobody matched after FIND_PERSON_MAX_ROUNDS, falls back to
+      asking the target to come over and confirming the same way.
 
 Preconditions:
     - The robot must be at a location where it can search for people.
@@ -618,34 +693,20 @@ Postconditions:
 </div><div class="memdoc">
 
 <p>HRI, Nav, Vision, Manipulation. </p>
-<pre class="fragment">Follow a person until a stop condition is met (HRIC FOLLOW_PERSON port).
+<pre class="fragment">GPSR follow command with physical following disabled
+(FOLLOW_PERSON_ENABLED = False): the robot tells the person it cannot
+follow them, asks for the location they want to go (or reuses the
+commanded destination), and navigates there with the person walking
+along — a guide in place of a follow.
 
 Args:
-    destination (str): Where to stop following. A location name means
-        the robot follows the person until it arrives there;
-        'cancelled' means it follows until the person says a stop
-        keyword (FOLLOW_STOP_KEYWORDS).
-
-Preconditions:
-    - The robot is in front of the person it will follow (the
-      interpreter guarantees a find_person action precedes this one).
-
-Behavior:
-    - Moves the arm to CARRY_POSE (camera upright, tilted slightly
-      higher than nav_pose) and clears the camera-flip flag, so follow
-      starts from the same camera configuration no matter how a
-      previous action left the camera.
-    - Locks the person tracker (track_person), then starts base-follow
-      (nav) and arm-follow (manipulation, keeps the person in frame).
-    - Follows until a stop keyword is heard, the destination is reached
-      (path distance below FOLLOW_ARRIVED_DISTANCE), or the safety cap
-      FOLLOW_MAX_DURATION expires.
-    - If the tracker never locks, degrades to plain navigation to the
-      destination (asking for one when following until cancelled).
+    destination (str): Where the person wanted to be followed to.
+        'cancelled' (follow until told to stop) carries no
+        destination, so the robot asks the person for one.
 
 Postconditions:
-    - Follow and tracking are off; the arm is back in nav_pose. The
-      robot is where the person stopped it or at the target location.
+    - The robot (and, walking with it, the person) is at the
+      destination.
 </pre> 
 </div>
 </div>

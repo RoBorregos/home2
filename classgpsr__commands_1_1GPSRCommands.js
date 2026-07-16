@@ -8,6 +8,7 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "_get_areas", "classgpsr__commands_1_1GPSRCommands.html#ad7734173cd66d7a0f0a9d7e43ddaad5d", null ],
     [ "_highlight_person", "classgpsr__commands_1_1GPSRCommands.html#ad61c88ab073a46e431a99e109e0f491f", null ],
     [ "_person_point", "classgpsr__commands_1_1GPSRCommands.html#a8d6892e5029041591af7432831dce27e", null ],
+    [ "_save_annotated", "classgpsr__commands_1_1GPSRCommands.html#aeb0003228392ced4c89ca0d37b84105b", null ],
     [ "camera_info_callback", "classgpsr__commands_1_1GPSRCommands.html#a64b8721e9a7a6dce509694f4ab033bef", null ],
     [ "count_by_color_callback", "classgpsr__commands_1_1GPSRCommands.html#a26012972d777c04eed5e6049860b7be0", null ],
     [ "count_by_gestures_callback", "classgpsr__commands_1_1GPSRCommands.html#a9f94a1a2ca03d10d612141ea76e667be", null ],
@@ -22,6 +23,7 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "moondream_crop_query", "classgpsr__commands_1_1GPSRCommands.html#a758d3b60afd37459b07c4274205cd1d7", null ],
     [ "publish_image", "classgpsr__commands_1_1GPSRCommands.html#a189b2d11b148acfd29d57196fc37bb0b", null ],
     [ "success", "classgpsr__commands_1_1GPSRCommands.html#a44fd2508682f74bbc718af3bb9550181", null ],
+    [ "_annotated_at", "classgpsr__commands_1_1GPSRCommands.html#a366c21bff2d799dcbd27b330c7cdf346", null ],
     [ "areas", "classgpsr__commands_1_1GPSRCommands.html#a928bee0668cea771ab24a95f6b34ec16", null ],
     [ "areas_client", "classgpsr__commands_1_1GPSRCommands.html#aca43ec4f8dbc009938aed6cf4c7852cc", null ],
     [ "bridge", "classgpsr__commands_1_1GPSRCommands.html#a2bf3849027b0522adbdb37289c178860", null ],
@@ -40,6 +42,7 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "people", "classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2", null ],
     [ "pose_detection", "classgpsr__commands_1_1GPSRCommands.html#a8f89fade140ca424d2ea96a4b38b9fb6", null ],
     [ "pose_gesture_detection_service", "classgpsr__commands_1_1GPSRCommands.html#a4e9ca299b34636b20eae3c1b7f3fba85", null ],
+    [ "save_dir", "classgpsr__commands_1_1GPSRCommands.html#a4c396f532119f40dc3e75e3dc38e1cb5", null ],
     [ "tf_buffer", "classgpsr__commands_1_1GPSRCommands.html#ac5640d419364ee207a47e124541b0fb6", null ],
     [ "tf_listener", "classgpsr__commands_1_1GPSRCommands.html#ade5a5a28fa3bae861f331f25b612756a", null ],
     [ "yolo_client", "classgpsr__commands_1_1GPSRCommands.html#ab8dc1494d1a666e0ca9e963ec7f26e2b", null ]

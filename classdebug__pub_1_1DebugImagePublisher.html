@@ -102,6 +102,8 @@ $(document).ready(function(){initNavTree('classdebug__pub_1_1DebugImagePublisher
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ae63cbf1816f85a254fee047d0da5e2b3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdebug__pub_1_1DebugImagePublisher.html#ae63cbf1816f85a254fee047d0da5e2b3">__init__</a> (self, node, str legacy_topic, str name, float max_hz=5.0, int jpeg_quality=70, callback_group=None)</td></tr>
 <tr class="separator:ae63cbf1816f85a254fee047d0da5e2b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf54ec2b789698a353396e8fc5402022"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdebug__pub_1_1DebugImagePublisher.html#adf54ec2b789698a353396e8fc5402022">has_subscribers</a> (self)</td></tr>
+<tr class="separator:adf54ec2b789698a353396e8fc5402022"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7a516ae69648c953191d28c2946b3532"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classdebug__pub_1_1DebugImagePublisher.html#a7a516ae69648c953191d28c2946b3532">publish</a> (self, frame_bgr)</td></tr>
 <tr class="separator:a7a516ae69648c953191d28c2946b3532"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -180,6 +182,25 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="adf54ec2b789698a353396e8fc5402022" name="adf54ec2b789698a353396e8fc5402022"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf54ec2b789698a353396e8fc5402022">&#9670;&#160;</a></span>has_subscribers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool debug_pub.DebugImagePublisher.has_subscribers </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">True when either the raw or the compressed debug topic is consumed
+(e.g. web_video_server streaming it for the display).</pre> 
+</div>
+</div>
 <a id="a7a516ae69648c953191d28c2946b3532" name="a7a516ae69648c953191d28c2946b3532"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7a516ae69648c953191d28c2946b3532">&#9670;&#160;</a></span>publish()</h2>
 

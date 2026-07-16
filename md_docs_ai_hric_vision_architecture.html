@@ -214,7 +214,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <p><b>Actually required by the HRIC TM:</b> all 6 launched nodes are used. No dead nodes in the launch set (<a class="el" href="namespacepointing__detection.html">pointing_detection</a>, <a class="el" href="namespacegpsr__commands.html">gpsr_commands</a>, etc. correctly excluded).</p>
 <p><b>Mismatches in <code>vision_tasks.services[Task.HRIC]</code> (startup service checks):</b></p><ul>
 <li><code>beverage_location</code> and <code>moondream_query</code> are checked at startup, but the TM never calls <code>find_drink</code>; <code>moondream_query</code> is used only via <code>describe_person</code>.</li>
-<li><code>track_person</code> (SET_TARGET_TOPIC) <b>is used</b> by FOLLOW_PERSON but is registered under <code>Task.HELP_ME_CARRY</code> — HRIC startup never verifies the tracker is up. Add it to the HRIC dict.</li>
+<li>~~<code>track_person</code> (SET_TARGET_TOPIC) is used by FOLLOW_PERSON but was only registered under <code>Task.HELP_ME_CARRY</code>~~ — FIXED: it is now in the <code>Task.HRIC</code> dict, so HRIC startup verifies the tracker is up.</li>
 </ul>
 <p><b>Redundancies / improvement candidates:</b></p><ol type="1">
 <li>Double-loaded weights: <code>yolo11m-pose</code> ×2, <code>yolov8n</code> ×2 (§1). A shared pose service (or <a class="el" href="namespacehric__commands.html">hric_commands</a> reusing the tracker's PoseDetection via a srv) frees VRAM.</li>

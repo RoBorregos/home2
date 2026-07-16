@@ -18,6 +18,7 @@ var classhric__task__manager_1_1HRIC__TM =
     [ "previous_state", "classhric__task__manager_1_1HRIC__TM.html#ac28e194f0e54186d25267bb945c78b8d", null ],
     [ "running_task", "classhric__task__manager_1_1HRIC__TM.html#a38a2f13ce28659b0646f28ac619fbc53", null ],
     [ "seat_angles", "classhric__task__manager_1_1HRIC__TM.html#a3d3e5d28db9aa77b2ef120b0cb704af7", null ],
+    [ "should_follow_person", "classhric__task__manager_1_1HRIC__TM.html#a923e80628e78c4a3812c0ee76b855231", null ],
     [ "state_start_time", "classhric__task__manager_1_1HRIC__TM.html#ae72a9f32f61882565f6cb4ed32c4b262", null ],
     [ "state_times", "classhric__task__manager_1_1HRIC__TM.html#ae1433594c0deaf7d82eb397323c6d9be", null ],
     [ "subtask_manager", "classhric__task__manager_1_1HRIC__TM.html#ad17a18cfb59e03cb469d067395563ddc", null ],

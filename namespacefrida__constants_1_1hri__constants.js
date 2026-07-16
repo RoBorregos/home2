@@ -11,6 +11,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "DISPLAY_IMAGE_TOPIC", "namespacefrida__constants_1_1hri__constants.html#aaa486a9f7f79cd7c69c81ff85d8ba336", null ],
     [ "DISPLAY_MAP_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a3fdac1c86ed416eee896a77aec9c4043", null ],
     [ "DISPLAY_PUBLISHER", "namespacefrida__constants_1_1hri__constants.html#a6b6228c6ea413ec24c0b26890dac3fb5", null ],
+    [ "DOORBELL_ARMED_TOPIC", "namespacefrida__constants_1_1hri__constants.html#af389049cb8421fabf9b65cdd32d4c4fa", null ],
     [ "EI_DETECTION_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a615c08822aa7ff399b5daf93033a00a6", null ],
     [ "EXTRACT_DATA_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31", null ],
     [ "FIND_CLOSEST_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a0795f01b17671ccc4a7411b5e9faf4c9", null ],
