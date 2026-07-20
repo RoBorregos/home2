@@ -294,12 +294,4 @@ trajectories, and lets the operator:
 | `omnidriver` | Holonomic ODrive base | Current | `odrive_serial_twist` (cmd_vel → wheels), `odrive_dashboard` web dashboard, `simple_rx` |
 | `dashgo_driver` | EAI Dashgo diff-drive | Legacy | STM32 serial driver + `ekf.launch.py` odometry fusion; kept for the old diff-drive base |
 
-## Notes
 
-- Navigation reserves dedicated CPU cores (`NAV_CPUSET`, default `0-3`) so the
-  MPPI control loop and SLAM aren't starved by other areas.
-- For multi-machine setups (robot ↔ dev PC), configure CycloneDDS — see the
-  [root README](../README.md#cyclone-dds-setup). `run.sh` picks up the config
-  automatically.
-- Add rosbags for offline simulation under
-  `map_context/config/rosbag/` (see its README) and rebuild the package.
