@@ -115,16 +115,6 @@ sets up USB devices and CycloneDDS, builds `nav_main` and opens a shell:
 ./run.sh navigation
 ```
 
-Rebuild the ROS packages / image when needed:
-
-```bash
-./run.sh navigation --build          # colcon build inside the container
-./run.sh navigation --build-image    # rebuild the Docker image
-./run.sh navigation --clean          # remove build/install/log artifacts
-./run.sh navigation --recreate       # recreate the container
-./run.sh navigation --down           # stop and remove the container
-```
-
 Inside the container the workspace lives at `/workspace` and the repo is mounted
 at `/workspace/src`. To build manually:
 
@@ -249,16 +239,16 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 
 | Service | Type | Purpose |
 | --- | --- | --- |
-| `/navigation/go_to_map_area` | `MoveLocation` | Navigate to a named area/sublocation from `areas.json` |
-| `/navigation/go_to_pose` | `GoToPose` | Navigate to an arbitrary map-frame pose |
-| `/navigation/approach_point` | `ApproachPoint` | Approach a person/object seen by vision at a standoff |
-| `/navigation/get_robot_pose` | `GetRobotPose` | Current robot pose from TF (map → base_link) |
-| `/navigation/query_path` | `NavQuery` | Path distance between two areas without moving |
+| `/navigation/go_to_map_area` | `MoveLocation` | Go to a named area/sublocation from `areas.json` |
+| `/navigation/go_to_pose` | `GoToPose` | Go to a map-frame pose |
+| `/navigation/approach_point` | `ApproachPoint` | Approach a point at a standoff distance |
+| `/navigation/get_robot_pose` | `GetRobotPose` | Current pose from TF (map → base_link) |
+| `/navigation/query_path` | `NavQuery` | Path distance between two areas (no motion) |
 | `/navigation/dock_table` | `DockTable` | Dock to the surface in front (with offset) |
-| `/navigation/is_door_open` | `CheckDoor` | Detect whether the door ahead is open via lidar |
-| `/navigation/areas_json` | `MapAreas` | Return the tagged `areas.json` as a string |
-| `/navigation/follow_person` | `SetBool` | Start/stop person-following navigation |
-| `/navigation/resume_nav` | `Empty` | Manually resume paused SLAM + Nav2 |
+| `/navigation/is_door_open` | `CheckDoor` | Door open/closed via lidar |
+| `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |
+| `/navigation/follow_person` | `SetBool` | Start/stop person following |
+| `/navigation/resume_nav` | `Empty` | Resume paused Nav2 (+ RTABMap on the legacy dashgo) |
 
 ### Example service calls
 
