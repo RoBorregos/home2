@@ -97,9 +97,9 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <p>&zwj;<b>Purpose of this file.</b> This is a context primer for AI agents (Claude) and new contributors working on <b>navigation</b> and its <b>integration with the task manager</b>. Read this <em>instead of</em> re-discovering the stack from scratch every session. It is intentionally dense: service/action/topic/file names are the high-value parts — use them as search anchors (<code>grep</code>/<code>Read</code>) to jump straight to the code.</p>
 <p>Scope: <code>navigation/</code>, <code>task_manager/</code>, the <code>frida_interfaces/navigation</code> + <code>frida_interfaces/task_manager</code> contracts, and how everything is launched. Last mapped: 2026-06 against branch <code>Hric_flag</code>. </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md184"></a>
+<h1><a class="anchor" id="autotoc_md198"></a>
 &lt;/blockquote&gt;</h1>
-<h1><a class="anchor" id="autotoc_md185"></a>
+<h1><a class="anchor" id="autotoc_md199"></a>
 0. TL;DR (read this first)</h1>
 <ul>
 <li><b>FRIDA</b> is a RoboCup@Home service robot. The codebase is split into <b>Areas</b>: <code>vision</code>, <code>hri</code>, <code>navigation</code>, <code>manipulation</code>, and <code>integration</code> (the task manager). Each area is a set of ROS 2 packages that runs in its <b>own Docker container</b> and talks to the others over <b>CycloneDDS</b> (optionally zero-copy SHM via iceoryx/RouDi).</li>
@@ -134,7 +134,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <div class="line">│  Drivers: omnidriver | dashgo_driver · sllidar · ira_laser_tools    │</div>
 <div class="line">└─────────────────────────────────────────────────────────────────────┘</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md187"></a>
+<h1><a class="anchor" id="autotoc_md201"></a>
 1. The layered control model</h1>
 <p>There is <b>no central blackboard or global state machine across areas</b>. Control is:</p>
 <ol type="1">
@@ -156,7 +156,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <div class="line"><span class="keyword">def </span>move_to_location(self, location, sublocation): ...</div>
 </div><!-- fragment --><p><b>Logging:</b> use <code>CLog</code> (<code><a class="el" href="colored__logger_8py.html">task_manager/utils/colored_logger.py</a></code>), not <code>print</code>. <code>CLog.nav(node, "INFO"/"SUCCESS"/"WARN"/"ERROR", msg)</code> — nav is cyan, manip yellow, vision magenta, hri green, fsm white.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md189"></a>
+<h1><a class="anchor" id="autotoc_md203"></a>
 2. ⭐ The Task-Manager ↔ Navigation contract (the connection)</h1>
 <p>This is the single most important section. Everything the task manager can ask navigation to do goes through **<code>NavigationTasks</code>** (<code><a class="el" href="nav__tasks_8py.html">task_manager/task_manager/subtask_managers/nav_tasks.py</a></code>). It opens exactly <b>five service clients</b>, whose names come from <code><a class="el" href="namespacefrida__constants_1_1navigation__constants.html">frida_constants.navigation_constants</a></code>:</p>
 <table class="markdownTable">
@@ -180,10 +180,10 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li>All five methods are <code>@mockable</code>/<code>@service_check</code>-wrapped, so a task can run with <code>mock_data=True</code> and navigation stubbed out.</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md191"></a>
+<h1><a class="anchor" id="autotoc_md205"></a>
 3. &lt;tt&gt;nav_central&lt;/tt&gt; — the navigation orchestrator</h1>
 <p>File: <code><a class="el" href="nav__central_8py.html">navigation/packages/nav_main/scripts/nav_central.py</a></code> (node class <code>Nav_Central</code>). It is the <b>only</b> thing other areas talk to. It wraps Nav2 + SLAM, monitors health, auto-restarts failed components, and chooses base/backend from launch params.</p>
-<h2><a class="anchor" id="autotoc_md192"></a>
+<h2><a class="anchor" id="autotoc_md206"></a>
 3.1 Server API it exposes (the "north" interface to the rest of the robot)</h2>
 <p><b>Services</b> </p><table class="markdownTable">
 <tr class="markdownTableHead">
@@ -218,7 +218,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li><code>INITIAL_POSE_TOPIC</code> (<code>PoseWithCovarianceStamped</code>) — initial pose from RViz / <code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>.</li>
 <li><code>SCAN_TOPIC</code> = <code>/scan</code> (<code>LaserScan</code>) — used by the door check.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md193"></a>
+<h2><a class="anchor" id="autotoc_md207"></a>
 3.2 Clients it calls (the "south" interface to the stack it manages)</h2>
 <ul>
 <li><b>SLAM control:</b> <code>RTAB_PAUSE_SERVICE</code> / <code>RTAB_RESUME_SERVICE</code> (dashgo/rtabmap path).</li>
@@ -226,11 +226,11 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li><b>Table docking:</b> <code>DOCK_SERVICE</code> / <code>UNDOCK_SERVICE</code> (<code>std_srvs/Trigger</code>) on the <code><a class="el" href="namespacetable__docker.html">table_docker</a></code> node, plus <code>/table_docker/set_parameters</code> to set the per-location offset. <code><a class="el" href="namespacenav__central.html">nav_central</a></code> <b>auto-undocks before any new goal</b> (<code>_retreat_if_docked</code>).</li>
 <li><b>Costmap clearing:</b> <code>/global_costmap/clear_entirely_global_costmap</code> and <code>/local_costmap/clear_entirely_local_costmap</code> (recovery).</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md194"></a>
+<h2><a class="anchor" id="autotoc_md208"></a>
 3.3 Self-healing / monitoring</h2>
 <p>A background monitor (<code>_monitoring</code>) watches the <b>TF tree</b> (baseline'd at startup): static frames must keep being published and dynamic frames must stay fresh (≤ ~2 s). If a required frame (e.g. <code>link_eef</code>, the end-effector) or a sensor disappears, it <b>pauses Nav2</b> (and rtabmap) and resumes when things recover, instead of letting Nav2 plan on stale data. This is why navigation "freezes then continues" sometimes — it is deliberate, not a crash.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md196"></a>
+<h1><a class="anchor" id="autotoc_md210"></a>
 4. Dual base / dual backend (one node, two robots)</h1>
 <p>Selected by launch args <code>default_base:={omnibase|dashgo}</code> and <code>nav_type:={2d|3d}</code>.</p>
 <table class="markdownTable">
@@ -259,12 +259,12 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li>cpuset partition is what fixed the earlier freeze-then-stutter behaviour. </li>
 </ul>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md197"></a>
+<h1><a class="anchor" id="autotoc_md211"></a>
 &lt;/blockquote&gt;</h1>
-<h1><a class="anchor" id="autotoc_md198"></a>
+<h1><a class="anchor" id="autotoc_md212"></a>
 5. Navigation packages &amp; key files</h1>
 <p>All under <code>navigation/packages/</code>. Ignore <code>build/ install/ log/ __pycache__/</code>.</p>
-<h2><a class="anchor" id="autotoc_md199"></a>
+<h2><a class="anchor" id="autotoc_md213"></a>
 5.1 &lt;tt&gt;nav_main&lt;/tt&gt; (the core package)</h2>
 <p><b>Scripts</b> (<code>nav_main/scripts/</code>)</p><ul>
 <li><code><a class="el" href="nav__central_8py.html">nav_central.py</a></code> — orchestrator (see §3). <b>Start here for any nav change.</b></li>
@@ -292,7 +292,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li><code>navigate_adaptive_goal.xml</code> — uses a <code>GoalUpdater</code> (fed by <code><a class="el" href="namespaceadaptive__goal__publisher.html">adaptive_goal_publisher</a></code>) for blocked-goal scenarios.</li>
 <li><code>follow_dynamic_point.xml</code> — person-following (dynamic point goal).</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md200"></a>
+<h2><a class="anchor" id="autotoc_md214"></a>
 5.2 Driver / support packages</h2>
 <ul>
 <li><code>omnidriver/</code> — ODrive bridge for the holonomic base; consumes <code>cmd_vel</code> (TwistStamped), publishes <code>/odrive/odom</code>, <code>/odrive/imu</code>.</li>
@@ -302,15 +302,15 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li><code>map_context/</code> — <code><a class="el" href="nav__ui_8py.html">nav_ui.py</a></code>: RViz-side map annotation UI; owns the <b>areas</b> JSON, serves static maps, and edits keepout masks.</li>
 <li><code>PlayStation-JoyInterface-ROS2/</code> *(submodule)* — DualShock teleop (<code>/joy</code> → <code>cmd_vel</code>).</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md201"></a>
+<h2><a class="anchor" id="autotoc_md215"></a>
 5.3 TF tree (omnibase)</h2>
 <div class="fragment"><div class="line">map ── (slam_toolbox) ──► odom ── (EKF) ──► base_link ──► {laser, camera_link, link_eef, ...}</div>
 </div><!-- fragment --><p> <code>link_eef</code> (arm end-effector) is monitored by <code><a class="el" href="namespacenav__central.html">nav_central</a></code>; if it vanishes nav pauses.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md203"></a>
+<h1><a class="anchor" id="autotoc_md217"></a>
 6. How it is built, launched &amp; deployed</h1>
 <p>Everything is containerized; <code>./run.sh</code> (root) + <code>lib.sh</code> orchestrate it. <b>Never run nodes natively for normal use — go through <code>run.sh</code>.</b></p>
-<h2><a class="anchor" id="autotoc_md204"></a>
+<h2><a class="anchor" id="autotoc_md218"></a>
 6.1 &lt;tt&gt;run.sh&lt;/tt&gt;</h2>
 <ul>
 <li><b>Platform autodetect:</b> <code>/etc/nv_tegra_release</code> → <code>l4t</code> (Jetson); else <code>nvidia-smi</code> → <code>cuda</code>; else <code>cpu</code>. Picks the base compose <code>docker/{cpu,cuda,l4t}.yaml</code> and sets <code>DOCKER_RUNTIME</code> (<code>nvidia</code> for cuda/l4t, <code>runc</code> for cpu).</li>
@@ -319,7 +319,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li><b>Competition tasks</b> (<code>--hric --ppc --gpsr --dlc --restaurant --finals</code>): launch <em>all</em> needed areas in parallel inside a <code>screen</code> session named <code>frida</code> (<code>screen -r frida</code> to attach; remote areas like HRI are SSH'd to the other Orin).</li>
 <li><b>Common flags:</b> <code>--build</code> (colcon build inside container), <code>--build-image</code> (rebuild image), <code>--recreate</code>, <code>-d</code> (detached); global <code>--stop</code> / <code>--down</code> / <code>--clean</code>.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md205"></a>
+<h2><a class="anchor" id="autotoc_md219"></a>
 6.2 Navigation container specifics (&lt;tt&gt;docker/navigation/&lt;/tt&gt;)</h2>
 <ul>
 <li>Mounts the lidar + base serial devices (e.g. <code>/dev/ttyUSBlidar2</code>, <code>/dev/ttyUSBStm32</code>); <code>setup-USB.sh</code> stabilizes the device symlinks first.</li>
@@ -327,7 +327,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li>Reads <code>MAP_NAME</code> (default <code>lab_23_march.db</code>; set via <code>./run.sh --update-map &lt;file&gt;</code>).</li>
 <li>Sub-flags pick the launch file: <code>--mapping</code> → <code><a class="el" href="mapping_8launch_8py.html">mapping.launch.py</a></code>, <code>--move</code> → <code><a class="el" href="omni__basics_8launch_8py.html">omni_basics.launch.py</a></code> (drivers only), default/task → <code><a class="el" href="general__navigation_8launch_8py.html">general_navigation.launch.py</a></code>.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md206"></a>
+<h2><a class="anchor" id="autotoc_md220"></a>
 6.3 DDS / inter-process comms</h2>
 <ul>
 <li><b>CycloneDDS</b> is the middleware (<code>cyclonedds.xml</code>; interface set by <code>scripts/setup_cyclonedds.sh</code>, stored in <code>/etc/cyclonedds.env</code>).</li>
@@ -335,24 +335,24 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <li>All containers use <code>network_mode: host</code> + <code>ipc: host</code> so DDS/SHM crosses container and machine boundaries.</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md208"></a>
+<h1><a class="anchor" id="autotoc_md222"></a>
 7. Custom interface reference (&lt;tt&gt;frida_interfaces/&lt;/tt&gt;)</h1>
-<h2><a class="anchor" id="autotoc_md209"></a>
+<h2><a class="anchor" id="autotoc_md223"></a>
 &lt;tt&gt;frida_interfaces/navigation/&lt;/tt&gt;</h2>
 <ul>
 <li><b>srv</b>: <code>MoveLocation</code> (<code>location, sublocation → success, error</code>), <code>NavQuery</code> (<code>location_a, sublocation_a, location_b, sublocation_b → success, distance_meters, error</code>), <code>DockTable</code> (<code>offset → success, error</code>), <code>MapAreas</code> (<code>→ areas</code> JSON string).</li>
 <li><b>action</b>: <code>Move</code> (<code>location → success, feedback</code>) — <em>defined but the task-manager bridge uses the <code>MoveLocation</code> service instead.</em></li>
 <li><b>msg</b>: <code>MonitorReport</code> (<code>NodeStatus[]</code>), <code>NodeStatus</code> (<code>name, cpu_usage, memory_usage, gpu_usage</code>).</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md210"></a>
+<h2><a class="anchor" id="autotoc_md224"></a>
 &lt;tt&gt;frida_interfaces/task_manager/&lt;/tt&gt; (srv only)</h2>
 <p><code>CheckDoor</code> (<code>→ status</code>), <code>FollowFace</code> (<code>follow_face → success</code>), <code>HearMultiThread</code> (<code>start/stop → stopped</code>), <code>PointTransformation</code> (<code>point, target_frame → transformed_point</code>), <code>PositionGet</code> (<code>→ posex, posey, status</code>), <code>ReturnLocation</code> (<code>→ location, nearest_locations[]</code>), <code>WaitForControllerInput</code> (<code>button, timeout → success</code>).</p>
 <blockquote class="doxtable">
 <p>&zwj;The other interface groups (<code>hri/</code>, <code>vision/</code>, <code>manipulation/</code>) are large (~20–28 srv each) and out of scope here; browse them when touching those areas. <b>Always</b> prefer these custom interfaces over ad-hoc messages (project convention). </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md211"></a>
+<h1><a class="anchor" id="autotoc_md225"></a>
 &lt;/blockquote&gt;</h1>
-<h1><a class="anchor" id="autotoc_md212"></a>
+<h1><a class="anchor" id="autotoc_md226"></a>
 8. Where to start for common changes</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -376,7 +376,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Run it   </td><td class="markdownTableBodyNone"><code>./run.sh navigation</code> (+ <code>./run.sh integration --&lt;task&gt;</code>)   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md213"></a>
+<h1><a class="anchor" id="autotoc_md227"></a>
 9. Conventions &amp; gotchas</h1>
 <ul>
 <li><b>Don't talk to Nav2 directly from outside navigation</b> — use the 5 services in §2.</li>
@@ -388,7 +388,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_navigation_architecture.htm
 </ul>
 <hr  />
 <p><em>See also: <code><a class="el" href="architecture_8md.html">docs/ai/architecture.md</a></code>, <code><a class="el" href="tech__stack_8md.html">docs/ai/tech_stack.md</a></code>, <code><a class="el" href="coding__standards_8md.html">docs/ai/coding_standards.md</a></code>, <code><a class="el" href="ROS2_8md.html">docs/ROS2.md</a></code>, <code><a class="el" href="cyclonedds-setup_8md.html">docs/cyclonedds-setup.md</a></code>, <code><a class="el" href="nav_8md.html">docs/Run/Areas/nav.md</a></code>.</em></p>
-<h1><a class="anchor" id="autotoc_md215"></a>
+<h1><a class="anchor" id="autotoc_md229"></a>
 Addendum (2026-07-03): point-based navigation services</h1>
 <p>Beyond the original 5-service contract, <code><a class="el" href="namespacenav__central.html">nav_central</a></code> also serves (constants in <code><a class="el" href="navigation__constants_8py.html">navigation_constants.py</a></code>, srvs in <code>frida_interfaces/navigation/srv/</code>):</p>
 <ul>
@@ -403,7 +403,7 @@ Addendum (2026-07-03): point-based navigation services</h1>
 </ul>
 </li>
 </ul>
-<h1><a class="anchor" id="autotoc_md216"></a>
+<h1><a class="anchor" id="autotoc_md230"></a>
 Addendum (2026-07-03): washing-machine insert-and-pick (doing_laundry)</h1>
 <p>Ported/adapted from branch <code>move-centroid-newapr</code> (that branch's own <code>RelativeMove.srv</code> was never registered — superseded by <code>MoveRelative</code> above). Flow in <code>doing_laundry_task_manager.pick_clothes_in_washing_machine</code>:</p><ol type="1">
 <li><b>Square up</b>: <code>nav.dock_table(offset=WM_ALIGN_OFFSET)</code> — <a class="el" href="namespacetable__docker.html">table_docker</a> RANSAC-fits the machine front and aligns perpendicular at a standoff (alignment only, no approach).</li>
@@ -412,7 +412,7 @@ Addendum (2026-07-03): washing-machine insert-and-pick (doing_laundry)</h1>
 <li><b>Insert</b>: <code>move_relative(dx=cap, stop_at_front_distance=WM_TARGET_LIDAR_DISTANCE)</code> — straight drive, lidar depth stop (see above).</li>
 <li><b>Grab</b>: <code>rotate_wrist_pitch(+90°)</code>, close gripper, <code>-90°</code>, back out <code>traveled</code>. Calibrate <code>WM_TARGET_LIDAR_DISTANCE</code> on the robot (park at perfect depth, read the /scan front sector). Test: <code>task_manager/scripts/test/test_move_to_washing_machine.py</code>.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md217"></a>
+<h1><a class="anchor" id="autotoc_md231"></a>
 Addendum (2026-07-03): wall_aligner — precision washing-machine align/close</h1>
 <p><code>navigation/packages/nav_main/scripts/wall_aligner.py</code> (launched with the omnibase set in <code><a class="el" href="general__navigation_8launch_8py.html">general_navigation.launch.py</a></code>). <b>Independent of <a class="el" href="namespacetable__docker.html">table_docker</a></b> and philosophically opposite: <a class="el" href="namespacetable__docker.html">table_docker</a> fits ONCE and locks the face in odom; wall_aligner locks nothing — every control cycle it re-fits the NEAREST straight segment the lidar sees in front (cluster the front-sector scan by point gaps → PCA line fit per cluster → keep straight <code>rms≤0.015</code> and long <code>≥0.30 m</code> clusters → take the closest) and servos on that live fit. Endings are verified with a stationary multi-scan median fit → cm/sub-degree repeatability. Scan sub uses sensor QoS (/scan is BEST_EFFORT).</p>
 <p>Two services (constants in <code><a class="el" href="navigation__constants_8py.html">navigation_constants.py</a></code>, srvs in <code>frida_interfaces/navigation/srv/</code>):</p><ul>
@@ -420,7 +420,7 @@ Addendum (2026-07-03): wall_aligner — precision washing-machine align/close</h
 <li><code>WALL_CLOSE_SERVICE</code> (<code>CloseToWall</code>) — creep (max 0.06 m/s, bidirectional) until the perpendicular distance to the live fitted line equals the request (<code>dist_tol</code> 0.008 m), re-squaring yaw on the live fit every cycle and holding lateral position on odom. Gates: aborts if &gt;~5° off square (align first), <code>max_travel</code> cap, <code>min_distance</code> floor, raw front-beam hard stop.</li>
 </ul>
 <p>Task side (<code><a class="el" href="nav__tasks_8py.html">nav_tasks.py</a></code>): <code>nav.align_washing_machine(center=False)</code> → <code>(Status, {"distance", "yaw_error", "segment_length"})</code>; <code>nav.close_washing_machine(distance, max_travel=0.0)</code> → <code>(Status, {"traveled", "final_distance"})</code> (signed traveled → back out with <code>move_relative(dx=-traveled)</code>). Test: <code>task_manager/scripts/test/test_wall_align.py</code> (no arg = align + print calibration distance; arg = close target). All tolerances/speeds are live ROS params on <code>wall_aligner</code>. RViz markers: <code>/wall_aligner/markers</code>. New srvs ⇒ rebuild the interface cache (<code>./run.sh frida_interfaces</code>) and restart nav + integration containers.</p>
-<h1><a class="anchor" id="autotoc_md218"></a>
+<h1><a class="anchor" id="autotoc_md232"></a>
 Addendum (2026-07-03): live-obstacle toggle for carried loads</h1>
 <p><code>SET_OBSTACLE_AVOIDANCE_SERVICE</code> = <code>/navigation/set_obstacle_avoidance</code> (<code>std_srvs/SetBool</code>, served by <code><a class="el" href="namespacenav__central.html">nav_central</a></code>). <code>data=False</code> sets <code>obstacle_layer.enabled=false</code> + <code>rgbd_obstacle_layer.enabled=false</code> on <b>both</b> costmaps via their <code>set_parameters</code> services and clears them; <code>data=True</code> restores. The <b>static layer stays on</b>, so mapped walls/furniture are still avoided — the robot only goes blind to LIVE obstacles. Use case: an object carried by the arm (laundry basket/bag) hangs in the lidar/ZED view and gets marked as an obstacle glued to the robot, boxing the planner in. Task side: <code>nav.set_obstacle_avoidance(False)</code> before a carry, <b>always</b> re-enable after (see <code>doing_laundry_task_manager.navigate_holding</code>, which wraps the carry in try/finally). Changing <code><a class="el" href="ApproachPoint_8srv.html">ApproachPoint.srv</a></code> fields requires rebuilding the interface cache: <code>./run.sh frida_interfaces</code>, then restart the nav + integration containers. </p>
 </div></div><!-- contents -->

@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_coding_standards.html','');
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>To maintain a high-quality, maintainable codebase, all contributions should adhere to the following standards.</p>
-<h1><a class="anchor" id="autotoc_md168"></a>
+<h1><a class="anchor" id="autotoc_md182"></a>
 ROS 2 Node Structure (Python)</h1>
 <p>When writing Python nodes, follow the modular structure demonstrated in <code><a class="el" href="ROS2_8md.html">docs/ROS2.md</a></code>:</p>
 <ul>
@@ -103,7 +103,7 @@ ROS 2 Node Structure (Python)</h1>
 <li><b>Callbacks</b>: Keep callback logic concise. Delegate complex processing to helper methods.</li>
 <li><b>Logger</b>: Use the built-in node logger (<code>self.get_logger()</code>) instead of <code>print()</code>.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md169"></a>
+<h2><a class="anchor" id="autotoc_md183"></a>
 Example Node Pattern</h2>
 <div class="fragment"><div class="line"><span class="keyword">import</span> rclpy</div>
 <div class="line"><span class="keyword">from</span> <a class="code hl_namespace" href="namespacerclpy_1_1node.html">rclpy.node</a> <span class="keyword">import</span> Node</div>
@@ -124,23 +124,23 @@ Example Node Pattern</h2>
 <div class="line">        node.destroy_node()</div>
 <div class="line">        rclpy.shutdown()</div>
 <div class="ttc" id="anamespacerclpy_1_1node_html"><div class="ttname"><a href="namespacerclpy_1_1node.html">rclpy.node</a></div></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md170"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md184"></a>
 Interface Usage</h1>
 <p>Always prefer using the custom messages, services, and actions defined in the **<code>frida_interfaces</code>** package for robot-specific interactions. Reference <code><a class="el" href="interfaces_8md.html">docs/interfaces.md</a></code> for existing definitions.</p>
-<h1><a class="anchor" id="autotoc_md171"></a>
+<h1><a class="anchor" id="autotoc_md185"></a>
 Tooling &amp; Quality Control</h1>
-<h2><a class="anchor" id="autotoc_md172"></a>
+<h2><a class="anchor" id="autotoc_md186"></a>
 Formatting</h2>
 <ul>
 <li><b>Ruff</b>: This project uses <code>ruff</code> for Python linting and formatting. Ensure your code passes all ruff checks.</li>
 <li><b>Pre-commit Hooks</b>: Always run <code>pre-commit install</code> to set up automated checks (ruff, linting, etc.) before committing.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md173"></a>
+<h2><a class="anchor" id="autotoc_md187"></a>
 Type Hints</h2>
 <ul>
 <li>Use Python type hints wherever possible to improve code clarity and enable better IDE/AI assistance.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md174"></a>
+<h2><a class="anchor" id="autotoc_md188"></a>
 Documentation</h2>
 <ul>
 <li>Provide docstrings for all classes and public methods following a consistent format (e.g., Google or NumPy style). </li>

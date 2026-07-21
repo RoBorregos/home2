@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_restaurant_task.html',''); 
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>Read this before touching <code><a class="el" href="restaurant__task__manager_8py.html">restaurant_task_manager.py</a></code> or the restaurant vision/nav pieces. Rulebook: <code>master.pdf</code> §5.5 (15 min, unknown venue, single restart, any contact with people/furniture = e-stop, pre-mapping = disqualification).</p>
-<h1><a class="anchor" id="autotoc_md220"></a>
+<h1><a class="anchor" id="autotoc_md234"></a>
 Task flow (one cycle per calling customer)</h1>
 <div class="fragment"><div class="line">WAIT_FOR_BUTTON → START (save bar/origin pose)</div>
 <div class="line">→ WAIT_FOR_CALL      camera pan sweep [0,-45,45] + omni in-place rotations (120°×2)</div>
@@ -113,7 +113,7 @@ Task flow (one cycle per calling customer)</h1>
 <div class="line">→ DELIVER_ORDER      per item: pick at bar → carry_pose → saved approach_pose or</div>
 <div class="line">                     approach_point → dock → place; bar round-trip between items</div>
 <div class="line">→ back to WAIT_FOR_CALL (cycle state reset) — loops until the operator stops it.</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md221"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md235"></a>
 Contracts used (all through subtask managers)</h1>
 <ul>
 <li><b>nav</b> (<code><a class="el" href="namespacenav__central.html">nav_central</a></code>): <code>GetRobotPose</code>, <code>GoToPose</code>, <code>ApproachPoint</code>, <code>DockTable</code> (all registered under <code>Task.RESTAURANT</code> in <code><a class="el" href="nav__tasks_8py.html">nav_tasks.py</a></code>; blocking spins use <code>NAV_GOAL_TIMEOUT</code> = 90 s so a dead nav service can't hang the FSM).</li>
@@ -121,7 +121,7 @@ Contracts used (all through subtask managers)</h1>
 <li><b>hri</b>: <code>take_order()</code> (asks 2 items, confirms each, returns partial <code>[first]</code> if the second fails), display via <code>publish_display_topic</code>.</li>
 <li><b>manipulation</b>: <code>carry_pose</code> (drive), <code>table_stare</code> (pick/place), <code>pan_to</code>.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md222"></a>
+<h1><a class="anchor" id="autotoc_md236"></a>
 Key invariants (things that will break silently if undone)</h1>
 <ol type="1">
 <li><b>Map frame at scan time.</b> Detections are camera-frame <code>PointStamped</code> with stamp 0 (= "latest" TF). They are only valid while the robot is still at the detection pose — <code>SCAN_TABLES</code> converts to map immediately; <code>look_at()</code> recomputes bearings from map points at use time. Never store camera-frame points across a navigation.</li>
@@ -130,7 +130,7 @@ Key invariants (things that will break silently if undone)</h1>
 <li><b>Display is an MJPEG stream</b> (web_video_server): single-shot image publishes are invisible. <code><a class="el" href="namespacerestaurant__commands.html">restaurant_commands</a></code> republishes the annotated tables image at 10 Hz; <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code> republishes at 10 Hz on <code>/vision/customer</code> a side-by-side composite of ALL confirmed callers (scored: detect calling customer ×2), and labels every caller in the full frame on the tracker topic.</li>
 <li><b>Docking</b>: always through the task manager's <code>_dock_to_table()</code> — it tucks the arm in <code>nav_pose</code> first (arm must be inside the footprint at the 0.32 m dock offset), then <code>dock_table(offset=0.32)</code>.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md223"></a>
+<h1><a class="anchor" id="autotoc_md237"></a>
 False-customer filtering (public raising phones in the recording zone)</h1>
 <p>Layered in <code><a class="el" href="customer__node_8py.html">customer_node.py</a></code> + task manager:</p><ul>
 <li>range gate <code>max_customer_range</code> (param, default 5 m) + depth validity;</li>
@@ -139,16 +139,16 @@ False-customer filtering (public raising phones in the recording zone)</h1>
 <li>two-hit persistence (task manager sweep);</li>
 <li>optional <code>restrict_search_sector</code> param on the task manager node: reject detections behind the bar's initial facing (enable on site if the public zone is behind the start pose).</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md224"></a>
+<h1><a class="anchor" id="autotoc_md238"></a>
 Venue tuning params (task manager node, set with &lt;tt&gt;ros2 param set&lt;/tt&gt;)</h1>
 <ul>
 <li><code>bar_return_yaw_deg</code> (default 180): heading when arriving back at the bar, degrees CCW relative to the START orientation — 180 turn around, 90 face left, -90 face right, 0 face as started. Pick per venue by where the barman stands.</li>
 <li><code>restrict_search_sector</code> (default false): see above.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md225"></a>
+<h1><a class="anchor" id="autotoc_md239"></a>
 Run images</h1>
 <p>Confirmed-caller frames/crops and table-scan images are saved to <code>/workspace/src/restaurant_runs/</code> (= <code>&lt;repo&gt;/restaurant_runs/</code> on the host, gitignored; <code>save_dir</code> param on both vision nodes). They double as referee evidence — the rulebook grants partial points for clearly identifying a detected caller even if the table is never reached.</p>
-<h1><a class="anchor" id="autotoc_md226"></a>
+<h1><a class="anchor" id="autotoc_md240"></a>
 Known TODOs / verify on the robot</h1>
 <ul>
 <li><code>/point_cloud</code> must actually be published by the ZED bring-up — without it the costmap has NO tabletop protection (invisible failure; lidar covers most arena furniture but not restaurant tables).</li>

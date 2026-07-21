@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <blockquote class="doxtable">
 <p>&zwj;🖼 <b>Full vision-area visual diagram</b> (all packages/tasks, not just HRIC): <a href="diagrams/vision_architecture.svg"><code>diagrams/vision_architecture.svg</code></a> / <a href="diagrams/vision_architecture.png"><code>.png</code></a> </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md176"></a>
+<h1><a class="anchor" id="autotoc_md190"></a>
 1. What runs for HRIC (launch set)</h1>
 <p><code><a class="el" href="hric__launch_8py.html">vision/packages/vision_general/launch/hric_launch.py</a></code> starts <b>6 nodes</b> (vision container). The Moondream gRPC server runs in its own container (<code>home2-moondream-server</code>), the ZED camera in <code>home2-zed</code>.</p>
 <table class="markdownTable">
@@ -121,7 +121,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <li><code>yolov8n</code>: loaded by <b><a class="el" href="namespacetracker__node.html">tracker_node</a></b> <em>and</em> <b><a class="el" href="namespacemoondream__node.html">moondream_node</a></b> (person cropping).</li>
 <li>SWIN ReID loads in tracker even though re-acquisition is still a TODO.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md177"></a>
+<h1><a class="anchor" id="autotoc_md191"></a>
 2. Camera/data plumbing</h1>
 <div class="fragment"><div class="line">home2-zed ──CAMERA_TOPIC(raw)──┬─▶ image_orienter ──IMAGE_ORIENTED_TOPIC──┬─▶ face_recognition</div>
 <div class="line">          ──DEPTH_IMAGE_TOPIC──┤        ▲                                 └─▶ hric_commands</div>
@@ -130,7 +130,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <div class="line">                               ├─▶ tracker_node   (subscribes RAW + rotation, flips internally)</div>
 <div class="line">                               └─▶ moondream_node (subscribes RAW, NO rotation handling ⚠)</div>
 </div><!-- fragment --><p>⚠ <code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> consumes the <b>raw</b> camera topic with no rotation compensation. Today this is safe only because <code>describe_person</code> runs in SAVE_FACE (camera upright); any future moondream call while carrying the bag (camera at 180°) would query upside-down frames.</p>
-<h1><a class="anchor" id="autotoc_md178"></a>
+<h1><a class="anchor" id="autotoc_md192"></a>
 3. FSM state → subtask call → interface → node → model</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -161,7 +161,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <td class="markdownTableBodyNone">(unused by TM)   </td><td class="markdownTableBodyNone"><code>get_person_name()</code>   </td><td class="markdownTableBodyNone">PERSON_LIST/PERSON_NAME topics   </td><td class="markdownTableBodyNone">face_recognition   </td><td class="markdownTableBodyNone">InsightFace   </td></tr>
 </table>
 <p>Non-vision areas per state (for context): HRI (<code>say</code>, <code>ask_and_confirm</code> STT/LLM, <code>interpret_keyword</code> stop-words, display topics, door events), Manipulation (<code>follow_face</code>, <code>move_to_position</code>, <code>pan_to</code>, <code>point</code>, <code>go_to_hand</code>, gripper, <code>place_on_floor</code>, <code>follow_person</code>), Nav (<code>move_to_location</code>, <code>follow_person</code>).</p>
-<h1><a class="anchor" id="autotoc_md179"></a>
+<h1><a class="anchor" id="autotoc_md193"></a>
 4. Full connection diagram</h1>
 <div class="fragment"><div class="line">flowchart LR</div>
 <div class="line">    subgraph TM[&quot;home2-integration: hric_task_manager (FSM)&quot;]</div>
@@ -209,7 +209,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <div class="line">    FR -.-&gt;|FOLLOW_TOPIC Point| ARM[manipulation follow_face]</div>
 <div class="line"> </div>
 <div class="line">    ZED[home2-zed] -.-&gt;|raw image+depth+info| IO &amp; TRK &amp; MD &amp; HC &amp; FR</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md180"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md194"></a>
 5. Needed vs. loaded — findings</h1>
 <p><b>Actually required by the HRIC TM:</b> all 6 launched nodes are used. No dead nodes in the launch set (<a class="el" href="namespacepointing__detection.html">pointing_detection</a>, <a class="el" href="namespacegpsr__commands.html">gpsr_commands</a>, etc. correctly excluded).</p>
 <p><b>Mismatches in <code>vision_tasks.services[Task.HRIC]</code> (startup service checks):</b></p><ul>
@@ -225,7 +225,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <li>Hardcoded <code>"/vision/face_recognition/active"</code> topic string in both <a class="el" href="vision__tasks_8py.html">vision_tasks.py</a> and <a class="el" href="face__recognition__node_8py.html">face_recognition_node.py</a> — move to <a class="el" href="namespacefrida__constants.html">frida_constants</a>.</li>
 </ol>
 <p><b>Test harness:</b> <code><a class="el" href="test__hric__vision_8py.html">task_manager/scripts/test/test_hric_vision.py</a></code> exercises exactly the §3 call sequence (vision only, no nav/manip/HRI), validates every return is a proper <code>(Status, ...)</code>, and supports <code>mock_data</code>/<code>steps</code> params.</p>
-<h1><a class="anchor" id="autotoc_md181"></a>
+<h1><a class="anchor" id="autotoc_md195"></a>
 6. Active-task launch audit (2026-07-02)</h1>
 <p>Active task managers: <b>gpsr, <a class="el" href="namespacedoing__laundry.html">doing_laundry</a> (&ndash;dlc), hric, restaurant, <a class="el" href="namespacepick__and__place.html">pick_and_place</a> (&ndash;ppc)</b>. <code>docker/vision/run.sh</code> maps each flag to one launch file; the container runs exactly that launch (no-flag runs = plain bash, nothing implicit).</p>
 <p><b>IMPORTANT (audit gotcha):</b> <code><a class="el" href="gpsr__launch_8py.html">gpsr_launch.py</a></code>, <code><a class="el" href="ppc__launch_8py.html">ppc_launch.py</a></code> and <code><a class="el" href="restaurant__launch_8py.html">restaurant_launch.py</a></code> pull in <code><a class="el" href="object__detector__node_8launch_8py.html">object_detector_node.launch.py</a></code> via <code>IncludeLaunchDescription</code> — and that include starts BOTH <code><a class="el" href="namespaceobject__detector__node.html">object_detector_node</a></code> AND <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code>. When auditing a launch, grep for <code>IncludeLaunchDescription</code>, not just <code>Node(executable=...)</code>. So <code>detect_objects</code>/<code>YoloDetect</code> have servers in every active task.</p>
@@ -251,7 +251,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <li>Not launched by any active task (repo cruft only): <a class="el" href="namespaceis__person__inside.html">is_person_inside</a> (broken), <a class="el" href="namespaceperson__in__map.html">person_in_map</a>, <a class="el" href="namespacedishwasher__node.html">dishwasher_node</a>, zero_shot + <a class="el" href="namespacepointing__detection.html">pointing_detection</a> (storing/carry only).</li>
 <li>In-node weight: tracker still carries unused DeepSORT code (ByteTrack replaced it); moondream PERSON_POSTURE srv references a commented-out attribute.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md182"></a>
+<h1><a class="anchor" id="autotoc_md196"></a>
 7. Follow-person pipeline rework (2026-07-03)</h1>
 <p>Applied across tracker / smoother / arm controller to stop losing the person (validate on robot with <code>ros2 run <a class="el" href="namespacetask__manager.html">task_manager</a> <a class="el" href="follow__calibration_8py.html">follow_calibration.py</a></code>):</p>
 <ul>

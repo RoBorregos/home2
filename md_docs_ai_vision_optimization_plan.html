@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_vision_optimization_plan.ht
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>Drafted 2026-07-03 from the full vision audit (see <code><a class="el" href="hric__vision__architecture_8md.html">hric_vision_architecture.md</a></code> + <code>diagrams/vision_architecture.svg</code>). Goal: less VRAM/CPU on the Orin, deterministic model provisioning, a subtask manager that can't drift, and debug/display output that demonstrates vision working per task step without eating bandwidth.</p>
-<h1><a class="anchor" id="autotoc_md234"></a>
+<h1><a class="anchor" id="autotoc_md248"></a>
 0. Current state (findings that motivate the plan)</h1>
 <p><b>Models</b> — 3 different storage conventions coexist:</p><ol type="1">
 <li><code>vision_general</code> nodes: <code>load_yolo_trt("&lt;name&gt;.pt")</code> — ultralytics downloads the <code>.pt</code> to the container CWD (<code>/workspace</code>, NOT a persistent mount) on first run, exports a TRT engine into <code>TENSORRT_CACHE_DIR</code> → host <code>docker/vision/trt_cache</code>. The same <code>trt_cache</code> folder is also overloaded as the <b>InsightFace</b> cache (<code>./trt_cache:/home/ros/.insightface</code>).</li>
@@ -106,7 +106,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_vision_optimization_plan.ht
 <p><b>Runtime issues</b> — single-threaded executors with blocking in-callback service waits (<a class="el" href="namespacehric__commands.html">hric_commands</a>, <a class="el" href="namespaceperson__in__map.html">person_in_map</a>); <code><a class="el" href="namespaceros__utils.html#a788d5920b4a890dfdb242742b858f948">ros_utils.wait_for_future</a></code> is a 100 %-CPU busy loop; face_recognition + object_detector run inference always-hot (activity flags exist but half-wired — object detector's <code>DETECTIONS_ACTIVE_TOPIC</code> constant is literally <code>"asd"</code>); restaurant launch starts <b>two</b> image_orienters; <a class="el" href="namespacetrash__detection__node.html">trash_detection_node</a> launched for gpsr/ppc/dlc with <b>zero</b> clients; <a class="el" href="namespacemoondream__node.html">moondream_node</a> consumes the <b>raw</b> camera topic (no rotation compensation).</p>
 <p><b>Subtask manager</b> — 25 near-identical <code>call_async + spin_until_future_complete</code> blocks; per-task service dicts drift from reality (HRIC uses <code>track_person</code> but doesn't check it); clients exist for services that have no server (<code>read_qr</code>, <code>detect_shelf</code>).</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md236"></a>
+<h1><a class="anchor" id="autotoc_md250"></a>
 1. Centralized model store + deterministic provisioning</h1>
 <p>Target layout (host <code>docker/vision/models/</code>, mounted at <code>/workspace/models</code>):</p>
 <div class="fragment"><div class="line">docker/vision/models/</div>
@@ -126,7 +126,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_vision_optimization_plan.ht
 <li>Pin <code>insightface</code> in <code>requirements/face_recognition.txt</code>; drop the yolov5 clone from <code>Dockerfile.l4t</code> (verify nothing imports it first).</li>
 <li>Sync between machines = rsync <code>weights/</code> only; engines rebuild per device via warmup.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md237"></a>
+<h1><a class="anchor" id="autotoc_md251"></a>
 2. Runtime consolidation (VRAM + CPU on the Orin)</h1>
 <ol type="1">
 <li><b>One pose model instance.</b> Create a <code>pose_node</code> (or promote tracker's PoseDetection) that owns the single <code>yolo11m-pose</code> engine and serves keypoints via one service (<code>GetPose</code>: image region → keypoints) + a low-rate topic. Migrate detect_hand (<a class="el" href="namespacehric__commands.html">hric_commands</a>), <a class="el" href="namespacegpsr__commands.html">gpsr_commands</a>, <a class="el" href="namespacecustomer__node.html">customer_node</a>, <a class="el" href="namespacepointing__detection.html">pointing_detection</a> to it. 5 engines → 1: saves roughly 1–2 GB VRAM (engine + CUDA workspace per process) and 4 × the export/startup cost.</li>
@@ -136,7 +136,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_vision_optimization_plan.ht
 <li><b>Launch cleanups</b> (from the active-task audit): remove the duplicate <a class="el" href="namespaceimage__orienter.html">image_orienter</a> from <a class="el" href="namespacerestaurant__launch.html">restaurant_launch</a>, <a class="el" href="namespacetrash__detection__node.html">trash_detection_node</a> from gpsr/ppc launches, <a class="el" href="namespaceface__recognition__node.html">face_recognition_node</a> from <a class="el" href="namespacerestaurant__launch.html">restaurant_launch</a>, <a class="el" href="namespacemoondream__node.html">moondream_node</a> from the &ndash;dlc profile; fix or delete the dangling <code>--carry</code> mapping; quarantine <code><a class="el" href="is__person__inside_8py.html">is_person_inside.py</a></code>.</li>
 <li><b>Orin platform</b> — FP16 TRT everywhere already (<code>half=True</code>); standardize <code>imgsz=640</code>; keep the cpuset partition (nav 0-3 / rest 4-11); add a <code>jetson_clocks</code> / MAXN check to the robot bring-up; optional experiment: pin the always-on detector to DLA to free GPU for moondream.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md238"></a>
+<h1><a class="anchor" id="autotoc_md252"></a>
 3. Subtask manager v2 (&lt;tt&gt;vision_tasks.py&lt;/tt&gt;)</h1>
 <ol type="1">
 <li><b>One <code>_call</code> helper</b> replaces 25 copies of the boilerplate: <div class="fragment"><div class="line"><span class="keyword">def </span>_call(self, client, request, timeout=TIMEOUT, name=&quot;&quot;):</div>
@@ -152,7 +152,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_vision_optimization_plan.ht
 <li><b>Contract enforcement</b> — every function returns <code>(Status, payload)</code> with <code>Status</code> enum (never bare ints/bools); mock values must match the real shape. The <code><a class="el" href="test__hric__vision_8py.html">test_hric_vision.py</a></code> harness generalizes to <code>test_vision_contract.py</code> that runs all functions in <code>mock_data=True</code> and fails CI on shape mismatches.</li>
 <li>Delete dead surface: <code>read_qr</code>, <code>detect_shelf</code> (no servers), <code>person_bounding_box</code> / <code>pan_to_person</code> pseudocode, <code>detect_guest</code> stub — or implement their servers.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md239"></a>
+<h1><a class="anchor" id="autotoc_md253"></a>
 4. Debug topics — compressed, lazy, namespaced</h1>
 <p><b>Today (audited):</b> every vision debug publisher is raw <code>sensor_msgs/Image</code> (bgr8) — zero <code>CompressedImage</code>, zero subscriber-gating anywhere in the repo. Rates: <a class="el" href="namespacehric__commands.html">hric_commands</a>, tracker, <a class="el" href="namespacegpsr__commands.html">gpsr_commands</a>, <a class="el" href="namespacecustomer__node.html">customer_node</a> publish on <b>10 Hz timers</b>; face_recognition 5 Hz; <b>base_detector (object + zero-shot) publishes EVERY camera frame (30 Hz)</b> inside <code>rgb_cb</code>; restaurant/dishwasher/yolo-service publish on-request (fine). The only compressor in the stack is <code>web_video_server</code> in the display container, which JPEG-encodes a raw topic on demand when the browser opens an MJPEG stream. <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> additionally republishes every ZED frame (its RELIABLE re-publish is load-bearing: web_video_server needs RELIABLE; the raw ZED topic is BEST_EFFORT — that QoS bridge is <em>why</em> the display default feed is <code>/vision/camera/image_oriented</code>).</p>
 <p>Cost: a 1280×720 bgr8 frame ≈ 2.7 MB. Each ungated debug publisher pays cv_bridge conversion + copy + DDS write at 10–30 Hz <em>whether or not anything is watching</em> — ~27 MB/s per 10 Hz topic, ~83 MB/s for base_detector, all day.</p>
@@ -162,7 +162,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_vision_optimization_plan.ht
 <li><b>Display keeps working with less CPU</b>: web_video_server serves CompressedImage topics via <code>?type=ros_compressed</code> as <b>passthrough MJPEG</b> — the JPEG encoded once at 5 Hz in the vision node replaces server-side re-encoding of a 30 Hz raw stream.</li>
 <li>Migration order: helper → HRIC nodes → detector/base nodes (the 30 Hz one first) → the rest; keep old raw topic names alive behind the same gate for one transition window, then delete.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md240"></a>
+<h1><a class="anchor" id="autotoc_md254"></a>
 5. Display per subtask step</h1>
 <p><b>Today (audited):</b> the display is a <b>Next.js app in Firefox kiosk</b> (per-task routes: <code>/hric</code>, <code>/gpsr</code>, <code>/laundry</code>, <code>/ppc</code>, <code>/restaurant</code>) + <code>rosbridge_websocket</code> (:9090) + <code>web_video_server</code> (:8080). Video = an <code>&lt;img&gt;</code> MJPEG stream pointed at whatever topic name arrives on <code>/hri/display/change_video</code> (<code>hri.publish_display_topic</code>). The step bar listens on <code>/hri/display/task_step</code> (<code>hri.publish_display_step</code>). So the per-task pages and step tracking already exist — the gaps are: (a) TMs hand-publish topic/step inconsistently, (b) several subtasks have no annotated stream to show, (c) the page shows no live vision <em>status</em> (found/not-found/latency).</p>
 <p>Plan (no new compositor node needed — the web app is the compositor):</p><ol type="1">
@@ -173,7 +173,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_vision_optimization_plan.ht
 <li><b>Subtask status ticker</b>: new topic <code>/hri/display/subtask_status</code> (String, JSON: <code>{function, status, ms}</code>) published by the decorator on exit; the Next.js pages render it as a footer/ticker (DOM overlay — crisper than burning text into frames, and it doubles as a live log of vision results for demos/judges).</li>
 <li>Page polish per task: the step bars already map <code>task_step</code> strings — align the decorator's step names with each page's <code>TASK_STEPS</code> keys so the bar advances without extra wiring.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md241"></a>
+<h1><a class="anchor" id="autotoc_md255"></a>
 6. Phased rollout (competition-safe ordering)</h1>
 <p><b>Phase 0 — quick wins, no behavior risk (≈ 1 day)</b></p><ul>
 <li>Launch cleanups (§2.5). Re-apply the three <a class="el" href="namespacehric__commands.html">hric_commands</a> fixes from the Orin tree.</li>

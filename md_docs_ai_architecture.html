@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_architecture.html',''); ini
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>The software architecture for <b>FRIDA</b> (Friendly Robotics Interactive Domestic Assistant) is built on <b>ROS 2</b> and designed with modularity in mind. The system is divided into several "Areas," each representing a specific robotic capability.</p>
-<h1><a class="anchor" id="autotoc_md163"></a>
+<h1><a class="anchor" id="autotoc_md177"></a>
 Core Areas</h1>
 <p>Each area typically corresponds to a set of ROS 2 packages and containers:</p>
 <ul>
@@ -104,10 +104,10 @@ Core Areas</h1>
 <li><b>Manipulation</b>: Controls the robotic arms and grippers for tasks like picking and placing objects.</li>
 <li><b>Integration</b>: Orchestrates the interaction between multiple areas to fulfill complex service robot challenges.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md164"></a>
+<h1><a class="anchor" id="autotoc_md178"></a>
 Execution Model</h1>
 <p>The project utilizes <b>Docker</b> and <b>Docker Compose</b> to ensure a consistent environment across different hardware platforms (CPU, CUDA, L4T).</p>
-<h2><a class="anchor" id="autotoc_md165"></a>
+<h2><a class="anchor" id="autotoc_md179"></a>
 The &lt;tt&gt;run.sh&lt;/tt&gt; Script</h2>
 <p>A central <code>run.sh</code> script is used to manage the lifecycle of these containers. It automatically detects the environment and spins up the necessary services.</p>
 <div class="fragment"><div class="line"># Example: Run the vision area</div>
@@ -115,7 +115,7 @@ The &lt;tt&gt;run.sh&lt;/tt&gt; Script</h2>
 <div class="line"> </div>
 <div class="line"># Example: Run a competition task (GPSR)</div>
 <div class="line">./run.sh --gpsr</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md166"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md180"></a>
 Communication</h1>
 <p>Communication between nodes is handled by the <b>Cyclone DDS</b> middleware, which is configured via <code>scripts/setup_cyclonedds.sh</code> to allow seamless multi-host or host-container interaction. </p>
 </div></div><!-- contents -->

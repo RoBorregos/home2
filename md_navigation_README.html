@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.6"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Roborregos @Home documentation: Home Navigation</title>
+<title>Roborregos @Home documentation: Navigation</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -90,10 +90,236 @@ $(document).ready(function(){initNavTree('md_navigation_README.html',''); initRe
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">Home Navigation </div></div>
+  <div class="headertitle"><div class="title">Navigation </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"></div></div><!-- contents -->
+<div class="textblock"><p>Navigation handles mapping (SLAM), localization, path planning and following, semantic areas, table docking and person following for FRIDA. It runs on <code>ROS 2</code> (Humble) and Nav2 inside a single centralized container.</p>
+<blockquote class="doxtable">
+<p>&zwj;FRIDA currently uses an <b>omnidirectional (holonomic) base</b>, which is why it is the default across this area. The previous <b>differential-drive base</b> (EAI Dashgo) is kept for backward compatibility and can still be selected, but the omnibase is the supported setup. </p>
+</blockquote>
+<h1><a class="anchor" id="autotoc_md148"></a>
+Tree structure</h1>
+<div class="fragment"><div class="line">home2/</div>
+<div class="line">│</div>
+<div class="line">│frida_constants/                       # Shared constants for the project</div>
+<div class="line">├── frida_constants/</div>
+<div class="line">│   └── navigation_constants.py         # Topic/service/action names, timeouts, limits</div>
+<div class="line">│</div>
+<div class="line">│frida_interfaces/                      # Custom ROS interfaces</div>
+<div class="line">├── navigation/</div>
+<div class="line">│   ├── action/</div>
+<div class="line">│   │   └── Move.action</div>
+<div class="line">│   ├── msg/</div>
+<div class="line">│   │   ├── MonitorReport.msg</div>
+<div class="line">│   │   └── NodeStatus.msg</div>
+<div class="line">│   └── srv/                            # ApproachPoint, DockTable, GetRobotPose,</div>
+<div class="line">│                                       # GoToPose, MapAreas, MoveLocation, NavQuery</div>
+<div class="line">│</div>
+<div class="line">│navigation/</div>
+<div class="line">├── packages/                           # ROS 2 packages for the area</div>
+<div class="line">│   ├── nav_main/                       # Core navigation: SLAM + Nav2 orchestration</div>
+<div class="line">│   │   ├── bt/                         # Behavior Trees (navigate, follow point)</div>
+<div class="line">│   │   ├── config/                     # Nav2 + RTABMap + slam_toolbox params</div>
+<div class="line">│   │   │   ├── nav2_standard.yaml</div>
+<div class="line">│   │   │   ├── nav2_following.yaml</div>
+<div class="line">│   │   │   ├── nav2_restaurant.yaml</div>
+<div class="line">│   │   │   ├── omni_config/            # Holonomic (omnibase) Nav2 profiles</div>
+<div class="line">│   │   │   └── rtabmap/               # RTABMap RGBD SLAM configs</div>
+<div class="line">│   │   ├── launch/</div>
+<div class="line">│   │   │   ├── dashgo_base/            # Diff-drive base bringup (RTABMap)</div>
+<div class="line">│   │   │   ├── omni_setup/             # Omni base bringup (slam_toolbox)</div>
+<div class="line">│   │   │   └── task_launch/            # Top-level launches per task</div>
+<div class="line">│   │   │       ├── general_navigation.launch.py</div>
+<div class="line">│   │   │       ├── mapping.launch.py</div>
+<div class="line">│   │   │       ├── restaurant.launch.py</div>
+<div class="line">│   │   │       ├── hric.launch.py</div>
+<div class="line">│   │   │       └── gpsr_hric.launch.py</div>
+<div class="line">│   │   └── scripts/                    # ROS nodes (Python)</div>
+<div class="line">│   │       ├── nav_central.py          # Central navigation orchestrator</div>
+<div class="line">│   │       ├── table_docker.py         # Perpendicular table/shelf docking</div>
+<div class="line">│   │       ├── person_goal_smoother.py # Person-following goal bridge</div>
+<div class="line">│   │       ├── adaptive_goal_publisher.py</div>
+<div class="line">│   │       ├── node_monitor.py</div>
+<div class="line">│   │       └── launch_nav.py</div>
+<div class="line">│   │</div>
+<div class="line">│   ├── map_context/                    # Maps, areas and the UIs</div>
+<div class="line">│   │   ├── maps/                       # Saved maps (.pgm/.yaml, RTABMap .db, posegraph)</div>
+<div class="line">│   │   │   └── areas/                  # areas_&lt;map&gt;.json (tagged semantic areas)</div>
+<div class="line">│   │   ├── scripts/</div>
+<div class="line">│   │   │   ├── nav_ui.py               # Live nav monitor + control panel (Qt)</div>
+<div class="line">│   │   │   ├── map_area_tagger.py      # Area/location tagging UI (Qt)</div>
+<div class="line">│   │   │   └── simulate_position.py</div>
+<div class="line">│   │   ├── src/map_service.cpp         # C++ map/areas service</div>
+<div class="line">│   │   └── launch/simulate_map.launch.py</div>
+<div class="line">│   │</div>
+<div class="line">│   ├── dashgo_driver/                  # Diff-drive base driver (STM32) + EKF</div>
+<div class="line">│   └── omnidriver/                     # Holonomic (ODrive) base driver + dashboard</div>
+<div class="line">│</div>
+<div class="line">├── README.md                           # This file</div>
+<div class="line">└── ...</div>
+<div class="line">│</div>
+<div class="line">docker/navigation/                      # Docker image, compose and entrypoint</div>
+<div class="line">├── Dockerfile.{cpu,cuda,l4t}</div>
+<div class="line">├── docker-compose.yaml</div>
+<div class="line">└── run.sh                              # Area entrypoint (called by root run.sh)</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md149"></a>
+Concepts</h1>
+<p>The base and SLAM backend are chosen with launch arguments. The omnibase row is the current setup; the dashgo row is the legacy diff-drive path:</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone"><code>default_base</code>   </th><th class="markdownTableHeadNone"><code>nav_type</code>   </th><th class="markdownTableHeadNone">SLAM backend   </th><th class="markdownTableHeadNone">Base   </th><th class="markdownTableHeadNone">Status    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>omnibase</code> (default)   </td><td class="markdownTableBodyNone"><code>2d</code>   </td><td class="markdownTableBodyNone"><code>slam_toolbox</code> (lidar)   </td><td class="markdownTableBodyNone">Holonomic (<code>omnidriver</code>)   </td><td class="markdownTableBodyNone">Current    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>dashgo</code>   </td><td class="markdownTableBodyNone"><code>3d</code>   </td><td class="markdownTableBodyNone"><code>RTABMap</code> (RGBD)   </td><td class="markdownTableBodyNone">Diff-drive (<code><a class="el" href="namespacedashgo__driver.html">dashgo_driver</a></code>)   </td><td class="markdownTableBodyNone">Legacy   </td></tr>
+</table>
+<p>The **<code><a class="el" href="namespacenav__central.html">nav_central</a></code>** node is the brain of the area. It:</p>
+<ul>
+<li>Waits for required topics/TF, starts the SLAM backend and (optionally) Nav2.</li>
+<li><b>Monitors</b> the system continuously — if topics/TF drop it pauses SLAM/Nav2 and resumes them automatically when they come back, reloading RTABMap if it crashes.</li>
+<li>Exposes the navigation services other areas call (see the table below).</li>
+<li>Pauses SLAM/Nav2 while idle to save CPU and resumes them for each goal.</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md150"></a>
+Setup with Docker</h1>
+<h2><a class="anchor" id="autotoc_md151"></a>
+Requirements</h2>
+<ul>
+<li>Docker Engine + Docker Compose</li>
+<li>NVIDIA Container Toolkit (for CUDA / L4T images)</li>
+<li>The robot's USB devices connected (lidar, STM32) for real hardware</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md152"></a>
+Building and entering the container</h2>
+<p>From the repo root (<code>home2</code>), the general <code>./run.sh</code> script forwards to <code>docker/navigation/run.sh</code>. It auto-detects the environment (cpu / cuda / l4t), sets up USB devices and CycloneDDS, builds <code>nav_main</code> and opens a shell:</p>
+<div class="fragment"><div class="line"># From home2/</div>
+<div class="line">./run.sh navigation</div>
+</div><!-- fragment --><p>Inside the container the workspace lives at <code>/workspace</code> and the repo is mounted at <code>/workspace/src</code>. To build manually:</p>
+<div class="fragment"><div class="line">colcon build --symlink-install --packages-up-to nav_main \</div>
+<div class="line">  --packages-ignore frida_interfaces frida_constants --cmake-args -Wno-dev</div>
+<div class="line">source install/setup.bash</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md153"></a>
+Selecting the map</h2>
+<p>The active map is read from the <code>MAP_NAME</code> variable (e.g. <code>lab_23.db</code>). Instead of exporting it by hand, set it once with the root <code>run.sh</code>:</p>
+<div class="fragment"><div class="line">./run.sh --update-map lab_23.db   # persists export MAP_NAME in your .bashrc/.zshrc</div>
+<div class="line">source ~/.bashrc                  # (or ~/.zshrc) so the current shell sees it</div>
+<div class="line">./run.sh navigation --gpsr</div>
+</div><!-- fragment --><p>From <code>MAP_NAME</code>, the launch files derive the <code>areas_&lt;map&gt;.json</code>, the slam_toolbox posegraph and any keepout mask. To override it for a single session without touching your rc file, pass <code>map_name:=&lt;file&gt;</code> to the launch (see below).</p>
+<h1><a class="anchor" id="autotoc_md154"></a>
+Running navigation</h1>
+<p>Once inside the container (or via the task flags of <code>run.sh</code>), the top-level launches are:</p>
+<div class="fragment"><div class="line"># Build a new map (SLAM only, no localization)</div>
+<div class="line">ros2 launch nav_main mapping.launch.py</div>
+<div class="line"> </div>
+<div class="line"># Localization + Nav2 — used by every competition task (gpsr/ppc/dlc/hric/safety)</div>
+<div class="line">ros2 launch nav_main general_navigation.launch.py</div>
+<div class="line"> </div>
+<div class="line"># Restaurant — maps the unknown venue live while serving, with table docking</div>
+<div class="line">ros2 launch nav_main restaurant.launch.py</div>
+</div><!-- fragment --><p>Common launch arguments:</p>
+<div class="fragment"><div class="line"># Use the diff-drive base + 3D RTABMap SLAM instead of the omnibase default</div>
+<div class="line">ros2 launch nav_main general_navigation.launch.py default_base:=dashgo nav_type:=3d</div>
+<div class="line"> </div>
+<div class="line"># Override the map for this session only</div>
+<div class="line">ros2 launch nav_main general_navigation.launch.py map_name:=lab_23.db</div>
+</div><!-- fragment --><p>The equivalent shortcuts from the root <code>run.sh</code> are:</p>
+<div class="fragment"><div class="line">./run.sh navigation --mapping     # ros2 launch nav_main mapping.launch.py</div>
+<div class="line">./run.sh navigation --gpsr        # general_navigation.launch.py</div>
+<div class="line">./run.sh navigation --restaurant  # restaurant.launch.py</div>
+<div class="line">./run.sh navigation --tagger      # ros2 run map_context map_area_tagger.py</div>
+<div class="line">./run.sh navigation --move        # omni_basics.launch.py (base + teleop only)</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md155"></a>
+Building a map (mapping workflow)</h2>
+<ol type="1">
+<li>Launch mapping: <code>ros2 launch nav_main <a class="el" href="mapping_8launch_8py.html">mapping.launch.py</a></code> (or <code>./run.sh navigation --mapping</code>). This starts <code><a class="el" href="namespacenav__central.html">nav_central</a></code> in mapping mode, the SLAM backend and the **<code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>** control panel.</li>
+<li>Drive the robot around the arena to cover the whole space.</li>
+<li>In <code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>, use <b>Save Map</b> to persist it:<ul>
+<li>omnibase / slam_toolbox → <code>&lt;name&gt;.posegraph</code> + <code>&lt;name&gt;.data</code> + a <code>&lt;name&gt;.yaml</code>/<code>&lt;name&gt;.pgm</code> grid.</li>
+<li>dashgo / RTABMap → the RTABMap <code>&lt;name&gt;.db</code> + a 2D <code>&lt;name&gt;.yaml</code>/<code>.pgm</code>. Maps are written to <code>navigation/packages/map_context/maps/</code>.</li>
+</ul>
+</li>
+</ol>
+<h2><a class="anchor" id="autotoc_md156"></a>
+Tagging areas (the tagger)</h2>
+<p>Semantic areas ("kitchen", "bedroom", locations like "sink", "shelf" …) are what <code><a class="el" href="namespacenav__central.html">nav_central</a></code> navigates to by name. Define them with the <b>map area tagger</b>:</p>
+<div class="fragment"><div class="line">ros2 run map_context map_area_tagger.py   # or: ./run.sh navigation --tagger</div>
+</div><!-- fragment --><p>The tagger loads a map image (<code>.pgm</code>/<code>.png</code>), lets you click to place named locations and draw polygon area boundaries (pre-seeded with the RoboCup @Home arena rooms/objects), and exports them to <code>map_context/maps/areas/areas_&lt;map&gt;.json</code>. Each location stores a full pose <code>[x, y, z, qx, qy, qz, qw]</code>. You can also hand-edit the <code>.pgm</code> to paint virtual obstacles or draw a keepout mask that Nav2 will respect.</p>
+<h2><a class="anchor" id="autotoc_md157"></a>
+Docking to a table / shelf</h2>
+<p><code><a class="el" href="table__docker_8py.html">table_docker.py</a></code> (started automatically by <code><a class="el" href="namespacegeneral__navigation.html">general_navigation</a></code> /<code>restaurant</code> on the omnibase) performs a <b>perpendicular approach</b> to a table or shelf: Nav2 brings the robot to a static "near" pose, then the docker detects the surface's front face from lidar/point-cloud (line for flat tables, circle for round ones), locks it, and closed-loop drives the holonomic base until the arm is <code>target_distance</code> from the surface.</p>
+<p>You can activate docking in three ways:</p>
+<ul>
+<li><b>From the <code><a class="el" href="namespacenav__ui.html">nav_ui</a></code> panel</b> — press the <b>Dock</b> button (optionally set a front offset). It calls <code><a class="el" href="namespacenav__central.html">nav_central</a></code>'s <code>DockTable</code> service so a per-call offset can be applied.</li>
+<li><b>From a service call</b> (see below).</li>
+<li><b>Automatically</b> — <code><a class="el" href="namespacenav__central.html">nav_central</a></code> calls the undock service before every new location goal so the robot backs off a docked surface before planning.</li>
+</ul>
+<div class="fragment"><div class="line"># Preview the detected face/orientation without moving</div>
+<div class="line">ros2 service call /navigation/preview_dock std_srvs/srv/Trigger {}</div>
+<div class="line"> </div>
+<div class="line"># Dock (offset 0.0 uses the docker default)</div>
+<div class="line">ros2 service call /navigation/dock_table frida_interfaces/srv/DockTable &quot;{offset: 0.0}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Undock / back off so Nav2 can plan the next goal</div>
+<div class="line">ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md158"></a>
+Navigation services</h1>
+<p><code><a class="el" href="namespacenav__central.html">nav_central</a></code> exposes the interface the rest of FRIDA uses. Names come from <a href="../frida_constants/frida_constants/navigation_constants.py"><code>frida_constants/navigation_constants.py</code></a>.</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Service   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Purpose    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/navigation/go_to_map_area</code>   </td><td class="markdownTableBodyNone"><code>MoveLocation</code>   </td><td class="markdownTableBodyNone">Go to a named area/sublocation from <code>areas.json</code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/navigation/go_to_pose</code>   </td><td class="markdownTableBodyNone"><code>GoToPose</code>   </td><td class="markdownTableBodyNone">Go to a map-frame pose    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/navigation/approach_point</code>   </td><td class="markdownTableBodyNone"><code>ApproachPoint</code>   </td><td class="markdownTableBodyNone">Approach a point at a standoff distance    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/navigation/get_robot_pose</code>   </td><td class="markdownTableBodyNone"><code>GetRobotPose</code>   </td><td class="markdownTableBodyNone">Current pose from TF (map → base_link)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/navigation/query_path</code>   </td><td class="markdownTableBodyNone"><code>NavQuery</code>   </td><td class="markdownTableBodyNone">Path distance between two areas (no motion)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/navigation/dock_table</code>   </td><td class="markdownTableBodyNone"><code>DockTable</code>   </td><td class="markdownTableBodyNone">Dock to the surface in front (with offset)    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/navigation/is_door_open</code>   </td><td class="markdownTableBodyNone"><code>CheckDoor</code>   </td><td class="markdownTableBodyNone">Door open/closed via lidar    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/navigation/areas_json</code>   </td><td class="markdownTableBodyNone"><code>MapAreas</code>   </td><td class="markdownTableBodyNone">Return <code>areas.json</code> as a string    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/navigation/follow_person</code>   </td><td class="markdownTableBodyNone"><code>SetBool</code>   </td><td class="markdownTableBodyNone">Start/stop person following    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/navigation/resume_nav</code>   </td><td class="markdownTableBodyNone"><code>Empty</code>   </td><td class="markdownTableBodyNone">Resume paused Nav2 (+ RTABMap on the legacy dashgo)   </td></tr>
+</table>
+<h2><a class="anchor" id="autotoc_md159"></a>
+Example service calls</h2>
+<div class="fragment"><div class="line"># Go to a named area</div>
+<div class="line">ros2 service call /navigation/go_to_map_area frida_interfaces/srv/MoveLocation \</div>
+<div class="line">  &quot;{location: &#39;kitchen&#39;, sublocation: &#39;sink&#39;}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Ask how far the kitchen sink is from the current pose (no motion)</div>
+<div class="line">ros2 service call /navigation/query_path frida_interfaces/srv/NavQuery \</div>
+<div class="line">  &quot;{location_a: &#39;&#39;, sublocation_a: &#39;&#39;, location_b: &#39;kitchen&#39;, sublocation_b: &#39;sink&#39;}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Start / stop following a person</div>
+<div class="line">ros2 service call /navigation/follow_person std_srvs/srv/SetBool &quot;{data: true}&quot;</div>
+<div class="line">ros2 service call /navigation/follow_person std_srvs/srv/SetBool &quot;{data: false}&quot;</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md160"></a>
+Nav_ui — live monitor &amp; control panel</h1>
+<p><code><a class="el" href="nav__ui_8py.html">nav_ui.py</a></code> (launched automatically with mapping / general navigation) is the Qt panel used on the field. It renders the map, robot pose, costmaps and planned trajectories, and lets the operator:</p>
+<ul>
+<li>Set the <b>initial pose</b> (required before localized navigation starts — <code><a class="el" href="namespacenav__central.html">nav_central</a></code> waits for it).</li>
+<li>Send goals, change the active map, save maps, resume paused navigation.</li>
+<li>Trigger docking with a configurable offset.</li>
+</ul>
+<h1><a class="anchor" id="autotoc_md161"></a>
+Robot bases</h1>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Package   </th><th class="markdownTableHeadNone">Base   </th><th class="markdownTableHeadNone">Status   </th><th class="markdownTableHeadNone">Notes    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>omnidriver</code>   </td><td class="markdownTableBodyNone">Holonomic ODrive base   </td><td class="markdownTableBodyNone">Current   </td><td class="markdownTableBodyNone"><code>odrive_serial_twist</code> (cmd_vel → wheels), <code>odrive_dashboard</code> web dashboard, <code>simple_rx</code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacedashgo__driver.html">dashgo_driver</a></code>   </td><td class="markdownTableBodyNone">EAI Dashgo diff-drive   </td><td class="markdownTableBodyNone">Legacy   </td><td class="markdownTableBodyNone">STM32 serial driver + <code><a class="el" href="ekf_8launch_8py.html">ekf.launch.py</a></code> odometry fusion; kept for the old diff-drive base   </td></tr>
+</table>
+</div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
 <!-- start footer part -->

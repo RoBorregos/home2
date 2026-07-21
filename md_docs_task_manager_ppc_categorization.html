@@ -94,36 +94,36 @@ $(document).ready(function(){initNavTree('md_docs_task_manager_ppc_categorizatio
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>This document explains the logic behind the <code>categorize_objects</code> method in the HRI Task Manager, which is responsible for organizing objects from a table onto available shelves based on their semantic categories.</p>
-<h1><a class="anchor" id="autotoc_md350"></a>
+<h1><a class="anchor" id="autotoc_md364"></a>
 Overview</h1>
 <p>The categorization process follows a deterministic approach to ensure that objects are placed on shelves that already contain similar items, or distributed logically when new categories are introduced.</p>
-<h1><a class="anchor" id="autotoc_md351"></a>
+<h1><a class="anchor" id="autotoc_md365"></a>
 Categorization Logic</h1>
 <p>The system uses a two-tiered approach for identifying the category of an object:</p>
 <ol type="1">
 <li><b>Direct Lookup:</b> The object name is cross-referenced against a pre-defined mapping in <code>frida_constants/data/objects.json</code>.</li>
 <li><b>Semantic Similarity:</b> If no direct match is found, the system uses an embeddings service to find the closest known object and adopts its category.</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md352"></a>
+<h1><a class="anchor" id="autotoc_md366"></a>
 Shelf Assignment Algorithm</h1>
 <p>When assigning <code>table_objects</code> to <code>shelves</code>, the following priority rules are applied:</p>
-<h2><a class="anchor" id="autotoc_md353"></a>
+<h2><a class="anchor" id="autotoc_md367"></a>
 1. Existing Category Match</h2>
 <p>If a category of a table object is already present on a shelf (because of objects already stored there), the new object is assigned to that same shelf.</p>
-<h2><a class="anchor" id="autotoc_md354"></a>
+<h2><a class="anchor" id="autotoc_md368"></a>
 2. Empty Shelf Distribution</h2>
 <p>If a category is "new" (not currently on any shelf), the system looks for empty shelves.</p><ul>
 <li>If multiple empty shelves are available, new categories are distributed across them in a round-robin fashion.</li>
 <li>This ensures that empty space is utilized before crowding existing shelves.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md355"></a>
+<h2><a class="anchor" id="autotoc_md369"></a>
 3. Overflow Distribution (Avoiding "Miscellaneous")</h2>
 <p>If there are no empty shelves, or if there are more new categories than empty shelves, the system distributes the new categories across the available shelves (starting with empty ones first) in a round-robin fashion.</p><ul>
 <li>Unlike previous versions, the system <b>avoids the "miscellaneous" label</b>.</li>
 <li>Instead, it maintains the specific names of all categories present on a shelf.</li>
 <li>A shelf can have multiple categories (e.g., <code>["fruit", "food"]</code>), which are returned as a list and used by the robot to describe the shelf's contents.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md356"></a>
+<h1><a class="anchor" id="autotoc_md370"></a>
 API Compatibility</h1>
 <p>The <code>categorize_objects</code> method returns:</p><ul>
 <li><code>Status</code>: Execution status.</li>
@@ -131,7 +131,7 @@ API Compatibility</h1>
 <li><code>objects_to_add</code>: A dictionary mapping shelf levels to the list of specific table objects to be placed there.</li>
 <li><code>categorized_shelves</code>: A dictionary mapping shelf levels to a list of all categories currently on that shelf (including existing items).</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md357"></a>
+<h1><a class="anchor" id="autotoc_md371"></a>
 Testing</h1>
 <p>Test cases are defined in <code>hri/packages/nlp/test/categorize_objects.json</code>. These tests verify:</p><ul>
 <li>Correct categorization of common objects.</li>
