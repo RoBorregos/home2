@@ -16,8 +16,16 @@
   <depend>sensor_msgs</depend>
   <depend>p9n_node</depend>
   <depend>rclcpp_components</depend>
-  <depend>navigation2</depend>
-  <depend>nav2_bringup</depend>
+  <depend>nav2_bt_navigator</depend>
+  <depend>nav2_mppi_controller</depend>
+  <depend>nav2_controller</depend>
+  <depend>nav2_navfn_planner</depend>
+  <depend>nav2_planner</depend>
+  <depend>nav2_behaviors</depend>
+  <depend>nav2_smoother</depend>
+  <depend>nav2_velocity_smoother</depend>
+  <depend>nav2_lifecycle_manager</depend>
+  <depend>nav2_map_server</depend>
   <depend>robot_localization</depend>
   <depend>sllidar_ros2</depend>
   <depend>ira_laser_tools</depend>
