@@ -1,0 +1,14 @@
+{
+  "name": "test",
+  "topics": [
+    "/AudioState",
+    "/connected_clients",
+    "/hri/rawAudioChunk",
+    "/parameter_events",
+    "/rosout",
+    "/saying",
+    "/speech/raw_command"
+  ],
+  "services": [],
+  "actions": []
+}
