@@ -655,12 +655,11 @@ class GPSRTask(GenericTask):
         counter = 0
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color_match = self.subtask_manager.hri.find_closest(
-                self.color_list, command.target_to_count
-            )
+            clothing = command.target_to_count.lower().strip().split(" ")
+            s, color_match = self.subtask_manager.hri.find_closest(self.color_list, clothing[0])
             cache_color = color_match.results[0]
             s, cloth_match = self.subtask_manager.hri.find_closest(
-                self.clothe_list, command.target_to_count
+                self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
             )
             cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
@@ -766,12 +765,11 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color_match = self.subtask_manager.hri.find_closest(
-                self.color_list, command.attribute_value
-            )
+            clothing = command.attribute_value.lower().strip().split(" ")
+            s, color_match = self.subtask_manager.hri.find_closest(self.color_list, clothing[0])
             cache_color = color_match.results[0]
             s, cloth_match = self.subtask_manager.hri.find_closest(
-                self.clothe_list, command.attribute_value
+                self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
             )
             cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
@@ -792,12 +790,13 @@ class GPSRTask(GenericTask):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
                 if cache_color is None or cache_cloth is None:
+                    clothing = command.attribute_value.lower().strip().split(" ")
                     s, color_match = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.attribute_value
+                        self.color_list, clothing[0]
                     )
                     cache_color = color_match.results[0]
                     s, cloth_match = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.attribute_value
+                        self.clothe_list, " ".join(clothing[1:] if len(clothing) > 1 else clothing)
                     )
                     cache_cloth = cloth_match.results[0]
 
