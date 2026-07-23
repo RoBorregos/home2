@@ -52,6 +52,8 @@ Competition Tasks:
   --dlc              Runs the Doing Laundry Challenge.
   --restaurant       Runs the Restaurant challenge.
   --finals           Runs the finals stage routine.
+  --safety           Runs the safety routine (nav + manipulation/hric + hri/ppc +
+                     zed + hric display + safety task manager; vision is not started).
 
 Control Commands:
   --stop             Stops the running containers without removing them.
@@ -83,7 +85,7 @@ case $INPUT in
   --clean-interfaces)
     clean_directories docker/frida_interfaces_cache
     ;;
-  --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
+  --hric|--ppc|--gpsr|--dlc|--restaurant|--finals|--safety)
     run_task "$@"
     ;;
   vision|manipulation|navigation|integration|hri|zed|display|roudi|simulation)

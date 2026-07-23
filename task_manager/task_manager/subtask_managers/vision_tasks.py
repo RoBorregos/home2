@@ -8,14 +8,17 @@ commands.
 
 import math
 import time
+import random
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
 from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
+    CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    COUNT_BY_PERSON_TOPIC,
     COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
@@ -29,6 +32,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     QUERY_TOPIC,
     READ_QR_TOPIC,
+    RESULTS_TOPIC,
     SAVE_NAME_TOPIC,
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
@@ -38,9 +42,11 @@ from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.msg import ObjectDetection, PersonList, CustomerTable
+from frida_interfaces.msg import PersonList, CustomerTable
 from frida_interfaces.srv import (
     BeverageLocation,
+    ChairsToRemove,
+    CountBy,
     CountByColor,
     CountByPose,
     CropQuery,
@@ -109,6 +115,14 @@ class VisionTasks:
         self.face_name_subscriber = self.node.create_subscription(
             String, PERSON_NAME_TOPIC, self.person_name_callback, 10
         )
+        # Camera-frame 3D points of the persons matched by the last
+        # count_by_pose/gesture/color call (for nav approach_point)
+        self.last_person_points = []
+        # Latest 3D point of the tracked person (tracker publishes while locked)
+        self._tracked_point = None
+        self.tracked_point_subscriber = self.node.create_subscription(
+            PointStamped, RESULTS_TOPIC, self._tracked_point_callback, 10
+        )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
         self.follow_by_name_client = self.node.create_client(SaveName, FOLLOW_BY_TOPIC)
@@ -130,6 +144,10 @@ class VisionTasks:
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
 
+        self.chairs_to_remove_client = self.node.create_client(
+            ChairsToRemove, CHAIRS_TO_REMOVE_SERVICE
+        )
+
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
 
         self.customer_table_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
@@ -137,6 +155,7 @@ class VisionTasks:
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
+        self.count_person_client = self.node.create_client(CountBy, COUNT_BY_PERSON_TOPIC)
 
         self.count_by_gesture_client = self.node.create_client(CountByPose, COUNT_BY_GESTURE_TOPIC)
 
@@ -157,9 +176,10 @@ class VisionTasks:
                     "type": "service",
                 },
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
-                "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
                 "detect_hand": {"client": self.detect_hand_client, "type": "service"},
+                # FOLLOW_PERSON depends on the tracker's SET_TARGET service
+                "track_person": {"client": self.track_person_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
@@ -188,8 +208,10 @@ class VisionTasks:
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
-                "read_qr_client": {
-                    "client": self.read_qr_client,
+                # read_qr removed from startup checks: no server exists for
+                # READ_QR_TOPIC and no GPSR command calls it.
+                "count_person": {
+                    "client": self.count_person_client,
                     "type": "service",
                 },
                 "count_by_gesture": {
@@ -219,6 +241,7 @@ class VisionTasks:
                     "type": "service",
                 },
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
+                "chairs_to_remove": {"client": self.chairs_to_remove_client, "type": "service"},
             },
             Task.DOING_LAUNDRY: {
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
@@ -238,6 +261,7 @@ class VisionTasks:
                     "client": self.moondream_crop_query_client,
                     "type": "service",
                 },
+                "chairs_to_remove": {"client": self.chairs_to_remove_client, "type": "service"},
             },
         }
 
@@ -258,6 +282,25 @@ class VisionTasks:
             elif service["type"] == "action":
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
+
+    def _call(self, client, request, timeout: float = TIMEOUT, name: str = "service"):
+        """Call a service synchronously with uniform timeout/error handling.
+
+        Returns (None, result) on a response, or (Status, None) when the call
+        timed out (Status.TIMEOUT) or raised (Status.EXECUTION_ERROR). Callers
+        map the result's fields onto their own (Status, payload) contract.
+        """
+        try:
+            future = client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+        except Exception as e:
+            Logger.error(self.node, f"{name} call failed: {e}")
+            return Status.EXECUTION_ERROR, None
+        if result is None:
+            Logger.warn(self.node, f"{name} timed out after {timeout}s")
+            return Status.TIMEOUT, None
+        return None, result
 
     def _set_node_active(self, publisher, active: bool):
         """Publish active/inactive signal to a vision node."""
@@ -316,22 +359,37 @@ class VisionTasks:
     def get_track_person(self):
         """Get the track person status"""
         Logger.info(self.node, "Getting track person status")
-        request = Trigger.Request()
-        try:
-            future = self.get_track_person_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No person found")
-                return Status.TARGET_NOT_FOUND
-
-        except Exception as e:
-            Logger.error(self.node, f"Error getting track person status: {e}")
-            return Status.EXECUTION_ERROR
+        err, result = self._call(
+            self.get_track_person_client, Trigger.Request(), name="get_track_person"
+        )
+        if err is not None:
+            return err
+        if not result.success:
+            Logger.warn(self.node, "No person found")
+            return Status.TARGET_NOT_FOUND
 
         Logger.success(self.node, "Track person status success")
         return Status.EXECUTION_SUCCESS
+
+    def _tracked_point_callback(self, msg: PointStamped):
+        self._tracked_point = msg
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, PointStamped()))
+    def get_tracked_person_point(self, timeout: float = 3.0):
+        """Latest 3D point of the tracked person (tracker RESULTS topic).
+
+        Requires the tracker to be locked first (track_person(True) or
+        track_person_by). Waits up to `timeout` for a FRESH point published
+        after this call, so a stale point from a previous lock is never
+        returned. Meant to feed nav.approach_point()."""
+        self._tracked_point = None
+        start = time.time()
+        while time.time() - start < timeout:
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+            if self._tracked_point is not None:
+                return Status.EXECUTION_SUCCESS, self._tracked_point
+        Logger.warn(self.node, "No tracked person point received")
+        return Status.TARGET_NOT_FOUND, None
 
     def person_name_callback(self, msg: String):
         """Callback for the face name subscriber"""
@@ -345,57 +403,55 @@ class VisionTasks:
         else:
             return None, None
 
-    def get_person_name(self):
-        """Get the name of the person detected"""
+    def get_person_name(self, fresh_timeout: float = 0.0):
+        """Get the name of the person detected.
+
+        With fresh_timeout > 0, clears the cached name and waits up to that
+        long for a NEW recognition from face_recognition — required after
+        moving to a DIFFERENT person, since the cache is never cleared and
+        would return the previous person's name."""
+        if fresh_timeout > 0:
+            self.person_name = ""
+            start = time.time()
+            while time.time() - start < fresh_timeout and self.person_name == "":
+                rclpy.spin_once(self.node, timeout_sec=0.1)
         if self.person_name != "":
             return Status.EXECUTION_SUCCESS, self.person_name
         return Status.TARGET_NOT_FOUND, None
 
-    @mockable(return_value=100)
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(client="save_name_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
-    def save_face_name(self, name: str) -> int:
+    def save_face_name(self, name: str) -> Status:
         """Save the name of the person detected"""
 
         Logger.info(self.node, f"Saving name: {name}")
         request = SaveName.Request()
         request.name = name
 
-        try:
-            future = self.save_name_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                return Status.TARGET_NOT_FOUND
-
-        except Exception as e:
-            Logger.error(self.node, f"Error saving name: {e}")
-            return Status.EXECUTION_ERROR
+        err, result = self._call(self.save_name_client, request, name="save_face_name")
+        if err is not None:
+            return err
+        if not result.success:
+            return Status.TARGET_NOT_FOUND
 
         Logger.success(self.node, f"Name saved: {name}")
         return Status.EXECUTION_SUCCESS
 
-    @mockable(return_value=100)
-    @service_check("find_seat_client", [Status.EXECUTION_ERROR, 0], TIMEOUT)
-    def find_seat(self) -> tuple[int, float]:
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 0.0))
+    @service_check("find_seat_client", (Status.EXECUTION_ERROR, 0.0), TIMEOUT)
+    def find_seat(self) -> tuple[Status, float]:
         """Find an available seat and get the angle for the camera to point at"""
 
         Logger.info(self.node, "Finding available seat")
         request = FindSeat.Request()
         request.request = True
 
-        try:
-            future = self.find_seat_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No seat found")
-                return Status.TARGET_NOT_FOUND, 0
-
-        except Exception as e:
-            Logger.error(self.node, f"Error finding seat: {e}")
-            return Status.EXECUTION_ERROR, 0
+        err, result = self._call(self.find_seat_client, request, name="find_seat")
+        if err is not None:
+            return err, 0.0
+        if not result.success:
+            Logger.warn(self.node, "No seat found")
+            return Status.TARGET_NOT_FOUND, 0.0
 
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
@@ -409,18 +465,12 @@ class VisionTasks:
         request = ReadQr.Request()
         request.request = True
 
-        try:
-            future = self.read_qr_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No qr code found")
-                return Status.TARGET_NOT_FOUND, ""
-
-        except Exception as e:
-            Logger.error(self.node, f"Error finding qr code: {e}")
-            return Status.EXECUTION_ERROR, ""
+        err, result = self._call(self.read_qr_client, request, name="read_qr")
+        if err is not None:
+            return err, ""
+        if not result.success:
+            Logger.warn(self.node, "No qr code found")
+            return Status.TARGET_NOT_FOUND, ""
 
         if len(result.result) == 0:
             Logger.warn(self.node, "QR code is empty")
@@ -437,29 +487,23 @@ class VisionTasks:
         request = ShelfDetectionHandler.Request()
         detections = []
 
-        try:
-            future = self.shelf_detections_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result = future.result()
+        err, result = self._call(
+            self.shelf_detections_client, request, timeout, name="detect_shelf"
+        )
+        if err is not None:
+            return err, detections
+        if not result.success:
+            Logger.warn(self.node, "No shelf detected")
+            return Status.TARGET_NOT_FOUND, detections
 
-            if not result.success:
-                Logger.warn(self.node, "No shelf detected")
-                return Status.TARGET_NOT_FOUND, detections
-
-            results = result.shelf_array.shelf_detections
-            # for each result
-            for detection in results:
-                shelf_detection = ShelfDetection()
-                shelf_detection.x1 = detection.xmin
-                shelf_detection.x2 = detection.xmax
-                shelf_detection.y1 = detection.ymin
-                shelf_detection.y2 = detection.ymax
-                shelf_detection.level = detection.level
-                detections.append(shelf_detection)
-
-        except Exception as e:
-            Logger.error(self.node, f"Error detecting shelf: {e}")
-            return Status.EXECUTION_ERROR, detections
+        for detection in result.shelf_array.shelf_detections:
+            shelf_detection = ShelfDetection()
+            shelf_detection.x1 = detection.xmin
+            shelf_detection.x2 = detection.xmax
+            shelf_detection.y1 = detection.ymin
+            shelf_detection.y2 = detection.ymax
+            shelf_detection.level = detection.level
+            detections.append(shelf_detection)
 
         Logger.success(self.node, "Shelf detected")
         return Status.EXECUTION_SUCCESS, detections
@@ -475,56 +519,41 @@ class VisionTasks:
         request.closest_object = False
         request.label = label
         detections: list[BBOX] = []
-        try:
-            future = self.object_detector_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result = future.result()
-            # print(f"result: {result}")
+        err, result = self._call(
+            self.object_detector_client, request, timeout, name="detect_objects"
+        )
+        if err is not None:
+            return err, detections
+        if not result.success:
+            Logger.warn(self.node, "No object detected")
+            return Status.TARGET_NOT_FOUND, detections
 
-            if not result.success:
-                Logger.warn(self.node, "No object detected")
-                return Status.TARGET_NOT_FOUND, detections
+        for detection in result.detection_array.detections:
+            if detection.label_text in ignore_labels:
+                continue
+            object_detection = BBOX()
+            object_detection.x1 = detection.xmin
+            object_detection.x2 = detection.xmax
+            object_detection.y1 = detection.ymin
+            object_detection.y2 = detection.ymax
+            object_detection.classname = detection.label_text
+            object_detection.h = detection.ymax - detection.ymin
+            object_detection.w = detection.xmax - detection.xmin
+            object_detection.x = (detection.xmin + detection.xmax) / 2
+            object_detection.y = (detection.ymin + detection.ymax) / 2
 
-            results2 = result.detection_array.detections
-            """
-            int32 label
-            string label_text
-            float32 score
-            float32 ymin
-            float32 xmin
-            float32 ymax
-            float32 xmax
-            geometry_msgs/PointStamped point3d
-            """
-            # for each result
-            for detection in results2:
-                object_detection = BBOX()
-                object_detection.x1 = detection.xmin
-                object_detection.x2 = detection.xmax
-                object_detection.y1 = detection.ymin
-                object_detection.y2 = detection.ymax
-                if detection.label_text in ignore_labels:
-                    continue
-                object_detection.classname = detection.label_text
-                object_detection.h = detection.ymax - detection.ymin
-                object_detection.w = detection.xmax - detection.xmin
-                object_detection.x = (detection.xmin + detection.xmax) / 2
-                object_detection.y = (detection.ymin + detection.ymax) / 2
+            # TODO transform if the frame_id is not 'zed...camera_frame'
+            object_detection.distance = math.sqrt(
+                detection.point3d.point.x**2
+                + detection.point3d.point.y**2
+                + detection.point3d.point.z**2
+            )
+            object_detection.px = detection.point3d.point.x
+            object_detection.py = detection.point3d.point.y
+            object_detection.pz = detection.point3d.point.z
+            object_detection.point3d = detection.point3d
+            detections.append(object_detection)
 
-                # TODO transorm if the frame_id is not 'zed...camera_frame'
-                object_detection.distance = math.sqrt(
-                    detection.point3d.point.x**2
-                    + detection.point3d.point.y**2
-                    + detection.point3d.point.z**2
-                )
-                object_detection.px = detection.point3d.point.x
-                object_detection.py = detection.point3d.point.y
-                object_detection.pz = detection.point3d.point.z
-                object_detection.point3d = detection.point3d
-                detections.append(object_detection)
-        except Exception as e:
-            Logger.error(self.node, f"Error detecting objects: {e}")
-            return Status.EXECUTION_ERROR, detections
         Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
 
@@ -575,31 +604,27 @@ class VisionTasks:
                 return True
         return False
 
-    @mockable(return_value=True, delay=2)
-    @service_check("beverage_location_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
-    def find_drink(self, drink: str, timeout: float = TIMEOUT) -> tuple[int, str]:
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, "kitchen table"), delay=2)
+    @service_check("beverage_location_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
+    def find_drink(self, drink: str, timeout: float = TIMEOUT) -> tuple[Status, str]:
         """Find if a drink is available and location"""
         Logger.info(self.node, f"Finding drink: {drink}")
         request = BeverageLocation.Request()
         request.beverage = drink
 
-        try:
-            future = self.beverage_location_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No drink found")
-                return Status.TARGET_NOT_FOUND, "not found"
-
-        except Exception as e:
-            Logger.error(self.node, f"Error finding drink: {e}")
-            return Status.EXECUTION_ERROR, "not found"
+        err, result = self._call(self.beverage_location_client, request, timeout, name="find_drink")
+        if err is not None:
+            return err, "not found"
+        if not result.success:
+            Logger.warn(self.node, "No drink found")
+            return Status.TARGET_NOT_FOUND, "not found"
 
         Logger.success(self.node, f"Found drink: {drink}")
         return Status.EXECUTION_SUCCESS, result.location
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @mockable(
+        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
+    )
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -608,25 +633,21 @@ class VisionTasks:
         request.query = prompt
         request.person = query_person
 
-        try:
-            future = self.moondream_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No result generated")
-                return Status.EXECUTION_ERROR, ""
-
-        except Exception as e:
-            Logger.error(self.node, f"Error requesting description: {e}")
+        err, result = self._call(self.moondream_query_client, request, name="moondream_query")
+        if err is not None:
+            return err, ""
+        if not result.success:
+            Logger.warn(self.node, "No result generated")
             return Status.EXECUTION_ERROR, ""
 
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @mockable(
+        return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
+    )
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
+    def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=60.0) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
         request = CropQuery.Request()
@@ -636,23 +657,52 @@ class VisionTasks:
         request.ymax = float(bbox.y2)
         request.xmax = float(bbox.x2)
 
-        try:
-            future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No result generated")
-                return Status.EXECUTION_ERROR, ""
-
-        except Exception as e:
-            Logger.error(self.node, f"Error requesting description: {e}")
+        err, result = self._call(
+            self.moondream_crop_query_client, request, timeout, name="moondream_crop_query"
+        )
+        if err is not None:
+            return err, ""
+        if not result.success:
+            Logger.warn(self.node, "No result generated")
             return Status.EXECUTION_ERROR, ""
 
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    def _mock_moondream_async(self, callback=None, **kwargs):
+        """Mock for moondream_query_async: fire the callback like the real path."""
+        if callback:
+            callback(Status.EXECUTION_SUCCESS, "a mocked person description")
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
+    @service_check("chairs_to_remove_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
+    def detect_chairs_to_remove(self, timeout: float = 90.0) -> tuple[int, list[tuple]]:
+        """Chairs between the robot and the dining table (hric_commands).
+        Returns pixel (x1, y1, x2, y2) bboxes; the node keeps publishing the
+        annotated frame on CHAIR_REMOVAL_IMAGE_TOPIC for the display."""
+        Logger.info(self.node, "Requesting chairs to remove")
+        request = ChairsToRemove.Request()
+
+        try:
+            future = self.chairs_to_remove_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if result is None or not result.success:
+                Logger.warn(self.node, "Chairs to remove service failed")
+                return Status.EXECUTION_ERROR, []
+            if not result.table_found:
+                Logger.warn(self.node, "No dining table found")
+                return Status.TARGET_NOT_FOUND, []
+        except Exception as e:
+            Logger.error(self.node, f"Error requesting chairs to remove: {e}")
+            return Status.EXECUTION_ERROR, []
+
+        chairs = [(d.x1, d.y1, d.x2, d.y2) for d in result.chairs]
+        Logger.success(self.node, f"{len(chairs)}/{result.total_chairs} chair(s) to remove")
+        return Status.EXECUTION_SUCCESS, chairs
+
+    @mockable(_mock_callback=_mock_moondream_async)
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query_async(self, prompt: str, query_person: bool = False, callback=None):
         """Makes a query of the current image using moondream. Runs asynchronously."""
@@ -685,25 +735,20 @@ class VisionTasks:
             if callback:
                 callback(Status.EXECUTION_ERROR, "")
 
-    @mockable(return_value=None, delay=2)
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("follow_by_name_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def follow_by_name(self, name: str):
+    def follow_by_name(self, name: str) -> Status:
         """Follow a person by name or area"""
         Logger.info(self.node, f"Following face by: {name}")
         request = SaveName.Request()
         request.name = name
 
-        try:
-            future = self.follow_by_name_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                raise Exception("Service call failed")
-
-        except Exception as e:
-            Logger.error(self.node, f"Error following face by: {e}")
-            return Status.EXECUTION_ERROR
+        err, result = self._call(self.follow_by_name_client, request, name="follow_by_name")
+        if err is not None:
+            return err
+        if not result.success:
+            Logger.warn(self.node, f"follow_by_name: no face found for '{name}'")
+            return Status.TARGET_NOT_FOUND
 
         Logger.success(self.node, f"Following face success: {name}")
         return Status.EXECUTION_SUCCESS
@@ -716,18 +761,12 @@ class VisionTasks:
         request = SetBool.Request()
         request.data = track
 
-        try:
-            future = self.track_person_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No person found")
-                return Status.TARGET_NOT_FOUND
-
-        except Exception as e:
-            Logger.error(self.node, f"Error tracking person: {e}")
-            return Status.EXECUTION_ERROR
+        err, result = self._call(self.track_person_client, request, name="track_person")
+        if err is not None:
+            return err
+        if not result.success:
+            Logger.warn(self.node, "No person found")
+            return Status.TARGET_NOT_FOUND
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
@@ -742,50 +781,34 @@ class VisionTasks:
         request.track_by = by
         request.value = value
 
-        try:
-            future = self.track_person_by_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No person found")
-                return Status.TARGET_NOT_FOUND
-
-        except Exception as e:
-            Logger.error(self.node, f"Error tracking person: {e}")
-            return Status.EXECUTION_ERROR
+        err, result = self._call(self.track_person_by_client, request, name="track_person_by")
+        if err is not None:
+            return err
+        if not result.success:
+            Logger.warn(self.node, "No person found")
+            return Status.TARGET_NOT_FOUND
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
 
-    @mockable(return_value=True, delay=2)
-    @service_check("customer_client", False, TIMEOUT)
-    def get_customer(self) -> int:
-        """Track the person in the image"""
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, PointStamped()), delay=2)
+    @service_check("customer_client", (Status.EXECUTION_ERROR, PointStamped()), TIMEOUT)
+    def get_customer(self) -> tuple[Status, PointStamped]:
+        """Find a customer and return their 3D position."""
         Logger.info(self.node, "Searching customer")
-        # request = TrackBy.Request()
         request = Customer.Request()
 
-        try:
-            future = self.customer_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if result is None or not result.found:
-                Logger.warn(self.node, "No person found")
-                from geometry_msgs.msg import PointStamped
-
-                return Status.TARGET_NOT_FOUND, PointStamped()
-
-        except Exception as e:
-            Logger.error(self.node, f"Error tracking person: {e}")
-            from geometry_msgs.msg import PointStamped
-
-            return Status.EXECUTION_ERROR, PointStamped()
+        # customer_node may run a moondream check (~5 s) per waving candidate,
+        # so the client budget must exceed the node's worst case — a premature
+        # client timeout here reads as "no customer" and the robot drives away.
+        err, result = self._call(self.customer_client, request, timeout=20.0, name="get_customer")
+        if err is not None:
+            return err, PointStamped()
+        if not result.found:
+            Logger.warn(self.node, "No person found")
+            return Status.TARGET_NOT_FOUND, PointStamped()
 
         Logger.success(self.node, "Person tracking success")
-        from geometry_msgs.msg import PointStamped
-
         return Status.EXECUTION_SUCCESS, result.people.list[0].point3d if len(
             result.people.list
         ) > 0 else PointStamped()
@@ -800,19 +823,36 @@ class VisionTasks:
         request.pose_requested = pose
         request.request = True
 
-        try:
-            future = self.count_by_pose_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
+        self.last_person_points = []
+        err, result = self._call(self.count_by_pose_client, request, name="count_by_pose")
+        if err is not None:
+            return err, 300
+        if not result.success:
+            return Status.TARGET_NOT_FOUND, 300
 
-            if not result.success:
-                return Status.TARGET_NOT_FOUND, 300
-
-        except Exception as e:
-            Logger.error(self.node, f"Error counting people by pose: {e}")
-            return Status.EXECUTION_ERROR, 300
-
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
+        return Status.EXECUTION_SUCCESS, result.count
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @service_check("count_person_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    def count_person(self) -> tuple[int, int]:
+        """Count ALL people currently in frame (no pose/gesture/clothes filter)."""
+
+        Logger.info(self.node, "Counting people in frame")
+        request = CountBy.Request()
+        request.request = True
+
+        self.last_person_points = []
+        err, result = self._call(self.count_person_client, request, name="count_person")
+        if err is not None:
+            return err, 300
+        if not result.success:
+            Logger.warn(self.node, "Count person service failed")
+            return Status.TARGET_NOT_FOUND, 300
+
+        self.last_person_points = list(getattr(result, "points", []))
+        Logger.success(self.node, f"People counted: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
@@ -825,19 +865,15 @@ class VisionTasks:
         request.pose_requested = gesture
         request.request = True
 
-        try:
-            future = self.count_by_gesture_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
+        self.last_person_points = []
+        err, result = self._call(self.count_by_gesture_client, request, name="count_by_gesture")
+        if err is not None:
+            return err, 300
+        if not result.success:
+            Logger.warn(self.node, "No gesture found")
+            return Status.TARGET_NOT_FOUND, 300
 
-            if not result.success:
-                Logger.warn(self.node, "No gesture found")
-                return Status.TARGET_NOT_FOUND, 300
-
-        except Exception as e:
-            Logger.error(self.node, f"Error counting people by gesture: {e}")
-            return Status.EXECUTION_ERROR, 300
-
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -852,19 +888,15 @@ class VisionTasks:
         request.clothing = clothing
         request.request = True
 
-        try:
-            future = self.count_by_color_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
+        self.last_person_points = []
+        err, result = self._call(self.count_by_color_client, request, name="count_by_color")
+        if err is not None:
+            return err, 300
+        if not result.success:
+            Logger.warn(self.node, f"No {color} {clothing} found")
+            return Status.TARGET_NOT_FOUND, 300
 
-            if not result.success:
-                Logger.warn(self.node, f"No {color} {clothing} found")
-                return Status.TARGET_NOT_FOUND, 300
-
-        except Exception as e:
-            Logger.error(self.node, f"Error counting people by color of clothing: {e}")
-            return Status.EXECUTION_ERROR, 300
-
+        self.last_person_points = list(getattr(result, "points", []))
         Logger.success(self.node, f"People with {color} {clothing}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
@@ -878,38 +910,28 @@ class VisionTasks:
         request.type_requested = type_requested
         request.request = True
 
-        try:
-            future = self.find_person_info_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success or result.result == "unknown":
-                Logger.warn(self.node, f"No {type_requested} detected.")
-                return Status.TARGET_NOT_FOUND, ""
-
-        except Exception as e:
-            Logger.error(self.node, f"Error detecting {type_requested}: {e}")
-            return Status.EXECUTION_ERROR, ""
+        err, result = self._call(self.find_person_info_client, request, name="find_person_info")
+        if err is not None:
+            return err, ""
+        if not result.success or result.result == "unknown":
+            Logger.warn(self.node, f"No {type_requested} detected.")
+            return Status.TARGET_NOT_FOUND, ""
 
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, None))
-    @service_check("detect_hand_client", [Status.EXECUTION_ERROR, None], TIMEOUT)
-    def detect_hand(self) -> tuple[int, PointStamped]:
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, PointStamped()))
+    @service_check("detect_hand_client", (Status.EXECUTION_ERROR, None), TIMEOUT)
+    def detect_hand(self) -> tuple[Status, PointStamped]:
         """Detect the hand and return its 3D position."""
         Logger.info(self.node, "Detecting hand")
         request = DetectHand.Request()
-        try:
-            future = self.detect_hand_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-            if not result.success:
-                Logger.warn(self.node, "No hand detected")
-                return Status.TARGET_NOT_FOUND, None
-        except Exception as e:
-            Logger.error(self.node, f"Error detecting hand: {e}")
-            return Status.EXECUTION_ERROR, None
+        err, result = self._call(self.detect_hand_client, request, name="detect_hand")
+        if err is not None:
+            return err, None
+        if not result.success:
+            Logger.warn(self.node, "No hand detected")
+            return Status.TARGET_NOT_FOUND, None
         Logger.success(
             self.node,
             f"Hand detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
@@ -927,12 +949,9 @@ class VisionTasks:
         Logger.info(self.node, "Detecting trash in the floor")
         prompt = "Reply only with 1 if there is trash on the floor. Otherwise, reply only with 0."
         status, response_q = self.moondream_query(prompt, query_person=False)
-        if status:
-            response_clean = response_q.strip()
-            if response_clean == "1":
-                response_clean = True
-            else:
-                response_clean = False
+        response_clean = False
+        if status == Status.EXECUTION_SUCCESS:
+            response_clean = response_q.strip() == "1"
         return status, response_clean
 
     def count_objects_moondream(self, object: str):
@@ -950,29 +969,72 @@ class VisionTasks:
         labels = [det.classname for det in detections]
         return Status.EXECUTION_SUCCESS, labels
 
-    def describe_person(self, callback):
-        """Describe the person in the image"""
+    def describe_person(self, callback=None):
+        """Describe the person in the image asynchronously."""
         Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses, etc. Don't mention if the person is looking directly at the camera."
-        self.moondream_query_async(prompt, query_person=True, callback=callback)
+        attributes = [
+            "describe the type of clothes and color the person in the front is wearing (dress, pants and shirt, skirt and shirt, shorts and shirt, etc.). Format: The person is wearing [description].",
+            "does the person in the front have glasses? (if not, respond only '0', if yes, describe the glasses).",
+            "does the person in the front have facial hair (if not, respond only '0', if yes, describe the facial hair).",
+            "describe the age group the person in the front belongs to (teenager, young adult, middle-aged, or elderly).",
+            "is the person in the front wearing jewelry? (if not, respond only '0', if yes, describe the jewelry).",
+            "describe the hair style and color of the person in the front (straight, wavy, curly, in a pony tail, etc.). Format: The person has [description] hair.",
+            "what is the build of the person in the front? (thin, average, athletic, robust, etc.). Format: Their build is [description].",
+        ]
 
-    def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
-        time.sleep(TIMEOUT)
+        seen = set()
+
+        state = {"index": random.randrange(len(attributes)), "count": 0, "parts": []}
+
+        def finish():
+            description = "; ".join(state["parts"])
+            if description:
+                description += ";"
+            if callback:
+                callback(Status.EXECUTION_SUCCESS, description)
+
+        def handle_result(status, answer):
+            seen.add(state["index"])
+            if status == Status.EXECUTION_SUCCESS and answer:
+                cleaned = answer.strip()
+                if cleaned and cleaned[0] != "0":
+                    state["parts"].append(cleaned)
+                    state["count"] += 1
+
+            while state["index"] in seen and len(seen) < len(attributes):
+                state["index"] = random.randrange(len(attributes))
+            if state["count"] >= 4 or len(seen) >= len(attributes):
+                finish()
+                return
+
+            self.moondream_query_async(
+                attributes[state["index"]],
+                query_person=True,
+                callback=handle_result,
+            )
+
+        if not attributes:
+            finish()
+            return
+
+        self.moondream_query_async(
+            attributes[state["index"]], query_person=True, callback=handle_result
+        )
+
+    def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[Status, BBOX, PointStamped]:
         """Get the bag in the image"""
+        time.sleep(TIMEOUT)  # allow the pointing pose to settle before capturing
         Logger.info(self.node, "Getting bag in the image")
         request = DetectPointingObject.Request()
 
-        try:
-            future = self.pointing_object_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No bag found")
-                return Status.TARGET_NOT_FOUND, BBOX(), PointStamped()
-        except Exception as e:
-            Logger.error(self.node, f"Error getting bag: {e}")
-            return Status.EXECUTION_ERROR, BBOX(), PointStamped
+        err, result = self._call(
+            self.pointing_object_client, request, timeout, name="get_pointing_bag"
+        )
+        if err is not None:
+            return err, BBOX(), PointStamped()
+        if not result.success:
+            Logger.warn(self.node, "No bag found")
+            return Status.TARGET_NOT_FOUND, BBOX(), PointStamped()
         Logger.success(self.node, f"Bag found: {result.detection}")
         bbox = BBOX()
         bbox.x1 = result.detection.xmin
@@ -1054,6 +1116,7 @@ class VisionTasks:
         drink_pos = None
         left_pos = None
         right_pos = None
+        location = ""
 
         for i in range(len(detections)):
             x_pos.append((detections[i].x, i))
@@ -1087,17 +1150,19 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, location
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
-    @service_check("customer_tables", [Status.EXECUTION_ERROR, None], TIMEOUT)
-    def customer_tables(self) -> tuple[int, list[CustomerTable]]:
+    @service_check("customer_table_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
+    def customer_tables(self) -> tuple[Status, list[CustomerTable]]:
         """Detect the tables and the customers associated to them."""
         req = CustomerTables.Request()
-        future = self.customer_table_client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
-        if not future.done():
-            Logger.warn(self.node, "customer_tables service call timed out")
-            return Status.EXECUTION_ERROR, []
-        result = future.result()
-        if result is None or not result.success:
+        # restaurant_commands internally waits on moondream table points (20 s)
+        # plus the customer service (25 s) — the client budget must cover both,
+        # or timed-out retries pile up concurrent scans on the GPU.
+        err, result = self._call(
+            self.customer_table_client, req, timeout=60.0, name="customer_tables"
+        )
+        if err is not None:
+            return err, []
+        if not result.success:
             Logger.warn(self.node, "customer_tables service call failed or returned no tables")
             return Status.EXECUTION_ERROR, []
         return Status.EXECUTION_SUCCESS, result.customer_tables
@@ -1120,9 +1185,12 @@ class VisionTasks:
 if __name__ == "__main__":
     rclpy.init()
     node = Node("vision_tasks")
-    vision_tasks = VisionTasks(node, task="HRIC")
+    vision_tasks = VisionTasks(node, task=Task.HRIC)
 
     try:
         rclpy.spin(node)
-    except Exception as e:
-        print(f"Error: {e}")
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()

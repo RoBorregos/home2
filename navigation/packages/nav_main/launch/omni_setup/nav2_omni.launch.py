@@ -25,11 +25,19 @@ def launch_setup(context, *args, **kwargs):
     from frida_constants.navigation_constants import RTAB_MAPS_PATH
 
     pkg_file_route = get_package_share_directory('nav_main')
-    nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni.yaml')
+    # Default omnibase profile: 3-WHEEL LIMP (base running degraded, one wheel
+    # out — see nav2_omni_limp.yaml header). Callers can still override with
+    # nav2_config_file:=; point back at nav2_omni.yaml once the base is healthy.
+    nav2_params_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_limp.yaml')
     keepout_overlay_file = os.path.join(pkg_file_route, 'config', 'omni_config', 'nav2_omni_keepout.yaml')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
     nav2_cfg_path = LaunchConfiguration('nav2_config_file', default=nav2_params_file).perform(context)
+
+    # Optional task overlay (e.g. nav2_omni_restaurant.yaml): deep-merged on top
+    # of the base params so task profiles carry only their deltas and never
+    # drift from base tuning.
+    overlay_path = LaunchConfiguration('nav2_overlay_file', default='').perform(context)
 
     # Keepout (virtual obstacle) filter — opt-in.
     use_keepout = LaunchConfiguration('use_keepout', default='false').perform(context)
@@ -39,18 +47,30 @@ def launch_setup(context, *args, **kwargs):
         nav_src, 'packages', 'map_context', 'maps', 'keepout_mask.yaml')
     keepout_mask = LaunchConfiguration('keepout_mask', default=keepout_mask_default)
 
+    # Editable static map (Option A): when on, serve the editable <map>.pgm/.yaml on
+    # /map from a map_server loaded INSIDE this container — co-located with the
+    # costmaps so the latched /map is delivered in-process (a standalone map_server's
+    # cross-process transient-local message can be dropped). slam_toolbox is remapped
+    # off /map by localization.launch.py when this is on.
+    use_static_map = LaunchConfiguration('use_static_map_server', default='false').perform(context).lower() in ('true', '1')
+    map_yaml = LaunchConfiguration('map_yaml', default='').perform(context)
+
     # Build the nav2 param file. When keepout is on, deep-merge the keepout overlay
     # into the nav2 params and write ONE merged file. Passing a single file is the
     # reliable way to get the filter into the composed costmap sub-nodes — extra
     # param files do not merge cleanly there. When off, use the base params as-is,
     # so the costmaps never load the filter (no "mask not received" spam).
     params_path = nav2_cfg_path
-    if keepout_on:
+    if keepout_on or overlay_path:
         with open(nav2_cfg_path) as f:
             merged = yaml.safe_load(f)
-        with open(keepout_overlay_file) as f:
-            _deep_merge(merged, yaml.safe_load(f))
-        params_path = os.path.join(tempfile.gettempdir(), 'nav2_omni_keepout_merged.yaml')
+        if overlay_path:
+            with open(overlay_path) as f:
+                _deep_merge(merged, yaml.safe_load(f))
+        if keepout_on:
+            with open(keepout_overlay_file) as f:
+                _deep_merge(merged, yaml.safe_load(f))
+        params_path = os.path.join(tempfile.gettempdir(), 'nav2_omni_merged.yaml')
         with open(params_path, 'w') as f:
             yaml.safe_dump(merged, f, default_flow_style=False, sort_keys=False)
 
@@ -169,6 +189,40 @@ def launch_setup(context, *args, **kwargs):
             }],
         )
 
+    # Editable static map: map_server loaded INTO this container so its latched /map
+    # reaches the costmap static_layer in-process (reliable, unlike cross-process).
+    map_lifecycle = None
+    if use_static_map and map_yaml:
+        map_server_nodes = LoadComposableNodes(
+            target_container='nav2_container',
+            composable_node_descriptions=[
+                ComposableNode(
+                    package='nav2_map_server',
+                    plugin='nav2_map_server::MapServer',
+                    name='map_server',
+                    parameters=[nav2_params, {
+                        'yaml_filename': map_yaml,
+                        'topic_name': 'map',
+                        'frame_id': 'map',
+                    }],
+                ),
+            ],
+        )
+        on_start_actions.append(TimerAction(period=2.0, actions=[map_server_nodes]))
+        # Dedicated lifecycle manager (autostart) brings map_server up so the latched
+        # /map is published before nav_central activates the costmaps.
+        map_lifecycle = Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_map',
+            output=log_output,
+            parameters=[{
+                'use_sim_time': False,
+                'autostart': True,
+                'node_names': ['map_server'],
+            }],
+        )
+
     # Delay node loading until container process is running
     delayed_nav2_load = RegisterEventHandler(
         condition=IfCondition(nav2_activate),
@@ -181,6 +235,8 @@ def launch_setup(context, *args, **kwargs):
     actions = [nav2_container, delayed_nav2_load]
     if keepout_lifecycle is not None:
         actions.append(keepout_lifecycle)
+    if map_lifecycle is not None:
+        actions.append(map_lifecycle)
 
     return actions
 

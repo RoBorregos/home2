@@ -3,9 +3,13 @@
 Task Manager for Doing Laundry Task
 """
 
+import math
+
 import rclpy
 from rclpy.node import Node
-from tf2_ros import Buffer, TransformListener
+from rclpy.duration import Duration
+from geometry_msgs.msg import PointStamped
+from tf2_ros import Buffer, TransformListener, TransformException
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -24,6 +28,7 @@ class DoingLaundryTM(Node):
     class TaskStates:
         WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
         START = "START"
+        SCAN_FOR_BASKET = "SCAN_FOR_BASKET"
         NAVIGATE_TO_BASKET = "NAVIGATE_TO_BASKET"
         PICK_LAUNDRY_BASKET = "PICK_LAUNDRY_BASKET"
         NAVIGATE_TO_LAUNDRY_TABLE = "NAVIGATE_TO_LAUNDRY_TABLE"
@@ -48,6 +53,10 @@ class DoingLaundryTM(Node):
         # Per-action retry counters so basket/clothes failures don't share budget.
         self.basket_pick_attempts = 0
         self.clothes_pick_attempts = 0
+        self.basket_scan_attempts = 0
+
+        # Chosen basket sublocation ("basket_left"/"basket_right"), decided by scanning.
+        self.basket_sublocation = None
 
         # Round counters for the two place loops.
         self.basket_placed = 0
@@ -55,6 +64,11 @@ class DoingLaundryTM(Node):
 
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "DoingLaundryTM has started.")
+
+    def set_state(self, new_state: str):
+        """Update current state and publish it for the display."""
+        self.current_state = new_state
+        self.subtask_manager.hri.publish_display_step(new_state.lower())
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to location, resetting arm to nav_pose first."""
@@ -92,6 +106,33 @@ class DoingLaundryTM(Node):
         Logger.success(self, "All place rounds completed.")
         return DoingLaundryTM.TaskStates.END
 
+    def _choose_nearest_basket(self, detection):
+        """Transform the basket detection to map frame and return the nearer
+        candidate sublocation ('basket_left' or 'basket_right')."""
+        ps = PointStamped()
+        ps.header.frame_id = "zed_left_camera_optical_frame"
+        ps.point.x = float(detection.px)
+        ps.point.y = float(detection.py)
+        ps.point.z = float(detection.pz)
+        try:
+            tp = self.tf_buffer.transform(ps, "map", timeout=Duration(seconds=1.0))
+        except TransformException as e:
+            Logger.error(self, f"Basket TF transform failed: {e}")
+            return None
+
+        _, areas = self.subtask_manager.nav.retrieve_areas()
+        laundry = areas.get("laundry", {}) if isinstance(areas, dict) else {}
+        left = laundry.get("basket_left")
+        right = laundry.get("basket_right")
+        if not left or not right:
+            Logger.error(self, "basket_left/basket_right missing from areas.")
+            return None
+
+        dl = math.hypot(tp.point.x - left[0], tp.point.y - left[1])
+        dr = math.hypot(tp.point.x - right[0], tp.point.y - right[1])
+        Logger.info(self, f"Basket dist left={dl:.2f} right={dr:.2f}")
+        return "basket_left" if dl <= dr else "basket_right"
+
     def run(self):
         if self.current_state == DoingLaundryTM.TaskStates.WAIT_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
@@ -101,18 +142,53 @@ class DoingLaundryTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, Doing Laundry task will begin now")
-            self.current_state = DoingLaundryTM.TaskStates.START
+            self.set_state(DoingLaundryTM.TaskStates.START)
 
         elif self.current_state == DoingLaundryTM.TaskStates.START:
             Logger.state(self, "Starting Doing Laundry Task")
             self.navigate_to("laundry", "safe_place")
-            self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET
+            self.set_state(DoingLaundryTM.TaskStates.SCAN_FOR_BASKET)
+
+        elif self.current_state == DoingLaundryTM.TaskStates.SCAN_FOR_BASKET:
+            Logger.info(self, "Scanning for the laundry basket to pick a location.")
+
+            self.navigate_to("laundry", "washing_machine")
+
+            self.subtask_manager.hri.say("Looking for the laundry basket.", wait=False)
+            status, dets = self.subtask_manager.vision.detect_objects(
+                label="laundry_basket", timeout=5
+            )
+
+            if status == Status.EXECUTION_SUCCESS and dets:
+                nearest = min(dets, key=lambda b: b.distance)
+                sublocation = self._choose_nearest_basket(nearest)
+                if sublocation is not None:
+                    self.basket_sublocation = sublocation
+                    self.basket_scan_attempts = 0
+                    Logger.success(self, f"Basket located at {sublocation}.")
+                    self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
+                    return
+
+            self.basket_scan_attempts += 1
+            if self.basket_scan_attempts >= ATTEMPT_LIMIT:
+                Logger.warn(
+                    self,
+                    "Basket scan failed after max attempts, defaulting to basket_left.",
+                )
+                self.basket_sublocation = "basket_left"
+                self.basket_scan_attempts = 0
+                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET)
+            else:
+                Logger.warn(
+                    self,
+                    f"Basket not detected (attempt {self.basket_scan_attempts}), retrying.",
+                )
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_BASKET:
-            Logger.info(self, "Navigating to basket area")
-            status, error = self.navigate_to("laundry", "laundry_basket")
+            Logger.info(self, f"Navigating to basket at {self.basket_sublocation}")
+            status, error = self.navigate_to("laundry", self.basket_sublocation)
             if status == Status.EXECUTION_SUCCESS:
-                self.current_state = DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET
+                self.set_state(DoingLaundryTM.TaskStates.PICK_LAUNDRY_BASKET)
             else:
                 Logger.error(self, f"Navigation failed: {error}. Retrying...")
 
@@ -124,12 +200,12 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Basket picked.")
                 self.basket_pick_attempts = 0
-                self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE
+                self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
             else:
                 self.basket_pick_attempts += 1
                 if self.basket_pick_attempts >= ATTEMPT_LIMIT:
                     Logger.error(self, "Basket pick failed after max attempts. Ending.")
-                    self.current_state = DoingLaundryTM.TaskStates.END
+                    self.set_state(DoingLaundryTM.TaskStates.END)
                 else:
                     Logger.warn(
                         self,
@@ -138,10 +214,10 @@ class DoingLaundryTM(Node):
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE:
             Logger.info(self, "Navigating to laundry table while holding basket.")
-            status, error = self.navigate_holding("laundry", "folding_surface")
+            status, error = self.navigate_holding("laundry", "table")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry table with basket.")
-                self.current_state = DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY
+                self.set_state(DoingLaundryTM.TaskStates.UNLOAD_LAUNDRY)
             else:
                 Logger.error(self, f"Navigation to table failed: {error}. Retrying...")
 
@@ -155,7 +231,7 @@ class DoingLaundryTM(Node):
             self.subtask_manager.manipulation.move_to_position("look_side_low_stare")
             for _ in range(20):
                 rclpy.spin_once(self, timeout_sec=0.1)
-            self.current_state = DoingLaundryTM.TaskStates.PICK_CLOTHES_BASKET
+            self.set_state(DoingLaundryTM.TaskStates.PICK_CLOTHES_BASKET)
 
         elif self.current_state == DoingLaundryTM.TaskStates.PICK_CLOTHES_BASKET:
             Logger.info(
@@ -168,12 +244,12 @@ class DoingLaundryTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from basket.")
                 self.clothes_pick_attempts = 0
-                self.current_state = DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE
+                self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
                 self.clothes_pick_attempts += 1
                 if self.clothes_pick_attempts >= ATTEMPT_LIMIT:
                     Logger.error(self, "Clothes pick from basket failed. Ending.")
-                    self.current_state = DoingLaundryTM.TaskStates.END
+                    self.set_state(DoingLaundryTM.TaskStates.END)
                 else:
                     Logger.warn(
                         self,
@@ -183,7 +259,8 @@ class DoingLaundryTM(Node):
         elif self.current_state == DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE:
             Logger.info(self, "Placing clothes on the laundry table.")
             self.subtask_manager.hri.say("Placing clothes on the table.", wait=False)
-            result = self.subtask_manager.manipulation.place()
+            self.subtask_manager.manipulation.move_to_position("nav_carry_bag_pose")
+            result = self.subtask_manager.manipulation.place(from_current=True)
 
             if result == Status.EXECUTION_SUCCESS:
                 # Attribute the placement to whichever loop we are currently in.
@@ -199,17 +276,17 @@ class DoingLaundryTM(Node):
                         self,
                         f"WM→table done {self.wm_placed}/{WM_PLACE_ROUNDS}.",
                     )
-                self.current_state = self.next_state_after_place()
+                self.set_state(self.next_state_after_place())
             else:
                 Logger.error(self, "Place clothes failed. Ending task.")
-                self.current_state = DoingLaundryTM.TaskStates.END
+                self.set_state(DoingLaundryTM.TaskStates.END)
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_MACHINE:
             Logger.info(self, "Navigating to laundry machine.")
             status, error = self.navigate_to("laundry", "laundry_machine")
             if status == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Reached laundry machine.")
-                self.current_state = DoingLaundryTM.TaskStates.PICK_CLOTHES_WM
+                self.set_state(DoingLaundryTM.TaskStates.PICK_CLOTHES_WM)
             else:
                 Logger.error(self, f"Navigation to laundry machine failed: {error}. Retrying...")
 
@@ -227,14 +304,14 @@ class DoingLaundryTM(Node):
                 # Close the door now while we are still in front of the machine,
                 # but only once we have finished all WM pick rounds.
                 if (self.wm_placed + 1) >= WM_PLACE_ROUNDS:
-                    self.current_state = DoingLaundryTM.TaskStates.CLOSE_LAUNDRY_MACHINE
+                    self.set_state(DoingLaundryTM.TaskStates.CLOSE_LAUNDRY_MACHINE)
                 else:
-                    self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES
+                    self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES)
             else:
                 self.clothes_pick_attempts += 1
                 if self.clothes_pick_attempts >= ATTEMPT_LIMIT:
                     Logger.error(self, "Clothes pick from WM failed. Ending.")
-                    self.current_state = DoingLaundryTM.TaskStates.END
+                    self.set_state(DoingLaundryTM.TaskStates.END)
                 else:
                     Logger.warn(
                         self,
@@ -249,13 +326,13 @@ class DoingLaundryTM(Node):
             # self.subtask_manager.manipulation.move_to_position("mid_close_laundry_pose")
             # self.subtask_manager.manipulation.move_to_position("end_close_laundry_pose")
             Logger.success(self, "Laundry machine door closed.")
-            self.current_state = DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES
+            self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES)
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES:
             Logger.info(self, "Navigating back to the laundry table with clothes.")
-            status, error = self.navigate_holding("laundry", "folding_surface")
+            status, error = self.navigate_holding("laundry", "table")
             if status == Status.EXECUTION_SUCCESS:
-                self.current_state = DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE
+                self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
                 Logger.error(self, f"Navigation back to table failed: {error}. Retrying...")
 

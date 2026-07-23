@@ -37,6 +37,7 @@ from frida_constants.vision_constants import (
 )
 from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
+from vision_general.utils.debug_pub import DebugImagePublisher
 
 
 def _insightface_providers() -> list:
@@ -116,7 +117,9 @@ class FaceRecognition(Node):
         )
 
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
-        self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
+        self.view_pub = DebugImagePublisher(
+            self, FACE_RECOGNITION_IMAGE, "face_recognition"
+        )
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
@@ -235,10 +238,7 @@ class FaceRecognition(Node):
 
     def publish_image(self) -> None:
         """Publish image with annotations"""
-        if len(self.annotated_frame) > 0:
-            self.view_pub.publish(
-                self.bridge.cv2_to_imgmsg(self.annotated_frame, "bgr8")
-            )
+        self.view_pub.publish(self.annotated_frame)
 
     def process_imgs(self) -> None:
         """Make encodings of known people images"""
@@ -341,7 +341,6 @@ class FaceRecognition(Node):
         person_seen = String()
         person_seen.data = largest_face_name
         self.name_publisher.publish(person_seen)
-        self.person_list_publisher.publish(self.face_list)
 
     def _active_callback(self, msg):
         if msg.data == self.vision_active:
@@ -485,6 +484,9 @@ class FaceRecognition(Node):
                 detected = False
 
         self.prev_faces = self.curr_faces
+
+        # Always publish the full list of recognized faces.
+        self.person_list_publisher.publish(self.face_list)
 
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)

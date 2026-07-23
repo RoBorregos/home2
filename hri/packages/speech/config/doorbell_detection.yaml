@@ -1,0 +1,44 @@
+doorbell_detection:
+  ros__parameters:
+    audio_topic: /hri/rawAudioChunk
+    KEYWORD_TOPIC: /hri/speech/ei_detection
+    doorbell_label: "doorbell"
+    sample_rate: 16000
+    # Confidence gate: only publish a ring scoring above this (0..1).
+    min_score: 0.6
+    # --- Gating: the doorbell only rings while the robot waits at the door, and
+    # its own TTS must not be mistaken for a bell. ---
+    arm_topic: /hri/doorbell/armed
+    saying_topic: /saying
+    # require_arm: publish nothing until the task manager arms the detector while
+    # waiting for a guest. Set False to run always (standalone debugging).
+    require_arm: true
+    mute_while_speaking: true
+    # --- Auto-enrollment: the bell is the same within a round; enroll the first
+    # confident ring so the second guest's ring is recognised even if fainter. ---
+    enroll: true
+    # A borderline event whose fingerprint matches the enrolled bell at/above this
+    # cosine similarity is confirmed even if its raw score is below min_score.
+    template_sim_confirm: 0.85
+    # --- Self-calibrating; the defaults below rarely need touching. ---
+    # Detection is by LOUD SOUND EVENT, not tonal shape: every doorbell type
+    # (short buzzer, long chime, ding-dong) and the knock is a loud event, so
+    # confirming on that is uniform across all of them. Specificity comes from the
+    # gating above (armed only while waiting, muted while speaking), not the audio.
+    #
+    # Stage 1 — adaptive loudness floor.
+    active_margin_db: 8.0   # a frame joins an event this far above the floor
+    floor_alpha: 0.05
+    # Stage 2 — event confirmation: the peak must stand confirm_margin_db above the
+    # floor and the loud part must last min_event_ms. Raise confirm_margin_db if
+    # faint background sounds trigger it; lower it if quiet doorbells are missed.
+    confirm_margin_db: 12.0
+    event_gap_ms: 150.0     # a silence this long ends an event
+    min_event_ms: 120.0     # total loud time needed to confirm
+    max_event_ms: 4000.0    # cap so a continuous sound confirms once
+    cooldown_s: 1.5
+    # Stage 3 — tonal features: score + fingerprint only, never reject. pitch_max
+    # bounds the doorbell band; clarity_min marks which frames count as tonal.
+    pitch_min_hz: 200.0
+    pitch_max_hz: 1600.0
+    clarity_min: 0.60

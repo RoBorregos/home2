@@ -4,6 +4,7 @@
 import copy
 import math
 import threading
+import time
 from abc import ABC, abstractmethod
 
 import cv2 as cv
@@ -101,6 +102,11 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
         self.pub_poses = self.create_publisher(PoseArray, det_poses_topic, 5)
         self.pub_3d = self.create_publisher(MarkerArray, det_3d_topic, 5)
         self.pub_image = self.create_publisher(Image, det_img_topic, 5)
+        # Debug image is subscriber-gated + throttled: converting/publishing a
+        # raw 720p frame at camera rate (30 Hz) costs ~80 MB/s whether or not
+        # anything is watching (web_video_server only subscribes on demand).
+        self._img_pub_max_hz = 5.0
+        self._img_pub_last = 0.0
 
         # --- subscriptions ---
         qos = rclpy.qos.QoSProfile(
@@ -152,7 +158,12 @@ class BaseDetectorNode(rclpy.node.Node, ABC):
             )
             self.run_thread.start()
 
-        if len(self.detections_frame) > 0:
+        if (
+            len(self.detections_frame) > 0
+            and self.pub_image.get_subscription_count() > 0
+            and time.monotonic() - self._img_pub_last >= 1.0 / self._img_pub_max_hz
+        ):
+            self._img_pub_last = time.monotonic()
             self.pub_image.publish(
                 self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8")
             )

@@ -15,6 +15,8 @@ def generate_launch_description():
     )
     return LaunchDescription(
         [
+            # image_orienter is started by the included object_detector_node.launch.py —
+            # do NOT add it here again or two instances will run.
             Node(
                 package="vision_general",
                 executable="restaurant_commands.py",
@@ -29,10 +31,12 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            # face_recognition_node removed: the restaurant task manager makes no
+            # face-recognition calls; it only cost InsightFace VRAM + a hot 5 Hz timer.
             Node(
-                package="vision_general",
-                executable="face_recognition_node.py",
-                name="face_recognition",
+                package="moondream_run",
+                executable="moondream_node.py",
+                name="moondream_node",
                 output="screen",
                 emulate_tty=True,
             ),

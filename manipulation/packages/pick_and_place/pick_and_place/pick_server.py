@@ -33,6 +33,10 @@ from frida_constants.manipulation_constants import (
     PEAK_PRE_GRASP_HEIGHT,
     FIXED_DISTANCE_MOVE_SERVICE,
     XARM_ROBOT_STATES_TOPIC,
+    BOWL_NAME,
+    BOWL_PRE_GRASP_HEIGHT,
+    BOWL_GRASP_Z_TWEAK,
+    BOWL_DESCENT_DISTANCE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -58,6 +62,7 @@ from frida_motion_planning.utils.service_utils import (
     open_gripper,
 )
 import time
+from collections import deque
 
 from std_srvs.srv import Empty
 
@@ -70,20 +75,40 @@ from xarm_msgs.msg import RobotMsg
 # Force-guarded descent constants
 # Units: speeds in mm/s (xArm SDK convention)
 # =============================================================================
-CUTLERY_DESCENT_SPEED = 20.0  # mm/s downward (= 2 cm/s)
-CUTLERY_EFFORT_THRESHOLD = (
-    6.5  # N - effort delta to detect contact (raised from 3.0 to avoid false positives)
-)
-CUTLERY_DESCENT_TIMEOUT = 10.0  # s - max descent before giving up
+CUTLERY_DESCENT_SPEED = 12.0  # mm/s downward (lowered from 20 for less impact force)
+# Hard safety ceiling on effort-delta. Normal contact uses the adaptive per-joint
+# threshold below, which survives base-height/pose changes without re-tuning.
+CUTLERY_EFFORT_THRESHOLD = 6.5  # N (ceiling)
+CUTLERY_DESCENT_TIMEOUT = 16.0  # s - must cover the 0.15 m pre-grasp at the speed above
 CUTLERY_PRE_GRASP_HEIGHT = (
     0.15  # m - pre-grasp height above target (MoveIt uses meters)
 )
-CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
-CUTLERY_POST_CONTACT_RETRACT = 0.002  # m - retract upward after contact to relieve Z pressure before closing gripper
+CUTLERY_EFFORT_GRACE_PERIOD = 0.3  # s - ignore effort right after velocity starts
+# Adaptive contact: after grace, sample each joint's effort-delta noise for
+# CALIB_WINDOW s, then trip when a joint exceeds mean + K*sigma (floored, capped).
+CUTLERY_EFFORT_CALIB_WINDOW = 0.3  # s
+CUTLERY_EFFORT_K = 5.0  # sigma multiplier for the per-joint trip level
+CUTLERY_EFFORT_MARGIN = 0.5  # N - added on top of K*sigma
+CUTLERY_EFFORT_MIN_TRIP = 1.5  # N - floor so a quiet joint does not trip on noise
+# J1 (base yaw) and J6 (tool roll) carry ~no vertical contact force on a top-down
+# grasp, so their effort drift causes false early trips. Exclude them from contact.
+CUTLERY_CONTACT_IGNORE_JOINTS = (0, 5)
+# Jump-based contact: trip on a sudden effort rise vs a trailing reference (robust
+# to slow gravity drift), after the motion settles and past a minimum descent.
+CUTLERY_CONTACT_SETTLE = 1.0  # s - skip the motion-onset spike before detecting
+CUTLERY_MIN_CONTACT_DESCENT = 0.08  # m - do not honor a jump before this depth
+CUTLERY_JUMP_WINDOW = 0.3  # s - age of the trailing effort reference
+CUTLERY_JUMP_TRIP = 2.5  # N - jump over the window that counts as contact
+CUTLERY_JUMP_SUSTAIN = 3  # consecutive samples (~0.06s) the jump must hold
+# Effort drifts several N from rest during a clean descent, so an absolute-vs-rest
+# threshold false-trips; this high ceiling is only a last-resort stop.
+CUTLERY_CONTACT_HARD_CEILING = 15.0  # N
+CUTLERY_POST_CONTACT_RETRACT = 0.004  # m - retract upward after contact to relieve Z pressure before closing gripper
+# Shelf retract constants (from main #1055)
 SHELF_RETRACT_DIST = 0.15  # m - fallback retract if the approach depth is unknown
 SHELF_RETRACT_MARGIN = 0.05  # m - extra beyond the measured approach depth
 SHELF_RETRACT_MIN = 0.08  # m - clamp
-SHELF_RETRACT_MAX = 0.30  # m - clamp
+SHELF_RETRACT_MAX = 0.20  # m - clamp
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
@@ -107,9 +132,13 @@ class PickMotionServer(Node):
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
-        self.declare_parameter("rim_tip_offset", -0.12)
+        self.declare_parameter("rim_tip_offset", -0.18)
         self.rim_tip_offset = self.get_parameter("rim_tip_offset").value
         self.get_logger().info(f"Rim tip offset: {self.rim_tip_offset} m")
+
+        self.declare_parameter("bowl_tip_offset", -0.12)
+        self.bowl_tip_offset = self.get_parameter("bowl_tip_offset").value
+        self.get_logger().info(f"Bowl tip offset: {self.bowl_tip_offset} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
@@ -349,6 +378,7 @@ class PickMotionServer(Node):
         is_flat = goal_handle.request.object_name.lower() in FLAT_OBJECT_NAMES
         is_rim = goal_handle.request.object_name.lower() in RIM_NAMES
         is_peak = goal_handle.request.object_name.lower() in PEAK_NAMES
+        is_bowl = goal_handle.request.object_name.lower() == BOWL_NAME
 
         if is_flat:
             num_grasping_alternatives = 6
@@ -372,7 +402,13 @@ class PickMotionServer(Node):
                     return False, pick_result
                 ee_link_pose = copy.deepcopy(pose)
                 # Rim: offset by full tip distance so fingers straddle the wall without descending too far.
-                offset_distance = self.rim_tip_offset if is_rim else self.ee_link_offset
+                if is_bowl:
+                    offset_distance = self.bowl_tip_offset
+                elif is_rim:
+                    offset_distance = self.rim_tip_offset
+                else:
+                    offset_distance = self.ee_link_offset
+
                 offset_distance += j * grasping_alternative_distance
 
                 quat = [
@@ -447,16 +483,21 @@ class PickMotionServer(Node):
                         self.get_logger().info(
                             f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT * 1000:.1f}mm before closing gripper..."
                         )
+                        # Retract from the actual contact point (not the nominal target)
+                        # so we go up, never back down into the table.
+                        contact_z = (
+                            pre_grasp_pose.pose.position.z - self._last_descent_m
+                        )
                         retract_pose = copy.deepcopy(pre_grasp_pose)
                         retract_pose.pose.position.z = (
-                            ee_link_pose.pose.position.z + CUTLERY_POST_CONTACT_RETRACT
+                            contact_z + CUTLERY_POST_CONTACT_RETRACT
                         )
                         self.move_to_pose(retract_pose, velocity=0.1)
                         time.sleep(0.5)
 
                         self.get_logger().info("[Cutlery] Closing gripper...")
                         close_gripper(self._gripper_set_state_client)
-                        time.sleep(1.5)
+                        time.sleep(2.5)  # let the gripper fully close before lifting
                         self.get_logger().info("[Cutlery] Gripper closed")
 
                         # Lift
@@ -483,7 +524,9 @@ class PickMotionServer(Node):
 
                     # Validate the descent endpoint against the robot itself
                     descent_endpoint = copy.deepcopy(ee_link_pose)
-                    descent_endpoint.pose.position.z += RIM_GRASP_Z_TWEAK
+                    descent_endpoint.pose.position.z += (
+                        BOWL_GRASP_Z_TWEAK if is_bowl else RIM_GRASP_Z_TWEAK
+                    )
                     if endpoint_self_collides(
                         self._compute_ik_client,
                         self._state_validity_client,
@@ -505,7 +548,9 @@ class PickMotionServer(Node):
 
                     # Pre-grasp above the rim (MoveIt)
                     pre_grasp_pose = copy.deepcopy(ee_link_pose)
-                    pre_grasp_pose.pose.position.z += RIM_PRE_GRASP_HEIGHT
+                    pre_grasp_pose.pose.position.z += (
+                        BOWL_PRE_GRASP_HEIGHT if is_bowl else RIM_PRE_GRASP_HEIGHT
+                    )
 
                     self.get_logger().info(
                         f"[Rim] Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f} "
@@ -527,10 +572,13 @@ class PickMotionServer(Node):
                     self._clear_octomap()
 
                     # Fixed-distance descent (xArm cartesian velocity)
-                    self.get_logger().info(
-                        f"[Rim] Descending a fixed {RIM_DESCENT_DISTANCE * 1000:.0f}mm..."
+                    descent_distance = (
+                        BOWL_DESCENT_DISTANCE if is_bowl else RIM_DESCENT_DISTANCE
                     )
-                    descended = self.fixed_distance_descent(RIM_DESCENT_DISTANCE)
+                    self.get_logger().info(
+                        f"[Rim] Descending a fixed {descent_distance * 1000:.0f}mm..."
+                    )
+                    descended = self.fixed_distance_descent(descent_distance)
 
                     if not descended:
                         self.get_logger().warn(
@@ -619,13 +667,7 @@ class PickMotionServer(Node):
                     return True, pick_result
 
                 else:
-                    # EE XY before reaching in, to size the retract dynamically.
-                    pre_state = self._latest_robot_state
-                    pre_xy = (
-                        (pre_state.pose[0] / 1000.0, pre_state.pose[1] / 1000.0)
-                        if pre_state is not None
-                        else None
-                    )
+                    # Pure GPD reach (simple plan straight to the grasp, what grasped before).
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(
                         ee_link_pose
                     )
@@ -642,43 +684,8 @@ class PickMotionServer(Node):
 
                     if result:
                         self.get_logger().info("Object attached")
-                        # Shelf pick (frontal grasp): pull straight out toward the
-                        # robot in XY (Z constant, clears ceiling). Table unchanged.
-                        approach = quat2mat(
-                            [
-                                ee_link_pose.pose.orientation.w,
-                                ee_link_pose.pose.orientation.x,
-                                ee_link_pose.pose.orientation.y,
-                                ee_link_pose.pose.orientation.z,
-                            ]
-                        )[:, 2]
-                        if abs(float(approach[2])) < 0.5:
-                            retract_pose = copy.deepcopy(ee_link_pose)
-                            gx = ee_link_pose.pose.position.x
-                            gy = ee_link_pose.pose.position.y
-                            dist = SHELF_RETRACT_DIST
-                            post_state = self._latest_robot_state
-                            if pre_xy is not None and post_state is not None:
-                                depth = float(
-                                    np.hypot(
-                                        post_state.pose[0] / 1000.0 - pre_xy[0],
-                                        post_state.pose[1] / 1000.0 - pre_xy[1],
-                                    )
-                                )
-                                dist = min(
-                                    max(
-                                        depth + SHELF_RETRACT_MARGIN, SHELF_RETRACT_MIN
-                                    ),
-                                    SHELF_RETRACT_MAX,
-                                )
-                            n = float(np.hypot(gx, gy))
-                            if n > 1e-6:
-                                retract_pose.pose.position.x -= (gx / n) * dist
-                                retract_pose.pose.position.y -= (gy / n) * dist
-                            self.get_logger().info(
-                                f"Shelf retract: pull-out toward robot ({dist:.3f} m)"
-                            )
-                            self.move_to_pose(retract_pose, velocity=0.2)
+                        # No shelf retract: switching to mode 5 with an object held opens the
+                        # gripper; let the front_stare return plan out collision-free instead.
                         pick_result.pick_pose = ee_link_pose
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
@@ -716,6 +723,7 @@ class PickMotionServer(Node):
         Grace period ignores transient effort spikes from mode switching.
         """
         self.get_logger().info("[ForceGuard] Starting force-guarded descent")
+        self._last_descent_m = 0.0  # meters descended when contact/timeout fires
 
         # --- 1. Effort baseline ---
         if self._latest_joint_state is None:
@@ -799,7 +807,10 @@ class PickMotionServer(Node):
                 f"(threshold={CUTLERY_EFFORT_THRESHOLD}N, grace={CUTLERY_EFFORT_GRACE_PERIOD}s)"
             )
 
-            # --- 4. Monitor effort ---
+            # --- 4. Monitor effort: jump-based contact (robust to drift) ---
+            effort_hist = deque()  # (timestamp, effort) within JUMP_WINDOW, post-settle
+            consecutive = 0
+            last_log = 0.0
             while (time.time() - start_time) < CUTLERY_DESCENT_TIMEOUT:
                 time.sleep(0.02)  # 50Hz
 
@@ -809,26 +820,60 @@ class PickMotionServer(Node):
                     continue
 
                 current_effort = np.array(self._latest_joint_state.effort)
-                effort_delta = np.abs(current_effort - effort_baseline)
-                max_delta = float(np.max(effort_delta))
-                max_joint = int(np.argmax(effort_delta))
 
-                # Skip during grace period (transient spikes from mode switch / motion start)
-                if elapsed < CUTLERY_EFFORT_GRACE_PERIOD:
+                # Skip the motion-onset transient before any detection.
+                if elapsed < CUTLERY_CONTACT_SETTLE:
                     continue
 
-                if max_delta > CUTLERY_EFFORT_THRESHOLD:
-                    distance_mm = elapsed * CUTLERY_DESCENT_SPEED
+                now = time.time()
+                effort_hist.append((now, current_effort))
+                while (
+                    len(effort_hist) > 1
+                    and now - effort_hist[0][0] > CUTLERY_JUMP_WINDOW
+                ):
+                    effort_hist.popleft()
+
+                descended = elapsed * CUTLERY_DESCENT_SPEED / 1000.0
+                abs_delta = np.abs(current_effort - effort_baseline)
+                jump_mag = np.abs(current_effort - effort_hist[0][1])
+                for ij in CUTLERY_CONTACT_IGNORE_JOINTS:
+                    if ij < len(abs_delta):
+                        abs_delta[ij] = 0.0
+                        jump_mag[ij] = 0.0
+
+                # Diagnostic: profile the slow drift (abs) vs the contact signal (jump).
+                if elapsed - last_log > 1.5:
                     self.get_logger().info(
-                        f"[ForceGuard] CONTACT! Joint {max_joint + 1} "
-                        f"delta={max_delta:.2f}N (threshold={CUTLERY_EFFORT_THRESHOLD}N) "
-                        f"after {elapsed:.2f}s (~{distance_mm:.1f}mm descended)"
+                        f"[ForceGuard] t={elapsed:.1f}s ~{descended * 1000:.0f}mm "
+                        f"max_abs={float(np.max(abs_delta)):.2f}N "
+                        f"max_jump={float(np.max(jump_mag)):.2f}N"
+                    )
+                    last_log = elapsed
+
+                # Real table contact is deep; only honor a trip past the min descent.
+                if descended < CUTLERY_MIN_CONTACT_DESCENT:
+                    continue
+
+                consecutive = (
+                    consecutive + 1 if (jump_mag > CUTLERY_JUMP_TRIP).any() else 0
+                )
+                hard = float(np.max(abs_delta)) > CUTLERY_CONTACT_HARD_CEILING
+                if consecutive >= CUTLERY_JUMP_SUSTAIN or hard:
+                    by_jump = consecutive >= CUTLERY_JUMP_SUSTAIN
+                    metric = jump_mag if by_jump else abs_delta
+                    j = int(np.argmax(metric))
+                    self._last_descent_m = descended
+                    self.get_logger().info(
+                        f"[ForceGuard] CONTACT ({'jump' if by_jump else 'ceiling'})! "
+                        f"Joint {j + 1} {float(metric[j]):.2f}N after {elapsed:.2f}s "
+                        f"(~{descended * 1000:.1f}mm descended)"
                     )
                     contact_detected = True
                     break
 
             if not contact_detected:
                 elapsed = time.time() - start_time
+                self._last_descent_m = elapsed * CUTLERY_DESCENT_SPEED / 1000.0
                 self.get_logger().warn(
                     f"[ForceGuard] Timeout after {elapsed:.1f}s "
                     f"(~{elapsed * CUTLERY_DESCENT_SPEED:.1f}mm descended)"
@@ -1054,12 +1099,13 @@ class PickMotionServer(Node):
         tolerance_position=0.005,
         tolerance_orientation=0.02,
         velocity=PICK_VELOCITY,
+        planner_id=PICK_PLANNER,
     ):
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = float(velocity)
         request.acceleration = float(PICK_ACCELERATION)
-        request.planner_id = PICK_PLANNER
+        request.planner_id = planner_id
         request.target_link = GRASP_LINK_FRAME
         request.tolerance_position = tolerance_position
         request.tolerance_orientation = tolerance_orientation
@@ -1093,28 +1139,25 @@ class PickMotionServer(Node):
         self.collision_objects = self.get_collision_objects()
 
     def attach_pick_object(self):
-        obj_lowest = None
-        obj_highest = None
-        for obj in self.collision_objects:
-            if PICK_OBJECT_NAMESPACE in obj.id:
+        pick_objs = [o for o in self.collision_objects if PICK_OBJECT_NAMESPACE in o.id]
+        if not pick_objs:
+            return True, None, None
+        obj_lowest = min(pick_objs, key=lambda o: o.pose.pose.position.z)
+        obj_highest = max(pick_objs, key=lambda o: o.pose.pose.position.z)
+        # Attach only ONE box and drop the rest: attaching the whole cluster cloud (~15 boxes
+        # ahead of the gripper) over-constrained the return; front_stare/table_stare failed (-2).
+        for obj in pick_objs:
+            if obj.id == obj_lowest.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
-                if obj_lowest is None:
-                    obj_lowest = obj
-                else:
-                    if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
-                        obj_lowest = obj
-                if obj_highest is None:
-                    obj_highest = obj
-                else:
-                    if obj.pose.pose.position.z > obj_highest.pose.pose.position.z:
-                        obj_highest = obj
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
                 self._attach_collision_object_client.wait_for_service()
                 future = self._attach_collision_object_client.call_async(request)
                 self.wait_for_future(future)
+            else:
+                self.remove_collision_object(obj.id)
         return True, obj_lowest, obj_highest
 
     def get_collision_objects(self):

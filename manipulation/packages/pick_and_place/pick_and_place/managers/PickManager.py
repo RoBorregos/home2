@@ -6,6 +6,8 @@ from frida_interfaces.srv import (
 )
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
+from moveit_msgs.srv import GetPlanningScene, ApplyPlanningScene
+from moveit_msgs.msg import PlanningScene, PlanningSceneComponents, CollisionObject
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
 from frida_interfaces.action import PickMotion
@@ -20,6 +22,7 @@ from frida_constants.manipulation_constants import (
     POUR_OBJECT_NAMES,
     RIM_NAMES,
     PEAK_NAMES,
+    BOWL_NAME,
 )
 from typing import Tuple
 import time
@@ -40,6 +43,15 @@ CFG_PATHS = [
     ],
     [
         "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
+        False,
+    ],
+]
+
+# Shelf picks use a frontal-biased cfg with a wider approach cone (the table 30deg cone
+# over-prunes the oblique shelf view); selected only when is_shelf.
+SHELF_CFG_PATHS = [
+    [
+        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_shelf.cfg",
         False,
     ],
 ]
@@ -92,7 +104,6 @@ class PickManager:
 
     def __init__(self, node):
         self.node = node
-
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
@@ -101,19 +112,60 @@ class PickManager:
         self._estimate_flat_grasp_client = self.node.create_client(
             EstimateFlatGrasp, "/manipulation/estimate_flat_grasp"
         )
+        self._get_scene_client = self.node.create_client(
+            GetPlanningScene, "/get_planning_scene"
+        )
+        self._apply_scene_client = self.node.create_client(
+            ApplyPlanningScene, "/apply_planning_scene"
+        )
+
+    def _clear_world_collision_objects(self):
+        """Remove accumulated world collision objects before perceiving fresh
+        ones; stale per-attempt clutter blocks grasp goal sampling."""
+        try:
+            if not self._get_scene_client.wait_for_service(timeout_sec=2.0):
+                return
+            req = GetPlanningScene.Request()
+            req.components.components = PlanningSceneComponents.WORLD_OBJECT_NAMES
+            fut = wait_for_future(self._get_scene_client.call_async(req), timeout=5)
+            if fut is None or fut.result() is None:
+                return
+            objs = fut.result().scene.world.collision_objects
+            if not objs:
+                return
+            scene = PlanningScene()
+            scene.is_diff = True
+            for o in objs:
+                co = CollisionObject()
+                co.id = o.id
+                co.header = o.header
+                co.operation = CollisionObject.REMOVE
+                scene.world.collision_objects.append(co)
+            if not self._apply_scene_client.wait_for_service(timeout_sec=2.0):
+                return
+            areq = ApplyPlanningScene.Request()
+            areq.scene = scene
+            wait_for_future(self._apply_scene_client.call_async(areq), timeout=5)
+            self.node.get_logger().info(
+                f"Cleared {len(objs)} stale collision objects before pick"
+            )
+        except Exception as e:
+            self.node.get_logger().warn(f"Collision clear skipped: {e}")
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params, is_shelf: bool = False
     ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
+        self._clear_world_collision_objects()
         self.node.get_logger().info("Setting initial joint positions")
 
         is_rim_object = is_rim(object_name)
         is_peak_object = is_peak(object_name)
         is_flat_object = is_flat_grasp(object_name) or is_rim_object or is_peak_object
+        is_bowl_object = object_name.lower() == BOWL_NAME
 
         if not pick_params.in_configuration:
-            if is_rim_object or is_peak_object:
+            if (is_rim_object or is_peak_object) and not is_bowl_object:
                 stare_position = "look_side_stare"
             elif is_cutlery(object_name):
                 stare_position = "cutlery_stare"
@@ -233,9 +285,9 @@ class PickManager:
         print("Gripper Result:", result)
 
         if is_flat_object:
-            # Flat: 90° alternative (either short/long axis grip works).
-            # Rim/Peak: 180° flip about Z (top-down grasp is symmetric).
-            alt_angle = 180 if (is_rim_object or is_peak_object) else 90
+            # Always flip 180 (top-down symmetric). A 90 alt on flat cutlery would
+            # align the fingers with the long axis and collide with the object.
+            alt_angle = 180
             grasp_pose_alt = copy.deepcopy(grasp_pose)
             q_orig = R.from_quat(
                 [
@@ -263,13 +315,24 @@ class PickManager:
             future = wait_for_future(future, timeout=30)
 
             if future:
-                pick_result = future.result().get_result().result
+                # Every hop can be None when the action server stalls (slow Orin) —
+                # treat any missing piece as a failed attempt instead of crashing.
+                goal_handle = future.result()
+                wrapped = goal_handle.get_result() if goal_handle else None
+                pick_result = wrapped.result if wrapped else None
                 self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-                if pick_result.success != 0:
+                if pick_result is not None and pick_result.success != 0:
                     pick_result_success = True
 
         else:
-            for CFG_PATH in CFG_PATHS:
+            # Shelf collision is handled by the sphere generation; the cavity boxes
+            # over-constrained the narrow grasp (OMPL found no plan), so leave them off.
+            # Retry the shelf detection a few times: GPD samples randomly, so re-detecting
+            # yields different grasps and recovers a round where all were unreachable.
+            cfg_list = SHELF_CFG_PATHS * 3 if is_shelf else CFG_PATHS
+            for CFG_PATH in cfg_list:
+                if pick_result_success:
+                    break
                 cfg_path = CFG_PATH[0]
                 is_reversible = CFG_PATH[1]
                 if is_reversible and height < 0.06:
@@ -284,7 +347,13 @@ class PickManager:
                 if len(grasp_poses) == 0:
                     continue
 
-                if len(grasp_poses) > 5:
+                if is_shelf:
+                    # Keep the highest-scored candidates (not a random 5) and try more of
+                    # them, so a reachable, higher-quality grasp wins over a marginal one.
+                    order = list(np.argsort(grasp_scores)[::-1][:8])
+                    grasp_poses = [grasp_poses[i] for i in order]
+                    grasp_scores = [grasp_scores[i] for i in order]
+                elif len(grasp_poses) > 5:
                     indices = np.random.choice(len(grasp_poses), size=5, replace=False)
                     grasp_poses = [grasp_poses[i] for i in indices]
                     grasp_scores = [grasp_scores[i] for i in indices]
@@ -347,6 +416,30 @@ class PickManager:
                             "using unfiltered set"
                         )
 
+                    # The ZED hangs ~10cm below the gripper and physically grazes the shelf
+                    # surface on a low frontal grasp; flip 180 about approach to lift it (same grasp).
+                    zed = np.array([-0.096, 0.0, 0.041])
+                    for pose in new_grasp_poses:
+                        q = [
+                            pose.pose.orientation.x,
+                            pose.pose.orientation.y,
+                            pose.pose.orientation.z,
+                            pose.pose.orientation.w,
+                        ]
+                        Rg = R.from_quat(q)
+                        cam0 = pose.pose.position.z + float(Rg.apply(zed)[2])
+                        q_flip = (Rg * R.from_euler("z", 180, degrees=True)).as_quat()
+                        cam1 = pose.pose.position.z + float(
+                            R.from_quat(q_flip).apply(zed)[2]
+                        )
+                        if cam1 > cam0:
+                            (
+                                pose.pose.orientation.x,
+                                pose.pose.orientation.y,
+                                pose.pose.orientation.z,
+                                pose.pose.orientation.w,
+                            ) = q_flip
+
                 goal_msg = PickMotion.Goal()
                 goal_msg.grasping_poses = new_grasp_poses
                 goal_msg.grasping_scores = new_grasp_scores
@@ -356,9 +449,13 @@ class PickManager:
                 future = wait_for_future(future, timeout=30)
                 if not future:
                     break
-                pick_result = future.result().get_result().result
+                # Every hop can be None when the action server stalls (slow Orin) —
+                # treat any missing piece as a failed attempt and try the next config.
+                goal_handle = future.result()
+                wrapped = goal_handle.get_result() if goal_handle else None
+                pick_result = wrapped.result if wrapped else None
                 self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-                if pick_result.success != 0:
+                if pick_result is not None and pick_result.success != 0:
                     pick_result_success = True
                     break
                 else:
@@ -374,7 +471,10 @@ class PickManager:
         self.node.get_logger().info("Closing gripper")
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
-        result = future.result()
+        if not future or future.result() is None:
+            self.node.get_logger().warn(
+                "Gripper close got no service response; continuing (grasp already executed)."
+            )
         self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
 
         if is_shelf:
@@ -386,7 +486,7 @@ class PickManager:
                 velocity=0.3,
             )
 
-        if is_rim_object:
+        if is_rim_object and not is_bowl_object:
             # Hold the position where pick_server left the arm (lifted pre-grasp).
             self.node.get_logger().info(
                 "Rim pick: holding position (skipping return to stare)"
@@ -416,8 +516,7 @@ class PickManager:
                     break
 
         self.node.get_logger().info("Pick Task completed successfully")
-        result.success = True
-        return result.success, pick_result.pick_result
+        return True, pick_result.pick_result
 
     def get_object_point(self, object_name: str) -> PointStamped:
         request = DetectionHandler.Request()

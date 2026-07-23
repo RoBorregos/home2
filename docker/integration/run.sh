@@ -26,7 +26,13 @@ esac
 #_________________________RUN_________________________
 
 # Commands to run inside the container
-GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
+# The baml_client dirs are untracked codegen output from baml_src. Clear them
+# before generating: baml-cli refuses to overwrite files whose content changed
+# since it wrote them ("output directory contains files that BAML did not
+# generate"), which otherwise blocks container startup. Never hand-edit
+# baml_client — edit baml_src and regenerate.
+CLEAN_BAML_CLIENT="rm -rf /workspace/src/task_manager/task_manager/utils/baml_client /workspace/src/hri/packages/nlp/nlp/assets/baml_client"
+GENERATE_BAML_CLIENT="$CLEAN_BAML_CLIENT && baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
@@ -60,6 +66,9 @@ case $TASK in
         ;;
     "--dlc")
         RUN="ros2 run task_manager doing_laundry_task_manager.py"
+        ;;
+    "--safety")
+        RUN="ros2 run task_manager safety_task_manager.py"
         ;;
     "--demo-becas")
         RUN="ros2 run task_manager demo_becas.py"

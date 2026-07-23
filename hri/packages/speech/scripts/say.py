@@ -203,7 +203,7 @@ class Say(Node):
                 self.connectedVoice(text)
             success = True
         except Exception as e:
-            self.get_logger().error(e)
+            self.get_logger().error(str(e))
             if not self.offline:
                 self.get_logger().warn("Retrying with offline mode")
                 self.offline_voice(text, speed)

@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
 
 import rclpy
+from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
 from task_manager.utils.logger import Logger
 from task_manager.subtask_managers.nav_tasks import NavigationTasks
+
+
+def _front_point(x: float = 1.2) -> PointStamped:
+    """A point `x` meters straight ahead of the robot (base_link frame)."""
+    p = PointStamped()
+    p.header.frame_id = "base_link"
+    p.point.x = x
+    return p
 
 
 # TUPLA DE REGRESO DE IDA ARGS
@@ -30,10 +39,26 @@ class TestNavigationManager(Node):
                 "location": "entrance",
                 "sublocation": "",
             },
+            "Follow Person Start": {
+                "func": self.navigation_manager.follow_person,
+                "follow": True,
+            },
+            "Follow Person Stop": {
+                "func": self.navigation_manager.follow_person,
+                "follow": False,
+            },
             "Get Path Info": {
                 "func": self.navigation_manager.get_path_info,
                 "location_b": "entrance",
                 "sublocation_b": "",
+            },
+            # Approaches a virtual target 1.2 m ahead: with standoff 0.5 the
+            # robot should advance ~0.7 m and stop facing the point (safe to
+            # run in an open area; nav_central snaps to a costmap-free pose).
+            "Approach Point (1.2m ahead)": {
+                "func": self.navigation_manager.approach_point,
+                "point": _front_point(1.2),
+                "standoff": 0.5,
             },
         }
 

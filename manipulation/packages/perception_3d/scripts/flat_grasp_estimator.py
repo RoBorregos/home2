@@ -27,6 +27,8 @@ from frida_constants.manipulation_constants import (
     RIM_NAMES,
     FLAT_OBJECT_NAMES,
     PEAK_NAMES,
+    TRASH_BIN_NAME,
+    PLACE_TRASH_HEIGHT_OFFSET,
 )
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
@@ -37,6 +39,11 @@ GRASP_SURFACE_OFFSET = 0.003
 
 # Minimum valid points in ROI for PCA orientation
 MIN_POINTS_FOR_PCA = 10
+
+# Min eigenvalue ratio (long/short variance) for a trustworthy long axis. Below
+# this the object looks square from this view, so the orientation is rejected.
+# Live-tunable via the 'elongation_min_ratio' ROS parameter.
+ELONGATION_MIN_RATIO = 2.0
 
 # Number of recent table height readings to average for stability
 TABLE_HEIGHT_BUFFER_SIZE = 15
@@ -55,6 +62,10 @@ PEAK_GRID_RES = 0.05  # meters per cell of the elevation (height) grid
 PEAK_NBR = 3  # neighborhood size (cells) for local-maximum detection
 PEAK_MIN_HEIGHT = RIM_MIN_HEIGHT  # ignore peaks too close to the floor
 
+# --- Trash bin place estimation ---
+# Fraction of the bbox height (from the top) kept to estimate the bin center.
+TRASH_TOP_BBOX_FRACTION = 0.5
+
 # --- Service collection ---
 FLAT_GRASP_DEFAULT_SAMPLES = 10  # frames to median when the caller passes <= 0
 FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
@@ -63,6 +74,8 @@ FLAT_GRASP_TIMEOUT = 5.0  # s: max wait to collect samples on one service call
 class FlatGraspEstimator(Node):
     def __init__(self):
         super().__init__("flat_grasp_estimator")
+        # Live-tunable min long/short variance ratio to trust the PCA long axis.
+        self.declare_parameter("elongation_min_ratio", ELONGATION_MIN_RATIO)
         self.bridge = CvBridge()
 
         self.tf_buffer = Buffer()
@@ -77,12 +90,14 @@ class FlatGraspEstimator(Node):
         self.target_classes = [n.lower() for n in FLAT_OBJECT_NAMES]
         self.rim_classes = [n.lower() for n in RIM_NAMES]
         self.peak_classes = [n.lower() for n in PEAK_NAMES]
+        self.trash_classes = [TRASH_BIN_NAME.lower()]
 
         # Collection state. The node only does the heavy per-frame work while a
         # service request is collecting samples; it is idle otherwise (saves CPU).
         self._collecting = False
         self._target_label = None
         self._peak_mode = False
+        self._trash_mode = False
         self._samples = []
 
         # Rolling buffer for table height stabilization
@@ -118,6 +133,10 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/peak_grasp_pose", 10
         )
 
+        self.trash_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/trash_place_pose", 10
+        )
+
         self.estimate_srv = self.create_service(
             EstimateFlatGrasp,
             "/manipulation/estimate_flat_grasp",
@@ -134,13 +153,17 @@ class FlatGraspEstimator(Node):
         stabilized grasp pose (median position, latest PCA orientation)."""
         label = request.object_name.lower()
         is_peak = label in self.peak_classes
+        is_trash = label in self.trash_classes
         if (
             label not in self.target_classes
             and label not in self.rim_classes
             and not is_peak
+            and not is_trash
         ):
             response.success = False
-            response.message = f"'{request.object_name}' is not a flat/rim/peak object"
+            response.message = (
+                f"'{request.object_name}' is not a flat/rim/peak/trash object"
+            )
             return response
         if self.intrinsics is None:
             response.success = False
@@ -157,6 +180,7 @@ class FlatGraspEstimator(Node):
         self._samples = []
         self._target_label = label
         self._peak_mode = is_peak
+        self._trash_mode = is_trash
         self.table_height_buffer.clear()
         self.latest_depth = None
         self._collecting = True
@@ -207,7 +231,12 @@ class FlatGraspEstimator(Node):
             return
         for det in msg.detections:
             label = det.label_text.lower()
-            if self._peak_mode:
+            if self._trash_mode:
+                if label not in self.trash_classes:
+                    continue
+                pose = self.process_trash_bin(det)
+                pub = self.trash_pose_pub
+            elif self._peak_mode:
                 # Peak content (e.g. clothes) is found inside a basket/rim
                 # detection, so the requested label never matches directly.
                 if label not in self.rim_classes:
@@ -342,9 +371,15 @@ class FlatGraspEstimator(Node):
             & (roi_depth < table_z_cam - 0.001)
             & (roi_depth > table_z_cam - 0.05)
         )
-        v_local, u_local = np.where(object_mask_roi)
+        # Keep the largest connected blob (the object body); drop scattered table
+        # noise. No whole-bbox fallback: a square bbox yields an arbitrary axis.
+        labeled, num = ndi.label(object_mask_roi)
+        if num == 0:
+            return
+        largest = int(np.argmax(np.bincount(labeled.ravel())[1:])) + 1
+        v_local, u_local = np.where(labeled == largest)
         if len(v_local) < MIN_POINTS_FOR_PCA:
-            v_local, u_local = np.where(valid_mask)
+            return
 
         points_3d_cam = self._deproject_pixels(
             u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
@@ -357,10 +392,38 @@ class FlatGraspEstimator(Node):
         if points_base is None:
             return
 
-        # --- GRASP POSITION ---
+        # --- LONG AXIS via PCA on the object's XY points ---
         centroid_xy = np.mean(points_base[:, :2], axis=0)
+        points_2d_xy = points_base[:, :2] - centroid_xy
+        cov_matrix = np.cov(points_2d_xy.T)
+        eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)  # ascending, real
+        # Reject near-square point sets: the long axis is unreliable there and
+        # would grasp parallel to the object instead of across it.
+        elongation_min = self.get_parameter("elongation_min_ratio").value
+        if eigenvalues[0] <= 1e-9 or eigenvalues[1] / eigenvalues[0] < elongation_min:
+            return
+        principal_vector = eigenvectors[:, 1]
+        spoon_dir = np.array([principal_vector[0], principal_vector[1], 0.0])
+        spoon_dir = spoon_dir / np.linalg.norm(spoon_dir)
+        perp_dir = np.array([-spoon_dir[1], spoon_dir[0]])  # in-plane perpendicular
 
-        # Transform table surface point at bbox center to base frame
+        # --- GRASP POSITION: aim at the HANDLE (thin end), not the centroid ---
+        # Project on the long axis; the handle end has the smaller perpendicular
+        # spread (narrower), so offset the grasp toward it.
+        handle_frac = 0.60  # fraction from center toward the handle tip (0..1)
+        proj = points_2d_xy @ spoon_dir[:2]
+        perp = points_2d_xy @ perp_dir
+        pos = proj >= 0
+        spread_pos = perp[pos].std() if np.count_nonzero(pos) > 2 else np.inf
+        spread_neg = perp[~pos].std() if np.count_nonzero(~pos) > 2 else np.inf
+        handle_sign = 1.0 if spread_pos <= spread_neg else -1.0
+        side = pos if handle_sign > 0 else ~pos
+        handle_extent = np.percentile(np.abs(proj[side]), 90) if np.any(side) else 0.0
+        grasp_xy = (
+            centroid_xy + (handle_sign * handle_frac * handle_extent) * spoon_dir[:2]
+        )
+
+        # Table surface height at the bbox center -> grasp Z
         fx, fy = self.intrinsics["fx"], self.intrinsics["fy"]
         cx, cy = self.intrinsics["cx"], self.intrinsics["cy"]
         bbox_cu, bbox_cv = (xmin + xmax) / 2.0, (ymin + ymax) / 2.0
@@ -375,25 +438,16 @@ class FlatGraspEstimator(Node):
         raw_table_height = (T_mat @ table_point_cam)[2]
         grasp_z = self.get_stable_table_height(raw_table_height) + GRASP_SURFACE_OFFSET
 
-        # --- GRASP ORIENTATION (PCA on XY to find long axis) ---
-        points_2d_xy = points_base[:, :2] - centroid_xy
-        cov_matrix = np.cov(points_2d_xy.T)
-        eigenvalues, eigenvectors = np.linalg.eig(cov_matrix)
-        principal_vector = eigenvectors[:, np.argmax(eigenvalues)]
-
-        spoon_dir = np.array([principal_vector[0], principal_vector[1], 0.0])
-        spoon_dir = spoon_dir / np.linalg.norm(spoon_dir)
-
+        # --- ORIENTATION: fingers close PERPENDICULAR to the long axis ---
         Z_grasp = np.array([0.0, 0.0, -1.0])
         Y_grasp = np.cross(Z_grasp, spoon_dir)
         Y_grasp = Y_grasp / np.linalg.norm(Y_grasp)
         X_grasp = np.cross(Y_grasp, Z_grasp)
-
         new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
         return self._make_grasp_pose(
-            float(centroid_xy[0]), float(centroid_xy[1]), float(grasp_z), new_quat
+            float(grasp_xy[0]), float(grasp_xy[1]), float(grasp_z), new_quat
         )
 
     def process_rim_object(self, detection: ObjectDetection):
@@ -548,6 +602,62 @@ class FlatGraspEstimator(Node):
         new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
 
         return self._make_grasp_pose(peak_grasp_x, peak_grasp_y, peak_grasp_z, new_quat)
+
+    def process_trash_bin(self, detection: ObjectDetection):
+        """Place pose for dropping an object into a trash bin: centered in XY
+        over the bin, a fixed offset above its highest point, gripper top-down."""
+        bbox = self._parse_bbox(detection)
+        if bbox is None:
+            return
+        xmin, ymin, xmax, ymax = bbox
+
+        # Use only the upper part of the bbox: the front wall fills the lower
+        ymid = ymin + max(1, int((ymax - ymin) * TRASH_TOP_BBOX_FRACTION))
+
+        roi_depth = self.latest_depth[ymin:ymid, xmin:xmax]
+        valid_mask = (roi_depth > 0) & (~np.isnan(roi_depth))
+        if np.count_nonzero(valid_mask) < MIN_POINTS_FOR_PCA:
+            return
+
+        v_local, u_local = np.where(valid_mask)
+        points_3d_cam = self._deproject_pixels(
+            u_local + xmin, v_local + ymin, roi_depth[v_local, u_local]
+        )
+
+        T_mat = self._lookup_T_cam_to_base()
+        if T_mat is None:
+            return
+        points_base = self._apply_transform(points_3d_cam, T_mat)
+        if points_base is None:
+            return
+
+        # --- FLOOR REJECTION ---
+        floor_z = np.percentile(points_base[:, 2], 5)
+        bin_points = points_base[points_base[:, 2] > floor_z + RIM_MIN_HEIGHT]
+        if len(bin_points) < MIN_POINTS_FOR_PCA:
+            bin_points = points_base
+
+        xs, ys, zs = bin_points[:, 0], bin_points[:, 1], bin_points[:, 2]
+
+        # --- CENTER (XY) and HIGHEST POINT (Z) ---
+        center_x = float(np.median(xs))
+        center_y = float(np.median(ys))
+        top_z = float(np.percentile(zs, RIM_TOP_PERCENTILE))
+
+        # Place pose: fixed offset above the rim top, centered over the bin.
+        place_z = top_z + PLACE_TRASH_HEIGHT_OFFSET
+
+        # --- TOP-DOWN ORIENTATION ---
+        Z_grasp = np.array([0.0, 0.0, -1.0])
+        X_grasp = np.array([1.0, 0.0, 0.0])
+        Y_grasp = np.cross(Z_grasp, X_grasp)
+        Y_grasp = Y_grasp / np.linalg.norm(Y_grasp)
+        X_grasp = np.cross(Y_grasp, Z_grasp)
+
+        new_rot_mat = np.column_stack((X_grasp, Y_grasp, Z_grasp))
+        new_quat = Rotation.from_matrix(new_rot_mat).as_quat()
+
+        return self._make_grasp_pose(center_x, center_y, place_z, new_quat)
 
 
 def main(args=None):
