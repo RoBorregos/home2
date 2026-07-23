@@ -4,6 +4,7 @@
 Task Manager for GPSR task of Robocup @Home 2026
 """
 
+import os
 import time
 from datetime import datetime
 
@@ -13,6 +14,9 @@ from frida_constants.vision_constants import IMAGE_TOPIC_HRIC
 from rclpy.node import Node
 from std_msgs.msg import Int32
 
+from task_manager.diagnosis import health_gate
+from task_manager.diagnosis.health_gate import HealthGate
+from task_manager.diagnosis.orchestrator import DiagnosisOrchestrator
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
@@ -24,6 +28,7 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
+MAX_MAINTENANCE_ATTEMPTS = 2  # heal attempts per subtask before giving up
 
 
 def confirm_command(interpreted_text, target_info):
@@ -50,6 +55,7 @@ class GPSRTM(Node):
         FINISHED_COMMAND = "FINISHED_COMMAND"
         DONE = "DONE"
         WAIT_BUTTON_COMMAND = "WAIT_BUTTON_COMMAND"
+        MAINTENANCE = "MAINTENANCE"
 
     def __init__(self):
         """Initialize the node"""
@@ -57,6 +63,19 @@ class GPSRTM(Node):
         self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
+        # Self-healing health-gate. Default is PASSIVE (detect + warn, never worse
+        # than before). Set HOME2_AUTO_HEAL=1 to enable active mode: unhealthy
+        # subtasks route through the MAINTENANCE state (stop actuators → diagnose →
+        # supervised heal → re-verify → retry/re-plan). HOME2_AUTO_CONFIRM=1 makes
+        # corrective actions autonomous (no console confirmation).
+        active_heal = os.getenv("HOME2_AUTO_HEAL", "0") == "1"
+        self.health_gate = HealthGate(node=self, passive=not active_heal, check_dds=active_heal)
+        self.orchestrator = DiagnosisOrchestrator(
+            node=self,
+            auto_heal=os.getenv("HOME2_AUTO_CONFIRM", "0") == "1",
+        )
+        self._maintenance_action = None
+        self._maintenance_attempts = 0
         self._command_index_pub = self.create_publisher(Int32, GPSR_COMMAND_INDEX_TOPIC, 10)
 
         self.current_state = (
@@ -240,6 +259,22 @@ class GPSRTM(Node):
                 self.get_logger().info(f"Executing command: {str(command)}")
                 self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
 
+                # Fase 5/6: gate the subtask on the health of its critical nodes.
+                gate = self.health_gate.guard(command.action)
+                if gate.decision == health_gate.NEEDS_HEAL:
+                    # Active mode: pause and route through MAINTENANCE (which stops
+                    # actuators first). Re-insert the command so it retries after.
+                    self.commands.insert(0, command)
+                    self._maintenance_action = command.action
+                    self._maintenance_attempts = 0
+                    self.current_state = GPSRTM.TaskStates.MAINTENANCE
+                    return
+                if gate.decision == health_gate.WARN:
+                    self.subtask_manager.hri.say(
+                        "A subsystem may be degraded, but I will try to continue.",
+                        wait=False,
+                    )
+
                 try:
                     exec_commad = search_command(
                         command.action,
@@ -273,6 +308,66 @@ class GPSRTM(Node):
             self.executed_commands += 1
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
             self.subtask_manager.manipulation.move_to_position("front_stare")
+
+        elif self.current_state == GPSRTM.TaskStates.MAINTENANCE:
+            # Fase 6: autonomous-maintenance safety state. Stop actuators, diagnose,
+            # (supervised) heal, re-verify, then retry / re-plan / skip.
+            self._track_state_change(GPSRTM.TaskStates.MAINTENANCE)
+            action = self._maintenance_action
+            self._maintenance_attempts += 1
+            CLog.fsm(
+                self,
+                "STATE",
+                f"MAINTENANCE for '{action}' (attempt {self._maintenance_attempts})",
+                level="warn",
+            )
+
+            # 1) Safety: bring the arm to a safe pose before doing anything.
+            try:
+                self.subtask_manager.manipulation.move_to_position("nav_pose")
+            except Exception as e:
+                self.get_logger().warning(f"Could not move arm to safe pose: {e}")
+            self.subtask_manager.hri.say(
+                "I detected a problem and I am running a self-check.", wait=False
+            )
+
+            # 2) Diagnose + supervised heal.
+            _n, _remote, area = self.health_gate.critical_nodes_for(action)
+            health = self.health_gate.recheck(action)
+            remediation = self.orchestrator.run_diagnosis_cycle(health, area=area)
+
+            # 3) Re-verify and decide.
+            recheck = self.health_gate.recheck(action)
+            if getattr(recheck, "ok", False):
+                CLog.fsm(self, "STATE", f"Recovered '{action}', retrying.", level="success")
+                self.subtask_manager.hri.say("I recovered. Retrying the step.", wait=False)
+                self.current_state = GPSRTM.TaskStates.EXECUTING_COMMAND
+            elif self._maintenance_attempts < MAX_MAINTENANCE_ATTEMPTS:
+                CLog.fsm(self, "STATE", "Still unhealthy, retrying maintenance.", level="warn")
+                # stay in MAINTENANCE for another attempt
+            else:
+                # Give up on this subtask: dynamic fallback instead of freezing.
+                CLog.fsm(
+                    self,
+                    "STATE",
+                    f"Could not recover '{action}', skipping and reporting.",
+                    level="error",
+                )
+                if self.commands and getattr(self.commands[0], "action", None) == action:
+                    self.commands.pop(0)  # drop the unrecoverable subtask
+                reason = (
+                    remediation.diagnosis.razon_falla
+                    if remediation and remediation.diagnosis
+                    else action
+                )
+                self.subtask_manager.hri.say(
+                    f"I could not complete the step '{action}'. Reason: {reason}. "
+                    "I will continue with the rest of the task.",
+                    wait=False,
+                )
+                self._maintenance_action = None
+                self._maintenance_attempts = 0
+                self.current_state = GPSRTM.TaskStates.EXECUTING_COMMAND
 
         elif self.current_state == GPSRTM.TaskStates.DONE:
             self._track_state_change(GPSRTM.TaskStates.DONE)

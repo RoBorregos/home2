@@ -27,7 +27,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from status import area_config, infra_checks, ros_introspection
+from status import area_config, health_monitor, infra_checks, ros_introspection
 
 ALL_AREAS = ("vision", "manipulation", "navigation", "hri", "integration")
 REMOTE_AREAS = {"hri"}  # mirrors lib.sh ORIN_SERVER_AREAS — checked on remote Orin
@@ -368,16 +368,8 @@ def _header(env_type: str, iface: str, task: str, areas: list[str]) -> Panel:
     return Panel(msg, border_style="blue")
 
 
-def _compute_area_states(
-    areas: list[str], task: str, running_nodes: set[str]
-) -> dict[str, dict]:
-    out: dict[str, dict] = {}
-    for area in areas:
-        expected = area_config.load_area_nodes(area, task) if task else []
-        running = [n for n in expected if n in running_nodes]
-        missing = [n for n in expected if n not in running_nodes]
-        out[area] = {"expected": expected, "running": running, "missing": missing}
-    return out
+# Shared with the task manager FSM: single source of truth for expected-vs-running.
+_compute_area_states = health_monitor.compute_area_states
 
 
 def _collect_containers(areas: list[str]) -> list[str]:

@@ -53,6 +53,10 @@ install(DIRECTORY launch scripts
 # Install python config
 install(DIRECTORY scripts/config/ DESTINATION lib/${PROJECT_NAME}/config FILES_MATCHING PATTERN "*.py")
 
+# Install diagnosis catalog (subtasks_catalog.json) so health_gate can find it
+# from the install space (ros2 run executes the installed copy).
+install(DIRECTORY config/ DESTINATION share/${PROJECT_NAME}/config)
+
 
 
 ######################### Testing  #########################

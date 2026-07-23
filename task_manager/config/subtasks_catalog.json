@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "description": "Maps each robot skill (action from robot_commands.baml) to the ROS 2 nodes that must be alive for that subtask to succeed. Consumed by task_manager diagnosis/health_gate.py. Node names use the fully-qualified graph name (leading slash), matching status/configs/*_nodes.cfg and `ros2 node list`.",
+    "sync_with": [
+      "task_manager/task_manager/utils/baml_src/robot_commands.baml",
+      "status/configs/*_nodes.cfg"
+    ],
+    "note": "hri nodes may run on a remote Orin (see lib.sh ORIN_SERVER_AREAS); the gate treats absent remote nodes as non-blocking when marked remote."
+  },
+  "go_to": {
+    "area": "navigation",
+    "critical_nodes": ["/bt_navigator", "/controller_server", "/planner_server"]
+  },
+  "follow_person_until": {
+    "area": "navigation",
+    "critical_nodes": ["/bt_navigator", "/controller_server", "/tracker_node"]
+  },
+  "guide_person_to": {
+    "area": "navigation",
+    "critical_nodes": ["/bt_navigator", "/controller_server", "/planner_server"]
+  },
+  "pick_object": {
+    "area": "manipulation",
+    "critical_nodes": ["/motion_planning_server", "/pick_server"]
+  },
+  "place_object": {
+    "area": "manipulation",
+    "critical_nodes": ["/motion_planning_server", "/place_server"]
+  },
+  "give_object": {
+    "area": "manipulation",
+    "critical_nodes": ["/motion_planning_server"]
+  },
+  "count": {
+    "area": "vision",
+    "critical_nodes": ["/zed/zed_node", "/moondream_node"]
+  },
+  "get_visual_info": {
+    "area": "vision",
+    "critical_nodes": ["/zed/zed_node", "/moondream_node"]
+  },
+  "find_person": {
+    "area": "vision",
+    "critical_nodes": ["/zed/zed_node", "/face_recognition"]
+  },
+  "find_person_by_name": {
+    "area": "vision",
+    "critical_nodes": ["/zed/zed_node", "/face_recognition"]
+  },
+  "get_person_info": {
+    "area": "vision",
+    "critical_nodes": ["/zed/zed_node", "/moondream_node"]
+  },
+  "answer_question": {
+    "area": "hri",
+    "critical_nodes": ["/llm_wrapper", "/rag_service"],
+    "remote": true
+  },
+  "say_with_context": {
+    "area": "hri",
+    "critical_nodes": ["/llm_wrapper"],
+    "remote": true
+  }
+}
