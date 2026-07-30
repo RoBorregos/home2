@@ -25,4 +25,8 @@ jobs:
       - name: Build
         # GITHUB_ACTIONS=false: workaround for vamp nanobind stub install path bug — see manipulation/packages/vamp_moveit_plugin/ReadMe.md#ci-build-note
         run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR="$(pwd)/install/gpd" && export GITHUB_ACTIONS=false && colcon build --symlink-install
-      
+
+      # Scoped to pick_and_place: it is the only package with automated tests,
+      # and scoping keeps packages without tests from failing the pipeline.
+      - name: Test pick_and_place
+        run: . /opt/ros/humble/setup.sh && . ./install/setup.sh && colcon test --packages-select pick_and_place --event-handlers console_direct+ && colcon test-result --verbose
