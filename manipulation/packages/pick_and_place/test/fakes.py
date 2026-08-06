@@ -39,6 +39,26 @@ class FakeObject:
         self.height = height
 
 
+class FakeTFBuffer:
+    """Returns a fixed base_link -> gripper transform."""
+
+    def __init__(self, x=0.5, y=0.0, z=0.4, raises=False):
+        self._xyz = (x, y, z)
+        self._raises = raises
+
+    def lookup_transform(self, target_frame, source_frame, when):
+        if self._raises:
+            raise RuntimeError("no transform available")
+        from geometry_msgs.msg import TransformStamped
+
+        transform = TransformStamped()
+        transform.transform.translation.x = self._xyz[0]
+        transform.transform.translation.y = self._xyz[1]
+        transform.transform.translation.z = self._xyz[2]
+        transform.transform.rotation.w = 1.0
+        return transform
+
+
 class FakeArm:
     """Records every call a pipeline makes, and lets tests script the replies.
 
@@ -61,7 +81,9 @@ class FakeArm:
         attach_result: Optional[AttachResult] = None,
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
+        estop: bool = False,
     ):
+        self._estop = estop
         self.calls: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
@@ -72,13 +94,14 @@ class FakeArm:
             "endpoint_self_collides": [],
         }
         self.descents: List[tuple] = []
+        self.move_kwargs: List[dict] = []
         self.close_settles: List[float] = []
         self.guards: List[Any] = []
         self.published_place_poses: List[PoseStamped] = []
         self.published_points: List[PointStamped] = []
         self._logger = FakeLogger()
 
-        self.tf_buffer = None
+        self.tf_buffer = FakeTFBuffer()
         self._tip_offsets = tip_offsets or {
             "ee_link_offset": -0.09,
             "rim_tip_offset": -0.18,
@@ -105,6 +128,7 @@ class FakeArm:
     def move_to_pose(self, pose, **kwargs):
         self.calls.append("move_to_pose")
         self.poses["move_to_pose"].append(pose)
+        self.move_kwargs.append(kwargs)
         return self._next(self._move_to_pose_results, True)
 
     def move_to_pregrasp(self, pose, velocity=None):
@@ -209,11 +233,14 @@ class FakeArm:
         return 0.5
 
     def now(self):
-        return None
+        # A real Time: message fields reject None on assignment.
+        from builtin_interfaces.msg import Time
+
+        return Time()
 
     @property
     def estop_active(self):
-        return False
+        return self._estop
 
     @property
     def joint_state(self):
@@ -255,6 +282,33 @@ class FakeArm:
         return self._logger
 
 
+class ServiceStub:
+    """A service client whose availability and reply are scripted."""
+
+    def __init__(self, reply=None, available=True):
+        self.reply = reply
+        self.available = available
+        self.requests: List[Any] = []
+
+    def wait_for_service(self, timeout_sec=None):
+        return self.available
+
+    def call_async(self, request):
+        self.requests.append(request)
+        return _DoneFuture(self.reply)
+
+
+class _DoneFuture:
+    def __init__(self, value):
+        self._value = value
+
+    def done(self):
+        return True
+
+    def result(self):
+        return self._value
+
+
 class FakePerception:
     """Scripted perception replies."""
 
@@ -264,6 +318,8 @@ class FakePerception:
         cluster=None,
         grasps: Optional[List[tuple]] = None,
         flat_response: Optional[Any] = None,
+        heatmap_point: Optional[PointStamped] = None,
+        surface_cloud: Optional[Any] = None,
     ):
         self.calls: List[str] = []
         self._logger = FakeLogger()
@@ -271,29 +327,46 @@ class FakePerception:
         self._cluster = cluster
         self._grasps = list(grasps or [])
         self._flat_response = flat_response
+        self.flat_timeouts: List[float] = []
+        self.detect_timeouts: List[float] = []
+        self.cluster_timeouts: List[float] = []
+
+        self.heatmap_place_client = ServiceStub(
+            reply=type("R", (), {"place_point": heatmap_point})()
+            if heatmap_point is not None
+            else None
+        )
+        self.place_perception_client = ServiceStub(
+            reply=type("R", (), {"cluster_result": surface_cloud})()
+            if surface_cloud is not None
+            else None
+        )
 
     @property
     def logger(self):
         return self._logger
 
-    def locate_object(self, object_name):
+    def locate_object(self, object_name, timeout=2.0):
         self.calls.append("locate_object")
+        self.detect_timeouts.append(timeout)
         return self._located_point
 
     @staticmethod
     def point_in_range(point, min_distance, max_distance):
         return True
 
-    def cluster_at(self, point, add_collision_objects=True):
+    def cluster_at(self, point, add_collision_objects=True, timeout=60.0):
         self.calls.append("cluster_at")
+        self.cluster_timeouts.append(timeout)
         return self._cluster
 
     def detect_grasps(self, cluster, cfg_path):
         self.calls.append("detect_grasps")
         return self._grasps.pop(0) if self._grasps else ([], [])
 
-    def estimate_flat_grasp(self, object_name):
+    def estimate_flat_grasp(self, object_name, timeout=8.0):
         self.calls.append("estimate_flat_grasp")
+        self.flat_timeouts.append(timeout)
         return self._flat_response
 
 

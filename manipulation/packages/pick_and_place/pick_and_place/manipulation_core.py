@@ -255,10 +255,12 @@ class ManipulationCore(Node):
         )
 
         self.arm.remove_all_collision_objects(attached=True)
-        success, outcome = pour_pipeline.execute(
+        # Clear first: if the pour raises, a stale outcome from an earlier task
+        # must not survive for the next place to consume as its drop height.
+        self._last_pick = PickOutcome()
+        success, self._last_pick = pour_pipeline.execute(
             self.arm, self.perception, pour_request, self.strategies
         )
-        self._last_pick = outcome
         if success:
             self.arm.remove_all_collision_objects(attached=True)
         return success

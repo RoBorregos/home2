@@ -87,6 +87,9 @@ class PickRequest:
     max_distance: float = PICK_MAX_DISTANCE
     is_shelf: bool = False
     in_configuration: bool = False
+    # False leaves the arm where the grasp ended, for callers that move on from
+    # there themselves (the pour lifts straight up from the grasp).
+    return_to_carry: bool = True
 
 
 @dataclass
@@ -150,7 +153,8 @@ def execute(
     arm.close_gripper(settle_s=0.0)
 
     outcome.object_name = request.object_name
-    _return_to_carry_pose(arm, strategy_key, request.is_shelf)
+    if request.return_to_carry:
+        _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
     return True, outcome
 

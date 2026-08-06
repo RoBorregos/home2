@@ -27,6 +27,7 @@ from sensor_msgs_py import point_cloud2
 from transforms3d.quaternions import quat2mat
 
 from pick_and_place.pipelines import pick as pick_pipeline
+from pick_and_place.pipelines.errors import PickHardwareError
 from pick_and_place.pipelines.strategies import PickOutcome
 
 # How far above the container rim to hold the source object before tilting.
@@ -45,6 +46,11 @@ MIN_POUR_ANGLE = 1.0  # rad
 
 # Fallback orientation when the pick reported no pose.
 DEFAULT_POUR_QUAT = [0.707, 0.000, 0.707, 0.002]
+
+# The pour path waits longer for a detection and less for a cluster than the
+# pick and place paths do; these were its own values before the merge.
+DETECT_TIMEOUT = 60.0
+CLUSTER_TIMEOUT = 10.0
 
 
 @dataclass
@@ -69,6 +75,15 @@ def execute(
 
     with arm.phase("initial_pose"):
         arm.move_to_named_position("table_stare", velocity=0.3)
+
+    # Check the source object exists before touching the container: locating the
+    # container clusters it and wipes the collision scene, so discovering the
+    # source is missing afterwards costs a wasted scene reset.
+    if not request.object_already_grasped:
+        point = perception.locate_object(request.object_name, timeout=DETECT_TIMEOUT)
+        if point is None or point.header.frame_id == "":
+            log.error(f"Source object {request.object_name} not found")
+            return False, PickOutcome()
 
     container = _locate_container(arm, perception, request.container_name)
     if container is None:
@@ -111,14 +126,16 @@ def _locate_container(arm, perception, container_name: str):
     """Return (centroid, rim height) of the container, or None."""
     log = arm.logger
     with arm.phase("locate_container"):
-        point = perception.locate_object(container_name)
+        point = perception.locate_object(container_name, timeout=DETECT_TIMEOUT)
         if point is None or point.header.frame_id == "":
             log.error(f"Container {container_name} not found")
             return None
 
         # add_collision_objects=False: the container must not become an obstacle,
         # the arm has to reach over it.
-        cluster = perception.cluster_at(point, add_collision_objects=False)
+        cluster = perception.cluster_at(
+            point, add_collision_objects=False, timeout=CLUSTER_TIMEOUT
+        )
         if cluster is None:
             log.error(f"No cluster for container {container_name}")
             return None
@@ -166,6 +183,10 @@ def _grasp_source_object(arm, perception, request: PourRequest, strategies):
     pick_request = pick_pipeline.PickRequest(
         object_name=request.object_name,
         in_configuration=True,  # already at table_stare
+        # The pour lifts from wherever the grasp ended. Returning to a carry
+        # pose first would send the arm to table_stare and make the lift plan
+        # back down toward the surface it just left.
+        return_to_carry=False,
     )
     with arm.phase("grasp_source_object"):
         return pick_pipeline.execute(arm, perception, pick_request, strategies)
@@ -222,34 +243,39 @@ def _build_pour_pose(arm, rim_centre, rim_top: float, outcome: PickOutcome):
 def _pour_motion(arm, pour_pose, outcome: PickOutcome, already_grasped: bool) -> bool:
     """Lift clear, move over the container, then tilt the wrist."""
     log = arm.logger
+    try:
+        if not already_grasped:
+            # Lift straight up first: the object was just grasped on a surface and
+            # moving sideways at that height would drag it.
+            _lift_clear(arm, outcome)
+        else:
+            log.info("Object already grasped, skipping the lift step")
 
-    if not already_grasped:
-        # Lift straight up first: the object was just grasped on a surface and
-        # moving sideways at that height would drag it.
-        if not _lift_clear(arm, outcome):
+        # Constraints keep the container upright while traversing, but cost planning
+        # time; a held object is already upright so they are skipped.
+        use_constraint = not already_grasped
+
+        pose = copy.deepcopy(pour_pose)
+        upside_down = _is_upside_down(pose)
+        log.info(f"Gripper upside down: {upside_down}")
+
+        pose = _offset_along_local_axis(pose, axis=2, distance=GRIPPER_CENTRE_OFFSET)
+        pose = _offset_along_local_axis(
+            pose, axis=1, distance=-LIP_OFFSET if upside_down else LIP_OFFSET
+        )
+
+        if not _reach_with_retries(arm, pose, use_constraint, tries=5):
+            log.error("Could not reach the pour pose")
             return False
-    else:
-        log.info("Object already grasped, skipping the lift step")
 
-    # Constraints keep the container upright while traversing, but cost planning
-    # time; a held object is already upright so they are skipped.
-    use_constraint = not already_grasped
-
-    pose = copy.deepcopy(pour_pose)
-    upside_down = _is_upside_down(pose)
-    log.info(f"Gripper upside down: {upside_down}")
-
-    pose = _offset_along_local_axis(pose, axis=2, distance=GRIPPER_CENTRE_OFFSET)
-    pose = _offset_along_local_axis(
-        pose, axis=1, distance=-LIP_OFFSET if upside_down else LIP_OFFSET
-    )
-
-    if not _reach_with_retries(arm, pose, use_constraint, tries=5):
-        log.error("Could not reach the pour pose")
-        return False
-
-    time.sleep(3.0)
-    return _tilt_to_pour(arm, pour_pose, pose)
+        time.sleep(3.0)
+        return _tilt_to_pour(arm, pour_pose, pose)
+    except PickHardwareError:
+        # A motion fault mid-pour leaves the object clamped; release it so the
+        # arm can be recovered by hand.
+        log.error("Motion fault during the pour; opening the gripper")
+        arm.open_gripper()
+        raise
 
 
 def _lift_clear(arm, outcome: PickOutcome) -> bool:
@@ -337,7 +363,16 @@ def _pour_direction(log, container_pose, gripper_pose) -> float:
 
     A positive joint6 rotation tilts the contents along -local_X, so if -local_X
     points at the container, pour positive.
+
+    PINNED to +1.0 below. Before the pipelines were merged the container pose
+    and the gripper pose were the same object, so the distance was always 0 and
+    this always fell through to +1.0 -- every pour that has run on this robot
+    used the positive direction. The computed sign is therefore untested, and
+    getting it wrong tips the container away from the bowl. Validate on
+    hardware, then delete this early return.
     """
+    return 1.0
+
     to_container = np.array(
         [
             container_pose.pose.position.x - gripper_pose.pose.position.x,

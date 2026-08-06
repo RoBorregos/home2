@@ -45,6 +45,17 @@ TABLE_LADDER = (8, 0.05)
 DEFAULT_SHELF_DROP = 0.15
 DEFAULT_TABLE_DROP = 0.10
 
+# The motion planner's own defaults, which the old place_server got by leaving
+# the tolerance fields at zero. Pick's tighter defaults made every rung of the
+# ladder harder to plan.
+PLACE_TOLERANCE_POSITION = 0.01
+PLACE_TOLERANCE_ORIENTATION = 0.05
+
+# The heatmap ranks a whole surface and the estimator averages several frames;
+# both are slow, so they keep the generous waits the pre-merge place used.
+HEATMAP_TIMEOUT = 60.0
+TRASH_TIMEOUT = 15.0
+
 # Orientation with Z aiming down, used when the pick pose is unusable.
 TOP_DOWN_QUAT = [0.0, 1.0, 0.0, 0.0]
 
@@ -111,6 +122,14 @@ def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
     count, step = SHELF_LADDER if is_shelf else TABLE_LADDER
     target_link = EEF_LINK_NAME if is_shelf else GRASP_LINK_FRAME
 
+    def reach(pose):
+        return arm.move_to_pose(
+            pose,
+            target_link=target_link,
+            tolerance_position=PLACE_TOLERANCE_POSITION,
+            tolerance_orientation=PLACE_TOLERANCE_ORIENTATION,
+        )
+
     for index in range(count):
         arm.check_abort()
         final, half, pre = _place_pose_triple(place_pose, index, step, is_shelf)
@@ -118,12 +137,12 @@ def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
 
         if is_shelf:
             with arm.phase("pre_place"):
-                if not arm.move_to_pose(pre, target_link=target_link):
+                if not reach(pre):
                     log.error(f"Failed to reach pre-place pose at rung {index}")
                     continue
 
         with arm.phase("place"):
-            if arm.move_to_pose(final, target_link=target_link):
+            if reach(final):
                 log.info(f"Place pose reached at rung {index}")
                 return True
 
@@ -131,7 +150,7 @@ def _reach_place_pose(arm, place_pose: PoseStamped, is_shelf: bool) -> bool:
             # Halfway only on the first rung; higher rungs are already elevated
             # and a halfway pose there risks a ceiling collision.
             with arm.phase("place_halfway"):
-                if arm.move_to_pose(half, target_link=target_link):
+                if reach(half):
                     log.info("Place halfway pose reached")
                     return True
         elif is_shelf:
@@ -233,10 +252,11 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
 
     # "Place next to X": aim the heatmap at X's centroid.
     if place_params.close_to:
+        # Failing to resolve it degrades to a generic place rather than failing
+        # the task, which is what the pre-merge place effectively did.
         point = _close_by_point(arm, perception, place_params.close_to)
-        if point is None:
-            return None
-        request.close_point = point
+        if point is not None:
+            request.close_point = point
 
     # A special request can instead put the object directly on top of another.
     on_top = None
@@ -253,7 +273,7 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
         return None
     request.pointcloud = cloud
 
-    request.prefer_closest = True
+    # Tables leave this unset (False), as the old place did.
     if place_params.is_shelf:
         # High shelves: the arm can barely reach the center, so prefer the
         # nearest reachable point (the heatmap's edge penalty keeps it inside
@@ -265,7 +285,7 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
         log.error("place_pose (heatmap) service not available")
         return None
     future = perception.heatmap_place_client.call_async(request)
-    if not wait_for_future(future, timeout=20) or future.result() is None:
+    if not wait_for_future(future, timeout=HEATMAP_TIMEOUT) or future.result() is None:
         log.error("heatmap place service did not respond")
         return None
     point = future.result().place_point
@@ -310,15 +330,37 @@ def _close_by_point(arm, perception, object_name: str):
         except Exception as exc:
             log.error(f"Failed to get object: {exc}")
 
-    if point is None:
-        log.error(f"Could not locate {object_name} to place near")
-        return None
+    return _to_base_link(arm, point, object_name)
 
+
+def _locate_point(arm, perception, object_name: str):
+    """Locate an object by label, in base_link. No clustering.
+
+    The special-request path places relative to the detected point; clustering
+    here would also wipe the collision scene mid-place.
+    """
+    log = arm.logger
+    point = None
+    for _ in range(5):
+        try:
+            point = perception.locate_object(object_name)
+            if point is not None:
+                break
+            log.warn(f"Failed to locate {object_name}, retrying")
+        except Exception as exc:
+            log.error(f"Failed to get object: {exc}")
+    return _to_base_link(arm, point, object_name)
+
+
+def _to_base_link(arm, point, object_name: str):
+    if point is None:
+        arm.logger.error(f"Could not locate {object_name}")
+        return None
     success, point = transform_point(point, "base_link", arm.tf_buffer)
     if not success:
-        log.error("Failed to transform close-by point")
+        arm.logger.error("Failed to transform point to base_link")
         return None
-    log.info(f"Close-by point: {point.point}")
+    arm.logger.info(f"Located {object_name} at {point.point}")
     return point
 
 
@@ -335,7 +377,8 @@ def _special_request(arm, perception, place_params):
         return None, None
 
     log.info("Using close-by place pose")
-    point = _close_by_point(arm, perception, parsed.get("object", ""))
+    # Detection only -- no clustering, no centroid, no collision wipe.
+    point = _locate_point(arm, perception, parsed.get("object", ""))
     if point is None:
         return None, None
 
@@ -414,7 +457,7 @@ def _apply_drop_height(
 
 def _trash_pose(perception) -> Optional[PoseStamped]:
     """Detect the trash bin; the estimator already offsets above it, top-down."""
-    response = perception.estimate_flat_grasp(TRASH_BIN_NAME)
+    response = perception.estimate_flat_grasp(TRASH_BIN_NAME, timeout=TRASH_TIMEOUT)
     if response is None:
         perception.logger.error("Trash bin detection failed")
         return None

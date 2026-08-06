@@ -16,6 +16,8 @@ import sys
 import types
 from unittest.mock import MagicMock
 
+import pytest
+
 # Sibling ROS packages that only provide transport helpers to the code under
 # test. Each entry is imported for real first; a stub appears only on failure.
 _OPTIONAL_MODULES = [
@@ -39,6 +41,12 @@ _OPTIONAL_MODULES = [
 _STUB_ATTRIBUTES = {
     "frida_pymoveit2.robots.xarm6": {
         "JOINT_POSITION_LIMITS": {f"joint{i}": (-6.28, 6.28) for i in range(1, 7)},
+    },
+    # The TF helpers return (success, transformed); a MagicMock cannot unpack.
+    # Identity is the right stub: these tests are not about frame conversion.
+    "frida_motion_planning.utils.tf_utils": {
+        "transform_point": lambda point, frame, buffer: (True, point),
+        "transform_pose": lambda pose, frame, buffer: (True, pose),
     },
 }
 
@@ -68,6 +76,23 @@ def _install_stubs():
 
 
 _install_stubs()
+
+
+@pytest.fixture(autouse=True)
+def _no_real_sleeping(monkeypatch):
+    """Unit tests must not spend real time in settle delays.
+
+    The pipelines sleep for gripper settles, mode switches and pour draining --
+    seconds each, minutes across the suite. None of it affects the logic under
+    test, which drives fakes rather than hardware.
+    """
+    for module in (
+        "pick_and_place.pipelines.pick",
+        "pick_and_place.pipelines.pour",
+        "pick_and_place.robot.arm",
+    ):
+        if module in sys.modules:
+            monkeypatch.setattr(f"{module}.time.sleep", lambda _: None, raising=False)
 
 
 def pytest_report_header(config):

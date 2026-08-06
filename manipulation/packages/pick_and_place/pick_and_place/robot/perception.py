@@ -32,8 +32,12 @@ from pick_and_place.utils.perception_utils import (
 
 ESTIMATE_FLAT_GRASP_SERVICE = "/manipulation/estimate_flat_grasp"
 
-# Max time to wait for the flat_grasp_estimator service to respond (seconds).
+# Defaults, in seconds. Callers override where their flow needs different ones:
+# the pour path waits longer for a detection and less for a cluster than the
+# pick and place paths do.
 FLAT_GRASP_TIMEOUT = 5.0
+DETECT_TIMEOUT = 2.0
+CLUSTER_TIMEOUT = 60.0
 
 
 class Perception:
@@ -69,15 +73,22 @@ class Perception:
     def logger(self):
         return self._log
 
-    def locate_object(self, object_name: str) -> PointStamped:
+    def locate_object(
+        self, object_name: str, timeout: float = DETECT_TIMEOUT
+    ) -> PointStamped:
         """Find an object by label. An empty frame_id means "not found"."""
-        return get_object_point(object_name, self.detection_handler_client)
+        return get_object_point(object_name, self.detection_handler_client, timeout)
 
     @staticmethod
     def point_in_range(point, min_distance: float, max_distance: float) -> bool:
         return point_in_range(point, min_distance, max_distance)
 
-    def cluster_at(self, point: PointStamped, add_collision_objects: bool = True):
+    def cluster_at(
+        self,
+        point: PointStamped,
+        add_collision_objects: bool = True,
+        timeout: float = CLUSTER_TIMEOUT,
+    ):
         """Segment the object at ``point`` into a point cloud, or None.
 
         ``add_collision_objects=False`` is used when only the geometry is
@@ -85,14 +96,16 @@ class Perception:
         make MoveIt reject every near-table path.
         """
         return get_object_cluster(
-            point, self.pick_perception_client, add_collision_objects
+            point, self.pick_perception_client, add_collision_objects, timeout
         )
 
     def detect_grasps(self, cluster, cfg_path: str) -> Tuple[List, List]:
         """Run GPD over a cluster. Returns (poses, scores), possibly empty."""
         return get_grasps(self.grasp_detection_client, cluster, cfg_path)
 
-    def estimate_flat_grasp(self, object_name: str) -> Optional[object]:
+    def estimate_flat_grasp(
+        self, object_name: str, timeout: float = FLAT_GRASP_TIMEOUT + 3.0
+    ) -> Optional[object]:
         """Ask the flat-grasp estimator for a top-down pose.
 
         Returns the service response, or None when unavailable or unsuccessful;
@@ -108,7 +121,7 @@ class Perception:
         request.object_name = object_name
         request.num_samples = 0  # let the estimator use its default
         future = self.flat_grasp_client.call_async(request)
-        future = wait_for_future(future, timeout=FLAT_GRASP_TIMEOUT + 3.0)
+        future = wait_for_future(future, timeout=timeout)
         response = future.result() if future else None
 
         if response is None or not response.success:
