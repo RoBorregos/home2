@@ -31,6 +31,11 @@ services:
       DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      TRANSFORMERS_VERBOSITY: error
+      HF_HUB_DISABLE_PROGRESS_BARS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      GRPC_VERBOSITY: ERROR
+      PYTHONWARNINGS: ignore
     env_file:
       - .env
     tty: true
