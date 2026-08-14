@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+import logging
 import os
 import queue
+import sys
 import threading
 import time
 import wave
@@ -15,6 +17,18 @@ from rclpy.node import Node
 
 from frida_interfaces.msg import AudioData
 import df as DF_MODULE
+
+logging.getLogger("df").setLevel(logging.WARNING)
+
+# DeepFilterNet logs its model config via loguru, not stdlib logging,
+# so the setLevel() above doesn't silence it. Cap loguru's own sink too.
+try:
+    from loguru import logger as _loguru_logger
+
+    _loguru_logger.remove()
+    _loguru_logger.add(sys.stderr, level="WARNING")
+except ImportError:
+    pass
 
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
 SAVE_IT = 100
@@ -77,7 +91,7 @@ class NoiseCancellation(Node):
         )
 
         if self.use_df:
-            self.get_logger().info(
+            self.get_logger().debug(
                 "Starting DeepFilterNet in background thread. ANC will be active once ready..."
             )
             threading.Thread(target=self._init_df_async, daemon=True).start()
@@ -98,7 +112,7 @@ class NoiseCancellation(Node):
                 self.use_df = False
                 return
 
-            self.get_logger().info(f"Loading DeepFilterNet model from {model_dir}")
+            self.get_logger().debug(f"Loading DeepFilterNet model from {model_dir}")
             self.df_model, self.df_state, _ = DF_MODULE.init_df(
                 model_base_dir=model_dir
             )
@@ -116,7 +130,7 @@ class NoiseCancellation(Node):
             # Input tensor must stay on CPU — DF_MODULE.enhance handles device placement
             # internally and will fail with 'can't convert cuda tensor to numpy' if
             # the input is already on CUDA.
-            self.get_logger().info("Pre-warming DeepFilterNet (3 dummy inferences)...")
+            self.get_logger().debug("Pre-warming DeepFilterNet (3 dummy inferences)...")
             dummy = (np.random.randn(1024 * RESAMPLE_FACTOR) * 0.01).astype(np.float32)
             dummy_tensor = torch.from_numpy(dummy).unsqueeze(0)  # keep on CPU
             for _ in range(3):

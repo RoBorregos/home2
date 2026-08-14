@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import ctypes
 import os
 import wave
 
@@ -10,6 +11,27 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from frida_interfaces.msg import AudioData
+
+# PortAudio/ALSA dump raw C-level stderr spam (dozens of "unable to open
+# slave" lines) while enumerating phantom/unavailable devices, both here
+# (pyaudio.PyAudio()) and inside SpeechApiUtils' sounddevice-based lookup.
+# Install a no-op ALSA error handler before any device enumeration runs.
+_ALSA_ERROR_HANDLER_FUNC = ctypes.CFUNCTYPE(
+    None, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p
+)
+
+
+def _alsa_error_handler(filename, line, function, err, fmt):
+    pass
+
+
+_alsa_error_handler_c = _ALSA_ERROR_HANDLER_FUNC(_alsa_error_handler)
+
+try:
+    _asound = ctypes.cdll.LoadLibrary("libasound.so.2")
+    _asound.snd_lib_error_set_handler(_alsa_error_handler_c)
+except OSError:
+    pass
 
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/audios"
 SAVE_IT = 100
@@ -43,7 +65,7 @@ class AudioCapturer(Node):
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
         )
-        self.get_logger().info("Input device index: " + str(self.input_device_index))
+        self.get_logger().debug("Input device index: " + str(self.input_device_index))
 
         if self.input_device_index is None:
             self.get_logger().warn(
@@ -68,7 +90,7 @@ class AudioCapturer(Node):
                 frames_per_buffer=self.chunk_size,
             )
 
-            self.get_logger().info(
+            self.get_logger().debug(
                 f"--- Listening on device index {self.input_device_index} ---"
             )
 

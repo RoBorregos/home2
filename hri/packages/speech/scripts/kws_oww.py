@@ -5,6 +5,7 @@ import time
 import json
 
 import numpy as np
+import onnxruntime as ort
 import openwakeword
 import openwakeword.utils as utils
 import rclpy
@@ -13,6 +14,11 @@ from rclpy.node import Node
 from std_msgs.msg import String
 
 from frida_interfaces.msg import AudioData
+
+# openwakeword loads its ONNX models via onnxruntime, which at default
+# verbosity prints per-session provider/graph-optimization info (dozens of
+# lines per model). Cap it to errors only before any Model() is created.
+ort.set_default_logger_severity(3)
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
@@ -63,18 +69,18 @@ class OpenWakeWordNode(Node):
         self.download_models()
         # Handle model loading dynamically from a directory
         if model_path:
-            self.get_logger().info(f"Loading models from {model_path}")
+            self.get_logger().debug(f"Loading models from {model_path}")
             model_files = [f for f in os.listdir(model_path) if f.endswith(".onnx")]
             if model_files:
                 self.oww_model = Model(
                     wakeword_models=[os.path.join(model_path, f) for f in model_files],
                     inference_framework=inference_framework,
                 )
-                self.get_logger().info(f"Loaded {len(model_files)} models.")
+                self.get_logger().debug(f"Loaded {len(model_files)} models.")
             else:
                 self.get_logger().warn(f"No models found in directory: {model_path}")
         else:
-            self.get_logger().info("Loading default model.")
+            self.get_logger().debug("Loading default model.")
             self.oww_model = Model(inference_framework=inference_framework)
 
         self.get_logger().info("OpenWakeWord model loaded successfully.")
@@ -125,7 +131,7 @@ class OpenWakeWordNode(Node):
         # Download models if they do not exist
 
         if not os.path.exists(melospectogram_download_path):
-            self.get_logger().info("Downloading melospectogram model.")
+            self.get_logger().debug("Downloading melospectogram model.")
 
             utils.download_file(
                 openwakeword.FEATURE_MODELS["melspectrogram"]["download_url"].replace(
@@ -135,7 +141,7 @@ class OpenWakeWordNode(Node):
             )
 
         if not os.path.exists(embedding_download_path):
-            self.get_logger().info("Downloading embedding model.")
+            self.get_logger().debug("Downloading embedding model.")
 
             utils.download_file(
                 openwakeword.FEATURE_MODELS["embedding"]["download_url"].replace(
@@ -147,16 +153,16 @@ class OpenWakeWordNode(Node):
         # Copy models to execution path if they do not exist
 
         if not os.path.exists(melospectogram_execution_path):
-            self.get_logger().info("Copying model to execution path.")
-            self.get_logger().info(
+            self.get_logger().debug("Copying model to execution path.")
+            self.get_logger().debug(
                 f"model_download {melospectogram_download_path}. model_execution {melospectogram_execution_path}"
             )
             os.makedirs(os.path.dirname(melospectogram_execution_path), exist_ok=True)
             shutil.copyfile(melospectogram_download_path, melospectogram_execution_path)
 
         if not os.path.exists(embedding_execution_path):
-            self.get_logger().info("Copying model to execution path.")
-            self.get_logger().info(
+            self.get_logger().debug("Copying model to execution path.")
+            self.get_logger().debug(
                 f"model_download {embedding_download_path}. model_execution {embedding_execution_path}"
             )
             os.makedirs(os.path.dirname(embedding_execution_path), exist_ok=True)
