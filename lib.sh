@@ -292,10 +292,6 @@ run_task() {
   local remote_first=true
 
   for area in ${AREAS}; do
-    # The safety routine intentionally does not bring up vision.
-    if [ "$1" = "--safety" ] && [ "$area" = "vision" ]; then
-      continue
-    fi
     CMD="bash run.sh $area $*"
     if is_orin_area "${area}"; then
       if [ "$remote_first" = true ]; then
@@ -313,6 +309,14 @@ run_task() {
       fi
     fi
   done
+
+  # Status dashboard window (Fase 1.3): live view re-using the same task args.
+  local DASHBOARD_CMD="bash scripts/dashboard.sh $*"
+  if [ "$local_first" = true ]; then
+    screen -dmS "$SESSION_NAME" -t "status" bash -c "$DASHBOARD_CMD; exec bash"
+  else
+    screen -S "$SESSION_NAME" -X screen -t "status" bash -c "$DASHBOARD_CMD; exec bash"
+  fi
 
   echo "Tasks started in screen session '$SESSION_NAME'."
   echo "To view, run: screen -r $SESSION_NAME"
