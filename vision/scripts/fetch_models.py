@@ -38,6 +38,8 @@ STANDARD_MODELS = {
 
 # Custom weights that cannot be downloaded — verify presence, warn if missing.
 CUSTOM_MODELS = [
+    "abril.pt",
+    "abril11.pt",
     "robocup2026_v1.pt",
     "tmr2025.pt",
     "dishwasher_layout.pt",

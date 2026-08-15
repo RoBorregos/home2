@@ -17,10 +17,9 @@ MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
 
 MODEL_CONFIGS: dict[str, dict] = {
     "yolo_finetuned": {
-        "filename": "robocup2026_v1.pt",
+        "filename": "abril11.pt",
         "type": "yolo",
         "conf": 0.6,
-        "translation": "robocup2026_translation.json",
     },
     "yolo_generic": {"filename": "yolo26n.pt", "type": "yolo", "conf": 0.5},
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
