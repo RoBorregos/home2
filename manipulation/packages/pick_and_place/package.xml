@@ -19,6 +19,7 @@
   <depend>xarm_moveit_config</depend>
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
+  <depend>xarm_utils</depend>
   <depend>perception_3d</depend>
   <depend>arm_pkg</depend>
   <depend>frida_motion_planning</depend>

@@ -22,6 +22,7 @@
   <depend>action_msgs</depend>
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
+  <depend>vision_general</depend>
   <depend>cv_bridge</depend>
   <depend>python3-opencv</depend>
   

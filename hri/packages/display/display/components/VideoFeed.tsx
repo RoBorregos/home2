@@ -12,7 +12,7 @@ interface VideoFeedProps {
 }
 
 export function VideoFeed({
-  defaultTopic = "/zed/zed_node/rgb/image_rect_color",
+  defaultTopic = "/vision/camera/image_oriented",
 }: VideoFeedProps) {
   const [videoTopic, setVideoTopic] = useState<string>(defaultTopic);
 
@@ -33,13 +33,19 @@ export function VideoFeed({
   }, []);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4">
-      <p className="text-xl mb-4 text-(--text-light)">
-        Video feed at {videoTopic}
-      </p>
-      <MjpegStream
-        streamUrl={`http://localhost:8080/stream?topic=${videoTopic}`}
-      />
+    <div className="w-full h-full">
+      {videoTopic.endsWith(".mp4") || videoTopic.endsWith(".webm") ? (
+        <video
+          src={`/${videoTopic}`}
+          autoPlay
+          loop
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        <MjpegStream
+          streamUrl={`http://localhost:8080/stream?topic=${videoTopic}`}
+        />
+      )}
     </div>
   );
 }

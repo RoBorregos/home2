@@ -26,9 +26,14 @@ count = 50
 # Full camera frames (~2MB each at 960x540 BGR)
 [[segment.mempool]]
 size = 2097152
-count = 30
+count = 60
+
+# Depth / pointcloud (~3.5MB)
+[[segment.mempool]]
+size = 4194304
+count = 80
 
 # Large images (HD1080 full resolution ~6MB)
 [[segment.mempool]]
 size = 8388608
-count = 30
+count = 60

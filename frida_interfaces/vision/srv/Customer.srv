@@ -1,3 +1,5 @@
+# Request
+bool include_non_waving   # true: also return seated, non-waving people (table scan); false: waving customers only
 ---
 bool found
 frida_interfaces/PersonList people

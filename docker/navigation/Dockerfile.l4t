@@ -70,6 +70,52 @@ RUN cd /workspace/src && sudo apt update && (sudo rosdep init || true) && rosdep
 RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces" -y
 RUN sudo rm -rf /workspace/src/
 
+# ============================================================================
+# Eigen MPPI: replace apt Nav2 (1.1.20) with a from-source build of the
+# `humble_main` branch, which carries the Eigen nav2_mppi_controller (1.4.0) —
+# ~45-50% less controller CPU, and ARM-friendly (apt Humble MPPI is xtensor,
+# which lacks good NEON SIMD). Validated on the AGX Orin:
+#   * BT.CPP v4 is NOT in the apt snapshot -> build from source. It must be built
+#     inside the colcon ws (ament-aware) so it exports the
+#     behaviortree_cpp::behaviortree_cpp target nav2 expects (raw upstream only
+#     gives BT::behaviortree_cpp).
+#   * humble_main CANNOT overlay apt nav2: apt installs headers into the merged
+#     /opt/ros/humble/include, which shadows the 1.4.0 headers. So the apt
+#     nav2-family is PURGED, and the runtime nav2 set + nav_2d_utils + STVL
+#     (a nav2_costmap_2d plugin, so ABI-bound to costmap 1.4.0) are rebuilt.
+#   * slam_toolbox needs NO rebuild (only an exec_depend on nav2_map_server).
+#   * Build set == exactly the nodes the omni launch starts (controller/MPPI,
+#     planner/navfn, behaviors, bt_navigator, smoother, velocity_smoother,
+#     lifecycle_manager, map_server for keepout filters) + STVL.
+# ============================================================================
+ARG NAV2_BRANCH=humble_main
+ARG BTCPP_TAG=4.6.2
+ARG STVL_BRANCH=humble
+RUN mkdir -p /home/ros/nav2_ws/src
+WORKDIR /home/ros/nav2_ws
+RUN git clone --depth 1 -b ${BTCPP_TAG} https://github.com/BehaviorTree/BehaviorTree.CPP.git src/BehaviorTree.CPP && \
+    git clone --depth 1 -b ${STVL_BRANCH} https://github.com/SteveMacenski/spatio_temporal_voxel_layer.git src/spatio_temporal_voxel_layer && \
+    git clone --depth 1 -b ${NAV2_BRANCH} https://github.com/ros-navigation/navigation2.git src/navigation2 && \
+    cd src/navigation2 && \
+    cp -r nav2_dwb_controller/nav_2d_utils nav2_dwb_controller/nav_2d_msgs /home/ros/nav2_ws/src/ && \
+    rm -rf nav2_bringup nav2_system_tests nav2_loopback_sim nav2_rviz_plugins nav2_simple_commander \
+           navigation2 nav2_docking nav2_smac_planner nav2_route nav2_dwb_controller \
+           nav2_constrained_smoother nav2_graceful_controller nav2_regulated_pure_pursuit_controller \
+           nav2_rotation_shim_controller nav2_theta_star_planner nav2_amcl
+# Purge apt nav2-family so its merged headers/cmake don't shadow the source build.
+RUN NAV2_APT=$(dpkg -l | awk '/^ii/ && ($2 ~ /^ros-humble-nav2/ || $2 ~ /^ros-humble-nav-2d/ || $2 ~ /^ros-humble-dwb/ || $2=="ros-humble-navigation2") {print $2}' | tr '\n' ' ') && \
+    if [ -n "$NAV2_APT" ]; then sudo dpkg --remove --force-depends $NAV2_APT; fi
+RUN source /opt/ros/humble/setup.bash && \
+    MAKEFLAGS="-j6" colcon build --parallel-workers 2 \
+      --packages-up-to nav2_bt_navigator nav2_mppi_controller nav2_controller nav2_navfn_planner \
+        nav2_planner nav2_behaviors nav2_smoother nav2_velocity_smoother nav2_lifecycle_manager \
+        nav2_map_server spatio_temporal_voxel_layer \
+      --packages-skip openvdb_vendor \
+      --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF
+# Source the from-source Nav2 BEFORE the /workspace overlay (sourced at runtime).
+RUN echo "source /home/ros/nav2_ws/install/setup.bash" >> /home/ros/.bashrc
+WORKDIR /workspace
+
 # CycloneDDS with SHM (iceoryx zero-copy)
 # Iceoryx from source (expanded publisher/subscriber limits)
 RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \

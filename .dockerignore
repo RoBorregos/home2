@@ -1,0 +1,48 @@
+# Docker build context exclusions
+
+# Source Control
+.git
+.gitmodules
+.githooks
+
+# Build & Cache
+**/build/
+**/install/
+**/log/
+**/devel/
+**/.vscode/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.clj-kondo/
+**/.lsp/
+**/baml_client/
+
+# Node.js
+**/node_modules/
+
+# ML / Heavy Caches
+**/trt_cache/
+**/moondream_cache/
+**/chromadb/
+**/.cache/
+*.pt
+*.pth
+*.engine
+*.onnx
+*.whl
+
+# Large Assets (Mounted via volumes, not needed in image)
+hri/packages/nlp/assets/**
+!hri/packages/nlp/assets/Modelfile
+!hri/packages/nlp/assets/NewModelfile
+
+# SQL dumps
+docker/hri/sql_dumps/
+
+# Temporary / OS files
+.DS_Store
+Thumbs.db
+*.bag
+*.traj
+cyclonedds.log

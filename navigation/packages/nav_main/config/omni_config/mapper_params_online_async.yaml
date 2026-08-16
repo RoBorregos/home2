@@ -1,0 +1,91 @@
+# slam_toolbox — online ASYNC mapping, tuned for the mecanum omnibase indoors.
+#
+# Frames / data flow (everything runs on the ROBOT computer):
+#   RPLIDAR C1 driver ──> /scan  (header.frame_id = base_link)
+#   odrive_dashboard  ──> /odrive/odom, /odrive/imu
+#                              │
+#                          ekf_node ──> TF  odom -> base_link   (+ /odometry/filtered)
+#                              │
+#                       slam_toolbox  ──> TF  map -> odom   (+ /map occupancy grid)
+#
+# Full TF chain SLAM needs:  map -> odom -> base_link -> <scan frame>
+#   * map  -> odom        : published by THIS node (slam_toolbox)
+#   * odom -> base_link   : published by the EKF (ekf.launch.py)
+#   * base_link -> scan   : identity here, because /scan is published in base_link
+#
+# slam_toolbox reads the scan's frame from the message header and looks up
+# base_frame -> that frame via TF. Since /scan is already in base_link, that
+# lookup is identity. If you later give the lidar its own frame (e.g. "laser"),
+# nothing here changes — just add the base_link->laser static TF.
+
+slam_toolbox:
+  ros__parameters:
+
+    # ---- Solver (Ceres pose-graph back end; default, fast on a robot CPU) ----
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+
+    # ---- Frames & I/O ----
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_link
+    scan_topic: /scan
+    mode: mapping                     # build a new map (use "localization" to run against a saved one)
+
+    # To RESUME from / LOCALIZE against a saved map, set mode: localization and:
+    # map_file_name: /home/<user>/omnibase_maps/arena   # absolute path on the robot, WITHOUT extension (.posegraph/.data)
+    # map_start_pose: [0.0, 0.0, 0.0]           # where the robot starts on that map
+    # map_start_at_dock: true
+
+    debug_logging: false
+    throttle_scans: 1                 # process every scan (C1 is only ~10 Hz)
+    transform_publish_period: 0.02    # publish map->odom TF at 50 Hz (smooth in RViz / for nav)
+    map_update_interval: 1.0          # rebuild the /map occupancy grid every 1.0 s (raise to 2.0 to save CPU)
+    resolution: 0.05                  # 5 cm grid cells — good detail/CPU balance indoors (drop to 0.03 for finer)
+    min_laser_range: 0.10             # C1 spec min is 0.05 m; ignore the closest returns (chassis/noise)
+    max_laser_range: 12.0             # RPLIDAR C1 max usable range; clamps slam_toolbox's 20 m default
+    minimum_time_interval: 0.2        # don't add nodes faster than 5 Hz even if scans arrive faster
+    transform_timeout: 0.2            # tolerate small TF latency from the EKF
+    tf_buffer_duration: 30.0
+    stack_size_to_use: 40000000       # 40 MB — needed for large serialized maps
+    enable_interactive_mode: true     # allows manual loop-closure / node edits in RViz
+
+    # ---- General mapper ----
+    use_scan_matching: true           # correlative scan match each scan against the local map (critical)
+    use_scan_barycenter: true
+    minimum_travel_distance: 0.2      # insert a new graph node every 0.2 m of motion...
+    minimum_travel_heading: 0.2       # ...or every ~11.5 deg of rotation (good for a base that spins in place)
+    scan_buffer_size: 10
+    scan_buffer_maximum_scan_distance: 12.0
+    link_match_minimum_response_fine: 0.1
+    link_scan_maximum_distance: 1.5
+    loop_search_maximum_distance: 3.0
+    do_loop_closing: true             # close loops so re-visiting a corridor snaps the map straight
+    loop_match_minimum_chain_size: 10
+    loop_match_maximum_variance_coarse: 3.0
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_minimum_response_fine: 0.45
+
+    # ---- Correlation (local scan-match search window) ----
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1
+
+    # ---- Loop-closure search window ----
+    loop_search_space_dimension: 8.0
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+
+    # ---- Scan-matcher penalties ----
+    distance_variance_penalty: 0.5
+    angle_variance_penalty: 1.0
+    fine_search_angle_offset: 0.00349
+    coarse_search_angle_offset: 0.349
+    coarse_angle_resolution: 0.0349
+    minimum_angle_penalty: 0.9
+    minimum_distance_penalty: 0.5
+    use_response_expansion: true

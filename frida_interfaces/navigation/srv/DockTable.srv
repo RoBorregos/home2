@@ -1,0 +1,8 @@
+# Request
+
+# Desired front offset for the approach (m). 0.0 -> use the docker default.
+float32 offset
+---
+#Response
+bool success
+string error

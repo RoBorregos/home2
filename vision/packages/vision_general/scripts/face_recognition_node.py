@@ -28,6 +28,7 @@ from frida_constants.vision_constants import (
 from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
 from models.face_recognition import FaceModel, TRACK_THRESHOLD
+from vision_general.utils.debug_pub import DebugImagePublisher
 
 MAX_DEGREE = 1
 PACKAGE_PATH = get_package_share_directory("vision_general")
@@ -89,7 +90,9 @@ class FaceRecognition(Node):
         )
 
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
-        self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
+        self.view_pub = DebugImagePublisher(
+            self, FACE_RECOGNITION_IMAGE, "face_recognition"
+        )
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
@@ -114,7 +117,7 @@ class FaceRecognition(Node):
         self.prev_faces: list = []
         self.curr_faces: list = []
         self.follow_name = "area"
-        self.vision_active = True
+        self.vision_active = False
         self.is_processing = False
         self.id = None
         self.processing_id = rclpy.duration.Infinite
@@ -269,14 +272,17 @@ class FaceRecognition(Node):
         self.prev_faces = self.curr_faces
         self.annotated_frame = annotated
 
+        # Always publish the full list of recognized faces.
+        self.person_list_publisher.publish(face_list)
+
         if detected:
-            self._publish_follow_face(xc, yc, largest_face_name, center, face_list)
+            self._publish_follow_face(xc, yc, largest_face_name, center)
         else:
             self.name_publisher.publish(String(data=""))
 
-        self.view_pub.publish(self.bridge.cv2_to_imgmsg(annotated, "bgr8"))
+        self.view_pub.publish(annotated)
 
-    def _publish_follow_face(self, xc, yc, name, center, face_list):
+    def _publish_follow_face(self, xc, yc, name, center):
         difx = 0.0 if xc == 0 else xc - center[0]
         dify = 0.0 if yc == 0 else center[1] - yc
         target = Point()
@@ -284,7 +290,6 @@ class FaceRecognition(Node):
         target.y = dify * MAX_DEGREE / center[1]
         self.follow_publisher.publish(target)
         self.name_publisher.publish(String(data=name))
-        self.person_list_publisher.publish(face_list)
 
 
 def main(args=None):

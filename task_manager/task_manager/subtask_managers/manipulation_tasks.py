@@ -12,7 +12,6 @@ control and provides a simple interface for the task manager to use.
 
 import rclpy
 from rclpy.node import Node
-from std_srvs.srv import SetBool
 from task_manager.utils.logger import Logger
 
 # from geometry_msgs.msg import PoseStamped
@@ -23,6 +22,7 @@ from frida_interfaces.srv import (
     GetOptimalPositionForPlane,
     GetOptimalPoseForPlane,
     RemoveCollisionObject,
+    FixedDistanceMove,
 )
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
@@ -34,11 +34,13 @@ from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
+from std_srvs.srv import Empty
 from xarm_msgs.srv import SetDigitalIO
 
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
+    FIXED_DISTANCE_MOVE_SERVICE,
 )
 import time as t
 
@@ -53,6 +55,9 @@ TIMEOUT = 5.0
 
 RAD_TO_DEG = 180 / 3.14159265359
 DEG_TO_RAD = 3.14159265359 / 180
+
+# Front reference
+FORWARD_JOINT1_DEG = -90.0
 
 
 class ManipulationTasks:
@@ -93,11 +98,15 @@ class ManipulationTasks:
         self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
+        self._fixed_distance_move_client = self.node.create_client(
+            FixedDistanceMove, FIXED_DISTANCE_MOVE_SERVICE
+        )
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
         self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
         self._remove_collision_object_client = self.node.create_client(
             RemoveCollisionObject, "/manipulation/remove_collision_object"
         )
+        self._clear_octomap_client = self.node.create_client(Empty, "/clear_octomap")
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
@@ -110,9 +119,6 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
-        self._flat_grasp_estimator_client = self.node.create_client(
-            SetBool, "/flat_grasp_estimator/enable"
-        )
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -122,13 +128,15 @@ class ManipulationTasks:
         """Closes the gripper"""
         return self._set_gripper_state("close")
 
-    def follow_person(self, follow: bool) -> int:
-        """Save the name of the person detected"""
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=1)
+    @service_check("follow_person_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def follow_person(self, follow: bool = True) -> int:
+        """Enable/disable arm tracking of a person via follow_person_controller.
 
-        if follow:
-            Logger.info(self.node, "Following face")
-        else:
-            Logger.info(self.node, "Stopping following face")
+        When True, the xArm joint1 rotates to keep the tracked person
+        centered in the camera image (PI + base-velocity feedforward).
+        """
+        Logger.info(self.node, f"Follow person (arm): {follow}")
         request = FollowFace.Request()
         request.follow_face = follow
 
@@ -145,7 +153,7 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error following person: {e}")
             return Status.EXECUTION_ERROR
 
-        Logger.success(self.node, "Following person request successful")
+        Logger.success(self.node, f"Follow person request successful: {follow}")
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
@@ -236,7 +244,8 @@ class ManipulationTasks:
         """Get named target"""
         return XARM_CONFIGURATIONS[target_name]
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    # mock must be a dict (fresh copy, callers mutate it); values in degrees like front_stare
+    @mockable(return_value=lambda self: dict(XARM_CONFIGURATIONS["front_stare"]["joints"]))
     @service_check("_get_joints_client", Status.EXECUTION_ERROR, TIMEOUT)
     def get_joint_positions(
         self,
@@ -251,6 +260,21 @@ class ManipulationTasks:
             result.joint_positions = [x * RAD_TO_DEG for x in result.joint_positions]
         print("Joint positions from service: ", result.joint_positions)
         return dict(zip(result.joint_names, result.joint_positions))
+
+    @service_check("_fixed_distance_move_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def move_arm_vertical(self, distance: float, descend: bool = False):
+        """Move the TCP a fixed distance in Z (xArm mode 5 closed-loop).
+        descend=False raises the arm (+Z); descend=True lowers it (-Z)."""
+        request = FixedDistanceMove.Request()
+        request.distance = float(distance)
+        request.descend = descend
+        future = self._fixed_distance_move_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
+        result = future.result()
+        if result is None or not result.success:
+            Logger.error(self.node, "move_arm_vertical failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
     # let the server pick the default values
     @service_check("_move_joints_action_client", -1, TIMEOUT)
@@ -367,46 +391,23 @@ class ManipulationTasks:
 
         return Status.EXECUTION_SUCCESS
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS)
-    @service_check(
-        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
-    )
-    def set_flat_grasp_estimator(self, enable: bool) -> int:
-        """Enable or disable the flat grasp estimator node."""
-        if not self._flat_grasp_estimator_client.wait_for_service(timeout_sec=5.0):
-            Logger.error(self.node, "Flat grasp estimator service not available")
-            return Status.EXECUTION_ERROR
-
-        req = SetBool.Request()
-        req.data = enable
-        future = self._flat_grasp_estimator_client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=5.0)
-
-        if future.result() is not None and future.result().success:
-            state = "enabled" if enable else "disabled"
-            Logger.info(self.node, f"Flat grasp estimator {state}")
-            return Status.EXECUTION_SUCCESS
-
-        Logger.error(self.node, "Failed to set flat grasp estimator state")
-        return Status.EXECUTION_ERROR
-
-    def pick_cutlery(self, object_name: str) -> int:
-        """Pick a cutlery object (fork, knife, spoon).
-        Enables the flat grasp estimator, performs the pick, then disables it."""
-        self.set_flat_grasp_estimator(True)
-        try:
-            result = self.pick_object(object_name)
-        finally:
-            self.set_flat_grasp_estimator(False)
-        return result
-
-    def place(self, close_to: str = "", special_request: str = ""):
+    def place(
+        self,
+        close_to: str = "",
+        special_request: str = "",
+        from_current: bool = False,
+        is_trash: bool = False,
+    ):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         if close_to:
             goal_msg.place_params.close_to = close_to
         if special_request:
             goal_msg.place_params.special_request = special_request
+        # Skip the server's initial "table_stare" pose
+        goal_msg.place_params.skip_initial_pose = from_current
+        # Trash bin: dedicated detect-and-drop flow
+        goal_msg.place_params.is_trash = is_trash
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
@@ -644,12 +645,31 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error clearing collision objects: {e}")
             return Status.EXECUTION_ERROR
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    def clear_octomap(self) -> int:
+        """Clear the MoveIt octomap. Voxels of a guest or a held bag left next to
+        the gripper otherwise make planning the next arm motion fail."""
+        try:
+            if not self._clear_octomap_client.wait_for_service(timeout_sec=2.0):
+                Logger.warn(self.node, "clear_octomap service not available")
+                return Status.EXECUTION_ERROR
+            future = self._clear_octomap_client.call_async(Empty.Request())
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            if future.result() is None:
+                Logger.warn(self.node, "clear_octomap call timed out")
+                return Status.EXECUTION_ERROR
+            Logger.info(self.node, "Octomap cleared")
+            return Status.EXECUTION_SUCCESS
+        except Exception as e:
+            Logger.error(self.node, f"Error clearing octomap: {e}")
+            return Status.EXECUTION_ERROR
+
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         if not isinstance(joint_positions, dict):
             Logger.error(self.node, f"Failed to get joint positions in pan_to: {joint_positions}")
             return Status.EXECUTION_ERROR
-        joint_positions["joint1"] = joint_positions["joint1"] - degrees
+        joint_positions["joint1"] = FORWARD_JOINT1_DEG - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def point(self, degrees: float):
@@ -671,7 +691,9 @@ class ManipulationTasks:
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
-        self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
+        return self.move_joint_positions(
+            named_position=named_position, velocity=velocity, degrees=True
+        )
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
@@ -701,7 +723,8 @@ class ManipulationTasks:
 
         Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
         result_future = future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=60.0)
+
+        rclpy.spin_until_future_complete(self.node, result_future)
 
         result = result_future.result().result
         if result.success:
@@ -740,7 +763,7 @@ class ManipulationTasks:
         result: GetOptimalPositionForPlane.Response
         if result.is_valid:
             Logger.success(self.node, f"Optimal position for plane: {result.pt1}")
-            return
+            return Status.EXECUTION_SUCCESS
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
 

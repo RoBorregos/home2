@@ -116,6 +116,11 @@ case $TASK in
         RUN="ros2 launch vision_general ppc_launch.py"
         PROFILES=("vision" "moondream")
         ;;
+    "--dlc")
+        PACKAGES="vision_general object_detector_2d"
+        RUN="ros2 launch vision_general dlc_launch.py"
+        PROFILES=("vision")
+        ;;
     "--restaurant")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general restaurant_launch.py"
@@ -138,6 +143,13 @@ case $TASK in
         ;;
     "--moondream")
         PROFILES=("moondream")
+        ;;
+    "--warmup")
+        # Fetch all model weights + pre-build TRT engines for this device so
+        # competition runs need no internet and pay no first-call export.
+        PACKAGES="vision_general object_detector_2d moondream_run"
+        RUN="python3 /workspace/src/vision/scripts/fetch_models.py --warmup"
+        PROFILES=("vision")
         ;;
     *)
         PACKAGES="vision_general object_detector_2d moondream_run"

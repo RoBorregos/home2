@@ -27,6 +27,9 @@ services:
     privileged: true
     pid: host
     runtime: ${DOCKER_RUNTIME:-runc}
+    # Reserve dedicated CPU cores for navigation so the MPPI control loop and
+    # SLAM are not starved by vision/manipulation. Tunable via NAV_CPUSET.
+    cpuset: "${NAV_CPUSET:-0-3}"
     group_add:
       - video
       - dialout
@@ -79,6 +82,7 @@ services:
     privileged: true
     pid: host
     runtime: ${DOCKER_RUNTIME:-runc}
+    cpuset: "${NAV_CPUSET:-0-3}"
     deploy:
       resources:
         reservations:

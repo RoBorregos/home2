@@ -121,14 +121,14 @@ class FixPositionToPlane(Node):
 
         # Set translation
         transform.transform.translation.x = pose.pose.position.x
-        transform.transform.translation.y = pose.pose.position.x
-        transform.transform.translation.z = pose.pose.position.x
+        transform.transform.translation.y = pose.pose.position.y
+        transform.transform.translation.z = pose.pose.position.z
 
         # Set rotation
         transform.transform.rotation.x = pose.pose.orientation.x
-        transform.transform.rotation.y = pose.pose.orientation.x
-        transform.transform.rotation.z = pose.pose.orientation.x
-        transform.transform.rotation.w = pose.pose.orientation.x
+        transform.transform.rotation.y = pose.pose.orientation.y
+        transform.transform.rotation.z = pose.pose.orientation.z
+        transform.transform.rotation.w = pose.pose.orientation.w
 
         # Broadcast the transform
         self.tf_broadcaster.sendTransform(transform)

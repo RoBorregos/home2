@@ -48,6 +48,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["voice_detection"]["ros__parameters"]
 
+    doorbell_detection_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "doorbell_detection.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["doorbell_detection"]["ros__parameters"]
+
     env_type = os.environ.get("ENV_TYPE", "cpu")
 
     nodes = [
@@ -74,6 +81,16 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[voice_detection_config],
+        ),
+        # Door-event detection: only the DSP doorbell node for now (knock and the
+        # Edge Impulse door model are intentionally not launched).
+        Node(
+            package="speech",
+            executable="doorbell_detection.py",
+            name="doorbell_detection",
+            output="screen",
+            emulate_tty=True,
+            parameters=[doorbell_detection_config],
         ),
         Node(
             package="speech",
@@ -111,15 +128,9 @@ def generate_launch_description():
             [ModuleNames.HRI.value],
         )["kws_eim"]["ros__parameters"]
 
-        door_eim_config = parse_ros_config(
-            os.path.join(
-                get_package_share_directory("speech"),
-                "config",
-                "door_eim.yaml",
-            ),
-            [ModuleNames.HRI.value],
-        )["door_eim"]["ros__parameters"]
-
+        # Doorbell detection is handled by the gated DSP node (doorbell_detection);
+        # the Edge Impulse door model (door_eim) is intentionally not launched — it
+        # ran ungated and generalised poorly to unseen, per-round doorbell sounds.
         nodes.extend(
             [
                 Node(
@@ -129,14 +140,6 @@ def generate_launch_description():
                     output="screen",
                     emulate_tty=True,
                     parameters=[eim_config],
-                ),
-                Node(
-                    package="speech",
-                    executable="ei_audio_node.py",
-                    name="door_eim",
-                    output="screen",
-                    emulate_tty=True,
-                    parameters=[door_eim_config],
                 ),
             ]
         )

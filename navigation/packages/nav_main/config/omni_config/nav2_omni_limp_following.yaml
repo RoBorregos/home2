@@ -1,0 +1,78 @@
+# Follow-mode nav2 overrides — 3-WHEEL LIMP omnibase (rear-left ODrive / node 33 dead).
+#
+# This is NOT a standalone nav2 config. While the base runs on 3 wheels, nav2 is
+# launched with nav2_omni_limp.yaml (general_navigation.launch.py default);
+# person_goal_smoother.py reads ONLY the keys below and pushes them onto the
+# running nav2 nodes via SetParameters when follow mode is activated, then
+# restores the nav2_omni_limp.yaml values when it is deactivated. The launch
+# file passes this pair explicitly (standard_config_file / follow_config_file)
+# so leaving follow mode restores LIMP values — not the healthy-base
+# nav2_omni.yaml speeds.
+#
+# Follow-mode intent vs. limp standard (nav2_omni_limp.yaml):
+#   * Forward cap AT the limp standard (0.45): a walking person does ~1.2 m/s,
+#     and a lower follow cap made the robot fall behind until the person left
+#     the depth range — the dominant loss mode (same finding that raised the
+#     healthy nav2_omni_following.yaml to its standard 0.5). Speed itself is
+#     safe on 3 wheels (per-wheel IK spins the live wheels at normal rates);
+#     it's accel that slips the unpowered corner, so accels stay NOTABLY
+#     gentler than limp standard. Lateral (vy) motion kept but reduced: strafe
+#     is the weakest axis on 3 wheels (set vy_max 0.0 here + velocity_smoother
+#     max_velocity[1] 0.0 to disable it entirely if it proves unreliable).
+#   * GoalCritic down (moving target, don't over-commit),
+#     Path{Follow,Align}Critic up (hug the freshly replanned path) — same
+#     rationale as nav2_omni_following.yaml.
+#   * CostCritic / obstacle avoidance left at full strength.
+#   * Inflation kept at the limp standard 0.45 (> circumscribed radius).
+#
+# Note: person_goal_smoother also DISABLES rgbd_obstacle_layer in follow mode
+# (the camera sees the followed person as an obstacle); the lidar
+# obstacle_layer stays on. That toggle is done in code, not here.
+#
+# Delete this file together with nav2_omni_limp.yaml once the ODrive is
+# replaced and the launch default reverts to nav2_omni.yaml.
+
+controller_server:
+  ros__parameters:
+    FollowPath:
+      # ---- Velocity limits (3-wheel; forward at limp standard to keep up) ----
+      vx_max: 0.45      # = limp std — was 0.4: fell behind a walking person
+      vx_min: -0.3      # = limp std — backs away when the person crowds in
+      vy_max: 0.3       # limp std 0.35 — weakest axis on 3 wheels; 0.0 to disable
+      wz_max: 1.0       # limp std 1.2
+      # ---- Critic weights tuned for chasing a moving goal ----
+      GoalCritic:
+        cost_weight: 3.0        # limp std 5.0 — moving target, don't over-commit
+      PathFollowCritic:
+        cost_weight: 8.0        # limp std 6.0 — hug the replanned path
+      PathAlignCritic:
+        cost_weight: 10.0       # limp std 6.0 — stay ON the path (position)
+      PathAngleCritic:
+        cost_weight: 2.0        # limp std 2.0 (unchanged; kept for completeness)
+      CostCritic:
+        cost_weight: 4.0        # limp std 4.0 — obstacle avoidance at full strength
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      inflation_layer:
+        cost_scaling_factor: 3.0   # limp std 3.0 (unchanged)
+        inflation_radius: 0.45     # limp std 0.45 (unchanged — > circumscribed radius)
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      inflation_layer:
+        cost_scaling_factor: 3.0
+        inflation_radius: 0.45
+
+velocity_smoother:
+  ros__parameters:
+    # [vx, vy, wz] — velocities near limp standard (keep up with the person);
+    # accel is the axis that slips the dead rear corner, so it stays dropped.
+    # NOTE: the omnibase reads /cmd_vel directly (velocity_smoother bypassed),
+    # so the MPPI caps above are what actually bind — kept in sync regardless.
+    max_velocity: [0.45, 0.3, 1.0]     # limp std [0.45, 0.35, 1.2]
+    min_velocity: [-0.3, -0.3, -1.0]   # limp std [-0.3, -0.35, -1.2]
+    max_accel: [1.2, 1.0, 1.8]         # limp std [1.5, 1.2, 2.0]
+    max_decel: [-1.2, -1.0, -1.8]      # limp std [-1.5, -1.2, -2.0]

@@ -1,5 +1,8 @@
-bool request 
+bool request
 string pose_requested
 ---
 bool success
 int32 count
+# Camera-frame 3D point of each matched person (bbox center deprojected);
+# feed one of these to nav approach_point to walk up to that exact person.
+geometry_msgs/PointStamped[] points

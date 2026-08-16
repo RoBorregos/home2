@@ -14,13 +14,14 @@ ament_python_install_package(xarm_utils)
 
 # Install examples
 set(SCRIPTS_DIR xarm_utils)
-  
+
 install(PROGRAMS
     ${SCRIPTS_DIR}/grasp_detector.py
+    ${SCRIPTS_DIR}/shelf_height_calibrator.py
     DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch
+install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME})
 
 ament_package()

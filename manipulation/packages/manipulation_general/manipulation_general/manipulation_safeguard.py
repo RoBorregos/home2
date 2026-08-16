@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import math
+import os
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -53,6 +54,20 @@ class ManipulationSafeguard(Node):
         self._recovering = False
         self._pending_target_angles: list[float] | None = None
 
+        # Global opt-in (default off via FRIDA_ENABLE_SAFEGUARD; ROS param overrides).
+        # Disabled = no autonomous estop/recovery; ensure_arm_ready stays available.
+        env_default = os.environ.get("FRIDA_ENABLE_SAFEGUARD", "false")
+        self._enable_safeguard = self.declare_parameter(
+            "enable_safeguard", env_default
+        ).get_parameter_value().string_value.strip().lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
+
+        # Always subscribe so _arm_state is populated for the on-demand ensure_arm_ready
+        # service; the autonomous estop broadcast in the callback is gated by the flag.
         self.create_subscription(
             RobotMsg,
             XARM_ROBOT_STATES_TOPIC,
@@ -108,11 +123,20 @@ class ManipulationSafeguard(Node):
             callback_group=self.callback_group,
         )
 
-        self.create_timer(
-            2.0, self._try_estop_recovery, callback_group=self.callback_group
-        )
+        # Autonomous recovery timer only when enabled; inert mode never auto-moves the arm.
+        if self._enable_safeguard:
+            self.create_timer(
+                2.0, self._try_estop_recovery, callback_group=self.callback_group
+            )
 
-        self.get_logger().info("Manipulation Safeguard node started")
+        mode = (
+            "full autonomous safeguard"
+            if self._enable_safeguard
+            else "INERT (ensure_arm_ready only; no autonomous estop or recovery)"
+        )
+        self.get_logger().info(
+            f"Manipulation Safeguard node started: enable_safeguard={self._enable_safeguard} [{mode}]"
+        )
 
     def _handle_ensure_arm_ready(self, request, response):
         self._ensure_arm_ready()
@@ -136,6 +160,8 @@ class ManipulationSafeguard(Node):
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
+        if not self._enable_safeguard:
+            return  # inert: keep arm state for ensure_arm_ready, but never auto-estop
         is_fault = msg.state == XARM_STATE_STOPPED or msg.err != 0
         if is_fault and not self._in_estop:
             self._in_estop = True

@@ -1,0 +1,14 @@
+# Request
+# Computes the real path (via nav2 ComputePathToPose) between two map areas
+# without moving the robot. Use location_a = "" to start from the robot's
+# current pose instead of a named area.
+
+string location_a
+string sublocation_a
+string location_b
+string sublocation_b
+---
+#Response
+bool success
+float64 distance_meters
+string error

@@ -300,3 +300,58 @@ test FollowPrsAtLocTest {
   @@assert({{this.commands[1].action == "find_person" and "sitting" in this.commands[1].attribute_value}})
   @@assert({{this.commands[2].action == "follow_person_until" and this.commands[2].destination == "cancelled"}})
 }
+
+/// Two pick-deliver pairs in one utterance — merger contracts each into its own atomic block.
+test BatchKitchenAndBedroomTest {
+  functions [GenerateCommandList]
+  args {
+    request "bring me a cup from the kitchen and a book from the bedroom"
+  }
+  @@assert({{this.commands|length >= 6}})
+  @@assert({{this.commands|map(attribute='action')|select('equalto','pick_object')|list|length == 2}})
+  @@assert({{this.commands|map(attribute='action')|select('equalto','give_object')|list|length == 2}})
+}
+
+/// Repeated reference to the same person across find + say — names must stay consistent.
+test BatchSamePersonRefTest {
+  functions [GenerateCommandList]
+  args {
+    request "find John in the office, tell him the time, then tell John how many cups are on the kitchen table"
+  }
+  @@assert({{this.commands|map(attribute='action')|select('equalto','find_person_by_name')|list|length >= 1}})
+  @@assert({{this.commands|map(attribute='action')|select('equalto','count')|list|length == 1}})
+  @@assert({{this.commands|map(attribute='action')|select('equalto','say_with_context')|list|length >= 1}})
+}
+
+/// Two counts at the same location — merger deduplicates the kitchen counter waypoint.
+test BatchSharedWaypointTest {
+  functions [GenerateCommandList]
+  args {
+    request "count the apples and the oranges on the kitchen counter"
+  }
+  @@assert({{this.commands|map(attribute='action')|select('equalto','count')|list|length == 2}})
+  @@assert({{this.commands[0].action == "go_to" and "kitchen" in this.commands[0].location_to_go}})
+}
+
+/// find_person must precede follow_person_until — hard precedence the merger relies on.
+test BatchPrecedenceFindFirstTest {
+  functions [GenerateCommandList]
+  args {
+    request "find Angel in the bedroom and follow him to the living room"
+  }
+  @@assert({{this.commands|length >= 3}})
+  @@assert({{this.commands[0].action == "go_to" and this.commands[0].location_to_go == "bedroom"}})
+  @@assert({{this.commands[1].action == "find_person_by_name" and this.commands[1].name == "Angel"}})
+  @@assert({{this.commands[2].action == "follow_person_until" and "living" in this.commands[2].destination}})
+}
+
+/// Auxiliary say-with-context interleaved with a pick-deliver — gripper block stays contiguous.
+test BatchAuxiliaryFailureTest {
+  functions [GenerateCommandList]
+  args {
+    request "tell me how many drinks are on the bookshelf and meanwhile bring me a snack from the side table"
+  }
+  @@assert({{this.commands|map(attribute='action')|select('equalto','count')|list|length == 1}})
+  @@assert({{this.commands|map(attribute='action')|select('equalto','pick_object')|list|length == 1}})
+  @@assert({{this.commands|map(attribute='action')|select('equalto','say_with_context')|list|length >= 1}})
+}

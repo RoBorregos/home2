@@ -1,0 +1,6 @@
+---
+bool success
+bool table_found
+int32 total_chairs
+frida_interfaces/Detection[] chairs
+string message

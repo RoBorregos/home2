@@ -27,3 +27,6 @@
 	path = manipulation/packages/vamp
 	url = https://github.com/KavrakiLab/vamp.git
 
+[submodule "navigation/packages/ira_laser_tools"]
+	path = navigation/packages/ira_laser_tools
+	url = https://github.com/ryanpennings/ira_laser_tools

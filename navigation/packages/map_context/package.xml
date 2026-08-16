@@ -14,8 +14,8 @@
   <depend>rclcpp_lifecycle</depend>
   <depend>rclpy</depend>
   <depend>lifecycle_msgs</depend>
-  <depend>navigation2</depend>
-  <depend>nav2_bringup</depend>
+  <depend>nav2_map_server</depend>
+  <depend>nav2_lifecycle_manager</depend>
   <depend>rviz2</depend>
   <!--C++ dependencies -->
   <depend>nlohmann-json-dev</depend>

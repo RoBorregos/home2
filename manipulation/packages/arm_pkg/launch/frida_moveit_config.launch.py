@@ -51,7 +51,7 @@ def launch_setup(context, *args, **kwargs):
     robot_sn = LaunchConfiguration("robot_sn", default="")
     attach_to = LaunchConfiguration("attach_to", default="xarm_base")
     attach_xyz = LaunchConfiguration("attach_xyz", default='"0 0 0"')
-    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 0"')
+    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 1.5707963267948966"')
     mesh_suffix = LaunchConfiguration("mesh_suffix", default="stl")
     kinematics_suffix = LaunchConfiguration("kinematics_suffix", default="")
 
@@ -278,6 +278,17 @@ def launch_setup(context, *args, **kwargs):
         ),
     )
 
+    # Points joint1 at the Nav2 goal while the base drives, homes to base front
+    # when the goal ends. Pure joint-velocity control, no MoveIt in the loop.
+    # nav_goal_arm_pointer_node = Node(
+    #     package="frida_motion_planning",
+    #     executable="nav_goal_arm_pointer.py",
+    #     name="nav_goal_arm_pointer",
+    #     output="screen",
+    #     respawn=True,
+    #     respawn_delay=1.0,
+    # )
+
     return [
         SetEnvironmentVariable(name="ROS_LOG_LEVEL", value=log_level),
         SetEnvironmentVariable(
@@ -290,6 +301,7 @@ def launch_setup(context, *args, **kwargs):
         ros2_control_launch,
         control_node,
         downsample_pcd,
+        # nav_goal_arm_pointer_node,
     ]
 
 

@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 interface MjpegStreamProps {
   streamUrl: string;
 }
 
+function buildSrc(url: string, retry: number) {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}retry=${retry}`;
+}
+
 export default function MjpegStream({ streamUrl }: MjpegStreamProps) {
   const [retryCount, setRetryCount] = useState(0);
-  const imgRef = useRef<HTMLImageElement>(null);
 
-  useEffect(() => {
-    if (imgRef.current) {
-      const separator = streamUrl.includes("?") ? "&" : "?";
-      imgRef.current.src = `${streamUrl}${separator}retry=${retryCount}`;
-    }
-  }, [streamUrl, retryCount]);
+  const src = buildSrc(streamUrl, retryCount);
 
   const handleError = () => {
     setTimeout(() => {
@@ -24,15 +23,14 @@ export default function MjpegStream({ streamUrl }: MjpegStreamProps) {
   };
 
   return (
-    <div className="w-full max-w-3xl">
+    <div className="w-full h-full flex items-center justify-center">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        key={retryCount}
-        ref={imgRef}
+        src={src}
         alt="MJPEG Stream"
         onError={handleError}
-        className="w-full h-auto rounded-lg border border-(--border-light)"
+        className="w-full h-full object-contain rounded-lg border border-(--border-light)"
       />
     </div>
   );
 }
-

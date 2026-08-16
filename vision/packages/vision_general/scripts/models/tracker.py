@@ -1,123 +1,88 @@
-"""Person tracking model: YOLO + DeepSORT + ReID + PoseDetection — no ROS dependencies."""
+"""Person tracking model: YOLO + ByteTrack + ReID + PoseDetection — no ROS dependencies."""
 
-import numpy as np
+import cv2
 import torch
 import torch.nn as nn
 from PIL import Image as PILImage
 
 from vision_general.utils.reid_model import (
-    compare_images,
-    compare_images_batch,
     extract_feature_from_img,
-    extract_feature_from_img_batch,
     get_structure,
     load_network,
 )
-from vision_general.utils.deep_sort.detection import Detection as DeepSORTDetection
-from vision_general.utils.deep_sort.nn_matching import NearestNeighborDistanceMetric
-from vision_general.utils.deep_sort.tracker import Tracker as DeepSORTTracker
 from vision_general.utils.trt_utils import load_yolo_trt
 from .pose_detection import PoseDetection
 
 CONF_THRESHOLD = 0.6
-DEEPSORT_MAX_COSINE_DISTANCE = 0.3
-DEEPSORT_NN_BUDGET = 100
-DEEPSORT_MAX_AGE = 100
-DEEPSORT_N_INIT = 3
 
 
 class TrackerModel:
-    """Bundles YOLO detection, DeepSORT tracking, ReID, and pose estimation."""
+    """Bundles YOLO detection, ByteTrack tracking, pose estimation and ReID."""
 
     def __init__(self):
         self.yolo = None
         self.pose = None
+        # Heavy SWIN ReID: only needed for re-acquisition after a lost track, so
+        # it is loaded on demand through load_reid() (the tracker node does it on
+        # a background thread) instead of at startup.
         self.reid = None
-        self.deepsort = None
 
     def load(self) -> None:
+        """Load the per-frame models (YOLO + pose). ReID is loaded separately."""
         self.yolo = load_yolo_trt("yolov8n.pt")
         self.pose = PoseDetection()
-        structure = get_structure()
-        self.reid = load_network(structure)
-        self.reid.classifier.classifier = nn.Sequential()
+
+    def load_reid(self) -> None:
+        """Build + load the SWIN ReID model. Takes several seconds — never call
+        this from a callback that must stay responsive."""
+        model = load_network(get_structure())
+        model.classifier.classifier = nn.Sequential()
+        model.eval()
         if torch.cuda.is_available():
-            self.reid = self.reid.cuda()
-        metric = NearestNeighborDistanceMetric(
-            "cosine", DEEPSORT_MAX_COSINE_DISTANCE, DEEPSORT_NN_BUDGET
-        )
-        self.deepsort = DeepSORTTracker(
-            metric, max_age=DEEPSORT_MAX_AGE, n_init=DEEPSORT_N_INIT
-        )
+            model = model.cuda()
+        self.reid = model
 
-    def predict(self, frame):
-        """Run YOLO person detection on frame."""
-        return self.yolo.predict(frame, classes=0, verbose=False)
+    def track(self, frame, conf_threshold: float = CONF_THRESHOLD) -> list[dict]:
+        """Per-frame multi-object tracking via ultralytics ByteTrack.
 
-    def run_deepsort(self, frame, yolo_results) -> list[dict]:
-        """Update DeepSORT with YOLO detections. Returns confirmed track dicts."""
+        Appearance-free: no per-detection ReID embedding. persist=True keeps the
+        ByteTrack state (and thus the track-ids) across calls. Returns a list of
+        {"track_id", "x1", "y1", "x2", "y2"} dicts (person class only).
+        """
         frame_h, frame_w = frame.shape[:2]
-        detections = []
-        for out in yolo_results:
-            for box in out.boxes:
-                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-                x1 = max(0, min(x1, frame_w - 1))
-                y1 = max(0, min(y1, frame_h - 1))
-                x2 = max(0, min(x2, frame_w))
-                y2 = max(0, min(y2, frame_h))
-                prob = round(box.conf[0].item(), 2)
-                if prob < CONF_THRESHOLD:
-                    continue
-                cropped = frame[y1:y2, x1:x2]
-                if cropped.size == 0:
-                    continue
-                feature = self.extract_reid(cropped)
-                detections.append(
-                    DeepSORTDetection(
-                        tlwh=np.array([x1, y1, x2 - x1, y2 - y1], dtype=np.float64),
-                        confidence=prob,
-                        feature=feature,
-                    )
-                )
-        self.deepsort.predict()
-        self.deepsort.update(detections)
-        tracks = []
-        for track in self.deepsort.tracks:
-            if not track.is_confirmed() or track.time_since_update > 1:
+        results = self.yolo.track(
+            frame,
+            classes=0,
+            persist=True,
+            tracker="bytetrack.yaml",
+            verbose=False,
+        )
+        tracked = []
+        if not results:
+            return tracked
+        boxes = results[0].boxes
+        if boxes is None or boxes.id is None:
+            return tracked
+        ids = boxes.id.int().cpu().tolist()
+        xyxy = boxes.xyxy.cpu().tolist()
+        confs = boxes.conf.cpu().tolist()
+        for tid, (bx1, by1, bx2, by2), conf in zip(ids, xyxy, confs):
+            if conf < conf_threshold:
                 continue
-            bbox = track.to_tlbr()
-            tracks.append(
-                {
-                    "track_id": track.track_id,
-                    "x1": max(0, int(bbox[0])),
-                    "y1": max(0, int(bbox[1])),
-                    "x2": min(frame_w, int(bbox[2])),
-                    "y2": min(frame_h, int(bbox[3])),
-                }
+            x1 = max(0, min(int(round(bx1)), frame_w - 1))
+            y1 = max(0, min(int(round(by1)), frame_h - 1))
+            x2 = max(0, min(int(round(bx2)), frame_w))
+            y2 = max(0, min(int(round(by2)), frame_h))
+            if x2 <= x1 or y2 <= y1:
+                continue
+            tracked.append(
+                {"track_id": int(tid), "x1": x1, "y1": y1, "x2": x2, "y2": y2}
             )
-        return tracks
+        return tracked
 
-    def extract_reid(self, crop: np.ndarray):
-        """Extract ReID embedding as numpy array from a BGR crop."""
-        pil = PILImage.fromarray(crop)
+    def embed(self, crop_bgr):
+        """Normalized ReID embedding (1-D tensor) for a BGR person crop."""
+        pil = PILImage.fromarray(cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB))
         with torch.no_grad():
-            emb = extract_feature_from_img(pil, self.reid)
-        return emb.cpu().numpy().flatten()
-
-    def extract_reid_tensor(self, crop: np.ndarray):
-        """Extract ReID embedding as tensor (for compare_images functions)."""
-        pil = PILImage.fromarray(crop)
-        with torch.no_grad():
-            return extract_feature_from_img(pil, self.reid)
-
-    def extract_reid_batch(self, crops: list[np.ndarray]):
-        """Batch ReID extraction; returns list of tensors."""
-        pils = [PILImage.fromarray(c) for c in crops]
-        with torch.no_grad():
-            return extract_feature_from_img_batch(pils, self.reid)
-
-    def compare(self, emb1, emb2, threshold: float = 0.7) -> bool:
-        return compare_images(emb1, emb2, threshold=threshold)
-
-    def compare_batch(self, embedding, embeddings, threshold: float = 0.7) -> bool:
-        return compare_images_batch(embedding, embeddings, threshold=threshold)
+            feat = extract_feature_from_img(pil, self.reid)
+        return feat.flatten().float()

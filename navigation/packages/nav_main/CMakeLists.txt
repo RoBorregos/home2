@@ -16,6 +16,7 @@ find_package(rtabmap_slam REQUIRED)
 find_package(rtabmap_sync REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(ira_laser_tools REQUIRED)
 
 
 install(DIRECTORY launch config bt

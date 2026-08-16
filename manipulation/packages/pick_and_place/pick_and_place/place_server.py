@@ -38,6 +38,10 @@ import numpy as np
 from transforms3d.quaternions import quat2mat
 import time
 
+# Shelf place: how far (m) to pull the place toward the front edge so the arm and
+# eye-in-hand camera do not jam against the short compartment ceiling on a deep reach.
+SHELF_PLACE_DEPTH_BACK = 0.07
+
 
 class PlaceMotionServer(Node):
     def __init__(self):
@@ -136,6 +140,10 @@ class PlaceMotionServer(Node):
         for i in range(n_poses):
             ee_link_pose = copy.deepcopy(place_pose)
             ee_link_pose.pose.position.z += i * poses_dist
+            if is_shelf:
+                # The heatmap aims at the compartment center (deep), which jams the arm
+                # and camera against the ceiling; pull the place toward the front edge.
+                ee_link_pose.pose.position.x -= SHELF_PLACE_DEPTH_BACK
 
             ee_link_pre_pose = copy.deepcopy(ee_link_pose)
             ee_link_half_pose = copy.deepcopy(ee_link_pose)
@@ -248,14 +256,8 @@ class PlaceMotionServer(Node):
             time.sleep(1)
             self.get_logger().info("Gripper opened")
 
-            if is_shelf:
-                self.get_logger().info(
-                    f"Going back to pre-place pose: {ee_link_pre_pose}"
-                )
-                place_pose_handler, place_pose_result = self.move_to_pose(
-                    ee_link_pre_pose
-                )
-                self.get_logger().info(f"Pre-place pose result: {place_pose_result}")
+            # No place retract (mirror the shelf pick): return straight from the place pose.
+            # The cartesian retract left the wrist wound, so table_stare then aborted.
             return True
         self.get_logger().error("Failed to reach any grasp pose")
         return False

@@ -112,37 +112,34 @@ mkdir -p install build log
 COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces frida_constants --cmake-args -Wno-dev"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_RTABMAP="if [ -f /home/ros/ros_packages3/install/setup.bash ]; then source /home/ros/ros_packages3/install/setup.bash; fi"
+SOURCE_NAV2="if [ -f /home/ros/nav2_ws/install/setup.bash ]; then source /home/ros/nav2_ws/install/setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $COLCON && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_NAV2 && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $COLCON && $SOURCE"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_NAV2 && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 case $TASK in
     "--mapping")
         RUN="ros2 launch nav_main mapping.launch.py"
         ;;
-    "--gpsr")
-        RUN="ros2 launch nav_main gpsr_hric.launch.py"
-        ;;
-    "--hric")
-        RUN="ros2 launch nav_main gpsr_hric.launch.py"
+    "--hric" | "--ppc" | "--dlc" | "--gpsr" | "--safety" )
+        RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
     "--restaurant")
+        # Unknown venue: slam_toolbox mapping + nav2 with the restaurant overlay
+        # (slow speeds, long voxel persistence) + table docking.
         RUN="ros2 launch nav_main restaurant.launch.py"
-        ;;
-    "--ppc")
-        RUN="ros2 launch nav_main general_navigation.launch.py"
         ;;
     "--tagger")
         RUN="ros2 run map_context map_area_tagger.py"
         ;;
     "--move")
-        RUN="ros2 launch nav_main nav_basics.launch.py"
+        RUN="ros2 launch nav_main omni_basics.launch.py"
         ;;
     *)
         RUN="bash"

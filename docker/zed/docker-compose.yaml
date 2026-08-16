@@ -23,6 +23,8 @@ services:
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     runtime: ${DOCKER_RUNTIME:-runc}
+    # Keep the ZED wrapper off navigation's reserved cores (nav is pinned 0-3). Tunable via COMPUTE_CPUSET.
+    cpuset: "${COMPUTE_CPUSET:-4-11}"
     group_add:
       - video
       - "1001"

@@ -216,6 +216,65 @@ public:
 
     *cloud = result->cluster;
 
+    auto req2table =
+        std::make_shared<frida_interfaces::srv::RemovePlane::Request>();
+
+    req2table->extract_or_remove = false;
+    req2table->close_point.header.frame_id = point.header.frame_id;
+    req2table->close_point.header.stamp = point.header.stamp;
+    req2table->close_point.point.x = point.point.x;
+    req2table->close_point.point.y = point.point.y;
+    req2table->close_point.point.z = point.point.z;
+
+    RCLCPP_INFO(this->get_logger(), "Sending request to remove plane");
+
+    auto res2table =
+        this->call_services_node->remove_plane_client->async_send_request(
+            req2table);
+
+    RCLCPP_INFO(this->get_logger(), "Waiting for response");
+
+    auto status2 =
+        wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
+            res2table, this->call_services_node->get_node_base_interface(),
+            500ms);
+
+    RCLCPP_INFO(this->get_logger(), "Response received");
+
+    auto result2table = res2table.get();
+
+    RCLCPP_INFO(this->get_logger(), "Response: %d",
+                result2table->health_response);
+
+    if (result2table->health_response == OK) {
+      RCLCPP_INFO(this->get_logger(), "Removed plane");
+    } else {
+      RCLCPP_ERROR(this->get_logger(), "Error removing plane");
+      //   return;
+    }
+
+    auto req3 =
+        std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
+
+    req3->is_plane = true;
+
+    req3->is_object = false;
+
+    req3->cloud = result2table->cloud;
+
+    RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
+
+    auto res3 = this->call_services_node->add_pick_primitives_client
+                    ->async_send_request(req3);
+
+    RCLCPP_INFO(this->get_logger(), "Waiting for response");
+
+    auto status3 =
+        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
+            res3, this->call_services_node->get_node_base_interface(), 500ms);
+
+    RCLCPP_INFO(this->get_logger(), "Response received");
+
     auto req4 =
         std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
 
@@ -320,6 +379,28 @@ public:
       RCLCPP_ERROR(this->get_logger(), "Error removing plane");
       //   return;
     }
+
+    auto req3 =
+        std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
+
+    req3->is_plane = true;
+
+    req3->is_object = false;
+
+    req3->cloud = result_extract_table->cloud;
+
+    RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
+
+    auto res3 = this->call_services_node->add_pick_primitives_client
+                    ->async_send_request(req3);
+
+    RCLCPP_INFO(this->get_logger(), "Waiting for response");
+
+    auto status3 =
+        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
+            res3, this->call_services_node->get_node_base_interface(), 500ms);
+
+    RCLCPP_INFO(this->get_logger(), "Response received");
 
     // return plane cloud
     *cloud = result_extract_table->cloud;

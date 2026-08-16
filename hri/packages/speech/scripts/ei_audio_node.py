@@ -34,6 +34,10 @@ class EIAudioNode(Node):
         self.declare_parameter("detection_cooldown", 0.0)
         self.declare_parameter("audio_gain", 1.0)
         self.declare_parameter("noise_label", "noise")
+        # skip inference below this dBFS. -120.0 ~ off (prior behaviour).
+        self.declare_parameter("min_db", -120.0)
+        # Allow-list of labels to emit. Empty = any non-noise label.
+        self.declare_parameter("target_labels", [""])
         self.declare_parameter("save_detection_audio", False)
         self.declare_parameter(
             "audio_save_dir",
@@ -70,6 +74,15 @@ class EIAudioNode(Node):
         self.noise_label = (
             self.get_parameter("noise_label").get_parameter_value().string_value
         )
+        self.min_db = self.get_parameter("min_db").get_parameter_value().double_value
+        # Drop the empty placeholder (yaml needs a non-empty default list).
+        self.target_labels = [
+            label.lower()
+            for label in self.get_parameter("target_labels")
+            .get_parameter_value()
+            .string_array_value
+            if label
+        ]
         self.save_detection_audio = (
             self.get_parameter("save_detection_audio").get_parameter_value().bool_value
         )
@@ -135,6 +148,12 @@ class EIAudioNode(Node):
             self.classify(window)
 
     def classify(self, audio_window: np.ndarray):
+        # filtro 1: skip inference on windows quieter than min_db.
+        rms = float(np.sqrt(np.mean(audio_window.astype(np.float64) ** 2)) + 1e-9)
+        level_db = 20.0 * np.log10(max(rms, 1e-9) / np.iinfo(np.int16).max)
+        if level_db < self.min_db:
+            return
+
         features = audio_window.astype(float).tolist()
 
         try:
@@ -166,6 +185,9 @@ class EIAudioNode(Node):
         best_score = 0.0
         for label, score in classification.items():
             if label.lower() == self.noise_label.lower():
+                continue
+            # Allow-list: door_eim emits only "doorbell"; knock is the DSP node.
+            if self.target_labels and label.lower() not in self.target_labels:
                 continue
             if score > best_score:
                 best_score = score

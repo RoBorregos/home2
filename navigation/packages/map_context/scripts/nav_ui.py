@@ -16,19 +16,30 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
 from nav_msgs.msg import OccupancyGrid, Path
+from nav_msgs.srv import GetMap
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from std_srvs.srv import Empty
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 from action_msgs.srv import CancelGoal
+from std_srvs.srv import Trigger
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import RTAB_MAPS_PATH, RESUME_NAV_SERVICE
+from frida_constants.navigation_constants import (
+    RTAB_MAPS_PATH,
+    RESUME_NAV_SERVICE,
+    AREAS_SERVICE,
+    MOVE_LOCATION_SERVICE,
+    DOCK_SERVICE,
+    DOCK_TABLE_SERVICE,
+    DEFAULT_DOCK_OFFSET,
+)
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QGroupBox, QSplitter, QToolBar,
-    QStatusBar, QCheckBox, QComboBox, QFileDialog, QMessageBox
+    QStatusBar, QCheckBox, QComboBox, QFileDialog, QMessageBox,
+    QDoubleSpinBox
 )
 from PyQt5.QtCore import Qt, QPointF, QTimer, QSize, pyqtSignal, QObject
 from PyQt5.QtGui import (
@@ -104,6 +115,10 @@ class NavRosNode(Node):
         # 'navigation' or 'mapping'
         self.ui_mode = self.declare_parameter('mode', 'navigation').value
         self.map_name = self.declare_parameter('map_name', '').value
+        # Base + SLAM backend (mirrors nav_central). Params absent -> legacy RTABMap.
+        self.default_base = self.declare_parameter('default_base', 'dashgo').value
+        self.nav_type = self.declare_parameter('nav_type', '2d').value
+        self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
 
         # TF
         self.tf_buffer = Buffer()
@@ -148,6 +163,20 @@ class NavRosNode(Node):
             OccupancyGrid, '/global_costmap/costmap',
             self.global_costmap_callback, costmap_qos)
 
+        # Static map fetch (editable map, "Option A"): when nav2_omni.launch.py serves
+        # /map from a map_server loaded INSIDE the nav2 container, that latched /map is
+        # delivered in-process to the costmaps but is DROPPED cross-process to this
+        # out-of-process nav_ui (transient_local over shared memory). So the /map topic
+        # sub above never fires here. Pull the map reliably via the map_server GetMap
+        # service instead (request/response is immune to the latch drop). When the
+        # static server is OFF, slam_toolbox publishes /map directly, the topic sub
+        # fills map_data first, and this self-cancels without ever calling the service.
+        self._static_map_client = None
+        self._static_map_pending = False
+        if self.ui_mode == 'navigation':
+            self._static_map_client = self.create_client(GetMap, '/map_server/map')
+            self._static_map_timer = self.create_timer(1.0, self._fetch_static_map)
+
         # Publishers
         self.goal_pub = self.create_publisher(PoseStamped, '/goal_pose', 10)
         self.initialpose_pub = self.create_publisher(
@@ -157,13 +186,28 @@ class NavRosNode(Node):
         self.cancel_nav_client = self.create_client(
             CancelGoal, '/navigate_to_pose/_action/cancel_goal')
 
-        # Navigation mode: resume nav service
+        # Navigation mode: resume nav + areas/move/dock clients
         if self.ui_mode == 'navigation':
             self._resume_nav_client = self.create_client(Empty, RESUME_NAV_SERVICE)
+            from frida_interfaces.srv import DockTable, MapAreas, MoveLocation
+            self._areas_client = self.create_client(MapAreas, AREAS_SERVICE)
+            self._move_client = self.create_client(MoveLocation, MOVE_LOCATION_SERVICE)
+            self._dock_client = self.create_client(Trigger, DOCK_SERVICE)
+            # nav_central's DockTable wrapper: sets the per-call front_offset on
+            # table_docker before triggering the approach — lets the UI test
+            # different offsets. Falls back to the raw Trigger dock if absent.
+            self._dock_table_client = self.create_client(DockTable, DOCK_TABLE_SERVICE)
 
-        # Mapping mode: map save via /rtabmap/backup
+        # Mapping mode: the map-save client depends on the SLAM backend.
         if self.ui_mode == 'mapping':
-            self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
+            if self.use_slam_toolbox:
+                from slam_toolbox.srv import SaveMap, SerializePoseGraph
+                self._slam_save_map_client = self.create_client(
+                    SaveMap, '/slam_toolbox/save_map')
+                self._slam_serialize_client = self.create_client(
+                    SerializePoseGraph, '/slam_toolbox/serialize_map')
+            else:
+                self._rtab_backup_client = self.create_client(Empty, '/rtabmap/backup')
 
         # Robot pose
         self.robot_x = 0.0
@@ -181,6 +225,40 @@ class NavRosNode(Node):
     def map_callback(self, msg):
         self.map_data = msg
         self.signals.map_updated.emit()
+
+    def _fetch_static_map(self):
+        """Retry the map_server GetMap service until we have a map, then stop.
+
+        Covers the case where the in-container map_server's latched /map never
+        reaches this cross-process node over the topic. No-op once map_data is set
+        (e.g. slam_toolbox publishes /map directly when the static server is off).
+        """
+        if self.map_data is not None:
+            self._static_map_timer.cancel()
+            return
+        if self._static_map_pending:
+            return  # a call is already in flight
+        if self._static_map_client is None or not self._static_map_client.service_is_ready():
+            return  # map_server not up yet — try again next tick
+        self._static_map_pending = True
+        future = self._static_map_client.call_async(GetMap.Request())
+        future.add_done_callback(self._on_static_map)
+
+    def _on_static_map(self, future):
+        self._static_map_pending = False
+        try:
+            grid = future.result().map
+        except Exception as e:  # noqa: BLE001 - log and retry on any service error
+            self.get_logger().warn(f"nav_ui: GetMap (/map_server/map) call failed: {e}")
+            return
+        if grid.info.width * grid.info.height == 0:
+            return  # empty map, keep retrying
+        self.map_data = grid
+        self.signals.map_updated.emit()
+        self.get_logger().info(
+            f"nav_ui: loaded static map via /map_server/map service "
+            f"({grid.info.width}x{grid.info.height} @ {grid.info.resolution} m/px)")
+        self._static_map_timer.cancel()
 
     def path_callback(self, msg):
         self.path_data = msg
@@ -261,6 +339,68 @@ class NavRosNode(Node):
             f.write('free_thresh: 0.25\n')
 
     def save_map_async(self, name, on_done):
+        """Dispatch map saving to the active SLAM backend."""
+        if self.use_slam_toolbox:
+            self._save_map_slamtoolbox(name, on_done)
+        else:
+            self._save_map_rtabmap(name, on_done)
+
+    def _save_map_slamtoolbox(self, name, on_done):
+        """Serialize the slam_toolbox pose-graph (.posegraph + .data, for later
+        localization) and write the occupancy grid (.pgm + .yaml, for nav2)."""
+        import time
+        from slam_toolbox.srv import SaveMap, SerializePoseGraph
+        from std_msgs.msg import String
+        # Snapshot map_data now (main thread) to avoid race with ROS spin thread
+        map_snapshot = self.map_data
+
+        def _worker():
+            try:
+                nav_src  = os.path.dirname(os.path.normpath(RTAB_MAPS_PATH))
+                maps_dir = os.path.join(nav_src, 'packages', 'map_context', 'maps')
+                os.makedirs(maps_dir, exist_ok=True)
+                base = os.path.join(maps_dir, name)
+
+                # --- Serialize the pose-graph (needed for localization mode) ---
+                if not self._slam_serialize_client.wait_for_service(timeout_sec=10.0):
+                    on_done(False, "slam_toolbox serialize_map service not available")
+                    return
+                sreq = SerializePoseGraph.Request()
+                sreq.filename = base
+                future = self._slam_serialize_client.call_async(sreq)
+                elapsed = 0.0
+                while not future.done() and elapsed < 30.0:
+                    time.sleep(0.2)
+                    elapsed += 0.2
+                if not future.done():
+                    on_done(False, "serialize_map timed out")
+                    return
+
+                # --- Occupancy grid via slam_toolbox; fall back to writing it
+                # ourselves from the last /map if the service is unavailable. ---
+                grid_ok = False
+                if self._slam_save_map_client.wait_for_service(timeout_sec=5.0):
+                    mreq = SaveMap.Request()
+                    mreq.name = String(data=base)
+                    future = self._slam_save_map_client.call_async(mreq)
+                    elapsed = 0.0
+                    while not future.done() and elapsed < 30.0:
+                        time.sleep(0.2)
+                        elapsed += 0.2
+                    grid_ok = future.done()
+                if not grid_ok:
+                    if map_snapshot is None:
+                        on_done(False, "Graph serialized, but no /map yet for the grid")
+                        return
+                    self._write_map_files(map_snapshot, base)
+
+                on_done(True, f"{name}.posegraph  |  {name}.yaml + {name}.pgm")
+            except Exception as e:
+                on_done(False, str(e))
+
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def _save_map_rtabmap(self, name, on_done):
         """Save RTABMap DB and 2D map YAML in a background thread.
 
         Uses /rtabmap/backup which properly flushes all in-memory state to disk,
@@ -333,6 +473,103 @@ class NavRosNode(Node):
                     on_done(False, "Resume Nav service timed out")
                     return
                 on_done(True, "Nav resumed")
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def fetch_areas_async(self, on_done):
+        """Fetch areas.json (via nav_central AREAS_SERVICE) in a background thread.
+        on_done(areas_dict_or_None, message)."""
+        import time
+        import json
+        from frida_interfaces.srv import MapAreas
+
+        def _worker():
+            try:
+                if not self._areas_client.wait_for_service(timeout_sec=5.0):
+                    on_done(None, "Areas service not available")
+                    return
+                future = self._areas_client.call_async(MapAreas.Request())
+                elapsed = 0.0
+                while not future.done() and elapsed < 5.0:
+                    time.sleep(0.05)
+                    elapsed += 0.05
+                if not future.done():
+                    on_done(None, "Areas service timed out")
+                    return
+                raw = future.result().areas
+                on_done(json.loads(raw) if raw else {}, "ok")
+            except Exception as e:
+                on_done(None, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def move_to_async(self, location, sublocation, on_done):
+        """Call MOVE_LOCATION_SERVICE (go_to_map_area) in a background thread."""
+        import time
+        from frida_interfaces.srv import MoveLocation
+
+        def _worker():
+            try:
+                if not self._move_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "Move service not available")
+                    return
+                req = MoveLocation.Request()
+                req.location = location
+                req.sublocation = sublocation
+                future = self._move_client.call_async(req)
+                elapsed = 0.0
+                while not future.done() and elapsed < 180.0:
+                    time.sleep(0.1)
+                    elapsed += 0.1
+                if not future.done():
+                    on_done(False, "Move timed out")
+                    return
+                res = future.result()
+                on_done(res.success, res.error)
+            except Exception as e:
+                on_done(False, str(e))
+        threading.Thread(target=_worker, daemon=True).start()
+
+    def dock_async(self, on_done, offset: float = 0.0):
+        """Approach the table in a background thread.
+
+        Prefers nav_central's DockTable service so `offset` (front_offset, m)
+        is applied per-call on table_docker — offset <= 0 means "use the
+        default" (DEFAULT_DOCK_OFFSET). Falls back to the raw Trigger
+        DOCK_SERVICE (offset ignored) when nav_central is not running.
+        """
+        import time
+        from frida_interfaces.srv import DockTable
+
+        def _wait(future, timeout):
+            elapsed = 0.0
+            while not future.done() and elapsed < timeout:
+                time.sleep(0.1)
+                elapsed += 0.1
+            return future.done()
+
+        def _worker():
+            try:
+                if self._dock_table_client.wait_for_service(timeout_sec=2.0):
+                    req = DockTable.Request()
+                    req.offset = float(offset)
+                    future = self._dock_table_client.call_async(req)
+                    if not _wait(future, 90.0):
+                        on_done(False, "Dock timed out")
+                        return
+                    res = future.result()
+                    on_done(res.success, res.error)
+                    return
+                # nav_central not up — raw table_docker trigger (no offset).
+                if not self._dock_client.wait_for_service(timeout_sec=5.0):
+                    on_done(False, "Dock service not available")
+                    return
+                future = self._dock_client.call_async(Trigger.Request())
+                if not _wait(future, 90.0):
+                    on_done(False, "Dock timed out")
+                    return
+                res = future.result()
+                on_done(res.success, res.message)
             except Exception as e:
                 on_done(False, str(e))
         threading.Thread(target=_worker, daemon=True).start()
@@ -826,6 +1063,45 @@ class NavUI(QMainWindow):
 
         panel_layout.addWidget(nav_group)
 
+        # Locations from areas.json — pick one and send the robot there (and
+        # trigger the table approach). Navigation mode only.
+        loc_group = QGroupBox("Locations")
+        loc_layout = QVBoxLayout(loc_group)
+        self.loc_combo = QComboBox()
+        loc_layout.addWidget(self.loc_combo)
+        loc_btn_row = QHBoxLayout()
+        self.btn_refresh_loc = QPushButton("Refresh")
+        self.btn_refresh_loc.clicked.connect(self._on_refresh_locations)
+        self.btn_go_loc = QPushButton("Go")
+        self.btn_go_loc.clicked.connect(self._on_go_location)
+        loc_btn_row.addWidget(self.btn_refresh_loc)
+        loc_btn_row.addWidget(self.btn_go_loc)
+        loc_layout.addLayout(loc_btn_row)
+        # Approach with a testable front_offset (m): the spinbox value is sent
+        # per-call through nav_central's DockTable service, so different
+        # offsets can be tried without editing configs or `ros2 param set`.
+        approach_row = QHBoxLayout()
+        self.btn_approach = QPushButton("Approach Table")
+        self.btn_approach.setStyleSheet("QPushButton { background: #8e44ad; } QPushButton:hover { background: #9b59b6; }")
+        self.btn_approach.clicked.connect(self._on_approach)
+        approach_row.addWidget(self.btn_approach, stretch=1)
+        self.spin_dock_offset = QDoubleSpinBox()
+        self.spin_dock_offset.setRange(0.0, 1.0)
+        self.spin_dock_offset.setSingleStep(0.01)
+        self.spin_dock_offset.setDecimals(2)
+        self.spin_dock_offset.setValue(DEFAULT_DOCK_OFFSET)
+        self.spin_dock_offset.setSuffix(" m")
+        self.spin_dock_offset.setToolTip(
+            "front_offset for the approach (m): distance from base_link to the "
+            "robot's front-most point (arm). 0.00 = use the default "
+            f"({DEFAULT_DOCK_OFFSET} m)."
+        )
+        approach_row.addWidget(self.spin_dock_offset)
+        loc_layout.addLayout(approach_row)
+        nav_layout.addWidget(loc_group)
+        # Populate shortly after startup (services need a moment to come up).
+        QTimer.singleShot(1500, self._on_refresh_locations)
+
         # Mapping mode: hide nav controls, show only view mode
         if self.ui_mode == 'mapping':
             nav_group.setVisible(False)
@@ -880,7 +1156,7 @@ class NavUI(QMainWindow):
         mapping_group.setVisible(self.ui_mode == 'mapping')
 
         # Map DB
-        db_group = QGroupBox("RTAB-Map DB")
+        db_group = QGroupBox("Map DB")
         db_layout = QVBoxLayout(db_group)
         self.lbl_current_db = QLabel("Current: --")
         db_layout.addWidget(self.lbl_current_db)
@@ -1042,6 +1318,73 @@ class NavUI(QMainWindow):
         else:
             self.status.showMessage(f"Resume failed: {msg}")
             QMessageBox.warning(self, "Resume Failed", msg)
+
+    # ---- Locations: list, send-to, approach ----
+    def _on_refresh_locations(self):
+        self.status.showMessage("Loading locations ...")
+
+        def on_done(areas, msg):
+            self._areas_result = (areas, msg)
+            QTimer.singleShot(0, self._on_areas_loaded)
+
+        self.ros_node.fetch_areas_async(on_done)
+
+    def _on_areas_loaded(self):
+        areas, msg = self._areas_result
+        self.loc_combo.clear()
+        if not areas:
+            self.status.showMessage(f"No locations ({msg})")
+            return
+        count = 0
+        for location, subs in areas.items():
+            if not isinstance(subs, dict):
+                continue
+            for sub in subs:
+                if sub == 'polygon':
+                    continue
+                self.loc_combo.addItem(f"{location} / {sub}", (location, sub))
+                count += 1
+        self.status.showMessage(f"Loaded {count} locations")
+
+    def _on_go_location(self):
+        data = self.loc_combo.currentData()
+        if not data:
+            self.status.showMessage("No location selected")
+            return
+        location, sub = data
+        self.btn_go_loc.setEnabled(False)
+        self.status.showMessage(f"Navigating to {location} / {sub} ...")
+
+        def on_done(success, msg):
+            self._move_result = (success, msg)
+            QTimer.singleShot(0, self._on_move_done)
+
+        self.ros_node.move_to_async(location, sub, on_done)
+
+    def _on_move_done(self):
+        self.btn_go_loc.setEnabled(True)
+        success, msg = self._move_result
+        self.status.showMessage(("Arrived" if success else "Move failed") + (f": {msg}" if msg else ""))
+        if not success:
+            QMessageBox.warning(self, "Move Failed", msg or "unknown error")
+
+    def _on_approach(self):
+        self.btn_approach.setEnabled(False)
+        offset = float(self.spin_dock_offset.value())
+        self.status.showMessage(f"Approaching surface (offset={offset:.2f} m) ...")
+
+        def on_done(success, msg):
+            self._approach_result = (success, msg)
+            QTimer.singleShot(0, self._on_approach_done)
+
+        self.ros_node.dock_async(on_done, offset=offset)
+
+    def _on_approach_done(self):
+        self.btn_approach.setEnabled(True)
+        success, msg = self._approach_result
+        self.status.showMessage(("Docked" if success else "Approach failed") + (f": {msg}" if msg else ""))
+        if not success:
+            QMessageBox.warning(self, "Approach Failed", msg or "unknown error")
 
     def check_canvas_actions(self):
         # Check for pending goal send

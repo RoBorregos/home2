@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ODrive Dashboard</title>
+<script src="/js/chart.umd.min.js"></script>
+<script src="/js/socket.io.min.js"></script>
+<style>
+:root{
+  --bg:#f0f2f6;--surf:#e8eaf2;--card:#ffffff;
+  --bdr:rgba(0,0,0,.07);--shd:0 1px 5px rgba(0,0,0,.08);
+  --txt:#1a1d2a;--mut:#64748b;
+  --acc:#5c6ef0;--grn:#1a9a60;--amb:#b87900;--red:#c94040;
+  --r:9px;--g:9px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);
+     font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+     font-size:12px;display:flex;flex-direction:column;overflow-y:auto}
+
+/* topbar */
+.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+        padding:7px 16px;background:var(--card);border-bottom:1px solid var(--bdr);box-shadow:var(--shd)}
+.topbar h1{font-size:14px;font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block;margin-right:4px;transition:background .4s}
+.dot.ok{background:var(--grn)}
+
+/* outer wrapper – 3 rows */
+.wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--g);padding:var(--g) 14px}
+
+/* ── ROW 1: config (4 equal columns) ── */
+.cfgrow{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--g);flex-shrink:0}
+
+/* ── ROW 2+3: axes 2×2 ── */
+.axes{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:var(--g)}
+
+/* card base */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);
+      box-shadow:var(--shd);padding:9px 11px;display:flex;flex-direction:column}
+.ct{font-size:9px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+.ah{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.aid{font-size:13px;font-weight:600}
+.pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;background:var(--surf);color:var(--mut)}
+.pill.run{background:rgba(26,154,96,.12);color:var(--grn)}
+.pill.err{background:rgba(201,64,64,.12);color:var(--red)}
+/* Larger pill used for the top-bar SM-state indicator. Same colour palette
+ * as the per-axis pills, just typographically louder. */
+.pill.sm{font-size:11px;padding:3px 11px;letter-spacing:.5px}
+.pill.sm.boot,.pill.sm.startup{background:rgba(217,154,40,.18);color:var(--amb)}
+.pill.sm.estop{background:rgba(201,64,64,.18);color:var(--red);
+               box-shadow:0 0 0 1px rgba(201,64,64,.35) inset}
+
+/* metrics */
+.mr3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:5px}
+.met{background:var(--surf);border-radius:6px;padding:4px 7px}
+.ml{font-size:9px;color:var(--mut);margin-bottom:1px}
+.mv{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* error row */
+.er{display:flex;align-items:center;gap:4px;font-size:10px;margin-bottom:5px;color:var(--mut)}
+.ec{font-family:monospace;color:var(--red)}.ec.ok{color:var(--grn)}
+
+/* axis chart – fills remaining card height */
+.acw{flex:1;min-height:0;position:relative;margin-bottom:5px}
+
+/* config chart – fixed height so config row stays compact */
+.ccw{position:relative;height:80px;margin-top:4px}
+
+/* buttons */
+.btns{display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0}
+.btn{padding:3px 9px;border-radius:5px;border:1px solid var(--bdr);background:var(--surf);
+     color:var(--txt);font-size:11px;cursor:pointer;transition:background .14s,border-color .14s}
+.btn:hover{background:#e0e3ef;border-color:#c5c8d8}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.pri:hover{background:#6e7ff2;border-color:#6e7ff2}
+.btn.dng{border-color:var(--red);color:var(--red)}.btn.dng:hover{background:rgba(201,64,64,.08)}
+.btn.suc{border-color:var(--grn);color:var(--grn)}.btn.suc:hover{background:rgba(26,154,96,.08)}
+
+/* slider rows */
+.sr{margin-bottom:4px}
+.slb{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:6px}
+.slb label{font-size:10px;color:var(--mut);white-space:nowrap;flex-shrink:0}
+input[type=range]{width:100%;accent-color:var(--acc)}
+
+/* number input */
+.numinp{width:68px;padding:2px 5px;border-radius:4px;border:1px solid var(--bdr);
+        background:var(--surf);color:var(--txt);font-size:11px;font-weight:600;
+        text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+.numinp:focus{outline:none;border-color:var(--acc);background:#fff}
+
+select{padding:3px 6px;border-radius:5px;background:var(--surf);color:var(--txt);
+       border:1px solid var(--bdr);font-size:11px;width:100%}
+select:focus{outline:none;border-color:var(--acc)}
+
+/* axis mask toggles */
+.mbrow{display:flex;gap:4px;margin-bottom:6px;align-items:center}
+.mbl{font-size:10px;color:var(--mut);flex-shrink:0}
+.mb{width:24px;height:20px;border-radius:4px;border:1px solid var(--bdr);background:var(--surf);
+    color:var(--mut);font-size:10px;cursor:pointer;text-align:center;line-height:20px}
+.mb.on{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* global actions grid */
+.gbts{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.gbts .btn{padding:5px;text-align:center}
+
+/* scrollable log – fixed height */
+.log{background:var(--surf);border-radius:5px;padding:5px 7px;font-family:monospace;
+     font-size:9.5px;color:var(--mut);height:72px;overflow-y:auto;flex-shrink:0}
+.log .e{color:var(--red)}.log .i{color:var(--amb)}
+
+/* 2-col split inside a card */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* ── Tab bar (Overview / Axis Lab) ────────────────────────────────── */
+.tabbar{flex-shrink:0;display:flex;gap:4px;padding:0 14px;margin-top:6px}
+.tab{padding:6px 14px;border-radius:6px 6px 0 0;border:1px solid var(--bdr);border-bottom:none;
+     background:var(--surf);color:var(--mut);font-size:11px;font-weight:600;cursor:pointer;
+     transition:background .14s,color .14s}
+.tab:hover{background:#e0e3ef}
+.tab.on{background:var(--card);color:var(--txt);border-color:var(--bdr)}
+.tabpanel.hidden{display:none}
+
+/* ── Axis Lab specifics ───────────────────────────────────────────── */
+.al-grid{display:grid;grid-template-columns:1fr 2fr;gap:var(--g);flex:1;min-height:0}
+.al-side{display:flex;flex-direction:column;gap:var(--g)}
+.al-main{display:flex;flex-direction:column;gap:var(--g);min-height:0}
+.al-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.al-row .met{padding:5px 7px}
+.al-charts{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:var(--g);flex:1;min-height:240px}
+.al-chartbox{position:relative;min-height:0}
+.al-chartbox canvas{position:absolute;inset:0}
+
+/* selector chips for the four motors */
+.al-sel{display:flex;flex-direction:column;gap:5px}
+.al-chip{display:flex;align-items:center;justify-content:space-between;
+         padding:7px 9px;border-radius:6px;background:var(--surf);
+         border:1px solid var(--bdr);cursor:pointer;transition:background .14s,border-color .14s}
+.al-chip:hover{background:#e0e3ef}
+.al-chip.on{background:rgba(92,110,240,.10);border-color:var(--acc)}
+.al-chip .al-cl{display:flex;flex-direction:column;gap:1px;min-width:0}
+.al-chip .al-name{font-size:12px;font-weight:600}
+.al-chip .al-nodeid{font-size:10px;color:var(--mut);font-variant-numeric:tabular-nums}
+.al-chip .al-cr{display:flex;gap:5px;align-items:center;flex-shrink:0}
+.al-lbl-edit{font-size:10px;background:transparent;border:1px solid var(--bdr);border-radius:4px;
+             padding:2px 5px;color:var(--txt);width:100px;text-align:left}
+.al-lbl-edit:focus{outline:none;border-color:var(--acc);background:#fff}
+
+/* safety checkbox row */
+.al-safety{display:flex;align-items:center;gap:7px;padding:7px 9px;background:rgba(184,121,0,.10);
+           border:1px solid rgba(184,121,0,.25);border-radius:6px;color:var(--amb);font-size:11px}
+.al-safety input[type=checkbox]{accent-color:var(--amb);width:14px;height:14px}
+
+/* test button grids */
+.al-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.al-btns .btn{padding:5px;text-align:center;font-size:10.5px}
+.al-btns .btn:disabled{opacity:.45;cursor:not-allowed}
+.al-btns .btn:disabled:hover{background:var(--surf);border-color:var(--bdr)}
+.al-section{font-size:9px;font-weight:700;color:var(--mut);text-transform:uppercase;
+            letter-spacing:.7px;margin:7px 0 4px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>ODrive Dashboard</h1>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div><span class="dot" id="dot"></span><span style="font-size:11px;color:var(--mut)" id="cl">Disconnected</span></div>
+    <div style="font-size:10px;color:var(--mut)">ROS: <span id="rs" style="color:var(--amb)">waiting</span></div>
+    <!-- Firmware state-machine indicator. Distinguishes SM_IDLE (commanded
+         stop) from SM_ESTOP (hardware button held) — both leave per-axis
+         state=IDLE so the per-axis pills cannot tell them apart. -->
+    <div style="display:flex;align-items:center;gap:5px">
+      <span style="font-size:10px;color:var(--mut)">SM:</span>
+      <span id="smst" class="pill sm">UNKNOWN</span>
+    </div>
+  </div>
+</div>
+
+<!-- Tab bar — adds the new Axis Lab page alongside the Overview. -->
+<div class="tabbar">
+  <button class="tab on" data-tab="overview">Overview</button>
+  <button class="tab"    data-tab="axislab">Axis Lab</button>
+</div>
+
+<div class="wrap tabpanel" id="tab-overview">
+
+  <!-- ══════════════ ROW 1 – CONFIG (4 wide columns) ══════════════ -->
+  <div class="cfgrow">
+
+    <!-- col 1: manual control -->
+    <div class="card">
+      <div class="ct">Last cmd_vel</div>
+      <div class="mr3" style="margin-bottom:7px">
+        <div class="met"><div class="ml">Vx m/s</div><div class="mv" id="cvx">0.000</div></div>
+        <div class="met"><div class="ml">Vy m/s</div><div class="mv" id="cvy">0.000</div></div>
+        <div class="met"><div class="ml">Wz r/s</div><div class="mv" id="cwz">0.000</div></div>
+      </div>
+      <div class="ct">Manual override</div>
+      <div class="sr">
+        <div class="slb"><label>Vx m/s</label><input type="number" class="numinp" id="ovxv" value="0.00" min="-0.5" max="0.5" step="0.01"></div>
+        <input type="range" id="ovx" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+      <div class="sr">
+        <div class="slb"><label>Vy m/s</label><input type="number" class="numinp" id="ovyv" value="0.00" min="-0.5" max="0.5" step="0.01"></div>
+        <input type="range" id="ovy" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+      <div class="sr">
+        <div class="slb"><label>Wz r/s</label><input type="number" class="numinp" id="owzv" value="0.00" min="-0.5" max="0.5" step="0.01"></div>
+        <input type="range" id="owz" min="-0.5" max="0.5" step="0.01" value="0">
+      </div>
+      <div style="display:flex;gap:5px;margin-top:4px">
+        <button class="btn pri" id="bsv" style="flex:1">Send velocity</button>
+        <button class="btn dng" id="bzv" style="flex:1">Zero</button>
+      </div>
+    </div>
+
+    <!-- col 2: odometry + link status + robot velocity chart -->
+    <div class="card">
+      <div class="ct">Odometry</div>
+      <div class="mr3">
+        <div class="met"><div class="ml">φ rad</div><div class="mv" id="ophi">0.000</div></div>
+        <div class="met"><div class="ml">X m</div><div class="mv" id="ox">0.000</div></div>
+        <div class="met"><div class="ml">Y m</div><div class="mv" id="oy">0.000</div></div>
+      </div>
+      <!-- Link status: ESP32→STM32 age (from firmware), STM32→PC age (measured here). -->
+      <div class="ct">Links</div>
+      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:6px;font-size:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <span style="color:var(--mut)">ESP32→STM32</span>
+          <span style="display:flex;gap:6px;align-items:center">
+            <span id="lnkesp" class="mv" style="font-size:11px">unknown</span>
+            <span id="lnkespp" class="pill">UNKNOWN</span>
+          </span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <span style="color:var(--mut)">STM32→PC</span>
+          <span style="display:flex;gap:6px;align-items:center">
+            <span id="lnkpc" class="mv" style="font-size:11px">unknown</span>
+            <span id="lnkpcp" class="pill">UNKNOWN</span>
+          </span>
+        </div>
+      </div>
+      <div class="ct">Robot velocity</div>
+      <div class="ccw"><canvas id="vc"></canvas></div>
+    </div>
+
+    <!-- col 3: target mask + limits + gains -->
+    <div class="card">
+      <div class="mbrow">
+        <span class="mbl">Target:</span>
+        <button class="mb on" id="mb0">0</button>
+        <button class="mb on" id="mb1">1</button>
+        <button class="mb on" id="mb2">2</button>
+        <button class="mb on" id="mb3">3</button>
+        <button class="btn" id="mball" style="padding:2px 7px;font-size:10px;margin-left:2px">All</button>
+      </div>
+      <div class="g2">
+        <div>
+          <div class="ct">Limits</div>
+          <div class="sr">
+            <div class="slb"><label>Vel t/s</label><input type="number" class="numinp" id="vlv" value="10.00" min="0.5" max="50" step="0.5"></div>
+            <input type="range" id="slvl" min="0.5" max="50" step="0.5" value="10">
+          </div>
+          <div class="sr">
+            <div class="slb"><label>Curr A</label><input type="number" class="numinp" id="clv" value="20.00" min="1" max="60" step="1"></div>
+            <input type="range" id="slcl" min="1" max="60" step="1" value="20">
+          </div>
+          <button class="btn" id="bapl" style="width:100%;margin-top:2px">Apply limits</button>
+        </div>
+        <div>
+          <div class="ct">Gains</div>
+          <!-- Initial values mirror ODRIVE_DEFAULT_{POS,VEL,VEL_INT}_GAIN in
+               firmware/.../CM7/Core/Inc/main.h. The STM32 pushes those to the
+               ODrives via ODrive_Startup at boot; these widgets just reflect
+               the same numbers so the GUI starts in sync. Keep them aligned
+               when tuning. -->
+          <div class="sr">
+            <div class="slb"><label>Pos</label><input type="number" class="numinp" id="pgv" value="20.00" min="-20" max="20" step="0.01"></div>
+            <input type="range" id="slpg" min="-20" max="20" step="0.01" value="20">
+          </div>
+          <div class="sr">
+            <div class="slb"><label>Vel</label><input type="number" class="numinp" id="vgv" value="0.160" min="-10" max="10" step="0.01"></div>
+            <input type="range" id="slvg" min="-10" max="10" step="0.01" value="0.16">
+          </div>
+          <div class="sr">
+            <div class="slb"><label>Int</label><input type="number" class="numinp" id="vigv" value="0.320" min="-10" max="10" step="0.01"></div>
+            <input type="range" id="slvi" min="-10" max="10" step="0.01" value="0.32">
+          </div>
+          <button class="btn" id="bapg" style="width:100%;margin-top:2px">Apply gains</button>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <div class="ct">Advanced param (RxSdo)</div>
+        <!-- Writes an arbitrary ODrive float32 parameter over CAN, e.g.
+             axis0.controller.config.vel_ramp_rate. endpoint_id is
+             firmware-build-specific -- look it up in the flat_endpoints.json
+             shipped with the ODrive's exact firmware release. -->
+        <div class="sr">
+          <div class="slb"><label>Endpoint ID</label><input type="number" class="numinp" id="pep" value="0" min="0" max="65535" step="1"></div>
+        </div>
+        <div class="sr">
+          <div class="slb"><label>Value</label><input type="number" class="numinp" id="pepv" value="0" step="0.01"></div>
+        </div>
+        <button class="btn" id="bapparam" style="width:100%;margin-top:2px">Set param</button>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--surf);border-radius:6px;flex-shrink:0">
+        <span style="font-size:10px;color:var(--mut);font-weight:600;white-space:nowrap">Bluetooth control:</span>
+        <span id="btst" style="font-size:11px;font-weight:700;color:var(--red)">Inactive</span>
+      </div>
+    </div>
+
+    <!-- col 4: mode + global actions + log -->
+    <div class="card">
+      <div class="ct">Controller mode</div>
+      <div class="sr"><select id="sctrl"><option value="2">Velocity</option><option value="3">Position</option><option value="1">Torque</option></select></div>
+      <div class="sr"><select id="sinp"><option value="1">Passthrough</option><option value="2" selected>Vel ramp</option><option value="3">Pos filter</option><option value="5">Trap traj</option></select></div>
+      <button class="btn" id="bsm" style="width:100%;margin-bottom:8px">Set mode</button>
+
+      <div class="ct">Global actions</div>
+      <div class="gbts">
+        <button class="btn suc" id="bgst">Startup all</button>
+        <button class="btn dng" id="bgsp">Stop all</button>
+        <button class="btn"     id="bgce">Clear errors</button>
+        <button class="btn dng" id="bgrb">Reboot all</button>
+      </div>
+
+      <div class="ct">Activity log</div>
+      <div class="log" id="log"></div>
+
+      <div class="ct" style="margin-top:8px">Firmware errors</div>
+      <div class="log" id="fw-err-log" style="max-height:120px;border-left:3px solid var(--red)"></div>
+    </div>
+
+  </div><!-- .cfgrow -->
+
+  <!-- ══════════════ ROWS 2 & 3 – AXIS CARDS 2×2 ══════════════ -->
+  <div class="axes" id="axes"></div>
+
+</div><!-- /#tab-overview -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+     AXIS LAB PANEL — per-motor inspection / control / calibration.
+     Phase 1: uses the telemetry that's already streamed, plus the
+     existing per-axis CFG_* commands (with a single-axis mask). The
+     direct-input vel/pos/torque controls and identify/blink button
+     are disabled and labelled as "Phase 2 (needs firmware)" so it's
+     obvious they aren't wired yet.
+     ════════════════════════════════════════════════════════════════════ -->
+<div class="wrap tabpanel hidden" id="tab-axislab">
+
+  <div class="al-grid">
+
+    <!-- ── LEFT COLUMN: motor selector + safety + state-change buttons ── -->
+    <div class="al-side">
+
+      <!-- Motor selector. Labels are editable inline and persisted to
+           localStorage so the FL/FR/RL/RR mapping survives reloads even
+           though it's not in the firmware yet. -->
+      <div class="card">
+        <div class="ct">Select motor</div>
+        <div class="al-sel" id="al-sel">
+          <!-- chips inserted by JS -->
+        </div>
+        <div class="al-section">Last heartbeat (selected)</div>
+        <div class="al-row" style="grid-template-columns:1fr 1fr">
+          <div class="met"><div class="ml">Age (ms)</div><div class="mv" id="al-hb">–</div></div>
+          <div class="met"><div class="ml">Status</div><div class="mv" id="al-hbst">UNKNOWN</div></div>
+        </div>
+        <div class="al-section">Identify</div>
+        <button class="btn" id="al-identify" disabled title="Needs firmware addition (Set_Identify or SDO function call). Coming in phase 4.">Blink LED on selected ODrive</button>
+      </div>
+
+      <!-- Safety controls. The "wheel lifted" checkbox gates the test
+           buttons in the main column — there's no hardware interlock,
+           so this is operator-attestation only. -->
+      <div class="card">
+        <div class="ct">Safety</div>
+        <label class="al-safety">
+          <input type="checkbox" id="al-lifted">
+          <span>Wheel is lifted / robot is on stand</span>
+        </label>
+        <div class="al-section">Test limits</div>
+        <div class="al-row" style="grid-template-columns:1fr 1fr">
+          <div>
+            <div class="ml" style="margin-bottom:2px">Max vel (t/s)</div>
+            <input type="number" class="numinp" id="al-mxv" value="2.00" min="0.1" max="50" step="0.1" style="width:100%">
+          </div>
+          <div>
+            <div class="ml" style="margin-bottom:2px">Max curr (A)</div>
+            <input type="number" class="numinp" id="al-mxc" value="10.00" min="0.5" max="60" step="0.5" style="width:100%">
+          </div>
+        </div>
+        <div class="al-row" style="grid-template-columns:1fr 1fr;margin-top:5px">
+          <div>
+            <div class="ml" style="margin-bottom:2px">Max trq (Nm)</div>
+            <input type="number" class="numinp" id="al-mxt" value="0.50" min="0.05" max="10" step="0.05" style="width:100%">
+          </div>
+          <div>
+            <div class="ml" style="margin-bottom:2px">Max pos step (t)</div>
+            <input type="number" class="numinp" id="al-mxp" value="1.00" min="0.05" max="20" step="0.05" style="width:100%">
+          </div>
+        </div>
+        <button class="btn dng" id="al-estop" style="margin-top:8px;width:100%">EMERGENCY: idle selected motor</button>
+      </div>
+
+      <!-- State + calibration buttons. All use existing CFG_SET_STATE /
+           CFG_* messages with a single-axis mask. Calibration is gated
+           by the wheel-lifted checkbox. -->
+      <div class="card">
+        <div class="ct">State</div>
+        <div class="al-btns">
+          <button class="btn suc"    data-st="al-closedloop">Closed loop</button>
+          <button class="btn"        data-st="al-idle">Idle</button>
+          <button class="btn"        data-st="al-clear">Clear errors</button>
+        </div>
+        <div class="al-section">Calibration (lift wheel first)</div>
+        <div class="al-btns">
+          <button class="btn" data-st="al-full"    data-needlift="1">Full calib</button>
+          <button class="btn" data-st="al-motor"   data-needlift="1">Motor only</button>
+          <button class="btn" data-st="al-eoffset" data-needlift="1">Enc offset</button>
+          <button class="btn" data-st="al-edir"    data-needlift="1">Enc dir find</button>
+          <button class="btn" data-st="al-eidx"    data-needlift="1">Enc idx srch</button>
+          <button class="btn" data-st="al-homing"  data-needlift="1">Homing</button>
+          <button class="btn" data-st="al-hallpol" data-needlift="1">Hall pol</button>
+          <button class="btn" data-st="al-hallph"  data-needlift="1">Hall phase</button>
+        </div>
+        <div class="al-section">Lifecycle</div>
+        <div class="al-btns" style="grid-template-columns:1fr 1fr">
+          <button class="btn" data-st="al-stop">Stop</button>
+          <button class="btn dng" data-st="al-reboot" data-confirm="Reboot selected ODrive?">Reboot</button>
+        </div>
+      </div>
+
+    </div><!-- .al-side -->
+
+    <!-- ── RIGHT COLUMN: detailed status + charts + direct controls ── -->
+    <div class="al-main">
+
+      <!-- Status / metrics card. -->
+      <div class="card">
+        <div class="ah">
+          <span class="aid">Motor: <span id="al-title">–</span></span>
+          <span class="pill" id="al-pl">IDLE</span>
+        </div>
+        <div class="al-row">
+          <div class="met"><div class="ml">Axis state</div><div class="mv" id="al-as">–</div></div>
+          <div class="met"><div class="ml">Controller mode</div><div class="mv" id="al-cm">–</div></div>
+          <div class="met"><div class="ml">Active error</div><div class="mv" id="al-err">0x00000000</div></div>
+          <div class="met"><div class="ml">Updated flag</div><div class="mv" id="al-uf">–</div></div>
+        </div>
+        <div class="al-row" style="margin-top:5px">
+          <div class="met"><div class="ml">Position (t)</div><div class="mv" id="al-pos">–</div></div>
+          <div class="met"><div class="ml">Velocity (t/s)</div><div class="mv" id="al-vel">–</div></div>
+          <div class="met"><div class="ml">Encoder shadow</div><div class="mv" id="al-sh">–</div></div>
+          <div class="met"><div class="ml">Encoder CPR</div><div class="mv" id="al-cpr">–</div></div>
+        </div>
+        <div class="al-row" style="margin-top:5px">
+          <div class="met"><div class="ml">Vbus (V)</div><div class="mv" id="al-vb">–</div></div>
+          <div class="met"><div class="ml">Ibus (A)</div><div class="mv" id="al-ib">–</div></div>
+          <div class="met"><div class="ml">Iq set (A)</div><div class="mv" id="al-is">–</div></div>
+          <div class="met"><div class="ml">Iq meas (A)</div><div class="mv" id="al-im">–</div></div>
+        </div>
+        <div class="al-section">Coming in phase 3 (needs firmware additions)</div>
+        <div class="al-row">
+          <div class="met"><div class="ml">FET temp (°C)</div><div class="mv" style="color:var(--mut)">–</div></div>
+          <div class="met"><div class="ml">Motor temp (°C)</div><div class="mv" style="color:var(--mut)">–</div></div>
+          <div class="met"><div class="ml">Torque tgt (Nm)</div><div class="mv" style="color:var(--mut)">–</div></div>
+          <div class="met"><div class="ml">Torque est (Nm)</div><div class="mv" style="color:var(--mut)">–</div></div>
+        </div>
+      </div>
+
+      <!-- 2×2 chart grid using the same telemetry as the per-axis cards. -->
+      <div class="card" style="flex:1;min-height:0">
+        <div class="ct">Live charts</div>
+        <div class="al-charts">
+          <div class="al-chartbox"><canvas id="al-cpos"></canvas></div>
+          <div class="al-chartbox"><canvas id="al-cvel"></canvas></div>
+          <div class="al-chartbox"><canvas id="al-ciq"></canvas></div>
+          <div class="al-chartbox"><canvas id="al-cvib"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Direct control + tuning. The direct vel/pos/torque inputs are
+           disabled until the firmware adds a per-axis bypass-IK command. -->
+      <div class="card">
+        <div class="ct">Direct input</div>
+        <div class="g2">
+          <div>
+            <div class="al-section" style="margin-top:0">Velocity</div>
+            <div class="slb"><label>Target t/s</label><input type="number" class="numinp" id="al-vt" value="0.00" step="0.05" disabled></div>
+            <div class="al-btns" style="grid-template-columns:1fr 1fr 1fr;margin-top:4px">
+              <button class="btn"     data-st="al-jogneg" data-needlift="1" disabled>Jog −</button>
+              <button class="btn"     data-st="al-vsend"  data-needlift="1" disabled>Send</button>
+              <button class="btn"     data-st="al-jogpos" data-needlift="1" disabled>Jog +</button>
+            </div>
+          </div>
+          <div>
+            <div class="al-section" style="margin-top:0">Torque</div>
+            <div class="slb"><label>Target Nm</label><input type="number" class="numinp" id="al-tt" value="0.00" step="0.01" disabled></div>
+            <div class="al-btns" style="grid-template-columns:1fr 1fr;margin-top:4px">
+              <button class="btn" data-st="al-tsend" data-needlift="1" disabled>Send</button>
+              <button class="btn" data-st="al-tpulse" data-needlift="1" disabled>Torque pulse</button>
+            </div>
+          </div>
+        </div>
+        <div class="g2" style="margin-top:7px">
+          <div>
+            <div class="al-section" style="margin-top:0">Position</div>
+            <div class="slb"><label>Target (t)</label><input type="number" class="numinp" id="al-pt" value="0.00" step="0.05" disabled></div>
+            <div class="al-btns" style="grid-template-columns:1fr 1fr;margin-top:4px">
+              <button class="btn" data-st="al-psend" data-needlift="1" disabled>Send pos</button>
+              <button class="btn" data-st="al-pstep" data-needlift="1" disabled>Pos step</button>
+            </div>
+          </div>
+          <div>
+            <div class="al-section" style="margin-top:0">Trap traj</div>
+            <div class="slb"><label>Final (t)</label><input type="number" class="numinp" id="al-trt" value="0.00" step="0.05" disabled></div>
+            <div class="al-btns" style="grid-template-columns:1fr 1fr;margin-top:4px">
+              <button class="btn" data-st="al-trapsend" data-needlift="1" disabled>Run trap</button>
+              <button class="btn" data-st="al-zero" disabled>Zero input</button>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:5px;font-size:10px;color:var(--mut)">
+          Direct input controls are disabled until phase 2 adds the
+          <code>ODRIVE_CMD_AXIS_INPUT_*</code> firmware command types
+          (these need to bypass the mecanum IK).
+        </div>
+      </div>
+
+    </div><!-- .al-main -->
+
+  </div><!-- .al-grid -->
+
+</div><!-- /#tab-axislab -->
+
+
+<script>
+const socket = io();
+const N = 4;
+
+socket.on('connect',    ()=>setConn(true));
+socket.on('disconnect', ()=>setConn(false));
+function setConn(ok){
+  document.getElementById('dot').className='dot'+(ok?' ok':'');
+  document.getElementById('cl').textContent=ok?'Connected':'Disconnected';
+}
+
+// shared robot-velocity chart
+const VH=60, vd={vx:Array(VH).fill(0),vy:Array(VH).fill(0),wz:Array(VH).fill(0)};
+const vc=new Chart(document.getElementById('vc').getContext('2d'),{
+  type:'line',
+  data:{labels:Array(VH).fill(''),datasets:[
+    {label:'Vx',data:vd.vx,borderColor:'#5c6ef0',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+    {label:'Vy',data:vd.vy,borderColor:'#1a9a60',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+    {label:'Wz',data:vd.wz,borderColor:'#b87900',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+  ]},
+  options:{animation:false,responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#64748b',font:{size:9},boxWidth:8}}},
+    scales:{x:{display:false},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b',font:{size:9},maxTicksLimit:3}}}}
+});
+
+// per-axis charts
+const AH=50;
+const ad=Array.from({length:N},()=>({vel:Array(AH).fill(0),iq:Array(AH).fill(0)}));
+const axCharts=[];
+
+const SN={0:'UNDEFINED',1:'IDLE',2:'STARTUP',3:'FULL_CALIB',4:'MOTOR_CALIB',
+          6:'IDX_SEARCH',7:'ENC_CALIB',8:'CLOSED_LOOP',9:'LOCKIN',
+          10:'DIR_FIND',11:'HOMING',12:'HALL_POL',13:'HALL_PHASE'};
+const CM={0:'VOLTAGE',1:'TORQUE',2:'VELOCITY',3:'POSITION'};
+
+const axes=document.getElementById('axes');
+for(let i=0;i<N;i++){
+  axes.insertAdjacentHTML('beforeend',`
+  <div class="card">
+    <div class="ah">
+      <span class="aid">Axis ${i} <span style="font-size:10px;color:var(--mut);font-weight:400" id="nd${i}">(node –)</span></span>
+      <span class="pill" id="pl${i}">IDLE</span>
+    </div>
+    <div class="mr3">
+      <div class="met"><div class="ml">Position t</div><div class="mv" id="po${i}">–</div></div>
+      <div class="met"><div class="ml">Velocity t/s</div><div class="mv" id="ve${i}">–</div></div>
+      <div class="met"><div class="ml">Vbus V</div><div class="mv" id="vb${i}">–</div></div>
+    </div>
+    <div class="mr3">
+      <div class="met"><div class="ml">Iq set A</div><div class="mv" id="is${i}">–</div></div>
+      <div class="met"><div class="ml">Iq meas A</div><div class="mv" id="im${i}">–</div></div>
+      <div class="met"><div class="ml">Ibus A</div><div class="mv" id="ib${i}">–</div></div>
+    </div>
+    <div class="er">Err: <span class="ec ok" id="er${i}">0x00000000</span>&nbsp;Ctrl: <span id="ct${i}">–</span></div>
+    <div class="acw"><canvas id="ac${i}"></canvas></div>
+    <div class="btns">
+      <button class="btn suc" onclick="ax(${i},'startup')">Startup</button>
+      <button class="btn dng" onclick="ax(${i},'stop')">Stop</button>
+      <button class="btn"     onclick="ax(${i},'clear')">Clear err</button>
+      <button class="btn"     onclick="ax(${i},'calib')">Calib</button>
+      <button class="btn dng" onclick="ax(${i},'reboot')">Reboot</button>
+    </div>
+  </div>`);
+
+  axCharts.push(new Chart(document.getElementById(`ac${i}`).getContext('2d'),{
+    type:'line',
+    data:{labels:Array(AH).fill(''),datasets:[
+      {label:'Vel t/s',data:ad[i].vel,borderColor:'#5c6ef0',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+      {label:'Iq A',   data:ad[i].iq, borderColor:'#b87900',borderWidth:1.5,pointRadius:0,tension:.3,fill:false},
+    ]},
+    options:{animation:false,responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#64748b',font:{size:9},boxWidth:8}}},
+      scales:{x:{display:false},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b',font:{size:9},maxTicksLimit:3}}}}
+  }));
+}
+
+function g(id){return document.getElementById(id)}
+function pillCls(s,e){return e!==0?'pill err':s===8?'pill run':'pill'}
+
+// bidirectional slider ↔ number-input
+function link(slId,niId,fmt,mn,mx){
+  const sl=g(slId),ni=g(niId);
+  sl.oninput=()=>{ni.value=fmt(parseFloat(sl.value))};
+  ni.oninput=()=>{const v=parseFloat(ni.value);if(!isNaN(v))sl.value=Math.max(mn,Math.min(mx,v))};
+  function commit(){let v=parseFloat(ni.value);if(isNaN(v))v=parseFloat(sl.value);v=Math.max(mn,Math.min(mx,v));sl.value=v;ni.value=fmt(v)}
+  ni.onblur=commit;
+  ni.onkeydown=e=>{if(e.key==='Enter'){commit();ni.blur()}};
+}
+link('ovx','ovxv',v=>v.toFixed(2),-0.5,0.5);
+link('ovy','ovyv',v=>v.toFixed(2),-0.5,0.5);
+link('owz','owzv',v=>v.toFixed(2),-0.5,0.5);
+link('slvl','vlv', v=>v.toFixed(2),0.5,50);
+link('slcl','clv', v=>v.toFixed(2),1,60);
+link('slpg','pgv', v=>v.toFixed(2),-20,20);
+link('slvg','vgv', v=>v.toFixed(3),-10,10);
+link('slvi','vigv',v=>v.toFixed(3),-10,10);
+
+// Link status helpers — render the ESP32→STM32 and STM32→PC ages with
+// an OK / WARN / LOST / UNKNOWN pill.  Thresholds match the Python side:
+//   OK    age < 500 ms
+//   WARN  500 ms ≤ age < 2000 ms
+//   LOST  age ≥ 2000 ms
+//   UNKNOWN  age is null / missing
+function fmtAge(ms){
+  if(ms===null||ms===undefined) return 'unknown';
+  if(ms<1000) return ms.toFixed(0)+' ms';
+  return (ms/1000).toFixed(2)+' s';
+}
+function applyLinkPill(pillEl, status){
+  pillEl.textContent = status;
+  pillEl.classList.remove('run','err');
+  // Colours from the existing palette:
+  //   OK   -> green   (.pill.run)
+  //   WARN -> amber   (inline style, no .pill.amb exists)
+  //   LOST -> red     (.pill.err)
+  //   UNKNOWN -> muted (default .pill)
+  pillEl.style.background=''; pillEl.style.color='';
+  if(status==='OK')        pillEl.classList.add('run');
+  else if(status==='WARN'){ pillEl.style.background='rgba(217,154,40,.12)'; pillEl.style.color='var(--amb)'; }
+  else if(status==='LOST') pillEl.classList.add('err');
+}
+function updateLink(prefix, ageMs, status){
+  g('lnk'+prefix).textContent = fmtAge(ageMs);
+  applyLinkPill(g('lnk'+prefix+'p'), status||'UNKNOWN');
+}
+
+// Map the firmware ODriveSMState enum to a colour-class on the SM pill.
+// Labels are computed Python-side and arrive in d.sm_state_label, but the
+// CSS classes need a hook from the numeric state so we don't have to keep
+// the colour palette in two places.
+function updateSmStatePill(label, num){
+  const el = g('smst');
+  if(!el) return;
+  el.textContent = label || 'UNKNOWN';
+  el.classList.remove('run','err','boot','startup','idle','estop');
+  switch(num){
+    case 0: el.classList.add('boot');    break;
+    case 1: el.classList.add('startup'); break;
+    case 2: el.classList.add('run');     break;
+    case 3: el.classList.add('idle');    break;  // muted default
+    case 4: el.classList.add('estop');   break;
+    default: /* UNKNOWN — keep the muted default */
+  }
+}
+
+// telemetry
+socket.on('telemetry',(d)=>{
+  g('rs').textContent='live'; g('rs').style.color='var(--grn)';
+  if(d.bt_active!==undefined){const b=g('btst');const _btl=['Inactive','Paired','Active'];const _btc=['var(--red)','var(--amb)','var(--grn)'];const _bti=Math.min(Math.max(d.bt_active,0),2);b.textContent=_btl[_bti];b.style.color=_btc[_bti];}
+  // Always refresh the link widget — the server pushes a fresh
+  // telemetry frame at ~4 Hz so the age values keep advancing even
+  // when the STM32 has gone silent.
+  updateLink('esp', d.esp32_age_ms, d.esp32_status);
+  updateLink('pc',  d.pc_age_ms,    d.pc_status);
+  updateSmStatePill(d.sm_state_label, d.sm_state);
+  g('cvx').textContent=d.cmd_vx.toFixed(3);
+  g('cvy').textContent=d.cmd_vy.toFixed(3);
+  g('cwz').textContent=d.cmd_wz.toFixed(3);
+  g('ophi').textContent=d.odom_phi.toFixed(3);
+  g('ox').textContent=d.odom_x.toFixed(3);
+  g('oy').textContent=d.odom_y.toFixed(3);
+  vd.vx.push(d.odom_vx);vd.vx.shift();
+  vd.vy.push(d.odom_vy);vd.vy.shift();
+  vd.wz.push(d.odom_w);vd.wz.shift();
+  vc.data.datasets[0].data=vd.vx;
+  vc.data.datasets[1].data=vd.vy;
+  vc.data.datasets[2].data=vd.wz;
+  vc.update();
+  for(let i=0;i<N;i++){
+    const st=d.axis_states[i],er=d.axis_errors[i],cm=d.ctrl_status[i];
+    g(`nd${i}`).textContent=`(node ${d.node_ids[i]})`;
+    g(`po${i}`).textContent=d.pos_est[i].toFixed(3);
+    g(`ve${i}`).textContent=d.vel_est[i].toFixed(3);
+    g(`vb${i}`).textContent=d.bus_voltage[i].toFixed(2);
+    g(`is${i}`).textContent=d.iq_setpoint[i].toFixed(3);
+    g(`im${i}`).textContent=d.iq_measured[i].toFixed(3);
+    g(`ib${i}`).textContent=d.bus_current[i].toFixed(3);
+    const ec=g(`er${i}`);
+    ec.textContent='0x'+er.toString(16).padStart(8,'0').toUpperCase();
+    ec.className='ec'+(er===0?' ok':'');
+    g(`ct${i}`).textContent=CM[cm]||cm;
+    const pl=g(`pl${i}`);
+    pl.textContent=SN[st]||`STATE_${st}`;
+    pl.className=pillCls(st,er);
+    ad[i].vel.push(d.vel_est[i]);   ad[i].vel.shift();
+    ad[i].iq.push(d.iq_measured[i]);ad[i].iq.shift();
+    axCharts[i].data.datasets[0].data=ad[i].vel;
+    axCharts[i].data.datasets[1].data=ad[i].iq;
+    axCharts[i].update();
+  }
+});
+
+socket.on('log',(m)=>appendLog(m.text,m.level||'i'));
+
+socket.on('firmware_error',(m)=>{
+  const now=new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const log=g('fw-err-log');
+  const axisStr = m.axis===255 ? 'sys' : 'ax'+m.axis;
+  log.insertAdjacentHTML('beforeend',
+    `<div class="e">[${now}] 0x${m.code.toString(16).padStart(2,'0')} ${axisStr} d=${m.detail}: ${m.desc}</div>`);
+  log.scrollTop=log.scrollHeight;
+});
+function appendLog(t,lv){
+  const now=new Date().toLocaleTimeString('en-GB',{hour12:false});
+  const log=g('log');
+  log.insertAdjacentHTML('beforeend',`<div class="${lv}">[${now}] ${t}</div>`);
+  log.scrollTop=log.scrollHeight;
+}
+
+// axis mask
+let mask=0x0F;
+for(let i=0;i<4;i++){
+  g(`mb${i}`).onclick=function(){
+    this.classList.toggle('on');
+    mask=0;
+    for(let j=0;j<4;j++)if(g(`mb${j}`).classList.contains('on'))mask|=(1<<j);
+    if(mask===0)mask=0x0F;
+  };
+}
+g('mball').onclick=()=>{mask=0x0F;for(let j=0;j<4;j++)g(`mb${j}`).classList.add('on')};
+
+function send(o){socket.emit('command',o);appendLog(JSON.stringify(o),'i')}
+function ax(i,a){
+  const m=1<<i;
+  if(a==='startup')send({type:'startup',mask:m,ctrl_mode:parseInt(g('sctrl').value),input_mode:parseInt(g('sinp').value),state:8});
+  if(a==='stop')   send({type:'stop',mask:m});
+  if(a==='clear')  send({type:'clear_errors',mask:m});
+  if(a==='calib')  send({type:'set_state',mask:m,state:3});
+  if(a==='reboot') send({type:'reboot',mask:m});
+}
+
+g('bapl').onclick=()=>send({type:'set_limits',mask,vel_lim:parseFloat(g('vlv').value),curr_lim:parseFloat(g('clv').value)});
+g('bapg').onclick=()=>{
+  send({type:'set_pos_gain',mask,pos_gain:parseFloat(g('pgv').value)});
+  send({type:'set_vel_gains',mask,vel_gain:parseFloat(g('vgv').value),vel_int_gain:parseFloat(g('vigv').value)});
+};
+g('bapparam').onclick=()=>send({type:'set_param_float',mask,endpoint_id:parseInt(g('pep').value),value:parseFloat(g('pepv').value)});
+g('bsm').onclick=()=>{
+  const cm=parseInt(g('sctrl').value),im=parseInt(g('sinp').value);
+  send({type:'stop',mask});
+  setTimeout(()=>send({type:'set_ctrl_mode',mask,ctrl_mode:cm,input_mode:im}),350);
+  setTimeout(()=>send({type:'startup',mask,ctrl_mode:cm,input_mode:im,state:8}),750);
+};
+g('bsv').onclick=()=>send({type:'ctrl',vx:parseFloat(g('ovx').value),vy:parseFloat(g('ovy').value),wz:parseFloat(g('owz').value)});
+g('bzv').onclick=()=>{
+  ['ovx','ovy','owz'].forEach(id=>{g(id).value=0});
+  ['ovxv','ovyv','owzv'].forEach(id=>{g(id).value='0.00'});
+  send({type:'ctrl',vx:0,vy:0,wz:0});
+};
+g('bgst').onclick=()=>send({type:'startup',mask:0x0F,ctrl_mode:parseInt(g('sctrl').value),input_mode:parseInt(g('sinp').value),state:8});
+g('bgsp').onclick=()=>send({type:'stop',mask:0x0F});
+g('bgce').onclick=()=>send({type:'clear_errors',mask:0x0F});
+g('bgrb').onclick=()=>send({type:'reboot',mask:0x0F});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  AXIS LAB (Phase 1)
+//  Self-contained — depends on the same `socket`, `send()`, `g()`, and
+//  the SN / CM enum maps already defined above for the Overview tab.
+//
+//  Data flow: every `telemetry` payload from the server has per-axis
+//  arrays (`pos_est`, `vel_est`, `axis_states`, `axis_errors`, etc.)
+//  indexed 0..3. The selector chooses which index is the "active" motor;
+//  the detail panel and charts refresh on every telemetry frame.
+// ═══════════════════════════════════════════════════════════════════════
+(function(){
+  // ── tab switching ───────────────────────────────────────────────────
+  const tabs   = document.querySelectorAll('.tab');
+  const panels = {overview:g('tab-overview'), axislab:g('tab-axislab')};
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(o=>o.classList.toggle('on', o===t));
+    const want = t.dataset.tab;
+    for(const k in panels) panels[k].classList.toggle('hidden', k!==want);
+  }));
+
+  // ── editable wheel labels, persisted ────────────────────────────────
+  // Defaults are placeholders until the user types real ones in. Mapping
+  // index → label is the source of truth here; the firmware doesn't know
+  // (or care) which slot is FL/FR/RL/RR.
+  const LS_KEY = 'al.labels.v1';
+  const DEFAULT_LABELS = ['Front-Left','Front-Right','Rear-Left','Rear-Right'];
+  let labels;
+  try { labels = JSON.parse(localStorage.getItem(LS_KEY)) || DEFAULT_LABELS.slice(); }
+  catch(_){ labels = DEFAULT_LABELS.slice(); }
+  if(!Array.isArray(labels) || labels.length<4) labels = DEFAULT_LABELS.slice();
+  function saveLabels(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(labels)); }catch(_){ } }
+
+  // ── selector state ──────────────────────────────────────────────────
+  let sel = 0;                  // currently selected motor index 0..3
+  // Track the last raw payload + per-motor "last seen U flag" timestamps
+  // so we can compute a synthetic "heartbeat age" — the firmware doesn't
+  // currently surface per-axis heartbeat ms, but the U flag toggles each
+  // time a CAN frame is decoded, which is a useful proxy.
+  const lastUTick = [null,null,null,null];
+  const lastUVal  = [null,null,null,null];
+  let lastTelem   = null;
+
+  // ── render the selector chips ───────────────────────────────────────
+  const selRoot = g('al-sel');
+  function renderSelector(){
+    selRoot.innerHTML = '';
+    for(let i=0;i<4;i++){
+      const nid = lastTelem && lastTelem.node_ids ? lastTelem.node_ids[i] : '–';
+      const chip = document.createElement('div');
+      chip.className = 'al-chip' + (i===sel?' on':'');
+      chip.dataset.idx = i;
+      chip.innerHTML = `
+        <div class="al-cl">
+          <input type="text" class="al-lbl-edit" data-idx="${i}" value="${labels[i].replace(/"/g,'&quot;')}">
+          <span class="al-nodeid">node id ${nid}  ·  idx ${i}</span>
+        </div>
+        <div class="al-cr">
+          <span class="pill" id="al-cp${i}">–</span>
+        </div>`;
+      chip.addEventListener('click',(e)=>{
+        // Clicks on the label input shouldn't change the selection.
+        if(e.target.classList.contains('al-lbl-edit')) return;
+        sel = i;
+        renderSelector();
+        refreshTitle();
+      });
+      selRoot.appendChild(chip);
+    }
+    // Wire up label edits.
+    selRoot.querySelectorAll('.al-lbl-edit').forEach(inp=>{
+      inp.addEventListener('change',()=>{
+        const idx = parseInt(inp.dataset.idx);
+        labels[idx] = inp.value || DEFAULT_LABELS[idx];
+        saveLabels();
+        refreshTitle();
+      });
+    });
+  }
+
+  function refreshTitle(){
+    const nid = lastTelem && lastTelem.node_ids ? lastTelem.node_ids[sel] : '?';
+    g('al-title').textContent = `${labels[sel]}  ·  idx ${sel}  ·  node ${nid}`;
+  }
+
+  // ── charts ──────────────────────────────────────────────────────────
+  const ALH = 80;
+  function mkBuf(){ return Array(ALH).fill(0); }
+  const buf = { pos:mkBuf(), vel:mkBuf(), iqs:mkBuf(), iqm:mkBuf(), vbus:mkBuf(), ibus:mkBuf() };
+  function pushBuf(arr,v){ arr.shift(); arr.push(v); }
+
+  const lineDS = (label,col,data)=>(
+    {label,data,borderColor:col,borderWidth:1.4,pointRadius:0,tension:.3,fill:false}
+  );
+  const chartOpts = {
+    animation:false,responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{labels:{color:'#64748b',font:{size:9},boxWidth:8}}},
+    scales:{x:{display:false},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#64748b',font:{size:9},maxTicksLimit:3}}}
+  };
+  const cPos = new Chart(g('al-cpos').getContext('2d'),{type:'line',
+    data:{labels:Array(ALH).fill(''),datasets:[lineDS('Position t','#5c6ef0',buf.pos)]},options:chartOpts});
+  const cVel = new Chart(g('al-cvel').getContext('2d'),{type:'line',
+    data:{labels:Array(ALH).fill(''),datasets:[lineDS('Velocity t/s','#1a9a60',buf.vel)]},options:chartOpts});
+  const cIq  = new Chart(g('al-ciq').getContext('2d'),{type:'line',
+    data:{labels:Array(ALH).fill(''),datasets:[lineDS('Iq set A','#5c6ef0',buf.iqs), lineDS('Iq meas A','#b87900',buf.iqm)]},options:chartOpts});
+  const cVib = new Chart(g('al-cvib').getContext('2d'),{type:'line',
+    data:{labels:Array(ALH).fill(''),datasets:[lineDS('Vbus V','#1a9a60',buf.vbus), lineDS('Ibus A','#c94040',buf.ibus)]},options:chartOpts});
+
+  // ── per-frame update ────────────────────────────────────────────────
+  function updateFromTelem(d){
+    const firstFrame = lastTelem === null;
+    lastTelem = d;
+    // Selector chip pills (use the same coloring as the overview pills).
+    for(let i=0;i<4;i++){
+      const s = (d.axis_states  ||[0,0,0,0])[i];
+      const e = (d.axis_errors  ||[0,0,0,0])[i];
+      const u = (d.updated      ||[0,0,0,0])[i];
+      const chip = document.getElementById('al-cp'+i);
+      if(chip){
+        chip.textContent = SN[s] || ('STATE_'+s);
+        chip.className = pillCls(s, e);
+      }
+      // Heartbeat freshness: U flips when a new CAN frame is decoded.
+      if(u !== lastUVal[i]){
+        lastUVal[i] = u;
+        lastUTick[i] = performance.now();
+      }
+    }
+    // Refresh chip node-IDs on the very first frame (and the title) —
+    // the static `renderSelector()` at startup had nothing to show.
+    if(firstFrame){
+      renderSelector();
+      refreshTitle();
+    }
+
+    // Detail panel — show the selected motor's row.
+    const s = (d.axis_states ||[0,0,0,0])[sel];
+    const e = (d.axis_errors ||[0,0,0,0])[sel];
+    const cs= (d.ctrl_status ||[0,0,0,0])[sel];
+    g('al-as').textContent  = (SN[s]||('STATE_'+s));
+    g('al-cm').textContent  = (CM[cs]||String(cs));
+    g('al-err').textContent = '0x' + (e>>>0).toString(16).padStart(8,'0');
+    g('al-err').style.color = e===0 ? 'var(--grn)' : 'var(--red)';
+    g('al-uf').textContent  = (d.updated||[0,0,0,0])[sel];
+    const pl = g('al-pl');
+    pl.textContent = SN[s] || ('STATE_'+s);
+    pl.className   = pillCls(s, e);
+
+    const f3 = v => (v==null?'–':v.toFixed(3));
+    const f2 = v => (v==null?'–':v.toFixed(2));
+    const pos = (d.pos_est     ||[0,0,0,0])[sel];
+    const vel = (d.vel_est     ||[0,0,0,0])[sel];
+    const iqs = (d.iq_setpoint ||[0,0,0,0])[sel];
+    const iqm = (d.iq_measured ||[0,0,0,0])[sel];
+    const vb  = (d.bus_voltage ||[0,0,0,0])[sel];
+    const ib  = (d.bus_current ||[0,0,0,0])[sel];
+    g('al-pos').textContent = f3(pos);
+    g('al-vel').textContent = f3(vel);
+    g('al-sh').textContent  = '–';   // shadows not in dashboard telem dict; firmware has them
+    g('al-cpr').textContent = '–';   // same
+    g('al-vb').textContent  = f2(vb);
+    g('al-ib').textContent  = f2(ib);
+    g('al-is').textContent  = f3(iqs);
+    g('al-im').textContent  = f3(iqm);
+
+    // Push to charts.
+    pushBuf(buf.pos,  pos||0);
+    pushBuf(buf.vel,  vel||0);
+    pushBuf(buf.iqs,  iqs||0);
+    pushBuf(buf.iqm,  iqm||0);
+    pushBuf(buf.vbus, vb ||0);
+    pushBuf(buf.ibus, ib ||0);
+    cPos.update('none'); cVel.update('none'); cIq.update('none'); cVib.update('none');
+
+    // Heartbeat age for the selected motor.
+    const t = lastUTick[sel];
+    if(t==null){
+      g('al-hb').textContent = '–';
+      g('al-hbst').textContent = 'UNKNOWN';
+      g('al-hbst').style.color = 'var(--mut)';
+    } else {
+      const age = performance.now() - t;
+      g('al-hb').textContent = age.toFixed(0);
+      let st='OK', col='var(--grn)';
+      if(age >= 2000){ st='LOST'; col='var(--red)'; }
+      else if(age >= 500){ st='WARN'; col='var(--amb)'; }
+      g('al-hbst').textContent = st;
+      g('al-hbst').style.color = col;
+    }
+  }
+
+  // ── command routing for the test / calibration buttons ──────────────
+  // Each button has `data-st="al-xxx"` identifying the action and an
+  // optional `data-needlift="1"` requiring the safety checkbox. All
+  // commands target only the selected axis via mask = 1 << sel.
+  // Calibration sub-states match the Axis_State enum in
+  //   firmware/.../CM7/Core/Inc/ODrive.h
+  const STATE_IDLE        = 1;
+  const STATE_FULL_CALIB  = 3;
+  const STATE_MOTOR_CALIB = 4;
+  const STATE_ENC_IDX     = 6;
+  const STATE_ENC_OFFSET  = 7;
+  const STATE_CLOSED_LOOP = 8;
+  const STATE_ENC_DIR     = 10;
+  const STATE_HOMING      = 11;
+  const STATE_HALL_POL    = 12;
+  const STATE_HALL_PHASE  = 13;
+
+  function safetyOK(btn){
+    if(btn.dataset.needlift==='1' && !g('al-lifted').checked){
+      appendLog('blocked: tick "Wheel is lifted" before running tests/calibration','e');
+      return false;
+    }
+    return true;
+  }
+
+  document.querySelectorAll('#tab-axislab [data-st]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      if(btn.disabled) return;
+      if(!safetyOK(btn)) return;
+      const confirmMsg = btn.dataset.confirm;
+      if(confirmMsg && !window.confirm(confirmMsg)) return;
+      const mask = 1 << sel;
+      const action = btn.dataset.st;
+      const ctrl = parseInt(g('sctrl').value);
+      const inp  = parseInt(g('sinp').value);
+      switch(action){
+        case 'al-closedloop':
+          send({type:'startup', mask, ctrl_mode:ctrl, input_mode:inp, state:STATE_CLOSED_LOOP});
+          break;
+        case 'al-idle':       send({type:'set_state',    mask, state:STATE_IDLE}); break;
+        case 'al-clear':      send({type:'clear_errors', mask}); break;
+        case 'al-stop':       send({type:'stop',         mask}); break;
+        case 'al-reboot':     send({type:'reboot',       mask}); break;
+        case 'al-full':       send({type:'set_state',    mask, state:STATE_FULL_CALIB}); break;
+        case 'al-motor':      send({type:'set_state',    mask, state:STATE_MOTOR_CALIB}); break;
+        case 'al-eoffset':    send({type:'set_state',    mask, state:STATE_ENC_OFFSET}); break;
+        case 'al-edir':       send({type:'set_state',    mask, state:STATE_ENC_DIR}); break;
+        case 'al-eidx':       send({type:'set_state',    mask, state:STATE_ENC_IDX}); break;
+        case 'al-homing':     send({type:'set_state',    mask, state:STATE_HOMING}); break;
+        case 'al-hallpol':    send({type:'set_state',    mask, state:STATE_HALL_POL}); break;
+        case 'al-hallph':     send({type:'set_state',    mask, state:STATE_HALL_PHASE}); break;
+        // Direct-input buttons remain disabled until phase 2. The cases
+        // are listed so a future enable just removes `disabled` from the
+        // HTML — the JS wiring is already here.
+        default:
+          appendLog('(phase 2 needed) action='+action,'i');
+      }
+    });
+  });
+
+  // Emergency idle button is always enabled regardless of the safety
+  // checkbox — that's its whole purpose.
+  g('al-estop').addEventListener('click',()=>{
+    const mask = 1 << sel;
+    send({type:'set_state', mask, state:STATE_IDLE});
+    appendLog(`E-STOP idle motor ${sel}`, 'e');
+  });
+
+  // Initial render — even with no telemetry yet, the chips need to exist
+  // so the user can edit labels before the firmware is up.
+  renderSelector();
+  refreshTitle();
+
+  // ── tap into the existing telemetry stream ──────────────────────────
+  // Listening on the same `socket` adds a second handler alongside the
+  // overview's — Socket.IO supports multiple listeners on one event.
+  socket.on('telemetry', updateFromTelem);
+})();
+</script>
+</body>
+</html>

@@ -35,11 +35,21 @@ class ImageOrienter(Node):
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
+        # Publish RELIABLE: a RELIABLE publisher is compatible with BOTH the
+        # BEST_EFFORT vision subscribers (gpsr/hric/face/detector) and
+        # web_video_server (the display's MJPEG bridge), which subscribes
+        # RELIABLE — a BEST_EFFORT publisher here left the display feed black
+        # ("requesting incompatible QoS ... RELIABILITY" warnings).
+        pub_qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
 
         self.create_subscription(Image, CAMERA_TOPIC, self._image_cb, img_qos)
         self.create_subscription(Int16, CAMERA_ROTATION_TOPIC, self._rotation_cb, 10)
 
-        self.pub = self.create_publisher(Image, IMAGE_ORIENTED_TOPIC, img_qos)
+        self.pub = self.create_publisher(Image, IMAGE_ORIENTED_TOPIC, pub_qos)
 
         self.get_logger().info("Image orienter ready (rotation=0)")
 

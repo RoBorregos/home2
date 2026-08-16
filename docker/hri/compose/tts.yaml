@@ -21,6 +21,11 @@ services:
       PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
       PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
       HF_HUB_DISABLE_XET: 1
+      # No internet on the robot: load the Kokoro model straight from the local
+      # HF cache instead of spending ~70s on DNS/HTTP retries before falling back.
+      # Without this the TTS gRPC port opens too late and say.py gets "connection refused".
+      HF_HUB_OFFLINE: 1
+      TRANSFORMERS_OFFLINE: 1
       HOME: /app
       HF_HOME: /app/.cache/huggingface
       HUGGINGFACE_HUB_CACHE: /app/.cache/huggingface/hub
