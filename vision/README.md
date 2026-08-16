@@ -130,7 +130,7 @@ publishes both `ObjectDetectionArray` and RViz markers.
 `utils/trt_utils.py::load_yolo_trt` exports a `.pt` to a `.engine` on first use and caches
 it in `TENSORRT_CACHE_DIR` (`docker/vision/trt_cache`, a persistent mount).
 **Never copy engines between the laptop and the Orin** — they are tied to the device and the
-TensorRT version.
+TensorRT version. Set `use_trt: False` when working on a PC.** 
 
 **Weights are provisioned up front, on purpose.** `.pt` files are gitignored and download
 lazily on a node's first run, followed by minutes of TRT export. On competition day, with no
