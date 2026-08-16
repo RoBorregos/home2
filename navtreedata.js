@@ -208,241 +208,258 @@ var NAVTREE =
       [ "Files NOT included from the original repo", "md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md165", null ],
       [ "How tracking works (high-level)", "md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md166", null ]
     ] ],
-    [ "README", "md_vision_README.html", null ],
+    [ "Vision", "md_vision_README.html", [
+      [ "Tree structure", "md_vision_README.html#autotoc_md168", null ],
+      [ "Concepts", "md_vision_README.html#autotoc_md169", null ],
+      [ "Vision pipeline", "md_vision_README.html#autotoc_md170", null ],
+      [ "Packages", "md_vision_README.html#autotoc_md171", [
+        [ "<tt>object_detector_2d</tt>", "md_vision_README.html#autotoc_md172", null ],
+        [ "<tt>vision_general</tt>", "md_vision_README.html#autotoc_md173", null ],
+        [ "<tt>moondream_run</tt>", "md_vision_README.html#autotoc_md174", null ]
+      ] ],
+      [ "Running vision", "md_vision_README.html#autotoc_md175", [
+        [ "Building inside the container", "md_vision_README.html#autotoc_md176", null ],
+        [ "Camera", "md_vision_README.html#autotoc_md177", null ],
+        [ "Example calls", "md_vision_README.html#autotoc_md178", null ]
+      ] ],
+      [ "Debugging", "md_vision_README.html#autotoc_md179", null ],
+      [ "Object detection pipeline training", "md_vision_README.html#autotoc_md180", null ],
+      [ "Known issues", "md_vision_README.html#autotoc_md181", null ]
+    ] ],
     [ "README", "md_robot_description_frida_description_README.html", null ],
     [ "Place Params Special Request", "md_frida_interfaces_manipulation_msg_PlaceParamsSpecialRequest.html", [
-      [ "Example of a special request", "md_frida_interfaces_manipulation_msg_PlaceParamsSpecialRequest.html#autotoc_md168", null ]
+      [ "Example of a special request", "md_frida_interfaces_manipulation_msg_PlaceParamsSpecialRequest.html#autotoc_md183", null ]
     ] ],
     [ "Names", "md_frida_constants_data_names.html", null ],
     [ "Class drinks (drink)", "md_frida_constants_data_objects.html", [
-      [ "Class fruits (fruit)", "md_frida_constants_data_objects.html#autotoc_md171", null ],
-      [ "Class snacks (snack)", "md_frida_constants_data_objects.html#autotoc_md172", null ],
-      [ "Class foods (food)", "md_frida_constants_data_objects.html#autotoc_md173", null ],
-      [ "Class dishes (dish)", "md_frida_constants_data_objects.html#autotoc_md174", null ],
-      [ "Class cleaning_supplies (cleaning_supply)", "md_frida_constants_data_objects.html#autotoc_md175", null ]
+      [ "Class fruits (fruit)", "md_frida_constants_data_objects.html#autotoc_md186", null ],
+      [ "Class snacks (snack)", "md_frida_constants_data_objects.html#autotoc_md187", null ],
+      [ "Class foods (food)", "md_frida_constants_data_objects.html#autotoc_md188", null ],
+      [ "Class dishes (dish)", "md_frida_constants_data_objects.html#autotoc_md189", null ],
+      [ "Class cleaning_supplies (cleaning_supply)", "md_frida_constants_data_objects.html#autotoc_md190", null ]
     ] ],
     [ "FRIDA Architecture", "md_docs_ai_architecture.html", [
-      [ "Core Areas", "md_docs_ai_architecture.html#autotoc_md177", null ],
-      [ "Execution Model", "md_docs_ai_architecture.html#autotoc_md178", [
-        [ "The <tt>run.sh</tt> Script", "md_docs_ai_architecture.html#autotoc_md179", null ]
+      [ "Core Areas", "md_docs_ai_architecture.html#autotoc_md192", null ],
+      [ "Execution Model", "md_docs_ai_architecture.html#autotoc_md193", [
+        [ "The <tt>run.sh</tt> Script", "md_docs_ai_architecture.html#autotoc_md194", null ]
       ] ],
-      [ "Communication", "md_docs_ai_architecture.html#autotoc_md180", null ]
+      [ "Communication", "md_docs_ai_architecture.html#autotoc_md195", null ]
     ] ],
     [ "Coding Standards & Conventions", "md_docs_ai_coding_standards.html", [
-      [ "ROS 2 Node Structure (Python)", "md_docs_ai_coding_standards.html#autotoc_md182", [
-        [ "Example Node Pattern", "md_docs_ai_coding_standards.html#autotoc_md183", null ]
+      [ "ROS 2 Node Structure (Python)", "md_docs_ai_coding_standards.html#autotoc_md197", [
+        [ "Example Node Pattern", "md_docs_ai_coding_standards.html#autotoc_md198", null ]
       ] ],
-      [ "Interface Usage", "md_docs_ai_coding_standards.html#autotoc_md184", null ],
-      [ "Tooling & Quality Control", "md_docs_ai_coding_standards.html#autotoc_md185", [
-        [ "Formatting", "md_docs_ai_coding_standards.html#autotoc_md186", null ],
-        [ "Type Hints", "md_docs_ai_coding_standards.html#autotoc_md187", null ],
-        [ "Documentation", "md_docs_ai_coding_standards.html#autotoc_md188", null ]
+      [ "Interface Usage", "md_docs_ai_coding_standards.html#autotoc_md199", null ],
+      [ "Tooling & Quality Control", "md_docs_ai_coding_standards.html#autotoc_md200", [
+        [ "Formatting", "md_docs_ai_coding_standards.html#autotoc_md201", null ],
+        [ "Type Hints", "md_docs_ai_coding_standards.html#autotoc_md202", null ],
+        [ "Documentation", "md_docs_ai_coding_standards.html#autotoc_md203", null ]
       ] ]
     ] ],
     [ "HRIC vision architecture — models → nodes → interfaces → subtask manager → FSM", "md_docs_ai_hric_vision_architecture.html", [
-      [ "1. What runs for HRIC (launch set)", "md_docs_ai_hric_vision_architecture.html#autotoc_md190", null ],
-      [ "2. Camera/data plumbing", "md_docs_ai_hric_vision_architecture.html#autotoc_md191", null ],
-      [ "3. FSM state → subtask call → interface → node → model", "md_docs_ai_hric_vision_architecture.html#autotoc_md192", null ],
-      [ "4. Full connection diagram", "md_docs_ai_hric_vision_architecture.html#autotoc_md193", null ],
-      [ "5. Needed vs. loaded — findings", "md_docs_ai_hric_vision_architecture.html#autotoc_md194", null ],
-      [ "6. Active-task launch audit (2026-07-02)", "md_docs_ai_hric_vision_architecture.html#autotoc_md195", null ],
-      [ "7. Follow-person pipeline rework (2026-07-03)", "md_docs_ai_hric_vision_architecture.html#autotoc_md196", null ]
+      [ "1. What runs for HRIC (launch set)", "md_docs_ai_hric_vision_architecture.html#autotoc_md205", null ],
+      [ "2. Camera/data plumbing", "md_docs_ai_hric_vision_architecture.html#autotoc_md206", null ],
+      [ "3. FSM state → subtask call → interface → node → model", "md_docs_ai_hric_vision_architecture.html#autotoc_md207", null ],
+      [ "4. Full connection diagram", "md_docs_ai_hric_vision_architecture.html#autotoc_md208", null ],
+      [ "5. Needed vs. loaded — findings", "md_docs_ai_hric_vision_architecture.html#autotoc_md209", null ],
+      [ "6. Active-task launch audit (2026-07-02)", "md_docs_ai_hric_vision_architecture.html#autotoc_md210", null ],
+      [ "7. Follow-person pipeline rework (2026-07-03)", "md_docs_ai_hric_vision_architecture.html#autotoc_md211", null ]
     ] ],
     [ "FRIDA — Navigation Stack & Task-Manager Architecture", "md_docs_ai_navigation_architecture.html", [
-      [ "</blockquote>", "md_docs_ai_navigation_architecture.html#autotoc_md198", null ],
-      [ "0. TL;DR (read this first)", "md_docs_ai_navigation_architecture.html#autotoc_md199", null ],
-      [ "1. The layered control model", "md_docs_ai_navigation_architecture.html#autotoc_md201", null ],
-      [ "2. ⭐ The Task-Manager ↔ Navigation contract (the connection)", "md_docs_ai_navigation_architecture.html#autotoc_md203", null ],
-      [ "3. <tt>nav_central</tt> — the navigation orchestrator", "md_docs_ai_navigation_architecture.html#autotoc_md205", [
-        [ "3.1 Server API it exposes (the \"north\" interface to the rest of the robot)", "md_docs_ai_navigation_architecture.html#autotoc_md206", null ],
-        [ "3.2 Clients it calls (the \"south\" interface to the stack it manages)", "md_docs_ai_navigation_architecture.html#autotoc_md207", null ],
-        [ "3.3 Self-healing / monitoring", "md_docs_ai_navigation_architecture.html#autotoc_md208", null ]
+      [ "</blockquote>", "md_docs_ai_navigation_architecture.html#autotoc_md213", null ],
+      [ "0. TL;DR (read this first)", "md_docs_ai_navigation_architecture.html#autotoc_md214", null ],
+      [ "1. The layered control model", "md_docs_ai_navigation_architecture.html#autotoc_md216", null ],
+      [ "2. ⭐ The Task-Manager ↔ Navigation contract (the connection)", "md_docs_ai_navigation_architecture.html#autotoc_md218", null ],
+      [ "3. <tt>nav_central</tt> — the navigation orchestrator", "md_docs_ai_navigation_architecture.html#autotoc_md220", [
+        [ "3.1 Server API it exposes (the \"north\" interface to the rest of the robot)", "md_docs_ai_navigation_architecture.html#autotoc_md221", null ],
+        [ "3.2 Clients it calls (the \"south\" interface to the stack it manages)", "md_docs_ai_navigation_architecture.html#autotoc_md222", null ],
+        [ "3.3 Self-healing / monitoring", "md_docs_ai_navigation_architecture.html#autotoc_md223", null ]
       ] ],
-      [ "4. Dual base / dual backend (one node, two robots)", "md_docs_ai_navigation_architecture.html#autotoc_md210", null ],
-      [ "</blockquote>", "md_docs_ai_navigation_architecture.html#autotoc_md211", null ],
-      [ "5. Navigation packages & key files", "md_docs_ai_navigation_architecture.html#autotoc_md212", [
-        [ "5.1 <tt>nav_main</tt> (the core package)", "md_docs_ai_navigation_architecture.html#autotoc_md213", null ],
-        [ "5.2 Driver / support packages", "md_docs_ai_navigation_architecture.html#autotoc_md214", null ],
-        [ "5.3 TF tree (omnibase)", "md_docs_ai_navigation_architecture.html#autotoc_md215", null ]
+      [ "4. Dual base / dual backend (one node, two robots)", "md_docs_ai_navigation_architecture.html#autotoc_md225", null ],
+      [ "</blockquote>", "md_docs_ai_navigation_architecture.html#autotoc_md226", null ],
+      [ "5. Navigation packages & key files", "md_docs_ai_navigation_architecture.html#autotoc_md227", [
+        [ "5.1 <tt>nav_main</tt> (the core package)", "md_docs_ai_navigation_architecture.html#autotoc_md228", null ],
+        [ "5.2 Driver / support packages", "md_docs_ai_navigation_architecture.html#autotoc_md229", null ],
+        [ "5.3 TF tree (omnibase)", "md_docs_ai_navigation_architecture.html#autotoc_md230", null ]
       ] ],
-      [ "6. How it is built, launched & deployed", "md_docs_ai_navigation_architecture.html#autotoc_md217", [
-        [ "6.1 <tt>run.sh</tt>", "md_docs_ai_navigation_architecture.html#autotoc_md218", null ],
-        [ "6.2 Navigation container specifics (<tt>docker/navigation/</tt>)", "md_docs_ai_navigation_architecture.html#autotoc_md219", null ],
-        [ "6.3 DDS / inter-process comms", "md_docs_ai_navigation_architecture.html#autotoc_md220", null ]
+      [ "6. How it is built, launched & deployed", "md_docs_ai_navigation_architecture.html#autotoc_md232", [
+        [ "6.1 <tt>run.sh</tt>", "md_docs_ai_navigation_architecture.html#autotoc_md233", null ],
+        [ "6.2 Navigation container specifics (<tt>docker/navigation/</tt>)", "md_docs_ai_navigation_architecture.html#autotoc_md234", null ],
+        [ "6.3 DDS / inter-process comms", "md_docs_ai_navigation_architecture.html#autotoc_md235", null ]
       ] ],
-      [ "7. Custom interface reference (<tt>frida_interfaces/</tt>)", "md_docs_ai_navigation_architecture.html#autotoc_md222", [
-        [ "<tt>frida_interfaces/navigation/</tt>", "md_docs_ai_navigation_architecture.html#autotoc_md223", null ],
-        [ "<tt>frida_interfaces/task_manager/</tt> (srv only)", "md_docs_ai_navigation_architecture.html#autotoc_md224", null ]
+      [ "7. Custom interface reference (<tt>frida_interfaces/</tt>)", "md_docs_ai_navigation_architecture.html#autotoc_md237", [
+        [ "<tt>frida_interfaces/navigation/</tt>", "md_docs_ai_navigation_architecture.html#autotoc_md238", null ],
+        [ "<tt>frida_interfaces/task_manager/</tt> (srv only)", "md_docs_ai_navigation_architecture.html#autotoc_md239", null ]
       ] ],
-      [ "</blockquote>", "md_docs_ai_navigation_architecture.html#autotoc_md225", null ],
-      [ "8. Where to start for common changes", "md_docs_ai_navigation_architecture.html#autotoc_md226", null ],
-      [ "9. Conventions & gotchas", "md_docs_ai_navigation_architecture.html#autotoc_md227", null ],
-      [ "Addendum (2026-07-03): point-based navigation services", "md_docs_ai_navigation_architecture.html#autotoc_md229", null ],
-      [ "Addendum (2026-07-03): washing-machine insert-and-pick (doing_laundry)", "md_docs_ai_navigation_architecture.html#autotoc_md230", null ],
-      [ "Addendum (2026-07-03): wall_aligner — precision washing-machine align/close", "md_docs_ai_navigation_architecture.html#autotoc_md231", null ],
-      [ "Addendum (2026-07-03): live-obstacle toggle for carried loads", "md_docs_ai_navigation_architecture.html#autotoc_md232", null ]
+      [ "</blockquote>", "md_docs_ai_navigation_architecture.html#autotoc_md240", null ],
+      [ "8. Where to start for common changes", "md_docs_ai_navigation_architecture.html#autotoc_md241", null ],
+      [ "9. Conventions & gotchas", "md_docs_ai_navigation_architecture.html#autotoc_md242", null ],
+      [ "Addendum (2026-07-03): point-based navigation services", "md_docs_ai_navigation_architecture.html#autotoc_md244", null ],
+      [ "Addendum (2026-07-03): washing-machine insert-and-pick (doing_laundry)", "md_docs_ai_navigation_architecture.html#autotoc_md245", null ],
+      [ "Addendum (2026-07-03): wall_aligner — precision washing-machine align/close", "md_docs_ai_navigation_architecture.html#autotoc_md246", null ],
+      [ "Addendum (2026-07-03): live-obstacle toggle for carried loads", "md_docs_ai_navigation_architecture.html#autotoc_md247", null ]
     ] ],
     [ "Restaurant task — architecture & conventions (RoboCup@Home 2026, sec. 5.5)", "md_docs_ai_restaurant_task.html", [
-      [ "Task flow (one cycle per calling customer)", "md_docs_ai_restaurant_task.html#autotoc_md234", null ],
-      [ "Contracts used (all through subtask managers)", "md_docs_ai_restaurant_task.html#autotoc_md235", null ],
-      [ "Key invariants (things that will break silently if undone)", "md_docs_ai_restaurant_task.html#autotoc_md236", null ],
-      [ "False-customer filtering (public raising phones in the recording zone)", "md_docs_ai_restaurant_task.html#autotoc_md237", null ],
-      [ "Venue tuning params (task manager node, set with <tt>ros2 param set</tt>)", "md_docs_ai_restaurant_task.html#autotoc_md238", null ],
-      [ "Run images", "md_docs_ai_restaurant_task.html#autotoc_md239", null ],
-      [ "Known TODOs / verify on the robot", "md_docs_ai_restaurant_task.html#autotoc_md240", null ]
+      [ "Task flow (one cycle per calling customer)", "md_docs_ai_restaurant_task.html#autotoc_md249", null ],
+      [ "Contracts used (all through subtask managers)", "md_docs_ai_restaurant_task.html#autotoc_md250", null ],
+      [ "Key invariants (things that will break silently if undone)", "md_docs_ai_restaurant_task.html#autotoc_md251", null ],
+      [ "False-customer filtering (public raising phones in the recording zone)", "md_docs_ai_restaurant_task.html#autotoc_md252", null ],
+      [ "Venue tuning params (task manager node, set with <tt>ros2 param set</tt>)", "md_docs_ai_restaurant_task.html#autotoc_md253", null ],
+      [ "Run images", "md_docs_ai_restaurant_task.html#autotoc_md254", null ],
+      [ "Known TODOs / verify on the robot", "md_docs_ai_restaurant_task.html#autotoc_md255", null ]
     ] ],
     [ "Tech Stack", "md_docs_ai_tech_stack.html", [
-      [ "Core Framework", "md_docs_ai_tech_stack.html#autotoc_md242", null ],
-      [ "Programming Languages", "md_docs_ai_tech_stack.html#autotoc_md243", null ],
-      [ "Middleware & Communication", "md_docs_ai_tech_stack.html#autotoc_md244", null ],
-      [ "Infrastructure", "md_docs_ai_tech_stack.html#autotoc_md245", null ],
-      [ "Targeted Platforms", "md_docs_ai_tech_stack.html#autotoc_md246", null ]
+      [ "Core Framework", "md_docs_ai_tech_stack.html#autotoc_md257", null ],
+      [ "Programming Languages", "md_docs_ai_tech_stack.html#autotoc_md258", null ],
+      [ "Middleware & Communication", "md_docs_ai_tech_stack.html#autotoc_md259", null ],
+      [ "Infrastructure", "md_docs_ai_tech_stack.html#autotoc_md260", null ],
+      [ "Targeted Platforms", "md_docs_ai_tech_stack.html#autotoc_md261", null ]
     ] ],
     [ "Vision optimization plan — Orin-first architecture", "md_docs_ai_vision_optimization_plan.html", [
-      [ "0. Current state (findings that motivate the plan)", "md_docs_ai_vision_optimization_plan.html#autotoc_md248", null ],
-      [ "1. Centralized model store + deterministic provisioning", "md_docs_ai_vision_optimization_plan.html#autotoc_md250", null ],
-      [ "2. Runtime consolidation (VRAM + CPU on the Orin)", "md_docs_ai_vision_optimization_plan.html#autotoc_md251", null ],
-      [ "3. Subtask manager v2 (<tt>vision_tasks.py</tt>)", "md_docs_ai_vision_optimization_plan.html#autotoc_md252", null ],
-      [ "4. Debug topics — compressed, lazy, namespaced", "md_docs_ai_vision_optimization_plan.html#autotoc_md253", null ],
-      [ "5. Display per subtask step", "md_docs_ai_vision_optimization_plan.html#autotoc_md254", null ],
-      [ "6. Phased rollout (competition-safe ordering)", "md_docs_ai_vision_optimization_plan.html#autotoc_md255", null ]
+      [ "0. Current state (findings that motivate the plan)", "md_docs_ai_vision_optimization_plan.html#autotoc_md263", null ],
+      [ "1. Centralized model store + deterministic provisioning", "md_docs_ai_vision_optimization_plan.html#autotoc_md265", null ],
+      [ "2. Runtime consolidation (VRAM + CPU on the Orin)", "md_docs_ai_vision_optimization_plan.html#autotoc_md266", null ],
+      [ "3. Subtask manager v2 (<tt>vision_tasks.py</tt>)", "md_docs_ai_vision_optimization_plan.html#autotoc_md267", null ],
+      [ "4. Debug topics — compressed, lazy, namespaced", "md_docs_ai_vision_optimization_plan.html#autotoc_md268", null ],
+      [ "5. Display per subtask step", "md_docs_ai_vision_optimization_plan.html#autotoc_md269", null ],
+      [ "6. Phased rollout (competition-safe ordering)", "md_docs_ai_vision_optimization_plan.html#autotoc_md270", null ]
     ] ],
     [ "CycloneDDS Setup", "md_docs_cyclonedds_setup.html", [
-      [ "Architecture", "md_docs_cyclonedds_setup.html#autotoc_md257", null ],
-      [ "Shared Memory (SHM) vs UDP", "md_docs_cyclonedds_setup.html#autotoc_md258", [
-        [ "SHM Memory Breakdown (when enabled)", "md_docs_cyclonedds_setup.html#autotoc_md259", null ],
-        [ "ZED SHM Workarounds", "md_docs_cyclonedds_setup.html#autotoc_md260", null ]
+      [ "Architecture", "md_docs_cyclonedds_setup.html#autotoc_md272", null ],
+      [ "Shared Memory (SHM) vs UDP", "md_docs_cyclonedds_setup.html#autotoc_md273", [
+        [ "SHM Memory Breakdown (when enabled)", "md_docs_cyclonedds_setup.html#autotoc_md274", null ],
+        [ "ZED SHM Workarounds", "md_docs_cyclonedds_setup.html#autotoc_md275", null ]
       ] ],
-      [ "Files", "md_docs_cyclonedds_setup.html#autotoc_md261", null ],
-      [ "Usage", "md_docs_cyclonedds_setup.html#autotoc_md262", [
-        [ "Local Development (no SHM, default)", "md_docs_cyclonedds_setup.html#autotoc_md263", null ],
-        [ "Orin AGX / High-Memory Machine (with SHM)", "md_docs_cyclonedds_setup.html#autotoc_md264", null ],
-        [ "Bare Metal (Orin, direct install)", "md_docs_cyclonedds_setup.html#autotoc_md265", null ],
-        [ "Revert to FastDDS", "md_docs_cyclonedds_setup.html#autotoc_md266", null ],
-        [ "Override Interface at Runtime", "md_docs_cyclonedds_setup.html#autotoc_md267", null ]
+      [ "Files", "md_docs_cyclonedds_setup.html#autotoc_md276", null ],
+      [ "Usage", "md_docs_cyclonedds_setup.html#autotoc_md277", [
+        [ "Local Development (no SHM, default)", "md_docs_cyclonedds_setup.html#autotoc_md278", null ],
+        [ "Orin AGX / High-Memory Machine (with SHM)", "md_docs_cyclonedds_setup.html#autotoc_md279", null ],
+        [ "Bare Metal (Orin, direct install)", "md_docs_cyclonedds_setup.html#autotoc_md280", null ],
+        [ "Revert to FastDDS", "md_docs_cyclonedds_setup.html#autotoc_md281", null ],
+        [ "Override Interface at Runtime", "md_docs_cyclonedds_setup.html#autotoc_md282", null ]
       ] ],
-      [ "What It Configures", "md_docs_cyclonedds_setup.html#autotoc_md268", [
-        [ "CycloneDDS XML (<tt>/etc/cyclonedds.xml</tt>)", "md_docs_cyclonedds_setup.html#autotoc_md269", null ],
-        [ "Kernel Tuning (<tt>/etc/sysctl.d/60-cyclonedds-buffers.conf</tt>)", "md_docs_cyclonedds_setup.html#autotoc_md270", null ],
-        [ "Iceoryx / RouDi (when <tt>CYCLONE_SHM=1</tt>)", "md_docs_cyclonedds_setup.html#autotoc_md271", null ]
+      [ "What It Configures", "md_docs_cyclonedds_setup.html#autotoc_md283", [
+        [ "CycloneDDS XML (<tt>/etc/cyclonedds.xml</tt>)", "md_docs_cyclonedds_setup.html#autotoc_md284", null ],
+        [ "Kernel Tuning (<tt>/etc/sysctl.d/60-cyclonedds-buffers.conf</tt>)", "md_docs_cyclonedds_setup.html#autotoc_md285", null ],
+        [ "Iceoryx / RouDi (when <tt>CYCLONE_SHM=1</tt>)", "md_docs_cyclonedds_setup.html#autotoc_md286", null ]
       ] ],
-      [ "Finding Your Network Interface", "md_docs_cyclonedds_setup.html#autotoc_md272", null ],
-      [ "Troubleshooting", "md_docs_cyclonedds_setup.html#autotoc_md273", [
-        [ "RouDi SIGBUS / fails to start", "md_docs_cyclonedds_setup.html#autotoc_md274", null ],
-        [ "Stale iceoryx artifacts", "md_docs_cyclonedds_setup.html#autotoc_md275", null ]
+      [ "Finding Your Network Interface", "md_docs_cyclonedds_setup.html#autotoc_md287", null ],
+      [ "Troubleshooting", "md_docs_cyclonedds_setup.html#autotoc_md288", [
+        [ "RouDi SIGBUS / fails to start", "md_docs_cyclonedds_setup.html#autotoc_md289", null ],
+        [ "Stale iceoryx artifacts", "md_docs_cyclonedds_setup.html#autotoc_md290", null ]
       ] ],
-      [ "Reference", "md_docs_cyclonedds_setup.html#autotoc_md276", null ]
+      [ "Reference", "md_docs_cyclonedds_setup.html#autotoc_md291", null ]
     ] ],
     [ "Expo demo Feb 13, 2025", "md_docs_expo_demo.html", [
-      [ "Running HRI", "md_docs_expo_demo.html#autotoc_md278", null ]
+      [ "Running HRI", "md_docs_expo_demo.html#autotoc_md293", null ]
     ] ],
     [ "frida_interfaces", "md_docs_interfaces.html", [
-      [ "MoveJoints.action definition", "md_docs_interfaces.html#autotoc_md280", null ],
-      [ "Other Messages", "md_docs_interfaces.html#autotoc_md282", [
-        [ "SomeMessage.msg", "md_docs_interfaces.html#autotoc_md283", null ],
-        [ "SomeService.srv", "md_docs_interfaces.html#autotoc_md284", null ]
+      [ "MoveJoints.action definition", "md_docs_interfaces.html#autotoc_md295", null ],
+      [ "Other Messages", "md_docs_interfaces.html#autotoc_md297", [
+        [ "SomeMessage.msg", "md_docs_interfaces.html#autotoc_md298", null ],
+        [ "SomeService.srv", "md_docs_interfaces.html#autotoc_md299", null ]
       ] ]
     ] ],
     [ "HRI", "md_docs_Run_Areas_hri.html", [
-      [ "Flags", "md_docs_Run_Areas_hri.html#autotoc_md300", null ],
-      [ "Running specific containers", "md_docs_Run_Areas_hri.html#autotoc_md301", null ]
+      [ "Flags", "md_docs_Run_Areas_hri.html#autotoc_md315", null ],
+      [ "Running specific containers", "md_docs_Run_Areas_hri.html#autotoc_md316", null ]
     ] ],
     [ "Manipulation", "md_docs_Run_Areas_Manipulation_manipulation.html", [
-      [ "Docker setup", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md303", null ],
-      [ "Running the vision module", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md304", [
-        [ "Additional Information", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md313", null ]
+      [ "Docker setup", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md318", null ],
+      [ "Running the vision module", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md319", [
+        [ "Additional Information", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md328", null ]
       ] ]
     ] ],
     [ "Running Pick and Place", "md_docs_Run_Areas_Manipulation_pick_and_place.html", [
-      [ "Launching the Robot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md315", [
-        [ "Simulation", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md316", null ],
-        [ "Real RObot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md317", [
-          [ "Robot interface", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md318", null ],
-          [ "3D Camera", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md319", null ]
+      [ "Launching the Robot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md330", [
+        [ "Simulation", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md331", null ],
+        [ "Real RObot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md332", [
+          [ "Robot interface", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md333", null ],
+          [ "3D Camera", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md334", null ]
         ] ]
       ] ],
-      [ "Launching utilities", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md320", [
-        [ "Object detector", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md321", null ]
+      [ "Launching utilities", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md335", [
+        [ "Object detector", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md336", null ]
       ] ],
-      [ "Launch Pick and Place main code", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md322", [
-        [ "Pick and Place pipeline", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md323", null ]
+      [ "Launch Pick and Place main code", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md337", [
+        [ "Pick and Place pipeline", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md338", null ]
       ] ],
-      [ "Usage", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md324", null ]
+      [ "Usage", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md339", null ]
     ] ],
     [ "Navigation Docs", "md_docs_Run_Areas_nav.html", [
-      [ "How to Run", "md_docs_Run_Areas_nav.html#autotoc_md326", null ],
-      [ "Running Nav Basics", "md_docs_Run_Areas_nav.html#autotoc_md328", [
-        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md329", null ],
-        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md330", null ]
+      [ "How to Run", "md_docs_Run_Areas_nav.html#autotoc_md341", null ],
+      [ "Running Nav Basics", "md_docs_Run_Areas_nav.html#autotoc_md343", [
+        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md344", null ],
+        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md345", null ]
       ] ],
-      [ "Running AMCL Localization", "md_docs_Run_Areas_nav.html#autotoc_md332", [
-        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md333", null ],
-        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md334", null ]
+      [ "Running AMCL Localization", "md_docs_Run_Areas_nav.html#autotoc_md347", [
+        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md348", null ],
+        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md349", null ]
       ] ],
-      [ "Running Navigation Node", "md_docs_Run_Areas_nav.html#autotoc_md336", [
-        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md337", null ],
-        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md338", null ]
+      [ "Running Navigation Node", "md_docs_Run_Areas_nav.html#autotoc_md351", [
+        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md352", null ],
+        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md353", null ]
       ] ]
     ] ],
     [ "Vision", "md_docs_Run_Areas_vision.html", [
-      [ "Docker setup", "md_docs_Run_Areas_vision.html#autotoc_md340", null ],
-      [ "Running the vision module", "md_docs_Run_Areas_vision.html#autotoc_md341", null ],
-      [ "Structure", "md_docs_Run_Areas_vision.html#autotoc_md344", null ],
-      [ "Camera", "md_docs_Run_Areas_vision.html#autotoc_md345", null ]
+      [ "Docker setup", "md_docs_Run_Areas_vision.html#autotoc_md355", null ],
+      [ "Running the vision module", "md_docs_Run_Areas_vision.html#autotoc_md356", null ],
+      [ "Structure", "md_docs_Run_Areas_vision.html#autotoc_md359", null ],
+      [ "Camera", "md_docs_Run_Areas_vision.html#autotoc_md360", null ]
     ] ],
     [ "Improving your ROS2 workflow with vscode", "md_docs_setup_vscode.html", [
-      [ "Prerequisites", "md_docs_setup_vscode.html#autotoc_md347", null ],
-      [ "Setup", "md_docs_setup_vscode.html#autotoc_md348", null ],
-      [ "Troubleshooting", "md_docs_setup_vscode.html#autotoc_md349", null ]
+      [ "Prerequisites", "md_docs_setup_vscode.html#autotoc_md362", null ],
+      [ "Setup", "md_docs_setup_vscode.html#autotoc_md363", null ],
+      [ "Troubleshooting", "md_docs_setup_vscode.html#autotoc_md364", null ]
     ] ],
     [ "Project setup", "md_docs_Setup.html", [
-      [ "Pre-commit", "md_docs_Setup.html#autotoc_md351", null ],
-      [ "Ruff", "md_docs_Setup.html#autotoc_md352", [
-        [ "Vscode integration", "md_docs_Setup.html#autotoc_md353", null ],
-        [ "Other integrations", "md_docs_Setup.html#autotoc_md354", null ]
+      [ "Pre-commit", "md_docs_Setup.html#autotoc_md366", null ],
+      [ "Ruff", "md_docs_Setup.html#autotoc_md367", [
+        [ "Vscode integration", "md_docs_Setup.html#autotoc_md368", null ],
+        [ "Other integrations", "md_docs_Setup.html#autotoc_md369", null ]
       ] ]
     ] ],
     [ "Decorators", "md_docs_task_manager_decorators.html", [
-      [ "Mockable", "md_docs_task_manager_decorators.html#autotoc_md356", [
-        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md357", null ],
-        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md358", null ]
+      [ "Mockable", "md_docs_task_manager_decorators.html#autotoc_md371", [
+        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md372", null ],
+        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md373", null ]
       ] ],
-      [ "Service Check", "md_docs_task_manager_decorators.html#autotoc_md359", [
-        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md360", null ],
-        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md361", null ]
+      [ "Service Check", "md_docs_task_manager_decorators.html#autotoc_md374", [
+        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md375", null ],
+        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md376", null ]
       ] ],
-      [ "Example", "md_docs_task_manager_decorators.html#autotoc_md362", null ]
+      [ "Example", "md_docs_task_manager_decorators.html#autotoc_md377", null ]
     ] ],
     [ "Object Categorization and Shelf Assignment", "md_docs_task_manager_ppc_categorization.html", [
-      [ "Overview", "md_docs_task_manager_ppc_categorization.html#autotoc_md364", null ],
-      [ "Categorization Logic", "md_docs_task_manager_ppc_categorization.html#autotoc_md365", null ],
-      [ "Shelf Assignment Algorithm", "md_docs_task_manager_ppc_categorization.html#autotoc_md366", [
-        [ "1. Existing Category Match", "md_docs_task_manager_ppc_categorization.html#autotoc_md367", null ],
-        [ "2. Empty Shelf Distribution", "md_docs_task_manager_ppc_categorization.html#autotoc_md368", null ],
-        [ "3. Overflow Distribution (Avoiding \"Miscellaneous\")", "md_docs_task_manager_ppc_categorization.html#autotoc_md369", null ]
+      [ "Overview", "md_docs_task_manager_ppc_categorization.html#autotoc_md379", null ],
+      [ "Categorization Logic", "md_docs_task_manager_ppc_categorization.html#autotoc_md380", null ],
+      [ "Shelf Assignment Algorithm", "md_docs_task_manager_ppc_categorization.html#autotoc_md381", [
+        [ "1. Existing Category Match", "md_docs_task_manager_ppc_categorization.html#autotoc_md382", null ],
+        [ "2. Empty Shelf Distribution", "md_docs_task_manager_ppc_categorization.html#autotoc_md383", null ],
+        [ "3. Overflow Distribution (Avoiding \"Miscellaneous\")", "md_docs_task_manager_ppc_categorization.html#autotoc_md384", null ]
       ] ],
-      [ "API Compatibility", "md_docs_task_manager_ppc_categorization.html#autotoc_md370", null ],
-      [ "Testing", "md_docs_task_manager_ppc_categorization.html#autotoc_md371", null ]
+      [ "API Compatibility", "md_docs_task_manager_ppc_categorization.html#autotoc_md385", null ],
+      [ "Testing", "md_docs_task_manager_ppc_categorization.html#autotoc_md386", null ]
     ] ],
     [ "PPC 2026 — Estrategia de tiempo y maximización de puntos", "md_docs_task_manager_ppc_time_strategy_2026.html", [
-      [ "0. Resumen ejecutivo", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md373", [
-        [ "Capacidades confirmadas del robot (2026-06-30, definen el routing)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md374", null ]
+      [ "0. Resumen ejecutivo", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md388", [
+        [ "Capacidades confirmadas del robot (2026-06-30, definen el routing)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md389", null ]
       ] ],
-      [ "0.bis Datos CONFIRMADOS de la sede (repo RoboCupAtHome/Incheon2026)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md375", null ],
-      [ "1. Scoring oficial (verificado) y lo realmente alcanzable", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md376", null ],
-      [ "2. A dónde se va el tiempo (time sinks rankeados)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md377", null ],
-      [ "3. Plan de cambios (por prioridad)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md378", [
-        [ "TIER 0 — Cambio estructural (mayor impacto, bajo riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md379", null ],
-        [ "TIER 1 — Tiempo gratis (0 pts en riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md380", null ],
-        [ "TIER 2 — Routing correcto al scoresheet (con nuestras capacidades)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md381", null ],
-        [ "TIER 3 — Tuning de primitivas (NO días antes de competir)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md382", null ],
-        [ "NO TOCAR", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md383", null ]
+      [ "0.bis Datos CONFIRMADOS de la sede (repo RoboCupAtHome/Incheon2026)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md390", null ],
+      [ "1. Scoring oficial (verificado) y lo realmente alcanzable", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md391", null ],
+      [ "2. A dónde se va el tiempo (time sinks rankeados)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md392", null ],
+      [ "3. Plan de cambios (por prioridad)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md393", [
+        [ "TIER 0 — Cambio estructural (mayor impacto, bajo riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md394", null ],
+        [ "TIER 1 — Tiempo gratis (0 pts en riesgo)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md395", null ],
+        [ "TIER 2 — Routing correcto al scoresheet (con nuestras capacidades)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md396", null ],
+        [ "TIER 3 — Tuning de primitivas (NO días antes de competir)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md397", null ],
+        [ "NO TOCAR", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md398", null ]
       ] ],
-      [ "4. \"Race plan\" recomendado para 420 s", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md384", null ],
-      [ "5. Checklist de Setup-Days (cosas a fijar/confirmar)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md385", null ],
-      [ "6.bis Mapa de roles PPC → waypoints raw de la cocina (LocationsNames)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md386", null ],
-      [ "6.ter Lo que Nav debe grabar (Arena Mapping, Miér, 10 min/arena × 3)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md387", null ],
-      [ "6. Riesgos / pendientes", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md388", null ]
+      [ "4. \"Race plan\" recomendado para 420 s", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md399", null ],
+      [ "5. Checklist de Setup-Days (cosas a fijar/confirmar)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md400", null ],
+      [ "6.bis Mapa de roles PPC → waypoints raw de la cocina (LocationsNames)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md401", null ],
+      [ "6.ter Lo que Nav debe grabar (Arena Mapping, Miér, 10 min/arena × 3)", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md402", null ],
+      [ "6. Riesgos / pendientes", "md_docs_task_manager_ppc_time_strategy_2026.html#autotoc_md403", null ]
     ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
@@ -522,26 +539,26 @@ var NAVTREEINDEX =
 "follow__calibration_8py.html#ad4e37f5979d5e6d97f8df3c32d02e1e1",
 "gpsr__test__commands_8py.html#a6fe40e97a8ff54b64671667b6e26cf95",
 "manipulation_2packages_2arm__pkg_2arm__pkg_2____init_____8py.html",
-"md_docs_ai_architecture.html#autotoc_md178",
+"md_docs_ai_architecture.html#autotoc_md193",
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md81",
-"namespacedashgo__driver.html",
-"namespacefrida__constants_1_1hri__constants.html#a1405902be9440099af248e891e6a796d",
-"namespacefrida__constants_1_1vision__constants.html#aa53ce4ada056e62207854a581ea44737",
-"namespacemembers_o.html",
-"namespacepick__and__place_1_1pick__server.html#ae59ed606e8f34b17ceb6741ced19afee",
-"namespacesimulate__position.html#a4774094fc5f57595a2d52ed9441d87c6",
-"namespacetest__hric__vision.html",
-"namespacevamp_1_1transformations.html#aab0e14c9ac829ad455e8b74fc0c2e99b",
-"odrive__dashboard_8py.html#a9c1b64aa76b22207e5814939b33e1c3c",
-"remove__collision__object_8py.html#a86366d327b8fa51f26394d0524fdc193",
-"structmujoco__ros2__sensors_1_1ImuSensorStruct.html#afc77bc352b85a8a7829f3e011fdc738a",
-"structvamp_1_1VectorInterface.html#a8640c0f0a85bd9d11725aad12d39f7ff",
-"structvamp_1_1collision_1_1Cuboid.html#a272115151ce54e9cffbd1ec0105f40a1",
-"structvamp_1_1planning_1_1FCITRoadmapNode.html#a299e65257c92f71bd5c85307718efb4b",
-"structvamp_1_1planning_1_1ShortcutSettings.html",
-"table__docker_8py.html#afca04db1c5ba4a082ef81fed1cf99e18",
-"validity_8hh.html#a50fbd16432460c6985aa3cd66590c214",
-"xarm__configurations_8py.html#a2bb2a5e5161403e9e48a8ed3b652fa54"
+"namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f",
+"namespaceformat.html#a2a29f347a155ccc16cb32c49b561e449",
+"namespacefrida__constants_1_1vision__constants.html#a72b604ba881b2235f65ec47a8ea08f2e",
+"namespacemembers_func_s.html",
+"namespacepick__and__place_1_1pick__server.html#a63bbc160e6b9673f125d3019fc830f15",
+"namespacesetup.html#aa1a7cf9bbf76004bb72697dc00bbee9d",
+"namespacetest__hri__manager.html#a66dffd1e474ea9bb91b2de082c4e4e42",
+"namespacevamp_1_1transformations.html#a68066295c675fd281abdf3ac9aa84702",
+"odrive__dashboard_8py.html#a2cfff9ba919aceaae98b34eceebe33dd",
+"reid__model_8py.html#abc26ab485ddf76983b7f06561ebdb8ca",
+"structmujoco__ros2__sensors_1_1ImuSensorStruct.html",
+"structvamp_1_1VectorInterface.html#a6e46111878623264542734391441d142",
+"structvamp_1_1collision_1_1CAPT_1_1BuildFrame.html#a7f2bd0d08fbd51c9c4d9a6cb8e4d9359",
+"structvamp_1_1planning_1_1ConstantNeighborParams.html#a15a7ddf19ec01905d74ff6e67ff7213d",
+"structvamp_1_1planning_1_1RoadmapSettings.html#a39ebc436b392a8ce21ffe4237afac71a",
+"structvamp_1_1robots_1_1UR5_1_1Spheres.html#ad223426f0b0d5f6c91373532c302d5da",
+"utils_8hh.html#aaf94b168033ba3ae749fe2e7f007c473",
+"xarm6__ikfast61_8cpp.html#adac93ad3ac22e016e6d690887e8688ba"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

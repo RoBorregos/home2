@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.6"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Roborregos @Home documentation: README</title>
+<title>Roborregos @Home documentation: Vision</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -90,10 +90,346 @@ $(document).ready(function(){initNavTree('md_vision_README.html',''); initResiza
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">README </div></div>
+  <div class="headertitle"><div class="title">Vision </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"></div></div><!-- contents -->
+<div class="textblock"><p>Vision turns the ZED's RGB-D stream into everything the task managers need to reason about the world: object detections with 3D points, people with poses, gestures and clothing colors, known faces, a tracked person to follow, and free-form visual questions answered by a VLM. It runs on <code>ROS 2</code> (Humble) inside a single <code>home2-vision</code> container, plus one non-ROS sidecar — <code>home2-moondream-server</code> — that serves the Moondream2 VLM over <code>gRPC</code>.</p>
+<blockquote class="doxtable">
+<p>&zwj;Vision <b>does not own the camera</b>. Frames come from the separate <code>home2-zed</code> container (<code>./run.sh zed</code>, Jetson/Orin only) or, on a laptop, from <code><a class="el" href="zed__simulator_8py.html">zed_simulator.py</a></code> publishing a plain webcam onto the same topics. </p>
+</blockquote>
+<h1><a class="anchor" id="autotoc_md168"></a>
+Tree structure</h1>
+<div class="fragment"><div class="line">home2/</div>
+<div class="line">│</div>
+<div class="line">│frida_constants/                          # Shared constants for the project</div>
+<div class="line">├── frida_constants/</div>
+<div class="line">│   ├── vision_constants.py                # Every camera/topic/service name (the authority)</div>
+<div class="line">│   ├── vision_classes.py                  # BBOX, ShelfDetection dataclasses</div>
+<div class="line">│   └── vision_enums.py                    # Gestures, Poses, DetectBy</div>
+<div class="line">│</div>
+<div class="line">│frida_interfaces/                         # Custom ROS interfaces</div>
+<div class="line">├── vision/</div>
+<div class="line">│   ├── action/                            # DetectPerson, Xarmmove</div>
+<div class="line">│   ├── msg/                               # ObjectDetection(+Array), Detection, Person,</div>
+<div class="line">│   │                                      # PersonList, CustomerTable, Point2D, Shelf*</div>
+<div class="line">│   └── srv/                               # 30 services (Query, FindSeat, TrackBy, ...)</div>
+<div class="line">│</div>
+<div class="line">│vision/</div>
+<div class="line">├── packages/</div>
+<div class="line">│   ├── object_detector_2d/                # 2D detection + 3D deprojection backbone</div>
+<div class="line">│   │   ├── config/</div>
+<div class="line">│   │   │   ├── parameters.yaml            # ObjectDetect2D params</div>
+<div class="line">│   │   │   └── parameters_zero_shot.yaml  # ZeroShotDetect2D params</div>
+<div class="line">│   │   ├── launch/</div>
+<div class="line">│   │   │   ├── object_detector_node.launch.py       # image_orienter + ObjectDetect2D</div>
+<div class="line">│   │   │   ├── zero_shot_object_detector_node.launch.py</div>
+<div class="line">│   │   │   └── object_detector_combined.launch.py   # both detectors at once</div>
+<div class="line">│   │   ├── models/                        # Custom weights (robocup2026_v1.pt, tmr2025.pt)</div>
+<div class="line">│   │   └── scripts/</div>
+<div class="line">│   │       ├── base_detector_node.py      # Shared base: params, TF, 3D projection, markers</div>
+<div class="line">│   │       ├── object_detector_node.py    # Runs N YOLO models, IoU-dedupes across them</div>
+<div class="line">│   │       ├── zero_shot_object_detector_node.py    # YOLOE open-vocabulary detector</div>
+<div class="line">│   │       ├── vision_3D_utils.py         # Pixel -&gt; 3D point helpers</div>
+<div class="line">│   │       └── detectors/                 # Pluggable model layer</div>
+<div class="line">│   │           ├── base.py                # BBOX, Detection, DetectorModel ABC</div>
+<div class="line">│   │           ├── registry.py            # MODEL_CONFIGS catalog + singleton loader</div>
+<div class="line">│   │           ├── yolo.py                # @register(&quot;yolo&quot;) — v8/v11/v26</div>
+<div class="line">│   │           ├── yolo_e.py              # @register(&quot;yolo_e&quot;) — YOLOE zero-shot</div>
+<div class="line">│   │           └── robocup2026_translation.json     # Raw label -&gt; published label</div>
+<div class="line">│   │</div>
+<div class="line">│   ├── vision_general/                    # People, tracking and the per-task command nodes</div>
+<div class="line">│   │   ├── config/botsort-reid.yaml       # Ultralytics BoT-SORT tracker config</div>
+<div class="line">│   │   ├── launch/                        # One launch file per competition task</div>
+<div class="line">│   │   │   ├── hric_launch.py</div>
+<div class="line">│   │   │   ├── gpsr_launch.py</div>
+<div class="line">│   │   │   ├── ppc_launch.py</div>
+<div class="line">│   │   │   ├── dlc_launch.py</div>
+<div class="line">│   │   │   └── restaurant_launch.py</div>
+<div class="line">│   │   ├── scripts/                       # ROS nodes (see Packages below)</div>
+<div class="line">│   │   └── vision_general/utils/          # Importable library shared by every node</div>
+<div class="line">│   │       ├── calculations.py            # deproject_pixel_to_point, get_depth, centroids</div>
+<div class="line">│   │       ├── trt_utils.py               # load_yolo_trt(): .pt -&gt; cached TensorRT .engine</div>
+<div class="line">│   │       ├── debug_pub.py               # Subscriber-gated, rate-limited debug images</div>
+<div class="line">│   │       ├── area_check.py              # Room filtering via nav MapAreas + TF</div>
+<div class="line">│   │       ├── reid_model.py              # SWIN person re-identification embedder</div>
+<div class="line">│   │       └── models/swin/               # ReID network</div>
+<div class="line">│   │</div>
+<div class="line">│   └── moondream_run/                     # Moondream2 VLM bridge</div>
+<div class="line">│       ├── scripts/moondream_node.py      # ROS node; gRPC client to localhost:50052</div>
+<div class="line">│       └── moondream_server/              # Runs in its OWN container, not the ROS one</div>
+<div class="line">│           ├── server.py                  # gRPC server on port 50052</div>
+<div class="line">│           ├── moondream_lib.py           # HF vikhyatk/moondream2 wrapper</div>
+<div class="line">│           └── moondream_proto.proto      # service MoonDreamService</div>
+<div class="line">│</div>
+<div class="line">├── requirements/                          # pip sets consumed by docker/vision/Dockerfile.*</div>
+<div class="line">│   ├── opencv.txt                         # numpy pin (opencv-python is forbidden on L4T)</div>
+<div class="line">│   ├── torch.txt / torch-gpu.txt          # CPU vs cu118 torch pins</div>
+<div class="line">│   ├── models.txt                         # ultralytics, lap</div>
+<div class="line">│   ├── face_recognition.txt               # insightface</div>
+<div class="line">│   ├── utils.txt                          # tqdm, pillow, timm</div>
+<div class="line">│   └── moondream.txt / moondream_server.txt</div>
+<div class="line">│</div>
+<div class="line">├── scripts/</div>
+<div class="line">│   └── fetch_models.py                    # Offline model provisioning + TRT warmup</div>
+<div class="line">│</div>
+<div class="line">└── README.md                              # This file</div>
+<div class="line">│</div>
+<div class="line">docker/vision/                             # Images, compose and the area entrypoint</div>
+<div class="line">├── Dockerfile.{cpu,cuda,l4t}              # ROS container (builds iceoryx + CycloneDDS SHM)</div>
+<div class="line">├── Dockerfile.moondream.server            # VLM sidecar</div>
+<div class="line">├── docker-compose.yaml                    # include: vision-general.yaml + moondream.yaml</div>
+<div class="line">├── vision-general.yaml                    # service `vision`      -&gt; home2-vision</div>
+<div class="line">├── moondream.yaml                         # service `moondream-server` (port 50052)</div>
+<div class="line">├── trt_cache/                             # Persisted weights + TensorRT engines</div>
+<div class="line">└── run.sh                                 # Area entrypoint (called by root run.sh)</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md169"></a>
+Concepts</h1>
+<p><b>Camera orientation is centralized.</b> FRIDA's camera is not always upright, so exactly one node applies rotation: <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> subscribes to <code>CAMERA_TOPIC</code> and <code>CAMERA_ROTATION_TOPIC</code> (an <code>Int16</code> of 0/90/180/270) and republishes on <code>IMAGE_ORIENTED_TOPIC</code>. Every downstream node consumes the <em>oriented</em> topic. A launch file must therefore never start two <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> instances — the per-task launches that <code>include</code> <code><a class="el" href="object__detector__node_8launch_8py.html">object_detector_node.launch.py</a></code> deliberately do not declare their own.</p>
+<p><b>Detectors are a plugin registry, not hardcoded models.</b> <code><a class="el" href="registry_8py.html">object_detector_2d/scripts/detectors/registry.py</a></code> holds <code>MODEL_CONFIGS</code>:</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Name   </th><th class="markdownTableHeadNone">Weights   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">conf    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>yolo_finetuned</code>   </td><td class="markdownTableBodyNone"><code>robocup2026_v1.pt</code>   </td><td class="markdownTableBodyNone"><code>yolo</code>   </td><td class="markdownTableBodyNone">0.6    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>yolo_generic</code>   </td><td class="markdownTableBodyNone"><code>yolo26n.pt</code>   </td><td class="markdownTableBodyNone"><code>yolo</code>   </td><td class="markdownTableBodyNone">0.5    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>zero_shot</code>   </td><td class="markdownTableBodyNone"><code>yoloe-11l-seg.pt</code>   </td><td class="markdownTableBodyNone"><code>yolo_e</code>   </td><td class="markdownTableBodyNone">0.25   </td></tr>
+</table>
+<p>Adding a model with the same architecture is a two-step change: drop the <code>.pt</code> beside <code><a class="el" href="registry_8py.html">registry.py</a></code> and add one dict entry. A model with conflicting dependencies, or one needing more than ~4 GB of exclusive GPU, should become a new gRPC container in <code>docker/vision/</code> instead — that is exactly what <code>moondream_run</code> is.</p>
+<p><b>2D boxes become 3D points in the base class.</b> <code><a class="el" href="base__detector__node_8py.html">base_detector_node.py</a></code> pairs each detection with <code>DEPTH_IMAGE_TOPIC</code> and <code>CAMERA_INFO_TOPIC</code>, deprojects the box centroid via <code><a class="el" href="calculations_8py.html">vision_general/utils/calculations.py</a></code>, transforms it out of <code>CAMERA_FRAME</code> with TF, and publishes both <code>ObjectDetectionArray</code> and RViz markers.</p>
+<p><b>TensorRT engines are built, cached, and device-specific.</b> <code><a class="el" href="trt__utils_8py.html">utils/trt_utils.py</a>::load_yolo_trt</code> exports a <code>.pt</code> to a <code>.engine</code> on first use and caches it in <code>TENSORRT_CACHE_DIR</code> (<code>docker/vision/trt_cache</code>, a persistent mount). <b>Never copy engines between the laptop and the Orin</b> — they are tied to the device and the TensorRT version. Set <code>use_trt: False</code> when working on a PC.**</p>
+<p><b>Weights are provisioned up front, on purpose.</b> <code>.pt</code> files are gitignored and download lazily on a node's first run, followed by minutes of TRT export. On competition day, with no internet, a fresh container simply breaks. <code><a class="el" href="fetch__models_8py.html">vision/scripts/fetch_models.py</a></code> fetches every standard weight, verifies the custom ones, writes a <code>MANIFEST.json</code> of sha256 hashes, and with <code>--warmup</code> pre-builds every engine for <em>this</em> device. Run it before you go offline:</p>
+<div class="fragment"><div class="line">./run.sh vision --warmup</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md170"></a>
+Vision pipeline</h1>
+<div class="fragment"><div class="line">flowchart LR</div>
+<div class="line">    ZED[home2-zed&lt;br/&gt;ZED wrapper] --&gt;|rgb + depth + camera_info| IO[image_orienter]</div>
+<div class="line">    ROT(/vision/camera/rotation) -.-&gt;|Int16 0/90/180/270| IO</div>
+<div class="line">    IO --&gt;|/vision/camera/image_oriented| OD &amp; TRK &amp; HC &amp; GC &amp; FR</div>
+<div class="line"> </div>
+<div class="line">    subgraph VIS[&quot;home2-vision (ROS 2)&quot;]</div>
+<div class="line">        IO</div>
+<div class="line">        OD[&quot;ObjectDetect2D&lt;br/&gt;yolo_finetuned + yolo_generic&quot;]</div>
+<div class="line">        ZS[&quot;ZeroShotDetect2D&lt;br/&gt;yoloe-11l-seg&quot;]</div>
+<div class="line">        TRK[&quot;tracker_node&lt;br/&gt;yolov8n + ByteTrack, yolo11m-pose, SWIN ReID&quot;]</div>
+<div class="line">        FR[&quot;face_recognition&lt;br/&gt;InsightFace buffalo_sc&quot;]</div>
+<div class="line">        HC[&quot;hric_commands&lt;br/&gt;yolo11m-pose&quot;]</div>
+<div class="line">        GC[&quot;gpsr_commands&lt;br/&gt;yolo11m-pose&quot;]</div>
+<div class="line">        MD[&quot;moondream_node&lt;br/&gt;yolov8n person crop&quot;]</div>
+<div class="line">    end</div>
+<div class="line"> </div>
+<div class="line">    OD --&gt;|/vision/detections + detections_3d| TM[task_manager&lt;br/&gt;vision_tasks.py]</div>
+<div class="line">    HC --&gt;|srv YoloDetect| OD</div>
+<div class="line">    HC --&gt;|srv MapAreas| NAV[nav_central]</div>
+<div class="line">    GC --&gt;|srv CropQuery| MD</div>
+<div class="line">    MD --&gt;|gRPC :50052| MDS[&quot;home2-moondream-server&lt;br/&gt;Moondream2 2B VLM&quot;]</div>
+<div class="line">    ZS --&gt;|/vision/zero_shot_detections| PD[pointing_detection]</div>
+<div class="line"> </div>
+<div class="line">    TRK -.-&gt;|/vision/tracking_results| SM[nav person_goal_smoother]</div>
+<div class="line">    FR -.-&gt;|/vision/follow_face| ARM[manipulation follow_face]</div>
+<div class="line">    TM -.-&gt;|service calls| TRK &amp; FR &amp; HC &amp; GC &amp; MD</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md171"></a>
+Packages</h1>
+<h2><a class="anchor" id="autotoc_md172"></a>
+&lt;tt&gt;object_detector_2d&lt;/tt&gt;</h2>
+<p>The detection backbone. Both nodes share <code>BaseDetectorNode</code>, which declares the camera topics, <code>TARGET_FRAME</code>, <code>DEPTH_ACTIVE</code>, <code>FLIP_IMAGE</code> and <code>MAX_DEPTH_THRESH</code> parameters and handles projection and visualization.</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Node   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key interfaces    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>ObjectDetect2D</code>   </td><td class="markdownTableBodyNone">Runs every model in <code>MODEL_CONFIGS</code> continuously and IoU-dedupes across them   </td><td class="markdownTableBodyNone">pubs <code>/vision/detections</code>, <code>/vision/detections_3d</code>, <code>/vision/detections_image</code>; srvs <code>DetectionHandler</code>, <code>YoloDetect</code>, <code>SetTrashCategory</code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>ZeroShotDetect2D</code>   </td><td class="markdownTableBodyNone">YOLOE open-vocabulary detection for classes not in the finetuned model   </td><td class="markdownTableBodyNone">pubs <code>/vision/zero_shot_detections*</code>; srv <code>SetDetectorClasses</code>   </td></tr>
+</table>
+<p>Each node has a fixed activation topic (<code>/vision/object_detector/active</code>, <code>/vision/zero_shot_detector/active</code>) so a task manager can idle the GPU between steps.</p>
+<h2><a class="anchor" id="autotoc_md173"></a>
+&lt;tt&gt;vision_general&lt;/tt&gt;</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Node   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key interfaces   </th><th class="markdownTableHeadNone">Model    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>   </td><td class="markdownTableBodyNone">Person detection, seat finding, handover point, chair removal   </td><td class="markdownTableBodyNone">action <code>DetectPerson</code>; srvs <code>FindSeat</code>, <code>DetectHand</code>, <code>ChairsToRemove</code>   </td><td class="markdownTableBodyNone">yolo11m-pose    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>   </td><td class="markdownTableBodyNone">Counting and describing people by pose, gesture, clothing color   </td><td class="markdownTableBodyNone">srvs <code>CountByPose</code>, <code>CountBy</code>, <code>CountByColor</code>, <code>PersonPoseGesture</code>   </td><td class="markdownTableBodyNone">yolo11m-pose    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>   </td><td class="markdownTableBodyNone">Locks onto one person and publishes their 3D point for nav to follow   </td><td class="markdownTableBodyNone">srvs <code>SetBool</code>&lt;tt&gt;set_tracking_target, <code>TrackBy</code>, <code>Trigger</code>&lt;tt&gt;is_tracking; pub <code>/vision/tracking_results</code>   </td><td class="markdownTableBodyNone">yolov8n + ByteTrack, yolo11m-pose, SWIN ReID    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>face_recognition</code>   </td><td class="markdownTableBodyNone">Learns and recognizes faces; drives the arm's face following   </td><td class="markdownTableBodyNone">srvs <code>SaveName</code>&lt;tt&gt;new_name, <code>SaveName</code>&lt;tt&gt;follow_by_name; pubs <code>/vision/follow_face</code>, <code>/vision/person_list</code>   </td><td class="markdownTableBodyNone">InsightFace <code>buffalo_sc</code>    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacerestaurant__commands.html">restaurant_commands</a></code>   </td><td class="markdownTableBodyNone">Maps waving customers onto table positions   </td><td class="markdownTableBodyNone">srv <code>CustomerTables</code>   </td><td class="markdownTableBodyNone">— (delegates)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>   </td><td class="markdownTableBodyNone">Finds seated / waving customers in the full frame   </td><td class="markdownTableBodyNone">srv <code>Customer</code>   </td><td class="markdownTableBodyNone">yolo11m-pose    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code>   </td><td class="markdownTableBodyNone">The single camera-rotation point (see Concepts)   </td><td class="markdownTableBodyNone">pub <code>/vision/camera/image_oriented</code>   </td><td class="markdownTableBodyNone">—    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacepointing__detection.html">pointing_detection</a></code>   </td><td class="markdownTableBodyNone">Resolves which object a person is pointing at   </td><td class="markdownTableBodyNone">srvs <code>DetectPointingObject</code>, <code>SetPointingObjectClasses</code>   </td><td class="markdownTableBodyNone">consumes zero-shot    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacezed__simulator.html">zed_simulator</a></code>   </td><td class="markdownTableBodyNone">Publishes a plain webcam onto the ZED topics for laptop dev   </td><td class="markdownTableBodyNone">params <code>video_id</code>, <code>use_zed</code>, <code>visualize</code>   </td><td class="markdownTableBodyNone">—   </td></tr>
+</table>
+<p><code><a class="el" href="pose__detection_8py.html">pose_detection.py</a></code> is a library, not a node: it holds the COCO keypoint constants and the gesture/pose classification used by <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code> and <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>.</p>
+<h2><a class="anchor" id="autotoc_md174"></a>
+&lt;tt&gt;moondream_run&lt;/tt&gt;</h2>
+<p><code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> is a thin ROS ⇄ gRPC bridge. The model itself lives in a separate container because its dependency set conflicts with the ROS one.</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">ROS service   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Does    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/vision/query</code>   </td><td class="markdownTableBodyNone"><code>Query</code>   </td><td class="markdownTableBodyNone">Free-form question about the current frame    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/vision/crop_query</code>   </td><td class="markdownTableBodyNone"><code>CropQuery</code>   </td><td class="markdownTableBodyNone">Same, restricted to a bounding box    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/vision/beverage_location</code>   </td><td class="markdownTableBodyNone"><code>BeverageLocation</code>   </td><td class="markdownTableBodyNone">Locates a named drink    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/vision/object_points</code>   </td><td class="markdownTableBodyNone"><code>ObjectPoints</code>   </td><td class="markdownTableBodyNone">2D points for a described subject    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/vision/moondream_detection</code>   </td><td class="markdownTableBodyNone"><code>MoondreamDetection</code>   </td><td class="markdownTableBodyNone">Open-vocabulary detection (normalized bboxes)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/vision/person_posture</code>   </td><td class="markdownTableBodyNone"><code>PersonPosture</code>   </td><td class="markdownTableBodyNone">Describes a person's posture   </td></tr>
+</table>
+<p>The gRPC side (<code>MoonDreamService</code> on port <code>50052</code>) exposes <code>EncodeImage</code>, <code>FindBeverage</code>, <code>FindObjectPoints</code>, <code>Query</code> and <code>Detect</code>, backed by <code>vikhyatk/moondream2</code>.</p>
+<h1><a class="anchor" id="autotoc_md175"></a>
+Running vision</h1>
+<p>Each competition flag maps to one launch file and one set of compose profiles:</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Command   </th><th class="markdownTableHeadNone">Launch file   </th><th class="markdownTableHeadNone">Extra container    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>./run.sh vision</code>   </td><td class="markdownTableBodyNone">*(interactive shell)*   </td><td class="markdownTableBodyNone">—    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>./run.sh vision --hric</code>   </td><td class="markdownTableBodyNone"><code>vision_general <a class="el" href="hric__launch_8py.html">hric_launch.py</a></code>   </td><td class="markdownTableBodyNone">moondream    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>./run.sh vision --gpsr</code>   </td><td class="markdownTableBodyNone"><code>vision_general <a class="el" href="gpsr__launch_8py.html">gpsr_launch.py</a></code>   </td><td class="markdownTableBodyNone">moondream    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>./run.sh vision --ppc</code>   </td><td class="markdownTableBodyNone"><code>vision_general <a class="el" href="ppc__launch_8py.html">ppc_launch.py</a></code>   </td><td class="markdownTableBodyNone">moondream    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>./run.sh vision --restaurant</code>   </td><td class="markdownTableBodyNone"><code>vision_general <a class="el" href="restaurant__launch_8py.html">restaurant_launch.py</a></code>   </td><td class="markdownTableBodyNone">moondream    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>./run.sh vision --dlc</code>   </td><td class="markdownTableBodyNone"><code>vision_general <a class="el" href="dlc__launch_8py.html">dlc_launch.py</a></code>   </td><td class="markdownTableBodyNone">—    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>./run.sh vision --moondream</code>   </td><td class="markdownTableBodyNone">*(VLM server only)*   </td><td class="markdownTableBodyNone">moondream    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>./run.sh vision --warmup</code>   </td><td class="markdownTableBodyNone">*(runs <code><a class="el" href="fetch__models_8py.html">fetch_models.py</a> --warmup</code>)*   </td><td class="markdownTableBodyNone">—   </td></tr>
+</table>
+<p>What each launch file starts:</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Launch file   </th><th class="markdownTableHeadNone">Nodes    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="hric__launch_8py.html">hric_launch.py</a></code>   </td><td class="markdownTableBodyNone"><code>face_recognition</code>, <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code>, <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code>, <code>ObjectDetect2D</code>, <code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code><a class="el" href="gpsr__launch_8py.html">gpsr_launch.py</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>, <code>face_recognition</code>, <code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>, <code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> + the detector launch    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="ppc__launch_8py.html">ppc_launch.py</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> + the detector launch    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code><a class="el" href="restaurant__launch_8py.html">restaurant_launch.py</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacerestaurant__commands.html">restaurant_commands</a></code>, <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>, <code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> + the detector launch    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code><a class="el" href="dlc__launch_8py.html">dlc_launch.py</a></code>   </td><td class="markdownTableBodyNone">the detector launch only (<code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> + <code>ObjectDetect2D</code>)   </td></tr>
+</table>
+<p>Modifier flags, combinable with any of the above:</p>
+<div class="fragment"><div class="line">./run.sh vision --build          # colcon build before launching</div>
+<div class="line">./run.sh vision --hric --build   # the usual first-of-the-day command</div>
+<div class="line">./run.sh vision --build-image    # rebuild the docker image</div>
+<div class="line">./run.sh vision --recreate       # docker compose down, then up (network/.env changes)</div>
+<div class="line">./run.sh vision --stop           # stop containers, keep them</div>
+<div class="line">./run.sh vision --down           # stop and remove</div>
+<div class="line">./run.sh vision --clean          # delete build/, install/, log/</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md176"></a>
+Building inside the container</h2>
+<p><code>--build</code> runs exactly this — <code>frida_interfaces</code> and <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> are ignored because they come prebuilt from the shared cache container (<code>./run.sh frida_interfaces</code>):</p>
+<div class="fragment"><div class="line">colcon build --packages-ignore frida_interfaces frida_constants \</div>
+<div class="line">  --packages-up-to vision_general object_detector_2d moondream_run</div>
+<div class="line">source install/setup.bash</div>
+</div><!-- fragment --><p>Every <code>scripts/*.py</code> is installed as an executable, so any script can be run directly:</p>
+<div class="fragment"><div class="line">ros2 run vision_general tracker_node.py</div>
+<div class="line">ros2 run object_detector_2d object_detector_node.py</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md177"></a>
+Camera</h2>
+<p>On the Orin, start the ZED container (or the wrapper directly):</p>
+<div class="fragment"><div class="line">./run.sh zed</div>
+<div class="line">ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false</div>
+</div><!-- fragment --><p>Anywhere else, publish a webcam onto the same topics. <code>video_id</code> is the <code>/dev/videoN</code> index:</p>
+<div class="fragment"><div class="line">ros2 run vision_general zed_simulator.py --ros-args -p video_id:=1</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md178"></a>
+Example calls</h2>
+<div class="fragment"><div class="line"># Track the largest person, then stop</div>
+<div class="line">ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool &quot;{data: true}&quot;</div>
+<div class="line">ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool &quot;{data: false}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Track by gesture / pose / clothing color</div>
+<div class="line">ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \</div>
+<div class="line">    &quot;{track_enabled: true, track_by: &#39;gestures&#39;, value: &#39;waving&#39;}&quot;</div>
+<div class="line">ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \</div>
+<div class="line">    &quot;{track_enabled: true, track_by: &#39;poses&#39;, value: &#39;standing&#39;}&quot;</div>
+<div class="line">ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \</div>
+<div class="line">    &quot;{track_enabled: true, track_by: &#39;color&#39;, value: &#39;red shirt&#39;}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Is a target locked?</div>
+<div class="line">ros2 service call /vision/is_tracking std_srvs/srv/Trigger</div>
+<div class="line"> </div>
+<div class="line"># Save the face in front of the camera</div>
+<div class="line">ros2 service call /vision/new_name frida_interfaces/srv/SaveName &quot;{name: &#39;oscar&#39;}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Ask the VLM about the frame (needs the moondream profile running)</div>
+<div class="line">ros2 service call /vision/query frida_interfaces/srv/Query \</div>
+<div class="line">    &quot;{query: &#39;describe the clothes of the person&#39;, person: true}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Find an empty seat, count who is standing</div>
+<div class="line">ros2 service call /vision/hric/find_seat frida_interfaces/srv/FindSeat &quot;{request: true}&quot;</div>
+<div class="line">ros2 service call /vision/gpsr/count_by_pose frida_interfaces/srv/CountByPose \</div>
+<div class="line">    &quot;{request: true, pose_requested: &#39;standing&#39;}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Ask the detector for the closest object</div>
+<div class="line">ros2 service call /vision/detection_handler frida_interfaces/srv/DetectionHandler \</div>
+<div class="line">    &quot;{label: &#39;&#39;, labels: [], closest_object: true}&quot;</div>
+<div class="line"> </div>
+<div class="line"># Rotate the camera image 180 degrees</div>
+<div class="line">ros2 topic pub /vision/camera/rotation std_msgs/msg/Int16 &#39;{data: 180}&#39; -1</div>
+<div class="line"> </div>
+<div class="line"># Watch the raw outputs</div>
+<div class="line">ros2 topic echo /vision/detections</div>
+<div class="line">ros2 topic echo /vision/person_list</div>
+<div class="line">ros2 topic echo /vision/tracking_results</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md179"></a>
+Debugging</h1>
+<p>Debug image topics are <b>subscriber-gated</b> by <code><a class="el" href="debug__pub_8py.html">utils/debug_pub.py</a></code>: nothing is encoded until someone subscribes, so leaving them in costs nothing. Open one in <code>rqt_image_view</code>:</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Topic   </th><th class="markdownTableHeadNone">From    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/vision/detections_image</code>   </td><td class="markdownTableBodyNone"><code>ObjectDetect2D</code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/vision/tracker_image</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/vision/face_recognition_image</code>   </td><td class="markdownTableBodyNone"><code>face_recognition</code>    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>/vision/hric/img_person_detecion</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>/vision/gpsr/img_detection</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>   </td></tr>
+</table>
+<p>Check which nodes a task expects versus what is actually up:</p>
+<div class="fragment"><div class="line">./scripts/status.sh vision --gpsr</div>
+<div class="line">ros2 node list | grep vision</div>
+</div><!-- fragment --><p>The VLM sidecar logs separately from the ROS container:</p>
+<div class="fragment"><div class="line">docker logs -f home2-moondream-server</div>
+</div><!-- fragment --> <h1><a class="anchor" id="autotoc_md180"></a>
+Object detection pipeline training</h1>
+<p>The training process involves preparing the dataset, configuring the model, and running the training. You can find the pipeline repository <a href="https://github.com/RoBorregos/home-pipelines/tree/main/vision/object_detector">here</a>.</p>
+<h1><a class="anchor" id="autotoc_md181"></a>
+Known issues</h1>
+<p>These are real inconsistencies in the current tree, recorded so they do not surprise you. None of them are fixed by this document.</p>
+<ul>
+<li><code>./run.sh vision --carry</code> launches <code>help_me_carry_launch.py</code>, which <b>does not exist</b>.</li>
+<li><code>./run.sh vision --restaurant</code> builds <code>object_detection_handler</code>, a package that <b>does not exist</b> anywhere in the repo.</li>
+<li><code>docker/vision/run.sh</code> rejects the <code>cpu</code> environment (<code>Unknown environment type!</code>) even though <code>docker/vision/Dockerfile.cpu</code> exists.</li>
+<li><code>--upload-image</code> passes <code>docker-compose.yml</code>; the real filename is <code>docker-compose.yaml</code>.</li>
+<li>Placeholder and typo'd constants in <code><a class="el" href="vision__constants_8py.html">vision_constants.py</a></code>: <code>DETECTIONS_ACTIVE_TOPIC</code> and <code>DEBUG_IMAGE_TOPIC</code> are both <code>"asd"</code>, and <code>SHELF_DETECTION_TOPIC</code> reads <code>/vision/storing_grocPeries/shelf_detection</code>.</li>
+<li><code><a class="el" href="person__in__map_8py.html">person_in_map.py</a></code> imports <code>PERSON_INSIDE_REQUEST_TOPIC</code>, which <code><a class="el" href="vision__constants_8py.html">vision_constants.py</a></code> never defines — the node fails at import.</li>
+<li><code><a class="el" href="trash__detection__node_8py.html">trash_detection_node.py</a></code> is launched by nothing and has no client.</li>
+<li><code>auto-complete.sh</code> does not know the vision-only flags (<code>--warmup</code>, <code>--moondream</code>, <code>--carry</code>, <code>--storing-groceries</code>).</li>
+<li><code>status/configs/vision_nodes.cfg</code> still refers to <code>/receptionist_commands</code>, which is now <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>. </li>
+</ul>
+</div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
 <!-- start footer part -->
