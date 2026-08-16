@@ -106,7 +106,8 @@ class FaceRecognition(Node):
         default_name = self.declare_parameter("default_name", "ale").value
         self.face_model = FaceModel(KNOWN_FACES_PATH, default_name)
         self.get_logger().info("Loading InsightFace model…")
-        self.face_model.load()
+        for filename in self.face_model.load():
+            self.get_logger().warn(f"No face found in {filename}, skipping.")
         self.pbar.update(1)
 
         self.new_name = ""
@@ -140,6 +141,10 @@ class FaceRecognition(Node):
     def image_info_callback(self, data):
         self.imageInfo = data
 
+    def success(self, message) -> None:
+        """Print success message"""
+        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
+
     def _active_callback(self, msg):
         if msg.data == self.vision_active:
             return
@@ -165,9 +170,10 @@ class FaceRecognition(Node):
     # ── Main loop ──
 
     def run(self):
-        if not self.vision_active or self.is_processing or self.image is None:
-            if self.image is None:
-                self.get_logger().info("No image")
+        if not self.vision_active or self.is_processing:
+            return
+        if self.image is None:
+            self.get_logger().info("No image", throttle_duration_sec=5.0)
             return
         if self.id == self.processing_id:
             return
@@ -256,8 +262,21 @@ class FaceRecognition(Node):
             yc = top + (bottom - top) / 2.0
             if self.new_name:
                 crop = frame[top:bottom, left:right]
-                self.face_model.enroll(self.new_name, crop)
+                if self.face_model.enroll(self.new_name, crop):
+                    self.success(f"{self.new_name} face enrolled")
+                else:
+                    self.get_logger().warn(
+                        f"Could not enroll {self.new_name}: no face found in the saved crop"
+                    )
                 largest_face_name = self.new_name
+                # Back-patch the enrolled name into this tick's outputs, so neither the
+                # published list nor the position tracker carries "Unknown" for a face
+                # we just named.
+                for i, face in enumerate(self.curr_faces):
+                    if face["x"] == xc and face["y"] == yc:
+                        self.curr_faces[i]["name"] = self.new_name
+                        face_list.list[i].name = self.new_name
+                        break
                 self.new_name = ""
 
         if self.follow_name != "area":

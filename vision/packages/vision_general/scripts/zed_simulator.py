@@ -45,6 +45,8 @@ class ZedSimulator(Node):
                 frame = frame[:, : frame.shape[1] // 2]
 
             image = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
+            image.header.stamp = self.get_clock().now().to_msg()
+            image.header.frame_id = "zed_left_camera_optical_frame"
             self.publisher_.publish(image)
             if self.visualize:
                 cv2.imshow("frame", frame)

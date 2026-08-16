@@ -42,7 +42,9 @@ class FaceModel:
         self.people_encodings: list[np.ndarray] = []
         self.people_names: list[str] = []
 
-    def load(self) -> None:
+    def load(self) -> list[str]:
+        """Load the model and register the known faces. Returns the filenames that
+        yielded no embedding, for the caller to log."""
         self.app = FaceAnalysis(
             name=INSIGHTFACE_MODEL,
             providers=_insightface_providers(),
@@ -51,7 +53,7 @@ class FaceModel:
         self.people_encodings = [np.zeros(512, dtype=np.float32)]
         self.people_names = ["random"]
         self.clear()
-        self._load_known_faces()
+        return self._load_known_faces()
 
     def detect(self, frame: np.ndarray) -> list:
         """Return raw InsightFace face objects for frame."""
@@ -78,12 +80,13 @@ class FaceModel:
             return self.people_names[best_idx]
         return "Unknown"
 
-    def enroll(self, name: str, crop: np.ndarray) -> None:
-        """Save face crop to disk and register its embedding."""
+    def enroll(self, name: str, crop: np.ndarray) -> bool:
+        """Save face crop to disk and register its embedding. False when no face
+        could be extracted from the saved crop (the file is still written)."""
         img_name = f"{name}.png"
         save_path = os.path.join(self.known_faces_path, img_name)
         cv2.imwrite(save_path, crop)
-        self._process_img(img_name)
+        return self._process_img(img_name)
 
     def clear(self) -> None:
         """Remove dynamically enrolled faces; keep default + random."""
@@ -92,23 +95,29 @@ class FaceModel:
                 continue
             os.remove(os.path.join(self.known_faces_path, filename))
 
-    def _load_known_faces(self) -> None:
+    def _load_known_faces(self) -> list[str]:
+        failed = []
         for filename in os.listdir(self.known_faces_path):
             if filename == ".DS_Store":
                 continue
-            self._process_img(filename)
+            if not self._process_img(filename):
+                failed.append(filename)
+        return failed
 
-    def _process_img(self, filename: str) -> None:
+    def _process_img(self, filename: str) -> bool:
+        """Register the embedding of a known-face image. False when the file cannot
+        be read or InsightFace finds no face in it."""
         img_path = os.path.join(self.known_faces_path, filename)
         img = cv2.imread(img_path)
         if img is None:
-            return
+            return False
         faces = self.app.get(self.apply_clahe(img))
         if not faces:
-            return
+            return False
         face = max(faces, key=lambda f: _bbox_area(f.bbox))
         self.people_encodings.append(face.embedding.astype(np.float32))
         self.people_names.append(filename[:-4])
+        return True
 
     @staticmethod
     def _cosine_distances(known: list[np.ndarray], query: np.ndarray) -> np.ndarray:
