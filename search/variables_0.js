@@ -199,7 +199,7 @@ var searchData=
   ['_5freset_196',['_RESET',['../namespacetask__manager_1_1utils_1_1colored__logger.html#a2e9693062dcffe46a119336e7741f3fc',1,'task_manager::utils::colored_logger']]],
   ['_5fresume_5fnav_5fclient_197',['_resume_nav_client',['../classnav__ui_1_1NavRosNode.html#a8c75a5c16896d6c4efa3f8fb7f6c4cbc',1,'nav_ui::NavRosNode']]],
   ['_5fresume_5fresult_198',['_resume_result',['../classnav__ui_1_1NavUI.html#a83fe0030ee655d3afb07fb87b2b20a8f',1,'nav_ui::NavUI']]],
-  ['_5fretry_5fcount_199',['_retry_count',['../classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html#a42b9981e40b1156c8de881ca437e2b02',1,'task_manager::subtask_managers::hri_hand::HRIHand']]],
+  ['_5fretry_5fcount_199',['_retry_count',['../classhri__hand_1_1HRIHand.html#a261a1dac724106074a24a4ba95fc8b8c',1,'hri_hand::HRIHand']]],
   ['_5frtab_5fbackup_5fclient_200',['_rtab_backup_client',['../classnav__ui_1_1NavRosNode.html#abf4a1faf4a5aebde7294aa1cdbad63f6',1,'nav_ui::NavRosNode']]],
   ['_5fsamples_201',['_samples',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#afc5e4a7c38f04a38f0282eae03e6db87',1,'flat_grasp_estimator::FlatGraspEstimator']]],
   ['_5fsave_5fresult_202',['_save_result',['../classnav__ui_1_1NavUI.html#a0e2a38719cc33b0c3ccc2d55d637abc0',1,'nav_ui::NavUI']]],

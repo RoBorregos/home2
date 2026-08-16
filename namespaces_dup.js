@@ -57,7 +57,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f", null ],
       [ "launch_setup", "namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491", null ]
     ] ],
-    [ "clean_table_task_manager", "namespaceclean__table__task__manager.html", "namespaceclean__table__task__manager" ],
     [ "client", "namespaceclient.html", [
       [ "run", "namespaceclient.html#a10d4416aef9193a3735b7f83fe3adae8", null ]
     ] ],
@@ -229,6 +228,7 @@ var namespaces_dup =
     [ "hand_task_manager", "namespacehand__task__manager.html", "namespacehand__task__manager" ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", "namespaceheatmapPlace__Server" ],
     [ "help_me_carry", "namespacehelp__me__carry.html", "namespacehelp__me__carry" ],
+    [ "hri_hand", "namespacehri__hand.html", "namespacehri__hand" ],
     [ "hric", "namespacehric.html", [
       [ "generate_launch_description", "namespacehric.html#ad1dd056eac0c72bace8a6fdd839dd77d", null ],
       [ "launch_function", "namespacehric.html#a9ba344eaf004b5e2b4032d983f068469", null ]
@@ -548,6 +548,7 @@ var namespaces_dup =
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_basket_pick", "namespacetest__basket__pick.html", "namespacetest__basket__pick" ],
     [ "test_chairs_to_remove", "namespacetest__chairs__to__remove.html", "namespacetest__chairs__to__remove" ],
+    [ "test_clean_table_task_manager", "namespacetest__clean__table__task__manager.html", "namespacetest__clean__table__task__manager" ],
     [ "test_copyright", "namespacetest__copyright.html", [
       [ "test_copyright", "namespacetest__copyright.html#a156f4f961887d49bfb4cc9f6e7f6af0a", null ]
     ] ],

@@ -36,9 +36,6 @@ var annotated_dup =
     [ "call_pose_goal", "namespacecall__pose__goal.html", [
       [ "MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", "classcall__pose__goal_1_1MoveToPoseClient" ]
     ] ],
-    [ "clean_table_task_manager", "namespaceclean__table__task__manager.html", [
-      [ "CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", "classclean__table__task__manager_1_1CleanTableTM" ]
-    ] ],
     [ "customer_node", "namespacecustomer__node.html", [
       [ "CustomerNode", "classcustomer__node_1_1CustomerNode.html", "classcustomer__node_1_1CustomerNode" ]
     ] ],
@@ -180,6 +177,9 @@ var annotated_dup =
     ] ],
     [ "help_me_carry", "namespacehelp__me__carry.html", [
       [ "HelpMeCarryTM", "classhelp__me__carry_1_1HelpMeCarryTM.html", "classhelp__me__carry_1_1HelpMeCarryTM" ]
+    ] ],
+    [ "hri_hand", "namespacehri__hand.html", [
+      [ "HRIHand", "classhri__hand_1_1HRIHand.html", "classhri__hand_1_1HRIHand" ]
     ] ],
     [ "hric_commands", "namespacehric__commands.html", [
       [ "HRICCommands", "classhric__commands_1_1HRICCommands.html", "classhric__commands_1_1HRICCommands" ]
@@ -445,9 +445,6 @@ var annotated_dup =
           [ "HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
           [ "Location", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1Location.html", null ]
         ] ],
-        [ "hri_hand", "namespacetask__manager_1_1subtask__managers_1_1hri__hand.html", [
-          [ "HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand" ]
-        ] ],
         [ "hri_tasks", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html", [
           [ "HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks" ]
         ] ],
@@ -490,6 +487,9 @@ var annotated_dup =
     ] ],
     [ "test_chairs_to_remove", "namespacetest__chairs__to__remove.html", [
       [ "TestChairsToRemove", "classtest__chairs__to__remove_1_1TestChairsToRemove.html", "classtest__chairs__to__remove_1_1TestChairsToRemove" ]
+    ] ],
+    [ "test_clean_table_task_manager", "namespacetest__clean__table__task__manager.html", [
+      [ "CleanTableTM", "classtest__clean__table__task__manager_1_1CleanTableTM.html", "classtest__clean__table__task__manager_1_1CleanTableTM" ]
     ] ],
     [ "test_describe_person", "namespacetest__describe__person.html", [
       [ "TestPersonDescription", "classtest__describe__person_1_1TestPersonDescription.html", "classtest__describe__person_1_1TestPersonDescription" ]

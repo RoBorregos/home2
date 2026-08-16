@@ -55,7 +55,7 @@ var hierarchy =
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
     [ "vamp::binding::Helper< Robot, Input >", "structvamp_1_1binding_1_1Helper.html", null ],
-    [ "task_manager.subtask_managers.hri_hand.HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
+    [ "hri_hand.HRIHand", "classhri__hand_1_1HRIHand.html", null ],
     [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ],
     [ "ikfast::IkFastFunctions< T >", "classikfast_1_1IkFastFunctions.html", null ],
     [ "ikfast::IkSingleDOFSolutionBase< T >", "classikfast_1_1IkSingleDOFSolutionBase.html", null ],
@@ -231,7 +231,6 @@ var hierarchy =
         [ "mujoco_ros2_control::MujocoSystem", "classmujoco__ros2__control_1_1MujocoSystem.html", null ]
       ] ]
     ] ],
-    [ "clean_table_task_manager.CleanTableTM.TaskStates", "classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
     [ "doing_laundry_task_manager.DoingLaundryTM.TaskStates", "classdoing__laundry__task__manager_1_1DoingLaundryTM_1_1TaskStates.html", null ],
     [ "gpsr_task_manager.GPSRTM.TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "hand_task_manager.HandTM.TaskStates", "classhand__task__manager_1_1HandTM_1_1TaskStates.html", null ],
@@ -239,6 +238,7 @@ var hierarchy =
     [ "pickandplace_task_manager.PickAndPlaceTM.TaskStates", "classpickandplace__task__manager_1_1PickAndPlaceTM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
+    [ "test_clean_table_task_manager.CleanTableTM.TaskStates", "classtest__clean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
     [ "unittest.TestCase", null, [
       [ "simple_launch.TestBringup", "classsimple__launch_1_1TestBringup.html", null ]
     ] ],
@@ -314,7 +314,6 @@ var hierarchy =
       [ "call_joint_goal.MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", null ],
       [ "call_pick_action.PickMotionClient", "classcall__pick__action_1_1PickMotionClient.html", null ],
       [ "call_pose_goal.MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", null ],
-      [ "clean_table_task_manager.CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", null ],
       [ "customer_node.CustomerNode", "classcustomer__node_1_1CustomerNode.html", null ],
       [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
       [ "demo_becas.DemoBecas", "classdemo__becas_1_1DemoBecas.html", null ],
@@ -385,6 +384,7 @@ var hierarchy =
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
       [ "test_basket_pick.TestRimPick", "classtest__basket__pick_1_1TestRimPick.html", null ],
       [ "test_chairs_to_remove.TestChairsToRemove", "classtest__chairs__to__remove_1_1TestChairsToRemove.html", null ],
+      [ "test_clean_table_task_manager.CleanTableTM", "classtest__clean__table__task__manager_1_1CleanTableTM.html", null ],
       [ "test_describe_person.TestPersonDescription", "classtest__describe__person_1_1TestPersonDescription.html", null ],
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],
       [ "test_face_rec.TestHRICFaceSave", "classtest__face__rec_1_1TestHRICFaceSave.html", null ],

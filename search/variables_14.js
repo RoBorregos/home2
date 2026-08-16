@@ -138,7 +138,7 @@ var searchData=
   ['trash_5fclasses_135',['trash_classes',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#a81309ddd41945a050daa35caef7844a2',1,'flat_grasp_estimator::FlatGraspEstimator']]],
   ['trash_5fdebug_5fimage_136',['trash_debug_image',['../classtrash__detection__node_1_1TrashDetectionNode.html#a01a0985693861eae215b6cb7931c3cd9',1,'trash_detection_node::TrashDetectionNode']]],
   ['trash_5fdebug_5fimage_5ftopic_137',['TRASH_DEBUG_IMAGE_TOPIC',['../namespacetrash__detection__node.html#ad1e06f4b4a0379d8fb7ad32641364f76',1,'trash_detection_node']]],
-  ['trash_5fplace_138',['trash_place',['../classclean__table__task__manager_1_1CleanTableTM.html#a70a4ad245ae1969088e40f45851915bb',1,'clean_table_task_manager::CleanTableTM']]],
+  ['trash_5fplace_138',['trash_place',['../classtest__clean__table__task__manager_1_1CleanTableTM.html#a53aa02b6ad66f1caa6ba792dc2e7f282',1,'test_clean_table_task_manager::CleanTableTM']]],
   ['trash_5fpose_5fpub_139',['trash_pose_pub',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html#a92fad5d45e79bddb624a5dd0efd2290e',1,'flat_grasp_estimator::FlatGraspEstimator']]],
   ['trash_5fservice_5fcategory_140',['TRASH_SERVICE_CATEGORY',['../namespacefrida__constants_1_1vision__constants.html#aa7fc575eec60c8ff3ddce0716e51807f',1,'frida_constants::vision_constants']]],
   ['trash_5ftop_5fbbox_5ffraction_141',['TRASH_TOP_BBOX_FRACTION',['../namespaceflat__grasp__estimator.html#a668ecfa37fc8dbe8f1200936eb7cc7fb',1,'flat_grasp_estimator']]],

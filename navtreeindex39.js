@@ -1,8 +1,5 @@
 var NAVTREEINDEX39 =
 {
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md81":[8,3,0,1,1],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md82":[8,3,0,1,2],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md83":[8,3,1],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md84":[8,3,1,0],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md85":[8,3,1,1],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md86":[8,3,1,2],
@@ -179,7 +176,7 @@ var NAVTREEINDEX39 =
 "namespacePourManager.html":[42,0,145],
 "namespacePourManager.html#a4803853b3c06bb06873e9255f1063a15":[42,0,145,1],
 "namespaceServo.html":[42,0,171],
-"namespaceXArmServices.html":[42,0,223],
+"namespaceXArmServices.html":[42,0,224],
 "namespace__merger__helpers.html":[42,0,0],
 "namespace__merger__helpers.html#a056d68161319e031c8117b0c17139a70":[42,0,0,2],
 "namespace__merger__helpers.html#a20f7b77cae141c9ab743e8adf4bb6b50":[42,0,0,4],
@@ -249,5 +246,8 @@ var NAVTREEINDEX39 =
 "namespacecarry.html":[42,0,14],
 "namespacecarry.html#a13d8f63b1ec69c76e488d9b0960dc65c":[42,0,14,0],
 "namespacecarry__my__lougage.html":[42,0,15],
-"namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491":[42,0,15,1]
+"namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491":[42,0,15,1],
+"namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f":[42,0,15,0],
+"namespaceclient.html":[42,0,16],
+"namespaceclient.html#a10d4416aef9193a3735b7f83fe3adae8":[42,0,16,0]
 };

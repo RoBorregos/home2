@@ -10,6 +10,6 @@ var searchData=
   ['hric_5ftm_7',['HRIC_TM',['../classhric__task__manager_1_1HRIC__TM.html',1,'hric_task_manager']]],
   ['hriccommands_8',['HRICCommands',['../classhric__commands_1_1HRICCommands.html',1,'hric_commands']]],
   ['hricvisiontest_9',['HRICVisionTest',['../classtest__hric__vision_1_1HRICVisionTest.html',1,'test_hric_vision']]],
-  ['hrihand_10',['HRIHand',['../classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html',1,'task_manager::subtask_managers::hri_hand']]],
+  ['hrihand_10',['HRIHand',['../classhri__hand_1_1HRIHand.html',1,'hri_hand']]],
   ['hritasks_11',['HRITasks',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html',1,'task_manager::subtask_managers::hri_tasks']]]
 ];

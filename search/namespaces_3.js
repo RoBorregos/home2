@@ -7,8 +7,7 @@ var searchData=
   ['call_5fpose_5fgoal_4',['call_pose_goal',['../namespacecall__pose__goal.html',1,'']]],
   ['carry_5',['carry',['../namespacecarry.html',1,'']]],
   ['carry_5fmy_5flougage_6',['carry_my_lougage',['../namespacecarry__my__lougage.html',1,'']]],
-  ['clean_5ftable_5ftask_5fmanager_7',['clean_table_task_manager',['../namespaceclean__table__task__manager.html',1,'']]],
-  ['client_8',['client',['../namespaceclient.html',1,'']]],
-  ['close_5fby_5fgenerators_9',['close_by_generators',['../namespaceclose__by__generators.html',1,'']]],
-  ['customer_5fnode_10',['customer_node',['../namespacecustomer__node.html',1,'']]]
+  ['client_7',['client',['../namespaceclient.html',1,'']]],
+  ['close_5fby_5fgenerators_8',['close_by_generators',['../namespaceclose__by__generators.html',1,'']]],
+  ['customer_5fnode_9',['customer_node',['../namespacecustomer__node.html',1,'']]]
 ];
