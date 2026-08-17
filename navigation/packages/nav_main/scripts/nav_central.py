@@ -131,9 +131,8 @@ class Nav_Central(Node):
         self.localization_config = self.declare_parameter('rtab_localization_config', '').value
 
         # Base + SLAM backend selection.
-        #   default_base: 'dashgo' (RTABMap RGBD SLAM) or 'omnibase' (slam_toolbox)
+        #   default_base: 'omnibase' (slam_toolbox)
         #   nav_type:     '2d' (slam_toolbox / lidar) or '3d' (RTABMap)
-        # Params absent -> legacy dashgo / RTABMap behaviour.
         self.default_base = self.declare_parameter('default_base', 'omnibase').value
         self.nav_type = self.declare_parameter('nav_type', '2d').value
         self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
