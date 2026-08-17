@@ -499,7 +499,6 @@ class VisionTasks:
             Logger.error(self.node, f"Error detecting person: {e}")
             return Status.EXECUTION_ERROR
 
-
     def isPerson(self, name: str = ""):
         for person in self.person_list:
             if name == person.name:

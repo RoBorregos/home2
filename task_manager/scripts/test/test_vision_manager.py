@@ -58,6 +58,7 @@ INFO_TYPE = "pose"
 OBJECT = "cup"
 VISUAL_INFO_DESCRIPTION = "closest"
 
+
 class TestVisionManager(Node):
     def __init__(self):
         super().__init__("test_vision_task_manager")
@@ -396,8 +397,10 @@ class TestVisionManager(Node):
         Covers track_person, get_track_person and get_tracked_person_point,
         which are meant to be used together in that order.
         """
-        Logger.info(self, "=== Testing tracking (track_person / get_track_person / "
-                    "get_tracked_person_point) ===")
+        Logger.info(
+            self,
+            "=== Testing tracking (track_person / get_track_person / get_tracked_person_point) ===",
+        )
         status = self.vision_manager.track_person(True)
         if status != Status.EXECUTION_SUCCESS:
             Logger.warn(self, "track_person(True) failed to lock a target")
