@@ -4,12 +4,15 @@
 Task Manager for testing the vision subtask manager
 """
 
+import time
+
 import rclpy
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from visualization_msgs.msg import Marker
 
 from frida_constants.vision_constants import CAMERA_FRAME, FOLLOW_TOPIC
+from frida_constants.vision_enums import Gestures, Poses
 from task_manager.subtask_managers.vision_tasks import VisionTasks
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
@@ -25,11 +28,35 @@ TEST_GET_PERSON_NAME = False
 TEST_FOLLOW_FACE = False
 TEST_HAND_MARKER = False
 TEST_CHAIRS_TO_REMOVE = False  # needs hric_commands + yolo + moondream + camera
+TEST_SAVE_FACE_NAME = False
+TEST_FIND_DRINK = False
+TEST_GET_CUSTOMER = False
+TEST_COUNT_PERSON = False
+TEST_COUNT_BY_POSE = False
+TEST_COUNT_BY_GESTURE = False
+TEST_COUNT_BY_COLOR = False
+TEST_FIND_PERSON_INFO = False
+TEST_COUNT_OBJECTS = False
+TEST_VISUAL_INFO = False
+TEST_TRACKING = False  # tests track_person + get_track_person + get_tracked_person_point
+TEST_GET_FOLLOW_FACE = False
+TEST_ISPERSON = False
+TEST_DESCRIBE_BAG = False  # get_pointing_bag + describe_bag (+ moondream_crop_query)
+TEST_GET_DRINK_POSITION = False
+TEST_DESCRIBE_PERSON = False
 
 FOLLOW_FACE_FLIP = False
 HAND_MARKER_FLIP = False
 HAND_MARKER_TOPIC = "/vision/test/hand_marker"
-
+SAVE_NAME = "Jp"
+DRINK = "coke"
+POSE = Poses.STANDING.value
+GESTURE = Gestures.WAVING.value
+COLOR = "grey"
+CLOTHING = "shirt"
+INFO_TYPE = "pose"
+OBJECT = "cup"
+VISUAL_INFO_DESCRIPTION = "closest"
 
 class TestVisionManager(Node):
     def __init__(self):
@@ -66,6 +93,54 @@ class TestVisionManager(Node):
 
         if TEST_CHAIRS_TO_REMOVE:
             self.test_chairs_to_remove()
+
+        if TEST_SAVE_FACE_NAME:
+            self.test_save_face_name()
+
+        if TEST_FIND_DRINK:
+            self.test_find_drink()
+
+        if TEST_GET_CUSTOMER:
+            self.test_get_customer()
+
+        if TEST_COUNT_PERSON:
+            self.test_count_person()
+
+        if TEST_COUNT_BY_POSE:
+            self.test_count_by_pose()
+
+        if TEST_COUNT_BY_GESTURE:
+            self.test_count_by_gesture()
+
+        if TEST_COUNT_BY_COLOR:
+            self.test_count_by_color()
+
+        if TEST_FIND_PERSON_INFO:
+            self.test_find_person_info()
+
+        if TEST_COUNT_OBJECTS:
+            self.test_count_objects()
+
+        if TEST_VISUAL_INFO:
+            self.test_visual_info()
+
+        if TEST_TRACKING:
+            self.test_tracking()
+
+        if TEST_GET_FOLLOW_FACE:
+            self.test_get_follow_face()
+
+        if TEST_ISPERSON:
+            self.test_isperson()
+
+        if TEST_DESCRIBE_BAG:
+            self.test_describe_bag()
+
+        if TEST_GET_DRINK_POSITION:
+            self.test_get_drink_position()
+
+        if TEST_DESCRIBE_PERSON:
+            self.test_describe_person()
 
         exit(0)
 
@@ -233,6 +308,204 @@ class TestVisionManager(Node):
         finally:
             self.vision_manager.camera_upside_down(False)
             Logger.info(self, "hand marker test stopped")
+
+    def test_save_face_name(self):
+        Logger.info(self, "=== Testing save_face_name ===")
+        status = self.vision_manager.save_face_name(SAVE_NAME)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Name saved: {SAVE_NAME}")
+        else:
+            Logger.error(self, "save_face_name failed")
+
+    def test_find_drink(self):
+        Logger.info(self, "=== Testing find_drink ===")
+        status, location = self.vision_manager.find_drink(DRINK)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Drink '{DRINK}' found at: {location}")
+        else:
+            Logger.warn(self, f"Drink '{DRINK}' not found")
+
+    def test_get_customer(self):
+        Logger.info(self, "=== Testing get_customer ===")
+        status, point = self.vision_manager.get_customer()
+        if status == Status.EXECUTION_SUCCESS:
+            pt = point.point
+            Logger.success(self, f"Customer found at ({pt.x:.3f}, {pt.y:.3f}, {pt.z:.3f})")
+        else:
+            Logger.warn(self, "No customer found")
+
+    def test_count_person(self):
+        Logger.info(self, "=== Testing count_person ===")
+        status, count = self.vision_manager.count_person()
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"People counted: {count}")
+        else:
+            Logger.warn(self, "count_person failed")
+
+    def test_count_by_pose(self):
+        Logger.info(self, "=== Testing count_by_pose ===")
+        status, count = self.vision_manager.count_by_pose(POSE)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"People with pose '{POSE}': {count}")
+        else:
+            Logger.warn(self, f"No people with pose '{POSE}' found")
+
+    def test_count_by_gesture(self):
+        Logger.info(self, "=== Testing count_by_gesture ===")
+        status, count = self.vision_manager.count_by_gesture(GESTURE)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"People with gesture '{GESTURE}': {count}")
+        else:
+            Logger.warn(self, f"No people with gesture '{GESTURE}' found")
+
+    def test_count_by_color(self):
+        Logger.info(self, "=== Testing count_by_color ===")
+        status, count = self.vision_manager.count_by_color(COLOR, CLOTHING)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"People with {COLOR} {CLOTHING}: {count}")
+        else:
+            Logger.warn(self, f"No people with {COLOR} {CLOTHING} found")
+
+    def test_find_person_info(self):
+        Logger.info(self, "=== Testing find_person_info ===")
+        status, result = self.vision_manager.find_person_info(INFO_TYPE)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Person {INFO_TYPE}: {result}")
+        else:
+            Logger.warn(self, f"No {INFO_TYPE} detected")
+
+    def test_count_objects(self):
+        Logger.info(self, "=== Testing count_objects ===")
+        status, labels = self.vision_manager.count_objects(OBJECT)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Objects detected: {labels}")
+        else:
+            Logger.warn(self, "count_objects failed")
+
+    def test_visual_info(self):
+        Logger.info(self, "=== Testing visual_info ===")
+        status, result = self.vision_manager.visual_info(VISUAL_INFO_DESCRIPTION, object=OBJECT)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Visual info: {result}")
+        else:
+            Logger.error(self, "visual_info failed")
+
+    def test_tracking(self):
+        """Lock the tracker, poll its status, read a tracked 3D point, then unlock.
+
+        Covers track_person, get_track_person and get_tracked_person_point,
+        which are meant to be used together in that order.
+        """
+        Logger.info(self, "=== Testing tracking (track_person / get_track_person / "
+                    "get_tracked_person_point) ===")
+        status = self.vision_manager.track_person(True)
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.warn(self, "track_person(True) failed to lock a target")
+            return
+        Logger.success(self, "track_person(True) locked a target")
+
+        status = self.vision_manager.get_track_person()
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, "get_track_person confirms a locked target")
+        else:
+            Logger.warn(self, "get_track_person reports no locked target")
+
+        status, point = self.vision_manager.get_tracked_person_point()
+        if status == Status.EXECUTION_SUCCESS:
+            pt = point.point
+            Logger.success(self, f"Tracked point: ({pt.x:.3f}, {pt.y:.3f}, {pt.z:.3f})")
+        else:
+            Logger.warn(self, "No tracked person point received")
+
+        self.vision_manager.track_person(False)
+
+    def test_get_follow_face(self):
+        """Poll get_follow_face() while face recognition is active."""
+        Logger.info(self, "=== Testing get_follow_face ===")
+        self.vision_manager.activate_face_recognition()
+        x, y = None, None
+        start = time.time()
+        while time.time() - start < 5.0:
+            rclpy.spin_once(self, timeout_sec=0.1)
+            x, y = self.vision_manager.get_follow_face()
+            if x is not None:
+                break
+        self.vision_manager.deactivate_face_recognition()
+        if x is not None:
+            Logger.success(self, f"get_follow_face: x={x:+.3f} y={y:+.3f}")
+        else:
+            Logger.warn(self, "get_follow_face returned no data")
+
+    def test_isperson(self):
+        """Poll the live person_list (populated by person_list_callback) for SAVE_NAME."""
+        Logger.info(self, "=== Testing isPerson ===")
+        found = False
+        start = time.time()
+        while time.time() - start < 5.0:
+            rclpy.spin_once(self, timeout_sec=0.1)
+            if self.vision_manager.isPerson(SAVE_NAME):
+                found = True
+                break
+        if found:
+            Logger.success(self, f"isPerson found '{SAVE_NAME}' in the live person list")
+        else:
+            Logger.warn(
+                self,
+                f"'{SAVE_NAME}' not in the live person list "
+                f"({len(self.vision_manager.person_list)} people seen)",
+            )
+
+    def test_describe_bag(self):
+        """Covers get_pointing_bag, describe_bag and (via describe_bag) moondream_crop_query."""
+        Logger.info(self, "=== Testing get_pointing_bag / describe_bag ===")
+        status, bbox, point = self.vision_manager.get_pointing_bag()
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.warn(self, "get_pointing_bag: no bag found")
+            return
+        pt = point.point
+        Logger.success(
+            self,
+            f"Bag found: bbox=({bbox.x1},{bbox.y1})->({bbox.x2},{bbox.y2}) "
+            f"point=({pt.x:.3f},{pt.y:.3f},{pt.z:.3f})",
+        )
+
+        status, description = self.vision_manager.describe_bag(bbox)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Bag description: {description}")
+        else:
+            Logger.error(self, "describe_bag failed")
+
+    def test_get_drink_position(self):
+        """detect_objects, then locate DRINK among the detections."""
+        Logger.info(self, "=== Testing get_drink_position ===")
+        status, detections = self.vision_manager.detect_objects()
+        if status != Status.EXECUTION_SUCCESS or not detections:
+            Logger.warn(self, "get_drink_position: no objects detected")
+            return
+        status, location = self.vision_manager.get_drink_position(detections, DRINK)
+        if status == Status.EXECUTION_SUCCESS:
+            Logger.success(self, f"Drink '{DRINK}' position: {location}")
+        else:
+            Logger.warn(self, f"Drink '{DRINK}' not among detected objects")
+
+    def test_describe_person(self):
+        """Async, multi-turn person description built from several moondream_query_async calls."""
+        Logger.info(self, "=== Testing describe_person ===")
+        done = [False]
+
+        def cb(status, description):
+            done[0] = True
+            if status == Status.EXECUTION_SUCCESS:
+                Logger.success(self, f"Person description: {description}")
+            else:
+                Logger.error(self, "describe_person failed")
+
+        self.vision_manager.describe_person(callback=cb)
+        start = time.time()
+        while not done[0] and time.time() - start < 30.0:
+            rclpy.spin_once(self, timeout_sec=0.1)
+        if not done[0]:
+            Logger.warn(self, "describe_person timed out")
 
 
 def main(args=None):
