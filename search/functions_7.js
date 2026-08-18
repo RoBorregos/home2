@@ -17,7 +17,7 @@ var searchData=
   ['get2dcentroid_14',['get2DCentroid',['../namespacecalculations.html#a9b5eb19cdc3b480d8b741b2a394bd49a',1,'calculations.get2DCentroid()'],['../namespacevision__3D__utils.html#aacc42d41856be0a1a34cfe33498aa9b8',1,'vision_3D_utils.get2DCentroid()']]],
   ['get2dcentroidnormalized_15',['get2DCentroidNormalized',['../namespacecalculations.html#aed62b46cb698edbf80e14a22e1839aca',1,'calculations']]],
   ['get_5factual_5fpose_16',['get_actual_pose',['../classpoint__transformer_1_1PointTransformer.html#a00a6e65fd33d1b035cfb5fe4fe2c1e2a',1,'point_transformer::PointTransformer']]],
-  ['get_5fangle_17',['get_angle',['../classpose__detection_1_1PoseDetection.html#aaed9c448e0eeebb5d242a190345536bf',1,'pose_detection::PoseDetection']]],
+  ['get_5fangle_17',['get_angle',['../classmodels_1_1pose__detection_1_1PoseDetection.html#ae81f20a30907ac0283dbd38e106593bc',1,'models::pose_detection::PoseDetection']]],
   ['get_5fautomatic_5frecharge_5fstatus_18',['get_automatic_recharge_status',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a06f447f3b8cc22e443294166398d03cd',1,'dashgo_driver::dashgo_stm32::Stm32']]],
   ['get_5fbaud_19',['get_baud',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#af2764f9a4792ac061de63839188eef10',1,'dashgo_driver::dashgo_stm32::Stm32']]],
   ['get_5fcheck_5fsum_20',['get_check_sum',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a14bbb9aa988ece2277b23c487c220ff8',1,'dashgo_driver::dashgo_stm32::Stm32']]],

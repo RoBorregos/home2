@@ -21,7 +21,7 @@ var searchData=
   ['plannerhelper_18',['PlannerHelper',['../structvamp_1_1binding_1_1Helper_1_1PlannerHelper.html',1,'vamp::binding::Helper']]],
   ['planningresult_19',['PlanningResult',['../structvamp_1_1planning_1_1PlanningResult.html',1,'vamp::planning']]],
   ['pointtransformer_20',['PointTransformer',['../classpoint__transformer_1_1PointTransformer.html',1,'point_transformer']]],
-  ['posedetection_21',['PoseDetection',['../classpose__detection_1_1PoseDetection.html',1,'pose_detection']]],
+  ['posedetection_21',['PoseDetection',['../classmodels_1_1pose__detection_1_1PoseDetection.html',1,'models::pose_detection']]],
   ['poses_22',['Poses',['../classfrida__constants_1_1vision__enums_1_1Poses.html',1,'frida_constants::vision_enums']]],
   ['posesensor_23',['PoseSensor',['../classmujoco__ros2__sensors_1_1PoseSensor.html',1,'mujoco_ros2_sensors']]],
   ['posesensorstruct_24',['PoseSensorStruct',['../structmujoco__ros2__sensors_1_1PoseSensorStruct.html',1,'mujoco_ros2_sensors']]],

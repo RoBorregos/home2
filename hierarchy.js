@@ -39,6 +39,7 @@ var hierarchy =
     [ "vamp::rng::Distribution", "structvamp_1_1rng_1_1Distribution.html", null ],
     [ "vamp::collision::Environment< DataT >", "structvamp_1_1collision_1_1Environment.html", null ],
     [ "task_manager.utils.exploration_planner.ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
+    [ "models.face_recognition.FaceModel", "classmodels_1_1face__recognition_1_1FaceModel.html", null ],
     [ "vamp::planning::FCIT< Robot, rake, resolution, NeighborParamsT >", "structvamp_1_1planning_1_1FCIT.html", null ],
     [ "vamp::planning::FCITRoadmapNode", "structvamp_1_1planning_1_1FCITRoadmapNode.html", null ],
     [ "vamp::planning::FCITStarNeighborParams", "structvamp_1_1planning_1_1FCITStarNeighborParams.html", null ],
@@ -170,7 +171,7 @@ var hierarchy =
       [ "vamp_moveit_plugin::VampPlanningContext", "classvamp__moveit__plugin_1_1VampPlanningContext.html", null ]
     ] ],
     [ "vamp::planning::PlanningResult< Robot >", "structvamp_1_1planning_1_1PlanningResult.html", null ],
-    [ "pose_detection.PoseDetection", "classpose__detection_1_1PoseDetection.html", null ],
+    [ "models.pose_detection.PoseDetection", "classmodels_1_1pose__detection_1_1PoseDetection.html", null ],
     [ "mujoco_ros2_sensors::PoseSensor", "classmujoco__ros2__sensors_1_1PoseSensor.html", null ],
     [ "mujoco_ros2_sensors::PoseSensorStruct", "structmujoco__ros2__sensors_1_1PoseSensorStruct.html", null ],
     [ "PourManager.PourManager", "classPourManager_1_1PourManager.html", null ],
@@ -246,6 +247,7 @@ var hierarchy =
     [ "follow_calibration.TopicStat", "classfollow__calibration_1_1TopicStat.html", null ],
     [ "track.Track", "classtrack_1_1Track.html", null ],
     [ "tracker.Tracker", "classtracker_1_1Tracker.html", null ],
+    [ "models.tracker.TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", null ],
     [ "track.TrackState", "classtrack_1_1TrackState.html", null ],
     [ "vamp::robots::UR5", "structvamp_1_1robots_1_1UR5.html", null ],
     [ "std::vector", null, [

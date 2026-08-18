@@ -1,5 +1,6 @@
 var dir_dafe0b1426346d1cf04b71ae40010d5b =
 [
+    [ "models", "dir_ebd9bdac403b995b10f45f2441b39e72.html", "dir_ebd9bdac403b995b10f45f2441b39e72" ],
     [ "customer_node.py", "customer__node_8py.html", "customer__node_8py" ],
     [ "dishwasher_node.py", "dishwasher__node_8py.html", "dishwasher__node_8py" ],
     [ "example_node.py", "example__node_8py.html", "example__node_8py" ],
@@ -10,7 +11,6 @@ var dir_dafe0b1426346d1cf04b71ae40010d5b =
     [ "is_person_inside.py", "is__person__inside_8py.html", "is__person__inside_8py" ],
     [ "person_in_map.py", "person__in__map_8py.html", "person__in__map_8py" ],
     [ "pointing_detection.py", "pointing__detection_8py.html", "pointing__detection_8py" ],
-    [ "pose_detection.py", "pose__detection_8py.html", "pose__detection_8py" ],
     [ "restaurant_commands.py", "restaurant__commands_8py.html", "restaurant__commands_8py" ],
     [ "test_chairs_to_remove.py", "test__chairs__to__remove_8py.html", "test__chairs__to__remove_8py" ],
     [ "tracker_node.py", "tracker__node_8py.html", "tracker__node_8py" ],

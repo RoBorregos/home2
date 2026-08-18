@@ -1,5 +1,17 @@
 var NAVTREEINDEX38 =
 {
+"md_docs_Run_Areas_vision.html#autotoc_md359":[36,2],
+"md_docs_Run_Areas_vision.html#autotoc_md360":[36,3],
+"md_docs_Setup.html":[38],
+"md_docs_Setup.html#autotoc_md366":[38,0],
+"md_docs_Setup.html#autotoc_md367":[38,1],
+"md_docs_Setup.html#autotoc_md368":[38,1,0],
+"md_docs_Setup.html#autotoc_md369":[38,1,1],
+"md_docs_ai_architecture.html":[22],
+"md_docs_ai_architecture.html#autotoc_md192":[22,0],
+"md_docs_ai_architecture.html#autotoc_md193":[22,1],
+"md_docs_ai_architecture.html#autotoc_md194":[22,1,0],
+"md_docs_ai_architecture.html#autotoc_md195":[22,2],
 "md_docs_ai_coding_standards.html":[23],
 "md_docs_ai_coding_standards.html#autotoc_md197":[23,0],
 "md_docs_ai_coding_standards.html#autotoc_md198":[23,0,0],
@@ -237,17 +249,5 @@ var NAVTREEINDEX38 =
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md68":[8,0],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md69":[8,1],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md70":[8,2],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md71":[8,2,0],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md72":[8,2,1],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md73":[8,3],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md74":[8,3,0],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md75":[8,3,0,0],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md76":[8,3,0,0,0],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md77":[8,3,0,0,1],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md78":[8,3,0,0,2],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md79":[8,3,0,1],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md80":[8,3,0,1,0],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md81":[8,3,0,1,1],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md82":[8,3,0,1,2],
-"md_manipulation_packages_vamp_resources_README.html#autotoc_md83":[8,3,1]
+"md_manipulation_packages_vamp_resources_README.html#autotoc_md71":[8,2,0]
 };

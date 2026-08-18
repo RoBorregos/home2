@@ -23,6 +23,7 @@ var searchData=
   ['topicstat_20',['TopicStat',['../classfollow__calibration_1_1TopicStat.html',1,'follow_calibration']]],
   ['track_21',['Track',['../classtrack_1_1Track.html',1,'track']]],
   ['tracker_22',['Tracker',['../classtracker_1_1Tracker.html',1,'tracker']]],
-  ['trackstate_23',['TrackState',['../classtrack_1_1TrackState.html',1,'track']]],
-  ['trashdetectionnode_24',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]]
+  ['trackermodel_23',['TrackerModel',['../classmodels_1_1tracker_1_1TrackerModel.html',1,'models::tracker']]],
+  ['trackstate_24',['TrackState',['../classtrack_1_1TrackState.html',1,'track']]],
+  ['trashdetectionnode_25',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]]
 ];

@@ -1,5 +1,17 @@
 var NAVTREEINDEX37 =
 {
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa9fce61393e29bd19881f49d3acd8a24e":[44,0,3,0,6,0,0,0,7,6],
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caaa65f9a19a43b17c5c4f822f6daf5a4cf":[44,0,3,0,6,0,0,0,7,3],
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caaebebbb844ff2f348a2e038508132f403":[44,0,3,0,6,0,0,0,7,10],
+"macros_8hpp.html#aa99f2147b3f775316d89971291dbf174":[44,0,3,0,6,0,0,0,0],
+"macros_8hpp.html#ac0a53cb5ed7356485105c7adf5dff4bf":[44,0,3,0,6,0,0,0,3],
+"macros_8hpp.html#acceb21363936fb79d3fe63e9d00a5500":[44,0,3,0,6,0,0,0,5],
+"macros_8hpp.html#acea63f67b814167fbfea2bf8eb6d69db":[44,0,3,0,6,0,0,0,2],
+"macros_8hpp.html#ad8f1e5a99ab940794a5a94f8d3f74299":[44,0,3,0,6,0,0,0,4],
+"macros_8hpp_source.html":[44,0,3,0,6,0,0,0],
+"manipulation_2packages_2arm__pkg_2arm__pkg_2____init_____8py.html":[44,0,3,0,0,0,0],
+"manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html":[44,0,3,0,0,0,3],
+"manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#a3ae85e33595c84274bc8d8fd016a62c7":[44,0,3,0,0,0,3,1],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#a7c0b33dacd672c3d3e9838e099c94994":[44,0,3,0,0,0,3,0],
 "manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#ae9eb22e558e6f2b39ff28482a2960667":[44,0,3,0,0,0,3,2],
 "manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2____init_____8py.html":[44,0,3,0,1,1,2],
@@ -237,17 +249,5 @@ var NAVTREEINDEX37 =
 "md_docs_Run_Areas_nav.html#autotoc_md353":[35,3,1],
 "md_docs_Run_Areas_vision.html":[36],
 "md_docs_Run_Areas_vision.html#autotoc_md355":[36,0],
-"md_docs_Run_Areas_vision.html#autotoc_md356":[36,1],
-"md_docs_Run_Areas_vision.html#autotoc_md359":[36,2],
-"md_docs_Run_Areas_vision.html#autotoc_md360":[36,3],
-"md_docs_Setup.html":[38],
-"md_docs_Setup.html#autotoc_md366":[38,0],
-"md_docs_Setup.html#autotoc_md367":[38,1],
-"md_docs_Setup.html#autotoc_md368":[38,1,0],
-"md_docs_Setup.html#autotoc_md369":[38,1,1],
-"md_docs_ai_architecture.html":[22],
-"md_docs_ai_architecture.html#autotoc_md192":[22,0],
-"md_docs_ai_architecture.html#autotoc_md193":[22,1],
-"md_docs_ai_architecture.html#autotoc_md194":[22,1,0],
-"md_docs_ai_architecture.html#autotoc_md195":[22,2]
+"md_docs_Run_Areas_vision.html#autotoc_md356":[36,1]
 };

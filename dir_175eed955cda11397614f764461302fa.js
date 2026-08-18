@@ -6,6 +6,6 @@ var dir_175eed955cda11397614f764461302fa =
     [ "linear_assignment.py", "linear__assignment_8py.html", "linear__assignment_8py" ],
     [ "nn_matching.py", "nn__matching_8py.html", "nn__matching_8py" ],
     [ "track.py", "track_8py.html", "track_8py" ],
-    [ "tracker.py", "tracker_8py.html", "tracker_8py" ],
+    [ "tracker.py", "vision__general_2utils_2deep__sort_2tracker_8py.html", "vision__general_2utils_2deep__sort_2tracker_8py" ],
     [ "visualization.py", "visualization_8py.html", "visualization_8py" ]
 ];

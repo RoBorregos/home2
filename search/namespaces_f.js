@@ -18,11 +18,10 @@ var searchData=
   ['planner_15',['Planner',['../namespacePlanner.html',1,'']]],
   ['point_5ftransformer_16',['point_transformer',['../namespacepoint__transformer.html',1,'']]],
   ['pointing_5fdetection_17',['pointing_detection',['../namespacepointing__detection.html',1,'']]],
-  ['pose_5fdetection_18',['pose_detection',['../namespacepose__detection.html',1,'']]],
-  ['pour_5fserver_19',['pour_server',['../namespacepick__and__place_1_1pour__server.html',1,'pick_and_place']]],
-  ['pourmanager_20',['PourManager',['../namespacePourManager.html',1,'']]],
-  ['ppc_21',['ppc',['../namespaceppc.html',1,'']]],
-  ['ppc_5flaunch_22',['ppc_launch',['../namespaceppc__launch.html',1,'']]],
-  ['probe_5fcuboid_23',['probe_cuboid',['../namespaceprobe__cuboid.html',1,'']]],
-  ['problem_5ftar_5fto_5fpkl_5fjson_24',['problem_tar_to_pkl_json',['../namespaceproblem__tar__to__pkl__json.html',1,'']]]
+  ['pour_5fserver_18',['pour_server',['../namespacepick__and__place_1_1pour__server.html',1,'pick_and_place']]],
+  ['pourmanager_19',['PourManager',['../namespacePourManager.html',1,'']]],
+  ['ppc_20',['ppc',['../namespaceppc.html',1,'']]],
+  ['ppc_5flaunch_21',['ppc_launch',['../namespaceppc__launch.html',1,'']]],
+  ['probe_5fcuboid_22',['probe_cuboid',['../namespaceprobe__cuboid.html',1,'']]],
+  ['problem_5ftar_5fto_5fpkl_5fjson_23',['problem_tar_to_pkl_json',['../namespaceproblem__tar__to__pkl__json.html',1,'']]]
 ];

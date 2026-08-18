@@ -301,6 +301,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacemerge__multi.html#aed4bf9362e9c7a4f7e289108d2e92868", null ]
     ] ],
     [ "model", "namespacemodel.html", "namespacemodel" ],
+    [ "models", "namespacemodels.html", "namespacemodels" ],
     [ "monitor", "namespacemonitor.html", [
       [ "generate_launch_description", "namespacemonitor.html#a89ffacc2739b9bf0e8a294482eeff9a1", null ]
     ] ],
@@ -375,7 +376,6 @@ var namespaces_dup =
     [ "Planner", "namespacePlanner.html", "namespacePlanner" ],
     [ "point_transformer", "namespacepoint__transformer.html", "namespacepoint__transformer" ],
     [ "pointing_detection", "namespacepointing__detection.html", "namespacepointing__detection" ],
-    [ "pose_detection", "namespacepose__detection.html", "namespacepose__detection" ],
     [ "PourManager", "namespacePourManager.html", "namespacePourManager" ],
     [ "ppc", "namespaceppc.html", [
       [ "generate_launch_description", "namespaceppc.html#aa3727ca5bcd22835536315a39ed75071", null ]

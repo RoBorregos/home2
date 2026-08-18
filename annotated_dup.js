@@ -231,6 +231,17 @@ var annotated_dup =
       [ "PCB", "classmodel_1_1PCB.html", "classmodel_1_1PCB" ],
       [ "PCB_test", "classmodel_1_1PCB__test.html", "classmodel_1_1PCB__test" ]
     ] ],
+    [ "models", "namespacemodels.html", [
+      [ "face_recognition", "namespacemodels_1_1face__recognition.html", [
+        [ "FaceModel", "classmodels_1_1face__recognition_1_1FaceModel.html", "classmodels_1_1face__recognition_1_1FaceModel" ]
+      ] ],
+      [ "pose_detection", "namespacemodels_1_1pose__detection.html", [
+        [ "PoseDetection", "classmodels_1_1pose__detection_1_1PoseDetection.html", "classmodels_1_1pose__detection_1_1PoseDetection" ]
+      ] ],
+      [ "tracker", "namespacemodels_1_1tracker.html", [
+        [ "TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", "classmodels_1_1tracker_1_1TrackerModel" ]
+      ] ]
+    ] ],
     [ "moondream_lib", "namespacemoondream__lib.html", [
       [ "MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", "classmoondream__lib_1_1MoonDreamModel" ]
     ] ],
@@ -357,9 +368,6 @@ var annotated_dup =
     ] ],
     [ "pointing_detection", "namespacepointing__detection.html", [
       [ "DetectPointingObjectServer", "classpointing__detection_1_1DetectPointingObjectServer.html", "classpointing__detection_1_1DetectPointingObjectServer" ]
-    ] ],
-    [ "pose_detection", "namespacepose__detection.html", [
-      [ "PoseDetection", "classpose__detection_1_1PoseDetection.html", "classpose__detection_1_1PoseDetection" ]
     ] ],
     [ "PourManager", "namespacePourManager.html", [
       [ "PourManager", "classPourManager_1_1PourManager.html", "classPourManager_1_1PourManager" ]
