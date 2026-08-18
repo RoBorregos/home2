@@ -274,4 +274,6 @@ trajectories, and lets the operator:
 | --- | --- | --- | --- |
 | `omnidriver` | Holonomic ODrive base | Current | `odrive_serial_twist` (cmd_vel → wheels), `odrive_dashboard` web dashboard, `simple_rx` |
 
+## External repositories
 
+- **Dashgo base driver & launch files**: Moved to [RoBorregos/Dashgo](https://github.com/RoBorregos/Dashgo.git)
