@@ -40,9 +40,8 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
 import cv2
 import time
 import numpy as np
-from PIL import Image as PILImage
-import tqdm
 import torch
+import tqdm
 from vision_general.utils.calculations import (
     deproject_pixel_to_point,
 )
@@ -57,19 +56,10 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
 
-from vision_general.utils.reid_model import (
-    extract_feature_from_img,
-    get_structure,
-    load_network,
-)
-
-from vision_general.utils.deep_sort.detection import Detection as DeepSORTDetection
-from vision_general.utils.trt_utils import load_yolo_trt
 from vision_general.utils.debug_pub import DebugImagePublisher
 
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
-from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     SET_TARGET_TOPIC,
@@ -85,9 +75,9 @@ from frida_constants.vision_constants import (
     CAMERA_ROTATION_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+from models.tracker import TrackerModel
 from std_msgs.msg import Bool, Int16
 
-CONF_THRESHOLD = 0.6
 # RGB/depth pairing gate. The ZED publishes at ~15 Hz (~66 ms between frames);
 # a 50 ms gate rejected legitimate same-grab pairs and silently dropped 3D
 # publishes, so allow up to one frame period of skew.
@@ -99,10 +89,6 @@ MAX_EMBEDDINGS = 128
 # extraction is heavy, so don't run it every tick).
 REID_MATCH_THRESHOLD = 0.6
 REID_REACQUIRE_FREQ = 0.3
-DEEPSORT_MAX_COSINE_DISTANCE = 0.3
-DEEPSORT_NN_BUDGET = 100
-DEEPSORT_MAX_AGE = 100
-DEEPSORT_N_INIT = 3
 DEPTH_JUMP_THRESHOLD = 0.5  # Max allowed depth change (meters) between frames
 # A depth jump can be REAL (the publisher skipped a few ticks while the person
 # kept walking). Accept the new depth after this many consecutive rejects —
@@ -188,6 +174,13 @@ class SingleTracker(Node):
         )
         self.create_subscription(
             Bool,
+            "/vision/tracker/active",
+            self._active_callback,
+            10,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            Bool,
             FLIP_TRACKER_TOPIC,
             self._flip_callback,
             10,
@@ -221,6 +214,7 @@ class SingleTracker(Node):
 
     def setup(self):
         """Load models and initial variables"""
+        self.active = True
         self.target_set = False
         # Serializes the tracker timer (run) and the set_target service so they
         # never touch the shared self.frame / TensorRT self.model concurrently.
@@ -257,18 +251,18 @@ class SingleTracker(Node):
         self._draw_debug = False
         pbar = tqdm.tqdm(total=2, desc="Loading models")
 
-        # Load YOLO with TensorRT acceleration for Orin AGX
-        self.model = load_yolo_trt("yolov8n.pt")
+        # Detection/tracking/ReID all live in the model class; YOLO (TensorRT on
+        # the Orin AGX) and pose load now, the heavy SWIN ReID on demand.
+        self.model = TrackerModel()
+        self.model.load()
         pbar.update(1)
-        self.pose_detection = PoseDetection()
+        self.pose_detection = self.model.pose
         pbar.update(1)
 
-        # Stage 0: per-frame tracking is ultralytics ByteTrack (self.model.track) —
-        # NO per-frame appearance ReID. The heavy SWIN ReID is NOT loaded at startup;
-        # Stage 1 will lazy-load a lightweight re-acquisition model (OSNet / face) on
-        # demand. DeepSORT is replaced by ByteTrack (see _track()).
-        self.model_reid = None
-        self.deepsort_tracker = None
+        # Stage 0: per-frame tracking is ultralytics ByteTrack (TrackerModel.track)
+        # — NO per-frame appearance ReID. The heavy SWIN ReID is NOT loaded at
+        # startup; Stage 1 will lazy-load a lightweight re-acquisition model
+        # (OSNet / face) on demand. DeepSORT is replaced by ByteTrack.
 
         self.output_image = []
         self.depth_image = []
@@ -303,6 +297,12 @@ class SingleTracker(Node):
     def image_info_callback(self, data):
         """Callback to receive camera info"""
         self.imageInfo = data
+
+    def _active_callback(self, msg):
+        if msg.data == self.active:
+            return
+        self.active = msg.data
+        self.get_logger().info(f"Tracker active: {self.active}")
 
     def _flip_callback(self, msg):
         if msg.data != self.flip_image:
@@ -366,107 +366,10 @@ class SingleTracker(Node):
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
-    def _extract_reid_feature_np(self, cropped_image):
-        """Extract ReID feature as numpy array for DeepSORT."""
-        pil_image = PILImage.fromarray(cropped_image)
-        with torch.no_grad():
-            embedding = extract_feature_from_img(pil_image, self.model_reid)
-        return embedding.cpu().numpy().flatten()
-
     def _track(self, frame):
-        """Per-frame multi-object tracking via ultralytics ByteTrack (Stage 0).
-
-        Appearance-free: no per-detection ReID embedding. persist=True keeps the
-        ByteTrack state (and thus the track-ids) across calls. Returns the SAME
-        structure the downstream consumers expect — a list of
-        {"track_id", "x1", "y1", "x2", "y2"} dicts (person class only).
-        """
-        frame_h, frame_w = frame.shape[:2]
-        results = self.model.track(
-            frame,
-            classes=0,
-            persist=True,
-            tracker="bytetrack.yaml",
-            verbose=False,
-        )
-        tracked = []
-        if not results:
-            return tracked
-        boxes = results[0].boxes
-        if boxes is None or boxes.id is None:
-            return tracked
-        ids = boxes.id.int().cpu().tolist()
-        xyxy = boxes.xyxy.cpu().tolist()
-        confs = boxes.conf.cpu().tolist()
-        for tid, (bx1, by1, bx2, by2), conf in zip(ids, xyxy, confs):
-            if conf < CONF_THRESHOLD:
-                continue
-            x1 = max(0, min(int(round(bx1)), frame_w - 1))
-            y1 = max(0, min(int(round(by1)), frame_h - 1))
-            x2 = max(0, min(int(round(bx2)), frame_w))
-            y2 = max(0, min(int(round(by2)), frame_h))
-            if x2 <= x1 or y2 <= y1:
-                continue
-            tracked.append(
-                {"track_id": int(tid), "x1": x1, "y1": y1, "x2": x2, "y2": y2}
-            )
-        return tracked
-
-    def _run_deepsort(self, frame, yolo_results):
-        """[Stage 0: UNUSED — replaced by _track()/ByteTrack] DeepSORT on YOLO dets."""
-        frame_h, frame_w = frame.shape[:2]  # ✅ use distinct names
-
-        detections = []
-        for out in yolo_results:
-            for box in out.boxes:
-                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-
-                # Ensure the bounding box is within the frame
-                x1 = max(0, min(x1, frame_w - 1))
-                y1 = max(0, min(y1, frame_h - 1))
-                x2 = max(0, min(x2, frame_w))
-                y2 = max(0, min(y2, frame_h))
-
-                prob = round(box.conf[0].item(), 2)
-                if prob < CONF_THRESHOLD:
-                    continue
-                cropped = frame[y1:y2, x1:x2]
-                if cropped.size == 0:
-                    continue
-                feature = self._extract_reid_feature_np(cropped)
-                w = x2 - x1
-                h = y2 - y1
-                det = DeepSORTDetection(
-                    tlwh=np.array([x1, y1, w, h], dtype=np.float64),
-                    confidence=prob,
-                    feature=feature,
-                )
-                detections.append(det)
-
-        self.deepsort_tracker.predict()
-        self.deepsort_tracker.update(detections)
-
-        tracks = []
-        for track in self.deepsort_tracker.tracks:
-            if not track.is_confirmed() or track.time_since_update > 1:
-                continue
-            bbox = track.to_tlbr()
-
-            x1 = max(0, int(bbox[0]))
-            y1 = max(0, int(bbox[1]))
-            x2 = min(frame_w, int(bbox[2]))
-            y2 = min(frame_h, int(bbox[3]))
-
-            tracks.append(
-                {
-                    "track_id": track.track_id,
-                    "x1": x1,
-                    "y1": y1,
-                    "x2": x2,
-                    "y2": y2,
-                }
-            )
-        return tracks
+        """Per-frame multi-object tracking (ByteTrack, appearance-free) — returns
+        a list of {"track_id", "x1", "y1", "x2", "y2"} dicts for people only."""
+        return self.model.track(frame)
 
     def _reset_person_data(self):
         """Reset the person data"""
@@ -490,7 +393,7 @@ class SingleTracker(Node):
         tracker timer, stall RESULTS_TOPIC, and make person_goal_smoother miss the
         follow goal (the base then never moves). Until it finishes, re-acquisition is
         simply unavailable; ByteTrack tracking keeps running uninterrupted."""
-        if self.model_reid is not None:
+        if self.model.reid is not None:
             return True
         if self.reid_failed:
             return False
@@ -504,12 +407,7 @@ class SingleTracker(Node):
         failure latch reid_failed and fall back to ByteTrack-only tracking."""
         try:
             self.get_logger().info("Loading ReID model (SWIN) in background ...")
-            model = load_network(get_structure())
-            model.classifier.classifier = torch.nn.Sequential()
-            model.eval()
-            if torch.cuda.is_available():
-                model = model.cuda()
-            self.model_reid = model
+            self.model.load_reid()
             self.get_logger().info("ReID model ready")
         except Exception as e:
             self.get_logger().error(f"ReID load failed ({e}); re-acquisition disabled")
@@ -524,10 +422,7 @@ class SingleTracker(Node):
         if not self._ensure_reid_model():
             return None
         try:
-            pil = PILImage.fromarray(cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB))
-            with torch.no_grad():
-                feat = extract_feature_from_img(pil, self.model_reid)
-            return feat.flatten().float()
+            return self.model.embed(crop_bgr)
         except Exception as e:
             self.get_logger().warn(f"ReID embed failed: {e}")
             return None
@@ -838,7 +733,7 @@ class SingleTracker(Node):
         # persistent ByteTrack state (self.model.track(persist=True)) so overlapping
         # ticks can't stack up or race set_target (set_target was crashing on
         # frame=None before this guard).
-        if not self.target_set:
+        if not self.active or not self.target_set:
             self.is_tracking_result = False
             return
         if not self._infer_lock.acquire(blocking=False):
