@@ -134,6 +134,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8fac24fdc932fad1187f67a2c6377728"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2da6bebf090fda1d2f45f96d9fda3664"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a2da6bebf090fda1d2f45f96d9fda3664">explore_zone</a> (self, step)</td></tr>
 <tr class="separator:a2da6bebf090fda1d2f45f96d9fda3664"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a776fcf1e7fb5cb7d22c2f8d9bd9b45"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a7a776fcf1e7fb5cb7d22c2f8d9bd9b45">to_map_point</a> (self, point_stamped)</td></tr>
+<tr class="separator:a7a776fcf1e7fb5cb7d22c2f8d9bd9b45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3adafb3362b7bf27fc657bb99ba25366"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a3adafb3362b7bf27fc657bb99ba25366">bearing_to</a> (self, point_stamped, str frame=&quot;base_link&quot;)</td></tr>
+<tr class="separator:a3adafb3362b7bf27fc657bb99ba25366"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab15b7e35abf343b08bc634ef3c4b3083"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ab15b7e35abf343b08bc634ef3c4b3083">rotate_in_place</a> (self, float degrees)</td></tr>
+<tr class="separator:ab15b7e35abf343b08bc634ef3c4b3083"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6efab6da783d75eaf0827fa50708a434"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a6efab6da783d75eaf0827fa50708a434">face_point</a> (self, point)</td></tr>
+<tr class="separator:a6efab6da783d75eaf0827fa50708a434"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af4cb913b91ca688bc4b504f108414355"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af4cb913b91ca688bc4b504f108414355">is_ahead_of</a> (self, pose, point)</td></tr>
+<tr class="separator:af4cb913b91ca688bc4b504f108414355"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -369,6 +379,42 @@ the robot is already within `standoff`, it just turns to face the
 target.</pre> 
 </div>
 </div>
+<a id="a3adafb3362b7bf27fc657bb99ba25366" name="a3adafb3362b7bf27fc657bb99ba25366"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3adafb3362b7bf27fc657bb99ba25366">&#9670;&#160;</a></span>bearing_to()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.bearing_to </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>point_stamped</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str &#160;</td>
+          <td class="paramname"><em>frame</em> = <code>&quot;base_link&quot;</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Bearing (degrees) from `frame` to a PointStamped in any TF frame.
++deg = target to the right, matching the arm's pan_to convention.
+Returns None if the transform fails.</pre> 
+</div>
+</div>
 <a id="a03078902443e9c684ea6deddb7a33921" name="a03078902443e9c684ea6deddb7a33921"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a03078902443e9c684ea6deddb7a33921">&#9670;&#160;</a></span>check_door()</h2>
 
@@ -444,6 +490,36 @@ offset: desired front offset in meters; 0.0 uses the docker default.
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Move forward `step` meters along the current heading (incremental search).</pre> 
+</div>
+</div>
+<a id="a6efab6da783d75eaf0827fa50708a434" name="a6efab6da783d75eaf0827fa50708a434"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6efab6da783d75eaf0827fa50708a434">&#9670;&#160;</a></span>face_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.face_point </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>point</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Rotate the base in place to face a map-frame point (or PointStamped
+in any TF frame). Used when a target's bearing is beyond the arm's pan
+range and a plain rotation (not a full approach) is enough.</pre> 
 </div>
 </div>
 <a id="a9be959e78a1de1f952fbe07f9e09c1f6" name="a9be959e78a1de1f952fbe07f9e09c1f6"></a>
@@ -545,6 +621,42 @@ Captures the origin pose on first success (used by return_to_origin).</pre>
 <pre class="fragment">Query the real path distance (m) to a map area without moving the
 robot. Empty location_a starts from the robot's current pose.
 Returns (Status, {"distance": float}).</pre> 
+</div>
+</div>
+<a id="af4cb913b91ca688bc4b504f108414355" name="af4cb913b91ca688bc4b504f108414355"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4cb913b91ca688bc4b504f108414355">&#9670;&#160;</a></span>is_ahead_of()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool task_manager.subtask_managers.nav_tasks.NavigationTasks.is_ahead_of </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>point</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">True if map-frame `point` (PointStamped/Point/(x, y)) lies in the
+forward half-plane of `pose`'s facing direction. Used to filter
+detections to a sector in front of a reference pose.</pre> 
 </div>
 </div>
 <a id="af971c18c37a11bef89307e70ef8324f7" name="af971c18c37a11bef89307e70ef8324f7"></a>
@@ -709,6 +821,34 @@ compatibility, equivalent to 180).
 </pre> 
 </div>
 </div>
+<a id="ab15b7e35abf343b08bc634ef3c4b3083" name="ab15b7e35abf343b08bc634ef3c4b3083"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab15b7e35abf343b08bc634ef3c4b3083">&#9670;&#160;</a></span>rotate_in_place()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.rotate_in_place </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>degrees</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Rotate the omni base in place by `degrees` (map-frame yaw change).</pre> 
+</div>
+</div>
 <a id="ac66cfb2c5e73cf1afe885a4b9884e576" name="ac66cfb2c5e73cf1afe885a4b9884e576"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac66cfb2c5e73cf1afe885a4b9884e576">&#9670;&#160;</a></span>setup_backup_map()</h2>
 
@@ -743,6 +883,37 @@ compatibility, equivalent to 180).
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Initialize services and actions</pre> 
+</div>
+</div>
+<a id="a7a776fcf1e7fb5cb7d22c2f8d9bd9b45" name="a7a776fcf1e7fb5cb7d22c2f8d9bd9b45"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a776fcf1e7fb5cb7d22c2f8d9bd9b45">&#9670;&#160;</a></span>to_map_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def task_manager.subtask_managers.nav_tasks.NavigationTasks.to_map_point </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>point_stamped</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Transform a PointStamped to the map frame using the CURRENT TF.
+Must be called while the robot is still at the pose where the point
+was detected (detections are stamped with time 0 = latest). Returns
+None if the point is empty or the transform fails.</pre> 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>

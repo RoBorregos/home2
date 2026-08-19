@@ -5,12 +5,9 @@ var classrestaurant__task__manager_1_1RestaurantTaskManager =
     [ "_dock_to_table", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a7aa9b0fb34bab9d5280d3d38d660761e", null ],
     [ "_in_search_sector", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#aa14c0ec4c2953a593e135bf5e8d4188e", null ],
     [ "_navigate_to_serve_table", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a41d370e4fa89f1c5ad5817344ca97e73", null ],
-    [ "_pan_angle_to", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a51014723a5a9c4dd223d0368981c8448", null ],
     [ "_reset_cycle", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a6ca9fdcbfb9cb1beef437cd7ea4410c5", null ],
     [ "_return_to_bar", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a1221685e89477a8a4bc512ee0a808e01", null ],
-    [ "_rotate_base", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a290b5430129e8828068f5c40af13fe86", null ],
     [ "_sweep_for_customer", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#ae5492bb6bc0ecf7f8d7004793740c133", null ],
-    [ "_to_map", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#acf9f4ffc7ed0dc4cb41135882505bcf5", null ],
     [ "deus_pick", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#aa50eb216d24550d710a0e7f7f51d7a93", null ],
     [ "look_at", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a1bcd2bd78b75cd1499421a87e92e4f1d", null ],
     [ "pick_object", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a5a75fec51624e4a3f094daae49317537", null ],
@@ -28,7 +25,5 @@ var classrestaurant__task__manager_1_1RestaurantTaskManager =
     [ "search_step", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a985cb2f878a3bf609165405893d385d4", null ],
     [ "serve_table", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a361f051e12d5fb6c2f49e6ea4ad20845", null ],
     [ "subtask_manager", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a48a2dc97ef01f6497531daf546c8c5a0", null ],
-    [ "target_person_point", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a189dd337f99ac7319b8bef0bcb0e7c25", null ],
-    [ "tf_buffer", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a6f932ca4fe2ca459fd5739e05f68bd08", null ],
-    [ "tf_listener", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#aa4aa949996bd99c2bca52ca8042f1e40", null ]
+    [ "target_person_point", "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a189dd337f99ac7319b8bef0bcb0e7c25", null ]
 ];
