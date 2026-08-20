@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""YOLO-pose model: PoseDetection class and TensorRT-aware loader."""
 
 import cv2
 import numpy as np

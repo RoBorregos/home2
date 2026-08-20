@@ -15,8 +15,6 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from tf2_ros import Buffer, TransformListener, TransformException
-from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 
 from frida_constants.vision_constants import (
     RESTAURANT_TABLES_TOPIC,
@@ -71,9 +69,6 @@ class RestaurantTaskManager(Node):
         super().__init__("restaurant_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.RESTAURANT, mock_areas=[])
 
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
-
         # Reject callers behind the bar's initial facing direction (public /
         # recording zone is usually behind the start pose). Off by default —
         # enable at the venue once the layout is known.
@@ -122,60 +117,11 @@ class RestaurantTaskManager(Node):
         self.base_rotations = 0
         self.search_step = 0
 
-    def _to_map(self, point_stamped):
-        """Transform a PointStamped to the map frame using the CURRENT TF.
-        Must be called while the robot is still at the pose where the point
-        was detected (detections are stamped with time 0 = latest)."""
-        if point_stamped is None or point_stamped.header.frame_id == "":
-            return None
-        if point_stamped.header.frame_id == "map":
-            return point_stamped
-        try:
-            t = self.tf_buffer.lookup_transform(
-                "map",
-                point_stamped.header.frame_id,
-                rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0),
-            )
-            return do_transform_point(point_stamped, t)
-        except TransformException as e:
-            Logger.warn(self, f"TF {point_stamped.header.frame_id}->map failed: {e}")
-            return None
-
-    def _pan_angle_to(self, point_stamped):
-        """Return the pan_to angle (degrees) to face a PointStamped, computed in base_link."""
-        if point_stamped is None:
-            return None
-        try:
-            t = self.tf_buffer.lookup_transform(
-                "base_link", point_stamped.header.frame_id, rclpy.time.Time()
-            )
-            bl_point = do_transform_point(point_stamped, t)
-        except TransformException as e:
-            Logger.warn(self, f"TF to base_link failed for pan: {e}")
-            return None
-
-        # base_link: x forward, y left. pan_to treats +deg as customer-to-right,
-        # so negate atan2(y, x). Result is inherently within [-180, 180].
-        return -math.degrees(math.atan2(bl_point.point.y, bl_point.point.x))
-
-    def _rotate_base(self, degrees: float):
-        """Rotate the omni base in place by `degrees` (map-frame yaw change)."""
-        status, cur = self.subtask_manager.nav.get_current_pose()
-        if status != Status.EXECUTION_SUCCESS or cur is None:
-            return Status.EXECUTION_ERROR
-        yaw = self.subtask_manager.nav._yaw_from_quaternion(cur.pose.orientation)
-        cur.pose.orientation = self.subtask_manager.nav._yaw_to_quaternion(
-            yaw + math.radians(degrees)
-        )
-        status, _ = self.subtask_manager.nav.move_to_pose(cur)
-        return status
-
     def look_at(self, map_point):
         """Aim the wrist camera at a map-frame point regardless of how the omni
         base ended up oriented: pan the arm when the bearing is within reach,
         otherwise rotate the base toward the point first, then trim with a pan."""
-        angle = self._pan_angle_to(map_point)
+        angle = self.subtask_manager.nav.bearing_to(map_point)
         if angle is None:
             Logger.warn(self, "look_at: could not resolve bearing, facing forward.")
             self.subtask_manager.manipulation.pan_to(0.0)
@@ -183,15 +129,8 @@ class RestaurantTaskManager(Node):
 
         if abs(angle) > MAX_PAN_DEG:
             Logger.info(self, f"look_at: bearing {angle:.0f} deg beyond pan range, rotating base")
-            status, cur = self.subtask_manager.nav.get_current_pose()
-            if status == Status.EXECUTION_SUCCESS and cur is not None:
-                yaw = math.atan2(
-                    map_point.point.y - cur.pose.position.y,
-                    map_point.point.x - cur.pose.position.x,
-                )
-                cur.pose.orientation = self.subtask_manager.nav._yaw_to_quaternion(yaw)
-                self.subtask_manager.nav.move_to_pose(cur)
-            angle = self._pan_angle_to(map_point)
+            self.subtask_manager.nav.face_point(map_point)
+            angle = self.subtask_manager.nav.bearing_to(map_point)
             if angle is None:
                 angle = 0.0
 
@@ -205,10 +144,7 @@ class RestaurantTaskManager(Node):
             return True
         if self.bar_pose is None or map_point is None:
             return True
-        yaw = self.subtask_manager.nav._yaw_from_quaternion(self.bar_pose.pose.orientation)
-        dx = map_point.point.x - self.bar_pose.pose.position.x
-        dy = map_point.point.y - self.bar_pose.pose.position.y
-        if dx * math.cos(yaw) + dy * math.sin(yaw) < 0.0:
+        if not self.subtask_manager.nav.is_ahead_of(self.bar_pose, map_point):
             Logger.info(self, "Detection behind the bar sector — ignoring (public zone).")
             return False
         return True
@@ -225,7 +161,7 @@ class RestaurantTaskManager(Node):
             status, person_point = self.subtask_manager.vision.get_customer()
             if status != Status.EXECUTION_SUCCESS or person_point.header.frame_id == "":
                 continue
-            first_map = self._to_map(person_point)
+            first_map = self.subtask_manager.nav.to_map_point(person_point)
             if first_map is None or not self._in_search_sector(first_map):
                 continue
 
@@ -235,7 +171,7 @@ class RestaurantTaskManager(Node):
             if status != Status.EXECUTION_SUCCESS or second_point.header.frame_id == "":
                 Logger.info(self, "Candidate not re-detected — ignoring transient wave.")
                 continue
-            second_map = self._to_map(second_point)
+            second_map = self.subtask_manager.nav.to_map_point(second_point)
             if second_map is None:
                 continue
             dist = math.hypot(
@@ -416,7 +352,7 @@ class RestaurantTaskManager(Node):
                 # Cover the full circle with in-place rotations before moving:
                 # cheap for the omni base and safe in an unknown restaurant.
                 self.base_rotations += 1
-                status = self._rotate_base(BASE_ROTATION_DEG)
+                status = self.subtask_manager.nav.rotate_in_place(BASE_ROTATION_DEG)
                 if status != Status.EXECUTION_SUCCESS:
                     Logger.warn(self, "In-place rotation failed, continuing sweep.")
 
@@ -472,7 +408,7 @@ class RestaurantTaskManager(Node):
                     ):
                         # Still too far — update target (in map frame, NOW,
                         # before moving again) and approach once more.
-                        re_map = self._to_map(re_point)
+                        re_map = self.subtask_manager.nav.to_map_point(re_point)
                         if re_map is not None:
                             self.approach_attempts += 1
                             self.target_person_point = re_map
@@ -529,13 +465,13 @@ class RestaurantTaskManager(Node):
             for table_msg in customer_tables:
                 if len(table_msg.people.list) == 0:
                     continue
-                table_map = self._to_map(table_msg.table_point)
+                table_map = self.subtask_manager.nav.to_map_point(table_msg.table_point)
                 if table_map is None:
                     Logger.warn(self, "Skipping table with untransformable point.")
                     continue
                 customer_points = []
                 for person in table_msg.people.list:
-                    p_map = self._to_map(person.point3d)
+                    p_map = self.subtask_manager.nav.to_map_point(person.point3d)
                     if p_map is not None:
                         customer_points.append(p_map)
                 if not customer_points:

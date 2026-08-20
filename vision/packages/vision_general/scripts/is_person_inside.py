@@ -16,7 +16,7 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped, Point
 from std_msgs.msg import Header
 
-from pose_detection import PoseDetection
+from models.pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
