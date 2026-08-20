@@ -28,7 +28,6 @@ def launch_function(context, *args, **kwargs):
 
     # Values to select base (same convention as mapping.launch.py)
     default_base = 'omnibase' 
-    nav_type_value = nav_type.perform(context) 
     nav_type = LaunchConfiguration('nav_type', default='2d')  # Other 3d
     nav_type_value = nav_type.perform(context)
     
