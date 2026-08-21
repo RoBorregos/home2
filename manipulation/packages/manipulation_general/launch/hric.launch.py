@@ -48,10 +48,13 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            # HRIC only needs GoToHand and /manipulation/fixed_distance_move.
+            # Both used to live on pick_server; they are on manipulation_core
+            # now that the pick/place/pour nodes are merged.
             Node(
                 package="pick_and_place",
-                executable="pick_server.py",
-                name="pick_server",
+                executable="manipulation_core.py",
+                name="manipulation_core",
                 output="screen",
                 emulate_tty=True,
             ),

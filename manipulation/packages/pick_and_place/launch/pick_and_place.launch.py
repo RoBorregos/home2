@@ -11,7 +11,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     # When the sim includes this launch it overrides use_sim_time to true so
-    # gpd_service, manipulation_core, pick/place/pour servers and perception
+    # gpd_service, manipulation_core and perception
     # all look up TFs against /clock. On the real robot the default (false)
     # keeps everything on wall time -- same launch, no sim-specific code.
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
@@ -34,18 +34,14 @@ def generate_launch_description():
                 respawn=True,
                 parameters=[sim_time_param],
             ),
+            # One node for the whole manipulation task. It replaced
+            # pick_server / place_server / pour_server, whose PickMotion,
+            # PlaceMotion and PourMotion actions had no callers outside this
+            # package and only added process hops.
             Node(
                 package="pick_and_place",
                 executable="manipulation_core.py",
                 name="manipulation_core",
-                output="screen",
-                emulate_tty=True,
-                parameters=[sim_time_param],
-            ),
-            Node(
-                package="pick_and_place",
-                executable="pick_server.py",
-                name="pick_server",
                 output="screen",
                 emulate_tty=True,
                 parameters=[
@@ -53,24 +49,11 @@ def generate_launch_description():
                         # based on distance between end-effector link and contact point with objects e.g. where you grip
                         "ee_link_offset": -0.09,
                     },
+                    # Per-strategy tuning (pre-grasp heights, descent distances,
+                    # flat-object contact-force thresholds) lives in
+                    # pick_and_place/config/pick_profiles.yaml.
                     sim_time_param,
                 ],
-            ),
-            Node(
-                package="pick_and_place",
-                executable="place_server.py",
-                name="place_server",
-                output="screen",
-                emulate_tty=True,
-                parameters=[sim_time_param],
-            ),
-            Node(
-                package="pick_and_place",
-                executable="pour_server.py",
-                name="pour_server",
-                output="screen",
-                emulate_tty=True,
-                parameters=[sim_time_param],
             ),
             # perception_3d.launch.py
             IncludeLaunchDescription(
