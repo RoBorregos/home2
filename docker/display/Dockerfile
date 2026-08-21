@@ -1,13 +1,12 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-# rosbridge + web_video_server + nodejs (for Next.js)
+# display_ui.py (PyQt5 desktop UI) deps — subscribes to ROS2 topics directly,
+# no rosbridge / web_video_server / nodejs needed.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ros-humble-rosbridge-server \
-    ros-humble-web-video-server \
+    ros-humble-cv-bridge \
+    python3-pyqt5 \
     libacl1-dev \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 USER ros
