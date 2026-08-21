@@ -1,0 +1,20 @@
+services:
+  l4t_base:
+    build:
+      context: .
+      dockerfile: Dockerfile.ROS-l4t
+      # No dustynv/nvcr.io JetPack 7 (L4T r38+) base image is published yet
+      # (checked 2026-08-19: nvcr.io/nvidia/l4t-jetpack:r38.2.0/r39.2.0 both
+      # "not found"). On this real Thor hardware, host CUDA/GPU access to
+      # containers is done via nvidia-container-toolkit CSV/CDI mounts
+      # (/etc/nvidia-container-runtime/host-files-for-container.d/*.csv),
+      # not by baking CUDA into the base image — so plain ubuntu:24.04
+      # (matching the host's own L4T R39 / noble userspace) works as BASE_IMAGE.
+      # Run containers with --runtime nvidia (or --gpus all with the nvidia
+      # runtime as default) to get GPU passthrough.
+      args:
+        BASE_IMAGE: ubuntu:24.04
+        ROS_DISTRO: jazzy
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
+    image: roborregos/home2:jazzy_l4t_base

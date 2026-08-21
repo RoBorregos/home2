@@ -1,6 +1,8 @@
 ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
+ARG ROS_DISTRO=humble
+
 # ── Orin AGX (sm_87) performance environment ──
 ENV CUDA_ARCHITECTURES=87
 ENV CMAKE_CUDA_ARCHITECTURES=87
@@ -16,14 +18,21 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
     libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
     libxcb-cursor0 libxcb-xkb1 libjpeg-dev \
-    ros-humble-cv-bridge ros-humble-rmw-cyclonedds-cpp \
+    ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
     && rm -rf /var/lib/apt/lists/*
 
 # ── dlib with CUDA for Orin AGX (sm_87) ──
 WORKDIR /workspace
 RUN wget -q http://dlib.net/files/dlib-20.0.tar.bz2 && \
     tar jxf dlib-20.0.tar.bz2 && rm dlib-20.0.tar.bz2 && \
-    cd dlib-20.0 && mkdir build && cd build && \
+    cd dlib-20.0 && \
+    sed -i 's/-arch=sm_50/-arch=sm_87/' dlib/cmake_utils/test_for_cuda/CMakeLists.txt && \
+    # dlib 20.0's -DCUDA_ARCHITECTURES/-DCMAKE_CUDA_ARCHITECTURES are ignored; it
+    # reads its own -DDLIB_USE_CUDA_COMPUTE_CAPABILITIES (default 50/Maxwell,
+    # which CUDA 13's nvcc rejects outright — dropped after CUDA 11). Both the
+    # sed above (its bundled CUDA-compiler smoke test) and this flag (the real
+    # build) need to target sm_87 or the whole thing silently falls back to CPU.
+    mkdir build && cd build && \
     cmake .. \
       -DDLIB_USE_CUDA=1 \
       -DUSE_AVX_INSTRUCTIONS=0 \
@@ -34,10 +43,16 @@ RUN wget -q http://dlib.net/files/dlib-20.0.tar.bz2 && \
       -DCUDAToolkit_ROOT=/usr/local/cuda \
       -DCMAKE_BUILD_TYPE=Release \
       -DCUDA_ARCHITECTURES="87" \
-      -DCMAKE_CUDA_ARCHITECTURES="87" && \
+      -DCMAKE_CUDA_ARCHITECTURES="87" \
+      -DDLIB_USE_CUDA_COMPUTE_CAPABILITIES=87 \
+      -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+      -DCMAKE_CXX_FLAGS=-fno-lto \
+      -DCMAKE_C_FLAGS=-fno-lto && \
     cmake --build . --config Release -- -j$(nproc) && \
     cd /workspace/dlib-20.0 && \
-    python3 setup.py install --set DLIB_USE_CUDA=1 --set USE_NEON=1 --set CUDA_ARCHITECTURES=87 && \
+    python3 setup.py install --set DLIB_USE_CUDA=1 --set USE_NEON=1 --set CUDA_ARCHITECTURES=87 \
+      --set DLIB_USE_CUDA_COMPUTE_CAPABILITIES=87 --set CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+      --set CMAKE_CXX_FLAGS=-fno-lto --set CMAKE_C_FLAGS=-fno-lto && \
     cd /workspace && rm -rf dlib-20.0
 
 # ── Python dependencies ──
@@ -65,14 +80,22 @@ WORKDIR /workspace
 RUN git clone --depth 1 https://github.com/ultralytics/yolov5.git
 
 # ── Iceoryx from source (expanded publisher/subscriber limits) ──
-RUN apt-get update -qq && apt-get install -y --no-install-recommends libacl1-dev && rm -rf /var/lib/apt/lists/* && \
-    dpkg --force-depends -r ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c 2>/dev/null || true
+# libboost-dev/libboost-python-dev installed here (not later, next to the
+# from-source cv_bridge build that actually needs them): once the
+# dpkg --force-depends -r below runs, the package DB is left with dangling
+# Depends (ros-${ROS_DISTRO}-cyclonedds/rmw-cyclonedds-cpp still reference
+# the force-removed iceoryx packages) — any apt-get install attempted AFTER
+# that point fails with "Unmet dependencies" for completely unrelated
+# packages too, since apt refuses to plan installs while known-broken nodes
+# exist anywhere in the dependency graph.
+RUN apt-get update -qq && apt-get install -y --no-install-recommends libacl1-dev libboost-dev libboost-python-dev && rm -rf /var/lib/apt/lists/* && \
+    dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
     sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
     cmake -S iceoryx_meta -B build \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
         -DIOX_MAX_PUBLISHERS=20000 \
         -DIOX_MAX_SUBSCRIBERS=20000 \
         -DIOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048 \
@@ -88,10 +111,10 @@ RUN cd /tmp && \
 RUN cd /tmp && \
     git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
     cd cyclonedds && mkdir build && cd build && \
-    . /opt/ros/humble/setup.sh && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
     cmake .. \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
-        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
         -DENABLE_SHM=ON \
         -DCMAKE_BUILD_TYPE=Release && \
     make -j$(nproc) && make install && \
@@ -123,3 +146,25 @@ USER ros
 # The ros user's pip config includes pypi.jetson-ai-lab.io, which provides
 # the Jetson-optimized build with TensorrtExecutionProvider + CUDAExecutionProvider.
 RUN pip install --no-cache-dir onnxruntime-gpu
+
+# cv_bridge vs. cv2: NOT the same numpy conflict as navigation. Here it's the
+# opposite direction. jazzy_l4t_base's cv2 (the CUDA/TensorRT-accelerated
+# OpenCV NVIDIA bakes into the L4T image, /usr/local/lib/python3.12/dist-
+# packages/cv2, version 4.11.0) needs NumPy >=2 — it fails to import under
+# 1.26.4. But apt's ros-jazzy-cv-bridge was compiled by the ROS build farm
+# against noble's system OpenCV/numpy (python3-opencv 4.6.0 + python3-numpy
+# 1.26.4) and its boost extension breaks under NumPy 2.x. Forcing numpy<2
+# (as navigation's Dockerfile does) would fix cv_bridge but break the far
+# more important CUDA cv2 — so instead, rebuild cv_bridge from source here,
+# against whatever numpy/OpenCV are actually active in this image (2.x /
+# the NVIDIA 4.11.0 build), so both halves agree. vision_opencv has no
+# `jazzy` branch yet; `rolling` is the closest current-development target.
+RUN sudo dpkg --force-depends -r ros-${ROS_DISTRO}-cv-bridge 2>/dev/null || true
+RUN mkdir -p /tmp/cv_bridge_ws/src && cd /tmp/cv_bridge_ws/src && \
+    git clone --depth 1 -b rolling https://github.com/ros-perception/vision_opencv.git && \
+    cd /tmp/cv_bridge_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    colcon build --packages-select cv_bridge --cmake-args -Wno-dev -DCMAKE_BUILD_TYPE=Release && \
+    sudo cp -a install/cv_bridge/. /opt/ros/${ROS_DISTRO}/ && \
+    sudo ldconfig && \
+    cd / && rm -rf /tmp/cv_bridge_ws

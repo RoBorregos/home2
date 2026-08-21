@@ -1,0 +1,12 @@
+services:
+  cuda_base:
+    build:
+      context: .
+      # Dockerfile.ROS is the same for both CPU and GPU
+      dockerfile: Dockerfile.ROS
+      args:
+        BASE_IMAGE: nvidia/cuda:12.6.3-devel-ubuntu24.04
+        ROS_DISTRO: jazzy
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
+    image: roborregos/home2:jazzy_cuda_base

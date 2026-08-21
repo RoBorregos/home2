@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-realtime-tools \
     ros-${ROS_DISTRO}-urdf-launch \
     ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
-    libgl1-mesa-glx \
+    libgl1 \
     libosmesa6 \
     libglew-dev \
     libglfw3-dev \

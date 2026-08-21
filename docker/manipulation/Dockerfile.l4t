@@ -1,6 +1,8 @@
 ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
+ARG ROS_DISTRO=humble
+
 RUN mkdir -p /workspace
 
 # Python Requirements
@@ -10,13 +12,16 @@ RUN rm -r /workspace/requirements/
 
 RUN chown -R ros:ros /workspace
 
-RUN apt update && apt install -y ros-humble-zed-msgs ros-humble-moveit*
+RUN apt update && apt install -y ros-${ROS_DISTRO}-zed-msgs ros-${ROS_DISTRO}-moveit*
 
 # Install manipulation dependencies
 WORKDIR /installs
 RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
 WORKDIR /installs/home2_install
-RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_install/ --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y
+# libvtk-qt: ros/rosdistro's rosdep base.yaml still hardcodes `ubuntu: '*': [libvtk7-qt-dev]`
+# for this key (never updated past VTK7), so it 404s on noble/24.04 no matter what —
+# skip it (it's only needed for the rtabmap_viz Qt GUI, not headless robot operation).
+RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_install/ --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control libvtk-qt" -y
 RUN rosdep fix-permissions
 WORKDIR /
 RUN rm -r installs/
@@ -27,7 +32,7 @@ RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc
 RUN echo "source /workspace/frida_interfaces_cache/install/setup.bash" >> /home/ros/.bashrc
 
 # CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
     && sudo rm -rf /var/lib/apt/lists/*
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh

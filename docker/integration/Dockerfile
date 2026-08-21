@@ -1,6 +1,8 @@
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 
+ARG ROS_DISTRO=humble
+
 RUN mkdir -p /workspace/requirements
 
 # Requirements
@@ -24,7 +26,7 @@ RUN rosdep install --from-paths /workspace/src --ignore-src -y -r
 RUN sudo rm -rf /workspace/src/
 
 # CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
     && sudo rm -rf /var/lib/apt/lists/*
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
