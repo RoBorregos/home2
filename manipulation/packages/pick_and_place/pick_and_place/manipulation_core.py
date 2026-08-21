@@ -37,11 +37,7 @@ from pick_and_place.pipelines import pick as pick_pipeline
 from pick_and_place.pipelines import place as place_pipeline
 from pick_and_place.pipelines import pour as pour_pipeline
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
-from pick_and_place.pipelines.profiles import (
-    PROFILES_PARAM_PREFIX,
-    default_profiles_path,
-    load_profiles,
-)
+from pick_and_place.pipelines.profiles import default_profiles_path, load_profiles
 from pick_and_place.pipelines.strategies import PickOutcome, build_strategies
 from pick_and_place.robot.arm import RobotArm
 from pick_and_place.robot.perception import Perception
@@ -56,28 +52,26 @@ EXECUTOR_THREADS = 16
 
 class ManipulationCore(Node):
     def __init__(self):
-        # Undeclared parameter overrides are declared automatically so
-        # `-p pick_profile.<profile>.<field>:=<value>` retunes a profile at
-        # launch without editing the installed YAML.
-        super().__init__(
-            "manipulation_core", automatically_declare_parameters_from_overrides=True
-        )
+        super().__init__("manipulation_core")
         # One reentrant group for everything. A task callback blocks for the
         # whole pick, so anything on the default mutually-exclusive group could
         # not be serviced while a task runs, and the node would deadlock.
         self.callback_group = ReentrantCallbackGroup()
 
-        self._declare_if_needed("ee_link_offset", -0.125)
-        self._declare_if_needed("rim_tip_offset", -0.18)
-        self._declare_if_needed("bowl_tip_offset", -0.12)
-        self._declare_if_needed("pick_profiles_file", "")
+        # Physical properties of the gripper; the launch file overrides
+        # ee_link_offset. Everything else tuned lives in pick_profiles.yaml.
+        self.declare_parameter("ee_link_offset", -0.125)
+        self.declare_parameter("rim_tip_offset", -0.18)
+        self.declare_parameter("bowl_tip_offset", -0.12)
+        # Points at an alternative profile file; empty means the installed one.
+        self.declare_parameter("pick_profiles_file", "")
 
         self.arm = RobotArm(self)
         self.perception = Perception(self)
 
         # Loaded and validated here so a bad profile fails at launch rather than
         # mid-descent with the arm in cartesian-velocity mode.
-        profiles = load_profiles(self._profiles_path(), self._profile_overrides())
+        profiles = load_profiles(self._profiles_path())
         self.strategies = build_strategies(profiles)
 
         # The most recent pick or pour. The place pipeline consumes it, so a
@@ -122,23 +116,9 @@ class ManipulationCore(Node):
     # Parameters
     # ==================================================================
 
-    def _declare_if_needed(self, name, default):
-        """Declare a parameter unless an override already declared it."""
-        if not self.has_parameter(name):
-            self.declare_parameter(name, default)
-
     def _profiles_path(self):
         override = self.get_parameter("pick_profiles_file").value
         return override if override else default_profiles_path()
-
-    def _profile_overrides(self):
-        """Collect `pick_profile.*` parameters into flat override keys."""
-        return {
-            f"{PROFILES_PARAM_PREFIX}.{name}": parameter.value
-            for name, parameter in self.get_parameters_by_prefix(
-                PROFILES_PARAM_PREFIX
-            ).items()
-        }
 
     # ==================================================================
     # ManipulationAction

@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 
 import pytest
+import yaml
 
 from pick_and_place.pipelines.profiles import (
     ProfileError,
@@ -14,6 +15,24 @@ from pick_and_place.pipelines.profiles import (
 )
 
 PROFILES_PATH = Path(__file__).resolve().parents[1] / "config" / "pick_profiles.yaml"
+
+
+def _load_with(tmp_path, profile: str, field: str, value):
+    """Carga el YAML real con un solo campo alterado.
+
+    Sustituye al parámetro `overrides` que tenía load_profiles: la validación se
+    prueba inyectando el valor malo por el mismo camino que usa el nodo.
+    ``field`` admite notación anidada: "force_guard.jump_trip".
+    """
+    document = yaml.safe_load(PROFILES_PATH.read_text())
+    target = document[profile]
+    *parents, leaf = field.split(".")
+    for step in parents:
+        target = target[step]
+    target[leaf] = value
+    written = tmp_path / "profiles.yaml"
+    written.write_text(yaml.safe_dump(document))
+    return load_profiles(written)
 
 
 @pytest.fixture
@@ -108,44 +127,29 @@ def test_only_descent_strategies_validate_the_endpoint(profiles):
     assert profiles["flat"].validate_endpoint is False
 
 
-def test_overrides_apply_and_recompute_derived_values():
-    profiles = load_profiles(
-        PROFILES_PATH,
-        {
-            "pick_profile.flat.pre_grasp_height": 0.18,
-            "pick_profile.bowl.grasp_z_tweak": 0.03,
-        },
-    )
-    assert profiles["flat"].pre_grasp_height == 0.18
+def test_derived_descent_follows_the_tweak(tmp_path):
+    """descent = pre_grasp_height - grasp_z_tweak, recomputado al cambiar uno."""
+    profiles = _load_with(tmp_path, "bowl", "grasp_z_tweak", 0.03)
     assert math.isclose(profiles["bowl"].effective_descent_distance, 0.07, abs_tol=1e-9)
 
 
-def test_overrides_coerce_command_line_strings():
-    profiles = load_profiles(
-        PROFILES_PATH, {"pick_profile.flat.force_guard.jump_trip": "3.0"}
-    )
-    assert profiles["flat"].force_guard.jump_trip == pytest.approx(3.0)
-
-
 @pytest.mark.parametrize(
-    "override,fragment",
+    "profile,field,value,fragment",
     [
-        ({"pick_profile.nope.x": 1}, "unknown profile"),
         # A tweak above the pre-grasp height would drive the arm upward.
-        ({"pick_profile.bowl.grasp_z_tweak": 0.5}, "must be positive"),
-        ({"pick_profile.flat.force_guard.jump_trip": 99.0}, "hard_ceiling"),
-        (
-            {"pick_profile.flat.force_guard.timeout": 2.0},
-            "less than pre_grasp_height",
-        ),
-        ({"pick_profile.gpd.num_alternatives": 0}, "num_alternatives"),
-        ({"pick_profile.rim.pre_grasp_height": "abc"}, "must be a float"),
-        ({"pick_profile.rim.descent_speed": 0.0}, "descent_speed"),
+        ("bowl", "grasp_z_tweak", 0.5, "must be positive"),
+        ("flat", "force_guard.jump_trip", 99.0, "hard_ceiling"),
+        ("flat", "force_guard.timeout", 2.0, "less than pre_grasp_height"),
+        ("gpd", "num_alternatives", 0, "num_alternatives"),
+        ("rim", "pre_grasp_height", "abc", "must be a float"),
+        ("rim", "descent_speed", 0.0, "descent_speed"),
     ],
 )
-def test_invalid_values_are_rejected_at_load_time(override, fragment):
+def test_invalid_values_are_rejected_at_load_time(
+    tmp_path, profile, field, value, fragment
+):
     with pytest.raises(ProfileError, match=fragment):
-        load_profiles(PROFILES_PATH, override)
+        _load_with(tmp_path, profile, field, value)
 
 
 def test_missing_file_is_reported_clearly():

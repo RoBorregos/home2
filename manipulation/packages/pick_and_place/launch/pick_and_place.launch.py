@@ -51,9 +51,7 @@ def generate_launch_description():
                     },
                     # Per-strategy tuning (pre-grasp heights, descent distances,
                     # flat-object contact-force thresholds) lives in
-                    # pick_and_place/config/pick_profiles.yaml. Override a single
-                    # field here with e.g.
-                    #   {"pick_profile.flat.force_guard.jump_trip": 3.0}
+                    # pick_and_place/config/pick_profiles.yaml.
                     sim_time_param,
                 ],
             ),

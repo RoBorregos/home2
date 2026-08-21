@@ -6,9 +6,9 @@ with the arm in cartesian-velocity mode.
 """
 
 import os
-from dataclasses import MISSING, dataclass, fields
+from dataclasses import MISSING, dataclass, fields, is_dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union, get_args, get_origin
 
 import yaml
 
@@ -23,7 +23,6 @@ KNOWN_STRATEGY_KINDS = (
 )
 
 PROFILES_FILE_ENV_VAR = "FRIDA_PICK_PROFILES_FILE"
-PROFILES_PARAM_PREFIX = "pick_profile"
 
 _DEFAULTS_KEY = "defaults"
 
@@ -196,133 +195,60 @@ def default_profiles_path() -> Path:
 
 
 def _coerce(raw: Any, field_type: Any, label: str) -> Any:
-    """Coerce a YAML/param scalar into the dataclass field's type.
+    """Convierte un valor del YAML al tipo declarado del campo."""
+    if get_origin(field_type) is Union:  # Optional[X] -> X
+        if raw is None:
+            return None
+        field_type = next(a for a in get_args(field_type) if a is not type(None))
 
-    YAML gives ints where floats are wanted, and ROS params arrive as strings
-    when set from the command line.
-    """
+    if is_dataclass(field_type):  # force_guard
+        if not isinstance(raw, dict):
+            raise ProfileError(f"{label} must be a mapping, got {raw!r}")
+        return _build(field_type, raw, label)
+
+    if get_origin(field_type) is tuple:  # ignore_joints
+        if not isinstance(raw, (list, tuple)):
+            raise ProfileError(f"{label} must be a list, got {raw!r}")
+        item_type = get_args(field_type)[0]
+        return tuple(_coerce(item, item_type, label) for item in raw)
+
     if field_type is bool:
-        if isinstance(raw, bool):
-            return raw
-        if isinstance(raw, str):
-            lowered = raw.strip().lower()
-            if lowered in ("true", "1", "yes"):
-                return True
-            if lowered in ("false", "0", "no"):
-                return False
-        raise ProfileError(f"{label} must be a boolean, got {raw!r}")
+        if not isinstance(raw, bool):
+            raise ProfileError(f"{label} must be a boolean, got {raw!r}")
+        return raw
+
     try:
-        if field_type is int:
-            return int(raw)
-        if field_type is float:
-            return float(raw)
+        return field_type(raw)
     except (TypeError, ValueError):
         raise ProfileError(f"{label} must be a {field_type.__name__}, got {raw!r}")
-    return raw
 
 
-def _build_force_guard(raw: Dict[str, Any], profile_name: str) -> ForceGuardProfile:
-    expected = {f.name: f for f in fields(ForceGuardProfile)}
+def _build(cls, raw: Dict[str, Any], label: str, **preset):
+    """Construye un dataclass de perfil desde un mapping, campo a campo.
+
+    Las claves desconocidas y las faltantes son error: una errata en el YAML debe
+    fallar al arrancar, no coger un default en silencio.
+    """
+    expected = {f.name: f for f in fields(cls) if f.name not in preset}
     unknown = set(raw) - set(expected)
     if unknown:
-        raise ProfileError(
-            f"{profile_name}.force_guard has unknown keys: {sorted(unknown)}"
-        )
-    missing = set(expected) - set(raw)
-    if missing:
-        raise ProfileError(
-            f"{profile_name}.force_guard is missing keys: {sorted(missing)}"
-        )
+        raise ProfileError(f"{label} has unknown keys: {sorted(unknown)}")
 
-    values: Dict[str, Any] = {}
-    for name, field in expected.items():
-        label = f"{profile_name}.force_guard.{name}"
-        if name == "ignore_joints":
-            joints = raw[name]
-            if not isinstance(joints, (list, tuple)):
-                raise ProfileError(
-                    f"{label} must be a list of joint indices, got {joints!r}"
-                )
-            values[name] = tuple(_coerce(j, int, label) for j in joints)
-        else:
-            values[name] = _coerce(raw[name], field.type, label)
-    return ForceGuardProfile(**values)
-
-
-def _build_profile(name: str, raw: Dict[str, Any]) -> PickProfile:
-    expected = {f.name: f for f in fields(PickProfile) if f.name != "name"}
-    unknown = set(raw) - set(expected)
-    if unknown:
-        raise ProfileError(f"Profile '{name}' has unknown keys: {sorted(unknown)}")
-
-    values: Dict[str, Any] = {"name": name}
+    values = dict(preset)
     for key, field in expected.items():
-        if key not in raw:
-            continue
-        label = f"{name}.{key}"
-        if key == "force_guard":
-            block = raw[key]
-            if not isinstance(block, dict):
-                raise ProfileError(f"{label} must be a mapping, got {block!r}")
-            values[key] = _build_force_guard(block, name)
-        elif key == "descent_distance":
-            values[key] = None if raw[key] is None else _coerce(raw[key], float, label)
-        elif key == "strategy" or key == "tip_offset_param":
-            values[key] = str(raw[key])
-        else:
-            values[key] = _coerce(raw[key], field.type, label)
+        if key in raw:
+            values[key] = _coerce(raw[key], field.type, f"{label}.{key}")
 
     missing = [
-        f.name
-        for f in fields(PickProfile)
-        if f.name != "name" and f.default is MISSING and f.name not in values
+        f.name for f in fields(cls) if f.default is MISSING and f.name not in values
     ]
     if missing:
-        raise ProfileError(
-            f"Profile '{name}' is missing required keys: {sorted(missing)}"
-        )
-
-    return PickProfile(**values)
+        raise ProfileError(f"{label} is missing required keys: {sorted(missing)}")
+    return cls(**values)
 
 
-def _apply_overrides(
-    raw_profiles: Dict[str, Dict[str, Any]], overrides: Dict[str, Any]
-) -> None:
-    """Apply flat ROS-param overrides onto the parsed YAML, in place.
-
-    Keys look like ``pick_profile.flat.pre_grasp_height`` or
-    ``pick_profile.flat.force_guard.jump_trip``.
-    """
-    for key, value in overrides.items():
-        parts = key.split(".")
-        if parts and parts[0] == PROFILES_PARAM_PREFIX:
-            parts = parts[1:]
-        if len(parts) < 2:
-            raise ProfileError(
-                f"Override '{key}' is malformed; expected "
-                f"'{PROFILES_PARAM_PREFIX}.<profile>.<field>[.<subfield>]'"
-            )
-        profile_name, path = parts[0], parts[1:]
-        if profile_name not in raw_profiles:
-            raise ProfileError(
-                f"Override '{key}' targets unknown profile '{profile_name}'; "
-                f"known profiles: {sorted(raw_profiles)}"
-            )
-        target = raw_profiles[profile_name]
-        for step in path[:-1]:
-            nested = target.get(step)
-            if not isinstance(nested, dict):
-                raise ProfileError(
-                    f"Override '{key}' targets a non-mapping at '{step}'"
-                )
-            target = nested
-        target[path[-1]] = value
-
-
-def load_profiles(
-    path: Optional[Path] = None, overrides: Optional[Dict[str, Any]] = None
-) -> Dict[str, PickProfile]:
-    """Load, override and validate every pick profile.
+def load_profiles(path: Optional[Path] = None) -> Dict[str, PickProfile]:
+    """Load and validate every pick profile.
 
     Raises ProfileError on anything malformed so the node fails at startup.
     """
@@ -349,12 +275,9 @@ def load_profiles(
         if not isinstance(body, dict):
             raise ProfileError(f"Profile '{name}' must be a mapping, got {body!r}")
 
-    if overrides:
-        _apply_overrides(raw_profiles, overrides)
-
     profiles = {}
     for name, body in raw_profiles.items():
-        profile = _build_profile(name, body)
+        profile = _build(PickProfile, body, f"Profile '{name}'", name=name)
         profile.validate()
         profiles[name] = profile
     return profiles
