@@ -6,6 +6,7 @@ FROM ${BASE_IMAGE}
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-cv-bridge \
     python3-pyqt5 \
+    fonts-noto-color-emoji \
     libacl1-dev \
     && rm -rf /var/lib/apt/lists/*
 

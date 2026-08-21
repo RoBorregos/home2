@@ -30,6 +30,7 @@ RUN pip install -r requirements/postgres.txt
 RUN apt-get update && apt-get install -y \
     ros-humble-cv-bridge \
     python3-pyqt5 \
+    fonts-noto-color-emoji \
     && rm -rf /var/lib/apt/lists/*
 
 USER ros
