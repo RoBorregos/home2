@@ -13,6 +13,7 @@ import json
 import sys
 import threading
 from datetime import datetime
+from pathlib import Path
 
 import rclpy
 from rclpy.node import Node
@@ -37,7 +38,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-DEFAULT_VIDEO_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+DEFAULT_VIDEO_TOPIC = "/vision/camera/image_oriented"
 
 # Per-task default video topic (VideoFeed defaultTopic prop in the web app).
 TASK_DEFAULT_VIDEO = {
@@ -114,6 +115,7 @@ MESSAGE_ICONS = {
 }
 
 AUDIO_STATE_TIMEOUT_MS = 10_000
+HEARD_WATCHDOG_S = 5.0
 
 # Display modes shared by the GPSR/HRIC step machines.
 MODE_BUTTON = "button"
@@ -248,6 +250,7 @@ class DisplaySignals(QObject):
     frame_received = pyqtSignal(QImage)
     task_step_changed = pyqtSignal(str)
     command_index_changed = pyqtSignal(int)
+    heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
 
 
 class DisplayRosNode(Node):
@@ -261,6 +264,9 @@ class DisplayRosNode(Node):
             self.task, DEFAULT_VIDEO_TOPIC
         )
         self._video_sub = None
+        self._audio_state = "idle"
+        self._pending_heard = None
+        self._heard_watchdog = None
 
         self.create_subscription(String, "/AudioState", self._on_audio_state, 10)
         self.create_subscription(Float32, "/hri/speech/vad", self._on_vad, 10)
@@ -306,13 +312,45 @@ class DisplayRosNode(Node):
         self.signals.video_topic_changed.emit(topic)
 
     def _on_audio_state(self, msg: String):
+        self._audio_state = msg.data
         self.signals.audio_state_changed.emit(msg.data)
+        if msg.data != "listening":
+            self._flush_pending_heard()
 
     def _on_vad(self, msg: Float32):
         self.signals.vad_level_changed.emit(msg.data)
 
     def _on_message(self, msg_type: str, msg: String):
+        if msg_type == "heard" and self._audio_state == "listening":
+            # Hold back "heard" text while listening: shown big via the audio
+            # overlay instead of the message list, flushed once idle (or
+            # after HEARD_WATCHDOG_S if /AudioState never reports idle).
+            self._pending_heard = msg.data
+            self.signals.heard_buffered.emit(msg.data)
+            if self._heard_watchdog is not None:
+                self._heard_watchdog.cancel()
+            self._heard_watchdog = self.create_timer(
+                HEARD_WATCHDOG_S, self._on_heard_watchdog
+            )
+            return
         self.signals.message_received.emit(msg_type, msg.data)
+
+    def _on_heard_watchdog(self):
+        self._heard_watchdog.cancel()
+        self._heard_watchdog = None
+        if self._audio_state == "listening":
+            self._audio_state = "idle"
+            self.signals.audio_state_changed.emit("idle")
+        self._flush_pending_heard()
+
+    def _flush_pending_heard(self):
+        if self._pending_heard is None:
+            return
+        text, self._pending_heard = self._pending_heard, None
+        if self._heard_watchdog is not None:
+            self._heard_watchdog.cancel()
+            self._heard_watchdog = None
+        self.signals.message_received.emit("heard", text)
 
     def _on_kws(self, msg: String):
         try:
@@ -363,6 +401,26 @@ class DisplayRosNode(Node):
         self.answer_pub.publish(String(data=text))
 
 
+# Bases tried, in order, to resolve a relative `image_path` from /hri/display/map
+# (the old web app resolved these as URLs against its own public/ dir; there's no
+# equivalent web root here, so we look in the likely asset locations instead).
+MAP_IMAGE_SEARCH_DIRS = [
+    Path("/workspace/src/frida_constants/data"),
+    Path.home() / ".frida",
+]
+
+
+def resolve_map_image(image_path: str) -> str:
+    path = Path(image_path)
+    if path.is_absolute() or path.is_file():
+        return str(path)
+    for base in MAP_IMAGE_SEARCH_DIRS:
+        candidate = base / path
+        if candidate.is_file():
+            return str(candidate)
+    return image_path
+
+
 class MapDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -372,13 +430,22 @@ class MapDialog(QDialog):
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignCenter)
 
+        self.legend_layout = QVBoxLayout()
+
         layout = QVBoxLayout(self)
         layout.addWidget(self.image_label)
+        layout.addLayout(self.legend_layout)
 
     def show_map(self, data: dict):
         self.markers = data.get("markers", [])
-        pixmap = QPixmap(data["image_path"])
-        if not pixmap.isNull():
+        image_path = resolve_map_image(data["image_path"])
+        pixmap = QPixmap(image_path)
+        if pixmap.isNull():
+            print(
+                f"[display_ui] MapDialog: could not load image '{image_path}'",
+                file=sys.stderr,
+            )
+        else:
             painted = QPixmap(pixmap)
             painter = QPainter(painted)
             for marker in self.markers:
@@ -389,6 +456,18 @@ class MapDialog(QDialog):
                 painter.drawEllipse(int(x) - 8, int(y) - 8, 16, 16)
             painter.end()
             self.image_label.setPixmap(painted)
+
+        while self.legend_layout.count():
+            self.legend_layout.takeAt(0).widget().deleteLater()
+        for marker in self.markers:
+            color = marker.get("color", "#ffffff")
+            color_name = marker.get("color_name", color)
+            row = QLabel(
+                f"<span style='color:{color}'>⬤</span> {color_name} — "
+                f"{marker['x']:.1f}%, {marker['y']:.1f}%"
+            )
+            self.legend_layout.addWidget(row)
+
         self.show()
         self.raise_()
 
@@ -439,7 +518,14 @@ class QuestionDialog(QDialog):
 
 
 class AudioOverlay(QWidget):
-    """Full-window overlay for listening/thinking/loading states."""
+    """Full-window overlay for listening/thinking/loading states.
+
+    Also shows a live mic-level ring (from /hri/speech/vad) and, while
+    listening, the "heard" text buffered by DisplayRosNode before it lands
+    in the permanent message list.
+    """
+
+    VAD_RING_BASE = 24
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -450,6 +536,20 @@ class AudioOverlay(QWidget):
         self.label.setFont(QFont("Sans Serif", 28, QFont.Bold))
         self.label.setStyleSheet(f"color: {TEXT_LIGHT}; background: rgba(0,0,0,150);")
         layout.addWidget(self.label)
+
+        self.vad_ring = QLabel()
+        self.vad_ring.setFixedSize(self.VAD_RING_BASE, self.VAD_RING_BASE)
+        layout.addWidget(self.vad_ring, 0, Qt.AlignCenter)
+
+        self.heard_label = QLabel()
+        self.heard_label.setAlignment(Qt.AlignCenter)
+        self.heard_label.setWordWrap(True)
+        self.heard_label.setFont(QFont("Sans Serif", 18))
+        self.heard_label.setStyleSheet(
+            f"color: {TEXT_LIGHT}; background: rgba(0,0,0,150);"
+        )
+        layout.addWidget(self.heard_label)
+
         self.hide()
 
     def show_state(self, text: str):
@@ -458,8 +558,22 @@ class AudioOverlay(QWidget):
         self.show()
         self.raise_()
 
+    def show_heard(self, text: str):
+        self.heard_label.setText(text)
+
+    def set_vad_level(self, level: float):
+        level = max(0.0, min(level, 1.0))
+        size = int(self.VAD_RING_BASE * (1 + level))
+        alpha = int(level * 0.8 * 255)
+        self.vad_ring.setFixedSize(size, size)
+        self.vad_ring.setStyleSheet(
+            f"background-color: rgba(59,111,224,{alpha}); border-radius: {size // 2}px;"
+        )
+
     def clear(self):
         self.hide()
+        self.heard_label.setText("")
+        self.set_vad_level(0.0)
 
 
 class AudioPill(QLabel):
@@ -490,24 +604,76 @@ class AudioPill(QLabel):
             self.hide()
 
 
-class StartButton(QPushButton):
-    """Publishes /hri/display/button_press; disabled while a task is active."""
+class StartButton(QStackedWidget):
+    """Shrinks to a floating FAB while the task is active (old web app parity)."""
 
     def __init__(self, ros_node: DisplayRosNode, xl: bool = False):
-        super().__init__("\U0001f525 Start")
-        self.setFixedHeight(128 if xl else 60)
-        font = self.font()
+        super().__init__()
+        self.ros_node = ros_node
+        self._task_active = False
+        self._maximized = True
+
+        self.button = QPushButton("\U0001f525 Start")
+        self.button.setFixedHeight(128 if xl else 60)
+        font = self.button.font()
         font.setPointSize(24 if xl else 12)
         font.setBold(True)
-        self.setFont(font)
-        self.clicked.connect(ros_node.publish_button_press)
-        ros_node.signals.task_status_changed.connect(
-            lambda active: self.setEnabled(not active)
+        self.button.setFont(font)
+        self.button.clicked.connect(self._on_start_clicked)
+
+        fab_size = 80 if xl else 56
+        self.fab = QPushButton("\U0001f525")
+        self.fab.setFixedSize(fab_size, fab_size)
+        fab_font = self.fab.font()
+        fab_font.setPointSize(20 if xl else 14)
+        self.fab.setFont(fab_font)
+        self.fab.setStyleSheet(
+            f"border-radius: {fab_size // 2}px; background-color: rgba(59,111,224,204);"
         )
+        self.fab.clicked.connect(self._on_restore_clicked)
+
+        fab_wrap = QWidget()
+        fab_layout = QHBoxLayout(fab_wrap)
+        fab_layout.setContentsMargins(0, 0, 0, 0)
+        fab_layout.addStretch()
+        fab_layout.addWidget(self.fab)
+
+        self.addWidget(self.button)
+        self.addWidget(fab_wrap)
+
+        ros_node.signals.task_status_changed.connect(self._on_task_status)
+        self._sync_view()
+
+    def _on_start_clicked(self):
+        self.ros_node.publish_button_press()
+        self._maximized = False
+        self._sync_view()
+
+    def _on_restore_clicked(self):
+        self._maximized = True
+        self._sync_view()
+
+    def _on_task_status(self, active: bool):
+        self._task_active = active
+        if active:
+            self._maximized = False
+        self._sync_view()
+
+    def _sync_view(self):
+        shrunk = self._task_active and not self._maximized
+        self.setCurrentIndex(1 if shrunk else 0)
+
+
+VIDEO_STALE_TIMEOUT_MS = 4_000
 
 
 class VideoView(QWidget):
-    """Topic label + live frame, fed by the shared ROS video subscription."""
+    """Topic label + live frame, fed by the shared ROS video subscription.
+
+    Shows a "No video signal" warning if no frame arrives for a while — the
+    closest equivalent to the old <img onError> auto-retry, since a DDS
+    subscription has no error event to hook when its publisher goes away.
+    """
 
     def __init__(self, signals: DisplaySignals, initial_topic: str):
         super().__init__()
@@ -524,12 +690,29 @@ class VideoView(QWidget):
         )
         layout.addWidget(self.video_label, 1)
 
-        signals.video_topic_changed.connect(
-            lambda topic: self.topic_label.setText(f"Video feed at {topic}")
-        )
+        self.signal_label = QLabel("⚠ No video signal")
+        self.signal_label.setAlignment(Qt.AlignCenter)
+        self.signal_label.setStyleSheet(f"color: {ORANGE}; font-weight: bold;")
+        self.signal_label.hide()
+        layout.addWidget(self.signal_label)
+
+        self._stale_timer = QTimer(self)
+        self._stale_timer.setSingleShot(True)
+        self._stale_timer.setInterval(VIDEO_STALE_TIMEOUT_MS)
+        self._stale_timer.timeout.connect(self.signal_label.show)
+
+        signals.video_topic_changed.connect(self._on_topic_changed)
         signals.frame_received.connect(self._on_frame)
+        self._stale_timer.start()
+
+    def _on_topic_changed(self, topic: str):
+        self.topic_label.setText(f"Video feed at {topic}")
+        self.signal_label.hide()
+        self._stale_timer.start()
 
     def _on_frame(self, qimg: QImage):
+        self.signal_label.hide()
+        self._stale_timer.start()
         pixmap = QPixmap.fromImage(qimg).scaled(
             self.video_label.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
         )
@@ -544,10 +727,17 @@ class MessagesPanel(QScrollArea):
         self._layout = QVBoxLayout(self._container)
         self._layout.setAlignment(Qt.AlignTop)
         self.setWidget(self._container)
+
+        self._placeholder = QLabel("Waiting for messages...")
+        self._placeholder.setAlignment(Qt.AlignCenter)
+        self._placeholder.setStyleSheet(f"color: {TEXT_GRAY};")
+        self._layout.addWidget(self._placeholder)
+
         if signals is not None:
             signals.message_received.connect(self.add_message)
 
     def add_message(self, msg_type: str, content: str):
+        self._placeholder.hide()
         color = MESSAGE_COLORS.get(msg_type, "#9ca3af")
         icon = MESSAGE_ICONS.get(msg_type, "")
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -578,7 +768,7 @@ class StepPillBar(QWidget):
             self._pills.append(pill)
             layout.addWidget(pill)
         layout.addStretch()
-        self.set_active_index(-1)
+        self.set_active_index(0)  # first step (e.g. "wait for button") starts active
 
     def set_active_index(self, active: int):
         for i, pill in enumerate(self._pills):
@@ -678,6 +868,8 @@ class BaseWindow(QMainWindow):
         self._audio_timeout_timer.setSingleShot(True)
         self._audio_timeout_timer.timeout.connect(lambda: self._on_audio_state("idle"))
         ros_node.signals.audio_state_changed.connect(self._on_audio_state)
+        ros_node.signals.vad_level_changed.connect(self.audio_overlay.set_vad_level)
+        ros_node.signals.heard_buffered.connect(self.audio_overlay.show_heard)
 
         if with_dialogs:
             self.map_dialog = MapDialog(self)
