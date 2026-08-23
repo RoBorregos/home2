@@ -29,7 +29,9 @@ def generate_launch_description():
                 package="arm_pkg",
                 executable="gpd_service",
                 name="gpd_service",
-                output="screen",
+                # GPD's vendored C++ dumps every grasp to stdout with printf and no
+                # flag silences it; ROS logs go to stderr, so only stdout is hidden.
+                output={"stdout": "log", "stderr": "screen"},
                 emulate_tty=True,
                 respawn=True,
                 parameters=[sim_time_param],

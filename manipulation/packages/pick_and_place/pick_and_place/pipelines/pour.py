@@ -363,16 +363,7 @@ def _pour_direction(log, container_pose, gripper_pose) -> float:
 
     A positive joint6 rotation tilts the contents along -local_X, so if -local_X
     points at the container, pour positive.
-
-    PINNED to +1.0 below. Before the pipelines were merged the container pose
-    and the gripper pose were the same object, so the distance was always 0 and
-    this always fell through to +1.0 -- every pour that has run on this robot
-    used the positive direction. The computed sign is therefore untested, and
-    getting it wrong tips the container away from the bowl. Validate on
-    hardware, then delete this early return.
     """
-    return 1.0
-
     to_container = np.array(
         [
             container_pose.pose.position.x - gripper_pose.pose.position.x,
@@ -383,10 +374,10 @@ def _pour_direction(log, container_pose, gripper_pose) -> float:
     distance = np.linalg.norm(to_container)
 
     quat = [
+        gripper_pose.pose.orientation.w,
         gripper_pose.pose.orientation.x,
         gripper_pose.pose.orientation.y,
         gripper_pose.pose.orientation.z,
-        gripper_pose.pose.orientation.w,
     ]
     local_x = quat2mat(quat)[:, 0].copy()
     local_x[2] = 0.0
@@ -425,10 +416,10 @@ def _is_upside_down(pose) -> bool:
     the other way up and the lip offset must flip.
     """
     quat = [
+        pose.pose.orientation.w,
         pose.pose.orientation.x,
         pose.pose.orientation.y,
         pose.pose.orientation.z,
-        pose.pose.orientation.w,
     ]
     x_axis = quat2mat(quat)[:, 0]
     projected_z = pose.pose.position.z + x_axis[2] * 0.15
@@ -439,10 +430,10 @@ def _offset_along_local_axis(pose, axis: int, distance: float):
     """Copy ``pose`` translated ``distance`` along one of its local axes."""
     shifted = copy.deepcopy(pose)
     quat = [
+        shifted.pose.orientation.w,
         shifted.pose.orientation.x,
         shifted.pose.orientation.y,
         shifted.pose.orientation.z,
-        shifted.pose.orientation.w,
     ]
     direction = quat2mat(quat)[:, axis]
     position = (
