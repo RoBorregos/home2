@@ -273,13 +273,13 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
         return None
     request.pointcloud = cloud
 
-    # Tables leave this unset (False), as the old place did.
-    if place_params.is_shelf:
-        # High shelves: the arm can barely reach the center, so prefer the
-        # nearest reachable point (the heatmap's edge penalty keeps it inside
-        # the lip). Low/mid shelves: prefer the densest center area, not the
-        # front edge, which causes edge drops.
-        request.prefer_closest = place_params.table_height > 1.0
+    # Tables bias toward the nearest reachable point; only shelves opt out.
+    # High shelves are the exception to the exception: the arm can barely reach
+    # the center, so prefer the nearest point. Low/mid shelves want the densest center area, not the
+    # front edge, which causes edge drops.
+    request.prefer_closest = (
+        place_params.table_height > 1.0 if place_params.is_shelf else True
+    )
 
     if not perception.heatmap_place_client.wait_for_service(timeout_sec=5.0):
         log.error("place_pose (heatmap) service not available")
