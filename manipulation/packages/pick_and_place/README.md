@@ -319,24 +319,3 @@ fakes drifting and the rest of the tests quietly becoming meaningless.
 
 These pin decisions, not geometry. A green run means the logic still makes the same choices; it
 says nothing about whether the arm reaches anything.
-
-
-## Status
-
-This package was recently restructured: four nodes (`manipulation_core`, `pick_server`,
-`place_server`, `pour_server`) merged into one, and the `PickMotion` / `PlaceMotion` / `PourMotion`
-actions were deleted — they had no callers outside this package and only added process hops.
-
-**Verified:** unit tests, lint, format, and import checks over every module.
-**Not yet verified on hardware.** Outstanding checks, in priority order:
-
-1. Concurrency — run a pick, a place and a `go_to_hand` close together and confirm no callback
-   starves. The merged node runs `MultiThreadedExecutor(16)` with everything on one reentrant
-   callback group; a client landing on the default group would deadlock.
-2. `flat_stare` now serves *all* flat objects, where plates and sponges previously used
-   `table_stare`. It is a noticeably different arm configuration, so confirm the flat-grasp
-   estimator still detects the larger flat items from it.
-3. Mode recovery — after a deliberately failed descent and after an e-stop mid-descent, confirm the
-   arm reports mode 1.
-4. `PickOutcome.object_pick_height` is non-zero after a rim/bowl/peak pick, and a following place
-   succeeds. This was a live bug before the restructure.
