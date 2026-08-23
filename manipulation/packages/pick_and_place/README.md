@@ -81,9 +81,6 @@ flowchart TD
 | `pipelines/*.py` | the task, start to finish | ROS clients — call `arm.*` / `perception.*` only |
 | `robot/*.py` | MoveIt, xArm, the gripper, the planning scene | which task is running |
 
-The middle rule is enforced by a test (`test_fakes.py::test_pipelines_do_not_import_ros_clients`),
-because it is the rule that erodes first.
-
 ## Tree structure
 
 ```
@@ -100,7 +97,7 @@ pick_and_place/
 │   │   ├── pour.py              find container -> grasp source -> tilt -> return
 │   │   ├── strategies.py        the 3 grasp motions + the STRATEGIES table
 │   │   ├── classification.py    object_name -> strategy key
-│   │   ├── profiles.py          YAML loading, override and validation
+│   │   ├── profiles.py          YAML loading and validation
 │   │   └── errors.py            PickAttemptFailed / PickAborted / PickHardwareError
 │   ├── robot/
 │   │   ├── arm.py               RobotArm -- everything the robot can do
@@ -133,6 +130,99 @@ pick_and_place/
 
 The gripper opens *after* perceiving and *before* grasping — the fingers are in the camera's view
 while it looks.
+
+### Where the flow goes
+
+The same pick as a file map: boxes are files, and each line says what travels along it. Dotted lines
+are read once at startup or leave the package.
+
+```mermaid
+flowchart TD
+    TM([task_manager]) -->|"pick 'fork'"| Core[manipulation_core.py]
+    Core -->|"dispatch on task_type"| Pick[pipelines/pick.py]
+
+    Pick -->|"object name → strategy key"| Cls[pipelines/classification.py]
+    Pick -->|"look for the object"| Perc[robot/perception.py]
+    Perc -->|"a grasp pose, or a point cloud"| Pick
+    Pick -->|"grasp pose → EE-link pose"| Geo[robot/geometry.py]
+    Pick -->|"one candidate at a time"| Str[pipelines/strategies.py]
+    Str -->|"move, descend, grip"| Arm[robot/arm.py]
+    Str -->|"PickOutcome, or try the next"| Pick
+    Pick -->|"success + PickOutcome"| Core
+    Core -->|"kept as the next place's drop height"| Place[pipelines/place.py]
+
+    Prof[pipelines/profiles.py] -.->|"tuned numbers, read once at startup"| Str
+    Arm -.->|"MoveIt, xArm, gripper"| Ext([other nodes])
+```
+
+### Which file does what, in order
+
+The same pick as above, but showing the file each step lives in. Every arrow is a real call; the
+function names are the ones in the source.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant TM as task_manager
+    participant Core as manipulation_core.py
+    participant Cls as pipelines/<br/>classification.py
+    participant Pick as pipelines/pick.py
+    participant Perc as robot/<br/>perception.py
+    participant Str as pipelines/<br/>strategies.py
+    participant Geo as robot/<br/>geometry.py
+    participant Arm as robot/arm.py
+
+    Note over Core,Str: at startup: profiles.py load_profiles() → strategies.py build_strategies()
+
+    TM->>Core: ManipulationAction (task_type = PICK)
+    Core->>Pick: execute(arm, perception, request, strategies)
+
+    Pick->>Cls: resolve_pick_strategy(object_name)
+    Cls-->>Pick: flat | rim | bowl | peak | gpd
+
+    Note over Pick,Arm: 1. Look
+    Pick->>Arm: move_to_named_position(STARE_POSES[key])
+
+    Note over Pick,Perc: 2. Perceive
+    alt not gpd — _perceive_flat
+        Pick->>Perc: estimate_flat_grasp(object_name)
+        Perc-->>Pick: one top-down pose
+    else gpd — _perceive_cluster
+        Pick->>Perc: locate_object(object_name)
+        Pick->>Perc: cluster_at(point)
+        Perc-->>Pick: point cloud
+    end
+
+    Pick->>Arm: open_gripper()
+    Pick->>Arm: snapshot_scene()
+
+    Note over Pick,Arm: 3. Grasp
+    loop _grasp_sets — one batch, or one per GPD config
+        opt gpd
+            Pick->>Perc: detect_grasps(cluster, cfg_path)
+        end
+        loop _candidates — poses × num_alternatives
+            Pick->>Geo: offset_along_approach(pose, tip_offset)
+            Geo-->>Pick: pose in the EE-link frame
+            Pick->>Str: attempt(arm, candidate)
+            Str->>Arm: move_to_pregrasp / descend / close_gripper
+            Arm-->>Str: reached, or PickAttemptFailed
+            Str-->>Pick: PickOutcome, or raise
+        end
+    end
+
+    Note over Pick,Arm: 4. Return
+    Pick->>Arm: move_to_named_position(carry pose)
+    Pick-->>Core: (success, PickOutcome)
+    Core-->>TM: success
+
+    Note over Core: PickOutcome is kept in _last_pick,<br/>and place.py consumes it as its drop height
+```
+
+Reading it as a file map: `manipulation_core.py` only dispatches, `pick.py` owns the order of
+operations, `strategies.py` owns how the gripper closes, and only `arm.py` and `perception.py` ever
+touch ROS. `classification.py`, `geometry.py` and `profiles.py` are pure functions and data with no
+state of their own.
 
 Failures are typed, and the caller decides what each one means:
 
@@ -170,19 +260,6 @@ Every tuned number lives in [`config/pick_profiles.yaml`](config/pick_profiles.y
 heights, descent distances and speeds, gripper settle times, and the flat strategy's contact-force
 thresholds. Retuning is a YAML edit, not a code change.
 
-Three ways to override, in order of precedence:
-
-```bash
-# 1. one field, at launch or on the command line
-ros2 run pick_and_place manipulation_core.py \
-  --ros-args -p pick_profile.flat.force_guard.jump_trip:=3.0
-
-# 2. a whole alternative file
-export FRIDA_PICK_PROFILES_FILE=/path/to/my_profiles.yaml
-
-# 3. edit the installed config/pick_profiles.yaml
-```
-
 Profiles are loaded and **validated at startup**, so a bad value fails at launch rather than
 mid-descent with the arm in cartesian-velocity mode. Validation catches unknown and missing keys,
 wrong types, a descent that resolves non-positive, a `jump_trip` above the hard ceiling, and a
@@ -208,9 +285,6 @@ A profile whose key has no registered class fails at startup, not on the first p
 ```bash
 ros2 launch pick_and_place pick_and_place.launch.py                  # real robot
 ros2 launch pick_and_place pick_and_place.launch.py use_sim_time:=true
-
-ros2 node list     # expect ONE manipulation node: /manipulation_core
-ros2 action list   # ManipulationAction + GoToHand only
 ```
 
 Operator tools:
@@ -230,14 +304,22 @@ colcon build --symlink-install --packages-select frida_constants frida_interface
 colcon test --packages-select pick_and_place && colcon test-result --verbose
 ```
 
-No ROS graph and no hardware: the pipelines run against `FakeArm` / `FakePerception`. The suite
-covers object classification, profile loading and validation, each strategy's exact call sequence,
-the descent arithmetic above, candidate iteration and retry, abort propagation, and the layering
-rule. `test/conftest.py` stubs sibling ROS packages *only* when they are not built, so a full
-workspace tests against the real ones.
+Or directly, inside the container (pytest ships as a module, not a binary):
 
-Because `RobotArm` is a plain class rather than an ABC, `test_fakes.py` asserts by introspection
-that `FakeArm` still covers its public surface — that is what stops the fakes drifting.
+```bash
+python3 -m pytest test/ -q      # 30 tests, 39 cases
+```
+
+No ROS graph and no hardware: the pipelines run against `FakeArm` / `FakePerception`.
+
+`test/conftest.py` stubs sibling ROS packages *only* when they are not built, so a full workspace
+tests against the real ones. Because `RobotArm` is a plain class rather than an ABC, the suite
+asserts by introspection that `FakeArm` still covers its public surface -- that is what stops the
+fakes drifting and the rest of the tests quietly becoming meaningless.
+
+These pin decisions, not geometry. A green run means the logic still makes the same choices; it
+says nothing about whether the arm reaches anything.
+
 
 ## Status
 
