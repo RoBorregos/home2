@@ -32,9 +32,7 @@ from pick_and_place.utils.perception_utils import (
 
 ESTIMATE_FLAT_GRASP_SERVICE = "/manipulation/estimate_flat_grasp"
 
-# Defaults, in seconds. Callers override where their flow needs different ones:
-# the pour path waits longer for a detection and less for a cluster than the
-# pick and place paths do.
+# Defaults, in seconds. Callers override where their flow needs different ones.
 FLAT_GRASP_TIMEOUT = 5.0
 DETECT_TIMEOUT = 2.0
 CLUSTER_TIMEOUT = 60.0
@@ -63,8 +61,6 @@ class Perception:
         self.heatmap_place_client = node.create_client(
             HeatmapPlace, HEATMAP_PLACE_SERVICE, callback_group=group
         )
-        # One client, not the two that used to exist on this node (PickManager
-        # and PlaceManager each created their own for the same service).
         self.flat_grasp_client = node.create_client(
             EstimateFlatGrasp, ESTIMATE_FLAT_GRASP_SERVICE, callback_group=group
         )

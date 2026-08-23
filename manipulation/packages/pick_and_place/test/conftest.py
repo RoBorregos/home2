@@ -1,14 +1,9 @@
 """Test bootstrap.
 
-The pipeline tests exercise manipulation logic, not ROS transport. Where a
-sibling ROS package is not built in the current environment, a stub is
-installed so the modules under test can be imported; when the package IS built
-(CI, the dev container after a full colcon build) the real module is used and
-nothing is stubbed.
-
-Only packages that carry no logic under test are eligible -- the pipelines,
-strategies, profiles and the RobotArm/Perception classes themselves are always
-the real thing.
+A sibling ROS package is stubbed only when it is not built, so a full
+workspace tests against the real one. Only packages carrying no logic under
+test are eligible: the pipelines, strategies, profiles and RobotArm/Perception
+are always the real thing.
 """
 
 import importlib

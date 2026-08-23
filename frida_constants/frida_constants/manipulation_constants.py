@@ -86,16 +86,11 @@ POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Object-name sets consumed by the pick strategy classifier
-# (pick_and_place/pipelines/classification.py) and by the flat grasp estimator.
-# The per-strategy geometry (pre-grasp heights, z tweaks, descent distances and
-# speeds) lives in pick_and_place/config/pick_profiles.yaml so it can be retuned
-# without a rebuild; keeping a second copy here is what let the two drift apart.
 BOWL_NAME = "bowl"
 RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 
 # Default speed for the generic /manipulation/fixed_distance_move service,
-# whose request carries a distance but no speed.
 RIM_DESCENT_SPEED = 20.0  # mm/s
 
 # Place-in-trash

@@ -6,10 +6,6 @@ GoToHand, and dispatches each task type to a pipeline. The pipelines
 (``pipelines/pick.py``, ``place.py``, ``pour.py``) hold the logic and talk to
 the robot through ``robot/arm.py`` and ``robot/perception.py``.
 
-There used to be four nodes here -- manipulation_core, pick_server,
-place_server, pour_server -- with PickMotion/PlaceMotion/PourMotion actions
-between them. Those actions had no callers outside this package, so following a
-single pick meant crossing two process boundaries.
 """
 
 import copy
@@ -210,11 +206,7 @@ class ManipulationCore(Node):
         return True
 
     def _run_pick_closest(self, request) -> bool:
-        """PICK_CLOSEST has never been implemented.
-
-        It used to reference an unbound local and raise NameError; say so
-        instead.
-        """
+        """PICK_CLOSEST has never been implemented."""
         self.get_logger().error("PICK_CLOSEST is not implemented")
         return False
 

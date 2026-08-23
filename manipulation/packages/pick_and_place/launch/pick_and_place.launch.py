@@ -10,10 +10,8 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    # When the sim includes this launch it overrides use_sim_time to true so
-    # gpd_service, manipulation_core and perception
-    # all look up TFs against /clock. On the real robot the default (false)
-    # keeps everything on wall time -- same launch, no sim-specific code.
+    # The sim overrides this to true so every node looks up TFs against /clock;
+    # the default keeps the real robot on wall time. One launch, no sim branch.
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
     sim_time_param = {"use_sim_time": use_sim_time}
 
@@ -36,10 +34,6 @@ def generate_launch_description():
                 respawn=True,
                 parameters=[sim_time_param],
             ),
-            # One node for the whole manipulation task. It replaced
-            # pick_server / place_server / pour_server, whose PickMotion,
-            # PlaceMotion and PourMotion actions had no callers outside this
-            # package and only added process hops.
             Node(
                 package="pick_and_place",
                 executable="manipulation_core.py",
@@ -48,12 +42,10 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[
                     {
-                        # based on distance between end-effector link and contact point with objects e.g. where you grip
+                        # based on distance between end-effector link and contact point with objects
                         "ee_link_offset": -0.09,
                     },
-                    # Per-strategy tuning (pre-grasp heights, descent distances,
-                    # flat-object contact-force thresholds) lives in
-                    # pick_and_place/config/pick_profiles.yaml.
+                    # Per-strategy tuninglives in pick_and_place/config/pick_profiles.yaml.
                     sim_time_param,
                 ],
             ),

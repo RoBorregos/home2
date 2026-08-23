@@ -1,20 +1,14 @@
 # Pick strategy profiles.
 #
-# One entry per pick strategy key (see resolve_pick_strategy in
-# frida_constants/manipulation_constants.py). Every tuned number the pick
+# One entry per pick strategy key. Every tuned number the pick
 # pipeline uses lives here -- retuning contact force or descent depth is a YAML
 # edit, not a code change plus rebuild.
-#
-# Override without editing this file: point FRIDA_PICK_PROFILES_FILE at another
-# YAML, or pass pick_profiles_file to manipulation_core.
 #
 # The loader validates on startup, so a bad value fails at launch rather than
 # mid-descent with the arm in cartesian-velocity mode.
 
 defaults: &defaults
   # Name of the manipulation_core ROS param holding this strategy's tip offset.
-  # The offset backs the grasp pose off along the gripper's local Z (approach)
-  # axis, from the perceived grasp point to the EE link frame.
   tip_offset_param: ee_link_offset
   # Extra candidates generated per grasp pose by stepping the tip offset.
   num_alternatives: 1

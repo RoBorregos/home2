@@ -80,11 +80,9 @@ class FixedDistanceDescentPick(PickStrategy):
 
     Used where the target height is trustworthy: the rim of a basket or bowl, or
     the top of a pile of clothes. The descent runs under xArm cartesian velocity
-    closed on TCP Z rather than through MoveIt, so it is unaffected by the
-    octomap noise these cavities generate.
-
-    Rim, bowl and peak differ only in their profile: the descent distance is
-    ``pre_grasp_height - grasp_z_tweak`` in all three cases.
+    closed on TCP Z, so the octomap noise these cavities generate cannot affect
+    it. Rim, bowl and peak differ only in their profile, the descent being
+    ``pre_grasp_height - grasp_z_tweak``.
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
@@ -106,8 +104,7 @@ class FixedDistanceDescentPick(PickStrategy):
                 raise PickAttemptFailed("pre-grasp unreachable")
 
         with arm.phase("descend"):
-            # Clear again: the arm has moved, so the octomap it planned against
-            # now contains voxels for space the gripper occupies.
+            # Clear again: the arm has moved
             arm.clear_octomap()
             arm.check_abort()
             descent = profile.effective_descent_distance
@@ -119,8 +116,7 @@ class FixedDistanceDescentPick(PickStrategy):
         with arm.phase("close_gripper"):
             arm.close_gripper(settle_s=profile.close_settle)
 
-        # No lift: the pick pipeline chooses the return pose, because holding
-        # position matters for baskets that must be carried in place.
+        # No lift: the pick pipeline chooses the return pose.
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
 
 
@@ -128,13 +124,11 @@ class ForceGuardedDescentPick(PickStrategy):
     """Descend onto a flat object until joint effort reports contact.
 
     Forks, plates and sponges are too thin to descend onto by position: the
-    perceived surface height is not accurate to the millimetre, so a fixed
-    descent either stops short or drives into the table. Feeling for contact
-    finds the real surface instead.
+    perceived height is not accurate to the millimetre, so a fixed descent
+    either stops short or drives into the table.
 
-    Unlike the fixed-distance strategy, the pre-grasp is a plain pose goal (the
-    approach is top-down and unobstructed, so nearest-IK seeding buys nothing)
-    and the arm lifts back to the pre-grasp afterwards.
+    The pre-grasp is a plain pose goal (top-down and unobstructed, so nearest-IK
+    seeding buys nothing) and the arm lifts back to it afterwards.
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
@@ -159,10 +153,7 @@ class ForceGuardedDescentPick(PickStrategy):
                 )
 
         with arm.phase("retract"):
-            # Retract from the measured contact point, never the nominal target,
-            # so the gripper always moves up and never back down into the table.
-            # The descent presses the tool into the surface; backing off lets the
-            # fingers close fully instead of binding under Z load.
+            # Retract from the measured contact point, never the nominal target.
             contact_z = pre_grasp.pose.position.z - result.descended_m
             retract_pose = offset_z(pre_grasp, 0.0)
             retract_pose.pose.position.z = contact_z + profile.post_contact_retract
@@ -175,8 +166,7 @@ class ForceGuardedDescentPick(PickStrategy):
             with arm.phase("lift"):
                 arm.move_to_pose(pre_grasp, velocity=0.2)
 
-        # Heights stay zero: this strategy attaches no collision object, so the
-        # object's extent is unknown.
+        # Heights stay zero: this strategy attaches no collision object.
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
 
 
@@ -184,12 +174,10 @@ class DirectGraspPick(PickStrategy):
     """Plan straight to a GPD-generated grasp and close on it.
 
     The default for anything without a specialised behavior. GPD grasps already
-    approach from a reachable direction, so there is no pre-grasp or descent
-    phase -- MoveIt plans the whole approach in one go.
-
-    This is the only strategy that attaches the picked object to the gripper in
-    the planning scene, which is also what lets it report the object heights the
-    place pipeline needs.
+    approach from a reachable direction, so MoveIt plans the whole approach in
+    one go, with no pre-grasp or descent phase. It is also the only strategy
+    that attaches the object in the planning scene, which is what lets it report
+    the heights the place pipeline needs.
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
@@ -206,9 +194,6 @@ class DirectGraspPick(PickStrategy):
         outcome = PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
 
         if not attachment.attached:
-            # The grasp itself succeeded, so the object is very likely held; only
-            # the scene bookkeeping failed. Report the pick without heights
-            # rather than dropping a good grasp.
             arm.logger.error(
                 "Failed to attach object to the planning scene; "
                 "reporting the pick without object heights"
@@ -229,9 +214,7 @@ class DirectGraspPick(PickStrategy):
         return outcome
 
 
-# Which strategy handles which profile. Adding a pick behavior that reuses an
-# existing motion algorithm means adding a profile to pick_profiles.yaml and one
-# line here; a genuinely new algorithm means one new class above.
+# Which strategy handles which profile.
 STRATEGIES = {
     PICK_STRATEGY_FLAT: ForceGuardedDescentPick,
     PICK_STRATEGY_RIM: FixedDistanceDescentPick,

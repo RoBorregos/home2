@@ -1,13 +1,11 @@
 """The pick_and_place invariants worth guarding.
 
-Consolidated from eight files. What survived is what breaks SILENTLY: safety
-stops, scene state that leaks into later plans, and config that must fail at
-launch rather than mid-descent. Tests that only echoed pick_profiles.yaml were
-dropped -- they turned every retune into a test edit and never caught a bug.
+These keep what breaks SILENTLY: safety stops, scene state that leaks into
+later plans, and config that must fail at launch rather than mid-descent.
 
-These run entirely against fakes. They pin decisions, not geometry: they cannot
-tell you the arm reaches anything, and a green run is not a working robot.
-They also need the ROS message packages, so they only run inside the container.
+They run against fakes and need the ROS message packages, so they only run
+inside the container. They pin decisions, not geometry: a green run is not a
+working robot.
 """
 
 import inspect
@@ -282,10 +280,8 @@ def test_motion_fault_releases_the_gripper(strategies):
 
 
 def test_joint6_too_close_to_its_limit_fails_rather_than_half_pouring(strategies):
-    # Read the limit the pipeline actually bound. conftest only stubs
-    # frida_pymoveit2 when it is NOT installed, so the real xarm6 limits
-    # (+-pi*0.99) apply inside the container while the stub uses +-6.28.
-    # A hardcoded value sits at the limit in only one of the two.
+    # conftest stubs frida_pymoveit2 only when it is not installed, so the real
+    # limits apply in the container and the stub's elsewhere; read the live one.
     upper = pour_pipeline.JOINT_POSITION_LIMITS["joint6"][1]
 
     class Pinned(FakeArm):

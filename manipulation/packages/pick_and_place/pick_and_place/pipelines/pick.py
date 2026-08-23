@@ -3,9 +3,7 @@
     look at the object -> perceive it -> find grasp candidates
     -> run the motion strategy -> return to a carry pose
 
-Read this file top to bottom and you have the whole pick. It used to be split
-across PickManager (perception, stare poses, return poses) and pick_server
-(motion), with a ROS action round-trip and a process boundary in between.
+Read this file top to bottom and you have the whole pick.
 """
 
 import copy
@@ -130,8 +128,7 @@ def execute(
     if perceived is None:
         return False, PickOutcome()
 
-    # Open after perceiving, before grasping: the original order, kept because
-    # the fingers are in the camera's view while it looks.
+    # Open after perceiving: the fingers are in the camera's view while it looks.
     arm.open_gripper()
 
     # Remember the perceived objects so DirectGraspPick can attach one.

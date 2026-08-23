@@ -66,8 +66,8 @@ class FakeArm:
     assert on: a pick strategy is defined by the sequence of things it does to
     the robot.
 
-    Duck-types :class:`RobotArm` rather than inheriting an ABC;
-    ``test_fakes.py`` fails if the two drift apart.
+    Duck-types :class:`RobotArm` rather than inheriting an ABC; the suite fails
+    if the two drift apart.
     """
 
     def __init__(

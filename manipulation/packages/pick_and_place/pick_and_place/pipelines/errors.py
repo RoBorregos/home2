@@ -1,8 +1,6 @@
 """Failure taxonomy shared by every manipulation pipeline.
 
-One recovery policy per failure class, decided by the caller, instead of the
-ad-hoc mix of ``continue`` / ``return False`` / ``return True`` the pipelines
-used to carry.
+One recovery policy per failure class, decided by the caller.
 """
 
 

@@ -3,10 +3,6 @@
 The pipelines (`pipelines/pick.py`, `place.py`, `pour.py`) talk only to this
 class and never touch a ROS client, which is what keeps them readable and what
 lets them be unit-tested against a fake arm with no ROS graph.
-
-Before this existed, `move_to_pose`, `AttachCollisionObject`, the gripper client
-and the e-stop subscription were re-implemented independently in pick_server,
-place_server and pour_server.
 """
 
 import time
@@ -196,9 +192,7 @@ class RobotArm:
             Bool, ESTOP_TOPIC, self._on_estop, 10, callback_group=group
         )
 
-        # One TF listener for the whole node. There used to be three in this
-        # process: the core's plus one each inside PickManager and PourManager,
-        # so /tf was subscribed three times and only one buffer was tuned.
+        # One TF listener for the whole node.
         qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             history=HistoryPolicy.KEEP_LAST,

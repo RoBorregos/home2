@@ -3,9 +3,7 @@
     find the container -> grasp the source object (or use the held one)
     -> lift above the container -> tilt the wrist -> return
 
-Used to be split across PourManager (perception, its own copy of the GPD grasp
-loop) and pour_server (motion), with two ROS action round-trips in between. The
-grasp loop is gone: this pipeline calls the pick pipeline instead.
+The source object is grasped by calling the pick pipeline.
 """
 
 import copy
@@ -47,8 +45,7 @@ MIN_POUR_ANGLE = 1.0  # rad
 # Fallback orientation when the pick reported no pose.
 DEFAULT_POUR_QUAT = [0.707, 0.000, 0.707, 0.002]
 
-# The pour path waits longer for a detection and less for a cluster than the
-# pick and place paths do; these were its own values before the merge.
+# The pour waits longer for a detection and less for a cluster than pick/place.
 DETECT_TIMEOUT = 60.0
 CLUSTER_TIMEOUT = 10.0
 
@@ -175,11 +172,7 @@ def _locate_container(arm, perception, container_name: str):
 
 
 def _grasp_source_object(arm, perception, request: PourRequest, strategies):
-    """Pick the source object using the normal pick pipeline.
-
-    This replaces PourManager's own copy of the GPD grasp loop, which had
-    drifted from PickManager's (different sort, different retry count).
-    """
+    """Pick the source object using the normal pick pipeline."""
     pick_request = pick_pipeline.PickRequest(
         object_name=request.object_name,
         in_configuration=True,  # already at table_stare
@@ -303,7 +296,6 @@ def _lift_clear(arm, outcome: PickOutcome) -> bool:
                 arm.logger.info("Lifted clear")
                 return True
             arm.logger.warn("Lift attempt failed, raising the target")
-    # The original continued to the pour even if the lift never succeeded.
     arm.logger.error("Could not lift clear; continuing to the pour anyway")
     return True
 

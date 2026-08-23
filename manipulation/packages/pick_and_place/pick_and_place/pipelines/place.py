@@ -1,10 +1,8 @@
 """The place pipeline, start to finish.
 
-    choose where to put it -> build a ladder of candidate poses
-    -> reach one -> release -> return
+choose where to put it -> build a ladder of candidate poses
+-> reach one -> release -> return
 
-Used to be split across PlaceManager (where to place) and place_server (how to
-reach it), with a ROS action round-trip in between.
 """
 
 import copy
@@ -45,14 +43,13 @@ TABLE_LADDER = (8, 0.05)
 DEFAULT_SHELF_DROP = 0.15
 DEFAULT_TABLE_DROP = 0.10
 
-# The motion planner's own defaults, which the old place_server got by leaving
-# the tolerance fields at zero. Pick's tighter defaults made every rung of the
+# The motion planner's own defaults. Pick's tighter ones make every rung of the
 # ladder harder to plan.
 PLACE_TOLERANCE_POSITION = 0.01
 PLACE_TOLERANCE_ORIENTATION = 0.05
 
 # The heatmap ranks a whole surface and the estimator averages several frames;
-# both are slow, so they keep the generous waits the pre-merge place used.
+# both are slow, hence the generous waits.
 HEATMAP_TIMEOUT = 60.0
 TRASH_TIMEOUT = 15.0
 
@@ -252,8 +249,7 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
 
     # "Place next to X": aim the heatmap at X's centroid.
     if place_params.close_to:
-        # Failing to resolve it degrades to a generic place rather than failing
-        # the task, which is what the pre-merge place effectively did.
+        # Failing to resolve it degrades to a generic place, not a failed task.
         point = _close_by_point(arm, perception, place_params.close_to)
         if point is not None:
             request.close_point = point
