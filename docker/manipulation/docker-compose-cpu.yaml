@@ -5,8 +5,8 @@ services:
       context: ../..
       dockerfile: docker/manipulation/Dockerfile.cpu
       args:
-        BASE_IMAGE: roborregos/home2:cpu_base
-    image: roborregos/home2:manipulation-cpu
+        BASE_IMAGE: roborregos/home2:jazzy_cpu_base
+    image: roborregos/home2:jazzy_manipulation-cpu
     volumes:
       - ../../:/workspace/src/
       - /dev:/dev

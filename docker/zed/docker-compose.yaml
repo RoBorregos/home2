@@ -5,7 +5,7 @@ services:
       context: ../..
       dockerfile: docker/zed/Dockerfile.l4t
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:l4t_base}
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:jazzy_l4t_base}
     image: ${IMAGE_NAME:-roborregos/home2:zed-l4t}
     volumes:
       - /dev:/dev
@@ -43,7 +43,7 @@ services:
       echo '=== ZED SDK check ===' && ls /usr/local/zed/lib/libsl_zed.so* 2>/dev/null || echo 'WARNING: libsl_zed.so NOT found in /usr/local/zed/lib/';
       export LD_LIBRARY_PATH=/usr/local/zed/lib:$${LD_LIBRARY_PATH};
       sudo sed -i 's|<LogLevel>warning</LogLevel>|<LogLevel>warn</LogLevel>|' /etc/cyclonedds.xml 2>/dev/null || true;
-      source /opt/ros/humble/setup.bash;
+      source /opt/ros/jazzy/setup.bash;
       source /usr/local/bin/cyclonedds_setup.sh;
       sleep 2;
       source /opt/zed_ws/install/setup.bash;

@@ -1,7 +1,7 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-ARG ROS_DISTRO=humble
+ARG ROS_DISTRO=jazzy
 
 # rosbridge + web_video_server + nodejs (for Next.js)
 RUN apt-get update && apt-get install -y --no-install-recommends \

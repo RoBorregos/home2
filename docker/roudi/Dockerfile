@@ -1,7 +1,7 @@
-ARG BASE_IMAGE=roborregos/home2:l4t_base
+ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
 FROM ${BASE_IMAGE}
 
-ARG ROS_DISTRO=humble
+ARG ROS_DISTRO=jazzy
 ENV ROS_DISTRO=${ROS_DISTRO}
 
 # Build iceoryx from source with expanded publisher/subscriber limits

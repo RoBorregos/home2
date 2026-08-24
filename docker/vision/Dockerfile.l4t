@@ -1,7 +1,7 @@
-ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
+ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
 FROM ${BASE_IMAGE}
 
-ARG ROS_DISTRO=humble
+ARG ROS_DISTRO=jazzy
 
 # ── Orin AGX (sm_87) performance environment ──
 ENV CUDA_ARCHITECTURES=87

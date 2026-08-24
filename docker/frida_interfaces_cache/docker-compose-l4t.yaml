@@ -5,7 +5,7 @@ services:
       dockerfile: ../Dockerfile.ROS
       args:
         BASE_IMAGE: ubuntu:22.04
-    image: roborregos/home2:l4t_base
+    image: roborregos/home2:jazzy_l4t_base
     container_name: home2-frida-interfaces-cache
     volumes:
       - ../../:/workspace/src
@@ -33,4 +33,4 @@ services:
     user: ${UID}:${GID}
     privileged: true
     command: >
-      bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants xarm_msgs"
+      bash -c "source /opt/ros/jazzy/setup.bash && colcon build --packages-select frida_interfaces frida_constants xarm_msgs"

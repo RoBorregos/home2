@@ -5,8 +5,8 @@ services:
       context: ../..
       dockerfile: docker/manipulation/Dockerfile.l4t
       args:
-        BASE_IMAGE: roborregos/home2:l4t_base
-    image: roborregos/home2:manipulation-l4t
+        BASE_IMAGE: roborregos/home2:jazzy_l4t_base
+    image: roborregos/home2:jazzy_manipulation-l4t
     volumes:
       - ../../:/workspace/src/
       - /dev:/dev
