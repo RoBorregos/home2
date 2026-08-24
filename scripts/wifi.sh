@@ -7,7 +7,7 @@
 #
 # Config: set ROUTER_HOST / ROUTER_USER as env vars, or edit the defaults below.
 
-ROUTER_HOST=${ROUTER_HOST:-192.168.1.1}
+ROUTER_HOST=${ROUTER_HOST:-192.168.31.1}
 ROUTER_USER=${ROUTER_USER:-root}
 SSH="ssh -o BatchMode=yes -o ConnectTimeout=5 ${ROUTER_USER}@${ROUTER_HOST}"
 
