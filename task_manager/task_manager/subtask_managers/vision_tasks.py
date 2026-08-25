@@ -86,7 +86,6 @@ class VisionTasks:
         self.task = task
         self.follow_face = {"x": None, "y": None}
 
-        # Per-node publishers to pause/resume heavy vision inference
         self._face_rec_pub = self.node.create_publisher(
             BoolMsg, "/vision/face_recognition/active", 10
         )
@@ -109,10 +108,7 @@ class VisionTasks:
         self.face_name_subscriber = self.node.create_subscription(
             String, PERSON_NAME_TOPIC, self.person_name_callback, 10
         )
-        # Camera-frame 3D points of the persons matched by the last
-        # count_by_pose/gesture/color call (for nav approach_point)
         self.last_person_points = []
-        # Latest 3D point of the tracked person (tracker publishes while locked)
         self._tracked_point = None
         self.tracked_point_subscriber = self.node.create_subscription(
             PointStamped, RESULTS_TOPIC, self._tracked_point_callback, 10
@@ -192,8 +188,6 @@ class VisionTasks:
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
-                # read_qr removed from startup checks: no server exists for
-                # READ_QR_TOPIC and no GPSR command calls it.
                 "count_person": {
                     "client": self.count_person_client,
                     "type": "service",
@@ -924,24 +918,6 @@ class VisionTasks:
 
     def get_drink_position(self, detections: list[BBOX], drink: str) -> tuple[int, str]:
         """Get the position of the drink in the detected objects"""
-        # location = ""
-        # for detection in detections:
-        #     if detection.classname.lower() == drink.lower():
-        #         if detection.x < 0.35:
-        #             location = "left"
-        #         elif detection.x > 0.65:
-        #             location = "right"
-        #         else:
-        #             location = "center"
-
-        #         if detection.y < 0.35:
-        #             location += " top"
-        #         elif detection.y > 0.65:
-        #             location += " bottom"
-
-        #         return Status.EXECUTION_SUCCESS, location
-
-        # return Status.TARGET_NOT_FOUND, "Not found"
         x_pos = []
         drink_pos = None
         left_pos = None
