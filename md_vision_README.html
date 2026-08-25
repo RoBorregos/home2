@@ -233,7 +233,7 @@ Vision pipeline</h1>
 Packages</h1>
 <h2><a class="anchor" id="autotoc_md172"></a>
 &lt;tt&gt;object_detector_2d&lt;/tt&gt;</h2>
-<p>The detection backbone. Both nodes share <code>BaseDetectorNode</code>, which declares the camera topics, <code>TARGET_FRAME</code>, <code>DEPTH_ACTIVE</code>, <code>FLIP_IMAGE</code> and <code>MAX_DEPTH_THRESH</code> parameters and handles projection and visualization.</p>
+<p>The detection backbone. Both nodes share <code>BaseDetectorNode</code>, which declares the camera topics, <code>TARGET_FRAME</code>, <code>DEPTH_ACTIVE</code>, <code>FLIP_IMAGE</code> and <code>MAX_DEPTH_THRESH</code> parameters and handles projection and visualization. <code>vision_general</code> has the same pattern in <code>VisionRuntime</code> (see below).</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Node   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key interfaces    </th></tr>
@@ -268,7 +268,12 @@ Packages</h1>
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacezed__simulator.html">zed_simulator</a></code>   </td><td class="markdownTableBodyNone">Publishes a plain webcam onto the ZED topics for laptop dev   </td><td class="markdownTableBodyNone">params <code>video_id</code>, <code>use_zed</code>, <code>visualize</code>   </td><td class="markdownTableBodyNone">—   </td></tr>
 </table>
 <p><code><a class="el" href="pose__detection_8py.html">pose_detection.py</a></code> is a library, not a node: it holds the COCO keypoint constants and the gesture/pose classification used by <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code> and <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>.</p>
-<h2><a class="anchor" id="autotoc_md174"></a>
+<h3><a class="anchor" id="autotoc_md174"></a>
+&lt;tt&gt;VisionRuntime&lt;/tt&gt;</h3>
+<p><code><a class="el" href="vision__runtime_8py.html">scripts/task_nodes/vision_runtime.py</a></code> is the counterpart to <code>object_detector_2d</code>'s <code>BaseDetectorNode</code>: camera subscriptions, the <code>/vision/&lt;node&gt;/active</code> gate, rotation tracking, TF, the debug publisher and a non-spinning <code>call_service</code>. Subclasses read <code>self.image</code>, <code>self.depth_image</code> and <code>self.camera_info</code> as they did when each node owned its own subscriptions.</p>
+<p><code>scripts/task_nodes/</code> holds the runtime and every node that subclasses it: <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>, <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacerestaurant__commands.html">restaurant_commands</a></code>, <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code> and <code><a class="el" href="namespaceface__recognition__node.html">face_recognition_node</a></code>. They all install flat into <code>lib/vision_general/</code>, so <code>from <a class="el" href="namespacevision__runtime.html">vision_runtime</a> import ...</code> resolves in both the source and the installed tree.</p>
+<p><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code> deliberately stays out: it needs a different QoS per stream (BEST_EFFORT colour, RELIABLE depth) and a separate callback group per subscription so its 20 Hz tracking timer is never starved by a service blocking on moondream. <code>VisionRuntime</code> expresses neither.</p>
+<h2><a class="anchor" id="autotoc_md175"></a>
 &lt;tt&gt;moondream_run&lt;/tt&gt;</h2>
 <p><code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> is a thin ROS ⇄ gRPC bridge. The model itself lives in a separate container because its dependency set conflicts with the ROS one.</p>
 <table class="markdownTable">
@@ -288,7 +293,7 @@ Packages</h1>
 <td class="markdownTableBodyNone"><code>/vision/person_posture</code>   </td><td class="markdownTableBodyNone"><code>PersonPosture</code>   </td><td class="markdownTableBodyNone">Describes a person's posture   </td></tr>
 </table>
 <p>The gRPC side (<code>MoonDreamService</code> on port <code>50052</code>) exposes <code>EncodeImage</code>, <code>FindBeverage</code>, <code>FindObjectPoints</code>, <code>Query</code> and <code>Detect</code>, backed by <code>vikhyatk/moondream2</code>.</p>
-<h1><a class="anchor" id="autotoc_md175"></a>
+<h1><a class="anchor" id="autotoc_md176"></a>
 Running vision</h1>
 <p>Each competition flag maps to one launch file and one set of compose profiles:</p>
 <table class="markdownTable">
@@ -334,7 +339,7 @@ Running vision</h1>
 <div class="line">./run.sh vision --stop           # stop containers, keep them</div>
 <div class="line">./run.sh vision --down           # stop and remove</div>
 <div class="line">./run.sh vision --clean          # delete build/, install/, log/</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md176"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md177"></a>
 Building inside the container</h2>
 <p><code>--build</code> runs exactly this — <code>frida_interfaces</code> and <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> are ignored because they come prebuilt from the shared cache container (<code>./run.sh frida_interfaces</code>):</p>
 <div class="fragment"><div class="line">colcon build --packages-ignore frida_interfaces frida_constants \</div>
@@ -343,14 +348,14 @@ Building inside the container</h2>
 </div><!-- fragment --><p>Every <code>scripts/*.py</code> is installed as an executable, so any script can be run directly:</p>
 <div class="fragment"><div class="line">ros2 run vision_general tracker_node.py</div>
 <div class="line">ros2 run object_detector_2d object_detector_node.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md177"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md178"></a>
 Camera</h2>
 <p>On the Orin, start the ZED container (or the wrapper directly):</p>
 <div class="fragment"><div class="line">./run.sh zed</div>
 <div class="line">ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false</div>
 </div><!-- fragment --><p>Anywhere else, publish a webcam onto the same topics. <code>video_id</code> is the <code>/dev/videoN</code> index:</p>
 <div class="fragment"><div class="line">ros2 run vision_general zed_simulator.py --ros-args -p video_id:=1</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md178"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md179"></a>
 Example calls</h2>
 <div class="fragment"><div class="line"># Track the largest person, then stop</div>
 <div class="line">ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool &quot;{data: true}&quot;</div>
@@ -390,7 +395,7 @@ Example calls</h2>
 <div class="line">ros2 topic echo /vision/detections</div>
 <div class="line">ros2 topic echo /vision/person_list</div>
 <div class="line">ros2 topic echo /vision/tracking_results</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md179"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md180"></a>
 Debugging</h1>
 <p>Debug image topics are <b>subscriber-gated</b> by <code><a class="el" href="debug__pub_8py.html">utils/debug_pub.py</a></code>: nothing is encoded until someone subscribes, so leaving them in costs nothing. Open one in <code>rqt_image_view</code>:</p>
 <table class="markdownTable">
@@ -412,10 +417,10 @@ Debugging</h1>
 <div class="line">ros2 node list | grep vision</div>
 </div><!-- fragment --><p>The VLM sidecar logs separately from the ROS container:</p>
 <div class="fragment"><div class="line">docker logs -f home2-moondream-server</div>
-</div><!-- fragment --> <h1><a class="anchor" id="autotoc_md180"></a>
+</div><!-- fragment --> <h1><a class="anchor" id="autotoc_md181"></a>
 Object detection pipeline training</h1>
 <p>The training process involves preparing the dataset, configuring the model, and running the training. You can find the pipeline repository <a href="https://github.com/RoBorregos/home-pipelines/tree/main/vision/object_detector">here</a>.</p>
-<h1><a class="anchor" id="autotoc_md181"></a>
+<h1><a class="anchor" id="autotoc_md182"></a>
 Known issues</h1>
 <p>These are real inconsistencies in the current tree, recorded so they do not surprise you. None of them are fixed by this document.</p>
 <ul>

@@ -613,6 +613,7 @@ var namespaces_dup =
       [ "map", "namespacevision__3D__utils.html#a3d2ba1e9d978b0afd592f74a898ea37e", null ],
       [ "FLT_EPSILON", "namespacevision__3D__utils.html#a98f504ec1d9a17769ad241f28580d805", null ]
     ] ],
+    [ "vision_runtime", "namespacevision__runtime.html", "namespacevision__runtime" ],
     [ "visualization", "namespacevisualization.html", "namespacevisualization" ],
     [ "visualize_mbm", "namespacevisualize__mbm.html", [
       [ "main", "namespacevisualize__mbm.html#a2caa0d958d1ae9a1ae73039e9f4db9bc", null ]

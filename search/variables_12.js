@@ -149,7 +149,7 @@ var searchData=
   ['robots_146',['robots',['../namespacevamp.html#a3a4dbad2475668263cff086bef79be46',1,'vamp']]],
   ['ros_5fnode_147',['ros_node',['../classnav__ui_1_1NavUI.html#abfbadaf7e053ba7ee5918abc45fb5fd1',1,'nav_ui::NavUI']]],
   ['rotate_5fcamera_5fpublisher_148',['rotate_camera_publisher',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aec26182e8c4067c092be4ec7847bea52',1,'task_manager::subtask_managers::vision_tasks::VisionTasks']]],
-  ['rotation_149',['rotation',['../classimage__orienter_1_1ImageOrienter.html#ab8555b57e61b7acc814e9ae67d17c43e',1,'image_orienter.ImageOrienter.rotation()'],['../classhric__commands_1_1HRICCommands.html#abd37800aa80cb67ba02cdc734c6754ed',1,'hric_commands.HRICCommands.rotation()']]],
+  ['rotation_149',['rotation',['../classvision__runtime_1_1VisionRuntime.html#a12b73e8d783f8c66ea3f429245ed1491',1,'vision_runtime.VisionRuntime.rotation()'],['../classimage__orienter_1_1ImageOrienter.html#ab8555b57e61b7acc814e9ae67d17c43e',1,'image_orienter.ImageOrienter.rotation()']]],
   ['rrtc_150',['rrtc',['../structvamp_1_1planning_1_1AORRTCSettings.html#addcc790f210fb05c852b0b7e413bff17',1,'vamp::planning::AORRTCSettings']]],
   ['rtab_5fcheck_5ftopic_151',['RTAB_CHECK_TOPIC',['../namespacefrida__constants_1_1navigation__constants.html#a8b92de2f769fb1a6b93b0c409f9dd4c0',1,'frida_constants::navigation_constants']]],
   ['rtab_5fcontainer_5fnode_152',['RTAB_CONTAINER_NODE',['../namespacefrida__constants_1_1navigation__constants.html#a6f453750877d26465830a78223bfd93b',1,'frida_constants::navigation_constants']]],

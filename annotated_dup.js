@@ -663,6 +663,9 @@ var annotated_dup =
     [ "vamp_server", "namespacevamp__server.html", [
       [ "VampServer", "classvamp__server_1_1VampServer.html", "classvamp__server_1_1VampServer" ]
     ] ],
+    [ "vision_runtime", "namespacevision__runtime.html", [
+      [ "VisionRuntime", "classvision__runtime_1_1VisionRuntime.html", "classvision__runtime_1_1VisionRuntime" ]
+    ] ],
     [ "visualization", "namespacevisualization.html", [
       [ "NoVisualization", "classvisualization_1_1NoVisualization.html", "classvisualization_1_1NoVisualization" ],
       [ "Visualization", "classvisualization_1_1Visualization.html", "classvisualization_1_1Visualization" ]
