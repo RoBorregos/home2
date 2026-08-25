@@ -10,16 +10,12 @@ from datetime import datetime
 
 import cv2
 import rclpy
-from cv_bridge import CvBridge
 
-from rclpy.node import Node
-from sensor_msgs.msg import CameraInfo, Image
+from sensor_msgs.msg import Image
 
 from frida_constants.vision_constants import (
-    CAMERA_INFO_TOPIC,
     CAMERA_TOPIC,
     CUSTOMER_TABLES_TOPIC,
-    DEPTH_IMAGE_TOPIC,
     GET_CUSTOMER_TOPIC,
     OBJECT_POINTS_TOPIC,
     RESTAURANT_TABLES_TOPIC,
@@ -31,19 +27,19 @@ from frida_interfaces.srv import Customer, CustomerTables, ObjectPoints
 from builtin_interfaces.msg import Time
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from vision_general.utils.ros_utils import wait_for_future
+from vision_runtime import VisionRuntime, spin
 
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
 
 
-class RESTAURANTCommands(Node):
+class RESTAURANTCommands(VisionRuntime):
     def __init__(self):
-        super().__init__("restaurant_commands")
-        self.bridge = CvBridge()
-        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-
-        self.image = None
-        self.depth_image = None
-        self.imageInfo = None
+        super().__init__(
+            "restaurant_commands",
+            image_topic=CAMERA_TOPIC,
+            use_depth=True,
+            use_camera_info=True,
+        )
         # Last annotated tables image — republished on a timer because the
         # display renders an MJPEG stream (web_video_server): a single-shot
         # publish is lost if the stream (re)subscribes after the scan.
@@ -57,12 +53,6 @@ class RESTAURANTCommands(Node):
         except OSError as e:
             self.get_logger().warn(f"Cannot create save dir {self.save_dir}: {e}")
             self.save_dir = None
-
-        self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
-        self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
-        self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
-        )
 
         self.client_debug_publisher = self.create_publisher(
             Image, RESTAURANT_TABLES_TOPIC, 10
@@ -90,7 +80,7 @@ class RESTAURANTCommands(Node):
 
         # An exception in this callback would drop the response and stall the
         # task manager for its whole client timeout — refuse early instead.
-        if self.image is None or self.depth_image is None or self.imageInfo is None:
+        if self.image is None or self.depth_image is None or self.camera_info is None:
             self.get_logger().warn("Camera image/depth/info not available yet")
             response.customer_tables = []
             response.success = False
@@ -111,12 +101,12 @@ class RESTAURANTCommands(Node):
         for raw_point2d in tables_points2d:
             table_msg = CustomerTable()
             point2d = (
-                int(raw_point2d[0] * self.imageInfo.width),
-                int(raw_point2d[1] * self.imageInfo.height),
+                int(raw_point2d[0] * self.camera_info.width),
+                int(raw_point2d[1] * self.camera_info.height),
             )
 
             table_msg.table_point = point2d_to_ros_point_stamped(
-                self.imageInfo,
+                self.camera_info,
                 self.depth_image,
                 point2d,
                 CAMERA_FRAME,
@@ -188,7 +178,7 @@ class RESTAURANTCommands(Node):
             )
 
     def publish_table_customer_image(self, table_groups, table_pixels):
-        if self.image is None or self.imageInfo is None:
+        if self.image is None or self.camera_info is None:
             return
         self.get_logger().info("Publishing table and customer debug image")
 
@@ -293,30 +283,10 @@ class RESTAURANTCommands(Node):
 
         return [(p.x, p.y) for p in result.points]
 
-    def image_callback(self, data):
-        try:
-            self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        except Exception as e:
-            self.get_logger().error(f"Image conversion error: {e}")
-
-    def image_info_callback(self, data):
-        self.imageInfo = data
-
-    def depth_callback(self, data):
-        try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-        except Exception as e:
-            self.get_logger().error(f"Depth conversion error: {e}")
-            self.depth_image = None
-
 
 def main(args=None):
     rclpy.init(args=args)
-    node = RESTAURANTCommands()
-    executor = rclpy.executors.MultiThreadedExecutor(8)
-    executor.add_node(node)
-    executor.spin()
-    rclpy.shutdown()
+    spin(RESTAURANTCommands(), threads=8)
 
 
 if __name__ == "__main__":
