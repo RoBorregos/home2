@@ -2,15 +2,12 @@
 
 Counterpart to object_detector_2d's `base_detector_node.py`: the camera
 subscriptions, the ``/vision/<name>/active`` gate, camera-rotation tracking, a
-TF buffer, an optional ``DebugImagePublisher`` and a ``call_service`` that waits
-on an event instead of spinning.
+TF buffer and an optional ``DebugImagePublisher``.
 
 Subclasses opt in through the constructor flags and read ``self.image``,
 ``self.depth_image`` and ``self.camera_info`` exactly as they did when each node
 owned its own subscriptions.
 """
-
-import threading
 
 import rclpy
 import rclpy.qos
@@ -46,8 +43,8 @@ class VisionRuntime(Node):
         track_rotation: bool = False,
         debug_topic: str = None,
         debug_name: str = None,
-        debug_max_hz: float = 5.0,
         active_name: str = None,
+        active_node: bool = True,
     ):
         super().__init__(node_name)
 
@@ -71,7 +68,6 @@ class VisionRuntime(Node):
         )
 
         self.depth_image = None
-        self.depth_image_time = None
         if use_depth:
             self.create_subscription(
                 Image,
@@ -105,6 +101,7 @@ class VisionRuntime(Node):
         self.tf_listener = None
         if use_tf:
             self.tf_buffer = tf2_ros.Buffer()
+            # Held only to keep it alive: if it is collected, /tf stops updating.
             self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self.debug_publisher = None
@@ -113,11 +110,10 @@ class VisionRuntime(Node):
                 self,
                 debug_topic,
                 debug_name or node_name,
-                max_hz=debug_max_hz,
                 callback_group=self.callback_group,
             )
 
-        self.active = True
+        self.active = active_node
         if active_name:
             self.create_subscription(
                 Bool,
@@ -142,8 +138,6 @@ class VisionRuntime(Node):
             self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
         except CvBridgeError as e:
             self.get_logger().warn(f"Depth conversion error: {e}")
-            return
-        self.depth_image_time = msg.header.stamp
 
     def _camera_info_callback(self, msg):
         self.camera_info = msg
@@ -165,22 +159,6 @@ class VisionRuntime(Node):
     def publish_debug(self, frame):
         if self.debug_publisher is not None:
             self.debug_publisher.publish(frame)
-
-    def call_service(
-        self, client, request, timeout: float = 5.0, name: str = "service"
-    ):
-        """Call a service, waiting on an event. Returns the response, or None on timeout."""
-        if not client.service_is_ready():
-            self.get_logger().warn(f"{name} unavailable")
-            return None
-
-        future = client.call_async(request)
-        done = threading.Event()
-        future.add_done_callback(lambda _f: done.set())
-        if not done.wait(timeout):
-            self.get_logger().warn(f"{name} timed out after {timeout}s")
-            return None
-        return future.result()
 
 
 def spin(node, threads: int = 4):
