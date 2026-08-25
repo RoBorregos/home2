@@ -30,9 +30,7 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
-# VisionRuntime and the nodes that subclass it. Installed flat, next to each
-# other, so launch finds the executables and `from vision_runtime import ...`
-# resolves the same way it does in the source tree.
+# VisionRuntime and the nodes that subclass it.
 file(GLOB TASK_NODE_SCRIPTS scripts/task_nodes/*.py)
 install(PROGRAMS
   ${TASK_NODE_SCRIPTS}
