@@ -5,18 +5,13 @@ import rclpy
 import rclpy.duration
 import tqdm
 from ament_index_python.packages import get_package_share_directory
-from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
-from rclpy.node import Node
-from sensor_msgs.msg import CameraInfo, Image
-from std_msgs.msg import Bool, String
+from std_msgs.msg import String
 
 import cv2
 import numpy as np
 
 from frida_constants.vision_constants import (
-    CAMERA_INFO_TOPIC,
-    DEPTH_IMAGE_TOPIC,
     FACE_RECOGNITION_IMAGE,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
@@ -29,52 +24,23 @@ from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
 from models.face_recognition import FaceModel, TRACK_THRESHOLD
 from vision_general.utils.debug_pub import DebugImagePublisher
+from vision_runtime import VisionRuntime, spin
 
 MAX_DEGREE = 1
 PACKAGE_PATH = get_package_share_directory("vision_general")
 KNOWN_FACES_PATH = PACKAGE_PATH + "/utils/known_faces"
 
 
-class FaceRecognition(Node):
+class FaceRecognition(VisionRuntime):
     def __init__(self):
-        super().__init__("face_recognition")
-        self.bridge = CvBridge()
+        super().__init__(
+            "face_recognition",
+            image_topic=IMAGE_ORIENTED_TOPIC,
+            use_depth=True,
+            use_camera_info=True,
+            active_name="face_recognition",
+        )
         self.pbar = tqdm.tqdm(total=2)
-        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-        self._img_qos = rclpy.qos.QoSProfile(
-            depth=1,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-        )
-
-        self.create_subscription(
-            Image,
-            IMAGE_ORIENTED_TOPIC,
-            self.image_callback,
-            self._img_qos,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            Image,
-            DEPTH_IMAGE_TOPIC,
-            self.depth_callback,
-            self._img_qos,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            CameraInfo,
-            CAMERA_INFO_TOPIC,
-            self.image_info_callback,
-            self._img_qos,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            Bool,
-            "/vision/face_recognition/active",
-            self._active_callback,
-            10,
-            callback_group=self.callback_group,
-        )
 
         self.create_service(
             SaveName,
@@ -111,14 +77,13 @@ class FaceRecognition(Node):
         self.pbar.update(1)
 
         self.new_name = ""
-        self.image = None
         self.annotated_frame = []
-        self.depth_image = []
         self.image_view = None
         self.prev_faces: list = []
         self.curr_faces: list = []
         self.follow_name = "area"
-        self.vision_active = False
+        # Idle until the task manager activates it.
+        self.active = False
         self.is_processing = False
         self.id = None
         self.processing_id = rclpy.duration.Infinite
@@ -128,28 +93,9 @@ class FaceRecognition(Node):
 
     # ── ROS callbacks ──
 
-    def image_callback(self, data):
-        self.id = data.header.stamp
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-
-    def depth_callback(self, data):
-        try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-        except Exception as e:
-            self.get_logger().warn(f"depth_callback error: {e}")
-
-    def image_info_callback(self, data):
-        self.imageInfo = data
-
     def success(self, message) -> None:
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
-
-    def _active_callback(self, msg):
-        if msg.data == self.vision_active:
-            return
-        self.vision_active = msg.data
-        self.get_logger().info(f"Face recognition active: {self.vision_active}")
 
     def new_name_callback(self, req, res):
         self.get_logger().info("Executing service new face")
@@ -170,23 +116,25 @@ class FaceRecognition(Node):
     # ── Main loop ──
 
     def run(self):
-        if not self.vision_active or self.is_processing:
+        if not self.active or self.is_processing:
             return
         if self.image is None:
             self.get_logger().info("No image", throttle_duration_sec=5.0)
             return
-        if self.id == self.processing_id:
+        # Frame id is the source stamp; skip frames already processed.
+        self.id = self.image_header.stamp if self.image_header is not None else None
+        if self.id is not None and self.id == self.processing_id:
             return
-        self.annotated_frame = self.image
+        frame = self.image
+        self.annotated_frame = frame
         self.is_processing = True
         try:
-            self._run_inference()
+            self._run_inference(frame)
         finally:
             self.is_processing = False
 
-    def _run_inference(self):
+    def _run_inference(self, frame):
         self.processing_id = self.id
-        frame = self.image
         annotated = frame.copy()
         center = [frame.shape[1] / 2, frame.shape[0] / 2]
 
@@ -313,16 +261,7 @@ class FaceRecognition(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    try:
-        node = FaceRecognition()
-        executor = rclpy.executors.MultiThreadedExecutor(5)
-        executor.add_node(node)
-        executor.spin()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    spin(FaceRecognition(), threads=5)
 
 
 if __name__ == "__main__":

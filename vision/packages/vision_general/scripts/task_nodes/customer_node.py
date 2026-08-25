@@ -18,21 +18,18 @@ from vision_general.utils.calculations import (
 )
 
 import rclpy
-from rclpy.node import Node
-from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image
 from geometry_msgs.msg import Point, PointStamped
 from builtin_interfaces.msg import Time
 from frida_interfaces.srv import CropQuery, Customer
 from frida_interfaces.msg import PersonList, Person
 from vision_general.utils.ros_utils import wait_for_future
 from models.pose_detection import PoseDetection
+from vision_runtime import VisionRuntime, spin
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     TRACKER_IMAGE_TOPIC,
-    DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
-    CAMERA_INFO_TOPIC,
     CENTROID_TOPIC,
     CROP_QUERY_TOPIC,
     CUSTOMER,
@@ -44,11 +41,14 @@ CAMERA_FRAME = "zed_left_camera_optical_frame"
 SAVE_MIN_INTERVAL = 2.0  # s between saved run images (avoid spamming during sweeps)
 
 
-class CustomerNode(Node):
+class CustomerNode(VisionRuntime):
     def __init__(self):
-        super().__init__("customer_node")
-        self.bridge = CvBridge()
-        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        super().__init__(
+            "customer_node",
+            image_topic=CAMERA_TOPIC,
+            use_depth=True,
+            use_camera_info=True,
+        )
 
         # Reject detections farther than this (public/recording zone at the
         # venue perimeter). Tune on site with `ros2 param set`.
@@ -68,24 +68,6 @@ class CustomerNode(Node):
             self.save_dir = None
         self._last_save_time = 0.0
 
-        qos = rclpy.qos.QoSProfile(
-            depth=1,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-        )
-
-        self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
-        )
-
-        self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
-        )
-
-        self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
-        )
-
         self.get_customer_service = self.create_service(
             Customer,
             GET_CUSTOMER_TOPIC,
@@ -104,8 +86,6 @@ class CustomerNode(Node):
 
         self.image = None
         self.depth_image = None
-        self.depth_image_time = None
-        self.imageInfo = None
         self.output_image = []
         self.customer_image = []
 
@@ -113,22 +93,6 @@ class CustomerNode(Node):
 
         self.create_timer(0.1, self.publish_image)
         self.get_logger().info("Customer Node Ready")
-
-    def image_callback(self, data):
-        """Callback to receive image from camera"""
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-
-    def depth_callback(self, data):
-        """Callback to receive depth image from camera"""
-        try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-            self.depth_image_time = data.header.stamp
-        except Exception as e:
-            self.get_logger().error(f"Error: {e}")
-
-    def image_info_callback(self, data):
-        """Callback to receive camera info"""
-        self.imageInfo = data
 
     def publish_image(self):
         """Publish the image to the camera topic"""
@@ -163,7 +127,7 @@ class CustomerNode(Node):
 
         # An exception here would drop the response and make the client wait
         # out its full timeout — refuse early while camera data is missing.
-        if self.image is None or self.depth_image is None or self.imageInfo is None:
+        if self.image is None or self.depth_image is None or self.camera_info is None:
             self.get_logger().warn("Camera image/depth/info not available yet")
             return res
 
@@ -203,7 +167,7 @@ class CustomerNode(Node):
 
             point2D = get2DCentroid((y1, x1, y2, x2), depth_image)
             coords = point2d_to_ros_point_stamped(
-                self.imageInfo,
+                self.camera_info,
                 depth_image,
                 point2D,
                 CAMERA_FRAME,
@@ -408,17 +372,7 @@ class CustomerNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = CustomerNode()
-
-    executor = rclpy.executors.MultiThreadedExecutor()
-    executor.add_node(node)
-    try:
-        executor.spin()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    spin(CustomerNode())
 
 
 if __name__ == "__main__":
