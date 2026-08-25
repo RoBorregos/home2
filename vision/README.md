@@ -179,7 +179,8 @@ flowchart LR
 
 The detection backbone. Both nodes share `BaseDetectorNode`, which declares the camera
 topics, `TARGET_FRAME`, `DEPTH_ACTIVE`, `FLIP_IMAGE` and `MAX_DEPTH_THRESH` parameters and
-handles projection and visualization.
+handles projection and visualization. `vision_general` has the same pattern in
+`VisionRuntime` (see below).
 
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
@@ -205,6 +206,24 @@ Each node has a fixed activation topic (`/vision/object_detector/active`,
 
 `pose_detection.py` is a library, not a node: it holds the COCO keypoint constants and the
 gesture/pose classification used by `hric_commands`, `gpsr_commands` and `customer_node`.
+
+#### `VisionRuntime`
+
+`scripts/task_nodes/vision_runtime.py` is the counterpart to `object_detector_2d`'s
+`BaseDetectorNode`: camera subscriptions, the `/vision/<node>/active` gate, rotation
+tracking, TF, the debug publisher and a non-spinning `call_service`. Subclasses read
+`self.image`, `self.depth_image` and `self.camera_info` as they did when each node owned
+its own subscriptions.
+
+`scripts/task_nodes/` holds the runtime and every node that subclasses it:
+`gpsr_commands`, `hric_commands`, `restaurant_commands`, `customer_node` and
+`face_recognition_node`. They all install flat into `lib/vision_general/`, so
+`from vision_runtime import ...` resolves in both the source and the installed tree.
+
+`tracker_node` deliberately stays out: it needs a different QoS per stream (BEST_EFFORT
+colour, RELIABLE depth) and a separate callback group per subscription so its 20 Hz
+tracking timer is never starved by a service blocking on moondream. `VisionRuntime`
+expresses neither.
 
 ### `moondream_run`
 

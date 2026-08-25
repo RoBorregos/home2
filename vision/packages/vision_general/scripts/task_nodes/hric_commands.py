@@ -11,14 +11,10 @@ import numpy as np
 import queue
 import time
 import rclpy
-from rclpy.node import Node
 from rclpy.action import ActionServer
-from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
 from vision_general.utils.trt_utils import load_yolo_trt
-from std_msgs.msg import Int16
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import (
@@ -32,13 +28,10 @@ from frida_interfaces.srv import (
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.navigation_constants import AREAS_SERVICE
 from frida_constants.vision_constants import (
-    CAMERA_ROTATION_TOPIC,
     CAMERA_FRAME,
-    CAMERA_INFO_TOPIC,
     CHAIR_REMOVAL_IMAGE_TOPIC,
     CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
-    DEPTH_IMAGE_TOPIC,
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
     IMAGE_ORIENTED_TOPIC,
@@ -46,10 +39,10 @@ from frida_constants.vision_constants import (
     MOONDREAM_DETECTION_TOPIC,
     YOLO_DETECTION_TOPIC,
 )
-from tf2_ros import Buffer, TransformListener
 from ament_index_python.packages import get_package_share_directory
 from vision_general.utils.area_check import filter_detections_in_house
 from vision_general.utils.debug_pub import DebugImagePublisher
+from vision_runtime import VisionRuntime, spin
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -74,44 +67,17 @@ CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
 
-class HRICCommands(Node):
+class HRICCommands(VisionRuntime):
     def __init__(self):
-        super().__init__("HRIC_commands")
-        self.bridge = CvBridge()
-        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-
-        self._img_qos = rclpy.qos.QoSProfile(
-            depth=1,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-        )
-        self.create_subscription(
-            Image,
-            IMAGE_ORIENTED_TOPIC,
-            self.image_callback,
-            self._img_qos,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            Image,
-            DEPTH_IMAGE_TOPIC,
-            self.depth_callback,
-            self._img_qos,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            CameraInfo,
-            CAMERA_INFO_TOPIC,
-            self.camera_info_callback,
-            self._img_qos,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            Int16,
-            CAMERA_ROTATION_TOPIC,
-            self._rotation_callback,
-            10,
-            callback_group=self.callback_group,
+        super().__init__(
+            "HRIC_commands",
+            image_topic=IMAGE_ORIENTED_TOPIC,
+            use_depth=True,
+            use_camera_info=True,
+            use_tf=True,
+            track_rotation=True,
+            debug_topic=IMAGE_TOPIC_HRIC,
+            debug_name="hric_commands",
         )
 
         self.find_seat_service = self.create_service(
@@ -119,9 +85,6 @@ class HRICCommands(Node):
             FIND_SEAT_TOPIC,
             self.find_seat_callback,
             callback_group=self.callback_group,
-        )
-        self.image_publisher = DebugImagePublisher(
-            self, IMAGE_TOPIC_HRIC, "hric_commands", callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -135,18 +98,11 @@ class HRICCommands(Node):
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
-
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
 
-        self.image = None
-        self.depth_image = None
-        self.camera_info = None
         self.output_image = []
         self.check = False
-        self.rotation = 0
 
         # Areas of the active map. Fetched asynchronously by _poll_areas:
         # blocking on the service future inside a callback can never complete
@@ -199,25 +155,6 @@ class HRICCommands(Node):
         self.create_timer(
             0.5, self.publish_chair_image, callback_group=self.callback_group
         )
-
-    def _rotation_callback(self, msg):
-        value = int(msg.data) % 360
-        if value != self.rotation:
-            self.rotation = value
-            self.get_logger().info(f"Camera rotation set to {self.rotation}")
-
-    def image_callback(self, data):
-        """Callback to receive the image from the camera."""
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-
-    def depth_callback(self, msg):
-        try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
-        except Exception as e:
-            self.get_logger().error(f"Depth conversion error: {e}")
-
-    def camera_info_callback(self, msg):
-        self.camera_info = msg
 
     def run_hand_inference(self):
         """Detect hand position using YOLO pose wrist keypoints (TensorRT accelerated)."""
@@ -407,7 +344,7 @@ class HRICCommands(Node):
 
     def publish_image(self):
         """Publish the image with the detections if available."""
-        self.image_publisher.publish(self.output_image)
+        self.publish_debug(self.output_image)
 
     def publish_chair_image(self):
         """Re-publish the last chair-removal annotated frame if available."""
@@ -762,15 +699,7 @@ class HRICCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = HRICCommands()
-
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    spin(HRICCommands(), threads=8)
 
 
 if __name__ == "__main__":

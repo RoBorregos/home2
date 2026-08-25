@@ -12,9 +12,6 @@ from datetime import datetime
 
 import rclpy
 import rclpy.qos
-from rclpy.node import Node
-from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
 from vision_general.utils.ros_utils import wait_for_future
 
 from frida_interfaces.srv import (
@@ -31,9 +28,7 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_constants import (
     IMAGE_ORIENTED_TOPIC,
     CAMERA_FRAME,
-    CAMERA_INFO_TOPIC,
     COUNT_BY_PERSON_TOPIC,
-    DEPTH_IMAGE_TOPIC,
     IMAGE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_POSE_TOPIC,
@@ -51,15 +46,14 @@ from vision_general.utils.area_check import (
 from rclpy.time import Time as RclTime
 from rclpy.duration import Duration as RclDuration
 from vision_general.utils.calculations import point2d_to_ros_point_stamped
-from vision_general.utils.debug_pub import DebugImagePublisher
 from builtin_interfaces.msg import Time as TimeMsg
-from tf2_ros import Buffer, TransformListener
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
 from frida_interfaces.srv import YoloDetect
 
 from models.pose_detection import PoseDetection
+from vision_runtime import VisionRuntime, spin
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -69,33 +63,16 @@ package_share_dir = get_package_share_directory("vision_general")
 ANNOTATION_HOLD_SECONDS = 6.0
 
 
-class GPSRCommands(Node):
+class GPSRCommands(VisionRuntime):
     def __init__(self):
-        super().__init__("gpsr_commands")
-        self.bridge = CvBridge()
-        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-
-        qos = rclpy.qos.QoSProfile(
-            depth=1,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-        )
-        self.image_subscriber = self.create_subscription(
-            Image, IMAGE_ORIENTED_TOPIC, self.image_callback, qos
-        )
-        self.create_subscription(
-            Image,
-            DEPTH_IMAGE_TOPIC,
-            self.depth_callback,
-            qos,
-            callback_group=self.callback_group,
-        )
-        self.create_subscription(
-            CameraInfo,
-            CAMERA_INFO_TOPIC,
-            self.camera_info_callback,
-            qos,
-            callback_group=self.callback_group,
+        super().__init__(
+            "gpsr_commands",
+            image_topic=IMAGE_ORIENTED_TOPIC,
+            use_depth=True,
+            use_camera_info=True,
+            use_tf=True,
+            debug_topic=IMAGE_TOPIC,
+            debug_name="gpsr_commands",
         )
         # Define services for GPSR commands
         self.count_by_pose_service = self.create_service(
@@ -133,18 +110,10 @@ class GPSRCommands(Node):
             callback_group=self.callback_group,
         )
 
-        self.image_publisher = DebugImagePublisher(self, IMAGE_TOPIC, "gpsr_commands")
-
         self.yolo_client = self.create_client(
             YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
-
-        self.image = None
-        self.depth_image = None
-        self.camera_info = None
         self.pose_detection = PoseDetection()
         self.output_image = []
         self.people = []
@@ -173,22 +142,6 @@ class GPSRCommands(Node):
         self.areas_client = self.create_client(
             MapAreas, AREAS_SERVICE, callback_group=self.callback_group
         )
-
-    def image_callback(self, data):
-        """Callback to receive the image from the camera."""
-        try:
-            self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        except Exception as e:
-            print(f"Error: {e}")
-
-    def depth_callback(self, msg):
-        try:
-            self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
-        except Exception as e:
-            self.get_logger().error(f"Depth conversion error: {e}")
-
-    def camera_info_callback(self, msg):
-        self.camera_info = msg
 
     def _highlight_person(self, bbox, label):
         """Highlight a MATCHED person on output_image (orange, thicker) so the
@@ -558,9 +511,9 @@ class GPSRCommands(Node):
             len(self.output_image) > 0
             and time.monotonic() - self._annotated_at < ANNOTATION_HOLD_SECONDS
         ):
-            self.image_publisher.publish(self.output_image)
+            self.publish_debug(self.output_image)
         elif self.image is not None:
-            self.image_publisher.publish(self.image)
+            self.publish_debug(self.image)
 
     def _save_annotated(self, tag: str):
         """Save the current annotated frame to save_dir for post-run review
@@ -759,11 +712,7 @@ class GPSRCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = GPSRCommands()
-    executor = rclpy.executors.MultiThreadedExecutor(8)
-    executor.add_node(node)
-    executor.spin()
-    rclpy.shutdown()
+    spin(GPSRCommands(), threads=8)
 
 
 if __name__ == "__main__":
