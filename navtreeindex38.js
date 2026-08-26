@@ -1,5 +1,11 @@
 var NAVTREEINDEX38 =
 {
+"md_docs_ai_restaurant_task.html#autotoc_md255":[26,5],
+"md_docs_ai_restaurant_task.html#autotoc_md256":[26,6],
+"md_docs_ai_tech_stack.html":[27],
+"md_docs_ai_tech_stack.html#autotoc_md258":[27,0],
+"md_docs_ai_tech_stack.html#autotoc_md259":[27,1],
+"md_docs_ai_tech_stack.html#autotoc_md260":[27,2],
 "md_docs_ai_tech_stack.html#autotoc_md261":[27,3],
 "md_docs_ai_tech_stack.html#autotoc_md262":[27,4],
 "md_docs_ai_vision_optimization_plan.html":[28],
@@ -243,11 +249,5 @@ var NAVTREEINDEX38 =
 "md_vision_README.html#autotoc_md181":[17,6],
 "md_vision_README.html#autotoc_md182":[17,7],
 "md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html":[16],
-"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md163":[16,0],
-"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md164":[16,1],
-"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md165":[16,2],
-"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md166":[16,3],
-"merge__multi_8launch_8py.html":[44,0,4,0,1,0,0],
-"merge__multi_8launch_8py.html#aed4bf9362e9c7a4f7e289108d2e92868":[44,0,4,0,1,0,0,0],
-"merger_8py.html":[44,0,6,2,0,3]
+"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md163":[16,0]
 };

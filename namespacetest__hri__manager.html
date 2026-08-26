@@ -118,8 +118,22 @@ Variables</h2></td></tr>
 <tr class="separator:a246a2a82635f931d92365e0a218576a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0111244d1518203a96ff4932fbb6d4ef"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a0111244d1518203a96ff4932fbb6d4ef">OUTPUT_DIR</a> = os.path.join(<a class="el" href="namespacetest__hri__manager.html#a246a2a82635f931d92365e0a218576a3">DATA_DIR</a>, &quot;output&quot;)</td></tr>
 <tr class="separator:a0111244d1518203a96ff4932fbb6d4ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04b9abda6607c92b76c852da0475a53e"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a04b9abda6607c92b76c852da0475a53e">BENCHMARK_DIR</a> = &quot;/workspace/src/hri/benchmarks/nlp&quot;</td></tr>
+<tr class="separator:a04b9abda6607c92b76c852da0475a53e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8784d90496e001b92067dffd903450e2"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a8784d90496e001b92067dffd903450e2">COMMAND_INTERPRETER_SUCCESS_THRESHOLD</a> = 0.9</td></tr>
 <tr class="separator:a8784d90496e001b92067dffd903450e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ac6a46e0a6a75878f37da6ac5afe92b"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a7ac6a46e0a6a75878f37da6ac5afe92b">TEST_NLP</a> = &quot;true&quot;</td></tr>
+<tr class="separator:a7ac6a46e0a6a75878f37da6ac5afe92b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9f1368fa7cc41cad9b419bf806a71d0a"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a9f1368fa7cc41cad9b419bf806a71d0a">NLP_MODEL_ALIAS</a> = os.getenv(&quot;NLP_MODEL_ALIAS&quot;, &quot;&quot;)</td></tr>
+<tr class="separator:a9f1368fa7cc41cad9b419bf806a71d0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a4ad6a435e0e4622ceb4b62a1a59c43"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a0a4ad6a435e0e4622ceb4b62a1a59c43">NLP_OLLAMA_URL</a> = os.getenv(&quot;NLP_OLLAMA_URL&quot;, &quot;&quot;)</td></tr>
+<tr class="separator:a0a4ad6a435e0e4622ceb4b62a1a59c43"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a80bd28785c098c5fde76604d0e2d3314"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a80bd28785c098c5fde76604d0e2d3314">NLP_TASKS</a> = [t for t in os.getenv(&quot;NLP_TASKS&quot;, &quot;&quot;).split(&quot;,&quot;) if t]</td></tr>
+<tr class="separator:a80bd28785c098c5fde76604d0e2d3314"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabe858f853397d68b3026e478e1f6796"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#aabe858f853397d68b3026e478e1f6796">NLP_RUNS</a> = int(os.getenv(&quot;NLP_RUNS&quot;) or &quot;3&quot;)</td></tr>
+<tr class="separator:aabe858f853397d68b3026e478e1f6796"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab0d96c360f16ca4bf9e348545a3dd33d"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#ab0d96c360f16ca4bf9e348545a3dd33d">NLP_RESULTS_DIR</a> = os.getenv(&quot;NLP_RESULTS_DIR&quot;) or <a class="el" href="namespacetest__hri__manager.html#a0111244d1518203a96ff4932fbb6d4ef">OUTPUT_DIR</a></td></tr>
+<tr class="separator:ab0d96c360f16ca4bf9e348545a3dd33d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4430ca670401cd0238602938659e8f3b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a4430ca670401cd0238602938659e8f3b">TEST_ASK_AND_CONFIRM</a> = False</td></tr>
 <tr class="separator:a4430ca670401cd0238602938659e8f3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a914b4542d179c1bd4ffea5b5fd5917b4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4">TEST_INDIVIDUAL_FUNCTIONS</a> = False</td></tr>
@@ -205,6 +219,20 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="a04b9abda6607c92b76c852da0475a53e" name="a04b9abda6607c92b76c852da0475a53e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04b9abda6607c92b76c852da0475a53e">&#9670;&#160;</a></span>BENCHMARK_DIR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">str test_hri_manager.BENCHMARK_DIR = &quot;/workspace/src/hri/benchmarks/nlp&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a8784d90496e001b92067dffd903450e2" name="a8784d90496e001b92067dffd903450e2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8784d90496e001b92067dffd903450e2">&#9670;&#160;</a></span>COMMAND_INTERPRETER_SUCCESS_THRESHOLD</h2>
 
@@ -261,6 +289,76 @@ Variables</h2></td></tr>
 <div class="line"><span class="lineno">   15</span>    SayWithContext,</div>
 <div class="line"><span class="lineno">   16</span>]</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="a9f1368fa7cc41cad9b419bf806a71d0a" name="a9f1368fa7cc41cad9b419bf806a71d0a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f1368fa7cc41cad9b419bf806a71d0a">&#9670;&#160;</a></span>NLP_MODEL_ALIAS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">os test_hri_manager.NLP_MODEL_ALIAS = os.getenv(&quot;NLP_MODEL_ALIAS&quot;, &quot;&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0a4ad6a435e0e4622ceb4b62a1a59c43" name="a0a4ad6a435e0e4622ceb4b62a1a59c43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a4ad6a435e0e4622ceb4b62a1a59c43">&#9670;&#160;</a></span>NLP_OLLAMA_URL</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">os test_hri_manager.NLP_OLLAMA_URL = os.getenv(&quot;NLP_OLLAMA_URL&quot;, &quot;&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab0d96c360f16ca4bf9e348545a3dd33d" name="ab0d96c360f16ca4bf9e348545a3dd33d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab0d96c360f16ca4bf9e348545a3dd33d">&#9670;&#160;</a></span>NLP_RESULTS_DIR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">os test_hri_manager.NLP_RESULTS_DIR = os.getenv(&quot;NLP_RESULTS_DIR&quot;) or <a class="el" href="namespacetest__hri__manager.html#a0111244d1518203a96ff4932fbb6d4ef">OUTPUT_DIR</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aabe858f853397d68b3026e478e1f6796" name="aabe858f853397d68b3026e478e1f6796"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabe858f853397d68b3026e478e1f6796">&#9670;&#160;</a></span>NLP_RUNS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int test_hri_manager.NLP_RUNS = int(os.getenv(&quot;NLP_RUNS&quot;) or &quot;3&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a80bd28785c098c5fde76604d0e2d3314" name="a80bd28785c098c5fde76604d0e2d3314"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80bd28785c098c5fde76604d0e2d3314">&#9670;&#160;</a></span>NLP_TASKS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list test_hri_manager.NLP_TASKS = [t for t in os.getenv(&quot;NLP_TASKS&quot;, &quot;&quot;).split(&quot;,&quot;) if t]</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 <a id="a0111244d1518203a96ff4932fbb6d4ef" name="a0111244d1518203a96ff4932fbb6d4ef"></a>
@@ -453,6 +551,20 @@ Variables</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">bool test_hri_manager.TEST_MERGER = False</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7ac6a46e0a6a75878f37da6ac5afe92b" name="a7ac6a46e0a6a75878f37da6ac5afe92b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ac6a46e0a6a75878f37da6ac5afe92b">&#9670;&#160;</a></span>TEST_NLP</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">os test_hri_manager.TEST_NLP = &quot;true&quot;</td>
         </tr>
       </table>
 </div><div class="memdoc">

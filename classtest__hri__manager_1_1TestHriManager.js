@@ -1,10 +1,13 @@
 var classtest__hri__manager_1_1TestHriManager =
 [
     [ "__init__", "classtest__hri__manager_1_1TestHriManager.html#a36b0bf279c06e38b98a8fef5ef2c2e04", null ],
+    [ "_emit_benchmark_report", "classtest__hri__manager_1_1TestHriManager.html#a1a5411a5d21aac539a34327a1ab494b6", null ],
+    [ "_run_perf_side_channel", "classtest__hri__manager_1_1TestHriManager.html#ae368c71d9e8d5a74f7fd9bcacfd0f721", null ],
     [ "async_llm_test", "classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1", null ],
     [ "detect_door", "classtest__hri__manager_1_1TestHriManager.html#ac324c102215af351f72106b28ae3be8c", null ],
     [ "individual_functions", "classtest__hri__manager_1_1TestHriManager.html#a71aa05a56df14e610a5a43647e27180c", null ],
     [ "run", "classtest__hri__manager_1_1TestHriManager.html#aed2c5bfb3ae73cb7c694cb6d4d3508f5", null ],
+    [ "run_nlp_benchmark", "classtest__hri__manager_1_1TestHriManager.html#a8b377cbeac3264f3d45aef085393437a", null ],
     [ "test_ask_and_confirm", "classtest__hri__manager_1_1TestHriManager.html#a073f31152fdd2f070dcef4e2dfa9dc8d", null ],
     [ "test_categorize_shelves", "classtest__hri__manager_1_1TestHriManager.html#ac58177fd7c3d68c7846e03aded7e7f94", null ],
     [ "test_command_interpreter", "classtest__hri__manager_1_1TestHriManager.html#a31b4ead34622ba59c45873059886afd7", null ],

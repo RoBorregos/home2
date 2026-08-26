@@ -1,5 +1,11 @@
 var NAVTREEINDEX37 =
 {
+"manipulation__constants_8py.html#a5108267149097acd78fdfdf07f41fdc0":[44,0,1,1,3,84],
+"manipulation__constants_8py.html#a5165adc9e6beb3861d698108db605489":[44,0,1,1,3,62],
+"manipulation__constants_8py.html#a520f33abe220f0f53b58bc4a6087abae":[44,0,1,1,3,29],
+"manipulation__constants_8py.html#a5a5abd76d002b0c9d56e76f93bc1b3e5":[44,0,1,1,3,97],
+"manipulation__constants_8py.html#a5e4ab2c20f0c0358ceb5107449be48b1":[44,0,1,1,3,45],
+"manipulation__constants_8py.html#a5ea55eae7fc712affd0e6fc30dcf8467":[44,0,1,1,3,52],
 "manipulation__constants_8py.html#a5eb759b00b661c3ef19e217417323b4c":[44,0,1,1,3,83],
 "manipulation__constants_8py.html#a6038fba62b19224dfcafc0c052adbae6":[44,0,1,1,3,76],
 "manipulation__constants_8py.html#a60fec6dff1f21269d68429db6ce6c56d":[44,0,1,1,3,99],
@@ -243,11 +249,5 @@ var NAVTREEINDEX37 =
 "md_docs_ai_restaurant_task.html#autotoc_md251":[26,1],
 "md_docs_ai_restaurant_task.html#autotoc_md252":[26,2],
 "md_docs_ai_restaurant_task.html#autotoc_md253":[26,3],
-"md_docs_ai_restaurant_task.html#autotoc_md254":[26,4],
-"md_docs_ai_restaurant_task.html#autotoc_md255":[26,5],
-"md_docs_ai_restaurant_task.html#autotoc_md256":[26,6],
-"md_docs_ai_tech_stack.html":[27],
-"md_docs_ai_tech_stack.html#autotoc_md258":[27,0],
-"md_docs_ai_tech_stack.html#autotoc_md259":[27,1],
-"md_docs_ai_tech_stack.html#autotoc_md260":[27,2]
+"md_docs_ai_restaurant_task.html#autotoc_md254":[26,4]
 };

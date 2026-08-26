@@ -1,5 +1,11 @@
 var NAVTREEINDEX41 =
 {
+"namespacefrida__constants_1_1manipulation__constants.html#a06e25fffe782d547f2a1fef8fbf115f7":[42,0,65,2,95],
+"namespacefrida__constants_1_1manipulation__constants.html#a0ac119f9f698cc539a4c2b3d92627549":[42,0,65,2,21],
+"namespacefrida__constants_1_1manipulation__constants.html#a0b7108a7f04682d83eb47aacc396c94b":[42,0,65,2,5],
+"namespacefrida__constants_1_1manipulation__constants.html#a0dc8f7fb16d410b4a27d8c1aac4cc769":[42,0,65,2,65],
+"namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f":[42,0,65,2,67],
+"namespacefrida__constants_1_1manipulation__constants.html#a16619c3dde995d837c19d6d3b5d54db9":[42,0,65,2,22],
 "namespacefrida__constants_1_1manipulation__constants.html#a1922f5fe1cb5b7e349cf1409c11f1527":[42,0,65,2,19],
 "namespacefrida__constants_1_1manipulation__constants.html#a1bd51b80a924a289d9d7836620eca1f6":[42,0,65,2,63],
 "namespacefrida__constants_1_1manipulation__constants.html#a21af79d5b4fabb9ddd588da869e67c4b":[42,0,65,2,42],
@@ -243,11 +249,5 @@ var NAVTREEINDEX41 =
 "namespacefrida__constants_1_1xarm__configurations.html#adca6be045477cf1eaae672f79a1d5b6f":[42,0,65,8,7],
 "namespacefrida__driver.html":[42,0,66],
 "namespacefrida__driver.html#a7b2dcd48dd7fdcb70e23940fe7d4695b":[42,0,66,1],
-"namespacefrida__driver.html#aef5c72bf0e9a5f9cd51e0088acd02488":[42,0,66,0],
-"namespacefrida__fake__moveit__config.html":[42,0,67],
-"namespacefrida__fake__moveit__config.html#a6b937307670b780d88c2311b1b5b2fc3":[42,0,67,0],
-"namespacefrida__fake__moveit__config.html#a9630fb34d2013bb4291e09ddaabe69dc":[42,0,67,2],
-"namespacefrida__fake__moveit__config.html#abfd963b35611d317b78a420c0197adeb":[42,0,67,1],
-"namespacefrida__motion__planning.html":[42,0,68],
-"namespacefrida__motion__planning_1_1motion__planning__server.html":[42,0,68,0]
+"namespacefrida__driver.html#aef5c72bf0e9a5f9cd51e0088acd02488":[42,0,66,0]
 };

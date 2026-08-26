@@ -1,5 +1,11 @@
 var NAVTREEINDEX39 =
 {
+"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md164":[16,1],
+"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md165":[16,2],
+"md_vision_packages_vision_general_vision_general_utils_deep_sort_readme.html#autotoc_md166":[16,3],
+"merge__multi_8launch_8py.html":[44,0,4,0,1,0,0],
+"merge__multi_8launch_8py.html#aed4bf9362e9c7a4f7e289108d2e92868":[44,0,4,0,1,0,0,0],
+"merger_8py.html":[44,0,6,2,0,3],
 "merger_8py.html#a0576effb917d1d7ef4c4a86c4f01c781":[44,0,6,2,0,3,14],
 "merger_8py.html#a23a128ee3f3a9ab2fae5cfe2cd612f15":[44,0,6,2,0,3,12],
 "merger_8py.html#a2ca8d248df6c7ca3a5f5c267b69ba21f":[44,0,6,2,0,3,8],
@@ -243,11 +249,5 @@ var NAVTREEINDEX39 =
 "namespacedetectors_1_1registry.html#a51e496b6760bdd844d1c44addc8d5e78":[42,0,28,1,2],
 "namespacedetectors_1_1registry.html#ab29beb337204e36fa21507816aad50c3":[42,0,28,1,1],
 "namespacedetectors_1_1registry.html#aff6ab07af9f7f2e55d84ade3c61d6e48":[42,0,28,1,3],
-"namespacedetectors_1_1utils.html":[42,0,28,2],
-"namespacedetectors_1_1utils.html#a518bb5f2252ac2f0372fdbb596bee6bf":[42,0,28,2,1],
-"namespacedetectors_1_1utils.html#af7cdecddcac99f7c329b866f5ed79ed9":[42,0,28,2,0],
-"namespacedetectors_1_1yolo.html":[42,0,28,3],
-"namespacedetectors_1_1yolo.html#ade4cf7f21233497fdedc15f77ef1c965":[42,0,28,3,1],
-"namespacedetectors_1_1yolo__e.html":[42,0,28,4],
-"namespacedetectors_1_1yolo__e.html#a89ca4a7f0960a269b588337ecb421c6f":[42,0,28,4,2]
+"namespacedetectors_1_1utils.html":[42,0,28,2]
 };
