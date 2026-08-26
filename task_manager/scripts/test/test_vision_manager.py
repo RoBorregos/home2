@@ -41,8 +41,6 @@ TEST_VISUAL_INFO = False
 TEST_TRACKING = False  # tests track_person + get_track_person + get_tracked_person_point
 TEST_GET_FOLLOW_FACE = False
 TEST_ISPERSON = False
-TEST_DESCRIBE_BAG = False  # get_pointing_bag + describe_bag (+ moondream_crop_query)
-TEST_GET_DRINK_POSITION = False
 TEST_DESCRIBE_PERSON = False
 
 FOLLOW_FACE_FLIP = False
@@ -133,12 +131,6 @@ class TestVisionManager(Node):
 
         if TEST_ISPERSON:
             self.test_isperson()
-
-        if TEST_DESCRIBE_BAG:
-            self.test_describe_bag()
-
-        if TEST_GET_DRINK_POSITION:
-            self.test_get_drink_position()
 
         if TEST_DESCRIBE_PERSON:
             self.test_describe_person()
@@ -457,39 +449,6 @@ class TestVisionManager(Node):
                 f"'{SAVE_NAME}' not in the live person list "
                 f"({len(self.vision_manager.person_list)} people seen)",
             )
-
-    def test_describe_bag(self):
-        """Covers get_pointing_bag, describe_bag and (via describe_bag) moondream_crop_query."""
-        Logger.info(self, "=== Testing get_pointing_bag / describe_bag ===")
-        status, bbox, point = self.vision_manager.get_pointing_bag()
-        if status != Status.EXECUTION_SUCCESS:
-            Logger.warn(self, "get_pointing_bag: no bag found")
-            return
-        pt = point.point
-        Logger.success(
-            self,
-            f"Bag found: bbox=({bbox.x1},{bbox.y1})->({bbox.x2},{bbox.y2}) "
-            f"point=({pt.x:.3f},{pt.y:.3f},{pt.z:.3f})",
-        )
-
-        status, description = self.vision_manager.describe_bag(bbox)
-        if status == Status.EXECUTION_SUCCESS:
-            Logger.success(self, f"Bag description: {description}")
-        else:
-            Logger.error(self, "describe_bag failed")
-
-    def test_get_drink_position(self):
-        """detect_objects, then locate DRINK among the detections."""
-        Logger.info(self, "=== Testing get_drink_position ===")
-        status, detections = self.vision_manager.detect_objects()
-        if status != Status.EXECUTION_SUCCESS or not detections:
-            Logger.warn(self, "get_drink_position: no objects detected")
-            return
-        status, location = self.vision_manager.get_drink_position(detections, DRINK)
-        if status == Status.EXECUTION_SUCCESS:
-            Logger.success(self, f"Drink '{DRINK}' position: {location}")
-        else:
-            Logger.warn(self, f"Drink '{DRINK}' not among detected objects")
 
     def test_describe_person(self):
         """Async, multi-turn person description built from several moondream_query_async calls."""
