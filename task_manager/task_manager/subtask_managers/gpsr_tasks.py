@@ -536,6 +536,7 @@ class GPSRTask(GenericTask):
                     question="Can you please tell me your name?",
                     query="name",
                     context="The user was asked to say their name. We want to infer his name from the response",
+                    hotwords=self.subtask_manager.hri.names_hotwords,
                 )
                 if s == Status.EXECUTION_SUCCESS:
                     save_name_retries = 0

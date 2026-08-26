@@ -273,6 +273,11 @@ class HRITasks:
         with open(file_path, "r") as file:
             self.names = json.load(file)["names"]
 
+        # Space-separated names for the faster-whisper `hotwords` argument. Every
+        # task that asks a person for their name reads it from here, so the
+        # competition's name list lives only in names.json.
+        self.names_hotwords = " ".join(self.names)
+
         if not self.mock_data:
             self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
