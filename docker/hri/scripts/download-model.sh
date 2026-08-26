@@ -17,7 +17,7 @@ ask_for_model() {
 }
 
 echo "Which models do you want to download?"
-echo "  1) qwen3-8b         (Qwen3-8B Q4_K_M GGUF, for llama.cpp)"
+echo "  1) qwen3-4b         (Qwen3-4B Q4_K_M GGUF, for llama.cpp)"
 echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
 echo "  3) qwen3            (Qwen3 via Ollama)"
 echo "  4) nomic-embed-text (embeddings via Ollama)"
@@ -49,10 +49,10 @@ download_gguf() {
 }
 
 # ── GGUFs for llama.cpp ───────────────────────────────────────────────────────
-if ask_for_model qwen3-8b 1; then
-    download_gguf "qwen3-8b" \
-        "https://huggingface.co/unsloth/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf" \
-        "$SCRIPT_DIR/qwen3-8b.Q4_K_M.gguf"
+if ask_for_model qwen3-4b 1; then
+    download_gguf "qwen3-4b" \
+        "https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf" \
+        "$SCRIPT_DIR/qwen3-4b.Q4_K_M.gguf"
 fi
 
 if ask_for_model rbrgs 2; then

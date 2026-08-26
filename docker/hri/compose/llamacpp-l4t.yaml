@@ -1,6 +1,6 @@
 services:
   llama:
-    profiles: [hric, gpsr, restaurant]
+    profiles: [hric, gpsr, restaurant, bench]
     container_name: home2-hri-llamacpp-l4t
     image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
     runtime: nvidia
@@ -11,6 +11,8 @@ services:
       - ../scripts/llama-cpp-entrypoint.sh:/scripts/entrypoint.sh
     environment:
       ROLE: ${ROLE}
+      LLAMA_MODEL_FILE: ${LLAMA_MODEL_FILE:-}
+      LLAMA_ALIAS: ${LLAMA_ALIAS:-}
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu/tegra
