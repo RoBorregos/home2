@@ -116,14 +116,6 @@ def load_network(network):
     return network
 
 
-def fliplr(img):
-    """flip horizontal"""
-    inv_idx = torch.arange(img.size(3) - 1, -1, -1).long()  # N x C x H x W
-    inv_idx = inv_idx.cuda() if img.is_cuda else inv_idx
-    img_flip = img.index_select(3, inv_idx)
-    return img_flip
-
-
 def extract_feature_from_img(image, model):
     model.eval()
     if use_gpu:
@@ -163,58 +155,6 @@ def extract_feature_from_img(image, model):
         return features.cpu()
 
 
-def extract_feature_from_img_batch(images, model, batch_size=64):
-    batch_data_transforms = transforms.Compose(
-        [
-            transforms.Resize((h, w), interpolation=interpolation_mode),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ]
-    )
-    images_tensor = torch.zeros(
-        len(images), 3, h, w, device="cuda" if use_gpu else "cpu"
-    )
-    # images: a batch of images in PIL format
-    if isinstance(images, list):
-        for i, image in enumerate(images):
-            images_tensor[i] = batch_data_transforms(image)
-    elif isinstance(images, torch.Tensor):
-        if images.ndim == 3:
-            # If images is a single image tensor, add batch dimension
-            images_tensor[0] = batch_data_transforms(images)
-        elif images.ndim == 4:
-            # If images is already a batch of images, apply transforms to each image
-            for i in range(images.shape[0]):
-                images_tensor[i] = batch_data_transforms(images[i])
-
-    else:
-        raise ValueError("Input images must be a list of PIL images or a tensor.")
-    # Extract features from the images
-    model.eval()
-    device = "cuda" if use_gpu else "cpu"
-    features_list = torch.zeros(images_tensor.shape[0], linear_num, device=device)
-    with torch.no_grad(), torch.cuda.amp.autocast(enabled=use_fp16 and use_gpu):
-        for i in range(0, images_tensor.shape[0], batch_size):
-            end = min(i + batch_size, images_tensor.shape[0])
-            batch_images = images_tensor[i:end]
-            features = torch.zeros(batch_images.shape[0], linear_num, device=device)
-
-            input_img = batch_images
-            for scale in ms:
-                if scale != 1:
-                    input_img = torch.nn.functional.interpolate(
-                        input_img,
-                        scale_factor=scale,
-                        mode="bicubic",
-                        align_corners=False,
-                    )
-                features += model(input_img)
-
-            features /= torch.norm(features, p=2, dim=1, keepdim=True)
-            features_list[i:end] = features
-    return features_list
-
-
 def compare_images(features1, features2, threshold=0.55):
     # if features1.ndim != 1 or features2.ndim != 1:
     #     print("error comparing images")
@@ -252,45 +192,6 @@ def compare_images(features1, features2, threshold=0.55):
         return True  # Images are considered to be of the same person
     else:
         return False  # Images are considered to be of different persons
-
-
-def compare_images_batch(
-    features1: torch.Tensor, features2_list: torch.Tensor, threshold=0.55, batch_size=64
-):
-    # Compares image1 with a set of images
-
-    # match features1 with features_list2
-    if features1.ndim != 1:
-        if use_gpu:
-            features1 = features1.squeeze()
-        else:
-            print("error comparing images")
-            return False
-
-    similarity_scores = torch.zeros(features2_list.shape[0], dtype=torch.float32)
-
-    # match features1 with features_list2
-    features1_list = features1.unsqueeze(0).repeat(features2_list.shape[0], 1)
-
-    # normalize
-    features1_list_norm = features1_list / torch.norm(
-        features1_list, p=2, dim=1, keepdim=True
-    )
-    features2_list_norm = features2_list / torch.norm(
-        features2_list, p=2, dim=1, keepdim=True
-    )
-
-    for i in range(0, features2_list_norm.shape[0], batch_size):
-        end = min(i + batch_size, features2_list_norm.shape[0])
-        features2_batch = features2_list_norm[i:end]
-
-        similarity_scores[i:end] = torch.mm(
-            features1_list_norm[i:end], features2_batch.t()
-        ).diagonal()
-
-    # if at least one is above the threshold, return True
-    is_same_person = (similarity_scores >= threshold).any().item()
-    return is_same_person
 
 
 # Test
