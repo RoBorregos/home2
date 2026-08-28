@@ -83,7 +83,6 @@ class MoondreamNode(Node):
         )
 
         self.yolo_model = load_yolo_trt("yolov8n.pt")
-        # self.moondream_model = MoonDreamModel()
 
         # gRPC client setup
         options = [
@@ -285,22 +284,6 @@ class MoondreamNode(Node):
             response.success = False
 
         return response
-
-        # frame = self.image
-        # encoded_image = self.moondream_model.encode_image(frame)
-        # beverage_position = self.moondream_model.find_beverage(
-        #     encoded_image, request.beverage
-        # )
-
-        # if beverage_position == Position.NOT_FOUND:
-        #     self.get_logger().warn("Beverage not found")
-        #     response.location = beverage_position.value
-        #     response.success = False
-        # else:
-        #     response.location = beverage_position.value
-        #     response.success = True
-        #     self.get_logger().info(f"Beverage found at: {response.location}")
-        # return response
 
     def detect_callback(self, request, response):
         """Callback to detect a subject's bounding boxes (normalized) in the current image."""
