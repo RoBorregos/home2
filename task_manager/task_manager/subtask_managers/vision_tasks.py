@@ -13,7 +13,6 @@ import random
 import rclpy
 from frida_constants.vision_classes import BBOX
 from frida_constants.vision_constants import (
-    BEVERAGE_TOPIC,
     CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
@@ -40,7 +39,6 @@ from frida_constants.vision_constants import (
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import PersonList, CustomerTable
 from frida_interfaces.srv import (
-    BeverageLocation,
     ChairsToRemove,
     CountBy,
     CountByColor,
@@ -112,7 +110,6 @@ class VisionTasks:
         self.moondream_crop_query_client = self.node.create_client(CropQuery, CROP_QUERY_TOPIC)
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
         self.get_track_person_client = self.node.create_client(Trigger, IS_TRACKING_TOPIC)
-        self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_hand_client = self.node.create_client(DetectHand, DETECT_HAND_SERVICE)
 
         self.object_detector_client = self.node.create_client(
@@ -469,24 +466,6 @@ class VisionTasks:
             if name == person.name:
                 return True
         return False
-
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, "kitchen table"), delay=2)
-    @service_check("beverage_location_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
-    def find_drink(self, drink: str, timeout: float = TIMEOUT) -> tuple[Status, str]:
-        """Find if a drink is available and location"""
-        Logger.info(self.node, f"Finding drink: {drink}")
-        request = BeverageLocation.Request()
-        request.beverage = drink
-
-        err, result = self._call(self.beverage_location_client, request, timeout, name="find_drink")
-        if err is not None:
-            return err, "not found"
-        if not result.success:
-            Logger.warn(self.node, "No drink found")
-            return Status.TARGET_NOT_FOUND, "not found"
-
-        Logger.success(self.node, f"Found drink: {drink}")
-        return Status.EXECUTION_SUCCESS, result.location
 
     @mockable(
         return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False

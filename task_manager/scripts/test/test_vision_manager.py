@@ -28,8 +28,6 @@ TEST_GET_PERSON_NAME = False
 TEST_FOLLOW_FACE = False
 TEST_HAND_MARKER = False
 TEST_CHAIRS_TO_REMOVE = False  # needs hric_commands + yolo + moondream + camera
-TEST_SAVE_FACE_NAME = False
-TEST_FIND_DRINK = False
 TEST_GET_CUSTOMER = False
 TEST_COUNT_PERSON = False
 TEST_COUNT_BY_POSE = False
@@ -46,8 +44,7 @@ TEST_DESCRIBE_PERSON = False
 FOLLOW_FACE_FLIP = False
 HAND_MARKER_FLIP = False
 HAND_MARKER_TOPIC = "/vision/test/hand_marker"
-SAVE_NAME = "Jp"
-DRINK = "coke"
+ISPERSON_NAME = "Jp"
 POSE = Poses.STANDING.value
 GESTURE = Gestures.WAVING.value
 COLOR = "grey"
@@ -92,12 +89,6 @@ class TestVisionManager(Node):
 
         if TEST_CHAIRS_TO_REMOVE:
             self.test_chairs_to_remove()
-
-        if TEST_SAVE_FACE_NAME:
-            self.test_save_face_name()
-
-        if TEST_FIND_DRINK:
-            self.test_find_drink()
 
         if TEST_GET_CUSTOMER:
             self.test_get_customer()
@@ -302,22 +293,6 @@ class TestVisionManager(Node):
             self.vision_manager.camera_upside_down(False)
             Logger.info(self, "hand marker test stopped")
 
-    def test_save_face_name(self):
-        Logger.info(self, "=== Testing save_face_name ===")
-        status = self.vision_manager.save_face_name(SAVE_NAME)
-        if status == Status.EXECUTION_SUCCESS:
-            Logger.success(self, f"Name saved: {SAVE_NAME}")
-        else:
-            Logger.error(self, "save_face_name failed")
-
-    def test_find_drink(self):
-        Logger.info(self, "=== Testing find_drink ===")
-        status, location = self.vision_manager.find_drink(DRINK)
-        if status == Status.EXECUTION_SUCCESS:
-            Logger.success(self, f"Drink '{DRINK}' found at: {location}")
-        else:
-            Logger.warn(self, f"Drink '{DRINK}' not found")
-
     def test_get_customer(self):
         Logger.info(self, "=== Testing get_customer ===")
         status, point = self.vision_manager.get_customer()
@@ -432,21 +407,21 @@ class TestVisionManager(Node):
             Logger.warn(self, "get_follow_face returned no data")
 
     def test_isperson(self):
-        """Poll the live person_list (populated by person_list_callback) for SAVE_NAME."""
+        """Poll the live person_list (populated by person_list_callback) for ISPERSON_NAME."""
         Logger.info(self, "=== Testing isPerson ===")
         found = False
         start = time.time()
         while time.time() - start < 5.0:
             rclpy.spin_once(self, timeout_sec=0.1)
-            if self.vision_manager.isPerson(SAVE_NAME):
+            if self.vision_manager.isPerson(ISPERSON_NAME):
                 found = True
                 break
         if found:
-            Logger.success(self, f"isPerson found '{SAVE_NAME}' in the live person list")
+            Logger.success(self, f"isPerson found '{ISPERSON_NAME}' in the live person list")
         else:
             Logger.warn(
                 self,
-                f"'{SAVE_NAME}' not in the live person list "
+                f"'{ISPERSON_NAME}' not in the live person list "
                 f"({len(self.vision_manager.person_list)} people seen)",
             )
 
