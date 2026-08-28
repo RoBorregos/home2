@@ -24,7 +24,7 @@ home2/
 │frida_interfaces/                         # Custom ROS interfaces
 ├── vision/
 │   ├── action/                            # DetectPerson, Xarmmove
-│   ├── msg/                               # ObjectDetection(+Array), Detection, Person,
+│   ├── msg/                               # Objec└── models/swin/               # ReID networktDetection(+Array), Detection, Person,
 │   │                                      # PersonList, CustomerTable, Point2D, Shelf*
 │   └── srv/                               # 30 services (Query, FindSeat, TrackBy, ...)
 │
@@ -64,9 +64,7 @@ home2/
 │   │       ├── calculations.py            # deproject_pixel_to_point, get_depth, centroids
 │   │       ├── trt_utils.py               # load_yolo_trt(): .pt -> cached TensorRT .engine
 │   │       ├── debug_pub.py               # Subscriber-gated, rate-limited debug images
-│   │       ├── area_check.py              # Room filtering via nav MapAreas + TF
-│   │       ├── reid_model.py              # SWIN person re-identification embedder
-│   │       └── models/swin/               # ReID network
+│   │       └── area_check.py              # Room filtering via nav MapAreas + TF     
 │   │
 │   └── moondream_run/                     # Moondream2 VLM bridge
 │       ├── scripts/moondream_node.py      # ROS node; gRPC client to localhost:50052
@@ -154,7 +152,7 @@ flowchart LR
         IO
         OD["ObjectDetect2D<br/>yolo_finetuned + yolo_generic"]
         ZS["ZeroShotDetect2D<br/>yoloe-11l-seg"]
-        TRK["tracker_node<br/>yolov8n + ByteTrack, yolo11m-pose, SWIN ReID"]
+        TRK["tracker_node<br/>yolov8n + ByteTrack, yolo11m-pose"]
         FR["face_recognition<br/>InsightFace buffalo_sc"]
         HC["hric_commands<br/>yolo11m-pose"]
         GC["gpsr_commands<br/>yolo11m-pose"]
@@ -196,7 +194,7 @@ Each node has a fixed activation topic (`/vision/object_detector/active`,
 | --- | --- | --- | --- |
 | `hric_commands` | Person detection, seat finding, handover point, chair removal | action `DetectPerson`; srvs `FindSeat`, `DetectHand`, `ChairsToRemove` | yolo11m-pose |
 | `gpsr_commands` | Counting and describing people by pose, gesture, clothing color | srvs `CountByPose`, `CountBy`, `CountByColor`, `PersonPoseGesture` | yolo11m-pose |
-| `tracker_node` | Locks onto one person and publishes their 3D point for nav to follow | srvs `SetBool`@`set_tracking_target`, `TrackBy`, `Trigger`@`is_tracking`; pub `/vision/tracking_results` | yolov8n + ByteTrack, yolo11m-pose, SWIN ReID |
+| `tracker_node` | Locks onto one person and publishes their 3D point for nav to follow | srvs `SetBool`@`set_tracking_target`, `TrackBy`, `Trigger`@`is_tracking`; pub `/vision/tracking_results` | yolov8n + ByteTrack, yolo11m-pose|
 | `face_recognition` | Learns and recognizes faces; drives the arm's face following | srvs `SaveName`@`new_name`, `SaveName`@`follow_by_name`; pubs `/vision/follow_face`, `/vision/person_list` | InsightFace `buffalo_sc` |
 | `restaurant_commands` | Maps waving customers onto table positions | srv `CustomerTables` | — (delegates) |
 | `customer_node` | Finds seated / waving customers in the full frame | srv `Customer` | yolo11m-pose |
@@ -400,9 +398,6 @@ None of them are fixed by this document.
 - Placeholder and typo'd constants in `vision_constants.py`: `DETECTIONS_ACTIVE_TOPIC` and
   `DEBUG_IMAGE_TOPIC` are both `"asd"`, and `SHELF_DETECTION_TOPIC` reads
   `/vision/storing_grocPeries/shelf_detection`.
-- `person_in_map.py` imports `PERSON_INSIDE_REQUEST_TOPIC`, which `vision_constants.py`
-  never defines — the node fails at import.
-- `trash_detection_node.py` is launched by nothing and has no client.
 - `auto-complete.sh` does not know the vision-only flags (`--warmup`, `--moondream`,
   `--carry`, `--storing-groceries`).
 - `status/configs/vision_nodes.cfg` still refers to `/receptionist_commands`, which is now
