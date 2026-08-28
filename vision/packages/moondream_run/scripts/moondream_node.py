@@ -17,13 +17,12 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import BeverageLocation
-from frida_interfaces.srv import PersonPosture, Query, CropQuery, ObjectPoints
+from frida_interfaces.srv import Query, CropQuery, ObjectPoints
 from frida_interfaces.srv import MoondreamDetection
 from frida_interfaces.msg import Point2D, ObjectDetection
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
-    PERSON_POSTURE_TOPIC,
     BEVERAGE_TOPIC,
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
@@ -67,9 +66,6 @@ class MoondreamNode(Node):
 
         self.beverage_location_service = self.create_service(
             BeverageLocation, BEVERAGE_TOPIC, self.beverage_location_callback
-        )
-        self.person_posture_service = self.create_service(
-            PersonPosture, PERSON_POSTURE_TOPIC, self.person_posture_callback
         )
 
         self.query_service = self.create_service(
@@ -341,7 +337,7 @@ class MoondreamNode(Node):
                 detection.label_text = obj.name
                 detection.score = 1.0
                 detection.xmin = obj.x_min
-                detection.ymin = obj.y_min
+                detection.ymin = obj.ymin
                 detection.xmax = obj.x_max
                 detection.ymax = obj.y_max
                 response.detections.append(detection)
@@ -355,23 +351,6 @@ class MoondreamNode(Node):
             response.success = False
             response.message = str(e)
 
-        return response
-
-    def person_posture_callback(self, request, response):
-        """Callback to determine the position of the person in the image."""
-        self.get_logger().info("Executing service Person Posture")
-
-        if self.image is None:
-            response.position = "No image received yet."
-            return response
-
-        query = "Determine if the person is sitting, standing, or lying down. Just mention the pose, no additional information is needed."
-        cropped_frame = self.detect_and_crop_person()
-        encoded_image = self.moondream_model.encode_image(cropped_frame)
-
-        response.description = self.moondream_model.generate_person_description(
-            encoded_image, query, stream=False
-        )
         return response
 
     def success(self, message):
