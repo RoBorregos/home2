@@ -19,7 +19,6 @@ var searchData=
   ['vision_5foptimization_5fplan_2emd_16',['vision_optimization_plan.md',['../vision__optimization__plan_8md.html',1,'']]],
   ['vision_5fruntime_2epy_17',['vision_runtime.py',['../vision__runtime_8py.html',1,'']]],
   ['vision_5ftasks_2epy_18',['vision_tasks.py',['../vision__tasks_8py.html',1,'']]],
-  ['visualization_2epy_19',['visualization.py',['../visualization_8py.html',1,'']]],
-  ['visualize_5fmbm_2epy_20',['visualize_mbm.py',['../visualize__mbm_8py.html',1,'']]],
-  ['visualize_5fompl_2epy_21',['visualize_ompl.py',['../visualize__ompl_8py.html',1,'']]]
+  ['visualize_5fmbm_2epy_19',['visualize_mbm.py',['../visualize__mbm_8py.html',1,'']]],
+  ['visualize_5fompl_2epy_20',['visualize_ompl.py',['../visualize__ompl_8py.html',1,'']]]
 ];

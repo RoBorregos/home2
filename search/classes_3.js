@@ -11,8 +11,7 @@ var searchData=
   ['configurationbuffer_8',['ConfigurationBuffer',['../structvamp_1_1robots_1_1Baxter_1_1ConfigurationBuffer.html',1,'vamp::robots::Baxter::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Fetch_1_1ConfigurationBuffer.html',1,'vamp::robots::Fetch::ConfigurationBuffer'],['../structvamp_1_1robots_1_1FRIDA__Real_1_1ConfigurationBuffer.html',1,'vamp::robots::FRIDA_Real::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Panda_1_1ConfigurationBuffer.html',1,'vamp::robots::Panda::ConfigurationBuffer'],['../structvamp_1_1robots_1_1Sphere_1_1ConfigurationBuffer.html',1,'vamp::robots::Sphere::ConfigurationBuffer'],['../structvamp_1_1robots_1_1UR5_1_1ConfigurationBuffer.html',1,'vamp::robots::UR5::ConfigurationBuffer']]],
   ['connectedcomponent_9',['ConnectedComponent',['../structvamp_1_1planning_1_1utils_1_1ConnectedComponent.html',1,'vamp::planning::utils']]],
   ['constantneighborparams_10',['ConstantNeighborParams',['../structvamp_1_1planning_1_1ConstantNeighborParams.html',1,'vamp::planning']]],
-  ['crossentropylabelsmooth_11',['CrossEntropyLabelSmooth',['../classutils_1_1CrossEntropyLabelSmooth.html',1,'utils']]],
-  ['cuboid_12',['Cuboid',['../structvamp_1_1collision_1_1Cuboid.html',1,'vamp::collision']]],
-  ['customernode_13',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]],
-  ['cylinder_14',['Cylinder',['../structvamp_1_1collision_1_1Cylinder.html',1,'vamp::collision']]]
+  ['cuboid_11',['Cuboid',['../structvamp_1_1collision_1_1Cuboid.html',1,'vamp::collision']]],
+  ['customernode_12',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]],
+  ['cylinder_13',['Cylinder',['../structvamp_1_1collision_1_1Cylinder.html',1,'vamp::collision']]]
 ];

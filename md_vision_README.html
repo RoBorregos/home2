@@ -110,7 +110,7 @@ Tree structure</h1>
 <div class="line">│frida_interfaces/                         # Custom ROS interfaces</div>
 <div class="line">├── vision/</div>
 <div class="line">│   ├── action/                            # DetectPerson, Xarmmove</div>
-<div class="line">│   ├── msg/                               # ObjectDetection(+Array), Detection, Person,</div>
+<div class="line">│   ├── msg/                               # Objec└── models/swin/               # ReID networktDetection(+Array), Detection, Person,</div>
 <div class="line">│   │                                      # PersonList, CustomerTable, Point2D, Shelf*</div>
 <div class="line">│   └── srv/                               # 30 services (Query, FindSeat, TrackBy, ...)</div>
 <div class="line">│</div>
@@ -150,9 +150,7 @@ Tree structure</h1>
 <div class="line">│   │       ├── calculations.py            # deproject_pixel_to_point, get_depth, centroids</div>
 <div class="line">│   │       ├── trt_utils.py               # load_yolo_trt(): .pt -&gt; cached TensorRT .engine</div>
 <div class="line">│   │       ├── debug_pub.py               # Subscriber-gated, rate-limited debug images</div>
-<div class="line">│   │       ├── area_check.py              # Room filtering via nav MapAreas + TF</div>
-<div class="line">│   │       ├── reid_model.py              # SWIN person re-identification embedder</div>
-<div class="line">│   │       └── models/swin/               # ReID network</div>
+<div class="line">│   │       └── area_check.py              # Room filtering via nav MapAreas + TF     </div>
 <div class="line">│   │</div>
 <div class="line">│   └── moondream_run/                     # Moondream2 VLM bridge</div>
 <div class="line">│       ├── scripts/moondream_node.py      # ROS node; gRPC client to localhost:50052</div>
@@ -212,7 +210,7 @@ Vision pipeline</h1>
 <div class="line">        IO</div>
 <div class="line">        OD[&quot;ObjectDetect2D&lt;br/&gt;yolo_finetuned + yolo_generic&quot;]</div>
 <div class="line">        ZS[&quot;ZeroShotDetect2D&lt;br/&gt;yoloe-11l-seg&quot;]</div>
-<div class="line">        TRK[&quot;tracker_node&lt;br/&gt;yolov8n + ByteTrack, yolo11m-pose, SWIN ReID&quot;]</div>
+<div class="line">        TRK[&quot;tracker_node&lt;br/&gt;yolov8n + ByteTrack, yolo11m-pose&quot;]</div>
 <div class="line">        FR[&quot;face_recognition&lt;br/&gt;InsightFace buffalo_sc&quot;]</div>
 <div class="line">        HC[&quot;hric_commands&lt;br/&gt;yolo11m-pose&quot;]</div>
 <div class="line">        GC[&quot;gpsr_commands&lt;br/&gt;yolo11m-pose&quot;]</div>
@@ -253,7 +251,7 @@ Packages</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>   </td><td class="markdownTableBodyNone">Counting and describing people by pose, gesture, clothing color   </td><td class="markdownTableBodyNone">srvs <code>CountByPose</code>, <code>CountBy</code>, <code>CountByColor</code>, <code>PersonPoseGesture</code>   </td><td class="markdownTableBodyNone">yolo11m-pose    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>   </td><td class="markdownTableBodyNone">Locks onto one person and publishes their 3D point for nav to follow   </td><td class="markdownTableBodyNone">srvs <code>SetBool</code>&lt;tt&gt;set_tracking_target, <code>TrackBy</code>, <code>Trigger</code>&lt;tt&gt;is_tracking; pub <code>/vision/tracking_results</code>   </td><td class="markdownTableBodyNone">yolov8n + ByteTrack, yolo11m-pose, SWIN ReID    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code>   </td><td class="markdownTableBodyNone">Locks onto one person and publishes their 3D point for nav to follow   </td><td class="markdownTableBodyNone">srvs <code>SetBool</code>&lt;tt&gt;set_tracking_target, <code>TrackBy</code>, <code>Trigger</code>&lt;tt&gt;is_tracking; pub <code>/vision/tracking_results</code>   </td><td class="markdownTableBodyNone">yolov8n + ByteTrack, yolo11m-pose    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>face_recognition</code>   </td><td class="markdownTableBodyNone">Learns and recognizes faces; drives the arm's face following   </td><td class="markdownTableBodyNone">srvs <code>SaveName</code>&lt;tt&gt;new_name, <code>SaveName</code>&lt;tt&gt;follow_by_name; pubs <code>/vision/follow_face</code>, <code>/vision/person_list</code>   </td><td class="markdownTableBodyNone">InsightFace <code>buffalo_sc</code>    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -429,8 +427,6 @@ Known issues</h1>
 <li><code>docker/vision/run.sh</code> rejects the <code>cpu</code> environment (<code>Unknown environment type!</code>) even though <code>docker/vision/Dockerfile.cpu</code> exists.</li>
 <li><code>--upload-image</code> passes <code>docker-compose.yml</code>; the real filename is <code>docker-compose.yaml</code>.</li>
 <li>Placeholder and typo'd constants in <code><a class="el" href="vision__constants_8py.html">vision_constants.py</a></code>: <code>DETECTIONS_ACTIVE_TOPIC</code> and <code>DEBUG_IMAGE_TOPIC</code> are both <code>"asd"</code>, and <code>SHELF_DETECTION_TOPIC</code> reads <code>/vision/storing_grocPeries/shelf_detection</code>.</li>
-<li><code><a class="el" href="person__in__map_8py.html">person_in_map.py</a></code> imports <code>PERSON_INSIDE_REQUEST_TOPIC</code>, which <code><a class="el" href="vision__constants_8py.html">vision_constants.py</a></code> never defines — the node fails at import.</li>
-<li><code><a class="el" href="trash__detection__node_8py.html">trash_detection_node.py</a></code> is launched by nothing and has no client.</li>
 <li><code>auto-complete.sh</code> does not know the vision-only flags (<code>--warmup</code>, <code>--moondream</code>, <code>--carry</code>, <code>--storing-groceries</code>).</li>
 <li><code>status/configs/vision_nodes.cfg</code> still refers to <code>/receptionist_commands</code>, which is now <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>. </li>
 </ul>

@@ -59,9 +59,6 @@ var annotated_dup =
     [ "demo_roborregosday", "namespacedemo__roborregosday.html", [
       [ "DemoRoborregosDay", "classdemo__roborregosday_1_1DemoRoborregosDay.html", "classdemo__roborregosday_1_1DemoRoborregosDay" ]
     ] ],
-    [ "detection", "namespacedetection.html", [
-      [ "Detection", "classdetection_1_1Detection.html", "classdetection_1_1Detection" ]
-    ] ],
     [ "detectors", "namespacedetectors.html", [
       [ "base", "namespacedetectors_1_1base.html", [
         [ "BBOX", "classdetectors_1_1base_1_1BBOX.html", null ],
@@ -78,9 +75,6 @@ var annotated_dup =
         [ "_SuppressStderr", "classdetectors_1_1yolo__e_1_1__SuppressStderr.html", "classdetectors_1_1yolo__e_1_1__SuppressStderr" ],
         [ "YoloEModel", "classdetectors_1_1yolo__e_1_1YoloEModel.html", "classdetectors_1_1yolo__e_1_1YoloEModel" ]
       ] ]
-    ] ],
-    [ "dishwasher_node", "namespacedishwasher__node.html", [
-      [ "DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", "classdishwasher__node_1_1DishwasherNode" ]
     ] ],
     [ "dock_to_handle", "namespacedock__to__handle.html", [
       [ "DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", "classdock__to__handle_1_1DockToHandleNode" ]
@@ -199,12 +193,6 @@ var annotated_dup =
     [ "image_orienter", "namespaceimage__orienter.html", [
       [ "ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", "classimage__orienter_1_1ImageOrienter" ]
     ] ],
-    [ "is_person_inside", "namespaceis__person__inside.html", [
-      [ "IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", "classis__person__inside_1_1IsPersonInside" ]
-    ] ],
-    [ "kalman_filter", "namespacekalman__filter.html", [
-      [ "KalmanFilter", "classkalman__filter_1_1KalmanFilter.html", "classkalman__filter_1_1KalmanFilter" ]
-    ] ],
     [ "look_at_example", "namespacelook__at__example.html", [
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],
@@ -295,9 +283,6 @@ var annotated_dup =
       [ "NavUI", "classnav__ui_1_1NavUI.html", "classnav__ui_1_1NavUI" ],
       [ "RosSignals", "classnav__ui_1_1RosSignals.html", null ]
     ] ],
-    [ "nn_matching", "namespacenn__matching.html", [
-      [ "NearestNeighborDistanceMetric", "classnn__matching_1_1NearestNeighborDistanceMetric.html", "classnn__matching_1_1NearestNeighborDistanceMetric" ]
-    ] ],
     [ "node_monitor", "namespacenode__monitor.html", [
       [ "NodeMonitor", "classnode__monitor_1_1NodeMonitor.html", "classnode__monitor_1_1NodeMonitor" ]
     ] ],
@@ -317,9 +302,6 @@ var annotated_dup =
     ] ],
     [ "person_goal_smoother", "namespaceperson__goal__smoother.html", [
       [ "PersonGoalSmoother", "classperson__goal__smoother_1_1PersonGoalSmoother.html", "classperson__goal__smoother_1_1PersonGoalSmoother" ]
-    ] ],
-    [ "person_in_map", "namespaceperson__in__map.html", [
-      [ "PersonLocation", "classperson__in__map_1_1PersonLocation.html", "classperson__in__map_1_1PersonLocation" ]
     ] ],
     [ "pick_and_place", "namespacepick__and__place.html", [
       [ "fix_position_to_plane", "namespacepick__and__place_1_1fix__position__to__plane.html", [
@@ -541,18 +523,8 @@ var annotated_dup =
     [ "test_vision_manager", "namespacetest__vision__manager.html", [
       [ "TestVisionManager", "classtest__vision__manager_1_1TestVisionManager.html", "classtest__vision__manager_1_1TestVisionManager" ]
     ] ],
-    [ "track", "namespacetrack.html", [
-      [ "Track", "classtrack_1_1Track.html", "classtrack_1_1Track" ],
-      [ "TrackState", "classtrack_1_1TrackState.html", null ]
-    ] ],
-    [ "tracker", "namespacetracker.html", [
-      [ "Tracker", "classtracker_1_1Tracker.html", "classtracker_1_1Tracker" ]
-    ] ],
     [ "tracker_node", "namespacetracker__node.html", [
       [ "SingleTracker", "classtracker__node_1_1SingleTracker.html", "classtracker__node_1_1SingleTracker" ]
-    ] ],
-    [ "trash_detection_node", "namespacetrash__detection__node.html", [
-      [ "TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", "classtrash__detection__node_1_1TrashDetectionNode" ]
     ] ],
     [ "unc", "namespaceunc.html", [
       [ "robotics", "namespaceunc_1_1robotics.html", [
@@ -562,9 +534,6 @@ var annotated_dup =
           ] ]
         ] ]
       ] ]
-    ] ],
-    [ "utils", "namespaceutils.html", [
-      [ "CrossEntropyLabelSmooth", "classutils_1_1CrossEntropyLabelSmooth.html", "classutils_1_1CrossEntropyLabelSmooth" ]
     ] ],
     [ "vamp", "namespacevamp.html", [
       [ "binding", "namespacevamp_1_1binding.html", [
@@ -665,10 +634,6 @@ var annotated_dup =
     ] ],
     [ "vision_runtime", "namespacevision__runtime.html", [
       [ "VisionRuntime", "classvision__runtime_1_1VisionRuntime.html", "classvision__runtime_1_1VisionRuntime" ]
-    ] ],
-    [ "visualization", "namespacevisualization.html", [
-      [ "NoVisualization", "classvisualization_1_1NoVisualization.html", "classvisualization_1_1NoVisualization" ],
-      [ "Visualization", "classvisualization_1_1Visualization.html", "classvisualization_1_1Visualization" ]
     ] ],
     [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", [
       [ "WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", "classwait__for__controller__input__node_1_1WaitForControllerInputNode" ]

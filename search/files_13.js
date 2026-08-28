@@ -30,13 +30,11 @@ var searchData=
   ['time_5fstrategy_5f2026_2emd_27',['time_strategy_2026.md',['../time__strategy__2026_8md.html',1,'']]],
   ['timeouts_2epy_28',['timeouts.py',['../timeouts_8py.html',1,'']]],
   ['toggleservo_2esrv_29',['ToggleServo.srv',['../ToggleServo_8srv.html',1,'']]],
-  ['track_2epy_30',['track.py',['../track_8py.html',1,'']]],
-  ['trackby_2esrv_31',['TrackBy.srv',['../TrackBy_8srv.html',1,'']]],
-  ['tracker_2epy_32',['tracker.py',['../scripts_2models_2tracker_8py.html',1,'(Global Namespace)'],['../vision__general_2utils_2deep__sort_2tracker_8py.html',1,'(Global Namespace)']]],
-  ['tracker_5fnode_2epy_33',['tracker_node.py',['../tracker__node_8py.html',1,'']]],
-  ['transformations_2epy_34',['transformations.py',['../transformations_8py.html',1,'']]],
-  ['trash_5fdetection_5fnode_2epy_35',['trash_detection_node.py',['../trash__detection__node_8py.html',1,'']]],
-  ['trashcandetection_2esrv_36',['TrashcanDetection.srv',['../TrashcanDetection_8srv.html',1,'']]],
-  ['trt_5futils_2epy_37',['trt_utils.py',['../trt__utils_8py.html',1,'']]],
-  ['typing_2epy_38',['typing.py',['../typing_8py.html',1,'']]]
+  ['trackby_2esrv_30',['TrackBy.srv',['../TrackBy_8srv.html',1,'']]],
+  ['tracker_2epy_31',['tracker.py',['../tracker_8py.html',1,'']]],
+  ['tracker_5fnode_2epy_32',['tracker_node.py',['../tracker__node_8py.html',1,'']]],
+  ['transformations_2epy_33',['transformations.py',['../transformations_8py.html',1,'']]],
+  ['trashcandetection_2esrv_34',['TrashcanDetection.srv',['../TrashcanDetection_8srv.html',1,'']]],
+  ['trt_5futils_2epy_35',['trt_utils.py',['../trt__utils_8py.html',1,'']]],
+  ['typing_2epy_36',['typing.py',['../typing_8py.html',1,'']]]
 ];

@@ -1,10 +1,26 @@
 var searchData=
 [
-  ['object_5fdetector_5fcombined_0',['object_detector_combined',['../namespaceobject__detector__combined.html',1,'']]],
-  ['object_5fdetector_5fnode_1',['object_detector_node',['../namespaceobject__detector__node.html',1,'']]],
-  ['odrive_5fdashboard_2',['odrive_dashboard',['../namespaceomnidriver_1_1odrive__dashboard.html',1,'omnidriver']]],
-  ['odrive_5fserial_5ftwist_3',['odrive_serial_twist',['../namespaceomnidriver_1_1odrive__serial__twist.html',1,'omnidriver']]],
-  ['omni_5fbasics_4',['omni_basics',['../namespaceomni__basics.html',1,'']]],
-  ['omnidriver_5',['omnidriver',['../namespaceomnidriver.html',1,'']]],
-  ['simple_5frx_6',['simple_rx',['../namespaceomnidriver_1_1simple__rx.html',1,'omnidriver']]]
+  ['fix_5fposition_5fto_5fplane_0',['fix_position_to_plane',['../namespacepick__and__place_1_1fix__position__to__plane.html',1,'pick_and_place']]],
+  ['keyboard_5finput_1',['keyboard_input',['../namespacepick__and__place_1_1keyboard__input.html',1,'pick_and_place']]],
+  ['manipulation_5fclient_2',['manipulation_client',['../namespacepick__and__place_1_1manipulation__client.html',1,'pick_and_place']]],
+  ['manipulation_5fcore_3',['manipulation_core',['../namespacepick__and__place_1_1manipulation__core.html',1,'pick_and_place']]],
+  ['perception_5f3d_4',['perception_3d',['../namespaceperception__3d.html',1,'']]],
+  ['perception_5futils_5',['perception_utils',['../namespaceperception__utils.html',1,'']]],
+  ['person_5fgoal_5fsmoother_6',['person_goal_smoother',['../namespaceperson__goal__smoother.html',1,'']]],
+  ['pick_5fand_5fplace_7',['pick_and_place',['../namespacepick__and__place.html',1,'']]],
+  ['pick_5fbenchmark_8',['pick_benchmark',['../namespacepick__and__place_1_1pick__benchmark.html',1,'pick_and_place']]],
+  ['pick_5fserver_9',['pick_server',['../namespacepick__and__place_1_1pick__server.html',1,'pick_and_place']]],
+  ['pickandplace_5ftask_5fmanager_10',['pickandplace_task_manager',['../namespacepickandplace__task__manager.html',1,'']]],
+  ['pickmanager_11',['PickManager',['../namespacePickManager.html',1,'']]],
+  ['place_5fserver_12',['place_server',['../namespacepick__and__place_1_1place__server.html',1,'pick_and_place']]],
+  ['placemanager_13',['PlaceManager',['../namespacePlaceManager.html',1,'']]],
+  ['planner_14',['Planner',['../namespacePlanner.html',1,'']]],
+  ['point_5ftransformer_15',['point_transformer',['../namespacepoint__transformer.html',1,'']]],
+  ['pointing_5fdetection_16',['pointing_detection',['../namespacepointing__detection.html',1,'']]],
+  ['pour_5fserver_17',['pour_server',['../namespacepick__and__place_1_1pour__server.html',1,'pick_and_place']]],
+  ['pourmanager_18',['PourManager',['../namespacePourManager.html',1,'']]],
+  ['ppc_19',['ppc',['../namespaceppc.html',1,'']]],
+  ['ppc_5flaunch_20',['ppc_launch',['../namespaceppc__launch.html',1,'']]],
+  ['probe_5fcuboid_21',['probe_cuboid',['../namespaceprobe__cuboid.html',1,'']]],
+  ['problem_5ftar_5fto_5fpkl_5fjson_22',['problem_tar_to_pkl_json',['../namespaceproblem__tar__to__pkl__json.html',1,'']]]
 ];

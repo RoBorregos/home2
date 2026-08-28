@@ -92,8 +92,7 @@ var hierarchy =
       [ "model.ft_net_hr", "classmodel_1_1ft__net__hr.html", null ],
       [ "model.ft_net_middle", "classmodel_1_1ft__net__middle.html", null ],
       [ "model.ft_net_swin", "classmodel_1_1ft__net__swin.html", null ],
-      [ "model.ft_net_swinv2", "classmodel_1_1ft__net__swinv2.html", null ],
-      [ "utils.CrossEntropyLabelSmooth", "classutils_1_1CrossEntropyLabelSmooth.html", null ]
+      [ "model.ft_net_swinv2", "classmodel_1_1ft__net__swinv2.html", null ]
     ] ],
     [ "moondream_lib.MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", null ],
     [ "ompl::base::MotionValidator", null, [
@@ -141,17 +140,12 @@ var hierarchy =
     [ "vamp::planning::NearestNeighborsGNAT< _T >::Node", "classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html", null ],
     [ "vamp::planning::NearestNeighborsGNAT< _T >::NodeDistCompare", "structvamp_1_1planning_1_1NearestNeighborsGNAT_1_1NodeDistCompare.html", null ],
     [ "object", null, [
-      [ "detection.Detection", "classdetection_1_1Detection.html", null ],
-      [ "kalman_filter.KalmanFilter", "classkalman__filter_1_1KalmanFilter.html", null ],
       [ "moondream_proto_pb2_grpc.MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
       [ "moondream_proto_pb2_grpc.MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", [
         [ "server.MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", null ]
       ] ],
       [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ],
-      [ "nn_matching.NearestNeighborDistanceMetric", "classnn__matching_1_1NearestNeighborDistanceMetric.html", null ],
-      [ "vamp.transformations.Arcball", "classvamp_1_1transformations_1_1Arcball.html", null ],
-      [ "visualization.NoVisualization", "classvisualization_1_1NoVisualization.html", null ],
-      [ "visualization.Visualization", "classvisualization_1_1Visualization.html", null ]
+      [ "vamp.transformations.Arcball", "classvamp_1_1transformations_1_1Arcball.html", null ]
     ] ],
     [ "pickandplace_task_manager.ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", null ],
     [ "vamp::robots::Panda", "structvamp_1_1robots_1_1Panda.html", null ],
@@ -245,10 +239,7 @@ var hierarchy =
     ] ],
     [ "vamp_server.VampServer.Timer", "classvamp__server_1_1VampServer_1_1Timer.html", null ],
     [ "follow_calibration.TopicStat", "classfollow__calibration_1_1TopicStat.html", null ],
-    [ "track.Track", "classtrack_1_1Track.html", null ],
-    [ "tracker.Tracker", "classtracker_1_1Tracker.html", null ],
     [ "models.tracker.TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", null ],
-    [ "track.TrackState", "classtrack_1_1TrackState.html", null ],
     [ "vamp::robots::UR5", "structvamp_1_1robots_1_1UR5.html", null ],
     [ "std::vector", null, [
       [ "vamp::planning::Path< vamp::robots::Panda >", "structvamp_1_1planning_1_1Path.html", null ],
@@ -320,7 +311,6 @@ var hierarchy =
       [ "demo_becas.DemoBecas", "classdemo__becas_1_1DemoBecas.html", null ],
       [ "demo_manager.DemoTM", "classdemo__manager_1_1DemoTM.html", null ],
       [ "demo_roborregosday.DemoRoborregosDay", "classdemo__roborregosday_1_1DemoRoborregosDay.html", null ],
-      [ "dishwasher_node.DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", null ],
       [ "dock_to_handle.DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", null ],
       [ "doing_laundry_task_manager.DoingLaundryTM", "classdoing__laundry__task__manager_1_1DoingLaundryTM.html", null ],
       [ "ds4_demo.ServoDS4", "classds4__demo_1_1ServoDS4.html", null ],
@@ -344,7 +334,6 @@ var hierarchy =
       [ "help_me_carry.HelpMeCarryTM", "classhelp__me__carry_1_1HelpMeCarryTM.html", null ],
       [ "hric_task_manager.HRIC_TM", "classhric__task__manager_1_1HRIC__TM.html", null ],
       [ "image_orienter.ImageOrienter", "classimage__orienter_1_1ImageOrienter.html", null ],
-      [ "is_person_inside.IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
       [ "manipulation_general.manipulation_safeguard.ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", null ],
       [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
@@ -356,7 +345,6 @@ var hierarchy =
       [ "omnidriver.odrive_serial_twist.SerialCommNode", "classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html", null ],
       [ "omnidriver.simple_rx.RawSerialReceiver", "classomnidriver_1_1simple__rx_1_1RawSerialReceiver.html", null ],
       [ "person_goal_smoother.PersonGoalSmoother", "classperson__goal__smoother_1_1PersonGoalSmoother.html", null ],
-      [ "person_in_map.PersonLocation", "classperson__in__map_1_1PersonLocation.html", null ],
       [ "pick_and_place.fix_position_to_plane.FixPositionToPlane", "classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html", null ],
       [ "pick_and_place.keyboard_input.KeyboardInput", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html", null ],
       [ "pick_and_place.manipulation_client.ManipulationClient", "classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html", null ],
@@ -396,7 +384,6 @@ var hierarchy =
       [ "test_start_button.TestHriManager", "classtest__start__button_1_1TestHriManager.html", null ],
       [ "test_vision_manager.TestVisionManager", "classtest__vision__manager_1_1TestVisionManager.html", null ],
       [ "tracker_node.SingleTracker", "classtracker__node_1_1SingleTracker.html", null ],
-      [ "trash_detection_node.TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", null ],
       [ "vision_runtime.VisionRuntime", "classvision__runtime_1_1VisionRuntime.html", [
         [ "customer_node.CustomerNode", "classcustomer__node_1_1CustomerNode.html", null ],
         [ "face_recognition_node.FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", null ],

@@ -77,9 +77,7 @@ var namespaces_dup =
     ] ],
     [ "demo_manager", "namespacedemo__manager.html", "namespacedemo__manager" ],
     [ "demo_roborregosday", "namespacedemo__roborregosday.html", "namespacedemo__roborregosday" ],
-    [ "detection", "namespacedetection.html", "namespacedetection" ],
     [ "detectors", "namespacedetectors.html", "namespacedetectors" ],
-    [ "dishwasher_node", "namespacedishwasher__node.html", "namespacedishwasher__node" ],
     [ "display_gz", "namespacedisplay__gz.html", [
       [ "generate_launch_description", "namespacedisplay__gz.html#a4f95fbbb9f34a1fd59c2387ed4123947", null ]
     ] ],
@@ -245,12 +243,6 @@ var namespaces_dup =
       [ "main", "namespaceinflate__body__spheres.html#a9cd297cc022b9e6ed4bd24e40cedcd45", null ],
       [ "BODY_LINKS", "namespaceinflate__body__spheres.html#a1f90a775b7c2e98642874f82cef30e18", null ]
     ] ],
-    [ "iou_matching", "namespaceiou__matching.html", [
-      [ "iou", "namespaceiou__matching.html#a8a1fdfd67c4235dd72f8055807874aff", null ],
-      [ "iou_cost", "namespaceiou__matching.html#a169ef7c7d312ff6ad71d6972b531c688", null ]
-    ] ],
-    [ "is_person_inside", "namespaceis__person__inside.html", "namespaceis__person__inside" ],
-    [ "kalman_filter", "namespacekalman__filter.html", "namespacekalman__filter" ],
     [ "launch_nav", "namespacelaunch__nav.html", [
       [ "classify_log_file", "namespacelaunch__nav.html#a75bd2855dafe96b1a39f361e973d957d", null ],
       [ "init_view_logs", "namespacelaunch__nav.html#ad8f3f0a83ccae0a1f950b036873acdfd", null ],
@@ -279,12 +271,6 @@ var namespaces_dup =
     [ "lidar_setup", "namespacelidar__setup.html", [
       [ "generate_launch_description", "namespacelidar__setup.html#a270b8733299546018e10198255b2f9bf", null ],
       [ "launch_setup", "namespacelidar__setup.html#a9990279d91c4caa156096d8ed443c567", null ]
-    ] ],
-    [ "linear_assignment", "namespacelinear__assignment.html", [
-      [ "gate_cost_matrix", "namespacelinear__assignment.html#a698de3cd650c504223c517799d7f3919", null ],
-      [ "matching_cascade", "namespacelinear__assignment.html#a7718b8a9c2d1d36106d686868c55498a", null ],
-      [ "min_cost_matching", "namespacelinear__assignment.html#af726e8ac9333bb98f165bf49c0c7a991", null ],
-      [ "INFTY_COST", "namespacelinear__assignment.html#a4dc5d6dd36ab525c7eec56cb41e458e1", null ]
     ] ],
     [ "localization", "namespacelocalization.html", [
       [ "generate_launch_description", "namespacelocalization.html#a03aa809ae87723efe694476a74017b40", null ],
@@ -349,7 +335,6 @@ var namespaces_dup =
     [ "nav_central", "namespacenav__central.html", "namespacenav__central" ],
     [ "nav_goal_arm_pointer", "namespacenav__goal__arm__pointer.html", "namespacenav__goal__arm__pointer" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
-    [ "nn_matching", "namespacenn__matching.html", "namespacenn__matching" ],
     [ "node_monitor", "namespacenode__monitor.html", "namespacenode__monitor" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
       [ "generate_launch_description", "namespaceobject__detector__combined.html#a89d204316b51e6caf017cd1f6253e538", null ]
@@ -368,7 +353,6 @@ var namespaces_dup =
       [ "point_in_range", "namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69", null ]
     ] ],
     [ "person_goal_smoother", "namespaceperson__goal__smoother.html", "namespaceperson__goal__smoother" ],
-    [ "person_in_map", "namespaceperson__in__map.html", "namespaceperson__in__map" ],
     [ "pick_and_place", "namespacepick__and__place.html", "namespacepick__and__place" ],
     [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", "namespacepickandplace__task__manager" ],
     [ "PickManager", "namespacePickManager.html", "namespacePickManager" ],
@@ -432,10 +416,7 @@ var namespaces_dup =
     [ "record_relative_pose", "namespacerecord__relative__pose.html", "namespacerecord__relative__pose" ],
     [ "reid_model", "namespacereid__model.html", [
       [ "compare_images", "namespacereid__model.html#a09e0afec43f563971591076d0a91a556", null ],
-      [ "compare_images_batch", "namespacereid__model.html#aa51284f7e83456e804bdfabfb93c06fd", null ],
       [ "extract_feature_from_img", "namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2", null ],
-      [ "extract_feature_from_img_batch", "namespacereid__model.html#a9d2fa5cd96d1d77a54412fa812689833", null ],
-      [ "fliplr", "namespacereid__model.html#a03dbf938a17f020c33a65cb86f86ce24", null ],
       [ "get_structure", "namespacereid__model.html#ae68f17bec5313be51d1ab808ef2755d0", null ],
       [ "load_network", "namespacereid__model.html#a4a574d476e5b12bd347146b9ae5c1cb0", null ],
       [ "_models_root", "namespacereid__model.html#ae48f4b9872d8c1b85b4e9852746680b1", null ],
@@ -588,10 +569,7 @@ var namespaces_dup =
       [ "transform_point", "namespacetf__utils.html#aa53ead24b1e4dc6caefbc64a1de35c75", null ],
       [ "transform_pose", "namespacetf__utils.html#acd9c843b0fe781b1c8f769decd9897e9", null ]
     ] ],
-    [ "track", "namespacetrack.html", "namespacetrack" ],
-    [ "tracker", "namespacetracker.html", "namespacetracker" ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
-    [ "trash_detection_node", "namespacetrash__detection__node.html", "namespacetrash__detection__node" ],
     [ "trt_utils", "namespacetrt__utils.html", [
       [ "_get_engine_path", "namespacetrt__utils.html#ae28972e2bd9e6ec6460827b6380c7b9a", null ],
       [ "_is_tensorrt_available", "namespacetrt__utils.html#a32e507a426c6ab7dcd37eb74888950c9", null ],
@@ -602,7 +580,6 @@ var namespaces_dup =
       [ "create_nodes", "namespaceunitree__h1.html#a8cd98f3b33f96dc92ba5aacccf0b9a0f", null ],
       [ "generate_launch_description", "namespaceunitree__h1.html#acd23c96a910cd26955ad22c40585eae5", null ]
     ] ],
-    [ "utils", "namespaceutils.html", "namespaceutils" ],
     [ "vamp", "namespacevamp.html", "namespacevamp" ],
     [ "vamp_moveit_plugin", "namespacevamp__moveit__plugin.html", "namespacevamp__moveit__plugin" ],
     [ "vamp_server", "namespacevamp__server.html", "namespacevamp__server" ],
@@ -614,7 +591,6 @@ var namespaces_dup =
       [ "FLT_EPSILON", "namespacevision__3D__utils.html#a98f504ec1d9a17769ad241f28580d805", null ]
     ] ],
     [ "vision_runtime", "namespacevision__runtime.html", "namespacevision__runtime" ],
-    [ "visualization", "namespacevisualization.html", "namespacevisualization" ],
     [ "visualize_mbm", "namespacevisualize__mbm.html", [
       [ "main", "namespacevisualize__mbm.html#a2caa0d958d1ae9a1ae73039e9f4db9bc", null ]
     ] ],

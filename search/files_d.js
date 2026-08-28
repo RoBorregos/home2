@@ -13,7 +13,6 @@ var searchData=
   ['navquery_2esrv_10',['NavQuery.srv',['../NavQuery_8srv.html',1,'']]],
   ['neon_2ehh_11',['neon.hh',['../neon_8hh.html',1,'']]],
   ['nn_2ehh_12',['nn.hh',['../nn_8hh.html',1,'']]],
-  ['nn_5fmatching_2epy_13',['nn_matching.py',['../nn__matching_8py.html',1,'']]],
-  ['node_5fmonitor_2epy_14',['node_monitor.py',['../node__monitor_8py.html',1,'']]],
-  ['nodestatus_2emsg_15',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]]
+  ['node_5fmonitor_2epy_13',['node_monitor.py',['../node__monitor_8py.html',1,'']]],
+  ['nodestatus_2emsg_14',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]]
 ];

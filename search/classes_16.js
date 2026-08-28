@@ -18,6 +18,5 @@ var searchData=
   ['vectorsignature_15',['VectorSignature',['../structvamp_1_1VectorSignature.html',1,'vamp']]],
   ['visionruntime_16',['VisionRuntime',['../classvision__runtime_1_1VisionRuntime.html',1,'vision_runtime']]],
   ['visiontasks_17',['VisionTasks',['../classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html',1,'task_manager::subtask_managers::vision_tasks']]],
-  ['visualization_18',['Visualization',['../classvisualization_1_1Visualization.html',1,'visualization']]],
-  ['volume_19',['Volume',['../structvamp_1_1collision_1_1Volume.html',1,'vamp::collision']]]
+  ['volume_18',['Volume',['../structvamp_1_1collision_1_1Volume.html',1,'vamp::collision']]]
 ];

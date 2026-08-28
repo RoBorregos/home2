@@ -24,7 +24,6 @@ var searchData=
   ['build_5fcostmap_5flut_21',['build_costmap_lut',['../namespacenav__ui.html#af78c57aff04ad7e1b00a22c3f4ab2a7e',1,'nav_ui']]],
   ['build_5fenvironment_22',['build_environment',['../classvamp__server_1_1VampServer.html#a167298fd2efb1364bfeb32af68298a17',1,'vamp_server::VampServer']]],
   ['build_5fjoint_5flink_5ftree_23',['build_joint_link_tree',['../namespacescripts_1_1urdf2mjcf.html#ad21f0be64a4bf966588936449ffc07e7',1,'scripts::urdf2mjcf']]],
-  ['build_5fpoint_5fstamped_24',['build_point_stamped',['../classtrash__detection__node_1_1TrashDetectionNode.html#ad632eef2e1f7fa691cd05ac025a3b3f5',1,'trash_detection_node::TrashDetectionNode']]],
-  ['build_5froadmap_25',['build_roadmap',['../structvamp_1_1planning_1_1PRM.html#acfe2e241ee7e65ec22f79f58e9515f2a',1,'vamp::planning::PRM']]],
-  ['build_5ftree_26',['build_tree',['../namespacetask__manager_1_1gpsr_1_1bt__builder.html#ad44f94cc65e24a37aa206df9e358dc2e',1,'task_manager::gpsr::bt_builder']]]
+  ['build_5froadmap_24',['build_roadmap',['../structvamp_1_1planning_1_1PRM.html#acfe2e241ee7e65ec22f79f58e9515f2a',1,'vamp::planning::PRM']]],
+  ['build_5ftree_25',['build_tree',['../namespacetask__manager_1_1gpsr_1_1bt__builder.html#ad44f94cc65e24a37aa206df9e358dc2e',1,'task_manager::gpsr::bt_builder']]]
 ];
