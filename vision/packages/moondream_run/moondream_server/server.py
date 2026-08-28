@@ -6,13 +6,6 @@ import argparse
 from moondream_lib import MoonDreamModel
 
 
-# class Position(Enum):
-#     LEFT = "left"
-#     CENTER = "center"
-#     RIGHT = "right"
-#     NOT_FOUND = "not found"
-
-
 class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
     def __init__(self, model):
         self.model = model
@@ -21,22 +14,6 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         print("Encoding image...")
         encoded_data = self.model.encode_image(request.image_data)
         return moondream_proto_pb2.EncodedImageResponse(encoded_image=encoded_data)
-
-    def FindBeverage(self, request, context):
-        # Use the general query model to locate the beverage.
-        # Ask the model to return only left/center/right/not found.
-        prompt = f"Where is the {request.subject}? Answer with only 'left', 'center', 'right', or 'not found'."
-        answer = self.model.query(request.encoded_image, prompt)
-        # Normalize answer
-        answer_clean = answer.strip().lower()
-        # Extract first word that matches expected positions
-        position = "not found"
-        for pos in ["left", "center", "right", "not found"]:
-            if pos in answer_clean:
-                position = pos
-                break
-
-        return moondream_proto_pb2.BeveragePositionResponse(position=position)
 
     def FindObjectPoints(self, request, context):
         points = self.model.find_object_points(request.encoded_image, request.subject)

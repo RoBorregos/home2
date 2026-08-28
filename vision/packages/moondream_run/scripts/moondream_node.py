@@ -6,7 +6,6 @@ Node for Moondream functions
 
 import grpc
 import rclpy
-from vision_general.utils.trt_utils import load_yolo_trt
 import cv2
 import sys
 import os
@@ -16,20 +15,17 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
-from frida_interfaces.srv import BeverageLocation
 from frida_interfaces.srv import Query, CropQuery, ObjectPoints
 from frida_interfaces.srv import MoondreamDetection
 from frida_interfaces.msg import Point2D, ObjectDetection
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
-    BEVERAGE_TOPIC,
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
     OBJECT_POINTS_TOPIC,
     MOONDREAM_DETECTION_TOPIC,
 )
-from enum import Enum
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -47,13 +43,6 @@ NOT_FOUND = "not found"
 CONF_THRESHOLD = 0.5
 
 
-class Position(Enum):
-    LEFT = "left"
-    CENTER = "center"
-    RIGHT = "right"
-    NOT_FOUND = "not found"
-
-
 class MoondreamNode(Node):
     def __init__(self):
         super().__init__("moondream_node")
@@ -62,10 +51,6 @@ class MoondreamNode(Node):
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
-        )
-
-        self.beverage_location_service = self.create_service(
-            BeverageLocation, BEVERAGE_TOPIC, self.beverage_location_callback
         )
 
         self.query_service = self.create_service(
@@ -81,8 +66,6 @@ class MoondreamNode(Node):
         self.detect_service = self.create_service(
             MoondreamDetection, MOONDREAM_DETECTION_TOPIC, self.detect_callback
         )
-
-        self.yolo_model = load_yolo_trt("yolov8n.pt")
 
         # gRPC client setup
         options = [
@@ -107,13 +90,6 @@ class MoondreamNode(Node):
             self.get_logger().warn("No image received yet.")
             return response
 
-        if request.person:
-            crop = self.detect_and_crop_person()
-            if crop is not None:
-                self.image = crop
-            else:
-                self.get_logger().warn("No person detected. Describing general image.")
-
         _, image_bytes = cv2.imencode(".jpg", self.image)
         image_bytes = image_bytes.tobytes()
 
@@ -128,7 +104,9 @@ class MoondreamNode(Node):
             )
             response.result = query_response.answer
             response.success = True
-            self.success(f"Query executed successfully. Result: {response.result}")
+            self.get_logger().info(
+                f"\033[92mSUCCESS:\033[0m Query executed successfully. Result: {response.result}"
+            )
         except Exception as e:
             self.get_logger().error(f"Error querying image: {e}")
             response.result = ""
@@ -180,59 +158,22 @@ class MoondreamNode(Node):
             encoded = self.stub.EncodeImage(
                 moondream_proto_pb2.ImageRequest(image_data=image_bytes)
             )
-            bag_description = self.stub.Query(
+            query_response = self.stub.Query(
                 moondream_proto_pb2.QueryRequest(
                     encoded_image=encoded.encoded_image, query=request.query
                 )
             )
 
-            print(bag_description.answer)
-            response.result = bag_description.answer
+            print(query_response.answer)
+            response.result = query_response.answer
             response.success = True
-            self.success(f"Query executed successfully. Result: {response.result}")
+            self.get_logger().info(
+                f"\033[92mSUCCESS:\033[0m Query executed successfully. Result: {response.result}"
+            )
 
         except Exception as e:
             self.get_logger().error(f"Error describing bag: {e}")
             response.result = ""
-            response.success = False
-
-        return response
-
-    def beverage_location_callback(self, request, response):
-        """Callback to locate x,y bounding box in the image."""
-        self.get_logger().info("Executing service Beverage Location")
-
-        if self.image is None:
-            response.location = "No image received yet."
-            response.success = False
-            self.get_logger().warn("No image received yet.")
-            return response
-
-        _, image_bytes = cv2.imencode(".jpg", self.image)
-        image_bytes = image_bytes.tobytes()
-
-        try:
-            encoded = self.stub.EncodeImage(
-                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
-            )
-            beverage_position = self.stub.FindBeverage(
-                moondream_proto_pb2.FindBeverageRequest(
-                    encoded_image=encoded.encoded_image, subject=request.beverage
-                )
-            )
-
-            response.location = beverage_position.position
-            print(beverage_position.position)
-            if beverage_position.position == Position.NOT_FOUND:
-                self.get_logger().warn("Beverage not found")
-                response.success = False
-            else:
-                self.success(f"Beverage location found at: {response.location}")
-                response.success = True
-
-        except Exception as e:
-            self.get_logger().error(f"Error locating beverage: {e}")
-            response.location = ""
             response.success = False
 
         return response
@@ -276,7 +217,9 @@ class MoondreamNode(Node):
 
             response.points = ros_points
             response.success = True
-            self.success(f"Found {len(ros_points)} points for {request.subject}")
+            self.get_logger().info(
+                f"\033[92mSUCCESS:\033[0m Found {len(ros_points)} points for {request.subject}"
+            )
 
         except Exception as e:
             self.get_logger().error(f"Error getting object points: {e}")
@@ -327,7 +270,9 @@ class MoondreamNode(Node):
 
             response.success = True
             response.message = f"Found {len(response.detections)} detections."
-            self.success(f"Detect found {len(response.detections)} '{request.subject}'")
+            self.get_logger().info(
+                f"\033[92mSUCCESS:\033[0m Detect found {len(response.detections)} '{request.subject}'"
+            )
 
         except Exception as e:
             self.get_logger().error(f"Error detecting object: {e}")
@@ -335,50 +280,6 @@ class MoondreamNode(Node):
             response.message = str(e)
 
         return response
-
-    def success(self, message):
-        """Log a success message."""
-        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
-
-    def detect_and_crop_person(self):
-        """Check if there is a person in the frame, crop the image to the person with the largest area, and return the cropped frame."""
-        if self.image is None:
-            self.get_logger().warn("No image received yet.")
-            return None
-
-        frame = self.image
-        self.output_image = frame.copy()
-
-        results = self.yolo_model(frame, verbose=False, classes=0)
-        largest_area = 0
-        largest_box = None
-
-        for out in results:
-            for box in out.boxes:
-                x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
-                confidence = box.conf.item()
-                area = w * h
-
-                if confidence > CONF_THRESHOLD and area > largest_area:
-                    largest_area = area
-                    largest_box = (x, y, w, h)
-
-        if largest_box:
-            x, y, w, h = largest_box
-            self.person_found = True
-            cv2.rectangle(
-                self.output_image,
-                (int(x - w / 2), int(y - h / 2)),
-                (int(x + w / 2), int(y + h / 2)),
-                (0, 255, 0),
-                2,
-            )
-            cropped_frame = frame[
-                int(y - h / 2) : int(y + h / 2), int(x - w / 2) : int(x + w / 2)
-            ]
-            return cropped_frame
-
-        return None
 
 
 def main(args=None):

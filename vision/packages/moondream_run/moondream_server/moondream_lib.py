@@ -6,24 +6,6 @@ import argparse
 
 NOT_FOUND = "not found"
 
-order_labels = [
-    "first",
-    "second",
-    "third",
-    "fourth",
-    "fifth",
-    "sixth",
-    "seventh",
-    "eighth",
-]
-
-
-# class Position(Enum):
-#     LEFT = "left"
-#     CENTER = "center"
-#     RIGHT = "right"
-#     NOT_FOUND = "not found"
-
 
 class MoonDreamModel:
     def __init__(
