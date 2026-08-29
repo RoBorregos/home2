@@ -11,9 +11,8 @@ import time
 import random
 
 import rclpy
-from frida_constants.vision_classes import BBOX, ShelfDetection
+from frida_constants.vision_classes import BBOX
 from frida_constants.vision_constants import (
-    BEVERAGE_TOPIC,
     CHAIRS_TO_REMOVE_SERVICE,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
@@ -28,15 +27,11 @@ from frida_constants.vision_constants import (
     GET_CUSTOMER_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
-    POINTING_OBJECT_SERVICE,
     POSE_GESTURE_TOPIC,
     QUERY_TOPIC,
-    READ_QR_TOPIC,
     RESULTS_TOPIC,
     SAVE_NAME_TOPIC,
-    SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
-    SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
     CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
@@ -44,7 +39,6 @@ from frida_constants.vision_constants import (
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import PersonList, CustomerTable
 from frida_interfaces.srv import (
-    BeverageLocation,
     ChairsToRemove,
     CountBy,
     CountByColor,
@@ -52,14 +46,10 @@ from frida_interfaces.srv import (
     CropQuery,
     Customer,
     DetectionHandler,
-    DetectPointingObject,
     FindSeat,
     PersonPoseGesture,
     Query,
-    ReadQr,
     SaveName,
-    ShelfDetectionHandler,
-    TrackBy,
     DetectHand,
     CustomerTables,
 )
@@ -79,8 +69,6 @@ TIMEOUT = 8.0
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 
-order_labels = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
-
 
 class VisionTasks:
     """Class to manage the vision tasks"""
@@ -92,15 +80,10 @@ class VisionTasks:
         self.task = task
         self.follow_face = {"x": None, "y": None}
 
-        # Per-node publishers to pause/resume heavy vision inference
         self._face_rec_pub = self.node.create_publisher(
             BoolMsg, "/vision/face_recognition/active", 10
         )
-        self._obj_det_pub = self.node.create_publisher(
-            BoolMsg, "/vision/object_detector/active", 10
-        )
         self._face_rec_active = True
-        self._obj_det_active = True
         self.flag_active_face = False
         self.person_list = []
         self.person_name = ""
@@ -115,10 +98,7 @@ class VisionTasks:
         self.face_name_subscriber = self.node.create_subscription(
             String, PERSON_NAME_TOPIC, self.person_name_callback, 10
         )
-        # Camera-frame 3D points of the persons matched by the last
-        # count_by_pose/gesture/color call (for nav approach_point)
         self.last_person_points = []
-        # Latest 3D point of the tracked person (tracker publishes while locked)
         self._tracked_point = None
         self.tracked_point_subscriber = self.node.create_subscription(
             PointStamped, RESULTS_TOPIC, self._tracked_point_callback, 10
@@ -129,15 +109,7 @@ class VisionTasks:
         self.moondream_query_client = self.node.create_client(Query, QUERY_TOPIC)
         self.moondream_crop_query_client = self.node.create_client(CropQuery, CROP_QUERY_TOPIC)
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
-        self.track_person_by_client = self.node.create_client(TrackBy, SET_TARGET_BY_TOPIC)
-        self.pointing_object_client = self.node.create_client(
-            DetectPointingObject, POINTING_OBJECT_SERVICE
-        )
         self.get_track_person_client = self.node.create_client(Trigger, IS_TRACKING_TOPIC)
-        self.shelf_detections_client = self.node.create_client(
-            ShelfDetectionHandler, SHELF_DETECTION_TOPIC
-        )
-        self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_hand_client = self.node.create_client(DetectHand, DETECT_HAND_SERVICE)
 
         self.object_detector_client = self.node.create_client(
@@ -163,8 +135,6 @@ class VisionTasks:
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
 
-        self.read_qr_client = self.node.create_client(ReadQr, READ_QR_TOPIC)
-
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
@@ -178,21 +148,7 @@ class VisionTasks:
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
                 "detect_hand": {"client": self.detect_hand_client, "type": "service"},
-                # FOLLOW_PERSON depends on the tracker's SET_TARGET service
                 "track_person": {"client": self.track_person_client, "type": "service"},
-            },
-            Task.HELP_ME_CARRY: {
-                "track_person": {"client": self.track_person_client, "type": "service"},
-                "moondream_crop_query": {
-                    "client": self.moondream_crop_query_client,
-                    "type": "service",
-                },
-                "pointing_object": {
-                    "client": self.node.create_client(
-                        DetectPointingObject, POINTING_OBJECT_SERVICE
-                    ),
-                    "type": "service",
-                },
             },
             Task.GPSR: {
                 "detect_person": {"client": self.detect_person_action_client, "type": "action"},
@@ -200,16 +156,10 @@ class VisionTasks:
                     "client": self.save_name_client,
                     "type": "service",
                 },
-                "track_by": {
-                    "client": self.track_person_by_client,
-                    "type": "service",
-                },
                 "find_person_info": {
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
-                # read_qr removed from startup checks: no server exists for
-                # READ_QR_TOPIC and no GPSR command calls it.
                 "count_person": {
                     "client": self.count_person_client,
                     "type": "service",
@@ -228,11 +178,6 @@ class VisionTasks:
                 },
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
-            Task.STORING_GROCERIES: {
-                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
-                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
-                "detect_objects": {"client": self.object_detector_client, "type": "service"},
-            },
             Task.PICK_AND_PLACE: {
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -240,7 +185,6 @@ class VisionTasks:
                     "client": self.moondream_crop_query_client,
                     "type": "service",
                 },
-                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
                 "chairs_to_remove": {"client": self.chairs_to_remove_client, "type": "service"},
             },
             Task.DOING_LAUNDRY: {
@@ -322,30 +266,6 @@ class VisionTasks:
             self._face_rec_active = False
             Logger.info(self.node, "Face recognition deactivated")
 
-    def activate_object_detector(self):
-        """Activate object detector node."""
-        if not self._obj_det_active:
-            self._set_node_active(self._obj_det_pub, True)
-            self._obj_det_active = True
-            Logger.info(self.node, "Object detector activated")
-
-    def deactivate_object_detector(self):
-        """Deactivate object detector node."""
-        if self._obj_det_active:
-            self._set_node_active(self._obj_det_pub, False)
-            self._obj_det_active = False
-            Logger.info(self.node, "Object detector deactivated")
-
-    def pause_vision(self):
-        """Pause all heavy vision inference to free GPU."""
-        self.deactivate_face_recognition()
-        self.deactivate_object_detector()
-
-    def resume_vision(self):
-        """Resume all vision inference."""
-        self.activate_face_recognition()
-        self.activate_object_detector()
-
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
         self.follow_face["x"] = msg.x
@@ -378,10 +298,10 @@ class VisionTasks:
     def get_tracked_person_point(self, timeout: float = 3.0):
         """Latest 3D point of the tracked person (tracker RESULTS topic).
 
-        Requires the tracker to be locked first (track_person(True) or
-        track_person_by). Waits up to `timeout` for a FRESH point published
-        after this call, so a stale point from a previous lock is never
-        returned. Meant to feed nav.approach_point()."""
+        Requires the tracker to be locked first (track_person(True)).
+        Waits up to `timeout` for a FRESH point published after this call,
+        so a stale point from a previous lock is never returned. Meant to
+        feed nav.approach_point()."""
         self._tracked_point = None
         start = time.time()
         while time.time() - start < timeout:
@@ -455,58 +375,6 @@ class VisionTasks:
 
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
-
-    @mockable(return_value=[Status.MOCKED, ""])
-    @service_check("read_qr_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
-    def read_qr(self) -> tuple[int, float]:
-        """Find an available seat and get the angle for the camera to point at"""
-
-        Logger.info(self.node, "Reading QR code")
-        request = ReadQr.Request()
-        request.request = True
-
-        err, result = self._call(self.read_qr_client, request, name="read_qr")
-        if err is not None:
-            return err, ""
-        if not result.success:
-            Logger.warn(self.node, "No qr code found")
-            return Status.TARGET_NOT_FOUND, ""
-
-        if len(result.result) == 0:
-            Logger.warn(self.node, "QR code is empty")
-            return Status.TARGET_NOT_FOUND, ""
-
-        Logger.success(self.node, f"Qr code found: {result.result}")
-        return Status.EXECUTION_SUCCESS, result.result
-
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    # @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def detect_shelf(self, timeout: float = TIMEOUT) -> tuple[Status, list[ShelfDetection]]:
-        """Detect the shelf in the image"""
-        Logger.info(self.node, "Waiting for shelf detection")
-        request = ShelfDetectionHandler.Request()
-        detections = []
-
-        err, result = self._call(
-            self.shelf_detections_client, request, timeout, name="detect_shelf"
-        )
-        if err is not None:
-            return err, detections
-        if not result.success:
-            Logger.warn(self.node, "No shelf detected")
-            return Status.TARGET_NOT_FOUND, detections
-
-        for detection in result.shelf_array.shelf_detections:
-            shelf_detection = ShelfDetection()
-            shelf_detection.x1 = detection.xmin
-            shelf_detection.x2 = detection.xmax
-            shelf_detection.y1 = detection.ymin
-            shelf_detection.y2 = detection.ymax
-            shelf_detection.level = detection.level
-            detections.append(shelf_detection)
-
-        Logger.success(self.node, "Shelf detected")
-        return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
@@ -593,34 +461,11 @@ class VisionTasks:
             Logger.error(self.node, f"Error detecting person: {e}")
             return Status.EXECUTION_ERROR
 
-    @mockable(return_value=True, delay=2)
-    def detect_guest(self, name: str, timeout: float = TIMEOUT):
-        """Returns true when the guest is detected"""
-        pass
-
     def isPerson(self, name: str = ""):
         for person in self.person_list:
             if name == person.name:
                 return True
         return False
-
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, "kitchen table"), delay=2)
-    @service_check("beverage_location_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
-    def find_drink(self, drink: str, timeout: float = TIMEOUT) -> tuple[Status, str]:
-        """Find if a drink is available and location"""
-        Logger.info(self.node, f"Finding drink: {drink}")
-        request = BeverageLocation.Request()
-        request.beverage = drink
-
-        err, result = self._call(self.beverage_location_client, request, timeout, name="find_drink")
-        if err is not None:
-            return err, "not found"
-        if not result.success:
-            Logger.warn(self.node, "No drink found")
-            return Status.TARGET_NOT_FOUND, "not found"
-
-        Logger.success(self.node, f"Found drink: {drink}")
-        return Status.EXECUTION_SUCCESS, result.location
 
     @mockable(
         return_value=(Status.EXECUTION_SUCCESS, "a mocked moondream answer"), delay=2, mock=False
@@ -762,26 +607,6 @@ class VisionTasks:
         request.data = track
 
         err, result = self._call(self.track_person_client, request, name="track_person")
-        if err is not None:
-            return err
-        if not result.success:
-            Logger.warn(self.node, "No person found")
-            return Status.TARGET_NOT_FOUND
-
-        Logger.success(self.node, "Person tracking success")
-        return Status.EXECUTION_SUCCESS
-
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
-    @service_check("track_person_by_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def track_person_by(self, by: str, value: str, track: bool = True) -> int:
-        """Track the person in the image"""
-        Logger.info(self.node, f"Tracking person by {by} with value {value}")
-        request = TrackBy.Request()
-        request.track_enabled = track
-        request.track_by = by
-        request.value = value
-
-        err, result = self._call(self.track_person_by_client, request, name="track_person_by")
         if err is not None:
             return err
         if not result.success:
@@ -944,22 +769,6 @@ class VisionTasks:
         prompt = f"What is the {description} {object} in the image?"
         return self.moondream_query(prompt, query_person=False)
 
-    def detect_trash(self):
-        """Return if there is trash in the floor"""
-        Logger.info(self.node, "Detecting trash in the floor")
-        prompt = "Reply only with 1 if there is trash on the floor. Otherwise, reply only with 0."
-        status, response_q = self.moondream_query(prompt, query_person=False)
-        response_clean = False
-        if status == Status.EXECUTION_SUCCESS:
-            response_clean = response_q.strip() == "1"
-        return status, response_clean
-
-    def count_objects_moondream(self, object: str):
-        """Count the number of objects in the image"""
-        Logger.info(self.node, "Counting objects")
-        prompt = f"How many {object} are in the image? Please return only a number"
-        return self.moondream_query(prompt, query_person=False)
-
     def count_objects(self, object: str) -> tuple[int, list[str]]:
         """Detect objects and return their labels for counting"""
         Logger.info(self.node, "Detecting objects for counting")
@@ -1021,69 +830,6 @@ class VisionTasks:
             attributes[state["index"]], query_person=True, callback=handle_result
         )
 
-    def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[Status, BBOX, PointStamped]:
-        """Get the bag in the image"""
-        time.sleep(TIMEOUT)  # allow the pointing pose to settle before capturing
-        Logger.info(self.node, "Getting bag in the image")
-        request = DetectPointingObject.Request()
-
-        err, result = self._call(
-            self.pointing_object_client, request, timeout, name="get_pointing_bag"
-        )
-        if err is not None:
-            return err, BBOX(), PointStamped()
-        if not result.success:
-            Logger.warn(self.node, "No bag found")
-            return Status.TARGET_NOT_FOUND, BBOX(), PointStamped()
-        Logger.success(self.node, f"Bag found: {result.detection}")
-        bbox = BBOX()
-        bbox.x1 = result.detection.xmin
-        bbox.x2 = result.detection.xmax
-        bbox.y1 = result.detection.ymin
-        bbox.y2 = result.detection.ymax
-        return Status.EXECUTION_SUCCESS, bbox, result.detection.point3d
-
-    def describe_bag(self, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
-        """Describe the person in the image"""
-        Logger.info(self.node, "Describing the bag")
-        prompt = "Please briefly describe the bag"
-        return self.moondream_crop_query(prompt, bbox, timeout=timeout)
-
-    def describe_bag_moondream(self):
-        """Describe the bag using only moondream"""
-        Logger.info(self.node, "Describing bag")
-        prompt = "Describe the bag that the person is pointing at. Say what color it is."
-        return self.moondream_query(prompt, query_person=False)
-
-    def find_seat_moondream(self):
-        """Find the seat using only moondream"""
-        Logger.info(self.node, "Finding seat")
-        prompt = """Check if there is an available seat in the image. 
-        This could be an empty chair (the largest empty chair) or a space in a couch. 
-        If there is no available seat, please return 300. 
-        Else return the estimated angle of the person decimal from -1 to 1, where -1 is the image on the left and 1 is right.
-        """
-        return self.moondream_query(prompt, query_person=False)
-
-    def describe_shelf(self):
-        """Describe the shelf using only moondream"""
-        Logger.info(self.node, "Describing shelf")
-        prompt = "You are watching a shelf level with several items. Please give me a list of the items in the shelf"
-        return self.moondream_query(prompt, query_person=False)
-
-    def find_object(self, object: str) -> int:
-        """Find the object using only moondream"""
-        Logger.info(self.node, f"Finding object: {object}")
-        prompt = f"Is there an {object} in the image? Please return 0(no) or 1(yes)"
-        status, result = self.moondream_query(prompt, query_person=False)
-        if status == Status.EXECUTION_SUCCESS:
-            if result == "1":
-                return Status.EXECUTION_SUCCESS
-            else:
-                return Status.TARGET_NOT_FOUND
-        else:
-            return Status.EXECUTION_ERROR
-
     def get_labels(self, detections: list[BBOX]) -> list[str]:
         """Get the labels of the detected objects"""
         labels = []
@@ -1091,63 +837,6 @@ class VisionTasks:
             if hasattr(detection, "classname") and detection.classname:
                 labels.append(detection.classname)
         return labels
-
-    def get_drink_position(self, detections: list[BBOX], drink: str) -> tuple[int, str]:
-        """Get the position of the drink in the detected objects"""
-        # location = ""
-        # for detection in detections:
-        #     if detection.classname.lower() == drink.lower():
-        #         if detection.x < 0.35:
-        #             location = "left"
-        #         elif detection.x > 0.65:
-        #             location = "right"
-        #         else:
-        #             location = "center"
-
-        #         if detection.y < 0.35:
-        #             location += " top"
-        #         elif detection.y > 0.65:
-        #             location += " bottom"
-
-        #         return Status.EXECUTION_SUCCESS, location
-
-        # return Status.TARGET_NOT_FOUND, "Not found"
-        x_pos = []
-        drink_pos = None
-        left_pos = None
-        right_pos = None
-        location = ""
-
-        for i in range(len(detections)):
-            x_pos.append((detections[i].x, i))
-            if detections[i].classname.lower() == drink.lower():
-                drink_pos = i
-
-        if drink_pos is None:
-            return Status.TARGET_NOT_FOUND, "Not found"
-
-        x_pos.sort()
-
-        for clx, (x, i) in enumerate(x_pos):
-            if i == drink_pos:
-                if clx > 0:
-                    left_pos = x_pos[clx - 1][1]
-                elif len(x_pos) > clx + 1:
-                    right_pos = x_pos[clx + 1][1]
-                if clx < len(order_labels):
-                    location = f"the {order_labels[clx]} from left to right"
-                break
-
-        if left_pos is not None:
-            if location != "":
-                location += ", "
-            location += f"to the right of the {detections[left_pos].classname.lower()}"
-        elif right_pos is not None:
-            if location != "":
-                location += ", "
-            location += f"to the left of the {detections[right_pos].classname.lower()}"
-
-        return Status.EXECUTION_SUCCESS, location
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
     @service_check("customer_table_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
