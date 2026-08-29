@@ -1,12 +1,5 @@
 var NAVTREEINDEX45 =
 {
-"namespacevamp_1_1collision.html#ac775b341f4d2e30d8048ac88276b5a78":[42,0,200,2,18],
-"namespacevamp_1_1collision.html#ad9ad9b6e5e0f4c6e1e061f205989deea":[42,0,200,2,26],
-"namespacevamp_1_1collision.html#adc62bb95b604b55a25abbdefa1e9c6ff":[42,0,200,2,36],
-"namespacevamp_1_1collision.html#ae7e386322e5528d3bebc447b84c2376f":[42,0,200,2,37],
-"namespacevamp_1_1collision.html#aec13ea492a5910adc84e9f1add23f487":[42,0,200,2,17],
-"namespacevamp_1_1collision.html#af24efb72b793eaafe1a65eeb68345288":[42,0,200,2,21],
-"namespacevamp_1_1collision.html#afc39af0a1c3b44c15d294299479c17b5":[42,0,200,2,15],
 "namespacevamp_1_1collision_1_1factory.html":[42,0,200,2,0],
 "namespacevamp_1_1collision_1_1factory.html#a772df934a0c6589a0611b4ab1d7f17ac":[42,0,200,2,0,5],
 "namespacevamp_1_1collision_1_1factory.html#aa00d3da74232f0c047b40f181d5f7fc9":[42,0,200,2,0,7],
@@ -249,5 +242,12 @@ var NAVTREEINDEX45 =
 "nav__ui_8py.html#a9c46380b372dee62877d099b65c01599":[44,0,4,0,2,3,1,14],
 "nav__ui_8py.html#a9f04dd826a5a9a56582830cc49df5efb":[44,0,4,0,2,3,1,9],
 "nav__ui_8py.html#ac2d8604148bbc1e3a92e817195c78772":[44,0,4,0,2,3,1,12],
-"nav__ui_8py.html#ae36f22f5cc0a33d7711f93973b541bfe":[44,0,4,0,2,3,1,7]
+"nav__ui_8py.html#ae36f22f5cc0a33d7711f93973b541bfe":[44,0,4,0,2,3,1,7],
+"nav__ui_8py.html#af78c57aff04ad7e1b00a22c3f4ab2a7e":[44,0,4,0,2,3,1,4],
+"nav__ui_8py.html#afe7f41c05d51ef045f70fb3faac8d90e":[44,0,4,0,2,3,1,10],
+"navigation_2packages_2dashgo__driver_2dashgo__driver_2____init_____8py.html":[44,0,4,0,0,0,0],
+"navigation_2packages_2map__context_2map__context_2____init_____8py.html":[44,0,4,0,2,2,0],
+"navigation_2packages_2nav__main_2launch_2task__launch_2hric_8launch_8py.html":[44,0,4,0,3,0,2,2],
+"navigation_2packages_2nav__main_2launch_2task__launch_2hric_8launch_8py.html#a9ba344eaf004b5e2b4032d983f068469":[44,0,4,0,3,0,2,2,1],
+"navigation_2packages_2nav__main_2launch_2task__launch_2hric_8launch_8py.html#ad1dd056eac0c72bace8a6fdd839dd77d":[44,0,4,0,3,0,2,2,0]
 };
