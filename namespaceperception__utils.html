@@ -98,16 +98,16 @@ $(document).ready(function(){initNavTree('namespaceperception__utils.html',''); 
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:adf7d95078b4cecc224d75c0f20109553"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__utils.html#adf7d95078b4cecc224d75c0f20109553">get_object_point</a> (str object_name, detection_handler_client)</td></tr>
-<tr class="separator:adf7d95078b4cecc224d75c0f20109553"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5d48369d8bd74a65c9f23aa7f318173d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__utils.html#a5d48369d8bd74a65c9f23aa7f318173d">get_object_cluster</a> (PointStamped point, perception_3d_client, add_collision_objects=True)</td></tr>
-<tr class="separator:a5d48369d8bd74a65c9f23aa7f318173d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c14626d1731182b72d1680307e9c488"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__utils.html#a2c14626d1731182b72d1680307e9c488">get_object_point</a> (str object_name, detection_handler_client, float timeout=2.0)</td></tr>
+<tr class="separator:a2c14626d1731182b72d1680307e9c488"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1455008e46c7408e221e29ac0302030"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__utils.html#ac1455008e46c7408e221e29ac0302030">get_object_cluster</a> (PointStamped point, perception_3d_client, add_collision_objects=True, float timeout=60.0)</td></tr>
+<tr class="separator:ac1455008e46c7408e221e29ac0302030"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a906076edfe03facab943fe84636d2f69"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69">point_in_range</a> (PointStamped point, float min_distance, float max_distance)</td></tr>
 <tr class="separator:a906076edfe03facab943fe84636d2f69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="a5d48369d8bd74a65c9f23aa7f318173d" name="a5d48369d8bd74a65c9f23aa7f318173d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5d48369d8bd74a65c9f23aa7f318173d">&#9670;&#160;</a></span>get_object_cluster()</h2>
+<a id="ac1455008e46c7408e221e29ac0302030" name="ac1455008e46c7408e221e29ac0302030"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1455008e46c7408e221e29ac0302030">&#9670;&#160;</a></span>get_object_cluster()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -128,7 +128,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>add_collision_objects</em> = <code>True</code>&#160;</td>
+          <td class="paramname"><em>add_collision_objects</em> = <code>True</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>60.0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -140,8 +146,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="adf7d95078b4cecc224d75c0f20109553" name="adf7d95078b4cecc224d75c0f20109553"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf7d95078b4cecc224d75c0f20109553">&#9670;&#160;</a></span>get_object_point()</h2>
+<a id="a2c14626d1731182b72d1680307e9c488" name="a2c14626d1731182b72d1680307e9c488"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c14626d1731182b72d1680307e9c488">&#9670;&#160;</a></span>get_object_point()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -156,7 +162,13 @@ Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>detection_handler_client</em>&#160;</td>
+          <td class="paramname"><em>detection_handler_client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>2.0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

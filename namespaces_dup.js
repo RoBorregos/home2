@@ -48,7 +48,6 @@ var namespaces_dup =
     ] ],
     [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", "namespacecalibrate__ignore__laser" ],
     [ "call_joint_goal", "namespacecall__joint__goal.html", "namespacecall__joint__goal" ],
-    [ "call_pick_action", "namespacecall__pick__action.html", "namespacecall__pick__action" ],
     [ "call_pose_goal", "namespacecall__pose__goal.html", "namespacecall__pose__goal" ],
     [ "carry", "namespacecarry.html", [
       [ "generate_launch_description", "namespacecarry.html#a13d8f63b1ec69c76e488d9b0960dc65c", null ]
@@ -63,6 +62,14 @@ var namespaces_dup =
     [ "close_by_generators", "namespaceclose__by__generators.html", [
       [ "generate_close_to_heatmap", "namespaceclose__by__generators.html#a028e0770c12f1f056c05d8347126a88c", null ],
       [ "generate_directional_heatmap", "namespaceclose__by__generators.html#a2833aebb91dad17af1c390b31894723e", null ]
+    ] ],
+    [ "conftest", "namespaceconftest.html", [
+      [ "_install_stubs", "namespaceconftest.html#ade8fdd73a0e3ee3cdab3713f0886ff0f", null ],
+      [ "_no_real_sleeping", "namespaceconftest.html#a73e700f3d3d6a81830ba29e93c8317da", null ],
+      [ "pytest_report_header", "namespaceconftest.html#af2f6c5c0884b3b74d52c04c93a902143", null ],
+      [ "_OPTIONAL_MODULES", "namespaceconftest.html#afac2d816e39ae06e6aedd8696206d724", null ],
+      [ "_STUB_ATTRIBUTES", "namespaceconftest.html#ad5a7fd97f0fd5e79d6fb857997840717", null ],
+      [ "_STUBBED", "namespaceconftest.html#a267ba91a9d10f1ce88460da25bfe1727", null ]
     ] ],
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
@@ -134,6 +141,7 @@ var namespaces_dup =
     ] ],
     [ "example_node", "namespaceexample__node.html", "namespaceexample__node" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
+    [ "fakes", "namespacefakes.html", "namespacefakes" ],
     [ "fetch_models", "namespacefetch__models.html", [
       [ "check_customs", "namespacefetch__models.html#adc2b1a4d6f420d55cdf89a4c97229587", null ],
       [ "detector_dirs", "namespacefetch__models.html#a74db5d17737c5ccc9c9fdb46b5a5e186", null ],
@@ -348,19 +356,16 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
     [ "perception_utils", "namespaceperception__utils.html", [
-      [ "get_object_cluster", "namespaceperception__utils.html#a5d48369d8bd74a65c9f23aa7f318173d", null ],
-      [ "get_object_point", "namespaceperception__utils.html#adf7d95078b4cecc224d75c0f20109553", null ],
+      [ "get_object_cluster", "namespaceperception__utils.html#ac1455008e46c7408e221e29ac0302030", null ],
+      [ "get_object_point", "namespaceperception__utils.html#a2c14626d1731182b72d1680307e9c488", null ],
       [ "point_in_range", "namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69", null ]
     ] ],
     [ "person_goal_smoother", "namespaceperson__goal__smoother.html", "namespaceperson__goal__smoother" ],
     [ "pick_and_place", "namespacepick__and__place.html", "namespacepick__and__place" ],
     [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", "namespacepickandplace__task__manager" ],
-    [ "PickManager", "namespacePickManager.html", "namespacePickManager" ],
-    [ "PlaceManager", "namespacePlaceManager.html", "namespacePlaceManager" ],
     [ "Planner", "namespacePlanner.html", "namespacePlanner" ],
     [ "point_transformer", "namespacepoint__transformer.html", "namespacepoint__transformer" ],
     [ "pointing_detection", "namespacepointing__detection.html", "namespacepointing__detection" ],
-    [ "PourManager", "namespacePourManager.html", "namespacePourManager" ],
     [ "ppc", "namespaceppc.html", [
       [ "generate_launch_description", "namespaceppc.html#aa3727ca5bcd22835536315a39ed75071", null ]
     ] ],
@@ -559,6 +564,7 @@ var namespaces_dup =
     [ "test_pep257", "namespacetest__pep257.html", [
       [ "test_pep257", "namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f", null ]
     ] ],
+    [ "test_pick_and_place", "namespacetest__pick__and__place.html", "namespacetest__pick__and__place" ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", "namespacetest__plan__parser" ],
     [ "test_ppc_cabinet_place", "namespacetest__ppc__cabinet__place.html", "namespacetest__ppc__cabinet__place" ],
     [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],

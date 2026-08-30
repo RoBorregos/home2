@@ -93,38 +93,38 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_resource
   <div class="headertitle"><div class="title">VAMP Robot and Problem Resources </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md68"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md80"></a>
 Robots</h1>
 <p>We ship code to do planning for a sphere in $\mathbb{R}^3$ and the UR5, Panda, Fetch, and Baxter models as found in <a href="https://github.com/KavrakiLab/robowflex_resources"><code>robowflex_resources</code></a> <a href="../README.md#5">[5]</a>, as used in the MotionBenchMaker (MBM) <a href="../README.md#3">[3]</a> dataset. Resources for each robot (URDF, SRDF, meshes, etc.) are all provided in the directory under each robot's name.</p>
 <p>To generate code for a new robot, we require a spherical decomposition of the robot's collision geometry. See the <code>*_spherized.urdf</code> files for examples of these spherical decompositions for each robot. We also use a secondary hierarchical decomposition: see the high-level single sphere URDF used for each robot in the <code>*_spherized_1.urdf</code> files. These decompositions are conservative estimations of the robot's mesh geometry.</p>
-<h1><a class="anchor" id="autotoc_md69"></a>
+<h1><a class="anchor" id="autotoc_md81"></a>
 Attachments</h1>
 <p>There is support to attach custom geometry to the end-effector of the following robots, with respect to the following end-effector frames (see the robot's URDF for transform information):</p><ul>
 <li>UR5: <code>robotiq85_base_link</code></li>
 <li>Panda: <code>panda_hand</code></li>
 <li>Fetch: <code>gripper_link</code></li>
 </ul>
-<h1><a class="anchor" id="autotoc_md70"></a>
+<h1><a class="anchor" id="autotoc_md82"></a>
 Datasets</h1>
-<h2><a class="anchor" id="autotoc_md71"></a>
+<h2><a class="anchor" id="autotoc_md83"></a>
 MotionBenchMaker problems</h2>
 <p>The MBM problems for each robot are compressed in <code>problems.tar.bz2</code>. For the UR5, Panda, and Fetch, these problems are the <code>table_pick</code>, <code>table_under_pick</code>, <code>box</code>, <code>bookshelf_small</code>, <code>bookshelf_tall</code>, <code>bookshelf_thin</code>, and <code>cage</code> scenarios, each with 100 problems. For the Baxter, these problems are <code>bookshelf_tall_both_arms_easy</code>, <code>bookshelf_tall_both_arms_medium</code>, and <code>bookshelf_tall_both_arms_hard</code> scenarios, each with 600 problems (note that the difficulty modifier refers to the amount of variation in the scene, not difficulty of finding a problem solution). These problems can be decompressed into a convenient <a href="https://docs.python.org/3/library/pickle.html">pickle</a> and JSON format with the script <code><a class="el" href="problem__tar__to__pkl__json_8py.html">resources/problem_tar_to_pkl_json.py</a></code>, after VAMP has been installed: </p><div class="fragment"><div class="line"># choose robot name from {ur5, panda, fetch, baxter}</div>
 <div class="line">python resources/problem_tar_to_pkl_json.py --robot panda</div>
 </div><!-- fragment --><p> This only needs to be run once.</p>
-<h2><a class="anchor" id="autotoc_md72"></a>
+<h2><a class="anchor" id="autotoc_md84"></a>
 &lt;a href="https://github.com/fishbotics/robometrics" &gt;Robometrics&lt;/a&gt;</h2>
 <p>We also provide support to load datasets from the <a href="https://github.com/fishbotics/robometrics">Robometrics</a> into the same pickle and JSON format as above. This requires installation of <a href="https://github.com/fishbotics/robometrics">robometrics</a> and <a href="https://github.com/fishbotics/geometrout">geometrout</a>. Robometrics has three datasets available for the Panda robot: <code>mpinets</code> (from <a href="https://mpinets.github.io/">Motion Policy Networks</a> <a href="../README.md#14">[14]</a>, <code>mbm</code> (their version of the MotionBenchMaker dataset), and <code>demo</code>. To convert these into a dataset format compatible with our evaluation script (<code><a class="el" href="evaluate__mbm_8py.html">evaluate_mbm.py</a></code>), simply run: </p><div class="fragment"><div class="line"># choose dataset name from {mpinets, mbm, demo}</div>
 <div class="line">python resources/robometrics_to_pkl_json.py --dataset mpinets</div>
 </div><!-- fragment --><p> This only needs to be run once. This will create the pickle file in the Panda robot directory <code>robometric_{dataset}_problems.pkl</code>, e.g., <code>robometric_mpinets_problems.pkl</code>. These files can be passed to the <code><a class="el" href="evaluate__mbm_8py.html">evaluate_mbm.py</a></code> and <code><a class="el" href="visualize__mbm_8py.html">visualize_mbm.py</a></code> scripts via the <code>--dataset</code> flag, e.g., <code>--dataset robometric_mpinets_problems.pkl</code>. See <a class="el" href="md_manipulation_packages_vamp_scripts_README.html">the script readme</a> for more information.</p>
 <p>:warning: Note that the Panda we ship uses the original MBM finger separation, which is at 6.5cm, while the robometric datasets assume the Panda to have the fingers separated at 2.5cm. This leads to a number of problems in these datasets to be invalid, mostly in the tabletop domain, but others as well.</p>
-<h1><a class="anchor" id="autotoc_md73"></a>
+<h1><a class="anchor" id="autotoc_md85"></a>
 Reference Timings</h1>
 <p>Here are reference timing outputs for <code><a class="el" href="evaluate__mbm_8py.html">evaluate_mbm.py</a></code> using default planner settings. The <a href="https://arxiv.org/abs/2309.14545">arXiv submission</a> does not use dynamic-domain RRT-Connect and uses different default range parameters (e.g., 1.25 for the Panda, 1. for the Fetch), disable this feature with <code>--dynamic_domain False</code> and specify range with <code>--range</code>.</p>
-<h2><a class="anchor" id="autotoc_md74"></a>
+<h2><a class="anchor" id="autotoc_md86"></a>
 &lt;tt&gt;problems.tar.gz&lt;/tt&gt;: MotionBenchMaker Reference Timings</h2>
-<h3><a class="anchor" id="autotoc_md75"></a>
+<h3><a class="anchor" id="autotoc_md87"></a>
 &lt;a href="https://www.amd.com/en/products/cpu/amd-ryzen-9-7950x" &gt;AMD Ryzen 9 7950X&lt;/a&gt;</h3>
-<h4><a class="anchor" id="autotoc_md76"></a>
+<h4><a class="anchor" id="autotoc_md88"></a>
 UR5</h4>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -182,7 +182,7 @@ UR5</h4>
 <div class="line">Solved / Valid / Total # Problems: 608 / 608 / 700</div>
 <div class="line">Completed all problems in 329.014 milliseconds</div>
 <div class="line">Total time including Python overhead: 37523.806 milliseconds</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md77"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md89"></a>
 Panda</h4>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -240,7 +240,7 @@ Panda</h4>
 <div class="line">Solved / Valid / Total # Problems: 699 / 699 / 700</div>
 <div class="line">Completed all problems in 314.958 milliseconds</div>
 <div class="line">Total time including Python overhead: 41970.451 milliseconds</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md78"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md90"></a>
 Fetch</h4>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -298,9 +298,9 @@ Fetch</h4>
 <div class="line">Solved / Valid / Total # Problems: 672 / 679 / 700</div>
 <div class="line">Completed all problems in 8113.554 milliseconds</div>
 <div class="line">Total time including Python overhead: 50923.907 milliseconds</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md79"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md91"></a>
 &lt;a href="http://www.orangepi.org/html/hardWare/computerAndMicrocontrollers/details/Orange-Pi-5B.html" &gt;Orange Pi 5B&lt;/a&gt;</h3>
-<h4><a class="anchor" id="autotoc_md80"></a>
+<h4><a class="anchor" id="autotoc_md92"></a>
 UR5</h4>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -325,7 +325,7 @@ UR5</h4>
 <div class="line">Solved / Valid / Total # Problems: 608 / 608 / 700</div>
 <div class="line">Completed all problems in 906.717 milliseconds</div>
 <div class="line">Total time including Python overhead: 1202.020 milliseconds</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md81"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md93"></a>
 Panda</h4>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -350,7 +350,7 @@ Panda</h4>
 <div class="line">Solved / Valid / Total # Problems: 699 / 699 / 700</div>
 <div class="line">Completed all problems in 830.516 milliseconds</div>
 <div class="line">Total time including Python overhead: 1167.840 milliseconds</div>
-</div><!-- fragment --><h4><a class="anchor" id="autotoc_md82"></a>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md94"></a>
 Fetch</h4>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -375,10 +375,10 @@ Fetch</h4>
 <div class="line">Solved / Valid / Total # Problems: 679 / 679 / 700</div>
 <div class="line">Completed all problems in 11951.364 milliseconds</div>
 <div class="line">Total time including Python overhead: 13018.943 milliseconds</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md83"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md95"></a>
 Robometrics</h2>
 <p>All evaluation is done for the Panda robot on a <a href="https://www.amd.com/en/products/cpu/amd-ryzen-9-7950x">AMD Ryzen 9 7950X</a> CPU.</p>
-<h3><a class="anchor" id="autotoc_md84"></a>
+<h3><a class="anchor" id="autotoc_md96"></a>
 Demo Reference Timings</h3>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -403,7 +403,7 @@ Demo Reference Timings</h3>
 <div class="line">Solved / Valid / Total # Problems: 5 / 5 / 5</div>
 <div class="line">Completed all problems in 0.751 milliseconds</div>
 <div class="line">Total time including Python overhead: 6.236 milliseconds</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md85"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md97"></a>
 Motion Policy Networks Reference Timings</h3>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -428,7 +428,7 @@ Motion Policy Networks Reference Timings</h3>
 <div class="line">Solved / Valid / Total # Problems: 1590 / 1593 / 1800</div>
 <div class="line">Completed all problems in 218.831 milliseconds</div>
 <div class="line">Total time including Python overhead: 14764.528 milliseconds</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md86"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md98"></a>
 MotionBenchMaker Reference Timings</h3>
 <div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>

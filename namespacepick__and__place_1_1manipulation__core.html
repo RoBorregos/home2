@@ -92,7 +92,8 @@ $(document).ready(function(){initNavTree('namespacepick__and__place_1_1manipulat
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">pick_and_place.manipulation_core Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -106,8 +107,21 @@ Classes</h2></td></tr>
 Functions</h2></td></tr>
 <tr class="memitem:a8186701a4f2197fd8462d338e413ed97"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1manipulation__core.html#a8186701a4f2197fd8462d338e413ed97">main</a> (args=None)</td></tr>
 <tr class="separator:a8186701a4f2197fd8462d338e413ed97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:aead1614fba3c4bc4f148d9114cbf5706"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1manipulation__core.html#aead1614fba3c4bc4f148d9114cbf5706">HAND_APPROACH_ANGLES</a> = [0, 180, 200, 220, 240, 270]</td></tr>
+<tr class="separator:aead1614fba3c4bc4f148d9114cbf5706"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a514658d21d46ed2364d0ea9e266e92d2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepick__and__place_1_1manipulation__core.html#a514658d21d46ed2364d0ea9e266e92d2">EXECUTOR_THREADS</a> = 16</td></tr>
+<tr class="separator:a514658d21d46ed2364d0ea9e266e92d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Function Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><pre class="fragment">The manipulation node.
+
+One node owns the whole manipulation task: it serves ManipulationAction and
+GoToHand, and dispatches each task type to a pipeline. The pipelines
+(``pipelines/pick.py``, ``place.py``, ``pour.py``) hold the logic and talk to
+the robot through ``robot/arm.py`` and ``robot/perception.py``.</pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="a8186701a4f2197fd8462d338e413ed97" name="a8186701a4f2197fd8462d338e413ed97"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8186701a4f2197fd8462d338e413ed97">&#9670;&#160;</a></span>main()</h2>
 
@@ -120,6 +134,35 @@ Functions</h2></td></tr>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>args</em> = <code>None</code></td><td>)</td>
           <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<h2 class="groupheader">Variable Documentation</h2>
+<a id="a514658d21d46ed2364d0ea9e266e92d2" name="a514658d21d46ed2364d0ea9e266e92d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a514658d21d46ed2364d0ea9e266e92d2">&#9670;&#160;</a></span>EXECUTOR_THREADS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int pick_and_place.manipulation_core.EXECUTOR_THREADS = 16</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aead1614fba3c4bc4f148d9114cbf5706" name="aead1614fba3c4bc4f148d9114cbf5706"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aead1614fba3c4bc4f148d9114cbf5706">&#9670;&#160;</a></span>HAND_APPROACH_ANGLES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list pick_and_place.manipulation_core.HAND_APPROACH_ANGLES = [0, 180, 200, 220, 240, 270]</td>
         </tr>
       </table>
 </div><div class="memdoc">

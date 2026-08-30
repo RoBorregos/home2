@@ -22,8 +22,6 @@ var manipulation__constants__cpp_8hpp =
     [ "MOVEIT_MODE", "manipulation__constants__cpp_8hpp.html#a7715c4d5e3008fba78b62434fd95ef63", null ],
     [ "PICK_ACCELERATION", "manipulation__constants__cpp_8hpp.html#a69a23044b6e0021de94086ac88132f47", null ],
     [ "PICK_ACTION_SERVER", "manipulation__constants__cpp_8hpp.html#a23980a0fd626cbc57e5491c24b47a90a", null ],
-    [ "PICK_MOTION_ACTION_SERVER", "manipulation__constants__cpp_8hpp.html#a7fda70824eeee515a3228fce7ea850f7", null ],
-    [ "PICK_MOTION_ACTION_SERVER_NODE", "manipulation__constants__cpp_8hpp.html#a0bd4bf498b5ec4d683867edc6dd6a643", null ],
     [ "PICK_OBJECT_NAMESPACE", "manipulation__constants__cpp_8hpp.html#a385e07ef4e7050c134d03395dadf5526", null ],
     [ "PICK_PERCEPTION_SERVICE", "manipulation__constants__cpp_8hpp.html#ac07ac703b06c0980cc5a40a0ac209741", null ],
     [ "PICK_PLANNER", "manipulation__constants__cpp_8hpp.html#aeede76ff0f1954547a24d2dd81f2ec64", null ],

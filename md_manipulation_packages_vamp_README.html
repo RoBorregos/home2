@@ -136,7 +136,7 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_README.h
 <div class="line">  year = {2025},</div>
 <div class="line">  note = {Under Review}</div>
 <div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md47"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md59"></a>
 Installation</h1>
 <p>You can simply download the latest release of VAMP from PyPI with: </p><div class="fragment"><div class="line">pip install vamp-planner</div>
 </div><!-- fragment --><blockquote class="doxtable">
@@ -149,7 +149,7 @@ Installation</h1>
 <li>Python development headers for generating Python bindings. We support Python 3.8 and above. To install on Ubuntu 22.04, <code>sudo apt install python3-dev</code>.</li>
 <li><a href="https://eigen.tuxfamily.org/index.php?title=Main_Page"><code>Eigen3</code></a> for some vector/matrix operations. To install on Ubuntu 22.04, <code>sudo apt install libeigen3-dev</code>. Note that we require at least Eigen 3.4, which is not available by default on Ubuntu 20.04.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md48"></a>
+<h2><a class="anchor" id="autotoc_md60"></a>
 Installation from Source</h2>
 <p>VAMP fetches the following external dependencies via <a href="https://github.com/cpm-cmake/CPM.cmake">CPM</a>:</p><ul>
 <li><a href="https://github.com/wjakob/nanobind"><code>nanobind</code></a>: for Python bindings</li>
@@ -158,59 +158,59 @@ Installation from Source</h2>
 <li><a href="https://github.com/lemire/SIMDxorshift"><code>SIMDxorshift</code></a>: alternative fast random numbers for x86 machines</li>
 </ul>
 <p>Download the code: </p><div class="fragment"><div class="line">git clone git@github.com:KavrakiLab/vamp.git</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md49"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md61"></a>
 Python</h2>
 <p>For use through Python, install with <code>pip</code>: </p><div class="fragment"><div class="line">cd vamp</div>
 <div class="line">pip install .</div>
 </div><!-- fragment --><p> If you want to install all Python dependencies to run the examples, specify those optional dependencies: </p><div class="fragment"><div class="line">pip install .[examples,heightmaps]</div>
 </div><!-- fragment --><p> If you have installed the <code>examples</code> dependencies, test your installation by running: </p><div class="fragment"><div class="line">python scripts/sphere_cage_example.py --visualize</div>
 </div><!-- fragment --><p> Which will benchmark a simple scenario of the Franka Emika Panda in a cage of spheres and visualize one of the results. See the <a class="el" href="md_manipulation_packages_vamp_scripts_README.html">README in the scripts directory</a> for more details.</p>
-<h3><a class="anchor" id="autotoc_md50"></a>
+<h3><a class="anchor" id="autotoc_md62"></a>
 Incremental Rebuilds</h3>
 <p>Rather than building the entire library from scratch each time, <code>nanobind</code> supports <a href="https://nanobind.readthedocs.io/en/latest/packaging.html#step-5-incremental-rebuilds">incremental rebuilds</a>: </p><div class="fragment"><div class="line">cd vamp</div>
 <div class="line">pip install --no-build-isolation -Ceditable.rebuild=true -ve .</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md51"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md63"></a>
 C++</h2>
 <p>If you wish to extend <code>vamp</code> via C++, please build directly with CMake, e.g.: </p><div class="fragment"><div class="line">cd vamp</div>
 <div class="line">cmake -Bbuild -DCMAKE_BUILD_TYPE=Release .</div>
 <div class="line">cmake --build build</div>
 </div><!-- fragment --><p> Please see <code>CMakeLists.txt</code> for further build configuration options.</p>
-<h3><a class="anchor" id="autotoc_md52"></a>
+<h3><a class="anchor" id="autotoc_md64"></a>
 Architecture-Specific Build Options</h3>
 <p>By default, VAMP builds with <code>-march=native</code> for optimal performance on the build machine. For builds targeting different hardware (e.g., Docker containers), you can override the architecture flags: </p><div class="fragment"><div class="line">cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -DVAMP_ARCH=&quot;-march=x86-64-v3 -mavx2&quot; .</div>
 </div><!-- fragment --><p>Example options:</p><ul>
 <li><code>-march=x86-64-v3 -mavx2</code>: Supports most modern x86_64 systems (2013+), includes BMI2 instructions required by VAMP</li>
 <li><code>-march=native -mavx2</code>: Default setting, optimizes for build machine's specific CPU</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md53"></a>
+<h2><a class="anchor" id="autotoc_md65"></a>
 Docker</h2>
 <p>We provide example dockerfiles in <code>docker/</code> that show installation on Ubuntu 20.04, 22.04, and 24.04.</p>
-<h2><a class="anchor" id="autotoc_md54"></a>
+<h2><a class="anchor" id="autotoc_md66"></a>
 Conda/Mamba</h2>
 <p>Installation in <a href="https://docs.conda.io/en/latest/">Conda</a>/<a href="https://mamba.readthedocs.io/en/latest/index.html">Mamba</a> environments is supported. See the <code>environment.yaml</code> file for a basic environment, and see <code>docker/ubuntu2204-conda.dockerfile</code> for an example installation.</p>
-<h2><a class="anchor" id="autotoc_md55"></a>
+<h2><a class="anchor" id="autotoc_md67"></a>
 Supported Platforms</h2>
 <p>We currently support x86 CPUs (e.g., Intel, AMD) with the <a href="https://en.wikipedia.org/wiki/Advanced_Vector_Extensions">AVX2 vector instruction set</a> and ARM CPUs (e.g., Raspberry Pi, Mac M1) with <a href="https://en.wikipedia.org/wiki/ARM_architecture_family#Advanced_SIMD_(Neon)">NEON</a>. Please see the <code>docker/</code> folder for reference installation procedures.</p>
-<h2><a class="anchor" id="autotoc_md56"></a>
+<h2><a class="anchor" id="autotoc_md68"></a>
 Using Clang instead of GCC</h2>
 <p>You can force the use of Clang instead of GCC for compiling VAMP by uncommenting the line at the bottom of the <code>pyproject.toml</code> (or setting the corresponding CMake variable for C++ builds): </p><div class="fragment"><div class="line">[tool.scikit-build.cmake.define]</div>
 <div class="line">VAMP_LTO = &quot;ON&quot;</div>
 <div class="line">VAMP_FORCE_CLANG = &quot;ON&quot;</div>
 </div><!-- fragment --><p>This may have performance implications for some systems (positive or negative). We recommend trying both compilers to see which works best for your particular setup.</p>
-<h1><a class="anchor" id="autotoc_md57"></a>
+<h1><a class="anchor" id="autotoc_md69"></a>
 Supported Robots</h1>
 <p>We ship code to do planning for a sphere in $\mathbb{R}^3$ and the UR5, Panda, Fetch, and Baxter models as found in <a href="https://github.com/KavrakiLab/robowflex_resources"><code>robowflex_resources</code></a> [5], as used in the MotionBenchMaker (MBM) [3] dataset. Resources for each robot (URDF, SRDF, meshes, etc.) are all provided in the <code>resources/</code> directory under each robot's name. See the <a class="el" href="md_manipulation_packages_vamp_resources_README.html">README</a> for more information on the robot models.</p>
 <p>The MBM problems for each robot are compressed in <code>problems.tar.bz2</code>. For the UR5, Panda, and Fetch, these problems are the <code>table_pick</code>, <code>table_under_pick</code>, <code>box</code>, <code>bookshelf_small</code>, <code>bookshelf_tall</code>, <code>bookshelf_thin</code>, and <code>cage</code> scenarios, each with 100 problems. For the Baxter, these problems are <code>bookshelf_tall_both_arms_easy</code>, <code>bookshelf_tall_both_arms_medium</code>, and <code>bookshelf_tall_both_arms_hard</code> scenarios, each with 600 problems (note that the difficulty modifier refers to the amount of variation in the scene, not difficulty of finding a problem solution). These problems can be decompressed into a convenient <a href="https://docs.python.org/3/library/pickle.html">pickle</a> and JSON format with the script <code><a class="el" href="problem__tar__to__pkl__json_8py.html">resources/problem_tar_to_pkl_json.py</a></code>, after VAMP has been installed: </p><div class="fragment"><div class="line"># choose robot name from {ur5, panda, fetch, baxter}</div>
 <div class="line">python resources/problem_tar_to_pkl_json.py --robot panda</div>
 </div><!-- fragment --><p> This only needs to be run once.</p>
-<h1><a class="anchor" id="autotoc_md58"></a>
+<h1><a class="anchor" id="autotoc_md70"></a>
 Custom Robots</h1>
 <p>VAMP uses a tracing compilation step to generate code for the SIMD raked collision check. This compiler is available in the <a href="https://github.com/CoMMALab/cricket"><code>cricket</code></a> repository. There are instructions in <code>cricket</code>'s readme for how to setup a new robot. You will also need to come up with a spherical decomposition of the robot's collision geometry. This can be done automatically with the tool <a href="https://github.com/CoMMALab/foam/"><code>foam</code></a>.</p>
 <blockquote class="doxtable">
 <p>&zwj;[!WARNING] <br  />
  There may be some tuning of the spherization of the robot necessary to get everything to work! Start with a finer approximation of the robot and work up from there. </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md59"></a>
+<h1><a class="anchor" id="autotoc_md71"></a>
 Robot-Specific Functions</h1>
 <p>Each robot in VAMP is provided as a Python submodule (e.g., <code>vamp.panda</code>, <code>vamp.fetch</code>) and supports the following functions:</p><ul>
 <li><code>rrtc</code>: RRT-Connect. See Supported Planners.</li>
@@ -229,13 +229,13 @@ Robot-Specific Functions</h1>
 <li><code>vamp.sphere.set_lows()</code> and <code>vamp.sphere.set_highs()</code> to set bounding box of space</li>
 <li><code>vamp.sphere.set_radius()</code> to set the sphere's radius</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md60"></a>
+<h1><a class="anchor" id="autotoc_md72"></a>
 Supported RNG</h1>
 <p>We ship implementations of the following pseudorandom number generators (PRNGs):</p><ul>
 <li><code>halton</code>: An implementation of a <a href="https://en.wikipedia.org/wiki/Halton_sequence">multi-dimensional Halton sequence</a> [12-13].</li>
 <li><code>xorshift</code>: A SIMD-accelerated implementation of an <a href="https://en.wikipedia.org/wiki/Xorshift">XOR shift</a> generator, only available on x86 machines. Uses the <a href="https://github.com/lemire/SIMDxorshift"><code>SIMDxorshift</code></a> library.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md61"></a>
+<h1><a class="anchor" id="autotoc_md73"></a>
 Supported Planners</h1>
 <p>We currently ship four planners:</p><ul>
 <li><code>rrtc</code>, which is an implementation of a dynamic-domain [6] balanced [7] RRT-Connect [1].</li>
@@ -249,7 +249,7 @@ Supported Planners</h1>
 <li>B-spline smoothing [10] (<code>BSPLINE</code>)</li>
 <li>randomized perturbation [11] (<code>PERTURB</code>). These routines heuristically attempt to shorten the total path length in configuration space. See the <code>src/impl/vamp/planning/</code> folder for more information.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md62"></a>
+<h2><a class="anchor" id="autotoc_md74"></a>
 Planner Configuration and Hyperparameters</h2>
 <p>We provide a helper function <code>vamp.configure_robot_and_planner_with_kwargs(robot, planner, **kwargs)</code> to help configure all the planner and simplification settings that are available. Scripts that use this helper (<code><a class="el" href="sphere__cage__example_8py.html">sphere_cage_example.py</a></code>, <code><a class="el" href="evaluate__mbm_8py.html">evaluate_mbm.py</a></code>, <code><a class="el" href="visualize__mbm_8py.html">visualize_mbm.py</a></code>) provide the following arguments:</p><ul>
 <li><code>--robot</code>: Specify the robot to use. See Supported Robots for names.</li>
@@ -293,7 +293,7 @@ Planner Configuration and Hyperparameters</h2>
 <li><code>--perturb_perturbation_attempts</code>: maximum number of attempts per iteration of perturbation.</li>
 <li><code>--perturb_range</code>: range vertices are perturbed. See <code><a class="el" href="simplify__settings_8hh.html">simplify_settings.hh</a></code> for more information.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md63"></a>
+<h1><a class="anchor" id="autotoc_md75"></a>
 Environment Representation</h1>
 <p>VAMP currently supports collision checking against primitive models of the environment and pointclouds via CAPTs (see planned features for forthcoming extensions to meshes, etc.). Environments (<code>vamp.Environment</code>) can be constructed by adding objects (<code>add_sphere(vamp.Sphere(...))</code>, etc.). These objects can be created with the following:</p><ul>
 <li><code>vamp.Sphere(position, radius)</code>: a sphere with position and radius.</li>
@@ -303,7 +303,7 @@ Environment Representation</h1>
 <li>Pointclouds via <code>add_pointcloud()</code> in <code>vamp.Environment</code>. This will construct a CAPT from the provided list of points, the minimum and maximum robot sphere radii, and radius for each point in the pointcloud. See the <code>src/impl/vamp/collision/</code> folder for more information.</li>
 </ul>
 <p>Some robots (currently, the UR5, Panda, and Fetch) support attaching custom geometry (a collection of spheres) to the end-effector via <code>vamp.Attachment(relative_position, relative_quaternion_xyzw)</code>. Spheres can be added (in the attachment's frame) with <code>add_sphere(...)</code>. The attachment can be added to the environment with <code>vamp.Environment.attach(...)</code>, and removed with <code>vamp.Environment.detach()</code>. An example use of attachments with the Panda arm is available in <code><a class="el" href="attachments_8py.html">scripts/attachments.py</a></code>.</p>
-<h1><a class="anchor" id="autotoc_md64"></a>
+<h1><a class="anchor" id="autotoc_md76"></a>
 Code Overview</h1>
 <p>The code lives in the <code>src</code> folder, split into <code>impl</code> (the C++ core) and <code>vamp</code> (the Python interface). Scripts live in the <code>scripts/</code> folder; see the <a class="el" href="md_manipulation_packages_vamp_scripts_README.html">README</a> in that directory for more information.</p>
 <p>Inside <code>impl/vamp</code>, the code is divided into the following directories:</p><ul>
@@ -314,7 +314,7 @@ Code Overview</h1>
 <li><code>planning/</code>: Planning and simplification routines. <code><a class="el" href="rrtc_8hh.html">rrtc.hh</a></code> and <code><a class="el" href="rrtc__settings_8hh.html">rrtc_settings.hh</a></code> are for our RRT-Connect implementation. <code><a class="el" href="prm_8hh.html">prm.hh</a></code> and <code><a class="el" href="roadmap_8hh.html">roadmap.hh</a></code> are for our PRM implementation. <code><a class="el" href="fcit_8hh.html">fcit.hh</a></code> is for the FCIT* implementation. <code><a class="el" href="aorrtc_8hh.html">aorrtc.hh</a></code> is for the AORRTC implementation. <code><a class="el" href="simplify_8hh.html">simplify.hh</a></code> and <code><a class="el" href="simplify__settings_8hh.html">simplify_settings.hh</a></code> are for simplification heuristics. <code><a class="el" href="validate_8hh.html">validate.hh</a></code> contains the raked motion validator.</li>
 <li><code>robots/</code>: Robot specific code. Each named subfolder contains <code>fk.hh</code> for each robot, which contains the automatically generated code from the tracing compiler. The named <code>{robot}.hh</code> folder at the top is a helper struct which maps <code>fk.hh</code> routines and other robot-specific information.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md65"></a>
+<h1><a class="anchor" id="autotoc_md77"></a>
 Planned Features</h1>
 <ul>
 <li>[ ] Improved API documentation</li>
@@ -329,7 +329,7 @@ Planned Features</h1>
 <li>[X] Asymptotically-optimal planning</li>
 <li>and more...</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md66"></a>
+<h1><a class="anchor" id="autotoc_md78"></a>
 References</h1>
 <ul>
 <li><a class="anchor" id="1"></a>[1] J. J. Kuffner and S. M. LaValle. "RRT-Connect: An efficient approach to single-query path planning". In: IEEE International Conference on Robotics and Automation. Vol. 2. IEEE. 2000, pp. 995–1001.</li>

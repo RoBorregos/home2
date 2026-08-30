@@ -97,7 +97,7 @@ $(document).ready(function(){initNavTree('md_vision_README.html',''); initResiza
 <blockquote class="doxtable">
 <p>&zwj;Vision <b>does not own the camera</b>. Frames come from the separate <code>home2-zed</code> container (<code>./run.sh zed</code>, Jetson/Orin only) or, on a laptop, from <code><a class="el" href="zed__simulator_8py.html">zed_simulator.py</a></code> publishing a plain webcam onto the same topics. </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md168"></a>
+<h1><a class="anchor" id="autotoc_md180"></a>
 Tree structure</h1>
 <div class="fragment"><div class="line">home2/</div>
 <div class="line">│</div>
@@ -180,7 +180,7 @@ Tree structure</h1>
 <div class="line">├── moondream.yaml                         # service `moondream-server` (port 50052)</div>
 <div class="line">├── trt_cache/                             # Persisted weights + TensorRT engines</div>
 <div class="line">└── run.sh                                 # Area entrypoint (called by root run.sh)</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md169"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md181"></a>
 Concepts</h1>
 <p><b>Camera orientation is centralized.</b> FRIDA's camera is not always upright, so exactly one node applies rotation: <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> subscribes to <code>CAMERA_TOPIC</code> and <code>CAMERA_ROTATION_TOPIC</code> (an <code>Int16</code> of 0/90/180/270) and republishes on <code>IMAGE_ORIENTED_TOPIC</code>. Every downstream node consumes the <em>oriented</em> topic. A launch file must therefore never start two <code><a class="el" href="namespaceimage__orienter.html">image_orienter</a></code> instances — the per-task launches that <code>include</code> <code><a class="el" href="object__detector__node_8launch_8py.html">object_detector_node.launch.py</a></code> deliberately do not declare their own.</p>
 <p><b>Detectors are a plugin registry, not hardcoded models.</b> <code><a class="el" href="registry_8py.html">object_detector_2d/scripts/detectors/registry.py</a></code> holds <code>MODEL_CONFIGS</code>:</p>
@@ -199,7 +199,7 @@ Concepts</h1>
 <p><b>TensorRT engines are built, cached, and device-specific.</b> <code><a class="el" href="trt__utils_8py.html">utils/trt_utils.py</a>::load_yolo_trt</code> exports a <code>.pt</code> to a <code>.engine</code> on first use and caches it in <code>TENSORRT_CACHE_DIR</code> (<code>docker/vision/trt_cache</code>, a persistent mount). <b>Never copy engines between the laptop and the Orin</b> — they are tied to the device and the TensorRT version. Set <code>use_trt: False</code> when working on a PC.**</p>
 <p><b>Weights are provisioned up front, on purpose.</b> <code>.pt</code> files are gitignored and download lazily on a node's first run, followed by minutes of TRT export. On competition day, with no internet, a fresh container simply breaks. <code><a class="el" href="fetch__models_8py.html">vision/scripts/fetch_models.py</a></code> fetches every standard weight, verifies the custom ones, writes a <code>MANIFEST.json</code> of sha256 hashes, and with <code>--warmup</code> pre-builds every engine for <em>this</em> device. Run it before you go offline:</p>
 <div class="fragment"><div class="line">./run.sh vision --warmup</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md170"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md182"></a>
 Vision pipeline</h1>
 <div class="fragment"><div class="line">flowchart LR</div>
 <div class="line">    ZED[home2-zed&lt;br/&gt;ZED wrapper] --&gt;|rgb + depth + camera_info| IO[image_orienter]</div>
@@ -227,9 +227,9 @@ Vision pipeline</h1>
 <div class="line">    TRK -.-&gt;|/vision/tracking_results| SM[nav person_goal_smoother]</div>
 <div class="line">    FR -.-&gt;|/vision/follow_face| ARM[manipulation follow_face]</div>
 <div class="line">    TM -.-&gt;|service calls| TRK &amp; FR &amp; HC &amp; GC &amp; MD</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md171"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md183"></a>
 Packages</h1>
-<h2><a class="anchor" id="autotoc_md172"></a>
+<h2><a class="anchor" id="autotoc_md184"></a>
 &lt;tt&gt;object_detector_2d&lt;/tt&gt;</h2>
 <p>The detection backbone. Both nodes share <code>BaseDetectorNode</code>, which declares the camera topics, <code>TARGET_FRAME</code>, <code>DEPTH_ACTIVE</code>, <code>FLIP_IMAGE</code> and <code>MAX_DEPTH_THRESH</code> parameters and handles projection and visualization. <code>vision_general</code> has the same pattern in <code>VisionRuntime</code> (see below).</p>
 <table class="markdownTable">
@@ -241,7 +241,7 @@ Packages</h1>
 <td class="markdownTableBodyNone"><code>ZeroShotDetect2D</code>   </td><td class="markdownTableBodyNone">YOLOE open-vocabulary detection for classes not in the finetuned model   </td><td class="markdownTableBodyNone">pubs <code>/vision/zero_shot_detections*</code>; srv <code>SetDetectorClasses</code>   </td></tr>
 </table>
 <p>Each node has a fixed activation topic (<code>/vision/object_detector/active</code>, <code>/vision/zero_shot_detector/active</code>) so a task manager can idle the GPU between steps.</p>
-<h2><a class="anchor" id="autotoc_md173"></a>
+<h2><a class="anchor" id="autotoc_md185"></a>
 &lt;tt&gt;vision_general&lt;/tt&gt;</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -266,12 +266,12 @@ Packages</h1>
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacezed__simulator.html">zed_simulator</a></code>   </td><td class="markdownTableBodyNone">Publishes a plain webcam onto the ZED topics for laptop dev   </td><td class="markdownTableBodyNone">params <code>video_id</code>, <code>use_zed</code>, <code>visualize</code>   </td><td class="markdownTableBodyNone">—   </td></tr>
 </table>
 <p><code><a class="el" href="pose__detection_8py.html">pose_detection.py</a></code> is a library, not a node: it holds the COCO keypoint constants and the gesture/pose classification used by <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code> and <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code>.</p>
-<h3><a class="anchor" id="autotoc_md174"></a>
+<h3><a class="anchor" id="autotoc_md186"></a>
 &lt;tt&gt;VisionRuntime&lt;/tt&gt;</h3>
 <p><code><a class="el" href="vision__runtime_8py.html">scripts/task_nodes/vision_runtime.py</a></code> is the counterpart to <code>object_detector_2d</code>'s <code>BaseDetectorNode</code>: camera subscriptions, the <code>/vision/&lt;node&gt;/active</code> gate, rotation tracking, TF, the debug publisher and a non-spinning <code>call_service</code>. Subclasses read <code>self.image</code>, <code>self.depth_image</code> and <code>self.camera_info</code> as they did when each node owned its own subscriptions.</p>
 <p><code>scripts/task_nodes/</code> holds the runtime and every node that subclasses it: <code><a class="el" href="namespacegpsr__commands.html">gpsr_commands</a></code>, <code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>, <code><a class="el" href="namespacerestaurant__commands.html">restaurant_commands</a></code>, <code><a class="el" href="namespacecustomer__node.html">customer_node</a></code> and <code><a class="el" href="namespaceface__recognition__node.html">face_recognition_node</a></code>. They all install flat into <code>lib/vision_general/</code>, so <code>from <a class="el" href="namespacevision__runtime.html">vision_runtime</a> import ...</code> resolves in both the source and the installed tree.</p>
 <p><code><a class="el" href="namespacetracker__node.html">tracker_node</a></code> deliberately stays out: it needs a different QoS per stream (BEST_EFFORT colour, RELIABLE depth) and a separate callback group per subscription so its 20 Hz tracking timer is never starved by a service blocking on moondream. <code>VisionRuntime</code> expresses neither.</p>
-<h2><a class="anchor" id="autotoc_md175"></a>
+<h2><a class="anchor" id="autotoc_md187"></a>
 &lt;tt&gt;moondream_run&lt;/tt&gt;</h2>
 <p><code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code> is a thin ROS ⇄ gRPC bridge. The model itself lives in a separate container because its dependency set conflicts with the ROS one.</p>
 <table class="markdownTable">
@@ -291,7 +291,7 @@ Packages</h1>
 <td class="markdownTableBodyNone"><code>/vision/person_posture</code>   </td><td class="markdownTableBodyNone"><code>PersonPosture</code>   </td><td class="markdownTableBodyNone">Describes a person's posture   </td></tr>
 </table>
 <p>The gRPC side (<code>MoonDreamService</code> on port <code>50052</code>) exposes <code>EncodeImage</code>, <code>FindBeverage</code>, <code>FindObjectPoints</code>, <code>Query</code> and <code>Detect</code>, backed by <code>vikhyatk/moondream2</code>.</p>
-<h1><a class="anchor" id="autotoc_md176"></a>
+<h1><a class="anchor" id="autotoc_md188"></a>
 Running vision</h1>
 <p>Each competition flag maps to one launch file and one set of compose profiles:</p>
 <table class="markdownTable">
@@ -337,7 +337,7 @@ Running vision</h1>
 <div class="line">./run.sh vision --stop           # stop containers, keep them</div>
 <div class="line">./run.sh vision --down           # stop and remove</div>
 <div class="line">./run.sh vision --clean          # delete build/, install/, log/</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md177"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md189"></a>
 Building inside the container</h2>
 <p><code>--build</code> runs exactly this — <code>frida_interfaces</code> and <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> are ignored because they come prebuilt from the shared cache container (<code>./run.sh frida_interfaces</code>):</p>
 <div class="fragment"><div class="line">colcon build --packages-ignore frida_interfaces frida_constants \</div>
@@ -346,14 +346,14 @@ Building inside the container</h2>
 </div><!-- fragment --><p>Every <code>scripts/*.py</code> is installed as an executable, so any script can be run directly:</p>
 <div class="fragment"><div class="line">ros2 run vision_general tracker_node.py</div>
 <div class="line">ros2 run object_detector_2d object_detector_node.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md178"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md190"></a>
 Camera</h2>
 <p>On the Orin, start the ZED container (or the wrapper directly):</p>
 <div class="fragment"><div class="line">./run.sh zed</div>
 <div class="line">ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false</div>
 </div><!-- fragment --><p>Anywhere else, publish a webcam onto the same topics. <code>video_id</code> is the <code>/dev/videoN</code> index:</p>
 <div class="fragment"><div class="line">ros2 run vision_general zed_simulator.py --ros-args -p video_id:=1</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md179"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md191"></a>
 Example calls</h2>
 <div class="fragment"><div class="line"># Track the largest person, then stop</div>
 <div class="line">ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool &quot;{data: true}&quot;</div>
@@ -393,7 +393,7 @@ Example calls</h2>
 <div class="line">ros2 topic echo /vision/detections</div>
 <div class="line">ros2 topic echo /vision/person_list</div>
 <div class="line">ros2 topic echo /vision/tracking_results</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md180"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md192"></a>
 Debugging</h1>
 <p>Debug image topics are <b>subscriber-gated</b> by <code><a class="el" href="debug__pub_8py.html">utils/debug_pub.py</a></code>: nothing is encoded until someone subscribes, so leaving them in costs nothing. Open one in <code>rqt_image_view</code>:</p>
 <table class="markdownTable">
@@ -415,10 +415,10 @@ Debugging</h1>
 <div class="line">ros2 node list | grep vision</div>
 </div><!-- fragment --><p>The VLM sidecar logs separately from the ROS container:</p>
 <div class="fragment"><div class="line">docker logs -f home2-moondream-server</div>
-</div><!-- fragment --> <h1><a class="anchor" id="autotoc_md181"></a>
+</div><!-- fragment --> <h1><a class="anchor" id="autotoc_md193"></a>
 Object detection pipeline training</h1>
 <p>The training process involves preparing the dataset, configuring the model, and running the training. You can find the pipeline repository <a href="https://github.com/RoBorregos/home-pipelines/tree/main/vision/object_detector">here</a>.</p>
-<h1><a class="anchor" id="autotoc_md182"></a>
+<h1><a class="anchor" id="autotoc_md194"></a>
 Known issues</h1>
 <p>These are real inconsistencies in the current tree, recorded so they do not surprise you. None of them are fixed by this document.</p>
 <ul>

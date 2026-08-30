@@ -11,5 +11,6 @@ var searchData=
   ['areasservices_8',['AreasServices',['../classAreasServices.html',1,'']]],
   ['arrayinput_9',['ArrayInput',['../structvamp_1_1binding_1_1ArrayInput.html',1,'vamp::binding']]],
   ['attachment_10',['Attachment',['../structvamp_1_1collision_1_1Attachment.html',1,'vamp::collision']]],
-  ['audiostates_11',['AudioStates',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html',1,'task_manager::subtask_managers::hri_dataclasses']]]
+  ['attachresult_11',['AttachResult',['../classpick__and__place_1_1robot_1_1arm_1_1AttachResult.html',1,'pick_and_place::robot::arm']]],
+  ['audiostates_12',['AudioStates',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html',1,'task_manager::subtask_managers::hri_dataclasses']]]
 ];

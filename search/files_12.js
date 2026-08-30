@@ -42,6 +42,7 @@ var searchData=
   ['sphere_5fsphere_2ehh_39',['sphere_sphere.hh',['../sphere__sphere_8hh.html',1,'']]],
   ['status_2epy_40',['status.py',['../status_8py.html',1,'']]],
   ['storing_5fgroceries_5fmanager_2epy_41',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
-  ['stt_2esrv_42',['STT.srv',['../STT_8srv.html',1,'']]],
-  ['subtask_5fmanager_2epy_43',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]]
+  ['strategies_2epy_42',['strategies.py',['../strategies_8py.html',1,'']]],
+  ['stt_2esrv_43',['STT.srv',['../STT_8srv.html',1,'']]],
+  ['subtask_5fmanager_2epy_44',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]]
 ];

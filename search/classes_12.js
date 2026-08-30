@@ -12,7 +12,8 @@ var searchData=
   ['roadmap_9',['Roadmap',['../structvamp_1_1planning_1_1Roadmap.html',1,'vamp::planning']]],
   ['roadmapnode_10',['RoadmapNode',['../structvamp_1_1planning_1_1RoadmapNode.html',1,'vamp::planning']]],
   ['roadmapsettings_11',['RoadmapSettings',['../structvamp_1_1planning_1_1RoadmapSettings.html',1,'vamp::planning']]],
-  ['rossignals_12',['RosSignals',['../classnav__ui_1_1RosSignals.html',1,'nav_ui']]],
-  ['rrtc_13',['RRTC',['../structvamp_1_1planning_1_1RRTC.html',1,'vamp::planning']]],
-  ['rrtcsettings_14',['RRTCSettings',['../structvamp_1_1planning_1_1RRTCSettings.html',1,'vamp::planning']]]
+  ['robotarm_12',['RobotArm',['../classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html',1,'pick_and_place::robot::arm']]],
+  ['rossignals_13',['RosSignals',['../classnav__ui_1_1RosSignals.html',1,'nav_ui']]],
+  ['rrtc_14',['RRTC',['../structvamp_1_1planning_1_1RRTC.html',1,'vamp::planning']]],
+  ['rrtcsettings_15',['RRTCSettings',['../structvamp_1_1planning_1_1RRTCSettings.html',1,'vamp::planning']]]
 ];

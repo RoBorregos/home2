@@ -110,13 +110,13 @@ Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Pick benchmark: run N trials per object and record success/retention rate.
 
-Cutlery mode picks spoon/fork/knife from the table; shelf mode scans the
+Flat mode picks spoon/fork/knife from the table; shelf mode scans the
 levels once then picks the given objects (scan_environment=True). The operator
 resets the object and confirms each outcome, since the gripper bit is not a
 reliable retention signal. Results are printed and written to a CSV.
 
 Usage (inside the manipulation container, with the manip launch running):
-    python3 pick_benchmark.py --mode cutlery --trials 10
+    python3 pick_benchmark.py --mode flat --trials 10
     python3 pick_benchmark.py --mode shelf --objects blue_cereal_box --trials 10
     python3 pick_benchmark.py --mode object --objects cup bowl --trials 10
 </pre> </div><h2 class="groupheader">Function Documentation</h2>

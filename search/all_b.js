@@ -22,7 +22,8 @@ var searchData=
   ['knowledge_5ftype_19',['KNOWLEDGE_TYPE',['../classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html',1,'frida_constants::hri_constants']]],
   ['known_5ffaces_5fpath_20',['known_faces_path',['../classmodels_1_1face__recognition_1_1FaceModel.html#a7157d34848628bed1b845a45e8310d91',1,'models::face_recognition::FaceModel']]],
   ['known_5ffaces_5fpath_21',['KNOWN_FACES_PATH',['../namespaceface__recognition__node.html#a4b2d182930304b364cdc2af6f6b32bef',1,'face_recognition_node']]],
-  ['kp_22',['KP',['../namespacenav__goal__arm__pointer.html#a41f08a8f198e639b5c2ca429e7d96881',1,'nav_goal_arm_pointer']]],
-  ['kp_5fconf_23',['KP_CONF',['../namespacemodels_1_1pose__detection.html#abda8d67aad212f9a92a490ded3d4f642',1,'models.pose_detection.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()']]],
-  ['kschedpriority_24',['kSchedPriority',['../mujoco__ros2__control__plugin_8cpp.html#ab8cbb74095b57cc8c140e6d92415f8a0',1,'mujoco_ros2_control_plugin.cpp']]]
+  ['known_5fstrategy_5fkinds_22',['KNOWN_STRATEGY_KINDS',['../namespacepick__and__place_1_1pipelines_1_1profiles.html#a6e3381fe4e1e49e1a6d1f748fa52da22',1,'pick_and_place::pipelines::profiles']]],
+  ['kp_23',['KP',['../namespacenav__goal__arm__pointer.html#a41f08a8f198e639b5c2ca429e7d96881',1,'nav_goal_arm_pointer']]],
+  ['kp_5fconf_24',['KP_CONF',['../namespacemodels_1_1pose__detection.html#abda8d67aad212f9a92a490ded3d4f642',1,'models.pose_detection.KP_CONF()'],['../namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a',1,'pointing_detection.KP_CONF()'],['../namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546',1,'hric_commands.KP_CONF()']]],
+  ['kschedpriority_25',['kSchedPriority',['../mujoco__ros2__control__plugin_8cpp.html#ab8cbb74095b57cc8c140e6d92415f8a0',1,'mujoco_ros2_control_plugin.cpp']]]
 ];

@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_scripts_
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>All scripts are in the <code>scripts/</code> directory. We provide a simple visualizer build on top of <a href="https://pybullet.org/wordpress/">PyBullet</a> in <code>pybullet_visualizer.py</code>.</p>
-<h1><a class="anchor" id="autotoc_md91"></a>
+<h1><a class="anchor" id="autotoc_md103"></a>
 &lt;tt&gt;evaluate_mbm.py&lt;/tt&gt; and &lt;tt&gt;visualize_mbm.py&lt;/tt&gt;</h1>
 <p>This pair of scripts evaluates and visualizes results for planning for the UR5, Panda, Fetch, and Baxter robots over the MotionBenchMaker (MBM) <a href="../README.md#3">[3]</a> dataset. Before these scripts can be run, the MBM data must be converted from the provided <code>problems.tar.bz2</code> that lives in each robot's subfolder (see <a href="../README.md#supported-robots">Supported Robots</a> for robots and <a href="../resources/README.md#datasets">Datasets</a> for more information). Example output of <code><a class="el" href="evaluate__mbm_8py.html">evaluate_mbm.py</a></code> for the Panda arm on an AMD Ryzen 9 7950X: </p><div class="fragment"><div class="line">|      |   Planning Time (μs) |   Simplification Time (μs) |   Total Time (μs) |   Planning Iters. |   Time per Iter. (μs) |</div>
 <div class="line">|------|----------------------|----------------------------|-------------------|-------------------|-----------------------|</div>
@@ -137,7 +137,7 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_scripts_
 <li><code>index</code>: the problem index to visualize.</li>
 <li><code>display_object_names</code>: show the names of each object in the collision geometry.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md92"></a>
+<h1><a class="anchor" id="autotoc_md104"></a>
 &lt;tt&gt;sphere_cage_example.py&lt;/tt&gt;</h1>
 <p>Demonstrates planning on the Panda surrounded by spheres. This script has two components: a benchmark on a number of similar problems (a small variation added to the position of each sphere), and a visualization of a plan on the nominal scene. This script has the following arguments that affect both visualization and benchmarking:</p><ul>
 <li><code>--radius</code>: radius used for all the spheres in the cage.</li>
@@ -148,14 +148,14 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_scripts_
 <li><code>--variation</code>: maximum variation applied to each sphere when sampling problems.</li>
 </ul>
 <p>Visualization is enabled by <code>--visualize</code>, which shows the plan with the PyBullet visualizer.</p>
-<h1><a class="anchor" id="autotoc_md93"></a>
+<h1><a class="anchor" id="autotoc_md105"></a>
 &lt;tt&gt;attachments.py&lt;/tt&gt;</h1>
 <p>Demonstrates planning with end-effector attachments using the same problem as in <code><a class="el" href="sphere__cage__example_8py.html">sphere_cage_example.py</a></code>. A single sphere is attached to the end-effector of the Panda and carried through the cage.</p>
 <p>This script has the following arguments that affect the placement of the attached sphere.</p><ul>
 <li><code>attachment_radius</code>: Radius of the attached sphere.</li>
 <li><code>attachment_offset</code>: Offset of the attachment transform along the local-frame Z-axis of the end-effector (i.e., its distance from the end-effector).</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md94"></a>
+<h1><a class="anchor" id="autotoc_md106"></a>
 &lt;tt&gt;flying_sphere.py&lt;/tt&gt;</h1>
 <p>Demonstrates generating a roadmap over a heightfield for a flying sphere. The script has the following arguments:</p><ul>
 <li><code>--{x, y, z}</code>: specify the range of each dimension that the configuration space is scaled to.</li>
@@ -163,9 +163,9 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_scripts_
 <li><code>--iterations</code>: number of iterations to use to generate the roadmap.</li>
 </ul>
 <p>Visualization is enabled by <code>--visualize</code>, which shows the plan with the PyBullet visualizer.</p>
-<h1><a class="anchor" id="autotoc_md95"></a>
+<h1><a class="anchor" id="autotoc_md107"></a>
 Other Scripts</h1>
-<h2><a class="anchor" id="autotoc_md96"></a>
+<h2><a class="anchor" id="autotoc_md108"></a>
 &lt;tt&gt;visualize_ompl.py&lt;/tt&gt;</h2>
 <p>If you have the <a href="https://ompl.kavrakilab.org/">OMPL</a> Python Bindings installed (we recommend using the <a href="https://github.com/ompl/ompl/releases/tag/prerelease">pre-built wheels</a>) you can also test problems against OMPL using PyBullet's collision checking with this script.</p>
 <p>The script supports the following arguments:</p><ul>

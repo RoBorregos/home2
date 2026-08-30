@@ -30,9 +30,6 @@ var annotated_dup =
     [ "call_joint_goal", "namespacecall__joint__goal.html", [
       [ "MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", "classcall__joint__goal_1_1MoveJointsClient" ]
     ] ],
-    [ "call_pick_action", "namespacecall__pick__action.html", [
-      [ "PickMotionClient", "classcall__pick__action_1_1PickMotionClient.html", "classcall__pick__action_1_1PickMotionClient" ]
-    ] ],
     [ "call_pose_goal", "namespacecall__pose__goal.html", [
       [ "MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", "classcall__pose__goal_1_1MoveToPoseClient" ]
     ] ],
@@ -96,6 +93,16 @@ var annotated_dup =
     ] ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", [
       [ "FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", "classface__recognition__node_1_1FaceRecognition" ]
+    ] ],
+    [ "fakes", "namespacefakes.html", [
+      [ "_DoneFuture", "classfakes_1_1__DoneFuture.html", "classfakes_1_1__DoneFuture" ],
+      [ "FakeArm", "classfakes_1_1FakeArm.html", "classfakes_1_1FakeArm" ],
+      [ "FakeFlatResponse", "classfakes_1_1FakeFlatResponse.html", "classfakes_1_1FakeFlatResponse" ],
+      [ "FakeLogger", "classfakes_1_1FakeLogger.html", "classfakes_1_1FakeLogger" ],
+      [ "FakeObject", "classfakes_1_1FakeObject.html", "classfakes_1_1FakeObject" ],
+      [ "FakePerception", "classfakes_1_1FakePerception.html", "classfakes_1_1FakePerception" ],
+      [ "FakeTFBuffer", "classfakes_1_1FakeTFBuffer.html", "classfakes_1_1FakeTFBuffer" ],
+      [ "ServiceStub", "classfakes_1_1ServiceStub.html", "classfakes_1_1ServiceStub" ]
     ] ],
     [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", [
       [ "FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", "classflat__grasp__estimator_1_1FlatGraspEstimator" ]
@@ -320,14 +327,43 @@ var annotated_dup =
       [ "pick_benchmark", "namespacepick__and__place_1_1pick__benchmark.html", [
         [ "PickBenchmark", "classpick__and__place_1_1pick__benchmark_1_1PickBenchmark.html", "classpick__and__place_1_1pick__benchmark_1_1PickBenchmark" ]
       ] ],
-      [ "pick_server", "namespacepick__and__place_1_1pick__server.html", [
-        [ "PickMotionServer", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html", "classpick__and__place_1_1pick__server_1_1PickMotionServer" ]
+      [ "pipelines", "namespacepick__and__place_1_1pipelines.html", [
+        [ "errors", "namespacepick__and__place_1_1pipelines_1_1errors.html", [
+          [ "PickAborted", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAborted.html", null ],
+          [ "PickAttemptFailed", "classpick__and__place_1_1pipelines_1_1errors_1_1PickAttemptFailed.html", null ],
+          [ "PickHardwareError", "classpick__and__place_1_1pipelines_1_1errors_1_1PickHardwareError.html", null ]
+        ] ],
+        [ "pick", "namespacepick__and__place_1_1pipelines_1_1pick.html", [
+          [ "GraspSet", "classpick__and__place_1_1pipelines_1_1pick_1_1GraspSet.html", null ],
+          [ "Perceived", "classpick__and__place_1_1pipelines_1_1pick_1_1Perceived.html", null ],
+          [ "PickRequest", "classpick__and__place_1_1pipelines_1_1pick_1_1PickRequest.html", null ]
+        ] ],
+        [ "pour", "namespacepick__and__place_1_1pipelines_1_1pour.html", [
+          [ "PourRequest", "classpick__and__place_1_1pipelines_1_1pour_1_1PourRequest.html", null ]
+        ] ],
+        [ "profiles", "namespacepick__and__place_1_1pipelines_1_1profiles.html", [
+          [ "ForceGuardProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile" ],
+          [ "PickProfile", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile.html", "classpick__and__place_1_1pipelines_1_1profiles_1_1PickProfile" ],
+          [ "ProfileError", "classpick__and__place_1_1pipelines_1_1profiles_1_1ProfileError.html", null ]
+        ] ],
+        [ "strategies", "namespacepick__and__place_1_1pipelines_1_1strategies.html", [
+          [ "DirectGraspPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1DirectGraspPick" ],
+          [ "FixedDistanceDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1FixedDistanceDescentPick" ],
+          [ "ForceGuardedDescentPick", "classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick" ],
+          [ "GraspCandidate", "classpick__and__place_1_1pipelines_1_1strategies_1_1GraspCandidate.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1GraspCandidate" ],
+          [ "PickOutcome", "classpick__and__place_1_1pipelines_1_1strategies_1_1PickOutcome.html", null ],
+          [ "PickStrategy", "classpick__and__place_1_1pipelines_1_1strategies_1_1PickStrategy.html", "classpick__and__place_1_1pipelines_1_1strategies_1_1PickStrategy" ]
+        ] ]
       ] ],
-      [ "place_server", "namespacepick__and__place_1_1place__server.html", [
-        [ "PlaceMotionServer", "classpick__and__place_1_1place__server_1_1PlaceMotionServer.html", "classpick__and__place_1_1place__server_1_1PlaceMotionServer" ]
-      ] ],
-      [ "pour_server", "namespacepick__and__place_1_1pour__server.html", [
-        [ "PourMotionServer", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html", "classpick__and__place_1_1pour__server_1_1PourMotionServer" ]
+      [ "robot", "namespacepick__and__place_1_1robot.html", [
+        [ "arm", "namespacepick__and__place_1_1robot_1_1arm.html", [
+          [ "AttachResult", "classpick__and__place_1_1robot_1_1arm_1_1AttachResult.html", "classpick__and__place_1_1robot_1_1arm_1_1AttachResult" ],
+          [ "ContactResult", "classpick__and__place_1_1robot_1_1arm_1_1ContactResult.html", "classpick__and__place_1_1robot_1_1arm_1_1ContactResult" ],
+          [ "RobotArm", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm.html", "classpick__and__place_1_1robot_1_1arm_1_1RobotArm" ]
+        ] ],
+        [ "perception", "namespacepick__and__place_1_1robot_1_1perception.html", [
+          [ "Perception", "classpick__and__place_1_1robot_1_1perception_1_1Perception.html", "classpick__and__place_1_1robot_1_1perception_1_1Perception" ]
+        ] ]
       ] ]
     ] ],
     [ "pickandplace_task_manager", "namespacepickandplace__task__manager.html", [
@@ -335,12 +371,6 @@ var annotated_dup =
       [ "ObjectCategory", "classpickandplace__task__manager_1_1ObjectCategory.html", null ],
       [ "ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", "classpickandplace__task__manager_1_1ObjectInfo" ],
       [ "PickAndPlaceTM", "classpickandplace__task__manager_1_1PickAndPlaceTM.html", "classpickandplace__task__manager_1_1PickAndPlaceTM" ]
-    ] ],
-    [ "PickManager", "namespacePickManager.html", [
-      [ "PickManager", "classPickManager_1_1PickManager.html", "classPickManager_1_1PickManager" ]
-    ] ],
-    [ "PlaceManager", "namespacePlaceManager.html", [
-      [ "PlaceManager", "classPlaceManager_1_1PlaceManager.html", "classPlaceManager_1_1PlaceManager" ]
     ] ],
     [ "Planner", "namespacePlanner.html", [
       [ "Planner", "classPlanner_1_1Planner.html", "classPlanner_1_1Planner" ]
@@ -350,9 +380,6 @@ var annotated_dup =
     ] ],
     [ "pointing_detection", "namespacepointing__detection.html", [
       [ "DetectPointingObjectServer", "classpointing__detection_1_1DetectPointingObjectServer.html", "classpointing__detection_1_1DetectPointingObjectServer" ]
-    ] ],
-    [ "PourManager", "namespacePourManager.html", [
-      [ "PourManager", "classPourManager_1_1PourManager.html", "classPourManager_1_1PourManager" ]
     ] ],
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", [
       [ "Guest", "classreceptionist__task__manager_1_1Guest.html", "classreceptionist__task__manager_1_1Guest" ],
@@ -510,6 +537,9 @@ var annotated_dup =
     ] ],
     [ "test_navigation_manager", "namespacetest__navigation__manager.html", [
       [ "TestNavigationManager", "classtest__navigation__manager_1_1TestNavigationManager.html", "classtest__navigation__manager_1_1TestNavigationManager" ]
+    ] ],
+    [ "test_pick_and_place", "namespacetest__pick__and__place.html", [
+      [ "_Request", "classtest__pick__and__place_1_1__Request.html", "classtest__pick__and__place_1_1__Request" ]
     ] ],
     [ "test_plan_parser", "namespacetest__plan__parser.html", [
       [ "TestPlanParser", "classtest__plan__parser_1_1TestPlanParser.html", "classtest__plan__parser_1_1TestPlanParser" ]

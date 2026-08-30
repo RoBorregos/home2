@@ -1,7 +1,7 @@
 var xarm__configurations_8py =
 [
     [ "CARRY_POSE", "xarm__configurations_8py.html#a40724ca8949bf6768bc309e32f3b284f", null ],
-    [ "CUTLERY_STARE", "xarm__configurations_8py.html#a74866c95df18e2f28da7ca969977024f", null ],
+    [ "FLAT_STARE", "xarm__configurations_8py.html#afd2bde4d96a97dd999bd8e1ec175b2ce", null ],
     [ "FRONT_LOW_STARE", "xarm__configurations_8py.html#a2f3850b75849b6bc32e08235fe99d81c", null ],
     [ "FRONT_STARE", "xarm__configurations_8py.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
     [ "FRONT_STARE_CARRY_BAG", "xarm__configurations_8py.html#a11fb9768bb78ea1ba4ea84e0e587de48", null ],

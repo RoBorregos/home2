@@ -93,11 +93,11 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_vamp_scripts_
   <div class="headertitle"><div class="title">Using VAMP inside of C++ projects </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md88"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md100"></a>
 C++ Demo</h1>
 <p>The VAMP C++ demo can be compiled with (in the VAMP directory): </p><div class="fragment"><div class="line">cmake -Bbuild -GNinja -DVAMP_BUILD_CPP_DEMO=On .</div>
 <div class="line">cmake --build build</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md89"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md101"></a>
 OMPL Integration Demo</h1>
 <p>We provide an example of using VAMP as a motion validator and collision checker inside the [<a href="https://ompl.kavrakilab.org/index.html">https://ompl.kavrakilab.org/index.html</a>](Open Motion Planning Library), given in <code><a class="el" href="ompl__integration_8cc.html">ompl_integration.cc</a></code>. Please note that - although offering a substantial speedup to OMPL planners - this example is not engineered for maximum performance (e.g., it relies on state copying between OMPL and VAMP representations, etc.).</p>
 <p>If you do not have an installation of OMPL already (or wish to do local development of OMPL with VAMP as a collision checking backend), we recommend installing the latest version of OMPL to a local directory: </p><div class="fragment"><div class="line">cd</div>
