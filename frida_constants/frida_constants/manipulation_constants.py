@@ -59,8 +59,6 @@ ARM_HIGHEST_0_0_HEIGHT = 1.45
 ARM_LOWEST_0_0_HEIGHT = 0.95
 
 # Pick
-PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
-PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
 GO_TO_HAND_ACTION_SERVER = "/manipulation/go_to_hand_action_server"
 CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
 PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
@@ -70,11 +68,14 @@ XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 GRIPPER_GRASP_STATE_TOPIC = "/gripper/grasp_state"
 SAFETY_HEIGHT = 0.05
 PICK_MIN_HEIGHT = 0.04
-CUTLERY_PICK_MIN_HEIGHT = 0.002
-CUTLERY_NAMES = ["fork", "knife", "spoon", "cutlery"]
 # Objects picked with the flat-grasp estimator. toothpaste/sponge/dishwasher_tab are
 # low, flat items GPD fails to grasp from above (PPC run 2026-07-02: toothpaste 0/2).
-FLAT_OBJECT_NAMES = CUTLERY_NAMES + [
+# These are detector labels -- they must match what the vision model publishes.
+FLAT_OBJECT_NAMES = [
+    "fork",
+    "knife",
+    "spoon",
+    "cutlery",
     "plate",
     "red_plate",
     "toothpaste",
@@ -84,23 +85,13 @@ FLAT_OBJECT_NAMES = CUTLERY_NAMES + [
 POUR_OBJECT_NAMES = {"blue_cereal_box", "cereal", "chocomilk_box", "milk"}
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
-# Rim pick
+# Object-name sets consumed by the pick strategy classifier
 BOWL_NAME = "bowl"
 RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
-RIM_PRE_GRASP_HEIGHT = 0.10
-RIM_GRASP_Z_TWEAK = -0.05  # m: target ~3 cm below rim top so fingers straddle the wall
-RIM_DESCENT_SPEED = 20.0  # mm/s
-RIM_DESCENT_DISTANCE = RIM_PRE_GRASP_HEIGHT - RIM_GRASP_Z_TWEAK
-
-# Bowl pick: reuses the rim straddle but with a much shorter descent.
-BOWL_PRE_GRASP_HEIGHT = RIM_PRE_GRASP_HEIGHT  # m
-BOWL_DESCENT_DISTANCE = 0.08  # m fingers ~3 cm below the rim top
-BOWL_GRASP_Z_TWEAK = BOWL_PRE_GRASP_HEIGHT - BOWL_DESCENT_DISTANCE
-
-# Peak pick
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
-PEAK_PRE_GRASP_HEIGHT = 0.15  # m
-PEAK_DESCENT_SPEED = RIM_DESCENT_SPEED  # mm/s (reuse rim close-loop)
+
+# Default speed for the generic /manipulation/fixed_distance_move service,
+RIM_DESCENT_SPEED = 20.0  # mm/s
 
 # Place-in-trash
 TRASH_BIN_NAME = "trash_bin"  # must match the label published by the main detector
@@ -117,7 +108,6 @@ HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
 PLACE_POINT_DEBUG_TOPIC = "/manipulation/table_place_point_debug"
 PICK_MAX_DISTANCE = 1.0
 PLACE_MAX_DISTANCE = 0.8
-PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 
 # Special request for place
 CLOSE_BY_MAX_DISTANCE = 0.3  # Maximum distance for close-by heatmap generation
@@ -137,7 +127,6 @@ PLANE_OBJECT_COLLISION_TOLERANCE = (
 )
 
 # Pour
-POUR_MOTION_ACTION_SERVER = "/manipulation/pour_motion_action_server"
 POUR_VELOCITY = 0.5
 POUR_ACCELERATION = 0.15
 

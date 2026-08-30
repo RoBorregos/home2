@@ -10,10 +10,8 @@ from launch_ros.substitutions import FindPackageShare
 
 
 def generate_launch_description():
-    # When the sim includes this launch it overrides use_sim_time to true so
-    # gpd_service, manipulation_core, pick/place/pour servers and perception
-    # all look up TFs against /clock. On the real robot the default (false)
-    # keeps everything on wall time -- same launch, no sim-specific code.
+    # The sim overrides this to true so every node looks up TFs against /clock;
+    # the default keeps the real robot on wall time. One launch, no sim branch.
     use_sim_time = LaunchConfiguration("use_sim_time", default="false")
     sim_time_param = {"use_sim_time": use_sim_time}
 
@@ -29,7 +27,9 @@ def generate_launch_description():
                 package="arm_pkg",
                 executable="gpd_service",
                 name="gpd_service",
-                output="screen",
+                # GPD's vendored C++ dumps every grasp to stdout with printf and no
+                # flag silences it; ROS logs go to stderr, so only stdout is hidden.
+                output={"stdout": "log", "stderr": "screen"},
                 emulate_tty=True,
                 respawn=True,
                 parameters=[sim_time_param],
@@ -40,37 +40,14 @@ def generate_launch_description():
                 name="manipulation_core",
                 output="screen",
                 emulate_tty=True,
-                parameters=[sim_time_param],
-            ),
-            Node(
-                package="pick_and_place",
-                executable="pick_server.py",
-                name="pick_server",
-                output="screen",
-                emulate_tty=True,
                 parameters=[
                     {
-                        # based on distance between end-effector link and contact point with objects e.g. where you grip
+                        # based on distance between end-effector link and contact point with objects
                         "ee_link_offset": -0.09,
                     },
+                    # Per-strategy tuninglives in pick_and_place/config/pick_profiles.yaml.
                     sim_time_param,
                 ],
-            ),
-            Node(
-                package="pick_and_place",
-                executable="place_server.py",
-                name="place_server",
-                output="screen",
-                emulate_tty=True,
-                parameters=[sim_time_param],
-            ),
-            Node(
-                package="pick_and_place",
-                executable="pour_server.py",
-                name="pour_server",
-                output="screen",
-                emulate_tty=True,
-                parameters=[sim_time_param],
             ),
             # perception_3d.launch.py
             IncludeLaunchDescription(
