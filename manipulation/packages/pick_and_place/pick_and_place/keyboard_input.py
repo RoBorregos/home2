@@ -398,8 +398,8 @@ def main(args=None):
                 # Clear the accumulated octomap (FSM does this) so the deep grasp's IK
                 # config is not over-restricted by stale/arm voxels.
                 node._clear_octomap()
-                # in_configuration=True keeps the frontal level pose (else PickManager
-                # re-stares to table_stare and GPD sees the wrong view).
+                # in_configuration keeps the frontal level pose; re-staring to
+                # table_stare would give GPD the wrong view.
                 node.send_pick_request(
                     object_name, scan_environment=True, in_configuration=True
                 )

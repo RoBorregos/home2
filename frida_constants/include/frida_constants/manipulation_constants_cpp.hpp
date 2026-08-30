@@ -49,8 +49,6 @@ const double PICK_VELOCITY = 0.15;
 const double PICK_ACCELERATION = 0.15;
 conststr PICK_PLANNER = "RRTConnect";
 
-conststr PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server";
-conststr PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server";
 
 conststr GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps";
 
