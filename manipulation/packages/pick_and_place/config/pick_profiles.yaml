@@ -40,9 +40,8 @@ flat:
     grace_period: 0.3 # s, ignore effort right after velocity starts
     contact_settle: 1.0 # s, skip the motion-onset spike before detecting
     min_contact_descent: 0.08 # m, do not honor a jump before this depth
-    # J1 (base yaw) and J6 (tool roll) carry ~no vertical contact force on a
-    # top-down grasp, so their effort drift causes false early trips.
-    ignore_joints: [0, 5]
+    # J1/J6 see no contact force; J2's gravity drift false-trips at 80 mm.
+    ignore_joints: [0, 1, 5]
     # Jump-based contact: trip on a sudden effort rise vs a trailing reference,
     # which is robust to the several-N gravity drift seen during a clean descent
     # (an absolute-vs-rest threshold false-trips).
