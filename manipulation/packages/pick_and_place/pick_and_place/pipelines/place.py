@@ -249,10 +249,14 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
 
     # "Place next to X": aim the heatmap at X's centroid.
     if place_params.close_to:
-        # Failing to resolve it degrades to a generic place, not a failed task.
         point = _close_by_point(arm, perception, place_params.close_to)
         if point is not None:
             request.close_point = point
+        else:
+            log.warn(
+                f"Could not resolve close_to='{place_params.close_to}'; "
+                "placing on any free spot instead"
+            )
 
     # A special request can instead put the object directly on top of another.
     on_top = None
@@ -261,6 +265,11 @@ def _heatmap_pose(arm, perception, place_params) -> Optional[PoseStamped]:
         if close_point is not None:
             request.close_point = close_point
             request.special_request = place_params.special_request
+        elif on_top is None:
+            log.warn(
+                f"special_request {place_params.special_request!r} yielded no target; "
+                "placing on any free spot instead"
+            )
     if on_top is not None:
         return on_top
 
@@ -303,7 +312,8 @@ def _close_by_point(arm, perception, object_name: str):
     """Locate an object and return its cluster centroid in base_link."""
     log = arm.logger
     point = None
-    for _ in range(5):
+    centroid_found = False
+    for attempt in range(5):
         try:
             log.info(f"Locating '{object_name}' to place near it")
             point = perception.locate_object(object_name)
@@ -312,20 +322,28 @@ def _close_by_point(arm, perception, object_name: str):
                 continue
             cluster = perception.cluster_at(point, add_collision_objects=False)
             if cluster is None:
+                log.warn(f"No cluster for {object_name} ({attempt + 1}/5), retrying")
                 continue
             log.info(f"Object cluster detected for {object_name}")
             arm.remove_all_collision_objects(attached=False)
             centroid = _centroid(cluster)
             if centroid is None:
+                log.warn(f"Empty cluster for {object_name} ({attempt + 1}/5), retrying")
                 continue
             point.point.x = float(centroid[0])
             point.point.y = float(centroid[1])
             point.point.z = float(centroid[2])
             point.header.frame_id = cluster.header.frame_id
+            centroid_found = True
             break
         except Exception as exc:
             log.error(f"Failed to get object: {exc}")
 
+    if point is not None and not centroid_found:
+        log.warn(
+            f"No cluster centroid for {object_name} after 5 tries; "
+            "using the raw detection point instead"
+        )
     return _to_base_link(arm, point, object_name)
 
 
@@ -369,7 +387,9 @@ def _special_request(arm, perception, place_params):
         log.error(f"Could not parse special_request: {exc}")
         return None, None
 
-    if parsed.get("request", "") != "close_by":
+    kind = parsed.get("request", "")
+    if kind != "close_by":
+        log.warn(f"Unsupported special_request {kind!r}; ignoring it")
         return None, None
 
     log.info("Using close-by place pose")
@@ -388,6 +408,10 @@ def _special_request(arm, perception, place_params):
 
     if point.header.frame_id:
         return None, point
+    log.warn(
+        f"'{parsed.get('object', '')}' resolved without a frame; "
+        "ignoring the special request"
+    )
     return None, None
 
 
