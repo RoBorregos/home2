@@ -7,10 +7,8 @@ from tf2_geometry_msgs import do_transform_point
 
 # from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.srv import PointTransformation, ReturnLocation, LaserGet
-import json
-import os
 from sensor_msgs.msg import LaserScan
-from ament_index_python.packages import get_package_share_directory
+from frida_constants.navigation_constants import load_areas_json
 from geometry_msgs.msg import TransformStamped
 from task_manager.utils.status import Status
 from math import sqrt
@@ -132,13 +130,9 @@ class PointTransformer(Node):
         Callback to determine the location of the robot based on its pose.
         """
 
-        package_share_directory = get_package_share_directory("frida_constants")
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         mylocation = ""
 
-        # Load areas from the JSON file
-        with open(file_path, "r") as file:
-            areas = json.load(file)
+        areas = load_areas_json()
 
         # Check which area the robot is in
         for area in areas:

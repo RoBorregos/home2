@@ -8,7 +8,11 @@ from embeddings.postgres_adapter import PostgresAdapter
 from frida_interfaces.srv import MapAreas
 
 from frida_constants.hri_constants import KNOWLEDGE_TYPE
-from frida_constants.navigation_constants import AREAS_SERVICE
+from frida_constants.navigation_constants import (
+    AREAS_SERVICE,
+    get_areas_json_path,
+    load_areas_json,
+)
 
 p = PostgresAdapter()
 
@@ -269,9 +273,7 @@ def main():
     node = rclpy.create_node("create_sql_dump")
     client = node.create_client(MapAreas, AREAS_SERVICE)
     if not client.wait_for_service(timeout_sec=5.0):
-        node.get_logger().warn(
-            "AREAS_SERVICE not available, falling back to areas.json"
-        )
+        node.get_logger().warn("AREAS_SERVICE not available, reading the areas file")
     else:
         future = client.call_async(MapAreas.Request())
         rclpy.spin_until_future_complete(node, future, timeout_sec=10.0)
@@ -280,13 +282,15 @@ def main():
             areas_json = json.loads(result.areas)
         else:
             node.get_logger().warn(
-                "AREAS_SERVICE returned empty data, falling back to areas.json"
+                "AREAS_SERVICE returned empty data, reading the areas file"
             )
     node.destroy_node()
     rclpy.shutdown()
 
     if areas_json is None:
-        areas_json = frida_constants_jsons["areas.json"]
+        path = get_areas_json_path()
+        print(f"Reading areas from {path}")
+        areas_json = load_areas_json()
 
     print("Writing locations")
     write_to_file(

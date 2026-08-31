@@ -220,6 +220,7 @@ def _optimal_schedule(
 
     Complexity: O(2^M · M²). M is capped at _M_CAP by the caller.
     """
+
     M = len(segments)
     if M == 0:
         return []

@@ -115,14 +115,17 @@ service clients**, whose names come from `frida_constants.navigation_constants`:
 | `get_path_info(location_b, sublocation_b, location_a="", sublocation_a="")` | `NAV_QUERY_SERVICE` | `NavQuery` | **Plan-only**: real path distance (m) between two areas (or from current pose) **without moving**. Returns `(Status, {"distance": float})`. Used to pick the nearest of several goals. |
 | `dock_table(offset=0.0)` | `DOCK_TABLE_SERVICE` | `DockTable` | **Perpendicular-approach** the table/shelf in front of the robot for manipulation. `offset` = desired front gap (m). |
 | `check_door()` | `CHECK_DOOR_SERVICE` | `CheckDoor` | Blocks until the door in front opens (lidar-based). Returns when open. |
-| `retrieve_areas()` | `AREAS_SERVICE` | `MapAreas` | Dump the live `areas.json` (named locations + sublocations) as a dict. Falls back to the on-disk backup if the service is down. |
+| `retrieve_areas()` | `AREAS_SERVICE` | `MapAreas` | Dump the live `areas.json` (named locations + sublocations) as a dict. Falls back to the same file read from disk if the service is down. |
 
 Notes that matter when editing this boundary:
 - **`areas.json` is the shared map vocabulary.** Locations like `"kitchen"` and
-  sublocations like `"table"`/`"safe_place"` are defined in
-  `frida_constants/map_areas/areas.json` (loaded as a backup in `NavigationTasks.__init__`,
-  served live by `nav_central`'s `MapAreas` service). Task code refers to places **by
-  name**, never by raw coordinates.
+  sublocations like `"table"`/`"safe_place"` are defined per map in
+  `map_context/maps/areas/areas_<MAP_NAME>.json`, served live by `nav_central`'s
+  `MapAreas` service. That file is the single source of truth: when the service is
+  unreachable (offline DB generation, mock runs) callers read the same file through
+  `load_areas_json()` in `navigation_constants.py`, which picks the map from
+  `MAP_NAME` and raises `FileNotFoundError` rather than substituting another map's
+  poses. Task code refers to places **by name**, never by raw coordinates.
 - The service **names** are constants (`navigation_constants.py`) — both `nav_central`
   (server) and `nav_tasks.py` (client) import the same symbol, so renaming is one-sided-safe.
 - There is also a `Move.action` defined in `frida_interfaces/navigation/`, but the
@@ -362,7 +365,7 @@ nodes natively for normal use — go through `run.sh`.**
 | Change how "go to X" behaves | `nav_central.py` `MoveLocation` handler → Nav2 goal send |
 | Tune driving (speed, smoothness, obstacle avoidance) | `config/omni_config/nav2_omni.yaml` (MPPI critics/limits) |
 | Change SLAM / localization | `omni_setup/{slam,localization}.launch.py` + `mapper_params_*.yaml` |
-| Add/rename a place | `frida_constants/map_areas/areas.json` (+ re-annotate via `nav_ui`) |
+| Add/rename a place | `map_context/maps/areas/areas_<MAP_NAME>.json` (+ re-annotate via `nav_ui`) |
 | Table approach for manipulation | `table_docker.py` + `dock_table()` in `nav_tasks.py` |
 | New competition task that drives around | new `*_task_manager.py` FSM in `task_manager/scripts/`, call `self.subtask_manager.nav.*` |
 | Recovery / blocked-goal behavior | BTs in `nav_main/bt/` + `adaptive_goal_publisher.py` |

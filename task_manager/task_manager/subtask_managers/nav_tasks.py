@@ -6,12 +6,10 @@ Navigation Area SubTask Manager
 """
 
 import json
-import os
 import math
 import copy
 import rclpy
 from rclpy.node import Node
-from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped, Quaternion, PointStamped, Point
 import tf2_ros
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
@@ -26,6 +24,7 @@ from frida_constants.navigation_constants import (
     GET_ROBOT_POSE_SERVICE,
     APPROACH_POINT_SERVICE,
     SUBTASK_MANAGER,
+    load_areas_json,
 )
 from frida_interfaces.srv import (
     CheckDoor,
@@ -122,10 +121,7 @@ class NavigationTasks:
     def setup_backup_map(self):
         """Load backup map info"""
         try:
-            package_share_directory = get_package_share_directory("frida_constants")
-            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-            with open(file_path, "r") as file:
-                data = json.load(file)
+            data = load_areas_json()
             if data is not None:
                 self.areas_backup = data
                 CLog.nav(self.node, "INFO", "Areas Json BackUp Loaded")

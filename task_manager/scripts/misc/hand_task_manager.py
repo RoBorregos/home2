@@ -4,12 +4,10 @@
 Task Manager for Give me a Hand Robocup @Home 2025
 """
 
-import json
-import os
 import time
 
 import rclpy
-from ament_index_python.packages import get_package_share_directory
+from frida_constants.navigation_constants import load_areas_json
 from rclpy.node import Node
 from task_manager.utils.logger import Logger
 from task_manager.utils.subtask_manager import SubtaskManager, Task
@@ -38,10 +36,7 @@ class HandTM(Node):
         self.selected_room = "living_room"
         self.look_degrees = [-45, 0, 45]
         self.handed_objects = 0
-        package_share_directory = get_package_share_directory("frida_constants")
-        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-        with open(file_path, "r") as file:
-            self.areas = json.load(file)
+        self.areas = load_areas_json()
 
         Logger.info(self, "HandTaskManager has started.")
 

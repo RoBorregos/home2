@@ -1,3 +1,5 @@
+import json
+import os
 from enum import Enum
 
 # Navigation Central
@@ -21,7 +23,7 @@ class DOOR_CHECK(Enum):
     DOOR_DISTANCE = 2.0
 
 
-###Map areas service
+###Map areas service (live table; see get_areas_json_path for the file behind it)
 AREAS_SERVICE = "/navigation/areas_json"
 
 ### Move to location service
@@ -110,3 +112,47 @@ CAMERA_RGB_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 CAMERA_INFO_TOPIC = "/zed/zed_node/rgb/camera_info"
 CAMERA_DEPTH_TOPIC = "/zed/zed_node/depth/depth_registered"
 MAP_TOPIC = "/map"
+
+
+# Map areas file access
+DEFAULT_AREAS_MAP_NAME = "default_map"
+AREAS_SUBDIR = "maps/areas"
+MAP_CONTEXT_SOURCE_DIR = "/workspace/src/navigation/packages/map_context"
+
+
+def get_areas_map_name() -> str:
+    """Map the areas table is tagged for: MAP_NAME as the nav launch files read
+    it, minus the rtabmap .db suffix, else nav_central's default."""
+    return (os.getenv("MAP_NAME") or DEFAULT_AREAS_MAP_NAME).replace(".db", "")
+
+
+def get_areas_json_path(map_name: str = "") -> str:
+    """Absolute path of areas_<map>.json inside map_context, from the installed
+    share directory or, when map_context isn't built, the mounted source tree.
+
+    Raises FileNotFoundError when the map has no areas file, so callers fail
+    loudly instead of using poses from some other map.
+    """
+    map_name = map_name or get_areas_map_name()
+    filename = f"areas_{map_name}.json"
+
+    try:
+        from ament_index_python.packages import get_package_share_directory
+
+        share_dir = get_package_share_directory("map_context")
+    except (ImportError, LookupError):
+        share_dir = ""
+
+    candidates = [os.path.join(MAP_CONTEXT_SOURCE_DIR, AREAS_SUBDIR, filename)]
+    if share_dir:
+        candidates.insert(0, os.path.join(share_dir, AREAS_SUBDIR, filename))
+
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    raise FileNotFoundError(f"No areas file for map '{map_name}'")
+
+
+def load_areas_json(map_name: str = "") -> dict:
+    with open(get_areas_json_path(map_name), "r") as file:
+        return json.load(file)
