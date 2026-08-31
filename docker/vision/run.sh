@@ -71,8 +71,8 @@ add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 
 # Write environment variables to .env file for Docker Compose and build base images
-add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:jazzy_${ENV_TYPE}_base"
-add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:jazzy_vision-${ENV_TYPE}"
+add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
+add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:vision-${ENV_TYPE}"
 add_or_update_variable .env "DOCKERFILE" "docker/vision/Dockerfile.${ENV_TYPE}"
 
 case $ENV_TYPE in
@@ -171,7 +171,7 @@ add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading vision image to DockerHub (env: ${ENV_TYPE})..."
-  ensure_and_upload_image "roborregos/home2:jazzy_vision-${ENV_TYPE}" "docker-compose.yml"
+  ensure_and_upload_image "roborregos/home2:vision-${ENV_TYPE}" "docker-compose.yml"
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then

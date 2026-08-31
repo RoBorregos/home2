@@ -5,7 +5,7 @@ services:
       context: ../..
       dockerfile: docker/zed/Dockerfile.l4t
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:jazzy_l4t_base}
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:l4t_base}
     image: ${IMAGE_NAME:-roborregos/home2:zed-l4t}
     volumes:
       - /dev:/dev
@@ -27,7 +27,7 @@ services:
     cpuset: "${COMPUTE_CPUSET:-4-11}"
     group_add:
       - video
-      - "1001"
+      - zed
     environment:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color

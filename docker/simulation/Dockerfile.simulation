@@ -1,5 +1,5 @@
 
-ARG BASE_IMAGE=roborregos/home2:jazzy_cpu_base
+ARG BASE_IMAGE=roborregos/home2:cpu_base
 ARG ROS_DISTRO=jazzy
 FROM $BASE_IMAGE
 

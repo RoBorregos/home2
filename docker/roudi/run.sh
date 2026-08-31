@@ -13,8 +13,8 @@ else
 fi
 
 echo "" > .env
-add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:jazzy_${ENV_TYPE}_base"
-add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:jazzy_roudi-${ENV_TYPE}"
+add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
+add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:roudi-${ENV_TYPE}"
 
 case $ACTION in
   --down)
@@ -27,7 +27,7 @@ case $ACTION in
     ;;
   *)
     # Build image if needed
-    check_image_exists "roborregos/home2:jazzy_roudi-${ENV_TYPE}"
+    check_image_exists "roborregos/home2:roudi-${ENV_TYPE}"
     if [ $? -eq 1 ]; then
       docker compose build
     fi

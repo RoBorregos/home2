@@ -1,41 +1,16 @@
-# Stereolabs has not published a ZED SDK build tagged for L4T r39 specifically
-# (`.../zedsdk/5.4/l4t39.2/jetsons` 302s to the generic homepage — confirmed
-# 2026-08-20). But their l4t38.4 build (JetPack 7.0/7.1, one minor L4T rev
-# behind our r39.2 host) DOES exist and works in practice: verified live on
-# real Orin hardware with a physical ZED 2 (USB) — camera opens, RGB grab,
-# and classical (non-NEURAL) depth (ULTRA mode) all succeed via
-# stereolabs/zed:5.4.1-tools-devel-l4t-r38.4's bundled pyzed. Caveat: NEURAL/
-# AI depth mode fails — that build's bundled TensorRT engine builder rejects
-# "Target GPU SM 87" (Ampere), likely because this particular l4t38.4 image
-# predates broad SM87 TensorRT plan support. Non-AI depth modes (PERFORMANCE/
-# QUALITY/ULTRA) are CUDA stereo matching only, no TensorRT, and work fine.
-ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
+ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
 ARG ROS_DISTRO=jazzy
 
-# Install ZED SDK (silent, skip drivers for container use) — l4t38.4 build,
-# see note above on why not l4t39.2 (doesn't exist) or l4t36.4 (JetPack 6,
-# further from this host's actual r39.2 than 38.4 is).
-# sudo -E (not plain sudo): the installer's internal pip calls need
-# PIP_IGNORE_INSTALLED=1 from the base image (see docker/Dockerfile.ROS-l4t)
-# to avoid "Cannot uninstall numpy 1.26.4, RECORD file not found" — Debian's
-# apt-provided numpy has no RECORD file for pip to reference. Plain `sudo`
-# resets the environment by default and drops that var, breaking the fix.
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq zstd && \
     wget -q -O /tmp/ZED_SDK.run \
     https://download.stereolabs.com/zedsdk/5.4/l4t38.4/jetsons && \
     chmod +x /tmp/ZED_SDK.run && \
     sudo -E /tmp/ZED_SDK.run silent skip_drivers && \
-    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/*
+    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/* && \
+    sudo usermod -aG zed ros
 
-# The SDK's NEURAL/NEURAL_LIGHT depth modes (the only ones zed_wrapper 5.x
-# exposes — classical PERFORMANCE/QUALITY/ULTRA modes still work via the raw
-# SDK API but aren't wired into the ROS2 wrapper's config schema anymore)
-# need TensorRT's ONNX parser at runtime to build the AI depth-inference
-# engine. jazzy_l4t_base bakes in libnvinfer* (see docker/Dockerfile.ROS-l4t)
-# but not the ONNX parser package — install it here since it's zed-specific,
-# not something every other l4t area needs.
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq libnvonnxparsers10 && \
     sudo rm -rf /var/lib/apt/lists/*
 
@@ -43,9 +18,6 @@ RUN sudo apt-get update -qq && sudo apt-get install -y -qq libnvonnxparsers10 &&
 RUN sudo ln -sf /usr/lib/$(uname -m)-linux-gnu/tegra/libv4l2.so.0 \
     /usr/lib/$(uname -m)-linux-gnu/libv4l2.so 2>/dev/null || true
 
-# zed-ros2-wrapper dropped distro-prefixed tags after humble-v5.1.0 — v5.2.0+
-# is distro-agnostic (auto-detects ROS_DISTRO from the environment at build
-# time), so v5.4.1 (matching the SDK version installed above) works on Jazzy.
 RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
     git clone --depth 1 -b v5.4.1 https://github.com/stereolabs/zed-ros2-wrapper.git && \
     cd /opt/zed_ws && \
@@ -55,12 +27,6 @@ RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
     rosdep install --from-paths src -y --ignore-src && \
     sudo rm -rf /var/lib/apt/lists/*
 
-# zed_debug links directly against libcuda.so/OpenGL/NvBufSurface (Jetson
-# multimedia + driver stub libs), which only exist on a host with the real
-# NVIDIA driver — not in a driver-less `docker build` sandbox (same class of
-# issue as OpenCV's cudacodec module, see docker/navigation/Dockerfile.l4t).
-# It's a standalone debug/visualization tool, not needed by the core wrapper
-# nodes (zed_components etc.) — skip it rather than fight the link step.
 RUN cd /opt/zed_ws && \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
     colcon build --cmake-args -Wno-dev \

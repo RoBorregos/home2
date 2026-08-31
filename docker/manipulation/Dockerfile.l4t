@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
+ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
 ARG ROS_DISTRO=jazzy
@@ -18,9 +18,6 @@ RUN apt update && apt install -y ros-${ROS_DISTRO}-zed-msgs ros-${ROS_DISTRO}-mo
 WORKDIR /installs
 RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
 WORKDIR /installs/home2_install
-# libvtk-qt: ros/rosdistro's rosdep base.yaml still hardcodes `ubuntu: '*': [libvtk7-qt-dev]`
-# for this key (never updated past VTK7), so it 404s on noble/24.04 no matter what —
-# skip it (it's only needed for the rtabmap_viz Qt GUI, not headless robot operation).
 RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_install/ --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control libvtk-qt" -y
 RUN rosdep fix-permissions
 WORKDIR /

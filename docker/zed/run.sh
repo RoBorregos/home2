@@ -53,8 +53,8 @@ add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 
 case $ENV_TYPE in
   "l4t")
-    add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:jazzy_l4t_base"
-    add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:jazzy_zed-l4t"
+    add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:l4t_base"
+    add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:zed-l4t"
     add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
     add_or_update_variable .env "DISPLAY" ":0"
     add_or_update_variable .env "ZED_CAMERA_MODEL" "zed2"
@@ -68,7 +68,7 @@ esac
 #_________________________RUN_________________________
 
 # Build image if it doesn't exist
-check_image_exists "roborregos/home2:jazzy_zed-l4t"
+check_image_exists "roborregos/home2:zed-l4t"
 if [ $? -eq 1 ]; then
     BUILD_IMAGE="--build "
 fi

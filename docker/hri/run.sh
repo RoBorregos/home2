@@ -66,6 +66,9 @@ if [ "$ENV_TYPE" = "cuda" ]; then
   add_or_update_variable compose/.env "STT_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
   add_or_update_variable compose/.env "TTS_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
 fi
+if [ "$ENV_TYPE" = "l4t" ]; then
+  add_or_update_variable compose/.env "TTS_BASE_IMAGE" "roborregos/home2:l4t_base"
+fi
 # If setup was done before persist it again now that .env has been reset
 if [ "${SETUP_DONE:-}" = "true" ]; then
   add_or_update_variable .env "SETUP_DONE" "true"

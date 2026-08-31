@@ -18,8 +18,8 @@ parse_common_flags "$COMPOSE" "${ARGS[@]}"
 #_________________________SETUP_________________________
 
 setup_common_env "simulation"
-add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:jazzy_${ENV_TYPE}_base"
-add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:jazzy_simulation-${ENV_TYPE}"
+add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
+add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:simulation-${ENV_TYPE}"
 
 # Pre-flight check: Increase network buffers on host if possible
 # This prevents the 'failed to create domain' error in CycloneDDS
@@ -76,7 +76,7 @@ esac
 
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading simulation image to DockerHub (env: ${ENV_TYPE})..."
-  ensure_and_upload_image "roborregos/home2:jazzy_simulation-${ENV_TYPE}" "$COMPOSE"
+  ensure_and_upload_image "roborregos/home2:simulation-${ENV_TYPE}" "$COMPOSE"
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then

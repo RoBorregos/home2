@@ -1,17 +1,7 @@
-# dustynv/l4t-pytorch has no JetPack 7 (L4T r38+) tag yet — build on our own
-# jazzy_l4t_base instead, which now bakes in the CUDA/cuDNN toolkit (via the
-# NVIDIA Jetson apt repo, see docker/Dockerfile.ROS-l4t) that CTranslate2 needs
-# at build time for -DWITH_CUDA=ON -DWITH_CUDNN=ON below.
-ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
+ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
 # Install dependencies
-# pkg-config + libx264-dev: PyAV's scripts/build-deps compiles ffmpeg from
-# source with --enable-libx264, but does not build x264 itself — it only
-# links against a system libx264 discovered via pkg-config. The old
-# dustynv/l4t-pytorch base apparently had these preinstalled; our bare
-# jazzy_l4t_base does not, so build-deps failed with "x264 not found using
-# pkg-config" until these were added explicitly.
 RUN apt-get update && apt-get install -y \
     libsndfile1 \
     libxml2-dev \
@@ -29,14 +19,6 @@ RUN git clone --recursive https://github.com/OpenNMT/CTranslate2.git
 WORKDIR /tmp/CTranslate2
 RUN mkdir build
 WORKDIR /tmp/CTranslate2/build
-# CTranslate2's CMakeLists.txt hardcodes a CUDA_ARCH_LIST default spanning
-# Maxwell through Ampere (compute_53 etc.) when CUDA_ARCH_LIST isn't set —
-# CUDA 13's nvcc dropped support for anything older than sm_50/Pascal-era
-# archs like compute_53, so it fails immediately (same class of issue as
-# dlib's compute_50 default, see vision/Dockerfile.l4t). Pin explicitly to
-# Orin's real sm_87 (Ampere) rather than CUDA_ARCH_LIST=Auto — `docker build`
-# has no GPU visible to nvcc for native-arch autodetection, only `docker run`
-# does (via the --runtime nvidia CSV/CDI mounts).
 RUN cmake .. -DOPENMP_RUNTIME=NONE -DWITH_CUDA=ON -DWITH_MKL=OFF -DWITH_CUDNN=ON -DCUDA_ARCH_LIST="8.7"
 RUN make -j4
 RUN make install
@@ -63,10 +45,4 @@ RUN pip install --upgrade protobuf
 COPY ../../hri/proto_interfaces /tmp/proto_interfaces
 RUN pip install --no-cache-dir /tmp/proto_interfaces
 
-# faster-whisper (in stt.txt above) depends on ctranslate2 and pulls the
-# official PyPI wheel during `pip install -r requirements.txt`, silently
-# overwriting our CUDA-enabled build from source with a CPU-only aarch64
-# wheel (PyPI publishes no CUDA build for aarch64). Re-install our build's
-# wheel last so it wins; --no-deps avoids re-resolving/reinstalling anything
-# faster-whisper already pulled in.
 RUN pip install --no-cache-dir --force-reinstall --no-deps /tmp/CTranslate2/python/dist/*.whl

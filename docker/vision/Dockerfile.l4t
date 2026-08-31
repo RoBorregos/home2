@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
+ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
 ARG ROS_DISTRO=jazzy
@@ -12,7 +12,7 @@ ENV OPENBLAS_CORETYPE=ARMV8
 # ── System dependencies (single consolidated layer) ──
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     build-essential ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
-    terminator nano git wget iputils-ping cmake \
+    terminator nano git wget curl unzip iputils-ping cmake \
     libcanberra-gtk-module libcanberra-gtk3-module \
     libx11-xcb1 libxkbcommon-x11-0 \
     libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
@@ -27,11 +27,6 @@ RUN wget -q http://dlib.net/files/dlib-20.0.tar.bz2 && \
     tar jxf dlib-20.0.tar.bz2 && rm dlib-20.0.tar.bz2 && \
     cd dlib-20.0 && \
     sed -i 's/-arch=sm_50/-arch=sm_87/' dlib/cmake_utils/test_for_cuda/CMakeLists.txt && \
-    # dlib 20.0's -DCUDA_ARCHITECTURES/-DCMAKE_CUDA_ARCHITECTURES are ignored; it
-    # reads its own -DDLIB_USE_CUDA_COMPUTE_CAPABILITIES (default 50/Maxwell,
-    # which CUDA 13's nvcc rejects outright — dropped after CUDA 11). Both the
-    # sed above (its bundled CUDA-compiler smoke test) and this flag (the real
-    # build) need to target sm_87 or the whole thing silently falls back to CPU.
     mkdir build && cd build && \
     cmake .. \
       -DDLIB_USE_CUDA=1 \
@@ -55,16 +50,24 @@ RUN wget -q http://dlib.net/files/dlib-20.0.tar.bz2 && \
       --set CMAKE_CXX_FLAGS=-fno-lto --set CMAKE_C_FLAGS=-fno-lto && \
     cd /workspace && rm -rf dlib-20.0
 
-# ── Python dependencies ──
-# NOTE: Do NOT install opencv-python — the L4T base image includes
-# OpenCV built with CUDA/TensorRT. Pip opencv-python overwrites it
-# with a CPU-only build, killing GPU acceleration.
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir \
-    numpy==1.26.4 \
+RUN pip install --upgrade pip && pip install --no-cache-dir "numpy>=2"
+
+WORKDIR /workspace
+RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/script/install_opencv4.10.0_Jetpack6.1.sh -o install_opencv.sh && \
+    chmod 777 install_opencv.sh && \
+    sed -i "s/make -j\$(nproc)/make -j4/" install_opencv.sh && \
+    sed -i '2i export CMAKE_POLICY_VERSION_MINIMUM=3.5' install_opencv.sh && \
+    sed -i 's/python3\.10-dev/python3-dev/' install_opencv.sh && \
+    sed -i 's/python3\.10\/site-packages/python3.12\/site-packages/' install_opencv.sh && \
+    sed -i 's/libtbb2 /libtbb12 /' install_opencv.sh && \
+    sed -i 's|-D WITH_CUDA=ON|-D WITH_CUDA=ON -D CUDA_NVCC_FLAGS="-std=c++17"|' install_opencv.sh && \
+    sed -i 's/version="4.10.0"/version="4.14.0"/' install_opencv.sh && \
+    sed -i 's|-D WITH_CUDA=ON|-D WITH_CUDA=ON -D BUILD_opencv_cudacodec=OFF|' install_opencv.sh && \
+    yes yes | ./install_opencv.sh && \
+    rm -f install_opencv.sh
+
+RUN pip install --no-cache-dir \
     cmake==3.25.2 \
-    insightface \
-    ultralytics==8.4.19 \
     lap \
     tqdm \
     pillow \
@@ -73,21 +76,23 @@ RUN pip install --upgrade pip && \
     scipy \
     onnxslim>=0.1.71 \
     grpcio==1.71.0 \
-    protobuf==5.29.1
+    protobuf==5.29.1 \
+    matplotlib \
+    polars \
+    psutil \
+    requests \
+    scikit-image \
+    onnx \
+    torch \
+    torchvision \
+    ultralytics-thop && \
+    pip install --no-cache-dir --no-deps insightface ultralytics==8.4.19
 
 # ── YOLOv5 for legacy YoloV5ObjectDetector ──
 WORKDIR /workspace
 RUN git clone --depth 1 https://github.com/ultralytics/yolov5.git
 
 # ── Iceoryx from source (expanded publisher/subscriber limits) ──
-# libboost-dev/libboost-python-dev installed here (not later, next to the
-# from-source cv_bridge build that actually needs them): once the
-# dpkg --force-depends -r below runs, the package DB is left with dangling
-# Depends (ros-${ROS_DISTRO}-cyclonedds/rmw-cyclonedds-cpp still reference
-# the force-removed iceoryx packages) — any apt-get install attempted AFTER
-# that point fails with "Unmet dependencies" for completely unrelated
-# packages too, since apt refuses to plan installs while known-broken nodes
-# exist anywhere in the dependency graph.
 RUN apt-get update -qq && apt-get install -y --no-install-recommends libacl1-dev libboost-dev libboost-python-dev && rm -rf /var/lib/apt/lists/* && \
     dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
 RUN cd /tmp && \
@@ -147,18 +152,6 @@ USER ros
 # the Jetson-optimized build with TensorrtExecutionProvider + CUDAExecutionProvider.
 RUN pip install --no-cache-dir onnxruntime-gpu
 
-# cv_bridge vs. cv2: NOT the same numpy conflict as navigation. Here it's the
-# opposite direction. jazzy_l4t_base's cv2 (the CUDA/TensorRT-accelerated
-# OpenCV NVIDIA bakes into the L4T image, /usr/local/lib/python3.12/dist-
-# packages/cv2, version 4.11.0) needs NumPy >=2 — it fails to import under
-# 1.26.4. But apt's ros-jazzy-cv-bridge was compiled by the ROS build farm
-# against noble's system OpenCV/numpy (python3-opencv 4.6.0 + python3-numpy
-# 1.26.4) and its boost extension breaks under NumPy 2.x. Forcing numpy<2
-# (as navigation's Dockerfile does) would fix cv_bridge but break the far
-# more important CUDA cv2 — so instead, rebuild cv_bridge from source here,
-# against whatever numpy/OpenCV are actually active in this image (2.x /
-# the NVIDIA 4.11.0 build), so both halves agree. vision_opencv has no
-# `jazzy` branch yet; `rolling` is the closest current-development target.
 RUN sudo dpkg --force-depends -r ros-${ROS_DISTRO}-cv-bridge 2>/dev/null || true
 RUN mkdir -p /tmp/cv_bridge_ws/src && cd /tmp/cv_bridge_ws/src && \
     git clone --depth 1 -b rolling https://github.com/ros-perception/vision_opencv.git && \

@@ -26,8 +26,6 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
-# Ubuntu 24.04 ships a default "ubuntu" user/group at UID/GID 1000, which
-# collides with the common host UID/GID 1000 used here — remove it first.
 RUN (id -u ubuntu >/dev/null 2>&1 && userdel -r ubuntu || true) \
     && (getent group ubuntu >/dev/null 2>&1 && groupdel ubuntu || true) \
     && groupadd --gid $USER_GID $USERNAME \
@@ -75,13 +73,6 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     libxcb-cursor0 libxcb-xkb1 \
     python3-pip
 
-# Ubuntu 24.04's python3-pip enforces PEP 668 (externally-managed-environment),
-# rejecting bare `pip install`. All area Dockerfiles install system-wide with
-# plain pip, so allow it globally here instead of patching every Dockerfile.
-# PIP_IGNORE_INSTALLED avoids a related noble issue: apt-provided Python
-# packages (pip itself, typing_extensions, etc.) ship without a pip RECORD
-# file, so `pip install` fails trying to uninstall them before reinstalling —
-# ignore-installed makes pip just reinstall over them instead.
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV PIP_IGNORE_INSTALLED=1
 
@@ -96,22 +87,11 @@ ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
 RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 
-# jp6/cu126 default targets JetPack 6 (Orin). For Thor/JetPack 7 pass
-# ARG PIP_INDEX_JETSON=https://pypi.jetson-ai-lab.io/jp7/cu130 (or whatever
-# index NVIDIA/dusty-nv publish for JP7) via --build-arg.
-ARG PIP_INDEX_JETSON=https://pypi.jetson-ai-lab.io/jp6/cu126
+ARG PIP_INDEX_JETSON=https://pypi.jetson-ai-lab.io/sbsa/cu130
 ENV PIP_INDEX_URL=${PIP_INDEX_JETSON} \
     PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
     PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io
 
-# No dustynv/nvcr.io JetPack 7 (L4T r38+) base image is published yet, so this
-# base has no CUDA toolkit baked in from a prebuilt image. The host itself
-# (real Thor/Orin-JP7 hardware) has NVIDIA's own public Jetson apt repo
-# configured (repo.download.nvidia.com/jetson, keyed to the exact L4T release
-# via /etc/apt/sources.list.d/nvidia-l4t-apt-source.list) — pull the same repo
-# + key into the image so area Dockerfiles (vision/dlib, hri stt/CTranslate2)
-# that need CUDA/cuDNN at *build* time (not just the runtime CSV/CDI mounts
-# from nvidia-container-toolkit) can apt-install it directly.
 COPY jetson-apt/nvidia-l4t-apt-source.list /etc/apt/sources.list.d/nvidia-l4t-apt-source.list
 COPY jetson-apt/jetson-ota-public.asc /etc/apt/trusted.gpg.d/jetson-ota-public.asc
 RUN apt-get update && apt-get install -y --no-install-recommends \

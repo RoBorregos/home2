@@ -1,7 +1,4 @@
-# dustynv/l4t-pytorch has no JetPack 7 (L4T r38+) tag yet — build on our own
-# jazzy_l4t_base instead, which already has the `ros` user + a Jetson pip
-# index (see docker/Dockerfile.ROS-l4t for PIP_INDEX_URL/PIP_INDEX_JETSON).
-ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
+ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
 # Install audio and speech synthesis dependencies natively for L4T
