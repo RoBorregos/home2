@@ -14,7 +14,7 @@ from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from std_msgs.msg import Bool
@@ -89,6 +89,7 @@ import re
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
+APPROACH_DIRECT_ALIGN_RANGE = 2.0
 # Max time to wait for the arm pointer to home back to its normal pose before
 # returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
 ARM_HOME_TIMEOUT = 10.0
@@ -259,6 +260,7 @@ class Nav_Central(Node):
         self.approach_point_srv = self.create_service(
             ApproachPoint, APPROACH_POINT_SERVICE, self.approach_point_callback,
             callback_group=self.service_group)
+        self.cmd_vel_pub = self.create_publisher(TwistStamped, "/cmd_vel", 10)
 
         # Occupancy grids for approach_point free-space checks: prefer the
         # global costmap (static map + inflation + live obstacles, latched by
