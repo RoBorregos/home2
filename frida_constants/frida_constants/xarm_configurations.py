@@ -82,7 +82,7 @@ PICK_STARE_AT_TABLE = {
     "degrees": True,
 }
 
-CUTLERY_STARE = {
+FLAT_STARE = {
     "joints": {
         "joint1": -90.0,
         "joint2": -10.0,
@@ -213,7 +213,7 @@ XARM_CONFIGURATIONS = {
     "table_stare": TABLE_STARE,
     "take_object": TAKE_OBJECT,
     "receive_object": RECEIVE_OBJECT,
-    "cutlery_stare": CUTLERY_STARE,
+    "flat_stare": FLAT_STARE,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
     "nav_carry_bag_pose": NAV_CARRY_BAG_POSE,

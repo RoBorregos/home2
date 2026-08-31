@@ -22,11 +22,15 @@ wait_for_server() {
     echo "Server on port $port is ready."
 }
 
-# qwen3-8b on port 11434 — hric, gpsr
-if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ]; then
-    echo "Starting qwen3-8b on port 11434..."
+# Main model on port 11434. LLAMA_MODEL_FILE / LLAMA_ALIAS override the defaults
+# from the benchmark flow without changing this script.
+MAIN_MODEL="${LLAMA_MODEL_FILE:-qwen3-4b.Q4_K_M.gguf}"
+MAIN_ALIAS="${LLAMA_ALIAS:-qwen3}"
+
+if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
+    echo "Starting $MAIN_MODEL on port 11434 (alias=$MAIN_ALIAS)..."
     llama-server \
-        --model "$MODELS_DIR/qwen3-8b.Q4_K_M.gguf" \
+        --model "$MODELS_DIR/$MAIN_MODEL" \
         --host 0.0.0.0 \
         --port 11434 \
         --ctx-size 2048 \
@@ -35,12 +39,12 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ]; then
         --cache-type-k q8_0 \
         --cache-type-v q8_0 \
         --parallel 1 \
-        --alias qwen3 \
+        --alias "$MAIN_ALIAS" \
         &
     wait_for_server 11434
 fi
 
-# rbrgs on port 11435 — gpsr only
+# rbrgs on port 11435, gpsr only
 if [ "$ROLE" = "gpsr" ]; then
     echo "Starting rbrgs on port 11435..."
     llama-server \
@@ -59,5 +63,4 @@ if [ "$ROLE" = "gpsr" ]; then
 fi
 
 echo "All servers ready. Container running..."
-# Keep container alive and exit if any llama-server process dies
 wait

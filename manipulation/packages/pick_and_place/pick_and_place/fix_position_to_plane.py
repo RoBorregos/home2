@@ -14,6 +14,7 @@ from rclpy.action import ActionClient
 from rclpy.executors import MultiThreadedExecutor
 from tf2_ros import TransformBroadcaster, TransformListener, Buffer
 from geometry_msgs.msg import TransformStamped, PointStamped, PoseStamped
+from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_motion_planning.utils.tf_utils import look_at
 from frida_pymoveit2.robots import xarm6
 import time
@@ -29,17 +30,6 @@ TABLE_Z_OFFSET = 0.75
 SHELF_Z_OFFSET = 0.4
 
 DISTANCE = 0.5
-
-
-def wait_for_future(future, timeout=10):
-    start_time = time.time()
-    while future is None and (time.time() - start_time) < timeout:
-        pass
-    if future is None:
-        return False
-    while not future.done():
-        pass
-    return future
 
 
 class MyPoint:

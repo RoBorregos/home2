@@ -12,19 +12,23 @@ find_package(ament_cmake_python REQUIRED)
 # Install Python package
 ament_python_install_package(pick_and_place)
 
-# Install examples
-#Install python scripts
+# Node entry points. The pipelines/ and robot/ subpackages are libraries and
+# are installed by ament_python_install_package above, not as executables.
 file(GLOB PYTHON_SCRIPTS pick_and_place/*.py)
-file(GLOB TEST_SCRIPTS pick_and_place/tests/*.py)
 
-# Install python scripts
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
-  ${TEST_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
 )
 
-install(DIRECTORY launch
+install(DIRECTORY config launch
   DESTINATION share/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(pick_and_place_tests test
+    TIMEOUT 120
+  )
+endif()
 
 ament_package()
