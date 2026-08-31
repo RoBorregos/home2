@@ -45,7 +45,9 @@ class DemoTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("demo_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.DEMO, mock_areas=[""])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.DEMO, mock_areas=["vision", "navigation", "manipulation"]
+        )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
