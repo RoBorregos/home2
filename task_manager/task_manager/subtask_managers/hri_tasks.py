@@ -70,7 +70,7 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
-from task_manager.scripts.misc.hri_hand import HRIHand
+from task_manager.subtask_managers.hri_hand import HRIHand
 from task_manager.utils.baml_client.sync_client import b
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
