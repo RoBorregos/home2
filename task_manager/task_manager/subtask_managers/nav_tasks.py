@@ -443,7 +443,9 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def approach_point(self, point, standoff: float = 0.65, align: str = "", final_distance: float = 0.0):
+    def approach_point(
+        self, point, standoff: float = 0.65, align: str = "", final_distance: float = 0.0
+    ):
         """Approach a person or free-standing object seen by vision (e.g. GPSR
         "go to the person", approaching a bag on the floor).
 
