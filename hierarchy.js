@@ -113,6 +113,11 @@ var hierarchy =
       [ "model.ft_net_swinv2", "classmodel_1_1ft__net__swinv2.html", null ]
     ] ],
     [ "moondream_lib.MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", null ],
+    [ "moondream_proto_pb2_grpc.MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
+    [ "moondream_proto_pb2_grpc.MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", [
+      [ "server.MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", null ]
+    ] ],
+    [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ],
     [ "ompl::base::MotionValidator", null, [
       [ "VAMPMotionValidator", "structVAMPMotionValidator.html", null ]
     ] ],
@@ -158,11 +163,6 @@ var hierarchy =
     [ "vamp::planning::NearestNeighborsGNAT< _T >::Node", "classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html", null ],
     [ "vamp::planning::NearestNeighborsGNAT< _T >::NodeDistCompare", "structvamp_1_1planning_1_1NearestNeighborsGNAT_1_1NodeDistCompare.html", null ],
     [ "object", null, [
-      [ "moondream_proto_pb2_grpc.MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],
-      [ "moondream_proto_pb2_grpc.MoonDreamServiceServicer", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html", [
-        [ "server.MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", null ]
-      ] ],
-      [ "moondream_proto_pb2_grpc.MoonDreamServiceStub", "classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html", null ],
       [ "vamp.transformations.Arcball", "classvamp_1_1transformations_1_1Arcball.html", null ]
     ] ],
     [ "pickandplace_task_manager.ObjectInfo", "classpickandplace__task__manager_1_1ObjectInfo.html", null ],
@@ -315,7 +315,6 @@ var hierarchy =
       [ "frida_constants.vision_enums.DetectBy", "classfrida__constants_1_1vision__enums_1_1DetectBy.html", null ],
       [ "frida_constants.vision_enums.Gestures", "classfrida__constants_1_1vision__enums_1_1Gestures.html", null ],
       [ "frida_constants.vision_enums.Poses", "classfrida__constants_1_1vision__enums_1_1Poses.html", null ],
-      [ "moondream_node.Position", "classmoondream__node_1_1Position.html", null ],
       [ "pickandplace_task_manager.Location", "classpickandplace__task__manager_1_1Location.html", null ],
       [ "pickandplace_task_manager.ObjectCategory", "classpickandplace__task__manager_1_1ObjectCategory.html", null ],
       [ "safety_task_manager.ExecutionStates", "classsafety__task__manager_1_1ExecutionStates.html", null ],

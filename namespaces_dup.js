@@ -56,9 +56,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f", null ],
       [ "launch_setup", "namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491", null ]
     ] ],
-    [ "client", "namespaceclient.html", [
-      [ "run", "namespaceclient.html#a10d4416aef9193a3735b7f83fe3adae8", null ]
-    ] ],
     [ "close_by_generators", "namespaceclose__by__generators.html", [
       [ "generate_close_to_heatmap", "namespaceclose__by__generators.html#a028e0770c12f1f056c05d8347126a88c", null ],
       [ "generate_directional_heatmap", "namespaceclose__by__generators.html#a2833aebb91dad17af1c390b31894723e", null ]

@@ -282,15 +282,11 @@ Packages</h1>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/vision/crop_query</code>   </td><td class="markdownTableBodyNone"><code>CropQuery</code>   </td><td class="markdownTableBodyNone">Same, restricted to a bounding box    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>/vision/beverage_location</code>   </td><td class="markdownTableBodyNone"><code>BeverageLocation</code>   </td><td class="markdownTableBodyNone">Locates a named drink    </td></tr>
-<tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>/vision/object_points</code>   </td><td class="markdownTableBodyNone"><code>ObjectPoints</code>   </td><td class="markdownTableBodyNone">2D points for a described subject    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>/vision/moondream_detection</code>   </td><td class="markdownTableBodyNone"><code>MoondreamDetection</code>   </td><td class="markdownTableBodyNone">Open-vocabulary detection (normalized bboxes)    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>/vision/person_posture</code>   </td><td class="markdownTableBodyNone"><code>PersonPosture</code>   </td><td class="markdownTableBodyNone">Describes a person's posture   </td></tr>
+<td class="markdownTableBodyNone"><code>/vision/moondream_detection</code>   </td><td class="markdownTableBodyNone"><code>MoondreamDetection</code>   </td><td class="markdownTableBodyNone">Open-vocabulary detection (normalized bboxes)   </td></tr>
 </table>
-<p>The gRPC side (<code>MoonDreamService</code> on port <code>50052</code>) exposes <code>EncodeImage</code>, <code>FindBeverage</code>, <code>FindObjectPoints</code>, <code>Query</code> and <code>Detect</code>, backed by <code>vikhyatk/moondream2</code>.</p>
+<p>The gRPC side (<code>MoonDreamService</code> on port <code>50052</code>) exposes <code>EncodeImage</code>, <code>FindObjectPoints</code>, <code>Query</code> and <code>Detect</code>, backed by <code>vikhyatk/moondream2</code>.</p>
 <h1><a class="anchor" id="autotoc_md188"></a>
 Running vision</h1>
 <p>Each competition flag maps to one launch file and one set of compose profiles:</p>

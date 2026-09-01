@@ -241,8 +241,7 @@ var annotated_dup =
       [ "MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", "classmoondream__lib_1_1MoonDreamModel" ]
     ] ],
     [ "moondream_node", "namespacemoondream__node.html", [
-      [ "MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", "classmoondream__node_1_1MoondreamNode" ],
-      [ "Position", "classmoondream__node_1_1Position.html", null ]
+      [ "MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", "classmoondream__node_1_1MoondreamNode" ]
     ] ],
     [ "moondream_proto_pb2_grpc", "namespacemoondream__proto__pb2__grpc.html", [
       [ "MoonDreamService", "classmoondream__proto__pb2__grpc_1_1MoonDreamService.html", null ],

@@ -22,14 +22,13 @@ var searchData=
   ['yolo_5fdetection_5ftopic_19',['YOLO_DETECTION_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#aca9a72dbc37b982ce33667a08adaec14',1,'frida_constants::vision_constants']]],
   ['yolo_5fdetections_5fpublisher_5ftopic_20',['YOLO_DETECTIONS_PUBLISHER_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a7de5488b3061c6029e51ae3732b3e1d1',1,'frida_constants::vision_constants']]],
   ['yolo_5fe_2epy_21',['yolo_e.py',['../yolo__e_8py.html',1,'']]],
-  ['yolo_5fmodel_22',['yolo_model',['../classmoondream__node_1_1MoondreamNode.html#a9148c6b9f34252b50fd4f9dc6e6c5420',1,'moondream_node::MoondreamNode']]],
-  ['yolo_5fnames_23',['yolo_names',['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#a0df0ac61d4c6a7ab25ed5b3262f0aca4',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.yolo_names()'],['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3310f539e233db2c7ce7a8b6b05c6ec2',1,'pickandplace_task_manager.PickAndPlaceTM.yolo_names()']]],
-  ['yolo_5fpose_24',['yolo_pose',['../classmodels_1_1pose__detection_1_1PoseDetection.html#abf71d9974255ad45920ec80c32f858f9',1,'models::pose_detection::PoseDetection']]],
-  ['yolo_5fservice_5fmodel_25',['yolo_service_model',['../classobject__detector__node_1_1ObjectDetectorNode.html#ae091374310e4817607f97c164864b20f',1,'object_detector_node::ObjectDetectorNode']]],
-  ['yolo_5fto_5flogical_26',['yolo_to_logical',['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a752e100668e27a0bce3f6862d7e617f0',1,'pickandplace_task_manager.PickAndPlaceTM.yolo_to_logical()'],['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#abaf5e859a6b0c8a44a348964c2c4f910',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.yolo_to_logical()']]],
-  ['yolodetect_2esrv_27',['YoloDetect.srv',['../YoloDetect_8srv.html',1,'']]],
-  ['yoloemodel_28',['YoloEModel',['../classdetectors_1_1yolo__e_1_1YoloEModel.html',1,'detectors::yolo_e']]],
-  ['yolomodel_29',['YoloModel',['../classdetectors_1_1yolo_1_1YoloModel.html',1,'detectors::yolo']]],
-  ['ys_30',['ys',['../structvamp_1_1collision_1_1HeightField.html#a8417bcc66382915f9f2f129e5274bd15',1,'vamp::collision::HeightField']]],
-  ['yv_31',['yv',['../structvamp_1_1collision_1_1Cylinder.html#a478144908e49595bd7839b7bdc752b06',1,'vamp::collision::Cylinder']]]
+  ['yolo_5fnames_22',['yolo_names',['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#a0df0ac61d4c6a7ab25ed5b3262f0aca4',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.yolo_names()'],['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a3310f539e233db2c7ce7a8b6b05c6ec2',1,'pickandplace_task_manager.PickAndPlaceTM.yolo_names()']]],
+  ['yolo_5fpose_23',['yolo_pose',['../classmodels_1_1pose__detection_1_1PoseDetection.html#abf71d9974255ad45920ec80c32f858f9',1,'models::pose_detection::PoseDetection']]],
+  ['yolo_5fservice_5fmodel_24',['yolo_service_model',['../classobject__detector__node_1_1ObjectDetectorNode.html#ae091374310e4817607f97c164864b20f',1,'object_detector_node::ObjectDetectorNode']]],
+  ['yolo_5fto_5flogical_25',['yolo_to_logical',['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#abaf5e859a6b0c8a44a348964c2c4f910',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.yolo_to_logical()'],['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a752e100668e27a0bce3f6862d7e617f0',1,'pickandplace_task_manager.PickAndPlaceTM.yolo_to_logical()']]],
+  ['yolodetect_2esrv_26',['YoloDetect.srv',['../YoloDetect_8srv.html',1,'']]],
+  ['yoloemodel_27',['YoloEModel',['../classdetectors_1_1yolo__e_1_1YoloEModel.html',1,'detectors::yolo_e']]],
+  ['yolomodel_28',['YoloModel',['../classdetectors_1_1yolo_1_1YoloModel.html',1,'detectors::yolo']]],
+  ['ys_29',['ys',['../structvamp_1_1collision_1_1HeightField.html#a8417bcc66382915f9f2f129e5274bd15',1,'vamp::collision::HeightField']]],
+  ['yv_30',['yv',['../structvamp_1_1collision_1_1Cylinder.html#a478144908e49595bd7839b7bdc752b06',1,'vamp::collision::Cylinder']]]
 ];

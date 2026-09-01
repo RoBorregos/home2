@@ -6,8 +6,7 @@ var searchData=
   ['call_5fpose_5fgoal_3',['call_pose_goal',['../namespacecall__pose__goal.html',1,'']]],
   ['carry_4',['carry',['../namespacecarry.html',1,'']]],
   ['carry_5fmy_5flougage_5',['carry_my_lougage',['../namespacecarry__my__lougage.html',1,'']]],
-  ['client_6',['client',['../namespaceclient.html',1,'']]],
-  ['close_5fby_5fgenerators_7',['close_by_generators',['../namespaceclose__by__generators.html',1,'']]],
-  ['conftest_8',['conftest',['../namespaceconftest.html',1,'']]],
-  ['customer_5fnode_9',['customer_node',['../namespacecustomer__node.html',1,'']]]
+  ['close_5fby_5fgenerators_6',['close_by_generators',['../namespaceclose__by__generators.html',1,'']]],
+  ['conftest_7',['conftest',['../namespaceconftest.html',1,'']]],
+  ['customer_5fnode_8',['customer_node',['../namespacecustomer__node.html',1,'']]]
 ];

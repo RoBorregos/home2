@@ -12,7 +12,6 @@ var namespacemoondream__lib =
     [ "image_bytes", "namespacemoondream__lib.html#afe5bff27ba8743d77b82c97de0489055", null ],
     [ "model", "namespacemoondream__lib.html#ac84395d9ed2025a9e954251124789ae7", null ],
     [ "NOT_FOUND", "namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73", null ],
-    [ "order_labels", "namespacemoondream__lib.html#ae20e70a8e9b4400517bdbee89022d0bd", null ],
     [ "parser", "namespacemoondream__lib.html#a982a539331047f39736ef58952c3e722", null ],
     [ "result", "namespacemoondream__lib.html#a4bd3748d658dedbd9710d61c47840b69", null ],
     [ "test_query", "namespacemoondream__lib.html#a3e80178be0f550fe0c9f3ba9acae5445", null ],
