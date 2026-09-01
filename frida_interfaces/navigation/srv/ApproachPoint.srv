@@ -5,8 +5,8 @@
 # there through the standard goal pipeline.
 geometry_msgs/PointStamped target
 float32 standoff        # meters from the target; <= 0 uses the default (0.65)
-string align
-float32 final_distance
+string align            # "", "face", "left" or "right" (see above)
+float32 final_dsistance  # align left/right only: final base_link<->target gap (m); <= 0 skips the close-in strafe
 ---
 bool success
 string error

@@ -1030,6 +1030,15 @@ class Nav_Central(Node):
         self.cmd_vel_pub.publish(t)
 
     def _align_parallel(self, tx, ty, side, final_distance, timeout=35.0, rate=0.05):
+        """Final alignment for approach_point(align=left/right): rotate in
+        place until the base is PARALLEL to the target (target abeam at ±90°),
+        then, if final_distance > 0, strafe until base_link sits that many
+        meters from the target, still abeam. Closed loop on map->base_link TF
+        with direct cmd_vel, so the costmaps cannot veto getting close to a
+        target that is itself marked as an obstacle (e.g. the laundry basket).
+        Holonomic base only — the strafe is a no-op on a diffdrive. The
+        timeout covers the direct-approach case too (up to ~2 m of drive at
+        the 0.12 m/s cap plus the initial rotation)."""
         offset = -math.pi / 2.0 if side == "right" else math.pi / 2.0
         want_y = -final_distance if side == "right" else final_distance
         MAX_V, MAX_W = 0.12, 0.5
