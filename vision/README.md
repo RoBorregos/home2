@@ -232,12 +232,10 @@ because its dependency set conflicts with the ROS one.
 | --- | --- | --- |
 | `/vision/query` | `Query` | Free-form question about the current frame |
 | `/vision/crop_query` | `CropQuery` | Same, restricted to a bounding box |
-| `/vision/beverage_location` | `BeverageLocation` | Locates a named drink |
 | `/vision/object_points` | `ObjectPoints` | 2D points for a described subject |
 | `/vision/moondream_detection` | `MoondreamDetection` | Open-vocabulary detection (normalized bboxes) |
-| `/vision/person_posture` | `PersonPosture` | Describes a person's posture |
 
-The gRPC side (`MoonDreamService` on port `50052`) exposes `EncodeImage`, `FindBeverage`,
+The gRPC side (`MoonDreamService` on port `50052`) exposes `EncodeImage`,
 `FindObjectPoints`, `Query` and `Detect`, backed by `vikhyatk/moondream2`.
 
 
