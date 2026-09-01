@@ -42,7 +42,7 @@ fi
 
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_ROS="source /opt/ros/jazzy/setup.bash"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 PACKAGES="display"
 RUN="ros2 launch display display_launch.py"

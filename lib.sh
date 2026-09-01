@@ -155,8 +155,8 @@ setup_common_env() {
   add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
   add_or_update_variable "$env_file" "LOCAL_USER_ID"     "$(id -u)"
   add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
-  add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
-  add_or_update_variable "$env_file" "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
+  add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:jazzy_${ENV_TYPE}_base"
+  add_or_update_variable "$env_file" "IMAGE_NAME"        "roborregos/home2:jazzy_${area}-${ENV_TYPE}"
   
   mkdir -p install build log
 }

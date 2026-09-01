@@ -1,21 +1,25 @@
 ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
-# Install ZED SDK (silent, skip drivers for container use)
+ARG ROS_DISTRO=jazzy
+
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq zstd && \
     wget -q -O /tmp/ZED_SDK.run \
-    https://download.stereolabs.com/zedsdk/5.0/l4t36.4/jetsons && \
+    https://download.stereolabs.com/zedsdk/5.4/l4t38.4/jetsons && \
     chmod +x /tmp/ZED_SDK.run && \
-    sudo /tmp/ZED_SDK.run silent skip_drivers && \
-    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/*
+    sudo -E /tmp/ZED_SDK.run silent skip_drivers && \
+    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/* && \
+    sudo usermod -aG zed ros
+
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq libnvonnxparsers10 && \
+    sudo rm -rf /var/lib/apt/lists/*
 
 # Symlink for v4l2 (required by ZED SDK in containers)
 RUN sudo ln -sf /usr/lib/$(uname -m)-linux-gnu/tegra/libv4l2.so.0 \
     /usr/lib/$(uname -m)-linux-gnu/libv4l2.so 2>/dev/null || true
 
-# Clone ZED ROS2 wrapper and install all dependencies via rosdep
 RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
-    git clone --depth 1 -b humble-v5.0.0 https://github.com/stereolabs/zed-ros2-wrapper.git && \
+    git clone --depth 1 -b v5.4.1 https://github.com/stereolabs/zed-ros2-wrapper.git && \
     cd /opt/zed_ws && \
     sudo apt-get update -qq && \
     sudo rosdep init 2>/dev/null || true && \
@@ -23,23 +27,23 @@ RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
     rosdep install --from-paths src -y --ignore-src && \
     sudo rm -rf /var/lib/apt/lists/*
 
-# Build ZED ROS2 wrapper
 RUN cd /opt/zed_ws && \
-    . /opt/ros/humble/setup.sh && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
     colcon build --cmake-args -Wno-dev \
-        -DCMAKE_BUILD_TYPE=Release && \
+        -DCMAKE_BUILD_TYPE=Release \
+        --packages-skip zed_debug && \
     sudo chown -R ros:ros /opt/zed_ws
 
 # CycloneDDS with SHM (iceoryx zero-copy for camera frames)
 # Iceoryx from source (expanded publisher/subscriber limits)
 RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \
-    sudo dpkg --force-depends -r ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c 2>/dev/null || true
+    sudo dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
     sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
     cmake -S iceoryx_meta -B build \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
         -DIOX_MAX_PUBLISHERS=20000 \
         -DIOX_MAX_SUBSCRIBERS=20000 \
         -DIOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048 \
@@ -54,10 +58,10 @@ RUN cd /tmp && \
 RUN cd /tmp && \
     git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
     cd cyclonedds && mkdir build && cd build && \
-    . /opt/ros/humble/setup.sh && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
     cmake .. \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
-        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
         -DENABLE_SHM=ON \
         -DCMAKE_BUILD_TYPE=Release && \
     make -j$(nproc) && sudo make install && \
