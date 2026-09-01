@@ -32,7 +32,7 @@ RUN pip install dist/*.whl
 WORKDIR /tmp
 RUN git clone https://github.com/PyAV-Org/PyAV.git
 WORKDIR /tmp/PyAV
-RUN pip install virtualenv
+RUN pip install virtualenv uv
 RUN bash -c "source ./scripts/activate.sh && ./scripts/build-deps && make && deactivate && pip install ."
 
 # Install additional Python dependencies

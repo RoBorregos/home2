@@ -35,6 +35,22 @@ TensorRT 10.16, GPU Ampere `sm_87`.
   `docker/jetson-apt/`) para tener CUDA/cuDNN disponibles en build time (no
   solo en runtime vía CDI/CSV mounts), necesario para compilar dlib
   (vision) y CTranslate2 (hri-stt).
+- `ENV NVIDIA_VISIBLE_DEVICES=all` / `NVIDIA_DRIVER_CAPABILITIES=all`
+  agregados a la base l4t. La vieja `dustynv/l4t-pytorch` los traía horneados
+  (estándar en imágenes Jetson de NVIDIA); nuestra base (`ubuntu:24.04` +
+  ROS) no, así que `runtime: nvidia` solo en los compose no bastaba —
+  cualquier proceso que solo revisara `runtime: nvidia` sin el env var
+  (p. ej. CTranslate2 en hri-stt) no veía la GPU y caía a CPU/int8 en
+  silencio.
+
+## Configuración del host (Orin), fuera del repo
+
+- `net.core.rmem_max`/`wmem_max` del kernel venían en el default de Ubuntu
+  (~208KB), muy por debajo de los 10MB que CycloneDDS pide para su socket —
+  sin esto, **ningún** nodo ROS 2 podía crear su dominio DDS
+  (`rmw_create_node: failed to create domain, error Error`), en cualquier
+  contenedor. Se subió a 2GB vía `/etc/sysctl.d/60-cyclonedds.conf` en la
+  Orin (fuera del repo, es config de host, no de imagen).
 
 ## Por área
 
@@ -49,6 +65,9 @@ TensorRT 10.16, GPU Ampere `sm_87`.
   su única dependencia dura sin wheel aarch64/cp312 es tflite-runtime,
   no usado en este código — solo el path ONNX), piper (sin uso real,
   eliminado), deepfilterlib (necesita `cargo`/`rustc` para compilar).
+  PyAV (clonado sin pin de rama, igual que en main) empezó a fallar con
+  `make: uv: No such file or directory` — su script de build upstream
+  ahora requiere `uv`; se agregó `pip install uv` antes de ese paso.
 - **vision**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`. dlib compilado con
   `DLIB_USE_CUDA_COMPUTE_CAPABILITIES=87` (antes rechazado por CUDA 13).
   A diferencia de la vieja `dustynv/l4t-pytorch`, `jazzy_l4t_base` no trae
@@ -100,6 +119,46 @@ TensorRT 10.16, GPU Ampere `sm_87`.
   ya corregida; manipulation con torch CUDA confirmado.
 - `jazzy_integration-cpu` — build y arranque de contenedor verificados.
 - `jazzy_zed-l4t` — build exitoso, SDK y permisos de grupo correctos.
+
+## Prueba end-to-end de hri (`./run.sh --hric l4t`)
+
+Con los fixes de `NVIDIA_VISIBLE_DEVICES` y del sysctl de CycloneDDS, se
+levantó el stack completo de `hric` (hri-ros, stt, tts, postgres, llamacpp):
+- `hri-stt`: pasó de `Using device: cpu with compute type: int8` (fallando
+  con `ValueError: Requested int8 compute type...`) a
+  `Using device: cuda with compute type: float16` — funcionando.
+- `hri-ros`: `llm_utils` y `extract_data` inicializan y corren
+  correctamente contra CycloneDDS/DDS real (no solo imports aislados).
+- `extract_data` necesitó el modelo spacy `en_core_web_md`, que no se
+  descarga en ningún Dockerfile (ni en `main`) — gap de setup preexistente,
+  no de la migración; se instaló manualmente para la prueba.
+- `noise_cancellation.py` (usa `deepfilternet==0.5.6`, la última versión
+  publicada) fallaba con `ModuleNotFoundError: No module named
+  'torchaudio.backend'`. Torchaudio 2.11+ eliminó por completo su antiguo
+  API de I/O (`torchaudio.info()`, `torchaudio.backend.common.AudioMetaData`)
+  a favor de `torchaudio.io`; no existe versión de torchaudio que sea a la
+  vez ABI-compatible con torch 2.13.0/CUDA13 y todavía tenga esa API vieja
+  (fijar `torchaudio<=2.5.0` rompe el binding CUDA de torch). deepfilternet
+  solo usa `AudioMetaData`/`torchaudio.info()` para leer el sample rate de
+  un archivo antes de cargarlo — algo que `soundfile` (ya es dependencia)
+  hace igual de bien. Se parcha `df/io.py` en build time (`Dockerfile.ROS`,
+  después de instalar `speech.txt`) para reemplazar esa única llamada por
+  `soundfile.info(file).samplerate`, sin tocar el paquete en sí. Verificado:
+  `NoiseCancellation node ready` + DeepFilterNet inicializa y carga el
+  modelo completo sin errores.
+- `hri-tts`: falla inicialmente por audio ALSA (`Couldn't open audio device`).
+  Causa real: la Orin usa PipeWire-Pulse (reemplazo de PulseAudio en Ubuntu
+  24.04), corriendo pero con su socket real en `/run/user/<uid>/pulse/native`
+  — no en `~/.config/pulse/pulseaudio.socket`, que es donde el compose
+  monta y `PULSE_SERVER` apunta. Además, sin `SDL_AUDIODRIVER=pulse`, SDL/
+  pygame intentaba ALSA directo primero (sin `/dev/snd` montado) antes de
+  siquiera probar pulse. Arreglado en `docker/hri/compose/tts.yaml`: monta
+  `/run/user/${LOCAL_USER_ID}/pulse` directo (no `~/.config/pulse`, que solo
+  tiene el cookie) y agrega `SDL_AUDIODRIVER: pulse`. Verificado: el server
+  Kokoro arranca limpio contra el sink real de audio de la Orin.
+- `edge-impulse` (door/kws): contenedores AWS específicos de Jetson Orin
+  6.0, no probados a fondo — bajo prioridad, ya señalados en fases previas
+  como potencialmente atados a JetPack 6.
 
 ## Pendiente / fuera de alcance de esta iteración
 
