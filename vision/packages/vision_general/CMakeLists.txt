@@ -30,6 +30,20 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# VisionRuntime and the nodes that subclass it.
+file(GLOB TASK_NODE_SCRIPTS scripts/task_nodes/*.py)
+install(PROGRAMS
+  ${TASK_NODE_SCRIPTS}
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install models
+file(GLOB MODEL_SCRIPTS scripts/models/*.py)
+install(PROGRAMS
+  ${MODEL_SCRIPTS}
+  DESTINATION lib/${PROJECT_NAME}/models
+)
+
 
 ######################### Testing  #########################
 ##For testing

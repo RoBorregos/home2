@@ -78,7 +78,21 @@ case $TASK in
         ;;
 esac
 
-COMMAND="$SETUP && $RUN"
+# Propagate TEST_NLP / NLP_* into the container for --test-hri benchmark mode.
+NLP_EXPORTS=""
+if [ -n "${TEST_NLP:-}" ]; then
+    NLP_EXPORTS="export TEST_NLP=$(printf '%q' "$TEST_NLP")"
+    for v in NLP_MODEL_ALIAS NLP_OLLAMA_URL NLP_TASKS NLP_RUNS NLP_RESULTS_DIR; do
+        val="${!v:-}"
+        NLP_EXPORTS="$NLP_EXPORTS && export $v=$(printf '%q' "$val")"
+    done
+fi
+
+if [ -n "$NLP_EXPORTS" ]; then
+    COMMAND="$NLP_EXPORTS && $SETUP && $RUN"
+else
+    COMMAND="$SETUP && $RUN"
+fi
 
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading integration image to DockerHub (env: ${ENV_TYPE})..."

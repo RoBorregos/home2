@@ -1,20 +1,67 @@
+# CODEOWNERS - RoBorregos @Home
+#
+------------------------------------------------------------------
+# Default: everything not matched below is owned by RoBorregos @Home
+# ---------------------------------------------------------------------------
+
+* @RoBorregos/home-hri @RoBorregos/home-vision @RoBorregos/home-nav @RoBorregos/home-manipulacion @RoBorregos/home-integracion
+
 /.github/ @RoBorregos/home-integracion
 
-# Docker
+# ---------------------------------------------------------------------------
+# Main areas
+# ---------------------------------------------------------------------------
 
+/hri/ @RoBorregos/home-hri
+/vision/ @RoBorregos/home-vision
+/navigation/ @RoBorregos/home-nav
+/manipulation/ @RoBorregos/home-manipulacion
+
+# Robot description: manipulation, navigation and mechanics (any one approves)
+/robot_description/ @RoBorregos/home-manipulacion @RoBorregos/home-nav @RoBorregos/home-mecanica
+
+# ---------------------------------------------------------------------------
+# Docker
+# ---------------------------------------------------------------------------
+
+/docker/hri/ @RoBorregos/home-hri
 /docker/vision/ @RoBorregos/home-vision
 /docker/navigation/ @RoBorregos/home-nav
 /docker/manipulation/ @RoBorregos/home-manipulacion
-/docker/hri/ @RoBorregos/home-hri
 
-# ROS packages
+# ---------------------------------------------------------------------------
+# ROS interfaces
+# ---------------------------------------------------------------------------
 
-/frida_interfaces/ @RoBorregos/home-integracion
-/frida_constants/ @RoBorregos/home-integracion
+/frida_interfaces/hri/ @RoBorregos/home-hri
+/frida_interfaces/vision/ @RoBorregos/home-vision
+/frida_interfaces/navigation/ @RoBorregos/home-nav
+/frida_interfaces/manipulation/ @RoBorregos/home-manipulacion
 
-/hri/ @RoBorregos/home-hri
-/navigation/ @RoBorregos/home-nav
-/robot_description/ @RoBorregos/home-mecanica
-/task_manager/ @RoBorregos/home-integracion
-/vision/ @RoBorregos/home-vision
-/manipulation/ @RoBorregos/home-manipulacion
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+/frida_constants/frida_constants/hri_constants.py @RoBorregos/home-hri
+
+/frida_constants/frida_constants/vision_constants.py @RoBorregos/home-vision
+/frida_constants/frida_constants/vision_classes.py @RoBorregos/home-vision
+/frida_constants/frida_constants/vision_enums.py @RoBorregos/home-vision
+/frida_constants/include/frida_constants/vision_constants_cpp.hpp @RoBorregos/home-vision
+
+/frida_constants/frida_constants/navigation_constants.py @RoBorregos/home-nav
+/frida_constants/map_areas/ @RoBorregos/home-nav
+
+/frida_constants/frida_constants/manipulation_constants.py @RoBorregos/home-manipulacion
+/frida_constants/frida_constants/xarm_configurations.py @RoBorregos/home-manipulacion
+/frida_constants/include/frida_constants/manipulation_constants_cpp.hpp @RoBorregos/home-manipulacion
+
+# ---------------------------------------------------------------------------
+# Task manager subtask managers
+# ---------------------------------------------------------------------------
+
+/task_manager/task_manager/subtask_managers/hri_tasks.py @RoBorregos/home-hri
+/task_manager/task_manager/subtask_managers/hri_dataclasses.py @RoBorregos/home-hri
+/task_manager/task_manager/subtask_managers/vision_tasks.py @RoBorregos/home-vision
+/task_manager/task_manager/subtask_managers/nav_tasks.py @RoBorregos/home-nav
+/task_manager/task_manager/subtask_managers/manipulation_tasks.py @RoBorregos/home-manipulacion
