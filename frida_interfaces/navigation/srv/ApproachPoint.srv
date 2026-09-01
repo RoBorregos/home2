@@ -5,6 +5,8 @@
 # there through the standard goal pipeline.
 geometry_msgs/PointStamped target
 float32 standoff        # meters from the target; <= 0 uses the default (0.65)
+string align
+float32 final_distance
 ---
 bool success
 string error

@@ -443,7 +443,7 @@ class NavigationTasks:
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
     )
-    def approach_point(self, point, standoff: float = 0.65):
+    def approach_point(self, point, standoff: float = 0.65, align: str = "", final_distance: float = 0.0):
         """Approach a person or free-standing object seen by vision (e.g. GPSR
         "go to the person", approaching a bag on the floor).
 
@@ -463,6 +463,8 @@ class NavigationTasks:
             request.target.header.frame_id = "map"
             request.target.point.x, request.target.point.y = xy
         request.standoff = float(standoff)
+        request.align = str(align)
+        request.final_distance = float(final_distance)
         CLog.nav(self.node, "MOVE", "Requesting approach to point")
         future = self.approach_point_srv.call_async(request)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=NAV_GOAL_TIMEOUT)
