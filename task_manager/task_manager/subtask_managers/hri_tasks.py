@@ -70,7 +70,6 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
-from task_manager.scripts.misc.hri_hand import HRIHand
 from task_manager.utils.baml_client.sync_client import b
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -254,24 +253,35 @@ class HRITasks:
             Task.DEBUG: all_services,
         }
 
-        self.hand = HRIHand(self)
-
         package_share_directory = get_package_share_directory("frida_constants")
-        file_path = os.path.join(package_share_directory, "data/positive.json")
-        with open(file_path, "r") as file:
-            self.positive = json.load(file)["affirmations"]
 
-        file_path = os.path.join(package_share_directory, "data/hand_items.json")
-        with open(file_path, "r") as file:
-            self.hand_items = json.load(file)
+        def _load_json(rel_path, key=None, default=None):
+            """Load a frida_constants data file, degrading to ``default`` if it is
+            missing. Keeps HRITasks (and every task manager that builds it) alive
+            when an optional data file is not shipped."""
+            path = os.path.join(package_share_directory, rel_path)
+            try:
+                with open(path, "r") as file:
+                    data = json.load(file)
+                return data[key] if key is not None else data
+            except (FileNotFoundError, KeyError) as e:
+                Logger.warn(self.node, f"hri_tasks: could not load {rel_path} ({e}); using default")
+                return default
 
-        file_path = os.path.join(package_share_directory, "data/objects.json")
-        with open(file_path, "r") as file:
-            self.objects_data = json.load(file)
-
-        file_path = os.path.join(package_share_directory, "data/names.json")
-        with open(file_path, "r") as file:
-            self.names = json.load(file)["names"]
+        # positive.json: affirmations matched in confirm() — used by active task managers
+        self.positive = _load_json(
+            "data/positive.json", "affirmations", default=["yes", "correct", "right", "affirmative"]
+        )
+        # objects.json: category lookup for deterministic_categorization()
+        self.objects_data = _load_json(
+            "data/objects.json", default={"object_to_category": {}, "all_objects": []}
+        )
+        # hand_items.json: only consumed by show_map()
+        self.hand_items = _load_json(
+            "data/hand_items.json", default={"markers": [], "image_path": ""}
+        )
+        # names.json: only exposed via self.names
+        self.names = _load_json("data/names.json", "names", default=[])
 
         if not self.mock_data:
             self.setup_services()
@@ -865,19 +875,6 @@ class HRITasks:
         future = self.grammar_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
-
-    @service_check("", (Status.SERVICE_CHECK, ("coke", "left")), TIMEOUT)
-    def get_location_orientation(self, room) -> tuple[Status, tuple[str, str]]:
-        """
-        Method to get the location and orientation of where to place the object
-        Returns:
-            tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
-            The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
-        """
-
-        return self.hand.get_complete_placement_info(
-            room=room,
-        )
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
     def command_interpreter(
