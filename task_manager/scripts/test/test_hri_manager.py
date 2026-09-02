@@ -8,8 +8,10 @@ import csv
 import json
 import os
 import subprocess
+import sys
 import time
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Union
 
 import rclpy
@@ -85,7 +87,134 @@ TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
 TEST_MERGER = False
 TEST_FALLBACK_RESUME = False
-TEST_DOOR = True
+TEST_MERGED_PLAN_SPEECH = True
+TEST_DOOR = False
+
+# Scenarios for test_merged_plan_speech. Each is a batch of commands in the same
+# shape merger.json uses (a list of commands, each a list of action dicts), sized
+# and worded like what the GPSR operator actually says. The say_with_context
+# steps carry realistic user_instructions on purpose: the bug this guards is the
+# robot reading the operator's own words back mid-plan ("..., then say: tell me
+# how many drinks there are on the tv stand, then ..."), and terse instructions
+# like "hello" do not exercise it.
+MERGED_PLAN_SPEECH_CASES = [
+    {
+        # The canonical failure: a report command batched with a fetch, so the
+        # say step lands in the middle of the merged plan rather than at the end.
+        "name": "count_report_batched_with_fetch",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "tv_stand"},
+                {"action": "count", "target_to_count": "drinks"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me how many drinks there are on the tv stand",
+                    "previous_command_info": ["count"],
+                },
+            ],
+            [
+                {"action": "go_to", "location_to_go": "kitchen"},
+                {"action": "pick_object", "object_to_pick": "apple"},
+                {"action": "go_to", "location_to_go": "living_room"},
+                {"action": "place_object"},
+            ],
+        ],
+    },
+    {
+        # Two reports in one batch: two "say:" steps to narrate, and the LLM has
+        # to keep them distinguishable rather than merging them into one.
+        "name": "two_reports_in_one_batch",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "kitchen"},
+                {"action": "count", "target_to_count": "foods"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me how many foods there are in the kitchen",
+                    "previous_command_info": ["count"],
+                },
+            ],
+            [
+                {"action": "go_to", "location_to_go": "bedroom"},
+                {"action": "find_person", "attribute_value": "waving"},
+                {"action": "get_person_info", "info_type": "gesture"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me the gesture of the person in the bedroom",
+                    "previous_command_info": ["get_person_info"],
+                },
+            ],
+        ],
+    },
+    {
+        # Single command whose say is already last: the raw rendering read fine
+        # here before the rewrite existed, so this is the regression guard that
+        # the rewrite does not mangle the case it was not meant to fix.
+        "name": "single_command_trailing_say",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "sofa"},
+                {"action": "get_visual_info", "measure": "biggest", "object_category": "object"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me which is the biggest object on the sofa",
+                    "previous_command_info": ["get_visual_info"],
+                },
+            ]
+        ],
+    },
+    {
+        # No say step at all: the announcement must stay a plain plan readout and
+        # must not invent a report the robot was never asked to give.
+        "name": "no_say_steps",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "storage_rack"},
+                {"action": "pick_object", "object_to_pick": "pringles"},
+                {"action": "go_to", "location_to_go": "living_room"},
+                {"action": "give_object"},
+            ],
+            [
+                {"action": "go_to", "location_to_go": "bathroom"},
+                {"action": "find_person_by_name", "name": "adel"},
+                {"action": "guide_person_to", "destination_room": "kitchen"},
+            ],
+        ],
+    },
+]
+
+# Coordinates for the locations above, so merge() plans against real travel costs
+# instead of treating every location as unknown. They are tuned so the report
+# command in count_report_batched_with_fetch is the cheaper one to run first,
+# which parks its say step in the middle of the merged plan — the shape the
+# rewrite exists to fix. Retuning these can move the say back to the end and
+# quietly weaken the test.
+MERGED_PLAN_SPEECH_COORDS = {
+    "start_location": [0.0, 0.0],
+    "tv_stand": [0.5, 0.5],
+    "kitchen": [5.0, 5.0],
+    "living_room": [6.0, 5.0],
+    "bedroom": [-2.0, 3.0],
+    "sofa": [3.0, 2.0],
+    "storage_rack": [-1.0, -2.0],
+    "bathroom": [-3.0, 1.0],
+}
+
+# Action fields whose values must survive the rewrite. If the LLM drops one of
+# these the announcement lost a step, which is the one thing the rewrite must
+# never do (it is allowed to rephrase everything else).
+_SPEECH_TOKEN_FIELDS = (
+    "location_to_go",
+    "object_to_pick",
+    "name",
+    "target_to_count",
+    "destination",
+    "destination_room",
+)
 
 
 class TestHriManager(Node):
@@ -145,6 +274,9 @@ class TestHriManager(Node):
 
         if TEST_FALLBACK_RESUME:
             self.test_fallback_resume()
+
+        if TEST_MERGED_PLAN_SPEECH:
+            self.test_merged_plan_speech()
 
         if TEST_DOOR:
             self.test_door()
@@ -793,6 +925,119 @@ class TestHriManager(Node):
             self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
         else:
             self.get_logger().info(f"  PASS (partial={partial}, all_done={all_done}, full={full})")
+
+    def test_merged_plan_speech(self):
+        """Test the merged-plan announcement on its own, without running a batch.
+
+        Exercises the real GPSRTM._spoken_merged_plan against
+        MERGED_PLAN_SPEECH_CASES: merge the batch, render it, hand it to the LLM
+        for the rewrite, and check what comes back. Only the LLM wrapper service
+        is needed — nothing navigates, nothing is spoken out loud, and no display
+        step is published, so this can run against a live stack without moving
+        the robot or hijacking the GPSR screen.
+
+        It calls the production method through a stand-in ``self`` (the method
+        only ever touches ``subtask_manager.hri`` and ``get_logger``) so the test
+        covers the shipped code path rather than a copy of it, and so no second
+        gpsr_task_manager node is created next to the real one.
+
+        Merge-ordering correctness is test_merger's job; this only judges the
+        wording: no literal say step survives, and no step goes missing.
+        """
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from gpsr_task_manager import GPSRTM
+
+        from task_manager.gpsr.merger import merge
+
+        # _spoken_merged_plan reads self.subtask_manager.hri and self.get_logger().
+        tm = SimpleNamespace(
+            subtask_manager=SimpleNamespace(hri=self.hri_manager),
+            get_logger=self.get_logger,
+        )
+        locator = make_locator(MERGED_PLAN_SPEECH_COORDS)
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"merged_plan_speech_{date_str}.csv")
+
+        results = []
+        passed = 0
+        for case in MERGED_PLAN_SPEECH_CASES:
+            name = case["name"]
+            self.get_logger().info(f"Merged-plan speech scenario: {name}")
+
+            commands = build_commands(case["commands"])
+            plan = merge(commands, locator=locator, origin=(0.0, 0.0))
+            actions = [pa.action for pa in plan.actions]
+            raw = self.hri_manager.parse_plan_to_text(actions)
+
+            try:
+                spoken = GPSRTM._spoken_merged_plan(tm, plan)
+            except Exception as e:
+                spoken, failures = "", [f"EXCEPTION: {e}"]
+            else:
+                failures = self._merged_plan_speech_failures(spoken, raw, actions)
+
+            self.get_logger().info(f"  raw:    {raw}")
+            self.get_logger().info(f"  spoken: {spoken}")
+            if failures:
+                self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
+            else:
+                passed += 1
+                self.get_logger().info("  PASS")
+
+            results.append([name, not failures, "; ".join(failures), raw, spoken])
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["scenario", "passed", "failures", "raw", "spoken"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Merged-plan speech results: {passed}/{len(results)} passed")
+        self.get_logger().info(f"Saved to {output_file}")
+
+    def _merged_plan_speech_failures(self, spoken: str, raw: str, actions: list) -> list:
+        """Name every way the rewritten announcement is still unusable.
+
+        ``spoken`` equal to ``raw`` means _spoken_merged_plan took its fallback
+        path, so the LLM wrapper service is down or answered with nothing — that
+        is the safe behaviour but it is not a passing rewrite, and it is called
+        out separately so a service outage is not read as a bad prompt.
+        """
+        if not spoken or not spoken.strip():
+            return ["empty announcement"]
+
+        failures = []
+        low = spoken.lower()
+        # parse_plan_to_text passes location names through as-is ("living_room"),
+        # while the rewrite will naturally say "living room". Compare with
+        # underscores flattened so that difference is not read as a lost step.
+        flat = low.replace("_", " ")
+        if spoken.strip() == raw.strip():
+            failures.append("fell back to the raw rendering (LLM unavailable or empty answer)")
+        if "then say" in low:
+            failures.append("still contains 'then say'")
+        if "say:" in low:
+            failures.append("still contains a literal 'say:' step")
+
+        for cmd in actions:
+            if getattr(cmd, "action", None) == "say_with_context":
+                instruction = getattr(cmd, "user_instruction", "")
+                if instruction and instruction.lower() in low:
+                    failures.append(f"quotes the user instruction verbatim: '{instruction}'")
+
+        missing = []
+        for cmd in actions:
+            for field in _SPEECH_TOKEN_FIELDS:
+                value = getattr(cmd, field, None)
+                if not isinstance(value, str) or not value or value == "start_location":
+                    continue
+                if value.replace("_", " ").lower() not in flat:
+                    missing.append(value)
+        if missing:
+            failures.append(f"dropped steps mentioning: {sorted(set(missing))}")
+
+        return failures
 
     def test_command_interpreter_baml(self):
         # Prepare output file

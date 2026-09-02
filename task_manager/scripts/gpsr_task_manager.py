@@ -85,7 +85,6 @@ class GPSRTM(Node):
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
         self._command_index_pub = self.create_publisher(Int32, GPSR_COMMAND_INDEX_TOPIC, 10)
-
         self.current_state = (
             # GPSRTM.TaskStates.START
             GPSRTM.TaskStates.WAITING_FOR_BUTTON
