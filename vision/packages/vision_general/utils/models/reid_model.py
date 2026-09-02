@@ -1,4 +1,4 @@
-from vision_general.utils.models.swin.model import ft_net_swin, ft_net, ft_net_dense
+from utils.models.swin.model import ft_net_swin, ft_net, ft_net_dense
 from torchvision import transforms
 import math
 import os
