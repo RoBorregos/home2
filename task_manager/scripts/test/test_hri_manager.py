@@ -90,17 +90,12 @@ TEST_FALLBACK_RESUME = False
 TEST_MERGED_PLAN_SPEECH = True
 TEST_DOOR = False
 
-# Scenarios for test_merged_plan_speech. Each is a batch of commands in the same
-# shape merger.json uses (a list of commands, each a list of action dicts), sized
-# and worded like what the GPSR operator actually says. The say_with_context
-# steps carry realistic user_instructions on purpose: the bug this guards is the
-# robot reading the operator's own words back mid-plan ("..., then say: tell me
-# how many drinks there are on the tv stand, then ..."), and terse instructions
-# like "hello" do not exercise it.
+# Batches for test_merged_plan_speech, in merger.json's shape. The
+# user_instructions are realistic on purpose: terse ones like "hello" don't
+# exercise the robot reciting the operator's words back mid-plan.
 MERGED_PLAN_SPEECH_CASES = [
     {
-        # The canonical failure: a report command batched with a fetch, so the
-        # say step lands in the middle of the merged plan rather than at the end.
+        # Report batched with a fetch, so the say lands mid-plan, not at the end.
         "name": "count_report_batched_with_fetch",
         "commands": [
             [
@@ -122,8 +117,7 @@ MERGED_PLAN_SPEECH_CASES = [
         ],
     },
     {
-        # Two reports in one batch: two "say:" steps to narrate, and the LLM has
-        # to keep them distinguishable rather than merging them into one.
+        # Two says to narrate, and they must stay distinguishable.
         "name": "two_reports_in_one_batch",
         "commands": [
             [
@@ -150,9 +144,7 @@ MERGED_PLAN_SPEECH_CASES = [
         ],
     },
     {
-        # Single command whose say is already last: the raw rendering read fine
-        # here before the rewrite existed, so this is the regression guard that
-        # the rewrite does not mangle the case it was not meant to fix.
+        # Say already last: read fine before the rewrite, must still read fine.
         "name": "single_command_trailing_say",
         "commands": [
             [
@@ -168,8 +160,7 @@ MERGED_PLAN_SPEECH_CASES = [
         ],
     },
     {
-        # No say step at all: the announcement must stay a plain plan readout and
-        # must not invent a report the robot was never asked to give.
+        # No say at all: the rewrite must not invent a report.
         "name": "no_say_steps",
         "commands": [
             [
@@ -187,12 +178,8 @@ MERGED_PLAN_SPEECH_CASES = [
     },
 ]
 
-# Coordinates for the locations above, so merge() plans against real travel costs
-# instead of treating every location as unknown. They are tuned so the report
-# command in count_report_batched_with_fetch is the cheaper one to run first,
-# which parks its say step in the middle of the merged plan — the shape the
-# rewrite exists to fix. Retuning these can move the say back to the end and
-# quietly weaken the test.
+# Tuned so count_report_batched_with_fetch runs its report command first, which
+# parks that say mid-plan. Retuning can move it back to the end and weaken the test.
 MERGED_PLAN_SPEECH_COORDS = {
     "start_location": [0.0, 0.0],
     "tv_stand": [0.5, 0.5],
@@ -204,9 +191,7 @@ MERGED_PLAN_SPEECH_COORDS = {
     "bathroom": [-3.0, 1.0],
 }
 
-# Action fields whose values must survive the rewrite. If the LLM drops one of
-# these the announcement lost a step, which is the one thing the rewrite must
-# never do (it is allowed to rephrase everything else).
+# Values that must survive the rewrite; dropping one means a step was lost.
 _SPEECH_TOKEN_FIELDS = (
     "location_to_go",
     "object_to_pick",
@@ -929,27 +914,17 @@ class TestHriManager(Node):
     def test_merged_plan_speech(self):
         """Test the merged-plan announcement on its own, without running a batch.
 
-        Exercises the real GPSRTM._spoken_merged_plan against
-        MERGED_PLAN_SPEECH_CASES: merge the batch, render it, hand it to the LLM
-        for the rewrite, and check what comes back. Only the LLM wrapper service
-        is needed — nothing navigates, nothing is spoken out loud, and no display
-        step is published, so this can run against a live stack without moving
-        the robot or hijacking the GPSR screen.
-
-        It calls the production method through a stand-in ``self`` (the method
-        only ever touches ``subtask_manager.hri`` and ``get_logger``) so the test
-        covers the shipped code path rather than a copy of it, and so no second
-        gpsr_task_manager node is created next to the real one.
-
-        Merge-ordering correctness is test_merger's job; this only judges the
-        wording: no literal say step survives, and no step goes missing.
+        Runs the real GPSRTM._spoken_merged_plan over MERGED_PLAN_SPEECH_CASES.
+        Only the LLM wrapper service is needed: nothing navigates, nothing is
+        spoken out loud, and no display step is published. Ordering is
+        test_merger's job; this only judges the wording.
         """
         sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from gpsr_task_manager import GPSRTM
 
         from task_manager.gpsr.merger import merge
 
-        # _spoken_merged_plan reads self.subtask_manager.hri and self.get_logger().
+        # Stand-in self, so the shipped method runs without a second GPSR node.
         tm = SimpleNamespace(
             subtask_manager=SimpleNamespace(hri=self.hri_manager),
             get_logger=self.get_logger,
@@ -997,21 +972,13 @@ class TestHriManager(Node):
         self.get_logger().info(f"Saved to {output_file}")
 
     def _merged_plan_speech_failures(self, spoken: str, raw: str, actions: list) -> list:
-        """Name every way the rewritten announcement is still unusable.
-
-        ``spoken`` equal to ``raw`` means _spoken_merged_plan took its fallback
-        path, so the LLM wrapper service is down or answered with nothing — that
-        is the safe behaviour but it is not a passing rewrite, and it is called
-        out separately so a service outage is not read as a bad prompt.
-        """
+        """Name every way the rewritten announcement is still unusable."""
         if not spoken or not spoken.strip():
             return ["empty announcement"]
 
         failures = []
         low = spoken.lower()
-        # parse_plan_to_text passes location names through as-is ("living_room"),
-        # while the rewrite will naturally say "living room". Compare with
-        # underscores flattened so that difference is not read as a lost step.
+        # "living_room" in the raw rendering vs "living room" in the rewrite.
         flat = low.replace("_", " ")
         if spoken.strip() == raw.strip():
             failures.append("fell back to the raw rendering (LLM unavailable or empty answer)")
