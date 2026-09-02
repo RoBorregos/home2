@@ -1,5 +1,3 @@
-import json
-
 from pydantic import BaseModel
 
 
@@ -42,31 +40,3 @@ class Knowledge(BaseModel):
     embedding: list[float]
     knowledge_type: str | None = None
     context: str | None = None
-
-
-class HandItem(BaseModel):
-    id: int
-    name: str
-    description: str
-    embedding_name: list[float]
-    embedding_description: list[float]
-    x_loc: float
-    y_loc: float
-    m_loc_x: float
-    m_loc_y: float
-    color: str
-
-
-def row_to_hand_item(row):
-    HandItem(
-        id=row[0],
-        name=row[1],
-        description=row[2],
-        embedding_name=json.loads(row[3]),
-        embedding_description=json.loads(row[4]),
-        x_loc=row[5],
-        y_loc=row[6],
-        m_loc_x=row[7],
-        m_loc_y=row[8],
-        color=row[9],
-    )

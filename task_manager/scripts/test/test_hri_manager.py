@@ -86,7 +86,6 @@ TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
-TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
@@ -128,9 +127,6 @@ class TestHriManager(Node):
 
         if TEST_STREAMING:
             self.test_streaming()
-
-        if TEST_MAP:
-            self.test_map()
 
         if TEST_OBJECT_LOCATION:
             self.test_object_location()
@@ -376,24 +372,6 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
-
-    def test_map(self):
-        """
-        Test the map functionality of the HRITasks.
-        """
-        self.get_logger().info("Testing map functionality...")
-
-        # Show the map with a specific item
-        self.hri_manager.show_map(name="Phone")
-        time.sleep(5)
-
-        # Clear the map
-        self.hri_manager.show_map(clear_map=True)
-        time.sleep(2)
-
-        # Show the map again to verify it is cleared
-        self.hri_manager.show_map(name="Mug")
-        time.sleep(5)
 
     def test_object_location(self):
         object_name = "cheese"

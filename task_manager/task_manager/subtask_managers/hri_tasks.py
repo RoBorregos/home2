@@ -18,7 +18,6 @@ from frida_constants.hri_constants import (
     ANSWER_PUBLISHER,
     COMMAND_INTERPRETER_SERVICE,
     DISPLAY_IMAGE_TOPIC,
-    DISPLAY_MAP_TOPIC,
     DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
     FIND_CLOSEST_SERVICE,
@@ -67,10 +66,8 @@ from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,
     FindClosestResult,
-    HandItem,
     Location,
 )
-from task_manager.scripts.misc.hri_hand import HRIHand
 from task_manager.utils.baml_client.sync_client import b
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -176,7 +173,6 @@ class HRITasks:
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
-        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
         self.mock_db = self.mock_data
@@ -254,16 +250,10 @@ class HRITasks:
             Task.DEBUG: all_services,
         }
 
-        self.hand = HRIHand(self)
-
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
             self.positive = json.load(file)["affirmations"]
-
-        file_path = os.path.join(package_share_directory, "data/hand_items.json")
-        with open(file_path, "r") as file:
-            self.hand_items = json.load(file)
 
         file_path = os.path.join(package_share_directory, "data/objects.json")
         with open(file_path, "r") as file:
@@ -866,19 +856,6 @@ class HRITasks:
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
-    @service_check("", (Status.SERVICE_CHECK, ("coke", "left")), TIMEOUT)
-    def get_location_orientation(self, room) -> tuple[Status, tuple[str, str]]:
-        """
-        Method to get the location and orientation of where to place the object
-        Returns:
-            tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
-            The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
-        """
-
-        return self.hand.get_complete_placement_info(
-            room=room,
-        )
-
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
     def command_interpreter(
         self, text: str, is_async=False
@@ -1292,19 +1269,6 @@ class HRITasks:
         raw = self._call_query_entry(collection="items", query_texts=[], top_k=10000)
         return [json.loads(r)["text"] for r in raw]
 
-    def get_hand_items(self, query: str) -> tuple[list[HandItem], list[HandItem]]:
-        """
-        Query hand_items from postgres service.
-        Returns:
-            tuple: (by_name, by_description) lists of HandItem objects.
-        """
-        raw = self._call_query_entry(collection="hand_items", query_texts=[query], top_k=10000)
-        if len(raw) < 2:
-            return [], []
-        by_name = [HandItem(**item) for item in json.loads(raw[0])]
-        by_description = [HandItem(**item) for item in json.loads(raw[1])]
-        return by_name, by_description
-
     # TODO: Make async
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "mocked_llm_answer"))
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -1522,27 +1486,6 @@ class HRITasks:
         except Exception as e:
             self.node.get_logger().error(f"Error finding closest object: {e}")
             return "unknown"
-
-    def show_map(self, name="", clear_map: bool = False):
-        """
-        Method to show the map on the display.
-        """
-        show_items = self.hand_items.copy()
-
-        if clear_map:
-            show_items["image_path"] = ""
-            Logger.info(self.node, "Map cleared on the screen.")
-        else:
-            filtered_items = []
-
-            # Filter items to only include those matching the specified name
-            for item in show_items["markers"]:
-                if name == "" or item["name"].strip().lower() == name.strip().lower():
-                    filtered_items.append(item)
-
-            show_items["markers"] = filtered_items
-
-        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
     def send_display_answer(self, answer: str) -> bool:
         try:
