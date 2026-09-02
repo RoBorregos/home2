@@ -1,13 +1,18 @@
 ## Names
 | Names     |
 |-----------|
-| Adel      |
-| Angel     |
-| Axel      |
-| Charlie   |
-| Jane      |
-| Jules     |
-| Morgan    |
-| Paris     |
-| Robin     |
-| Simone    |
+| Maria     |
+| Ana       |
+| Francisca |
+| Antônia   |
+| Adriana   |
+| Juliana   |
+| Marcia    |
+| Fernanda  |
+| Patrícia  |
+| Aline     |
+| Jose      |
+| Joao      |
+| Antonio   |
+| Francisco |
+| Carlos    |
