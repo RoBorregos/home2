@@ -90,9 +90,6 @@ TEST_FALLBACK_RESUME = False
 TEST_MERGED_PLAN_SPEECH = True
 TEST_DOOR = False
 
-# Batches for test_merged_plan_speech, in merger.json's shape. The
-# user_instructions are realistic on purpose: terse ones like "hello" don't
-# exercise the robot reciting the operator's words back mid-plan.
 MERGED_PLAN_SPEECH_CASES = [
     {
         # Report batched with a fetch, so the say lands mid-plan, not at the end.
@@ -117,7 +114,6 @@ MERGED_PLAN_SPEECH_CASES = [
         ],
     },
     {
-        # Two says to narrate, and they must stay distinguishable.
         "name": "two_reports_in_one_batch",
         "commands": [
             [
@@ -144,7 +140,6 @@ MERGED_PLAN_SPEECH_CASES = [
         ],
     },
     {
-        # Say already last: read fine before the rewrite, must still read fine.
         "name": "single_command_trailing_say",
         "commands": [
             [
@@ -160,7 +155,6 @@ MERGED_PLAN_SPEECH_CASES = [
         ],
     },
     {
-        # No say at all: the rewrite must not invent a report.
         "name": "no_say_steps",
         "commands": [
             [
@@ -178,8 +172,6 @@ MERGED_PLAN_SPEECH_CASES = [
     },
 ]
 
-# Tuned so count_report_batched_with_fetch runs its report command first, which
-# parks that say mid-plan. Retuning can move it back to the end and weaken the test.
 MERGED_PLAN_SPEECH_COORDS = {
     "start_location": [0.0, 0.0],
     "tv_stand": [0.5, 0.5],
