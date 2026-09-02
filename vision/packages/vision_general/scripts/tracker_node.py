@@ -42,7 +42,7 @@ import time
 import numpy as np
 import torch
 import tqdm
-from vision_general.utils.calculations import (
+from utils.calculations import (
     deproject_pixel_to_point,
 )
 
@@ -50,13 +50,13 @@ import queue
 import threading
 import rclpy
 from rclpy.node import Node
-from vision_general.utils.ros_utils import wait_for_future
+from utils.ros_utils import wait_for_future
 from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
 
-from vision_general.utils.debug_pub import DebugImagePublisher
+from utils.debug_pub import DebugImagePublisher
 
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
