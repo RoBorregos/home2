@@ -355,5 +355,3 @@ To rebuild the image:
 > `--clean` removes `build/`, `log/` and `install/` **from the repository root**, where they do not
 > exist — the real build tree lives in `docker/manipulation/`. Delete that one by hand when a stale
 > CMake cache bites (typically after switching branches).
-
-*Issues: A00833160@tec.mx*
