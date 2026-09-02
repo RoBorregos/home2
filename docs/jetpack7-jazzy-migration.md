@@ -160,19 +160,33 @@ levantó el stack completo de `hric` (hri-ros, stt, tts, postgres, llamacpp):
   6.0, no probados a fondo — bajo prioridad, ya señalados en fases previas
   como potencialmente atados a JetPack 6.
 
+## zed — verificado con cámara real (ZED2 por USB)
+
+Con la cámara conectada, se encontraron y arreglaron 4 problemas en cadena
+(cada uno tapaba al siguiente):
+1. `docker/zed/.env` en la Orin seguía con `BASE_IMAGE`/`IMAGE_NAME`
+   apuntando a `jazzy_l4t_base`/`jazzy_zed-l4t` — no se actualizó en el
+   rename de imágenes. Corregido.
+2. `zed-l4t` estaba construida antes del fix de `NVIDIA_VISIBLE_DEVICES`
+   en la base — sin eso, `libcuda.so.1` no se encontraba y el componente
+   `zed_camera_component` fallaba al cargar. Reconstruida.
+3. Faltaba la regla udev del host para el vendor ID de Stereolabs (`2b03`,
+   `/etc/udev/rules.d/99-slabs.rules`) — sin ella, el MCU/sensores de la
+   cámara daban `Permissions denied`. Esto es config de host (normalmente
+   la crea el instalador del SDK cuando se corre nativo, no dentro de un
+   container), así que nunca existió aquí. Creada.
+4. `/usr/local/zed/settings` y `/usr/local/zed/resources` en el host
+   (montados al container) eran `root:root` sin permiso de escritura — el
+   SDK necesita escribir ahí el archivo de calibración de la cámara
+   (descargado por serial) y el modelo neural de profundidad optimizado
+   con TensorRT (~26MB, se compila la primera vez). `chown 2002:2002`
+   (el UID del container) en ambos.
+
+Con los 4 fixes: `=== zed started ===`, positional tracking activo,
+publicando RGB/depth/IMU/point cloud reales — confirmado `rgb/color/rect/image`
+a ~30Hz vía `ros2 topic hz`.
+
 ## Pendiente / fuera de alcance de esta iteración
 
-- `zed`: no hay cámara física conectada a este devkit, así que no se pudo
-  probar streaming real. Al levantar el contenedor (sin cámara) se encontró
-  un problema real, no relacionado a la falta de hardware: `iox-roudi`
-  (compilado desde fuente, v2.0.6) usa `memfd_create` para su memoria
-  compartida y no expone segmentos nombrados en `/dev/shm`, mientras que el
-  componente interno del ZED SDK 5.4 (`zed_components`, con su propio
-  iceoryx embebido) intenta abrir un segmento por nombre vía `shm_open` y
-  falla (`Unable to create shared memory ... Shared Memory does not exist`).
-  Es un conflicto de versión/mecanismo de iceoryx entre nuestro build y el
-  SDK de Stereolabs, no un problema de la migración a JetPack7/Jazzy en sí
-  — pendiente de investigar si Stereolabs publica una versión de iceoryx
-  compatible o si hay que ajustar el build de iceoryx para usar shm nombrada.
 - Sabores `cpu`/`cuda` de cada área: no priorizados en esta iteración (foco
   exclusivo en `l4t`, que es el hardware real del robot).
