@@ -426,8 +426,6 @@ class GPSRTM(Node):
                     skip_extract_data=True,
                     always_confirm=True,
                     max_audio_length=20.0,
-                    # GPSR commands name people ("say hello to Adel"), so bias the
-                    # transcription toward the competition's names.
                     hotwords=self.subtask_manager.hri.names_hotwords,
                 )
 
