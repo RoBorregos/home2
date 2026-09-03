@@ -176,7 +176,6 @@ class GPSRTM(Node):
             if self.previous_state != self.current_state
             else self.current_state,
         )
-
         self.subtask_manager.hri.publish_display_step(new_state.lower(), GPSR_TASK_STEP_TOPIC)
         self._publish_command_index(self.executed_commands + len(self.batched_commands))
 
@@ -465,6 +464,7 @@ class GPSRTM(Node):
                     skip_extract_data=True,
                     always_confirm=True,
                     max_audio_length=20.0,
+                    hotwords=self.subtask_manager.hri.names_hotwords,
                 )
 
             if s != Status.EXECUTION_SUCCESS:
