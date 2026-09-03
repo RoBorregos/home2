@@ -151,6 +151,7 @@ USER ros
 # The ros user's pip config includes pypi.jetson-ai-lab.io, which provides
 # the Jetson-optimized build with TensorrtExecutionProvider + CUDAExecutionProvider.
 RUN pip install --no-cache-dir onnxruntime-gpu
+RUN pip install --no-cache-dir tensorrt-cu13==10.16.1.11
 
 RUN sudo dpkg --force-depends -r ros-${ROS_DISTRO}-cv-bridge 2>/dev/null || true
 RUN mkdir -p /tmp/cv_bridge_ws/src && cd /tmp/cv_bridge_ws/src && \
