@@ -50,7 +50,6 @@ var searchData=
   ['tf_5futils_47',['tf_utils',['../namespacetf__utils.html',1,'']]],
   ['timeouts_48',['timeouts',['../namespacetask__manager_1_1gpsr_1_1timeouts.html',1,'task_manager::gpsr']]],
   ['tracker_5fnode_49',['tracker_node',['../namespacetracker__node.html',1,'']]],
-  ['trt_5futils_50',['trt_utils',['../namespacetrt__utils.html',1,'']]],
-  ['utils_51',['utils',['../namespacetask__manager_1_1utils.html',1,'task_manager']]],
-  ['vision_5ftasks_52',['vision_tasks',['../namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html',1,'task_manager::subtask_managers']]]
+  ['utils_50',['utils',['../namespacetask__manager_1_1utils.html',1,'task_manager']]],
+  ['vision_5ftasks_51',['vision_tasks',['../namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html',1,'task_manager::subtask_managers']]]
 ];

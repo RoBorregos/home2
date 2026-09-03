@@ -18,13 +18,6 @@ var namespaces_dup =
     [ "add_collision_object", "namespaceadd__collision__object.html", [
       [ "main", "namespaceadd__collision__object.html#a4d453f8d2e963ce0e4c23e30c0f9b0bd", null ]
     ] ],
-    [ "area_check", "namespacearea__check.html", [
-      [ "fetch_map_areas", "namespacearea__check.html#a6c483f65cdbb0f4d2866e5426e3e00c5", null ],
-      [ "filter_detections_in_house", "namespacearea__check.html#a2f9676eacc1c5466e43c74599c50c4fa", null ],
-      [ "is_point_in_house", "namespacearea__check.html#a96dc766a4c5632b741a45f3930ea3448", null ],
-      [ "is_point_in_room", "namespacearea__check.html#adde7b9820374ec0867e3bcc9888ae56f", null ],
-      [ "point_in_polygon", "namespacearea__check.html#a57f97085ecda9c86f7f750d44a2bf6ec", null ]
-    ] ],
     [ "arm_pkg", "namespacearm__pkg.html", "namespacearm__pkg" ],
     [ "attachments", "namespaceattachments.html", [
       [ "main", "namespaceattachments.html#a43331084867eb005f9f5b0b783163757", null ],
@@ -34,18 +27,6 @@ var namespaces_dup =
     ] ],
     [ "base_detector_node", "namespacebase__detector__node.html", "namespacebase__detector__node" ],
     [ "benchmark_vamp", "namespacebenchmark__vamp.html", "namespacebenchmark__vamp" ],
-    [ "calculations", "namespacecalculations.html", [
-      [ "deproject_pixel_to_point", "namespacecalculations.html#af8d8159051ab90fd57ec31e9221579f5", null ],
-      [ "get2DCentroid", "namespacecalculations.html#a9b5eb19cdc3b480d8b741b2a394bd49a", null ],
-      [ "get2DCentroidNormalized", "namespacecalculations.html#aed62b46cb698edbf80e14a22e1839aca", null ],
-      [ "get_depth", "namespacecalculations.html#a19db582aa5483cc03e16968a79a25a28", null ],
-      [ "map", "namespacecalculations.html#ab20c1a0c376ea6c16cebfb03541d2ee3", null ],
-      [ "point2d_to_3d", "namespacecalculations.html#a6026fc3d0ab025701ce2f0253fc6f4f1", null ],
-      [ "point2d_to_ros_point_stamped", "namespacecalculations.html#af4c94b2f21df2524b17fb6396980cc58", null ],
-      [ "point3d_to_ros_point_stamped", "namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02", null ],
-      [ "unrotate_pixel", "namespacecalculations.html#a2e4d2ec99c4c314a9b80f7ad719ef3c4", null ],
-      [ "FLT_EPSILON", "namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388", null ]
-    ] ],
     [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", "namespacecalibrate__ignore__laser" ],
     [ "call_joint_goal", "namespacecall__joint__goal.html", "namespacecall__joint__goal" ],
     [ "call_pose_goal", "namespacecall__pose__goal.html", "namespacecall__pose__goal" ],
@@ -71,7 +52,6 @@ var namespaces_dup =
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
-    [ "debug_pub", "namespacedebug__pub.html", "namespacedebug__pub" ],
     [ "demo_becas", "namespacedemo__becas.html", "namespacedemo__becas" ],
     [ "demo_ds4", "namespacedemo__ds4.html", [
       [ "generate_launch_description", "namespacedemo__ds4.html#a3b92a5a114f0a71450f4b47c440d3352", null ]
@@ -291,7 +271,6 @@ var namespaces_dup =
     [ "merge_multi", "namespacemerge__multi.html", [
       [ "generate_launch_description", "namespacemerge__multi.html#aed4bf9362e9c7a4f7e289108d2e92868", null ]
     ] ],
-    [ "model", "namespacemodel.html", "namespacemodel" ],
     [ "models", "namespacemodels.html", "namespacemodels" ],
     [ "monitor", "namespacemonitor.html", [
       [ "generate_launch_description", "namespacemonitor.html#a89ffacc2739b9bf0e8a294482eeff9a1", null ]
@@ -416,43 +395,6 @@ var namespaces_dup =
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", "namespacereceptionist__task__manager" ],
     [ "record_joints_node", "namespacerecord__joints__node.html", "namespacerecord__joints__node" ],
     [ "record_relative_pose", "namespacerecord__relative__pose.html", "namespacerecord__relative__pose" ],
-    [ "reid_model", "namespacereid__model.html", [
-      [ "compare_images", "namespacereid__model.html#a09e0afec43f563971591076d0a91a556", null ],
-      [ "extract_feature_from_img", "namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2", null ],
-      [ "get_structure", "namespacereid__model.html#ae68f17bec5313be51d1ab808ef2755d0", null ],
-      [ "load_network", "namespacereid__model.html#a4a574d476e5b12bd347146b9ae5c1cb0", null ],
-      [ "_models_root", "namespacereid__model.html#ae48f4b9872d8c1b85b4e9852746680b1", null ],
-      [ "batch_size", "namespacereid__model.html#aa3618009d6e7524b0bc74f1995eec942", null ],
-      [ "classifier", "namespacereid__model.html#adecba37571323573286275a0ae3cf2da", null ],
-      [ "config", "namespacereid__model.html#abc26ab485ddf76983b7f06561ebdb8ca", null ],
-      [ "config_path", "namespacereid__model.html#a239a20382a6ae204ac7c425165d8693c", null ],
-      [ "data_transforms", "namespacereid__model.html#a116c89b650065d26026a027f0f2225ce", null ],
-      [ "else", "namespacereid__model.html#af2965c7a90f0a13893ebecee20348435", null ],
-      [ "epoch", "namespacereid__model.html#a4997b25661d158fd9e30896477d2aaf9", null ],
-      [ "features1", "namespacereid__model.html#a349b140df65272177c7efe47a2cb070c", null ],
-      [ "features2", "namespacereid__model.html#afaac96bf9ea7e027827946c8584dbac6", null ],
-      [ "folder_path", "namespacereid__model.html#a7c2efdb27dc4bbd61ae50edc9b76ddd4", null ],
-      [ "gpu_ids", "namespacereid__model.html#ac0854462968e1d652883a22511988c48", null ],
-      [ "h", "namespacereid__model.html#af38d74c51ee6e8a581c116ac98a03817", null ],
-      [ "ibn", "namespacereid__model.html#aefe166fd1a454c496a38758c0471fc37", null ],
-      [ "image", "namespacereid__model.html#aeac2a4399a707658142eb7782e9d8ad0", null ],
-      [ "image2", "namespacereid__model.html#a66ce18b1885fdae96d0671e7cda50c8a", null ],
-      [ "interpolation_mode", "namespacereid__model.html#a1dfc143a6b7397fdc11a65ea189e0697", null ],
-      [ "is_same_person", "namespacereid__model.html#a6e16be2589eccf5084dc86dafe17df2e", null ],
-      [ "linear_num", "namespacereid__model.html#ae9c13aa962487362309ec0e288114b65", null ],
-      [ "model", "namespacereid__model.html#a330bb3a57fa3351d22e3fe3a9435e542", null ],
-      [ "model_structure", "namespacereid__model.html#a46ac54db756bf38a35302ea78d2f478f", null ],
-      [ "ms", "namespacereid__model.html#ac2f413c488e697d0f5e5edd23106838d", null ],
-      [ "name", "namespacereid__model.html#a73d66ca5d73e46af1ef65bccf347666e", null ],
-      [ "nclasses", "namespacereid__model.html#a89d8ea6aeef570700d95e69bd62b3614", null ],
-      [ "stride", "namespacereid__model.html#a563124f8add6fe9787b1f9d9b7865479", null ],
-      [ "use_dense", "namespacereid__model.html#a0edad6891176ff69f75984e2090786c6", null ],
-      [ "use_fp16", "namespacereid__model.html#a445dafe498912f06097f6c1d72c6665d", null ],
-      [ "use_gpu", "namespacereid__model.html#a3ee43bcfc3791b1ad7ee22fb1c7e7447", null ],
-      [ "use_swin", "namespacereid__model.html#afd0c502aecc7fb1b4bdc4ebf9acda11f", null ],
-      [ "version", "namespacereid__model.html#a1b20919b2f580c0d5e9cb7184391778b", null ],
-      [ "w", "namespacereid__model.html#a1394a721868a4409d9c82dd84949f2a6", null ]
-    ] ],
     [ "remove_collision_object", "namespaceremove__collision__object.html", [
       [ "main", "namespaceremove__collision__object.html#a86366d327b8fa51f26394d0524fdc193", null ]
     ] ],
@@ -573,16 +515,12 @@ var namespaces_dup =
       [ "transform_pose", "namespacetf__utils.html#acd9c843b0fe781b1c8f769decd9897e9", null ]
     ] ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
-    [ "trt_utils", "namespacetrt__utils.html", [
-      [ "_get_engine_path", "namespacetrt__utils.html#ae28972e2bd9e6ec6460827b6380c7b9a", null ],
-      [ "_is_tensorrt_available", "namespacetrt__utils.html#a32e507a426c6ab7dcd37eb74888950c9", null ],
-      [ "load_yolo_trt", "namespacetrt__utils.html#a60b6f5e8a22c056723d7c0a0ecd88ca3", null ]
-    ] ],
     [ "unc", "namespaceunc.html", "namespaceunc" ],
     [ "unitree_h1", "namespaceunitree__h1.html", [
       [ "create_nodes", "namespaceunitree__h1.html#a8cd98f3b33f96dc92ba5aacccf0b9a0f", null ],
       [ "generate_launch_description", "namespaceunitree__h1.html#acd23c96a910cd26955ad22c40585eae5", null ]
     ] ],
+    [ "utils", "namespaceutils.html", "namespaceutils" ],
     [ "vamp", "namespacevamp.html", "namespacevamp" ],
     [ "vamp_moveit_plugin", "namespacevamp__moveit__plugin.html", "namespacevamp__moveit__plugin" ],
     [ "vamp_server", "namespacevamp__server.html", "namespacevamp__server" ],

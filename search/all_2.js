@@ -31,7 +31,7 @@ var searchData=
   ['basket_5fsublocation_28',['basket_sublocation',['../classdoing__laundry__task__manager_1_1DoingLaundryTM.html#a9fa0c9148b31f1c5e6f1c591b377dec5',1,'doing_laundry_task_manager::DoingLaundryTM']]],
   ['batch_5fsize_29',['batch_size',['../classgpsr__task__manager_1_1GPSRTM.html#a1e9cf81e6d45c97d8f9dcc9f61ce5fb1',1,'gpsr_task_manager.GPSRTM.batch_size()'],['../structvamp_1_1planning_1_1RoadmapSettings.html#a71931c332417a644105e73169ae21440',1,'vamp::planning::RoadmapSettings::batch_size()']]],
   ['batch_5fsize_30',['BATCH_SIZE',['../namespacegpsr__task__manager.html#afe950bb28e9c31e9da1943679f1c8a00',1,'gpsr_task_manager']]],
-  ['batch_5fsize_31',['batch_size',['../namespacereid__model.html#aa3618009d6e7524b0bc74f1995eec942',1,'reid_model']]],
+  ['batch_5fsize_31',['batch_size',['../namespaceutils_1_1models_1_1reid__model.html#ab6ce5ce4fd1778af055e7a1024a2506d',1,'utils::models::reid_model']]],
   ['batched_5fcommands_32',['batched_commands',['../classgpsr__task__manager_1_1GPSRTM.html#a546d2e73ffba0ff4b5d555024072448b',1,'gpsr_task_manager::GPSRTM']]],
   ['baud_33',['baud',['../classdashgo__driver2_1_1DashgoDriver.html#a4e8570d977fd49aee1200ef0f5707a52',1,'dashgo_driver2::DashgoDriver']]],
   ['baudrate_34',['baudrate',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a1172a39e9df6255be0b4658c8a3985b1',1,'dashgo_driver::dashgo_stm32::Stm32']]],

@@ -1,7 +1,7 @@
 var searchData=
 [
   ['dashgodriver_0',['DashgoDriver',['../classdashgo__driver2_1_1DashgoDriver.html',1,'dashgo_driver2']]],
-  ['debugimagepublisher_1',['DebugImagePublisher',['../classdebug__pub_1_1DebugImagePublisher.html',1,'debug_pub']]],
+  ['debugimagepublisher_1',['DebugImagePublisher',['../classutils_1_1debug__pub_1_1DebugImagePublisher.html',1,'utils::debug_pub']]],
   ['demobecas_2',['DemoBecas',['../classdemo__becas_1_1DemoBecas.html',1,'demo_becas']]],
   ['demoroborregosday_3',['DemoRoborregosDay',['../classdemo__roborregosday_1_1DemoRoborregosDay.html',1,'demo_roborregosday']]],
   ['demotm_4',['DemoTM',['../classdemo__manager_1_1DemoTM.html',1,'demo_manager']]],

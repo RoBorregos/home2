@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['h_0',['h',['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a38d9b91745429d6dd18dcafde08adc15',1,'frida_constants.vision_classes.BBOX.h()'],['../namespacereid__model.html#af38d74c51ee6e8a581c116ac98a03817',1,'reid_model.h()'],['../classdetectors_1_1base_1_1BBOX.html#ac9a56f95d939c7f7b4f5ffc15d907060',1,'detectors.base.BBOX.h()']]],
+  ['h_0',['h',['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a38d9b91745429d6dd18dcafde08adc15',1,'frida_constants.vision_classes.BBOX.h()'],['../namespaceutils_1_1models_1_1reid__model.html#acd72fb52dc545ab79834d81913bb598b',1,'utils.models.reid_model.h()'],['../classdetectors_1_1base_1_1BBOX.html#ac9a56f95d939c7f7b4f5ffc15d907060',1,'detectors.base.BBOX.h()']]],
   ['hand_1',['hand',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#ad34b2a84b6e0c385d10234c72e59754e',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['hand_2',['HAND',['../classtask__manager_1_1utils_1_1task_1_1Task.html#a42178176865995e6f228c612d9aa2ce3',1,'task_manager::utils::task::Task']]],
   ['hand_5fapproach_5fangles_3',['HAND_APPROACH_ANGLES',['../namespacepick__and__place_1_1manipulation__core.html#aead1614fba3c4bc4f148d9114cbf5706',1,'pick_and_place::manipulation_core']]],

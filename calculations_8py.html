@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.6"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Roborregos @Home documentation: vision/packages/vision_general/vision_general/utils/calculations.py File Reference</title>
+<title>Roborregos @Home documentation: vision/packages/vision_general/scripts/utils/calculations.py File Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -100,41 +100,43 @@ $(document).ready(function(){initNavTree('calculations_8py.html',''); initResiza
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="namespaces" name="namespaces"></a>
 Namespaces</h2></td></tr>
-<tr class="memitem:namespacecalculations"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html">calculations</a></td></tr>
+<tr class="memitem:namespaceutils"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils.html">utils</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:namespaceutils_1_1calculations"><td class="memItemLeft" align="right" valign="top">namespace &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html">utils.calculations</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ab20c1a0c376ea6c16cebfb03541d2ee3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#ab20c1a0c376ea6c16cebfb03541d2ee3">calculations.map</a> (x, in_min, in_max, out_min, out_max)</td></tr>
-<tr class="separator:ab20c1a0c376ea6c16cebfb03541d2ee3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b5eb19cdc3b480d8b741b2a394bd49a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a9b5eb19cdc3b480d8b741b2a394bd49a">calculations.get2DCentroid</a> (box, frame)</td></tr>
-<tr class="separator:a9b5eb19cdc3b480d8b741b2a394bd49a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed62b46cb698edbf80e14a22e1839aca"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#aed62b46cb698edbf80e14a22e1839aca">calculations.get2DCentroidNormalized</a> (box, frame)</td></tr>
-<tr class="separator:aed62b46cb698edbf80e14a22e1839aca"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19db582aa5483cc03e16968a79a25a28"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a19db582aa5483cc03e16968a79a25a28">calculations.get_depth</a> (depthframe_, pixel)</td></tr>
-<tr class="separator:a19db582aa5483cc03e16968a79a25a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8d8159051ab90fd57ec31e9221579f5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#af8d8159051ab90fd57ec31e9221579f5">calculations.deproject_pixel_to_point</a> (cv_image_rgb_info, pixel, depth)</td></tr>
-<tr class="separator:af8d8159051ab90fd57ec31e9221579f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6026fc3d0ab025701ce2f0253fc6f4f1"><td class="memItemLeft" align="right" valign="top">tuple[float, float, float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a6026fc3d0ab025701ce2f0253fc6f4f1">calculations.point2d_to_3d</a> (image_info, depth_image, tuple[int, int] point2d)</td></tr>
-<tr class="separator:a6026fc3d0ab025701ce2f0253fc6f4f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a181b15f652845f523b8d576fcf2c5b02"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a181b15f652845f523b8d576fcf2c5b02">calculations.point3d_to_ros_point_stamped</a> (tuple[float, float, float] point3d, str frame_id, stamp, bool is_optical=True)</td></tr>
-<tr class="separator:a181b15f652845f523b8d576fcf2c5b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e4d2ec99c4c314a9b80f7ad719ef3c4"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a2e4d2ec99c4c314a9b80f7ad719ef3c4">calculations.unrotate_pixel</a> (tuple[int, int] pixel, int rotation, int width, int height)</td></tr>
-<tr class="separator:a2e4d2ec99c4c314a9b80f7ad719ef3c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4c94b2f21df2524b17fb6396980cc58"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#af4c94b2f21df2524b17fb6396980cc58">calculations.point2d_to_ros_point_stamped</a> (image_info, depth_image, tuple[int, int] point2d, str frame_id, stamp, bool is_optical=False, int rotation=0)</td></tr>
-<tr class="separator:af4c94b2f21df2524b17fb6396980cc58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d10da3b60fc4b28b9507f0a3e30dd17"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#a8d10da3b60fc4b28b9507f0a3e30dd17">utils.calculations.map</a> (x, in_min, in_max, out_min, out_max)</td></tr>
+<tr class="separator:a8d10da3b60fc4b28b9507f0a3e30dd17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7ef89e94c0965cbac5c0dd45bd11089b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#a7ef89e94c0965cbac5c0dd45bd11089b">utils.calculations.get2DCentroid</a> (box, frame)</td></tr>
+<tr class="separator:a7ef89e94c0965cbac5c0dd45bd11089b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49d970c66e5566e90674149c3d7bd782"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#a49d970c66e5566e90674149c3d7bd782">utils.calculations.get2DCentroidNormalized</a> (box, frame)</td></tr>
+<tr class="separator:a49d970c66e5566e90674149c3d7bd782"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae81d30df147937e072038b426cf87867"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#ae81d30df147937e072038b426cf87867">utils.calculations.get_depth</a> (depthframe_, pixel)</td></tr>
+<tr class="separator:ae81d30df147937e072038b426cf87867"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f82eef65830f9de60fad32ded3d8863"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#a7f82eef65830f9de60fad32ded3d8863">utils.calculations.deproject_pixel_to_point</a> (cv_image_rgb_info, pixel, depth)</td></tr>
+<tr class="separator:a7f82eef65830f9de60fad32ded3d8863"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4230d1813d104a02552303bebfabc668"><td class="memItemLeft" align="right" valign="top">tuple[float, float, float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#a4230d1813d104a02552303bebfabc668">utils.calculations.point2d_to_3d</a> (image_info, depth_image, tuple[int, int] point2d)</td></tr>
+<tr class="separator:a4230d1813d104a02552303bebfabc668"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2199a1742d2b047bf273993ead416365"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#a2199a1742d2b047bf273993ead416365">utils.calculations.point3d_to_ros_point_stamped</a> (tuple[float, float, float] point3d, str frame_id, stamp, bool is_optical=True)</td></tr>
+<tr class="separator:a2199a1742d2b047bf273993ead416365"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b7bcfaa6450f858059ccef01aa6ffc5"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#a2b7bcfaa6450f858059ccef01aa6ffc5">utils.calculations.unrotate_pixel</a> (tuple[int, int] pixel, int rotation, int width, int height)</td></tr>
+<tr class="separator:a2b7bcfaa6450f858059ccef01aa6ffc5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acfb19ca6aed507bc624806759c62b68d"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#acfb19ca6aed507bc624806759c62b68d">utils.calculations.point2d_to_ros_point_stamped</a> (image_info, depth_image, tuple[int, int] point2d, str frame_id, stamp, bool is_optical=False, int rotation=0)</td></tr>
+<tr class="separator:acfb19ca6aed507bc624806759c62b68d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a7bc607213c6ce6ae2313c9733977f388"><td class="memItemLeft" align="right" valign="top">sys&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388">calculations.FLT_EPSILON</a> = sys.float_info.epsilon</td></tr>
-<tr class="separator:a7bc607213c6ce6ae2313c9733977f388"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afbbc7b8ca55a739eec73bf9dfee96f65"><td class="memItemLeft" align="right" valign="top">sys&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceutils_1_1calculations.html#afbbc7b8ca55a739eec73bf9dfee96f65">utils.calculations.FLT_EPSILON</a> = sys.float_info.epsilon</td></tr>
+<tr class="separator:afbbc7b8ca55a739eec73bf9dfee96f65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="navelem"><a class="el" href="dir_094696d64bf9042e34c4ff3938c71239.html">vision</a></li><li class="navelem"><a class="el" href="dir_dd3fcdd5f7d5b8b10e8da434bfc4edb7.html">packages</a></li><li class="navelem"><a class="el" href="dir_741861650a25b095d61223a99fe0e875.html">vision_general</a></li><li class="navelem"><a class="el" href="dir_d6ea1fb454f7cad534a3dbbe58dee6ce.html">vision_general</a></li><li class="navelem"><a class="el" href="dir_836e412c6ba9b2d050f060d2cb43f277.html">utils</a></li><li class="navelem"><a class="el" href="calculations_8py.html">calculations.py</a></li>
+    <li class="navelem"><a class="el" href="dir_094696d64bf9042e34c4ff3938c71239.html">vision</a></li><li class="navelem"><a class="el" href="dir_dd3fcdd5f7d5b8b10e8da434bfc4edb7.html">packages</a></li><li class="navelem"><a class="el" href="dir_741861650a25b095d61223a99fe0e875.html">vision_general</a></li><li class="navelem"><a class="el" href="dir_dafe0b1426346d1cf04b71ae40010d5b.html">scripts</a></li><li class="navelem"><a class="el" href="dir_2044c9c828f066d02c134b0f2709e1b2.html">utils</a></li><li class="navelem"><a class="el" href="calculations_8py.html">calculations.py</a></li>
     <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.6 </li>
   </ul>
 </div>

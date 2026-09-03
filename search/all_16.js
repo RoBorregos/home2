@@ -93,7 +93,7 @@ var searchData=
   ['verbose_90',['verbose',['../classtracker__node_1_1SingleTracker.html#ae4b5daaab2bb197b7b685ffbd699b438',1,'tracker_node.SingleTracker.verbose()'],['../classface__recognition__node_1_1FaceRecognition.html#ac25cdb48e6d894a5521e450f55207a6d',1,'face_recognition_node.FaceRecognition.verbose()'],['../classbase__detector__node_1_1BaseDetectorNode.html#aafc7dfbcc0253b03e9322c2b931671d9',1,'base_detector_node.BaseDetectorNode.verbose()']]],
   ['verify_5fattempts_91',['VERIFY_ATTEMPTS',['../namespacetest__face__rec.html#a621e28b270153b5ad2a3cc33a7ad5cbb',1,'test_face_rec']]],
   ['verify_5fguest_92',['verify_guest',['../classtest__face__rec_1_1TestHRICFaceSave.html#a48b32b9b80d139d5f9c033debdfad342',1,'test_face_rec::TestHRICFaceSave']]],
-  ['version_93',['version',['../namespacesetup.html#a2aa722b36a933088812b50ea79b97a5c',1,'setup.version()'],['../namespacereid__model.html#a1b20919b2f580c0d5e9cb7184391778b',1,'reid_model.version()']]],
+  ['version_93',['version',['../namespacesetup.html#a2aa722b36a933088812b50ea79b97a5c',1,'setup.version()'],['../namespaceutils_1_1models_1_1reid__model.html#a1e9630930774203f7ed1a4573233d055',1,'utils.models.reid_model.version()']]],
   ['vertical_5fplane_94',['vertical_plane',['../classTableSegmentationNode.html#a27e261d285af15e5333aa646d5cb4c83',1,'TableSegmentationNode']]],
   ['vertices_95',['vertices',['../structvamp_1_1planning_1_1Roadmap.html#ac995503ded5543b3ed2d2ab702e37890',1,'vamp::planning::Roadmap']]],
   ['video_5fid_96',['video_id',['../classzed__simulator_1_1ZedSimulator.html#a198e1834dcf295418677fd6cff8b4213',1,'zed_simulator::ZedSimulator']]],

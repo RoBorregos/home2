@@ -10,7 +10,7 @@ var searchData=
   ['make_5ftransforms_7',['make_transforms',['../classsimulate__position_1_1SimulatePosition.html#a67116ba47d88dee99389cb2b2fa98286',1,'simulate_position::SimulatePosition']]],
   ['manip_8',['manip',['../classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html#aa08ccbda010912d63f5a6019d0c05532',1,'task_manager::utils::colored_logger::CLog']]],
   ['manipulation_5fcallback_9',['manipulation_callback',['../classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a0c63bb6640feabbe6b2931f008c19ce7',1,'pick_and_place::manipulation_core::ManipulationCore']]],
-  ['map_10',['map',['../namespacecalculations.html#ab20c1a0c376ea6c16cebfb03541d2ee3',1,'calculations.map()'],['../namespacevision__3D__utils.html#a3d2ba1e9d978b0afd592f74a898ea37e',1,'vision_3D_utils.map()']]],
+  ['map_10',['map',['../namespaceutils_1_1calculations.html#a8d10da3b60fc4b28b9507f0a3e30dd17',1,'utils.calculations.map()'],['../namespacevision__3D__utils.html#a3d2ba1e9d978b0afd592f74a898ea37e',1,'vision_3D_utils.map()']]],
   ['map_5fareas_5fcallback_11',['map_areas_callback',['../classnav__central_1_1Nav__Central.html#a4b554bc01e696e55b06183500aa95e62',1,'nav_central::Nav_Central']]],
   ['map_5fcallback_12',['map_callback',['../classnav__ui_1_1NavRosNode.html#aaa2a9f0861e35d2e022c93f7be56094c',1,'nav_ui::NavRosNode']]],
   ['map_5fto_5fpixel_13',['map_to_pixel',['../classnav__ui_1_1NavCanvas.html#aed24b7e9128240394798f22d815c92de',1,'nav_ui.NavCanvas.map_to_pixel()'],['../classmap__area__tagger_1_1MapCanvas.html#a60409b4f48e7ce4eff0e23ff54265ece',1,'map_area_tagger.MapCanvas.map_to_pixel()']]],

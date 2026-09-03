@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['h_0',['h',['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a38d9b91745429d6dd18dcafde08adc15',1,'frida_constants.vision_classes.BBOX.h()'],['../classdetectors_1_1base_1_1BBOX.html#ac9a56f95d939c7f7b4f5ffc15d907060',1,'detectors.base.BBOX.h()'],['../namespacereid__model.html#af38d74c51ee6e8a581c116ac98a03817',1,'reid_model.h()']]],
+  ['h_0',['h',['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a38d9b91745429d6dd18dcafde08adc15',1,'frida_constants.vision_classes.BBOX.h()'],['../classdetectors_1_1base_1_1BBOX.html#ac9a56f95d939c7f7b4f5ffc15d907060',1,'detectors.base.BBOX.h()'],['../namespaceutils_1_1models_1_1reid__model.html#acd72fb52dc545ab79834d81913bb598b',1,'utils.models.reid_model.h()']]],
   ['halton_1',['Halton',['../structvamp_1_1rng_1_1Halton.html#a17bfec479726f662f8991c9bc8caa2a9',1,'vamp::rng::Halton::Halton(std::initializer_list&lt; FloatT &gt; v) noexcept'],['../structvamp_1_1rng_1_1Halton.html#a5fd97379a572045e977dfb6983a23aa0',1,'vamp::rng::Halton::Halton(Configuration b_in) noexcept'],['../structvamp_1_1rng_1_1Halton.html#a07ea61081521201ca4fb2d90611983b2',1,'vamp::rng::Halton::Halton()'],['../structvamp_1_1rng_1_1Halton.html',1,'vamp::rng::Halton&lt; Robot &gt;']]],
   ['halton_2ehh_2',['halton.hh',['../halton_8hh.html',1,'']]],
   ['hand_3',['HAND',['../classtask__manager_1_1utils_1_1task_1_1Task.html#a42178176865995e6f228c612d9aa2ce3',1,'task_manager::utils::task::Task']]],
@@ -31,7 +31,7 @@ var searchData=
   ['has_5fnew_5fface_5fdata_28',['has_new_face_data',['../classfollow__face__node_1_1FollowFaceNode.html#a1ad3c72eecd30033ece1f84ec6a82540',1,'follow_face_node::FollowFaceNode']]],
   ['has_5fpymoveit_29',['HAS_PYMOVEIT',['../namespacebenchmark__vamp.html#ad3eea89269da5fba69502eb1830b20e2',1,'benchmark_vamp']]],
   ['has_5fpynvml_30',['HAS_PYNVML',['../namespacenode__monitor.html#a93e6479c92c3fb367e3769e802f06383',1,'node_monitor']]],
-  ['has_5fsubscribers_31',['has_subscribers',['../classdebug__pub_1_1DebugImagePublisher.html#adf54ec2b789698a353396e8fc5402022',1,'debug_pub::DebugImagePublisher']]],
+  ['has_5fsubscribers_31',['has_subscribers',['../classutils_1_1debug__pub_1_1DebugImagePublisher.html#aa716162ff89596694593869a5a6520c9',1,'utils::debug_pub::DebugImagePublisher']]],
   ['header_32',['HEADER',['../namespacelaunch__nav.html#ace16b89971ec24d4c2a83bfb2423d2fa',1,'launch_nav']]],
   ['header0_33',['HEADER0',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#ac5d24a378d77c3e2233b5f254325b6b9',1,'dashgo_driver::dashgo_stm32::Stm32']]],
   ['header1_34',['HEADER1',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#ad91a55d8859deb82448ffef44382e04f',1,'dashgo_driver::dashgo_stm32::Stm32']]],

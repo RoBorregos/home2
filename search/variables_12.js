@@ -101,7 +101,7 @@ var searchData=
   ['retry_5fiter_5fmult_98',['retry_iter_mult',['../classvamp__server_1_1VampServer.html#a10ad67b64f36f8ec7f663648f47219fe',1,'vamp_server::VampServer']]],
   ['retry_5frange_5fmult_99',['retry_range_mult',['../classvamp__server_1_1VampServer.html#a0a2e9479dd9581abb56c20508e101dc2',1,'vamp_server::VampServer']]],
   ['return_5fareas_100',['return_areas',['../classpoint__transformer_1_1PointTransformer.html#a4308756226635bb50e09409315fb0f2d',1,'point_transformer::PointTransformer']]],
-  ['return_5ff_101',['return_f',['../classmodel_1_1ClassBlock.html#a4c00e1b3932381343ca6584d9c1970b5',1,'model::ClassBlock']]],
+  ['return_5ff_101',['return_f',['../classutils_1_1models_1_1swin_1_1model_1_1ClassBlock.html#a34fa37d011530c7459c2ebb428c14449',1,'utils::models::swin::model::ClassBlock']]],
   ['return_5flaser_102',['return_laser',['../classpoint__transformer_1_1PointTransformer.html#aaa856f1ade5c37779f0d87c211b604e2',1,'point_transformer::PointTransformer']]],
   ['return_5flaser_5fdata_103',['RETURN_LASER_DATA',['../namespacefrida__constants_1_1integration__constants.html#a6afb4839f1987ec652b6d312adee8407',1,'frida_constants::integration_constants']]],
   ['return_5flocation_104',['RETURN_LOCATION',['../namespacefrida__constants_1_1integration__constants.html#a92bf4c688dac25bab266591c51f2956a',1,'frida_constants::integration_constants']]],

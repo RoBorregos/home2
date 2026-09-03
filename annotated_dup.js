@@ -44,9 +44,6 @@ var annotated_dup =
     [ "dashgo_driver2", "namespacedashgo__driver2.html", [
       [ "DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", "classdashgo__driver2_1_1DashgoDriver" ]
     ] ],
-    [ "debug_pub", "namespacedebug__pub.html", [
-      [ "DebugImagePublisher", "classdebug__pub_1_1DebugImagePublisher.html", "classdebug__pub_1_1DebugImagePublisher" ]
-    ] ],
     [ "demo_becas", "namespacedemo__becas.html", [
       [ "DemoBecas", "classdemo__becas_1_1DemoBecas.html", "classdemo__becas_1_1DemoBecas" ]
     ] ],
@@ -211,20 +208,6 @@ var annotated_dup =
     [ "map_area_tagger", "namespacemap__area__tagger.html", [
       [ "MapAreaTagger", "classmap__area__tagger_1_1MapAreaTagger.html", "classmap__area__tagger_1_1MapAreaTagger" ],
       [ "MapCanvas", "classmap__area__tagger_1_1MapCanvas.html", "classmap__area__tagger_1_1MapCanvas" ]
-    ] ],
-    [ "model", "namespacemodel.html", [
-      [ "ClassBlock", "classmodel_1_1ClassBlock.html", "classmodel_1_1ClassBlock" ],
-      [ "ft_net", "classmodel_1_1ft__net.html", "classmodel_1_1ft__net" ],
-      [ "ft_net_convnext", "classmodel_1_1ft__net__convnext.html", "classmodel_1_1ft__net__convnext" ],
-      [ "ft_net_dense", "classmodel_1_1ft__net__dense.html", "classmodel_1_1ft__net__dense" ],
-      [ "ft_net_efficient", "classmodel_1_1ft__net__efficient.html", "classmodel_1_1ft__net__efficient" ],
-      [ "ft_net_hr", "classmodel_1_1ft__net__hr.html", "classmodel_1_1ft__net__hr" ],
-      [ "ft_net_middle", "classmodel_1_1ft__net__middle.html", "classmodel_1_1ft__net__middle" ],
-      [ "ft_net_NAS", "classmodel_1_1ft__net__NAS.html", "classmodel_1_1ft__net__NAS" ],
-      [ "ft_net_swin", "classmodel_1_1ft__net__swin.html", "classmodel_1_1ft__net__swin" ],
-      [ "ft_net_swinv2", "classmodel_1_1ft__net__swinv2.html", "classmodel_1_1ft__net__swinv2" ],
-      [ "PCB", "classmodel_1_1PCB.html", "classmodel_1_1PCB" ],
-      [ "PCB_test", "classmodel_1_1PCB__test.html", "classmodel_1_1PCB__test" ]
     ] ],
     [ "models", "namespacemodels.html", [
       [ "face_recognition", "namespacemodels_1_1face__recognition.html", [
@@ -560,6 +543,29 @@ var annotated_dup =
         [ "nigh", "namespaceunc_1_1robotics_1_1nigh.html", [
           [ "metric", "namespaceunc_1_1robotics_1_1nigh_1_1metric.html", [
             [ "Space< vamp::planning::NNFloatArray< dim >, LP< 2 > >", "structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4.html", "structunc_1_1robotics_1_1nigh_1_1metric_1_1Space_3_01vamp_1_1planning_1_1NNFloatArray_3_01dim_01_4_00_01LP_3_012_01_4_01_4" ]
+          ] ]
+        ] ]
+      ] ]
+    ] ],
+    [ "utils", "namespaceutils.html", [
+      [ "debug_pub", "namespaceutils_1_1debug__pub.html", [
+        [ "DebugImagePublisher", "classutils_1_1debug__pub_1_1DebugImagePublisher.html", "classutils_1_1debug__pub_1_1DebugImagePublisher" ]
+      ] ],
+      [ "models", "namespaceutils_1_1models.html", [
+        [ "swin", "namespaceutils_1_1models_1_1swin.html", [
+          [ "model", "namespaceutils_1_1models_1_1swin_1_1model.html", [
+            [ "ClassBlock", "classutils_1_1models_1_1swin_1_1model_1_1ClassBlock.html", "classutils_1_1models_1_1swin_1_1model_1_1ClassBlock" ],
+            [ "ft_net", "classutils_1_1models_1_1swin_1_1model_1_1ft__net.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net" ],
+            [ "ft_net_convnext", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__convnext.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__convnext" ],
+            [ "ft_net_dense", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__dense.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__dense" ],
+            [ "ft_net_efficient", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__efficient.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__efficient" ],
+            [ "ft_net_hr", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__hr.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__hr" ],
+            [ "ft_net_middle", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__middle.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__middle" ],
+            [ "ft_net_NAS", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__NAS.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__NAS" ],
+            [ "ft_net_swin", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__swin.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__swin" ],
+            [ "ft_net_swinv2", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__swinv2.html", "classutils_1_1models_1_1swin_1_1model_1_1ft__net__swinv2" ],
+            [ "PCB", "classutils_1_1models_1_1swin_1_1model_1_1PCB.html", "classutils_1_1models_1_1swin_1_1model_1_1PCB" ],
+            [ "PCB_test", "classutils_1_1models_1_1swin_1_1model_1_1PCB__test.html", "classutils_1_1models_1_1swin_1_1model_1_1PCB__test" ]
           ] ]
         ] ]
       ] ]

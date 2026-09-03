@@ -3,7 +3,7 @@ var searchData=
   ['callservicesnode_0',['CallServicesNode',['../classCallServicesNode.html',1,'']]],
   ['capt_1',['CAPT',['../structvamp_1_1collision_1_1CAPT.html',1,'vamp::collision']]],
   ['checkvalue_2',['CheckValue',['../structCheckValue.html',1,'']]],
-  ['classblock_3',['ClassBlock',['../classmodel_1_1ClassBlock.html',1,'model']]],
+  ['classblock_3',['ClassBlock',['../classutils_1_1models_1_1swin_1_1model_1_1ClassBlock.html',1,'utils::models::swin::model']]],
   ['cleantabletm_4',['CleanTableTM',['../classtest__clean__table__task__manager_1_1CleanTableTM.html',1,'test_clean_table_task_manager']]],
   ['clientnode_5',['ClientNode',['../classClientNode.html',1,'']]],
   ['clog_6',['CLog',['../classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html',1,'task_manager::utils::colored_logger']]],

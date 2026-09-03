@@ -35,6 +35,6 @@ var searchData=
   ['extract_32',['extract',['../structvamp_1_1SIMDVector_3_01float32x4__t_01_4.html#a8f74aa5261c397216260f259a9a7fefa',1,'vamp::SIMDVector&lt; float32x4_t &gt;::extract()'],['../structvamp_1_1SIMDVector_3_01int32x4__t_01_4.html#a1e51a39dc8fafd4b206ba8e9a34582b4',1,'vamp::SIMDVector&lt; int32x4_t &gt;::extract()'],['../structvamp_1_1SIMDVector_3_01____m256_01_4.html#a0e5e645fdbdfcae581fa7964c7af4439',1,'vamp::SIMDVector&lt; __m256 &gt;::extract()'],['../structvamp_1_1SIMDVector_3_01____m256i_01_4.html#a8d56a6c57c06a838ba0bc46b56452095',1,'vamp::SIMDVector&lt; __m256i &gt;::extract()']]],
   ['extract_5f3d_33',['extract_3d',['../classbase__detector__node_1_1BaseDetectorNode.html#a75bd2b91ada346b08645a8699da043c0',1,'base_detector_node::BaseDetectorNode']]],
   ['extract_5fdata_34',['extract_data',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a3645a215289e1cbe97c6196c6a09b216',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['extract_5ffeature_5ffrom_5fimg_35',['extract_feature_from_img',['../namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2',1,'reid_model']]],
+  ['extract_5ffeature_5ffrom_5fimg_35',['extract_feature_from_img',['../namespaceutils_1_1models_1_1reid__model.html#a754f535d3251ddffaa44e81b0cccb0d8',1,'utils::models::reid_model']]],
   ['extractplane_36',['extractPlane',['../classTableSegmentationNode.html#a04770a379a6a0d7c661c989c2184f279',1,'TableSegmentationNode']]]
 ];

@@ -69,7 +69,7 @@ var searchData=
   ['collides_66',['collides',['../structvamp_1_1collision_1_1CAPT.html#aad175a5c873ad940d03b9179c0855424',1,'vamp::collision::CAPT']]],
   ['collides_5fsimd_67',['collides_simd',['../structvamp_1_1collision_1_1CAPT.html#a6a9de5dcf92998e104922d0ebfeca26e',1,'vamp::collision::CAPT']]],
   ['command_5finterpreter_68',['command_interpreter',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a209bbb22747ca2343e6cd3692e427eaf',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
-  ['compare_5fimages_69',['compare_images',['../namespacereid__model.html#a09e0afec43f563971591076d0a91a556',1,'reid_model']]],
+  ['compare_5fimages_69',['compare_images',['../namespaceutils_1_1models_1_1reid__model.html#a523cca143f1465b504a15c56c12b2d2a',1,'utils::models::reid_model']]],
   ['compose_5fmatrix_70',['compose_matrix',['../namespacevamp_1_1transformations.html#a60e8f0eda4696fd043ef9ec2be146488',1,'vamp::transformations']]],
   ['compute_5ffk_71',['compute_fk',['../classPlanner_1_1Planner.html#a7fbfef3cfc4ebe948ce11f74a4f6eec6',1,'Planner.Planner.compute_fk()'],['../classMoveItPlanner_1_1MoveItPlanner.html#ac108d174d746bb2f0e63d4184dc37f0e',1,'MoveItPlanner.MoveItPlanner.compute_fk()']]],
   ['compute_5fik_72',['compute_ik',['../namespaceself__collision__utils.html#adacc1b236355b90fa16f716b067a337d',1,'self_collision_utils']]],

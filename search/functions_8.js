@@ -8,7 +8,7 @@ var searchData=
   ['handle_5fleftover_5fcereal_5',['handle_leftover_cereal',['../class__storing__groceries_1_1StoringGroceriesTM.html#add47d7edd6f6616ad6552d9717de612e',1,'_storing_groceries::StoringGroceriesTM']]],
   ['handle_5fpose_5fcallback_6',['handle_pose_callback',['../classrecord__relative__pose_1_1DockingPoseRecorder.html#a377fda43f255061ea030a4ce7e48b8ae',1,'record_relative_pose::DockingPoseRecorder']]],
   ['handle_5fstop_7',['handle_stop',['../classrun__while__hearing_1_1ServiceClientServerNode.html#a721146cf6301901f7b66aa32cb65634a',1,'run_while_hearing::ServiceClientServerNode']]],
-  ['has_5fsubscribers_8',['has_subscribers',['../classdebug__pub_1_1DebugImagePublisher.html#adf54ec2b789698a353396e8fc5402022',1,'debug_pub::DebugImagePublisher']]],
+  ['has_5fsubscribers_8',['has_subscribers',['../classutils_1_1debug__pub_1_1DebugImagePublisher.html#aa716162ff89596694593869a5a6520c9',1,'utils::debug_pub::DebugImagePublisher']]],
   ['hear_9',['hear',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a774e876e6babdc4811d0ac61eb1971ad',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['hear_5fmulti_10',['hear_multi',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#af810c9637ba003ed2de3c5e94f9eb0d9',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['hear_5fstreaming_11',['hear_streaming',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a3cee9131fc600da2f7f0feedbe7492f4',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],

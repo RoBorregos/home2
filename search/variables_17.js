@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['w_0',['w',['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a02134ae46182c764bdcd0200a8657a5b',1,'frida_constants.vision_classes.BBOX.w()'],['../namespacereid__model.html#a1394a721868a4409d9c82dd84949f2a6',1,'reid_model.w()'],['../classdetectors_1_1base_1_1BBOX.html#af16e7d62b264b9e8f15ada2ce5bac5d1',1,'detectors.base.BBOX.w()']]],
+  ['w_0',['w',['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a02134ae46182c764bdcd0200a8657a5b',1,'frida_constants.vision_classes.BBOX.w()'],['../namespaceutils_1_1models_1_1reid__model.html#ac5ffe93684652f2dd1dee366c760333a',1,'utils.models.reid_model.w()'],['../classdetectors_1_1base_1_1BBOX.html#af16e7d62b264b9e8f15ada2ce5bac5d1',1,'detectors.base.BBOX.w()']]],
   ['wait_5fafter_5fpick_1',['WAIT_AFTER_PICK',['../classdemo__roborregosday_1_1DemoRoborregosDay_1_1States.html#afb205841882fb67fd8ed68351ea8f8a8',1,'demo_roborregosday::DemoRoborregosDay::States']]],
   ['wait_5fbutton_5fcommand_2',['WAIT_BUTTON_COMMAND',['../classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html#a5203cbb50eed4110359037370998d319',1,'gpsr_task_manager::GPSRTM::TaskStates']]],
   ['wait_5fdoor_5fopen_3',['WAIT_DOOR_OPEN',['../classsafety__task__manager_1_1ExecutionStates.html#acff599b5363b039a9052a2a61e050cc1',1,'safety_task_manager::ExecutionStates']]],

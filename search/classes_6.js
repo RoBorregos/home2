@@ -24,13 +24,13 @@ var searchData=
   ['forceguardeddescentpick_21',['ForceGuardedDescentPick',['../classpick__and__place_1_1pipelines_1_1strategies_1_1ForceGuardedDescentPick.html',1,'pick_and_place::pipelines::strategies']]],
   ['forceguardprofile_22',['ForceGuardProfile',['../classpick__and__place_1_1pipelines_1_1profiles_1_1ForceGuardProfile.html',1,'pick_and_place::pipelines::profiles']]],
   ['frida_5freal_23',['FRIDA_Real',['../structvamp_1_1robots_1_1FRIDA__Real.html',1,'vamp::robots']]],
-  ['ft_5fnet_24',['ft_net',['../classmodel_1_1ft__net.html',1,'model']]],
-  ['ft_5fnet_5fconvnext_25',['ft_net_convnext',['../classmodel_1_1ft__net__convnext.html',1,'model']]],
-  ['ft_5fnet_5fdense_26',['ft_net_dense',['../classmodel_1_1ft__net__dense.html',1,'model']]],
-  ['ft_5fnet_5fefficient_27',['ft_net_efficient',['../classmodel_1_1ft__net__efficient.html',1,'model']]],
-  ['ft_5fnet_5fhr_28',['ft_net_hr',['../classmodel_1_1ft__net__hr.html',1,'model']]],
-  ['ft_5fnet_5fmiddle_29',['ft_net_middle',['../classmodel_1_1ft__net__middle.html',1,'model']]],
-  ['ft_5fnet_5fnas_30',['ft_net_NAS',['../classmodel_1_1ft__net__NAS.html',1,'model']]],
-  ['ft_5fnet_5fswin_31',['ft_net_swin',['../classmodel_1_1ft__net__swin.html',1,'model']]],
-  ['ft_5fnet_5fswinv2_32',['ft_net_swinv2',['../classmodel_1_1ft__net__swinv2.html',1,'model']]]
+  ['ft_5fnet_24',['ft_net',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fconvnext_25',['ft_net_convnext',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__convnext.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fdense_26',['ft_net_dense',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__dense.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fefficient_27',['ft_net_efficient',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__efficient.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fhr_28',['ft_net_hr',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__hr.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fmiddle_29',['ft_net_middle',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__middle.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fnas_30',['ft_net_NAS',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__NAS.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fswin_31',['ft_net_swin',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__swin.html',1,'utils::models::swin::model']]],
+  ['ft_5fnet_5fswinv2_32',['ft_net_swinv2',['../classutils_1_1models_1_1swin_1_1model_1_1ft__net__swinv2.html',1,'utils::models::swin::model']]]
 ];
