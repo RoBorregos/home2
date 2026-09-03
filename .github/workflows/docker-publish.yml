@@ -60,6 +60,8 @@ jobs:
               - 'docker/navigation/Dockerfile.cpu'
             navigation_cuda:
               - 'docker/navigation/Dockerfile.cuda'
+            navigation_l4t:
+              - 'docker/navigation/Dockerfile.l4t'
             manipulation_cpu:
               - 'docker/manipulation/Dockerfile.cpu'
             manipulation_cuda:
@@ -78,7 +80,7 @@ jobs:
           elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             needed=true
           else
-            for tag in cpu_base cuda_base; do
+            for tag in cpu_base cuda_base l4t_base; do
               if ! docker manifest inspect "roborregos/home2:${tag}" > /dev/null 2>&1; then
                 echo "::notice::Base image roborregos/home2:${tag} not found on DockerHub, will build"
                 needed=true
@@ -100,6 +102,7 @@ jobs:
           else
             [ "${{ steps.filter.outputs.navigation_cpu }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["cpu"]')
             [ "${{ steps.filter.outputs.navigation_cuda }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["cuda"]')
+            [ "${{ steps.filter.outputs.navigation_l4t }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["l4t"]')
           fi
           echo "navigation=$nav" >> $GITHUB_OUTPUT
 
@@ -120,7 +123,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   base:
     name: "Base [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted","l4t"]') || 'ubuntu-latest' }}
     needs: detect
     if: needs.detect.outputs.base_needed == 'true'
     strategy:
@@ -133,6 +136,9 @@ jobs:
           - env: cuda
             base_image: nvidia/cuda:11.8.0-devel-ubuntu22.04
             tag: roborregos/home2:cuda_base
+            env: l4t
+            base_image: <PENDIENTE: confirmar con Luis>
+            tag: roborregos/home2:l4t_base
 
     steps:
       - name: Checkout
@@ -164,7 +170,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   hri:
     name: "HRI [${{ matrix.service }}] [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted","l4t"]') || 'ubuntu-latest' }}
     needs: [detect, base]
     if: |
       always() &&
@@ -177,7 +183,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
+        env: [cpu, cuda, l4t] 
         service: [ros, stt, tts, ollama]
         exclude:
           # ollama only exists for cuda (and l4t when re-enabled)
@@ -433,7 +439,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   navigation:
     name: "Navigation [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted","l4t"]') || 'ubuntu-latest' }}
     needs: [detect, base]
     if: |
       always() &&
