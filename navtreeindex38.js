@@ -1,5 +1,12 @@
 var NAVTREEINDEX38 =
 {
+"md_manipulation_packages_vamp_resources_README.html#autotoc_md98":[9,3,1,2],
+"md_manipulation_packages_vamp_scripts_README.html":[11],
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md103":[11,0],
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md104":[11,1],
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md105":[11,2],
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md106":[11,3],
+"md_manipulation_packages_vamp_scripts_README.html#autotoc_md107":[11,4],
 "md_manipulation_packages_vamp_scripts_README.html#autotoc_md108":[11,4,0],
 "md_manipulation_packages_vamp_scripts_cpp_README.html":[10],
 "md_manipulation_packages_vamp_scripts_cpp_README.html#autotoc_md100":[10,0],
@@ -242,12 +249,5 @@ var NAVTREEINDEX38 =
 "namespacedashgo__driver2.html#a7220adc4c225226793143348c6e1ac6d":[43,0,19,8],
 "namespacedashgo__driver2.html#a94ba9cc15107c0317260b0f50dc0d5a1":[43,0,19,5],
 "namespacedashgo__driver2.html#a9f41d112ae449716ef1bcafdb8ab08ec":[43,0,19,1],
-"namespacedashgo__driver2.html#aadf359cf24f3f2b174deae106d37ef3f":[43,0,19,4],
-"namespacedashgo__driver2.html#ac38822713549b60f54ddf0d384dcbfa9":[43,0,19,2],
-"namespacedashgo__driver2.html#acc466769d2772016d37de4afb11ea7e1":[43,0,19,3],
-"namespacedashgo__driver_1_1dashgo__stm32.html":[43,0,18,0],
-"namespacedebug__pub.html":[43,0,20],
-"namespacedebug__pub.html#ad8964132ba024688eee09a85f1cc06cd":[43,0,20,1],
-"namespacedemo__becas.html":[43,0,21],
-"namespacedemo__becas.html#a2151e9e7805453d113a17685d53121a5":[43,0,21,1]
+"namespacedashgo__driver2.html#aadf359cf24f3f2b174deae106d37ef3f":[43,0,19,4]
 };

@@ -166,8 +166,16 @@ Variables</h2></td></tr>
 <tr class="separator:adc9eb09510b4382c10329bd2d6aa0b63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad1afdc4bd1aac351029411361b8c7f38"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#ad1afdc4bd1aac351029411361b8c7f38">TEST_FALLBACK_RESUME</a> = False</td></tr>
 <tr class="separator:ad1afdc4bd1aac351029411361b8c7f38"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa088235952c6afdf84049733a3d8e6d7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#aa088235952c6afdf84049733a3d8e6d7">TEST_DOOR</a> = True</td></tr>
+<tr class="memitem:a2b89018d4828726cfb8545330447a473"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a2b89018d4828726cfb8545330447a473">TEST_MERGED_PLAN_SPEECH</a> = False</td></tr>
+<tr class="separator:a2b89018d4828726cfb8545330447a473"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa088235952c6afdf84049733a3d8e6d7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#aa088235952c6afdf84049733a3d8e6d7">TEST_DOOR</a> = False</td></tr>
 <tr class="separator:aa088235952c6afdf84049733a3d8e6d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0c1a984ac31ae73bc99c573fbcfbe1f"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#ad0c1a984ac31ae73bc99c573fbcfbe1f">MERGED_PLAN_SPEECH_CASES</a></td></tr>
+<tr class="separator:ad0c1a984ac31ae73bc99c573fbcfbe1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a215d2c6323fb3053457a0cfcfd95bb76"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a215d2c6323fb3053457a0cfcfd95bb76">MERGED_PLAN_SPEECH_COORDS</a></td></tr>
+<tr class="separator:a215d2c6323fb3053457a0cfcfd95bb76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa0767675ed5bb425f7b162de4c4174eb"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#aa0767675ed5bb425f7b162de4c4174eb">_SPEECH_TOKEN_FIELDS</a></td></tr>
+<tr class="separator:aa0767675ed5bb425f7b162de4c4174eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Task Manager for testing the subtask managers
@@ -219,6 +227,36 @@ Variables</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="aa0767675ed5bb425f7b162de4c4174eb" name="aa0767675ed5bb425f7b162de4c4174eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0767675ed5bb425f7b162de4c4174eb">&#9670;&#160;</a></span>_SPEECH_TOKEN_FIELDS</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">tuple test_hri_manager._SPEECH_TOKEN_FIELDS</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  (</div>
+<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;location_to_go&quot;</span>,</div>
+<div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;object_to_pick&quot;</span>,</div>
+<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;name&quot;</span>,</div>
+<div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;target_to_count&quot;</span>,</div>
+<div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&quot;destination&quot;</span>,</div>
+<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&quot;destination_room&quot;</span>,</div>
+<div class="line"><span class="lineno">    8</span>)</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="a04b9abda6607c92b76c852da0475a53e" name="a04b9abda6607c92b76c852da0475a53e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a04b9abda6607c92b76c852da0475a53e">&#9670;&#160;</a></span>BENCHMARK_DIR</h2>
 
@@ -288,6 +326,44 @@ Variables</h2></td></tr>
 <div class="line"><span class="lineno">   14</span>    PlaceObject,</div>
 <div class="line"><span class="lineno">   15</span>    SayWithContext,</div>
 <div class="line"><span class="lineno">   16</span>]</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="ad0c1a984ac31ae73bc99c573fbcfbe1f" name="ad0c1a984ac31ae73bc99c573fbcfbe1f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0c1a984ac31ae73bc99c573fbcfbe1f">&#9670;&#160;</a></span>MERGED_PLAN_SPEECH_CASES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list test_hri_manager.MERGED_PLAN_SPEECH_CASES</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a215d2c6323fb3053457a0cfcfd95bb76" name="a215d2c6323fb3053457a0cfcfd95bb76"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a215d2c6323fb3053457a0cfcfd95bb76">&#9670;&#160;</a></span>MERGED_PLAN_SPEECH_COORDS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict test_hri_manager.MERGED_PLAN_SPEECH_COORDS</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
+<div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&quot;start_location&quot;</span>: [0.0, 0.0],</div>
+<div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&quot;tv_stand&quot;</span>: [0.5, 0.5],</div>
+<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&quot;kitchen&quot;</span>: [5.0, 5.0],</div>
+<div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;living_room&quot;</span>: [6.0, 5.0],</div>
+<div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&quot;bedroom&quot;</span>: [-2.0, 3.0],</div>
+<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&quot;sofa&quot;</span>: [3.0, 2.0],</div>
+<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;storage_rack&quot;</span>: [-1.0, -2.0],</div>
+<div class="line"><span class="lineno">    9</span>    <span class="stringliteral">&quot;bathroom&quot;</span>: [-3.0, 1.0],</div>
+<div class="line"><span class="lineno">   10</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -466,7 +542,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool test_hri_manager.TEST_DOOR = True</td>
+          <td class="memname">bool test_hri_manager.TEST_DOOR = False</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -537,6 +613,20 @@ Variables</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">bool test_hri_manager.TEST_MAP = False</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2b89018d4828726cfb8545330447a473" name="a2b89018d4828726cfb8545330447a473"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b89018d4828726cfb8545330447a473">&#9670;&#160;</a></span>TEST_MERGED_PLAN_SPEECH</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool test_hri_manager.TEST_MERGED_PLAN_SPEECH = False</td>
         </tr>
       </table>
 </div><div class="memdoc">

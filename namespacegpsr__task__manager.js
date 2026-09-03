@@ -6,5 +6,6 @@ var namespacegpsr__task__manager =
     [ "search_command", "namespacegpsr__task__manager.html#acde48271012efc9388cf1370294e321d", null ],
     [ "ATTEMPT_LIMIT", "namespacegpsr__task__manager.html#a3082b3302b813b3c09b9f0d3da26865a", null ],
     [ "BATCH_SIZE", "namespacegpsr__task__manager.html#afe950bb28e9c31e9da1943679f1c8a00", null ],
-    [ "MAX_COMMANDS", "namespacegpsr__task__manager.html#acbd3cc051bcaa0355718e913a0b44e0e", null ]
+    [ "MAX_COMMANDS", "namespacegpsr__task__manager.html#acbd3cc051bcaa0355718e913a0b44e0e", null ],
+    [ "PLAN_REWRITE_INSTRUCTION", "namespacegpsr__task__manager.html#a5f8661659aeecc186592f901a733bada", null ]
 ];

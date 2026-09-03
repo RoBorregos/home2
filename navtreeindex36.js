@@ -1,5 +1,12 @@
 var NAVTREEINDEX36 =
 {
+"manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2____init_____8py.html":[45,0,3,0,1,1,2],
+"manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html":[45,0,3,0,1,1,1,3],
+"manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html#a788d5920b4a890dfdb242742b858f948":[45,0,3,0,1,1,1,3,0],
+"manipulation_2packages_2frida__pymoveit2_2frida__pymoveit2_2____init_____8py.html":[45,0,3,0,2,1,1],
+"manipulation_2packages_2manipulation__general_2launch_2hric_8launch_8py.html":[45,0,3,0,3,0,2],
+"manipulation_2packages_2manipulation__general_2launch_2hric_8launch_8py.html#ad1dd056eac0c72bace8a6fdd839dd77d":[45,0,3,0,3,0,2,0],
+"manipulation_2packages_2manipulation__general_2launch_2restaurant_8launch_8py.html":[45,0,3,0,3,0,5],
 "manipulation_2packages_2manipulation__general_2launch_2restaurant_8launch_8py.html#a90267738e600fcd32bced0afc020e437":[45,0,3,0,3,0,5,0],
 "manipulation_2packages_2manipulation__general_2manipulation__general_2____init_____8py.html":[45,0,3,0,3,1,0],
 "manipulation_2packages_2mujoco__ros2__control_2mujoco__ros2__control_2scripts_2____init_____8py.html":[45,0,3,0,4,1,1,0],
@@ -242,12 +249,5 @@ var NAVTREEINDEX36 =
 "md_docs_ai_hric_vision_architecture.html#autotoc_md219":[25,1],
 "md_docs_ai_hric_vision_architecture.html#autotoc_md220":[25,2],
 "md_docs_ai_hric_vision_architecture.html#autotoc_md221":[25,3],
-"md_docs_ai_hric_vision_architecture.html#autotoc_md222":[25,4],
-"md_docs_ai_hric_vision_architecture.html#autotoc_md223":[25,5],
-"md_docs_ai_hric_vision_architecture.html#autotoc_md224":[25,6],
-"md_docs_ai_navigation_architecture.html":[26],
-"md_docs_ai_navigation_architecture.html#autotoc_md226":[26,0],
-"md_docs_ai_navigation_architecture.html#autotoc_md227":[26,1],
-"md_docs_ai_navigation_architecture.html#autotoc_md229":[26,2],
-"md_docs_ai_navigation_architecture.html#autotoc_md231":[26,3]
+"md_docs_ai_hric_vision_architecture.html#autotoc_md222":[25,4]
 };

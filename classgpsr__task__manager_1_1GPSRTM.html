@@ -180,6 +180,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a254e014bbb1145c8c4247705320eb8f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac84a10d0474100da37161ae7eb11debf"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__task__manager_1_1GPSRTM.html#ac84a10d0474100da37161ae7eb11debf">_on_action_complete</a> (self, plan_action, status, result)</td></tr>
 <tr class="separator:ac84a10d0474100da37161ae7eb11debf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a3da4aa7a6a30bcab90839cac3d63d2"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__task__manager_1_1GPSRTM.html#a6a3da4aa7a6a30bcab90839cac3d63d2">_spoken_merged_plan</a> (self, plan)</td></tr>
+<tr class="separator:a6a3da4aa7a6a30bcab90839cac3d63d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6b2fd61bf7b5bee3ac6dd7ba4ef1cb7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__task__manager_1_1GPSRTM.html#af6b2fd61bf7b5bee3ac6dd7ba4ef1cb7">_execute_interleaved_batch</a> (self)</td></tr>
 <tr class="separator:af6b2fd61bf7b5bee3ac6dd7ba4ef1cb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8db9899803b4978d55001f5bf5c7fc1c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classgpsr__task__manager_1_1GPSRTM.html#a8db9899803b4978d55001f5bf5c7fc1c">_execute_sequential_fallback</a> (self, <a class="el" href="classgpsr__task__manager_1_1GPSRTM.html#a546d2e73ffba0ff4b5d555024072448b">batched_commands</a>)</td></tr>
@@ -490,6 +492,50 @@ locator degrades to unknown coordinates (LARGE_M) rather than raising.
 </div><div class="memdoc">
 <pre class="fragment">Resolve a free-text location to (x, y) using query_location +
 the live areas table (see _get_areas). Memoized per planning session.</pre> 
+</div>
+</div>
+<a id="a6a3da4aa7a6a30bcab90839cac3d63d2" name="a6a3da4aa7a6a30bcab90839cac3d63d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a3da4aa7a6a30bcab90839cac3d63d2">&#9670;&#160;</a></span>_spoken_merged_plan()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> str gpsr_task_manager.GPSRTM._spoken_merged_plan </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>plan</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Render the merged plan for speech, with the say steps rewritten.
+
+Hands the raw parse_plan_to_text rendering to the LLM so the "say:
+&lt;user_instruction&gt;" steps get narrated instead of quoted — see
+PLAN_REWRITE_INSTRUCTION. Falls back to the raw rendering whenever the
+LLM is unavailable or returns something unusable: announcing the plan at
+all is worth more than the phrasing, and the fallback is the wording the
+robot used before this rewrite existed.
+</pre> 
 </div>
 </div>
 <a id="a07ab2e2b3988fb097bba3b52f18c556e" name="a07ab2e2b3988fb097bba3b52f18c556e"></a>

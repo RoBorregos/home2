@@ -1,5 +1,12 @@
 var NAVTREEINDEX39 =
 {
+"namespacedashgo__driver2.html#ac38822713549b60f54ddf0d384dcbfa9":[43,0,19,2],
+"namespacedashgo__driver2.html#acc466769d2772016d37de4afb11ea7e1":[43,0,19,3],
+"namespacedashgo__driver_1_1dashgo__stm32.html":[43,0,18,0],
+"namespacedebug__pub.html":[43,0,20],
+"namespacedebug__pub.html#ad8964132ba024688eee09a85f1cc06cd":[43,0,20,1],
+"namespacedemo__becas.html":[43,0,21],
+"namespacedemo__becas.html#a2151e9e7805453d113a17685d53121a5":[43,0,21,1],
 "namespacedemo__becas.html#a9902a055b3e3fc3f06c3da078f398a47":[43,0,21,3],
 "namespacedemo__becas.html#ace0e951cda34e5df0d988ac6e774c7a2":[43,0,21,2],
 "namespacedemo__ds4.html":[43,0,22],
@@ -242,12 +249,5 @@ var NAVTREEINDEX39 =
 "namespacefrida__constants_1_1hri__constants.html#a4f57beaa697d3fd2366209c57e9261db":[43,0,63,0,45],
 "namespacefrida__constants_1_1hri__constants.html#a5122d4a93ffda1e706247ba9f13e538c":[43,0,63,0,29],
 "namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7":[43,0,63,0,48],
-"namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9":[43,0,63,0,19],
-"namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8":[43,0,63,0,40],
-"namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29":[43,0,63,0,36],
-"namespacefrida__constants_1_1hri__constants.html#a615c08822aa7ff399b5daf93033a00a6":[43,0,63,0,12],
-"namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8":[43,0,63,0,25],
-"namespacefrida__constants_1_1hri__constants.html#a6b6228c6ea413ec24c0b26890dac3fb5":[43,0,63,0,10],
-"namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd":[43,0,63,0,26],
-"namespacefrida__constants_1_1hri__constants.html#a8991597884d20fbe00d82139b7026ebf":[43,0,63,0,17]
+"namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9":[43,0,63,0,19]
 };

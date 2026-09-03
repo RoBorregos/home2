@@ -10,6 +10,7 @@ var classgpsr__task__manager_1_1GPSRTM =
     [ "_on_action_start", "classgpsr__task__manager_1_1GPSRTM.html#a254e014bbb1145c8c4247705320eb8f2", null ],
     [ "_publish_command_index", "classgpsr__task__manager_1_1GPSRTM.html#aa13116b088076bf52cf212f7d95d5799", null ],
     [ "_resolve_xy", "classgpsr__task__manager_1_1GPSRTM.html#a10dd40f4c8f60af5fc77007605832648", null ],
+    [ "_spoken_merged_plan", "classgpsr__task__manager_1_1GPSRTM.html#a6a3da4aa7a6a30bcab90839cac3d63d2", null ],
     [ "_track_state_change", "classgpsr__task__manager_1_1GPSRTM.html#a07ab2e2b3988fb097bba3b52f18c556e", null ],
     [ "navigate_to", "classgpsr__task__manager_1_1GPSRTM.html#a09e8b727fb274ed853d6a26cb6b5abf0", null ],
     [ "run", "classgpsr__task__manager_1_1GPSRTM.html#a4b53e2251f2eb169b1460844ebd1c0ee", null ],

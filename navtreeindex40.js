@@ -1,5 +1,12 @@
 var NAVTREEINDEX40 =
 {
+"namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8":[43,0,63,0,40],
+"namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29":[43,0,63,0,36],
+"namespacefrida__constants_1_1hri__constants.html#a615c08822aa7ff399b5daf93033a00a6":[43,0,63,0,12],
+"namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8":[43,0,63,0,25],
+"namespacefrida__constants_1_1hri__constants.html#a6b6228c6ea413ec24c0b26890dac3fb5":[43,0,63,0,10],
+"namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd":[43,0,63,0,26],
+"namespacefrida__constants_1_1hri__constants.html#a8991597884d20fbe00d82139b7026ebf":[43,0,63,0,17],
 "namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7":[43,0,63,0,23],
 "namespacefrida__constants_1_1hri__constants.html#aa04127dd3af14465c6ed0fdea141cd3c":[43,0,63,0,20],
 "namespacefrida__constants_1_1hri__constants.html#aaa486a9f7f79cd7c69c81ff85d8ba336":[43,0,63,0,8],
@@ -242,12 +249,5 @@ var NAVTREEINDEX40 =
 "namespacefrida__constants_1_1xarm__configurations.html":[43,0,63,8],
 "namespacefrida__constants_1_1xarm__configurations.html#a11fb9768bb78ea1ba4ea84e0e587de48":[43,0,63,8,4],
 "namespacefrida__constants_1_1xarm__configurations.html#a1ebb73dff17d4fb86c8530a2eda2fe58":[43,0,63,8,13],
-"namespacefrida__constants_1_1xarm__configurations.html#a2bb2a5e5161403e9e48a8ed3b652fa54":[43,0,63,8,14],
-"namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c":[43,0,63,8,2],
-"namespacefrida__constants_1_1xarm__configurations.html#a3573bdef9b6b808b471943095e5fbaa4":[43,0,63,8,5],
-"namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd":[43,0,63,8,3],
-"namespacefrida__constants_1_1xarm__configurations.html#a40724ca8949bf6768bc309e32f3b284f":[43,0,63,8,0],
-"namespacefrida__constants_1_1xarm__configurations.html#a749105a6a0190f46d91824dc4ba5aad8":[43,0,63,8,11],
-"namespacefrida__constants_1_1xarm__configurations.html#a849e0344225e88acda565e96c4430eea":[43,0,63,8,8],
-"namespacefrida__constants_1_1xarm__configurations.html#a8b1e396afc938cca2d0950696c816b6b":[43,0,63,8,6]
+"namespacefrida__constants_1_1xarm__configurations.html#a2bb2a5e5161403e9e48a8ed3b652fa54":[43,0,63,8,14]
 };

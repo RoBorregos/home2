@@ -2,6 +2,7 @@ var classtest__hri__manager_1_1TestHriManager =
 [
     [ "__init__", "classtest__hri__manager_1_1TestHriManager.html#a36b0bf279c06e38b98a8fef5ef2c2e04", null ],
     [ "_emit_benchmark_report", "classtest__hri__manager_1_1TestHriManager.html#a1a5411a5d21aac539a34327a1ab494b6", null ],
+    [ "_merged_plan_speech_failures", "classtest__hri__manager_1_1TestHriManager.html#a3a7a450ef7f36e6b0deb98205e9035a9", null ],
     [ "_run_perf_side_channel", "classtest__hri__manager_1_1TestHriManager.html#ae368c71d9e8d5a74f7fd9bcacfd0f721", null ],
     [ "async_llm_test", "classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1", null ],
     [ "detect_door", "classtest__hri__manager_1_1TestHriManager.html#ac324c102215af351f72106b28ae3be8c", null ],
@@ -18,6 +19,7 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "test_is_negative", "classtest__hri__manager_1_1TestHriManager.html#a5ffc27f537aa91090fa44f0e715250e5", null ],
     [ "test_is_positive", "classtest__hri__manager_1_1TestHriManager.html#a5e36aa8c1a7e0afb23ab8950f8ee5b1e", null ],
     [ "test_map", "classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6", null ],
+    [ "test_merged_plan_speech", "classtest__hri__manager_1_1TestHriManager.html#ab6539f583db1f8d9c7433e07eaa15ef6", null ],
     [ "test_merger", "classtest__hri__manager_1_1TestHriManager.html#ac612e2939530a3918c89a5f57ab90058", null ],
     [ "test_object_location", "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e", null ],
     [ "test_streaming", "classtest__hri__manager_1_1TestHriManager.html#ada6686724ccf7d0d09899ff380ccebf6", null ],
