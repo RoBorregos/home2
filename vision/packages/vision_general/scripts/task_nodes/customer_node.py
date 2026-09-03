@@ -12,7 +12,7 @@ from datetime import datetime
 
 import cv2
 import numpy as np
-from vision_general.utils.calculations import (
+from utils.calculations import (
     get2DCentroid,
     point2d_to_ros_point_stamped,
 )
@@ -23,7 +23,7 @@ from geometry_msgs.msg import Point, PointStamped
 from builtin_interfaces.msg import Time
 from frida_interfaces.srv import CropQuery, Customer
 from frida_interfaces.msg import PersonList, Person
-from vision_general.utils.ros_utils import wait_for_future
+from utils.ros_utils import wait_for_future
 from models.pose_detection import PoseDetection
 from vision_runtime import VisionRuntime, spin
 from frida_constants.vision_constants import (
