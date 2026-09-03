@@ -1,5 +1,6 @@
 var NAVTREEINDEX38 =
 {
+"md_manipulation_packages_vamp_resources_README.html#autotoc_md97":[9,3,1,1],
 "md_manipulation_packages_vamp_resources_README.html#autotoc_md98":[9,3,1,2],
 "md_manipulation_packages_vamp_scripts_README.html":[11],
 "md_manipulation_packages_vamp_scripts_README.html#autotoc_md103":[11,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX38 =
 "namespacedashgo__driver2.html#a11fe160e8e92a2ea6cbab643ed1d8a36":[43,0,19,7],
 "namespacedashgo__driver2.html#a7220adc4c225226793143348c6e1ac6d":[43,0,19,8],
 "namespacedashgo__driver2.html#a94ba9cc15107c0317260b0f50dc0d5a1":[43,0,19,5],
-"namespacedashgo__driver2.html#a9f41d112ae449716ef1bcafdb8ab08ec":[43,0,19,1],
-"namespacedashgo__driver2.html#aadf359cf24f3f2b174deae106d37ef3f":[43,0,19,4]
+"namespacedashgo__driver2.html#a9f41d112ae449716ef1bcafdb8ab08ec":[43,0,19,1]
 };

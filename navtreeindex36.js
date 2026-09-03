@@ -1,5 +1,6 @@
 var NAVTREEINDEX36 =
 {
+"manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html#ae9eb22e558e6f2b39ff28482a2960667":[45,0,3,0,0,0,3,2],
 "manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2____init_____8py.html":[45,0,3,0,1,1,2],
 "manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html":[45,0,3,0,1,1,1,3],
 "manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html#a788d5920b4a890dfdb242742b858f948":[45,0,3,0,1,1,1,3,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX36 =
 "md_docs_ai_hric_vision_architecture.html#autotoc_md218":[25,0],
 "md_docs_ai_hric_vision_architecture.html#autotoc_md219":[25,1],
 "md_docs_ai_hric_vision_architecture.html#autotoc_md220":[25,2],
-"md_docs_ai_hric_vision_architecture.html#autotoc_md221":[25,3],
-"md_docs_ai_hric_vision_architecture.html#autotoc_md222":[25,4]
+"md_docs_ai_hric_vision_architecture.html#autotoc_md221":[25,3]
 };

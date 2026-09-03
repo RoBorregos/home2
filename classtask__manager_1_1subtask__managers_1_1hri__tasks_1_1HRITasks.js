@@ -83,6 +83,7 @@ var classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "mock_data", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a1bcfdb46a04f87a6ebea92e784333ee5", null ],
     [ "mock_db", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a53b68bb31121a8a20eef0cf84128a83a", null ],
     [ "names", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a701c21732f808796299391bf4cbca5c6", null ],
+    [ "names_hotwords", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a69e188d135655fd32f81f44de9698437", null ],
     [ "node", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a0161cc25f47da2eb6831fdbed0c2a97c", null ],
     [ "objects_data", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#acaddc3526f459e72190e8d349686402e", null ],
     [ "positive", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a6176dc242a4e998b0839cb675ac1a356", null ],

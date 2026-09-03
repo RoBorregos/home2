@@ -1,5 +1,6 @@
 var NAVTREEINDEX39 =
 {
+"namespacedashgo__driver2.html#aadf359cf24f3f2b174deae106d37ef3f":[43,0,19,4],
 "namespacedashgo__driver2.html#ac38822713549b60f54ddf0d384dcbfa9":[43,0,19,2],
 "namespacedashgo__driver2.html#acc466769d2772016d37de4afb11ea7e1":[43,0,19,3],
 "namespacedashgo__driver_1_1dashgo__stm32.html":[43,0,18,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX39 =
 "namespacefrida__constants_1_1hri__constants.html#a451ff86158f7fdd9ed1e85902b264df4":[43,0,63,0,31],
 "namespacefrida__constants_1_1hri__constants.html#a4f57beaa697d3fd2366209c57e9261db":[43,0,63,0,45],
 "namespacefrida__constants_1_1hri__constants.html#a5122d4a93ffda1e706247ba9f13e538c":[43,0,63,0,29],
-"namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7":[43,0,63,0,48],
-"namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9":[43,0,63,0,19]
+"namespacefrida__constants_1_1hri__constants.html#a56bf361bc52f5478274dc6f3eb125cc7":[43,0,63,0,48]
 };
