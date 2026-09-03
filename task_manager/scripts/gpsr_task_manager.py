@@ -167,7 +167,6 @@ class GPSRTM(Node):
             if self.previous_state != self.current_state
             else self.current_state,
         )
-
         self.subtask_manager.hri.publish_display_step(new_state.lower(), GPSR_TASK_STEP_TOPIC)
         self._publish_command_index(self.executed_commands + len(self.batched_commands))
 
