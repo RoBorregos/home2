@@ -262,7 +262,7 @@ class SingleTracker(Node):
         # Stage 0: per-frame tracking is ultralytics ByteTrack (TrackerModel.track)
         # — NO per-frame appearance ReID. The heavy SWIN ReID is NOT loaded at
         # startup; Stage 1 will lazy-load a lightweight re-acquisition model
-        # (OSNet / face) on demand. DeepSORT is replaced by ByteTrack.
+        # (OSNet / face) on demand.
 
         self.output_image = []
         self.depth_image = []
@@ -559,8 +559,8 @@ class SingleTracker(Node):
         self.output_image = self.frame.copy()
 
         # ByteTrack runs continuously; SELECT the operator from the CURRENT tracks
-        # (no DeepSORT n_init confirmation loop needed) — Stage 0. Track + crops all
-        # use the same (flipped, if enabled) self.frame for consistency.
+        # — Stage 0. Track + crops all use the same (flipped, if enabled)
+        # self.frame for consistency.
         tracked_people = self._track(self.frame)
 
         largest_person = {
