@@ -17,6 +17,7 @@ from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     ANSWER_PUBLISHER,
     COMMAND_INTERPRETER_SERVICE,
+    DISPLAY_CAPTURE_TOPIC,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
     DISPLAY_PUBLISHER,
@@ -175,6 +176,9 @@ class HRITasks:
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
+        self.display_capture_publisher = self.node.create_publisher(
+            String, DISPLAY_CAPTURE_TOPIC, 10
+        )
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
@@ -1460,6 +1464,16 @@ class HRITasks:
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
+
+    def publish_display_capture(self, label: str, topic: str = "") -> None:
+        """Ask the display to snapshot a frame (from `topic`, or its current feed).
+
+        The display saves it to disk and shows it in the end-of-task gallery.
+        """
+        self.display_capture_publisher.publish(
+            String(data=json.dumps({"label": label, "topic": topic}))
+        )
+        Logger.info(self.node, f"Published display capture: {label} ({topic or 'current feed'})")
 
     def publish_display_step(self, step: str, topic: str = TASK_STEP_TOPIC) -> None:
         if topic == TASK_STEP_TOPIC:

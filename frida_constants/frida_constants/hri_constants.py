@@ -34,6 +34,7 @@ TASK_STATUS_TOPIC = "/hri/display/task_status"
 GPSR_TASK_STEP_TOPIC = "/gpsr/display/task_step"
 GPSR_COMMAND_INDEX_TOPIC = "/gpsr/display/command_index"
 TASK_STEP_TOPIC = "/hri/display/task_step"
+DISPLAY_CAPTURE_TOPIC = "/hri/display/capture"
 
 GPSR_COMMANDS = {
     "go_to",

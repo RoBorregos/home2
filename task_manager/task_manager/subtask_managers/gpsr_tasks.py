@@ -518,6 +518,9 @@ class GPSRTask(GenericTask):
         status, count = self.subtask_manager.hri.count_from_detections(labels, object_name)
         if status == Status.EXECUTION_SUCCESS:
             self.subtask_manager.hri.say(f"I have counted {count} {object_name}.")
+            self.subtask_manager.hri.publish_display_capture(
+                f"Counted {count} {object_name}", DETECTIONS_IMAGE_TOPIC
+            )
         else:
             self.subtask_manager.hri.say(f"I couldn't determine how many {object_name} there are.")
 
@@ -677,6 +680,9 @@ class GPSRTask(GenericTask):
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
                     f"I found a {command.attribute_value}. Please approach me.",
+                )
+                self.subtask_manager.hri.publish_display_capture(
+                    f"Found person: {command.attribute_value}", IMAGE_TOPIC_HRIC
                 )
                 break
 
