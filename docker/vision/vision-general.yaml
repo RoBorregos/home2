@@ -11,6 +11,7 @@ services:
     volumes:
       - ../../:/workspace/src
       - /dev:/dev
+      - /dev/shm:/dev/shm
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
