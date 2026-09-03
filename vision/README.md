@@ -59,12 +59,12 @@ home2/
 │   │   │   ├── ppc_launch.py
 │   │   │   ├── dlc_launch.py
 │   │   │   └── restaurant_launch.py
-│   │   ├── scripts/                       # ROS nodes (see Packages below)
-│   │   └── vision_general/utils/          # Importable library shared by every node
-│   │       ├── calculations.py            # deproject_pixel_to_point, get_depth, centroids
-│   │       ├── trt_utils.py               # load_yolo_trt(): .pt -> cached TensorRT .engine
-│   │       ├── debug_pub.py               # Subscriber-gated, rate-limited debug images
-│   │       └── area_check.py              # Room filtering via nav MapAreas + TF     
+│   │   └── scripts/                       # ROS nodes (see Packages below)
+│   │       └── utils/                     # Importable library shared by every node
+│   │           ├── calculations.py        # deproject_pixel_to_point, get_depth, centroids
+│   │           ├── trt_utils.py           # load_yolo_trt(): .pt -> cached TensorRT .engine
+│   │           ├── debug_pub.py           # Subscriber-gated, rate-limited debug images
+│   │           └── area_check.py          # Room filtering via nav MapAreas + TF     
 │   │
 │   └── moondream_run/                     # Moondream2 VLM bridge
 │       ├── scripts/moondream_node.py      # ROS node; gRPC client to localhost:50052
@@ -121,7 +121,7 @@ instead — that is exactly what `moondream_run` is.
 
 **2D boxes become 3D points in the base class.** `base_detector_node.py` pairs each
 detection with `DEPTH_IMAGE_TOPIC` and `CAMERA_INFO_TOPIC`, deprojects the box centroid via
-`vision_general/utils/calculations.py`, transforms it out of `CAMERA_FRAME` with TF, and
+`utils/calculations.py`, transforms it out of `CAMERA_FRAME` with TF, and
 publishes both `ObjectDetectionArray` and RViz markers.
 
 **TensorRT engines are built, cached, and device-specific.**

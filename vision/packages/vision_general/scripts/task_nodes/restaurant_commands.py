@@ -25,8 +25,8 @@ from frida_interfaces.msg import CustomerTable, PersonList
 from frida_interfaces.srv import Customer, CustomerTables, ObjectPoints
 
 from builtin_interfaces.msg import Time
-from vision_general.utils.calculations import point2d_to_ros_point_stamped
-from vision_general.utils.ros_utils import wait_for_future
+from utils.calculations import point2d_to_ros_point_stamped
+from utils.ros_utils import wait_for_future
 from vision_runtime import VisionRuntime, spin
 
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
