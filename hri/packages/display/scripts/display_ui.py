@@ -615,6 +615,7 @@ class StartButton(QStackedWidget):
 
         self.button = QPushButton("\U0001f525 Start")
         self.button.setFixedHeight(128 if xl else 60)
+        self.button.setMinimumWidth(360 if xl else 220)
         font = self.button.font()
         font.setPointSize(24 if xl else 12)
         font.setBold(True)
@@ -743,8 +744,9 @@ class MessagesPanel(QScrollArea):
         timestamp = datetime.now().strftime("%H:%M:%S")
 
         entry = QLabel(
-            f"<b style='color:{color}'>{icon} {msg_type.upper()}</b> "
-            f"<span style='color:#9ca3af'>{timestamp}</span><br>{content}"
+            f"<span style='color:{color}; font-size:16px;'><b>{icon} {msg_type.upper()}</b></span> "
+            f"<span style='color:#9ca3af; font-size:14px;'>{timestamp}</span>"
+            f"<br><span style='font-size:22px;'>{content}</span>"
         )
         entry.setWordWrap(True)
         entry.setStyleSheet(
