@@ -47,6 +47,14 @@ class DebugImagePublisher:
             CompressedImage, DEBUG_TOPIC_FMT.format(name=name), 10, **kwargs
         )
 
+    def has_subscribers(self) -> bool:
+        """True when either the raw or the compressed debug topic is consumed
+        (e.g. web_video_server streaming it for the display)."""
+        return (
+            self._raw_pub.get_subscription_count() > 0
+            or self._jpg_pub.get_subscription_count() > 0
+        )
+
     def publish(self, frame_bgr) -> None:
         """Publish a bgr8 debug frame; no-op unless someone is subscribed."""
         if frame_bgr is None or len(frame_bgr) == 0:

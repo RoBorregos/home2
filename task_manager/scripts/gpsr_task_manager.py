@@ -38,7 +38,7 @@ BATCH_SIZE = 3
 
 
 def confirm_command(interpreted_text, target_info):
-    return f"Is your command: {target_info}?"
+    return f"Is your command: {target_info}? Yes or no?"
 
 
 def search_command(command, objects: list[object]):

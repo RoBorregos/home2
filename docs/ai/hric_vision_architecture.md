@@ -124,9 +124,9 @@ the launch set (pointing_detection, gpsr_commands, etc. correctly excluded).
 **Mismatches in `vision_tasks.services[Task.HRIC]` (startup service checks):**
 - `beverage_location` and `moondream_query` are checked at startup, but the TM never
   calls `find_drink`; `moondream_query` is used only via `describe_person`.
-- `track_person` (SET_TARGET_TOPIC) **is used** by FOLLOW_PERSON but is registered under
-  `Task.HELP_ME_CARRY` — HRIC startup never verifies the tracker is up. Add it to the
-  HRIC dict.
+- ~~`track_person` (SET_TARGET_TOPIC) is used by FOLLOW_PERSON but was only registered
+  under `Task.HELP_ME_CARRY`~~ — FIXED: it is now in the `Task.HRIC` dict, so HRIC
+  startup verifies the tracker is up.
 
 **Redundancies / improvement candidates:**
 1. Double-loaded weights: `yolo11m-pose` ×2, `yolov8n` ×2 (§1). A shared pose service
