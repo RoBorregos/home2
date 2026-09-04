@@ -149,9 +149,14 @@ ENV TENSORRT_CACHE_DIR=/workspace/trt_cache
 USER ros
 
 # ── onnxruntime-gpu (must install as ros user) ──
-# The ros user's pip config includes pypi.jetson-ai-lab.io, which provides
-# the Jetson-optimized build with TensorrtExecutionProvider + CUDAExecutionProvider.
-RUN pip install --no-cache-dir onnxruntime-gpu
+# Install the Jetson wheel explicitly; the generic PyPI wheel does not provide
+# TensorRTExecutionProvider on Orin.
+RUN pip uninstall -y onnxruntime onnxruntime-gpu 2>/dev/null || true && \
+        pip install --no-cache-dir \
+            --index-url https://pypi.jetson-ai-lab.io/sbsa/cu130 \
+            --extra-index-url https://pypi.org/simple \
+            onnxruntime-gpu && \
+        python3 -c 'import onnxruntime as ort; providers = ort.get_available_providers(); assert "TensorrtExecutionProvider" in providers, providers; print(providers)'
 
 RUN sudo dpkg --force-depends -r ros-${ROS_DISTRO}-cv-bridge 2>/dev/null || true
 RUN mkdir -p /tmp/cv_bridge_ws/src && cd /tmp/cv_bridge_ws/src && \
