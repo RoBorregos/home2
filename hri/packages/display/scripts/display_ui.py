@@ -967,6 +967,55 @@ class CenteredWindow(BaseWindow):
         root.addLayout(body, 1)
 
 
+class StartOverlay(QWidget):
+    """Floating Start prompt shown over whatever page is currently visible.
+
+    Unlike navigating the step stack to the button page, this never touches
+    the underlying content — closing it (X or pressing Start) returns you to
+    exactly what was on screen before.
+    """
+
+    def __init__(self, ros_node: DisplayRosNode, parent=None):
+        super().__init__(parent)
+        self.ros_node = ros_node
+        self.setStyleSheet("background-color: rgba(0,0,0,190);")
+
+        close_row = QHBoxLayout()
+        close_row.addStretch()
+        close_btn = QPushButton("✕ Close")
+        close_btn.setStyleSheet(
+            "background: transparent; color: #b4b4b4; font-weight: normal; font-size: 14px;"
+        )
+        close_btn.clicked.connect(self.hide)
+        close_row.addWidget(close_btn)
+
+        button = QPushButton("\U0001f525 Start")
+        button.setFixedHeight(110)
+        button.setMinimumWidth(340)
+        font = button.font()
+        font.setPointSize(26)
+        font.setBold(True)
+        button.setFont(font)
+        button.clicked.connect(self._on_start_clicked)
+
+        center_row = QHBoxLayout()
+        center_row.addStretch()
+        center_row.addWidget(button)
+        center_row.addStretch()
+
+        layout = QVBoxLayout(self)
+        layout.addLayout(close_row)
+        layout.addStretch()
+        layout.addLayout(center_row)
+        layout.addStretch()
+
+        self.hide()
+
+    def _on_start_clicked(self):
+        self.ros_node.publish_button_press()
+        self.hide()
+
+
 class SteppedWindow(BaseWindow):
     """Step pill bar + button/camera/logs/both stacked content (gpsr / hric)."""
 
@@ -1007,13 +1056,20 @@ class SteppedWindow(BaseWindow):
 
         root.addWidget(self.stack, 1)
 
+        fab_size = 84
         self.restore_fab = QPushButton("\U0001f525", self._central)
-        self.restore_fab.setFixedSize(56, 56)
+        self.restore_fab.setFixedSize(fab_size, fab_size)
+        fab_font = self.restore_fab.font()
+        fab_font.setPointSize(30)
+        self.restore_fab.setFont(fab_font)
         self.restore_fab.setStyleSheet(
-            "border-radius: 28px; background-color: rgba(59,111,224,204); font-size: 20px;"
+            f"border-radius: {fab_size // 2}px; background-color: rgba(59,111,224,230);"
         )
-        self.restore_fab.clicked.connect(lambda: self.set_mode(MODE_BUTTON))
+        self.restore_fab.clicked.connect(self._show_start_overlay)
+        self._position_restore_fab()
         self.restore_fab.hide()
+
+        self.start_overlay = StartOverlay(ros_node, self._central)
 
         signals.task_step_changed.connect(self._on_task_step)
         self.set_mode(MODE_BUTTON)
@@ -1023,9 +1079,14 @@ class SteppedWindow(BaseWindow):
         if mode == MODE_BUTTON:
             self.restore_fab.hide()
         else:
+            self._position_restore_fab()
             self.restore_fab.show()
             self.restore_fab.raise_()
-            self._position_restore_fab()
+
+    def _show_start_overlay(self):
+        self.start_overlay.setGeometry(self._central.rect())
+        self.start_overlay.show()
+        self.start_overlay.raise_()
 
     def _position_restore_fab(self):
         margin = 24
@@ -1039,6 +1100,8 @@ class SteppedWindow(BaseWindow):
         super().resizeEvent(event)
         if self.restore_fab.isVisible():
             self._position_restore_fab()
+        if self.start_overlay.isVisible():
+            self.start_overlay.setGeometry(self._central.rect())
 
     def step_index(self, key: str) -> int:
         for i, (step_key, _label, _icon) in enumerate(self.steps):
