@@ -4,9 +4,6 @@ Everything the robot does with its arm: **pick**, **place**, **pour**, and the p
 services those three need. One ROS 2 action is the whole public surface; everything below it is an
 implementation detail of this area.
 
-> Simulation packages (`mujoco_spawn`, `mujoco_ros2_control`) are out of scope here — they are not
-> part of the pick-and-place path.
-
 ---
 
 ## 1. System context
@@ -307,32 +304,7 @@ logic still makes the same choices, **not** that the robot works.
 
 ---
 
-## 9. Debugging
-
-Read the logs in this order — each line tells you which layer failed:
-
-```
-[flat pose=0 alt=1] descend: start        <- manipulation_core, phase + candidate
-[ForceGuard] t=6.0s ~72mm max_jump=0.44N  <- the descent, live effort
-[ompl] Unable to sample any valid states  <- MoveIt: goal unreachable or in collision
-```
-
-| Symptom | Look at |
-|---|---|
-| `grasp pose unreachable`, OMPL cannot sample | Collision scene. The octomap often contains the target object |
-| Descent stops short | `[ForceGuard]` trace: a false contact trips near `min_contact_descent` |
-| `no contact after descending N mm` | Budget is `timeout × descent_speed`; compare with the real height |
-| Everything fails after one bad run | The arm may be stuck in mode 5. Check `[xArm] mode …` lines |
-| Place lands in a strange spot | `heatmapPlace_Server` publishes its chosen point and can dump its maps |
-
-```bash
-docker compose -f docker-compose-l4t.yaml exec -T manipulation \
-  bash -c "source /opt/ros/humble/setup.bash && ros2 node list"
-```
-
----
-
-## 10. Docker setup
+## 9. Docker setup
 
 **Requirements:** Docker Engine, and the NVIDIA Container Toolkit for CUDA/L4T images.
 
