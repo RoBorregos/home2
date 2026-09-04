@@ -589,14 +589,14 @@ class AudioPill(QLabel):
             self.setText("\U0001f50a Speaking")
             self.setStyleSheet(
                 f"color: {PURPLE}; background-color: rgba(157,95,214,50);"
-                "border-radius: 12px; padding: 4px 12px; font-weight: bold;"
+                "border-radius: 12px; padding: 6px 16px; font-weight: bold; font-size: 18px;"
             )
             self.show()
         elif state == "idle":
             self.setText("\U0001f507 Idle")
             self.setStyleSheet(
                 f"color: {TEXT_GRAY}; background-color: transparent;"
-                "border-radius: 12px; padding: 4px 12px;"
+                "border-radius: 12px; padding: 6px 16px; font-size: 18px;"
             )
             self.show()
         else:
@@ -885,7 +885,7 @@ class BaseWindow(QMainWindow):
         layout = QHBoxLayout(header)
         layout.setContentsMargins(12, 8, 12, 8)
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        title_label.setStyleSheet("font-size: 26px; font-weight: bold;")
         layout.addWidget(title_label)
         for widget in extra_left:
             layout.addWidget(widget)
