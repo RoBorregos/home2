@@ -18,9 +18,6 @@ _run_sh_autocomplete() {
             # TODO: add other important scripts
             flags="$flags --test-hri --demo-becas"
             ;;
-        display)
-            flags="$flags --build-display --open-display"
-            ;;
     esac
 
     local options
@@ -51,7 +48,7 @@ _initiate_sh_autocomplete() {
     _init_completion || return
 
     local tasks="--gpsr --hric --ppc --storing-groceries --finals"
-    local flags="--build --recreate --open-display --zed --integration"
+    local flags="--build --recreate --zed --integration"
 
     local options
     case ${COMP_CWORD} in
