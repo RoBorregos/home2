@@ -19,6 +19,7 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
     libxcb-cursor0 libxcb-xkb1 libjpeg-dev \
     ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+    python3-libnvinfer \
     && rm -rf /var/lib/apt/lists/*
 
 # ── dlib with CUDA for Orin AGX (sm_87) ──
@@ -139,11 +140,6 @@ RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 # Usage: docker run -v /path/on/host:/workspace/trt_cache ...
 RUN mkdir -p /workspace/trt_cache && chmod 777 /workspace/trt_cache
 ENV TENSORRT_CACHE_DIR=/workspace/trt_cache
-
-# Use the TensorRT Python binding supplied by the JetPack/L4T repository.
-RUN apt-get update -qq && apt-get install -y --no-install-recommends \
-    python3-libnvinfer \
-    && rm -rf /var/lib/apt/lists/*
 
 # ── Orin AGX max performance at runtime ──
 # Set MAXN power mode and max clocks before running vision nodes:
