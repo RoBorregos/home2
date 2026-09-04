@@ -1006,11 +1006,39 @@ class SteppedWindow(BaseWindow):
         self.stack.addWidget(both_page)
 
         root.addWidget(self.stack, 1)
+
+        self.restore_fab = QPushButton("\U0001f525", self._central)
+        self.restore_fab.setFixedSize(56, 56)
+        self.restore_fab.setStyleSheet(
+            "border-radius: 28px; background-color: rgba(59,111,224,204); font-size: 20px;"
+        )
+        self.restore_fab.clicked.connect(lambda: self.set_mode(MODE_BUTTON))
+        self.restore_fab.hide()
+
         signals.task_step_changed.connect(self._on_task_step)
         self.set_mode(MODE_BUTTON)
 
     def set_mode(self, mode: str):
         self.stack.setCurrentIndex(self.MODES.index(mode))
+        if mode == MODE_BUTTON:
+            self.restore_fab.hide()
+        else:
+            self.restore_fab.show()
+            self.restore_fab.raise_()
+            self._position_restore_fab()
+
+    def _position_restore_fab(self):
+        margin = 24
+        rect = self._central.rect()
+        self.restore_fab.move(
+            rect.width() - self.restore_fab.width() - margin,
+            rect.height() - self.restore_fab.height() - margin,
+        )
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self.restore_fab.isVisible():
+            self._position_restore_fab()
 
     def step_index(self, key: str) -> int:
         for i, (step_key, _label, _icon) in enumerate(self.steps):
