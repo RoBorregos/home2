@@ -50,8 +50,6 @@ var namespaces_dup =
       [ "_STUBBED", "namespaceconftest.html#a267ba91a9d10f1ce88460da25bfe1727", null ]
     ] ],
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
-    [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
-    [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
     [ "demo_becas", "namespacedemo__becas.html", "namespacedemo__becas" ],
     [ "demo_ds4", "namespacedemo__ds4.html", [
       [ "generate_launch_description", "namespacedemo__ds4.html#a3b92a5a114f0a71450f4b47c440d3352", null ]
@@ -93,13 +91,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacedownsample__pc.html#ac2b4cab7e9652eb5d6142f99b1981c55", null ]
     ] ],
     [ "ds4_demo", "namespaceds4__demo.html", "namespaceds4__demo" ],
-    [ "dualshock_cmd_vel", "namespacedualshock__cmd__vel.html", [
-      [ "generate_launch_description", "namespacedualshock__cmd__vel.html#a432ab17ac92da4fc48450236583614a3", null ]
-    ] ],
     [ "egsr_cut", "namespaceegsr__cut.html", "namespaceegsr__cut" ],
-    [ "ekf", "namespaceekf.html", [
-      [ "generate_launch_description", "namespaceekf.html#a32e94cb02311b88f95d5b52017cf6948", null ]
-    ] ],
     [ "evaluate_mbm", "namespaceevaluate__mbm.html", [
       [ "main", "namespaceevaluate__mbm.html#aa346f69415bd523a19a5647fe30c3740", null ]
     ] ],
@@ -272,9 +264,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacemerge__multi.html#aed4bf9362e9c7a4f7e289108d2e92868", null ]
     ] ],
     [ "models", "namespacemodels.html", "namespacemodels" ],
-    [ "monitor", "namespacemonitor.html", [
-      [ "generate_launch_description", "namespacemonitor.html#a89ffacc2739b9bf0e8a294482eeff9a1", null ]
-    ] ],
     [ "moondream_lib", "namespacemoondream__lib.html", "namespacemoondream__lib" ],
     [ "moondream_node", "namespacemoondream__node.html", "namespacemoondream__node" ],
     [ "moondream_proto_pb2", "namespacemoondream__proto__pb2.html", [
@@ -311,10 +300,6 @@ var namespaces_dup =
       [ "_deep_merge", "namespacenav2__omni.html#a8f9ab7e6f07b2aa955480714d501402f", null ],
       [ "generate_launch_description", "namespacenav2__omni.html#ae46555951af49346cd9428eb1af550cf", null ],
       [ "launch_setup", "namespacenav2__omni.html#a9f93b07e8eb53e1d1c2a1aac7bf8cd7c", null ]
-    ] ],
-    [ "nav_basics", "namespacenav__basics.html", [
-      [ "generate_launch_description", "namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146", null ],
-      [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
     ] ],
     [ "nav_central", "namespacenav__central.html", "namespacenav__central" ],
     [ "nav_goal_arm_pointer", "namespacenav__goal__arm__pointer.html", "namespacenav__goal__arm__pointer" ],
@@ -419,9 +404,6 @@ var namespaces_dup =
     ] ],
     [ "ros_utils", "namespaceros__utils.html", [
       [ "wait_for_future", "namespaceros__utils.html#a788d5920b4a890dfdb242742b858f948", null ]
-    ] ],
-    [ "rtabnav2", "namespacertabnav2.html", [
-      [ "generate_launch_description", "namespacertabnav2.html#a0b5741c31c1cac08c5b3158c043374e7", null ]
     ] ],
     [ "run_while_hearing", "namespacerun__while__hearing.html", "namespacerun__while__hearing" ],
     [ "safety_task_manager", "namespacesafety__task__manager.html", "namespacesafety__task__manager" ],

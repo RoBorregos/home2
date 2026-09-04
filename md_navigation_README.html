@@ -126,7 +126,6 @@ Tree structure</h1>
 <div class="line">│   │   │   ├── omni_config/            # Holonomic (omnibase) Nav2 profiles</div>
 <div class="line">│   │   │   └── rtabmap/               # RTABMap RGBD SLAM configs</div>
 <div class="line">│   │   ├── launch/</div>
-<div class="line">│   │   │   ├── dashgo_base/            # Diff-drive base bringup (RTABMap)</div>
 <div class="line">│   │   │   ├── omni_setup/             # Omni base bringup (slam_toolbox)</div>
 <div class="line">│   │   │   └── task_launch/            # Top-level launches per task</div>
 <div class="line">│   │   │       ├── general_navigation.launch.py</div>
@@ -152,7 +151,6 @@ Tree structure</h1>
 <div class="line">│   │   ├── src/map_service.cpp         # C++ map/areas service</div>
 <div class="line">│   │   └── launch/simulate_map.launch.py</div>
 <div class="line">│   │</div>
-<div class="line">│   ├── dashgo_driver/                  # Diff-drive base driver (STM32) + EKF</div>
 <div class="line">│   └── omnidriver/                     # Holonomic (ODrive) base driver + dashboard</div>
 <div class="line">│</div>
 <div class="line">├── README.md                           # This file</div>
@@ -164,14 +162,12 @@ Tree structure</h1>
 <div class="line">└── run.sh                              # Area entrypoint (called by root run.sh)</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md161"></a>
 Concepts</h1>
-<p>The base and SLAM backend are chosen with launch arguments. The omnibase row is the current setup; the dashgo row is the legacy diff-drive path:</p>
+<p>The SLAM backend is chosen with the <code>nav_type</code> launch argument. The robot always runs on the omnibase:</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
-<th class="markdownTableHeadNone"><code>default_base</code>   </th><th class="markdownTableHeadNone"><code>nav_type</code>   </th><th class="markdownTableHeadNone">SLAM backend   </th><th class="markdownTableHeadNone">Base   </th><th class="markdownTableHeadNone">Status    </th></tr>
+<th class="markdownTableHeadNone"><code>nav_type</code>   </th><th class="markdownTableHeadNone">SLAM backend   </th><th class="markdownTableHeadNone">Base    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>omnibase</code> (default)   </td><td class="markdownTableBodyNone"><code>2d</code>   </td><td class="markdownTableBodyNone"><code>slam_toolbox</code> (lidar)   </td><td class="markdownTableBodyNone">Holonomic (<code>omnidriver</code>)   </td><td class="markdownTableBodyNone">Current    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>dashgo</code>   </td><td class="markdownTableBodyNone"><code>3d</code>   </td><td class="markdownTableBodyNone"><code>RTABMap</code> (RGBD)   </td><td class="markdownTableBodyNone">Diff-drive (<code><a class="el" href="namespacedashgo__driver.html">dashgo_driver</a></code>)   </td><td class="markdownTableBodyNone">Legacy   </td></tr>
+<td class="markdownTableBodyNone"><code>2d</code> (default)   </td><td class="markdownTableBodyNone"><code>slam_toolbox</code> (lidar)   </td><td class="markdownTableBodyNone">Holonomic (<code>omnidriver</code>)   </td></tr>
 </table>
 <p>The **<code><a class="el" href="namespacenav__central.html">nav_central</a></code>** node is the brain of the area. It:</p>
 <ul>
@@ -217,10 +213,7 @@ Running navigation</h1>
 <div class="line"># Restaurant — maps the unknown venue live while serving, with table docking</div>
 <div class="line">ros2 launch nav_main restaurant.launch.py</div>
 </div><!-- fragment --><p>Common launch arguments:</p>
-<div class="fragment"><div class="line"># Use the diff-drive base + 3D RTABMap SLAM instead of the omnibase default</div>
-<div class="line">ros2 launch nav_main general_navigation.launch.py default_base:=dashgo nav_type:=3d</div>
-<div class="line"> </div>
-<div class="line"># Override the map for this session only</div>
+<div class="fragment"><div class="line"># Override the map for this session only</div>
 <div class="line">ros2 launch nav_main general_navigation.launch.py map_name:=lab_23.db</div>
 </div><!-- fragment --><p>The equivalent shortcuts from the root <code>run.sh</code> are:</p>
 <div class="fragment"><div class="line">./run.sh navigation --mapping     # ros2 launch nav_main mapping.launch.py</div>
@@ -234,8 +227,7 @@ Building a map (mapping workflow)</h2>
 <li>Launch mapping: <code>ros2 launch nav_main <a class="el" href="mapping_8launch_8py.html">mapping.launch.py</a></code> (or <code>./run.sh navigation --mapping</code>). This starts <code><a class="el" href="namespacenav__central.html">nav_central</a></code> in mapping mode, the SLAM backend and the **<code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>** control panel.</li>
 <li>Drive the robot around the arena to cover the whole space.</li>
 <li>In <code><a class="el" href="namespacenav__ui.html">nav_ui</a></code>, use <b>Save Map</b> to persist it:<ul>
-<li>omnibase / slam_toolbox → <code>&lt;name&gt;.posegraph</code> + <code>&lt;name&gt;.data</code> + a <code>&lt;name&gt;.yaml</code>/<code>&lt;name&gt;.pgm</code> grid.</li>
-<li>dashgo / RTABMap → the RTABMap <code>&lt;name&gt;.db</code> + a 2D <code>&lt;name&gt;.yaml</code>/<code>.pgm</code>. Maps are written to <code>navigation/packages/map_context/maps/</code>.</li>
+<li><code>&lt;name&gt;.posegraph</code> + <code>&lt;name&gt;.data</code> + a <code>&lt;name&gt;.yaml</code>/<code>&lt;name&gt;.pgm</code> grid. Maps are written to <code>navigation/packages/map_context/maps/</code>.</li>
 </ul>
 </li>
 </ol>
@@ -286,7 +278,7 @@ Navigation services</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/navigation/follow_person</code>   </td><td class="markdownTableBodyNone"><code>SetBool</code>   </td><td class="markdownTableBodyNone">Start/stop person following    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>/navigation/resume_nav</code>   </td><td class="markdownTableBodyNone"><code>Empty</code>   </td><td class="markdownTableBodyNone">Resume paused Nav2 (+ RTABMap on the legacy dashgo)   </td></tr>
+<td class="markdownTableBodyNone"><code>/navigation/resume_nav</code>   </td><td class="markdownTableBodyNone"><code>Empty</code>   </td><td class="markdownTableBodyNone">Resume paused Nav2   </td></tr>
 </table>
 <h2><a class="anchor" id="autotoc_md171"></a>
 Example service calls</h2>
@@ -315,10 +307,13 @@ Robot bases</h1>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Package   </th><th class="markdownTableHeadNone">Base   </th><th class="markdownTableHeadNone">Status   </th><th class="markdownTableHeadNone">Notes    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>omnidriver</code>   </td><td class="markdownTableBodyNone">Holonomic ODrive base   </td><td class="markdownTableBodyNone">Current   </td><td class="markdownTableBodyNone"><code>odrive_serial_twist</code> (cmd_vel → wheels), <code>odrive_dashboard</code> web dashboard, <code>simple_rx</code>    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacedashgo__driver.html">dashgo_driver</a></code>   </td><td class="markdownTableBodyNone">EAI Dashgo diff-drive   </td><td class="markdownTableBodyNone">Legacy   </td><td class="markdownTableBodyNone">STM32 serial driver + <code><a class="el" href="ekf_8launch_8py.html">ekf.launch.py</a></code> odometry fusion; kept for the old diff-drive base   </td></tr>
+<td class="markdownTableBodyNone"><code>omnidriver</code>   </td><td class="markdownTableBodyNone">Holonomic ODrive base   </td><td class="markdownTableBodyNone">Current   </td><td class="markdownTableBodyNone"><code>odrive_serial_twist</code> (cmd_vel → wheels), <code>odrive_dashboard</code> web dashboard, <code>simple_rx</code>   </td></tr>
 </table>
+<h1><a class="anchor" id="autotoc_md174"></a>
+External repositories</h1>
+<ul>
+<li><b>Dashgo base driver &amp; launch files</b>: Moved to <a href="https://github.com/RoBorregos/Dashgo.git">RoBorregos/Dashgo</a> </li>
+</ul>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->

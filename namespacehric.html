@@ -104,20 +104,15 @@ Functions</h2></td></tr>
 <tr class="separator:a9ba344eaf004b5e2b4032d983f068469"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">HRI follow-person bringup — OMNIBASE by default (dashgo still selectable).
+<div class="textblock"><pre class="fragment">HRI follow-person bringup.
 
 Same base-selection convention as general_navigation.launch.py, plus the
 person_goal_smoother that bridges the vision tracker to the Nav2 GoalUpdater.
-
-  omnibase (default): omni_basics + slam_toolbox localization + nav2_omni
-  dashgo            : nav_basics + RTABMap localization + nav2 (nav2_standard)
 
 The actual "follow person" trigger is the /navigation/follow_person service on
 nav_central; it switches person_goal_smoother to follow mode (which swaps in the
 nav2_omni_following.yaml params) and sends a NavigateToPose goal with the
 follow_dynamic_point.xml behaviour tree.
-
-Override the base:   ros2 launch nav_main hric.launch.py default_base:=dashgo
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="ad1dd056eac0c72bace8a6fdd839dd77d" name="ad1dd056eac0c72bace8a6fdd839dd77d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad1dd056eac0c72bace8a6fdd839dd77d">&#9670;&#160;</a></span>generate_launch_description()</h2>

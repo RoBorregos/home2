@@ -61,7 +61,7 @@ var searchData=
   ['urdf_5froot_58',['urdf_root',['../classscripts_1_1xacro2mjcf_1_1Xacro2Mjcf.html#a93fde4beba27b85f9d0ab5254c2058c8',1,'scripts::xacro2mjcf::Xacro2Mjcf']]],
   ['use_5farm_59',['use_arm',['../classfollow__calibration_1_1FollowCalibration.html#adb22dcbd428dbd09f3ddc55afb41cd55',1,'follow_calibration::FollowCalibration']]],
   ['use_5fdense_60',['use_dense',['../namespaceutils_1_1models_1_1reid__model.html#ae671375d833f458905be442e9620fb00',1,'utils::models::reid_model']]],
-  ['use_5fdishwasher_61',['use_dishwasher',['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#abf8a9d4227d20d14286469bf375433c9',1,'pickandplace_task_manager.PickAndPlaceTM.use_dishwasher()'],['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#a948a5b2aefaf013596f5fa2e2f023c0a',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.use_dishwasher()']]],
+  ['use_5fdishwasher_61',['use_dishwasher',['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#a948a5b2aefaf013596f5fa2e2f023c0a',1,'test_ppc_cabinet_place.PPCTestCabinetPlace.use_dishwasher()'],['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#abf8a9d4227d20d14286469bf375433c9',1,'pickandplace_task_manager.PickAndPlaceTM.use_dishwasher()']]],
   ['use_5fextra_5fsurface_62',['use_extra_surface',['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a6354ef2769e4119bf08d15b9e115c5ea',1,'pickandplace_task_manager::PickAndPlaceTM']]],
   ['use_5ffp16_63',['use_fp16',['../namespaceutils_1_1models_1_1reid__model.html#a845384362c679ceb807a25320fed2684',1,'utils::models::reid_model']]],
   ['use_5ffront_5fcontour_64',['use_front_contour',['../classtable__docker_1_1TableDocker.html#a19c5b45f81e98a3ec06dfd2d495738f8',1,'table_docker::TableDocker']]],
@@ -84,9 +84,8 @@ var searchData=
   ['use_5fzed_81',['use_zed',['../classzed__simulator_1_1ZedSimulator.html#a51ea3acb3de2294481c6d53d9cfd9f77',1,'zed_simulator::ZedSimulator']]],
   ['useful_5faudio_5fnode_5fname_82',['USEFUL_AUDIO_NODE_NAME',['../namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a',1,'frida_constants::hri_constants']]],
   ['useful_5faudio_5ftopic_83',['USEFUL_AUDIO_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733',1,'frida_constants::hri_constants']]],
-  ['useimu_84',['useImu',['../classdashgo__driver2_1_1DashgoDriver.html#a44242a5b500095dc84d451bb3d24e7d5',1,'dashgo_driver2::DashgoDriver']]],
-  ['using_20vamp_20inside_20of_20c_2b_2b_20projects_85',['Using VAMP inside of C++ projects',['../md_manipulation_packages_vamp_scripts_cpp_README.html',1,'']]],
-  ['utils_86',['utils',['../namespaceutils.html',1,'']]],
-  ['utils_2ehh_87',['utils.hh',['../planning_2utils_8hh.html',1,'(Global Namespace)'],['../utils_8hh.html',1,'(Global Namespace)'],['../vector_2utils_8hh.html',1,'(Global Namespace)']]],
-  ['utils_2epy_88',['utils.py',['../frida__constants_2frida__constants_2utils_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html',1,'(Global Namespace)']]]
+  ['using_20vamp_20inside_20of_20c_2b_2b_20projects_84',['Using VAMP inside of C++ projects',['../md_manipulation_packages_vamp_scripts_cpp_README.html',1,'']]],
+  ['utils_85',['utils',['../namespaceutils.html',1,'']]],
+  ['utils_2ehh_86',['utils.hh',['../planning_2utils_8hh.html',1,'(Global Namespace)'],['../utils_8hh.html',1,'(Global Namespace)'],['../vector_2utils_8hh.html',1,'(Global Namespace)']]],
+  ['utils_2epy_87',['utils.py',['../frida__constants_2frida__constants_2utils_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2arm__pkg_2arm__pkg_2utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2object__detector__2d_2scripts_2detectors_2utils_8py.html',1,'(Global Namespace)']]]
 ];

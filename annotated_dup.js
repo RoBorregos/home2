@@ -36,14 +36,6 @@ var annotated_dup =
     [ "customer_node", "namespacecustomer__node.html", [
       [ "CustomerNode", "classcustomer__node_1_1CustomerNode.html", "classcustomer__node_1_1CustomerNode" ]
     ] ],
-    [ "dashgo_driver", "namespacedashgo__driver.html", [
-      [ "dashgo_stm32", "namespacedashgo__driver_1_1dashgo__stm32.html", [
-        [ "Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32" ]
-      ] ]
-    ] ],
-    [ "dashgo_driver2", "namespacedashgo__driver2.html", [
-      [ "DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", "classdashgo__driver2_1_1DashgoDriver" ]
-    ] ],
     [ "demo_becas", "namespacedemo__becas.html", [
       [ "DemoBecas", "classdemo__becas_1_1DemoBecas.html", "classdemo__becas_1_1DemoBecas" ]
     ] ],

@@ -247,7 +247,6 @@ var hierarchy =
     [ "ompl::base::StateValidityChecker", null, [
       [ "VAMPStateValidator", "structVAMPStateValidator.html", null ]
     ] ],
-    [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
     [ "task_manager.utils.subtask_manager.SubtaskManager", "classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html", null ],
     [ "hardware_interface::SystemInterface", null, [
       [ "mujoco_ros2_control::MujocoSystemInterface", "classmujoco__ros2__control_1_1MujocoSystemInterface.html", [
@@ -336,7 +335,6 @@ var hierarchy =
       [ "calibrate_ignore_laser.LidarCalibrator", "classcalibrate__ignore__laser_1_1LidarCalibrator.html", null ],
       [ "call_joint_goal.MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", null ],
       [ "call_pose_goal.MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", null ],
-      [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
       [ "demo_becas.DemoBecas", "classdemo__becas_1_1DemoBecas.html", null ],
       [ "demo_manager.DemoTM", "classdemo__manager_1_1DemoTM.html", null ],
       [ "demo_roborregosday.DemoRoborregosDay", "classdemo__roborregosday_1_1DemoRoborregosDay.html", null ],

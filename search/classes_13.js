@@ -27,9 +27,8 @@ var searchData=
   ['spheres_24',['Spheres',['../structvamp_1_1robots_1_1Baxter_1_1Spheres.html',1,'vamp::robots::Baxter::Spheres&lt; rake &gt;'],['../structvamp_1_1robots_1_1Fetch_1_1Spheres.html',1,'vamp::robots::Fetch::Spheres&lt; rake &gt;'],['../structvamp_1_1robots_1_1FRIDA__Real_1_1Spheres.html',1,'vamp::robots::FRIDA_Real::Spheres&lt; rake &gt;'],['../structvamp_1_1robots_1_1Panda_1_1Spheres.html',1,'vamp::robots::Panda::Spheres&lt; rake &gt;'],['../structvamp_1_1robots_1_1Sphere_1_1Spheres.html',1,'vamp::robots::Sphere::Spheres&lt; rake &gt;'],['../structvamp_1_1robots_1_1UR5_1_1Spheres.html',1,'vamp::robots::UR5::Spheres&lt; rake &gt;']]],
   ['states_25',['States',['../classdemo__manager_1_1DemoTM_1_1States.html',1,'demo_manager.DemoTM.States'],['../classdemo__roborregosday_1_1DemoRoborregosDay_1_1States.html',1,'demo_roborregosday.DemoRoborregosDay.States'],['../classegsr__cut_1_1EGPSRTM_1_1States.html',1,'egsr_cut.EGPSRTM.States']]],
   ['status_26',['Status',['../classtask__manager_1_1utils_1_1status_1_1Status.html',1,'task_manager::utils::status']]],
-  ['stm32_27',['Stm32',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html',1,'dashgo_driver::dashgo_stm32']]],
-  ['storinggroceriesmanager_28',['StoringGroceriesManager',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html',1,'storing_groceries_manager']]],
-  ['storinggroceriestm_29',['StoringGroceriesTM',['../class__storing__groceries_1_1StoringGroceriesTM.html',1,'_storing_groceries']]],
-  ['subtask_5fmanager_30',['SUBTASK_MANAGER',['../classfrida__constants_1_1navigation__constants_1_1SUBTASK__MANAGER.html',1,'frida_constants::navigation_constants']]],
-  ['subtaskmanager_31',['SubtaskManager',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html',1,'task_manager::utils::subtask_manager']]]
+  ['storinggroceriesmanager_27',['StoringGroceriesManager',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html',1,'storing_groceries_manager']]],
+  ['storinggroceriestm_28',['StoringGroceriesTM',['../class__storing__groceries_1_1StoringGroceriesTM.html',1,'_storing_groceries']]],
+  ['subtask_5fmanager_29',['SUBTASK_MANAGER',['../classfrida__constants_1_1navigation__constants_1_1SUBTASK__MANAGER.html',1,'frida_constants::navigation_constants']]],
+  ['subtaskmanager_30',['SubtaskManager',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html',1,'task_manager::utils::subtask_manager']]]
 ];

@@ -159,7 +159,7 @@ Non-interactive mode (docker compose): prints nav_central to stdout,
   0 = nav_central only (default)
   1 = nav2 container
   2 = rtabmap container
-  3 = hardware (dashgo, lidar, ekf)
+  3 = hardware (lidar, ekf)
   4 = all logs
   5 = launch messages only
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
@@ -507,7 +507,7 @@ Non-interactive mode (docker compose): prints nav_central to stdout,
 <b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  {</div>
 <div class="line"><span class="lineno">    2</span>    <span class="stringliteral">&#39;nav2&#39;</span>: [<span class="stringliteral">&#39;nav2_container&#39;</span>],</div>
 <div class="line"><span class="lineno">    3</span>    <span class="stringliteral">&#39;rtabmap&#39;</span>: [<span class="stringliteral">&#39;rtabmap_container&#39;</span>, <span class="stringliteral">&#39;rgbd_sync&#39;</span>],</div>
-<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&#39;hardware&#39;</span>: [<span class="stringliteral">&#39;dashgo&#39;</span>, <span class="stringliteral">&#39;sllidar&#39;</span>, <span class="stringliteral">&#39;ekf&#39;</span>, <span class="stringliteral">&#39;joy_container&#39;</span>],</div>
+<div class="line"><span class="lineno">    4</span>    <span class="stringliteral">&#39;hardware&#39;</span>: [<span class="stringliteral">&#39;sllidar&#39;</span>, <span class="stringliteral">&#39;ekf&#39;</span>, <span class="stringliteral">&#39;joy_container&#39;</span>],</div>
 <div class="line"><span class="lineno">    5</span>}</div>
 </div><!-- fragment -->
 </div>
@@ -529,7 +529,7 @@ Non-interactive mode (docker compose): prints nav_central to stdout,
 <div class="line"><span class="lineno">    4</span>             <span class="stringliteral">&#39;behavior_server&#39;</span>, <span class="stringliteral">&#39;bt_navigator&#39;</span>, <span class="stringliteral">&#39;velocity_smoother&#39;</span>, <span class="stringliteral">&#39;lifecycle_manager&#39;</span>,</div>
 <div class="line"><span class="lineno">    5</span>             <span class="stringliteral">&#39;local_costmap&#39;</span>, <span class="stringliteral">&#39;global_costmap&#39;</span>, <span class="stringliteral">&#39;MPPIController&#39;</span>],</div>
 <div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&#39;rtabmap&#39;</span>: [<span class="stringliteral">&#39;rtabmap_container&#39;</span>, <span class="stringliteral">&#39;rtabmap&#39;</span>, <span class="stringliteral">&#39;rgbd_sync&#39;</span>],</div>
-<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&#39;hardware&#39;</span>: [<span class="stringliteral">&#39;dashgo&#39;</span>, <span class="stringliteral">&#39;DashgoDriver&#39;</span>, <span class="stringliteral">&#39;sllidar&#39;</span>, <span class="stringliteral">&#39;ekf_node&#39;</span>, <span class="stringliteral">&#39;PlayStation&#39;</span>, <span class="stringliteral">&#39;joy&#39;</span>],</div>
+<div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&#39;hardware&#39;</span>: [<span class="stringliteral">&#39;sllidar&#39;</span>, <span class="stringliteral">&#39;ekf_node&#39;</span>, <span class="stringliteral">&#39;PlayStation&#39;</span>, <span class="stringliteral">&#39;joy&#39;</span>],</div>
 <div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&#39;launch&#39;</span>: [<span class="stringliteral">&#39;[INFO] [launch&#39;</span>, <span class="stringliteral">&#39;process started&#39;</span>, <span class="stringliteral">&#39;process died&#39;</span>, <span class="stringliteral">&#39;ERROR&#39;</span>, <span class="stringliteral">&#39;FATAL&#39;</span>],</div>
 <div class="line"><span class="lineno">    9</span>}</div>
 </div><!-- fragment -->

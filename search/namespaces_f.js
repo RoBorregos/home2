@@ -13,6 +13,5 @@ var searchData=
   ['robometrics_5fto_5fpkl_5fjson_10',['robometrics_to_pkl_json',['../namespacerobometrics__to__pkl__json.html',1,'']]],
   ['robot_5fsim_11',['robot_sim',['../namespacerobot__sim.html',1,'']]],
   ['ros_5futils_12',['ros_utils',['../namespaceros__utils.html',1,'']]],
-  ['rtabnav2_13',['rtabnav2',['../namespacertabnav2.html',1,'']]],
-  ['run_5fwhile_5fhearing_14',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
+  ['run_5fwhile_5fhearing_13',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
 ];

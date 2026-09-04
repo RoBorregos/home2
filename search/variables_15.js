@@ -34,11 +34,10 @@ var searchData=
   ['use_5fshelf_5fcache_31',['use_shelf_cache',['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a1ee322654b807a734b02a341ca117756',1,'pickandplace_task_manager::PickAndPlaceTM']]],
   ['use_5fside_5ftable_32',['use_side_table',['../classtest__ppc__cabinet__place_1_1PPCTestCabinetPlace.html#a41e6c43978fec097b6f7c953fc42192b',1,'test_ppc_cabinet_place::PPCTestCabinetPlace']]],
   ['use_5fslam_5ftoolbox_33',['use_slam_toolbox',['../classnav__central_1_1Nav__Central.html#a50b00fd3e9527372a29cfe44837d3614',1,'nav_central.Nav_Central.use_slam_toolbox()'],['../classnav__ui_1_1NavRosNode.html#af1e9662650d3f3fcae30efbaa98ac3d2',1,'nav_ui.NavRosNode.use_slam_toolbox()']]],
-  ['use_5fstamped_34',['use_stamped',['../classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a76ec4b32a2277312217a23755d69f2ec',1,'omnidriver.odrive_dashboard.ODriveDashboardNode.use_stamped()'],['../classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html#a602fb0aa6059c5a011d13d3e5beed5f0',1,'omnidriver.odrive_serial_twist.SerialCommNode.use_stamped()']]],
+  ['use_5fstamped_34',['use_stamped',['../classomnidriver_1_1odrive__serial__twist_1_1SerialCommNode.html#a602fb0aa6059c5a011d13d3e5beed5f0',1,'omnidriver.odrive_serial_twist.SerialCommNode.use_stamped()'],['../classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a76ec4b32a2277312217a23755d69f2ec',1,'omnidriver.odrive_dashboard.ODriveDashboardNode.use_stamped()']]],
   ['use_5fswin_35',['use_swin',['../namespaceutils_1_1models_1_1reid__model.html#ae819961ee14a8e25b634c048925d1bbd',1,'utils::models::reid_model']]],
   ['use_5fvision_5fconfirmation_36',['use_vision_confirmation',['../classpickandplace__task__manager_1_1PickAndPlaceTM.html#a87a220e385f8b97e0c72dcf8d6069617',1,'pickandplace_task_manager::PickAndPlaceTM']]],
   ['use_5fzed_37',['use_zed',['../classzed__simulator_1_1ZedSimulator.html#a51ea3acb3de2294481c6d53d9cfd9f77',1,'zed_simulator::ZedSimulator']]],
   ['useful_5faudio_5fnode_5fname_38',['USEFUL_AUDIO_NODE_NAME',['../namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a',1,'frida_constants::hri_constants']]],
-  ['useful_5faudio_5ftopic_39',['USEFUL_AUDIO_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733',1,'frida_constants::hri_constants']]],
-  ['useimu_40',['useImu',['../classdashgo__driver2_1_1DashgoDriver.html#a44242a5b500095dc84d451bb3d24e7d5',1,'dashgo_driver2::DashgoDriver']]]
+  ['useful_5faudio_5ftopic_39',['USEFUL_AUDIO_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733',1,'frida_constants::hri_constants']]]
 ];
