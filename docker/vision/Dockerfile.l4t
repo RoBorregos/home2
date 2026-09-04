@@ -140,6 +140,11 @@ RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 RUN mkdir -p /workspace/trt_cache && chmod 777 /workspace/trt_cache
 ENV TENSORRT_CACHE_DIR=/workspace/trt_cache
 
+# Use the TensorRT Python binding supplied by the JetPack/L4T repository.
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    python3-libnvinfer \
+    && rm -rf /var/lib/apt/lists/*
+
 # ── Orin AGX max performance at runtime ──
 # Set MAXN power mode and max clocks before running vision nodes:
 #   sudo nvpmodel -m 0 && sudo jetson_clocks
@@ -151,7 +156,6 @@ USER ros
 # The ros user's pip config includes pypi.jetson-ai-lab.io, which provides
 # the Jetson-optimized build with TensorrtExecutionProvider + CUDAExecutionProvider.
 RUN pip install --no-cache-dir onnxruntime-gpu
-RUN pip install --no-cache-dir tensorrt-cu13==10.16.1.11
 
 RUN sudo dpkg --force-depends -r ros-${ROS_DISTRO}-cv-bridge 2>/dev/null || true
 RUN mkdir -p /tmp/cv_bridge_ws/src && cd /tmp/cv_bridge_ws/src && \
