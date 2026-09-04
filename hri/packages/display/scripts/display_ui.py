@@ -544,7 +544,7 @@ class AudioOverlay(QWidget):
         self.heard_label = QLabel()
         self.heard_label.setAlignment(Qt.AlignCenter)
         self.heard_label.setWordWrap(True)
-        self.heard_label.setFont(QFont("Sans Serif", 18))
+        self.heard_label.setFont(QFont("Sans Serif", 28, QFont.Bold))
         self.heard_label.setStyleSheet(
             f"color: {TEXT_LIGHT}; background: rgba(0,0,0,150);"
         )
