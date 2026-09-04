@@ -195,7 +195,7 @@ local_costmap:
         # the dashgo base). STVL TIME-DECAYS voxels (voxel_decay seconds), so stray
         # marks clear on their own even while the robot is stopped — that fixes the
         # "phantom points linger until the robot moves" problem.
-        plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
+        plugin: "spatio_temporal_voxel_layer::SpatioTemporalVoxelLayer"
         enabled: true
         voxel_decay: 2.0           # s — lower for faster auto-clear of stale marks
         decay_model: 0             # 0=linear, 1=exponential, -1=persistent
@@ -272,7 +272,7 @@ global_costmap:
       rgbd_obstacle_layer:
         # ZED2 3D obstacles in the global map (SpatioTemporalVoxelLayer) so the
         # planner also routes around tables / overhangs. Time-decays like the local.
-        plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
+        plugin: "spatio_temporal_voxel_layer::SpatioTemporalVoxelLayer"
         enabled: true
         voxel_decay: 2.0
         decay_model: 0

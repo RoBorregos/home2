@@ -2,7 +2,7 @@
 
 Navigation handles mapping (SLAM), localization, path planning and following,
 semantic areas, table docking and person following for FRIDA. It runs on `ROS 2`
-(Humble) and Nav2 inside a single centralized container.
+(Jazzy) and Nav2 inside a single centralized container.
 
 > FRIDA currently uses an **omnidirectional (holonomic) base**, which is why it is
 > the default across this area. The previous **differential-drive base** (EAI

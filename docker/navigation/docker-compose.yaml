@@ -5,8 +5,8 @@ services:
       context: ../..
       dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.cpu}
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
-    image: ${IMAGE_NAME:-roborregos/home2:navigation-cpu}
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:jazzy_cpu_base}
+    image: ${IMAGE_NAME:-roborregos/home2:jazzy_navigation-cpu}
     profiles: ["cpu_l4t"]
     volumes:
       - ../../:/workspace/src
@@ -60,8 +60,8 @@ services:
       context: ../..
       dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.cpu}
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
-    image: ${IMAGE_NAME:-roborregos/home2:navigation-cpu}
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:jazzy_cpu_base}
+    image: ${IMAGE_NAME:-roborregos/home2:jazzy_navigation-cpu}
     profiles: ["gpu"]
     volumes:
       - ../../:/workspace/src
