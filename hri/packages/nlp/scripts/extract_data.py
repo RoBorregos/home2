@@ -65,8 +65,11 @@ class DataExtractor(Node):
         try:
             self.nlp = spacy.load(os.path.join(ASSETS_DIR, spacy_model))
         except OSError:
-            spacy.cli.download(spacy_model)
-            self.nlp = spacy.load(spacy_model)
+            try:
+                self.nlp = spacy.load(spacy_model)
+            except OSError:
+                spacy.cli.download(spacy_model)
+                self.nlp = spacy.load(spacy_model)
             self.nlp.to_disk(os.path.join(ASSETS_DIR, spacy_model))
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value

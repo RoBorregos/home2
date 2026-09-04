@@ -129,9 +129,68 @@ levantó el stack completo de `hric` (hri-ros, stt, tts, postgres, llamacpp):
   `Using device: cuda with compute type: float16` — funcionando.
 - `hri-ros`: `llm_utils` y `extract_data` inicializan y corren
   correctamente contra CycloneDDS/DDS real (no solo imports aislados).
-- `extract_data` necesitó el modelo spacy `en_core_web_md`, que no se
-  descarga en ningún Dockerfile (ni en `main`) — gap de setup preexistente,
-  no de la migración; se instaló manualmente para la prueba.
+- `extract_data` necesitaba el modelo spacy `en_core_web_md`, que no se
+  descargaba en ningún Dockerfile (ni en `main`) — gap de setup preexistente,
+  no de la migración. El fallback en runtime (`spacy.cli.download` +
+  `spacy.load` dentro del mismo proceso) fallaba porque el contenedor corre
+  con un UID/GID sin entrada en `/etc/passwd` (`user: ${LOCAL_USER_ID}`), así
+  que `pip install --user` no cae en un `site-packages` que el proceso pueda
+  ver. Se agregó `RUN python3 -m spacy download en_core_web_md` en
+  `Dockerfile.ROS` (junto a `nlp.txt`, corre como root en build time) para
+  no depender de esto en runtime — pero `extract_data.py` seguía llamando a
+  `spacy.cli.download()` incondicionalmente en cada arranque (nunca
+  intentaba cargar el paquete ya instalado primero), así que igual pegaba
+  contra el mismo problema de UID cada vez. Se reordenó el `try/except` en
+  `hri/packages/nlp/scripts/extract_data.py` para intentar
+  `spacy.load(spacy_model)` (el paquete ya horneado) antes de caer a
+  `spacy.cli.download()`.
+- `nlp.txt`/`speech.txt` tenían varios pines viejos que dejaron de resolver
+  en Python 3.12/aarch64 al hacer un build limpio de `hri-ros` (la imagen
+  cacheada que veníamos usando predataba estos requirements y nunca lo
+  expuso): `pydantic==1.10.11` en `nlp.txt` forzaba a pip a resolver
+  `thinc==9.1.1` (única versión de thinc compatible con pydantic 1.x), que
+  no tiene wheel para aarch64/cp312 y falla al compilar Cython desde fuente
+  — se quitó el pin (nada en `nlp/` usa la API de pydantic 1.x). En
+  `speech.txt`: `onnxruntime==1.16.3` y `scipy==1.10.1` ya no tienen wheel
+  para Python 3.12 (bump a `1.17.3`/`1.11.4`); `openwakeword==0.6.0` estaba
+  duplicado (el Dockerfile ya lo instala aparte con `--no-deps`, precisamente
+  porque su dependencia `tflite-runtime` no tiene wheel aquí) — se quitó del
+  requirements; `piper-tts`/`piper` no los importa ningún script y
+  `piper-tts` requiere `piper-phonemize`, sin wheel disponible — se
+  quitaron; `torchaudio<=2.5.0` (pin viejo, ya no hace falta gracias al
+  parche de `df/io.py` de abajo) forzaba una versión de torchaudio
+  incompatible con el torch que instalan `nlp.txt`/`postgres.txt`
+  (`torch 2.14.0`), el mismo tipo de rotura de ABI CUDA documentada abajo —
+  se fijó a `torchaudio==2.11.0` (la versión que efectivamente resuelve
+  junto al resto).
+- Con `nlp.txt`/`speech.txt`/`postgres.txt` ya instalando limpio, apareció
+  un segundo problema, más sutil: `voice_detection.py`, `noise_cancellation.py`
+  y `llm_utils.py` morían con `ValueError: numpy.dtype size changed, may
+  indicate binary incompatibility. Expected 96 from C header, got 88 from
+  PyObject` al importar `scipy.spatial.transform`. `pip show`/`import numpy`
+  confirmaban `numpy 2.5.2` y `scipy` correctos — no era un problema de qué
+  versión quedaba instalada, sino que **`scipy==1.18.1` (la última en ese
+  momento) tiene un bug real de ABI contra `numpy 2.5.2` en este entorno**.
+  Se confirmó reinstalando varias versiones de scipy en vivo dentro del
+  contenedor corriendo y probando `from scipy.spatial.transform import
+  Rotation`: `1.16.2`, `1.15.3`, `1.14.1` y `1.13.1` funcionan, `1.18.1` no.
+  Se fijó `scipy==1.16.2` (con `numpy==2.5.2`) de forma consistente en los
+  **tres** requirements (`nlp.txt`, `speech.txt`, `postgres.txt`) — cada uno
+  es una invocación de pip separada en el Dockerfile, así que un solo
+  archivo sin el pin (p. ej. `postgres.txt`, que jala scipy transitivamente
+  vía `scikit-learn`←`sentence_transformers`) reintroduce la versión rota.
+  Mismo motivo para fijar `pydantic==2.13.5` en `nlp.txt`+`postgres.txt` y
+  `sentence_transformers==2.6.1` en `postgres.txt` (sin pin, jalaba una
+  versión más nueva que subía `transformers` por encima de lo que fija
+  `nlp.txt`, silenciosamente, entre invocaciones de pip separadas).
+  `deepfilternet` complica esto más: su metadata exige `numpy<2.0` aunque su
+  parte compilada (`deepfilterlib`) es Rust/PyO3, no Cython, y no depende
+  realmente del ABI de numpy — pinnearlo junto con `scipy==1.18.1`
+  (numpy≥2.0) en el mismo archivo daba `ResolutionImpossible` directo. Se
+  instala aparte con `pip install --no-deps deepfilternet==0.5.6
+  deepfilterlib==0.5.6` en `Dockerfile.ROS` (mismo patrón que
+  `openwakeword`), con sus dependencias reales (`appdirs`, `loguru`)
+  agregadas explícitamente a `speech.txt`.
 - `noise_cancellation.py` (usa `deepfilternet==0.5.6`, la última versión
   publicada) fallaba con `ModuleNotFoundError: No module named
   'torchaudio.backend'`. Torchaudio 2.11+ eliminó por completo su antiguo
@@ -159,6 +218,21 @@ levantó el stack completo de `hric` (hri-ros, stt, tts, postgres, llamacpp):
 - `edge-impulse` (door/kws): contenedores AWS específicos de Jetson Orin
   6.0, no probados a fondo — bajo prioridad, ya señalados en fases previas
   como potencialmente atados a JetPack 6.
+- `hri-ros` (`docker/hri/compose/hri-ros.yaml`) tenía el mismo problema de
+  audio que `tts.yaml` (socket de PulseAudio clásico en vez del de
+  PipeWire-Pulse) — hacía fallar `audio_capturer.py` con
+  `PyAudio: Invalid input device`. Se aplicó el mismo fix: montar
+  `/run/user/${LOCAL_USER_ID}/pulse` directo y agregar `SDL_AUDIODRIVER:
+  pulse` al `x-speech-devices` compartido.
+- `frida_interfaces_cache` (compila `frida_interfaces`/`frida_constants`/
+  `xarm_msgs` antes de `hri`) puede quedar en un build incompleto (p. ej.
+  interrumpido por un reboot) sin que nada lo detecte: `lib.sh` solo
+  reconstruye la caché si la carpeta `build/` no existe, no si el build dentro
+  de ella falló a medias. Cuando pase, hay que borrar
+  `docker/frida_interfaces_cache/{build,install,log}` a mano (puede necesitar
+  `sudo rm -rf` si el contenedor corrió como root por `UID`/`GID` sin
+  exportar) y volver a correr `./run.sh hri --build`. No se automatizó una
+  detección de build incompleto en esta iteración.
 
 ## zed — verificado con cámara real (ZED2 por USB)
 
