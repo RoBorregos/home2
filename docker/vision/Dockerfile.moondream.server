@@ -28,5 +28,5 @@ RUN python3 -c "import numpy as np; print(np.__version__)"
 WORKDIR /workspace
 # Keep model downloads in the mounted, writable cache volume.
 ENV HF_HOME=/home/ros/.cache/huggingface \
-	TRANSFORMERS_CACHE=/home/ros/.cache/huggingface/hub
+	HF_HUB_CACHE=/home/ros/.cache/huggingface
 # CV-bridge
