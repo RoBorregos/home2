@@ -13,6 +13,12 @@ Adding multiple flags in the same command is supported. Remember that to run a s
 Launches HRI with the given task. The PyQt display UI ([hri/packages/display/scripts/display_ui.py](../../../hri/packages/display/scripts/display_ui.py)) starts automatically inside the container and shows the task's specific view (via the `display_task` arg forwarded to `hri_launch.py`) — no separate "open display" step needed, the window renders directly on the forwarded X11 `DISPLAY`.
 
 ```bash
+./run.sh hri --gpsr --backup
+```
+
+Same as above, but launches the legacy Next.js display (`display_launch_backup.py`, rosbridge + web_video_server + a kiosk browser window) instead of the default PyQt UI. Kept as a fallback, not deleted. `./run.sh display --backup` runs it standalone the same way.
+
+```bash
 ./run.sh hri --download-model
 ```
 

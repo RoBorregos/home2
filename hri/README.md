@@ -45,9 +45,11 @@ home2/
 ├──packages/ # ROS packages for the project
 │   ├──display/
 │   │   ├──launch/
-│   │   │   └──display_launch.py # Launches the PyQt display UI, `task` arg selects the view
-│   │   └──scripts/
-│   │       └──display_ui.py # PyQt5 display: per-task windows (gpsr, hric, laundry, ppc, restaurant, storing_groceries, default)
+│   │   │   ├──display_launch.py # Launches the PyQt display UI (default), `task` arg selects the view
+│   │   │   └──display_launch_backup.py # Legacy Next.js display (rosbridge + web_video_server), used with --backup
+│   │   ├──scripts/
+│   │   │   └──display_ui.py # PyQt5 display: per-task windows (gpsr, hric, laundry, ppc, restaurant, storing_groceries, default)
+│   │   └──display/ # Legacy Next.js app, kept as the --backup fallback
 │   ├──embeddings/
 │   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constants.py values
 │   │   ├──embeddings/
@@ -221,6 +223,11 @@ ros2 topic echo /hri/display/answers
 # To run just the display standalone against a chosen view:
 ros2 launch display display_launch.py task:=<task_name>
 # Valid tasks: default, gpsr, hric, laundry, ppc, restaurant, storing_groceries
+
+# Fall back to the legacy Next.js display (kept as a backup, not deleted) instead
+# of the default PyQt UI:
+./run.sh hri --<task_name> --backup
+ros2 launch display display_launch_backup.py
 ```
 
 ## Other useful commands

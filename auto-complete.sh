@@ -12,7 +12,10 @@ _run_sh_autocomplete() {
     # Add area specific flags
     case "${words[1]}" in
         hri)
-            flags="$flags --download-model --regenerate-db --build-proto"
+            flags="$flags --download-model --regenerate-db --build-proto --backup"
+            ;;
+        display)
+            flags="$flags --backup"
             ;;
         integration)
             # TODO: add other important scripts
