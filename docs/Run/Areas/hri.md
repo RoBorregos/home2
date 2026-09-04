@@ -7,16 +7,16 @@ In order to run and setup this area specific flags were added which abstract the
 Adding multiple flags in the same command is supported. Remember that to run a specific task the task's flag must be the first one.
 
 ```bash
-./run.sh hri --build-display
+./run.sh hri --gpsr
 ```
 
-Downloads node-modules (dependencies) and builds the next.js web page inside a temporary `hri-ros` container.
+Launches HRI with the given task. The PyQt display UI ([hri/packages/display/scripts/display_ui.py](../../../hri/packages/display/scripts/display_ui.py)) starts automatically inside the container and shows the task's specific view (via the `display_task` arg forwarded to `hri_launch.py`) — no separate "open display" step needed, the window renders directly on the forwarded X11 `DISPLAY`.
 
 ```bash
-./run.sh hri --open-display
+./run.sh hri --gpsr --backup
 ```
 
-Opens a new Firefox window in kiosk mode (fullscreen). If running with a task it will open the task's specific URL. See `docker/hri/scripts/open-display.bash`.
+Same as above, but launches the legacy Next.js display (`display_launch_backup.py`, rosbridge + web_video_server + a kiosk browser window) instead of the default PyQt UI. Kept as a fallback, not deleted. `./run.sh display --backup` runs it standalone the same way.
 
 ```bash
 ./run.sh hri --download-model

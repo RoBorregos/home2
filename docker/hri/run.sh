@@ -9,6 +9,7 @@ ENV_TYPE="${*: -1}"
 
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
+DISPLAY_BACKUP=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 parse_common_flags "$COMPOSE" "${ARGS[@]}"
@@ -19,6 +20,8 @@ for arg in "${ARGS[@]}"; do
     "--download-model") DOWNLOAD_MODEL="true" ;;
     "--regenerate-db")  REGENERATE_DB="true" ;;
     "--build-proto")    BUILD_PROTO="true" ;;
+    # Fall back to the legacy Next.js display instead of the default PyQt UI.
+    "--backup")         DISPLAY_BACKUP="true" ;;
   esac
 done
 
@@ -88,27 +91,31 @@ fi
 
 #_________________________RUN_________________________
 
-# baml_client dirs are untracked codegen output — clear them first, baml-cli
-# refuses to overwrite modified generated files (see docker/integration/run.sh).
-CLEAN_BAML_CLIENT="rm -rf /workspace/src/task_manager/task_manager/utils/baml_client /workspace/src/hri/packages/nlp/nlp/assets/baml_client"
-GENERATE_BAML_CLIENT="$CLEAN_BAML_CLIENT && baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_ROS="source /opt/ros/jazzy/setup.bash"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
-PACKAGES="speech nlp embeddings"
+PACKAGES="speech nlp embeddings display"
 PROFILES=()
 RUN=""
 
 case $TASK in
   "--restaurant"|"--hric"|"--storing-groceries"|"--gpsr"|"--ppc"|"--dlc"|"--finals")
     PROFILES=("${TASK#--}")
-    RUN="ros2 launch speech hri_launch.py"
+    # Map run.sh task flags to the PyQt display's task views
+    DISPLAY_TASK="${TASK#--}"
+    case "$DISPLAY_TASK" in
+      "dlc")               DISPLAY_TASK="laundry" ;;
+      "storing-groceries") DISPLAY_TASK="storing_groceries" ;;
+      "finals")            DISPLAY_TASK="default" ;;
+    esac
+    RUN="ros2 launch speech hri_launch.py display_task:=${DISPLAY_TASK} display_backup:=${DISPLAY_BACKUP:-false}"
     ;;
   "--safety")
     # Safety routine reuses the Pick & Place HRI profile.
     PROFILES=("ppc")
-    RUN="ros2 launch speech hri_launch.py"
+    RUN="ros2 launch speech hri_launch.py display_task:=ppc display_backup:=${DISPLAY_BACKUP:-false}"
     ;;
   *)
     PROFILES=("*")
