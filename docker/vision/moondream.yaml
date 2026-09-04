@@ -35,6 +35,8 @@ services:
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
       HF_HUB_OFFLINE: 1
+      HF_HOME: /home/ros/.cache/huggingface
+      TRANSFORMERS_CACHE: /home/ros/.cache/huggingface/hub
     tty: true
     stdin_open: true
     command: ["bash", "-c", "python3 -u server.py"]

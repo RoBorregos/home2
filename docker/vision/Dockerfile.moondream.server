@@ -17,6 +17,8 @@ RUN apt install libvips-dev --no-install-recommends -y
 RUN pip install pyvips
 RUN pip install einops
 RUN pip install accelerate
+RUN pip install --no-cache-dir --force-reinstall --no-deps \
+	"huggingface-hub==0.30.2"
 # grpcio==1.71.0
 # protobuf==5.29.1
 RUN pip install grpcio==1.71.0
@@ -24,4 +26,7 @@ RUN pip install protobuf==5.29.1
 RUN python3 -c "import numpy as np; print(np.__version__)"
 
 WORKDIR /workspace
+# Keep model downloads in the mounted, writable cache volume.
+ENV HF_HOME=/home/ros/.cache/huggingface \
+	TRANSFORMERS_CACHE=/home/ros/.cache/huggingface/hub
 # CV-bridge
