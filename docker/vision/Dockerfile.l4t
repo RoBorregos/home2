@@ -153,9 +153,10 @@ USER ros
 # TensorRTExecutionProvider on Orin.
 RUN pip uninstall -y onnxruntime onnxruntime-gpu 2>/dev/null || true && \
         pip install --no-cache-dir \
+            --no-deps \
             --index-url https://pypi.jetson-ai-lab.io/sbsa/cu130 \
             --extra-index-url https://pypi.org/simple \
-            onnxruntime-gpu && \
+            onnxruntime-gpu==1.24.0 && \
         python3 -c 'import onnxruntime as ort; providers = ort.get_available_providers(); assert "TensorrtExecutionProvider" in providers, providers; print(providers)'
 
 RUN sudo dpkg --force-depends -r ros-${ROS_DISTRO}-cv-bridge 2>/dev/null || true
