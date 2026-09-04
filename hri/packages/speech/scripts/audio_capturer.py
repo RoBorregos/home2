@@ -37,9 +37,14 @@ class AudioCapturer(Node):
             AudioData, self.get_parameter("RAW_AUDIO_TOPIC").value, 20
         )
 
-        mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
-        mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
-        mic_out_channels = self.get_parameter("MIC_OUT_CHANNELS").value
+        if self.use_respeaker:
+            mic_device_name = "ReSpeaker"
+            mic_input_channels = 6
+            mic_out_channels = 0
+        else:
+            mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
+            mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
+            mic_out_channels = self.get_parameter("MIC_OUT_CHANNELS").value
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
         )

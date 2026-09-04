@@ -27,7 +27,7 @@ services:
     cpuset: "${COMPUTE_CPUSET:-4-11}"
     group_add:
       - video
-      - "1001"
+      - zed
     environment:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color
@@ -43,7 +43,7 @@ services:
       echo '=== ZED SDK check ===' && ls /usr/local/zed/lib/libsl_zed.so* 2>/dev/null || echo 'WARNING: libsl_zed.so NOT found in /usr/local/zed/lib/';
       export LD_LIBRARY_PATH=/usr/local/zed/lib:$${LD_LIBRARY_PATH};
       sudo sed -i 's|<LogLevel>warning</LogLevel>|<LogLevel>warn</LogLevel>|' /etc/cyclonedds.xml 2>/dev/null || true;
-      source /opt/ros/humble/setup.bash;
+      source /opt/ros/jazzy/setup.bash;
       source /usr/local/bin/cyclonedds_setup.sh;
       sleep 2;
       source /opt/zed_ws/install/setup.bash;

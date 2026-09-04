@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
     libportaudiocpp0 \
     pulseaudio \
     curl \
+    cargo \
+    rustc \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /workspace/requirements
@@ -19,9 +21,24 @@ RUN mkdir -p /workspace/requirements
 # Python modules
 COPY hri/requirements/nlp.txt /workspace/requirements/nlp.txt
 RUN pip install -r requirements/nlp.txt
+RUN python3 -m spacy download en_core_web_md
 
 COPY hri/requirements/speech.txt /workspace/requirements/speech.txt
 RUN pip install -r requirements/speech.txt
+RUN pip install --no-deps openwakeword==0.6.0
+RUN pip install --no-deps deepfilternet==0.5.6 deepfilterlib==0.5.6
+RUN python3 -c "\
+path = '/usr/local/lib/python3.12/dist-packages/df/io.py'; \
+content = open(path).read(); \
+content = content.replace( \
+    'from torchaudio.backend.common import AudioMetaData', \
+    'import soundfile as _sf\n\n\nclass AudioMetaData:\n    def __init__(self, sample_rate):\n        self.sample_rate = sample_rate' \
+); \
+content = content.replace( \
+    'info: AudioMetaData = ta.info(file, **ikwargs)', \
+    'info = AudioMetaData(_sf.info(file).samplerate)' \
+); \
+open(path, 'w').write(content)"
 
 COPY hri/requirements/postgres.txt /workspace/requirements/postgres.txt
 RUN pip install -r requirements/postgres.txt
