@@ -42,7 +42,7 @@ import time
 import numpy as np
 import torch
 import tqdm
-from vision_general.utils.calculations import (
+from utils.calculations import (
     deproject_pixel_to_point,
 )
 
@@ -50,13 +50,13 @@ import queue
 import threading
 import rclpy
 from rclpy.node import Node
-from vision_general.utils.ros_utils import wait_for_future
+from utils.ros_utils import wait_for_future
 from rclpy.executors import MultiThreadedExecutor
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
 
-from vision_general.utils.debug_pub import DebugImagePublisher
+from utils.debug_pub import DebugImagePublisher
 
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
@@ -262,7 +262,7 @@ class SingleTracker(Node):
         # Stage 0: per-frame tracking is ultralytics ByteTrack (TrackerModel.track)
         # — NO per-frame appearance ReID. The heavy SWIN ReID is NOT loaded at
         # startup; Stage 1 will lazy-load a lightweight re-acquisition model
-        # (OSNet / face) on demand. DeepSORT is replaced by ByteTrack.
+        # (OSNet / face) on demand.
 
         self.output_image = []
         self.depth_image = []
@@ -559,8 +559,8 @@ class SingleTracker(Node):
         self.output_image = self.frame.copy()
 
         # ByteTrack runs continuously; SELECT the operator from the CURRENT tracks
-        # (no DeepSORT n_init confirmation loop needed) — Stage 0. Track + crops all
-        # use the same (flipped, if enabled) self.frame for consistency.
+        # — Stage 0. Track + crops all use the same (flipped, if enabled)
+        # self.frame for consistency.
         tracked_people = self._track(self.frame)
 
         largest_person = {

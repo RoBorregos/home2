@@ -12,7 +12,7 @@ from datetime import datetime
 
 import rclpy
 import rclpy.qos
-from vision_general.utils.ros_utils import wait_for_future
+from utils.ros_utils import wait_for_future
 
 from frida_interfaces.srv import (
     CountBy,
@@ -38,14 +38,14 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from frida_constants.navigation_constants import AREAS_SERVICE
-from vision_general.utils.area_check import (
+from utils.area_check import (
     filter_detections_in_house,
     fetch_map_areas,
     point_in_polygon,
 )
 from rclpy.time import Time as RclTime
 from rclpy.duration import Duration as RclDuration
-from vision_general.utils.calculations import point2d_to_ros_point_stamped
+from utils.calculations import point2d_to_ros_point_stamped
 from builtin_interfaces.msg import Time as TimeMsg
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
