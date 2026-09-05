@@ -19,9 +19,9 @@ add_or_update_variable docker/.env "USER_UID" "$(id -u)"
 add_or_update_variable docker/.env "USER_GID" "$(id -g)"
 
 # Check and build base image if it doesn't exist
-check_image_exists "roborregos/home2:${ENV_TYPE}_base"
+check_image_exists "roborregos/home2:jazzy_${ENV_TYPE}_base"
 if [ $? -eq 1 ]; then
-  docker compose -f docker/${ENV_TYPE}.yaml build
+  docker compose -f docker/jazzy_${ENV_TYPE}.yaml build
 fi
 
 # check arguments passed as --help or -h
