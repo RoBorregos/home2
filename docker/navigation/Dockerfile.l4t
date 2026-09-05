@@ -85,6 +85,7 @@ RUN source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --symlink-install -
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_CXX_STANDARD=20 \
     -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+    -DCMAKE_CXX_FLAGS="-std=c++20" \
     -DOpenCV_DIR=/usr/local/lib/cmake/opencv4 \
     -DWITH_TORCH=ON \
     -DWITH_PYTHON=ON \
