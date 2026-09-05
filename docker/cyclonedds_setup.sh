@@ -11,8 +11,9 @@ CYCLONE_XML="/etc/cyclonedds.xml"
 if [ -n "${CYCLONE_INTERFACE:-}" ]; then
     IFACE_LINE="        <NetworkInterface name=\"$CYCLONE_INTERFACE\" priority=\"default\" multicast=\"true\" autodetermine=\"false\"/>"
 else
-    # If XML already exists and no SHM override, skip
-    if [ -f "$CYCLONE_XML" ] && [ -z "${CYCLONE_SHM:-}" ]; then
+    # Skip if the XML exists, has no SHM override and already carries MaxAutoParticipantIndex
+    if [ -f "$CYCLONE_XML" ] && [ -z "${CYCLONE_SHM:-}" ] \
+       && grep -q "MaxAutoParticipantIndex" "$CYCLONE_XML"; then
         return 0 2>/dev/null || exit 0
     fi
 
