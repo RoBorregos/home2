@@ -61,7 +61,7 @@ RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && \
 # preinstalled — install it via the base's Jetson pip index (PIP_INDEX_URL,
 # see docker/Dockerfile.ROS-l4t) so rtabmap's -DWITH_TORCH=ON and the
 # SuperPoint/SuperGlue tracing below have a CUDA-enabled torch to link/import.
-RUN pip install --upgrade pip && pip install torch torchvision
+RUN pip install --upgrade pip && pip install torch==2.9.0 torchvision
 
 # Persist paths so subsequent RUN layers find CUDA OpenCV and libtorch.
 # pip installs as the non-root `ros` user land in ~/.local (user site), not
