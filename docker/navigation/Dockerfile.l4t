@@ -133,7 +133,7 @@ RUN cd /workspace/src && sudo apt update && (sudo rosdep init || true) && rosdep
 # deleted right after (`rm -rf /workspace/src/` below) and colcon-built later
 # at runtime from a mounted volume — so skipping these is safe, it doesn't
 # skip building them, just skips this convenience pre-cache for their deps.
-RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces libvtk-qt ira_laser_tools sllidar_ros2 dashgo_driver map_context omnidriver p9n_node" -y
+RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces libvtk-qt pcl eigen3 ira_laser_tools sllidar_ros2 map_context omnidriver p9n_node" -y
 RUN sudo rm -rf /workspace/src/
 
 # ============================================================================
