@@ -1,5 +1,7 @@
 ultralytics
 numpy==1.26.0
+# Pinned together: a bare `pip install scipy` pulls numpy 2.x and breaks cv_bridge.
+scipy==1.13.1
 imutils
 transforms3d
 # YOLOE (zero-shot detector) uses text prompts via OpenAI CLIP.  Without

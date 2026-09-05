@@ -42,6 +42,10 @@ $IFACE_LINE
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
 $SHM_SECTION
+    <Discovery>
+      <MaxAutoParticipantIndex>120</MaxAutoParticipantIndex>
+    </Discovery>
+
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>
