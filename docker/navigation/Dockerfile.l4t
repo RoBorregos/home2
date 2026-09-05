@@ -83,6 +83,8 @@ RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignor
 RUN sed -i '/PATTERN "\*.h"/a\    PATTERN "*.hpp"' src/rtabmap_ros/rtabmap_sync/CMakeLists.txt
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_STANDARD=20 \
+    -DCMAKE_CXX_STANDARD_REQUIRED=ON \
     -DOpenCV_DIR=/usr/local/lib/cmake/opencv4 \
     -DWITH_TORCH=ON \
     -DWITH_PYTHON=ON \
