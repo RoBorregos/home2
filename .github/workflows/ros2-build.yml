@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: ros:humble
+      image: ros:jazzy
     steps:
       - name: Create Workspace and checkout code
         uses: actions/checkout@v3
@@ -25,5 +25,5 @@ jobs:
       - name: Build
         # GITHUB_ACTIONS=false: workaround for vamp nanobind stub install path bug — see manipulation/packages/vamp_moveit_plugin/ReadMe.md#ci-build-note
         # packages-ignore mirrors docker/manipulation/run.sh: xarm_gazebo needs a simulator this job does not use
-        run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR="$(pwd)/install/gpd" && export GITHUB_ACTIONS=false && colcon build --symlink-install --packages-ignore realsense_gazebo_plugin xarm_gazebo
+        run: . /opt/ros/jazzy/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR="$(pwd)/install/gpd" && export GITHUB_ACTIONS=false && colcon build --symlink-install --packages-ignore realsense_gazebo_plugin xarm_gazebo
       
