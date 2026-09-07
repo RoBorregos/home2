@@ -187,10 +187,32 @@ RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
 RUN echo "source /home/ros/nav2_ws/install/setup.bash" >> /home/ros/.bashrc
 WORKDIR /workspace
 
-# CycloneDDS with SHM (iceoryx zero-copy)
-# Iceoryx from source (expanded publisher/subscriber limits)
+# ============================================================================
+# CycloneDDS + iceoryx zero-copy SHM, built ENTIRELY from source so the whole
+# rmw_cyclonedds_cpp -> libddsc -> libiceoryx_posh chain resolves to ONE
+# iceoryx with the expanded IOX_MAX_* limits.
+#
+# The apt ros-${ROS_DISTRO}-rmw-cyclonedds-cpp pulls in apt iceoryx (default
+# 512/1024 limits). A plain `dpkg -r` of the iceoryx packages is refused
+# (rmw-cyclonedds-cpp depends on them), so the apt iceoryx stayed installed
+# alongside the from-source one -> two incompatible libiceoryx_posh.so ABIs
+# loaded in the same process (apt one via apt rmw_cyclonedds_cpp, source one
+# via source libddsc) -> SIGSEGV once several nodes register with RouDi at
+# once. Purge the whole apt DDS/iceoryx set and rebuild rmw_cyclonedds_cpp
+# from source too.
+# ============================================================================
 RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \
-    sudo dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
+    sudo apt-get purge -y \
+        ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+        ros-${ROS_DISTRO}-cyclonedds \
+        ros-${ROS_DISTRO}-iceoryx-posh \
+        ros-${ROS_DISTRO}-iceoryx-hoofs \
+        ros-${ROS_DISTRO}-iceoryx-binding-c \
+        ros-${ROS_DISTRO}-iceoryx-introspection 2>/dev/null || true
+
+# iceoryx from source (expanded publisher/subscriber limits). Flags kept
+# identical to docker/roudi/Dockerfile so RouDi and the client agree on the
+# shared-memory management layout.
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
@@ -202,6 +224,7 @@ RUN cd /tmp && \
         -DIOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048 \
         -DBUILD_BINDING_C=ON \
         -DBUILD_SHARED_LIBS=ON \
+        -DINTROSPECTION=ON \
         -DCMAKE_BUILD_TYPE=Release && \
     cmake --build build -j$(nproc) && \
     sudo cmake --install build && \
@@ -217,8 +240,23 @@ RUN cd /tmp && \
         -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
         -DENABLE_SHM=ON \
         -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && sudo make install && \
+    make -j$(nproc) && sudo make install && sudo ldconfig && \
     cd / && rm -rf /tmp/cyclonedds
+
+# rmw_cyclonedds_cpp from source, linked against the from-source CycloneDDS +
+# iceoryx above (the apt build was purged, so nothing pulls default-limit
+# iceoryx back into the image).
+RUN mkdir -p /tmp/rmw_ws/src && cd /tmp/rmw_ws && \
+    git clone --depth 1 -b ${ROS_DISTRO} https://github.com/ros2/rmw_cyclonedds.git src/rmw_cyclonedds && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    CMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO}:${CMAKE_PREFIX_PATH} \
+    colcon build --merge-install --packages-select rmw_cyclonedds_cpp \
+        --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} && \
+    for d in lib include share bin; do \
+        { [ -d "install/$d" ] && sudo cp -a "install/$d/." "/opt/ros/${ROS_DISTRO}/$d/"; } || true; \
+    done && \
+    sudo ldconfig && \
+    cd / && rm -rf /tmp/rmw_ws
 
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
