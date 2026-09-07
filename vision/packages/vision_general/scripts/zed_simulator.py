@@ -6,7 +6,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
-from frida_constants.vision_constants import CAMERA_TOPIC
+from frida_constants.vision_constants import CAMERA_FRAME, CAMERA_TOPIC
 
 """
     Node that simulates the Zed camera by capturing 
@@ -46,7 +46,7 @@ class ZedSimulator(Node):
 
             image = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
             image.header.stamp = self.get_clock().now().to_msg()
-            image.header.frame_id = "zed_left_camera_optical_frame"
+            image.header.frame_id = CAMERA_FRAME
             self.publisher_.publish(image)
             if self.visualize:
                 cv2.imshow("frame", frame)
