@@ -24,6 +24,6 @@ jobs:
 
       - name: Build
         # GITHUB_ACTIONS=false: workaround for vamp nanobind stub install path bug — see manipulation/packages/vamp_moveit_plugin/ReadMe.md#ci-build-note
-        # packages-ignore: the simulator packages, which this job does not use and which are slated for removal
-        run: . /opt/ros/jazzy/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR="$(pwd)/install/gpd" && export GITHUB_ACTIONS=false && colcon build --symlink-install --packages-ignore realsense_gazebo_plugin xarm_gazebo mujoco_ros2_control
+        # packages-ignore: the simulators and the disconnected VAMP planner, none of which the robot builds or runs
+        run: . /opt/ros/jazzy/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR="$(pwd)/install/gpd" && export GITHUB_ACTIONS=false && colcon build --symlink-install --packages-ignore realsense_gazebo_plugin xarm_gazebo mujoco_ros2_control vamp_moveit_plugin
       
