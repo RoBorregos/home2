@@ -201,17 +201,26 @@ WORKDIR /workspace
 # once. Purge the whole apt DDS/iceoryx set and rebuild rmw_cyclonedds_cpp
 # from source too.
 # ============================================================================
-RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \
+# libacl1-dev (build dep for the from-source iceoryx below) via download+dpkg,
+# not `apt-get install`: by this point the earlier Nav2 dpkg-removal has left
+# several still-installed apt packages (costmap-queue, rtabmap-slam,
+# spatio-temporal-voxel-layer, ...) with unmet deps, and `apt-get install`
+# refuses to run at all in that state. Its own deps (libacl1, libc6-dev) are
+# already present, so a plain dpkg -i is enough.
+RUN set -e; \
+    sudo apt-get update -qq; \
+    ( cd /tmp && apt-get download libacl1-dev && sudo dpkg -i ./libacl1-dev_*.deb && rm -f ./libacl1-dev_*.deb ); \
+    sudo rm -rf /var/lib/apt/lists/*; \
     sudo dpkg --purge --force-all \
         ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
         ros-${ROS_DISTRO}-cyclonedds \
         ros-${ROS_DISTRO}-iceoryx-posh \
         ros-${ROS_DISTRO}-iceoryx-hoofs \
         ros-${ROS_DISTRO}-iceoryx-binding-c \
-        ros-${ROS_DISTRO}-iceoryx-introspection || true && \
+        ros-${ROS_DISTRO}-iceoryx-introspection || true; \
     sudo rm -f /opt/ros/${ROS_DISTRO}/lib/aarch64-linux-gnu/libiceoryx_* \
                /opt/ros/${ROS_DISTRO}/lib/aarch64-linux-gnu/libddsc* \
-               /opt/ros/${ROS_DISTRO}/lib/librmw_cyclonedds_cpp.so && \
+               /opt/ros/${ROS_DISTRO}/lib/librmw_cyclonedds_cpp.so; \
     ! dpkg -l | grep -qE "^ii +ros-${ROS_DISTRO}-(iceoryx|cyclonedds|rmw-cyclonedds)"
 
 # iceoryx from source (expanded publisher/subscriber limits). Flags kept
