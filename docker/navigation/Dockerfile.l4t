@@ -202,13 +202,17 @@ WORKDIR /workspace
 # from source too.
 # ============================================================================
 RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \
-    sudo apt-get purge -y \
+    sudo dpkg --purge --force-all \
         ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
         ros-${ROS_DISTRO}-cyclonedds \
         ros-${ROS_DISTRO}-iceoryx-posh \
         ros-${ROS_DISTRO}-iceoryx-hoofs \
         ros-${ROS_DISTRO}-iceoryx-binding-c \
-        ros-${ROS_DISTRO}-iceoryx-introspection 2>/dev/null || true
+        ros-${ROS_DISTRO}-iceoryx-introspection || true && \
+    sudo rm -f /opt/ros/${ROS_DISTRO}/lib/aarch64-linux-gnu/libiceoryx_* \
+               /opt/ros/${ROS_DISTRO}/lib/aarch64-linux-gnu/libddsc* \
+               /opt/ros/${ROS_DISTRO}/lib/librmw_cyclonedds_cpp.so && \
+    ! dpkg -l | grep -qE "^ii +ros-${ROS_DISTRO}-(iceoryx|cyclonedds|rmw-cyclonedds)"
 
 # iceoryx from source (expanded publisher/subscriber limits). Flags kept
 # identical to docker/roudi/Dockerfile so RouDi and the client agree on the
