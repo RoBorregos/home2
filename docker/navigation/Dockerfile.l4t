@@ -1,7 +1,5 @@
-# dustynv/l4t-pytorch has no JetPack 7 (L4T r38+) tag yet — build on our own
-# jazzy_l4t_base instead (see docker/Dockerfile.ROS-l4t), which already bakes
-# in the CUDA/cuDNN toolkit this Dockerfile needs at build time for OpenCV-CUDA.
-ARG BASE_IMAGE=roborregos/home2:jazzy_l4t_base
+# No JetPack 7 dustynv tag yet; build on our l4t_base (Jazzy, has the CUDA/cuDNN toolkit).
+ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
 ARG ROS_DISTRO=jazzy
@@ -9,9 +7,7 @@ ARG ROS_DISTRO=jazzy
 USER ros
 SHELL ["/bin/bash", "-c"]
 
-#Install dependencies
-# unzip: needed by the OpenCV install script below to unpack its source zips;
-# the old dustynv/l4t-pytorch base had it preinstalled, jazzy_l4t_base doesn't.
+#Install dependencies (unzip: needed by the OpenCV install script below)
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-${ROS_DISTRO}-rmw-cyclonedds-cpp libboost-iostreams-dev libtbb-dev libblosc-dev unzip\
     && sudo rm -rf /var/lib/apt/lists/*
 
@@ -20,52 +16,24 @@ WORKDIR /home/ros/
 RUN sudo apt update
 RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/script/install_opencv4.10.0_Jetpack6.1.sh -o install.sh
 RUN chmod 777 install.sh
-# This script targets JetPack 6.1 (jammy/Python 3.10) — patch its two
-# python3.10 references for noble's system Python 3.12 (no python3.10-dev
-# package exists on noble; the site-packages PYTHONPATH it appends to
-# .bashrc must match too, even though it's a fallback we don't actually
-# rely on below — see the pip-installed torch's own ~/.local path instead).
+# Script targets JetPack 6.1 (Python 3.10); patch it for noble's Python 3.12.
 RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && \
     sed -i '2i export CMAKE_POLICY_VERSION_MINIMUM=3.5' install.sh && \
     sed -i 's/python3\.10-dev/python3-dev/' install.sh && \
     sed -i 's/python3\.10\/site-packages/python3.12\/site-packages/' install.sh && \
     sed -i 's/libtbb2 /libtbb12 /' install.sh && \
-    # CUDA 13.2's bundled thrust/libcu++ (cccl) headers hard-require C++17
-    # (`#error Thrust requires at least C++17`), but OpenCV's cmake doesn't
-    # request a CUDA C++ standard by default — same class of "newer CUDA
-    # toolkit vs. script's older assumptions" issue as dlib/CTranslate2
-    # above, just a language-standard mismatch instead of an arch one.
-    # OpenCV 4.10's cmake still uses the legacy FindCUDA module (note the
-    # "cuda_compile_1_generated_*.cu.o" object naming in build logs), which
-    # ignores CMAKE_CUDA_STANDARD entirely — CUDA_NVCC_FLAGS is the variable
-    # that module actually reads for extra nvcc flags.
+    # CUDA 13's thrust/libcu++ headers require C++17; OpenCV's FindCUDA only reads CUDA_NVCC_FLAGS.
     sed -i 's|-D WITH_CUDA=ON|-D WITH_CUDA=ON -D CUDA_NVCC_FLAGS="-std=c++17"|' install.sh && \
-    # With C++17 forced, CUDA 13's stricter nvcc parser then hits a genuine
-    # OpenCV 4.10 cudev bug: `gridCopy_<DefaultCopyPolicy>(...)` in
-    # grid/copy.hpp is a template-disambiguation-dependent call that older
-    # nvcc tolerated but 13.2 rejects (parses `<` as less-than). This is a
-    # real upstream incompatibility, not a flag to tune — bump the pinned
-    # OpenCV/contrib version to the latest stable (4.14.0, confirmed to
-    # exist as a tag), which was built against modern CUDA and doesn't hit it.
+    # 4.10 cudev has a gridCopy_<> parse bug CUDA 13's nvcc rejects; bump to 4.14.0.
     sed -i 's/version="4.10.0"/version="4.14.0"/' install.sh && \
-    # opencv_cudacodec (NVENC/NVDEC hw video codec, not used by rtabmap/SLAM)
-    # links against libcuda.so, the real driver stub — only present on a host
-    # with the NVIDIA driver actually installed, not in a `docker build`
-    # environment (driver access is a `docker run --runtime nvidia` thing).
-    # Disable it rather than fight CUDA_CUDA_LIBRARY=NOTFOUND for a module
-    # nothing here needs.
+    # cudacodec links libcuda.so (driver stub, absent in docker build) and nothing here needs it.
     sed -i 's|-D WITH_CUDA=ON|-D WITH_CUDA=ON -D BUILD_opencv_cudacodec=OFF|' install.sh && \
     yes yes | sudo -E ./install.sh
 
-# jazzy_l4t_base (unlike the old dustynv/l4t-pytorch base) has no PyTorch
-# preinstalled — install it via the base's Jetson pip index (PIP_INDEX_URL,
-# see docker/Dockerfile.ROS-l4t) so rtabmap's -DWITH_TORCH=ON and the
-# SuperPoint/SuperGlue tracing below have a CUDA-enabled torch to link/import.
+# l4t_base ships no PyTorch; install from the base's Jetson pip index (Dockerfile.ROS-l4t).
 RUN pip install --upgrade pip && pip install torch==2.9.0 torchvision
 
-# Persist paths so subsequent RUN layers find CUDA OpenCV and libtorch.
-# pip installs as the non-root `ros` user land in ~/.local (user site), not
-# /usr/local/lib/python3.10/dist-packages like the old root-installed dustynv base.
+# Persist paths so later layers find CUDA OpenCV and libtorch (pip user-site under ~/.local).
 ENV LD_LIBRARY_PATH=/home/ros/.local/lib/python3.12/site-packages/torch/lib:/usr/local/lib:${LD_LIBRARY_PATH}
 ENV PYTHONPATH=/home/ros/.local/lib/python3.12/site-packages/:${PYTHONPATH}
 
@@ -76,9 +44,7 @@ WORKDIR /home/ros/ros_packages3
 RUN git clone https://github.com/introlab/rtabmap.git src/rtabmap
 RUN git clone --branch ros2 https://github.com/introlab/rtabmap_ros.git src/rtabmap_ros
 RUN sudo apt update
-# libvtk-qt: skip it, same rosdistro rosdep base.yaml staleness fixed for
-# manipulation (see docker/manipulation/Dockerfile.l4t) — 404s on noble no
-# matter what, only needed for a Qt GUI rtabmap/PCL don't need headless.
+# libvtk-qt: 404s on noble, only a Qt GUI dep we don't need headless (same skip as manipulation).
 RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r --skip-keys "libvtk-qt" -y
 RUN sed -i '/PATTERN "\*.h"/a\    PATTERN "*.hpp"' src/rtabmap_ros/rtabmap_sync/CMakeLists.txt
 RUN source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args \
@@ -123,16 +89,8 @@ RUN mkdir -p /workspace
 WORKDIR /workspace 
 COPY ./navigation /workspace/src
 RUN cd /workspace/src && sudo apt update && (sudo rosdep init || true) && rosdep update
-# All of these (ira_laser_tools, sllidar_ros2, dashgo_driver, map_context,
-# omnidriver, p9n_node) are genuine in-tree source packages under
-# navigation/packages/ with correctly-named package.xml <name> tags — they
-# should resolve via --ignore-src, but rosdep fails to find rosdep keys for
-# them anyway (no upstream rosdep key registered, and --ignore-src doesn't
-# seem to short-circuit that lookup here). This whole rosdep step only
-# pre-warms system apt packages into the image; the actual source tree is
-# deleted right after (`rm -rf /workspace/src/` below) and colcon-built later
-# at runtime from a mounted volume — so skipping these is safe, it doesn't
-# skip building them, just skips this convenience pre-cache for their deps.
+# In-tree source packages with no upstream rosdep key; this step only pre-caches
+# apt deps (the src tree is deleted below and colcon-built at runtime), so skipping is safe.
 RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces libvtk-qt pcl eigen3 ira_laser_tools sllidar_ros2 map_context omnidriver p9n_node" -y
 RUN sudo rm -rf /workspace/src/
 
@@ -154,11 +112,7 @@ RUN sudo rm -rf /workspace/src/
 #     planner/navfn, behaviors, bt_navigator, smoother, velocity_smoother,
 #     lifecycle_manager, map_server for keepout filters) + STVL.
 # ============================================================================
-# Jazzy's Nav2 apt snapshot is new enough to ship the Eigen nav2_mppi_controller
-# already (unlike Humble's apt snapshot, which needed the humble_main
-# from-source backport below for it) — but we keep the same from-source
-# pattern anyway for consistency/control, just pointed at the `jazzy` branches
-# (confirmed to exist on both navigation2 and spatio_temporal_voxel_layer).
+# On Jazzy we keep the same from-source pattern, pointed at the `jazzy` branches.
 ARG NAV2_BRANCH=jazzy
 ARG BTCPP_TAG=4.6.2
 ARG STVL_BRANCH=jazzy
@@ -187,26 +141,12 @@ RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
 RUN echo "source /home/ros/nav2_ws/install/setup.bash" >> /home/ros/.bashrc
 WORKDIR /workspace
 
-# ============================================================================
-# CycloneDDS + iceoryx zero-copy SHM, built ENTIRELY from source so the whole
-# rmw_cyclonedds_cpp -> libddsc -> libiceoryx_posh chain resolves to ONE
-# iceoryx with the expanded IOX_MAX_* limits.
-#
-# The apt ros-${ROS_DISTRO}-rmw-cyclonedds-cpp pulls in apt iceoryx (default
-# 512/1024 limits). A plain `dpkg -r` of the iceoryx packages is refused
-# (rmw-cyclonedds-cpp depends on them), so the apt iceoryx stayed installed
-# alongside the from-source one -> two incompatible libiceoryx_posh.so ABIs
-# loaded in the same process (apt one via apt rmw_cyclonedds_cpp, source one
-# via source libddsc) -> SIGSEGV once several nodes register with RouDi at
-# once. Purge the whole apt DDS/iceoryx set and rebuild rmw_cyclonedds_cpp
-# from source too.
-# ============================================================================
-# libacl1-dev (build dep for the from-source iceoryx below) via download+dpkg,
-# not `apt-get install`: by this point the earlier Nav2 dpkg-removal has left
-# several still-installed apt packages (costmap-queue, rtabmap-slam,
-# spatio-temporal-voxel-layer, ...) with unmet deps, and `apt-get install`
-# refuses to run at all in that state. Its own deps (libacl1, libc6-dev) are
-# already present, so a plain dpkg -i is enough.
+# CycloneDDS + iceoryx zero-copy SHM, built entirely from source so the whole
+# rmw_cyclonedds_cpp -> libddsc -> libiceoryx_posh chain uses ONE iceoryx with the
+# expanded IOX_MAX_* limits. The apt iceoryx can't just be `dpkg -r`'d (rmw depends
+# on it) and two iceoryx ABIs in one process SIGSEGVs, so purge the whole apt set.
+# libacl1-dev comes via download+dpkg because apt-get install refuses to run while
+# the earlier Nav2 dpkg-removal has left packages with unmet deps.
 RUN set -e; \
     sudo apt-get update -qq; \
     ( cd /tmp && apt-get download libacl1-dev && sudo dpkg -i ./libacl1-dev_*.deb && rm -f ./libacl1-dev_*.deb ); \
@@ -223,9 +163,8 @@ RUN set -e; \
                /opt/ros/${ROS_DISTRO}/lib/librmw_cyclonedds_cpp.so; \
     ! dpkg -l | grep -qE "^ii +ros-${ROS_DISTRO}-(iceoryx|cyclonedds|rmw-cyclonedds)"
 
-# iceoryx from source (expanded publisher/subscriber limits). Flags kept
-# identical to docker/roudi/Dockerfile so RouDi and the client agree on the
-# shared-memory management layout.
+# iceoryx from source. Flags kept identical to docker/roudi/Dockerfile so RouDi
+# and the client agree on the shared-memory layout.
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
@@ -256,9 +195,7 @@ RUN cd /tmp && \
     make -j$(nproc) && sudo make install && sudo ldconfig && \
     cd / && rm -rf /tmp/cyclonedds
 
-# rmw_cyclonedds_cpp from source, linked against the from-source CycloneDDS +
-# iceoryx above (the apt build was purged, so nothing pulls default-limit
-# iceoryx back into the image).
+# rmw_cyclonedds_cpp from source, linked against the from-source CycloneDDS + iceoryx above.
 RUN mkdir -p /tmp/rmw_ws/src && cd /tmp/rmw_ws && \
     git clone --depth 1 -b ${ROS_DISTRO} https://github.com/ros2/rmw_cyclonedds.git src/rmw_cyclonedds && \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
@@ -285,13 +222,8 @@ RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 # RTABMap's embedded Python skips sitecustomize.py, so patch os.py directly.
 RUN sudo sed -i '$ a\# Patch for RTABMap embedded Python + PyTorch\ntry:\n    add_dll_directory\nexcept NameError:\n    add_dll_directory = lambda path: None' /usr/lib/python3.12/os.py
 
-# The OpenCV build (start of this file) ran against apt's python3-numpy
-# (NumPy 1.x, matching the JetPack6.1/jammy-era install script's
-# assumptions). `pip install torch` earlier pulled a NumPy 2.x wheel into
-# the user site (~/.local), which sys.path resolves before apt's system
-# dist-packages — so cv2 (compiled against the 1.x ABI) fails to import
-# under a NumPy 2.x runtime. Force user-site numpy back down to <2 as the
-# last step so it doesn't shadow the version OpenCV expects.
+# OpenCV was built against NumPy 1.x; `pip install torch` pulled NumPy 2.x into
+# ~/.local which shadows it and breaks `import cv2`. Pin user-site numpy back to <2.
 RUN pip install --force-reinstall "numpy<2"
 
 WORKDIR /workspace
