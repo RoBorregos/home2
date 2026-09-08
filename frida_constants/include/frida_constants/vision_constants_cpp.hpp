@@ -11,7 +11,7 @@ conststr DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered";
 conststr CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info";
 
 // ZED CAMERA FRAME
-conststr CAMERA_FRAME = "zed_left_camera_optical_frame";
+conststr CAMERA_FRAME = "zed_left_camera_frame_optical";
 
 // OBJECT 2D TOPICS
 conststr DETECTIONS_TOPIC = "/vision/detections";
