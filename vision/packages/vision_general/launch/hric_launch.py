@@ -46,7 +46,7 @@ def generate_launch_description():
                 respawn=True,
                 output="screen",
                 emulate_tty=True,
-                parameters=[config, {"models": ["yolo_finetuned"]}],
+                parameters=[config, {"models": [""]}],
             ),
             Node(
                 package="vision_general",
