@@ -28,14 +28,10 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 # find_package(tf_transformations REQUIRED)
 find_package(rclpy REQUIRED)
-# ros-jazzy-yaml-cpp-vendor's cmake extras unconditionally redirect
-# yaml-cpp_DIR to /opt/ros/jazzy/opt/yaml_cpp_vendor/share/cmake/yaml-cpp,
-# which that package no longer populates on noble (a genuine upstream
-# packaging bug — this ROS release just expects the system yaml-cpp to
-# satisfy it instead). That broken redirect made publish_handle link
-# against no yaml-cpp symbols at all ("undefined reference to YAML::...").
-# Use the system libyaml-cpp-dev's own CMake config directly instead.
-find_package(yaml-cpp REQUIRED)
+find_package(yaml-cpp QUIET)
+if(NOT TARGET yaml-cpp::yaml-cpp)
+  find_package(yaml_cpp_vendor REQUIRED)
+endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -91,7 +87,11 @@ ament_target_dependencies(publish_handle
   frida_interfaces
   frida_constants
   rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
-target_link_libraries(publish_handle yaml-cpp::yaml-cpp)
+if(TARGET yaml-cpp::yaml-cpp)
+  target_link_libraries(publish_handle yaml-cpp::yaml-cpp)
+else()
+  ament_target_dependencies(publish_handle yaml_cpp_vendor)
+endif()
 
 install(TARGETS 
   plane_service

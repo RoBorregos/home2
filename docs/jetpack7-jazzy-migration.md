@@ -35,6 +35,22 @@ TensorRT 10.16, GPU Ampere `sm_87`.
   `docker/jetson-apt/`) para tener CUDA/cuDNN disponibles en build time (no
   solo en runtime vía CDI/CSV mounts), necesario para compilar dlib
   (vision) y CTranslate2 (hri-stt).
+- `ENV NVIDIA_VISIBLE_DEVICES=all` / `NVIDIA_DRIVER_CAPABILITIES=all`
+  agregados a la base l4t. La vieja `dustynv/l4t-pytorch` los traía horneados
+  (estándar en imágenes Jetson de NVIDIA); nuestra base (`ubuntu:24.04` +
+  ROS) no, así que `runtime: nvidia` solo en los compose no bastaba —
+  cualquier proceso que solo revisara `runtime: nvidia` sin el env var
+  (p. ej. CTranslate2 en hri-stt) no veía la GPU y caía a CPU/int8 en
+  silencio.
+
+## Configuración del host (Orin), fuera del repo
+
+- `net.core.rmem_max`/`wmem_max` del kernel venían en el default de Ubuntu
+  (~208KB), muy por debajo de los 10MB que CycloneDDS pide para su socket —
+  sin esto, **ningún** nodo ROS 2 podía crear su dominio DDS
+  (`rmw_create_node: failed to create domain, error Error`), en cualquier
+  contenedor. Se subió a 2GB vía `/etc/sysctl.d/60-cyclonedds.conf` en la
+  Orin (fuera del repo, es config de host, no de imagen).
 
 ## Por área
 
@@ -49,6 +65,9 @@ TensorRT 10.16, GPU Ampere `sm_87`.
   su única dependencia dura sin wheel aarch64/cp312 es tflite-runtime,
   no usado en este código — solo el path ONNX), piper (sin uso real,
   eliminado), deepfilterlib (necesita `cargo`/`rustc` para compilar).
+  PyAV (clonado sin pin de rama, igual que en main) empezó a fallar con
+  `make: uv: No such file or directory` — su script de build upstream
+  ahora requiere `uv`; se agregó `pip install uv` antes de ese paso.
 - **vision**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`. dlib compilado con
   `DLIB_USE_CUDA_COMPUTE_CAPABILITIES=87` (antes rechazado por CUDA 13).
   A diferencia de la vieja `dustynv/l4t-pytorch`, `jazzy_l4t_base` no trae
@@ -101,19 +120,147 @@ TensorRT 10.16, GPU Ampere `sm_87`.
 - `jazzy_integration-cpu` — build y arranque de contenedor verificados.
 - `jazzy_zed-l4t` — build exitoso, SDK y permisos de grupo correctos.
 
+## Prueba end-to-end de hri (`./run.sh --hric l4t`)
+
+Con los fixes de `NVIDIA_VISIBLE_DEVICES` y del sysctl de CycloneDDS, se
+levantó el stack completo de `hric` (hri-ros, stt, tts, postgres, llamacpp):
+- `hri-stt`: pasó de `Using device: cpu with compute type: int8` (fallando
+  con `ValueError: Requested int8 compute type...`) a
+  `Using device: cuda with compute type: float16` — funcionando.
+- `hri-ros`: `llm_utils` y `extract_data` inicializan y corren
+  correctamente contra CycloneDDS/DDS real (no solo imports aislados).
+- `extract_data` necesitaba el modelo spacy `en_core_web_md`, que no se
+  descargaba en ningún Dockerfile (ni en `main`) — gap de setup preexistente,
+  no de la migración. El fallback en runtime (`spacy.cli.download` +
+  `spacy.load` dentro del mismo proceso) fallaba porque el contenedor corre
+  con un UID/GID sin entrada en `/etc/passwd` (`user: ${LOCAL_USER_ID}`), así
+  que `pip install --user` no cae en un `site-packages` que el proceso pueda
+  ver. Se agregó `RUN python3 -m spacy download en_core_web_md` en
+  `Dockerfile.ROS` (junto a `nlp.txt`, corre como root en build time) para
+  no depender de esto en runtime — pero `extract_data.py` seguía llamando a
+  `spacy.cli.download()` incondicionalmente en cada arranque (nunca
+  intentaba cargar el paquete ya instalado primero), así que igual pegaba
+  contra el mismo problema de UID cada vez. Se reordenó el `try/except` en
+  `hri/packages/nlp/scripts/extract_data.py` para intentar
+  `spacy.load(spacy_model)` (el paquete ya horneado) antes de caer a
+  `spacy.cli.download()`.
+- `nlp.txt`/`speech.txt` tenían varios pines viejos que dejaron de resolver
+  en Python 3.12/aarch64 al hacer un build limpio de `hri-ros` (la imagen
+  cacheada que veníamos usando predataba estos requirements y nunca lo
+  expuso): `pydantic==1.10.11` en `nlp.txt` forzaba a pip a resolver
+  `thinc==9.1.1` (única versión de thinc compatible con pydantic 1.x), que
+  no tiene wheel para aarch64/cp312 y falla al compilar Cython desde fuente
+  — se quitó el pin (nada en `nlp/` usa la API de pydantic 1.x). En
+  `speech.txt`: `onnxruntime==1.16.3` y `scipy==1.10.1` ya no tienen wheel
+  para Python 3.12 (bump a `1.17.3`/`1.11.4`); `openwakeword==0.6.0` estaba
+  duplicado (el Dockerfile ya lo instala aparte con `--no-deps`, precisamente
+  porque su dependencia `tflite-runtime` no tiene wheel aquí) — se quitó del
+  requirements; `piper-tts`/`piper` no los importa ningún script y
+  `piper-tts` requiere `piper-phonemize`, sin wheel disponible — se
+  quitaron; `torchaudio<=2.5.0` (pin viejo, ya no hace falta gracias al
+  parche de `df/io.py` de abajo) forzaba una versión de torchaudio
+  incompatible con el torch que instalan `nlp.txt`/`postgres.txt`
+  (`torch 2.14.0`), el mismo tipo de rotura de ABI CUDA documentada abajo —
+  se fijó a `torchaudio==2.11.0` (la versión que efectivamente resuelve
+  junto al resto).
+- Con `nlp.txt`/`speech.txt`/`postgres.txt` ya instalando limpio, apareció
+  un segundo problema, más sutil: `voice_detection.py`, `noise_cancellation.py`
+  y `llm_utils.py` morían con `ValueError: numpy.dtype size changed, may
+  indicate binary incompatibility. Expected 96 from C header, got 88 from
+  PyObject` al importar `scipy.spatial.transform`. `pip show`/`import numpy`
+  confirmaban `numpy 2.5.2` y `scipy` correctos — no era un problema de qué
+  versión quedaba instalada, sino que **`scipy==1.18.1` (la última en ese
+  momento) tiene un bug real de ABI contra `numpy 2.5.2` en este entorno**.
+  Se confirmó reinstalando varias versiones de scipy en vivo dentro del
+  contenedor corriendo y probando `from scipy.spatial.transform import
+  Rotation`: `1.16.2`, `1.15.3`, `1.14.1` y `1.13.1` funcionan, `1.18.1` no.
+  Se fijó `scipy==1.16.2` (con `numpy==2.5.2`) de forma consistente en los
+  **tres** requirements (`nlp.txt`, `speech.txt`, `postgres.txt`) — cada uno
+  es una invocación de pip separada en el Dockerfile, así que un solo
+  archivo sin el pin (p. ej. `postgres.txt`, que jala scipy transitivamente
+  vía `scikit-learn`←`sentence_transformers`) reintroduce la versión rota.
+  Mismo motivo para fijar `pydantic==2.13.5` en `nlp.txt`+`postgres.txt` y
+  `sentence_transformers==2.6.1` en `postgres.txt` (sin pin, jalaba una
+  versión más nueva que subía `transformers` por encima de lo que fija
+  `nlp.txt`, silenciosamente, entre invocaciones de pip separadas).
+  `deepfilternet` complica esto más: su metadata exige `numpy<2.0` aunque su
+  parte compilada (`deepfilterlib`) es Rust/PyO3, no Cython, y no depende
+  realmente del ABI de numpy — pinnearlo junto con `scipy==1.18.1`
+  (numpy≥2.0) en el mismo archivo daba `ResolutionImpossible` directo. Se
+  instala aparte con `pip install --no-deps deepfilternet==0.5.6
+  deepfilterlib==0.5.6` en `Dockerfile.ROS` (mismo patrón que
+  `openwakeword`), con sus dependencias reales (`appdirs`, `loguru`)
+  agregadas explícitamente a `speech.txt`.
+- `noise_cancellation.py` (usa `deepfilternet==0.5.6`, la última versión
+  publicada) fallaba con `ModuleNotFoundError: No module named
+  'torchaudio.backend'`. Torchaudio 2.11+ eliminó por completo su antiguo
+  API de I/O (`torchaudio.info()`, `torchaudio.backend.common.AudioMetaData`)
+  a favor de `torchaudio.io`; no existe versión de torchaudio que sea a la
+  vez ABI-compatible con torch 2.13.0/CUDA13 y todavía tenga esa API vieja
+  (fijar `torchaudio<=2.5.0` rompe el binding CUDA de torch). deepfilternet
+  solo usa `AudioMetaData`/`torchaudio.info()` para leer el sample rate de
+  un archivo antes de cargarlo — algo que `soundfile` (ya es dependencia)
+  hace igual de bien. Se parcha `df/io.py` en build time (`Dockerfile.ROS`,
+  después de instalar `speech.txt`) para reemplazar esa única llamada por
+  `soundfile.info(file).samplerate`, sin tocar el paquete en sí. Verificado:
+  `NoiseCancellation node ready` + DeepFilterNet inicializa y carga el
+  modelo completo sin errores.
+- `hri-tts`: falla inicialmente por audio ALSA (`Couldn't open audio device`).
+  Causa real: la Orin usa PipeWire-Pulse (reemplazo de PulseAudio en Ubuntu
+  24.04), corriendo pero con su socket real en `/run/user/<uid>/pulse/native`
+  — no en `~/.config/pulse/pulseaudio.socket`, que es donde el compose
+  monta y `PULSE_SERVER` apunta. Además, sin `SDL_AUDIODRIVER=pulse`, SDL/
+  pygame intentaba ALSA directo primero (sin `/dev/snd` montado) antes de
+  siquiera probar pulse. Arreglado en `docker/hri/compose/tts.yaml`: monta
+  `/run/user/${LOCAL_USER_ID}/pulse` directo (no `~/.config/pulse`, que solo
+  tiene el cookie) y agrega `SDL_AUDIODRIVER: pulse`. Verificado: el server
+  Kokoro arranca limpio contra el sink real de audio de la Orin.
+- `edge-impulse` (door/kws): contenedores AWS específicos de Jetson Orin
+  6.0, no probados a fondo — bajo prioridad, ya señalados en fases previas
+  como potencialmente atados a JetPack 6.
+- `hri-ros` (`docker/hri/compose/hri-ros.yaml`) tenía el mismo problema de
+  audio que `tts.yaml` (socket de PulseAudio clásico en vez del de
+  PipeWire-Pulse) — hacía fallar `audio_capturer.py` con
+  `PyAudio: Invalid input device`. Se aplicó el mismo fix: montar
+  `/run/user/${LOCAL_USER_ID}/pulse` directo y agregar `SDL_AUDIODRIVER:
+  pulse` al `x-speech-devices` compartido.
+- `frida_interfaces_cache` (compila `frida_interfaces`/`frida_constants`/
+  `xarm_msgs` antes de `hri`) puede quedar en un build incompleto (p. ej.
+  interrumpido por un reboot) sin que nada lo detecte: `lib.sh` solo
+  reconstruye la caché si la carpeta `build/` no existe, no si el build dentro
+  de ella falló a medias. Cuando pase, hay que borrar
+  `docker/frida_interfaces_cache/{build,install,log}` a mano (puede necesitar
+  `sudo rm -rf` si el contenedor corrió como root por `UID`/`GID` sin
+  exportar) y volver a correr `./run.sh hri --build`. No se automatizó una
+  detección de build incompleto en esta iteración.
+
+## zed — verificado con cámara real (ZED2 por USB)
+
+Con la cámara conectada, se encontraron y arreglaron 4 problemas en cadena
+(cada uno tapaba al siguiente):
+1. `docker/zed/.env` en la Orin seguía con `BASE_IMAGE`/`IMAGE_NAME`
+   apuntando a `jazzy_l4t_base`/`jazzy_zed-l4t` — no se actualizó en el
+   rename de imágenes. Corregido.
+2. `zed-l4t` estaba construida antes del fix de `NVIDIA_VISIBLE_DEVICES`
+   en la base — sin eso, `libcuda.so.1` no se encontraba y el componente
+   `zed_camera_component` fallaba al cargar. Reconstruida.
+3. Faltaba la regla udev del host para el vendor ID de Stereolabs (`2b03`,
+   `/etc/udev/rules.d/99-slabs.rules`) — sin ella, el MCU/sensores de la
+   cámara daban `Permissions denied`. Esto es config de host (normalmente
+   la crea el instalador del SDK cuando se corre nativo, no dentro de un
+   container), así que nunca existió aquí. Creada.
+4. `/usr/local/zed/settings` y `/usr/local/zed/resources` en el host
+   (montados al container) eran `root:root` sin permiso de escritura — el
+   SDK necesita escribir ahí el archivo de calibración de la cámara
+   (descargado por serial) y el modelo neural de profundidad optimizado
+   con TensorRT (~26MB, se compila la primera vez). `chown 2002:2002`
+   (el UID del container) en ambos.
+
+Con los 4 fixes: `=== zed started ===`, positional tracking activo,
+publicando RGB/depth/IMU/point cloud reales — confirmado `rgb/color/rect/image`
+a ~30Hz vía `ros2 topic hz`.
+
 ## Pendiente / fuera de alcance de esta iteración
 
-- `zed`: no hay cámara física conectada a este devkit, así que no se pudo
-  probar streaming real. Al levantar el contenedor (sin cámara) se encontró
-  un problema real, no relacionado a la falta de hardware: `iox-roudi`
-  (compilado desde fuente, v2.0.6) usa `memfd_create` para su memoria
-  compartida y no expone segmentos nombrados en `/dev/shm`, mientras que el
-  componente interno del ZED SDK 5.4 (`zed_components`, con su propio
-  iceoryx embebido) intenta abrir un segmento por nombre vía `shm_open` y
-  falla (`Unable to create shared memory ... Shared Memory does not exist`).
-  Es un conflicto de versión/mecanismo de iceoryx entre nuestro build y el
-  SDK de Stereolabs, no un problema de la migración a JetPack7/Jazzy en sí
-  — pendiente de investigar si Stereolabs publica una versión de iceoryx
-  compatible o si hay que ajustar el build de iceoryx para usar shm nombrada.
 - Sabores `cpu`/`cuda` de cada área: no priorizados en esta iteración (foco
   exclusivo en `l4t`, que es el hardware real del robot).
