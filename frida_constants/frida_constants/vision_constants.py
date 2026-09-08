@@ -10,6 +10,7 @@ CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
 
 # ZED CAMERA FRAME
 CAMERA_FRAME = "zed_left_camera_frame_optical"
+RIGHT_CAMERA_FRAME = "zed_right_camera_frame_optical"
 
 # OBJECT 2D TOPICS
 DETECTIONS_TOPIC = "/vision/detections"
