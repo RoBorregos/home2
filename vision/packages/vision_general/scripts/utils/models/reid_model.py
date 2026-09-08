@@ -1,4 +1,4 @@
-from vision_general.utils.models.swin.model import ft_net_swin, ft_net, ft_net_dense
+from utils.models.swin.model import ft_net_swin, ft_net, ft_net_dense
 from torchvision import transforms
 import math
 import os
@@ -19,7 +19,7 @@ folder_path = str(pathlib.Path(__file__).parent)
 
 # Resolve model weights from the source tree via the package file location.
 # Works with --symlink-install (symlinks back to source) and direct execution.
-_models_root = str(pathlib.Path(__file__).resolve().parent / "models")
+_models_root = str(pathlib.Path(__file__).resolve().parent)
 
 use_gpu = torch.cuda.is_available()
 # Enable FP16 for Orin AGX — halves memory and doubles throughput

@@ -35,7 +35,6 @@ class NodeMonitor(Node):
             'controller_server',
             'planner_server',
             'map_server',
-            'dashgo_driver',
             'rplidar_node'
         ])
         self.declare_parameter('update_period', 2.0)

@@ -5,12 +5,12 @@ import torch
 import torch.nn as nn
 from PIL import Image as PILImage
 
-from vision_general.utils.reid_model import (
+from utils.models.reid_model import (
     extract_feature_from_img,
     get_structure,
     load_network,
 )
-from vision_general.utils.trt_utils import load_yolo_trt
+from utils.trt_utils import load_yolo_trt
 from .pose_detection import PoseDetection
 
 CONF_THRESHOLD = 0.6

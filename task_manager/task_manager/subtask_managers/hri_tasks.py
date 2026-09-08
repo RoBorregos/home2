@@ -273,6 +273,8 @@ class HRITasks:
         with open(file_path, "r") as file:
             self.names = json.load(file)["names"]
 
+        self.names_hotwords = " ".join(self.names)
+
         if not self.mock_data:
             self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -474,8 +476,11 @@ class HRITasks:
         self.cancel_hear_action()
 
         result = goal_future.result().result
+        # On silence or too-short audio the transcription can come back as the hotwords themselves.
+        transcription = result.transcription.strip()
+        heard_text = "" if transcription == self.last_hotwords.strip() else transcription
         execution_status = (
-            Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
+            Status.EXECUTION_SUCCESS if len(heard_text) > 0 else Status.TARGET_NOT_FOUND
         )
 
         word_confidences = (
@@ -487,7 +492,7 @@ class HRITasks:
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
                 self.node,
-                f"hearing result: {result.transcription}",
+                f"hearing result: {heard_text}",
             )
             if word_confidences:
                 Logger.info(
@@ -498,7 +503,7 @@ class HRITasks:
         else:
             Logger.warn(self.node, "hearing result: no text heard")
 
-        return execution_status, result.transcription, word_confidences
+        return execution_status, heard_text, word_confidences
 
     def hear_streaming(
         self,

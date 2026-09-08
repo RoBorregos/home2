@@ -6,13 +6,6 @@ import argparse
 from moondream_lib import MoonDreamModel
 
 
-# class Position(Enum):
-#     LEFT = "left"
-#     CENTER = "center"
-#     RIGHT = "right"
-#     NOT_FOUND = "not found"
-
-
 class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
     def __init__(self, model):
         self.model = model
@@ -21,10 +14,6 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         print("Encoding image...")
         encoded_data = self.model.encode_image(request.image_data)
         return moondream_proto_pb2.EncodedImageResponse(encoded_image=encoded_data)
-
-    def FindBeverage(self, request, context):
-        position = self.model.find_beverage(request.encoded_image, request.subject)
-        return moondream_proto_pb2.BeveragePositionResponse(position=position)
 
     def FindObjectPoints(self, request, context):
         points = self.model.find_object_points(request.encoded_image, request.subject)

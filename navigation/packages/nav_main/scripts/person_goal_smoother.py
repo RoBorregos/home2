@@ -38,9 +38,6 @@ from frida_constants.navigation_constants import MAP_TOPIC, GOAL_UPDATE_TOPIC, F
 
 
 # Which MPPI controller params to switch (dot-separated keys under controller_server.ros__parameters)
-# Keys absent from BOTH configs are silently skipped, so this single list covers
-# the omnibase (holonomic, has vy_max; no PreferForwardCritic) and the dashgo
-# (diff-drive, vy_max == 0; has PreferForwardCritic) alike.
 CONTROLLER_KEYS = [
     "FollowPath.vx_max",
     "FollowPath.vx_min",
@@ -151,9 +148,8 @@ class PersonGoalSmoother(Node):
         #        the tracker's ReID re-acquisition re-locks when they reappear).
         #   "halt" — freeze at the robot's own pose (legacy behavior).
         self.declare_parameter("lost_behavior", "last_position")
-        # Selects which (standard, follow) nav2 config PAIR to switch between:
-        #   "omnibase" -> omni_config/nav2_omni.yaml  + omni_config/nav2_omni_following.yaml
-        #   "dashgo"   -> nav2_standard.yaml          + nav2_following.yaml
+        # Selects the (standard, follow) nav2 config PAIR to switch between —
+        # always omni_config/nav2_omni.yaml + omni_config/nav2_omni_following.yaml
         self.declare_parameter("default_base", "omnibase")
         # Explicit config-pair override (absolute paths or nav_main-config-relative).
         # The launch file forwards the ACTUAL nav2 config it started Nav2 with
@@ -201,12 +197,8 @@ class PersonGoalSmoother(Node):
 
         # --- Load the (standard, follow) YAML pair for the active base ---
         base = self.get_parameter("default_base").value
-        if base == "omnibase":
-            standard_file = os.path.join("omni_config", "nav2_omni.yaml")
-            follow_file = os.path.join("omni_config", "nav2_omni_following.yaml")
-        else:
-            standard_file = "nav2_standard.yaml"
-            follow_file = "nav2_following.yaml"
+        standard_file = os.path.join("omni_config", "nav2_omni.yaml")
+        follow_file = os.path.join("omni_config", "nav2_omni_following.yaml")
         # Launch-provided override wins (keeps standard-mode restore in sync
         # with the config Nav2 actually launched with, e.g. the limp profile).
         override_standard = self.get_parameter("standard_config_file").value

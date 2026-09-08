@@ -11,7 +11,7 @@ from tf2_ros import Buffer
 
 from frida_interfaces.srv import MapAreas
 
-from vision_general.utils.calculations import point2d_to_ros_point_stamped
+from utils.calculations import point2d_to_ros_point_stamped
 
 
 def fetch_map_areas(

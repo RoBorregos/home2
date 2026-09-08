@@ -116,7 +116,7 @@ class NavRosNode(Node):
         self.ui_mode = self.declare_parameter('mode', 'navigation').value
         self.map_name = self.declare_parameter('map_name', '').value
         # Base + SLAM backend (mirrors nav_central). Params absent -> legacy RTABMap.
-        self.default_base = self.declare_parameter('default_base', 'dashgo').value
+        self.default_base = self.declare_parameter('default_base', 'omnibase').value
         self.nav_type = self.declare_parameter('nav_type', '2d').value
         self.use_slam_toolbox = (self.default_base == 'omnibase' and self.nav_type == '2d')
 
