@@ -34,7 +34,6 @@ services:
     cpuset: "${COMPUTE_CPUSET:-4-11}"
     group_add:
       - video
-      - "982"
       - "993"
     environment:
       DISPLAY: ${DISPLAY}
