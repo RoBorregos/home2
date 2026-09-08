@@ -1,5 +1,5 @@
 # =============================================================================
-# FAST PATH — Eigen Nav2 overlay built ON TOP of the existing jazzy_navigation-l4t
+# FAST PATH — Eigen Nav2 overlay built ON TOP of the existing navigation-l4t
 # image, which already contains the expensive base layers (CUDA OpenCV, rtabmap,
 # OpenVDB, iceoryx, cyclonedds). This rebuilds ONLY the from-source Nav2 overlay
 # (~20 min) instead of a cold from-scratch Dockerfile.l4t build (hours, since the
@@ -8,14 +8,14 @@
 # The overlay block below is identical to the one inlined in Dockerfile.l4t
 # (the canonical from-scratch recipe). Build with:
 #   docker build -f docker/navigation/Dockerfile.l4t-eigen \
-#     --build-arg BASE_IMAGE=roborregos/home2:jazzy_navigation-l4t \
-#     -t roborregos/home2:jazzy_navigation-l4t ..    # context = repo root
+#     --build-arg BASE_IMAGE=roborregos/home2:navigation-l4t \
+#     -t roborregos/home2:navigation-l4t ..    # context = repo root
 #
-# See branch mppi-eigen-humble. Replaces apt nav2 (1.1.20) with the jazzy
+# See branch mppi-eigen-humble. Replaces apt nav2 (1.1.20) with the jazzy branch
 # (Eigen nav2_mppi_controller 1.4.0). Runtime sourcing is wired via run.sh
 # (SOURCE_NAV2 -> /home/ros/nav2_ws/install/setup.bash).
 # =============================================================================
-ARG BASE_IMAGE=roborregos/home2:jazzy_navigation-l4t
+ARG BASE_IMAGE=roborregos/home2:navigation-l4t
 FROM ${BASE_IMAGE}
 ARG ROS_DISTRO=jazzy
 USER ros
