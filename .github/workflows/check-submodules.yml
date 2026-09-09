@@ -22,7 +22,7 @@ jobs:
         run: |
           SUBMODULE_PATH="manipulation/packages/xarm_ros2"
           EXPECTED_REMOTE="https://github.com/RoBorregos/xarm_ros2.git"
-          EXPECTED_BRANCH="xarm_servicios_estable"
+          EXPECTED_BRANCH="xarm_servicios_estable_jazzy"
 
           # Get the submodule commit pointer from this PR
           SUBMODULE_COMMIT=$(git ls-tree HEAD "$SUBMODULE_PATH" | awk '{print $3}')
