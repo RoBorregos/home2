@@ -9,7 +9,7 @@ class PickAttemptFailed(Exception):
 
 
 class PickAborted(Exception):
-    """E-stop or goal cancellation: stop immediately and leave the arm safe."""
+    """Goal cancellation: stop immediately and leave the arm safe."""
 
 
 class PickHardwareError(Exception):

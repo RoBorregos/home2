@@ -16,7 +16,6 @@ from frida_constants.manipulation_constants import (
     ATTACH_COLLISION_OBJECT_SERVICE,
     EEF_CONTACT_LINKS,
     EEF_LINK_NAME,
-    ESTOP_TOPIC,
     GET_COLLISION_OBJECTS_SERVICE,
     GET_JOINT_SERVICE,
     GRASP_LINK_FRAME,
@@ -55,7 +54,6 @@ from rclpy.action import ActionClient
 from rclpy.duration import Duration
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Bool
 from std_srvs.srv import Empty, SetBool
 from tf2_ros import Buffer, TransformListener
 from xarm_msgs.msg import RobotMsg
@@ -117,7 +115,6 @@ class RobotArm:
         # --- state fed by subscriptions ------------------------------------
         self._latest_joint_state: Optional[JointState] = None
         self._latest_robot_state: Optional[RobotMsg] = None
-        self._estop = False
         self._scene_snapshot = []
 
         # --- observability context ------------------------------------------
@@ -188,9 +185,6 @@ class RobotArm:
             10,
             callback_group=group,
         )
-        node.create_subscription(
-            Bool, ESTOP_TOPIC, self._on_estop, 10, callback_group=group
-        )
 
         # One TF listener for the whole node.
         qos = QoSProfile(
@@ -233,9 +227,6 @@ class RobotArm:
     def _on_robot_state(self, msg):
         self._latest_robot_state = msg
 
-    def _on_estop(self, msg):
-        self._estop = msg.data
-
     # ==================================================================
     # State
     # ==================================================================
@@ -243,10 +234,6 @@ class RobotArm:
     @property
     def logger(self):
         return self._log
-
-    @property
-    def estop_active(self) -> bool:
-        return self._estop
 
     @property
     def joint_state(self) -> Optional[JointState]:
@@ -263,9 +250,7 @@ class RobotArm:
         return float(self._node.get_parameter(param_name).value)
 
     def check_abort(self) -> None:
-        """Raise PickAborted if the e-stop is active or the goal was cancelled."""
-        if self._estop:
-            raise PickAborted("e-stop active")
+        """Raise PickAborted if the goal was cancelled."""
         if self._goal_handle is not None and self._goal_handle.is_cancel_requested:
             raise PickAborted("goal cancelled")
 
@@ -609,7 +594,7 @@ class RobotArm:
     def cartesian_velocity_mode(self, label: str):
         """Hold the arm in mode 5 for the duration of the block.
 
-        Whatever happens inside -- an exception, an e-stop, an early return --
+        Whatever happens inside -- an exception, an early return --
         the exit path zeroes the velocity and restores mode 1. Leaving the arm
         in mode 5 takes the trajectory controller offline, so every subsequent
         MoveIt goal would fail.
@@ -703,12 +688,6 @@ class RobotArm:
         while (time.time() - start_time) < guard.timeout:
             time.sleep(0.02)
             elapsed = time.time() - start_time
-
-            # The mode-5 loop bypasses MoveIt, so nothing else would stop the arm
-            # on an e-stop; the context manager restores mode 1 on the way out.
-            if self._estop:
-                self._log.warn(f"[{label}] e-stop during descent")
-                raise PickAborted("e-stop during force-guarded descent")
 
             if self._latest_joint_state is None:
                 continue
@@ -812,10 +791,6 @@ class RobotArm:
                         f"[{label}] timeout after {elapsed:.1f}s (limit={timeout:.1f}s)"
                     )
                     break
-
-                if self._estop:
-                    self._log.warn(f"[{label}] e-stop during descent")
-                    raise PickAborted("e-stop during fixed-distance descent")
 
                 current_z = self.tcp_z()
                 if current_z is None:

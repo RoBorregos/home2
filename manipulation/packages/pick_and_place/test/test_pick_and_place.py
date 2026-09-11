@@ -92,7 +92,7 @@ def test_incomplete_descent_fails_the_attempt(strategies):
     assert "close_gripper" not in arm.calls
 
 
-def test_estop_during_descent_aborts_rather_than_retrying(strategies):
+def test_abort_during_descent_aborts_rather_than_retrying(strategies):
     arm = FakeArm(abort_after=0)
     with pytest.raises(PickAborted):
         strategies["rim"].attempt(arm, candidate())
