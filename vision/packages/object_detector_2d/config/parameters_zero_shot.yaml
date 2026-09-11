@@ -8,7 +8,6 @@ ZeroShotDetect2D:
     DETECTIONS_POSES_TOPIC : /vision/zero_shot_detection_poses
     DETECTIONS_3D_TOPIC : /vision/zero_shot_detections_3d
     DETECTIONS_ACTIVE_TOPIC : /vision/zero_shot_detections_active
-    CAMERA_FRAME :  zed_left_camera_optical_frame
     TARGET_FRAME :  base_link
     USE_ACTIVE_FLAG : False
     DEPTH_ACTIVE : True

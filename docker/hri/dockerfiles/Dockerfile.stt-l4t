@@ -1,8 +1,5 @@
-FROM dustynv/l4t-pytorch:r36.4.0
-
-ENV PIP_INDEX_URL=https://pypi.jetson-ai-lab.io/jp6/cu126 \
-    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
-    PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io
+ARG BASE_IMAGE=roborregos/home2:l4t_base
+FROM ${BASE_IMAGE}
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -12,6 +9,8 @@ RUN apt-get update && apt-get install -y \
     git \
     cmake \
     g++ \
+    pkg-config \
+    libx264-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install CTranslate2 from source
@@ -20,7 +19,7 @@ RUN git clone --recursive https://github.com/OpenNMT/CTranslate2.git
 WORKDIR /tmp/CTranslate2
 RUN mkdir build
 WORKDIR /tmp/CTranslate2/build
-RUN cmake .. -DOPENMP_RUNTIME=NONE -DWITH_CUDA=ON -DWITH_MKL=OFF -DWITH_CUDNN=ON
+RUN cmake .. -DOPENMP_RUNTIME=NONE -DWITH_CUDA=ON -DWITH_MKL=OFF -DWITH_CUDNN=ON -DCUDA_ARCH_LIST="8.7"
 RUN make -j4
 RUN make install
 RUN ldconfig
@@ -33,7 +32,7 @@ RUN pip install dist/*.whl
 WORKDIR /tmp
 RUN git clone https://github.com/PyAV-Org/PyAV.git
 WORKDIR /tmp/PyAV
-RUN pip install virtualenv
+RUN pip install virtualenv uv
 RUN bash -c "source ./scripts/activate.sh && ./scripts/build-deps && make && deactivate && pip install ."
 
 # Install additional Python dependencies
@@ -45,3 +44,5 @@ RUN pip install --upgrade protobuf
 
 COPY ../../hri/proto_interfaces /tmp/proto_interfaces
 RUN pip install --no-cache-dir /tmp/proto_interfaces
+
+RUN pip install --no-cache-dir --force-reinstall --no-deps /tmp/CTranslate2/python/dist/*.whl

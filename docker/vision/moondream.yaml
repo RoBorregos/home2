@@ -22,6 +22,7 @@ services:
 
     working_dir: /workspace/moondream_server
     network_mode: host
+    pid: host
     privileged: true
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     runtime: ${DOCKER_RUNTIME:-nvidia}
@@ -29,12 +30,15 @@ services:
     cpuset: "${COMPUTE_CPUSET:-4-11}"
     group_add:
       - video
+      - "993"
     environment:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
       HF_HUB_OFFLINE: 1
+      HF_HOME: /home/ros/.cache/huggingface
+      HF_HUB_CACHE: /home/ros/.cache/huggingface
     tty: true
     stdin_open: true
     command: ["bash", "-c", "python3 -u server.py"]

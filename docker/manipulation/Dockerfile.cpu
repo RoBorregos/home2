@@ -6,6 +6,7 @@ LABEL maintainer="RoBorregos <roborregosteam@gmail.com>"
 
 FROM base AS manipulation
 
+ARG ROS_DISTRO=jazzy
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN mkdir -p /workspace/requirements
@@ -14,7 +15,7 @@ RUN mkdir -p /workspace/requirements
 RUN pip3 install torch torchvision torchaudio
 
 # ROS Requirements, will need several tools from desktop TODO: change desktop for specific dependencies
-RUN apt update && apt install -y ros-humble-desktop ros-humble-cv-bridge ros-humble-moveit ros-humble-laser-geometry
+RUN apt update && apt install -y ros-${ROS_DISTRO}-desktop ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-moveit ros-${ROS_DISTRO}-laser-geometry
 
 # Python Requirements
 COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
@@ -25,8 +26,8 @@ RUN mkdir -p /installs
 RUN chown -R ros:ros /workspace
 RUN chown -R ros:ros /installs
 
-RUN apt update && apt install -y ros-humble-zed-msgs ros-humble-moveit* \
-    ros-humble-gazebo-ros ros-humble-gazebo-ros2-control ros-humble-gazebo-plugins
+RUN apt update && apt install -y ros-${ROS_DISTRO}-zed-msgs ros-${ROS_DISTRO}-moveit* \
+    ros-${ROS_DISTRO}-gazebo-ros ros-${ROS_DISTRO}-gazebo-ros2-control ros-${ROS_DISTRO}-gazebo-plugins
 # prebuild and more
 WORKDIR /installs
 RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
@@ -40,7 +41,7 @@ RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc
 RUN echo "source /workspace/frida_interfaces_cache/install/setup.bash" >> /home/ros/.bashrc
 
 # CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
     && sudo rm -rf /var/lib/apt/lists/*
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
