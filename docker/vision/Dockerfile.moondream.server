@@ -2,11 +2,6 @@ ARG BASE_IMAGE=ubuntu:24.04
 FROM ${BASE_IMAGE}
 
 RUN echo "${BASE_IMAGE}"
-# RUN if [ "${BASE_IMAGE}" = "docker.io/roborregos/home2:cuda_base" ]; then \
-#     echo "Installing PyTorch with CUDA support"; \
-#     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126; \
-#     fi
-# RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
 
 RUN pip install transformers==4.40.0 accelerate huggingface-hub==0.30.2
 RUN pip install numpy==1.26.4
@@ -24,4 +19,3 @@ WORKDIR /workspace
 # Keep model downloads in the mounted, writable cache volume.
 ENV HF_HOME=/home/ros/.cache/huggingface \
 	HF_HUB_CACHE=/home/ros/.cache/huggingface
-# CV-bridge
