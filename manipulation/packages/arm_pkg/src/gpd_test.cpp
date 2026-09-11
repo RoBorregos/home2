@@ -2,6 +2,7 @@
 #include <gpd/grasp_detector.h>
 #include <gpd/util/cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/common/transforms.h>
 #include <frida_interfaces/srv/grasp_detection.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 #include <tf2_ros/buffer.h>

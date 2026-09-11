@@ -19,6 +19,8 @@ find_package(tf2 REQUIRED)
 find_package(pcl_ros REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(tf2_eigen REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(PCL REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
@@ -26,7 +28,10 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 # find_package(tf_transformations REQUIRED)
 find_package(rclpy REQUIRED)
-find_package(yaml_cpp_vendor REQUIRED)
+find_package(yaml-cpp QUIET)
+if(NOT TARGET yaml-cpp::yaml-cpp)
+  find_package(yaml_cpp_vendor REQUIRED)
+endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -51,37 +56,42 @@ add_executable(publish_handle src/publish_handle.cpp)
 ament_target_dependencies(down_sample_pc
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
 
 ament_target_dependencies(publish_cloud
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
 
 ament_target_dependencies(plane_service
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
 
 ament_target_dependencies(pick_primitives
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
 
 ament_target_dependencies(test_only_orchestrator
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
 
 ament_target_dependencies(read_pcd
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
 
 ament_target_dependencies(publish_handle
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL yaml_cpp_vendor)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen tf2_geometry_msgs ament_index_cpp PCL)
+if(TARGET yaml-cpp::yaml-cpp)
+  target_link_libraries(publish_handle yaml-cpp::yaml-cpp)
+else()
+  ament_target_dependencies(publish_handle yaml_cpp_vendor)
+endif()
 
 install(TARGETS 
   plane_service

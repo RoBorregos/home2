@@ -5,7 +5,8 @@ ARG USERNAME=ros
 ARG USER_UID
 ARG USER_GID
 
-ENV ROS_DISTRO=humble
+ARG ROS_DISTRO=jazzy
+ENV ROS_DISTRO=${ROS_DISTRO}
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install language
@@ -25,7 +26,9 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
-RUN groupadd --gid $USER_GID $USERNAME \
+RUN (id -u ubuntu >/dev/null 2>&1 && userdel -r ubuntu || true) \
+    && (getent group ubuntu >/dev/null 2>&1 && groupdel ubuntu || true) \
+    && groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
     # Add sudo support for the non-root user
     && apt-get update \
@@ -41,7 +44,7 @@ RUN apt-get update && apt-get install -y \
 # Install ROS
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-    && apt-get update && apt install -y ros-humble-ros-base
+    && apt-get update && apt install -y ros-${ROS_DISTRO}-ros-base
 
 # Install ROS utilities
 RUN apt-get update && apt-get install -y ros-dev-tools
@@ -70,9 +73,12 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     libxcb-cursor0 libxcb-xkb1 \
     python3-pip
 
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
+ENV PIP_IGNORE_INSTALLED=1
+
 # CycloneDDS (network-only, no SHM — SHM is vision/ZED-only)
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
-    ros-humble-rmw-cyclonedds-cpp \
+    ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
     && sudo rm -rf /var/lib/apt/lists/*
 
 COPY cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
@@ -81,6 +87,21 @@ ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
 RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 
-ENV PIP_INDEX_URL=https://pypi.jetson-ai-lab.io/jp6/cu126 \
+ARG PIP_INDEX_JETSON=https://pypi.jetson-ai-lab.io/sbsa/cu130
+ENV PIP_INDEX_URL=${PIP_INDEX_JETSON} \
     PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
     PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io
+
+COPY jetson-apt/nvidia-l4t-apt-source.list /etc/apt/sources.list.d/nvidia-l4t-apt-source.list
+COPY jetson-apt/jetson-ota-public.asc /etc/apt/trusted.gpg.d/jetson-ota-public.asc
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cuda-toolkit-13-2 \
+    libcudnn9-dev-cuda-13 \
+    libnvinfer-dev \
+    libnvinfer-plugin-dev \
+    && rm -rf /var/lib/apt/lists/*
+ENV PATH=/usr/local/cuda/bin:${PATH} \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH} \
+    CUDA_HOME=/usr/local/cuda
+ENV NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=all

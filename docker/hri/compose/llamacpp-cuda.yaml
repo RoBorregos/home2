@@ -1,0 +1,17 @@
+services:
+  llama:
+    profiles: [hric, carry, gpsr, storing, restaurant]
+    container_name: home2-hri-llamacpp-cuda
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    runtime: nvidia
+    network_mode: host
+    volumes:
+      - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
+      - ../scripts/llama-cpp-entrypoint.sh:/scripts/entrypoint.sh
+    environment:
+      ROLE: ${ROLE}
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    stdin_open: true
+    tty: true
+    entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]

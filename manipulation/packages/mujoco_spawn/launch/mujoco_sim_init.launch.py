@@ -1,3 +1,4 @@
+from frida_constants.vision_constants import CAMERA_FRAME
 from launch import LaunchDescription, LaunchContext
 import os
 import yaml
@@ -304,7 +305,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
             "--frame-id",
             "zed",
             "--child-frame-id",
-            "zed_left_camera_optical_frame",
+            CAMERA_FRAME,
         ],
         parameters=[{"use_sim_time": use_sim_time}],
     )
