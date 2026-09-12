@@ -18,12 +18,11 @@ class XArmServices:
         self.state_client = state_client
         self.move_velocity_client = None
         # The gripper IO client must be created regardless of whether the
-        # xarm low-level services are available: in sim the bridge exposes
-        # /xarm/set_tgpio_digital (the real-robot gripper service name) so
-        # open/close commands can still reach MuJoCo.  Creating it only
-        # inside the xarm-available branch meant sim init skipped it and
-        # every close_gripper() silently returned False with a "Cannot set
-        # gripper state" warning while pick_server logged "Gripper closed".
+        # xarm low-level services (mode/state) are available, since gripper
+        # IO does not depend on them. Creating it only inside the
+        # xarm-available branch meant close_gripper() could silently return
+        # False with a "Cannot set gripper state" warning while pick_server
+        # logged "Gripper closed".
         self.gripper_io_client = self.node.create_client(
             SetDigitalIO, XARM_SET_DIGITAL_TGPIO_SERVICE
         )
@@ -36,10 +35,10 @@ class XArmServices:
         self.move_velocity_client = self.node.create_client(
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE
         )
-        # In simulation the xarm low-level services never come up. Without a
-        # timeout this blocks the node init forever, so the action server is
-        # registered in DDS but the executor never starts spinning (which is
-        # why goal handshakes silently time out).
+        # If the xarm low-level services never come up, a timeout is
+        # required here: without one this blocks the node init forever, so
+        # the action server is registered in DDS but the executor never
+        # starts spinning (which is why goal handshakes silently time out).
         if not self.move_velocity_client.wait_for_service(timeout_sec=3.0):
             self.node.get_logger().warn(
                 "XArmServices: move_velocity service not available, disabling xarm low-level path"
