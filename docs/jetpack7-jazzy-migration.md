@@ -80,12 +80,25 @@ TensorRT 10.16, GPU Ampere `sm_87`.
   `insightface` se instalan con `--no-deps` (ambos dependen de
   `opencv-python`, que pisaría la build CUDA). `cv_bridge` reconstruido
   desde fuente contra el NumPy activo.
-- **navigation**: script de instalación de OpenCV apuntado a 4.14.0 (el
-  4.10.0 original no compila contra el CUDA 13/C++17 de este hardware);
-  Nav2/BehaviorTree.CPP/STVL apuntados a ramas `jazzy`; 2 rosdep keys
-  (`pcl`, `eigen3`) agregadas a `--skip-keys` (paquetes de terceros con
-  dependencias no resolubles en el rosdep DB de noble, no bloquean el
-  colcon build real que ocurre después desde el volumen montado).
+- **navigation** (solo `Dockerfile.l4t`; `cpu`/`.cuda` reciben el renombre
+  `ros-humble-*` → `ros-${ROS_DISTRO}-*` + `ubuntu:24.04`, sin probar):
+  - Base `dustynv/l4t-pytorch` → `l4t_base`. Como ya no trae OpenCV-CUDA ni
+    PyTorch: OpenCV **4.14.0** con CUDA desde fuente (4.10.0 no compila con
+    CUDA 13; `cudacodec` off), torch explícito (`torch==2.9.0 torchvision`)
+    y `unzip` agregado a apt.
+  - rtabmap con `-DCMAKE_CXX_STANDARD=20`. Nav2/BehaviorTree.CPP/STVL en
+    ramas `jazzy` (`BTCPP_TAG=4.6.2`).
+  - `--skip-keys`: `+pcl +eigen3`, `-dashgo_driver`.
+  - CycloneDDS/iceoryx: el `dpkg -r` selectivo ya no basta (dos
+    `libiceoryx_posh.so` en un proceso → SIGSEGV en RouDi); se purga todo el
+    set apt de DDS y se reconstruye `rmw_cyclonedds_cpp` desde fuente.
+    `libacl1-dev` vía `apt-get download` + `dpkg -i` (apt-get install se
+    niega con las deps rotas de la remoción de Nav2). iceoryx con
+    `-DINTROSPECTION=ON` (paridad con `docker/roudi/Dockerfile`).
+  - `numpy<2` al final: `pip install torch` mete NumPy 2.x en `~/.local` que
+    rompe `import cv2`.
+  - `nav2_omni.yaml` / `nav2_omni_limp.yaml`: plugin STVL `…/…` → `…::…`
+    (pluginlib de Jazzy).
 - **manipulation**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`; base cambiada de
   `dustynv/l4t-pytorch:r36.4.0` a `jazzy_l4t_base`; `libvtk-qt` agregado a
   skip-keys (rosdep base.yaml de ROS sigue apuntando a `libvtk7-qt-dev`,
