@@ -154,7 +154,7 @@ def _evaluate(
     joint_p, expected_s, destination = auto
 
     use_fallback = False
-    points = objective.points
+    points = _discounted_points(objective, world, brief)
     bar = _confidence_bar(objective, brief.risk_posture)
 
     if objective.fallback and joint_p < bar:
@@ -193,6 +193,23 @@ def _fallback_steps(fallback: str, brief: Brief):
     if fallback in REGISTRY:
         return (Step(skill=fallback),)
     return None
+
+
+def _discounted_points(objective: Objective, world: WorldModel, brief: Brief) -> float:
+    """
+    Apply the scoresheet's repetition penalty for solving one kind of problem twice.
+
+    Finals is the case this exists for: a problem is worth 650, but the second solve of
+    the same category is docked 300 and the third onward 500. Without this the selector
+    would happily pick up eight pieces of floor trash and score far less than it thinks.
+    """
+    if not objective.category or not brief.repeat_penalties:
+        return objective.points
+    solved = world.category_solves(objective.category)
+    if solved == 0:
+        return objective.points
+    index = min(solved - 1, len(brief.repeat_penalties) - 1)
+    return max(0.0, objective.points - brief.repeat_penalties[index])
 
 
 def _confidence_bar(objective: Objective, posture: str) -> float:

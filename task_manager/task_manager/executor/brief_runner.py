@@ -244,6 +244,7 @@ class BriefRunner(TaskRunner):
         self.world.note_attempt(objective.id, target)
         if succeeded:
             self.world.mark_done(objective.id)
+            self.world.solve_category(objective.category)
             self._score_projection += self._candidate.p * self._candidate.points
         else:
             self._penalize(objective, target)

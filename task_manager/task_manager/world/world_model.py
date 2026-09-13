@@ -51,6 +51,8 @@ class WorldModel:
     completed: dict = field(default_factory=dict)
     # (objective id, target) -> attempts, so one awkward object does not retire an objective
     attempts: dict = field(default_factory=dict)
+    # problem category -> times solved, for scoresheets that penalise repetition
+    categories: dict = field(default_factory=dict)
     facts: dict = field(default_factory=dict)
 
     # ---------------- predicates ----------------
@@ -118,6 +120,14 @@ class WorldModel:
 
     def times_done(self, objective_id: str) -> int:
         return self.completed.get(objective_id, 0)
+
+    def solve_category(self, category: str) -> None:
+        """Record that a problem of this kind was solved, for repetition scoring."""
+        if category:
+            self.categories[category] = self.categories.get(category, 0) + 1
+
+    def category_solves(self, category: str) -> int:
+        return self.categories.get(category, 0) if category else 0
 
     def note_attempt(self, objective_id: str, target: Any = None) -> int:
         """

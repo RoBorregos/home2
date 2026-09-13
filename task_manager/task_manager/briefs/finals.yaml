@@ -1,0 +1,127 @@
+# Finals brief — rulebook 2026 §6.2, scoresheet p.57.
+#
+# This is the one test that genuinely cannot be hardcoded. The rulebook says "the robot
+# has to find problems to solve on its own", the arena holds at least 8 unannounced
+# problems, and teams may add custom ones. There is no fixed sequence to write down.
+#
+# It is also where an LLM earns its place: `visual_query` asks a vision-language model
+# what is out of place in the current view, and the answer decides which problem
+# objective applies. Everything else stays deterministic — the ordering is still
+# expected value per second against the clock.
+#
+# Scoring shape that drives the design:
+#   find and state a problem   3x150
+#   solve a problem           10x650
+#   same category 2nd solve      -300
+#   same category 3rd+ solve     -500
+# So variety is worth more than repetition: eight pieces of floor trash score far less
+# than four different kinds of problem. That is what `category` and `repeat_penalties`
+# below encode, and why the selector spreads its work.
+
+task: finals
+budget_s: 600 # 10:00
+risk_posture: aggressive # there is no prize for a cautious final
+
+# points docked for the 2nd, then 3rd-and-later solve of a category
+repeat_penalties: [300, 500]
+
+on_start:
+  - move_arm_to(nav_pose)
+  - say("Hello, I will tidy up the apartment.")
+
+on_deadline:
+  - say("I am out of time. Thank you.")
+  - move_arm_to(nav_pose)
+
+triggers:
+  # a person raising their hand is an obligation, and ignoring people is the single
+  # largest penalty class in this league
+  - event: person_raised_hand
+    objective: help_person
+  - event: guest_at_door
+    objective: welcome_guest
+
+objectives:
+  # Survey a room, then ask the VLM what looks wrong. This is the problem detector:
+  # its answer populates the world model that the objectives below repeat over.
+  - id: survey_room
+    points: 150 # 3x150 for finding and stating a problem
+    repeat_for: rooms
+    max_attempts: 1
+    category: survey
+    template:
+      - go_to("{item}")
+      - detect_objects()
+      - visual_query("What in this room is out of place, dirty, or needs tidying?")
+      - say("I found something that needs attention.")
+
+  # --- the known problem categories, one objective each ---
+
+  - id: floor_trash
+    points: 650
+    repeat_for: table_objects
+    requires: [arm_free]
+    category: trash
+    penalty_risk: -40 # dropping it again
+    template:
+      - go_to("{obj.surface}")
+      - pick_object("{obj.name}")
+      - go_to(kitchen, trash)
+      - place(is_trash=true)
+
+  - id: misplaced_object
+    points: 650
+    repeat_for: table_objects
+    requires: [arm_free]
+    category: misplaced
+    template:
+      - go_to("{obj.surface}")
+      - pick_object("{obj.name}")
+      - go_to("{obj.destination}")
+      - place()
+
+  - id: help_person
+    points: 650
+    max_attempts: 3
+    category: person
+    template:
+      - follow_face(true)
+      - say("Hello, how can I help you?")
+      - ask_and_confirm("What would you like me to do?")
+      - answer_question()
+
+  # --- the three problems the rulebook names explicitly and prices separately ---
+
+  - id: close_dishwasher
+    points: 300
+    once: true
+    requires: [arm_free]
+    at: dishwasher
+    category: appliance
+    template:
+      - go_to(kitchen, dishwasher)
+      - move_arm_to(dishwasher_close)
+
+  - id: move_laundry_basket
+    points: 600
+    once: true
+    requires: [arm_free]
+    at: washing_machine
+    category: laundry
+    template:
+      - detect_objects(laundry_basket)
+      - pick_object(laundry_basket)
+      - go_to(kitchen, washing_machine)
+      - place()
+
+  - id: welcome_guest
+    points: 600
+    once: true
+    requires: [arm_free]
+    at: entrance
+    category: door
+    template:
+      - go_to(entrance, door)
+      - move_arm_to(door_open)
+      - say("Welcome, please come in.")
+      - ask_and_confirm("How can I help you?")

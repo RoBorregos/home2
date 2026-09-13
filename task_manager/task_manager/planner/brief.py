@@ -52,6 +52,8 @@ class Objective:
     penalty_risk: float = 0.0
     max_attempts: int = 2
     at: str = ""  # location this objective happens at, for travel cost
+    # problem category, for scoresheets that penalise solving the same kind twice
+    category: str = ""
 
     @property
     def repeats(self) -> bool:
@@ -76,6 +78,9 @@ class Brief:
     triggers: tuple = ()
     on_start: tuple = ()
     on_deadline: tuple = ()
+    # points deducted the Nth time a category is solved, indexed by prior solves.
+    # Finals docks 300 for the second solve of a category and 500 from the third on.
+    repeat_penalties: tuple = ()
 
     def objective(self, objective_id: str) -> Optional[Objective]:
         for objective in self.objectives:
@@ -242,6 +247,7 @@ def parse_brief(data: dict) -> Brief:
         triggers=triggers,
         on_start=tuple(parse_step(step) for step in data.get("on_start", [])),
         on_deadline=tuple(parse_step(step) for step in data.get("on_deadline", [])),
+        repeat_penalties=tuple(float(p) for p in _as_list(data.get("repeat_penalties", []))),
     )
 
     for objective in brief.objectives:
@@ -297,6 +303,7 @@ def _parse_objective(raw: dict) -> Objective:
         penalty_risk=float(raw.get("penalty_risk", 0)),
         max_attempts=int(raw.get("max_attempts", 2)),
         at=raw.get("at", ""),
+        category=raw.get("category", ""),
     )
 
 

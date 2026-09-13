@@ -23,6 +23,7 @@ TASKS = {
     "doing_laundry": Task.DOING_LAUNDRY,
     "hric": Task.HRIC,
     "restaurant": Task.RESTAURANT,
+    "finals": Task.DEBUG,
 }
 
 
