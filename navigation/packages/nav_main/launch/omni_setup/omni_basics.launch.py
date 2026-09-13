@@ -125,5 +125,6 @@ def generate_launch_description():
     return LaunchDescription([
         declare_cmd_vel_topic,
         dashboard_node,
+        ekf_node,
         lidar_setup,
     ])
