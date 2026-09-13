@@ -68,7 +68,7 @@ case "$BACKEND" in
     *) echo "ERROR: --backend must be llamacpp, ollama or both"; exit 1 ;;
 esac
 
-mkdir -p "$ASSETS_DIR" "$RESULTS_DIR/logs"
+mkdir -p "$ASSETS_DIR" "$RESULTS_DIR"
 
 upsert_env() {
     local file="$1" key="$2" value="$3"
@@ -112,9 +112,6 @@ if $DELETE_MODE; then
     run_delete_menu
     exit 0
 fi
-
-TS="$(date +%Y%m%d-%H%M%S)"
-exec > >(tee -a "$RESULTS_DIR/logs/manager-$TS.log") 2>&1
 
 echo "FRIDA NLP benchmark - $(date)"
 
