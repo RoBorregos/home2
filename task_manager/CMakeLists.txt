@@ -50,6 +50,11 @@ install(PROGRAMS ${MISC_NODES}
 install(DIRECTORY launch scripts
   DESTINATION share/${PROJECT_NAME})
 
+# Declarative task briefs and the measured capability manifest are data, not code,
+# so they need installing explicitly for briefs_dir() to find them at runtime.
+install(DIRECTORY task_manager/briefs
+  DESTINATION share/${PROJECT_NAME})
+
 # Install python config
 install(DIRECTORY scripts/config/ DESTINATION lib/${PROJECT_NAME}/config FILES_MATCHING PATTERN "*.py")
 

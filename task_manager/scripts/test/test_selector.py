@@ -352,7 +352,7 @@ def test_once_and_progress_are_respected() -> None:
     world.mark_done("greet")
     assert rank(once_only, world, Manifest(), 420) == [], "a once objective must retire"
 
-    # a non-repeating objective also gives up after max_attempts
+    # retries are capped by attempts, not completions — a failure still burns one
     retryable = parse_brief(
         minimal(
             objectives=[
@@ -362,11 +362,37 @@ def test_once_and_progress_are_respected() -> None:
     )
     fresh = build_world()
     assert rank(retryable, fresh, Manifest(), 420)
-    fresh.mark_done("tidy")
+    fresh.note_attempt("tidy")
     assert rank(retryable, fresh, Manifest(), 420), "one attempt used, one left"
-    fresh.mark_done("tidy")
+    fresh.note_attempt("tidy")
     assert rank(retryable, fresh, Manifest(), 420) == [], "attempts exhausted"
-    print("✓ once-only objectives retire, retries are capped")
+    print("✓ once-only objectives retire, retries are capped by attempts")
+
+
+def test_attempts_are_tracked_per_target() -> None:
+    """Failing on one object must not retire the objective for every other object."""
+    brief = parse_brief(
+        minimal(
+            objectives=[
+                {
+                    "id": "pick_place",
+                    "points": 90,
+                    "repeat_for": "table_objects",
+                    "requires": ["arm_free"],
+                    "max_attempts": 2,
+                    "template": ["pick_object({obj.name})"],
+                }
+            ]
+        )
+    )
+    world = build_world(("red_plate", "pringles"))
+
+    world.note_attempt("pick_place", world.objects["red_plate"])
+    world.note_attempt("pick_place", world.objects["red_plate"])
+
+    remaining = {c.binding["obj"].name for c in rank(brief, world, Manifest(), 420)}
+    assert remaining == {"pringles"}, remaining
+    print("✓ attempts are counted per target, not per objective")
 
 
 def test_selector_returns_none_when_nothing_fits() -> None:
@@ -390,6 +416,7 @@ if __name__ == "__main__":
     test_zero_point_enabler_is_reachable()
     test_travel_cost_batches_nearby_work()
     test_once_and_progress_are_respected()
+    test_attempts_are_tracked_per_target()
     test_selector_returns_none_when_nothing_fits()
     print("\nAll selector tests passed.")
     _ = Step

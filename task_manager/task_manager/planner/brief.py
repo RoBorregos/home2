@@ -301,4 +301,13 @@ def load_brief(path: str) -> Brief:
 
 
 def briefs_dir() -> str:
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)), "briefs")
+    """Briefs beside the package in a source tree, or in the ament share dir once installed."""
+    local = os.path.join(os.path.dirname(os.path.dirname(__file__)), "briefs")
+    if os.path.isdir(local):
+        return local
+    try:
+        from ament_index_python.packages import get_package_share_directory
+
+        return os.path.join(get_package_share_directory("task_manager"), "briefs")
+    except Exception:  # noqa: BLE001 — outside a workspace the local path is all there is
+        return local

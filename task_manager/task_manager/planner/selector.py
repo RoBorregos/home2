@@ -226,7 +226,9 @@ def _admissible(
 
     if objective.once and world.times_done(objective.id) > 0:
         return False
-    if not objective.repeats and world.times_done(objective.id) >= objective.max_attempts:
+    # attempts are counted per target, so one awkward object cannot retire the objective
+    target = candidate.binding.get("obj") or candidate.binding.get("item")
+    if world.attempts_for(objective.id, target) >= objective.max_attempts:
         return False
     if not world.satisfies(objective.requires):
         return False

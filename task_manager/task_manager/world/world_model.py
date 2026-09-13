@@ -49,6 +49,8 @@ class WorldModel:
     objects: dict = field(default_factory=dict)
     # objective id -> times completed, so `once` and `repeat_for` can be enforced
     completed: dict = field(default_factory=dict)
+    # (objective id, target) -> attempts, so one awkward object does not retire an objective
+    attempts: dict = field(default_factory=dict)
     facts: dict = field(default_factory=dict)
 
     # ---------------- predicates ----------------
@@ -117,6 +119,21 @@ class WorldModel:
     def times_done(self, objective_id: str) -> int:
         return self.completed.get(objective_id, 0)
 
+    def note_attempt(self, objective_id: str, target: Any = None) -> int:
+        """
+        Count an attempt against one (objective, target) pair.
+
+        Per target, not per objective: a repeating objective that fails on one object
+        must still be allowed to try the next one, and a global counter would retire
+        the whole objective after the first couple of awkward items.
+        """
+        key = (objective_id, _target_key(target))
+        self.attempts[key] = self.attempts.get(key, 0) + 1
+        return self.attempts[key]
+
+    def attempts_for(self, objective_id: str, target: Any = None) -> int:
+        return self.attempts.get((objective_id, _target_key(target)), 0)
+
     # ---------------- reporting ----------------
 
     def snapshot(self) -> dict:
@@ -145,3 +162,10 @@ class WorldModel:
 
 def _name_of(status: Any) -> str:
     return getattr(status, "name", str(status))
+
+
+def _target_key(target: Any) -> str:
+    """Bindings hold objects or bare strings; both need a stable key."""
+    if target is None:
+        return ""
+    return str(getattr(target, "name", target))
