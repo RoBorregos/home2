@@ -225,14 +225,7 @@ def parse_brief(data: dict) -> Brief:
     if not objectives:
         raise BriefError(f"brief '{data['task']}' declares no objectives")
 
-    triggers = tuple(
-        Trigger(
-            on=raw["on"],
-            objective=raw["objective"],
-            when=tuple(_as_list(raw.get("when", []))),
-        )
-        for raw in data.get("triggers", [])
-    )
+    triggers = tuple(_parse_trigger(raw) for raw in data.get("triggers", []))
     for trigger in triggers:
         if trigger.objective not in seen:
             raise BriefError(f"trigger '{trigger.on}' targets unknown '{trigger.objective}'")
@@ -259,6 +252,29 @@ def parse_brief(data: dict) -> Brief:
                     f"objective '{objective.id}' has unknown fallback '{objective.fallback}'"
                 )
     return brief
+
+
+def _parse_trigger(raw: dict) -> Trigger:
+    """
+    Triggers name their event with ``event:``.
+
+    Not ``on:`` — YAML 1.1 parses a bare ``on`` key as the boolean True, which silently
+    produces a trigger nothing can ever fire. An unquoted ``on`` is rejected loudly here
+    rather than left to fail on the arena floor.
+    """
+    if True in raw or "on" in raw:
+        raise BriefError(
+            f"trigger uses 'on:' — rename it to 'event:' (YAML reads bare 'on' as true): {raw!r}"
+        )
+    if "event" not in raw:
+        raise BriefError(f"trigger needs an 'event' key: {raw!r}")
+    if "objective" not in raw:
+        raise BriefError(f"trigger '{raw['event']}' needs an 'objective' key")
+    return Trigger(
+        on=str(raw["event"]),
+        objective=raw["objective"],
+        when=tuple(_as_list(raw.get("when", []))),
+    )
 
 
 def _parse_objective(raw: dict) -> Objective:

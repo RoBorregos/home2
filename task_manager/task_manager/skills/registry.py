@@ -182,6 +182,24 @@ def _skills() -> tuple[Skill, ...]:
             mutates_world=False,
             prior_duration_s=6.0,
         ),
+        Skill(
+            name="get_customer",
+            area="vision",
+            method="get_customer",
+            summary="Find a calling or waving customer and return their position.",
+            mutates_world=False,
+            prior_duration_s=8.0,
+            prior_success=0.7,
+        ),
+        Skill(
+            name="save_face",
+            area="vision",
+            method="save_face_name",
+            summary="Remember the face currently in view under a name.",
+            args=(SkillArg("name"),),
+            prior_duration_s=5.0,
+            prior_success=0.85,
+        ),
         # ---------------- manipulation ----------------
         Skill(
             name="pick_object",
@@ -287,6 +305,38 @@ def _skills() -> tuple[Skill, ...]:
             summary="Move the gripper to a detected hand for a handover.",
             args=(SkillArg("point", type="point"),),
             prior_duration_s=15.0,
+        ),
+        Skill(
+            name="move_arm_vertical",
+            area="manipulation",
+            method="move_arm_vertical",
+            summary="Raise or lower the gripper by a distance in metres.",
+            args=(
+                SkillArg("distance", type="float"),
+                SkillArg("descend", type="bool", required=False, default=False),
+            ),
+            prior_duration_s=6.0,
+            prior_success=0.9,
+        ),
+        Skill(
+            name="follow_face",
+            area="manipulation",
+            method="follow_face",
+            summary="Track a person's face with the arm-mounted camera.",
+            args=(SkillArg("follow", type="bool", required=False, default=True),),
+            mutates_world=False,
+            prior_duration_s=1.0,
+            prior_success=0.9,
+        ),
+        # ---------------- following ----------------
+        Skill(
+            name="follow_person",
+            area="nav",
+            method="follow_person",
+            summary="Drive after a person until told to stop.",
+            args=(SkillArg("follow", type="bool", required=False, default=True),),
+            prior_duration_s=120.0,
+            prior_success=0.6,
         ),
         # ---------------- interaction ----------------
         Skill(

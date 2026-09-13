@@ -19,7 +19,14 @@ from task_manager.executor.objective_tree import build_objective_tree
 from task_manager.gpsr.skill_runner import SkillRunner
 from task_manager.planner.brief import Brief, Step
 from task_manager.planner.manifest import Manifest, load_manifest
-from task_manager.planner.selector import as_dict, choose, distance_travel, explain, rank
+from task_manager.planner.selector import (
+    Candidate,
+    as_dict,
+    choose,
+    distance_travel,
+    explain,
+    rank,
+)
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.run_log import RunLog
 from task_manager.utils.status import Status
@@ -70,6 +77,40 @@ class BriefRunner(TaskRunner):
         self._candidate = None
         self._pending: list = []
         self._score_projection = 0.0
+        self._fired_triggers: list = []
+
+    # ---------------- triggers ----------------
+
+    def fire_trigger(self, event: str) -> None:
+        """
+        Record that a reactive event happened (doorbell, waving customer).
+
+        Deliberately does not preempt the objective in flight: interrupting a carry
+        mid-arena drops the object, which is worth more negative points than a few
+        seconds of delay. The event is honoured at the next selection instead.
+        """
+        if event not in {trigger.on for trigger in self.brief.triggers}:
+            self.get_logger().warning(f"no trigger declared for event '{event}'")
+            return
+        if event not in self._fired_triggers:
+            self._fired_triggers.append(event)
+            RunLog.note("trigger_fired", event=event)
+            CLog.fsm(self, "PLAN", f"Trigger '{event}' fired.")
+
+    def _triggered_objective(self):
+        """First fired trigger whose conditions hold, as an objective to run now."""
+        for event in list(self._fired_triggers):
+            for trigger in self.brief.triggers:
+                if trigger.on != event or not self.world.satisfies(trigger.when):
+                    continue
+                objective = self.brief.objective(trigger.objective)
+                if objective is None:
+                    continue
+                if objective.once and self.world.times_done(objective.id) > 0:
+                    self._fired_triggers.remove(event)
+                    break
+                return event, objective
+        return None, None
 
     # ---------------- travel cost ----------------
 
@@ -126,15 +167,24 @@ class BriefRunner(TaskRunner):
             return
 
         remaining = self.budget.remaining() - WRAP_UP_RESERVE_S
-        ranked = rank(
-            self.brief, self.world, self.manifest, remaining, self._travel_fn(), self.guards
-        )
-        if ranked:
-            CLog.fsm(self, "PLAN", "\n" + explain(ranked))
 
-        candidate = choose(
-            self.brief, self.world, self.manifest, remaining, self._travel_fn(), self.guards
-        )
+        # a fired trigger is an obligation to the person in front of us, not an option,
+        # so it jumps the expected-value queue
+        event, triggered = self._triggered_objective()
+        if triggered is not None:
+            self._fired_triggers.remove(event)
+            candidate = _forced_candidate(triggered)
+            CLog.fsm(self, "PLAN", f"Answering trigger '{event}' with {triggered.id}")
+        else:
+            ranked = rank(
+                self.brief, self.world, self.manifest, remaining, self._travel_fn(), self.guards
+            )
+            if ranked:
+                CLog.fsm(self, "PLAN", "\n" + explain(ranked))
+            candidate = choose(
+                self.brief, self.world, self.manifest, remaining, self._travel_fn(), self.guards
+            )
+
         if candidate is None:
             CLog.fsm(self, "STATE", "Nothing left worth doing.", level="warn")
             self._start_wrap_up()
@@ -275,6 +325,18 @@ class BriefRunner(TaskRunner):
         except Exception as error:  # noqa: BLE001 — wrap-up must always finish
             self.get_logger().warning(f"{label} step {step.skill} failed: {error}")
         return not self._pending
+
+
+def _forced_candidate(objective) -> Candidate:
+    """Wrap a triggered objective as a candidate without consulting expected value."""
+    return Candidate(
+        objective=objective,
+        binding={},
+        points=objective.points,
+        p=1.0,
+        expected_s=0.0,
+        travel_s=0.0,
+    )
 
 
 def spin_brief(node_factory, args=None) -> None:

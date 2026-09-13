@@ -1,0 +1,87 @@
+# Doing Laundry brief — rulebook 2026 §5.4, scoresheet p.50.
+#
+# Unusual scoresheet: folding one shirt is worth 800, more than everything around it,
+# and folding badly can cost up to -800. The selector therefore treats folding as the
+# objective to protect, and transport as what earns the right to do it.
+
+task: doing_laundry
+budget_s: 420
+risk_posture: safe
+
+on_start:
+  - move_arm_to(nav_pose)
+  - go_to(kitchen, washing_machine)
+
+on_deadline:
+  - say("I am out of time. Stopping here.")
+  - move_arm_to(nav_pose)
+
+objectives:
+  - id: reach_laundry_area
+    points: 15
+    once: true
+    at: washing_machine
+    template:
+      - go_to(kitchen, washing_machine)
+
+  # 100 per piece lifted out of the basket.
+  - id: pick_from_basket
+    points: 100
+    repeat_for: table_objects
+    requires: [arm_free]
+    at: washing_machine
+    template:
+      - go_to(kitchen, washing_machine)
+      - detect_objects(cloth)
+      - pick_object("{obj.name}")
+
+  # Clothes must reach the table before folding; folding on the floor scores nothing.
+  - id: deliver_to_table
+    points: 60
+    repeat_for: table_objects
+    requires: [holding]
+    at: laundry_table
+    penalty_risk: -200 # dropping laundry in transit
+    template:
+      - go_to(kitchen, laundry_table)
+      - place()
+
+  # The big one: 800 for a neat fold, the densest objective in any task we run.
+  #
+  # KNOWN GAP: there is no folding primitive in manipulation_tasks.py. The template
+  # below is a placeholder that positions and releases the cloth; it will not produce a
+  # scoring fold. Replace it with a real `fold_cloth` skill before competing — until
+  # then this objective is what makes the selector reserve time for folding, not what
+  # performs it.
+  #
+  # Keep the template short. Chained steps multiply: six steps at p=0.9 is only 53%,
+  # which a safe posture correctly refuses for an objective that can cost -800.
+  - id: fold_shirt
+    points: 800
+    repeat_for: table_objects
+    requires: [arm_free]
+    at: laundry_table
+    penalty_risk: -800 # a bad fold is scored down to nothing
+    template:
+      - go_to(kitchen, laundry_table)
+      - detect_objects(cloth)
+      - place(close_to=folded_stack)
+
+  # 300 for opening the machine ourselves; the assist is penalised, unlike in P&P.
+  - id: open_washing_machine
+    points: 300
+    once: true
+    requires: [arm_free]
+    at: washing_machine
+    fallback: ask_machine_help
+    template:
+      - go_to(kitchen, washing_machine)
+      - move_arm_to(washing_machine_open)
+
+  - id: ask_machine_help
+    points: 0
+    once: true
+    at: washing_machine
+    template:
+      - say("Could you please open the washing machine door for me?")
+      - confirm("Please say yes once the door is open.")

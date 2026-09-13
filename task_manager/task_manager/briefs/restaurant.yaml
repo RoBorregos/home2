@@ -1,0 +1,75 @@
+# Restaurant brief — rulebook 2026 §5.5, scoresheet p.54.
+#
+# Two things make this task different from the arena tasks:
+#   1. 15 minutes instead of 7, in an environment mapped online rather than in advance.
+#   2. The rulebook says to assume no wireless, no external computing and no power.
+#      Everything here must therefore run on the robot with a local model.
+#
+# Customers call whenever they like, including simultaneously, so the work is
+# trigger-driven. Interleaving order-taking and serving is explicitly allowed, which is
+# what the expected-value ordering does anyway once travel cost is included.
+
+task: restaurant
+budget_s: 900
+risk_posture: safe
+
+on_start:
+  - move_arm_to(nav_pose)
+  - say("I am ready to take orders.")
+
+on_deadline:
+  - say("I am out of time. Thank you.")
+  - move_arm_to(nav_pose)
+
+triggers:
+  - event: customer_calling
+    objective: approach_customer
+
+objectives:
+  # 2x80 detect + 2x80 reach the table. Being guided there costs 80.
+  - id: approach_customer
+    points: 160
+    max_attempts: 3
+    template:
+      - get_customer()
+      - say("I am coming to your table.")
+
+  # 2x160 to understand and confirm, minus 60 for not making eye contact
+  - id: take_order
+    points: 160
+    max_attempts: 3
+    requires: [person_found]
+    template:
+      - follow_face(true)
+      - say("Hello, what would you like to order?")
+      - ask_and_confirm("What would you like to order?")
+
+  # 2x80 for relaying the order to the barman
+  - id: place_order_at_bar
+    points: 80
+    at: kitchen_bar
+    max_attempts: 3
+    template:
+      - go_to(kitchen_bar, bar)
+      - say("I have an order to collect, please.")
+      - confirm("Is the order ready?")
+
+  # 4x100 per item picked, plus a one-off 100 first-pick bonus
+  - id: collect_item
+    points: 100
+    repeat_for: table_objects
+    requires: [arm_free]
+    at: kitchen_bar
+    template:
+      - go_to(kitchen_bar, bar)
+      - pick_object("{obj.name}")
+
+  # 2x80 to return plus 4x100 to serve. Handing from the gripper costs 100 per item.
+  - id: serve_item
+    points: 180
+    repeat_for: table_objects
+    requires: [holding]
+    penalty_risk: -100
+    template:
+      - say("Here is your order.")
+      - place()

@@ -1,0 +1,96 @@
+# Human-Robot Interaction brief — rulebook 2026 §5.1, scoresheet p.39.
+#
+# The first event-driven brief: guests arrive on a doorbell rather than on a schedule,
+# so the work is declared as triggers plus objectives. Reactive obligations jump the
+# expected-value queue — you do not leave a guest at the door because picking something
+# up scored better per second.
+#
+# Scoresheet quirk worth knowing: "not acknowledging people" is 2x-200, the largest
+# penalty in the test. Attending to a person is never optional.
+
+task: hric
+budget_s: 420
+risk_posture: safe
+
+on_start:
+  - move_arm_to(nav_pose)
+  - go_to(living_room, start_position)
+  - say("Hello, I am ready to receive guests.")
+
+on_deadline:
+  - say("I am out of time. Thank you.")
+  - move_arm_to(nav_pose)
+
+triggers:
+  # 2x30 for reacting to the doorbell, but only from the start position
+  - event: doorbell
+    objective: receive_guest
+    when: [at_start_position]
+  - event: guest_seated
+    objective: introduce_guests
+  - event: bag_offered
+    objective: take_bag
+
+objectives:
+  - id: receive_guest
+    points: 280 # 200 open door + 2x50 look at the speaker, per guest
+    max_attempts: 3
+    at: entrance
+    template:
+      - go_to(entrance, door)
+      - say("Hello, welcome. What is your name and your favourite drink?")
+      - follow_face(true)
+      - ask_and_confirm("What is your name and favourite drink?")
+      - save_face("{item}")
+
+  - id: seat_guest
+    points: 100
+    max_attempts: 3
+    at: living_room
+    requires: [person_found]
+    template:
+      - go_to(living_room, couch)
+      - find_seat()
+      - say("Please take this seat.")
+
+  # 4x30 for names and drinks, 2x50 for looking at the right guest while talking
+  - id: introduce_guests
+    points: 220
+    once: true
+    at: living_room
+    template:
+      - follow_face(true)
+      - say("Let me introduce you to each other.")
+      - answer_question()
+
+  # 50 for a clean handover; asking for help costs 25, placing on the robot costs 50
+  - id: take_bag
+    points: 50
+    once: true
+    requires: [arm_free]
+    template:
+      - say("May I carry your bag? Please hold it out to me.")
+      - detect_hand()
+      - open_gripper()
+      - close_gripper()
+
+  # 200 for following the host to the drop point, then 50 for putting the bag down
+  - id: deliver_bag
+    points: 250
+    once: true
+    requires: [holding]
+    penalty_risk: -50 # dropping the bag while following
+    template:
+      - say("I have your bag. Please lead the way.")
+      - follow_person(true)
+      - place_on_floor()
+
+  # 4x20 for a correct visual attribute, but 4x-20 for a wrong one
+  - id: describe_first_guest
+    points: 80
+    once: true
+    penalty_risk: -80
+    at: living_room
+    template:
+      - describe_person()
+      - say("Let me tell you about the other guest.")
