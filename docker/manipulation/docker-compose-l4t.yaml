@@ -13,6 +13,7 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - ./build/:/workspace/build
       - ./install/:/workspace/install
       - ./log/:/workspace/log
