@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "frida": {
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "home2-hri-ros-${ENV_TYPE:-cpu}",
+        "python3",
+        "/workspace/src/task_manager/scripts/frida_mcp_server.py"
+      ],
+      "env": {}
+    }
+  }
+}
