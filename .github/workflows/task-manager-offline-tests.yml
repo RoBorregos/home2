@@ -1,0 +1,33 @@
+name: Task manager offline tests
+
+# The planner, selector, world model and brief parser are deliberately ROS-free, so they
+# can be tested on a plain runner in seconds. This is the gate that catches a bad brief
+# or a broken selector decision long before anything reaches the robot.
+
+on:
+  push:
+    paths:
+      - "task_manager/**"
+      - ".github/workflows/task-manager-offline-tests.yml"
+  pull_request:
+    paths:
+      - "task_manager/**"
+      - ".github/workflows/task-manager-offline-tests.yml"
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: python -m pip install --quiet py_trees pyyaml
+
+      - name: Run offline test suites
+        run: python task_manager/scripts/test/run_offline_tests.py
