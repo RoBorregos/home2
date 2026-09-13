@@ -13,7 +13,6 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - ./build/:/workspace/build
       - ./install/:/workspace/install
       - ./log/:/workspace/log
@@ -30,7 +29,7 @@ services:
     group_add:
       - video
     environment:
-      DISPLAY: :0
+      DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1

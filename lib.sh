@@ -169,6 +169,7 @@ setup_common_env() {
   add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
   add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
   add_or_update_variable "$env_file" "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
+  add_or_update_variable "$env_file" "DISPLAY"           "${DISPLAY:-:0}"
   set_compute_cpuset "$env_file"
 
   mkdir -p install build log
