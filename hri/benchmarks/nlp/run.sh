@@ -13,7 +13,7 @@
 # Flags:
 #   --backend  llamacpp | ollama | both   (default: llamacpp)
 #   --model    registry name or index     (default: interactive menu)
-#   --runs     timed runs per task        (default: 5, after 1 discarded warmup)
+#   --runs     timed runs per task        (default: 20, after 1 discarded warmup)
 #   --tasks    comma-separated task list  (default: all)
 #   --download-only / --all / --delete / --no-build / --keep-up
 
@@ -32,7 +32,7 @@ PORT=11434
 
 BACKEND="llamacpp"
 MODEL_SELECT=""
-RUNS=5
+RUNS=20
 TASKS="is_coherent,extract_data,is_positive,is_negative,llm_wrapper"
 SELECT_ALL=false
 DELETE_MODE=false
