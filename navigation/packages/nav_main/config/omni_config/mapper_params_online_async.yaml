@@ -41,7 +41,7 @@ slam_toolbox:
     # map_start_pose: [0.0, 0.0, 0.0]           # where the robot starts on that map
     # map_start_at_dock: true
 
-    debug_logging: false
+    debug_logging: true
     throttle_scans: 1                 # process every scan (C1 is only ~10 Hz)
     transform_publish_period: 0.02    # publish map->odom TF at 50 Hz (smooth in RViz / for nav)
     map_update_interval: 1.0          # rebuild the /map occupancy grid every 1.0 s (raise to 2.0 to save CPU)
