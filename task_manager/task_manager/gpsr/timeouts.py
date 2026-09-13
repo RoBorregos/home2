@@ -6,12 +6,18 @@ FIND_TIMEOUT_S = 60.0
 SAY_TIMEOUT_S = 10.0
 DEFAULT_TIMEOUT_S = 30.0
 # Follow-person budget: FOLLOW_MAX_DURATION (120 s, gpsr_tasks) + lock-on
-# retries and speech. Leaves are synchronous so this only fires between ticks;
-# it must sit ABOVE the handler's own cap or the Retry decorator would restart
-# a follow that ended normally.
+# retries and speech. It must sit ABOVE the handler's own cap or the Retry
+# decorator would restart a follow that ended normally.
 FOLLOW_TIMEOUT_S = 160.0
+# Shelf placing is the worst measured sink (60-120 s, docs/task_manager/ppc).
+# Capping it is also what keeps the arm from idling past the 30 s arena rule.
+SHELF_PLACE_TIMEOUT_S = 100.0
+POUR_TIMEOUT_S = 60.0
 
+# Budget for one interleaved batch of commands.
 GLOBAL_BUDGET_S = 300.0
+# Whole-test budget from the rulebook: 7:00 for HRIC/PPC/GPSR/Laundry.
+TASK_BUDGET_S = 420.0
 
 ACTION_TIMEOUTS = {
     "go_to": NAVIGATE_TIMEOUT_S,
@@ -27,6 +33,9 @@ ACTION_TIMEOUTS = {
     "get_visual_info": FIND_TIMEOUT_S,
     "answer_question": FIND_TIMEOUT_S,
     "say_with_context": SAY_TIMEOUT_S,
+    "place_on_shelf": SHELF_PLACE_TIMEOUT_S,
+    "pour": POUR_TIMEOUT_S,
+    "detect_objects": FIND_TIMEOUT_S,
 }
 
 

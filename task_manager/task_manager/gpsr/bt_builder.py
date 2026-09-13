@@ -27,12 +27,14 @@ from typing import Any, Callable, Optional, Sequence
 
 import py_trees
 
+from task_manager.gpsr.bt_decorators import Deadline
 from task_manager.gpsr.leaf_behaviours import (
     ActionLeaf,
     OneShotCallbackLeaf,
     SequentialFallbackLeaf,
 )
 from task_manager.gpsr.merger import InterleavedPlan, PlanAction
+from task_manager.gpsr.skill_runner import SkillRunner
 from task_manager.gpsr.timeouts import GLOBAL_BUDGET_S, timeout_for
 
 
@@ -42,8 +44,11 @@ def _wrap_action(
     on_complete: Optional[Callable[[PlanAction, Any, Any], None]],
     retry_count: int,
     on_start: Optional[Callable[[PlanAction], None]] = None,
+    runner: Optional[SkillRunner] = None,
 ) -> py_trees.behaviour.Behaviour:
-    leaf = ActionLeaf(plan_action, handlers, on_complete=on_complete, on_start=on_start)
+    leaf = ActionLeaf(
+        plan_action, handlers, on_complete=on_complete, on_start=on_start, runner=runner
+    )
     kind = getattr(plan_action.action, "action", "")
     timeout = py_trees.decorators.Timeout(
         name=f"to({kind})",
@@ -66,6 +71,9 @@ def build_tree(
     on_fallback_entry: Optional[Callable[[], None]] = None,
     is_completed: Optional[Callable[[PlanAction], bool]] = None,
     on_action_start: Optional[Callable[[PlanAction], None]] = None,
+    runner: Optional[SkillRunner] = None,
+    remaining_s: Optional[Callable[[], float]] = None,
+    on_deadline: Optional[Callable[[], None]] = None,
 ) -> py_trees.behaviour.Behaviour:
     """Build the GPSR behaviour tree for ``plan``.
 
@@ -98,11 +106,17 @@ def build_tree(
     Returns:
         the root Selector behaviour ready for ``tick()``.
     """
+    runner = runner or SkillRunner()
     interleaved_seq = py_trees.composites.Sequence(name="interleaved", memory=True)
     for pa in plan.actions:
         interleaved_seq.add_child(
             _wrap_action(
-                pa, subtask_handlers, on_action_complete, retry_count, on_start=on_action_start
+                pa,
+                subtask_handlers,
+                on_action_complete,
+                retry_count,
+                on_start=on_action_start,
+                runner=runner,
             )
         )
 
@@ -126,6 +140,7 @@ def build_tree(
                 name=f"fallback_cmd{cmd_idx}",
                 is_completed=is_completed,
                 on_start=on_action_start,
+                runner=runner,
             )
         )
 
@@ -133,6 +148,10 @@ def build_tree(
     root.add_child(interleaved_branch)
     if fallback_seq.children:
         root.add_child(fallback_seq)
+
+    # absolute run budget wraps everything, including the fallback branch
+    if remaining_s is not None:
+        return Deadline(child=root, remaining_s=remaining_s, on_expire=on_deadline)
     return root
 
 

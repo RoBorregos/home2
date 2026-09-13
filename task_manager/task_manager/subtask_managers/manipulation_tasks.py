@@ -27,7 +27,7 @@ from frida_interfaces.srv import (
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
-from task_manager.utils.decorators import mockable, service_check
+from task_manager.utils.decorators import measured, mockable, service_check
 from task_manager.utils.status import Status
 from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
@@ -353,6 +353,7 @@ class ManipulationTasks:
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
+    @measured("pick_object", context=lambda self, object_name, **kw: {"object": object_name})
     def pick_object(
         self, object_name: str, in_configuration: bool = False, scan_environment: bool = False
     ):
@@ -391,6 +392,7 @@ class ManipulationTasks:
 
         return Status.EXECUTION_SUCCESS
 
+    @measured("place", context=lambda self, **kw: {"is_trash": kw.get("is_trash", False)})
     def place(
         self,
         close_to: str = "",
@@ -555,6 +557,7 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error in place_on_floor: {e}")
             return Status.EXECUTION_ERROR
 
+    @measured("place_on_shelf")
     def place_on_shelf(self, plane_height: int, tolerance: int):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
@@ -593,6 +596,7 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    @measured("pour", context=lambda self, pour_object_name, **kw: {"object": pour_object_name})
     def pour(
         self, pour_object_name: str, pour_container_name: str, object_already_grasped: bool = False
     ):

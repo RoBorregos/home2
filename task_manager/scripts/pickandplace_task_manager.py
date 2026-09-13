@@ -36,6 +36,7 @@ from frida_constants.vision_constants import (
 )
 from std_srvs.srv import Empty
 from task_manager.utils.colored_logger import CLog
+from task_manager.utils.run_log import RunLog
 from task_manager.utils.status import Status
 from task_manager.utils.shelf_pick_logic import (
     find_target_on_level,
@@ -860,6 +861,9 @@ class PickAndPlaceTM(Node):
             # The scored 420s window starts NOW (door open), not at node launch —
             # without this reset the final report includes the button-wait time.
             self.total_start_time = datetime.now()
+            # same anchor for the skill run log that feeds the capability manifest
+            run_id = RunLog.start("pick_and_place")
+            CLog.fsm(self, "STATE", f"Run log: {run_id}")
             self.current_state = PickAndPlaceTM.TaskStates.START
 
         # ==================== START ====================
@@ -1718,6 +1722,8 @@ class PickAndPlaceTM(Node):
                 CLog.fsm(self, "TIMER", f"{state}: {time_spent:.2f}s ({percentage:.1f}%)")
 
             CLog.fsm(self, "TIMER", "=== END TIMING REPORT ===")
+            RunLog.note("state_times", total_s=total_task_time, states=dict(self.state_times))
+            RunLog.finish()
             self.subtask_manager.hri.say("I have completed the pick and place task.")
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.running_task = False

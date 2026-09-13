@@ -5,11 +5,14 @@ Each leaf calls the method that matches its action's ``.action`` field
 ``subtask_handlers`` that defines it — the same dispatch model used by
 ``gpsr_task_manager.search_command``.
 
-The leaves are synchronous: ``update()`` blocks for the duration of the
-underlying subtask call, then returns SUCCESS/FAILURE. py_trees Timeout
-decorators only check between ticks, so the *primary* timeout enforcement
-lives inside the subtask managers themselves; the decorators are a
-between-tick safety net.
+The leaves are asynchronous: ``update()`` hands the blocking subtask call to a
+``SkillRunner`` worker and returns RUNNING until it finishes. That is what makes the
+Timeout and Deadline decorators actually fire — py_trees only preempts a child that
+is RUNNING at the next tick — and lets the tick loop spin ROS while a skill executes.
+
+A preempted skill cannot be killed (it is a blocking call, not a cancellable goal), so
+the runner keeps it on its single worker and the next action queues behind it. The tree
+moves on; the robot does not double-actuate. See ``skill_runner.SkillRunner.abandon``.
 """
 
 from typing import Any, Callable, List, Optional, Sequence, Tuple
@@ -17,6 +20,7 @@ from typing import Any, Callable, List, Optional, Sequence, Tuple
 import py_trees
 
 from task_manager.gpsr.merger import PlanAction
+from task_manager.gpsr.skill_runner import SkillRunner
 from task_manager.utils.status import Status
 
 
@@ -86,7 +90,7 @@ def _dispatch(
 
 
 class ActionLeaf(py_trees.behaviour.Behaviour):
-    """Leaf that runs one ``PlanAction`` to completion."""
+    """Leaf that runs one ``PlanAction`` on a worker thread, ticking RUNNING meanwhile."""
 
     def __init__(
         self,
@@ -95,6 +99,7 @@ class ActionLeaf(py_trees.behaviour.Behaviour):
         on_complete: Optional[Callable[[PlanAction, Any, Any], None]] = None,
         name: Optional[str] = None,
         on_start: Optional[Callable[[PlanAction], None]] = None,
+        runner: Optional[SkillRunner] = None,
     ):
         kind = getattr(plan_action.action, "action", "?")
         super().__init__(name=name or f"{kind}#{plan_action.source_cmd}.{plan_action.source_idx}")
@@ -103,6 +108,12 @@ class ActionLeaf(py_trees.behaviour.Behaviour):
         self._method = _resolve_method(kind, subtask_handlers)
         self._on_complete = on_complete
         self._on_start = on_start
+        self._runner = runner or SkillRunner()
+        self._future = None
+
+    def initialise(self) -> None:
+        # py_trees calls this on every fresh entry, including each Retry attempt
+        self._future = None
 
     def update(self) -> py_trees.common.Status:
         if self._method is None:
@@ -111,16 +122,34 @@ class ActionLeaf(py_trees.behaviour.Behaviour):
                 f"No handler for action '{kind}' in [{_handler_names(self._handlers)}]"
             )
             return py_trees.common.Status.FAILURE
-        status = _dispatch(
-            self._plan_action,
-            self._method,
-            self._on_complete,
-            self.logger,
-            on_start=self._on_start,
-        )
+
+        if self._future is None:
+            self._future = self._runner.submit(
+                _dispatch,
+                self._plan_action,
+                self._method,
+                self._on_complete,
+                self.logger,
+                self._on_start,
+            )
+            return py_trees.common.Status.RUNNING
+
+        if not self._future.done():
+            return py_trees.common.Status.RUNNING
+
+        try:
+            status = self._future.result()
+        except Exception:  # noqa: BLE001 — a worker crash must not kill the tree
+            self.logger.error(f"{self.name} worker raised")
+            return py_trees.common.Status.FAILURE
         if status == Status.EXECUTION_SUCCESS:
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
+
+    def terminate(self, new_status: py_trees.common.Status) -> None:
+        # INVALID means a Timeout/Deadline above us preempted the still-running call
+        if new_status == py_trees.common.Status.INVALID:
+            self._runner.abandon(self._future)
 
 
 class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
@@ -140,6 +169,7 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
         name: Optional[str] = None,
         is_completed: Optional[Callable[[PlanAction], bool]] = None,
         on_start: Optional[Callable[[PlanAction], None]] = None,
+        runner: Optional[SkillRunner] = None,
     ):
         if not per_command_actions:
             raise ValueError("SequentialFallbackLeaf requires at least one action")
@@ -148,6 +178,8 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
         self._on_complete = on_complete
         self._is_completed = is_completed
         self._on_start = on_start
+        self._runner = runner or SkillRunner()
+        self._future = None
         # Resolve handlers once so a missing-method misconfiguration
         # surfaces here, in tree construction, rather than mid-tick.
         self._resolved: List[Tuple[PlanAction, Optional[Callable]]] = [
@@ -192,14 +224,7 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
                 skip[i] = True
         return skip
 
-    def update(self) -> py_trees.common.Status:
-        if not self._started:
-            self._started = True
-            if self._resolved:
-                cmd_idx = self._resolved[0][0].source_cmd
-                self.logger.info(
-                    f"fallback running cmd_idx={cmd_idx}, " f"{len(self._resolved)} actions"
-                )
+    def _run_all(self) -> None:
         skip = self._resume_skip_mask()
         for idx, (pa, method) in enumerate(self._resolved):
             kind = getattr(pa.action, "action", "")
@@ -212,9 +237,30 @@ class SequentialFallbackLeaf(py_trees.behaviour.Behaviour):
                 )
                 continue
             _dispatch(pa, method, self._on_complete, self.logger, on_start=self._on_start)
+
+    def initialise(self) -> None:
+        self._future = None
+
+    def update(self) -> py_trees.common.Status:
+        if not self._started:
+            self._started = True
+            if self._resolved:
+                cmd_idx = self._resolved[0][0].source_cmd
+                self.logger.info(
+                    f"fallback running cmd_idx={cmd_idx}, " f"{len(self._resolved)} actions"
+                )
+        if self._future is None:
+            self._future = self._runner.submit(self._run_all)
+            return py_trees.common.Status.RUNNING
+        if not self._future.done():
+            return py_trees.common.Status.RUNNING
         # The fallback branch always reports SUCCESS — its job is to give
         # every command its chance, not to gate on per-action outcomes.
         return py_trees.common.Status.SUCCESS
+
+    def terminate(self, new_status: py_trees.common.Status) -> None:
+        if new_status == py_trees.common.Status.INVALID:
+            self._runner.abandon(self._future)
 
 
 class OneShotCallbackLeaf(py_trees.behaviour.Behaviour):

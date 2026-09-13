@@ -21,14 +21,16 @@ from tf2_ros import Buffer, TransformListener
 import py_trees
 
 from task_manager.gpsr.bt_builder import build_tree, render_tree_ascii
+from task_manager.gpsr.bt_decorators import Budget
 from task_manager.gpsr.merger import merge
-from task_manager.gpsr.timeouts import GLOBAL_BUDGET_S
+from task_manager.gpsr.timeouts import GLOBAL_BUDGET_S, TASK_BUDGET_S
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
 # from task_manager.subtask_managers.gpsr_test_commands import get_gpsr_comands
 from task_manager.utils.baml_client.types import CommandListLLM
 from task_manager.utils.colored_logger import CLog
+from task_manager.utils.run_log import RunLog
 from task_manager.utils.status import Status
 from task_manager.utils.subtask_manager import SubtaskManager, Task
 
@@ -87,6 +89,7 @@ class GPSRTM(Node):
             # GPSRTM.TaskStates.EXECUTING_COMMAND
         )
         self.running_task = True
+        self.budget = Budget(total_s=TASK_BUDGET_S)
         self.current_hear_attempt = 0
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("custom")
@@ -333,6 +336,8 @@ class GPSRTM(Node):
             on_fallback_entry=_announce_fallback,
             is_completed=lambda pa: (pa.source_cmd, pa.source_idx) in self._completed,
             on_action_start=self._on_action_start,
+            remaining_s=self.budget.remaining,
+            on_deadline=lambda: RunLog.note("deadline_hit", elapsed_s=self.budget.elapsed()),
         )
         self.get_logger().info("Behaviour tree:\n" + render_tree_ascii(root))
 
@@ -412,6 +417,10 @@ class GPSRTM(Node):
         elif self.current_state == GPSRTM.TaskStates.START:
             self._track_state_change(GPSRTM.TaskStates.START)
             status = self.subtask_manager.nav.check_door()
+
+            # anchor the scored window and the skill log at door-open, not at launch
+            self.budget.start()
+            RunLog.start("gpsr")
 
             self.navigate_to("start_location", "", False)
 

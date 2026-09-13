@@ -60,7 +60,7 @@ from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
 from std_msgs.msg import Int16
 from std_srvs.srv import SetBool, Trigger
-from task_manager.utils.decorators import mockable, service_check
+from task_manager.utils.decorators import measured, mockable, service_check
 from task_manager.utils.logger import Logger
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
@@ -378,6 +378,7 @@ class VisionTasks:
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
+    @measured("detect_objects", context=lambda self, **kw: {"label": kw.get("label", "all")})
     def detect_objects(
         self, timeout: float = TIMEOUT, ignore_labels: list[str] = [], label: str = "all"
     ) -> tuple[Status, list[BBOX]]:

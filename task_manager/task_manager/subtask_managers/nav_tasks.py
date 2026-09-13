@@ -39,7 +39,7 @@ from frida_interfaces.srv import (
 )
 from std_srvs.srv import SetBool
 
-from task_manager.utils.decorators import mockable, service_check
+from task_manager.utils.decorators import measured, mockable, service_check
 from task_manager.utils.colored_logger import CLog
 from task_manager.utils.status import Status
 from task_manager.utils.task import Task
@@ -209,6 +209,13 @@ class NavigationTasks:
         "move_to_location_srv",
         (Status.EXECUTION_ERROR, "Service not started"),
         timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    @measured(
+        "move_to_location",
+        context=lambda self, location, sublocation="", **kw: {
+            "location": location,
+            "sublocation": sublocation,
+        },
     )
     def move_to_location(self, location, sublocation):
         """Move to areas json location"""
