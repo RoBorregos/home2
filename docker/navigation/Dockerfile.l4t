@@ -32,6 +32,9 @@ RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && \
 
 # l4t_base ships no PyTorch; install from the base's Jetson pip index (Dockerfile.ROS-l4t).
 RUN pip install --upgrade pip && pip install torch==2.9.0 torchvision
+# torch/torchvision pull in a setuptools new enough to drop `develop --uninstall`,
+# which ament_cmake_python's runtime colcon build still relies on; pin it back down.
+RUN pip install "setuptools<71"
 
 # Persist paths so later layers find CUDA OpenCV and libtorch (pip user-site under ~/.local).
 ENV LD_LIBRARY_PATH=/home/ros/.local/lib/python3.12/site-packages/torch/lib:/usr/local/lib:${LD_LIBRARY_PATH}
