@@ -1,0 +1,145 @@
+# Pick & Place brief — RoboCup@Home rulebook 2026 §5.2, scoresheet p.44.
+#
+# Point values below are transcribed from the printed scoresheet. They are what the
+# robot optimizes, so a typo here is a strategy bug: re-verify against the 2027 rulebook
+# before competing. Capability notes come from docs/task_manager/ppc/time_strategy_2026.md.
+#
+# Reality check: the best Pick & Place score at Incheon 2026 was 170, not 3515. The
+# ordering below is therefore built to bank cheap reliable points first and reach for
+# the dense breakfast cluster second.
+
+task: pick_and_place
+budget_s: 420
+risk_posture: safe
+
+on_start:
+  - move_arm_to(nav_pose)
+  - go_to(kitchen, dinner_table)
+
+# always leave the arm somewhere safe, whatever else happened
+on_deadline:
+  - say("I am out of time. Stopping here.")
+  - move_arm_to(nav_pose)
+
+objectives:
+  # 15 navigate + up to 12x10 recognize. Cheapest points on the sheet.
+  - id: perceive_table
+    points: 135
+    once: true
+    at: dinner_table
+    template:
+      - go_to(kitchen, dinner_table)
+      - detect_objects()
+
+  # 50 pick + 40 place. Repeats over whatever perception actually found.
+  - id: pick_place
+    points: 90
+    repeat_for: table_objects
+    requires: [arm_free, objects_known]
+    guard: graspable
+    at: dinner_table
+    template:
+      - go_to(kitchen, "{obj.surface}")
+      - pick_object("{obj.name}")
+      - go_to(kitchen, "{obj.destination}")
+      - place(close_to="{obj.category}")
+
+  # 12x40 base + 2x20 for grouping with similar items. place_on_shelf works but is
+  # the worst measured time sink at 60-120 s, so its EV has to earn the slot.
+  - id: shelf_place
+    points: 60
+    repeat_for: table_objects
+    requires: [holding]
+    at: cabinet
+    template:
+      - go_to(kitchen, cabinet)
+      - place_on_shelf(2)
+
+  # Breakfast cluster. The bowl gates both pours, so it is worth more than its own 90.
+  - id: breakfast_bowl
+    points: 90
+    once: true
+    requires: [arm_free]
+    at: dishwasher
+    template:
+      - go_to(kitchen, dishwasher)
+      - pick_object(bowl)
+      - go_to(kitchen, dinner_table)
+      - place(close_to=spoon)
+
+  # 50 pick + 200 pour + 40 place. Highest points per second on the sheet.
+  - id: serve_cereal
+    points: 290
+    once: true
+    requires: [arm_free]
+    at: cabinet
+    penalty_risk: -100 # spilling costs 100
+    template:
+      - go_to(kitchen, cabinet)
+      - pick_object(blue_cereal_box)
+      - go_to(kitchen, dinner_table)
+      - pour(blue_cereal_box, bowl)
+      - place(close_to=bowl)
+
+  - id: serve_milk
+    points: 290
+    once: true
+    requires: [arm_free]
+    at: cabinet
+    penalty_risk: -100
+    template:
+      - go_to(kitchen, cabinet)
+      - pick_object(chocomilk_box)
+      - go_to(kitchen, dinner_table)
+      - pour(chocomilk_box, bowl)
+      - place(close_to=blue_cereal_box)
+
+  - id: breakfast_spoon
+    points: 90
+    once: true
+    requires: [arm_free]
+    at: dishwasher
+    template:
+      - go_to(kitchen, dishwasher)
+      - pick_object(spoon)
+      - go_to(kitchen, dinner_table)
+      - place(close_to=bowl)
+
+  # 2x200 for doing it ourselves, and the scoresheet prices the assist at -0.
+  # The selector decides which, from the measured success rate. Do not hardcode.
+  - id: open_dishwasher
+    points: 400
+    once: true
+    requires: [arm_free]
+    at: dishwasher
+    fallback: ask_dishwasher_help
+    template:
+      - go_to(kitchen, dishwasher)
+      - move_arm_to(dishwasher_open)
+
+  - id: ask_dishwasher_help
+    points: 0
+    once: true
+    at: dishwasher
+    template:
+      - say("Could you please open the dishwasher door for me?")
+      - confirm("Please say yes once the dishwasher door is open.")
+
+  # Opening the milk ourselves is 400; asking is likewise -0.
+  - id: ask_milk_help
+    points: 0
+    once: true
+    template:
+      - say("Could you please open the milk container for me?")
+      - confirm("Please say yes once the milk is open.")
+
+  # One trash item sits near the bin; +30 for picking off the floor.
+  - id: floor_trash
+    points: 120
+    once: true
+    requires: [arm_free]
+    at: trash
+    template:
+      - go_to(kitchen, trash)
+      - detect_objects()
+      - place(is_trash=true)
