@@ -12,6 +12,5 @@
 <xacro:include filename="lidar.xacro"/>
 <xacro:include filename="realsense.xacro"/>
 <xacro:include filename="$(find frida_description)/urdf/RoboCup2024/imu.xacro"/>
-<xacro:include filename="$(find frida_description)/urdf/RoboCup2024/gazebo.xacro"/>
 
 </robot>
