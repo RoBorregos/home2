@@ -30,3 +30,7 @@
 [submodule "navigation/packages/ira_laser_tools"]
 	path = navigation/packages/ira_laser_tools
 	url = https://github.com/ryanpennings/ira_laser_tools
+
+[submodule "manipulation/packages/giga"]
+	path = manipulation/packages/giga
+	url = https://github.com/UT-Austin-RPL/GIGA.git
