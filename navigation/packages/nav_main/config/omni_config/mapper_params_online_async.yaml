@@ -41,7 +41,7 @@ slam_toolbox:
     # map_start_pose: [0.0, 0.0, 0.0]           # where the robot starts on that map
     # map_start_at_dock: true
 
-    debug_logging: true
+    debug_logging: false
     throttle_scans: 1                 # process every scan (C1 is only ~10 Hz)
     transform_publish_period: 0.02    # publish map->odom TF at 50 Hz (smooth in RViz / for nav)
     map_update_interval: 1.0          # rebuild the /map occupancy grid every 1.0 s (raise to 2.0 to save CPU)
@@ -52,7 +52,7 @@ slam_toolbox:
     transform_timeout: 0.2            # tolerate small TF latency from the EKF
     tf_buffer_duration: 30.0
     stack_size_to_use: 40000000       # 40 MB — needed for large serialized maps
-    enable_interactive_mode: false    # TEMP DISABLED for debugging — was true (allows manual loop-closure / node edits in RViz)
+    enable_interactive_mode: true     # allows manual loop-closure / node edits in RViz
 
     # ---- General mapper ----
     use_scan_matching: true           # correlative scan match each scan against the local map (critical)
