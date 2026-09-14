@@ -51,7 +51,7 @@ slam_toolbox:
     minimum_time_interval: 0.2        # don't add nodes faster than 5 Hz even if scans arrive faster
     transform_timeout: 0.2            # tolerate small TF latency from the EKF
     tf_buffer_duration: 30.0
-    stack_size_to_use: 40000000       # 40 MB — needed for large serialized maps
+    # stack_size_to_use: 40000000     # 40 MB — needed for large serialized maps. TEMP DISABLED: suspected of silently hanging async_slam_toolbox_node's worker thread on this platform (process alive, 0% CPU, no /scan subscription ever created).
     enable_interactive_mode: true     # allows manual loop-closure / node edits in RViz
 
     # ---- General mapper ----
