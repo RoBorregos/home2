@@ -59,8 +59,12 @@ class GigaGraspDetectionService(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.pcd_pub = self.create_publisher(PointCloud2, GRASP_POINTCLOUD_TOPIC, _QOS_DEPTH)
-        self.marker_pub = self.create_publisher(MarkerArray, GRASP_MARKER_TOPIC, _QOS_DEPTH)
+        self.pcd_pub = self.create_publisher(
+            PointCloud2, GRASP_POINTCLOUD_TOPIC, _QOS_DEPTH
+        )
+        self.marker_pub = self.create_publisher(
+            MarkerArray, GRASP_MARKER_TOPIC, _QOS_DEPTH
+        )
 
         self.detector = None
         self.model_load_error = None
@@ -75,9 +79,7 @@ class GigaGraspDetectionService(Node):
         model_path = pathlib.Path(
             self.get_parameter("model_path").get_parameter_value().string_value
         )
-        model_type = (
-            self.get_parameter("model_type").get_parameter_value().string_value
-        )
+        model_type = self.get_parameter("model_type").get_parameter_value().string_value
         qual_th = self.get_parameter("qual_th").get_parameter_value().double_value
         resolution = (
             self.get_parameter("resolution").get_parameter_value().integer_value
@@ -243,9 +245,7 @@ class GigaGraspDetectionService(Node):
         res.grasp_scores = final_scores
 
         if poses:
-            self.marker_pub.publish(
-                build_gripper_markers(poses, final_scores, widths)
-            )
+            self.marker_pub.publish(build_gripper_markers(poses, final_scores, widths))
 
         return res
 
