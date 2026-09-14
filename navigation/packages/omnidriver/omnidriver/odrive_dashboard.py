@@ -815,10 +815,12 @@ class ODriveDashboardNode(Node):
             if 'IMU_yaw' in data:
                 iy = data['IMU_yaw']
                 if not math.isfinite(iy) or abs(iy) > 200.0:
+                    self.get_logger().warn(f"TEMP DEBUG: dropping line, IMU_yaw out of range/non-finite: {iy}")
                     return
                 if self._last_imu_yaw is not None:
                     dyaw = (iy - self._last_imu_yaw + 180.0) % 360.0 - 180.0
                     if abs(dyaw) > 40.0:
+                        self.get_logger().warn(f"TEMP DEBUG: dropping line, IMU_yaw jump too large: last={self._last_imu_yaw} new={iy} dyaw={dyaw}")
                         return
                 self._last_imu_yaw = iy
 
