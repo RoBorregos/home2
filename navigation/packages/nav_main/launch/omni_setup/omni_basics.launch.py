@@ -118,7 +118,12 @@ def generate_launch_description():
         output='screen',
         # Nav2 1.4.0 publishes geometry_msgs/TwistStamped on cmd_vel
         # (enable_stamped_cmd_vel defaults true), so subscribe stamped.
-        parameters=[{'use_stamped_cmd_vel': True}],
+        # publish_tf: False -- the ekf_node above is the one that owns
+        # odom -> base_link here; odrive_dashboard's own publish_tf defaults
+        # to True (see its docstring: "Disable at runtime via publish_tf:=False
+        # if you ever want to run an external EKF alongside"), and this launch
+        # never turned it off, so both nodes were fighting over the same TF.
+        parameters=[{'use_stamped_cmd_vel': True, 'publish_tf': False}],
         remappings=[('cmd_vel', cmd_vel_topic)],
     )
 
