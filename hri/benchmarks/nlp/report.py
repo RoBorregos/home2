@@ -118,7 +118,9 @@ def _print_failures_rich(console, task_results: dict) -> None:
             inp = f.get("input", "")
             if isinstance(inp, list):
                 inp = str(inp[:2])
-            lines.append(f"  expected={f['expected']!r}  got={f['got']!r}  ({inp})")
+            lines.append(
+                f"  expected={f.get('expected', '?')!r}  got={f.get('got', '?')!r}  ({inp})"
+            )
         if len(failures) > 5:
             lines.append(f"  ... and {len(failures) - 5} more")
         console.print(
@@ -244,6 +246,14 @@ def save_json(all_results: dict, output_dir: str, config: Optional[dict] = None)
     return path
 
 
+def _rebuild_cases(r: dict) -> list:
+    """Reuse the persisted failure detail; pad the rest, which save_json truncated."""
+    failed = r.get("failed_cases") or []
+    passed = r.get("passed", 0)
+    padding = max(0, r.get("cases", 0) - passed - len(failed))
+    return [{"passed": True}] * passed + failed + [{"passed": False}] * padding
+
+
 def merge_reports(paths: list[str]) -> dict:
     """Load saved benchmark JSONs into one label -> task -> metrics mapping."""
     merged: dict[str, dict] = {}
@@ -254,11 +264,7 @@ def merge_reports(paths: list[str]) -> dict:
         for model, task_results in (data.get("models") or {}).items():
             label = f"{backend}/{model}"
             merged[label] = {
-                task: dict(
-                    r,
-                    cases=[{"passed": True}] * r.get("passed", 0)
-                    + [{"passed": False}] * (r.get("cases", 0) - r.get("passed", 0)),
-                )
+                task: dict(r, cases=_rebuild_cases(r))
                 for task, r in task_results.items()
             }
     return merged
