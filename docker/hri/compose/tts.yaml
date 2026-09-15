@@ -10,7 +10,7 @@ services:
     volumes:
       - ../../../hri/microservices/tts/:/app
       - ../../../hri/packages/speech/assets/downloads/offline_voice/audios/:/app/audios
-      - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
+      - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/app/.cache/huggingface/hub
       - /run/user/${LOCAL_USER_ID:-1000}/pulse:/tmp/pulse
       - ~/.config/pulse:/tmp/pulse-cookie
     network_mode: host

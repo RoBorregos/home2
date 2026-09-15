@@ -215,6 +215,38 @@ levantó el stack completo de `hric` (hri-ros, stt, tts, postgres, llamacpp):
   `/run/user/${LOCAL_USER_ID}/pulse` directo (no `~/.config/pulse`, que solo
   tiene el cookie) y agrega `SDL_AUDIODRIVER: pulse`. Verificado: el server
   Kokoro arranca limpio contra el sink real de audio de la Orin.
+- `hri-tts` seguía fallando después del fix de audio: `KPipeline`/`KModel` de
+  Kokoro no encontraban el modelo cacheado (`LocalEntryNotFoundError`) aunque
+  `HF_HUB_OFFLINE=1` y el volumen del modelo estaban montados. Causa real:
+  `docker/hri/compose/tts.yaml` montaba el modelo en
+  `/home/ros/.cache/huggingface/hub`, pero el mismo compose fija
+  `HOME=/app` (y por lo tanto `HF_HOME`/`HUGGINGFACE_HUB_CACHE` bajo `/app`)
+  — la app nunca miraba la ruta donde estaba montado el modelo. Corregido el
+  destino del volumen a `/app/.cache/huggingface/hub`. Además, el propio
+  warm-up de `kokoro-tts.py` usa la voz `af_heart`, cuyos pesos son un
+  archivo aparte del repo de HuggingFace que tampoco estaba cacheado; se
+  generó una vez con `HF_HUB_OFFLINE=0` (la Orin sí tiene salida a internet)
+  para completar la caché local — queda persistido en
+  `hri/packages/speech/assets/downloads/offline_voice/model/` igual que el
+  resto de modelos descargables del repo. Se aprovechó para fijar versiones
+  explícitas en `hri/requirements/tts.txt` (antes con `kokoro>=0.9.2`,
+  `pygame`, `numpy<2`, `scipy`, `sentencepiece<0.2` sin pin), usando las
+  versiones que ya resuelven correctamente en esta imagen. Verificado:
+  `Model warm-up complete` + `Whisper... /Kokoro TTS server on port 50050`.
+- Nota (no bloqueante, ya existe en `main`, no se tocó): el warm-up de
+  `hri-stt` (`faster-whisper-streaming.py`, con `./warmup.wav`) falla con
+  `open() got an unexpected keyword argument 'metadata_errors'`. Causa: el
+  `command` de `stt-l4t.yaml` hace `source /tmp/PyAV/scripts/activate.sh &&
+  deactivate` antes de lanzar el server — ese `activate.sh` exporta
+  `PYTHONPATH=/tmp/PyAV:...` para el build de PyAV desde fuente, y
+  `deactivate` (del venv de `uv`) no limpia esa variable, así que el proceso
+  real termina importando el árbol fuente de PyAV en `/tmp/PyAV` en vez del
+  paquete instalado en site-packages. Solo afecta la ruta de
+  `decode_audio`/`av.open` (transcribir un archivo), que solo se usa en el
+  warm-up — la transcripción real en streaming (`ServeClientFasterWhisper`)
+  recibe directamente arrays de numpy y nunca pasa por `decode_audio`, así
+  que no afecta la transcripción real; el servidor igual queda arriba y
+  sirviendo en el puerto 50051.
 - `edge-impulse` (door/kws): contenedores AWS específicos de Jetson Orin
   6.0, no probados a fondo — bajo prioridad, ya señalados en fases previas
   como potencialmente atados a JetPack 6.
