@@ -8,11 +8,8 @@ RUN sudo apt-get update -qq && sudo apt-get install -y -qq zstd && \
     https://download.stereolabs.com/zedsdk/5.4/l4t38.4/jetsons && \
     chmod +x /tmp/ZED_SDK.run && \
     sudo -E /tmp/ZED_SDK.run silent skip_drivers && \
-    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/* && \
+    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/* /var/lib/apt/lists/* && \
     sudo usermod -aG zed ros
-
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq libnvonnxparsers10 && \
-    sudo rm -rf /var/lib/apt/lists/*
 
 # Symlink for v4l2 (required by ZED SDK in containers)
 RUN sudo ln -sf /usr/lib/$(uname -m)-linux-gnu/tegra/libv4l2.so.0 \
@@ -32,48 +29,12 @@ RUN cd /opt/zed_ws && \
     colcon build --cmake-args -Wno-dev \
         -DCMAKE_BUILD_TYPE=Release \
         --packages-skip zed_debug && \
+    rm -rf /opt/zed_ws/build /opt/zed_ws/log && \
     sudo chown -R ros:ros /opt/zed_ws
 
-# CycloneDDS with SHM (iceoryx zero-copy for camera frames)
-# Iceoryx from source (expanded publisher/subscriber limits)
-RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \
-    sudo dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
-RUN cd /tmp && \
-    git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
-    cd iceoryx && \
-    sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
-    cmake -S iceoryx_meta -B build \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
-        -DIOX_MAX_PUBLISHERS=20000 \
-        -DIOX_MAX_SUBSCRIBERS=20000 \
-        -DIOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048 \
-        -DBUILD_BINDING_C=ON \
-        -DBUILD_SHARED_LIBS=ON \
-        -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build build -j$(nproc) && \
-    sudo cmake --install build && \
-    sudo ldconfig && \
-    cd / && rm -rf /tmp/iceoryx
-
-RUN cd /tmp && \
-    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
-    cd cyclonedds && mkdir build && cd build && \
-    . /opt/ros/${ROS_DISTRO}/setup.sh && \
-    cmake .. \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
-        -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
-        -DENABLE_SHM=ON \
-        -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && sudo make install && \
-    cd / && rm -rf /tmp/cyclonedds
-
-COPY docker/cyclonedds_setup.sh /tmp/cyclonedds_setup.sh
-COPY roudi_config.toml /tmp/roudi_config.toml
-RUN sudo cp /tmp/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh && \
-    sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && \
-    sudo mkdir -p /etc/iceoryx && sudo cp /tmp/roudi_config.toml /etc/iceoryx/roudi_config.toml
+# CycloneDDS SHM (iceoryx built in l4t_base)
 ENV CYCLONE_SHM=1
-RUN sudo /usr/local/bin/cyclonedds_setup.sh
+RUN /usr/local/bin/cyclonedds_setup.sh
 
 # CycloneDDS config without SHM (for robot_state_publisher)
 RUN echo '<?xml version="1.0"?><CycloneDDS><Domain><SharedMemory><Enable>false</Enable><LogLevel>warn</LogLevel></SharedMemory></Domain></CycloneDDS>' > /opt/zed_ws/cyclonedds_noshm.xml
