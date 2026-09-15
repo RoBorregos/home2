@@ -78,7 +78,8 @@ TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
 NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
 NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
 NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
-NLP_RUNS = int(os.getenv("NLP_RUNS") or "3")
+NLP_BACKEND = os.getenv("NLP_BACKEND", "")
+NLP_RUNS = int(os.getenv("NLP_RUNS") or "20")  # keep in sync with run.sh RUNS
 NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR") or OUTPUT_DIR
 
 # Choose which tests to perform (used only when TEST_NLP is unset)
@@ -401,6 +402,7 @@ class TestHriManager(Node):
         output_file = os.path.join(OUTPUT_DIR, f"categorize_objects_{date_str}.csv")
 
         results = []
+        cases = []
         passed_tests = 0
 
         for i, test_case in enumerate(test_cases, 1):
@@ -458,6 +460,14 @@ class TestHriManager(Node):
                 actual_output = f"EXCEPTION: {str(e)}"
 
             results.append([i, test_case["name"], str(expected), str(actual_output), success])
+            cases.append(
+                {
+                    "input": test_case["name"],
+                    "expected": expected,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
             self.get_logger().info("-" * 50)
 
         # Write results to CSV
@@ -468,6 +478,7 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
 
     def async_llm_test(self):
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
@@ -1077,7 +1088,11 @@ class TestHriManager(Node):
         "is_positive": "test_is_positive",
         "is_negative": "test_is_negative",
         "extract_data": "test_data_extractor",
+        "categorize_shelves": "test_categorize_shelves",
     }
+
+    # No accuracy dataset for these; they contribute perf and JSON conformance.
+    _PERF_ONLY_TASKS = {"is_coherent", "llm_wrapper"}
 
     def run_nlp_benchmark(self):
         if not NLP_MODEL_ALIAS:
@@ -1095,15 +1110,16 @@ class TestHriManager(Node):
         model_results = {}
         for task_name in NLP_TASKS:
             method_name = self._TASK_DISPATCH.get(task_name)
-            if not method_name:
-                self.get_logger().warn(
-                    f"Unknown NLP task '{task_name}', supported: "
-                    f"{list(self._TASK_DISPATCH.keys())}"
-                )
+            if method_name is None and task_name not in self._PERF_ONLY_TASKS:
+                supported = sorted(set(self._TASK_DISPATCH) | self._PERF_ONLY_TASKS)
+                self.get_logger().warn(f"Unknown NLP task '{task_name}', supported: {supported}")
                 continue
-            self.get_logger().info(f"Running accuracy: {task_name}")
-            cases = getattr(self, method_name)()
-            task_r = {"cases": cases or []}
+
+            cases = []
+            if method_name:
+                self.get_logger().info(f"Running accuracy: {task_name}")
+                cases = getattr(self, method_name)() or []
+            task_r = {"cases": cases}
 
             perf = self._run_perf_side_channel(task_name)
             if perf:
@@ -1142,6 +1158,28 @@ class TestHriManager(Node):
             self.get_logger().warn(f"Perf side-channel failed: {e}")
             return {}
 
+    def _benchmark_config(self) -> dict:
+        """Stamped into every report so a result can be reproduced."""
+        config = {
+            "backend": NLP_BACKEND or "unknown",
+            "model_alias": NLP_MODEL_ALIAS,
+            "url": NLP_OLLAMA_URL,
+            "runs": NLP_RUNS,
+            "tasks": NLP_TASKS,
+        }
+        if NLP_OLLAMA_URL:
+            try:
+                if BENCHMARK_DIR not in sys.path:
+                    sys.path.insert(0, BENCHMARK_DIR)
+                from tasks import probe_backend
+
+                config.update(probe_backend(NLP_OLLAMA_URL))
+            except Exception as e:
+                config["probe_error"] = str(e)
+        if config.get("backend") in (None, "", "unknown") and NLP_BACKEND:
+            config["backend"] = NLP_BACKEND
+        return config
+
     def _emit_benchmark_report(self, all_results: dict) -> None:
         try:
             if BENCHMARK_DIR not in sys.path:
@@ -1152,7 +1190,7 @@ class TestHriManager(Node):
             return
 
         os.makedirs(NLP_RESULTS_DIR, exist_ok=True)
-        path = rpt.save_json(all_results, NLP_RESULTS_DIR)
+        path = rpt.save_json(all_results, NLP_RESULTS_DIR, self._benchmark_config())
         self.get_logger().info(f"Benchmark JSON written to: {path}")
         try:
             for model, task_results in all_results.items():
