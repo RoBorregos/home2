@@ -5,10 +5,12 @@ ARG ROS_DISTRO=jazzy
 ENV ROS_DISTRO=${ROS_DISTRO}
 
 # Build iceoryx from source with expanded publisher/subscriber limits
-# (default 512/1024 is too low when navigation + vision + ZED all use SHM)
-RUN apt-get update -qq && apt-get install -y --no-install-recommends libacl1-dev libncurses-dev && rm -rf /var/lib/apt/lists/* && \
-    dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
-RUN cd /tmp && \
+# (default 512/1024 is too low when navigation + vision + ZED all use SHM).
+# l4t_base already ships this build; other bases still compile it here.
+RUN if [ ! -x /opt/ros/${ROS_DISTRO}/bin/iox-roudi ]; then \
+    apt-get update -qq && apt-get install -y --no-install-recommends libacl1-dev libncurses-dev && rm -rf /var/lib/apt/lists/* && \
+    (dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true) && \
+    cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
     sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
@@ -24,7 +26,8 @@ RUN cd /tmp && \
     cmake --build build -j$(nproc) && \
     cmake --install build && \
     ldconfig && \
-    cd / && rm -rf /tmp/iceoryx
+    cd / && rm -rf /tmp/iceoryx; \
+    fi
 
 COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
 
