@@ -45,7 +45,7 @@ RUN pip install \
     scikit-image \
     onnx \
     ultralytics-thop && \
-    pip install --no-deps insightface ultralytics==8.4.19
+    pip install --no-deps insightface==1.0.1 ultralytics==8.4.19
 
 # ── YOLOv5 for legacy YoloV5ObjectDetector ──
 ARG YOLOV5_COMMIT=35b48237aef6d71ca9de2c5dea345d7536eb7fa7
