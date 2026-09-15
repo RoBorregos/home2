@@ -3,7 +3,6 @@ FROM ${BASE_IMAGE}
 
 # Install audio and speech synthesis dependencies natively for L4T
 RUN apt-get update && apt-get install -y \
-    python3-venv \
     libopenmpi-dev \
     libportaudio2 \
     libportaudiocpp0 \
@@ -11,16 +10,12 @@ RUN apt-get update && apt-get install -y \
     espeak-ng \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /tmp
-RUN pip install virtualenv
-
-# Install Python dependencies
+# Install Python dependencies (numpy/scipy/torch come from l4t_base)
 WORKDIR /app
 COPY ../../hri/requirements/tts.txt requirements.txt
-RUN python3 -m pip install --upgrade pip
-RUN pip install --no-cache-dir -r /app/requirements.txt
-RUN pip install --upgrade protobuf
-RUN python3 -m spacy download en_core_web_sm
-
 COPY ../../hri/proto_interfaces /tmp/proto_interfaces
-RUN pip install --no-cache-dir /tmp/proto_interfaces
+RUN pip-install-reqs /app/requirements.txt && \
+    pip install --upgrade protobuf && \
+    python3 -m spacy download en_core_web_sm && \
+    pip install /tmp/proto_interfaces && \
+    rm -rf /tmp/proto_interfaces

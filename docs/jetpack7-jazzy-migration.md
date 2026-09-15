@@ -260,6 +260,154 @@ Con los 4 fixes: `=== zed started ===`, positional tracking activo,
 publicando RGB/depth/IMU/point cloud reales — confirmado `rgb/color/rect/image`
 a ~30Hz vía `ros2 topic hz`.
 
+## Imagen base única `l4t_base` (optimización de tamaño)
+
+Las imágenes l4t de Jazzy pesaban mucho más que en `main` (`l4t_base` 26 GB,
+`hri-l4t` 53 GB, `manipulation-l4t` 50 GB). Con `docker history` se vio que
+la causa no era el PYTHONPATH, sino tres cosas:
+
+1. **La base traía `cuda-toolkit-13-2` completo más los `-dev`: una capa de
+   14.3 GB.** Incluía `libnvinfer_static.a` (3.3 GB), Nsight Systems/Compute
+   (1.7 GB) y las librerías estáticas de CUDA (~4 GB). Todas las áreas la
+   heredaban.
+2. **torch se instalaba desde PyPI (2.14.0+cu130).** El índice de Jetson solo
+   llega a 2.11, así que pip elegía el de PyPI por ser más nuevo. Ese wheel trae
+   su propio CUDA/cuDNN en paquetes `nvidia-*` (3.3 GB) más `triton`, y duplica
+   lo que ya estaba en el sistema. Además, `torchaudio` no coincidía con torch.
+3. **`PIP_IGNORE_INSTALLED=1` hacía que cada `pip install` reinstalara todo su
+   árbol de dependencias.** En hri-l4t, torch quedaba dos veces (capas de
+   9.66 GB y 6 GB). A eso se sumaban OpenCV compilado en vision y en navigation
+   sin borrar el árbol de build, e iceoryx/CycloneDDS compilados en 5
+   Dockerfiles.
+
+La vieja `dustynv/l4t-pytorch` era ligera porque ya traía torch/OpenCV
+compilados contra el CUDA del sistema en una sola capa compartida. Ahora
+`docker/Dockerfile.ROS-l4t` hace ese mismo papel, y todas las áreas l4t
+heredan de ella como en `main`:
+
+- **CUDA 13.2 / cuDNN 9 / TensorRT 10.** Se instalan compilador, headers y
+  librerías compartidas, sin el meta-paquete `cuda-toolkit` (Nsight) y sin
+  librerías `*_static*.a`. También se borran los builder resources de TensorRT
+  para GPUs dGPU (`sm90`/`sm100`); se conserva `sm110` (Thor).
+- **Stack de Python compartido:** `torch 2.11.0`, `torchvision 0.26.0` y
+  `torchaudio 2.11.0` (las versiones coinciden) vienen de **PyPI**.
+  - Los wheels de `jetson-ai-lab sbsa/cu130` **no sirven en Orin**: solo traen
+    kernels para `sm_110` (Thor) y `sm_121` (Spark). En la Orin (`sm_87`) fallan
+    con `no kernel image is available for execution on the device`. El build
+    cu130 de PyPI trae `sm_80`, que corre en la Orin, y `sm_110`, que sirve para
+    Thor.
+  - En la metadata de torch se quitan las dependencias `cuda-toolkit`,
+    `cuda-bindings`, `nvidia-cudnn-cu13` y `triton`, así que usa CUDA 13.2 y
+    cuDNN 9.20 del sistema. Solo se instalan como wheels NCCL, NVSHMEM y
+    cuSPARSELt, que JetPack no trae. Sin triton, `torch.compile` no está
+    disponible.
+  - En la Orin torch muestra un aviso de compute capability (8.7 vs 8.0), pero
+    matmul, conv (cuDNN) y `torchvision.ops.nms` funcionan en GPU.
+  - `onnxruntime-gpu 1.24.0` sigue viniendo del índice de Jetson (TensorRT EP).
+  - Además: `numpy 2.5.2`, `scipy 1.16.2`, OpenCV 4.14 + contrib con CUDA
+    (`docker/scripts/build_opencv.sh`, sin árbol de build) y
+    `cv_bridge`/`image_geometry` compilados contra ese OpenCV.
+- **Builds sin GPU:** `docker build` no tiene el runtime de NVIDIA. Los pasos
+  que importan torch/cv2 usan `with-cuda-stub <cmd>`, que agrega el stub
+  `libcuda.so.1` solo para ese comando.
+- **Paquetes `.deb` placeholder:** iceoryx y cv_bridge compilados desde fuente
+  se registran como paquetes apt vacíos (versión 99, en hold) con
+  `install-placeholder-deb`. Así apt no queda con dependencias rotas (antes se
+  quitaban con `dpkg --force-depends`) y rosdep no vuelve a instalar los de
+  apt.
+- **iceoryx 2.0.6 (límites ampliados) + CycloneDDS 0.10 con SHM** se compilan
+  una sola vez. La memoria compartida queda apagada por defecto; cada área que
+  la usa pone `ENV CYCLONE_SHM=1` y vuelve a correr `cyclonedds_setup.sh`.
+- **Sin `PIP_BREAK_SYSTEM_PACKAGES` ni `PIP_IGNORE_INSTALLED`:**
+  - Se borra `/usr/lib/python3.12/EXTERNALLY-MANAGED`.
+  - Los paquetes de Python que apt instala para ROS y que las áreas
+    actualizan (numpy, pillow, pyyaml, requests…) se instalan una sola vez en
+    `/usr/local` con `--ignore-installed`. A partir de ahí pip los ve primero y
+    los puede actualizar normalmente.
+- **`/etc/pip.conf`** fija el índice de Jetson, `no-cache-dir` y
+  `constraint = /etc/pip/constraints.txt` (`docker/scripts/constraints-l4t.txt`).
+  Como está en `pip.conf` y no en `ENV`, también aplica con `sudo pip`. Ningún
+  área puede reinstalar ni cambiar la versión de torch/numpy/scipy/OpenCV/
+  onnxruntime: si un requirement choca, el build falla en vez de engordar la
+  imagen sin avisar.
+- **Distribuciones placeholder** (`opencv-python*`, `onnxruntime`): son
+  `dist-info` vacíos con la versión de la base. Así `ultralytics`,
+  `insightface`, `faster-whisper`, etc. dan la dependencia por satisfecha y no
+  instalan encima los wheels CPU de PyPI. `ros-jazzy-cv-bridge` e
+  `ros-jazzy-image-geometry` también quedan como paquetes placeholder, para que
+  apt/rosdep no instalen encima los de apt.
+- **`pip-install-reqs a.txt b.txt`** es un helper de la base para los
+  requirements que se comparten con cpu/cuda. Ignora las líneas de paquetes que
+  ya da la base (por ejemplo `numpy<2` en `tts.txt` u `onnxruntime==1.17.3` en
+  `speech.txt`) y hace un solo `pip install`. Los Dockerfiles compartidos
+  (`hri/dockerfiles/Dockerfile.ROS`, `integration`) solo lo usan si existe.
+
+Cambios por área:
+
+- **vision:** ya no compila OpenCV, no instala torch/numpy/onnxruntime por
+  pip, no reconstruye cv_bridge y no compila iceoryx/cyclone. dlib se compila
+  en un solo paso.
+- **navigation:** ya no compila OpenCV ni hace `pip install torch` como
+  usuario `ros` en `~/.local`. Por eso se quitan también el `PYTHONPATH` y el
+  `LD_LIBRARY_PATH` hacia `~/.local`, y el `pip install --force-reinstall
+  "numpy<2"` (ahora numpy 2, igual que el resto). rtabmap y rtabmap_ros quedan
+  fijados por commit. OpenVDB se compila en una sola capa y se borran sus
+  fuentes.
+- **manipulation:** usa torch/numpy de la base. Ya no clona
+  `RoBorregos/home2` (traía la rama por defecto); `rosdep` lee los
+  `package.xml` de este checkout con un bind mount de BuildKit.
+- **hri-ros:** `nlp.txt`, `speech.txt` y `postgres.txt` se instalan en una
+  sola corrida del resolver.
+- **stt:** CTranslate2 y PyAV quedan fijados por commit, compilados y
+  limpiados en un solo paso, e instalados antes de los requirements (así no
+  hace falta el `--force-reinstall` final).
+- **tts:** usa la base directamente.
+- **roudi, zed, display:** usan el iceoryx/cyclone de la base. roudi y display
+  siguen compilándolo solo si su base no lo trae (cpu/cuda).
+
+- **moondream-server:** un solo `pip install`; en l4t usa numpy/OpenCV/torch de
+  la base.
+- **stt:** las librerías FFmpeg que compila PyAV se copian a `/usr/local/lib`,
+  así que el `command` de `stt-l4t.yaml` ya no hace
+  `source /tmp/PyAV/scripts/activate.sh` (ese directorio ya no existe).
+- **navigation:** `LD_LIBRARY_PATH` incluye `torch/lib` de la base, porque
+  rtabmap enlaza libtorch.
+
+Resultado medido en la Orin (2026-09-15). La columna "Antes" es `docker images`
+del baseline. En "Ahora", el total es `docker images` y el propio sale de
+`docker system df -v`: lo que la imagen agrega sobre `l4t_base`, que se guarda
+una sola vez en disco.
+
+| Imagen | Antes | Ahora (total) | Ahora (propio) |
+|---|---|---|---|
+| l4t_base | 26.3 GB | 16.2 GB | — |
+| hri-l4t | 53.6 GB | 17.9 GB | 1.7 GB |
+| manipulation-l4t | 50.3 GB | 22.2 GB | 6.0 GB (MoveIt + rosdep del repo) |
+| moondream-server | 42.6 GB | 16.5 GB | 0.3 GB |
+| vision-l4t | 39.9 GB | 16.9 GB | 0.7 GB |
+| navigation-l4t | 38.7 GB | 23.1 GB | 7.0 GB (rtabmap, Nav2, OpenVDB) |
+| hri-tts-l4t | 36.4 GB | 17.0 GB | 0.9 GB |
+| hri-stt-l4t | 30.2 GB | 16.6 GB | 0.5 GB |
+| zed-l4t | 28.2 GB | 17.2 GB | 1.1 GB |
+| display-l4t | 27.8 GB | 17.0 GB | 0.8 GB |
+| roudi-l4t | 26.3 GB | 16.2 GB | 0 |
+| integration-l4t | 21.0 GB | 16.6 GB | 0.5 GB |
+
+En disco, las 12 imágenes l4t ocupan ~16 GB compartidos más ~20 GB propios
+(~36 GB en total). Antes eran ~190 GB, porque cada una traía su propio torch/CUDA.
+Cada imagen pasó un smoke test con GPU real:
+- **Todas:** torch matmul/conv en CUDA.
+- **vision:** cv2.cuda, TensorRT EP, dlib CUDA, YOLO, cv_bridge.
+- **hri:** spaCy, DeepFilterNet, openwakeword, sentence-transformers.
+- **stt:** CTranslate2 con float16 en CUDA, PyAV, faster-whisper.
+- **navigation:** SuperPoint TorchScript; rtabmap enlazado a OpenCV 4.14 y torch.
+- **tts:** kokoro.
+- **manipulation:** ultralytics, CLIP.
+
+Para agregar o cambiar una versión de torch/numpy/OpenCV: editar
+`docker/scripts/constraints-l4t.txt` (y la URL del wheel en
+`Dockerfile.ROS-l4t` si es torch) y reconstruir la base.
+
 ## Pendiente / fuera de alcance de esta iteración
 
 - Sabores `cpu`/`cuda` de cada área: no priorizados en esta iteración (foco
