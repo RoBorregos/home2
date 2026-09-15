@@ -144,7 +144,6 @@ different paths**, and knowing which one is active explains most failures:
 | xArm mode | **1** | **5** |
 | Used by | every `move_to_pose` / `move_joints` | force-guarded and fixed-distance descents |
 | Collision checking | yes, full planning scene | **none** |
-| Stops on e-stop | via the controller | only because the pipeline polls it |
 
 Mode 5 takes the trajectory controller offline. The code always restores mode 1 on the way out; if a
 descent crashes without restoring it, every later plan fails until the arm is reset.
@@ -241,7 +240,6 @@ plus two lines. Only a genuinely new motion needs a new class.
 | `/manipulation/estimate_flat_grasp` | `flat_grasp_estimator` | Top-down pose for flat objects |
 | `/manipulation/detect_grasps` | `gpd_service` | GPD grasp candidates |
 | `/manipulation/heatmap_place_service` | `heatmapPlace_Server` | Best free spot on a surface |
-| `/manipulation/estop` | *(topic)* | Aborts any motion in progress |
 
 Names are constants in `frida_constants` (`manipulation_constants.py` / `..._cpp.hpp`) — never
 hardcode them.

@@ -1,18 +1,14 @@
 #!/usr/bin/env python3
 
 import math
-import os
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
-from std_msgs.msg import Bool
 from sensor_msgs.msg import JointState
 from std_srvs.srv import Empty, Trigger
 from xarm_msgs.msg import RobotMsg
 from xarm_msgs.srv import SetInt16, SetInt16ById, Call as XArmCall, MoveJoint
 from controller_manager_msgs.srv import SwitchController
-from frida_interfaces.action import MoveJoints
 from frida_constants.manipulation_constants import (
     XARM_ROBOT_STATES_TOPIC,
     XARM_CLEAN_ERROR_SERVICE,
@@ -21,8 +17,6 @@ from frida_constants.manipulation_constants import (
     XARM_SETSTATE_SERVICE,
     XARM_SET_SERVO_ANGLE_SERVICE,
     XARM_POSITION_MODE,
-    ESTOP_TOPIC,
-    MOVE_JOINTS_ACTION_SERVER,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
     MOVEIT_MODE,
     XARM_STATE_READY,
@@ -30,9 +24,6 @@ from frida_constants.manipulation_constants import (
     XARM_STATE_PAUSED,
     XARM_STATE_STOPPED,
     XARM_ALL_JOINTS_ID,
-)
-from frida_motion_planning.utils.service_utils import (
-    move_joint_positions as send_joint_goal,
 )
 from frida_pymoveit2.robots.xarm6 import (
     JOINT_POSITION_LIMITS,
@@ -50,24 +41,8 @@ class ManipulationSafeguard(Node):
         self.callback_group = ReentrantCallbackGroup()
 
         self._arm_state: RobotMsg | None = None
-        self._in_estop = False
-        self._recovering = False
         self._pending_target_angles: list[float] | None = None
 
-        # Global opt-in (default off via FRIDA_ENABLE_SAFEGUARD; ROS param overrides).
-        # Disabled = no autonomous estop/recovery; ensure_arm_ready stays available.
-        env_default = os.environ.get("FRIDA_ENABLE_SAFEGUARD", "false")
-        self._enable_safeguard = self.declare_parameter(
-            "enable_safeguard", env_default
-        ).get_parameter_value().string_value.strip().lower() in (
-            "1",
-            "true",
-            "yes",
-            "on",
-        )
-
-        # Always subscribe so _arm_state is populated for the on-demand ensure_arm_ready
-        # service; the autonomous estop broadcast in the callback is gated by the flag.
         self.create_subscription(
             RobotMsg,
             XARM_ROBOT_STATES_TOPIC,
@@ -75,8 +50,6 @@ class ManipulationSafeguard(Node):
             10,
             callback_group=self.callback_group,
         )
-
-        self._estop_pub = self.create_publisher(Bool, ESTOP_TOPIC, 10)
 
         self._clean_error_client = self.create_client(
             XArmCall, XARM_CLEAN_ERROR_SERVICE, callback_group=self.callback_group
@@ -98,12 +71,6 @@ class ManipulationSafeguard(Node):
             "/controller_manager/switch_controller",
             callback_group=self.callback_group,
         )
-        self._move_joints_client = ActionClient(
-            self,
-            MoveJoints,
-            MOVE_JOINTS_ACTION_SERVER,
-            callback_group=self.callback_group,
-        )
         self._set_servo_angle_client = self.create_client(
             MoveJoint, XARM_SET_SERVO_ANGLE_SERVICE, callback_group=self.callback_group
         )
@@ -123,20 +90,7 @@ class ManipulationSafeguard(Node):
             callback_group=self.callback_group,
         )
 
-        # Autonomous recovery timer only when enabled; inert mode never auto-moves the arm.
-        if self._enable_safeguard:
-            self.create_timer(
-                2.0, self._try_estop_recovery, callback_group=self.callback_group
-            )
-
-        mode = (
-            "full autonomous safeguard"
-            if self._enable_safeguard
-            else "INERT (ensure_arm_ready only; no autonomous estop or recovery)"
-        )
-        self.get_logger().info(
-            f"Manipulation Safeguard node started: enable_safeguard={self._enable_safeguard} [{mode}]"
-        )
+        self.get_logger().info("Manipulation Safeguard node started")
 
     def _handle_ensure_arm_ready(self, request, response):
         self._ensure_arm_ready()
@@ -160,42 +114,6 @@ class ManipulationSafeguard(Node):
 
     def _on_arm_state(self, msg: RobotMsg):
         self._arm_state = msg
-        if not self._enable_safeguard:
-            return  # inert: keep arm state for ensure_arm_ready, but never auto-estop
-        is_fault = msg.state == XARM_STATE_STOPPED or msg.err != 0
-        if is_fault and not self._in_estop:
-            self._in_estop = True
-            reason = f"state={msg.state}, err={msg.err}"
-            self.get_logger().warn(f"E-stop ACTIVATED ({reason}) — broadcasting abort")
-            self._estop_pub.publish(Bool(data=True))
-
-    def _try_estop_recovery(self):
-        if not self._in_estop or self._recovering:
-            return
-        self._recovering = True
-        try:
-            self.get_logger().info("E-stop active — attempting arm recovery...")
-            self._ensure_arm_ready()
-            if (
-                self._arm_state
-                and self._arm_state.state not in (XARM_STATE_PAUSED, XARM_STATE_STOPPED)
-                and self._arm_state.err == 0
-            ):
-                self._in_estop = False
-                self.get_logger().warn(
-                    "E-stop CLEARED — arm recovered, going to table_stare"
-                )
-                self._estop_pub.publish(Bool(data=False))
-                send_joint_goal(
-                    move_joints_action_client=self._move_joints_client,
-                    named_position="table_stare",
-                    velocity=0.3,
-                )
-                self._call_svc(
-                    self._clear_octomap_client, Empty.Request(), 5.0, "clear_octomap"
-                )
-        finally:
-            self._recovering = False
 
     def _joints_out_of_bounds(self) -> list[int]:
         """Return indices of joints whose reported angle violates JOINT_POSITION_LIMITS."""

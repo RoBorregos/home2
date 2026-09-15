@@ -81,9 +81,7 @@ class FakeArm:
         attach_result: Optional[AttachResult] = None,
         named_position_results: Optional[List[bool]] = None,
         abort_after: Optional[int] = None,
-        estop: bool = False,
     ):
-        self._estop = estop
         self.calls: List[str] = []
         self.phases: List[str] = []
         self.contexts: List[str] = []
@@ -239,17 +237,13 @@ class FakeArm:
         return Time()
 
     @property
-    def estop_active(self):
-        return self._estop
-
-    @property
     def joint_state(self):
         return None
 
     def check_abort(self):
         self._abort_checks += 1
         if self._abort_after is not None and self._abort_checks > self._abort_after:
-            raise PickAborted("e-stop active")
+            raise PickAborted("goal cancelled")
 
     def tip_offset(self, param_name):
         return self._tip_offsets[param_name]

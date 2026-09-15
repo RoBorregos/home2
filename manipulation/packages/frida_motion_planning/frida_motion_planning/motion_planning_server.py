@@ -35,7 +35,6 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
-    ESTOP_TOPIC,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
     MANIPULATION_ARM_BUSY_TOPIC,
 )
@@ -70,7 +69,6 @@ class MotionPlanningServer(Node):
         self.planner.set_planning_time(0.5)
         self.planner.set_planner(PICK_PLANNER)
 
-        self._in_estop = False
         self.current_mode = -1
 
         # Latched "arm in use" flag so nav_goal_arm_pointer yields the xArm mode
@@ -200,14 +198,6 @@ class MotionPlanningServer(Node):
             JointState, "/manipulation/joint_goal_target", 1
         )
 
-        self.create_subscription(
-            Bool,
-            ESTOP_TOPIC,
-            lambda msg: setattr(self, "_in_estop", msg.data),
-            10,
-            callback_group=self.callback_group,
-        )
-
         self.get_logger().info("Motion Planning Server has been started")
         self.get_collision_objects_service = self.create_service(
             GetCollisionObjects,
@@ -224,12 +214,6 @@ class MotionPlanningServer(Node):
 
     def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
-        if self._in_estop:
-            self.get_logger().warn("E-stop active — rejecting move_to_pose")
-            goal_handle.abort()
-            result = MoveToPose.Result()
-            result.success = False
-            return result
         self.get_logger().info("Executing pose goal...")
 
         # Initialize result
@@ -283,9 +267,7 @@ class MotionPlanningServer(Node):
                     "Trajectory file parsed successfully. Executing plan..."
                 )
                 # Step 2: Use the planner's execution function
-                response.success = self.planner.execute_plan(
-                    trajectory_msg, is_estop_active=lambda: self._in_estop
-                )
+                response.success = self.planner.execute_plan(trajectory_msg)
             else:
                 self.get_logger().error("Failed to parse trajectory file.")
                 response.success = False
@@ -304,12 +286,6 @@ class MotionPlanningServer(Node):
 
     def move_joints_execute_callback(self, goal_handle):
         """Manages the lifecycle of the MoveJoints action."""
-        if self._in_estop:
-            self.get_logger().warn("E-stop active — rejecting move_joints")
-            goal_handle.abort()
-            result = MoveJoints.Result()
-            result.success = False
-            return result
         self.get_logger().info("Executing joint goal action...")
         result = MoveJoints.Result()
         self.set_planning_settings(goal_handle)
@@ -400,9 +376,7 @@ class MotionPlanningServer(Node):
 
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            was_execution_successful = self.planner.execute_plan(
-                trajectory_plan, is_estop_active=lambda: self._in_estop
-            )
+            was_execution_successful = self.planner.execute_plan(trajectory_plan)
             return was_execution_successful
         else:
             self.get_logger().error("Cannot execute because planning failed.")
@@ -470,9 +444,7 @@ class MotionPlanningServer(Node):
         self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
         if was_plan_successful:
             self.execute_trajectory(trajectory_plan)
-            was_execution_successful = self.planner.execute_plan(
-                trajectory_plan, is_estop_active=lambda: self._in_estop
-            )
+            was_execution_successful = self.planner.execute_plan(trajectory_plan)
             if was_execution_successful:
                 self.get_logger().info("Trajectory executed successfully.")
                 return True

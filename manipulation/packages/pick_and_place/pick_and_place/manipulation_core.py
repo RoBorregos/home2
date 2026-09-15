@@ -130,11 +130,6 @@ class ManipulationCore(Node):
         result = ManipulationAction.Result()
         result.success = 0
 
-        if self.arm.estop_active:
-            self.get_logger().warn("E-stop active, aborting manipulation task")
-            goal_handle.abort()
-            return result
-
         pipeline = self._pipelines.get(request.task_type)
         if pipeline is None:
             self.get_logger().error(f"Unknown task type: {request.task_type}")
@@ -312,7 +307,7 @@ class ManipulationCore(Node):
     # ==================================================================
 
     def _fixed_distance_move_cb(self, request, response):
-        # Service callers get a boolean, not an exception: an e-stop or a mode
+        # Service callers get a boolean, not an exception: a mode
         # fault here is a failed move, not a crashed service.
         try:
             response.success = self.arm.fixed_distance_descent(
