@@ -53,10 +53,6 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
-    # Nav2 jazzy (1.3.x) defaults this to false (plain Twist); odrive_dashboard
-    # subscribes TwistStamped (use_stamped_cmd_vel: True in omni_basics.launch.py),
-    # which matched the old humble_main 1.4 default. Without this the types
-    # mismatch and the base never receives Nav2's velocity commands.
     enable_stamped_cmd_vel: true
     controller_frequency: 20.0   # raised 15->20 for snappier control (nav now has dedicated cores)
     odom_topic: /odrive/odom
