@@ -1,11 +1,13 @@
-ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
+ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
+
+ARG ROS_DISTRO=jazzy
 
 USER ros
 SHELL ["/bin/bash", "-c"]
 
 #Install dependencies
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp libboost-iostreams-dev libtbb-dev libblosc-dev\
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-${ROS_DISTRO}-rmw-cyclonedds-cpp libboost-iostreams-dev libtbb-dev libblosc-dev unzip\
     && sudo rm -rf /var/lib/apt/lists/*
 
 #Build OPENCV
@@ -13,11 +15,20 @@ WORKDIR /home/ros/
 RUN sudo apt update
 RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/script/install_opencv4.10.0_Jetpack6.1.sh -o install.sh
 RUN chmod 777 install.sh
-RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && sed -i '2i export CMAKE_POLICY_VERSION_MINIMUM=3.5' install.sh && yes yes | sudo -E ./install.sh
+RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && \
+    sed -i '2i export CMAKE_POLICY_VERSION_MINIMUM=3.5' install.sh && \
+    sed -i 's/python3\.10-dev/python3-dev/' install.sh && \
+    sed -i 's/python3\.10\/site-packages/python3.12\/site-packages/' install.sh && \
+    sed -i 's/libtbb2 /libtbb12 /' install.sh && \
+    sed -i 's|-D WITH_CUDA=ON|-D WITH_CUDA=ON -D CUDA_NVCC_FLAGS="-std=c++17"|' install.sh && \
+    sed -i 's/version="4.10.0"/version="4.14.0"/' install.sh && \
+    sed -i 's|-D WITH_CUDA=ON|-D WITH_CUDA=ON -D BUILD_opencv_cudacodec=OFF|' install.sh && \
+    yes yes | sudo -E ./install.sh
 
-# Persist paths so subsequent RUN layers find CUDA OpenCV and libtorch
-ENV LD_LIBRARY_PATH=/usr/local/lib/python3.10/dist-packages/torch/lib:/usr/local/lib:${LD_LIBRARY_PATH}
-ENV PYTHONPATH=/usr/local/lib/python3.10/site-packages/:${PYTHONPATH}
+RUN pip install --upgrade pip && pip install torch torchvision
+
+ENV LD_LIBRARY_PATH=/home/ros/.local/lib/python3.12/site-packages/torch/lib:/usr/local/lib:${LD_LIBRARY_PATH}
+ENV PYTHONPATH=/home/ros/.local/lib/python3.12/site-packages/:${PYTHONPATH}
 
 
 #Building rtabmap packages
@@ -26,9 +37,9 @@ WORKDIR /home/ros/ros_packages3
 RUN git clone https://github.com/introlab/rtabmap.git src/rtabmap
 RUN git clone --branch ros2 https://github.com/introlab/rtabmap_ros.git src/rtabmap_ros
 RUN sudo apt update
-RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r -y
+RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r --skip-keys "libvtk-qt" -y
 RUN sed -i '/PATTERN "\*.h"/a\    PATTERN "*.hpp"' src/rtabmap_ros/rtabmap_sync/CMakeLists.txt
-RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args \
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --symlink-install --cmake-clean-cache --cmake-args \
     -DCMAKE_BUILD_TYPE=Release \
     -DOpenCV_DIR=/usr/local/lib/cmake/opencv4 \
     -DWITH_TORCH=ON \
@@ -67,7 +78,7 @@ RUN mkdir -p /workspace
 WORKDIR /workspace 
 COPY ./navigation /workspace/src
 RUN cd /workspace/src && sudo apt update && (sudo rosdep init || true) && rosdep update
-RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces" -y
+RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces libvtk-qt ira_laser_tools sllidar_ros2 dashgo_driver map_context omnidriver p9n_node pcl eigen3" -y
 RUN sudo rm -rf /workspace/src/
 
 # ============================================================================
@@ -88,9 +99,9 @@ RUN sudo rm -rf /workspace/src/
 #     planner/navfn, behaviors, bt_navigator, smoother, velocity_smoother,
 #     lifecycle_manager, map_server for keepout filters) + STVL.
 # ============================================================================
-ARG NAV2_BRANCH=humble_main
+ARG NAV2_BRANCH=jazzy
 ARG BTCPP_TAG=4.6.2
-ARG STVL_BRANCH=humble
+ARG STVL_BRANCH=jazzy
 RUN mkdir -p /home/ros/nav2_ws/src
 WORKDIR /home/ros/nav2_ws
 RUN git clone --depth 1 -b ${BTCPP_TAG} https://github.com/BehaviorTree/BehaviorTree.CPP.git src/BehaviorTree.CPP && \
@@ -103,9 +114,9 @@ RUN git clone --depth 1 -b ${BTCPP_TAG} https://github.com/BehaviorTree/Behavior
            nav2_constrained_smoother nav2_graceful_controller nav2_regulated_pure_pursuit_controller \
            nav2_rotation_shim_controller nav2_theta_star_planner nav2_amcl
 # Purge apt nav2-family so its merged headers/cmake don't shadow the source build.
-RUN NAV2_APT=$(dpkg -l | awk '/^ii/ && ($2 ~ /^ros-humble-nav2/ || $2 ~ /^ros-humble-nav-2d/ || $2 ~ /^ros-humble-dwb/ || $2=="ros-humble-navigation2") {print $2}' | tr '\n' ' ') && \
+RUN NAV2_APT=$(dpkg -l | awk -v d="${ROS_DISTRO}" '/^ii/ && ($2 ~ "^ros-"d"-nav2" || $2 ~ "^ros-"d"-nav-2d" || $2 ~ "^ros-"d"-dwb" || $2=="ros-"d"-navigation2") {print $2}' | tr '\n' ' ') && \
     if [ -n "$NAV2_APT" ]; then sudo dpkg --remove --force-depends $NAV2_APT; fi
-RUN source /opt/ros/humble/setup.bash && \
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
     MAKEFLAGS="-j6" colcon build --parallel-workers 2 \
       --packages-up-to nav2_bt_navigator nav2_mppi_controller nav2_controller nav2_navfn_planner \
         nav2_planner nav2_behaviors nav2_smoother nav2_velocity_smoother nav2_lifecycle_manager \
@@ -119,13 +130,13 @@ WORKDIR /workspace
 # CycloneDDS with SHM (iceoryx zero-copy)
 # Iceoryx from source (expanded publisher/subscriber limits)
 RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libacl1-dev && sudo rm -rf /var/lib/apt/lists/* && \
-    sudo dpkg --force-depends -r ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c 2>/dev/null || true
+    sudo dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
     sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
     cmake -S iceoryx_meta -B build \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
         -DIOX_MAX_PUBLISHERS=20000 \
         -DIOX_MAX_SUBSCRIBERS=20000 \
         -DIOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048 \
@@ -140,10 +151,10 @@ RUN cd /tmp && \
 RUN cd /tmp && \
     git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
     cd cyclonedds && mkdir build && cd build && \
-    . /opt/ros/humble/setup.sh && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
     cmake .. \
-        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
-        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
         -DENABLE_SHM=ON \
         -DCMAKE_BUILD_TYPE=Release && \
     make -j$(nproc) && sudo make install && \
@@ -161,6 +172,8 @@ RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 # sitecustomize.py runs automatically on every Python interpreter start.
 # Patch: os.add_dll_directory is Windows-only but PyTorch calls it.
 # RTABMap's embedded Python skips sitecustomize.py, so patch os.py directly.
-RUN sudo sed -i '$ a\# Patch for RTABMap embedded Python + PyTorch\ntry:\n    add_dll_directory\nexcept NameError:\n    add_dll_directory = lambda path: None' /usr/lib/python3.10/os.py
+RUN sudo sed -i '$ a\# Patch for RTABMap embedded Python + PyTorch\ntry:\n    add_dll_directory\nexcept NameError:\n    add_dll_directory = lambda path: None' /usr/lib/python3.12/os.py
+
+RUN pip install --force-reinstall "numpy<2"
 
 WORKDIR /workspace
