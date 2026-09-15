@@ -28,7 +28,7 @@ def generate_launch_description():
                 package="perception_3d",
                 executable="plane_service",
                 name="plane_service",
-                output="screen",s
+                output="screen",
                 emulate_tty=True,
                 respawn=True,
                 parameters=[
