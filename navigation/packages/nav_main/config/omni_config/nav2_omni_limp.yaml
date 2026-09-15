@@ -70,6 +70,11 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 controller_server:
   ros__parameters:
     use_sim_time: False
+    # Nav2 jazzy (1.3.x) defaults this to false (plain Twist); odrive_dashboard
+    # subscribes TwistStamped (use_stamped_cmd_vel: True in omni_basics.launch.py),
+    # which matched the old humble_main 1.4 default. Without this the types
+    # mismatch and the base never receives Nav2's velocity commands.
+    enable_stamped_cmd_vel: true
     controller_frequency: 20.0   # raised 15->20 for snappier control (nav now has dedicated cores)
     odom_topic: /odrive/odom
     # These three were missing in the source file but are REQUIRED.
@@ -369,6 +374,7 @@ smoother_server:
 behavior_server:
   ros__parameters:
     use_sim_time: False
+    enable_stamped_cmd_vel: true   # backup/spin publish /cmd_vel too; see controller_server
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
@@ -396,6 +402,7 @@ robot_state_publisher:
 velocity_smoother:
   ros__parameters:
     use_sim_time: False
+    enable_stamped_cmd_vel: true   # see controller_server
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
