@@ -140,18 +140,6 @@ parse_common_flags() {
   done
 }
 
-# Compose files default COMPUTE_CPUSET to "4-11" (nav is pinned 0-3), which
-# assumes 12+ cores. On smaller machines (e.g. 8-core Jetson Orin Nano) that
-# range doesn't exist, so shrink it to fit the cores actually present.
-# First arg: env file path to write into.
-set_compute_cpuset() {
-  local env_file="$1"
-  local last_core=$(( $(nproc) - 1 ))
-  if [ "$last_core" -ge 4 ] && [ "$last_core" -lt 11 ]; then
-    add_or_update_variable "$env_file" "COMPUTE_CPUSET" "${COMPUTE_CPUSET:-4-${last_core}}"
-  fi
-}
-
 # Write .env variables shared by all areas.
 # First arg: area name. Second arg: env file path (default: .env).
 setup_common_env() {
@@ -169,9 +157,7 @@ setup_common_env() {
   add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
   add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
   add_or_update_variable "$env_file" "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
-  add_or_update_variable "$env_file" "DISPLAY"           "${DISPLAY:-:0}"
-  set_compute_cpuset "$env_file"
-
+  
   mkdir -p install build log
 }
 

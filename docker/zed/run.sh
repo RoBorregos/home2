@@ -50,7 +50,6 @@ add_or_update_variable .env "CYCLONE_SHM" "$CYCLONE_SHM"
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
-set_compute_cpuset .env
 
 case $ENV_TYPE in
   "l4t")

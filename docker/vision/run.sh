@@ -74,7 +74,6 @@ add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
 add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:vision-${ENV_TYPE}"
 add_or_update_variable .env "DOCKERFILE" "docker/vision/Dockerfile.${ENV_TYPE}"
-set_compute_cpuset .env
 
 case $ENV_TYPE in
   "cuda")
