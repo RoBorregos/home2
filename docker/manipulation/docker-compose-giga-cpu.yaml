@@ -1,0 +1,22 @@
+services:
+  giga-train:
+    container_name: home2-giga-train-cpu
+    build:
+      context: ../..
+      dockerfile: docker/manipulation/Dockerfile.giga-cpu
+    image: roborregos/home2:giga-train-cpu
+    volumes:
+      - ../../:/workspace/src/
+      - ./setup_giga.sh:/root/setup_giga.sh
+      # Training data / generated datasets / checkpoints live here, outside
+      # the repo and the container's writable layer -- can grow to 100GB+.
+      - ./giga_data:/workspace/giga_data
+    # No `deploy.resources.reservations.devices` block -- that's what
+    # requires the nvidia container runtime, which is exactly what a
+    # no-GPU laptop doesn't have. Everything else is identical to
+    # docker-compose-giga.yaml.
+    working_dir: /workspace/src/manipulation/packages/giga
+    tty: true
+    stdin_open: true
+    command: >
+      bash -c "${COMMAND:-/bin/bash}"

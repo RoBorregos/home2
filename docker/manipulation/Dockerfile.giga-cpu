@@ -1,0 +1,82 @@
+FROM ubuntu:22.04
+
+# Prevent interactive prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+# GIGA's pyrender-based visualization utilities (src/vgn/utils/visual.py)
+# hardcode PYOPENGL_PLATFORM=egl at import time, which overrides this anyway
+# and needs a GPU driver -- only relevant if you later call grasp
+# visualization/evaluation (detection.py, detection_implicit.py), not the
+# generate/clean/construct/train pipeline this image is for.
+ENV PYOPENGL_PLATFORM=osmesa
+
+# No CUDA toolkit here: GIGA's compiled extensions (scripts/convonet_setup.py)
+# are plain C/C++/Cython (pykdtree, mcubes, triangle_hash, mise) with no
+# CUDAExtension() calls, and generate_data_parallel.py / train_giga.py both
+# run pybullet/torch on CPU fine -- pulling in the ~5GB nvidia/cuda devel
+# base bought nothing for a machine with no GPU to use it on.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-pip \
+    python3-dev \
+    git \
+    build-essential \
+    cmake \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libosmesa6-dev \
+    freeglut3-dev \
+    ninja-build \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+RUN python3 -m pip install --upgrade pip setuptools wheel
+
+# CPU-only torch build (not the default CUDA-bundled PyPI wheel): saves
+# several GB of unused nvidia-cublas/cudnn/cufft shared libraries that a
+# machine with no GPU driver would never load.
+RUN pip3 install torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 \
+    --index-url https://download.pytorch.org/whl/cpu
+
+RUN pip3 install torch-scatter -f https://data.pyg.org/whl/torch-2.2.0+cpu.html
+
+# numpy pinned <2: GIGA's vendored ConvONets C++/Cython extensions
+# (src/vgn/ConvONets/utils/libmcubes/pywrapper.cpp etc.) use the classic
+# NumPy 1.x C API (PyArray_DOUBLE, PyArray_ULONG, ...) -- those macros were
+# removed in NumPy 2.x and the build fails with a compile error, not just
+# a deprecation warning.
+RUN pip3 install \
+    catkin_pkg \
+    numpy==1.26.4 \
+    scipy \
+    pandas \
+    matplotlib \
+    h5py \
+    tensorboard \
+    tqdm \
+    cython \
+    scikit-image \
+    pykdtree
+
+RUN pip3 install pybullet trimesh urdfpy pyrender
+
+# Heaviest single wheel (~450MB) -- isolated so a network blip on retry
+# doesn't force re-fetching everything above.
+RUN pip3 install open3d
+
+RUN pip3 install pytorch-ignite==0.5.5 wandb
+
+# GIGA's source is NOT baked into the image -- it's bind-mounted from the
+# repo's own submodule (manipulation/packages/giga) at container run time.
+# setup_giga.sh (mounted to /root/setup_giga.sh, see
+# docker-compose-giga-cpu.yaml) does the submodule check, editable
+# `pip install -e`, and extension build against this image's toolchain the
+# first time a shell starts.
+RUN echo ". /root/setup_giga.sh" >> /root/.bashrc
+
+CMD ["/bin/bash"]

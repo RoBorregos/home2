@@ -17,10 +17,10 @@ if python3 -c "import vgn" >/dev/null 2>&1; then
 else
     echo "Installing GIGA (vgn) python package ..."
     pip3 install catkin_pkg
-    grep -v '^torch==' "$GIGA_DIR/requirements.txt" > /tmp/giga_requirements_no_torch.txt
+    grep -v '^torch==' "$GIGA_DIR/requirements.txt" | sed -E 's/[=<>!~].*$//' > /tmp/giga_requirements_no_torch.txt
     pip3 install -r /tmp/giga_requirements_no_torch.txt
     rm -f /tmp/giga_requirements_no_torch.txt
-    pip3 install -e "$GIGA_DIR"
+    pip3 install --no-build-isolation -e "$GIGA_DIR"
 
     echo "Building ConvONets compiled extensions ..."
     (cd "$GIGA_DIR" && python3 scripts/convonet_setup.py build_ext --inplace)
