@@ -15,7 +15,8 @@ def generate_launch_description():
             DeclareLaunchArgument(
                 "point_cloud_topic",
                 default_value="/point_cloud",
-                description="Point cloud topic consumed by the cluster extraction.",            ),
+                description="Point cloud topic consumed by the cluster extraction.",
+            ),
             Node(
                 package="perception_3d",
                 executable="pick_primitives",
