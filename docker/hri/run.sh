@@ -126,6 +126,14 @@ add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
+# A benchmark run leaves LLAMA_MODEL_FILE/LLAMA_ALIAS in compose/.env pointing at
+# whatever it last served. Clear them so production always falls back to the
+# shipping defaults in llama-cpp-entrypoint.sh.
+if [ "${PROFILES[0]}" != "bench" ]; then
+  add_or_update_variable compose/.env "LLAMA_MODEL_FILE" ""
+  add_or_update_variable compose/.env "LLAMA_ALIAS" ""
+fi
+
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."
   HRI_IMAGES=(

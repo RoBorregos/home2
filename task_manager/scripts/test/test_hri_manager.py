@@ -5,6 +5,7 @@ Task Manager for testing the subtask managers
 """
 
 import csv
+import glob
 import json
 import os
 import subprocess
@@ -83,6 +84,14 @@ NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
 NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
 NLP_RUNS = int(os.getenv("NLP_RUNS") or "3")
 NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR") or OUTPUT_DIR
+
+# LLM upgrade suite. Flip this, start the hri and integration containers, and run
+# the test: it exercises every service backed by the general-purpose LLM, scores
+# extract_data, and diffs against the last run of a different model.
+TEST_LLM_SUITE = False
+LLM_MODEL_LABEL = "qwen3.5-4b"  # names this run; change it before each model
+LLM_SUITE_RUNS = 3  # perf repetitions per task
+LLM_SUITE_URL = "http://localhost:11434/v1"  # where TTFT/tok-s are measured
 
 # Choose which tests to perform (used only when TEST_NLP is unset)
 TEST_ASK_AND_CONFIRM = False
@@ -220,6 +229,10 @@ class TestHriManager(Node):
     def run(self):
         if TEST_NLP:
             self.run_nlp_benchmark()
+            exit(0)
+
+        if TEST_LLM_SUITE:
+            self.run_llm_suite()
             exit(0)
 
         if TEST_ASK_AND_CONFIRM:
@@ -1116,8 +1129,151 @@ class TestHriManager(Node):
 
         self._emit_benchmark_report({NLP_MODEL_ALIAS: model_results})
 
-    def _run_perf_side_channel(self, task_name: str) -> dict:
-        if not NLP_OLLAMA_URL:
+    # Services backed by the general-purpose LLM. is_positive/is_negative use a
+    # local DeBERTa classifier and command_interpreter uses rbrgs, so neither is here.
+    def _llm_smoke_checks(self) -> list:
+        checks = []
+        texts = []
+
+        def record(name, ok, detail):
+            checks.append({"name": name, "ok": bool(ok), "detail": str(detail)[:140]})
+            self.get_logger().info(f"  [{'PASS' if ok else 'FAIL'}] {name}: {detail}")
+
+        try:
+            s, corrected = self.hri_manager.refactor_text("he go to the kitchen yesterday")
+            texts.append(corrected)
+            record(
+                "grammar", s == Status.EXECUTION_SUCCESS and bool(str(corrected).strip()), corrected
+            )
+        except Exception as e:
+            record("grammar", False, f"EXCEPTION: {e}")
+
+        # check_coherence returns a bare bool; the service_check decorator returns a
+        # tuple instead when the service is missing.
+        for label, text, expected in (
+            ("is_coherent (complete)", "Go to the kitchen and pick up the apple", True),
+            ("is_coherent (truncated)", "Go to the", False),
+        ):
+            try:
+                got = self.hri_manager.check_coherence(text)
+                if isinstance(got, tuple):
+                    record(label, False, "service unavailable")
+                else:
+                    record(label, got == expected, f"expected={expected} got={got}")
+            except Exception as e:
+                record(label, False, f"EXCEPTION: {e}")
+
+        try:
+            s, answer = self.hri_manager.answer_with_context(
+                "What object did the robot pick up?",
+                "The robot picked up a red apple from the kitchen table.",
+            )
+            texts.append(answer)
+            ok = s == Status.EXECUTION_SUCCESS and "apple" in str(answer).lower()
+            record("llm_wrapper", ok, answer)
+        except Exception as e:
+            record("llm_wrapper", False, f"EXCEPTION: {e}")
+
+        try:
+            s, data = self.hri_manager.extract_data(
+                "drink", "My name is Carlos and I would like a glass of water."
+            )
+            texts.append(data)
+            record("extract_data", "water" in str(data).lower(), data)
+        except Exception as e:
+            record("extract_data", False, f"EXCEPTION: {e}")
+
+        # RAG only launches under the gpsr/storing profiles; absence is not a failure.
+        try:
+            s, answer, _ = self.hri_manager.answer_question("What is RoBorregos?")
+            if s == Status.SERVICE_CHECK:
+                record("rag (skipped)", True, "service not running under this profile")
+            else:
+                texts.append(answer)
+                record("rag", bool(str(answer).strip()), answer)
+        except Exception as e:
+            record("rag", False, f"EXCEPTION: {e}")
+
+        # Thinking must be off: no reasoning block and no leftover Qwen3 token.
+        leaked = [t for t in texts if "<think>" in str(t) or "/no_think" in str(t)]
+        record("no thinking leakage", not leaked, f"{len(leaked)} of {len(texts)} responses leaked")
+
+        return checks
+
+    def _print_smoke_table(self, checks: list) -> None:
+        passed = sum(1 for c in checks if c["ok"])
+        print(f"\n=== LLM service smoke checks: {LLM_MODEL_LABEL} ===")
+        for c in checks:
+            print(f"  {'PASS' if c['ok'] else 'FAIL'}  {c['name']:<26} {c['detail']}")
+        print(f"  {passed}/{len(checks)} checks passed")
+
+    def _previous_model_results(self) -> dict:
+        """Most recent saved run whose model label differs from this one."""
+        try:
+            files = sorted(
+                glob.glob(os.path.join(NLP_RESULTS_DIR, "benchmark_*.json")), reverse=True
+            )
+        except Exception:
+            return {}
+        for path in files:
+            try:
+                with open(path) as f:
+                    report = json.load(f)
+            except Exception:
+                continue
+            for model, tasks in report.get("models", {}).items():
+                if model == LLM_MODEL_LABEL:
+                    continue
+                # Rehydrate minimal case stubs so report.print_comparison_table,
+                # which counts passed/total, can read the saved summary.
+                rebuilt = {}
+                for task, r in tasks.items():
+                    total = r.get("cases", 0)
+                    passed = r.get("passed", 0)
+                    rebuilt[task] = {
+                        "cases": [{"passed": True}] * passed
+                        + [{"passed": False}] * max(total - passed, 0),
+                        "avg_ttft_ms": r.get("avg_ttft_ms"),
+                        "avg_tokens_per_s": r.get("avg_tokens_per_s"),
+                    }
+                self.get_logger().info(f"Comparing against {model} from {os.path.basename(path)}")
+                return {model: rebuilt}
+        return {}
+
+    def run_llm_suite(self):
+        self.get_logger().info(f"LLM suite for {LLM_MODEL_LABEL}")
+
+        checks = self._llm_smoke_checks()
+
+        # extract_data is the only dataset-backed task that routes to this LLM.
+        task_r = {"cases": self.test_data_extractor() or []}
+        perf = self._run_perf_side_channel("extract_data", LLM_SUITE_RUNS, LLM_SUITE_URL)
+        if perf:
+            task_r.update(perf)
+        model_results = {"extract_data": task_r}
+
+        previous = self._previous_model_results()
+        self._emit_benchmark_report({LLM_MODEL_LABEL: model_results})
+        self._print_smoke_table(checks)
+
+        if previous:
+            try:
+                if BENCHMARK_DIR not in sys.path:
+                    sys.path.insert(0, BENCHMARK_DIR)
+                import report as rpt
+
+                combined = dict(previous)
+                combined[LLM_MODEL_LABEL] = model_results
+                rpt.print_comparison_table(combined)
+            except Exception as e:
+                self.get_logger().warn(f"Comparison table failed: {e}")
+        else:
+            self.get_logger().info("No previous model run found; run the other model to compare.")
+
+    def _run_perf_side_channel(
+        self, task_name: str, runs: int = NLP_RUNS, url: str = NLP_OLLAMA_URL
+    ) -> dict:
+        if not url:
             return {}
         try:
             if BENCHMARK_DIR not in sys.path:
@@ -1133,8 +1289,8 @@ class TestHriManager(Node):
             return {}
 
         try:
-            self.get_logger().info(f"   perf: {NLP_RUNS} run(s) against {NLP_OLLAMA_URL}")
-            perf = run_perf(NLP_OLLAMA_URL, MODEL.LLM_WRAPPER.value, task_cls, NLP_RUNS)
+            self.get_logger().info(f"   perf: {runs} run(s) against {url}")
+            perf = run_perf(url, MODEL.LLM_WRAPPER.value, task_cls, runs)
             ttft = perf.get("avg_ttft_ms")
             tps = perf.get("avg_tokens_per_s")
             self.get_logger().info(
