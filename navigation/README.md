@@ -39,7 +39,6 @@ home2/
 │   │   │   ├── omni_config/            # Holonomic (omnibase) Nav2 profiles
 │   │   │   └── rtabmap/               # RTABMap RGBD SLAM configs
 │   │   ├── launch/
-│   │   │   ├── dashgo_base/            # Diff-drive base bringup (RTABMap)
 │   │   │   ├── omni_setup/             # Omni base bringup (slam_toolbox)
 │   │   │   └── task_launch/            # Top-level launches per task
 │   │   │       ├── general_navigation.launch.py
@@ -65,7 +64,6 @@ home2/
 │   │   ├── src/map_service.cpp         # C++ map/areas service
 │   │   └── launch/simulate_map.launch.py
 │   │
-│   ├── dashgo_driver/                  # Diff-drive base driver (STM32) + EKF
 │   └── omnidriver/                     # Holonomic (ODrive) base driver + dashboard
 │
 ├── README.md                           # This file
@@ -79,14 +77,12 @@ docker/navigation/                      # Docker image, compose and entrypoint
 
 ## Concepts
 
-The base and SLAM backend are chosen with launch arguments. The omnibase row is
-the current setup; the dashgo row is the legacy diff-drive path:
+The SLAM backend is chosen with the `nav_type` launch argument. The robot always
+runs on the omnibase:
 
-| `default_base` | `nav_type` | SLAM backend | Base | Status |
-| --- | --- | --- | --- | --- |
-| `omnibase` (default) | `2d` | `slam_toolbox` (lidar) | Holonomic (`omnidriver`) | Current |
-| `dashgo` | `3d` | `RTABMap` (RGBD) | Diff-drive (`dashgo_driver`) | Legacy |
-
+| `nav_type` | SLAM backend | Base |
+| --- | --- | --- |
+| `2d` (default) | `slam_toolbox` (lidar) | Holonomic (`omnidriver`) |
 The **`nav_central`** node is the brain of the area. It:
 
 - Waits for required topics/TF, starts the SLAM backend and (optionally) Nav2.
@@ -158,9 +154,6 @@ ros2 launch nav_main restaurant.launch.py
 Common launch arguments:
 
 ```bash
-# Use the diff-drive base + 3D RTABMap SLAM instead of the omnibase default
-ros2 launch nav_main general_navigation.launch.py default_base:=dashgo nav_type:=3d
-
 # Override the map for this session only
 ros2 launch nav_main general_navigation.launch.py map_name:=lab_23.db
 ```
@@ -182,9 +175,7 @@ The equivalent shortcuts from the root `run.sh` are:
    the SLAM backend and the **`nav_ui`** control panel.
 2. Drive the robot around the arena to cover the whole space.
 3. In `nav_ui`, use **Save Map** to persist it:
-   - omnibase / slam_toolbox → `<name>.posegraph` + `<name>.data` + a
-     `<name>.yaml`/`<name>.pgm` grid.
-   - dashgo / RTABMap → the RTABMap `<name>.db` + a 2D `<name>.yaml`/`.pgm`.
+      - `<name>.posegraph` + `<name>.data` + a `<name>.yaml`/`<name>.pgm` grid.
    Maps are written to `navigation/packages/map_context/maps/`.
 
 ### Tagging areas (the tagger)
@@ -248,7 +239,7 @@ ros2 service call /navigation/undock_from_surface std_srvs/srv/Trigger {}
 | `/navigation/is_door_open` | `CheckDoor` | Door open/closed via lidar |
 | `/navigation/areas_json` | `MapAreas` | Return `areas.json` as a string |
 | `/navigation/follow_person` | `SetBool` | Start/stop person following |
-| `/navigation/resume_nav` | `Empty` | Resume paused Nav2 (+ RTABMap on the legacy dashgo) |
+| `/navigation/resume_nav` | `Empty` | Resume paused Nav2 |
 
 ### Example service calls
 
@@ -282,6 +273,7 @@ trajectories, and lets the operator:
 | Package | Base | Status | Notes |
 | --- | --- | --- | --- |
 | `omnidriver` | Holonomic ODrive base | Current | `odrive_serial_twist` (cmd_vel → wheels), `odrive_dashboard` web dashboard, `simple_rx` |
-| `dashgo_driver` | EAI Dashgo diff-drive | Legacy | STM32 serial driver + `ekf.launch.py` odometry fusion; kept for the old diff-drive base |
 
+## External repositories
 
+- **Dashgo base driver & launch files**: Moved to [RoBorregos/Dashgo](https://github.com/RoBorregos/Dashgo.git)

@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
-from vision_general.utils.trt_utils import load_yolo_trt
+from utils.trt_utils import load_yolo_trt
 
 # ── YOLO COCO keypoint indices ──
 NOSE = 0

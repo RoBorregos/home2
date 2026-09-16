@@ -14,7 +14,7 @@ import rclpy
 from rclpy.action import ActionServer
 from builtin_interfaces.msg import Time
 from rclpy.task import Future
-from vision_general.utils.trt_utils import load_yolo_trt
+from utils.trt_utils import load_yolo_trt
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import (
@@ -25,7 +25,7 @@ from frida_interfaces.srv import (
     YoloDetect,
     MapAreas,
 )
-from vision_general.utils.calculations import point2d_to_ros_point_stamped
+from utils.calculations import point2d_to_ros_point_stamped
 from frida_constants.navigation_constants import AREAS_SERVICE
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
@@ -40,8 +40,8 @@ from frida_constants.vision_constants import (
     YOLO_DETECTION_TOPIC,
 )
 from ament_index_python.packages import get_package_share_directory
-from vision_general.utils.area_check import filter_detections_in_house
-from vision_general.utils.debug_pub import DebugImagePublisher
+from utils.area_check import filter_detections_in_house
+from utils.debug_pub import DebugImagePublisher
 from vision_runtime import VisionRuntime, spin
 
 package_share_dir = get_package_share_directory("vision_general")

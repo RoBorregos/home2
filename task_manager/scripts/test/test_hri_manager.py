@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Union
 
 import rclpy
@@ -97,7 +98,111 @@ TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
 TEST_MERGER = False
 TEST_FALLBACK_RESUME = False
-TEST_DOOR = True
+TEST_MERGED_PLAN_SPEECH = False
+TEST_DOOR = False
+
+MERGED_PLAN_SPEECH_CASES = [
+    {
+        # Report batched with a fetch, so the say lands mid-plan, not at the end.
+        "name": "count_report_batched_with_fetch",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "tv_stand"},
+                {"action": "count", "target_to_count": "drinks"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me how many drinks there are on the tv stand",
+                    "previous_command_info": ["count"],
+                },
+            ],
+            [
+                {"action": "go_to", "location_to_go": "kitchen"},
+                {"action": "pick_object", "object_to_pick": "apple"},
+                {"action": "go_to", "location_to_go": "living_room"},
+                {"action": "place_object"},
+            ],
+        ],
+    },
+    {
+        "name": "two_reports_in_one_batch",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "kitchen"},
+                {"action": "count", "target_to_count": "foods"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me how many foods there are in the kitchen",
+                    "previous_command_info": ["count"],
+                },
+            ],
+            [
+                {"action": "go_to", "location_to_go": "bedroom"},
+                {"action": "find_person", "attribute_value": "waving"},
+                {"action": "get_person_info", "info_type": "gesture"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me the gesture of the person in the bedroom",
+                    "previous_command_info": ["get_person_info"],
+                },
+            ],
+        ],
+    },
+    {
+        "name": "single_command_trailing_say",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "sofa"},
+                {"action": "get_visual_info", "measure": "biggest", "object_category": "object"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me which is the biggest object on the sofa",
+                    "previous_command_info": ["get_visual_info"],
+                },
+            ]
+        ],
+    },
+    {
+        "name": "no_say_steps",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "storage_rack"},
+                {"action": "pick_object", "object_to_pick": "pringles"},
+                {"action": "go_to", "location_to_go": "living_room"},
+                {"action": "give_object"},
+            ],
+            [
+                {"action": "go_to", "location_to_go": "bathroom"},
+                {"action": "find_person_by_name", "name": "adel"},
+                {"action": "guide_person_to", "destination_room": "kitchen"},
+            ],
+        ],
+    },
+]
+
+MERGED_PLAN_SPEECH_COORDS = {
+    "start_location": [0.0, 0.0],
+    "tv_stand": [0.5, 0.5],
+    "kitchen": [5.0, 5.0],
+    "living_room": [6.0, 5.0],
+    "bedroom": [-2.0, 3.0],
+    "sofa": [3.0, 2.0],
+    "storage_rack": [-1.0, -2.0],
+    "bathroom": [-3.0, 1.0],
+}
+
+# Values that must survive the rewrite; dropping one means a step was lost.
+_SPEECH_TOKEN_FIELDS = (
+    "location_to_go",
+    "object_to_pick",
+    "name",
+    "target_to_count",
+    "destination",
+    "destination_room",
+)
 
 
 class TestHriManager(Node):
@@ -161,6 +266,9 @@ class TestHriManager(Node):
 
         if TEST_FALLBACK_RESUME:
             self.test_fallback_resume()
+
+        if TEST_MERGED_PLAN_SPEECH:
+            self.test_merged_plan_speech()
 
         if TEST_DOOR:
             self.test_door()
@@ -839,6 +947,101 @@ class TestHriManager(Node):
             self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
         else:
             self.get_logger().info(f"  PASS (partial={partial}, all_done={all_done}, full={full})")
+
+    def test_merged_plan_speech(self):
+        """Test the merged-plan announcement on its own, without running a batch.
+
+        Runs the real GPSRTM._spoken_merged_plan over MERGED_PLAN_SPEECH_CASES.
+        Only the LLM wrapper service is needed: nothing navigates, nothing is
+        spoken out loud, and no display step is published. Ordering is
+        test_merger's job; this only judges the wording.
+        """
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from gpsr_task_manager import GPSRTM
+
+        from task_manager.gpsr.merger import merge
+
+        # Stand-in self, so the shipped method runs without a second GPSR node.
+        tm = SimpleNamespace(
+            subtask_manager=SimpleNamespace(hri=self.hri_manager),
+            get_logger=self.get_logger,
+        )
+        locator = make_locator(MERGED_PLAN_SPEECH_COORDS)
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"merged_plan_speech_{date_str}.csv")
+
+        results = []
+        passed = 0
+        for case in MERGED_PLAN_SPEECH_CASES:
+            name = case["name"]
+            self.get_logger().info(f"Merged-plan speech scenario: {name}")
+
+            commands = build_commands(case["commands"])
+            plan = merge(commands, locator=locator, origin=(0.0, 0.0))
+            actions = [pa.action for pa in plan.actions]
+            raw = self.hri_manager.parse_plan_to_text(actions)
+
+            try:
+                spoken = GPSRTM._spoken_merged_plan(tm, plan)
+            except Exception as e:
+                spoken, failures = "", [f"EXCEPTION: {e}"]
+            else:
+                failures = self._merged_plan_speech_failures(spoken, raw, actions)
+
+            self.get_logger().info(f"  raw:    {raw}")
+            self.get_logger().info(f"  spoken: {spoken}")
+            if failures:
+                self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
+            else:
+                passed += 1
+                self.get_logger().info("  PASS")
+
+            results.append([name, not failures, "; ".join(failures), raw, spoken])
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["scenario", "passed", "failures", "raw", "spoken"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Merged-plan speech results: {passed}/{len(results)} passed")
+        self.get_logger().info(f"Saved to {output_file}")
+
+    def _merged_plan_speech_failures(self, spoken: str, raw: str, actions: list) -> list:
+        """Name every way the rewritten announcement is still unusable."""
+        if not spoken or not spoken.strip():
+            return ["empty announcement"]
+
+        failures = []
+        low = spoken.lower()
+        # "living_room" in the raw rendering vs "living room" in the rewrite.
+        flat = low.replace("_", " ")
+        if spoken.strip() == raw.strip():
+            failures.append("fell back to the raw rendering (LLM unavailable or empty answer)")
+        if "then say" in low:
+            failures.append("still contains 'then say'")
+        if "say:" in low:
+            failures.append("still contains a literal 'say:' step")
+
+        for cmd in actions:
+            if getattr(cmd, "action", None) == "say_with_context":
+                instruction = getattr(cmd, "user_instruction", "")
+                if instruction and instruction.lower() in low:
+                    failures.append(f"quotes the user instruction verbatim: '{instruction}'")
+
+        missing = []
+        for cmd in actions:
+            for field in _SPEECH_TOKEN_FIELDS:
+                value = getattr(cmd, field, None)
+                if not isinstance(value, str) or not value or value == "start_location":
+                    continue
+                if value.replace("_", " ").lower() not in flat:
+                    missing.append(value)
+        if missing:
+            failures.append(f"dropped steps mentioning: {sorted(set(missing))}")
+
+        return failures
 
     def test_command_interpreter_baml(self):
         # Prepare output file

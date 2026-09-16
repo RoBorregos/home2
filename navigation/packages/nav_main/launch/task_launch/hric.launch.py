@@ -1,17 +1,12 @@
-"""HRI follow-person bringup — OMNIBASE by default (dashgo still selectable).
+"""HRI follow-person bringup.
 
 Same base-selection convention as general_navigation.launch.py, plus the
 person_goal_smoother that bridges the vision tracker to the Nav2 GoalUpdater.
-
-  omnibase (default): omni_basics + slam_toolbox localization + nav2_omni
-  dashgo            : nav_basics + RTABMap localization + nav2 (nav2_standard)
 
 The actual "follow person" trigger is the /navigation/follow_person service on
 nav_central; it switches person_goal_smoother to follow mode (which swaps in the
 nav2_omni_following.yaml params) and sends a NavigateToPose goal with the
 follow_dynamic_point.xml behaviour tree.
-
-Override the base:   ros2 launch nav_main hric.launch.py default_base:=dashgo
 """
 
 import os
@@ -29,7 +24,6 @@ def launch_function(context, *args, **kwargs):
 
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
-    nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
     # Active omnibase Nav2 profile: 3-WHEEL LIMP (base running degraded, one
     # wheel out — see nav2_omni_limp.yaml header). Single source for BOTH the
     # nav2_omni include and the person_goal_smoother restore pair below; point
@@ -39,13 +33,11 @@ def launch_function(context, *args, **kwargs):
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
-    nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
     # Values to select base (same convention as general_navigation.launch.py)
-    default_base = LaunchConfiguration('default_base', default='omnibase')  # Other option "dashgo"
-    default_base_value = default_base.perform(context)
+    default_base = 'omnibase'
     nav_type = LaunchConfiguration('nav_type', default='2d')  # Other 3d
     nav_type_value = nav_type.perform(context)
 
@@ -97,16 +89,16 @@ def launch_function(context, *args, **kwargs):
         }],
     )
 
-    # Bridges the vision tracker -> Nav2 GoalUpdater, and switches nav2 between the
-    # standard and follow param sets for the active base (default_base picks the
-    # config pair: omnibase -> nav2_omni(_following).yaml, dashgo -> nav2_(standard|following).yaml).
-    smoother_params = {'default_base': default_base}
-    if default_base_value == 'omnibase':
+    # Bridges the vision tracker -> Nav2 GoalUpdater.
         # Keep the smoother's restore pair in sync with the config Nav2 is
         # launched with below — otherwise deactivating follow mode would
         # re-apply healthy nav2_omni.yaml speeds onto the limp base.
-        smoother_params['standard_config_file'] = nav2_omni_file
-        smoother_params['follow_config_file'] = nav2_omni_follow_file
+    smoother_params = {
+        'default_base': default_base,
+        'standard_config_file': nav2_omni_file,
+        'follow_config_file': nav2_omni_follow_file,
+    }
+
     person_goal_smoother_node = Node(
         package='nav_main',
         executable='person_goal_smoother.py',
@@ -114,26 +106,6 @@ def launch_function(context, *args, **kwargs):
         output='screen',
         emulate_tty=True,
         parameters=[smoother_params],
-    )
-
-    # ----- dashgo base: RTABMap RGBD localization + nav2 -----
-    nav_basics = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "dashgo_base", "nav_basics.launch.py"])
-        ),
-    )
-
-    rtabmapnav = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "dashgo_base", "rtabnav2.launch.py"])
-        ),
-        launch_arguments={
-            'localization': localization,
-            'rtab_config_file': rtab_params,
-            'nav2_config_file': nav2_params,
-            'nav2': nav2_activate,
-            'map_name': rtabmap_map_name,
-        }.items(),
     )
 
     # ----- omnibase: slam_toolbox localization + nav2_omni -----
@@ -168,16 +140,12 @@ def launch_function(context, *args, **kwargs):
         nav_central_node,
         nav_ui_node,
         person_goal_smoother_node,
+        omni_basics,
     ]
 
-    if default_base_value != 'omnibase':
-        launch_actions.append(nav_basics)
-        launch_actions.append(rtabmapnav)
-    else:
-        launch_actions.append(omni_basics)
-        if nav_type_value == '2d':
-            launch_actions.append(omni_localization)
-        launch_actions.append(nav2_omni)
+    if nav_type_value == '2d':
+        launch_actions.append(omni_localization)
+    launch_actions.append(nav2_omni)
 
     return launch_actions
 

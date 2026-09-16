@@ -1,5 +1,6 @@
 ultralytics
 numpy==1.26.0
+scipy==1.13.1
 imutils
 transforms3d
 # YOLOE (zero-shot detector) uses text prompts via OpenAI CLIP.  Without

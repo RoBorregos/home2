@@ -24,7 +24,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
 from std_msgs.msg import Bool, Int16
 
-from vision_general.utils.debug_pub import DebugImagePublisher
+from utils.debug_pub import DebugImagePublisher
 
 ACTIVE_TOPIC_FMT = "/vision/{name}/active"
 

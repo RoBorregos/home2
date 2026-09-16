@@ -21,7 +21,6 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 ATTEMPT_LIMIT = 5
 FIRST_GUEST_IDX = 0
 SECOND_GUEST_IDX = 1
-HOT_NAMES = "Adel Angel Axel Charlie Jane Jules Morgan Paris Robin Simone"
 HOT_DRINKS = "fanta water lipton coca-cola soda lemonade pepsi orange juice milk sidral mundet iced tea coke red bull soju"
 
 # Person-following (runs between the introduction and leaving the bag): the robot
@@ -293,7 +292,7 @@ class HRIC_TM(Node):
                 context="The question 'What is your name?' was asked, full_text corresponds to the response.",
                 initial_prompt="The question 'What is your name?' was asked",
                 retries=5,
-                hotwords=HOT_NAMES,
+                hotwords=self.subtask_manager.hri.names_hotwords,
             )
 
             if status == Status.EXECUTION_SUCCESS:

@@ -23,7 +23,7 @@ from frida_constants.vision_constants import (
 from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
 from models.face_recognition import FaceModel, TRACK_THRESHOLD
-from vision_general.utils.debug_pub import DebugImagePublisher
+from utils.debug_pub import DebugImagePublisher
 from vision_runtime import VisionRuntime, spin
 
 MAX_DEGREE = 1
