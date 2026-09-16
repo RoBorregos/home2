@@ -157,10 +157,9 @@ fi
 idx=${SELECTED[0]}
 name="${MODEL_NAMES[$idx]}"
 file="${MODEL_FILES[$idx]}"
-# Serve under the production alias so the accuracy path resolves; the registry
-# name is only a report label.
+# Serve under the production alias so both the ROS services and the perf
+# side-channel resolve; the registry name only labels the report.
 alias_name="frida-llm"
-model_label="$name"
 
 echo "Launch mode: $name ($file)"
 
@@ -198,14 +197,13 @@ cat <<EOF
 
 llama-server is up.
   Container: $LIVE_CONTAINER
-  Model:     $file   (alias: $alias_name, label: $model_label)
+  Model:     $file   (alias: $alias_name)
   Port:      $PORT
 
 Next step - run the benchmark:
 
   TEST_NLP=true \\
-  NLP_MODEL_ALIAS=$alias_name \\
-  NLP_MODEL_LABEL=$model_label \\
+  NLP_MODEL_ALIAS=$name \\
   NLP_OLLAMA_URL=http://localhost:$PORT/v1 \\
   NLP_TASKS=extract_data \\
   ./run.sh integration --test-hri --build

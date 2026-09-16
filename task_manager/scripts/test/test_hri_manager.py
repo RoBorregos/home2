@@ -23,6 +23,7 @@ from _merger_helpers import (
     evaluate_expectations,
     make_locator,
 )
+from frida_constants.hri_constants import MODEL
 from task_manager.subtask_managers.hri_tasks import HRITasks
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -75,9 +76,9 @@ COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match onl
 # from NLP_TASKS (comma-separated) and a benchmark JSON is emitted alongside
 # the per-task CSVs.
 TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
+# Names the model under test in the report. The perf channel asks the server for
+# MODEL.LLM_WRAPPER, same as production, so this is a label only.
 NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
-# Alias is what the server answers to; label is what the report calls the model.
-NLP_MODEL_LABEL = os.getenv("NLP_MODEL_LABEL") or NLP_MODEL_ALIAS
 NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
 NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
 NLP_RUNS = int(os.getenv("NLP_RUNS") or "3")
@@ -1090,7 +1091,7 @@ class TestHriManager(Node):
             return
 
         self.get_logger().info(
-            f"TEST_NLP mode: label={NLP_MODEL_LABEL} alias={NLP_MODEL_ALIAS} tasks={NLP_TASKS} "
+            f"TEST_NLP mode: model={NLP_MODEL_ALIAS} serving={MODEL.LLM_WRAPPER.value} tasks={NLP_TASKS} "
             f"ollama={NLP_OLLAMA_URL or '(perf disabled)'}"
         )
 
@@ -1113,7 +1114,7 @@ class TestHriManager(Node):
 
             model_results[task_name] = task_r
 
-        self._emit_benchmark_report({NLP_MODEL_LABEL: model_results})
+        self._emit_benchmark_report({NLP_MODEL_ALIAS: model_results})
 
     def _run_perf_side_channel(self, task_name: str) -> dict:
         if not NLP_OLLAMA_URL:
@@ -1133,7 +1134,7 @@ class TestHriManager(Node):
 
         try:
             self.get_logger().info(f"   perf: {NLP_RUNS} run(s) against {NLP_OLLAMA_URL}")
-            perf = run_perf(NLP_OLLAMA_URL, NLP_MODEL_ALIAS, task_cls, NLP_RUNS)
+            perf = run_perf(NLP_OLLAMA_URL, MODEL.LLM_WRAPPER.value, task_cls, NLP_RUNS)
             ttft = perf.get("avg_ttft_ms")
             tps = perf.get("avg_tokens_per_s")
             self.get_logger().info(

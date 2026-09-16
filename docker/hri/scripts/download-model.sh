@@ -219,6 +219,8 @@ if ask_for_model qwen3.5 3 || ask_for_model nomic-embed-text 4; then
 
     if ask_for_model qwen3.5 3; then
         docker exec "$CONTAINER_ID" ollama pull qwen3.5
+        # The ROS nodes request this alias; Ollama needs the tag to exist.
+        docker exec "$CONTAINER_ID" ollama cp qwen3.5 frida-llm
     fi
 
     if ask_for_model nomic-embed-text 4; then
