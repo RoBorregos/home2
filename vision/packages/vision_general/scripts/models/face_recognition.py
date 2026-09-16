@@ -4,6 +4,7 @@ import os
 
 import cv2
 import numpy as np
+import onnxruntime as ort
 from insightface.app import FaceAnalysis
 
 INSIGHTFACE_MODEL = "buffalo_sc"
@@ -12,6 +13,12 @@ TRACK_THRESHOLD = 50
 
 
 def _insightface_providers() -> list:
+    available = ort.get_available_providers()
+    if "TensorrtExecutionProvider" not in available:
+        raise RuntimeError(
+            "InsightFace requires TensorrtExecutionProvider on Jetson; "
+            f"available providers: {available}"
+        )
     cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
     return [
         (

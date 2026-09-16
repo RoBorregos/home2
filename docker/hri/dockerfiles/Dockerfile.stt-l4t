@@ -6,43 +6,44 @@ RUN apt-get update && apt-get install -y \
     libsndfile1 \
     libxml2-dev \
     portaudio19-dev \
-    git \
-    cmake \
-    g++ \
     pkg-config \
     libx264-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install CTranslate2 from source
+# CTranslate2 with CUDA/cuDNN from source (the PyPI aarch64 wheel is CPU-only).
+# Installed before the requirements so faster-whisper keeps this build.
+ARG CTRANSLATE2_COMMIT=d44d2d069eb88c7b7804da864c10c201501cb4a9
 WORKDIR /tmp
-RUN git clone --recursive https://github.com/OpenNMT/CTranslate2.git
-WORKDIR /tmp/CTranslate2
-RUN mkdir build
-WORKDIR /tmp/CTranslate2/build
-RUN cmake .. -DOPENMP_RUNTIME=NONE -DWITH_CUDA=ON -DWITH_MKL=OFF -DWITH_CUDNN=ON -DCUDA_ARCH_LIST="8.7"
-RUN make -j4
-RUN make install
-RUN ldconfig
-WORKDIR /tmp/CTranslate2/python
-RUN pip install -r install_requirements.txt
-RUN python3 setup.py bdist_wheel
-RUN pip install dist/*.whl
+RUN git clone https://github.com/OpenNMT/CTranslate2.git && \
+    cd CTranslate2 && git checkout ${CTRANSLATE2_COMMIT} && git submodule update --init --recursive && \
+    cmake -S . -B build -DOPENMP_RUNTIME=NONE -DWITH_CUDA=ON -DWITH_MKL=OFF -DWITH_CUDNN=ON -DCUDA_ARCH_LIST="8.7" && \
+    cmake --build build -j4 && \
+    cmake --install build && \
+    ldconfig && \
+    cd python && \
+    pip install -r install_requirements.txt && \
+    python3 setup.py bdist_wheel && \
+    pip install --no-deps dist/*.whl && \
+    cd /tmp && rm -rf CTranslate2
 
-# Install PyAV from source
-WORKDIR /tmp
-RUN git clone https://github.com/PyAV-Org/PyAV.git
-WORKDIR /tmp/PyAV
-RUN pip install virtualenv uv
-RUN bash -c "source ./scripts/activate.sh && ./scripts/build-deps && make && deactivate && pip install ."
+# PyAV from source. Its build script compiles its own FFmpeg; those libraries go
+# to /usr/local/lib so av imports without sourcing PyAV's activate.sh, and the
+# source tree is removed.
+ARG PYAV_COMMIT=680dddf4a2e57fb59cccfd8119d7379c0b4de17f
+RUN git clone https://github.com/PyAV-Org/PyAV.git && \
+    cd PyAV && git checkout ${PYAV_COMMIT} && \
+    pip install uv && \
+    bash -c "source ./scripts/activate.sh && ./scripts/build-deps && make && deactivate && pip install . && cp -a \$PYAV_LIBRARY_PREFIX/lib/*.so* /usr/local/lib/" && \
+    ldconfig && \
+    cd /tmp && rm -rf PyAV && \
+    python3 -c "import av; print('av', av.__version__, av.library_versions['libavcodec'])"
 
 # Install additional Python dependencies
 WORKDIR /app
 COPY ../../hri/requirements/stt.txt requirements.txt
-RUN python3 -m pip install --upgrade pip
-RUN pip install --no-cache-dir -r /app/requirements.txt
-RUN pip install --upgrade protobuf
-
 COPY ../../hri/proto_interfaces /tmp/proto_interfaces
-RUN pip install --no-cache-dir /tmp/proto_interfaces
-
-RUN pip install --no-cache-dir --force-reinstall --no-deps /tmp/CTranslate2/python/dist/*.whl
+RUN pip-install-reqs /app/requirements.txt && \
+    pip install --upgrade protobuf && \
+    pip install /tmp/proto_interfaces && \
+    rm -rf /tmp/proto_interfaces && \
+    python3 -c "import ctranslate2, faster_whisper; print('ctranslate2', ctranslate2.__version__)"

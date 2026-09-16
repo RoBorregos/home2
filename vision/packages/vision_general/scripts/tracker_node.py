@@ -61,6 +61,7 @@ from utils.debug_pub import DebugImagePublisher
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
 from frida_constants.vision_constants import (
+    CAMERA_FRAME,
     CAMERA_TOPIC,
     SET_TARGET_TOPIC,
     SET_TARGET_BY_TOPIC,
@@ -221,7 +222,7 @@ class SingleTracker(Node):
         self._infer_lock = threading.Lock()
         self.image = None
         self.image_time = None
-        self.frame_id = "zed_left_camera_optical_frame"
+        self.frame_id = CAMERA_FRAME
         self.person_data = {
             "id": None,
             "embeddings": [],
