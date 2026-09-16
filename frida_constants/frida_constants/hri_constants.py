@@ -1,3 +1,4 @@
+import os
 from enum import Enum
 
 SPEAK_SERVICE = "/hri/speech/speak"
@@ -58,16 +59,21 @@ GPSR_COMMANDS = {
 }
 
 
+# Alias llama-server publishes for the general-purpose LLM, not a model version.
+# Swapping models means changing LLAMA_MODEL_FILE, not this.
+LLM_ALIAS = os.getenv("FRIDA_LLM_ALIAS", "frida-llm")
+
+
 class MODEL(Enum):
-    GRAMMAR = "qwen3"
-    LLM_WRAPPER = "qwen3"
-    IS_POSITIVE = "qwen3"
-    IS_NEGATIVE = "qwen3"
-    GENERIC_STRUCTURED_OUTPUT = "qwen3"
-    GENERATE_RESPONSE = "qwen3"
-    STRUCTURED_RESPONSE = "qwen3"
-    EXTRACT_INFO_REQUESTED = "qwen3"
-    GET_COMMANDS = "qwen3"
+    GRAMMAR = LLM_ALIAS
+    LLM_WRAPPER = LLM_ALIAS
+    IS_POSITIVE = LLM_ALIAS
+    IS_NEGATIVE = LLM_ALIAS
+    GENERIC_STRUCTURED_OUTPUT = LLM_ALIAS
+    GENERATE_RESPONSE = LLM_ALIAS
+    STRUCTURED_RESPONSE = LLM_ALIAS
+    EXTRACT_INFO_REQUESTED = LLM_ALIAS
+    GET_COMMANDS = LLM_ALIAS
 
 
 class KNOWLEDGE_TYPE(Enum):

@@ -76,6 +76,8 @@ COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match onl
 # the per-task CSVs.
 TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
 NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
+# Alias is what the server answers to; label is what the report calls the model.
+NLP_MODEL_LABEL = os.getenv("NLP_MODEL_LABEL") or NLP_MODEL_ALIAS
 NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
 NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
 NLP_RUNS = int(os.getenv("NLP_RUNS") or "3")
@@ -1088,7 +1090,7 @@ class TestHriManager(Node):
             return
 
         self.get_logger().info(
-            f"TEST_NLP mode: model={NLP_MODEL_ALIAS} tasks={NLP_TASKS} "
+            f"TEST_NLP mode: label={NLP_MODEL_LABEL} alias={NLP_MODEL_ALIAS} tasks={NLP_TASKS} "
             f"ollama={NLP_OLLAMA_URL or '(perf disabled)'}"
         )
 
@@ -1111,7 +1113,7 @@ class TestHriManager(Node):
 
             model_results[task_name] = task_r
 
-        self._emit_benchmark_report({NLP_MODEL_ALIAS: model_results})
+        self._emit_benchmark_report({NLP_MODEL_LABEL: model_results})
 
     def _run_perf_side_channel(self, task_name: str) -> dict:
         if not NLP_OLLAMA_URL:

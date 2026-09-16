@@ -17,7 +17,7 @@ from nlp.assets.data_extraction_priority import (
     NAME_PRIORITY_LABELS,
     extract_by_priority,
 )
-from nlp.assets.dialogs import get_extract_data_args
+from nlp.assets.dialogs import NO_THINKING, get_extract_data_args, strip_thinking
 from openai import OpenAI
 from pydantic import BaseModel
 from rclpy.node import Node
@@ -151,10 +151,12 @@ class DataExtractor(Node):
                     temperature=self.temperature,
                     messages=messages,
                     response_format=response_format,
+                    extra_body=NO_THINKING,
                 )
                 .choices[0]
                 .message.content
             )
+            response_content = strip_thinking(response_content)
         except Exception as e:
             self.get_logger().error(f"LLM extraction failed: {e}")
             return ""

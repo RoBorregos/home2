@@ -24,8 +24,11 @@ wait_for_server() {
 
 # Main model on port 11434. LLAMA_MODEL_FILE / LLAMA_ALIAS override the defaults
 # from the benchmark flow without changing this script.
-MAIN_MODEL="${LLAMA_MODEL_FILE:-qwen3-4b.Q4_K_M.gguf}"
-MAIN_ALIAS="${LLAMA_ALIAS:-qwen3}"
+MAIN_MODEL="${LLAMA_MODEL_FILE:-Qwen3.5-4B-UD-Q4_K_XL.gguf}"
+# Version-neutral alias: the GGUF filename is the only place the model version lives.
+MAIN_ALIAS="${LLAMA_ALIAS:-frida-llm}"
+# q8_0 KV cache can produce gibberish on Qwen3.5; set to f16 if that happens.
+CACHE_TYPE="${LLAMA_CACHE_TYPE:-q8_0}"
 
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
     echo "Starting $MAIN_MODEL on port 11434 (alias=$MAIN_ALIAS)..."
@@ -36,8 +39,9 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
         --ctx-size 2048 \
         -ngl 99 \
         --flash-attn on \
-        --cache-type-k q8_0 \
-        --cache-type-v q8_0 \
+        --jinja \
+        --cache-type-k "$CACHE_TYPE" \
+        --cache-type-v "$CACHE_TYPE" \
         --parallel 1 \
         --alias "$MAIN_ALIAS" \
         &

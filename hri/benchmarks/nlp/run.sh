@@ -157,7 +157,10 @@ fi
 idx=${SELECTED[0]}
 name="${MODEL_NAMES[$idx]}"
 file="${MODEL_FILES[$idx]}"
-alias_name="${file%.gguf}"
+# Serve under the production alias so the accuracy path resolves; the registry
+# name is only a report label.
+alias_name="frida-llm"
+model_label="$name"
 
 echo "Launch mode: $name ($file)"
 
@@ -195,16 +198,21 @@ cat <<EOF
 
 llama-server is up.
   Container: $LIVE_CONTAINER
-  Model:     $file   (alias: $alias_name)
+  Model:     $file   (alias: $alias_name, label: $model_label)
   Port:      $PORT
 
 Next step - run the benchmark:
 
   TEST_NLP=true \\
   NLP_MODEL_ALIAS=$alias_name \\
+  NLP_MODEL_LABEL=$model_label \\
   NLP_OLLAMA_URL=http://localhost:$PORT/v1 \\
-  NLP_TASKS=is_positive,is_negative,extract_data \\
+  NLP_TASKS=extract_data \\
   ./run.sh integration --test-hri --build
+
+Perf across the other LLM-backed use cases:
+
+  docker/hri/scripts/benchmark-llm.sh --all --runs 5
 
 To stop this server:
   docker compose -f $COMPOSE_FILE stop llama

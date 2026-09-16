@@ -12,7 +12,7 @@
 set -euo pipefail
 
 RUNS=3
-NO_THINK=" /no_think"
+THINKING_FLAG=""
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ASSETS_DIR="$(realpath "$SCRIPT_DIR/../../../hri/packages/nlp/assets")"
 TEGRA_DIR="/usr/lib/aarch64-linux-gnu/tegra"
@@ -23,7 +23,7 @@ OLLAMA_CONTAINER="benchmark-ollama"
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --runs) RUNS="$2"; shift 2 ;;
-        --thinking) NO_THINK=""; shift 1 ;;
+        --thinking) THINKING_FLAG="--thinking"; shift 1 ;;
         *) echo "Unknown arg: $1"; exit 1 ;;
     esac
 done
@@ -88,9 +88,9 @@ wait_for_port "http://localhost:11436/api/version" "Ollama"
 # ── Run benchmark across all use cases ───────────────────────────────────────
 echo
 echo "Running benchmark — $RUNS runs per use case..."
-NO_THINK="$NO_THINK" bash "$SCRIPT_DIR/benchmark-llm.sh" \
+bash "$SCRIPT_DIR/benchmark-llm.sh" \
     --runs "$RUNS" \
-    --all \
+    --all $THINKING_FLAG \
     "http://localhost:11434/v1" "llama.cpp" \
     "http://localhost:11436/v1" "ollama"
 
