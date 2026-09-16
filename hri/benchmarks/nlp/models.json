@@ -15,13 +15,6 @@
       "extra_llama_args": "--flash-attn on"
     },
     {
-      "name": "qwen3.5-4b-q4km",
-      "hf_url": "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf",
-      "filename": "Qwen3.5-4B-Q4_K_M.gguf",
-      "ctx_size": 2048,
-      "extra_llama_args": "--flash-attn on"
-    },
-    {
       "name": "qwen3-8b",
       "hf_url": "https://huggingface.co/unsloth/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf",
       "filename": "qwen3-8b.Q4_K_M.gguf",
