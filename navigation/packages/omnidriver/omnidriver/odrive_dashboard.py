@@ -344,6 +344,10 @@ class ODriveDashboardNode(Node):
         # rejection (firmware-side), so this is defence-in-depth, not load-
         # bearing -- kept per the EKF rollout's "keep unchanged" guidance.
         self._last_imu_yaw: float | None = None
+        # Consecutive yaw rejections. A genuine fast spin (or an IMU reset)
+        # looks exactly like a corrupted sample, so after a few in a row we
+        # re-anchor instead of rejecting the real heading forever.
+        self._imu_yaw_rejects = 0
 
         # publishers
         self.pub_raw         = self.create_publisher(String,            'odrive/raw',               10)
@@ -916,15 +920,35 @@ class ODriveDashboardNode(Node):
             # home-custom-base omnibase_documentation.md section 11.3), so
             # this is defence-in-depth, not load-bearing -- kept rather than
             # removed per the EKF rollout's "keep unchanged" guidance.
+            # Only the yaw is dropped, never the whole line: the ODOM_* block
+            # rides on these same lines and feeds /odrive/odom and the
+            # odom -> base_link TF that slam_toolbox looks up once per scan.
+            # Returning here would take those down too.
             if 'IMU_yaw' in data:
                 iy = data['IMU_yaw']
-                if not math.isfinite(iy) or abs(iy) > 200.0:
-                    return
-                if self._last_imu_yaw is not None:
+                reject = not math.isfinite(iy) or abs(iy) > 200.0
+                if not reject and self._last_imu_yaw is not None:
                     dyaw = (iy - self._last_imu_yaw + 180.0) % 360.0 - 180.0
-                    if abs(dyaw) > 40.0:
-                        return
-                self._last_imu_yaw = iy
+                    reject = abs(dyaw) > 40.0
+                if reject:
+                    # Hold the last accepted heading rather than dropping the
+                    # key: /odrive/imu_euler and the web telemetry read this
+                    # field straight from `data`, and a missing key would
+                    # surface there as a bogus 0 deg.
+                    if self._last_imu_yaw is not None:
+                        data['IMU_yaw'] = self._last_imu_yaw
+                    else:
+                        del data['IMU_yaw']
+                    self._imu_yaw_rejects += 1
+                    # Persistent rejection means the anchor, not the sample, is
+                    # the stale one -- adopt the reading so we can't lock out
+                    # the real heading indefinitely.
+                    if self._imu_yaw_rejects > 5 and math.isfinite(iy):
+                        self._last_imu_yaw = iy
+                        self._imu_yaw_rejects = 0
+                else:
+                    self._last_imu_yaw = iy
+                    self._imu_yaw_rejects = 0
 
             # FAST PATH: the slim high-rate line (sent every cycle, fields
             # 3, 12, 20..38, 96 — see the index map above main.c's printf)

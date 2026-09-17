@@ -40,6 +40,7 @@ import lifecycle_msgs.msg
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler
+from launch.event_handlers import OnProcessStart
 from launch.events import matches_action
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode
@@ -81,10 +82,22 @@ def generate_launch_description():
         ],
     )
 
-    configure_on_start = EmitEvent(
-        event=ChangeState(
-            lifecycle_node_matcher=matches_action(slam_node),
-            transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
+    # Driven off the process starting rather than off the launch starting, so a
+    # respawn gets configured too. A bare EmitEvent fires once for the whole
+    # launch: after a crash, `respawn` would bring the node back `unconfigured`
+    # -- alive, but with no /scan subscription, no /map and no map->odom, and
+    # nothing logged to say so.
+    configure_on_start = RegisterEventHandler(
+        OnProcessStart(
+            target_action=slam_node,
+            on_start=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(slam_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
+                    )
+                ),
+            ],
         )
     )
     activate_on_configured = RegisterEventHandler(
