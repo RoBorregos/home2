@@ -46,9 +46,6 @@ def _get_model(model_name: str) -> WhisperModel:
     return _model_cache[model_name]
 
 
-# ── WER ──────────────────────────────────────────────────────────────────────
-
-
 def _remove_punctuation(text: str) -> str:
     return re.sub(r"[^\w\s]", "", text)
 
@@ -75,9 +72,6 @@ def calculate_wer(reference: str, hypothesis: str) -> float:
                 d[i][j] = min(d[i - 1][j - 1] + 1, d[i][j - 1] + 1, d[i - 1][j] + 1)
 
     return d[n][len(hyp_words)] / n
-
-
-# ── Transcription ────────────────────────────────────────────────────────────
 
 
 def transcribe_file(
@@ -142,9 +136,6 @@ def transcribe_file(
     }
 
 
-# ── Audio utils ──────────────────────────────────────────────────────────────
-
-
 def _apply_gain(audio_path: str, gain: float) -> str:
     """Apply linear gain to a WAV file. Returns path to a temporary copy."""
     with wave.open(audio_path, "rb") as wf:
@@ -166,9 +157,6 @@ def _apply_gain(audio_path: str, gain: float) -> str:
         wf_out.writeframes(struct.pack(fmt, *scaled))
 
     return out.name
-
-
-# ── Accuracy benchmark ───────────────────────────────────────────────────────
 
 
 def load_test_cases(path: str = TEST_CASES_FILE) -> list[dict]:
@@ -232,9 +220,6 @@ def run_accuracy(
     return results
 
 
-# ── Latency benchmark ────────────────────────────────────────────────────────
-
-
 def run_latency(
     audio_path: str,
     model_name: str,
@@ -263,9 +248,6 @@ def run_latency(
     }
 
 
-# ── Batch transcription ──────────────────────────────────────────────────────
-
-
 def run_batch(audio_dir: str, model_name: str) -> list[dict]:
     wav_files = sorted(f for f in os.listdir(audio_dir) if f.lower().endswith(".wav"))
     if not wav_files:
@@ -280,9 +262,6 @@ def run_batch(audio_dir: str, model_name: str) -> list[dict]:
         print(f"  {wav}: {result['text']}  (RTF={result['real_time_factor']})")
         results.append({"file": wav, **result})
     return results
-
-
-# ── Reporting ────────────────────────────────────────────────────────────────
 
 
 def print_accuracy_report(results: list[dict], model_name: str) -> None:
@@ -376,9 +355,6 @@ def save_latency_csv(latency: dict, model_name: str) -> str:
             ]
         )
     return path
-
-
-# ── CLI ──────────────────────────────────────────────────────────────────────
 
 
 def main() -> None:
