@@ -1,3 +1,10 @@
+# Explicit project name. Compose otherwise derives it from the containing
+# directory, which is `manipulation` for both this file and its GPU
+# counterpart -- same project, same service name (`giga-train`), so running
+# one of them treats the other's container as the same service and recreates
+# it instead of standing up its own. The CPU container then never exists.
+name: home2-giga-cpu
+
 services:
   giga-train:
     container_name: home2-giga-train-cpu
