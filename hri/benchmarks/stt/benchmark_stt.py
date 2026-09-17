@@ -200,9 +200,9 @@ def run_accuracy(
                 os.unlink(temp_file)
 
         actual = result["text"]
-        wer = calculate_wer(expected, actual)
+        wer = min(calculate_wer(expected, actual), 1.0)
         accuracy = 1.0 - wer
-        passed = accuracy >= 0.8
+        passed = wer == 0.0
 
         results.append(
             {
