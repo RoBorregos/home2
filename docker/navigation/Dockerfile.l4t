@@ -1,3 +1,4 @@
+# No JetPack 7 dustynv tag yet; build on our l4t_base (Jazzy, has the CUDA/cuDNN toolkit).
 ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 
@@ -60,6 +61,9 @@ RUN wget -q https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/ta
 
 #Install dependencies
 RUN sudo pip install pyserial
+# torch (from l4t_base) pulls in a setuptools new enough to drop `develop --uninstall`,
+# which ament_cmake_python's runtime colcon build still relies on; pin it back down.
+RUN sudo pip install "setuptools<71"
 RUN sudo mkdir -p /workspace && sudo chown ros:ros /workspace
 WORKDIR /workspace
 COPY ./navigation /workspace/src
