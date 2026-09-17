@@ -246,6 +246,13 @@ class ODriveDashboardNode(Node):
         # forward linear.x/linear.y/angular.z, so holonomic strafing works either way.
         self.declare_parameter('use_stamped_cmd_vel', False)
         self.declare_parameter('tx_period',           0.1)
+        # Staleness cutoff (s) for velocities that came from the cmd_vel topic.
+        # _send_control_cmd re-streams the last value at 1/tx_period forever, so
+        # without this a nav2 crash mid-trajectory leaves the base driving on the
+        # last command it ever published. 0 disables the cutoff. Web-UI velocities
+        # are deliberately latched (they have their own on-disconnect zeroing) and
+        # are NOT subject to this.
+        self.declare_parameter('cmd_vel_timeout',     0.5)
         # Wheel order must match StartODriveTask odrives[].NODE_ID in the firmware.
         self.declare_parameter('node_ids',            [36, 34, 33, 40])
         self.declare_parameter('enable_web_gui',      False)
@@ -326,6 +333,12 @@ class ODriveDashboardNode(Node):
         # (/follow/base_yaw). Added to wz only while FRESH (<0.5 s old).
         self._follow_base_yaw: float = 0.0
         self._follow_base_yaw_time: float = 0.0
+        # When the streamed velocity last came from cmd_vel, and whether cmd_vel
+        # (rather than the web UI) is the current source. Only the cmd_vel source
+        # is aged out -- see the cmd_vel_timeout parameter.
+        self._cmd_vel_time: float = 0.0
+        self._cmd_vel_is_source: bool = False
+        self._cmd_vel_stale_logged: bool = False
         self.discovered_node_ids: List[int] = []
         self._latest_telem: Dict[str, Any] = self._empty_telem()
         self._sio = None
@@ -339,6 +352,11 @@ class ODriveDashboardNode(Node):
         # Latest ESP32→STM32 age (ms) as reported by the firmware. -1 sentinel
         # (or None) means "the STM32 has never received an ESP32 message".
         self._latest_esp32_age_ms: int | None = None
+        # Firmware-error tallies keyed by (code, axis). High-rate codes are
+        # rate-limited in the log but always counted, so `log_ferr_summary()`
+        # at shutdown still reports the true totals per axis.
+        self._ferr_counts: Dict[tuple, int] = {}
+        self._axis_err_warn_time: float = 0.0
         # Last accepted IMU yaw (deg); used to reject corrupted/outlier telemetry
         # lines before they reach ROS. The on-MCU EKF now does its own outlier
         # rejection (firmware-side), so this is defence-in-depth, not load-
@@ -476,6 +494,9 @@ class ODriveDashboardNode(Node):
             vy = float(data.get('vy', 0.0))
             wz = float(data.get('wz', 0.0))
             self.tx_vx, self.tx_vy, self.tx_wz = vx, vy, wz
+            # The web UI latches deliberately; hand the stream over to it so the
+            # cmd_vel staleness cutoff stops zeroing it out from under the slider.
+            self._cmd_vel_is_source = False
             self._serial_write(f"1 {vx:.4f} {vy:.4f} {wz:.4f}")
 
         elif cmd == 'startup':
@@ -568,10 +589,17 @@ class ODriveDashboardNode(Node):
     def _cb_cmd_vel(self, msg: Twist):
         self.tx_vx, self.tx_vy, self.tx_wz = \
             msg.linear.x, msg.linear.y, msg.angular.z
+        self._mark_cmd_vel_source()
 
     def _cb_cmd_vel_stamped(self, msg: TwistStamped):
         self.tx_vx, self.tx_vy, self.tx_wz = \
             msg.twist.linear.x, msg.twist.linear.y, msg.twist.angular.z
+        self._mark_cmd_vel_source()
+
+    def _mark_cmd_vel_source(self):
+        self._cmd_vel_time = time.monotonic()
+        self._cmd_vel_is_source = True
+        self._cmd_vel_stale_logged = False
 
     def _cb_follow_base_yaw(self, msg: Float64):
         # Reactive yaw from the arm follow controller; merged into wz at TX time.
@@ -588,6 +616,17 @@ class ODriveDashboardNode(Node):
     # ── periodic TX ───────────────────────────────────────────────────────────
 
     def _send_control_cmd(self):
+        # Age out a stale cmd_vel: if the publisher (nav2, table_docker, a teleop)
+        # died, keep the base from coasting on its last command forever.
+        timeout = self.get_parameter('cmd_vel_timeout').value
+        if self._cmd_vel_is_source and timeout > 0.0 and \
+                (time.monotonic() - self._cmd_vel_time) > timeout and \
+                (self.tx_vx or self.tx_vy or self.tx_wz):
+            self.tx_vx = self.tx_vy = self.tx_wz = 0.0
+            if not self._cmd_vel_stale_logged:
+                self._cmd_vel_stale_logged = True
+                self.get_logger().warn(
+                    f"cmd_vel stale (>{timeout:.2f}s) -- zeroing commanded velocity")
         wz = self.tx_wz
         # Follow mode: add the reactive "unload-the-arm" base yaw if enabled and
         # FRESH (<0.5 s). Stale or disabled -> normal driving is unchanged.
@@ -701,6 +740,13 @@ class ODriveDashboardNode(Node):
     # (firmware Start_UART_TX_Task: osDelay(10)); the ESP32 heartbeat runs
     # well above 2 Hz. 0.5 s already represents many missed packets at either
     # rate, so OK / WARN / LOST is a sensible split.
+    # Firmware-error codes that arrive as a flood on degraded hardware: log
+    # 1 in _FERR_FLOOD_EVERY, count all of them. 0x32 = heartbeat timeout.
+    _FERR_FLOOD_CODES = frozenset({0x32})
+    _FERR_FLOOD_EVERY = 100
+    # How often to repeat the "axis error latched" warning (s).
+    _AXIS_ERR_WARN_S = 30.0
+
     _LINK_OK_S   = 0.5
     _LINK_WARN_S = 2.0
 
@@ -744,8 +790,35 @@ class ODriveDashboardNode(Node):
         push to the web dashboard so the displayed values keep advancing even
         when the STM32 stops sending data."""
         self._inject_link_ages(self._latest_telem)
+        self._warn_latched_axis_errors()
         if self._sio:
             self._sio.emit('telemetry', self._latest_telem)
+
+    def _warn_latched_axis_errors(self) -> None:
+        """Periodically warn about axes carrying a non-zero error.
+
+        The firmware only pushes FERR_0x30 on the fault TRANSITION, so an error
+        that latched once and stays set is never re-reported: the axis keeps
+        driving, its board LED sits amber, and nothing on the console says why.
+        (Observed on node 36: a latched 0x01000000 WATCHDOG_TIMER_EXPIRED that
+        survived for the whole run while the axis was in CLOSED_LOOP_CONTROL.)
+        Repeat it at _AXIS_ERR_WARN_S so it stays visible without flooding.
+        """
+        errors = self._latest_telem.get('axis_errors') or []
+        bad = [(i, e) for i, e in enumerate(errors) if e]
+        if not bad:
+            self._axis_err_warn_time = 0.0
+            return
+        now = time.monotonic()
+        if now - self._axis_err_warn_time < self._AXIS_ERR_WARN_S:
+            return
+        self._axis_err_warn_time = now
+        self.get_logger().warn('Axis error latched: ' + ', '.join(
+            f'axis {i}'
+            + (f' (node {self.expected_node_ids[i]})'
+               if i < len(self.expected_node_ids) else '')
+            + f' = 0x{e & 0xFFFFFFFF:08x}'
+            for i, e in bad))
 
     def _parse_and_publish(self, line: str):
         try:
@@ -757,15 +830,23 @@ class ODriveDashboardNode(Node):
                     desc = FERR_DESCRIPTIONS.get(code, f'Unknown error 0x{code:02X}')
                     axis_s = 'sys' if axis == 255 else f'axis {axis}'
                     msg = f'[FW ERR] {desc} ({axis_s}, detail={detail})'
-                    # TEMP (debug): suppress the heartbeat-timeout flood (code 0x32,
-                    # ~1900/run) — a known base CAN/firmware hardware issue — so it
-                    # does not drown out other logs. Delete this guard to restore it.
-                    if code != 0x32:
+                    # 0x32 (heartbeat timeout) floods at ~1900/run on a base
+                    # with a flaky CAN node, so logging every one drowns out
+                    # everything else. Count them PER AXIS and log 1 in
+                    # _FERR_FLOOD_EVERY instead of dropping them: which axes
+                    # stop answering, and how often, is the whole diagnosis for
+                    # a dead/intermittent ODrive. Fully suppressing it hid that.
+                    n = self._ferr_counts[(code, axis)] = \
+                        self._ferr_counts.get((code, axis), 0) + 1
+                    if code in self._FERR_FLOOD_CODES:
+                        if n % self._FERR_FLOOD_EVERY == 1:
+                            self.get_logger().warn(f'{msg} [x{n}]')
+                    else:
                         self.get_logger().warn(msg)
                     if self._sio:
                         self._sio.emit('firmware_error', {
                             'code': code, 'axis': axis, 'detail': detail,
-                            'desc': desc, 'text': msg,
+                            'desc': desc, 'text': msg, 'count': n,
                         })
                 return
 
@@ -1183,6 +1264,27 @@ class ODriveDashboardNode(Node):
         except Exception:
             return 0.0
 
+    def log_ferr_summary(self) -> None:
+        """Log the per-(code, axis) firmware-error totals for the whole run.
+
+        This is where a degraded ODrive shows itself: a node that loses CAN
+        heartbeat intermittently racks up thousands of 0x32 on its axis only,
+        while a healthy axis stays at zero.
+        """
+        if not self._ferr_counts:
+            return
+        lines = []
+        for (code, axis), n in sorted(self._ferr_counts.items(),
+                                      key=lambda kv: -kv[1]):
+            desc = FERR_DESCRIPTIONS.get(code, f'Unknown error 0x{code:02X}')
+            axis_s = 'sys' if axis == 255 else f'axis {axis}'
+            node_s = ''
+            if axis != 255 and axis < len(self.expected_node_ids):
+                node_s = f' (node {self.expected_node_ids[axis]})'
+            lines.append(f'  0x{code:02X} {desc} — {axis_s}{node_s}: {n}')
+        self.get_logger().warn(
+            'Firmware-error totals for this run:\n' + '\n'.join(lines))
+
     @staticmethod
     def _si(v) -> int:
         try:
@@ -1200,6 +1302,7 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
+        node.log_ferr_summary()
         node.destroy_node()
         rclpy.shutdown()
 
