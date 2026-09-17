@@ -39,7 +39,6 @@ def _print_rich(model: str, task_results: dict) -> None:
         pct = (passed / total * 100) if total else 0
         acc_color = "green" if pct >= 80 else ("yellow" if pct >= 60 else "red")
 
-        acc = r.get("accuracy")
         wer = r.get("avg_wer")
         rtf = r.get("avg_rtf")
         lat = r.get("avg_latency_s")
@@ -94,10 +93,10 @@ def _print_plain(model: str, task_results: dict) -> None:
         passed = sum(1 for c in cases if c["passed"])
         total = len(cases)
         pct = (passed / total * 100) if total else 0
-        acc = r.get("accuracy")
         wer = r.get("avg_wer")
         rtf = r.get("avg_rtf")
         lat = r.get("avg_latency_s")
+
         print(
             f"{task_name:<16} {total:>6} {passed}/{total} ({pct:.0f}%){'':<3} "
             f"{f'{wer:.2%}' if wer is not None else '—':>10} "

@@ -5,21 +5,17 @@ Each task class wraps a benchmark_stt function and exposes a standard
 can invoke any task uniformly.
 """
 
-import json
 import os
 import sys
-import time
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-from benchmark_stt import (
-    calculate_wer,
+from benchmark_stt import (  # noqa: E402
     load_test_cases,
     run_accuracy,
     run_latency,
-    transcribe_file,
 )
 
 RECORDINGS_DIR = os.path.join(SCRIPT_DIR, "recordings")

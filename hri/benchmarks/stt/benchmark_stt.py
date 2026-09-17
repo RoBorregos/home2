@@ -18,7 +18,6 @@ import re
 import sys
 import time
 from datetime import datetime
-from typing import Optional
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -364,7 +363,6 @@ def main() -> None:
     parser.add_argument("--no-save", action="store_true", help="Skip saving results to CSV")
 
     args = parser.parse_args()
-    vad = not args.no_vad
 
     if args.accuracy:
         test_cases = load_test_cases(args.test_cases)
