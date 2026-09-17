@@ -215,6 +215,12 @@ def run_latency(
     model_name: str,
     n_runs: int = 3,
 ) -> dict:
+    if n_runs < 1:
+        raise ValueError(f"n_runs must be >= 1, got {n_runs}")
+
+    # Warmup run — first transcribe is slower (CUDA kernel init, etc.)
+    transcribe_file(audio_path, model_name=model_name)
+
     latencies = []
     rtf_values = []
     for _ in range(n_runs):
