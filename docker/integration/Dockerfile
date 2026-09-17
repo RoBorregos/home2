@@ -6,7 +6,9 @@ RUN mkdir -p /workspace/requirements
 # Requirements
 COPY task_manager/requirements /workspace/requirements
 WORKDIR /workspace/requirements
-RUN pip install --upgrade pip
+# --ignore-installed: the base image's pip comes from apt and has no RECORD
+# file, so a plain upgrade fails trying to uninstall it.
+RUN pip install --upgrade --ignore-installed pip
 RUN pip install -r requirements.txt
 
 COPY task_manager/task_manager/utils /workspace/utils
