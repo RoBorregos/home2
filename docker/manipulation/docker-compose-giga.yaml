@@ -1,20 +1,26 @@
+# GPU variant. Identical to docker-compose-giga-cpu.yaml except for the
+# Dockerfile it builds and the device reservation below, which is what
+# requires the nvidia container runtime.
 services:
   giga-train:
-    container_name: home2-giga-train-cpu
+    container_name: home2-giga-train
     build:
       context: ../..
-      dockerfile: docker/manipulation/Dockerfile.giga-cpu
-    image: roborregos/home2:giga-train-cpu
+      dockerfile: docker/manipulation/Dockerfile.giga
+    image: roborregos/home2:giga-train
     volumes:
       - ../../:/workspace/src/
       - ./setup_giga.sh:/root/setup_giga.sh
       # Training data / generated datasets / checkpoints live here, outside
       # the repo and the container's writable layer -- can grow to 100GB+.
       - ./giga_data:/workspace/giga_data
-    # No `deploy.resources.reservations.devices` block -- that's what
-    # requires the nvidia container runtime, which is exactly what a
-    # no-GPU laptop doesn't have. Everything else is identical to
-    # docker-compose-giga.yaml.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     # NOTE: this container runs as root on purpose. setup_giga.sh does an
     # editable `pip install -e` of vgn at runtime (the source is bind-mounted,
     # so it cannot happen at build time) and dist-packages is not writable by

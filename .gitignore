@@ -40,3 +40,10 @@ GEMINI.md
 manipulation/packages/contact_graspnet/
 restaurant_runs/
 gpsr_runs/
+
+# GIGA training data: bind-mounted into the giga-train container as
+# /workspace/giga_data. Holds the raw object scans (~166MB), the generated
+# datasets (can reach 100GB+), run logs and checkpoints. None of it belongs
+# in the repo -- the *prepared* object sets are versioned in the giga
+# submodule itself, under manipulation/packages/giga/data/urdfs.
+docker/manipulation/giga_data/
