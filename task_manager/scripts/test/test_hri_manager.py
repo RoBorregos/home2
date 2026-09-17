@@ -88,7 +88,7 @@ NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR") or OUTPUT_DIR
 # LLM upgrade suite. Flip this, start the hri and integration containers, and run
 # the test: it exercises every service backed by the general-purpose LLM, scores
 # extract_data, and diffs against the last run of a different model.
-TEST_LLM_SUITE = False
+TEST_LLM_SUITE = True
 LLM_MODEL_LABEL = "qwen3.5-4b"  # names this run; change it before each model
 LLM_SUITE_RUNS = 3  # perf repetitions per task
 LLM_SUITE_URL = "http://localhost:11434/v1"  # where TTFT/tok-s are measured
