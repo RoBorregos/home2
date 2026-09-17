@@ -33,4 +33,4 @@
 
 [submodule "manipulation/packages/giga"]
 	path = manipulation/packages/giga
-	url = https://github.com/UT-Austin-RPL/GIGA.git
+	url = https://github.com/RoBorregos/GIGA.git
