@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     libgl1-mesa-glx \
     libglib2.0-0 \
+    libusb-1.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
@@ -51,25 +52,30 @@ RUN pip3 install torch-scatter -f https://data.pyg.org/whl/torch-2.2.0+cpu.html
 # removed in NumPy 2.x and the build fails with a compile error, not just
 # a deprecation warning.
 RUN pip3 install \
-    catkin_pkg \
+    catkin_pkg==1.1.1 \
     numpy==1.26.4 \
-    scipy \
-    pandas \
-    matplotlib \
-    h5py \
-    tensorboard \
-    tqdm \
-    cython \
-    scikit-image \
-    pykdtree
+    scipy==1.15.3 \
+    pandas==2.3.3 \
+    matplotlib==3.10.9 \
+    h5py==3.16.0 \
+    tensorboard==2.21.0 \
+    tqdm==4.70.1 \
+    cython==3.3.0 \
+    scikit-image==0.19.3 \
+    pykdtree==1.4.3
 
-RUN pip3 install pybullet trimesh urdfpy pyrender
+RUN pip3 install pybullet==3.2.7 trimesh==5.1.0 urdfpy==0.0.22 pyrender==0.1.45
 
 # Heaviest single wheel (~450MB) -- isolated so a network blip on retry
 # doesn't force re-fetching everything above.
-RUN pip3 install open3d
+# Pinned deliberately. Unpinned, this line resolves to whatever is current
+# on the day the image is built, so two machines on the same commit end up
+# with different Open3D versions. That actually happened: one box got a
+# build that links libusb-1.0.so.0, which this image did not install, and
+# generate_data_parallel.py died on `import open3d` with open3d installed.
+RUN pip3 install open3d==0.19.0
 
-RUN pip3 install pytorch-ignite==0.5.5 wandb
+RUN pip3 install pytorch-ignite==0.5.5 wandb==0.30.0
 
 # GIGA's source is NOT baked into the image -- it's bind-mounted from the
 # repo's own submodule (manipulation/packages/giga) at container run time.

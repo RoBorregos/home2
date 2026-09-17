@@ -19,10 +19,38 @@ if python3 -c "import vgn" >/dev/null 2>&1; then
     echo "GIGA (vgn) python package already installed, continuing ..."
 else
     echo "Installing GIGA (vgn) python package ..."
-    pip3 install catkin_pkg
-    grep -v '^torch==' "$GIGA_DIR/requirements.txt" | sed -E 's/[=<>!~].*$//' > /tmp/giga_requirements_no_torch.txt
-    pip3 install -r /tmp/giga_requirements_no_torch.txt
-    rm -f /tmp/giga_requirements_no_torch.txt
+    # Dependencies belong to the image, not to runtime. This used to run
+    # `pip3 install -r requirements.txt` with every version pin stripped by
+    # sed, which meant that any package missing from the image got whatever
+    # release was current that day -- silently, and differently on each
+    # machine. Two boxes on the same commit could end up with different
+    # Open3D versions, and one of them linked a libusb the image never
+    # installed, so `import open3d` failed on an installed open3d.
+    #
+    # Verify instead of mutate: if something is missing the image is wrong,
+    # and the fix is to rebuild it, not to paper over it here with an
+    # arbitrary version.
+    missing=""
+    for mod in numpy scipy pandas matplotlib open3d pybullet torch trimesh \
+               urdfpy skimage tqdm tensorboard catkin_pkg pykdtree; do
+        python3 -c "import $mod" >/dev/null 2>&1 || missing="$missing $mod"
+    done
+    if [ -n "$missing" ]; then
+        cat <<EOF
+
+ERROR: the image is missing these Python modules:$missing
+
+They are installed by docker/manipulation/Dockerfile.giga-cpu (or
+Dockerfile.giga). Rebuild the image rather than installing them here --
+installing at runtime gives each machine different versions, which is how
+the "import open3d fails although open3d is installed" bug happened.
+
+    docker compose -f docker/manipulation/docker-compose-giga-cpu.yaml up -d --build
+
+EOF
+        return 1 2>/dev/null || exit 1
+    fi
+
     pip3 install --no-build-isolation -e "$GIGA_DIR"
 
     echo "Building ConvONets compiled extensions ..."
