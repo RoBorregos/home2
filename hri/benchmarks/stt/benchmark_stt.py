@@ -15,8 +15,11 @@ import csv
 import json
 import os
 import re
+import struct
 import sys
+import tempfile
 import time
+import wave
 from datetime import datetime
 
 import numpy as np
@@ -139,6 +142,32 @@ def transcribe_file(
     }
 
 
+# ── Audio utils ──────────────────────────────────────────────────────────────
+
+
+def _apply_gain(audio_path: str, gain: float) -> str:
+    """Apply linear gain to a WAV file. Returns path to a temporary copy."""
+    with wave.open(audio_path, "rb") as wf:
+        params = wf.getparams()
+        frames = wf.readframes(params.nframes)
+
+    # Unpack all samples, scale, clamp
+    fmt = "<{n}h".format(n=params.nframes * params.nchannels)
+    samples = list(struct.unpack(fmt, frames))
+    max_sample = 32767
+    scaled = []
+    for s in samples:
+        v = int(s * gain)
+        scaled.append(max(-max_sample, min(max_sample, v)))
+
+    out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    with wave.open(out.name, "wb") as wf_out:
+        wf_out.setparams(params)
+        wf_out.writeframes(struct.pack(fmt, *scaled))
+
+    return out.name
+
+
 # ── Accuracy benchmark ───────────────────────────────────────────────────────
 
 
@@ -156,6 +185,7 @@ def run_accuracy(
     for tc in test_cases:
         audio_path = os.path.join(audio_dir, tc["audio_file"])
         expected = tc["expected_transcript"]
+        gain = tc.get("gain", 1.0)
 
         if not os.path.exists(audio_path):
             results.append(
@@ -170,7 +200,17 @@ def run_accuracy(
             )
             continue
 
-        result = transcribe_file(audio_path, model_name=model_name)
+        temp_file = None
+        if gain != 1.0:
+            temp_file = _apply_gain(audio_path, gain)
+            audio_path = temp_file
+
+        try:
+            result = transcribe_file(audio_path, model_name=model_name)
+        finally:
+            if temp_file:
+                os.unlink(temp_file)
+
         actual = result["text"]
         wer = calculate_wer(expected, actual)
         accuracy = 1.0 - wer
