@@ -99,7 +99,7 @@ def transcribe_file(
 
     all_segments = []
     full_text_parts = []
-    for seg in (segments or []):
+    for seg in segments or []:
         words = []
         if seg.words:
             words = [
@@ -227,9 +227,7 @@ def run_latency(
 
 
 def run_batch(audio_dir: str, model_name: str) -> list[dict]:
-    wav_files = sorted(
-        f for f in os.listdir(audio_dir) if f.lower().endswith(".wav")
-    )
+    wav_files = sorted(f for f in os.listdir(audio_dir) if f.lower().endswith(".wav"))
     if not wav_files:
         print(f"No .wav files found in {audio_dir}")
         return []
@@ -279,7 +277,9 @@ def print_latency_report(latency: dict, model_name: str) -> None:
     print(f"  Audio duration:  {latency['audio_duration']}s")
     print(f"  Runs:            {latency['n_runs']}")
     print(f"  Avg latency:     {latency['avg_latency_s']}s")
-    print(f"  Min / Max:       {latency['min_latency_s']}s / {latency['max_latency_s']}s")
+    print(
+        f"  Min / Max:       {latency['min_latency_s']}s / {latency['max_latency_s']}s"
+    )
     print(f"  Avg RTF:         {latency['avg_rtf']}x")
     print(f"  Throughput:      {latency['throughput']}x realtime")
     print(f"{'='*70}\n")
@@ -315,7 +315,16 @@ def save_latency_csv(latency: dict, model_name: str) -> str:
     path = os.path.join(RESULTS_DIR, f"latency_{model_name}_{ts}.csv")
     with open(path, "w", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["model", "audio_duration", "n_runs", "avg_latency_s", "avg_rtf", "throughput"])
+        writer.writerow(
+            [
+                "model",
+                "audio_duration",
+                "n_runs",
+                "avg_latency_s",
+                "avg_rtf",
+                "throughput",
+            ]
+        )
         writer.writerow(
             [
                 model_name,
@@ -341,7 +350,9 @@ def main() -> None:
 
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument(
-        "--accuracy", action="store_true", help="Run accuracy benchmark against test_cases.json"
+        "--accuracy",
+        action="store_true",
+        help="Run accuracy benchmark against test_cases.json",
     )
     group.add_argument(
         "--latency",
@@ -352,21 +363,35 @@ def main() -> None:
         "--batch", metavar="DIR", help="Transcribe all .wav files in a directory"
     )
 
-    parser.add_argument("--model", default="distil-large-v3", help="Whisper model (default: distil-large-v3)")
+    parser.add_argument(
+        "--model",
+        default="distil-large-v3",
+        help="Whisper model (default: distil-large-v3)",
+    )
     parser.add_argument("--language", default="en", help="Language code (default: en)")
-    parser.add_argument("--runs", type=int, default=3, help="Number of latency runs (default: 3)")
+    parser.add_argument(
+        "--runs", type=int, default=3, help="Number of latency runs (default: 3)"
+    )
     parser.add_argument("--audio", help="Audio file for latency benchmark")
-    parser.add_argument("--test-cases", default=TEST_CASES_FILE, help="Path to test_cases.json")
+    parser.add_argument(
+        "--test-cases", default=TEST_CASES_FILE, help="Path to test_cases.json"
+    )
     parser.add_argument("--no-vad", action="store_true", help="Disable VAD filter")
     parser.add_argument("--hotwords", default="", help="Hotwords hint for the model")
-    parser.add_argument("--initial-prompt", default="", help="Initial prompt for the model")
-    parser.add_argument("--no-save", action="store_true", help="Skip saving results to CSV")
+    parser.add_argument(
+        "--initial-prompt", default="", help="Initial prompt for the model"
+    )
+    parser.add_argument(
+        "--no-save", action="store_true", help="Skip saving results to CSV"
+    )
 
     args = parser.parse_args()
 
     if args.accuracy:
         test_cases = load_test_cases(args.test_cases)
-        print(f"Running accuracy benchmark: {len(test_cases)} test cases, model={args.model}")
+        print(
+            f"Running accuracy benchmark: {len(test_cases)} test cases, model={args.model}"
+        )
         results = run_accuracy(args.model, test_cases)
         print_accuracy_report(results, args.model)
         if not args.no_save:
