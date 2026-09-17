@@ -34,7 +34,6 @@ class AccuracyTask:
         passed = sum(1 for r in results if r["passed"])
         total = len(results)
         avg_wer = sum(r["wer"] for r in results) / total if total else 0
-        avg_acc = sum(r["accuracy"] for r in results) / total if total else 0
 
         return {
             "cases": [
@@ -44,11 +43,10 @@ class AccuracyTask:
                     "got": r["actual"],
                     "passed": r["passed"],
                     "wer": r["wer"],
-                    "accuracy": r["accuracy"],
                 }
                 for r in results
             ],
-            "accuracy": round(avg_acc, 3),
+            "accuracy": round(passed / total, 3) if total else 0,
             "avg_wer": round(avg_wer, 4),
             "total": total,
             "passed": passed,

@@ -1,26 +1,20 @@
 #!/usr/bin/env python3
 """
-STT benchmark — accuracy (WER) and latency (RTF) for faster-whisper models.
+STT benchmark library — accuracy (WER) and latency (RTF) for faster-whisper models.
 
-Usage:
-    python benchmark_stt.py --accuracy                             # run all test cases, report WER
-    python benchmark_stt.py --accuracy --model base.en             # specific model
-    python benchmark_stt.py --latency --audio recordings/hello_frida.wav  # single-file RTF
-    python benchmark_stt.py --latency --runs 5                     # custom run count
-    python benchmark_stt.py --batch recordings/                    # transcribe dir, print results
+Reporting is handled by report.py. This module provides the core functions:
+  run_accuracy()  — run test cases, return per-case WER / pass-fail
+  run_latency()   — measure latency and RTF on a single audio file
+  transcribe_file() — transcribe a single audio file
 """
 
-import argparse
-import csv
 import json
 import os
 import re
 import struct
-import sys
 import tempfile
 import time
 import wave
-from datetime import datetime
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -28,7 +22,6 @@ from faster_whisper import WhisperModel
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 RECORDINGS_DIR = os.path.join(SCRIPT_DIR, "recordings")
 TEST_CASES_FILE = os.path.join(SCRIPT_DIR, "test_cases.json")
-RESULTS_DIR = os.path.join(SCRIPT_DIR, "results")
 
 _model_cache: dict[str, WhisperModel] = {}
 
@@ -182,7 +175,6 @@ def run_accuracy(
                     "expected": expected,
                     "actual": "FILE_NOT_FOUND",
                     "wer": 1.0,
-                    "accuracy": 0.0,
                     "passed": False,
                 }
             )
@@ -201,7 +193,6 @@ def run_accuracy(
 
         actual = result["text"]
         wer = min(calculate_wer(expected, actual), 1.0)
-        accuracy = 1.0 - wer
         passed = wer == 0.0
 
         results.append(
@@ -210,7 +201,6 @@ def run_accuracy(
                 "expected": expected,
                 "actual": actual,
                 "wer": round(wer, 4),
-                "accuracy": round(accuracy, 4),
                 "rtf": result["real_time_factor"],
                 "processing_time": result["processing_time"],
                 "audio_duration": result["audio_duration"],
@@ -262,178 +252,3 @@ def run_batch(audio_dir: str, model_name: str) -> list[dict]:
         print(f"  {wav}: {result['text']}  (RTF={result['real_time_factor']})")
         results.append({"file": wav, **result})
     return results
-
-
-def print_accuracy_report(results: list[dict], model_name: str) -> None:
-    passed = sum(1 for r in results if r["passed"])
-    total = len(results)
-    avg_wer = float(np.mean([r["wer"] for r in results]))
-    avg_acc = float(np.mean([r["accuracy"] for r in results]))
-
-    print(f"\n{'='*70}")
-    print(f" STT ACCURACY REPORT — model: {model_name} ".center(70))
-    print(f"{'='*70}")
-
-    for r in results:
-        mark = "PASS" if r["passed"] else "FAIL"
-        print(
-            f"  [{mark}] {r['name']:<24} "
-            f"WER={r['wer']:.2%}  "
-            f"expected={r['expected']!r}  "
-            f"got={r['actual']!r}"
-        )
-
-    print(f"\n{'─'*70}")
-    print(f"  Total: {total}  |  Passed: {passed}  |  Failed: {total - passed}")
-    print(f"  Avg WER: {avg_wer:.2%}  |  Avg Accuracy: {avg_acc:.2%}")
-    print(f"{'='*70}\n")
-
-
-def print_latency_report(latency: dict, model_name: str) -> None:
-    print(f"\n{'='*70}")
-    print(f" STT LATENCY REPORT — model: {model_name} ".center(70))
-    print(f"{'='*70}")
-    print(f"  Audio duration:  {latency['audio_duration']}s")
-    print(f"  Runs:            {latency['n_runs']}")
-    print(f"  Avg latency:     {latency['avg_latency_s']}s")
-    print(
-        f"  Min / Max:       {latency['min_latency_s']}s / {latency['max_latency_s']}s"
-    )
-    print(f"  Avg RTF:         {latency['avg_rtf']}x")
-    print(f"  Throughput:      {latency['throughput']}x realtime")
-    print(f"{'='*70}\n")
-
-
-def save_accuracy_csv(results: list[dict], model_name: str) -> str:
-    os.makedirs(RESULTS_DIR, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = os.path.join(RESULTS_DIR, f"accuracy_{model_name}_{ts}.csv")
-    with open(path, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            ["name", "expected", "actual", "wer", "accuracy", "rtf", "passed"]
-        )
-        for r in results:
-            writer.writerow(
-                [
-                    r["name"],
-                    r["expected"],
-                    r["actual"],
-                    r["wer"],
-                    r["accuracy"],
-                    r.get("rtf", ""),
-                    r["passed"],
-                ]
-            )
-    return path
-
-
-def save_latency_csv(latency: dict, model_name: str) -> str:
-    os.makedirs(RESULTS_DIR, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    path = os.path.join(RESULTS_DIR, f"latency_{model_name}_{ts}.csv")
-    with open(path, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(
-            [
-                "model",
-                "audio_duration",
-                "n_runs",
-                "avg_latency_s",
-                "avg_rtf",
-                "throughput",
-            ]
-        )
-        writer.writerow(
-            [
-                model_name,
-                latency["audio_duration"],
-                latency["n_runs"],
-                latency["avg_latency_s"],
-                latency["avg_rtf"],
-                latency["throughput"],
-            ]
-        )
-    return path
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="STT benchmark — accuracy (WER) and latency (RTF)",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-
-    group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument(
-        "--accuracy",
-        action="store_true",
-        help="Run accuracy benchmark against test_cases.json",
-    )
-    group.add_argument(
-        "--latency",
-        action="store_true",
-        help="Run latency benchmark on a single audio file",
-    )
-    group.add_argument(
-        "--batch", metavar="DIR", help="Transcribe all .wav files in a directory"
-    )
-
-    parser.add_argument(
-        "--model",
-        default="distil-large-v3",
-        help="Whisper model (default: distil-large-v3)",
-    )
-    parser.add_argument("--language", default="en", help="Language code (default: en)")
-    parser.add_argument(
-        "--runs", type=int, default=3, help="Number of latency runs (default: 3)"
-    )
-    parser.add_argument("--audio", help="Audio file for latency benchmark")
-    parser.add_argument(
-        "--test-cases", default=TEST_CASES_FILE, help="Path to test_cases.json"
-    )
-    parser.add_argument("--no-vad", action="store_true", help="Disable VAD filter")
-    parser.add_argument("--hotwords", default="", help="Hotwords hint for the model")
-    parser.add_argument(
-        "--initial-prompt", default="", help="Initial prompt for the model"
-    )
-    parser.add_argument(
-        "--no-save", action="store_true", help="Skip saving results to CSV"
-    )
-
-    args = parser.parse_args()
-
-    if args.accuracy:
-        test_cases = load_test_cases(args.test_cases)
-        print(
-            f"Running accuracy benchmark: {len(test_cases)} test cases, model={args.model}"
-        )
-        results = run_accuracy(args.model, test_cases)
-        print_accuracy_report(results, args.model)
-        if not args.no_save:
-            csv_path = save_accuracy_csv(results, args.model)
-            print(f"Results saved to {csv_path}")
-
-    elif args.latency:
-        audio = args.audio
-        if not audio:
-            audio = os.path.join(RECORDINGS_DIR, "hello_frida.wav")
-        if not os.path.isfile(audio):
-            print(f"Error: file not found: {audio}")
-            sys.exit(1)
-        print(f"Running latency benchmark: {args.runs} runs, model={args.model}")
-        latency = run_latency(audio, args.model, n_runs=args.runs)
-        print_latency_report(latency, args.model)
-        if not args.no_save:
-            csv_path = save_latency_csv(latency, args.model)
-            print(f"Results saved to {csv_path}")
-
-    elif args.batch:
-        if not os.path.isdir(args.batch):
-            print(f"Error: directory not found: {args.batch}")
-            sys.exit(1)
-        run_batch(args.batch, args.model)
-
-
-if __name__ == "__main__":
-    main()
