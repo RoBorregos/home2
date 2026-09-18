@@ -8,6 +8,16 @@ from nlp.assets.schemas import (
     IsAnswerPositive,
 )
 
+# Qwen3.5 controls reasoning through the chat template, not a /no_think token.
+NO_THINKING = {"chat_template_kwargs": {"enable_thinking": False}}
+
+
+def strip_thinking(response: str) -> str:
+    """Drop a leaked <think> block so callers can json.loads the remainder."""
+    if response and "</think>" in response:
+        return response.split("</think>")[-1].strip()
+    return response
+
 
 def get_extract_data_args(full_text, data_to_extract, context=None):
     user_content = f"<full_text>{full_text}</full_text>\n<extract_data>{data_to_extract}</extract_data>"
@@ -96,7 +106,7 @@ Ensure that the extracted data is always **the most contextually relevant** answ
             },
             {
                 "role": "user",
-                "content": user_content + " /no_think",
+                "content": user_content,
             },
         ],
         ExtractedData,
@@ -148,7 +158,7 @@ def get_is_answer_positive_args(interpreted_text):
             },
             {
                 "role": "user",
-                "content": interpreted_text + " /no_think",
+                "content": interpreted_text,
             },
         ],
         IsAnswerPositive,
@@ -211,7 +221,7 @@ But does **not** include:
             },
             {
                 "role": "user",
-                "content": interpreted_text + " /no_think",
+                "content": interpreted_text,
             },
         ],
         IsAnswerNegative,
@@ -226,7 +236,7 @@ def format_response(response):
         },
         {
             "role": "user",
-            "content": response + " /no_think",
+            "content": response,
         },
     ]
 
@@ -242,7 +252,7 @@ def clean_question_rag(question):
         },
         {
             "role": "user",
-            "content": question + " /no_think",
+            "content": question,
         },
     ]
 
@@ -295,7 +305,7 @@ def get_answer_question_dialog(contexts, question):
         },
         {
             "role": "user",
-            "content": user_content + "/no_think",
+            "content": user_content,
         },
     ]
 
@@ -316,7 +326,7 @@ def get_previous_command_answer(context, question):
         },
         {
             "role": "user",
-            "content": question + " /no_think",
+            "content": question,
         },
     ]
 
@@ -338,7 +348,7 @@ Output a JSON with a single boolean field `is_coherent`.
             },
             {
                 "role": "user",
-                "content": f"Command: {text} /no_think",
+                "content": f"Command: {text}",
             },
         ],
         "response_format": IsAnswerCoherent,

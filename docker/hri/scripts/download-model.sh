@@ -17,13 +17,14 @@ ask_for_model() {
 }
 
 echo "Which models do you want to download?"
-echo "  1) qwen3-4b         (Qwen3-4B Q4_K_M GGUF, for llama.cpp)"
+echo "  1) qwen3.5-4b       (Qwen3.5-4B UD-Q4_K_XL GGUF, for llama.cpp) [production]"
 echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
-echo "  3) qwen3            (Qwen3 via Ollama)"
+echo "  3) qwen3.5          (Qwen3.5 via Ollama)"
 echo "  4) nomic-embed-text (embeddings via Ollama)"
 echo "  5) DeepFilterNet3"
 echo "  6) ei-door          (Door detection)"
 echo "  7) ei-kws           (Keyword detection)"
+echo "  8) qwen3-4b         (Qwen3-4B Q4_K_M GGUF, previous model - benchmark baseline)"
 echo "  a) all"
 echo "  n) none"
 printf "Enter choices separated by spaces [default: all]: "
@@ -49,7 +50,13 @@ download_gguf() {
 }
 
 # ── GGUFs for llama.cpp ───────────────────────────────────────────────────────
-if ask_for_model qwen3-4b 1; then
+if ask_for_model qwen3.5-4b 1; then
+    download_gguf "qwen3.5-4b" \
+        "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-UD-Q4_K_XL.gguf" \
+        "$SCRIPT_DIR/Qwen3.5-4B-UD-Q4_K_XL.gguf"
+fi
+
+if ask_for_model qwen3-4b 8; then
     download_gguf "qwen3-4b" \
         "https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf" \
         "$SCRIPT_DIR/qwen3-4b.Q4_K_M.gguf"
@@ -190,7 +197,7 @@ if ask_for_model ei-kws 7; then
     download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
 fi
 
-if ask_for_model qwen3 3 || ask_for_model nomic-embed-text 4; then
+if ask_for_model qwen3.5 3 || ask_for_model nomic-embed-text 4; then
     # Detect available image
     if docker images | grep -q "dustynv/ollama"; then
         IMAGE="dustynv/ollama:0.6.8-r36.4"
@@ -210,8 +217,10 @@ if ask_for_model qwen3 3 || ask_for_model nomic-embed-text 4; then
     # Don't quote $COMMAND to allow for multiple word commands
     CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$SCRIPT_DIR":/ollama -e OLLAMA_MODELS=/ollama "$IMAGE" $COMMAND)
 
-    if ask_for_model qwen3 3; then
-        docker exec "$CONTAINER_ID" ollama pull qwen3
+    if ask_for_model qwen3.5 3; then
+        docker exec "$CONTAINER_ID" ollama pull qwen3.5
+        # The ROS nodes request this alias; Ollama needs the tag to exist.
+        docker exec "$CONTAINER_ID" ollama cp qwen3.5 frida-llm
     fi
 
     if ask_for_model nomic-embed-text 4; then

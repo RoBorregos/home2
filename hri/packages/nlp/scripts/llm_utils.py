@@ -12,8 +12,10 @@ import rclpy
 import requests
 from nlp.assets.baml_client.sync_client import b
 from nlp.assets.dialogs import (
+    NO_THINKING,
     get_is_coherent_dialog,
     get_previous_command_answer,
+    strip_thinking,
 )
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
@@ -159,12 +161,13 @@ class LLMUtils(Node):
                     },
                     {"role": "user", "content": req.text},
                 ],
+                extra_body=NO_THINKING,
             )
             .choices[0]
             .message.content
         )
 
-        res.corrected_text = response
+        res.corrected_text = strip_thinking(response)
         return res
 
     def llm_wrapper_service(self, req, res):
@@ -178,15 +181,13 @@ class LLMUtils(Node):
                 model=MODEL.LLM_WRAPPER.value,
                 temperature=self.temperature,
                 messages=messages,
+                extra_body=NO_THINKING,
             )
             .choices[0]
             .message.content
         )
 
-        if "</think>" in response:
-            response = response.split("</think>")[-1].strip()
-
-        res.answer = response
+        res.answer = strip_thinking(response)
         return res
 
     def is_coherent_service_callback(self, req, res):
@@ -198,10 +199,12 @@ class LLMUtils(Node):
                 temperature=self.temperature,
                 messages=dialog["messages"],
                 response_format=dialog["response_format"],
+                extra_body=NO_THINKING,
             )
             .choices[0]
             .message.content
         )
+        response = strip_thinking(response)
         self.logger.info(f"Coherence result: {response}")
         try:
             res.is_coherent = json.loads(response)["is_coherent"]
@@ -218,10 +221,12 @@ class LLMUtils(Node):
                 temperature=self.temperature,
                 messages=messages,
                 response_format=response_format,
+                extra_body=NO_THINKING,
             )
             .choices[0]
             .message.content
         )
+        response = strip_thinking(response)
         self.get_logger().info(f"Response: {response}")
         try:
             response_data = json.loads(response)
