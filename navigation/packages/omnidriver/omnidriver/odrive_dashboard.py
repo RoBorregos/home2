@@ -344,6 +344,10 @@ class ODriveDashboardNode(Node):
         # rejection (firmware-side), so this is defence-in-depth, not load-
         # bearing -- kept per the EKF rollout's "keep unchanged" guidance.
         self._last_imu_yaw: float | None = None
+        # Consecutive yaw rejections. A genuine fast spin (or an IMU reset)
+        # looks exactly like a corrupted sample, so after a few in a row we
+        # re-anchor instead of rejecting the real heading forever.
+        self._imu_yaw_rejects = 0
 
         # publishers
         self.pub_raw         = self.create_publisher(String,            'odrive/raw',               10)
@@ -747,6 +751,110 @@ class ODriveDashboardNode(Node):
         if self._sio:
             self._sio.emit('telemetry', self._latest_telem)
 
+    def _publish_odom_and_tf(self, data: dict, stamp,
+                             o_phi: float, o_x: float, o_y: float,
+                             o_w: float, o_vx: float, o_vy: float) -> None:
+        """Publish /odrive/odom (+ the odom -> base_link TF) from one telemetry
+        line's ODOM_* block.
+
+        Called from BOTH serial paths. The fat (N0-present) line is rare -- on
+        the robot it lands at ~6 Hz while /scan runs at 10 Hz -- and slam_toolbox
+        looks up odom -> base_link at each scan's stamp, so odometry published
+        only there forces the scan matcher to interpolate across ~160 ms gaps.
+        The slim high-rate line carries the same ODOM_* fields, so it publishes
+        here too.
+        """
+        o_z   = self._sf(data.get('ODOM_z'))
+        o_vxb = self._sf(data.get('ODOM_vxb')); o_vyb = self._sf(data.get('ODOM_vyb'))
+        o_qx  = self._sf(data.get('ODOM_qx')); o_qy = self._sf(data.get('ODOM_qy'))
+        o_qz  = self._sf(data.get('ODOM_qz')); o_qw = self._sf(data.get('ODOM_qw'))
+        ekf_quat_present = any(k in data for k in
+                               ('ODOM_qx', 'ODOM_qy', 'ODOM_qz', 'ODOM_qw'))
+        ekf_cov_present = any(k in data for k in
+                              ('ODOM_var_x', 'ODOM_var_y', 'ODOM_var_yaw',
+                               'ODOM_var_vx', 'ODOM_var_vy', 'ODOM_var_wz'))
+
+        cphi = math.cos(o_phi); sphi = math.sin(o_phi)
+        if ekf_quat_present or ekf_cov_present or ('ODOM_vxb' in data):
+            vx_body, vy_body = o_vxb, o_vyb
+        else:
+            # Legacy (pre-EKF) firmware: ODOM_vx/vy are world-frame --
+            # undo the firmware's rotation to recover body-frame velocity.
+            vx_body =  cphi * o_vx + sphi * o_vy
+            vy_body = -sphi * o_vx + cphi * o_vy
+        # Live distance calibration (read fresh so `ros2 param set` applies
+        # immediately, no restart). 1.0 = unchanged. Empirical wheel-radius
+        # corrections -- independent of the EKF rollout, still apply.
+        vx_body *= float(self.get_parameter('linear_scale_x').value)
+        vy_body *= float(self.get_parameter('linear_scale_y').value)
+
+        odom_msg = Odometry()
+        odom_msg.header.stamp = stamp
+        odom_msg.header.frame_id = self.odom_frame_id
+        odom_msg.child_frame_id  = self.base_frame_id
+        odom_msg.pose.pose.position.x = o_x
+        odom_msg.pose.pose.position.y = o_y
+        odom_msg.pose.pose.position.z = o_z
+        if ekf_quat_present and (o_qx or o_qy or o_qz or o_qw):
+            odom_msg.pose.pose.orientation = Quaternion(
+                x=o_qx, y=o_qy, z=o_qz, w=o_qw)
+        else:
+            odom_msg.pose.pose.orientation = _yaw_to_quaternion(o_phi)
+        odom_msg.twist.twist.linear.x  = vx_body
+        odom_msg.twist.twist.linear.y  = vy_body
+        odom_msg.twist.twist.linear.z  = 0.0
+        # Negate: the wheel/firmware-derived yaw rate (o_w) has the opposite
+        # sign convention to REP-103 (the IMU / cmd_vel convention). Nav2 MPPI
+        # uses this field as velocity feedback (odom_topic=/odrive/odom), so a
+        # flipped sign breaks its yaw control (slow/non-converging final rotation).
+        # The EKF ignores this field (odom0_config vyaw=False; yaw rate from IMU).
+        odom_msg.twist.twist.angular.z = -o_w
+
+        _LARGE = 1.0e9
+        _pose_cov = [0.0] * 36
+        _twist_cov = [0.0] * 36
+        if ekf_cov_present:
+            _pose_cov[0]  = self._sf(data.get('ODOM_var_x'))     # x
+            _pose_cov[7]  = self._sf(data.get('ODOM_var_y'))     # y
+            _pose_cov[14] = _LARGE                          # z   (not estimated)
+            _pose_cov[21] = _LARGE                          # roll
+            _pose_cov[28] = _LARGE                          # pitch
+            _pose_cov[35] = self._sf(data.get('ODOM_var_yaw'))   # yaw
+            _twist_cov[0]  = self._sf(data.get('ODOM_var_vx'))   # vx
+            _twist_cov[7]  = self._sf(data.get('ODOM_var_vy'))   # vy
+            _twist_cov[14] = _LARGE                         # vz
+            _twist_cov[21] = _LARGE                         # wx
+            _twist_cov[28] = _LARGE                         # wy
+            _twist_cov[35] = self._sf(data.get('ODOM_var_wz'))   # wz
+        else:
+            # Legacy firmware — no covariance emitted. Keep the previous
+            # small placeholders so consumers see a positive-definite
+            # diagonal. Mecanum lateral rollers slip more than the
+            # longitudinal ones, so trust vy less than vx.
+            _pose_cov[0] = _pose_cov[7] = 0.05; _pose_cov[35] = 0.10
+            _twist_cov[0] = 0.02; _twist_cov[7] = 0.08; _twist_cov[35] = 0.05
+        odom_msg.pose.covariance  = _pose_cov
+        odom_msg.twist.covariance = _twist_cov
+        self.pub_odom.publish(odom_msg)
+
+        # ── TF: odom -> base_link ──────────────────────────────────────
+        # Mirrors robot_localization's `publish_tf: True` for the omnibase
+        # config (omni_basics.launch.py). The orientation is the same
+        # quaternion that just went into the odom message so the TF tree
+        # and the message agree exactly. Disable at runtime via
+        # `publish_tf:=False` if you ever want to run an external EKF
+        # alongside.
+        if self.publish_tf:
+            tf_msg = TransformStamped()
+            tf_msg.header.stamp = odom_msg.header.stamp
+            tf_msg.header.frame_id = self.odom_frame_id
+            tf_msg.child_frame_id  = self.base_frame_id
+            tf_msg.transform.translation.x = odom_msg.pose.pose.position.x
+            tf_msg.transform.translation.y = odom_msg.pose.pose.position.y
+            tf_msg.transform.translation.z = odom_msg.pose.pose.position.z
+            tf_msg.transform.rotation      = odom_msg.pose.pose.orientation
+            self._tf_broadcaster.sendTransform(tf_msg)
+
     def _parse_and_publish(self, line: str):
         try:
             # Firmware error event:  E=<code>,<axis>,<detail>
@@ -812,15 +920,35 @@ class ODriveDashboardNode(Node):
             # home-custom-base omnibase_documentation.md section 11.3), so
             # this is defence-in-depth, not load-bearing -- kept rather than
             # removed per the EKF rollout's "keep unchanged" guidance.
+            # Only the yaw is dropped, never the whole line: the ODOM_* block
+            # rides on these same lines and feeds /odrive/odom and the
+            # odom -> base_link TF that slam_toolbox looks up once per scan.
+            # Returning here would take those down too.
             if 'IMU_yaw' in data:
                 iy = data['IMU_yaw']
-                if not math.isfinite(iy) or abs(iy) > 200.0:
-                    return
-                if self._last_imu_yaw is not None:
+                reject = not math.isfinite(iy) or abs(iy) > 200.0
+                if not reject and self._last_imu_yaw is not None:
                     dyaw = (iy - self._last_imu_yaw + 180.0) % 360.0 - 180.0
-                    if abs(dyaw) > 40.0:
-                        return
-                self._last_imu_yaw = iy
+                    reject = abs(dyaw) > 40.0
+                if reject:
+                    # Hold the last accepted heading rather than dropping the
+                    # key: /odrive/imu_euler and the web telemetry read this
+                    # field straight from `data`, and a missing key would
+                    # surface there as a bogus 0 deg.
+                    if self._last_imu_yaw is not None:
+                        data['IMU_yaw'] = self._last_imu_yaw
+                    else:
+                        del data['IMU_yaw']
+                    self._imu_yaw_rejects += 1
+                    # Persistent rejection means the anchor, not the sample, is
+                    # the stale one -- adopt the reading so we can't lock out
+                    # the real heading indefinitely.
+                    if self._imu_yaw_rejects > 5 and math.isfinite(iy):
+                        self._last_imu_yaw = iy
+                        self._imu_yaw_rejects = 0
+                else:
+                    self._last_imu_yaw = iy
+                    self._imu_yaw_rejects = 0
 
             # FAST PATH: the slim high-rate line (sent every cycle, fields
             # 3, 12, 20..38, 96 — see the index map above main.c's printf)
@@ -851,6 +979,16 @@ class ODriveDashboardNode(Node):
                 self._latest_telem = telem
                 if self._sio:
                     self._sio.emit('telemetry', telem)
+                # Republish odometry here too: this is the line that arrives
+                # every cycle, and slam_toolbox / Nav2 need odom -> base_link
+                # continuously, not at the fat line's ~6 Hz. Guarded on the
+                # ODOM block being present so a line without it never
+                # republishes a stale pose under a fresh stamp.
+                if 'ODOM_phi' in data:
+                    self._publish_odom_and_tf(
+                        data, self.get_clock().now().to_msg(),
+                        telem['odom_phi'], telem['odom_x'], telem['odom_y'],
+                        telem['odom_w'], telem['odom_vx'], telem['odom_vy'])
                 return
 
             node_ids    = [i(data.get(f'N{j}'))        for j in range(4)]
@@ -894,31 +1032,9 @@ class ODriveDashboardNode(Node):
             o_phi  = f(data.get('ODOM_phi')); o_x = f(data.get('ODOM_x'))
             o_y    = f(data.get('ODOM_y'));   o_w = f(data.get('ODOM_w'))
             o_vx   = f(data.get('ODOM_vx')); o_vy = f(data.get('ODOM_vy'))
-            # EKF-extended fields emitted by the firmware after the on-MCU
-            # EKF landed. All are optional — older firmware just leaves them
-            # as 0.0.
-            o_z    = f(data.get('ODOM_z'))
-            o_qx   = f(data.get('ODOM_qx')); o_qy = f(data.get('ODOM_qy'))
-            o_qz   = f(data.get('ODOM_qz')); o_qw = f(data.get('ODOM_qw'))
-            o_vxb  = f(data.get('ODOM_vxb')); o_vyb = f(data.get('ODOM_vyb'))
-            # Covariance diagonal (only the values the firmware actually
-            # estimates — z, roll, pitch, wx, wy are advertised as 1e9
-            # below so downstream filters know they're unknown).
-            o_var_x   = f(data.get('ODOM_var_x'))
-            o_var_y   = f(data.get('ODOM_var_y'))
-            o_var_yaw = f(data.get('ODOM_var_yaw'))
-            o_var_vx  = f(data.get('ODOM_var_vx'))
-            o_var_vy  = f(data.get('ODOM_var_vy'))
-            o_var_wz  = f(data.get('ODOM_var_wz'))
-            # Detect "EKF firmware present" once per packet — if all the
-            # ODOM_q*/ODOM_var_* fields are missing we fall back to the
-            # legacy yaw-derived quaternion and the old placeholder
-            # covariance so the topic shape stays valid for any consumer.
-            ekf_quat_present = any(k in data for k in
-                                   ('ODOM_qx', 'ODOM_qy', 'ODOM_qz', 'ODOM_qw'))
-            ekf_cov_present  = any(k in data for k in
-                                   ('ODOM_var_x', 'ODOM_var_y', 'ODOM_var_yaw',
-                                    'ODOM_var_vx', 'ODOM_var_vy', 'ODOM_var_wz'))
+            # The EKF-extended ODOM_* fields (ODOM_z / ODOM_q* / ODOM_vxb /
+            # ODOM_var_*) are read straight from `data` by
+            # _publish_odom_and_tf(), which both serial paths call.
             bt_active = i(data.get('BT_active'))
 
             # ESP32→STM32 link age, reported in milliseconds by the firmware.
@@ -998,86 +1114,10 @@ class ODriveDashboardNode(Node):
             #     layout. Unestimated entries (z / roll / pitch / wx / wy)
             #     are marked with 1e9 so downstream filters treat them as
             #     "unknown" rather than "tightly zero".
-            cphi = math.cos(o_phi); sphi = math.sin(o_phi)
-            if ekf_quat_present or ekf_cov_present or ('ODOM_vxb' in data):
-                vx_body, vy_body = o_vxb, o_vyb
-            else:
-                # Legacy (pre-EKF) firmware: ODOM_vx/vy are world-frame --
-                # undo the firmware's rotation to recover body-frame velocity.
-                vx_body =  cphi * o_vx + sphi * o_vy
-                vy_body = -sphi * o_vx + cphi * o_vy
-            # Live distance calibration (read fresh so `ros2 param set` applies
-            # immediately, no restart). 1.0 = unchanged. Empirical wheel-radius
-            # corrections -- independent of the EKF rollout, still apply.
-            vx_body *= float(self.get_parameter('linear_scale_x').value)
-            vy_body *= float(self.get_parameter('linear_scale_y').value)
-
-            odom_msg = Odometry()
-            odom_msg.header.stamp = imu_msg.header.stamp
-            odom_msg.header.frame_id = self.odom_frame_id
-            odom_msg.child_frame_id  = self.base_frame_id
-            odom_msg.pose.pose.position.x = o_x
-            odom_msg.pose.pose.position.y = o_y
-            odom_msg.pose.pose.position.z = o_z
-            if ekf_quat_present and (o_qx or o_qy or o_qz or o_qw):
-                odom_msg.pose.pose.orientation = Quaternion(
-                    x=o_qx, y=o_qy, z=o_qz, w=o_qw)
-            else:
-                odom_msg.pose.pose.orientation = _yaw_to_quaternion(o_phi)
-            odom_msg.twist.twist.linear.x  = vx_body
-            odom_msg.twist.twist.linear.y  = vy_body
-            odom_msg.twist.twist.linear.z  = 0.0
-            # Negate: the wheel/firmware-derived yaw rate (o_w) has the opposite
-            # sign convention to REP-103 (the IMU / cmd_vel convention). Nav2 MPPI
-            # uses this field as velocity feedback (odom_topic=/odrive/odom), so a
-            # flipped sign breaks its yaw control (slow/non-converging final rotation).
-            # The EKF ignores this field (odom0_config vyaw=False; yaw rate from IMU).
-            odom_msg.twist.twist.angular.z = -o_w
-
-            _LARGE = 1.0e9
-            _pose_cov = [0.0] * 36
-            _twist_cov = [0.0] * 36
-            if ekf_cov_present:
-                _pose_cov[0]  = o_var_x      # x
-                _pose_cov[7]  = o_var_y      # y
-                _pose_cov[14] = _LARGE       # z   (not estimated)
-                _pose_cov[21] = _LARGE       # roll
-                _pose_cov[28] = _LARGE       # pitch
-                _pose_cov[35] = o_var_yaw    # yaw
-                _twist_cov[0]  = o_var_vx    # vx
-                _twist_cov[7]  = o_var_vy    # vy
-                _twist_cov[14] = _LARGE      # vz
-                _twist_cov[21] = _LARGE      # wx
-                _twist_cov[28] = _LARGE      # wy
-                _twist_cov[35] = o_var_wz    # wz
-            else:
-                # Legacy firmware — no covariance emitted. Keep the previous
-                # small placeholders so consumers see a positive-definite
-                # diagonal. Mecanum lateral rollers slip more than the
-                # longitudinal ones, so trust vy less than vx.
-                _pose_cov[0] = _pose_cov[7] = 0.05; _pose_cov[35] = 0.10
-                _twist_cov[0] = 0.02; _twist_cov[7] = 0.08; _twist_cov[35] = 0.05
-            odom_msg.pose.covariance  = _pose_cov
-            odom_msg.twist.covariance = _twist_cov
-            self.pub_odom.publish(odom_msg)
-
-            # ── TF: odom -> base_link ──────────────────────────────────────
-            # Mirrors robot_localization's `publish_tf: True` for the omnibase
-            # config (omni_basics.launch.py). The orientation is the same
-            # quaternion that just went into the odom message so the TF tree
-            # and the message agree exactly. Disable at runtime via
-            # `publish_tf:=False` if you ever want to run an external EKF
-            # alongside.
-            if self.publish_tf:
-                tf_msg = TransformStamped()
-                tf_msg.header.stamp = odom_msg.header.stamp
-                tf_msg.header.frame_id = self.odom_frame_id
-                tf_msg.child_frame_id  = self.base_frame_id
-                tf_msg.transform.translation.x = odom_msg.pose.pose.position.x
-                tf_msg.transform.translation.y = odom_msg.pose.pose.position.y
-                tf_msg.transform.translation.z = odom_msg.pose.pose.position.z
-                tf_msg.transform.rotation      = odom_msg.pose.pose.orientation
-                self._tf_broadcaster.sendTransform(tf_msg)
+            # Same publication as the slim line above -- one implementation,
+            # so the two serial paths can never disagree on frames or signs.
+            self._publish_odom_and_tf(data, imu_msg.header.stamp,
+                                      o_phi, o_x, o_y, o_w, o_vx, o_vy)
             self.pub_node_ids   .publish(_i32(node_ids))
             self.pub_axis_errors.publish(_i32(axis_errors))
             self.pub_axis_states.publish(_i32(axis_states))

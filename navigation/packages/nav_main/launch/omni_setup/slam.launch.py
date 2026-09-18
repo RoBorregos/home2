@@ -36,11 +36,16 @@ Use an ABSOLUTE path on the ROBOT computer and create the directory first
 
 import os
 
+import lifecycle_msgs.msg
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, EmitEvent, RegisterEventHandler
+from launch.event_handlers import OnProcessStart
+from launch.events import matches_action
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch_ros.actions import LifecycleNode
+from launch_ros.event_handlers import OnStateTransition
+from launch_ros.events.lifecycle import ChangeState
 
 
 def generate_launch_description():
@@ -57,10 +62,16 @@ def generate_launch_description():
         'params_file', default_value=default_params,
         description='slam_toolbox parameter YAML.')
     # slam_toolbox online-async mapper: publishes map->odom + /map.
-    slam_node = Node(
+    # It's a lifecycle node — it does nothing (no /scan subscription, no /map
+    # publisher) until driven through configure -> activate. The events below
+    # do that automatically as soon as the process starts, so this behaves
+    # like a normal always-on node instead of requiring an external lifecycle
+    # manager (nav2's, or a manual `ros2 lifecycle set` call).
+    slam_node = LifecycleNode(
         package='slam_toolbox',
         executable='async_slam_toolbox_node',
         name='slam_toolbox',
+        namespace='',
         output='screen',
         emulate_tty=True,
         respawn=True,            # survive a crash mid-round
@@ -71,8 +82,44 @@ def generate_launch_description():
         ],
     )
 
+    # Driven off the process starting rather than off the launch starting, so a
+    # respawn gets configured too. A bare EmitEvent fires once for the whole
+    # launch: after a crash, `respawn` would bring the node back `unconfigured`
+    # -- alive, but with no /scan subscription, no /map and no map->odom, and
+    # nothing logged to say so.
+    configure_on_start = RegisterEventHandler(
+        OnProcessStart(
+            target_action=slam_node,
+            on_start=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(slam_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
+                    )
+                ),
+            ],
+        )
+    )
+    activate_on_configured = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=slam_node,
+            start_state='configuring',
+            goal_state='inactive',
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(slam_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
+                    )
+                ),
+            ],
+        )
+    )
+
     return LaunchDescription([
         declare_use_sim_time,
         declare_params_file,
         slam_node,
+        configure_on_start,
+        activate_on_configured,
     ])
