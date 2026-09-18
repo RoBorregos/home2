@@ -36,7 +36,6 @@ from frida_constants.vision_constants import (
     CUSTOMER_TABLES_TOPIC,
     CAMERA_ROTATION_TOPIC,
 )
-from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import PersonList, CustomerTable
 from frida_interfaces.srv import (
     ChairsToRemove,
@@ -46,6 +45,7 @@ from frida_interfaces.srv import (
     CropQuery,
     Customer,
     DetectionHandler,
+    DetectPerson,
     FindSeat,
     PersonPoseGesture,
     Query,
@@ -54,7 +54,6 @@ from frida_interfaces.srv import (
     CustomerTables,
 )
 from geometry_msgs.msg import Point, PointStamped
-from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_msgs.msg import Bool as BoolMsg
@@ -124,7 +123,7 @@ class VisionTasks:
 
         self.customer_table_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
 
-        self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
+        self.detect_person_client = self.node.create_client(DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
         self.count_person_client = self.node.create_client(CountBy, COUNT_BY_PERSON_TOPIC)
@@ -139,7 +138,7 @@ class VisionTasks:
 
         self.services = {
             Task.HRIC: {
-                "detect_person": {"client": self.detect_person_action_client, "type": "action"},
+                "detect_person": {"client": self.detect_person_client, "type": "service"},
                 "find_seat": {"client": self.find_seat_client, "type": "service"},
                 "save_face_name": {
                     "client": self.save_name_client,
@@ -151,7 +150,7 @@ class VisionTasks:
                 "track_person": {"client": self.track_person_client, "type": "service"},
             },
             Task.GPSR: {
-                "detect_person": {"client": self.detect_person_action_client, "type": "action"},
+                "detect_person": {"client": self.detect_person_client, "type": "service"},
                 "save_face_name": {
                     "client": self.save_name_client,
                     "type": "service",
@@ -426,40 +425,28 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
-    @service_check("detect_person_action_client", Status.EXECUTION_ERROR, TIMEOUT)
+    @service_check("detect_person_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_person(self, timeout: float = TIMEOUT) -> int:
         """Returns true when a person is detected"""
 
         Logger.info(self.node, "Waiting for person detection")
-        goal = DetectPerson.Goal()
-        goal.request = True
+        request = DetectPerson.Request()
+        request.timeout = float(timeout)
 
-        try:
-            goal_future = self.detect_person_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=timeout)
+        # Outlast the server's own deadline, or we give up while it still holds
+        # one of its executor threads polling YOLO.
+        status, result = self._call(
+            self.detect_person_client, request, timeout + 2.0, "detect_person"
+        )
+        if status is not None:
+            return status
 
-            goal_handle = goal_future.result()
-            Logger.info(self.node, f"Goal future result: {goal_handle}")
+        if result.success:
+            Logger.success(self.node, "Person detected")
+            return Status.EXECUTION_SUCCESS
 
-            if goal_handle is None:
-                raise Exception("Failed to get a valid goal handle")
-
-            if not goal_handle.accepted:
-                raise Exception("Goal rejected")
-
-            result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=timeout)
-            result = result_future.result()
-
-            if result and result.result.success:
-                Logger.success(self.node, "Person detected")
-                return Status.EXECUTION_SUCCESS
-            else:
-                Logger.warn(self.node, "No person detected")
-                return Status.TARGET_NOT_FOUND
-        except Exception as e:
-            Logger.error(self.node, f"Error detecting person: {e}")
-            return Status.EXECUTION_ERROR
+        Logger.warn(self.node, "No person detected")
+        return Status.TARGET_NOT_FOUND
 
     def isPerson(self, name: str = ""):
         for person in self.person_list:

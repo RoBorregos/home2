@@ -230,10 +230,10 @@ ros2 service call /example/service_topic std_srvs/srv/SetBool "data: true"
 ## Action services
 An action service is a more complex service that allows for feedback and goal handling.
 This also receives a request and should return a response, but it can also send feedback during the process. The ActionServer should be imported from `rclpy.action`.
-In this example we are using an action file called `DetectPerson` that should be imported from `frida_interfaces` and has the following structure:
+In this example we are using an action file called `Xarmmove` that should be imported from `frida_interfaces` and has the following structure:
 
 ``` yaml
-bool request
+float32[] speeds
 ---
 bool success
 ---
@@ -246,7 +246,7 @@ string feedback
         super().__init__("example_node")
 
         # Create Action Service
-        self.example_action_server = ActionServer(self, DetectPerson, "/example/action_service_topic", self.action_callback)
+        self.example_action_server = ActionServer(self, Xarmmove, "/example/action_service_topic", self.action_callback)
 
     def action_callback(self, goal_handle):
         # Get the request data
@@ -259,10 +259,10 @@ string feedback
             # Check if the request was canceled
             if goal_handle.is_cancel_requested:
                 goal_handle.canceled()
-                return DetectPerson.Result()
+                return Xarmmove.Result()
 
             # Create feedback message
-            feedback_msg = DetectPerson.Feedback()
+            feedback_msg = Xarmmove.Feedback()
             feedback_msg.feedback = str(i)
 
             # Send feedback
@@ -271,7 +271,7 @@ string feedback
             time.sleep(1)
 
         # After finishing a process, send the result
-        result = DetectPerson.Result()
+        result = Xarmmove.Result()
         result.success = True
         goal_handle.succeed()
         return result
@@ -288,7 +288,7 @@ ros2 run vision_general example_node
 ```
 
 ``` bash
-ros2 action send_goal /example/action_service_topic frida_interfaces/action/DetectPerson "request: true" --feedback
+ros2 action send_goal /example/action_service_topic frida_interfaces/action/Xarmmove "speeds: [1.0]" --feedback
 ```
 
 ## Interfaces

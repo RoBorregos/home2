@@ -11,15 +11,13 @@ import numpy as np
 import queue
 import time
 import rclpy
-from rclpy.action import ActionServer
 from builtin_interfaces.msg import Time
-from rclpy.task import Future
 from utils.trt_utils import load_yolo_trt
 
-from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import (
     ChairsToRemove,
     DetectHand,
+    DetectPerson,
     FindSeat,
     MoondreamDetection,
     YoloDetect,
@@ -65,6 +63,8 @@ MAX_DEGREE = 50
 AREA_PERCENTAGE_THRESHOLD = 0.01
 CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
+POLL_INTERVAL = 0.2
+YOLO_CALL_TIMEOUT = 5.0
 
 
 class HRICCommands(VisionRuntime):
@@ -86,8 +86,7 @@ class HRICCommands(VisionRuntime):
             self.find_seat_callback,
             callback_group=self.callback_group,
         )
-        self.person_detection_action_server = ActionServer(
-            self,
+        self.detect_person_service = self.create_service(
             DetectPerson,
             CHECK_PERSON_TOPIC,
             self.detect_person_callback,
@@ -316,27 +315,28 @@ class HRICCommands(VisionRuntime):
         self.get_logger().warn("No seat found")
         return response
 
-    async def detect_person_callback(self, goal_handle):
-        """Callback to return a response until a person is
-        detected in a frame or timeout is reached."""
-        self.get_logger().info("Executing action Detect Person")
+    def detect_person_callback(self, request, response):
+        """Poll YOLO until a person stands in the centre band or the timeout
+        expires. All state is local: two concurrent calls cannot corrupt
+        each other."""
+        self.get_logger().info("Executing service Detect Person")
 
-        self.person_found = False
-        self.goal_handle = goal_handle
-        self.start_time = time.time()
-        self.detection_future = Future()
+        deadline = time.time() + (
+            request.timeout if request.timeout > 0 else CHECK_TIMEOUT
+        )
 
-        self.timer = self.create_timer(0.1, self.detect_person)
-        await self.detection_future
+        response.success = False
+        while time.time() < deadline:
+            if self._person_in_centre(deadline):
+                response.success = True
+                break
+            time.sleep(POLL_INTERVAL)
 
-        result = DetectPerson.Result()
-        result.success = self.person_found
-        goal_handle.succeed()
-        if self.person_found:
+        if response.success:
             self.success("Person detected")
         else:
             self.get_logger().warn("No person detected")
-        return result
+        return response
 
     def success(self, message):
         """Log a success message."""
@@ -366,13 +366,12 @@ class HRICCommands(VisionRuntime):
 
         req = YoloDetect.Request()
         req.classes = [56]  # COCO chair
-        future = self.yolo_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=15.0)
-        if not future.done() or future.result() is None or not future.result().success:
+        result = self.call_service(self.yolo_client, req, 15.0)
+        if result is None or not result.success:
             response.message = "YOLO chair detection failed"
             self.get_logger().error(response.message)
             return response
-        chairs = list(future.result().detections)
+        chairs = list(result.detections)
 
         response.total_chairs = len(chairs)
         if not chairs:
@@ -386,11 +385,9 @@ class HRICCommands(VisionRuntime):
         if self.moondream_client.wait_for_service(timeout_sec=3.0):
             md_req = MoondreamDetection.Request()
             md_req.subject = "dining table"
-            future = self.moondream_client.call_async(md_req)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=60.0)
-            result = future.result() if future.done() else None
-            if result is not None and result.success:
-                tables = result.detections
+            md_result = self.call_service(self.moondream_client, md_req, 60.0)
+            if md_result is not None and md_result.success:
+                tables = md_result.detections
         if not tables:
             response.success = True
             response.message = "No dining table found"
@@ -428,11 +425,12 @@ class HRICCommands(VisionRuntime):
         move = diff * MAX_DEGREE / (width / 2)
         return move
 
-    def detect_person(self):
-        """Check if there is a person in the frame and resolve the future promise using YOLO service."""
+    def _person_in_centre(self, deadline: float) -> bool:
+        """One YOLO round trip: True if a confident person sits in the centre
+        band of the frame. Annotates self.output_image for the debug topic."""
         if self.image is None:
             self.get_logger().warn("No image received yet.")
-            return
+            return False
 
         frame = self.image
         self.output_image = frame.copy()
@@ -441,14 +439,17 @@ class HRICCommands(VisionRuntime):
         # Call YOLO service for person detection (class 0)
         req = YoloDetect.Request()
         req.classes = [0]
-        future = self.yolo_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        result = self.call_service(
+            self.yolo_client,
+            req,
+            min(YOLO_CALL_TIMEOUT, max(deadline - time.time(), 0.0)),
+        )
 
-        if not future.done() or not future.result().success:
+        if result is None or not result.success:
             self.get_logger().error("YOLO detection failed")
-            return
+            return False
 
-        for det in future.result().detections:
+        for det in result.detections:
             x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
             confidence = det.confidence
             x = int((x1 + x2) / 2)
@@ -458,7 +459,6 @@ class HRICCommands(VisionRuntime):
                 and x >= int(width * PERCENTAGE)
                 and x <= int(width * (1 - PERCENTAGE))
             ):
-                self.person_found = True
                 cv2.rectangle(
                     self.output_image,
                     (x1, y1),
@@ -466,7 +466,7 @@ class HRICCommands(VisionRuntime):
                     (0, 255, 0),
                     2,
                 )
-                break
+                return True
             cv2.rectangle(
                 self.output_image,
                 (x1, y1),
@@ -475,30 +475,19 @@ class HRICCommands(VisionRuntime):
                 2,
             )
 
-        if self.person_found or (time.time() - self.start_time) > CHECK_TIMEOUT:
-            self.timer.cancel()
-            self.detection_future.set_result(self.person_found)
+        return False
 
     def get_detections(self, frame) -> None:
         """Obtain YOLO detections for people, chairs, and couches using YOLO service."""
         req = YoloDetect.Request()
         req.classes = [0, 56, 57]
-        future = self.yolo_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        result = self.call_service(self.yolo_client, req, YOLO_CALL_TIMEOUT)
 
-        if not future.done() or not future.result().success:
+        if result is None or not result.success:
             self.get_logger().error("YOLO detection failed")
             return
 
-        self.get_logger().info(
-            f"YOLO service response: success={getattr(future.result(), 'success', None)}, detections={getattr(future.result(), 'detections', None)}"
-        )
-
-        if future.result() is None or not future.result().success:
-            self.get_logger().error("YOLO detection failed")
-            return
-
-        for det in future.result().detections:
+        for det in result.detections:
             x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
             class_id = det.class_id
             label = det.class_id

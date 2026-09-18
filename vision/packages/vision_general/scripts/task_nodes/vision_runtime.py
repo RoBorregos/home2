@@ -9,6 +9,8 @@ Subclasses opt in through the constructor flags and read ``self.image``,
 owned its own subscriptions.
 """
 
+import time
+
 import rclpy
 import rclpy.qos
 import tf2_ros
@@ -159,6 +161,24 @@ class VisionRuntime(Node):
     def publish_debug(self, frame):
         if self.debug_publisher is not None:
             self.debug_publisher.publish(frame)
+
+    def call_service(self, client, request, timeout: float):
+        """Wait for a service response without spinning; returns None on timeout.
+
+        NEVER call ``rclpy.spin_until_future_complete(self, ...)`` from inside a
+        callback: spinning a node its own executor already owns corrupts the
+        shared wait set ("IndexError: wait set index too big") and kills the
+        process. Here the MultiThreadedExecutor's other threads complete the
+        future while this one waits.
+        """
+        future = client.call_async(request)
+        deadline = time.time() + timeout
+        while not future.done() and time.time() < deadline:
+            time.sleep(0.01)
+        if not future.done():
+            future.cancel()
+            return None
+        return future.result()
 
 
 def spin(node, threads: int = 4):
