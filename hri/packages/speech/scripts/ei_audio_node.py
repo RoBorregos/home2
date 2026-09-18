@@ -106,19 +106,22 @@ class EIAudioNode(Node):
         # Wait for the EI inference server to be ready before accepting audio
         self._wait_for_server()
 
-        self.get_logger().info(
-            f"EIAudioNode '{self.get_name()}' ready | in: {audio_topic} | out: {result_topic} | "
+        self.get_logger().info(f"EIAudioNode '{self.get_name()}' ready")
+        self.get_logger().debug(
+            f"EIAudioNode '{self.get_name()}' | in: {audio_topic} | out: {result_topic} | "
             f"window: {self.window_samples} samples ({window_size_s}s) | hop: {self.hop_samples} samples"
         )
 
     def _wait_for_server(self, poll_interval: float = 5.0, max_retries: int = 60):
         """Block until the EI inference server is reachable and responding."""
-        self.get_logger().info(f"Waiting for EI server at {self.ei_url} to be ready...")
+        self.get_logger().debug(
+            f"Waiting for EI server at {self.ei_url} to be ready..."
+        )
         for attempt in range(1, max_retries + 1):
             try:
                 resp = requests.get(f"{self.ei_url}/api/info", timeout=3.0)
                 if resp.ok:
-                    self.get_logger().info(f"EI server is ready (attempt {attempt}).")
+                    self.get_logger().debug(f"EI server is ready (attempt {attempt}).")
                     self._server_error_logged = False
                     return
             except requests.RequestException:

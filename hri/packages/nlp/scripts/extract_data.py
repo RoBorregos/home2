@@ -90,13 +90,13 @@ class DataExtractor(Node):
             .string_value
         )
 
-        self.get_logger().info("Starting data extractor node")
+        self.get_logger().debug("Starting data extractor node")
 
         self.srv = self.create_service(
             ExtractInfo, EXTRACT_DATA_SERVICE, self.extract_info_requested
         )
 
-        self.get_logger().info("Data extractor node started")
+        self.get_logger().info("ExtractData ready")
 
     def extract_info_requested(
         self, request: ExtractInfo.Request, response: ExtractInfo.Response

@@ -94,7 +94,8 @@ fi
 # baml_client dirs are untracked codegen output — clear them first, baml-cli
 # refuses to overwrite modified generated files (see docker/integration/run.sh).
 CLEAN_BAML_CLIENT="rm -rf /workspace/src/task_manager/task_manager/utils/baml_client /workspace/src/hri/packages/nlp/nlp/assets/baml_client"
-GENERATE_BAML_CLIENT="$CLEAN_BAML_CLIENT && baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
+# stdout only carries the "Generated N baml_clients" banner; errors still reach stderr.
+GENERATE_BAML_CLIENT="$CLEAN_BAML_CLIENT && baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/ > /dev/null"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/jazzy/setup.bash"
