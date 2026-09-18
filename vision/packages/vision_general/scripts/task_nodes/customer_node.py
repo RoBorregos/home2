@@ -25,7 +25,7 @@ from frida_interfaces.srv import CropQuery, Customer
 from frida_interfaces.msg import PersonList, Person
 from utils.ros_utils import wait_for_future
 from models.pose_detection import PoseDetection
-from vision_runtime import VisionRuntime, spin
+from vision_runtime import VisionRuntime, safe_service_callback, spin
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
     CAMERA_TOPIC,
@@ -117,6 +117,7 @@ class CustomerNode(VisionRuntime):
                 self.bridge.cv2_to_imgmsg(square_img, "bgr8")
             )
 
+    @safe_service_callback
     def get_customer_callback(self, req, res):
         res.found = False
         res.people = PersonList()

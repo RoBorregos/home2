@@ -48,10 +48,12 @@ from utils.calculations import (
 
 import queue
 import threading
+import traceback
 import rclpy
 from rclpy.node import Node
 from utils.ros_utils import wait_for_future
 from rclpy.executors import MultiThreadedExecutor
+from vision_runtime import safe_service_callback
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
@@ -286,6 +288,7 @@ class SingleTracker(Node):
         except Exception as e:
             self.get_logger().error(f"Depth callback error: {e}")
 
+    @safe_service_callback
     def get_is_tracking_callback(self, request, response):
         response = Trigger.Response()
         response.success = self.is_tracking_result
@@ -335,6 +338,7 @@ class SingleTracker(Node):
             return (width - 1 - x, height - 1 - y)
         return (x, y)
 
+    @safe_service_callback
     def set_target_callback(self, request, response):
         """Callback to set the target to track"""
         self.target_set = request.data
@@ -346,6 +350,7 @@ class SingleTracker(Node):
             self.get_logger().info("Tracking disabled")
         return response
 
+    @safe_service_callback
     def set_target_by_callback(self, request, response):
         """Callback to set target by pose, gesture, clothes, etc"""
         self.target_set = request.track_enabled
@@ -932,7 +937,18 @@ def main(args=None):
     try:
         executor = MultiThreadedExecutor(num_threads=4)
         executor.add_node(node)
-        executor.spin()
+        # Manual spin_once() loop instead of executor.spin(): an unhandled
+        # callback exception re-raises on the spinning thread (see
+        # MultiThreadedExecutor._spin_once_impl) and would otherwise crash
+        # this whole process instead of just failing one request.
+        while rclpy.ok():
+            try:
+                executor.spin_once()
+            except Exception:
+                node.get_logger().error(
+                    "Unhandled exception in a callback; node keeps running:\n"
+                    f"{traceback.format_exc()}"
+                )
     except KeyboardInterrupt:
         pass
     finally:

@@ -13,6 +13,7 @@ import time
 import rclpy
 from rclpy.action import ActionServer
 from builtin_interfaces.msg import Time
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.task import Future
 from utils.trt_utils import load_yolo_trt
 
@@ -42,7 +43,7 @@ from frida_constants.vision_constants import (
 from ament_index_python.packages import get_package_share_directory
 from utils.area_check import filter_detections_in_house
 from utils.debug_pub import DebugImagePublisher
-from vision_runtime import VisionRuntime, spin
+from vision_runtime import VisionRuntime, safe_service_callback, spin
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -80,22 +81,32 @@ class HRICCommands(VisionRuntime):
             debug_name="hric_commands",
         )
 
+        # Dedicated, self-contained group for every entity in the
+        # await-a-client-from-a-service chain (services/action server that
+        # await, plus the clients and timers they await on). Kept separate
+        # from self.callback_group on purpose: it must stay Reentrant for
+        # any of these awaits to ever resolve or time out, and this way that
+        # no longer depends on self.callback_group staying Reentrant too -
+        # a future change to self.callback_group elsewhere in this class
+        # can't deadlock this chain.
+        self._async_group = ReentrantCallbackGroup()
+
         self.find_seat_service = self.create_service(
             FindSeat,
             FIND_SEAT_TOPIC,
             self.find_seat_callback,
-            callback_group=self.callback_group,
+            callback_group=self._async_group,
         )
         self.person_detection_action_server = ActionServer(
             self,
             DetectPerson,
             CHECK_PERSON_TOPIC,
             self.detect_person_callback,
-            callback_group=self.callback_group,
+            callback_group=self._async_group,
         )
 
         self.yolo_client = self.create_client(
-            YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
+            YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self._async_group
         )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
@@ -130,13 +141,13 @@ class HRICCommands(VisionRuntime):
         self.moondream_client = self.create_client(
             MoondreamDetection,
             MOONDREAM_DETECTION_TOPIC,
-            callback_group=self.callback_group,
+            callback_group=self._async_group,
         )
         self.chairs_to_remove_service = self.create_service(
             ChairsToRemove,
             CHAIRS_TO_REMOVE_SERVICE,
             self.chairs_to_remove_callback,
-            callback_group=self.callback_group,
+            callback_group=self._async_group,
         )
         self.chair_image_publisher = DebugImagePublisher(
             self,
@@ -155,6 +166,63 @@ class HRICCommands(VisionRuntime):
         self.create_timer(
             0.5, self.publish_chair_image, callback_group=self.callback_group
         )
+
+    def _race_futures(self, *futures):
+        """Return a Future that resolves as soon as any of `futures` is done."""
+        combined = Future()
+
+        def _on_any_done(fut):
+            if not combined.done():
+                combined.set_result(fut)
+
+        for f in futures:
+            f.add_done_callback(_on_any_done)
+        return combined
+
+    async def _wait_for_future(self, future, timeout_sec):
+        """Await `future` without holding an executor thread, giving up after
+        timeout_sec. rclpy's async Task stepper only resumes a coroutine when
+        it yields one of rclpy's own Futures (see rclpy.task.Task), so
+        asyncio.wait_for/asyncio.sleep can't be used here; the timeout is
+        implemented by racing `future` against a one-shot timer's Future.
+        The timer runs in self._async_group (always Reentrant), so the
+        timeout still fires - turning a hang into a bounded, logged failure -
+        no matter what happens to self.callback_group elsewhere."""
+        timeout_future = Future()
+        timer_holder = []
+
+        def _on_timeout():
+            if not timeout_future.done():
+                timeout_future.set_result(None)
+            timer_holder[0].cancel()
+
+        timer_holder.append(
+            self.create_timer(
+                timeout_sec, _on_timeout, callback_group=self._async_group
+            )
+        )
+        try:
+            await self._race_futures(future, timeout_future)
+        finally:
+            # cancel() alone leaves the Timer in self._timers forever (only
+            # destroy_timer() removes it) - every call would leak one timer.
+            timer_holder[0].cancel()
+            self.destroy_timer(timer_holder[0])
+        return future.done()
+
+    def _future_result_or_none(self, future):
+        """Return future.result(), or None if it isn't done yet or the
+        service call raised - so callers never crash on an unhandled
+        exception from future.result() (which would otherwise leave the
+        Task's exception unretrieved and the caller hanging on its own
+        timeout instead of getting a response)."""
+        if not future.done():
+            return None
+        try:
+            return future.result()
+        except Exception as e:
+            self.get_logger().error(f"Service call raised: {e}")
+            return None
 
     def run_hand_inference(self):
         """Detect hand position using YOLO pose wrist keypoints (TensorRT accelerated)."""
@@ -259,6 +327,7 @@ class HRICCommands(VisionRuntime):
         self.output_image = annotated
         return stamped
 
+    @safe_service_callback
     def detect_hand_callback(self, request, response):
         hand_point = self.run_hand_inference()
         if hand_point is not None:
@@ -273,7 +342,8 @@ class HRICCommands(VisionRuntime):
             self.get_logger().info("No hand detected")
         return response
 
-    def find_seat_callback(self, request, response):
+    @safe_service_callback
+    async def find_seat_callback(self, request, response):
         """Callback to find an available seat."""
         self.get_logger().info("Executing service Find Seat")
 
@@ -289,27 +359,22 @@ class HRICCommands(VisionRuntime):
         self.chairs = []
         self.couches = []
 
-        try:
-            self.get_detections(frame)
+        await self.get_detections(frame)
 
-            has_chair_seat, angle = self.check_chairs(frame)
+        has_chair_seat, angle = self.check_chairs(frame)
 
-            if has_chair_seat:
-                response.success = True
-                response.angle = angle
-                self.success(f"Seat found in chair at angle: {angle}")
-                return response
+        if has_chair_seat:
+            response.success = True
+            response.angle = angle
+            self.success(f"Seat found in chair at angle: {angle}")
+            return response
 
-            has_couch_seat, angle = self.check_couches(frame)
+        has_couch_seat, angle = self.check_couches(frame)
 
-            if has_couch_seat:
-                response.success = True
-                response.angle = angle
-                self.success(f"Seat found in couch at angle: {angle}")
-                return response
-        except Exception as e:
-            self.get_logger().error(f"Find Seat failed: {e}")
-            response.success = False
+        if has_couch_seat:
+            response.success = True
+            response.angle = angle
+            self.success(f"Seat found in couch at angle: {angle}")
             return response
 
         response.success = False
@@ -321,18 +386,19 @@ class HRICCommands(VisionRuntime):
         detected in a frame or timeout is reached."""
         self.get_logger().info("Executing action Detect Person")
 
-        self.person_found = False
-        self.goal_handle = goal_handle
-        self.start_time = time.time()
-        self.detection_future = Future()
-
-        self.timer = self.create_timer(0.1, self.detect_person)
-        await self.detection_future
+        try:
+            person_found = await self._detect_person_loop()
+        except Exception as e:
+            # An unhandled exception here would propagate out of spin()
+            # (vision_runtime.spin only catches KeyboardInterrupt) and kill
+            # the whole node's process, not just this goal.
+            self.get_logger().error(f"Detect Person failed: {e}")
+            person_found = False
 
         result = DetectPerson.Result()
-        result.success = self.person_found
+        result.success = person_found
         goal_handle.succeed()
-        if self.person_found:
+        if person_found:
             self.success("Person detected")
         else:
             self.get_logger().warn("No person detected")
@@ -351,7 +417,8 @@ class HRICCommands(VisionRuntime):
         if self.chair_image is not None:
             self.chair_image_publisher.publish(self.chair_image)
 
-    def chairs_to_remove_callback(self, request, response):
+    @safe_service_callback
+    async def chairs_to_remove_callback(self, request, response):
         """Chairs between the robot and the dining table (the ones to ask a
         human to remove): a chair whose bbox bottom edge is lower in the image
         than the table's bottom edge stands in front of the table. Chairs come
@@ -367,12 +434,13 @@ class HRICCommands(VisionRuntime):
         req = YoloDetect.Request()
         req.classes = [56]  # COCO chair
         future = self.yolo_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=15.0)
-        if not future.done() or future.result() is None or not future.result().success:
+        await self._wait_for_future(future, 15.0)
+        yolo_result = self._future_result_or_none(future)
+        if yolo_result is None or not yolo_result.success:
             response.message = "YOLO chair detection failed"
             self.get_logger().error(response.message)
             return response
-        chairs = list(future.result().detections)
+        chairs = list(yolo_result.detections)
 
         response.total_chairs = len(chairs)
         if not chairs:
@@ -387,8 +455,8 @@ class HRICCommands(VisionRuntime):
             md_req = MoondreamDetection.Request()
             md_req.subject = "dining table"
             future = self.moondream_client.call_async(md_req)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=60.0)
-            result = future.result() if future.done() else None
+            await self._wait_for_future(future, 60.0)
+            result = self._future_result_or_none(future)
             if result is not None and result.success:
                 tables = result.detections
         if not tables:
@@ -428,11 +496,21 @@ class HRICCommands(VisionRuntime):
         move = diff * MAX_DEGREE / (width / 2)
         return move
 
-    def detect_person(self):
-        """Check if there is a person in the frame and resolve the future promise using YOLO service."""
+    async def _detect_person_loop(self) -> bool:
+        """Poll YOLO for a person in frame until found or CHECK_TIMEOUT elapses,
+        awaiting each detection future without blocking the executor thread."""
+        start_time = time.time()
+        while time.time() - start_time < CHECK_TIMEOUT:
+            if await self._detect_person_once():
+                return True
+        return False
+
+    async def _detect_person_once(self) -> bool:
+        """Single YOLO pass; returns True if a person was found within the
+        frame's central band."""
         if self.image is None:
             self.get_logger().warn("No image received yet.")
-            return
+            return False
 
         frame = self.image
         self.output_image = frame.copy()
@@ -442,13 +520,15 @@ class HRICCommands(VisionRuntime):
         req = YoloDetect.Request()
         req.classes = [0]
         future = self.yolo_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        await self._wait_for_future(future, 5.0)
 
-        if not future.done() or not future.result().success:
+        yolo_result = self._future_result_or_none(future)
+        if yolo_result is None or not yolo_result.success:
             self.get_logger().error("YOLO detection failed")
-            return
+            return False
 
-        for det in future.result().detections:
+        person_found = False
+        for det in yolo_result.detections:
             x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
             confidence = det.confidence
             x = int((x1 + x2) / 2)
@@ -458,7 +538,7 @@ class HRICCommands(VisionRuntime):
                 and x >= int(width * PERCENTAGE)
                 and x <= int(width * (1 - PERCENTAGE))
             ):
-                self.person_found = True
+                person_found = True
                 cv2.rectangle(
                     self.output_image,
                     (x1, y1),
@@ -475,30 +555,26 @@ class HRICCommands(VisionRuntime):
                 2,
             )
 
-        if self.person_found or (time.time() - self.start_time) > CHECK_TIMEOUT:
-            self.timer.cancel()
-            self.detection_future.set_result(self.person_found)
+        return person_found
 
-    def get_detections(self, frame) -> None:
+    async def get_detections(self, frame) -> None:
         """Obtain YOLO detections for people, chairs, and couches using YOLO service."""
         req = YoloDetect.Request()
         req.classes = [0, 56, 57]
         future = self.yolo_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        await self._wait_for_future(future, 5.0)
 
-        if not future.done() or not future.result().success:
+        yolo_result = self._future_result_or_none(future)
+        if yolo_result is None or not yolo_result.success:
             self.get_logger().error("YOLO detection failed")
             return
 
         self.get_logger().info(
-            f"YOLO service response: success={getattr(future.result(), 'success', None)}, detections={getattr(future.result(), 'detections', None)}"
+            f"YOLO service response: success={yolo_result.success}, "
+            f"detections={yolo_result.detections}"
         )
 
-        if future.result() is None or not future.result().success:
-            self.get_logger().error("YOLO detection failed")
-            return
-
-        for det in future.result().detections:
+        for det in yolo_result.detections:
             x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
             class_id = det.class_id
             label = det.class_id

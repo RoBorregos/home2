@@ -53,7 +53,7 @@ from frida_constants.vision_enums import Poses, Gestures, DetectBy
 from frida_interfaces.srv import YoloDetect
 
 from models.pose_detection import PoseDetection
-from vision_runtime import VisionRuntime, spin
+from vision_runtime import VisionRuntime, safe_service_callback, spin
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -204,6 +204,7 @@ class GPSRCommands(VisionRuntime):
             self.get_logger().warn(f"Person point deprojection failed: {e}")
             return None
 
+    @safe_service_callback
     def count_by_pose_callback(self, request, response):
         """Callback to count a specific pose in the image."""
         self.get_logger().info("Executing service Count By Pose")
@@ -274,6 +275,7 @@ class GPSRCommands(VisionRuntime):
         self._save_annotated(f"pose_{pose_requested_enum.value}_{response.count}")
         return response
 
+    @safe_service_callback
     def count_by_gestures_callback(self, request, response):
         """Callback to count gestures in the image."""
         self.get_logger().info("Executing service Count By Gestures")
@@ -357,6 +359,7 @@ class GPSRCommands(VisionRuntime):
 
         return gesture_count, gesture_boxes
 
+    @safe_service_callback
     def count_by_person_callback(self, request, response):
         """Callback to count people in the image."""
         self.get_logger().info("Executing service Count By Person")
@@ -383,6 +386,7 @@ class GPSRCommands(VisionRuntime):
         self._save_annotated(f"person_count_{people_count}")
         return response
 
+    @safe_service_callback
     def count_by_color_callback(self, request, response):
         """Callback to count people wearing a specific color and clothing."""
         self.get_logger().info("Executing service Count By Color")
@@ -438,6 +442,7 @@ class GPSRCommands(VisionRuntime):
         self._save_annotated(f"color_{color}_{clothing}_{count}")
         return response
 
+    @safe_service_callback
     def detect_pose_gesture_callback(self, request, response):
         """Callback to detect a specific pose or gesture in the image."""
         self.get_logger().info("Executing service Pose Detection")

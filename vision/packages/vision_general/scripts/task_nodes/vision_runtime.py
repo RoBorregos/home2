@@ -9,6 +9,10 @@ Subclasses opt in through the constructor flags and read ``self.image``,
 owned its own subscriptions.
 """
 
+import functools
+import inspect
+import traceback
+
 import rclpy
 import rclpy.qos
 import tf2_ros
@@ -161,12 +165,69 @@ class VisionRuntime(Node):
             self.debug_publisher.publish(frame)
 
 
+def safe_service_callback(callback):
+    """Wrap a service callback (self, request, response) -> response so an
+    unhandled exception logs and returns response (with success=False and,
+    if present, a message) instead of propagating.
+
+    spin() below already keeps the node itself running through any
+    unhandled callback exception, but the one request whose callback raised
+    still never gets a reply and its caller hangs until its own timeout -
+    this decorator is what gives THAT specific caller a clean failure
+    response instead. Works for both `def` and `async def` callbacks.
+    """
+
+    def _on_failure(self, response, exc):
+        self.get_logger().error(f"{callback.__qualname__} failed: {exc}")
+        if hasattr(response, "success"):
+            response.success = False
+        if hasattr(response, "message"):
+            response.message = f"{callback.__qualname__} failed: {exc}"
+        return response
+
+    if inspect.iscoroutinefunction(callback):
+
+        @functools.wraps(callback)
+        async def async_wrapper(self, request, response):
+            try:
+                return await callback(self, request, response)
+            except Exception as e:
+                return _on_failure(self, response, e)
+
+        return async_wrapper
+
+    @functools.wraps(callback)
+    def sync_wrapper(self, request, response):
+        try:
+            return callback(self, request, response)
+        except Exception as e:
+            return _on_failure(self, response, e)
+
+    return sync_wrapper
+
+
 def spin(node, threads: int = 4):
-    """Run `node` on a MultiThreadedExecutor and shut down cleanly."""
+    """Run `node` on a MultiThreadedExecutor and shut down cleanly.
+
+    Drives spin_once() manually instead of calling executor.spin() directly:
+    MultiThreadedExecutor._spin_once_impl re-raises any unhandled callback
+    exception on the thread that's spinning, so a single buggy callback
+    would otherwise propagate all the way out and kill this node's entire
+    process. Catching per-iteration keeps every other callback (and every
+    other in-flight request) running; only the one request whose callback
+    raised is left without a response.
+    """
     executor = rclpy.executors.MultiThreadedExecutor(threads)
     executor.add_node(node)
     try:
-        executor.spin()
+        while rclpy.ok():
+            try:
+                executor.spin_once()
+            except Exception:
+                node.get_logger().error(
+                    "Unhandled exception in a callback; node keeps running:\n"
+                    f"{traceback.format_exc()}"
+                )
     except KeyboardInterrupt:
         pass
     finally:

@@ -24,7 +24,7 @@ from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
 from models.face_recognition import FaceModel, TRACK_THRESHOLD
 from utils.debug_pub import DebugImagePublisher
-from vision_runtime import VisionRuntime, spin
+from vision_runtime import VisionRuntime, safe_service_callback, spin
 
 MAX_DEGREE = 1
 PACKAGE_PATH = get_package_share_directory("vision_general")
@@ -97,6 +97,7 @@ class FaceRecognition(VisionRuntime):
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
+    @safe_service_callback
     def new_name_callback(self, req, res):
         self.get_logger().info("Executing service new face")
         self.new_name = req.name
@@ -105,6 +106,7 @@ class FaceRecognition(VisionRuntime):
             self.get_logger().info("No face detected")
         return res
 
+    @safe_service_callback
     def follow_by_name_callback(self, req, res):
         self.get_logger().info("Executing service follow by")
         self.follow_name = req.name

@@ -27,7 +27,7 @@ from frida_interfaces.srv import Customer, CustomerTables, ObjectPoints
 from builtin_interfaces.msg import Time
 from utils.calculations import point2d_to_ros_point_stamped
 from utils.ros_utils import wait_for_future
-from vision_runtime import VisionRuntime, spin
+from vision_runtime import VisionRuntime, safe_service_callback, spin
 
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
 
@@ -75,6 +75,7 @@ class RESTAURANTCommands(VisionRuntime):
 
         self.get_logger().info("RESTAURANT Commands Ready.")
 
+    @safe_service_callback
     def customer_table_callback(self, request, response):
         self.get_logger().info("Received customer table request")
 
