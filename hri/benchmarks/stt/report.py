@@ -14,9 +14,11 @@ try:
 except ImportError:
     _RICH = False
 
+_force_plain = os.environ.get("STT_FORCE_PLAIN", "") == "1"
+
 
 def print_model_table(model: str, task_results: dict[str, dict]) -> None:
-    if _RICH:
+    if _RICH and not _force_plain:
         _print_rich(model, task_results)
     else:
         _print_plain(model, task_results)
