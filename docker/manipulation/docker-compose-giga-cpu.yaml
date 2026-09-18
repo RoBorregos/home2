@@ -1,8 +1,8 @@
-# Explicit project name. Compose otherwise derives it from the containing
-# directory, which is `manipulation` for both this file and its GPU
-# counterpart -- same project, same service name (`giga-train`), so running
-# one of them treats the other's container as the same service and recreates
-# it instead of standing up its own. The CPU container then never exists.
+# GIGA training container, CPU version (works on any machine).
+# GPU version: docker-compose-giga.yaml
+
+# Own project name so the CPU and GPU containers don't replace each other
+# (both files live in the same folder and use the same service name).
 name: home2-giga-cpu
 
 services:
@@ -15,19 +15,10 @@ services:
     volumes:
       - ../../:/workspace/src/
       - ./setup_giga.sh:/root/setup_giga.sh
-      # Training data / generated datasets / checkpoints live here, outside
-      # the repo and the container's writable layer -- can grow to 100GB+.
+      # Datasets, logs and checkpoints (gitignored, can reach 100GB+).
       - ./giga_data:/workspace/giga_data
-    # No `deploy.resources.reservations.devices` block -- that's what
-    # requires the nvidia container runtime, which is exactly what a
-    # no-GPU laptop doesn't have. Everything else is identical to
-    # docker-compose-giga.yaml.
-    # NOTE: this container runs as root on purpose. setup_giga.sh does an
-    # editable `pip install -e` of vgn at runtime (the source is bind-mounted,
-    # so it cannot happen at build time) and dist-packages is not writable by
-    # anyone else. run_pipeline.sh hands $GIGA_DATA_ROOT back to the owner of
-    # the mount when it finishes, so generated datasets stay deletable from
-    # the host.
+    # Runs as root so setup_giga.sh can pip-install GIGA. run_pipeline.sh gives
+    # the generated data back to your host user when it finishes.
     working_dir: /workspace/src/manipulation/packages/giga
     tty: true
     stdin_open: true
