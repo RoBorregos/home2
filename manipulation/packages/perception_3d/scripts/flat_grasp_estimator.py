@@ -19,6 +19,7 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 from frida_constants.vision_constants import (
+    CAMERA_FRAME,
     DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
@@ -85,7 +86,7 @@ class FlatGraspEstimator(Node):
 
         self.latest_depth = None
         self.intrinsics = None
-        self.depth_frame_id = "zed_left_camera_optical_frame"
+        self.depth_frame_id = CAMERA_FRAME
 
         self.target_classes = [n.lower() for n in FLAT_OBJECT_NAMES]
         self.rim_classes = [n.lower() for n in RIM_NAMES]

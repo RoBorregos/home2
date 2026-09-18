@@ -16,7 +16,6 @@ from launch.actions import (
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
@@ -159,14 +158,8 @@ def launch_setup(context, *args, **kwargs):
             geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
             geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
         )
-        .planning_pipelines(
-            pipelines=["vamp", "ompl"], default_planning_pipeline="vamp"
-        )
+        .planning_pipelines(pipelines=["ompl"], default_planning_pipeline="ompl")
         .to_moveit_configs()
-    )
-
-    moveit_config.planning_pipelines["vamp"]["planning_plugin"] = (
-        "vamp_moveit_plugin/VampPlannerManager"
     )
 
     # robot description launch
@@ -278,23 +271,7 @@ def launch_setup(context, *args, **kwargs):
             )
         )
 
-    # Start the VAMP backend ("vamp" is the default planner; without it every plan
-    # waits ~3s then falls back to OMPL). Disable with start_vamp_server:=false.
-    vamp_server_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("vamp_moveit_plugin"),
-                    "launch",
-                    "vamp_server.launch.py",
-                ]
-            )
-        ),
-        condition=IfCondition(LaunchConfiguration("start_vamp_server", default="true")),
-    )
-
     return [
-        vamp_server_launch,
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_broadcaster,
