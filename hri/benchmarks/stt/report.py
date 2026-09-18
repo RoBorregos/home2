@@ -2,7 +2,7 @@
 
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 try:
@@ -151,10 +151,13 @@ def print_comparison_table(all_results: dict[str, dict[str, dict]]) -> None:
 
 def save_json(all_results: dict, output_dir: str) -> str:
     os.makedirs(output_dir, exist_ok=True)
-    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
     path = os.path.join(output_dir, f"benchmark_{ts}.json")
 
-    report: dict[str, Any] = {"timestamp": datetime.now().isoformat(), "models": {}}
+    report: dict[str, Any] = {
+        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+        "models": {},
+    }
     for model, task_results in all_results.items():
         report["models"][model] = {}
         for task, r in task_results.items():

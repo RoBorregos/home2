@@ -148,8 +148,10 @@ def _apply_gain(audio_path: str, gain: float) -> str:
         v = int(s * gain)
         scaled.append(max(-max_sample, min(max_sample, v)))
 
-    out = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
-    with wave.open(out.name, "wb") as wf_out:
+    with (
+        tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as out,
+        wave.open(out.name, "wb") as wf_out,
+    ):
         wf_out.setparams(params)
         wf_out.writeframes(struct.pack(fmt, *scaled))
 

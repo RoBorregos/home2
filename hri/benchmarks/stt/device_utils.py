@@ -17,7 +17,7 @@ def detect_device_and_compute_type(preferred_device=None):
             if "float32" in supported_types:
                 return "cuda", "float32"
             return "cuda", "default"
-    except Exception as exc:
+    except RuntimeError as exc:
         print(f"CUDA detection via ctranslate2 failed: {exc}")
 
     return "cpu", "int8"

@@ -65,7 +65,7 @@ class LatencyTask:
     name = "latency"
 
     @staticmethod
-    def run(model: str, runs: int = 3, audio: str = None, **kwargs) -> dict:
+    def run(model: str, runs: int = 3, audio: str | None = None, **kwargs) -> dict:
         if audio is None:
             audio = os.path.join(RECORDINGS_DIR, "hello_frida.wav")
         if not os.path.isfile(audio):
