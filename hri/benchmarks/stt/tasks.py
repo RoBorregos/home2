@@ -5,11 +5,6 @@ Supported transcription kwargs (forwarded to transcribe_file):
 """
 
 import os
-import sys
-
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-if SCRIPT_DIR not in sys.path:
-    sys.path.insert(0, SCRIPT_DIR)
 
 from benchmark_stt import (
     load_test_cases,
@@ -17,6 +12,7 @@ from benchmark_stt import (
     run_latency,
 )
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 RECORDINGS_DIR = os.path.join(SCRIPT_DIR, "recordings")
 TEST_CASES_FILE = os.path.join(SCRIPT_DIR, "test_cases.json")
 
