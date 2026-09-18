@@ -7,17 +7,17 @@ RUN mkdir -p /workspace/requirements
 COPY vision/requirements /workspace/requirements
 
 # Download and extract dlib
-RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
-tar jxvf dlib-19.21.tar.bz2
+RUN wget http://dlib.net/files/dlib-20.0.tar.bz2 && \
+tar jxvf dlib-20.0.tar.bz2
 
-WORKDIR /workspace/dlib-19.21
+WORKDIR /workspace/dlib-20.0
 RUN mkdir build
-WORKDIR /workspace/dlib-19.21/build
+WORKDIR /workspace/dlib-20.0/build
 
 RUN cmake .. && \
 cmake --build .
 
-WORKDIR /workspace/dlib-19.21
+WORKDIR /workspace/dlib-20.0
 RUN python3 setup.py install --set DLIB_USE_CUDA=1
 
 RUN pip install --upgrade pip
