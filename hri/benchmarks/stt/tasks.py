@@ -1,8 +1,11 @@
 """STT benchmark task definitions.
 
 Each task class wraps a benchmark_stt function and exposes a standard
-``run(model, runs)`` interface so the runner (run.sh / test_hri_manager)
+``run(model, runs, **kwargs)`` interface so the runner (run.sh / test_hri_manager)
 can invoke any task uniformly.
+
+Supported transcription kwargs (forwarded to transcribe_file):
+  language, vad, hotwords, initial_prompt
 """
 
 import os
@@ -21,6 +24,12 @@ from benchmark_stt import (  # noqa: E402
 RECORDINGS_DIR = os.path.join(SCRIPT_DIR, "recordings")
 TEST_CASES_FILE = os.path.join(SCRIPT_DIR, "test_cases.json")
 
+_TRANSCRIBE_KEYS = {"language", "vad", "hotwords", "initial_prompt"}
+
+
+def _extract_transcribe_kwargs(kwargs: dict) -> dict:
+    return {k: v for k, v in kwargs.items() if k in _TRANSCRIBE_KEYS and v is not None}
+
 
 class AccuracyTask:
     """Run all test cases and compute aggregate WER / accuracy."""
@@ -30,7 +39,8 @@ class AccuracyTask:
     @staticmethod
     def run(model: str, runs: int = 1, **kwargs) -> dict:
         test_cases = load_test_cases(TEST_CASES_FILE)
-        results = run_accuracy(model, test_cases)
+        tkwargs = _extract_transcribe_kwargs(kwargs)
+        results = run_accuracy(model, test_cases, **tkwargs)
         passed = sum(1 for r in results if r["passed"])
         total = len(results)
         avg_wer = sum(r["wer"] for r in results) / total if total else 0
@@ -65,7 +75,8 @@ class LatencyTask:
         if not os.path.isfile(audio):
             return {"error": f"audio not found: {audio}"}
 
-        lat = run_latency(audio, model, n_runs=runs)
+        tkwargs = _extract_transcribe_kwargs(kwargs)
+        lat = run_latency(audio, model, n_runs=runs, **tkwargs)
         return {
             "audio_duration": lat["audio_duration"],
             "n_runs": lat["n_runs"],
