@@ -1,9 +1,5 @@
 """STT benchmark task definitions.
 
-Each task class wraps a benchmark_stt function and exposes a standard
-``run(model, runs, **kwargs)`` interface so the runner (run.sh / test_hri_manager)
-can invoke any task uniformly.
-
 Supported transcription kwargs (forwarded to transcribe_file):
   language, vad, hotwords, initial_prompt
 """
