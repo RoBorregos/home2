@@ -1,15 +1,14 @@
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 
+ARG ROS_DISTRO=jazzy
+
 RUN mkdir -p /workspace/requirements
 
 # Requirements
 COPY task_manager/requirements /workspace/requirements
 WORKDIR /workspace/requirements
-# --ignore-installed: the base image's pip comes from apt and has no RECORD
-# file, so a plain upgrade fails trying to uninstall it.
-RUN pip install --upgrade --ignore-installed pip
-RUN pip install -r requirements.txt
+RUN if command -v pip-install-reqs >/dev/null; then pip-install-reqs requirements.txt; else pip install -r requirements.txt; fi
 
 COPY task_manager/task_manager/utils /workspace/utils
 WORKDIR /workspace/utils
@@ -22,11 +21,10 @@ COPY frida_constants /workspace/src/frida_constants
 COPY frida_interfaces /workspace/src/frida_interfaces
 
 RUN sudo apt update && (sudo rosdep init || true) && rosdep update
-RUN rosdep install --from-paths /workspace/src --ignore-src -y -r
-RUN sudo rm -rf /workspace/src/
+RUN rosdep install --from-paths /workspace/src --ignore-src -y -r && sudo rm -rf /workspace/src/ /var/lib/apt/lists/*
 
 # CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
     && sudo rm -rf /var/lib/apt/lists/*
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh

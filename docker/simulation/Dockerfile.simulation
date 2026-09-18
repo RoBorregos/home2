@@ -1,6 +1,6 @@
 
 ARG BASE_IMAGE=roborregos/home2:cpu_base
-ARG ROS_DISTRO=humble
+ARG ROS_DISTRO=jazzy
 FROM $BASE_IMAGE
 
 # 1. Install all system dependencies and ROS 2 packages in a single optimized layer
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-${ROS_DISTRO}-realtime-tools \
     ros-${ROS_DISTRO}-urdf-launch \
     ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
-    libgl1-mesa-glx \
+    libgl1 \
     libosmesa6 \
     libglew-dev \
     libglfw3-dev \

@@ -18,7 +18,6 @@ from launch.actions import (
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
-from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
 from arm_pkg.moveit_configs_builder import MoveItConfigsBuilder
@@ -147,16 +146,10 @@ def launch_setup(context, *args, **kwargs):
             geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
         )
         .planning_pipelines(
-            # Default "ompl": VAMP needs retuning before it can be default
-            # again (its self-filter masks goal voxels FCL keeps -> rejection).
-            pipelines=["vamp", "ompl"],
+            pipelines=["ompl"],
             default_planning_pipeline="ompl",
         )
         .to_moveit_configs()
-    )
-
-    moveit_config.planning_pipelines["vamp"]["planning_plugin"] = (
-        "vamp_moveit_plugin/VampPlannerManager"
     )
 
     # robot description launch
@@ -261,23 +254,6 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    # VAMP backend off by default (pipeline above is "ompl"). Re-enable with
-    # start_vamp_server:=true and flip the default pipeline back to "vamp".
-    vamp_server_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [
-                    FindPackageShare("vamp_moveit_plugin"),
-                    "launch",
-                    "vamp_server.launch.py",
-                ]
-            )
-        ),
-        condition=IfCondition(
-            LaunchConfiguration("start_vamp_server", default="false")
-        ),
-    )
-
     # Points joint1 at the Nav2 goal while the base drives, homes to base front
     # when the goal ends. Pure joint-velocity control, no MoveIt in the loop.
     # nav_goal_arm_pointer_node = Node(
@@ -294,7 +270,6 @@ def launch_setup(context, *args, **kwargs):
         SetEnvironmentVariable(
             name="RCUTILS_LOGGING_SEVERITY_THRESHOLD", value=log_level
         ),
-        vamp_server_launch,
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_publisher_node,

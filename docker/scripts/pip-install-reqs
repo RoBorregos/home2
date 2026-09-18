@@ -1,0 +1,20 @@
+#!/bin/bash
+# pip install -r for requirement files shared with the cpu/cuda images.
+# Lines for packages that l4t_base already provides (see /etc/pip/constraints.txt)
+# are dropped, so cpu-only pins like numpy<2 or onnxruntime==1.17.3 don't clash
+# with the base. Extra pip arguments go after "--".
+set -euo pipefail
+
+PROVIDED='numpy|scipy|torch|torchvision|torchaudio|onnxruntime|onnxruntime-gpu|opencv-python|opencv-contrib-python|opencv-python-headless|opencv-contrib-python-headless'
+
+filtered="$(mktemp --suffix=.txt)"
+trap 'rm -f "$filtered"' EXIT
+
+while [ $# -gt 0 ] && [ "$1" != "--" ]; do
+    grep -viE "^[[:space:]]*(${PROVIDED})[[:space:]]*([=<>!~;\[@]|$)" "$1" >> "$filtered" || true
+    echo >> "$filtered"
+    shift
+done
+[ "${1:-}" = "--" ] && shift
+
+pip install -r "$filtered" "$@"
