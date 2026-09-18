@@ -147,8 +147,10 @@ class HRIC_TM(Node):
                 break
         return result
 
-    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
-        """Navigate to the location"""
+    def navigate_to(self, location: str, sublocation: str = "", say: bool = True) -> int:
+        """Navigate to the location. Retries once on failure and always logs the
+        outcome loudly (Logger.error, not just the nested nav CLog tag) so a failed
+        move is never silently mistaken for arrival by the caller or the operator."""
         self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.clear_collision_objects()
@@ -161,7 +163,19 @@ class HRIC_TM(Node):
                 f"I'll guide you to the {location}. Please follow me.",
                 wait=False,
             )
-        self.subtask_manager.nav.move_to_location(location, sublocation)
+        status, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+        if status != Status.EXECUTION_SUCCESS:
+            Logger.error(
+                self, f"Navigation to {location} ({sublocation}) failed: {error}. Retrying once."
+            )
+            status, error = self.subtask_manager.nav.move_to_location(location, sublocation)
+            if status != Status.EXECUTION_SUCCESS:
+                Logger.error(
+                    self,
+                    f"Navigation to {location} ({sublocation}) failed again: {error}. "
+                    "Continuing task without confirmed arrival.",
+                )
+        return status
 
     def timeout(self, timeout: int = 2):
         time.sleep(timeout)
