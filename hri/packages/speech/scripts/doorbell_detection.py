@@ -100,8 +100,9 @@ class DoorbellDetectionNode(Node):
         if self.mute_while_speaking:
             self.create_subscription(Bool, g("saying_topic"), self._saying_callback, 10)
 
-        self.get_logger().info(
-            f"DoorbellDetectionNode ready | in: {audio_topic} | out: {result_topic} | "
+        self.get_logger().info("DoorbellDetection ready")
+        self.get_logger().debug(
+            f"DoorbellDetection | in: {audio_topic} | out: {result_topic} | "
             f"require_arm: {self.require_arm} | enroll: {self.enroll} | "
             f"loud-event (confirm >={cfg.confirm_margin_db:.0f} dB over floor, "
             f">={cfg.min_event_ms:.0f} ms)"

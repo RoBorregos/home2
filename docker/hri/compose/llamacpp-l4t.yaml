@@ -16,6 +16,8 @@ services:
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
       LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu/tegra
+      # The entrypoint derives llama.cpp's own log verbosity from this.
+      HRI_LOG_LEVEL: ${HRI_LOG_LEVEL:-info}
     stdin_open: true
     tty: true
     entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]

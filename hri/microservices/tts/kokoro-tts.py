@@ -24,10 +24,12 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
                 device = "cuda"
         except Exception:
             pass
-        print("Using device:", device)
+        self.device = device
 
         # Initialize the TTS pipeline
-        self.pipeline = KPipeline(lang_code="a", device=device)
+        self.pipeline = KPipeline(
+            lang_code="a", repo_id="hexgrad/Kokoro-82M", device=device
+        )
         self.original_sample_rate = 24000
         self.target_sample_rate = 48000
 
@@ -37,14 +39,12 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
 
         # Warm up the model
         try:
-            print("Warming up Kokoro model...")
             warmup_generator = self.pipeline(
                 "Hola, soy tu asistente.", voice="af_heart"
             )
             for i, (_, _, audio) in enumerate(warmup_generator):
                 if i > 0:
                     break  # Just do one chunk to warm up
-            print("Model warm-up complete.")
         except Exception as e:
             print(f"Warm-up failed: {e}")
 
@@ -150,15 +150,15 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
 
 def serve(port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
-    tts_pb2_grpc.add_TTSServiceServicer_to_server(TTSService(), server)
+    service = TTSService()
+    tts_pb2_grpc.add_TTSServiceServicer_to_server(service, server)
     server.add_insecure_port(f"[::]:{port}")
-    print(f"Starting Kokoro TTS server on port {port}...")
     server.start()
+    print(f"TTS ready on :{port} ({service.device})", flush=True)
     server.wait_for_termination()
 
 
 if __name__ == "__main__":
-    print("Starting Kokoro TTS server...")
     parser = argparse.ArgumentParser(description="Kokoro gRPC server")
     parser.add_argument(
         "--port", type=int, default=50050, help="Port to run the gRPC server on"
