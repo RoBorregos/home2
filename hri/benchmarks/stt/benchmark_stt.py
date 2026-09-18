@@ -32,7 +32,10 @@ def _get_model(model_name: str) -> WhisperModel:
         from device_utils import detect_device_and_compute_type
 
         device, compute_type = detect_device_and_compute_type()
-        print(f"Loading model '{model_name}' on {device} ({compute_type}) ...", file=sys.stderr)
+        print(
+            f"Loading model '{model_name}' on {device} ({compute_type}) ...", 
+            file=sys.stderr
+        )
         _model_cache[model_name] = WhisperModel(
             model_name, device=device, compute_type=compute_type
         )
