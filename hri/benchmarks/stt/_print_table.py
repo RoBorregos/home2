@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Print model table. Called by run.sh via env vars."""
+
 import json
 import os
 import sys

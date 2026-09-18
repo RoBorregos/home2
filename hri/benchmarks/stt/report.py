@@ -6,9 +6,9 @@ from datetime import datetime
 from typing import Any
 
 try:
+    from rich import box
     from rich.console import Console
     from rich.table import Table
-    from rich import box
 
     _RICH = True
 except ImportError:

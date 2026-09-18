@@ -140,7 +140,7 @@ def _apply_gain(audio_path: str, gain: float) -> str:
         frames = wf.readframes(params.nframes)
 
     # Unpack all samples, scale, clamp
-    fmt = "<{n}h".format(n=params.nframes * params.nchannels)
+    fmt = f"<{params.nframes * params.nchannels}h"
     samples = list(struct.unpack(fmt, frames))
     max_sample = 32767
     scaled = []

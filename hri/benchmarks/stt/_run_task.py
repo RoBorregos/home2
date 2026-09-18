@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run a single benchmark task. Called by run.sh via env vars."""
+
 import json
 import os
 import sys
