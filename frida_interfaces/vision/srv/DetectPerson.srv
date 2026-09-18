@@ -1,3 +1,4 @@
+bool request
 float32 timeout  # 0 -> CHECK_TIMEOUT
 ---
 bool success

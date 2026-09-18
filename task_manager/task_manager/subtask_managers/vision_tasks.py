@@ -431,6 +431,7 @@ class VisionTasks:
 
         Logger.info(self.node, "Waiting for person detection")
         request = DetectPerson.Request()
+        request.request = True
         request.timeout = float(timeout)
 
         # Outlast the server's own deadline, or we give up while it still holds
