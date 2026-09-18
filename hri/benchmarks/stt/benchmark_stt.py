@@ -33,7 +33,7 @@ def _get_model(model_name: str) -> WhisperModel:
 
         device, compute_type = detect_device_and_compute_type()
         print(
-            f"Loading model '{model_name}' on {device} ({compute_type}) ...", 
+            f"Loading model '{model_name}' on {device} ({compute_type}) ...",
             file=sys.stderr,
         )
         _model_cache[model_name] = WhisperModel(
