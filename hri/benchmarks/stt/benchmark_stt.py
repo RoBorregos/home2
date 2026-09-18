@@ -12,11 +12,12 @@ import json
 import os
 import re
 import struct
+import sys
 import tempfile
 import time
 import wave
+from statistics import mean
 
-import numpy as np
 from faster_whisper import WhisperModel
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,11 +32,11 @@ def _get_model(model_name: str) -> WhisperModel:
         from device_utils import detect_device_and_compute_type
 
         device, compute_type = detect_device_and_compute_type()
-        print(f"Loading model '{model_name}' on {device} ({compute_type}) ...")
+        print(f"Loading model '{model_name}' on {device} ({compute_type}) ...", file=sys.stderr)
         _model_cache[model_name] = WhisperModel(
             model_name, device=device, compute_type=compute_type
         )
-        print("Model loaded.\n")
+        print("Model loaded.\n", file=sys.stderr)
     return _model_cache[model_name]
 
 
@@ -161,6 +162,7 @@ def run_accuracy(
     model_name: str,
     test_cases: list[dict],
     audio_dir: str = RECORDINGS_DIR,
+    **kwargs,
 ) -> list[dict]:
     results = []
     for tc in test_cases:
@@ -186,7 +188,7 @@ def run_accuracy(
             audio_path = temp_file
 
         try:
-            result = transcribe_file(audio_path, model_name=model_name)
+            result = transcribe_file(audio_path, model_name=model_name, **kwargs)
         finally:
             if temp_file:
                 os.unlink(temp_file)
@@ -214,24 +216,25 @@ def run_latency(
     audio_path: str,
     model_name: str,
     n_runs: int = 3,
+    **kwargs,
 ) -> dict:
     if n_runs < 1:
         raise ValueError(f"n_runs must be >= 1, got {n_runs}")
 
     # Warmup run — first transcribe is slower (CUDA kernel init, etc.)
-    transcribe_file(audio_path, model_name=model_name)
+    transcribe_file(audio_path, model_name=model_name, **kwargs)
 
     latencies = []
     rtf_values = []
     for _ in range(n_runs):
-        result = transcribe_file(audio_path, model_name=model_name)
+        result = transcribe_file(audio_path, model_name=model_name, **kwargs)
         latencies.append(result["processing_time"])
         if result["real_time_factor"] is not None:
             rtf_values.append(result["real_time_factor"])
 
     duration = result["audio_duration"]
-    avg_latency = float(np.mean(latencies))
-    avg_rtf = float(np.mean(rtf_values)) if rtf_values else None
+    avg_latency = mean(latencies)
+    avg_rtf = mean(rtf_values) if rtf_values else None
 
     return {
         "audio_duration": duration,
@@ -239,12 +242,12 @@ def run_latency(
         "avg_latency_s": round(avg_latency, 4),
         "avg_rtf": round(avg_rtf, 4) if avg_rtf is not None else None,
         "throughput": round(duration / avg_latency, 2) if avg_latency > 0 else None,
-        "min_latency_s": round(float(np.min(latencies)), 4),
-        "max_latency_s": round(float(np.max(latencies)), 4),
+        "min_latency_s": round(min(latencies), 4),
+        "max_latency_s": round(max(latencies), 4),
     }
 
 
-def run_batch(audio_dir: str, model_name: str) -> list[dict]:
+def run_batch(audio_dir: str, model_name: str, **kwargs) -> list[dict]:
     wav_files = sorted(f for f in os.listdir(audio_dir) if f.lower().endswith(".wav"))
     if not wav_files:
         print(f"No .wav files found in {audio_dir}")
@@ -254,7 +257,7 @@ def run_batch(audio_dir: str, model_name: str) -> list[dict]:
     results = []
     for wav in wav_files:
         path = os.path.join(audio_dir, wav)
-        result = transcribe_file(path, model_name=model_name)
+        result = transcribe_file(path, model_name=model_name, **kwargs)
         print(f"  {wav}: {result['text']}  (RTF={result['real_time_factor']})")
         results.append({"file": wav, **result})
     return results
