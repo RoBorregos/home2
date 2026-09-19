@@ -2,9 +2,9 @@
 """
 STT benchmark library — accuracy (WER) and latency (RTF) for faster-whisper models.
 
-Reporting is handled by report.py. This module provides the core functions:
-  run_accuracy()  — run test cases, return per-case WER / pass-fail
-  run_latency()   — measure latency and RTF on a single audio file
+Core functions:
+  run_accuracy()    — run test cases, return per-case WER / pass-fail
+  run_latency()     — measure latency and RTF on a single audio file
   transcribe_file() — transcribe a single audio file
 """
 
@@ -139,14 +139,26 @@ def _apply_gain(audio_path: str, gain: float) -> str:
         params = wf.getparams()
         frames = wf.readframes(params.nframes)
 
-    # Unpack all samples, scale, clamp
-    fmt = f"<{params.nframes * params.nchannels}h"
+    n_samples = params.nframes * params.nchannels
+    sw = params.sampwidth
+
+    if sw == 1:
+        fmt = f"<{n_samples}B"
+        lo, hi = 0, 255
+    elif sw == 2:
+        fmt = f"<{n_samples}h"
+        lo, hi = -32768, 32767
+    elif sw == 4:
+        fmt = f"<{n_samples}i"
+        lo, hi = -2147483648, 2147483647
+    else:
+        raise ValueError(f"Unsupported sample width: {sw * 8}-bit WAV")
+
     samples = list(struct.unpack(fmt, frames))
-    max_sample = 32767
     scaled = []
     for s in samples:
         v = int(s * gain)
-        scaled.append(max(-max_sample, min(max_sample, v)))
+        scaled.append(max(lo, min(hi, v)))
 
     with (
         tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as out,
