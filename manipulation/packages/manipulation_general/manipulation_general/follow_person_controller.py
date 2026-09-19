@@ -290,7 +290,9 @@ class FollowPersonController(Node):
 
         # PID controller (derivative computed at centroid rate in _centroid_cb)
         self.error_integral += error * self.dt
-        self.error_integral = max(-integral_clamp, min(integral_clamp, self.error_integral))
+        self.error_integral = max(
+            -integral_clamp, min(integral_clamp, self.error_integral)
+        )
 
         pid_output = kp * error + ki * self.error_integral + kd * self.error_deriv
 

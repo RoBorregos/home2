@@ -63,13 +63,17 @@ class FollowFaceNode(Node):
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE, callback_group=callback_group
         )
         self.reset_controller_client = self.create_client(
-            Trigger, MANIPULATION_ENSURE_ARM_READY_SERVICE, callback_group=callback_group
+            Trigger,
+            MANIPULATION_ENSURE_ARM_READY_SERVICE,
+            callback_group=callback_group,
         )
         # Client to configure the xArm driver to NOT reset TGPIO outputs
         # when the robot state/mode changes. Without this, switching between
         # MoveIt mode (1) and velocity mode (4) resets the gripper (opens it).
         self.config_tgpio_reset_client = self.create_client(
-            SetInt16, "/xarm/config_tgpio_reset_when_stop", callback_group=callback_group
+            SetInt16,
+            "/xarm/config_tgpio_reset_when_stop",
+            callback_group=callback_group,
         )
 
         # Wait for critical services
@@ -119,7 +123,9 @@ class FollowFaceNode(Node):
         self.prev_y = 0.0
         self.last_move_time = time.time()
 
-        self.create_timer(RUN_LOOP_PERIOD, self._run_loop, callback_group=callback_group)
+        self.create_timer(
+            RUN_LOOP_PERIOD, self._run_loop, callback_group=callback_group
+        )
         self.get_logger().info("FollowFaceNode has started.")
 
     # -- Mode switching --
@@ -137,7 +143,9 @@ class FollowFaceNode(Node):
 
         for attempt in range(SET_MODE_RETRIES):
             try:
-                self.get_logger().info(f"Setting mode to {mode} (attempt {attempt + 1})")
+                self.get_logger().info(
+                    f"Setting mode to {mode} (attempt {attempt + 1})"
+                )
                 future_mode = self.mode_client.call_async(mode_request)
                 future_mode = wait_for_future(future_mode)
                 if not future_mode:
@@ -155,7 +163,9 @@ class FollowFaceNode(Node):
 
                 if reset_controller:
                     self.get_logger().info("Resetting trajectory controller")
-                    future_ctrl = self.reset_controller_client.call_async(Trigger.Request())
+                    future_ctrl = self.reset_controller_client.call_async(
+                        Trigger.Request()
+                    )
                     future_ctrl = wait_for_future(future_ctrl)
                     if not future_ctrl:
                         self.get_logger().error("Failed to reset controller")
@@ -166,7 +176,9 @@ class FollowFaceNode(Node):
             except Exception as e:
                 self.get_logger().error(f"Error setting arm mode: {e}")
 
-        self.get_logger().error(f"Failed to set mode {mode} after {SET_MODE_RETRIES} attempts")
+        self.get_logger().error(
+            f"Failed to set mode {mode} after {SET_MODE_RETRIES} attempts"
+        )
         return False
 
     # -- Service callback --
@@ -187,7 +199,9 @@ class FollowFaceNode(Node):
             self.is_following_face_active = True
         else:
             if not self.is_following_face_active:
-                self.get_logger().info("Face following already inactive, skipping mode switch")
+                self.get_logger().info(
+                    "Face following already inactive, skipping mode switch"
+                )
                 response.success = True
                 return response
             self.get_logger().info("Deactivating face following")
