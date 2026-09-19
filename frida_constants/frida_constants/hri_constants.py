@@ -86,7 +86,7 @@ CATEGORIZE_IDK_THRESHOLD = 0.01
 
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
-DEFAULT_HOTWORDS = "Frida RoBorregos"
+DEFAULT_HOTWORDS = "Frida, RoBorregos"
 
 
 # Fundamental frequency range for human voice (Hz)

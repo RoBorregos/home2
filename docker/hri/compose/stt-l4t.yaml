@@ -11,7 +11,9 @@ services:
       - ../../../hri/microservices/stt/:/app
       - ../../../hri/packages/speech/speech/:/app/speech
     network_mode: host
-    # Any language -> english: distil-large-v3
-    # Any language -> Any language: large-v3-turbo
+    # English: distil-large-v3. Multilingual transcription: large-v3-turbo.
+    # Translation to English needs a compatible model such as large-v3.
     command: >
-      bash -c "python3 -u faster-whisper-streaming.py --port 50051 --model distil-large-v3 --log_transcriptions"
+      python3 -u faster-whisper-streaming.py --port 50051
+      --model ${STT_MODEL:-distil-large-v3} --language ${STT_LANGUAGE:-en}
+      --task ${STT_TASK:-transcribe} --log_transcriptions
