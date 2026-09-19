@@ -16,7 +16,7 @@ On centroid timeout the arm slowly recenters to joint1_neutral so the camera
 faces where the base (per person_goal_smoother's lost-person goal) is heading.
 
 Usage:
-    ros2 run task_manager follow_person_controller.py
+    ros2 run manipulation_general follow_person_controller.py
 
     # Enable following (after tracker is running and target is set):
     ros2 service call /follow_person frida_interfaces/srv/FollowFace "{follow_face: true}"
