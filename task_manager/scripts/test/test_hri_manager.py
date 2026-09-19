@@ -94,6 +94,7 @@ TEST_IS_NEGATIVE = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
+TEST_HOTWORDS = False
 TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
 TEST_MERGER = False
@@ -255,6 +256,9 @@ class TestHriManager(Node):
         if TEST_COMMAND_INTERPRETER_BAML:
             self.test_command_interpreter_baml()
 
+        if TEST_HOTWORDS:
+            self.test_hotwords()
+
         if TEST_WORD_CONFIDENCES:
             self.test_word_confidences()
 
@@ -341,6 +345,19 @@ class TestHriManager(Node):
 
         s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)
         self.get_logger().info(f"Interpreted keyword: {keyword}")
+
+    def test_hotwords(self):
+        hotwords = "Kuat, orange juice, iced tea, Coca-Cola"
+        self.hri_manager.say("Please say: My favorite drink is Kuat.", wait=True)
+        status, transcription, _ = self.hri_manager.hear(
+            hotwords=hotwords,
+            initial_prompt="The speaker is naming a favorite drink.",
+        )
+
+        if status == Status.EXECUTION_SUCCESS and "kuat" in transcription.casefold():
+            self.get_logger().info(f"Hotwords test passed: {transcription}")
+        else:
+            self.get_logger().error(f"Hotwords test failed: {transcription}")
 
     def test_word_confidences(self):
         self.hri_manager.say("Please say something.", wait=True)
