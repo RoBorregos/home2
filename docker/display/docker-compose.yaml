@@ -14,6 +14,8 @@ services:
     volumes:
       - ../../:/workspace/src
       - /tmp:/tmp
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${HOME}/.Xauthority:/home/ros/.Xauthority:rw
       - /dev/shm:/dev/shm
       - ./build:/workspace/build
       - ./install:/workspace/install
@@ -25,6 +27,8 @@ services:
     privileged: true
     environment:
       DISPLAY: ${DISPLAY:-:0}
+      XAUTHORITY: /home/ros/.Xauthority
+      QT_X11_NO_MITSHM: 1
       TERM: xterm-256color
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
       CYCLONE_SHM: "${CYCLONE_SHM:-1}"

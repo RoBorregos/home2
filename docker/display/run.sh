@@ -26,6 +26,18 @@ setup_common_env "display" ".env"
 
 add_or_update_variable .env "ENV_TYPE" "$ENV_TYPE"
 
+# Use the active Xauthority display when DISPLAY is not exported (common in
+# XRDP/TTY shells), while preserving an explicitly selected display.
+DISPLAY_VALUE="${DISPLAY:-}"
+XAUTHORITY_FILE="${XAUTHORITY:-$HOME/.Xauthority}"
+if [ -z "$DISPLAY_VALUE" ] && [ -r "$XAUTHORITY_FILE" ] && command -v xauth >/dev/null 2>&1; then
+  DISPLAY_NUMBER=$(xauth -f "$XAUTHORITY_FILE" list 2>/dev/null | sed -n 's|.*/unix:\([0-9][0-9]*\).*|\1|p' | head -n 1)
+  if [ -n "$DISPLAY_NUMBER" ]; then
+    DISPLAY_VALUE=":$DISPLAY_NUMBER"
+  fi
+fi
+add_or_update_variable .env "DISPLAY" "${DISPLAY_VALUE:-:0}"
+
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable .env "RUNTIME" "nvidia"
 fi
@@ -45,7 +57,7 @@ case "$DISPLAY_TASK" in
   "storing-groceries") DISPLAY_TASK="storing_groceries" ;;
   "finals")            DISPLAY_TASK="default" ;;
   "safety")            DISPLAY_TASK="ppc" ;;
-  "--backup"|"")        DISPLAY_TASK="default" ;;
+  "backup"|"recreate"|"build"|"build-image"|"clean"|"upload-image"|"") DISPLAY_TASK="default" ;;
 esac
 
 if [ "$BUILD" == "true" ]; then
