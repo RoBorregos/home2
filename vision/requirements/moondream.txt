@@ -1,4 +1,4 @@
-numpy==1.26.4
+# numpy is pinned in constraints.txt (must be applied via `pip install -c constraints.txt -r ...`)
 opencv-python
 grpcio==1.71.0
 protobuf==5.29.1
