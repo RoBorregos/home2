@@ -5,23 +5,29 @@ ARG ROS_DISTRO=jazzy
 
 RUN mkdir -p /workspace/requirements
 
+ENV PIP_NO_CACHE_DIR=1
+
 RUN pip install --upgrade pip
 
 # Requirements
 COPY vision/requirements /workspace/requirements
 WORKDIR /workspace/requirements
 
-RUN pip install -r opencv.txt
-RUN pip install -r torch.txt
-RUN pip install -r face_recognition.txt
-RUN pip install -r models.txt
-RUN pip install -r utils.txt
+# Installed in a single pip invocation (not one RUN per file) so the resolver
+# sees every requirement at once and installs each package exactly once.
+RUN pip install -c constraints.txt \
+    -r opencv.txt \
+    -r torch.txt \
+    -r face_recognition.txt \
+    -r models.txt \
+    -r utils.txt
 
 WORKDIR /workspace
-RUN git clone https://github.com/ultralytics/yolov5.git
+RUN git clone --depth 1 https://github.com/ultralytics/yolov5.git
 
 # CV-bridge
-RUN apt update && apt-get install -y ros-${ROS_DISTRO}-cv-bridge
+RUN apt update && apt-get install -y ros-${ROS_DISTRO}-cv-bridge \
+    && rm -rf /var/lib/apt/lists/*
 
 # CycloneDDS with SHM (iceoryx zero-copy for camera frames)
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
