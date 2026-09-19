@@ -109,7 +109,18 @@ run_task() {
     local result
 
     if ! result=$(STT_KWARGS="$kwargs" STT_TASK="$task" STT_MODEL="$model" STT_RUNS="$runs" \
-                   "$PYTHON" "$SCRIPT_DIR/_run_task.py"); then
+                   "$PYTHON" -c "
+import json, os, sys
+sys.path.insert(0, os.environ.get('STT_DIR', '$SCRIPT_DIR'))
+from tasks import TASK_REGISTRY
+task_cls = TASK_REGISTRY.get(os.environ['STT_TASK'])
+if task_cls is None:
+    print(json.dumps({'error': f\"unknown task {os.environ['STT_TASK']}\"}))
+    sys.exit(0)
+r = task_cls.run(model=os.environ['STT_MODEL'], runs=int(os.environ['STT_RUNS']),
+                 **json.loads(os.environ['STT_KWARGS']))
+print(json.dumps(r))
+"); then
         echo "  ERROR: task '$task' failed" >&2
         result='{"error": "task failed"}'
     elif echo "$result" | jq -e '.error' >/dev/null 2>&1; then
@@ -144,7 +155,14 @@ benchmark_model() {
         all_results=$(echo "$all_results" | jq --argjson r "$result" --arg t "$task" '. + {($t): $r}')
     done
 
-    STT_ALL_RESULTS="$all_results" STT_MODEL="$model_name" "$PYTHON" "$SCRIPT_DIR/_print_table.py"
+    STT_FORCE_PLAIN=1 STT_ALL_RESULTS="$all_results" STT_MODEL="$model_name" \
+        "$PYTHON" -c "
+import json, os, sys
+sys.path.insert(0, '$SCRIPT_DIR')
+from report import print_model_table
+results = json.loads(os.environ['STT_ALL_RESULTS'])
+print_model_table(os.environ['STT_MODEL'], results)
+"
 
     local ts report_path
     ts=$(date +%Y%m%d_%H%M%S)
