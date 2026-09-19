@@ -1220,7 +1220,7 @@ def main():
         )
         factory = TASK_WINDOWS["default"]
     window = factory(ros_node)
-    window.show()
+    window.showMaximized()
 
     ret = app.exec_()
     ros_node.destroy_node()
