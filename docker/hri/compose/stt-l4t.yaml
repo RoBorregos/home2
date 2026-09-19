@@ -14,4 +14,4 @@ services:
     # Any language -> english: distil-large-v3
     # Any language -> Any language: large-v3-turbo
     command: >
-      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper-streaming.py --port 50051 --model distil-large-v3 --log_transcriptions"
+      bash -c "python3 -u faster-whisper-streaming.py --port 50051 --model distil-large-v3 --log_transcriptions"
