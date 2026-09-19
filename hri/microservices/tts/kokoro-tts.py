@@ -12,6 +12,8 @@ from kokoro import KPipeline
 from pygame import mixer
 from scipy import signal
 
+PLAYBACK_TIMEOUT_MARGIN = 2.0
+
 
 class TTSService(tts_pb2_grpc.TTSServiceServicer):
     def __init__(self):
@@ -33,7 +35,12 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
 
         # Initialize pygame mixer
         mixer.pre_init(frequency=self.target_sample_rate, buffer=2048)
-        mixer.init()
+        try:
+            mixer.init()
+            self.playback_available = True
+        except Exception as e:
+            print(f"Audio playback unavailable ({e}); serving synthesis only.")
+            self.playback_available = False
 
         # Warm up the model
         try:
@@ -104,6 +111,9 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
 
     def _play_audio_chunk(self, audio_data):
         """Play audio chunk using pygame mixer."""
+        if not self.playback_available:
+            return
+
         # Normalize audio to int16
         audio_int16 = np.int16(audio_data * 32767)
 
@@ -118,16 +128,20 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
         # Reset buffer position
         buffer.seek(0)
 
-        # Wait until mixer is available
-        while mixer.music.get_busy():
-            time.sleep(0.05)
+        timeout = len(audio_int16) / self.target_sample_rate + PLAYBACK_TIMEOUT_MARGIN
+
+        self._wait_for_mixer(timeout)
 
         # Load and play from memory buffer
         mixer.music.load(buffer)
         mixer.music.play()
 
-        # Wait until this chunk finishes playing
-        while mixer.music.get_busy():
+        self._wait_for_mixer(timeout)
+
+    @staticmethod
+    def _wait_for_mixer(timeout):
+        deadline = time.monotonic() + timeout
+        while mixer.music.get_busy() and time.monotonic() < deadline:
             time.sleep(0.05)
 
     def _save_audio_to_wav(self, audio_data, output_path, sample_rate):

@@ -1,0 +1,23 @@
+# Shared pip constraints for the vision cuda/cpu images.
+#
+# numpy is pinned to 1.26.4 because the CUDA-built OpenCV/dlib stack (opencv.txt)
+# needs numpy 1.x. Without this constraint applied to every `pip install` in the
+# image, unpinned transitive deps pulled in later (e.g. ultralytics -> opencv-python,
+# insightface -> onnx/tifffile/ml-dtypes) can pull numpy 2.x in one layer and get
+# force-downgraded to 1.26.4 in a later layer, leaving files from both versions
+# mixed together in site-packages and breaking `import cv2` at runtime with errors
+# like `numpy._core.multiarray failed to import`.
+#
+# torch/torchvision are pinned to match torch.txt/torch-gpu.txt. Without this,
+# later requirements files with unpinned torch deps (models.txt -> ultralytics,
+# utils.txt -> timm, moondream.txt -> transformers/accelerate) let pip silently
+# upgrade torch in a later `pip install` layer, pulling a second, newer set of
+# `nvidia-*-cu13` CUDA runtime packages alongside the original cu12 ones instead
+# of reusing the already-installed torch — multiple GB of pure duplication.
+#
+# Pass this to every `pip install` step for these requirements files
+# (`pip install -c constraints.txt -r <file>.txt`) so pip resolves a single
+# consistent set of versions up front instead of overwriting them later.
+numpy==1.26.4
+torch==2.6.0
+torchvision==0.21.0

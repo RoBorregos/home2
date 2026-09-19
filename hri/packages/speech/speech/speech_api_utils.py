@@ -65,7 +65,10 @@ class SpeechApiUtils(object):
             if (
                 name in device_info["name"]
                 and device_info["max_input_channels"] == in_channels
-                and device_info["max_output_channels"] == out_channels
+                and (
+                    out_channels is None
+                    or device_info["max_output_channels"] == out_channels
+                )
             ):
                 return num_dev
             num_dev = num_dev + 1

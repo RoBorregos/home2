@@ -40,7 +40,7 @@ class AudioCapturer(Node):
         if self.use_respeaker:
             mic_device_name = "ReSpeaker"
             mic_input_channels = 6
-            mic_out_channels = 0
+            mic_out_channels = None
         else:
             mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
             mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
