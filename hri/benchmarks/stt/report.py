@@ -1,9 +1,6 @@
-"""Terminal output and JSON report writer for STT benchmarks."""
+"""Terminal output for STT benchmarks."""
 
-import json
 import os
-from datetime import datetime, timezone
-from typing import Any
 
 try:
     from rich import box
@@ -15,6 +12,7 @@ except ImportError:
     _RICH = False
 
 _force_plain = os.environ.get("STT_FORCE_PLAIN", "") == "1"
+_DASH = "\u2014"
 
 
 def print_model_table(model: str, task_results: dict[str, dict]) -> None:
@@ -49,9 +47,9 @@ def _print_rich(model: str, task_results: dict) -> None:
             task_name,
             str(total),
             f"[{acc_color}]{passed}/{total} ({pct:.0f}%)[/{acc_color}]",
-            f"{wer:.2%}" if wer is not None else "—",
-            f"{rtf:.4f}" if rtf is not None else "—",
-            f"{lat:.3f}" if lat is not None else "—",
+            f"{wer:.2%}" if wer is not None else _DASH,
+            f"{rtf:.4f}" if rtf is not None else _DASH,
+            f"{lat:.3f}" if lat is not None else _DASH,
         )
 
     console.print(t)
@@ -101,79 +99,7 @@ def _print_plain(model: str, task_results: dict) -> None:
 
         print(
             f"{task_name:<16} {total:>6} {passed}/{total} ({pct:.0f}%){'':<3} "
-            f"{f'{wer:.2%}' if wer is not None else '—':>10} "
-            f"{f'{rtf:.4f}' if rtf is not None else '—':>10} "
-            f"{f'{lat:.3f}' if lat is not None else '—':>10}"
+            f"{f'{wer:.2%}' if wer is not None else _DASH:>10} "
+            f"{f'{rtf:.4f}' if rtf is not None else _DASH:>10} "
+            f"{f'{lat:.3f}' if lat is not None else _DASH:>10}"
         )
-
-
-def print_comparison_table(all_results: dict[str, dict[str, dict]]) -> None:
-    """Side-by-side accuracy table for all models."""
-    models = list(all_results.keys())
-    tasks = list(next(iter(all_results.values())).keys()) if all_results else []
-    if not models or not tasks:
-        return
-
-    if _RICH:
-        console = Console()
-        t = Table(title="Model Comparison (Accuracy %)", box=box.SIMPLE_HEAD)
-        t.add_column("Task", style="cyan")
-        for m in models:
-            t.add_column(m, justify="right")
-        for task in tasks:
-            row = [task]
-            for m in models:
-                r = all_results[m].get(task, {})
-                cases = r.get("cases", [])
-                passed = sum(1 for c in cases if c["passed"])
-                total = len(cases)
-                pct = (passed / total * 100) if total else 0
-                color = "green" if pct >= 80 else ("yellow" if pct >= 60 else "red")
-                row.append(f"[{color}]{pct:.0f}%[/{color}]")
-            t.add_row(*row)
-        console.print(t)
-    else:
-        print("\n=== Comparison ===")
-        header = f"{'Task':<16}" + "".join(f"{m[:14]:>16}" for m in models)
-        print(header)
-        print("-" * len(header))
-        for task in tasks:
-            row = f"{task:<16}"
-            for m in models:
-                r = all_results[m].get(task, {})
-                cases = r.get("cases", [])
-                passed = sum(1 for c in cases if c["passed"])
-                total = len(cases)
-                pct = (passed / total * 100) if total else 0
-                row += f"{pct:.0f}%".rjust(16)
-            print(row)
-
-
-def save_json(all_results: dict, output_dir: str) -> str:
-    os.makedirs(output_dir, exist_ok=True)
-    ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
-    path = os.path.join(output_dir, f"benchmark_{ts}.json")
-
-    report: dict[str, Any] = {
-        "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-        "models": {},
-    }
-    for model, task_results in all_results.items():
-        report["models"][model] = {}
-        for task, r in task_results.items():
-            cases = r.get("cases", [])
-            passed = sum(1 for c in cases if c["passed"])
-            failed = [c for c in cases if not c["passed"]]
-            report["models"][model][task] = {
-                "accuracy": round(passed / len(cases), 3) if cases else 0,
-                "cases": len(cases),
-                "passed": passed,
-                "failed_cases": failed[:10],
-                "avg_wer": r.get("avg_wer"),
-                "avg_rtf": r.get("avg_rtf"),
-                "avg_latency_s": r.get("avg_latency_s"),
-            }
-
-    with open(path, "w") as f:
-        json.dump(report, f, indent=2, default=str)
-    return path
