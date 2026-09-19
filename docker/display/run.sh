@@ -31,7 +31,17 @@ add_or_update_variable .env "ENV_TYPE" "$ENV_TYPE"
 DISPLAY_VALUE="${DISPLAY:-}"
 XAUTHORITY_FILE="${XAUTHORITY:-$HOME/.Xauthority}"
 XAUTHORITY_HOST="$XAUTHORITY_FILE"
-if [ -z "$DISPLAY_VALUE" ] && [ -S /tmp/.X11-unix/X0 ]; then
+PHYSICAL_DISPLAY=""
+PHYSICAL_XAUTHORITY=""
+for shell_pid in $(pgrep -u "$(id -u)" -x gnome-shell 2>/dev/null); do
+  PHYSICAL_DISPLAY=$(tr '\0' '\n' < "/proc/$shell_pid/environ" 2>/dev/null | sed -n 's/^DISPLAY=//p' | head -n 1)
+  PHYSICAL_XAUTHORITY=$(tr '\0' '\n' < "/proc/$shell_pid/environ" 2>/dev/null | sed -n 's/^XAUTHORITY=//p' | head -n 1)
+  [ -n "$PHYSICAL_DISPLAY" ] && break
+done
+if [ -z "$DISPLAY_VALUE" ] && [ -n "$PHYSICAL_DISPLAY" ] && [ -r "$PHYSICAL_XAUTHORITY" ]; then
+  DISPLAY_VALUE="$PHYSICAL_DISPLAY"
+  XAUTHORITY_HOST="$PHYSICAL_XAUTHORITY"
+elif [ -z "$DISPLAY_VALUE" ] && [ -S /tmp/.X11-unix/X0 ]; then
   PHYSICAL_XAUTHORITY=$(ps -eo args= | sed -n 's|.*Xorg .* -auth \([^ ]*\).*|\1|p' | head -n 1)
   PHYSICAL_XAUTHORITY_COPY="/tmp/home2-display-xauthority"
   if [ -n "$PHYSICAL_XAUTHORITY" ] && sudo -n install -o "$(id -u)" -g "$(id -g)" -m 600 "$PHYSICAL_XAUTHORITY" "$PHYSICAL_XAUTHORITY_COPY" 2>/dev/null; then
