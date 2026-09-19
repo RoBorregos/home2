@@ -148,7 +148,7 @@ def launch_setup(context, *args, **kwargs):
         .planning_pipelines(
             # Default "ompl": VAMP needs retuning before it can be default
             # again (its self-filter masks goal voxels FCL keeps -> rejection).
-            pipelines=["ompl"], # add "vamp" to the list to enable VAMP planning
+            pipelines=["ompl"],  # add "vamp" to the list to enable VAMP planning
             default_planning_pipeline="ompl",
         )
         .to_moveit_configs()
@@ -156,7 +156,7 @@ def launch_setup(context, *args, **kwargs):
 
     # moveit_config.planning_pipelines["vamp"]["planning_plugin"] = (
     #    "vamp_moveit_plugin/VampPlannerManager"
-    #)
+    # )
 
     # robot description launch
     robot_description_launch = IncludeLaunchDescription(
@@ -275,7 +275,7 @@ def launch_setup(context, *args, **kwargs):
     #    condition=IfCondition(
     #        LaunchConfiguration("start_vamp_server", default="false")
     #    ),
-    #)
+    # )
 
     # Points joint1 at the Nav2 goal while the base drives, homes to base front
     # when the goal ends. Pure joint-velocity control, no MoveIt in the loop.
@@ -293,7 +293,7 @@ def launch_setup(context, *args, **kwargs):
         SetEnvironmentVariable(
             name="RCUTILS_LOGGING_SEVERITY_THRESHOLD", value=log_level
         ),
-        #vamp_server_launch,
+        # vamp_server_launch,
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_publisher_node,
