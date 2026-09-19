@@ -26,10 +26,19 @@ setup_common_env "display" ".env"
 
 add_or_update_variable .env "ENV_TYPE" "$ENV_TYPE"
 
-# Use the active Xauthority display when DISPLAY is not exported (common in
-# XRDP/TTY shells), while preserving an explicitly selected display.
+# Prefer the physical display when launching from a shell without DISPLAY.
+# XRDP/TTY sessions fall back to their own Xauthority display.
 DISPLAY_VALUE="${DISPLAY:-}"
 XAUTHORITY_FILE="${XAUTHORITY:-$HOME/.Xauthority}"
+XAUTHORITY_HOST="$XAUTHORITY_FILE"
+if [ -z "$DISPLAY_VALUE" ] && [ -S /tmp/.X11-unix/X0 ]; then
+  PHYSICAL_XAUTHORITY=$(ps -eo args= | sed -n 's|.*Xorg .* -auth \([^ ]*\).*|\1|p' | head -n 1)
+  PHYSICAL_XAUTHORITY_COPY="/tmp/home2-display-xauthority"
+  if [ -n "$PHYSICAL_XAUTHORITY" ] && sudo -n install -o "$(id -u)" -g "$(id -g)" -m 600 "$PHYSICAL_XAUTHORITY" "$PHYSICAL_XAUTHORITY_COPY" 2>/dev/null; then
+    DISPLAY_VALUE=":0"
+    XAUTHORITY_HOST="$PHYSICAL_XAUTHORITY_COPY"
+  fi
+fi
 if [ -z "$DISPLAY_VALUE" ] && [ -r "$XAUTHORITY_FILE" ] && command -v xauth >/dev/null 2>&1; then
   DISPLAY_NUMBER=$(xauth -f "$XAUTHORITY_FILE" list 2>/dev/null | sed -n 's|.*/unix:\([0-9][0-9]*\).*|\1|p' | head -n 1)
   if [ -n "$DISPLAY_NUMBER" ]; then
@@ -37,6 +46,7 @@ if [ -z "$DISPLAY_VALUE" ] && [ -r "$XAUTHORITY_FILE" ] && command -v xauth >/de
   fi
 fi
 add_or_update_variable .env "DISPLAY" "${DISPLAY_VALUE:-:0}"
+add_or_update_variable .env "XAUTHORITY_HOST" "$XAUTHORITY_HOST"
 
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable .env "RUNTIME" "nvidia"

@@ -15,7 +15,7 @@ services:
       - ../../:/workspace/src
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - ${HOME}/.Xauthority:/home/ros/.Xauthority:rw
+      - ${XAUTHORITY_HOST:-$HOME/.Xauthority}:/home/ros/.Xauthority:rw
       - /dev/shm:/dev/shm
       - ./build:/workspace/build
       - ./install:/workspace/install
