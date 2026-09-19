@@ -57,7 +57,7 @@ case "$DISPLAY_TASK" in
   "storing-groceries") DISPLAY_TASK="storing_groceries" ;;
   "finals")            DISPLAY_TASK="default" ;;
   "safety")            DISPLAY_TASK="ppc" ;;
-  "backup"|"recreate"|"build"|"build-image"|"clean"|"upload-image"|"") DISPLAY_TASK="default" ;;
+  "backup"|"recreate"|"build"|"build-image"|"clean"|"upload-image"|"cpu"|"cuda"|"l4t"|"") DISPLAY_TASK="default" ;;
 esac
 
 if [ "$BUILD" == "true" ]; then
