@@ -97,8 +97,12 @@ TensorRT 10.16, GPU Ampere `sm_87`.
     `-DINTROSPECTION=ON` (paridad con `docker/roudi/Dockerfile`).
   - `numpy<2` al final: `pip install torch` mete NumPy 2.x en `~/.local` que
     rompe `import cv2`.
-  - `nav2_omni.yaml` / `nav2_omni_limp.yaml`: plugin STVL `…/…` → `…::…`
-    (pluginlib de Jazzy).
+  - `nav2_omni.yaml` / `nav2_omni_limp.yaml`: el plugin STVL **se queda** como
+    `spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer` (con diagonal). NO
+    migrar a `::`: el `costmap_plugins.xml` de la rama `jazzy` (la que clonan
+    los Dockerfiles, `STVL_BRANCH=jazzy`) lo declara con
+    `name="spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"`, y pluginlib
+    resuelve por `name`. Con `::` el costmap no carga la capa.
 - **manipulation**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`; base cambiada de
   `dustynv/l4t-pytorch:r36.4.0` a `jazzy_l4t_base`; `libvtk-qt` agregado a
   skip-keys (rosdep base.yaml de ROS sigue apuntando a `libvtk7-qt-dev`,

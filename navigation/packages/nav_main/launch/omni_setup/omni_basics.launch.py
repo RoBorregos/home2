@@ -4,24 +4,19 @@
 Data flow:
     odrive_dashboard  ──>  /odrive/odom  (nav_msgs/Odometry, body-frame vx/vy)
                       ──>  /odrive/imu   (sensor_msgs/Imu, BNO085 yaw + yaw-rate)
-                                │
-                                ▼
-                        ekf_node (this launch)  ──>  /odometry/filtered  +  TF odom->base_link
+                      ──>  TF odom->base_link  (the on-MCU EKF pose, publish_tf)
     lidar setup ----> /scan1 , /scan2 - > /scan
 
-Fusion strategy for a mecanum base:
-  * Wheels are trusted ONLY for body-frame linear velocity (vx, vy). They slip,
-    so we never fuse wheel x/y/yaw.
-  * The BNO085 IMU OWNS heading: we fuse absolute yaw + yaw rate, which are
-    immune to wheel slip.
+The dashboard is the SOLE publisher of odom->base_link. robot_localization is
+configured below but deliberately NOT launched — see the ekf_node block.
 
 Prerequisites:
   * odrive_dashboard must be running (it owns /dev/ttyACM0 and publishes the two
     inputs above). Pass use_dashboard:=true to start it from here.
   * The dashboard publishes /odrive/odom twist in the base_link frame (it
-    un-rotates the firmware's world-frame ODOM_vx/ODOM_vy). robot_localization
-    rotates that body-frame twist by the IMU heading, so it must NOT be
-    world-frame here or it gets rotated twice.
+    un-rotates the firmware's world-frame ODOM_vx/ODOM_vy). If the EKF is ever
+    re-enabled it rotates that body-frame twist by the IMU heading, so it must
+    NOT be world-frame here or it gets rotated twice.
 
 """
 
@@ -55,6 +50,21 @@ def generate_launch_description():
     )
 
 
+    # ╔══════════════════════════════════════════════════════════════════════╗
+    # ║  NOT LAUNCHED — this Node is defined but intentionally left out of   ║
+    # ║  the LaunchDescription at the bottom of this file (dropped in        ║
+    # ║  24a57a3e6). odrive_dashboard owns odom->base_link via its own       ║
+    # ║  publish_tf param (default True), so nothing here competes with it.  ║
+    # ║                                                                      ║
+    # ║  To re-enable the EKF you must do BOTH in the same edit, or the two  ║
+    # ║  nodes fight over the same TF edge:                                  ║
+    # ║    1. add `ekf_node` back to the LaunchDescription, and              ║
+    # ║    2. add 'publish_tf': False to dashboard_node's parameters.        ║
+    # ║                                                                      ║
+    # ║  Fusion strategy this config encodes (mecanum base): wheels are      ║
+    # ║  trusted ONLY for body-frame vx/vy (they slip, so never fuse wheel   ║
+    # ║  x/y/yaw); the BNO085 IMU owns heading (absolute yaw + yaw rate).    ║
+    # ╚══════════════════════════════════════════════════════════════════════╝
     # robot_localization state-vector layout for the *_config arrays (15 values):
     #   X      Y      Z
     #   roll   pitch  yaw
@@ -74,7 +84,8 @@ def generate_launch_description():
             'frequency': 30.0,
             'sensor_timeout': 0.2,   # telemetry is ~25-35 Hz; 0.2 s tolerates a few dropped frames
             'two_d_mode': True,      # planar base: zero Z / roll / pitch
-            'publish_tf': True,      # publishes odom -> base_link (do NOT also run odom_to_tf.py)
+            'publish_tf': True,      # would publish odom -> base_link — only takes effect if this
+                                     # node is re-added to the LaunchDescription (see header above)
 
             'map_frame': 'map',
             'odom_frame': 'odom',
