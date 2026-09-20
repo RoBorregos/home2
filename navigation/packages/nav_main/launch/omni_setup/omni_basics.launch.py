@@ -50,21 +50,10 @@ def generate_launch_description():
     )
 
 
-    # ╔══════════════════════════════════════════════════════════════════════╗
-    # ║  NOT LAUNCHED — this Node is defined but intentionally left out of   ║
-    # ║  the LaunchDescription at the bottom of this file (dropped in        ║
-    # ║  24a57a3e6). odrive_dashboard owns odom->base_link via its own       ║
-    # ║  publish_tf param (default True), so nothing here competes with it.  ║
-    # ║                                                                      ║
-    # ║  To re-enable the EKF you must do BOTH in the same edit, or the two  ║
-    # ║  nodes fight over the same TF edge:                                  ║
-    # ║    1. add `ekf_node` back to the LaunchDescription, and              ║
-    # ║    2. add 'publish_tf': False to dashboard_node's parameters.        ║
-    # ║                                                                      ║
-    # ║  Fusion strategy this config encodes (mecanum base): wheels are      ║
-    # ║  trusted ONLY for body-frame vx/vy (they slip, so never fuse wheel   ║
-    # ║  x/y/yaw); the BNO085 IMU owns heading (absolute yaw + yaw rate).    ║
-    # ╚══════════════════════════════════════════════════════════════════════╝
+    # NOT LAUNCHED: left out of the LaunchDescription below (24a57a3e6) — the
+    # dashboard owns odom->base_link. To re-enable, add it back AND set
+    # 'publish_tf': False on dashboard_node, or both fight over the same TF.
+    # Fuses body-frame vx/vy only (wheels slip); IMU owns heading.
     # robot_localization state-vector layout for the *_config arrays (15 values):
     #   X      Y      Z
     #   roll   pitch  yaw
@@ -84,8 +73,7 @@ def generate_launch_description():
             'frequency': 30.0,
             'sensor_timeout': 0.2,   # telemetry is ~25-35 Hz; 0.2 s tolerates a few dropped frames
             'two_d_mode': True,      # planar base: zero Z / roll / pitch
-            'publish_tf': True,      # would publish odom -> base_link — only takes effect if this
-                                     # node is re-added to the LaunchDescription (see header above)
+            'publish_tf': True,      # inert unless this node is re-added (see above)
 
             'map_frame': 'map',
             'odom_frame': 'odom',
