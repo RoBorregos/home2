@@ -35,14 +35,6 @@
       </geometry>
     </collision>
   </link>
-  <xacro:if value="${mujoco_plugin}">
-    <mujoco>
-      <reference name="${attach_to}">
-        <camera name="zed_mujoco_camera_link" mode="fixed" fovy="45" quat="-0.5 -0.5 0.5 0.5 "/>
-        </reference>
-    </mujoco>
-  </xacro:if>
-
 
 </xacro:macro>
 </robot>
