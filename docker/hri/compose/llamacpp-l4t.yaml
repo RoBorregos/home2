@@ -2,7 +2,7 @@ services:
   llama:
     profiles: [hric, gpsr, restaurant, bench]
     container_name: home2-hri-llamacpp-l4t
-    image: ${LLAMA_CPP_IMAGE:-ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin@sha256:f7c67c102b08252e963f9e5f92c3a36554c8f69305eb7ea257c6cd12e24c3191}
+    image: ${LLAMA_CPP_IMAGE:-ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin}
     runtime: nvidia
     network_mode: host
     volumes:
