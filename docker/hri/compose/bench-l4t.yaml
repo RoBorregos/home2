@@ -1,56 +1,30 @@
-# Benchmark-only backends. Both bind port 11434 and live behind separate
-# profiles, so exactly one runs at a time on the single Jetson GPU.
+# Benchmark overrides for the existing HRI llama.cpp and Ollama services.
+# Load this after llamacpp-l4t.yaml and ollama-l4t.yaml so the benchmark uses
+# the same images, GPU configuration, network, and model volume as production.
 services:
-  bench-llamacpp:
-    profiles: [llamacpp]
-    container_name: home2-hri-bench-llamacpp
-    image: ghcr.io/nvidia-ai-iot/llama_cpp:latest-jetson-orin
-    runtime: nvidia
-    network_mode: host
-    volumes:
-      - ../../../hri/packages/nlp/assets:/root/.cache/huggingface
-      - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
-      - ../scripts/llama-cpp-entrypoint.sh:/scripts/entrypoint.sh
+  llama:
+    profiles: [bench]
     environment:
       ROLE: bench
       LLAMA_MODEL_FILE: ${LLAMA_MODEL_FILE:-}
-      LLAMA_ALIAS: ${LLAMA_ALIAS:-}
+      LLAMA_ALIAS: ${LLAMA_ALIAS:-qwen3}
       LLAMA_CTX_SIZE: ${LLAMA_CTX_SIZE:-2048}
-      NVIDIA_VISIBLE_DEVICES: all
-      NVIDIA_DRIVER_CAPABILITIES: compute,utility
-      LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu/tegra
-    stdin_open: true
-    tty: true
-    entrypoint: ["/bin/bash", "/scripts/entrypoint.sh"]
 
-  bench-ollama:
-    profiles: [ollama]
-    container_name: home2-hri-bench-ollama
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.ollama
-      args:
-        BASE_IMAGE: dustynv/ollama:0.6.8-r36.4
-    image: roborregos/home2:hri-ollama-l4t
-    runtime: nvidia
-    network_mode: host
+  ollama:
+    profiles: [bench]
     volumes:
-      - ../../../hri/packages/nlp/assets:/ollama
       - /usr/lib/aarch64-linux-gnu/tegra:/usr/lib/aarch64-linux-gnu/tegra
       - ../scripts/ollama-bench-entrypoint.sh:/scripts/bench-entrypoint.sh
     environment:
       ROLE: bench
-      OLLAMA_MODELS: /ollama
       LLAMA_MODEL_FILE: ${LLAMA_MODEL_FILE:-}
-      LLAMA_ALIAS: ${LLAMA_ALIAS:-}
+      LLAMA_ALIAS: ${LLAMA_ALIAS:-qwen3}
       LLAMA_CTX_SIZE: ${LLAMA_CTX_SIZE:-2048}
       BENCH_PORT: "11434"
-      # Match the llama.cpp entrypoint's flash-attn + q8_0 KV cache.
+      # Match llama.cpp's flash-attention, q8_0 KV cache, and one request slot.
       OLLAMA_FLASH_ATTENTION: "1"
       OLLAMA_KV_CACHE_TYPE: q8_0
       OLLAMA_NUM_PARALLEL: "1"
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
-    stdin_open: true
-    tty: true
     entrypoint: ["/bin/bash", "/scripts/bench-entrypoint.sh"]

@@ -260,9 +260,10 @@ def merge_reports(paths: list[str]) -> dict:
     for p in paths:
         with open(p) as f:
             data = json.load(f)
-        backend = (data.get("config") or {}).get("backend") or "unknown"
+        config = data.get("config") or {}
+        backend = config.get("backend") or "unknown"
         for model, task_results in (data.get("models") or {}).items():
-            label = f"{backend}/{model}"
+            label = f"{backend}/{config.get('model_name') or model}"
             merged[label] = {
                 task: dict(r, cases=_rebuild_cases(r))
                 for task, r in task_results.items()

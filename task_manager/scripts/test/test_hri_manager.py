@@ -76,6 +76,8 @@ COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match onl
 # the per-task CSVs.
 TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
 NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
+NLP_MODEL_NAME = os.getenv("NLP_MODEL_NAME", "")
+NLP_MODEL_FILE = os.getenv("NLP_MODEL_FILE", "")
 NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
 NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
 NLP_BACKEND = os.getenv("NLP_BACKEND", "")
@@ -1093,6 +1095,26 @@ class TestHriManager(Node):
 
     # No accuracy dataset for these; they contribute perf and JSON conformance.
     _PERF_ONLY_TASKS = {"is_coherent", "llm_wrapper"}
+    _ACCURACY_SERVICE_CLIENTS = {
+        "extract_data": "extract_data_service",
+        "is_positive": "is_positive_service",
+        "is_negative": "is_negative_service",
+    }
+
+    def _require_accuracy_services(self) -> None:
+        missing = []
+        for task_name in NLP_TASKS:
+            client_name = self._ACCURACY_SERVICE_CLIENTS.get(task_name)
+            if client_name and not getattr(self.hri_manager, client_name).wait_for_service(
+                timeout_sec=2.0
+            ):
+                missing.append(task_name)
+        if missing:
+            tasks = ", ".join(missing)
+            raise RuntimeError(
+                f"HRI NLP services are unavailable for: {tasks}. "
+                "Start the HRI NLP services or select only performance tasks."
+            )
 
     def run_nlp_benchmark(self):
         if not NLP_MODEL_ALIAS:
@@ -1101,6 +1123,8 @@ class TestHriManager(Node):
         if not NLP_TASKS:
             self.get_logger().error("TEST_NLP set but NLP_TASKS is empty.")
             return
+
+        self._require_accuracy_services()
 
         self.get_logger().info(
             f"TEST_NLP mode: model={NLP_MODEL_ALIAS} tasks={NLP_TASKS} "
@@ -1163,6 +1187,8 @@ class TestHriManager(Node):
         config = {
             "backend": NLP_BACKEND or "unknown",
             "model_alias": NLP_MODEL_ALIAS,
+            "model_name": NLP_MODEL_NAME,
+            "model_file": NLP_MODEL_FILE,
             "url": NLP_OLLAMA_URL,
             "runs": NLP_RUNS,
             "tasks": NLP_TASKS,

@@ -115,6 +115,7 @@ def _run_timed(
         "stream": True,
         "stream_options": {"include_usage": True},
         "max_tokens": max_tokens,
+        "temperature": 0,
     }
     schema_req = _schema_request(schema_model)
     schema_mode = "none"

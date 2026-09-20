@@ -3,6 +3,8 @@
 #
 # Both backends bind port 11434 and are started one at a time, so the single
 # Jetson GPU is never shared between them.
+# Accuracy tasks require the HRI NLP ROS services to already be running;
+# is_coherent and llm_wrapper can run as standalone performance-only tasks.
 #
 # Usage:
 #   ./run.sh --backend both --model qwen3-4b --runs 5
@@ -13,6 +15,7 @@
 # Flags:
 #   --backend  llamacpp | ollama | both   (default: llamacpp)
 #   --model    registry name or index     (default: interactive menu)
+#   --alias    API model name              (default: qwen3, matching HRI config)
 #   --runs     timed runs per task        (default: 20, after 1 discarded warmup)
 #   --tasks    comma-separated task list  (default: all)
 #   --download-only / --all / --delete / --no-build / --keep-up
@@ -25,6 +28,7 @@ ASSETS_DIR="$REPO_ROOT/hri/packages/nlp/assets"
 REGISTRY="$SCRIPT_DIR/models.json"
 HRI_COMPOSE_DIR="$REPO_ROOT/docker/hri/compose"
 BENCH_COMPOSE="$HRI_COMPOSE_DIR/bench-l4t.yaml"
+COMPOSE_FILES=(-f llamacpp-l4t.yaml -f ollama-l4t.yaml -f bench-l4t.yaml)
 COMPOSE_ENV="$HRI_COMPOSE_DIR/.env"
 RESULTS_DIR="$SCRIPT_DIR/results"
 CONTAINER_RESULTS_DIR="/workspace/src/hri/benchmarks/nlp/results"
@@ -32,6 +36,7 @@ PORT=11434
 
 BACKEND="llamacpp"
 MODEL_SELECT=""
+MODEL_ALIAS="qwen3"
 RUNS=20
 TASKS="is_coherent,extract_data,is_positive,is_negative,llm_wrapper"
 SELECT_ALL=false
@@ -44,6 +49,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --backend)       BACKEND="$2"; shift 2 ;;
         --model|--models) MODEL_SELECT="$2"; shift 2 ;;
+        --alias)         MODEL_ALIAS="$2"; shift 2 ;;
         --runs)          RUNS="$2"; shift 2 ;;
         --tasks)         TASKS="$2"; shift 2 ;;
         --all)           SELECT_ALL=true; shift ;;
@@ -185,7 +191,7 @@ IDX=${SELECTED[0]}
 MODEL_NAME="${MODEL_NAMES[$IDX]}"
 MODEL_FILE="${MODEL_FILES[$IDX]}"
 MODEL_CTX_SIZE="${MODEL_CTX[$IDX]}"
-ALIAS="${MODEL_FILE%.gguf}"
+ALIAS="$MODEL_ALIAS"
 
 if [[ ! -f "$ASSETS_DIR/$MODEL_FILE" ]]; then
     echo "Model not cached; downloading first."
@@ -194,10 +200,18 @@ fi
 
 stop_backends() {
     (cd "$HRI_COMPOSE_DIR" && \
-        docker compose -f bench-l4t.yaml --profile llamacpp --profile ollama down --remove-orphans >/dev/null 2>&1) || true
-    for c in home2-hri-bench-llamacpp home2-hri-bench-ollama home2-hri-llamacpp-l4t home2-hri-ollama-l4t; do
-        docker rm -f "$c" >/dev/null 2>&1 || true
-    done
+        docker compose "${COMPOSE_FILES[@]}" --profile bench rm -sf llama ollama \
+            >/dev/null 2>&1) || true
+}
+
+service_for_backend() {
+    [[ "$1" == "llamacpp" ]] && echo "llama" || echo "ollama"
+}
+
+container_for_backend() {
+    [[ "$1" == "llamacpp" ]] \
+        && echo "home2-hri-llamacpp-l4t" \
+        || echo "home2-hri-ollama-l4t"
 }
 
 wait_healthy() {
@@ -212,7 +226,7 @@ wait_healthy() {
     done
     echo
     echo "ERROR: $backend failed to come up. Logs:"
-    docker logs "home2-hri-bench-$backend" 2>&1 | tail -40
+    docker logs "$(container_for_backend "$backend")" 2>&1 | tail -40
     return 1
 }
 
@@ -228,8 +242,10 @@ echo "Model:    $MODEL_NAME ($MODEL_FILE, ctx=$MODEL_CTX_SIZE, alias=$ALIAS)"
 echo "Backends: ${BACKENDS[*]}  (sequential, one GPU)"
 echo "Tasks:    $TASKS"
 echo "Runs:     $RUNS per task (+1 discarded warmup)"
+echo "Compose:  HRI llama/Ollama definitions + benchmark override"
 
 REPORTS=()
+FAILED=false
 
 for backend in "${BACKENDS[@]}"; do
     echo
@@ -239,8 +255,9 @@ for backend in "${BACKENDS[@]}"; do
 
     stop_backends
     echo "  Starting $backend..."
+    service="$(service_for_backend "$backend")"
     (cd "$HRI_COMPOSE_DIR" && \
-        docker compose -f bench-l4t.yaml --profile "$backend" up -d "bench-$backend")
+        docker compose "${COMPOSE_FILES[@]}" --profile bench up -d "$service")
     wait_healthy "$backend"
 
     before="$(ls -1 "$RESULTS_DIR"/benchmark_*.json 2>/dev/null | sort || true)"
@@ -250,6 +267,8 @@ for backend in "${BACKENDS[@]}"; do
     TEST_NLP=true \
     NLP_BACKEND="$backend" \
     NLP_MODEL_ALIAS="$ALIAS" \
+    NLP_MODEL_NAME="$MODEL_NAME" \
+    NLP_MODEL_FILE="$MODEL_FILE" \
     NLP_OLLAMA_URL="http://localhost:$PORT/v1" \
     NLP_TASKS="$TASKS" \
     NLP_RUNS="$RUNS" \
@@ -257,7 +276,10 @@ for backend in "${BACKENDS[@]}"; do
         "$REPO_ROOT/run.sh" integration --test-hri $BUILD_FLAG
     rc=$?
     set -e
-    [[ $rc -ne 0 ]] && echo "  WARNING: integration run exited $rc"
+    if [[ $rc -ne 0 ]]; then
+        echo "  ERROR: integration run exited $rc"
+        FAILED=true
+    fi
 
     after="$(ls -1 "$RESULTS_DIR"/benchmark_*.json 2>/dev/null | sort || true)"
     new_report="$(comm -13 <(echo "$before") <(echo "$after") | tail -1)"
@@ -265,7 +287,8 @@ for backend in "${BACKENDS[@]}"; do
         echo "  Report: $new_report"
         REPORTS+=("$new_report")
     else
-        echo "  WARNING: no new benchmark JSON produced for $backend"
+        echo "  ERROR: no new benchmark JSON produced for $backend"
+        FAILED=true
     fi
 
     BUILD_FLAG=""   # only build the integration image once
@@ -278,4 +301,8 @@ if [[ ${#REPORTS[@]} -gt 0 ]]; then
     python3 "$SCRIPT_DIR/report.py" "${REPORTS[@]}" || true
 else
     echo "No reports produced."
+fi
+
+if $FAILED; then
+    exit 1
 fi
