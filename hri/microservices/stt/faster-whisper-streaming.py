@@ -11,10 +11,19 @@ from transcriber_faster_whisper import WhisperModel
 
 
 class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
-    def __init__(self, model, transcriber=None, log_transcriptions=False):
+    def __init__(
+        self,
+        model,
+        transcriber=None,
+        log_transcriptions=False,
+        language="en",
+        task="transcribe",
+    ):
         self.log_transcriptions = log_transcriptions
         self.model = model
         self.transcriber = transcriber
+        self.language = None if language == "auto" else language
+        self.task = task
 
     def Transcribe(self, request_iterator, context):
         client = None
@@ -31,12 +40,12 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                 send_last_n_segments=10,
                 clip_audio=False,
                 model=self.model,
-                language="en",
-                task="translate",
+                language=self.language,
+                task=self.task,
                 same_output_threshold=10,
                 transcriber=self.transcriber,
             )
-            print("Hotwords set for transcription:", first_chunk.hotwords)
+            print("Hotwords set for transcription:", client.hotwords)
 
             first_audio = WhisperServicer.bytes_to_float_array(first_chunk.audio_data)
             client.add_frames(first_audio)
@@ -102,7 +111,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         return raw_data.astype(np.float32) / 32768.0
 
 
-def serve(port, model, log_transcriptions):
+def serve(port, model, log_transcriptions, language="en", task="transcribe"):
     # Create the gRPC server
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -132,7 +141,7 @@ def serve(port, model, log_transcriptions):
         print(f"Warmup file {warmup_file} not found, skipping warmup")
 
     speech_pb2_grpc.add_SpeechStreamServicer_to_server(
-        WhisperServicer(model, transcriber, log_transcriptions), server
+        WhisperServicer(model, transcriber, log_transcriptions, language, task), server
     )
 
     # Bind to a port
@@ -151,7 +160,16 @@ if __name__ == "__main__":
         "--model",
         type=str,
         default="base.en",
-        help="Model size to use (base.en, large, or small.en)",
+        help="Model ID or CTranslate2 path (e.g. base.en, distil-large-v3, large-v3-turbo)",
+    )
+    parser.add_argument(
+        "--language", default="en", help="Source language code, or auto for detection"
+    )
+    parser.add_argument(
+        "--task",
+        choices=("transcribe", "translate"),
+        default="transcribe",
+        help="Transcribe speech as spoken, or translate to English with a compatible model",
     )
     parser.add_argument(
         "--log_transcriptions",
@@ -159,4 +177,4 @@ if __name__ == "__main__":
         help="Enable logging of transcriptions and audio files",
     )
     args = parser.parse_args()
-    serve(args.port, args.model, args.log_transcriptions)
+    serve(args.port, args.model, args.log_transcriptions, args.language, args.task)

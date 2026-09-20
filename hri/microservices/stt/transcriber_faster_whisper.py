@@ -30,6 +30,7 @@ from faster_whisper.vad import (
     get_speech_timestamps,
     merge_segments,
 )
+from hotwords import build_context_tokens
 
 
 @dataclass
@@ -1492,15 +1493,15 @@ class WhisperModel:
     ) -> List[int]:
         prompt = []
 
-        if previous_tokens or (hotwords and not prefix):
+        context_tokens = build_context_tokens(
+            tokenizer,
+            previous_tokens,
+            hotwords if not prefix else None,
+            self.max_length // 2 - 1,
+        )
+        if context_tokens:
             prompt.append(tokenizer.sot_prev)
-            if hotwords and not prefix:
-                hotwords_tokens = tokenizer.encode(" " + hotwords.strip())
-                if len(hotwords_tokens) >= self.max_length // 2:
-                    hotwords_tokens = hotwords_tokens[: self.max_length // 2 - 1]
-                prompt.extend(hotwords_tokens)
-            if previous_tokens:
-                prompt.extend(previous_tokens[-(self.max_length // 2 - 1) :])
+            prompt.extend(context_tokens)
 
         prompt.extend(tokenizer.sot_sequence)
 
