@@ -1,0 +1,6 @@
+ObjectDetect2D:
+  ros__parameters:
+    use_sim_time: true
+    models:
+      - yolo_generic
+    MAX_DEPTH_THRESH: 2.5

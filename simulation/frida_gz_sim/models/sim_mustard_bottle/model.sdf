@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="sim_mustard_bottle">
+    <link name="link">
+      <inertial>
+        <pose>0 0 0.095 0 0 0</pose>
+        <mass>0.3</mass>
+        <inertia><ixx>0.00099</ixx><iyy>0.00111</iyy><izz>0.00029</izz><ixy>0</ixy><ixz>0</ixz><iyz>0</iyz></inertia>
+      </inertial>
+      <collision name="collision_0">
+        <pose>0 0 0.095 0 0 0</pose>
+        <geometry><box><size>0.090 0.060 0.19</size></box></geometry>
+        <surface>
+          <friction><ode><mu>1.2</mu><mu2>1.2</mu2></ode></friction>
+          <contact><ode><kp>1000000</kp><kd>100</kd><min_depth>0.001</min_depth><max_vel>0.1</max_vel></ode></contact>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <pose>0.0155 0.0235 0.003 0 0 0</pose>
+        <geometry><mesh><uri>model://fuel_mustard_bottle/textured.obj</uri></mesh></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

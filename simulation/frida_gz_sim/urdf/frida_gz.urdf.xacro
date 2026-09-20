@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="controllers_file" default="$(find frida_gz_sim)/config/gz_controllers.yaml"/>
+  <xacro:arg name="image_width" default="640"/>
+  <xacro:arg name="image_height" default="360"/>
+  <xacro:arg name="camera_rate" default="10"/>
+
+  <!-- Real robot description; pass ros2_control_plugin:=gz_ros2_control/GazeboSimSystem -->
+  <xacro:include filename="$(find frida_description)/urdf/omnibase/FRIDA_Real.urdf.xacro"/>
+
+  <!-- Static base: the sim does not navigate -->
+  <link name="world"/>
+  <joint name="world_to_base_link" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Gripper fingers, both commanded directly (no mimic in sim) -->
+  <ros2_control name="FridaGripperSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <joint name="rightfinger">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="leftfinger">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>$(arg controllers_file)</parameters>
+    </plugin>
+  </gazebo>
+
+  <!-- Firmware-like gravity compensation on the arm -->
+  <xacro:macro name="no_gravity" params="link">
+    <gazebo reference="${link}">
+      <gravity>false</gravity>
+    </gazebo>
+  </xacro:macro>
+  <xacro:no_gravity link="link1"/>
+  <xacro:no_gravity link="link2"/>
+  <xacro:no_gravity link="link3"/>
+  <xacro:no_gravity link="link4"/>
+  <xacro:no_gravity link="link5"/>
+  <xacro:no_gravity link="link6"/>
+
+  <!-- Grippy finger pads -->
+  <xacro:macro name="finger_pad" params="link">
+    <gazebo reference="${link}">
+      <gravity>false</gravity>
+      <mu1>4.0</mu1>
+      <mu2>4.0</mu2>
+      <kp>1000000.0</kp>
+      <kd>100.0</kd>
+      <minDepth>0.001</minDepth>
+      <maxVel>0.1</maxVel>
+    </gazebo>
+  </xacro:macro>
+  <xacro:finger_pad link="right_finger"/>
+  <xacro:finger_pad link="left_finger"/>
+
+  <!-- ZED2 frames normally published by the zed_wrapper -->
+  <link name="zed_camera_center"/>
+  <joint name="zed_camera_center_joint" type="fixed">
+    <parent link="zed_camera_link"/>
+    <child link="zed_camera_center"/>
+    <origin xyz="0 0 0.015" rpy="0 0.05 0"/>
+  </joint>
+  <link name="zed_left_camera_frame"/>
+  <joint name="zed_left_camera_joint" type="fixed">
+    <parent link="zed_camera_center"/>
+    <child link="zed_left_camera_frame"/>
+    <origin xyz="-0.01 0.06 0" rpy="0 0 0"/>
+  </joint>
+  <link name="zed_left_camera_frame_optical"/>
+  <joint name="zed_left_camera_optical_joint" type="fixed">
+    <parent link="zed_left_camera_frame"/>
+    <child link="zed_left_camera_frame_optical"/>
+    <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+  </joint>
+  <link name="zed_right_camera_frame"/>
+  <joint name="zed_right_camera_joint" type="fixed">
+    <parent link="zed_camera_center"/>
+    <child link="zed_right_camera_frame"/>
+    <origin xyz="-0.01 -0.06 0" rpy="0 0 0"/>
+  </joint>
+  <link name="zed_right_camera_frame_optical"/>
+  <joint name="zed_right_camera_optical_joint" type="fixed">
+    <parent link="zed_right_camera_frame"/>
+    <child link="zed_right_camera_frame_optical"/>
+    <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+  </joint>
+
+  <!-- Simulated ZED left RGB-D stream (looks along +X of the left camera frame) -->
+  <gazebo reference="zed_left_camera_frame">
+    <sensor name="zed_rgbd" type="rgbd_camera">
+      <always_on>true</always_on>
+      <update_rate>$(arg camera_rate)</update_rate>
+      <topic>zed_rgbd</topic>
+      <gz_frame_id>zed_left_camera_frame_optical</gz_frame_id>
+      <camera>
+        <horizontal_fov>1.76</horizontal_fov>
+        <image>
+          <width>$(arg image_width)</width>
+          <height>$(arg image_height)</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.1</near>
+          <far>10.0</far>
+        </clip>
+        <depth_camera>
+          <clip>
+            <near>0.2</near>
+            <far>10.0</far>
+          </clip>
+        </depth_camera>
+      </camera>
+    </sensor>
+  </gazebo>
+</robot>

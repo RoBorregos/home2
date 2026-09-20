@@ -1,0 +1,41 @@
+name: gzsim
+
+services:
+  gzsim:
+    container_name: home2-gzsim
+    image: roborregos/home2:gz-sim
+    build:
+      context: ../..
+      dockerfile: docker/gz_sim/Dockerfile
+      args:
+        USER_UID: ${LOCAL_USER_ID:-1000}
+        USER_GID: ${LOCAL_GROUP_ID:-1000}
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    user: ${LOCAL_USER_ID:-1000}:${LOCAL_GROUP_ID:-1000}
+    volumes:
+      - ../../:/workspace/src/
+      - ./ws/build:/workspace/build
+      - ./ws/install:/workspace/install
+      - ./ws/log:/workspace/log
+      - ./cache/gz:/home/ros/.gz
+      - ./cache/ultralytics:/home/ros/.config/Ultralytics
+      - ./logs:/workspace/sim_logs
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    environment:
+      DISPLAY: ${DISPLAY:-}
+      QT_X11_NO_MITSHM: 1
+      TERM: xterm-256color
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+      # Isolated DDS domain so the sim never mixes with other running FRIDA containers
+      ROS_DOMAIN_ID: ${SIM_ROS_DOMAIN_ID:-77}
+      RMW_IMPLEMENTATION: rmw_cyclonedds_cpp
+      CYCLONEDDS_URI: file:///etc/cyclonedds.xml
+      GPD_INSTALL_DIR: /usr/local
+      YOLO_CONFIG_DIR: /home/ros/.config/Ultralytics
+    tty: true
+    stdin_open: true
+    working_dir: /workspace
+    command: sleep infinity
