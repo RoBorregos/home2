@@ -27,10 +27,15 @@ wait_for_server() {
 MAIN_MODEL="${LLAMA_MODEL_FILE:-Qwen3.5-4B-UD-Q4_K_XL.gguf}"
 # Version-neutral alias: the GGUF filename is the only place the model version lives.
 MAIN_ALIAS="${LLAMA_ALIAS:-frida-llm}"
-# q8_0 KV cache can produce gibberish on Qwen3.5; set to f16 if that happens.
-CACHE_TYPE="${LLAMA_CACHE_TYPE:-q8_0}"
+# Keep the correctness-first llama.cpp default until q8_0 is validated on the
+# target Jetson; set LLAMA_CACHE_TYPE=q8_0 for that A/B comparison.
+CACHE_TYPE="${LLAMA_CACHE_TYPE:-f16}"
 
-if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
+if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] || [ "$ROLE" = "bench" ]; then
+    if [ ! -s "$MODELS_DIR/$MAIN_MODEL" ]; then
+        echo "ERROR: model not found or empty: $MODELS_DIR/$MAIN_MODEL"
+        exit 1
+    fi
     echo "Starting $MAIN_MODEL on port 11434 (alias=$MAIN_ALIAS)..."
     llama-server \
         --model "$MODELS_DIR/$MAIN_MODEL" \
@@ -40,6 +45,7 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
         -ngl 99 \
         --flash-attn on \
         --jinja \
+        --reasoning off \
         --cache-type-k "$CACHE_TYPE" \
         --cache-type-v "$CACHE_TYPE" \
         --parallel 1 \

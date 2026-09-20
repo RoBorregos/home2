@@ -157,9 +157,7 @@ fi
 idx=${SELECTED[0]}
 name="${MODEL_NAMES[$idx]}"
 file="${MODEL_FILES[$idx]}"
-# Serve under the production alias so both the ROS services and the perf
-# side-channel resolve; the registry name only labels the report.
-alias_name="frida-llm"
+alias_name="${file%.gguf}"
 
 echo "Launch mode: $name ($file)"
 
@@ -203,14 +201,10 @@ llama-server is up.
 Next step - run the benchmark:
 
   TEST_NLP=true \\
-  NLP_MODEL_ALIAS=$name \\
+  NLP_MODEL_ALIAS=$alias_name \\
   NLP_OLLAMA_URL=http://localhost:$PORT/v1 \\
-  NLP_TASKS=extract_data \\
+  NLP_TASKS=is_positive,is_negative,extract_data \\
   ./run.sh integration --test-hri --build
-
-Perf across the other LLM-backed use cases:
-
-  docker/hri/scripts/benchmark-llm.sh --all --runs 5
 
 To stop this server:
   docker compose -f $COMPOSE_FILE stop llama

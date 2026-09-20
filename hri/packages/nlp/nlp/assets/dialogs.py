@@ -8,8 +8,8 @@ from nlp.assets.schemas import (
     IsAnswerPositive,
 )
 
-# Qwen3.5 controls reasoning through the chat template, not a /no_think token.
-NO_THINKING = {"chat_template_kwargs": {"enable_thinking": False}}
+# Supported by both Ollama and llama.cpp's OpenAI-compatible endpoints.
+NO_THINKING = {"reasoning_effort": "none"}
 
 
 def strip_thinking(response: str) -> str:

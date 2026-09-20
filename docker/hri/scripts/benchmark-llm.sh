@@ -15,7 +15,7 @@
 #   categorize_shelves — assigns categories to shelves given their contents
 #
 # Flags:
-#   --thinking         — enable thinking mode (enable_thinking: true)
+#   --thinking         — enable thinking mode (removes /no_think from prompts)
 #
 # Examples:
 #   ./benchmark-llm.sh --usecase is_coherent
@@ -28,7 +28,6 @@ RUNS=5
 PROMPT=""
 MODEL_OVERRIDE=""  # Leave empty to let the server pick its loaded model
 USECASE=""
-ENABLE_THINKING=false
 
 ENDPOINTS=()
 LABELS=()
@@ -41,53 +40,49 @@ usecase_payload() {
     local model="$2"
     case "$uc" in
         extract_data)
-            jq -n --arg model "$model" --argjson think "$ENABLE_THINKING" '{
+            jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
-                chat_template_kwargs: {enable_thinking: $think},
                 max_tokens: 60,
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"You will receive a text (`full_text`) and a specific target (`extract_data`). Your task is to extract and return the closest relevant word or phrase that directly answers the target.\nReturn JSON: {\"data\": \"<value or empty string>\"}"},
-                    {role:"user",   content:"<full_text>My name is Carlos and I would like a glass of water.</full_text>\n<extract_data>drink</extract_data>"}
+                    {role:"user",   content:"<full_text>My name is Carlos and I would like a glass of water.</full_text>\n<extract_data>drink</extract_data> /no_think"}
                 ]
             }'
             ;;
         is_coherent)
-            jq -n --arg model "$model" --argjson think "$ENABLE_THINKING" '{
+            jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
-                chat_template_kwargs: {enable_thinking: $think},
                 max_tokens: 30,
                 temperature: 0.0,
                 messages: [
                     {role:"system", content:"Determine if a command is complete and executable by a robot. Output JSON: {\"is_coherent\": true/false}"},
-                    {role:"user",   content:"Command: Go to the kitchen and pick up the apple"}
+                    {role:"user",   content:"Command: Go to the kitchen and pick up the apple /no_think"}
                 ]
             }'
             ;;
         llm_wrapper)
-            jq -n --arg model "$model" --argjson think "$ENABLE_THINKING" '{
+            jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
-                chat_template_kwargs: {enable_thinking: $think},
                 max_tokens: 80,
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"You are an intelligent assistant. Answer clearly and concisely using the provided context.\n\nContext: The robot picked up a red apple from the kitchen table."},
-                    {role:"user",   content:"What object did the robot pick up?"}
+                    {role:"user",   content:"What object did the robot pick up? /no_think"}
                 ]
             }'
             ;;
         categorize_shelves)
-            jq -n --arg model "$model" --argjson think "$ENABLE_THINKING" '{
+            jq -n --arg model "$model" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
-                chat_template_kwargs: {enable_thinking: $think},
                 max_tokens: 40,
                 temperature: 0.5,
                 messages: [
@@ -111,7 +106,7 @@ while [[ $# -gt 0 ]]; do
         --model) MODEL_OVERRIDE="$2"; shift 2 ;;
         --usecase) USECASE="$2"; shift 2 ;;
         --all) USECASE="all"; shift 1 ;;
-        --thinking) ENABLE_THINKING=true; shift 1 ;;
+        --thinking) NO_THINK="" ; shift 1 ;;
         --list-usecases)
             echo "Available use cases:"
             echo "  extract_data       — extract a specific piece of info from free text"
@@ -195,9 +190,8 @@ run_single() {
         else
             payload=$(jq -n \
                 --arg model "$model" \
-                --arg content "$PROMPT" \
-                --argjson think "$ENABLE_THINKING" \
-                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512, stream_options: {include_usage: true}, chat_template_kwargs: {enable_thinking: $think}}')
+                --arg content "$PROMPT /no_think" \
+                '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512, stream_options: {include_usage: true}}')
         fi
 
         # Capture streaming response with timestamps
