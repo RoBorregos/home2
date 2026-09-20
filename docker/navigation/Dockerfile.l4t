@@ -1,4 +1,3 @@
-# No JetPack 7 dustynv tag yet; build on our l4t_base (Jazzy, has the CUDA/cuDNN toolkit).
 ARG BASE_IMAGE=roborregos/home2:l4t_base
 FROM ${BASE_IMAGE}
 

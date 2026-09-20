@@ -344,9 +344,8 @@ class ODriveDashboardNode(Node):
         # rejection (firmware-side), so this is defence-in-depth, not load-
         # bearing -- kept per the EKF rollout's "keep unchanged" guidance.
         self._last_imu_yaw: float | None = None
-        # Consecutive yaw rejections. A genuine fast spin (or an IMU reset)
-        # looks exactly like a corrupted sample, so after a few in a row we
-        # re-anchor instead of rejecting the real heading forever.
+        # Consecutive rejections. A real fast spin looks like a corrupted sample,
+        # so after a few in a row we re-anchor instead of rejecting forever.
         self._imu_yaw_rejects = 0
 
         # publishers
@@ -755,14 +754,19 @@ class ODriveDashboardNode(Node):
                              o_phi: float, o_x: float, o_y: float,
                              o_w: float, o_vx: float, o_vy: float) -> None:
         """Publish /odrive/odom (+ the odom -> base_link TF) from one telemetry
-        line's ODOM_* block.
+        line's ODOM_* block. Called from BOTH serial paths: the fat line lands at
+        ~6 Hz but slam_toolbox looks up the TF once per scan (10 Hz), so the slim
+        line -- which carries the same ODOM_* fields -- publishes here too.
 
-        Called from BOTH serial paths. The fat (N0-present) line is rare -- on
-        the robot it lands at ~6 Hz while /scan runs at 10 Hz -- and slam_toolbox
-        looks up odom -> base_link at each scan's stamp, so odometry published
-        only there forces the scan matcher to interpolate across ~160 ms gaps.
-        The slim high-rate line carries the same ODOM_* fields, so it publishes
-        here too.
+        ODOM_x/y/z in meters (z = 0 on a planar base), ODOM_phi in radians, and:
+          - ODOM_q*             EKF orientation quaternion (preferred); falls back
+                                to a yaw-derived quaternion on pre-EKF firmware.
+          - ODOM_vxb / ODOM_vyb body-frame linear twist, what nav_msgs/Odometry
+                                expects under `child_frame_id`. Pre-EKF firmware
+                                sends world-frame ODOM_vx / ODOM_vy instead.
+          - ODOM_var_*          EKF covariance diagonal, mapped into the ROS
+                                [x, y, z, roll, pitch, yaw] layout. Unestimated
+                                entries get 1e9 so filters read them as unknown.
         """
         o_z   = self._sf(data.get('ODOM_z'))
         o_vxb = self._sf(data.get('ODOM_vxb')); o_vyb = self._sf(data.get('ODOM_vyb'))
@@ -921,9 +925,7 @@ class ODriveDashboardNode(Node):
             # this is defence-in-depth, not load-bearing -- kept rather than
             # removed per the EKF rollout's "keep unchanged" guidance.
             # Only the yaw is dropped, never the whole line: the ODOM_* block
-            # rides on these same lines and feeds /odrive/odom and the
-            # odom -> base_link TF that slam_toolbox looks up once per scan.
-            # Returning here would take those down too.
+            # rides along and feeds the TF slam_toolbox needs every scan.
             if 'IMU_yaw' in data:
                 iy = data['IMU_yaw']
                 reject = not math.isfinite(iy) or abs(iy) > 200.0
@@ -931,18 +933,15 @@ class ODriveDashboardNode(Node):
                     dyaw = (iy - self._last_imu_yaw + 180.0) % 360.0 - 180.0
                     reject = abs(dyaw) > 40.0
                 if reject:
-                    # Hold the last accepted heading rather than dropping the
-                    # key: /odrive/imu_euler and the web telemetry read this
-                    # field straight from `data`, and a missing key would
-                    # surface there as a bogus 0 deg.
+                    # Hold the last good heading instead of dropping the key --
+                    # /odrive/imu_euler reads `data` directly and a missing key
+                    # would surface there as a bogus 0 deg.
                     if self._last_imu_yaw is not None:
                         data['IMU_yaw'] = self._last_imu_yaw
                     else:
                         del data['IMU_yaw']
                     self._imu_yaw_rejects += 1
-                    # Persistent rejection means the anchor, not the sample, is
-                    # the stale one -- adopt the reading so we can't lock out
-                    # the real heading indefinitely.
+                    # Persistent => the anchor is the stale one; adopt the reading.
                     if self._imu_yaw_rejects > 5 and math.isfinite(iy):
                         self._last_imu_yaw = iy
                         self._imu_yaw_rejects = 0
@@ -979,11 +978,8 @@ class ODriveDashboardNode(Node):
                 self._latest_telem = telem
                 if self._sio:
                     self._sio.emit('telemetry', telem)
-                # Republish odometry here too: this is the line that arrives
-                # every cycle, and slam_toolbox / Nav2 need odom -> base_link
-                # continuously, not at the fat line's ~6 Hz. Guarded on the
-                # ODOM block being present so a line without it never
-                # republishes a stale pose under a fresh stamp.
+                # Publish odom here too -- this line arrives every cycle. Guarded
+                # on the ODOM block so we never restamp a stale pose.
                 if 'ODOM_phi' in data:
                     self._publish_odom_and_tf(
                         data, self.get_clock().now().to_msg(),
@@ -1032,8 +1028,7 @@ class ODriveDashboardNode(Node):
             o_phi  = f(data.get('ODOM_phi')); o_x = f(data.get('ODOM_x'))
             o_y    = f(data.get('ODOM_y'));   o_w = f(data.get('ODOM_w'))
             o_vx   = f(data.get('ODOM_vx')); o_vy = f(data.get('ODOM_vy'))
-            # The EKF-extended ODOM_* fields (ODOM_z / ODOM_q* / ODOM_vxb /
-            # ODOM_var_*) are read straight from `data` by
+            # The EKF-extended ODOM_* fields are read from `data` by
             # _publish_odom_and_tf(), which both serial paths call.
             bt_active = i(data.get('BT_active'))
 
@@ -1100,22 +1095,6 @@ class ODriveDashboardNode(Node):
             self.pub_imu.publish(imu_msg)
 
             # ── nav_msgs/Odometry ───────────────────────────────────────────
-            # ODOM_x / ODOM_y / ODOM_z in meters (z = 0 on a planar base),
-            # ODOM_phi in radians (heading), and:
-            #   - ODOM_q*    EKF orientation quaternion (preferred); falls
-            #                back to a yaw-derived quaternion when the EKF
-            #                firmware hasn't been flashed yet.
-            #   - ODOM_vxb / ODOM_vyb : body-frame linear twist — what
-            #     nav_msgs/Odometry expects under `child_frame_id`. When the
-            #     EKF firmware is absent, ODOM_vx / ODOM_vy carry the
-            #     legacy world-frame twist and we fall back to those.
-            #   - ODOM_var_* : EKF covariance diagonal mapped into the ROS
-            #     [x, y, z, roll, pitch, yaw] / [vx, vy, vz, wx, wy, wz]
-            #     layout. Unestimated entries (z / roll / pitch / wx / wy)
-            #     are marked with 1e9 so downstream filters treat them as
-            #     "unknown" rather than "tightly zero".
-            # Same publication as the slim line above -- one implementation,
-            # so the two serial paths can never disagree on frames or signs.
             self._publish_odom_and_tf(data, imu_msg.header.stamp,
                                       o_phi, o_x, o_y, o_w, o_vx, o_vy)
             self.pub_node_ids   .publish(_i32(node_ids))
