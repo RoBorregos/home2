@@ -69,11 +69,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Dedicated localization node: rolling-buffer scan match against the loaded
     # graph, publishes map->odom. The map arg overrides map_file_name in the YAML.
-    # It's a lifecycle node — it does nothing (no /scan subscription, no map->odom
-    # TF) until driven through configure -> activate. The events below do that
-    # automatically as soon as the process starts (same pattern as slam.launch.py's
-    # mapping node), so Nav2's global_costmap doesn't spin forever waiting for a
-    # "map" frame that never shows up.
+    # Lifecycle node: idle until configure -> activate, driven by the events below.
     slam_node = LifecycleNode(
         package='slam_toolbox',
         executable='localization_slam_toolbox_node',
@@ -93,11 +89,7 @@ def launch_setup(context, *args, **kwargs):
         remappings=slam_remaps,
     )
 
-    # Driven off the process starting rather than off the launch starting, so a
-    # respawn gets configured too. A bare EmitEvent fires once for the whole
-    # launch: after a crash, `respawn` would bring the node back `unconfigured`
-    # -- alive, but with no /scan subscription, no /map and no map->odom, and
-    # nothing logged to say so.
+    # On process start, not launch start, so a respawn gets re-configured too.
     configure_on_start = RegisterEventHandler(
         OnProcessStart(
             target_action=slam_node,

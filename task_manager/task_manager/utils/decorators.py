@@ -4,7 +4,6 @@ Decorators for subtask managers
 
 import time
 from rclpy.action import ActionClient
-from rclpy.task import Future
 import rclpy.client
 from .logger import Logger
 
@@ -27,13 +26,6 @@ def mockable(return_value=None, delay=0, mock=False, _mock_callback=None):
                     time.sleep(delay)
                 value = return_value(self) if callable(return_value) else return_value
                 Logger.mock(self.node, f"{func.__name__}. Value: {value}")
-                # Methods with an is_async contract promise a Future when called
-                # with is_async=True (callers do future.add_done_callback(...));
-                # honor that under mock too, or the mock crashes any async caller.
-                if kwargs.get("is_async"):
-                    future = Future()
-                    future.set_result(value)
-                    return future
                 return value
             return func(self, *args, **kwargs)
 

@@ -62,11 +62,7 @@ def generate_launch_description():
         'params_file', default_value=default_params,
         description='slam_toolbox parameter YAML.')
     # slam_toolbox online-async mapper: publishes map->odom + /map.
-    # It's a lifecycle node — it does nothing (no /scan subscription, no /map
-    # publisher) until driven through configure -> activate. The events below
-    # do that automatically as soon as the process starts, so this behaves
-    # like a normal always-on node instead of requiring an external lifecycle
-    # manager (nav2's, or a manual `ros2 lifecycle set` call).
+    # Lifecycle node: idle until configure -> activate, driven by the events below.
     slam_node = LifecycleNode(
         package='slam_toolbox',
         executable='async_slam_toolbox_node',
@@ -82,11 +78,7 @@ def generate_launch_description():
         ],
     )
 
-    # Driven off the process starting rather than off the launch starting, so a
-    # respawn gets configured too. A bare EmitEvent fires once for the whole
-    # launch: after a crash, `respawn` would bring the node back `unconfigured`
-    # -- alive, but with no /scan subscription, no /map and no map->odom, and
-    # nothing logged to say so.
+    # On process start, not launch start, so a respawn gets re-configured too.
     configure_on_start = RegisterEventHandler(
         OnProcessStart(
             target_action=slam_node,
