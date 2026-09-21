@@ -37,6 +37,7 @@ wait_for_server() {
 # from the benchmark flow without changing this script.
 MAIN_MODEL="${LLAMA_MODEL_FILE:-qwen3-4b.Q4_K_M.gguf}"
 MAIN_ALIAS="${LLAMA_ALIAS:-qwen3}"
+MAIN_CTX="${LLAMA_CTX_SIZE:-2048}"
 
 if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
     debug_log "Starting $MAIN_MODEL on port 11434 (alias=$MAIN_ALIAS)..."
@@ -44,7 +45,7 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "bench" ]; then
         --model "$MODELS_DIR/$MAIN_MODEL" \
         --host 0.0.0.0 \
         --port 11434 \
-        --ctx-size 2048 \
+        --ctx-size "$MAIN_CTX" \
         -ngl 99 \
         --flash-attn on \
         --cache-type-k q8_0 \
