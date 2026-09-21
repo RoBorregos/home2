@@ -8,19 +8,10 @@ COPY vision/requirements /workspace/requirements
 
 ENV PIP_NO_CACHE_DIR=1
 
-# Download, build and install dlib, then drop the source/build tree so it
-# doesn't linger in this layer.
-WORKDIR /workspace
-RUN wget http://dlib.net/files/dlib-20.0.tar.bz2 && \
-    tar jxvf dlib-20.0.tar.bz2 && \
-    cd dlib-20.0 && \
-    mkdir build && cd build && \
-    cmake .. && \
-    cmake --build . && \
-    cd .. && \
-    python3 setup.py install --set DLIB_USE_CUDA=1 && \
-    cd /workspace && \
-    rm -rf dlib-20.0 dlib-20.0.tar.bz2
+# Disable Ultralytics' runtime auto-install of missing packages (e.g. tensorrt,
+# onnx). It bypasses constraints.txt and pulls unpinned versions at runtime,
+# which requires internet access we won't have at competition time.
+ENV YOLO_AUTOINSTALL=false
 
 RUN pip install --upgrade pip
 
@@ -32,9 +23,12 @@ RUN pip install -c constraints.txt \
     -r opencv.txt \
     -r torch-gpu.txt \
     -r face_recognition.txt \
+    -r face_recognition-gpu.txt \
     -r models.txt \
     -r utils.txt \
     -r moondream.txt
+
+WORKDIR /workspace
 
 # CV-bridge
 RUN apt update && apt install -y ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-laser-geometry \

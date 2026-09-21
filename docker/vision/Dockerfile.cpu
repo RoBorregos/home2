@@ -7,6 +7,11 @@ RUN mkdir -p /workspace/requirements
 
 ENV PIP_NO_CACHE_DIR=1
 
+# Disable Ultralytics' runtime auto-install of missing packages (e.g. tensorrt,
+# onnx). It bypasses constraints.txt and pulls unpinned versions at runtime,
+# which requires internet access we won't have at competition time.
+ENV YOLO_AUTOINSTALL=false
+
 RUN pip install --upgrade pip
 
 # Requirements
@@ -23,7 +28,6 @@ RUN pip install -c constraints.txt \
     -r utils.txt
 
 WORKDIR /workspace
-RUN git clone --depth 1 https://github.com/ultralytics/yolov5.git
 
 # CV-bridge
 RUN apt update && apt-get install -y ros-${ROS_DISTRO}-cv-bridge \

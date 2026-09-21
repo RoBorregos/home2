@@ -1,5 +1,5 @@
 # numpy is pinned in constraints.txt (must be applied via `pip install -c constraints.txt -r ...`)
-opencv-python
+# NOTE: Do NOT add opencv-python here, see opencv.txt.
 grpcio==1.71.0
 protobuf==5.29.1
 ultralytics==8.4.19
