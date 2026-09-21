@@ -7,7 +7,7 @@ services:
     environment:
       ROLE: bench
       LLAMA_MODEL_FILE: ${LLAMA_MODEL_FILE:-}
-      LLAMA_ALIAS: ${LLAMA_ALIAS:-qwen3}
+      LLAMA_ALIAS: ${LLAMA_ALIAS:-frida-llm}
       LLAMA_CTX_SIZE: ${LLAMA_CTX_SIZE:-2048}
 
   ollama:
@@ -18,7 +18,7 @@ services:
     environment:
       ROLE: bench
       LLAMA_MODEL_FILE: ${LLAMA_MODEL_FILE:-}
-      LLAMA_ALIAS: ${LLAMA_ALIAS:-qwen3}
+      LLAMA_ALIAS: ${LLAMA_ALIAS:-frida-llm}
       LLAMA_CTX_SIZE: ${LLAMA_CTX_SIZE:-2048}
       BENCH_PORT: "11434"
       # Match llama.cpp's flash-attention, q8_0 KV cache, and one request slot.

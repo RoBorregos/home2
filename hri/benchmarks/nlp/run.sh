@@ -7,7 +7,7 @@
 # is_coherent and llm_wrapper can run as standalone performance-only tasks.
 #
 # Usage:
-#   ./run.sh --backend both --model qwen3-4b --runs 5
+#   ./run.sh --backend llamacpp --model qwen3.5-4b --runs 20
 #   ./run.sh --backend llamacpp                 # menu picks the model
 #   ./run.sh --download-only --all              # just fetch GGUFs
 #   ./run.sh --delete                           # delete-cached menu
@@ -36,7 +36,7 @@ PORT=11434
 
 BACKEND="llamacpp"
 MODEL_SELECT=""
-MODEL_ALIAS="qwen3"
+MODEL_ALIAS="frida-llm"
 RUNS=20
 TASKS="is_coherent,extract_data,is_positive,is_negative,llm_wrapper"
 SELECT_ALL=false
