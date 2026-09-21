@@ -14,6 +14,7 @@ import os
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
+from std_msgs.msg import Int16
 
 from frida_interfaces.srv import Query, CropQuery, ObjectPoints
 from frida_interfaces.srv import MoondreamDetection
@@ -21,6 +22,7 @@ from frida_interfaces.msg import Point2D, ObjectDetection
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
+    CAMERA_ROTATION_TOPIC,
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
     OBJECT_POINTS_TOPIC,
@@ -38,6 +40,15 @@ import moondream_proto_pb2_grpc  # noqa
 
 NOT_FOUND = "not found"
 
+# The camera hangs upside down while FRIDA carries a bag (vision_tasks.camera_upside_down
+# publishes 180 on CAMERA_ROTATION_TOPIC). Moondream must see an UPRIGHT image or the VLM
+# describes an upside-down scene, but every caller speaks RAW pixel coordinates: the depth
+# image is never rotated, so a 3D deprojection built on rotated pixels comes out mirrored
+# (see tracker_node._to_raw_coords). So this node rotates the frame for the model and
+# translates coordinates on the way in and out, leaving the raw-space contract intact.
+# Like tracker_node, only 0/180 is supported; 90/270 are logged and treated as 0.
+SUPPORTED_ROTATIONS = (0, 180)
+
 # MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
 
 CONF_THRESHOLD = 0.5
@@ -51,6 +62,11 @@ class MoondreamNode(Node):
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
+        )
+
+        self.rotation = 0
+        self.rotation_subscriber = self.create_subscription(
+            Int16, CAMERA_ROTATION_TOPIC, self.rotation_callback, 10
         )
 
         self.query_service = self.create_service(
@@ -81,6 +97,39 @@ class MoondreamNode(Node):
         """Callback to receive the image from the camera."""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
+    def rotation_callback(self, msg):
+        """Track the camera orientation published by vision_tasks.camera_upside_down."""
+        value = int(msg.data) % 360
+        if value not in SUPPORTED_ROTATIONS:
+            self.get_logger().warn(
+                f"Camera rotation {value} not supported by moondream "
+                f"(only {SUPPORTED_ROTATIONS}); treating as 0"
+            )
+            value = 0
+        if value != self.rotation:
+            self.rotation = value
+            self.get_logger().info(f"Camera rotation set to {self.rotation}")
+
+    def upright(self, frame):
+        """The frame as the model should see it. A 180 deg rotation preserves the
+        shape, so normalized coordinates stay comparable either way."""
+        if self.rotation == 180:
+            return cv2.rotate(frame, cv2.ROTATE_180)
+        return frame
+
+    def flip_box(self, xmin, ymin, xmax, ymax):
+        """Move a normalized bbox between raw and upright space. A 180 deg flip is
+        its own inverse, so this converts in both directions."""
+        if self.rotation != 180:
+            return xmin, ymin, xmax, ymax
+        return 1.0 - xmax, 1.0 - ymax, 1.0 - xmin, 1.0 - ymin
+
+    def flip_point(self, x, y):
+        """Move a normalized point between raw and upright space (see flip_box)."""
+        if self.rotation != 180:
+            return x, y
+        return 1.0 - x, 1.0 - y
+
     def query_callback(self, request, response):
         """Callback to query the image."""
         self.get_logger().info("Executing service Query")
@@ -90,7 +139,7 @@ class MoondreamNode(Node):
             self.get_logger().warn("No image received yet.")
             return response
 
-        _, image_bytes = cv2.imencode(".jpg", self.image)
+        _, image_bytes = cv2.imencode(".jpg", self.upright(self.image))
         image_bytes = image_bytes.tobytes()
 
         try:
@@ -123,23 +172,23 @@ class MoondreamNode(Node):
             self.get_logger().warn("No image received yet.")
             return response
 
-        frame = self.image.copy()
+        frame = self.upright(self.image)
 
-        xmin = request.xmin
-        ymin = request.ymin
-        xmax = request.xmax
-        ymax = request.ymax
+        # The caller normalized against the raw frame; crop out of the upright one.
+        xmin, ymin, xmax, ymax = self.flip_box(
+            request.xmin, request.ymin, request.xmax, request.ymax
+        )
 
-        xmin = xmin * self.image.shape[1]
-        ymin = ymin * self.image.shape[0]
-        xmax = xmax * self.image.shape[1]
-        ymax = ymax * self.image.shape[0]
+        xmin = xmin * frame.shape[1]
+        ymin = ymin * frame.shape[0]
+        xmax = xmax * frame.shape[1]
+        ymax = ymax * frame.shape[0]
 
         if (
-            0 <= xmin < self.image.shape[1]
-            and 0 <= ymin < self.image.shape[0]
-            and 0 < xmax <= self.image.shape[1]
-            and 0 < ymax <= self.image.shape[0]
+            0 <= xmin < frame.shape[1]
+            and 0 <= ymin < frame.shape[0]
+            and 0 < xmax <= frame.shape[1]
+            and 0 < ymax <= frame.shape[0]
         ):
             print(f"Crop coordinates: {xmin}, {ymin}, {xmax}, {ymax}")
             cropped = frame[int(ymin) : int(ymax), int(xmin) : int(xmax)]
@@ -188,7 +237,7 @@ class MoondreamNode(Node):
             self.get_logger().warn("No image received yet.")
             return response
 
-        _, image_bytes = cv2.imencode(".jpg", self.image)
+        _, image_bytes = cv2.imencode(".jpg", self.upright(self.image))
         image_bytes = image_bytes.tobytes()
 
         try:
@@ -208,11 +257,11 @@ class MoondreamNode(Node):
                 self.get_logger().warn(f"No points found for {request.subject}")
                 return response
 
+            # Answers come back in upright space; callers expect raw.
             ros_points = []
             for pt in grpc_response.points:
                 point = Point2D()
-                point.x = pt.x
-                point.y = pt.y
+                point.x, point.y = self.flip_point(pt.x, pt.y)
                 ros_points.append(point)
 
             response.points = ros_points
@@ -238,7 +287,7 @@ class MoondreamNode(Node):
             self.get_logger().warn("No image received yet.")
             return response
 
-        _, image_bytes = cv2.imencode(".jpg", self.image)
+        _, image_bytes = cv2.imencode(".jpg", self.upright(self.image))
         image_bytes = image_bytes.tobytes()
 
         try:
@@ -258,14 +307,17 @@ class MoondreamNode(Node):
                 self.get_logger().warn(response.message)
                 return response
 
+            # Boxes come back in upright space; callers expect raw.
             for obj in grpc_response.objects:
                 detection = ObjectDetection()
                 detection.label_text = obj.name
                 detection.score = 1.0
-                detection.xmin = obj.x_min
-                detection.ymin = obj.y_min
-                detection.xmax = obj.x_max
-                detection.ymax = obj.y_max
+                (
+                    detection.xmin,
+                    detection.ymin,
+                    detection.xmax,
+                    detection.ymax,
+                ) = self.flip_box(obj.x_min, obj.y_min, obj.x_max, obj.y_max)
                 response.detections.append(detection)
 
             response.success = True
