@@ -1,5 +1,5 @@
 # ZED CAMERA TOPICS
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+CAMERA_TOPIC = "/zed/zed_node/rgb/color/rect/image"
 DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
 CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
 
@@ -9,7 +9,8 @@ CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
 # CAMERA_INFO_TOPIC = "/zed/depth/camera_info"
 
 # ZED CAMERA FRAME
-CAMERA_FRAME = "zed_left_camera_optical_frame"
+CAMERA_FRAME = "zed_left_camera_frame_optical"
+RIGHT_CAMERA_FRAME = "zed_right_camera_frame_optical"
 
 # OBJECT 2D TOPICS
 DETECTIONS_TOPIC = "/vision/detections"
@@ -147,6 +148,9 @@ YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 # Chair removal
 CHAIRS_TO_REMOVE_SERVICE = "/vision/chairs_to_remove"
 CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
+
+# Talking detection node
+IS_TALKING_TOPIC = "/vision/is_talking"
 
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"

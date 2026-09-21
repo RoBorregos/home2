@@ -263,7 +263,7 @@ class MoondreamNode(Node):
                 detection.label_text = obj.name
                 detection.score = 1.0
                 detection.xmin = obj.x_min
-                detection.ymin = obj.ymin
+                detection.ymin = obj.y_min
                 detection.xmax = obj.x_max
                 detection.ymax = obj.y_max
                 response.detections.append(detection)

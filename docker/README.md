@@ -43,7 +43,9 @@ roborregos/home2:l4t_base
 
 ## Base images
 
-These images are based on `ubuntu 22.04` and contain the basic setup for all areas using `ROS`. There is one for each environment ensuring the best performance. The right image is detected and built upon running `run.sh` using the `Dockerfiles` in this directory.
+These images are based on `ubuntu 24.04` (ROS 2 Jazzy) and contain the basic setup for all areas using `ROS`. There is one for each environment ensuring the best performance. The right image is detected and built upon running `run.sh` using the `Dockerfiles` in this directory.
+
+`l4t_base` (JetPack 7.2) is the only base for every l4t area. It also ships CUDA/cuDNN/TensorRT, torch/torchvision/torchaudio (PyPI cu130 build using the system CUDA), numpy, scipy, OpenCV with CUDA, cv_bridge, onnxruntime-gpu and CycloneDDS with iceoryx SHM, so area images only add their own packages. Versions are pinned in `scripts/constraints-l4t.txt` and enforced for every `pip install` through `/etc/pip.conf`. See `docs/jetpack7-jazzy-migration.md` for details.
 
 ## Areas
 

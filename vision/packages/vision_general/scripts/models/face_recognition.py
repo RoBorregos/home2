@@ -4,6 +4,7 @@ import os
 
 import cv2
 import numpy as np
+import onnxruntime as ort
 from insightface.app import FaceAnalysis
 
 INSIGHTFACE_MODEL = "buffalo_sc"
@@ -12,19 +13,32 @@ TRACK_THRESHOLD = 50
 
 
 def _insightface_providers() -> list:
-    cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
-    return [
-        (
-            "TensorrtExecutionProvider",
-            {
-                "trt_engine_cache_enable": True,
-                "trt_engine_cache_path": cache_dir,
-                "trt_fp16_enable": True,
-            },
-        ),
-        "CUDAExecutionProvider",
-        "CPUExecutionProvider",
-    ]
+    available = ort.get_available_providers()
+    if (
+        "TensorrtExecutionProvider" not in available
+        and "CUDAExecutionProvider" not in available
+    ):
+        raise RuntimeError(
+            "InsightFace requires a GPU execution provider (TensorRT or CUDA); "
+            f"available providers: {available}"
+        )
+    providers = []
+    if "TensorrtExecutionProvider" in available:
+        cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
+        providers.append(
+            (
+                "TensorrtExecutionProvider",
+                {
+                    "trt_engine_cache_enable": True,
+                    "trt_engine_cache_path": cache_dir,
+                    "trt_fp16_enable": True,
+                },
+            )
+        )
+    if "CUDAExecutionProvider" in available:
+        providers.append("CUDAExecutionProvider")
+    providers.append("CPUExecutionProvider")
+    return providers
 
 
 def _bbox_area(bbox) -> float:
