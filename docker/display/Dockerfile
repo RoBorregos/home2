@@ -1,12 +1,15 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
-
 ARG ROS_DISTRO=jazzy
 
-# rosbridge + web_video_server + nodejs (for Next.js)
+# display_ui.py (PyQt5 desktop UI, default) deps, plus rosbridge / web_video_server
+# / nodejs for the legacy Next.js UI kept as the --backup fallback (display_launch_backup.py).
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-${ROS_DISTRO}-cv-bridge \
     ros-${ROS_DISTRO}-rosbridge-server \
     ros-${ROS_DISTRO}-web-video-server \
+    python3-pyqt5 \
+    fonts-noto-color-emoji \
     libacl1-dev \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
