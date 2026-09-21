@@ -34,13 +34,13 @@ from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
-from std_srvs.srv import Empty
-from xarm_msgs.srv import SetDigitalIO
+from std_srvs.srv import Empty, SetBool
 
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
     FIXED_DISTANCE_MOVE_SERVICE,
+    GRIPPER_SET_STATE_SERVICE,
 )
 import time as t
 
@@ -95,7 +95,7 @@ class ManipulationTasks:
             self.node, MoveJoints, "/manipulation/move_joints_action_server"
         )
 
-        self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
+        self.gripper_client = self.node.create_client(SetBool, GRIPPER_SET_STATE_SERVICE)
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
         self._fixed_distance_move_client = self.node.create_client(
@@ -168,9 +168,8 @@ class ManipulationTasks:
             #     Logger.error(self.node, "Gripper service not available")
             #     return Status.ExecutionError
 
-            req = SetDigitalIO.Request()
-            req.ionum = 1
-            req.value = 0 if state == "open" else 1  # 0=Open, 1=close
+            req = SetBool.Request()
+            req.data = state == "open"
 
             future = self.gripper_client.call_async(req)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
