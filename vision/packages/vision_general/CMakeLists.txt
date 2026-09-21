@@ -13,7 +13,7 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 
 #Install directories
-install(DIRECTORY launch scripts/utils config Utils
+install(DIRECTORY launch scripts/utils config
   DESTINATION share/${PROJECT_NAME})
 
 
