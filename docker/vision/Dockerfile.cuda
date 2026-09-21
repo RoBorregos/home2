@@ -8,41 +8,26 @@ COPY vision/requirements /workspace/requirements
 
 ENV PIP_NO_CACHE_DIR=1
 
-# Download, build and install dlib, then drop the source/build tree so it
-# doesn't linger in this layer.
-WORKDIR /workspace
-RUN wget http://dlib.net/files/dlib-20.0.tar.bz2 && \
-    tar jxvf dlib-20.0.tar.bz2 && \
-    cd dlib-20.0 && \
-    mkdir build && cd build && \
-    cmake .. && \
-    cmake --build . && \
-    cd .. && \
-    python3 setup.py install --set DLIB_USE_CUDA=1 && \
-    cd /workspace && \
-    rm -rf dlib-20.0 dlib-20.0.tar.bz2
+# Disable Ultralytics' runtime auto-install of missing packages (e.g. tensorrt,
+# onnx). It bypasses constraints.txt and pulls unpinned versions at runtime,
+# which requires internet access we won't have at competition time.
+ENV YOLO_AUTOINSTALL=false
 
 RUN pip install --upgrade pip
 
 # Requirements
 WORKDIR /workspace/requirements
 
-# Installed in a single pip invocation (not one RUN per file) so the resolver
-# sees every requirement at once and installs each package exactly once.
-# Splitting these across separate RUNs let later files (e.g. utils.txt ->
-# timm, models.txt -> ultralytics) trigger a second torch/CUDA reinstall in
-# their own layer, and the overwritten copies from earlier layers stayed
-# baked into the image even though invisible in the final filesystem.
+# These are installed in a single pip invocation so the resolver sees every requirement at once and installs each package exactly once.
 RUN pip install -c constraints.txt \
-    -r opencv.txt \
     -r torch-gpu.txt \
     -r face_recognition.txt \
+    -r face_recognition-gpu.txt \
     -r models.txt \
     -r utils.txt \
     -r moondream.txt
 
 WORKDIR /workspace
-RUN git clone --depth 1 https://github.com/ultralytics/yolov5.git
 
 # CV-bridge
 RUN apt update && apt install -y ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-laser-geometry \
