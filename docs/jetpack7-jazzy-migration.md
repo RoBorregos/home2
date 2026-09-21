@@ -1,405 +1,396 @@
-# Migración Ubuntu 22.04/Humble/JetPack 6 → Ubuntu 24.04/Jazzy/JetPack 7
+# Migration Ubuntu 22.04/Humble/JetPack 6 → Ubuntu 24.04/Jazzy/JetPack 7
 
-## Nombres de imagen
+## Image names
 
-Las imágenes usan los mismos nombres que en `main` (`l4t_base`, `vision-l4t`,
+The images keep the same names as on `main` (`l4t_base`, `vision-l4t`,
 `navigation-l4t`, `manipulation-l4t`, `roudi-l4t`, `zed-l4t`, `hri-l4t`,
-`hri-stt-l4t`, `hri-tts-l4t`, `integration-cpu`, etc.) — sin prefijo
-`jazzy_`. Esta Orin queda dedicada exclusivamente a Jazzy, así que no hace
-falta distinguir por nombre; `docker/l4t.yaml`, `docker/cpu.yaml` y
-`docker/cuda.yaml` reemplazan directamente las recetas de base viejas
-(Humble/`dustynv`) en vez de vivir en paralelo.
+`hri-stt-l4t`, `hri-tts-l4t`, `integration-cpu`, etc.) — with no `jazzy_`
+prefix. This Orin is dedicated exclusively to Jazzy, so there is no need to
+tell them apart by name; `docker/l4t.yaml`, `docker/cpu.yaml` and
+`docker/cuda.yaml` replace the old base recipes (Humble/`dustynv`) outright
+instead of living alongside them.
 
-## Motivo
+## Rationale
 
-El equipo migra hacia Jetson AGX Thor (JetPack 7, L4T r38+, Ubuntu 24.04, sin
-soporte para ROS 2 Humble). Se validó primero en una Orin AGX devkit que ya
-corre JetPack 7.2 / L4T R39.2 / Ubuntu 24.04 (noble) / CUDA 13.2 / cuDNN9 /
-TensorRT 10.16, GPU Ampere `sm_87`.
+The team is migrating to the Jetson AGX Thor (JetPack 7, L4T r38+, Ubuntu
+24.04, no ROS 2 Humble support). It was validated first on an Orin AGX devkit
+already running JetPack 7.2 / L4T R39.2 / Ubuntu 24.04 (noble) / CUDA 13.2 /
+cuDNN 9 / TensorRT 10.16, Ampere GPU `sm_87`.
 
-## Imagen base (`docker/Dockerfile.ROS`, `docker/Dockerfile.ROS-l4t`)
+## Base image (`docker/Dockerfile.ROS`, `docker/Dockerfile.ROS-l4t`)
 
-- `ROS_DISTRO` parametrizado (`ARG`/`ENV`), default `humble` sin tocar, pero
-  los compose nuevos (`docker/jazzy_cpu.yaml`, `docker/jazzy_cuda.yaml`,
-  `docker/jazzy_l4t.yaml`) lo fijan a `jazzy`.
-- Ubuntu 24.04 trae un usuario/grupo `ubuntu` en UID/GID 1000 de fábrica; se
-  borra antes de crear el usuario `ros` (colisiona con el UID/GID 1000 típico
-  del host).
-- `PIP_BREAK_SYSTEM_PACKAGES=1` — Ubuntu 24.04 aplica PEP 668.
-- `PIP_INDEX_JETSON` cambiado de `jp6/cu126` (JetPack 6) a `sbsa/cu130`
-  (aarch64 + CUDA 13, cp312) — no existe índice `jp7` dedicado en
-  jetson-ai-lab. Esta era la causa raíz de que todo siguiera resolviendo
-  paquetes de JetPack 6 pese a que la imagen base ya era JetPack 7.
-- `Dockerfile.ROS-l4t` ahora hornea el repo APT propio de Jetson
-  (`repo.download.nvidia.com/jetson/{common,som,ffmpeg}`, vía
-  `docker/jetson-apt/`) para tener CUDA/cuDNN disponibles en build time (no
-  solo en runtime vía CDI/CSV mounts), necesario para compilar dlib
-  (vision) y CTranslate2 (hri-stt).
-- `ENV NVIDIA_VISIBLE_DEVICES=all` / `NVIDIA_DRIVER_CAPABILITIES=all`
-  agregados a la base l4t. La vieja `dustynv/l4t-pytorch` los traía horneados
-  (estándar en imágenes Jetson de NVIDIA); nuestra base (`ubuntu:24.04` +
-  ROS) no, así que `runtime: nvidia` solo en los compose no bastaba —
-  cualquier proceso que solo revisara `runtime: nvidia` sin el env var
-  (p. ej. CTranslate2 en hri-stt) no veía la GPU y caía a CPU/int8 en
-  silencio.
+- `ROS_DISTRO` is parameterized (`ARG`/`ENV`), default `humble` left untouched,
+  but the new compose files (`docker/jazzy_cpu.yaml`, `docker/jazzy_cuda.yaml`,
+  `docker/jazzy_l4t.yaml`) set it to `jazzy`.
+- Ubuntu 24.04 ships a stock `ubuntu` user/group at UID/GID 1000; it is deleted
+  before creating the `ros` user (it collides with the host's typical UID/GID
+  1000).
+- `PIP_BREAK_SYSTEM_PACKAGES=1` — Ubuntu 24.04 enforces PEP 668.
+- `PIP_INDEX_JETSON` changed from `jp6/cu126` (JetPack 6) to `sbsa/cu130`
+  (aarch64 + CUDA 13, cp312) — jetson-ai-lab has no dedicated `jp7` index. This
+  was the root cause of everything still resolving JetPack 6 packages even
+  though the base image was already JetPack 7.
+- `Dockerfile.ROS-l4t` now bakes in Jetson's own APT repo
+  (`repo.download.nvidia.com/jetson/{common,som,ffmpeg}`, via
+  `docker/jetson-apt/`) so CUDA/cuDNN are available at build time (not only at
+  runtime through CDI/CSV mounts), which is required to compile dlib (vision)
+  and CTranslate2 (hri-stt).
+- `ENV NVIDIA_VISIBLE_DEVICES=all` / `NVIDIA_DRIVER_CAPABILITIES=all` added to
+  the l4t base. The old `dustynv/l4t-pytorch` had them baked in (standard in
+  NVIDIA's Jetson images); ours (`ubuntu:24.04` + ROS) does not, so
+  `runtime: nvidia` in the compose files alone was not enough — any process
+  that only checked `runtime: nvidia` without the env var (e.g. CTranslate2 in
+  hri-stt) did not see the GPU and silently fell back to CPU/int8.
 
-## Configuración del host (Orin), fuera del repo
+## Host configuration (Orin), outside the repo
 
-- `net.core.rmem_max`/`wmem_max` del kernel venían en el default de Ubuntu
-  (~208KB), muy por debajo de los 10MB que CycloneDDS pide para su socket —
-  sin esto, **ningún** nodo ROS 2 podía crear su dominio DDS
-  (`rmw_create_node: failed to create domain, error Error`), en cualquier
-  contenedor. Se subió a 2GB vía `/etc/sysctl.d/60-cyclonedds.conf` en la
-  Orin (fuera del repo, es config de host, no de imagen).
+- The kernel's `net.core.rmem_max`/`wmem_max` were at Ubuntu's default
+  (~208 KB), far below the 10 MB CycloneDDS asks for on its socket — without
+  this, **no** ROS 2 node could create its DDS domain
+  (`rmw_create_node: failed to create domain, error Error`), in any container.
+  Raised to 2 GB via `/etc/sysctl.d/60-cyclonedds.conf` on the Orin (outside the
+  repo — it is host config, not image config).
 
-## Por área
+## By area
 
-- **hri**: `dockerfiles/Dockerfile.ROS` sin cambios de fondo (deps de audio +
-  pip). `Dockerfile.stt-l4t`/`Dockerfile.tts-l4t` migrados de
-  `dustynv/l4t-pytorch:r36.4.0` (sin tag JetPack 7) a `jazzy_l4t_base`.
-  `hri-ros.yaml`/`hri/run.sh` tenían bugs reales que hacían que el build
-  siguiera usando la base vieja pese a la migración (`BASE_IMAGE` sin
-  prefijo `jazzy_`, `TTS_BASE_IMAGE` no seteado para l4t). Requirements
-  (`nlp.txt`, `speech.txt`) actualizados: pydantic 1→2, spacy/thinc,
-  onnxruntime, scipy, torchaudio, openwakeword (instalado `--no-deps`,
-  su única dependencia dura sin wheel aarch64/cp312 es tflite-runtime,
-  no usado en este código — solo el path ONNX), piper (sin uso real,
-  eliminado), deepfilterlib (necesita `cargo`/`rustc` para compilar).
-  PyAV (clonado sin pin de rama, igual que en main) empezó a fallar con
-  `make: uv: No such file or directory` — su script de build upstream
-  ahora requiere `uv`; se agregó `pip install uv` antes de ese paso.
-- **vision**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`. dlib compilado con
-  `DLIB_USE_CUDA_COMPUTE_CAPABILITIES=87` (antes rechazado por CUDA 13).
-  A diferencia de la vieja `dustynv/l4t-pytorch`, `jazzy_l4t_base` no trae
-  OpenCV con CUDA preinstalado — el Dockerfile ahora compila OpenCV 4.14.0
-  con CUDA desde fuente (mismo script/patches que navigation). `numpy>=2`
-  se instala antes de compilar OpenCV para que sus bindings de Python queden
-  ABI-compatibles con torch/onnxruntime-gpu (que requieren NumPy ≥2) —
-  compilar contra NumPy 1.x, como hace `navigation`, rompe onnxruntime-gpu
-  aquí porque vision necesita ambos en el mismo proceso. `ultralytics` e
-  `insightface` se instalan con `--no-deps` (ambos dependen de
-  `opencv-python`, que pisaría la build CUDA). `cv_bridge` reconstruido
-  desde fuente contra el NumPy activo.
-- **navigation** (solo `Dockerfile.l4t`; `cpu`/`.cuda` reciben el renombre
-  `ros-humble-*` → `ros-${ROS_DISTRO}-*` + `ubuntu:24.04`, sin probar):
-  - Base `dustynv/l4t-pytorch` → `l4t_base`. Como ya no trae OpenCV-CUDA ni
-    PyTorch: OpenCV **4.14.0** con CUDA desde fuente (4.10.0 no compila con
-    CUDA 13; `cudacodec` off), torch explícito (`torch==2.9.0 torchvision`)
-    y `unzip` agregado a apt.
-  - rtabmap con `-DCMAKE_CXX_STANDARD=20`. Nav2/BehaviorTree.CPP/STVL en
-    ramas `jazzy` (`BTCPP_TAG=4.6.2`).
+- **hri**: `dockerfiles/Dockerfile.ROS` with no fundamental changes (audio deps
+  + pip). `Dockerfile.stt-l4t`/`Dockerfile.tts-l4t` migrated from
+  `dustynv/l4t-pytorch:r36.4.0` (no JetPack 7 tag) to `jazzy_l4t_base`.
+  `hri-ros.yaml`/`hri/run.sh` had real bugs that kept the build on the old base
+  despite the migration (`BASE_IMAGE` without the `jazzy_` prefix,
+  `TTS_BASE_IMAGE` not set for l4t). Requirements (`nlp.txt`, `speech.txt`)
+  updated: pydantic 1→2, spacy/thinc, onnxruntime, scipy, torchaudio,
+  openwakeword (installed `--no-deps`; its only hard dependency without an
+  aarch64/cp312 wheel is tflite-runtime, unused by this code — only the ONNX
+  path is), piper (no real use, removed), deepfilterlib (needs `cargo`/`rustc`
+  to compile). PyAV (cloned without a branch pin, same as on `main`) started
+  failing with `make: uv: No such file or directory` — its upstream build script
+  now requires `uv`; `pip install uv` was added before that step.
+- **vision**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`. dlib compiled with
+  `DLIB_USE_CUDA_COMPUTE_CAPABILITIES=87` (previously rejected by CUDA 13).
+  Unlike the old `dustynv/l4t-pytorch`, `jazzy_l4t_base` does not ship OpenCV
+  with CUDA preinstalled — the Dockerfile now compiles OpenCV 4.14.0 with CUDA
+  from source (same script/patches as navigation). `numpy>=2` is installed
+  before compiling OpenCV so its Python bindings stay ABI-compatible with
+  torch/onnxruntime-gpu (which require NumPy ≥2) — compiling against NumPy 1.x,
+  as `navigation` does, breaks onnxruntime-gpu here because vision needs both in
+  the same process. `ultralytics` and `insightface` are installed with
+  `--no-deps` (both depend on `opencv-python`, which would clobber the CUDA
+  build). `cv_bridge` rebuilt from source against the active NumPy.
+- **navigation** (`Dockerfile.l4t` only; `cpu`/`.cuda` get the
+  `ros-humble-*` → `ros-${ROS_DISTRO}-*` + `ubuntu:24.04` rename, untested):
+  - Base `dustynv/l4t-pytorch` → `l4t_base`. Since it no longer ships
+    OpenCV-CUDA or PyTorch: OpenCV **4.14.0** with CUDA from source (4.10.0 does
+    not compile with CUDA 13; `cudacodec` off), explicit torch
+    (`torch==2.9.0 torchvision`) and `unzip` added to apt.
+  - rtabmap with `-DCMAKE_CXX_STANDARD=20`. Nav2/BehaviorTree.CPP/STVL on
+    `jazzy` branches (`BTCPP_TAG=4.6.2`).
   - `--skip-keys`: `+pcl +eigen3`, `-dashgo_driver`.
-  - CycloneDDS/iceoryx: el `dpkg -r` selectivo ya no basta (dos
-    `libiceoryx_posh.so` en un proceso → SIGSEGV en RouDi); se purga todo el
-    set apt de DDS y se reconstruye `rmw_cyclonedds_cpp` desde fuente.
-    `libacl1-dev` vía `apt-get download` + `dpkg -i` (apt-get install se
-    niega con las deps rotas de la remoción de Nav2). iceoryx con
-    `-DINTROSPECTION=ON` (paridad con `docker/roudi/Dockerfile`).
-  - `numpy<2` al final: `pip install torch` mete NumPy 2.x en `~/.local` que
-    rompe `import cv2`.
-  - `nav2_omni.yaml` / `nav2_omni_limp.yaml`: el plugin STVL **se queda** como
-    `spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer` (con diagonal). NO
-    migrar a `::`: el `costmap_plugins.xml` de la rama `jazzy` (la que clonan
-    los Dockerfiles, `STVL_BRANCH=jazzy`) lo declara con
-    `name="spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"`, y pluginlib
-    resuelve por `name`. Con `::` el costmap no carga la capa.
-- **manipulation**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`; base cambiada de
-  `dustynv/l4t-pytorch:r36.4.0` a `jazzy_l4t_base`; `libvtk-qt` agregado a
-  skip-keys (rosdep base.yaml de ROS sigue apuntando a `libvtk7-qt-dev`,
-  inexistente en noble; solo usado por la GUI de rtabmap_viz, no en
-  operación headless).
-- **roudi**: iceoryx recompilado con prefix `/opt/ros/${ROS_DISTRO}`.
-- **display**, **integration**, **simulation**: renombrado de paquetes
-  `ros-humble-*` → `ros-${ROS_DISTRO}-*`, mismo patrón de iceoryx/cyclonedds.
-- **zed**: SDK de Stereolabs actualizado de `zedsdk/5.0/l4t36.4` a
-  `zedsdk/5.4/l4t38.4` (Stereolabs sí publicó build para L4T r38);
-  `zed-ros2-wrapper` de la rama `humble-v5.0.0` a `v5.4.1`. El usuario `ros`
-  no quedaba en el grupo `zed` que crea el instalador del SDK (permisos 770
-  en `/usr/local/zed/lib`) — se agrega vía `usermod -aG zed ros` en el
-  Dockerfile, y el `docker-compose.yaml` se corrige para pasar `group_add:
-  zed` por nombre en vez de un GID viejo hardcodeado (`1001`, que ya no
-  coincide con el GID real del grupo tras el rebuild).
-- **frida_interfaces_cache**: el compose l4t reconstruía la imagen desde
-  `ubuntu:22.04` con `Dockerfile.ROS`, lo que sobrescribía silenciosamente
-  el tag `jazzy_l4t_base` real con una imagen rota — corregido para
-  referenciar la imagen ya construida, sin rebuild propio.
+  - CycloneDDS/iceoryx: the selective `dpkg -r` is no longer enough (two
+    `libiceoryx_posh.so` in one process → SIGSEGV in RouDi); the whole DDS apt
+    set is purged and `rmw_cyclonedds_cpp` is rebuilt from source. `libacl1-dev`
+    via `apt-get download` + `dpkg -i` (apt-get install refuses with the broken
+    deps left by the Nav2 removal). iceoryx with `-DINTROSPECTION=ON` (parity
+    with `docker/roudi/Dockerfile`).
+  - `numpy<2` at the end: `pip install torch` drops NumPy 2.x into `~/.local`,
+    which breaks `import cv2`.
+  - `nav2_omni.yaml` / `nav2_omni_limp.yaml`: the STVL plugin **stays** as
+    `spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer` (with the slash). Do
+    NOT migrate it to `::`: the `costmap_plugins.xml` on the `jazzy` branch (the
+    one the Dockerfiles clone, `STVL_BRANCH=jazzy`) declares it as
+    `name="spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"`, and pluginlib
+    resolves by `name`. With `::` the costmap does not load the layer.
+- **manipulation**: `ros-humble-*` → `ros-${ROS_DISTRO}-*`; base changed from
+  `dustynv/l4t-pytorch:r36.4.0` to `jazzy_l4t_base`; `libvtk-qt` added to
+  skip-keys (ROS's rosdep base.yaml still points at `libvtk7-qt-dev`, which does
+  not exist on noble; only used by the rtabmap_viz GUI, not in headless
+  operation).
+- **roudi**: iceoryx recompiled with prefix `/opt/ros/${ROS_DISTRO}`.
+- **display**, **integration**, **simulation**: `ros-humble-*` →
+  `ros-${ROS_DISTRO}-*` package rename, same iceoryx/cyclonedds pattern.
+- **zed**: Stereolabs SDK updated from `zedsdk/5.0/l4t36.4` to
+  `zedsdk/5.4/l4t38.4` (Stereolabs did publish a build for L4T r38);
+  `zed-ros2-wrapper` from branch `humble-v5.0.0` to `v5.4.1`. The `ros` user was
+  not in the `zed` group the SDK installer creates (permissions 770 on
+  `/usr/local/zed/lib`) — it is now added via `usermod -aG zed ros` in the
+  Dockerfile, and `docker-compose.yaml` is fixed to pass `group_add: zed` by
+  name instead of a stale hardcoded GID (`1001`, which no longer matches the
+  group's real GID after the rebuild).
+- **frida_interfaces_cache**: the l4t compose rebuilt the image from
+  `ubuntu:22.04` with `Dockerfile.ROS`, silently overwriting the real
+  `jazzy_l4t_base` tag with a broken image — fixed to reference the
+  already-built image, with no rebuild of its own.
 
-## Verificado (build + GPU smoke test) en la Orin AGX real
+## Verified (build + GPU smoke test) on the real Orin AGX
 
 - `jazzy_l4t_base`, `hri-l4t`, `hri-stt-l4t`, `hri-tts-l4t` — CUDA/torch
-  confirmados funcionando dentro del contenedor.
-- `jazzy_vision-l4t` — cv2 4.14.0 (CUDA, 1 dispositivo detectado), torch,
-  onnxruntime-gpu, dlib, ultralytics e insightface, todos importando y
-  funcionando juntos en el mismo proceso (NumPy 2.x compartido).
-- `jazzy_navigation-l4t` — numpy, cv2 con CUDA, torch, todos verificados.
-- `jazzy_manipulation-l4t`, `jazzy_roudi-l4t` — reconstruidos contra la base
-  ya corregida; manipulation con torch CUDA confirmado.
-- `jazzy_integration-cpu` — build y arranque de contenedor verificados.
-- `jazzy_zed-l4t` — build exitoso, SDK y permisos de grupo correctos.
+  confirmed working inside the container.
+- `jazzy_vision-l4t` — cv2 4.14.0 (CUDA, 1 device detected), torch,
+  onnxruntime-gpu, dlib, ultralytics and insightface, all importing and working
+  together in the same process (shared NumPy 2.x).
+- `jazzy_navigation-l4t` — numpy, cv2 with CUDA, torch, all verified.
+- `jazzy_manipulation-l4t`, `jazzy_roudi-l4t` — rebuilt against the fixed base;
+  manipulation with torch CUDA confirmed.
+- `jazzy_integration-cpu` — build and container startup verified.
+- `jazzy_zed-l4t` — successful build, SDK and group permissions correct.
 
-## Prueba end-to-end de hri (`./run.sh --hric l4t`)
+## End-to-end hri test (`./run.sh --hric l4t`)
 
-Con los fixes de `NVIDIA_VISIBLE_DEVICES` y del sysctl de CycloneDDS, se
-levantó el stack completo de `hric` (hri-ros, stt, tts, postgres, llamacpp):
-- `hri-stt`: pasó de `Using device: cpu with compute type: int8` (fallando
-  con `ValueError: Requested int8 compute type...`) a
-  `Using device: cuda with compute type: float16` — funcionando.
-- `hri-ros`: `llm_utils` y `extract_data` inicializan y corren
-  correctamente contra CycloneDDS/DDS real (no solo imports aislados).
-- `extract_data` necesitaba el modelo spacy `en_core_web_md`, que no se
-  descargaba en ningún Dockerfile (ni en `main`) — gap de setup preexistente,
-  no de la migración. El fallback en runtime (`spacy.cli.download` +
-  `spacy.load` dentro del mismo proceso) fallaba porque el contenedor corre
-  con un UID/GID sin entrada en `/etc/passwd` (`user: ${LOCAL_USER_ID}`), así
-  que `pip install --user` no cae en un `site-packages` que el proceso pueda
-  ver. Se agregó `RUN python3 -m spacy download en_core_web_md` en
-  `Dockerfile.ROS` (junto a `nlp.txt`, corre como root en build time) para
-  no depender de esto en runtime — pero `extract_data.py` seguía llamando a
-  `spacy.cli.download()` incondicionalmente en cada arranque (nunca
-  intentaba cargar el paquete ya instalado primero), así que igual pegaba
-  contra el mismo problema de UID cada vez. Se reordenó el `try/except` en
-  `hri/packages/nlp/scripts/extract_data.py` para intentar
-  `spacy.load(spacy_model)` (el paquete ya horneado) antes de caer a
+With the `NVIDIA_VISIBLE_DEVICES` and CycloneDDS sysctl fixes, the full `hric`
+stack (hri-ros, stt, tts, postgres, llamacpp) came up:
+- `hri-stt`: went from `Using device: cpu with compute type: int8` (failing with
+  `ValueError: Requested int8 compute type...`) to
+  `Using device: cuda with compute type: float16` — working.
+- `hri-ros`: `llm_utils` and `extract_data` initialize and run correctly against
+  real CycloneDDS/DDS (not just isolated imports).
+- `extract_data` needed the spacy model `en_core_web_md`, which no Dockerfile
+  downloaded (not even on `main`) — a pre-existing setup gap, not a migration
+  one. The runtime fallback (`spacy.cli.download` + `spacy.load` inside the same
+  process) failed because the container runs with a UID/GID that has no entry in
+  `/etc/passwd` (`user: ${LOCAL_USER_ID}`), so `pip install --user` does not land
+  in a `site-packages` the process can see. `RUN python3 -m spacy download
+  en_core_web_md` was added to `Dockerfile.ROS` (next to `nlp.txt`, running as
+  root at build time) so this is not needed at runtime — but `extract_data.py`
+  still called `spacy.cli.download()` unconditionally on every startup (it never
+  tried loading the already-installed package first), so it hit the same UID
+  problem anyway. The `try/except` in
+  `hri/packages/nlp/scripts/extract_data.py` was reordered to try
+  `spacy.load(spacy_model)` (the already-baked package) before falling back to
   `spacy.cli.download()`.
-- `nlp.txt`/`speech.txt` tenían varios pines viejos que dejaron de resolver
-  en Python 3.12/aarch64 al hacer un build limpio de `hri-ros` (la imagen
-  cacheada que veníamos usando predataba estos requirements y nunca lo
-  expuso): `pydantic==1.10.11` en `nlp.txt` forzaba a pip a resolver
-  `thinc==9.1.1` (única versión de thinc compatible con pydantic 1.x), que
-  no tiene wheel para aarch64/cp312 y falla al compilar Cython desde fuente
-  — se quitó el pin (nada en `nlp/` usa la API de pydantic 1.x). En
-  `speech.txt`: `onnxruntime==1.16.3` y `scipy==1.10.1` ya no tienen wheel
-  para Python 3.12 (bump a `1.17.3`/`1.11.4`); `openwakeword==0.6.0` estaba
-  duplicado (el Dockerfile ya lo instala aparte con `--no-deps`, precisamente
-  porque su dependencia `tflite-runtime` no tiene wheel aquí) — se quitó del
-  requirements; `piper-tts`/`piper` no los importa ningún script y
-  `piper-tts` requiere `piper-phonemize`, sin wheel disponible — se
-  quitaron; `torchaudio<=2.5.0` (pin viejo, ya no hace falta gracias al
-  parche de `df/io.py` de abajo) forzaba una versión de torchaudio
-  incompatible con el torch que instalan `nlp.txt`/`postgres.txt`
-  (`torch 2.14.0`), el mismo tipo de rotura de ABI CUDA documentada abajo —
-  se fijó a `torchaudio==2.11.0` (la versión que efectivamente resuelve
-  junto al resto).
-- Con `nlp.txt`/`speech.txt`/`postgres.txt` ya instalando limpio, apareció
-  un segundo problema, más sutil: `voice_detection.py`, `noise_cancellation.py`
-  y `llm_utils.py` morían con `ValueError: numpy.dtype size changed, may
-  indicate binary incompatibility. Expected 96 from C header, got 88 from
-  PyObject` al importar `scipy.spatial.transform`. `pip show`/`import numpy`
-  confirmaban `numpy 2.5.2` y `scipy` correctos — no era un problema de qué
-  versión quedaba instalada, sino que **`scipy==1.18.1` (la última en ese
-  momento) tiene un bug real de ABI contra `numpy 2.5.2` en este entorno**.
-  Se confirmó reinstalando varias versiones de scipy en vivo dentro del
-  contenedor corriendo y probando `from scipy.spatial.transform import
-  Rotation`: `1.16.2`, `1.15.3`, `1.14.1` y `1.13.1` funcionan, `1.18.1` no.
-  Se fijó `scipy==1.16.2` (con `numpy==2.5.2`) de forma consistente en los
-  **tres** requirements (`nlp.txt`, `speech.txt`, `postgres.txt`) — cada uno
-  es una invocación de pip separada en el Dockerfile, así que un solo
-  archivo sin el pin (p. ej. `postgres.txt`, que jala scipy transitivamente
-  vía `scikit-learn`←`sentence_transformers`) reintroduce la versión rota.
-  Mismo motivo para fijar `pydantic==2.13.5` en `nlp.txt`+`postgres.txt` y
-  `sentence_transformers==2.6.1` en `postgres.txt` (sin pin, jalaba una
-  versión más nueva que subía `transformers` por encima de lo que fija
-  `nlp.txt`, silenciosamente, entre invocaciones de pip separadas).
-  `deepfilternet` complica esto más: su metadata exige `numpy<2.0` aunque su
-  parte compilada (`deepfilterlib`) es Rust/PyO3, no Cython, y no depende
-  realmente del ABI de numpy — pinnearlo junto con `scipy==1.18.1`
-  (numpy≥2.0) en el mismo archivo daba `ResolutionImpossible` directo. Se
-  instala aparte con `pip install --no-deps deepfilternet==0.5.6
-  deepfilterlib==0.5.6` en `Dockerfile.ROS` (mismo patrón que
-  `openwakeword`), con sus dependencias reales (`appdirs`, `loguru`)
-  agregadas explícitamente a `speech.txt`.
-- `noise_cancellation.py` (usa `deepfilternet==0.5.6`, la última versión
-  publicada) fallaba con `ModuleNotFoundError: No module named
-  'torchaudio.backend'`. Torchaudio 2.11+ eliminó por completo su antiguo
-  API de I/O (`torchaudio.info()`, `torchaudio.backend.common.AudioMetaData`)
-  a favor de `torchaudio.io`; no existe versión de torchaudio que sea a la
-  vez ABI-compatible con torch 2.13.0/CUDA13 y todavía tenga esa API vieja
-  (fijar `torchaudio<=2.5.0` rompe el binding CUDA de torch). deepfilternet
-  solo usa `AudioMetaData`/`torchaudio.info()` para leer el sample rate de
-  un archivo antes de cargarlo — algo que `soundfile` (ya es dependencia)
-  hace igual de bien. Se parcha `df/io.py` en build time (`Dockerfile.ROS`,
-  después de instalar `speech.txt`) para reemplazar esa única llamada por
-  `soundfile.info(file).samplerate`, sin tocar el paquete en sí. Verificado:
-  `NoiseCancellation node ready` + DeepFilterNet inicializa y carga el
-  modelo completo sin errores.
-- `hri-tts`: falla inicialmente por audio ALSA (`Couldn't open audio device`).
-  Causa real: la Orin usa PipeWire-Pulse (reemplazo de PulseAudio en Ubuntu
-  24.04), corriendo pero con su socket real en `/run/user/<uid>/pulse/native`
-  — no en `~/.config/pulse/pulseaudio.socket`, que es donde el compose
-  monta y `PULSE_SERVER` apunta. Además, sin `SDL_AUDIODRIVER=pulse`, SDL/
-  pygame intentaba ALSA directo primero (sin `/dev/snd` montado) antes de
-  siquiera probar pulse. Arreglado en `docker/hri/compose/tts.yaml`: monta
-  `/run/user/${LOCAL_USER_ID}/pulse` directo (no `~/.config/pulse`, que solo
-  tiene el cookie) y agrega `SDL_AUDIODRIVER: pulse`. Verificado: el server
-  Kokoro arranca limpio contra el sink real de audio de la Orin.
-- `edge-impulse` (door/kws): contenedores AWS específicos de Jetson Orin
-  6.0, no probados a fondo — bajo prioridad, ya señalados en fases previas
-  como potencialmente atados a JetPack 6.
-- `hri-ros` (`docker/hri/compose/hri-ros.yaml`) tenía el mismo problema de
-  audio que `tts.yaml` (socket de PulseAudio clásico en vez del de
-  PipeWire-Pulse) — hacía fallar `audio_capturer.py` con
-  `PyAudio: Invalid input device`. Se aplicó el mismo fix: montar
-  `/run/user/${LOCAL_USER_ID}/pulse` directo y agregar `SDL_AUDIODRIVER:
-  pulse` al `x-speech-devices` compartido.
-- `frida_interfaces_cache` (compila `frida_interfaces`/`frida_constants`/
-  `xarm_msgs` antes de `hri`) puede quedar en un build incompleto (p. ej.
-  interrumpido por un reboot) sin que nada lo detecte: `lib.sh` solo
-  reconstruye la caché si la carpeta `build/` no existe, no si el build dentro
-  de ella falló a medias. Cuando pase, hay que borrar
-  `docker/frida_interfaces_cache/{build,install,log}` a mano (puede necesitar
-  `sudo rm -rf` si el contenedor corrió como root por `UID`/`GID` sin
-  exportar) y volver a correr `./run.sh hri --build`. No se automatizó una
-  detección de build incompleto en esta iteración.
+- `nlp.txt`/`speech.txt` had several stale pins that stopped resolving on Python
+  3.12/aarch64 on a clean build of `hri-ros` (the cached image we had been using
+  predated these requirements and never exposed it): `pydantic==1.10.11` in
+  `nlp.txt` forced pip to resolve `thinc==9.1.1` (the only thinc version
+  compatible with pydantic 1.x), which has no aarch64/cp312 wheel and fails
+  compiling Cython from source — the pin was dropped (nothing in `nlp/` uses the
+  pydantic 1.x API). In `speech.txt`: `onnxruntime==1.16.3` and `scipy==1.10.1`
+  no longer have a Python 3.12 wheel (bumped to `1.17.3`/`1.11.4`);
+  `openwakeword==0.6.0` was duplicated (the Dockerfile already installs it
+  separately with `--no-deps`, precisely because its `tflite-runtime` dependency
+  has no wheel here) — removed from the requirements; `piper-tts`/`piper` are
+  imported by no script and `piper-tts` requires `piper-phonemize`, which has no
+  wheel available — both removed; `torchaudio<=2.5.0` (a stale pin, no longer
+  needed thanks to the `df/io.py` patch below) forced a torchaudio version
+  incompatible with the torch that `nlp.txt`/`postgres.txt` install
+  (`torch 2.14.0`), the same kind of CUDA ABI breakage documented below — pinned
+  to `torchaudio==2.11.0` (the version that actually resolves alongside the
+  rest).
+- With `nlp.txt`/`speech.txt`/`postgres.txt` installing cleanly, a second, more
+  subtle problem appeared: `voice_detection.py`, `noise_cancellation.py` and
+  `llm_utils.py` died with `ValueError: numpy.dtype size changed, may indicate
+  binary incompatibility. Expected 96 from C header, got 88 from PyObject` when
+  importing `scipy.spatial.transform`. `pip show`/`import numpy` confirmed
+  `numpy 2.5.2` and `scipy` were correct — the problem was not which version
+  ended up installed, but that **`scipy==1.18.1` (the latest at the time) has a
+  real ABI bug against `numpy 2.5.2` in this environment**. Confirmed by
+  reinstalling several scipy versions live inside the running container and
+  testing `from scipy.spatial.transform import Rotation`: `1.16.2`, `1.15.3`,
+  `1.14.1` and `1.13.1` work, `1.18.1` does not. `scipy==1.16.2` (with
+  `numpy==2.5.2`) was pinned consistently across **all three** requirements
+  (`nlp.txt`, `speech.txt`, `postgres.txt`) — each one is a separate pip
+  invocation in the Dockerfile, so a single file without the pin (e.g.
+  `postgres.txt`, which pulls scipy transitively via
+  `scikit-learn`←`sentence_transformers`) reintroduces the broken version. Same
+  reason for pinning `pydantic==2.13.5` in `nlp.txt`+`postgres.txt` and
+  `sentence_transformers==2.6.1` in `postgres.txt` (unpinned, it pulled a newer
+  version that raised `transformers` above what `nlp.txt` pins, silently,
+  between separate pip invocations). `deepfilternet` complicates this further:
+  its metadata demands `numpy<2.0` even though its compiled part
+  (`deepfilterlib`) is Rust/PyO3, not Cython, and does not actually depend on
+  the numpy ABI — pinning it together with `scipy==1.18.1` (numpy≥2.0) in the
+  same file gave an outright `ResolutionImpossible`. It is installed separately
+  with `pip install --no-deps deepfilternet==0.5.6 deepfilterlib==0.5.6` in
+  `Dockerfile.ROS` (same pattern as `openwakeword`), with its real dependencies
+  (`appdirs`, `loguru`) added explicitly to `speech.txt`.
+- `noise_cancellation.py` (uses `deepfilternet==0.5.6`, the latest published
+  version) failed with `ModuleNotFoundError: No module named
+  'torchaudio.backend'`. Torchaudio 2.11+ removed its old I/O API entirely
+  (`torchaudio.info()`, `torchaudio.backend.common.AudioMetaData`) in favor of
+  `torchaudio.io`; there is no torchaudio version that is both ABI-compatible
+  with torch 2.13.0/CUDA 13 and still has that old API (pinning
+  `torchaudio<=2.5.0` breaks torch's CUDA binding). deepfilternet only uses
+  `AudioMetaData`/`torchaudio.info()` to read a file's sample rate before
+  loading it — something `soundfile` (already a dependency) does just as well.
+  `df/io.py` is patched at build time (`Dockerfile.ROS`, after installing
+  `speech.txt`) to replace that single call with
+  `soundfile.info(file).samplerate`, without touching the package itself.
+  Verified: `NoiseCancellation node ready` + DeepFilterNet initializes and loads
+  the full model without errors.
+- `hri-tts`: initially failed on ALSA audio (`Couldn't open audio device`). Real
+  cause: the Orin uses PipeWire-Pulse (PulseAudio's replacement in Ubuntu
+  24.04), running but with its actual socket at `/run/user/<uid>/pulse/native` —
+  not at `~/.config/pulse/pulseaudio.socket`, which is what the compose mounts
+  and `PULSE_SERVER` points at. On top of that, without `SDL_AUDIODRIVER=pulse`,
+  SDL/pygame tried raw ALSA first (with no `/dev/snd` mounted) before even
+  trying pulse. Fixed in `docker/hri/compose/tts.yaml`: mount
+  `/run/user/${LOCAL_USER_ID}/pulse` directly (not `~/.config/pulse`, which only
+  holds the cookie) and add `SDL_AUDIODRIVER: pulse`. Verified: the Kokoro
+  server starts cleanly against the Orin's real audio sink.
+- `edge-impulse` (door/kws): AWS containers specific to Jetson Orin 6.0, not
+  thoroughly tested — low priority, already flagged in earlier phases as
+  potentially tied to JetPack 6.
+- `hri-ros` (`docker/hri/compose/hri-ros.yaml`) had the same audio problem as
+  `tts.yaml` (classic PulseAudio socket instead of the PipeWire-Pulse one) — it
+  made `audio_capturer.py` fail with `PyAudio: Invalid input device`. The same
+  fix was applied: mount `/run/user/${LOCAL_USER_ID}/pulse` directly and add
+  `SDL_AUDIODRIVER: pulse` to the shared `x-speech-devices`.
+- `frida_interfaces_cache` (builds `frida_interfaces`/`frida_constants`/
+  `xarm_msgs` before `hri`) can be left in an incomplete build (e.g. interrupted
+  by a reboot) with nothing detecting it: `lib.sh` only rebuilds the cache if the
+  `build/` folder does not exist, not if the build inside it failed halfway.
+  When that happens, `docker/frida_interfaces_cache/{build,install,log}` must be
+  deleted by hand (may need `sudo rm -rf` if the container ran as root because
+  `UID`/`GID` were not exported) and `./run.sh hri --build` rerun. Detection of
+  an incomplete build was not automated in this iteration.
 
-## zed — verificado con cámara real (ZED2 por USB)
+## zed — verified with a real camera (ZED2 over USB)
 
-Con la cámara conectada, se encontraron y arreglaron 4 problemas en cadena
-(cada uno tapaba al siguiente):
-1. `docker/zed/.env` en la Orin seguía con `BASE_IMAGE`/`IMAGE_NAME`
-   apuntando a `jazzy_l4t_base`/`jazzy_zed-l4t` — no se actualizó en el
-   rename de imágenes. Corregido.
-2. `zed-l4t` estaba construida antes del fix de `NVIDIA_VISIBLE_DEVICES`
-   en la base — sin eso, `libcuda.so.1` no se encontraba y el componente
-   `zed_camera_component` fallaba al cargar. Reconstruida.
-3. Faltaba la regla udev del host para el vendor ID de Stereolabs (`2b03`,
-   `/etc/udev/rules.d/99-slabs.rules`) — sin ella, el MCU/sensores de la
-   cámara daban `Permissions denied`. Esto es config de host (normalmente
-   la crea el instalador del SDK cuando se corre nativo, no dentro de un
-   container), así que nunca existió aquí. Creada.
-4. `/usr/local/zed/settings` y `/usr/local/zed/resources` en el host
-   (montados al container) eran `root:root` sin permiso de escritura — el
-   SDK necesita escribir ahí el archivo de calibración de la cámara
-   (descargado por serial) y el modelo neural de profundidad optimizado
-   con TensorRT (~26MB, se compila la primera vez). `chown 2002:2002`
-   (el UID del container) en ambos.
+With the camera connected, 4 chained problems were found and fixed (each one
+masking the next):
+1. `docker/zed/.env` on the Orin still had `BASE_IMAGE`/`IMAGE_NAME` pointing at
+   `jazzy_l4t_base`/`jazzy_zed-l4t` — it was not updated in the image rename.
+   Fixed.
+2. `zed-l4t` had been built before the `NVIDIA_VISIBLE_DEVICES` fix in the base
+   — without it, `libcuda.so.1` was not found and the `zed_camera_component`
+   failed to load. Rebuilt.
+3. The host udev rule for Stereolabs' vendor ID (`2b03`,
+   `/etc/udev/rules.d/99-slabs.rules`) was missing — without it, the camera's
+   MCU/sensors gave `Permissions denied`. This is host config (normally created
+   by the SDK installer when run natively, not inside a container), so it never
+   existed here. Created.
+4. `/usr/local/zed/settings` and `/usr/local/zed/resources` on the host (mounted
+   into the container) were `root:root` with no write permission — the SDK needs
+   to write the camera's calibration file there (downloaded by serial) and the
+   TensorRT-optimized neural depth model (~26 MB, compiled on first run).
+   `chown 2002:2002` (the container's UID) on both.
 
-Con los 4 fixes: `=== zed started ===`, positional tracking activo,
-publicando RGB/depth/IMU/point cloud reales — confirmado `rgb/color/rect/image`
-a ~30Hz vía `ros2 topic hz`.
+With all 4 fixes: `=== zed started ===`, positional tracking active, publishing
+real RGB/depth/IMU/point cloud — `rgb/color/rect/image` confirmed at ~30 Hz via
+`ros2 topic hz`.
 
-## Imagen base única `l4t_base` (optimización de tamaño)
+## Single `l4t_base` base image (size optimization)
 
-Las imágenes l4t de Jazzy pesaban mucho más que en `main` (`l4t_base` 26 GB,
-`hri-l4t` 53 GB, `manipulation-l4t` 50 GB). Con `docker history` se vio que
-la causa no era el PYTHONPATH, sino tres cosas:
+The Jazzy l4t images were much heavier than on `main` (`l4t_base` 26 GB,
+`hri-l4t` 53 GB, `manipulation-l4t` 50 GB). `docker history` showed the cause
+was not PYTHONPATH but three things:
 
-1. **La base traía `cuda-toolkit-13-2` completo más los `-dev`: una capa de
-   14.3 GB.** Incluía `libnvinfer_static.a` (3.3 GB), Nsight Systems/Compute
-   (1.7 GB) y las librerías estáticas de CUDA (~4 GB). Todas las áreas la
-   heredaban.
-2. **torch se instalaba desde PyPI (2.14.0+cu130).** El índice de Jetson solo
-   llega a 2.11, así que pip elegía el de PyPI por ser más nuevo. Ese wheel trae
-   su propio CUDA/cuDNN en paquetes `nvidia-*` (3.3 GB) más `triton`, y duplica
-   lo que ya estaba en el sistema. Además, `torchaudio` no coincidía con torch.
-3. **`PIP_IGNORE_INSTALLED=1` hacía que cada `pip install` reinstalara todo su
-   árbol de dependencias.** En hri-l4t, torch quedaba dos veces (capas de
-   9.66 GB y 6 GB). A eso se sumaban OpenCV compilado en vision y en navigation
-   sin borrar el árbol de build, e iceoryx/CycloneDDS compilados en 5
+1. **The base carried the full `cuda-toolkit-13-2` plus the `-dev` packages: a
+   14.3 GB layer.** It included `libnvinfer_static.a` (3.3 GB), Nsight
+   Systems/Compute (1.7 GB) and CUDA's static libraries (~4 GB). Every area
+   inherited it.
+2. **torch was installed from PyPI (2.14.0+cu130).** The Jetson index only goes
+   up to 2.11, so pip picked PyPI's because it was newer. That wheel brings its
+   own CUDA/cuDNN in `nvidia-*` packages (3.3 GB) plus `triton`, duplicating
+   what was already on the system. On top of that, `torchaudio` did not match
+   torch.
+3. **`PIP_IGNORE_INSTALLED=1` made every `pip install` reinstall its whole
+   dependency tree.** In hri-l4t, torch ended up twice (9.66 GB and 6 GB
+   layers). Added to that were OpenCV compiled in vision and in navigation
+   without deleting the build tree, and iceoryx/CycloneDDS compiled in 5
    Dockerfiles.
 
-La vieja `dustynv/l4t-pytorch` era ligera porque ya traía torch/OpenCV
-compilados contra el CUDA del sistema en una sola capa compartida. Ahora
-`docker/Dockerfile.ROS-l4t` hace ese mismo papel, y todas las áreas l4t
-heredan de ella como en `main`:
+The old `dustynv/l4t-pytorch` was light because it already shipped torch/OpenCV
+compiled against the system CUDA in a single shared layer. `docker/Dockerfile.ROS-l4t`
+now plays that same role, and every l4t area inherits from it as on `main`:
 
-- **CUDA 13.2 / cuDNN 9 / TensorRT 10.** Se instalan compilador, headers y
-  librerías compartidas, sin el meta-paquete `cuda-toolkit` (Nsight) y sin
-  librerías `*_static*.a`. También se borran los builder resources de TensorRT
-  para GPUs dGPU (`sm90`/`sm100`); se conserva `sm110` (Thor).
-- **Stack de Python compartido:** `torch 2.11.0`, `torchvision 0.26.0` y
-  `torchaudio 2.11.0` (las versiones coinciden) vienen de **PyPI**.
-  - Los wheels de `jetson-ai-lab sbsa/cu130` **no sirven en Orin**: solo traen
-    kernels para `sm_110` (Thor) y `sm_121` (Spark). En la Orin (`sm_87`) fallan
-    con `no kernel image is available for execution on the device`. El build
-    cu130 de PyPI trae `sm_80`, que corre en la Orin, y `sm_110`, que sirve para
-    Thor.
-  - En la metadata de torch se quitan las dependencias `cuda-toolkit`,
-    `cuda-bindings`, `nvidia-cudnn-cu13` y `triton`, así que usa CUDA 13.2 y
-    cuDNN 9.20 del sistema. Solo se instalan como wheels NCCL, NVSHMEM y
-    cuSPARSELt, que JetPack no trae. Sin triton, `torch.compile` no está
-    disponible.
-  - En la Orin torch muestra un aviso de compute capability (8.7 vs 8.0), pero
-    matmul, conv (cuDNN) y `torchvision.ops.nms` funcionan en GPU.
-  - `onnxruntime-gpu 1.24.0` sigue viniendo del índice de Jetson (TensorRT EP).
-  - Además: `numpy 2.5.2`, `scipy 1.16.2`, OpenCV 4.14 + contrib con CUDA
-    (`docker/scripts/build_opencv.sh`, sin árbol de build) y
-    `cv_bridge`/`image_geometry` compilados contra ese OpenCV.
-- **Builds sin GPU:** `docker build` no tiene el runtime de NVIDIA. Los pasos
-  que importan torch/cv2 usan `with-cuda-stub <cmd>`, que agrega el stub
-  `libcuda.so.1` solo para ese comando.
-- **Paquetes `.deb` placeholder:** iceoryx y cv_bridge compilados desde fuente
-  se registran como paquetes apt vacíos (versión 99, en hold) con
-  `install-placeholder-deb`. Así apt no queda con dependencias rotas (antes se
-  quitaban con `dpkg --force-depends`) y rosdep no vuelve a instalar los de
-  apt.
-- **iceoryx 2.0.6 (límites ampliados) + CycloneDDS 0.10 con SHM** se compilan
-  una sola vez. La memoria compartida queda apagada por defecto; cada área que
-  la usa pone `ENV CYCLONE_SHM=1` y vuelve a correr `cyclonedds_setup.sh`.
-- **Sin `PIP_BREAK_SYSTEM_PACKAGES` ni `PIP_IGNORE_INSTALLED`:**
-  - Se borra `/usr/lib/python3.12/EXTERNALLY-MANAGED`.
-  - Los paquetes de Python que apt instala para ROS y que las áreas
-    actualizan (numpy, pillow, pyyaml, requests…) se instalan una sola vez en
-    `/usr/local` con `--ignore-installed`. A partir de ahí pip los ve primero y
-    los puede actualizar normalmente.
-- **`/etc/pip.conf`** fija el índice de Jetson, `no-cache-dir` y
+- **CUDA 13.2 / cuDNN 9 / TensorRT 10.** Compiler, headers and shared libraries
+  are installed, without the `cuda-toolkit` meta-package (Nsight) and without
+  `*_static*.a` libraries. TensorRT's builder resources for dGPUs
+  (`sm90`/`sm100`) are also deleted; `sm110` (Thor) is kept.
+- **Shared Python stack:** `torch 2.11.0`, `torchvision 0.26.0` and
+  `torchaudio 2.11.0` (matching versions) come from **PyPI**.
+  - The `jetson-ai-lab sbsa/cu130` wheels **do not work on Orin**: they only
+    carry kernels for `sm_110` (Thor) and `sm_121` (Spark). On the Orin
+    (`sm_87`) they fail with `no kernel image is available for execution on the
+    device`. PyPI's cu130 build carries `sm_80`, which runs on the Orin, and
+    `sm_110`, which covers Thor.
+  - torch's metadata has the `cuda-toolkit`, `cuda-bindings`,
+    `nvidia-cudnn-cu13` and `triton` dependencies stripped, so it uses the
+    system's CUDA 13.2 and cuDNN 9.20. Only NCCL, NVSHMEM and cuSPARSELt, which
+    JetPack does not ship, are installed as wheels. Without triton,
+    `torch.compile` is unavailable.
+  - On the Orin, torch prints a compute-capability warning (8.7 vs 8.0), but
+    matmul, conv (cuDNN) and `torchvision.ops.nms` work on the GPU.
+  - `onnxruntime-gpu 1.24.0` still comes from the Jetson index (TensorRT EP).
+  - Also: `numpy 2.5.2`, `scipy 1.16.2`, OpenCV 4.14 + contrib with CUDA
+    (`docker/scripts/build_opencv.sh`, build tree removed) and
+    `cv_bridge`/`image_geometry` compiled against that OpenCV.
+- **GPU-less builds:** `docker build` has no NVIDIA runtime. The steps that
+  import torch/cv2 use `with-cuda-stub <cmd>`, which adds the `libcuda.so.1`
+  stub for that command only.
+- **Placeholder `.deb` packages:** iceoryx and cv_bridge, compiled from source,
+  are registered as empty apt packages (version 99, on hold) with
+  `install-placeholder-deb`. This keeps apt from ending up with broken
+  dependencies (they used to be removed with `dpkg --force-depends`) and stops
+  rosdep reinstalling the apt ones.
+- **iceoryx 2.0.6 (expanded limits) + CycloneDDS 0.10 with SHM** are compiled
+  once. Shared memory stays off by default; each area that uses it sets
+  `ENV CYCLONE_SHM=1` and reruns `cyclonedds_setup.sh`.
+- **No `PIP_BREAK_SYSTEM_PACKAGES` and no `PIP_IGNORE_INSTALLED`:**
+  - `/usr/lib/python3.12/EXTERNALLY-MANAGED` is deleted.
+  - The Python packages apt installs for ROS and that the areas upgrade (numpy,
+    pillow, pyyaml, requests…) are installed once into `/usr/local` with
+    `--ignore-installed`. From then on pip sees them first and can upgrade them
+    normally.
+- **`/etc/pip.conf`** sets the Jetson index, `no-cache-dir` and
   `constraint = /etc/pip/constraints.txt` (`docker/scripts/constraints-l4t.txt`).
-  Como está en `pip.conf` y no en `ENV`, también aplica con `sudo pip`. Ningún
-  área puede reinstalar ni cambiar la versión de torch/numpy/scipy/OpenCV/
-  onnxruntime: si un requirement choca, el build falla en vez de engordar la
-  imagen sin avisar.
-- **Distribuciones placeholder** (`opencv-python*`, `onnxruntime`): son
-  `dist-info` vacíos con la versión de la base. Así `ultralytics`,
-  `insightface`, `faster-whisper`, etc. dan la dependencia por satisfecha y no
-  instalan encima los wheels CPU de PyPI. `ros-jazzy-cv-bridge` e
-  `ros-jazzy-image-geometry` también quedan como paquetes placeholder, para que
-  apt/rosdep no instalen encima los de apt.
-- **`pip-install-reqs a.txt b.txt`** es un helper de la base para los
-  requirements que se comparten con cpu/cuda. Ignora las líneas de paquetes que
-  ya da la base (por ejemplo `numpy<2` en `tts.txt` u `onnxruntime==1.17.3` en
-  `speech.txt`) y hace un solo `pip install`. Los Dockerfiles compartidos
-  (`hri/dockerfiles/Dockerfile.ROS`, `integration`) solo lo usan si existe.
+  Because it lives in `pip.conf` and not in `ENV`, it also applies under
+  `sudo pip`. No area can reinstall or change the version of
+  torch/numpy/scipy/OpenCV/onnxruntime: if a requirement clashes, the build
+  fails instead of silently bloating the image.
+- **Placeholder distributions** (`opencv-python*`, `onnxruntime`): empty
+  `dist-info` directories carrying the base's version. This way `ultralytics`,
+  `insightface`, `faster-whisper`, etc. consider the dependency satisfied and do
+  not install the CPU wheels from PyPI over it. `ros-jazzy-cv-bridge` and
+  `ros-jazzy-image-geometry` are placeholder packages too, so apt/rosdep do not
+  install the apt ones on top.
+- **`pip-install-reqs a.txt b.txt`** is a base helper for the requirements files
+  shared with cpu/cuda. It drops lines for packages the base already provides
+  (for example `numpy<2` in `tts.txt` or `onnxruntime==1.17.3` in `speech.txt`)
+  and does a single `pip install`. The shared Dockerfiles
+  (`hri/dockerfiles/Dockerfile.ROS`, `integration`) only use it if it exists.
 
-Cambios por área:
+Changes by area:
 
-- **vision:** ya no compila OpenCV, no instala torch/numpy/onnxruntime por
-  pip, no reconstruye cv_bridge y no compila iceoryx/cyclone. dlib se compila
-  en un solo paso.
-- **navigation:** ya no compila OpenCV ni hace `pip install torch` como
-  usuario `ros` en `~/.local`. Por eso se quitan también el `PYTHONPATH` y el
-  `LD_LIBRARY_PATH` hacia `~/.local`, y el `pip install --force-reinstall
-  "numpy<2"` (ahora numpy 2, igual que el resto). rtabmap y rtabmap_ros quedan
-  fijados por commit. OpenVDB se compila en una sola capa y se borran sus
-  fuentes.
-- **manipulation:** usa torch/numpy de la base. Ya no clona
-  `RoBorregos/home2` (traía la rama por defecto); `rosdep` lee los
-  `package.xml` de este checkout con un bind mount de BuildKit.
-- **hri-ros:** `nlp.txt`, `speech.txt` y `postgres.txt` se instalan en una
-  sola corrida del resolver.
-- **stt:** CTranslate2 y PyAV quedan fijados por commit, compilados y
-  limpiados en un solo paso, e instalados antes de los requirements (así no
-  hace falta el `--force-reinstall` final).
-- **tts:** usa la base directamente.
-- **roudi, zed, display:** usan el iceoryx/cyclone de la base. roudi y display
-  siguen compilándolo solo si su base no lo trae (cpu/cuda).
+- **vision:** no longer compiles OpenCV, does not pip-install
+  torch/numpy/onnxruntime, does not rebuild cv_bridge and does not compile
+  iceoryx/cyclone. dlib is compiled in a single step.
+- **navigation:** no longer compiles OpenCV nor runs `pip install torch` as the
+  `ros` user into `~/.local`. That is why the `PYTHONPATH` and `LD_LIBRARY_PATH`
+  entries pointing at `~/.local` are also removed, along with the
+  `pip install --force-reinstall "numpy<2"` (now numpy 2, like everything else).
+  rtabmap and rtabmap_ros are pinned by commit. OpenVDB is compiled in a single
+  layer and its sources deleted.
+- **manipulation:** uses the base's torch/numpy. No longer clones
+  `RoBorregos/home2` (it pulled the default branch); `rosdep` reads this
+  checkout's `package.xml` files through a BuildKit bind mount.
+- **hri-ros:** `nlp.txt`, `speech.txt` and `postgres.txt` are installed in a
+  single resolver run.
+- **stt:** CTranslate2 and PyAV are pinned by commit, compiled and cleaned up in
+  a single step, and installed before the requirements (so the final
+  `--force-reinstall` is not needed).
+- **tts:** uses the base directly.
+- **roudi, zed, display:** use the base's iceoryx/cyclone. roudi and display
+  still compile it only if their base does not provide it (cpu/cuda).
 
-- **moondream-server:** un solo `pip install`; en l4t usa numpy/OpenCV/torch de
-  la base.
-- **stt:** las librerías FFmpeg que compila PyAV se copian a `/usr/local/lib`,
-  así que el `command` de `stt-l4t.yaml` ya no hace
-  `source /tmp/PyAV/scripts/activate.sh` (ese directorio ya no existe).
-- **navigation:** `LD_LIBRARY_PATH` incluye `torch/lib` de la base, porque
-  rtabmap enlaza libtorch.
+- **moondream-server:** a single `pip install`; on l4t it uses the base's
+  numpy/OpenCV/torch.
+- **stt:** the FFmpeg libraries PyAV compiles are copied to `/usr/local/lib`, so
+  the `command` in `stt-l4t.yaml` no longer runs
+  `source /tmp/PyAV/scripts/activate.sh` (that directory no longer exists).
+- **navigation:** `LD_LIBRARY_PATH` includes the base's `torch/lib`, because
+  rtabmap links against libtorch.
 
-Resultado medido en la Orin (2026-09-15). La columna "Antes" es `docker images`
-del baseline. En "Ahora", el total es `docker images` y el propio sale de
-`docker system df -v`: lo que la imagen agrega sobre `l4t_base`, que se guarda
-una sola vez en disco.
+Measured result on the Orin (2026-09-15). The "Before" column is `docker images`
+for the baseline. Under "Now", the total is `docker images` and the own size
+comes from `docker system df -v`: what the image adds on top of `l4t_base`,
+which is stored on disk only once.
 
-| Imagen | Antes | Ahora (total) | Ahora (propio) |
+| Image | Before | Now (total) | Now (own) |
 |---|---|---|---|
 | l4t_base | 26.3 GB | 16.2 GB | — |
 | hri-l4t | 53.6 GB | 17.9 GB | 1.7 GB |
-| manipulation-l4t | 50.3 GB | 22.2 GB | 6.0 GB (MoveIt + rosdep del repo) |
+| manipulation-l4t | 50.3 GB | 22.2 GB | 6.0 GB (MoveIt + the repo's rosdep) |
 | moondream-server | 42.6 GB | 16.5 GB | 0.3 GB |
 | vision-l4t | 39.9 GB | 16.9 GB | 0.7 GB |
 | navigation-l4t | 38.7 GB | 23.1 GB | 7.0 GB (rtabmap, Nav2, OpenVDB) |
@@ -410,22 +401,23 @@ una sola vez en disco.
 | roudi-l4t | 26.3 GB | 16.2 GB | 0 |
 | integration-l4t | 21.0 GB | 16.6 GB | 0.5 GB |
 
-En disco, las 12 imágenes l4t ocupan ~16 GB compartidos más ~20 GB propios
-(~36 GB en total). Antes eran ~190 GB, porque cada una traía su propio torch/CUDA.
-Cada imagen pasó un smoke test con GPU real:
-- **Todas:** torch matmul/conv en CUDA.
+On disk, the 12 l4t images take ~16 GB shared plus ~20 GB of their own (~36 GB
+in total). They used to be ~190 GB, because each one carried its own torch/CUDA.
+Every image passed a smoke test on a real GPU:
+- **All:** torch matmul/conv on CUDA.
 - **vision:** cv2.cuda, TensorRT EP, dlib CUDA, YOLO, cv_bridge.
 - **hri:** spaCy, DeepFilterNet, openwakeword, sentence-transformers.
-- **stt:** CTranslate2 con float16 en CUDA, PyAV, faster-whisper.
-- **navigation:** SuperPoint TorchScript; rtabmap enlazado a OpenCV 4.14 y torch.
+- **stt:** CTranslate2 with float16 on CUDA, PyAV, faster-whisper.
+- **navigation:** SuperPoint TorchScript; rtabmap linked against OpenCV 4.14 and
+  torch.
 - **tts:** kokoro.
 - **manipulation:** ultralytics, CLIP.
 
-Para agregar o cambiar una versión de torch/numpy/OpenCV: editar
-`docker/scripts/constraints-l4t.txt` (y la URL del wheel en
-`Dockerfile.ROS-l4t` si es torch) y reconstruir la base.
+To add or change a torch/numpy/OpenCV version: edit
+`docker/scripts/constraints-l4t.txt` (and the wheel URL in `Dockerfile.ROS-l4t`
+if it is torch) and rebuild the base.
 
-## Pendiente / fuera de alcance de esta iteración
+## Pending / out of scope for this iteration
 
-- Sabores `cpu`/`cuda` de cada área: no priorizados en esta iteración (foco
-  exclusivo en `l4t`, que es el hardware real del robot).
+- The `cpu`/`cuda` flavors of each area: not prioritized in this iteration
+  (exclusive focus on `l4t`, which is the robot's real hardware).

@@ -117,7 +117,7 @@ esac
 echo "=== CycloneDDS Setup (host) ==="
 
 # Install CycloneDDS RMW if not present
-ROS_DISTRO="${ROS_DISTRO:-humble}"
+ROS_DISTRO="${ROS_DISTRO:-jazzy}"
 if ! dpkg -s "ros-${ROS_DISTRO}-rmw-cyclonedds-cpp" &>/dev/null; then
     echo "[0/3] Installing ros-${ROS_DISTRO}-rmw-cyclonedds-cpp..."
     apt-get update -qq && apt-get install -y -qq "ros-${ROS_DISTRO}-rmw-cyclonedds-cpp"
