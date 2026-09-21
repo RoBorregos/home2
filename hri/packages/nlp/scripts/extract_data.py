@@ -65,8 +65,11 @@ class DataExtractor(Node):
         try:
             self.nlp = spacy.load(os.path.join(ASSETS_DIR, spacy_model))
         except OSError:
-            spacy.cli.download(spacy_model)
-            self.nlp = spacy.load(spacy_model)
+            try:
+                self.nlp = spacy.load(spacy_model)
+            except OSError:
+                spacy.cli.download(spacy_model)
+                self.nlp = spacy.load(spacy_model)
             self.nlp.to_disk(os.path.join(ASSETS_DIR, spacy_model))
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
@@ -87,13 +90,13 @@ class DataExtractor(Node):
             .string_value
         )
 
-        self.get_logger().info("Starting data extractor node")
+        self.get_logger().debug("Starting data extractor node")
 
         self.srv = self.create_service(
             ExtractInfo, EXTRACT_DATA_SERVICE, self.extract_info_requested
         )
 
-        self.get_logger().info("Data extractor node started")
+        self.get_logger().info("ExtractData ready")
 
     def extract_info_requested(
         self, request: ExtractInfo.Request, response: ExtractInfo.Response

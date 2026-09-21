@@ -18,9 +18,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 USER ros
 RUN sudo chown -R ros /usr/lib/python3.10/ /usr/local/lib/python3.10/ 2>/dev/null || true
 
-# CycloneDDS with SHM (iceoryx zero-copy) — needed for ZED → display frame path
-RUN sudo dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true
-RUN cd /tmp && \
+# CycloneDDS with SHM (iceoryx zero-copy) — needed for ZED → display frame path.
+# l4t_base already ships this build; other bases still compile it here.
+RUN if [ ! -f /etc/iceoryx/roudi_config.toml ]; then \
+    (sudo dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c 2>/dev/null || true) && \
+    cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
     sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
@@ -35,9 +37,7 @@ RUN cd /tmp && \
     cmake --build build -j$(nproc) && \
     sudo cmake --install build && \
     sudo ldconfig && \
-    cd / && rm -rf /tmp/iceoryx
-
-RUN cd /tmp && \
+    cd /tmp && rm -rf /tmp/iceoryx && \
     git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
     cd cyclonedds && mkdir build && cd build && \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
@@ -47,7 +47,8 @@ RUN cd /tmp && \
     -DENABLE_SHM=ON \
     -DCMAKE_BUILD_TYPE=Release && \
     make -j$(nproc) && sudo make install && \
-    cd / && rm -rf /tmp/cyclonedds
+    cd / && rm -rf /tmp/cyclonedds; \
+    fi
 
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
