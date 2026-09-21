@@ -107,24 +107,19 @@ Functions</h2></td></tr>
 Data flow:
     odrive_dashboard  ──&gt;  /odrive/odom  (nav_msgs/Odometry, body-frame vx/vy)
                       ──&gt;  /odrive/imu   (sensor_msgs/Imu, BNO085 yaw + yaw-rate)
-                                │
-                                ▼
-                        ekf_node (this launch)  ──&gt;  /odometry/filtered  +  TF odom-&gt;base_link
+                      ──&gt;  TF odom-&gt;base_link  (the on-MCU EKF pose, publish_tf)
     lidar setup ----&gt; /scan1 , /scan2 - &gt; /scan
 
-Fusion strategy for a mecanum base:
-  * Wheels are trusted ONLY for body-frame linear velocity (vx, vy). They slip,
-    so we never fuse wheel x/y/yaw.
-  * The BNO085 IMU OWNS heading: we fuse absolute yaw + yaw rate, which are
-    immune to wheel slip.
+The dashboard is the SOLE publisher of odom-&gt;base_link. robot_localization is
+configured below but deliberately NOT launched — see the ekf_node block.
 
 Prerequisites:
   * odrive_dashboard must be running (it owns /dev/ttyACM0 and publishes the two
     inputs above). Pass use_dashboard:=true to start it from here.
   * The dashboard publishes /odrive/odom twist in the base_link frame (it
-    un-rotates the firmware's world-frame ODOM_vx/ODOM_vy). robot_localization
-    rotates that body-frame twist by the IMU heading, so it must NOT be
-    world-frame here or it gets rotated twice.</pre> </div><h2 class="groupheader">Function Documentation</h2>
+    un-rotates the firmware's world-frame ODOM_vx/ODOM_vy). If the EKF is ever
+    re-enabled it rotates that body-frame twist by the IMU heading, so it must
+    NOT be world-frame here or it gets rotated twice.</pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="aaa6181047378b8fed9d7735c8f2a9341" name="aaa6181047378b8fed9d7735c8f2a9341"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aaa6181047378b8fed9d7735c8f2a9341">&#9670;&#160;</a></span>generate_launch_description()</h2>
 

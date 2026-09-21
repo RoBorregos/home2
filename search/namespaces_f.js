@@ -11,7 +11,6 @@ var searchData=
   ['restaurant_5flaunch_8',['restaurant_launch',['../namespacerestaurant__launch.html',1,'']]],
   ['restaurant_5ftask_5fmanager_9',['restaurant_task_manager',['../namespacerestaurant__task__manager.html',1,'']]],
   ['robometrics_5fto_5fpkl_5fjson_10',['robometrics_to_pkl_json',['../namespacerobometrics__to__pkl__json.html',1,'']]],
-  ['robot_5fsim_11',['robot_sim',['../namespacerobot__sim.html',1,'']]],
-  ['ros_5futils_12',['ros_utils',['../namespaceros__utils.html',1,'']]],
-  ['run_5fwhile_5fhearing_13',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
+  ['ros_5futils_11',['ros_utils',['../namespaceros__utils.html',1,'']]],
+  ['run_5fwhile_5fhearing_12',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
 ];

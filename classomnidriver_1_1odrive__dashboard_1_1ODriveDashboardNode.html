@@ -228,6 +228,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="separator:a6a92c9f4469f4fc78861192fb5a7d4b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af643a76f9dd60cd2edfd2edcc742e931"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#af643a76f9dd60cd2edfd2edcc742e931">_tick_link_status</a> (self)</td></tr>
 <tr class="separator:af643a76f9dd60cd2edfd2edcc742e931"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab484167026f715a8df69755e186d69cb"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#ab484167026f715a8df69755e186d69cb">_publish_odom_and_tf</a> (self, dict data, stamp, float o_phi, float o_x, float o_y, float o_w, float o_vx, float o_vy)</td></tr>
+<tr class="separator:ab484167026f715a8df69755e186d69cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af054e1902b67b995f529cce9caafce92"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#af054e1902b67b995f529cce9caafce92">_parse_and_publish</a> (self, str line)</td></tr>
 <tr class="separator:af054e1902b67b995f529cce9caafce92"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -252,6 +254,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a8587c56d7cd5e21e01204bcfde151b6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44867cb1299341392a34b349d4b5aaa3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a44867cb1299341392a34b349d4b5aaa3">_sio</a></td></tr>
 <tr class="separator:a44867cb1299341392a34b349d4b5aaa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8742c6648969e8fd4755b36de84dabd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#ab8742c6648969e8fd4755b36de84dabd">_imu_yaw_rejects</a></td></tr>
+<tr class="separator:ab8742c6648969e8fd4755b36de84dabd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada359ee1e75c53fa3da1d554f57629e8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#ada359ee1e75c53fa3da1d554f57629e8">_follow_base_yaw</a></td></tr>
 <tr class="separator:ada359ee1e75c53fa3da1d554f57629e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a463c904f86329d136cf1f259c58db82c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classomnidriver_1_1odrive__dashboard_1_1ODriveDashboardNode.html#a463c904f86329d136cf1f259c58db82c">_follow_base_yaw_time</a></td></tr>
@@ -647,6 +651,98 @@ been observed (rendered as "unknown" on the dashboard).
 </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="ab484167026f715a8df69755e186d69cb" name="ab484167026f715a8df69755e186d69cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab484167026f715a8df69755e186d69cb">&#9670;&#160;</a></span>_publish_odom_and_tf()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None omnidriver.odrive_dashboard.ODriveDashboardNode._publish_odom_and_tf </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict&#160;</td>
+          <td class="paramname"><em>data</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>stamp</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>o_phi</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>o_x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>o_y</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>o_w</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>o_vx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>o_vy</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Publish /odrive/odom (+ the odom -&gt; base_link TF) from one telemetry
+line's ODOM_* block. Called from BOTH serial paths: the fat line lands at
+~6 Hz but slam_toolbox looks up the TF once per scan (10 Hz), so the slim
+line -- which carries the same ODOM_* fields -- publishes here too.
+
+ODOM_x/y/z in meters (z = 0 on a planar base), ODOM_phi in radians, and:
+  - ODOM_q*             EKF orientation quaternion (preferred); falls back
+                        to a yaw-derived quaternion on pre-EKF firmware.
+  - ODOM_vxb / ODOM_vyb body-frame linear twist, what nav_msgs/Odometry
+                        expects under `child_frame_id`. Pre-EKF firmware
+                        sends world-frame ODOM_vx / ODOM_vy instead.
+  - ODOM_var_*          EKF covariance diagonal, mapped into the ROS
+                        [x, y, z, roll, pitch, yaw] layout. Unestimated
+                        entries get 1e9 so filters read them as unknown.
+</pre> 
 </div>
 </div>
 <a id="a0369f264d486197cd7ef4132fccde265" name="a0369f264d486197cd7ef4132fccde265"></a>
@@ -1257,6 +1353,28 @@ exact firmware release (e.g. axis0.controller.config.vel_ramp_rate).</pre>
       <table class="memname">
         <tr>
           <td class="memname">omnidriver.odrive_dashboard.ODriveDashboardNode._follow_base_yaw_time</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab8742c6648969e8fd4755b36de84dabd" name="ab8742c6648969e8fd4755b36de84dabd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8742c6648969e8fd4755b36de84dabd">&#9670;&#160;</a></span>_imu_yaw_rejects</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">omnidriver.odrive_dashboard.ODriveDashboardNode._imu_yaw_rejects</td>
         </tr>
       </table>
   </td>

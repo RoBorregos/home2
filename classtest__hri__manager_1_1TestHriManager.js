@@ -1,8 +1,10 @@
 var classtest__hri__manager_1_1TestHriManager =
 [
     [ "__init__", "classtest__hri__manager_1_1TestHriManager.html#a36b0bf279c06e38b98a8fef5ef2c2e04", null ],
+    [ "_benchmark_config", "classtest__hri__manager_1_1TestHriManager.html#aa7ec9cf8d65231cab25892d5d01f7379", null ],
     [ "_emit_benchmark_report", "classtest__hri__manager_1_1TestHriManager.html#a1a5411a5d21aac539a34327a1ab494b6", null ],
     [ "_merged_plan_speech_failures", "classtest__hri__manager_1_1TestHriManager.html#a3a7a450ef7f36e6b0deb98205e9035a9", null ],
+    [ "_require_accuracy_services", "classtest__hri__manager_1_1TestHriManager.html#aeea7ec2c432260db82a1ec48b854ce2c", null ],
     [ "_run_perf_side_channel", "classtest__hri__manager_1_1TestHriManager.html#ae368c71d9e8d5a74f7fd9bcacfd0f721", null ],
     [ "async_llm_test", "classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1", null ],
     [ "detect_door", "classtest__hri__manager_1_1TestHriManager.html#ac324c102215af351f72106b28ae3be8c", null ],

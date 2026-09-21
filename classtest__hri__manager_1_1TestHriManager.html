@@ -163,8 +163,12 @@ Public Attributes</h2></td></tr>
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:a3a7a450ef7f36e6b0deb98205e9035a9"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a3a7a450ef7f36e6b0deb98205e9035a9">_merged_plan_speech_failures</a> (self, str spoken, str raw, list actions)</td></tr>
 <tr class="separator:a3a7a450ef7f36e6b0deb98205e9035a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeea7ec2c432260db82a1ec48b854ce2c"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#aeea7ec2c432260db82a1ec48b854ce2c">_require_accuracy_services</a> (self)</td></tr>
+<tr class="separator:aeea7ec2c432260db82a1ec48b854ce2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae368c71d9e8d5a74f7fd9bcacfd0f721"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#ae368c71d9e8d5a74f7fd9bcacfd0f721">_run_perf_side_channel</a> (self, str task_name)</td></tr>
 <tr class="separator:ae368c71d9e8d5a74f7fd9bcacfd0f721"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa7ec9cf8d65231cab25892d5d01f7379"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#aa7ec9cf8d65231cab25892d5d01f7379">_benchmark_config</a> (self)</td></tr>
+<tr class="separator:aa7ec9cf8d65231cab25892d5d01f7379"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a5411a5d21aac539a34327a1ab494b6"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a1a5411a5d21aac539a34327a1ab494b6">_emit_benchmark_report</a> (self, dict all_results)</td></tr>
 <tr class="separator:a1a5411a5d21aac539a34327a1ab494b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -177,6 +181,10 @@ Protected Attributes</h2></td></tr>
 Static Protected Attributes</h2></td></tr>
 <tr class="memitem:a34704ef7e00e99b171413deb73ecdba2"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a34704ef7e00e99b171413deb73ecdba2">_TASK_DISPATCH</a></td></tr>
 <tr class="separator:a34704ef7e00e99b171413deb73ecdba2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab157518a1bfedfe6a8f72ccc3bc49ddc"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#ab157518a1bfedfe6a8f72ccc3bc49ddc">_PERF_ONLY_TASKS</a> = {&quot;is_coherent&quot;, &quot;llm_wrapper&quot;}</td></tr>
+<tr class="separator:ab157518a1bfedfe6a8f72ccc3bc49ddc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab6a6ddcb52a5376722ab882fe287bf44"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#ab6a6ddcb52a5376722ab882fe287bf44">_ACCURACY_SERVICE_CLIENTS</a></td></tr>
+<tr class="separator:ab6a6ddcb52a5376722ab882fe287bf44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a36b0bf279c06e38b98a8fef5ef2c2e04" name="a36b0bf279c06e38b98a8fef5ef2c2e04"></a>
@@ -198,6 +206,32 @@ Static Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="aa7ec9cf8d65231cab25892d5d01f7379" name="aa7ec9cf8d65231cab25892d5d01f7379"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7ec9cf8d65231cab25892d5d01f7379">&#9670;&#160;</a></span>_benchmark_config()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> dict test_hri_manager.TestHriManager._benchmark_config </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Stamped into every report so a result can be reproduced.</pre> 
+</div>
+</div>
 <a id="a1a5411a5d21aac539a34327a1ab494b6" name="a1a5411a5d21aac539a34327a1ab494b6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1a5411a5d21aac539a34327a1ab494b6">&#9670;&#160;</a></span>_emit_benchmark_report()</h2>
 
@@ -280,6 +314,32 @@ Static Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 <pre class="fragment">Name every way the rewritten announcement is still unusable.</pre> 
+</div>
+</div>
+<a id="aeea7ec2c432260db82a1ec48b854ce2c" name="aeea7ec2c432260db82a1ec48b854ce2c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeea7ec2c432260db82a1ec48b854ce2c">&#9670;&#160;</a></span>_require_accuracy_services()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None test_hri_manager.TestHriManager._require_accuracy_services </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
 </div>
 </div>
 <a id="ae368c71d9e8d5a74f7fd9bcacfd0f721" name="ae368c71d9e8d5a74f7fd9bcacfd0f721"></a>
@@ -728,6 +788,33 @@ PASS/FAIL log + CSV output.</pre>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="ab6a6ddcb52a5376722ab882fe287bf44" name="ab6a6ddcb52a5376722ab882fe287bf44"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab6a6ddcb52a5376722ab882fe287bf44">&#9670;&#160;</a></span>_ACCURACY_SERVICE_CLIENTS</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict test_hri_manager.TestHriManager._ACCURACY_SERVICE_CLIENTS</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=  {</div>
+<div class="line">        <span class="stringliteral">&quot;extract_data&quot;</span>: <span class="stringliteral">&quot;extract_data_service&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;is_positive&quot;</span>: <span class="stringliteral">&quot;is_positive_service&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;is_negative&quot;</span>: <span class="stringliteral">&quot;is_negative_service&quot;</span>,</div>
+<div class="line">    }</div>
+</div><!-- fragment -->
+</div>
+</div>
 <a id="aba0825b2b3807faccbd6aff2f71f2f52" name="aba0825b2b3807faccbd6aff2f71f2f52"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aba0825b2b3807faccbd6aff2f71f2f52">&#9670;&#160;</a></span>_calls</h2>
 
@@ -744,6 +831,28 @@ PASS/FAIL log + CSV output.</pre>
   </td>
   <td class="mlabels-right">
 <span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab157518a1bfedfe6a8f72ccc3bc49ddc" name="ab157518a1bfedfe6a8f72ccc3bc49ddc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab157518a1bfedfe6a8f72ccc3bc49ddc">&#9670;&#160;</a></span>_PERF_ONLY_TASKS</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">dict test_hri_manager.TestHriManager._PERF_ONLY_TASKS = {&quot;is_coherent&quot;, &quot;llm_wrapper&quot;}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">protected</span></span>  </td>
   </tr>
 </table>
 </div><div class="memdoc">
@@ -773,6 +882,7 @@ PASS/FAIL log + CSV output.</pre>
 <div class="line">        <span class="stringliteral">&quot;is_positive&quot;</span>: <span class="stringliteral">&quot;test_is_positive&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;is_negative&quot;</span>: <span class="stringliteral">&quot;test_is_negative&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;extract_data&quot;</span>: <span class="stringliteral">&quot;test_data_extractor&quot;</span>,</div>
+<div class="line">        <span class="stringliteral">&quot;categorize_shelves&quot;</span>: <span class="stringliteral">&quot;test_categorize_shelves&quot;</span>,</div>
 <div class="line">    }</div>
 </div><!-- fragment -->
 </div>

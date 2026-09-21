@@ -94,20 +94,20 @@ $(document).ready(function(){initNavTree('md_docs_Run_Areas_hri.html',''); initR
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>In order to run and setup this area specific flags were added which abstract the complexity of performing both simple and complex tasks.</p>
-<h1><a class="anchor" id="autotoc_md347"></a>
+<h1><a class="anchor" id="autotoc_md327"></a>
 Flags</h1>
 <p>Adding multiple flags in the same command is supported. Remember that to run a specific task the task's flag must be the first one.</p>
-<div class="fragment"><div class="line">./run.sh hri --build-display</div>
-</div><!-- fragment --><p>Downloads node-modules (dependencies) and builds the next.js web page inside a temporary <code>hri-ros</code> container.</p>
-<div class="fragment"><div class="line">./run.sh hri --open-display</div>
-</div><!-- fragment --><p>Opens a new Firefox window in kiosk mode (fullscreen). If running with a task it will open the task's specific URL. See <code>docker/hri/scripts/open-display.bash</code>.</p>
+<div class="fragment"><div class="line">./run.sh hri --gpsr</div>
+</div><!-- fragment --><p>Launches HRI with the given task. The PyQt display UI (<a href="../../../hri/packages/display/scripts/display_ui.py">hri/packages/display/scripts/display_ui.py</a>) starts automatically inside the container and shows the task's specific view (via the <code>display_task</code> arg forwarded to <code>hri_launch.py</code>) — no separate "open display" step needed, the window renders directly on the forwarded X11 <code>DISPLAY</code>.</p>
+<div class="fragment"><div class="line">./run.sh hri --gpsr --backup</div>
+</div><!-- fragment --><p>Same as above, but launches the legacy Next.js display (<code>display_launch_backup.py</code>, rosbridge + web_video_server + a kiosk browser window) instead of the default PyQt UI. Kept as a fallback, not deleted. <code>./run.sh display --backup</code> runs it standalone the same way.</p>
 <div class="fragment"><div class="line">./run.sh hri --download-model</div>
 </div><!-- fragment --><p>Pulls RoBorregos' command interpreter LLM from hugging face and other ollama models. See <code>docker/hri/scripts/download-model.sh</code>.</p>
 <div class="fragment"><div class="line">./run.sh hri --regenerate-db</div>
 </div><!-- fragment --><p>Uses current json files from <code>hri/packages/embeddings/embeddings/dataframes/</code> and a navigation service to retrive information and generate SQL files which are saved in <code>/docker/hri/sql_dumps/</code>. Then it replaces the information in the postgres database with these scripts. See <code>docker/hri/scripts/regenerate_db.sh</code>.</p>
 <div class="fragment"><div class="line">./run.sh hri --build-proto</div>
 </div><!-- fragment --><p>Generates gRPC files for the microservices using the .proto files located in <code>hri/proto_interfaces/proto_interfaces/</code>.</p>
-<h1><a class="anchor" id="autotoc_md348"></a>
+<h1><a class="anchor" id="autotoc_md328"></a>
 Running specific containers</h1>
 <p>You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose yaml files in the <code>docker/hri/compose/</code> folder and comment out the services you do not want to run.</p>
 <p>For more detailed information, see HRI's README.md. </p>

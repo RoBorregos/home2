@@ -74,7 +74,7 @@ var hierarchy =
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
     [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
     [ "vamp::binding::Helper< Robot, Input >", "structvamp_1_1binding_1_1Helper.html", null ],
-    [ "hri_hand.HRIHand", "classhri__hand_1_1HRIHand.html", null ],
+    [ "task_manager.subtask_managers.hri_hand.HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
     [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ],
     [ "ikfast::IkFastFunctions< T >", "classikfast_1_1IkFastFunctions.html", null ],
     [ "ikfast::IkSingleDOFSolutionBase< T >", "classikfast_1_1IkSingleDOFSolutionBase.html", null ],
@@ -85,8 +85,6 @@ var hierarchy =
       [ "ikfast::IkSolutionList< T >", "classikfast_1_1IkSolutionList.html", null ]
     ] ],
     [ "IKSolver", "classIKSolver.html", null ],
-    [ "mujoco_ros2_sensors::ImuSensor", "classmujoco__ros2__sensors_1_1ImuSensor.html", null ],
-    [ "mujoco_ros2_sensors::ImuSensorStruct", "structmujoco__ros2__sensors_1_1ImuSensorStruct.html", null ],
     [ "task_manager.gpsr.merger.InterleavedPlan", "classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html", null ],
     [ "kinematics::KinematicsBase", null, [
       [ "xarm6_ikfast_plugin::IKFastKinematicsPlugin", "classxarm6__ikfast__plugin_1_1IKFastKinematicsPlugin.html", null ]
@@ -123,11 +121,6 @@ var hierarchy =
     ] ],
     [ "arm_pkg.moveit_configs_builder.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigs.html", null ],
     [ "arm_pkg.moveit_configs_builder_sim.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigs.html", null ],
-    [ "mujoco_rgbd_camera::MujocoDepthCamera", "classmujoco__rgbd__camera_1_1MujocoDepthCamera.html", null ],
-    [ "mujoco_ros2_control::MujocoRos2Control", "classmujoco__ros2__control_1_1MujocoRos2Control.html", null ],
-    [ "mujoco_ros2_sensors::MujocoRos2Sensors", "classmujoco__ros2__sensors_1_1MujocoRos2Sensors.html", null ],
-    [ "mujoco_simulate_gui::MujocoSimulateGui", "classmujoco__simulate__gui_1_1MujocoSimulateGui.html", null ],
-    [ "mujoco_visualization::MujocoVisualization", "classmujoco__visualization_1_1MujocoVisualization.html", null ],
     [ "pick_and_place.fix_position_to_plane.MyPoint", "classpick__and__place_1_1fix__position__to__plane_1_1MyPoint.html", null ],
     [ "task_manager.subtask_managers.nav_tasks.NavigationTasks", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html", null ],
     [ "vamp::binding::NDArrayInput< Robot >", "structvamp_1_1binding_1_1NDArrayInput.html", null ],
@@ -149,7 +142,6 @@ var hierarchy =
       [ "PublishNode", "classPublishNode.html", null ],
       [ "TableSegmentationNode", "classTableSegmentationNode.html", null ],
       [ "TestsNode", "classTestsNode.html", null ],
-      [ "Xarm_gripper_mujoco_bridge", "classXarm__gripper__mujoco__bridge.html", null ],
       [ "gpd_ros2::GraspDetection", "classgpd__ros2_1_1GraspDetection.html", null ],
       [ "gpd_ros2::GraspDetectionService", "classgpd__ros2_1_1GraspDetectionService.html", null ]
     ] ],
@@ -157,8 +149,7 @@ var hierarchy =
       [ "base_detector_node.BaseDetectorNode", "classbase__detector__node_1_1BaseDetectorNode.html", [
         [ "object_detector_node.ObjectDetectorNode", "classobject__detector__node_1_1ObjectDetectorNode.html", null ],
         [ "zero_shot_object_detector_node.ZeroShotDetectorNode", "classzero__shot__object__detector__node_1_1ZeroShotDetectorNode.html", null ]
-      ] ],
-      [ "simple_launch.TestNode", "classsimple__launch_1_1TestNode.html", null ]
+      ] ]
     ] ],
     [ "vamp::planning::NearestNeighborsGNAT< _T >::Node", "classvamp_1_1planning_1_1NearestNeighborsGNAT_1_1Node.html", null ],
     [ "vamp::planning::NearestNeighborsGNAT< _T >::NodeDistCompare", "structvamp_1_1planning_1_1NearestNeighborsGNAT_1_1NodeDistCompare.html", null ],
@@ -192,8 +183,6 @@ var hierarchy =
     ] ],
     [ "vamp::planning::PlanningResult< Robot >", "structvamp_1_1planning_1_1PlanningResult.html", null ],
     [ "models.pose_detection.PoseDetection", "classmodels_1_1pose__detection_1_1PoseDetection.html", null ],
-    [ "mujoco_ros2_sensors::PoseSensor", "classmujoco__ros2__sensors_1_1PoseSensor.html", null ],
-    [ "mujoco_ros2_sensors::PoseSensorStruct", "structmujoco__ros2__sensors_1_1PoseSensorStruct.html", null ],
     [ "pick_and_place.pipelines.pour.PourRequest", "classpick__and__place_1_1pipelines_1_1pour_1_1PourRequest.html", null ],
     [ "vamp::planning::PRM< Robot, rake, resolution, NeighborParamsT >", "structvamp_1_1planning_1_1PRM.html", null ],
     [ "vamp::planning::PRMStarNeighborParams", "structvamp_1_1planning_1_1PRMStarNeighborParams.html", null ],
@@ -217,7 +206,6 @@ var hierarchy =
     [ "vamp::planning::RRTC< Robot, rake, resolution >", "structvamp_1_1planning_1_1RRTC.html", null ],
     [ "vamp::planning::RRTCSettings", "structvamp_1_1planning_1_1RRTCSettings.html", null ],
     [ "vamp::same_num_scalars< S1, S2 >", "structvamp_1_1same__num__scalars.html", null ],
-    [ "mujoco_ros2_sensors::MujocoRos2Sensors::Sensors", "structmujoco__ros2__sensors_1_1MujocoRos2Sensors_1_1Sensors.html", null ],
     [ "fakes.ServiceStub", "classfakes_1_1ServiceStub.html", null ],
     [ "vamp::collision::Shape< DataT >", "structvamp_1_1collision_1_1Shape.html", [
       [ "vamp::collision::Cuboid< DataT >", "structvamp_1_1collision_1_1Cuboid.html", null ],
@@ -248,11 +236,6 @@ var hierarchy =
       [ "VAMPStateValidator", "structVAMPStateValidator.html", null ]
     ] ],
     [ "task_manager.utils.subtask_manager.SubtaskManager", "classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html", null ],
-    [ "hardware_interface::SystemInterface", null, [
-      [ "mujoco_ros2_control::MujocoSystemInterface", "classmujoco__ros2__control_1_1MujocoSystemInterface.html", [
-        [ "mujoco_ros2_control::MujocoSystem", "classmujoco__ros2__control_1_1MujocoSystem.html", null ]
-      ] ]
-    ] ],
     [ "doing_laundry_task_manager.DoingLaundryTM.TaskStates", "classdoing__laundry__task__manager_1_1DoingLaundryTM_1_1TaskStates.html", null ],
     [ "gpsr_task_manager.GPSRTM.TaskStates", "classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html", null ],
     [ "hand_task_manager.HandTM.TaskStates", "classhand__task__manager_1_1HandTM_1_1TaskStates.html", null ],
@@ -261,9 +244,6 @@ var hierarchy =
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
     [ "test_clean_table_task_manager.CleanTableTM.TaskStates", "classtest__clean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
-    [ "unittest.TestCase", null, [
-      [ "simple_launch.TestBringup", "classsimple__launch_1_1TestBringup.html", null ]
-    ] ],
     [ "vamp_server.VampServer.Timer", "classvamp__server_1_1VampServer_1_1Timer.html", null ],
     [ "follow_calibration.TopicStat", "classfollow__calibration_1_1TopicStat.html", null ],
     [ "models.tracker.TrackerModel", "classmodels_1_1tracker_1_1TrackerModel.html", null ],
@@ -290,8 +270,6 @@ var hierarchy =
     [ "vamp::VectorSignature< SimdT_, num_rows_, num_scalars_per_row_ >", "structvamp_1_1VectorSignature.html", null ],
     [ "task_manager.subtask_managers.vision_tasks.VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", null ],
     [ "vamp::collision::Volume", "structvamp_1_1collision_1_1Volume.html", null ],
-    [ "mujoco_ros2_sensors::WrenchSensor", "classmujoco__ros2__sensors_1_1WrenchSensor.html", null ],
-    [ "mujoco_ros2_sensors::WrenchSensorStruct", "structmujoco__ros2__sensors_1_1WrenchSensorStruct.html", null ],
     [ "XArmServices.XArmServices", "classXArmServices_1_1XArmServices.html", null ],
     [ "ABC", null, [
       [ "Planner.Planner", "classPlanner_1_1Planner.html", null ],
@@ -386,7 +364,6 @@ var hierarchy =
       [ "restaurant_task_manager.RestaurantTaskManager", "classrestaurant__task__manager_1_1RestaurantTaskManager.html", null ],
       [ "run_while_hearing.ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", null ],
       [ "safety_task_manager.SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", null ],
-      [ "scripts.xacro2mjcf.Xacro2Mjcf", "classscripts_1_1xacro2mjcf_1_1Xacro2Mjcf.html", null ],
       [ "simulate_position.SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "table_docker.TableDocker", "classtable__docker_1_1TableDocker.html", null ],

@@ -94,7 +94,7 @@ $(document).ready(function(){initNavTree('md_manipulation_packages_pick_and_plac
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>The manipulation task layer. One node, <code>manipulation_core</code>, accepts a task (pick, place, pour), runs it start to finish, and reports success. It owns no motion planning and no perception of its own &ndash; it drives the nodes that do.</p>
-<h1><a class="anchor" id="autotoc_md47"></a>
+<h1><a class="anchor" id="autotoc_md1"></a>
 External contract</h1>
 <p>Everything outside this package talks to it through exactly three interfaces. They are stable; nothing else here is public.</p>
 <table class="markdownTable">
@@ -107,7 +107,7 @@ External contract</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>/manipulation/fixed_distance_move</code>   </td><td class="markdownTableBodyNone"><code>FixedDistanceMove</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (<code>move_arm_vertical</code>)   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md48"></a>
+<h1><a class="anchor" id="autotoc_md2"></a>
 System context</h1>
 <p>A node exists here only if it owns expensive state. MoveIt, GPD and the point-cloud pipeline each do; the pick, place and pour flows do not, so they are functions in one node rather than three.</p>
 <div class="fragment"><div class="line">flowchart TD</div>
@@ -126,7 +126,7 @@ System context</h1>
 <div class="line"> </div>
 <div class="line">    mp --&gt; xarm</div>
 </div><!-- fragment --><p>The arm is driven two ways. Normal motion goes through <code><a class="el" href="namespacemotion__planning__server.html">motion_planning_server</a></code> and MoveIt. The descents bypass it: they switch the xArm into cartesian-velocity mode (mode 5) and close the loop themselves, because MoveIt cannot plan into a basket the octomap has filled with noise. Mode 5 takes the trajectory controller offline, so it is always entered through a context manager that restores mode 1 on the way out.</p>
-<h1><a class="anchor" id="autotoc_md49"></a>
+<h1><a class="anchor" id="autotoc_md3"></a>
 Package architecture</h1>
 <p>Three layers, each with a strict rule about what it may know.</p>
 <div class="fragment"><div class="line">flowchart TD</div>
@@ -163,7 +163,7 @@ Package architecture</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>robot/*.py</code>   </td><td class="markdownTableBodyNone">MoveIt, xArm, the gripper, the planning scene   </td><td class="markdownTableBodyNone">which task is running   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md50"></a>
+<h1><a class="anchor" id="autotoc_md4"></a>
 Tree structure</h1>
 <div class="fragment"><div class="line">pick_and_place/</div>
 <div class="line">├── config/</div>
@@ -190,7 +190,7 @@ Tree structure</h1>
 <div class="line">│   ├── manipulation_client.py   RViz clicked-point bridge</div>
 <div class="line">│   └── fix_position_to_plane.py separate node: where to stand for a surface</div>
 <div class="line">└── test/</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md51"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md5"></a>
 How a pick runs</h1>
 <p><code><a class="el" href="pick_8py.html">pipelines/pick.py</a>::execute</code> is four steps; each is a function directly below it in the same file.</p>
 <ol type="1">
@@ -200,7 +200,7 @@ How a pick runs</h1>
 <li><b>Return</b> — <code>_return_to_carry_pose</code>. Shelf picks retract to <code>front_stare</code> first; rim picks hold position (a basket is carried where it was grasped); everything else returns to a stare pose.</li>
 </ol>
 <p>The gripper opens <em>after</em> perceiving and <em>before</em> grasping — the fingers are in the camera's view while it looks.</p>
-<h2><a class="anchor" id="autotoc_md52"></a>
+<h2><a class="anchor" id="autotoc_md6"></a>
 Where the flow goes</h2>
 <p>The same pick as a file map: boxes are files, and each line says what travels along it. Dotted lines are read once at startup or leave the package.</p>
 <div class="fragment"><div class="line">flowchart TD</div>
@@ -219,7 +219,7 @@ Where the flow goes</h2>
 <div class="line"> </div>
 <div class="line">    Prof[pipelines/profiles.py] -.-&gt;|&quot;tuned numbers, read once at startup&quot;| Str</div>
 <div class="line">    Arm -.-&gt;|&quot;MoveIt, xArm, gripper&quot;| Ext([other nodes])</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md53"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md7"></a>
 Pick strategies</h1>
 <p>Which strategy runs is decided by <code>classification.resolve_pick_strategy(object_name)</code>. Order matters there: <code>bowl</code> is a member of <code>RIM_NAMES</code>, so it is tested first.</p>
 <table class="markdownTable">
@@ -247,12 +247,12 @@ Pick strategies</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">peak   </td><td class="markdownTableBodyNone">0.15   </td><td class="markdownTableBodyNone">0.00   </td><td class="markdownTableBodyNone"><b>0.15 m</b>   </td></tr>
 </table>
-<h1><a class="anchor" id="autotoc_md54"></a>
+<h1><a class="anchor" id="autotoc_md8"></a>
 Configuration</h1>
 <p>Every tuned number lives in <a href="config/pick_profiles.yaml"><code>config/pick_profiles.yaml</code></a> — pre-grasp heights, descent distances and speeds, gripper settle times, and the flat strategy's contact-force thresholds. Retuning is a YAML edit, not a code change.</p>
 <p>Profiles are loaded and <b>validated at startup</b>, so a bad value fails at launch rather than mid-descent with the arm in cartesian-velocity mode. Validation catches unknown and missing keys, wrong types, a descent that resolves non-positive, a <code>jump_trip</code> above the hard ceiling, and a force-guard timeout too short to cover the pre-grasp height.</p>
 <p>The tip offsets stay ROS parameters because they are physical properties of the gripper: <code>ee_link_offset</code> (−0.09 in the launch file), <code>rim_tip_offset</code>, <code>bowl_tip_offset</code>.</p>
-<h1><a class="anchor" id="autotoc_md55"></a>
+<h1><a class="anchor" id="autotoc_md9"></a>
 Adding or tuning a pick behavior</h1>
 <ul>
 <li><b>Retune an existing behavior</b> — edit <code>pick_profiles.yaml</code>. No code, no rebuild.</li>
@@ -260,7 +260,7 @@ Adding or tuning a pick behavior</h1>
 <li><b>New motion algorithm</b> — add one class to <code><a class="el" href="strategies_8py.html">strategies.py</a></code> implementing <code>attempt(arm, candidate) -&gt; PickOutcome</code>, then register it as above. It may only use <code>RobotArm</code> methods; if you need something the arm cannot do, add it to <code><a class="el" href="arm_8py.html">robot/arm.py</a></code> first.</li>
 </ul>
 <p>A profile whose key has no registered class fails at startup, not on the first pick of that type.</p>
-<h1><a class="anchor" id="autotoc_md56"></a>
+<h1><a class="anchor" id="autotoc_md10"></a>
 Running</h1>
 <div class="fragment"><div class="line">ros2 launch pick_and_place pick_and_place.launch.py                  # real robot</div>
 <div class="line">ros2 launch pick_and_place pick_and_place.launch.py use_sim_time:=true</div>
@@ -269,7 +269,7 @@ Running</h1>
 <div class="line">ros2 run pick_and_place pick_benchmark.py --mode flat --trials 10</div>
 <div class="line">ros2 run pick_and_place manipulation_client.py                 # pick an RViz clicked point</div>
 </div><!-- fragment --><p>Live phase state is published as action feedback (<code>execution_state</code>), e.g. <code>flat pose=0 alt=2/descend</code>.</p>
-<h1><a class="anchor" id="autotoc_md57"></a>
+<h1><a class="anchor" id="autotoc_md11"></a>
 Testing</h1>
 <div class="fragment"><div class="line">colcon build --symlink-install --packages-select frida_constants frida_interfaces pick_and_place</div>
 <div class="line">colcon test --packages-select pick_and_place &amp;&amp; colcon test-result --verbose</div>

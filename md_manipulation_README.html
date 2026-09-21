@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('md_manipulation_README.html',''); init
 <div class="contents">
 <div class="textblock"><p>Everything the robot does with its arm: <b>pick</b>, <b>place</b>, <b>pour</b>, and the perception and motion services those three need. One ROS 2 action is the whole public surface; everything below it is an implementation detail of this area.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md153"></a>
+<h1><a class="anchor" id="autotoc_md107"></a>
 1. System context</h1>
 <p>Who talks to manipulation, and what manipulation talks to.</p>
 <div class="fragment"><div class="line">flowchart TB</div>
@@ -134,10 +134,10 @@ $(document).ready(function(){initNavTree('md_manipulation_README.html',''); init
 </table>
 <p>A <code>place</code> is only meaningful after a <code>pick</code> or <code>pour</code> <b>in the same process</b>: the node remembers the last pick outcome and uses its measured object height to decide the drop height.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md155"></a>
+<h1><a class="anchor" id="autotoc_md109"></a>
 2. The packages</h1>
 <p>Only what the pick-and-place path uses.</p>
-<h2><a class="anchor" id="autotoc_md156"></a>
+<h2><a class="anchor" id="autotoc_md110"></a>
 Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -163,11 +163,11 @@ Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">**<code><a class="el" href="namespacexarm6__ikfast__plugin.html">xarm6_ikfast_plugin</a></code>**   </td><td class="markdownTableBodyNone">*(MoveIt plugin)*   </td><td class="markdownTableBodyNone">Analytical IK for the xArm6   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md157"></a>
+<h2><a class="anchor" id="autotoc_md111"></a>
 Submodules — pull before building</h2>
 <p><code>gpd</code> · <code>pymoveit2</code> · <code>vamp</code> · <code>xarm_ros2</code></p>
 <div class="fragment"><div class="line">git submodule update --init --recursive manipulation/packages/</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md158"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md112"></a>
 Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -180,7 +180,7 @@ Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <td class="markdownTableBodyNone"><code>robot_description/frida_description/</code>   </td><td class="markdownTableBodyNone">URDF and the MoveIt scene   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md160"></a>
+<h1><a class="anchor" id="autotoc_md114"></a>
 3. Architecture</h1>
 <p>Four layers. An arrow crosses a layer boundary only downward.</p>
 <div class="fragment"><div class="line">flowchart TB</div>
@@ -219,7 +219,7 @@ Shared, outside &lt;tt&gt;manipulation/&lt;/tt&gt;</h2>
 <div class="line">    class mps l3</div>
 <div class="line">    class mg,ctl l4</div>
 </div><!-- fragment --><p><b>The rule that keeps this readable:</b> the pipelines never create a ROS client. They call <code>RobotArm</code> and <code>Perception</code> (in <code>pick_and_place/robot/</code>), and those two own every service and action client in the area. A unit test enforces it.</p>
-<h2><a class="anchor" id="autotoc_md161"></a>
+<h2><a class="anchor" id="autotoc_md115"></a>
 Two ways to reach the arm</h2>
 <p><code><a class="el" href="namespacemotion__planning__server.html">motion_planning_server</a></code> is the only node that commands hardware, but it does so through <b>two very different paths</b>, and knowing which one is active explains most failures:</p>
 <table class="markdownTable">
@@ -236,7 +236,7 @@ Two ways to reach the arm</h2>
 </table>
 <p>Mode 5 takes the trajectory controller offline. The code always restores mode 1 on the way out; if a descent crashes without restoring it, every later plan fails until the arm is reset.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md163"></a>
+<h1><a class="anchor" id="autotoc_md117"></a>
 4. What actually runs</h1>
 <div class="fragment"><div class="line">ros2 launch manipulation_general ppc.launch.py</div>
 <div class="line">│</div>
@@ -257,9 +257,9 @@ Two ways to reach the arm</h2>
 </div><!-- fragment --><blockquote class="doxtable">
 <p>&zwj;<b>Naming trap:</b> <code>test_only_orchestrator</code> is <b>not</b> test-only. It serves <code>pick_perception_service</code> and <code>place_perception_service</code> — segmenting the object cluster and the place surface. Without it, every pick and place fails at perception. </p>
 </blockquote>
-<h1><a class="anchor" id="autotoc_md164"></a>
+<h1><a class="anchor" id="autotoc_md118"></a>
 &lt;/blockquote&gt;</h1>
-<h1><a class="anchor" id="autotoc_md165"></a>
+<h1><a class="anchor" id="autotoc_md119"></a>
 5. A pick, end to end</h1>
 <div class="fragment"><div class="line">sequenceDiagram</div>
 <div class="line">    participant TM as task_manager</div>
@@ -290,7 +290,7 @@ Two ways to reach the arm</h2>
 <div class="line"> </div>
 <div class="line">    C-&gt;&gt;M: move_joints(carry pose)</div>
 <div class="line">    C--&gt;&gt;TM: success</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md166"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md120"></a>
 The five pick strategies</h2>
 <p>Chosen by object name in <code><a class="el" href="classification_8py.html">pipelines/classification.py</a></code>; tuned in <code>config/pick_profiles.yaml</code>.</p>
 <table class="markdownTable">
@@ -309,7 +309,7 @@ The five pick strategies</h2>
 </table>
 <p>Retuning any number is a YAML edit. Adding a behaviour that reuses an existing motion is a YAML entry plus two lines. Only a genuinely new motion needs a new class.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md168"></a>
+<h1><a class="anchor" id="autotoc_md122"></a>
 6. Key interfaces</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -335,7 +335,7 @@ The five pick strategies</h2>
 </table>
 <p>Names are constants in <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> (<code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code> / <code>..._cpp.hpp</code>) — never hardcode them.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md170"></a>
+<h1><a class="anchor" id="autotoc_md124"></a>
 7. Where to change what</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -358,27 +358,27 @@ The five pick strategies</h2>
 <td class="markdownTableBodyNone">Add a message, service or action   </td><td class="markdownTableBodyNone"><code>frida_interfaces/manipulation/</code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md172"></a>
+<h1><a class="anchor" id="autotoc_md126"></a>
 8. Running it</h1>
-<h2><a class="anchor" id="autotoc_md173"></a>
+<h2><a class="anchor" id="autotoc_md127"></a>
 Build</h2>
 <div class="fragment"><div class="line">./run.sh manipulation --build     # builds inside the container</div>
 </div><!-- fragment --><p>Submodules must be initialised first (§2). Inside the container the workspace is <code>/workspace</code>, with the repository mounted at <code>/workspace/src</code>.</p>
-<h2><a class="anchor" id="autotoc_md174"></a>
+<h2><a class="anchor" id="autotoc_md128"></a>
 Launch</h2>
 <div class="fragment"><div class="line">ros2 launch manipulation_general ppc.launch.py     # pick, place, carry</div>
 </div><!-- fragment --><p>Other entry points in <code>manipulation_general/launch/</code>: <code>gpsr</code>, <code>restaurant</code>, <code>receptionist</code>, <code>carry</code>, <code>hric</code>.</p>
-<h2><a class="anchor" id="autotoc_md175"></a>
+<h2><a class="anchor" id="autotoc_md129"></a>
 Drive it by hand</h2>
 <div class="fragment"><div class="line">ros2 run pick_and_place keyboard_input.py</div>
 </div><!-- fragment --><p>A menu for pick / place / pour and the shelf helpers — the fastest way to test one behaviour without the task manager.</p>
-<h2><a class="anchor" id="autotoc_md176"></a>
+<h2><a class="anchor" id="autotoc_md130"></a>
 Tests</h2>
 <div class="fragment"><div class="line">cd /workspace/src/manipulation/packages/pick_and_place</div>
 <div class="line">python3 -m pytest test/ -q</div>
 </div><!-- fragment --><p>Fakes only, no ROS graph and no hardware. They pin decisions, not geometry: a green run says the logic still makes the same choices, <b>not</b> that the robot works.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md178"></a>
+<h1><a class="anchor" id="autotoc_md132"></a>
 9. Docker setup</h1>
 <p><b>Requirements:</b> Docker Engine, and the NVIDIA Container Toolkit for CUDA/L4T images.</p>
 <div class="fragment"><div class="line">git clone https://github.com/RoBorregos/home2</div>

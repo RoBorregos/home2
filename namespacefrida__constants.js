@@ -159,6 +159,7 @@ var namespacefrida__constants =
       [ "READ_QR_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a0f1e21b2876c5aff0a6ce0bb081cd000", null ],
       [ "RESTAURANT_TABLES_TOPIC", "namespacefrida__constants_1_1vision__constants.html#acf6e486b4cc84dc5cfa930625c958b0c", null ],
       [ "RESULTS_TOPIC", "namespacefrida__constants_1_1vision__constants.html#ac8a0b118ce5720f4ebf6377d410a6513", null ],
+      [ "RIGHT_CAMERA_FRAME", "namespacefrida__constants_1_1vision__constants.html#a81be31e6afbd7a14c0fc60f163a1b3e3", null ],
       [ "SAVE_NAME_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a84bae216de4143026b94ae627c8bb4a8", null ],
       [ "SET_DETECTOR_CLASSES_SERVICE", "namespacefrida__constants_1_1vision__constants.html#a03983d3f159310b7d5cd63db4c94cca2", null ],
       [ "SET_POINTING_OBJECT_CLASSES_SERVICE", "namespacefrida__constants_1_1vision__constants.html#a5c8ba66a04dae03f35aa7b0551566f08", null ],

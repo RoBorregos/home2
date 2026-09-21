@@ -13,6 +13,5 @@ var searchData=
   ['swin_10',['swin',['../namespaceutils_1_1models_1_1swin.html',1,'utils::models']]],
   ['trt_5futils_11',['trt_utils',['../namespaceutils_1_1trt__utils.html',1,'utils']]],
   ['unc_12',['unc',['../namespaceunc.html',1,'']]],
-  ['unitree_5fh1_13',['unitree_h1',['../namespaceunitree__h1.html',1,'']]],
-  ['utils_14',['utils',['../namespaceutils.html',1,'']]]
+  ['utils_13',['utils',['../namespaceutils.html',1,'']]]
 ];

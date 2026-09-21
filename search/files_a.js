@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['keyboard_5finput_2epy_0',['keyboard_input.py',['../keyboard__input_8py.html',1,'']]]
+  ['jetpack7_2djazzy_2dmigration_2emd_0',['jetpack7-jazzy-migration.md',['../jetpack7-jazzy-migration_8md.html',1,'']]]
 ];

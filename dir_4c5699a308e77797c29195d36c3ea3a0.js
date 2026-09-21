@@ -12,7 +12,6 @@ var dir_4c5699a308e77797c29195d36c3ea3a0 =
     [ "follow_person_v2.py", "follow__person__v2_8py.html", "follow__person__v2_8py" ],
     [ "hand_task_manager.py", "hand__task__manager_8py.html", "hand__task__manager_8py" ],
     [ "help_me_carry.py", "help__me__carry_8py.html", "help__me__carry_8py" ],
-    [ "hri_hand.py", "hri__hand_8py.html", "hri__hand_8py" ],
     [ "point_transformer.py", "point__transformer_8py.html", "point__transformer_8py" ],
     [ "receptionist_task_manager.py", "receptionist__task__manager_8py.html", "receptionist__task__manager_8py" ],
     [ "run_while_hearing.py", "run__while__hearing_8py.html", "run__while__hearing_8py" ],

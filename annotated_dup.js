@@ -168,9 +168,6 @@ var annotated_dup =
     [ "help_me_carry", "namespacehelp__me__carry.html", [
       [ "HelpMeCarryTM", "classhelp__me__carry_1_1HelpMeCarryTM.html", "classhelp__me__carry_1_1HelpMeCarryTM" ]
     ] ],
-    [ "hri_hand", "namespacehri__hand.html", [
-      [ "HRIHand", "classhri__hand_1_1HRIHand.html", "classhri__hand_1_1HRIHand" ]
-    ] ],
     [ "hric_commands", "namespacehric__commands.html", [
       [ "HRICCommands", "classhric__commands_1_1HRICCommands.html", "classhric__commands_1_1HRICCommands" ]
     ] ],
@@ -228,29 +225,6 @@ var annotated_dup =
     ] ],
     [ "MoveItServo", "namespaceMoveItServo.html", [
       [ "MoveItServo", "classMoveItServo_1_1MoveItServo.html", "classMoveItServo_1_1MoveItServo" ]
-    ] ],
-    [ "mujoco_rgbd_camera", "namespacemujoco__rgbd__camera.html", [
-      [ "MujocoDepthCamera", "classmujoco__rgbd__camera_1_1MujocoDepthCamera.html", "classmujoco__rgbd__camera_1_1MujocoDepthCamera" ]
-    ] ],
-    [ "mujoco_ros2_control", "namespacemujoco__ros2__control.html", [
-      [ "MujocoRos2Control", "classmujoco__ros2__control_1_1MujocoRos2Control.html", "classmujoco__ros2__control_1_1MujocoRos2Control" ],
-      [ "MujocoSystem", "classmujoco__ros2__control_1_1MujocoSystem.html", "classmujoco__ros2__control_1_1MujocoSystem" ],
-      [ "MujocoSystemInterface", "classmujoco__ros2__control_1_1MujocoSystemInterface.html", "classmujoco__ros2__control_1_1MujocoSystemInterface" ]
-    ] ],
-    [ "mujoco_ros2_sensors", "namespacemujoco__ros2__sensors.html", [
-      [ "ImuSensor", "classmujoco__ros2__sensors_1_1ImuSensor.html", "classmujoco__ros2__sensors_1_1ImuSensor" ],
-      [ "ImuSensorStruct", "structmujoco__ros2__sensors_1_1ImuSensorStruct.html", "structmujoco__ros2__sensors_1_1ImuSensorStruct" ],
-      [ "MujocoRos2Sensors", "classmujoco__ros2__sensors_1_1MujocoRos2Sensors.html", "classmujoco__ros2__sensors_1_1MujocoRos2Sensors" ],
-      [ "PoseSensor", "classmujoco__ros2__sensors_1_1PoseSensor.html", "classmujoco__ros2__sensors_1_1PoseSensor" ],
-      [ "PoseSensorStruct", "structmujoco__ros2__sensors_1_1PoseSensorStruct.html", "structmujoco__ros2__sensors_1_1PoseSensorStruct" ],
-      [ "WrenchSensor", "classmujoco__ros2__sensors_1_1WrenchSensor.html", "classmujoco__ros2__sensors_1_1WrenchSensor" ],
-      [ "WrenchSensorStruct", "structmujoco__ros2__sensors_1_1WrenchSensorStruct.html", "structmujoco__ros2__sensors_1_1WrenchSensorStruct" ]
-    ] ],
-    [ "mujoco_simulate_gui", "namespacemujoco__simulate__gui.html", [
-      [ "MujocoSimulateGui", "classmujoco__simulate__gui_1_1MujocoSimulateGui.html", "classmujoco__simulate__gui_1_1MujocoSimulateGui" ]
-    ] ],
-    [ "mujoco_visualization", "namespacemujoco__visualization.html", [
-      [ "MujocoVisualization", "classmujoco__visualization_1_1MujocoVisualization.html", "classmujoco__visualization_1_1MujocoVisualization" ]
     ] ],
     [ "nav_central", "namespacenav__central.html", [
       [ "Nav_Central", "classnav__central_1_1Nav__Central.html", "classnav__central_1_1Nav__Central" ]
@@ -379,20 +353,11 @@ var annotated_dup =
       [ "Retries", "classsafety__task__manager_1_1Retries.html", null ],
       [ "SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", "classsafety__task__manager_1_1SafetyTaskManager" ]
     ] ],
-    [ "scripts", "namespacescripts.html", [
-      [ "xacro2mjcf", "namespacescripts_1_1xacro2mjcf.html", [
-        [ "Xacro2Mjcf", "classscripts_1_1xacro2mjcf_1_1Xacro2Mjcf.html", "classscripts_1_1xacro2mjcf_1_1Xacro2Mjcf" ]
-      ] ]
-    ] ],
     [ "server", "namespaceserver.html", [
       [ "MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ]
     ] ],
     [ "Servo", "namespaceServo.html", [
       [ "Servo", "classServo_1_1Servo.html", "classServo_1_1Servo" ]
-    ] ],
-    [ "simple_launch", "namespacesimple__launch.html", [
-      [ "TestBringup", "classsimple__launch_1_1TestBringup.html", "classsimple__launch_1_1TestBringup" ],
-      [ "TestNode", "classsimple__launch_1_1TestNode.html", "classsimple__launch_1_1TestNode" ]
     ] ],
     [ "simulate_position", "namespacesimulate__position.html", [
       [ "SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", "classsimulate__position_1_1SimulatePosition" ]
@@ -435,6 +400,9 @@ var annotated_dup =
           [ "FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
           [ "HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
           [ "Location", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1Location.html", null ]
+        ] ],
+        [ "hri_hand", "namespacetask__manager_1_1subtask__managers_1_1hri__hand.html", [
+          [ "HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand" ]
         ] ],
         [ "hri_tasks", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html", [
           [ "HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks" ]
@@ -700,6 +668,5 @@ var annotated_dup =
     [ "TableSegmentationNode", "classTableSegmentationNode.html", "classTableSegmentationNode" ],
     [ "TestsNode", "classTestsNode.html", "classTestsNode" ],
     [ "VAMPMotionValidator", "structVAMPMotionValidator.html", "structVAMPMotionValidator" ],
-    [ "VAMPStateValidator", "structVAMPStateValidator.html", "structVAMPStateValidator" ],
-    [ "Xarm_gripper_mujoco_bridge", "classXarm__gripper__mujoco__bridge.html", "classXarm__gripper__mujoco__bridge" ]
+    [ "VAMPStateValidator", "structVAMPStateValidator.html", "structVAMPStateValidator" ]
 ];

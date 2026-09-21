@@ -59,5 +59,5 @@ var searchData=
   ['from_5fpoint_56',['from_point',['../classpick__and__place_1_1fix__position__to__plane_1_1MyPoint.html#a303b50b671e466bb5252b0e9603ed3a3',1,'pick_and_place::fix_position_to_plane::MyPoint']]],
   ['from_5fvamp_57',['from_vamp',['../classvamp__server_1_1VampServer.html#a7a9880edf01df846a0911658a1fe2478',1,'vamp_server::VampServer']]],
   ['fsm_58',['fsm',['../classtask__manager_1_1utils_1_1colored__logger_1_1CLog.html#ab44515ce1f2b68335ed2888ea9d41edf',1,'task_manager::utils::colored_logger::CLog']]],
-  ['furniture_5for_5fobject_59',['furniture_or_object',['../classhri__hand_1_1HRIHand.html#ae4aae5924ab76c711eb67a73349b1d78',1,'hri_hand::HRIHand']]]
+  ['furniture_5for_5fobject_59',['furniture_or_object',['../classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html#a5d9bd3f80e8c04de955b0a24800e471f',1,'task_manager::subtask_managers::hri_hand::HRIHand']]]
 ];

@@ -126,11 +126,17 @@ Variables</h2></td></tr>
 <tr class="separator:a7ac6a46e0a6a75878f37da6ac5afe92b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f1368fa7cc41cad9b419bf806a71d0a"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a9f1368fa7cc41cad9b419bf806a71d0a">NLP_MODEL_ALIAS</a> = os.getenv(&quot;NLP_MODEL_ALIAS&quot;, &quot;&quot;)</td></tr>
 <tr class="separator:a9f1368fa7cc41cad9b419bf806a71d0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a422e7805f73a62b241b16687216a5e7c"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a422e7805f73a62b241b16687216a5e7c">NLP_MODEL_NAME</a> = os.getenv(&quot;NLP_MODEL_NAME&quot;, &quot;&quot;)</td></tr>
+<tr class="separator:a422e7805f73a62b241b16687216a5e7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7177fdddf57adfc9433421d11e3448f7"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a7177fdddf57adfc9433421d11e3448f7">NLP_MODEL_FILE</a> = os.getenv(&quot;NLP_MODEL_FILE&quot;, &quot;&quot;)</td></tr>
+<tr class="separator:a7177fdddf57adfc9433421d11e3448f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a4ad6a435e0e4622ceb4b62a1a59c43"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a0a4ad6a435e0e4622ceb4b62a1a59c43">NLP_OLLAMA_URL</a> = os.getenv(&quot;NLP_OLLAMA_URL&quot;, &quot;&quot;)</td></tr>
 <tr class="separator:a0a4ad6a435e0e4622ceb4b62a1a59c43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80bd28785c098c5fde76604d0e2d3314"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#a80bd28785c098c5fde76604d0e2d3314">NLP_TASKS</a> = [t for t in os.getenv(&quot;NLP_TASKS&quot;, &quot;&quot;).split(&quot;,&quot;) if t]</td></tr>
 <tr class="separator:a80bd28785c098c5fde76604d0e2d3314"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aabe858f853397d68b3026e478e1f6796"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#aabe858f853397d68b3026e478e1f6796">NLP_RUNS</a> = int(os.getenv(&quot;NLP_RUNS&quot;) or &quot;3&quot;)</td></tr>
+<tr class="memitem:ac330ac2e0246dd47c099911764ed1f04"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#ac330ac2e0246dd47c099911764ed1f04">NLP_BACKEND</a> = os.getenv(&quot;NLP_BACKEND&quot;, &quot;&quot;)</td></tr>
+<tr class="separator:ac330ac2e0246dd47c099911764ed1f04"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabe858f853397d68b3026e478e1f6796"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#aabe858f853397d68b3026e478e1f6796">NLP_RUNS</a> = int(os.getenv(&quot;NLP_RUNS&quot;) or &quot;20&quot;)</td></tr>
 <tr class="separator:aabe858f853397d68b3026e478e1f6796"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0d96c360f16ca4bf9e348545a3dd33d"><td class="memItemLeft" align="right" valign="top">os&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetest__hri__manager.html#ab0d96c360f16ca4bf9e348545a3dd33d">NLP_RESULTS_DIR</a> = os.getenv(&quot;NLP_RESULTS_DIR&quot;) or <a class="el" href="namespacetest__hri__manager.html#a0111244d1518203a96ff4932fbb6d4ef">OUTPUT_DIR</a></td></tr>
 <tr class="separator:ab0d96c360f16ca4bf9e348545a3dd33d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -367,6 +373,20 @@ Variables</h2></td></tr>
 </div><!-- fragment -->
 </div>
 </div>
+<a id="ac330ac2e0246dd47c099911764ed1f04" name="ac330ac2e0246dd47c099911764ed1f04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac330ac2e0246dd47c099911764ed1f04">&#9670;&#160;</a></span>NLP_BACKEND</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">os test_hri_manager.NLP_BACKEND = os.getenv(&quot;NLP_BACKEND&quot;, &quot;&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9f1368fa7cc41cad9b419bf806a71d0a" name="a9f1368fa7cc41cad9b419bf806a71d0a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9f1368fa7cc41cad9b419bf806a71d0a">&#9670;&#160;</a></span>NLP_MODEL_ALIAS</h2>
 
@@ -375,6 +395,34 @@ Variables</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">os test_hri_manager.NLP_MODEL_ALIAS = os.getenv(&quot;NLP_MODEL_ALIAS&quot;, &quot;&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7177fdddf57adfc9433421d11e3448f7" name="a7177fdddf57adfc9433421d11e3448f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7177fdddf57adfc9433421d11e3448f7">&#9670;&#160;</a></span>NLP_MODEL_FILE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">os test_hri_manager.NLP_MODEL_FILE = os.getenv(&quot;NLP_MODEL_FILE&quot;, &quot;&quot;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a422e7805f73a62b241b16687216a5e7c" name="a422e7805f73a62b241b16687216a5e7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a422e7805f73a62b241b16687216a5e7c">&#9670;&#160;</a></span>NLP_MODEL_NAME</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">os test_hri_manager.NLP_MODEL_NAME = os.getenv(&quot;NLP_MODEL_NAME&quot;, &quot;&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -416,7 +464,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int test_hri_manager.NLP_RUNS = int(os.getenv(&quot;NLP_RUNS&quot;) or &quot;3&quot;)</td>
+          <td class="memname">int test_hri_manager.NLP_RUNS = int(os.getenv(&quot;NLP_RUNS&quot;) or &quot;20&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">

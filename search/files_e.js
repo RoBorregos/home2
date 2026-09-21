@@ -1,14 +1,17 @@
 var searchData=
 [
-  ['object_5fdetector_5fcombined_2elaunch_2epy_0',['object_detector_combined.launch.py',['../object__detector__combined_8launch_8py.html',1,'']]],
-  ['object_5fdetector_5fnode_2elaunch_2epy_1',['object_detector_node.launch.py',['../object__detector__node_8launch_8py.html',1,'']]],
-  ['object_5fdetector_5fnode_2epy_2',['object_detector_node.py',['../object__detector__node_8py.html',1,'']]],
-  ['objectdetection_2emsg_3',['ObjectDetection.msg',['../ObjectDetection_8msg.html',1,'']]],
-  ['objectdetectionarray_2emsg_4',['ObjectDetectionArray.msg',['../ObjectDetectionArray_8msg.html',1,'']]],
-  ['objectpoints_2esrv_5',['ObjectPoints.srv',['../ObjectPoints_8srv.html',1,'']]],
-  ['objects_2emd_6',['objects.md',['../objects_8md.html',1,'']]],
-  ['odrive_5fdashboard_2epy_7',['odrive_dashboard.py',['../odrive__dashboard_8py.html',1,'']]],
-  ['odrive_5fserial_5ftwist_2epy_8',['odrive_serial_twist.py',['../odrive__serial__twist_8py.html',1,'']]],
-  ['omni_5fbasics_2elaunch_2epy_9',['omni_basics.launch.py',['../omni__basics_8launch_8py.html',1,'']]],
-  ['ompl_5fintegration_2ecc_10',['ompl_integration.cc',['../ompl__integration_8cc.html',1,'']]]
+  ['names_2emd_0',['names.md',['../names_8md.html',1,'']]],
+  ['nav_2emd_1',['nav.md',['../nav_8md.html',1,'']]],
+  ['nav2_5fomni_2elaunch_2epy_2',['nav2_omni.launch.py',['../nav2__omni_8launch_8py.html',1,'']]],
+  ['nav_5fcentral_2epy_3',['nav_central.py',['../nav__central_8py.html',1,'']]],
+  ['nav_5fgoal_5farm_5fpointer_2epy_4',['nav_goal_arm_pointer.py',['../nav__goal__arm__pointer_8py.html',1,'']]],
+  ['nav_5ftasks_2epy_5',['nav_tasks.py',['../nav__tasks_8py.html',1,'']]],
+  ['nav_5fui_2epy_6',['nav_ui.py',['../nav__ui_8py.html',1,'']]],
+  ['navigation_5farchitecture_2emd_7',['navigation_architecture.md',['../navigation__architecture_8md.html',1,'']]],
+  ['navigation_5fconstants_2epy_8',['navigation_constants.py',['../navigation__constants_8py.html',1,'']]],
+  ['navquery_2esrv_9',['NavQuery.srv',['../NavQuery_8srv.html',1,'']]],
+  ['neon_2ehh_10',['neon.hh',['../neon_8hh.html',1,'']]],
+  ['nn_2ehh_11',['nn.hh',['../nn_8hh.html',1,'']]],
+  ['node_5fmonitor_2epy_12',['node_monitor.py',['../node__monitor_8py.html',1,'']]],
+  ['nodestatus_2emsg_13',['NodeStatus.msg',['../NodeStatus_8msg.html',1,'']]]
 ];

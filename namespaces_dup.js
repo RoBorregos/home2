@@ -60,23 +60,11 @@ var namespaces_dup =
     [ "demo_manager", "namespacedemo__manager.html", "namespacedemo__manager" ],
     [ "demo_roborregosday", "namespacedemo__roborregosday.html", "namespacedemo__roborregosday" ],
     [ "detectors", "namespacedetectors.html", "namespacedetectors" ],
-    [ "display_gz", "namespacedisplay__gz.html", [
-      [ "generate_launch_description", "namespacedisplay__gz.html#a4f95fbbb9f34a1fd59c2387ed4123947", null ]
-    ] ],
-    [ "display_gz_tmr2025", "namespacedisplay__gz__tmr2025.html", [
-      [ "generate_launch_description", "namespacedisplay__gz__tmr2025.html#a153b0bab395c49b4a2223b915b400035", null ]
-    ] ],
     [ "display_real", "namespacedisplay__real.html", [
       [ "generate_launch_description", "namespacedisplay__real.html#a4823fd49d5c39a0cb92073a9d0ec55fc", null ]
     ] ],
     [ "display_real_tmr2025", "namespacedisplay__real__tmr2025.html", [
       [ "generate_launch_description", "namespacedisplay__real__tmr2025.html#a1afad9e55b991b240ed5206b8f21e428", null ]
-    ] ],
-    [ "display_sim", "namespacedisplay__sim.html", [
-      [ "generate_launch_description", "namespacedisplay__sim.html#aee9b8831b3e59ba99556fe8800761a31", null ]
-    ] ],
-    [ "display_sim_tmr2025", "namespacedisplay__sim__tmr2025.html", [
-      [ "generate_launch_description", "namespacedisplay__sim__tmr2025.html#aa678e8e2cd36d56ee50a024b3782ee92", null ]
     ] ],
     [ "dlc_launch", "namespacedlc__launch.html", [
       [ "generate_launch_description", "namespacedlc__launch.html#a37ea668562076873e257090bfe0041b7", null ]
@@ -143,10 +131,6 @@ var namespaces_dup =
       [ "parse_objects", "namespaceformat.html#af0893b47c7fbeda9b19ea7006e54f925", null ],
       [ "save_json", "namespaceformat.html#ad68caf3b2ac11c6981af7cda72d732bf", null ]
     ] ],
-    [ "franka", "namespacefranka.html", [
-      [ "create_nodes", "namespacefranka.html#a6d36b962d0174a66cb09b0b742ee24a5", null ],
-      [ "generate_launch_description", "namespacefranka.html#a7d5bcadff61381ca683226e468f3469d", null ]
-    ] ],
     [ "frida_constants", "namespacefrida__constants.html", "namespacefrida__constants" ],
     [ "frida_driver", "namespacefrida__driver.html", [
       [ "generate_launch_description", "namespacefrida__driver.html#aef5c72bf0e9a5f9cd51e0088acd02488", null ],
@@ -168,9 +152,6 @@ var namespaces_dup =
     [ "frida_moveit_config", "namespacefrida__moveit__config.html", [
       [ "generate_launch_description", "namespacefrida__moveit__config.html#a55fbe8117df991cd5a2af35a23d38579", null ],
       [ "launch_setup", "namespacefrida__moveit__config.html#a5e023520268c7fc528bdef585510ea67", null ]
-    ] ],
-    [ "gazebo_objects", "namespacegazebo__objects.html", [
-      [ "generate_launch_description", "namespacegazebo__objects.html#ae772c64528c2799ae896221ae540da16", null ]
     ] ],
     [ "general_navigation", "namespacegeneral__navigation.html", [
       [ "generate_launch_description", "namespacegeneral__navigation.html#af472e117a9a8a68b98c82219ed0d3a14", null ],
@@ -203,7 +184,6 @@ var namespaces_dup =
     [ "hand_task_manager", "namespacehand__task__manager.html", "namespacehand__task__manager" ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", "namespaceheatmapPlace__Server" ],
     [ "help_me_carry", "namespacehelp__me__carry.html", "namespacehelp__me__carry" ],
-    [ "hri_hand", "namespacehri__hand.html", "namespacehri__hand" ],
     [ "hric", "namespacehric.html", [
       [ "generate_launch_description", "namespacehric.html#ad1dd056eac0c72bace8a6fdd839dd77d", null ],
       [ "launch_function", "namespacehric.html#a9ba344eaf004b5e2b4032d983f068469", null ]
@@ -284,18 +264,6 @@ var namespaces_dup =
     ] ],
     [ "MoveItPlanner", "namespaceMoveItPlanner.html", "namespaceMoveItPlanner" ],
     [ "MoveItServo", "namespaceMoveItServo.html", "namespaceMoveItServo" ],
-    [ "mujoco_rgbd_camera", "namespacemujoco__rgbd__camera.html", "namespacemujoco__rgbd__camera" ],
-    [ "mujoco_ros2_control", "namespacemujoco__ros2__control.html", "namespacemujoco__ros2__control" ],
-    [ "mujoco_ros2_sensors", "namespacemujoco__ros2__sensors.html", "namespacemujoco__ros2__sensors" ],
-    [ "mujoco_sim_init", "namespacemujoco__sim__init.html", [
-      [ "deep_update", "namespacemujoco__sim__init.html#abab4eb2c56ce9e35a5f9a01b045c54c3", null ],
-      [ "generate_launch_description", "namespacemujoco__sim__init.html#a5114034a67e258ad767a1476be8b2827", null ],
-      [ "generate_nodes_for_spawn", "namespacemujoco__sim__init.html#a9aaa62c4a0851323a1c3f9b92242e1f5", null ],
-      [ "yaml_dump", "namespacemujoco__sim__init.html#a7adaab4e1670a4e3f3996523f471f673", null ],
-      [ "yaml_loader", "namespacemujoco__sim__init.html#ae98a083815bf56a97e4224c413305096", null ]
-    ] ],
-    [ "mujoco_simulate_gui", "namespacemujoco__simulate__gui.html", "namespacemujoco__simulate__gui" ],
-    [ "mujoco_visualization", "namespacemujoco__visualization.html", "namespacemujoco__visualization" ],
     [ "nav2_omni", "namespacenav2__omni.html", [
       [ "_deep_merge", "namespacenav2__omni.html#a8f9ab7e6f07b2aa955480714d501402f", null ],
       [ "generate_launch_description", "namespacenav2__omni.html#ae46555951af49346cd9428eb1af550cf", null ],
@@ -398,16 +366,11 @@ var namespaces_dup =
       [ "test_problem", "namespacerobometrics__to__pkl__json.html#a82cfb68c65ca2aabcc4ce8a636a38b18", null ],
       [ "datasets", "namespacerobometrics__to__pkl__json.html#a60383597795724fe31606e39374ea514", null ]
     ] ],
-    [ "robot_sim", "namespacerobot__sim.html", [
-      [ "generate_launch_description", "namespacerobot__sim.html#aa1de369c762aa456d4c9e31388d6f617", null ],
-      [ "launch_setup", "namespacerobot__sim.html#aa842398b51f41c4ee2a7105e1e83009e", null ]
-    ] ],
     [ "ros_utils", "namespaceros__utils.html", [
       [ "wait_for_future", "namespaceros__utils.html#a788d5920b4a890dfdb242742b858f948", null ]
     ] ],
     [ "run_while_hearing", "namespacerun__while__hearing.html", "namespacerun__while__hearing" ],
     [ "safety_task_manager", "namespacesafety__task__manager.html", "namespacesafety__task__manager" ],
-    [ "scripts", "namespacescripts.html", "namespacescripts" ],
     [ "self_collision_utils", "namespaceself__collision__utils.html", [
       [ "compute_ik", "namespaceself__collision__utils.html#adacc1b236355b90fa16f716b067a337d", null ],
       [ "endpoint_self_collides", "namespaceself__collision__utils.html#adc0819160793aeeeaaf2e2880945f843", null ],
@@ -435,7 +398,6 @@ var namespaces_dup =
       [ "version", "namespacesetup.html#a2aa722b36a933088812b50ea79b97a5c", null ],
       [ "zip_safe", "namespacesetup.html#a13510753661cb74083a0c664db11dde9", null ]
     ] ],
-    [ "simple_launch", "namespacesimple__launch.html", "namespacesimple__launch" ],
     [ "simulate_map", "namespacesimulate__map.html", [
       [ "generate_launch_description", "namespacesimulate__map.html#ad6149f6889b194fc6ef401af9ad4a40b", null ]
     ] ],
@@ -498,10 +460,6 @@ var namespaces_dup =
     ] ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
     [ "unc", "namespaceunc.html", "namespaceunc" ],
-    [ "unitree_h1", "namespaceunitree__h1.html", [
-      [ "create_nodes", "namespaceunitree__h1.html#a8cd98f3b33f96dc92ba5aacccf0b9a0f", null ],
-      [ "generate_launch_description", "namespaceunitree__h1.html#acd23c96a910cd26955ad22c40585eae5", null ]
-    ] ],
     [ "utils", "namespaceutils.html", "namespaceutils" ],
     [ "vamp", "namespacevamp.html", "namespacevamp" ],
     [ "vamp_moveit_plugin", "namespacevamp__moveit__plugin.html", "namespacevamp__moveit__plugin" ],
@@ -541,10 +499,6 @@ var namespaces_dup =
       [ "OPEN_GRIPPER_JOINT_POSITIONS", "namespacexarm6.html#a870c5989a729d42092392e1737069109", null ]
     ] ],
     [ "xarm6_ikfast_plugin", "namespacexarm6__ikfast__plugin.html", "namespacexarm6__ikfast__plugin" ],
-    [ "xarm_launch", "namespacexarm__launch.html", [
-      [ "generate_launch_description", "namespacexarm__launch.html#a6120858d912a0dc3d2783725c36b7d04", null ],
-      [ "launch_setup", "namespacexarm__launch.html#a12ed068b87932217931e30a0ae5d9bb6", null ]
-    ] ],
     [ "xarm_utils", "namespacexarm__utils.html", "namespacexarm__utils" ],
     [ "XArmServices", "namespaceXArmServices.html", "namespaceXArmServices" ],
     [ "zed_simulator", "namespacezed__simulator.html", "namespacezed__simulator" ],
