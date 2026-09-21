@@ -64,7 +64,7 @@ def _print_rich(model: str, task_results: dict) -> None:
     t.add_column("Accuracy", justify="right")
     t.add_column("TTFT p50", justify="right")
     t.add_column("TTFT p95", justify="right")
-    t.add_column("tok/s p50", justify="right")
+    t.add_column("tok/s p50 (end-to-end)", justify="right")
     t.add_column("JSON fail", justify="right")
     t.add_column("Schema", justify="left")
 
@@ -134,7 +134,7 @@ def _print_plain(model: str, task_results: dict) -> None:
     print(f"\n=== Model: {model} ===")
     header = (
         f"{'Task':<22} {'Cases':>6} {'Accuracy':>14} {'TTFTp50':>9} {'TTFTp95':>9}"
-        f" {'tok/s':>8} {'JSONfail':>14} {'Schema':<13}"
+        f" {'tok/s (end-to-end)':>18} {'JSONfail':>14} {'Schema':<13}"
     )
     print(header)
     print("-" * len(header))
@@ -146,7 +146,7 @@ def _print_plain(model: str, task_results: dict) -> None:
         acc = _accuracy_cell(r)
         print(
             f"{task_name:<22} {total:>6} {acc:>14} {_fmt(r.get('p50_ttft_ms')):>9}"
-            f" {_fmt(r.get('p95_ttft_ms')):>9} {_tps_cell(r):>8}"
+            f" {_fmt(r.get('p95_ttft_ms')):>9} {_tps_cell(r):>18}"
             f" {_json_cell(r):>14} {r.get('schema_mode', '—'):<13}"
         )
     if usage_missing:
@@ -170,7 +170,7 @@ def print_comparison_table(all_results: dict[str, dict[str, dict]]) -> None:
             lambda r: f"{_accuracy_parts(r)[2]:.0f}%" if r.get("cases") else "—",
         ),
         ("TTFT p50", lambda r: _fmt(r.get("p50_ttft_ms"))),
-        ("tok/s p50", _tps_cell),
+        ("tok/s p50 (end-to-end)", _tps_cell),
         ("JSON fail", _json_cell),
     ]
 
