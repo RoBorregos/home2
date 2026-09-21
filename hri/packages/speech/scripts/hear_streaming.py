@@ -25,7 +25,7 @@ MIN_BUFFER_CHUNKS = 10
 class HearStreaming(Node):
     def __init__(self):
         super().__init__("hear_streaming_node")
-        self.get_logger().info("*Starting Hear Streaming Node*")
+        self.get_logger().debug("Starting HearStreaming node")
 
         server_ip = (
             self.declare_parameter("STT_SERVER_IP", "127.0.0.1:50051")
@@ -110,7 +110,7 @@ class HearStreaming(Node):
             String, "/speech/raw_command", 10
         )
 
-        self.get_logger().info("*Hear Streaming Node is ready*")
+        self.get_logger().info("HearStreaming ready")
 
     def cancel_callback(self, goal_handle):
         """Accept cancellation requests."""
