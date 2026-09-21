@@ -1,3 +1,1 @@
-# CUDAExecutionProvider for InsightFace on images without a TensorRT toolchain
-# (e.g. the cuda x86 image). The l4t image gets this from its base instead.
 onnxruntime-gpu

@@ -47,15 +47,8 @@ ENV CYCLONE_SHM=1
 RUN /usr/local/bin/cyclonedds_setup.sh
 
 # ── TensorRT engine cache ──
-# Mount a host volume here to persist TensorRT engines across container restarts.
-# Without this, engines are re-exported on every `docker run` (takes ~2-5 min per model).
-# Usage: docker run -v /path/on/host:/workspace/trt_cache ...
 RUN mkdir -p /workspace/trt_cache && chmod 777 /workspace/trt_cache
 ENV TENSORRT_CACHE_DIR=/workspace/trt_cache
 
-# ── Orin AGX max performance at runtime ──
-# Set MAXN power mode and max clocks before running vision nodes:
-#   sudo nvpmodel -m 0 && sudo jetson_clocks
-# These require host-level access and cannot be set inside the container.
 
 USER ros
