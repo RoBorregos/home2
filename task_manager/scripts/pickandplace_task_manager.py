@@ -29,6 +29,7 @@ from std_msgs.msg import String
 from frida_interfaces.msg import GripperGraspState
 from frida_constants.manipulation_constants import GRIPPER_GRASP_STATE_TOPIC
 from frida_constants.vision_constants import (
+    CAMERA_FRAME,
     CHAIR_REMOVAL_IMAGE_TOPIC,
     DETECTIONS_IMAGE_TOPIC,
     IMAGE_ORIENTED_TOPIC,
@@ -434,7 +435,7 @@ class PickAndPlaceTM(Node):
         """
         try:
             stamped_point = PointStamped()
-            stamped_point.header.frame_id = "zed_left_camera_optical_frame"
+            stamped_point.header.frame_id = CAMERA_FRAME
             stamped_point.header.stamp = rclpy.time.Time().to_msg()  # latest available
             stamped_point.point.x = float(detection.px)
             stamped_point.point.y = float(detection.py)

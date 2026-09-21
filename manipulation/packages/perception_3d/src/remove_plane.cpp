@@ -1,6 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <pcl-1.12/pcl/sample_consensus/model_types.h>
+#include <pcl/sample_consensus/model_types.h>
 #include <pcl/common/transforms.h>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logging.hpp>
@@ -28,7 +28,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.hpp>
 
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 

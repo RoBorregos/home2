@@ -70,7 +70,6 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
-from task_manager.scripts.misc.hri_hand import HRIHand
 from task_manager.utils.baml_client.sync_client import b
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -253,8 +252,6 @@ class HRITasks:
             Task.RESTAURANT: all_services,
             Task.DEBUG: all_services,
         }
-
-        self.hand = HRIHand(self)
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
@@ -870,19 +867,6 @@ class HRITasks:
         future = self.grammar_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
-
-    @service_check("", (Status.SERVICE_CHECK, ("coke", "left")), TIMEOUT)
-    def get_location_orientation(self, room) -> tuple[Status, tuple[str, str]]:
-        """
-        Method to get the location and orientation of where to place the object
-        Returns:
-            tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
-            The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
-        """
-
-        return self.hand.get_complete_placement_info(
-            room=room,
-        )
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
     def command_interpreter(

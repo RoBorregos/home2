@@ -30,27 +30,33 @@ class AudioCapturer(Node):
         self.chunk_size = self.get_parameter("CHUNK_SIZE").value
         self.debug = self.get_parameter("DEBUG").value
         self.use_respeaker = SpeechApiUtils.respeaker_available()
-        self.get_logger().info(f"ReSpeaker detected: {self.use_respeaker}")
         self.RATE = 16000
 
         self.publisher_ = self.create_publisher(
             AudioData, self.get_parameter("RAW_AUDIO_TOPIC").value, 20
         )
 
-        mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
-        mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
-        mic_out_channels = self.get_parameter("MIC_OUT_CHANNELS").value
+        if self.use_respeaker:
+            mic_device_name = "ReSpeaker"
+            mic_input_channels = 6
+            mic_out_channels = None
+        else:
+            mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
+            mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
+            mic_out_channels = self.get_parameter("MIC_OUT_CHANNELS").value
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
         )
-        self.get_logger().info("Input device index: " + str(self.input_device_index))
-
         if self.input_device_index is None:
             self.get_logger().warn(
                 "Input device index not found, using system default."
             )
 
-        self.get_logger().info("AudioCapturer node initialized.")
+        # Kept at INFO on purpose: which mic is live is the first thing to check before a round.
+        self.get_logger().info(
+            f"AudioCapturer ready | ReSpeaker: {self.use_respeaker} "
+            f"| device index: {self.input_device_index}"
+        )
 
     def record(self):
         self.p = pyaudio.PyAudio()
@@ -68,7 +74,7 @@ class AudioCapturer(Node):
                 frames_per_buffer=self.chunk_size,
             )
 
-            self.get_logger().info(
+            self.get_logger().debug(
                 f"--- Listening on device index {self.input_device_index} ---"
             )
 

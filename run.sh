@@ -39,7 +39,7 @@ Available Areas:
   manipulation       Spins up the containers for manipulation.
   navigation         Spins up the containers for navigation.
   hri                Spins up the containers for human-robot interaction.
-  display            Spins up the display (Next.js + rosbridge + web_video_server).
+  display            Spins up the standalone PyQt display UI.
   simulation         Spins up the dedicated MuJoCo simulation container.
   integration        Spins up the complete integration environment.
   zed                Starts the ZED camera in a container (with CycloneDDS SHM).
@@ -53,7 +53,7 @@ Competition Tasks:
   --restaurant       Runs the Restaurant challenge.
   --finals           Runs the finals stage routine.
   --safety           Runs the safety routine (nav + manipulation/hric + hri/ppc +
-                     zed + hric display + safety task manager; vision is not started).
+                     zed + ppc display + safety task manager; vision is not started).
 
 Control Commands:
   --stop             Stops the running containers without removing them.
@@ -63,11 +63,10 @@ Additional Flags:
   --build            Builds the ros2 packages inside the container.
   --build-image      Builds the Docker image for the specified area or task.
   --recreate         Forces the recreation of containers (useful for network or .env changes).
-  --open-display     Opens the graphical interface (UI/Display) required for HRI or Vision.
   --clean            Deletes the build/, log/, and install/ folders and frida_interfaces_cache/.
 
 Examples:
-  ./run.sh hri --receptionist --open-display
+  ./run.sh hri --receptionist
   ./run.sh vision --build
   ./run.sh --gpsr --recreate
   ./run.sh --down
@@ -79,7 +78,7 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  --stop|--down|--build)
+  --stop|--down|--clean|--build)
     control "$INPUT"
     ;;
   --clean-interfaces)

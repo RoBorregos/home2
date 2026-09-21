@@ -1,5 +1,6 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
+ARG ROS_DISTRO=jazzy
 
 RUN apt-get update && apt-get install -y \
     python3-pyaudio \
@@ -12,19 +13,47 @@ RUN apt-get update && apt-get install -y \
     libportaudiocpp0 \
     pulseaudio \
     curl \
+    cargo \
+    rustc \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /workspace/requirements
+# Python modules: one resolver run for nlp + speech + postgres so every package
+# is installed once. On l4t, pip-install-reqs (from l4t_base) skips the pins the
+# base already provides (numpy, scipy, torch, torchaudio, onnxruntime).
+COPY hri/requirements/nlp.txt hri/requirements/speech.txt hri/requirements/postgres.txt /tmp/requirements/
+RUN if command -v pip-install-reqs >/dev/null; then \
+        pip-install-reqs /tmp/requirements/nlp.txt /tmp/requirements/speech.txt /tmp/requirements/postgres.txt; \
+    else \
+        pip install -r /tmp/requirements/nlp.txt -r /tmp/requirements/speech.txt -r /tmp/requirements/postgres.txt; \
+    fi \
+    && pip install --no-deps openwakeword==0.6.0 deepfilternet==0.5.6 deepfilterlib==0.5.6 \
+    && python3 -m spacy download en_core_web_md \
+    && rm -rf /tmp/requirements
+RUN python3 -c "\
+import importlib.util, os; \
+path = os.path.join(importlib.util.find_spec('df').submodule_search_locations[0], 'io.py'); \
+content = open(path).read(); \
+content = content.replace( \
+    'from torchaudio.backend.common import AudioMetaData', \
+    'import soundfile as _sf\n\n\nclass AudioMetaData:\n    def __init__(self, sample_rate):\n        self.sample_rate = sample_rate' \
+); \
+content = content.replace( \
+    'info: AudioMetaData = ta.info(file, **ikwargs)', \
+    'info = AudioMetaData(_sf.info(file).samplerate)' \
+); \
+open(path, 'w').write(content)"
 
-# Python modules
-COPY hri/requirements/nlp.txt /workspace/requirements/nlp.txt
-RUN pip install -r requirements/nlp.txt
-
-COPY hri/requirements/speech.txt /workspace/requirements/speech.txt
-RUN pip install -r requirements/speech.txt
-
-COPY hri/requirements/postgres.txt /workspace/requirements/postgres.txt
-RUN pip install -r requirements/postgres.txt
+# display_ui.py (PyQt5 desktop UI, default) deps, plus rosbridge / web_video_server
+# / nodejs for the legacy Next.js UI kept as the --backup fallback.
+RUN apt-get update && apt-get install -y \
+    ros-${ROS_DISTRO}-cv-bridge \
+    ros-${ROS_DISTRO}-rosbridge-server \
+    ros-${ROS_DISTRO}-web-video-server \
+    python3-pyqt5 \
+    fonts-noto-color-emoji \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 USER ros
 RUN sudo usermod -aG audio ros

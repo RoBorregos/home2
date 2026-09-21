@@ -3,10 +3,11 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import LogInfo
 from speech.speech_api_utils import SpeechApiUtils
 
 from frida_constants import ModuleNames, parse_ros_config
+
+LOG_LEVEL = os.environ.get("HRI_LOG_LEVEL", "info")
 
 
 def generate_launch_description():
@@ -61,6 +62,7 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="audio_capturer.py",
+            ros_arguments=["--log-level", f"audio_capturer:={LOG_LEVEL}"],
             name="audio_capturer",
             output="screen",
             emulate_tty=True,
@@ -69,6 +71,7 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="noise_cancellation.py",
+            ros_arguments=["--log-level", f"noise_cancellation:={LOG_LEVEL}"],
             name="noise_cancellation",
             output="screen",
             emulate_tty=True,
@@ -77,6 +80,7 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="voice_detection.py",
+            ros_arguments=["--log-level", f"voice_detection:={LOG_LEVEL}"],
             name="voice_detection",
             output="screen",
             emulate_tty=True,
@@ -87,6 +91,7 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="doorbell_detection.py",
+            ros_arguments=["--log-level", f"doorbell_detection:={LOG_LEVEL}"],
             name="doorbell_detection",
             output="screen",
             emulate_tty=True,
@@ -95,6 +100,7 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="hear_streaming.py",
+            ros_arguments=["--log-level", f"hear:={LOG_LEVEL}"],
             name="hear",
             output="screen",
             emulate_tty=True,
@@ -103,6 +109,7 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="say.py",
+            ros_arguments=["--log-level", f"say:={LOG_LEVEL}"],
             name="say",
             output="screen",
             emulate_tty=True,
@@ -111,16 +118,12 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="audio_feedback.py",
+            ros_arguments=["--log-level", f"audio_feedback:={LOG_LEVEL}"],
             name="audio_feedback",
         ),
     ]
 
-    actions = [LogInfo(msg=f"Environment type detected: {env_type}")]
-
     if env_type == "l4t":
-        actions.append(
-            LogInfo(msg="L4T environment detected - adding Edge Impulse nodes")
-        )
         eim_config = parse_ros_config(
             os.path.join(
                 get_package_share_directory("speech"), "config", "kws_eim.yaml"
@@ -136,6 +139,7 @@ def generate_launch_description():
                 Node(
                     package="speech",
                     executable="ei_audio_node.py",
+                    ros_arguments=["--log-level", f"kws_eim:={LOG_LEVEL}"],
                     name="kws_eim",
                     output="screen",
                     emulate_tty=True,
@@ -144,9 +148,6 @@ def generate_launch_description():
             ]
         )
     else:
-        actions.append(
-            LogInfo(msg=f"{env_type} environment detected - adding OpenWakeWord node")
-        )
         oww_config_path = os.path.join(
             get_package_share_directory("speech"), "config", "kws_oww.yaml"
         )
@@ -158,6 +159,7 @@ def generate_launch_description():
             Node(
                 package="speech",
                 executable="kws_oww.py",
+                ros_arguments=["--log-level", f"kws_oww:={LOG_LEVEL}"],
                 name="kws_oww",
                 output="screen",
                 emulate_tty=True,
@@ -166,20 +168,16 @@ def generate_launch_description():
         )
 
     if SpeechApiUtils.respeaker_available():
-        actions.append(
-            LogInfo(msg="ReSpeaker detected - adding respeaker node to launch")
-        )
         nodes.append(
             Node(
                 package="speech",
                 executable="respeaker.py",
+                ros_arguments=["--log-level", f"respeaker:={LOG_LEVEL}"],
                 name="respeaker",
                 output="screen",
                 emulate_tty=True,
                 parameters=[respeaker_config],
             )
         )
-    else:
-        actions.append(LogInfo(msg="ReSpeaker not detected - skipping respeaker node"))
 
-    return LaunchDescription(nodes + actions)
+    return LaunchDescription(nodes)
