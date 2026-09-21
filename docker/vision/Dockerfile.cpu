@@ -21,7 +21,6 @@ WORKDIR /workspace/requirements
 # Installed in a single pip invocation (not one RUN per file) so the resolver
 # sees every requirement at once and installs each package exactly once.
 RUN pip install -c constraints.txt \
-    -r opencv.txt \
     -r torch.txt \
     -r face_recognition.txt \
     -r models.txt \
