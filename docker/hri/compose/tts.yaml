@@ -33,4 +33,9 @@ services:
       HUGGINGFACE_HUB_CACHE: /app/.cache/huggingface/hub
       TRANSFORMERS_CACHE: /app/.cache/huggingface/transformers
       XDG_CACHE_HOME: /app/.cache
+      # torch only creates subdirs under an existing base; the default base
+      # (/app/.cache, a bind mount) doesn't exist, so it warned and disabled caching.
+      PYTORCH_KERNEL_CACHE_PATH: /tmp
+      PYGAME_HIDE_SUPPORT_PROMPT: 1
+      PYTHONWARNINGS: "ignore:Found GPU0:UserWarning,ignore:dropout option adds dropout:UserWarning,ignore:`torch.nn.utils.weight_norm`:FutureWarning,ignore:Using `TRANSFORMERS_CACHE`:FutureWarning"
     command: "python3 kokoro-tts.py --port 50050"

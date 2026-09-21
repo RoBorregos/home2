@@ -1,5 +1,6 @@
 import argparse
 import os
+import wave
 from concurrent import futures
 
 import grpc
@@ -102,12 +103,26 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         return raw_data.astype(np.float32) / 32768.0
 
 
+def load_warmup_audio(path):
+    """Read a 16-bit wav as 16 kHz mono float32.
+
+    Passing the path to transcribe() goes through faster-whisper's decode_audio, which
+    calls av.open(metadata_errors=...) — a kwarg the PyAV 19.x in this image rejects.
+    """
+    with wave.open(path, "rb") as wf:
+        rate, channels = wf.getframerate(), wf.getnchannels()
+        audio = WhisperServicer.bytes_to_float_array(wf.readframes(wf.getnframes()))
+    audio = audio.reshape(-1, channels).mean(axis=1)
+    target_len = int(len(audio) * 16000 / rate)
+    positions = np.linspace(0, len(audio), target_len, endpoint=False)
+    return np.interp(positions, np.arange(len(audio)), audio).astype(np.float32)
+
+
 def serve(port, model, log_transcriptions):
     # Create the gRPC server
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     device, compute_type = detect_device_and_compute_type()
-    print(f"Using device: {device} with compute type: {compute_type}")
 
     transcriber = WhisperModel(
         model,
@@ -120,12 +135,10 @@ def serve(port, model, log_transcriptions):
     warmup_file = "./warmup.wav"
     if os.path.exists(warmup_file):
         try:
-            print(f"Warming up model with {warmup_file}...")
-            result = transcriber.transcribe(warmup_file)
+            result = transcriber.transcribe(load_warmup_audio(warmup_file))
             # Consume generator to complete the warmup
             for _ in result[0]:
                 pass
-            print("Model warmup complete")
         except Exception as e:
             print(f"Model warmup failed: {e}")
     else:
@@ -137,8 +150,8 @@ def serve(port, model, log_transcriptions):
 
     # Bind to a port
     server.add_insecure_port(f"0.0.0.0:{port}")
-    print(f"Whisper gRPC server is running on port {port}...")
     server.start()
+    print(f"STT ready on :{port} ({device}, {compute_type})", flush=True)
     server.wait_for_termination()
 
 

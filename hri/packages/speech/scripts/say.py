@@ -33,7 +33,7 @@ os.makedirs(VOICE_DIRECTORY, exist_ok=True)
 class Say(Node):
     def __init__(self):
         super().__init__("say")
-        self.get_logger().info("Initializing Say node.")
+        self.get_logger().debug("Initializing Say node.")
 
         # Initialize LRU cache for audio files
         self.declare_parameter("cache_size", 100)
@@ -100,7 +100,7 @@ class Say(Node):
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
 
-        self.get_logger().info("Say node initialized.")
+        self.get_logger().info("Say ready")
 
     def _load_cache(self):
         """Load the cache from disk if it exists."""
@@ -127,7 +127,7 @@ class Say(Node):
                             self._audio_cache[cache_key] = filepath
                         else:
                             self.get_logger().warn(f"Cached file not found: {filepath}")
-                self.get_logger().info(
+                self.get_logger().debug(
                     f"Loaded {len(self._audio_cache)} entries from cache"
                 )
         except Exception as e:

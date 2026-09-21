@@ -62,7 +62,7 @@ class LLMUtils(Node):
     def __init__(self) -> None:
         super().__init__("llm_utils")
         self.logger = self.get_logger()
-        self.logger.info("Initializing llm_utils node")
+        self.logger.debug("Initializing llm_utils node")
 
         self.declare_parameter("base_url", "None")
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
@@ -122,7 +122,7 @@ class LLMUtils(Node):
             self.classifier.model.save_pretrained(ASSETS_DIR)
             self.classifier.tokenizer.save_pretrained(ASSETS_DIR)
         else:
-            self.logger.info(
+            self.logger.debug(
                 f"Loading {IS_POSITIVE_MODEL_NAME} from local directory..."
             )
 
@@ -147,7 +147,7 @@ class LLMUtils(Node):
             CommandInterpreter, command_interpreter_service, self.command_interpreter
         )
 
-        self.logger.info("Initialized llm_utils node")
+        self.logger.info("LLMUtils ready")
 
     def grammar_service(self, req, res):
         response = (
