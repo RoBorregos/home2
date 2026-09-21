@@ -14,7 +14,10 @@ TRACK_THRESHOLD = 50
 
 def _insightface_providers() -> list:
     available = ort.get_available_providers()
-    if "TensorrtExecutionProvider" not in available and "CUDAExecutionProvider" not in available:
+    if (
+        "TensorrtExecutionProvider" not in available
+        and "CUDAExecutionProvider" not in available
+    ):
         raise RuntimeError(
             "InsightFace requires a GPU execution provider (TensorRT or CUDA); "
             f"available providers: {available}"
