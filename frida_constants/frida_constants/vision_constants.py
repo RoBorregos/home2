@@ -149,6 +149,9 @@ YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 CHAIRS_TO_REMOVE_SERVICE = "/vision/chairs_to_remove"
 CHAIR_REMOVAL_IMAGE_TOPIC = "/vision/chair_removal_image"
 
+# Talking detection node
+IS_TALKING_TOPIC = "/vision/is_talking"
+
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"
