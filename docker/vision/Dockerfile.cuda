@@ -27,12 +27,7 @@ RUN pip install --upgrade pip
 # Requirements
 WORKDIR /workspace/requirements
 
-# Installed in a single pip invocation (not one RUN per file) so the resolver
-# sees every requirement at once and installs each package exactly once.
-# Splitting these across separate RUNs let later files (e.g. utils.txt ->
-# timm, models.txt -> ultralytics) trigger a second torch/CUDA reinstall in
-# their own layer, and the overwritten copies from earlier layers stayed
-# baked into the image even though invisible in the final filesystem.
+# These are installed in a single pip invocation so the resolver sees every requirement at once and installs each package exactly once.
 RUN pip install -c constraints.txt \
     -r opencv.txt \
     -r torch-gpu.txt \
@@ -40,9 +35,6 @@ RUN pip install -c constraints.txt \
     -r models.txt \
     -r utils.txt \
     -r moondream.txt
-
-WORKDIR /workspace
-RUN git clone --depth 1 https://github.com/ultralytics/yolov5.git
 
 # CV-bridge
 RUN apt update && apt install -y ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-laser-geometry \
