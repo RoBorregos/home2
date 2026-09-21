@@ -653,6 +653,11 @@ class TestHriManager(Node):
         with open(test_cases_file, "r") as f:
             test_cases = json.load(f)
 
+        if TEST_NLP:
+            # Benchmark only requests that always use the LLM. Name and location
+            # take the spaCy-first path and therefore do not measure LLM accuracy.
+            test_cases = [case for case in test_cases if case[1].startswith("LLM_")]
+
         # Prepare output directory and file
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_file = os.path.join(OUTPUT_DIR, f"data_extractor_{date_str}.csv")
