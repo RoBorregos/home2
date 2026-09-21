@@ -1,0 +1,22 @@
+[
+  ["Go to the kitchen", true],
+  ["Find the person wearing a red shirt", true],
+  ["Pick up the apple from the table", true],
+  ["Bring me a bottle of water", true],
+  ["Take the cup to the living room", true],
+  ["Follow the person standing by the door", true],
+  ["Count the chairs in the dining room", true],
+  ["Guide John to the exit", true],
+  ["Place the cereal box on the counter", true],
+  ["Wait here until I come back", true],
+  ["Go to", false],
+  ["Find the", false],
+  ["Pick up", false],
+  ["Bring me the", false],
+  ["Take", false],
+  ["The kitchen", false],
+  ["Apple", false],
+  ["Could you please", false],
+  ["Put it on the", false],
+  ["Look for the person who", false]
+]
