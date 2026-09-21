@@ -87,7 +87,7 @@
 <text x="529" y="225" font-size="12.5" font-weight="bold" fill="#1565c0">hric_commands</text>
 <text x="529" y="238.5" font-size="10.5" fill="#37474f">model: yolo11m-pose (TRT, wrists)</text>
 <text x="529" y="252.0" font-size="10.5" fill="#37474f">srv FIND_SEAT | srv DETECT_HAND</text>
-<text x="529" y="265.5" font-size="10.5" fill="#37474f">action DetectPerson @ CHECK_PERSON</text>
+<text x="529" y="265.5" font-size="10.5" fill="#37474f">srv DetectPerson @ CHECK_PERSON</text>
 <text x="529" y="279.0" font-size="10.5" fill="#c62828" font-weight="bold">single-threaded spin + blocking waits</text>
 <rect x="520" y="312" width="350" height="104" rx="7" fill="#e3f2fd" stroke="#1565c0" stroke-width="1.6"/>
 <text x="529" y="329" font-size="12.5" font-weight="bold" fill="#1565c0">tracker_node</text>
