@@ -49,6 +49,10 @@ The contract with the rest of the robot is exactly one action:
 A `place` is only meaningful after a `pick` or `pour` **in the same process**: the node remembers the
 last pick outcome and uses its measured object height to decide the drop height.
 
+Besides the action, `task_manager` uses a few direct services: move joints / fixed-distance moves,
+the gripper, and the face / person follow toggles (§6, §7). All of them are typed with
+`frida_interfaces` or `std_srvs`, never with xArm types.
+
 ---
 
 ## 2. The packages
@@ -64,7 +68,7 @@ Only what the pick-and-place path uses.
 | **`perception_3d`** | `test_only_orchestrator`, `pick_primitives`, `plane_service`, `flat_grasp_estimator`, `downsample_pc` | Segments objects and surfaces from the point cloud |
 | **`place`** | `heatmapPlace_Server` | Scores a surface and returns the best free spot |
 | **`arm_pkg`** | `gpd_service` | Wraps the GPD library; also owns the MoveIt launch files |
-| **`manipulation_general`** | `manipulation_safeguard` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion |
+| **`manipulation_general`** | `manipulation_safeguard`, `follow_face_node`, `follow_person_controller` | Task launch files (`ppc`, `gpsr`, …); watches the xArm state and clears errors / re-enables motion; face and person following |
 | **`frida_pymoveit2`** | *(library)* | xArm6 joint names and `JOINT_POSITION_LIMITS` |
 | **`xarm_utils`** | *(library)* | Shelf level geometry |
 | **`vamp_moveit_plugin`** | *(MoveIt plugin)* | VAMP planner, with OMPL fallback |
@@ -248,7 +252,57 @@ hardcode them.
 
 ---
 
-## 7. Where to change what
+## 7. Face / person following and the task_manager boundary
+
+### The follow nodes live here
+
+`follow_face_node` and `follow_person_controller` used to be scripts in `task_manager`. They now live
+in `manipulation_general`. `hric` and `gpsr` launch both; `receptionist` and `restaurant` launch
+only `follow_face_node`. Both drive the arm directly in **xArm velocity mode (4)**: while one is active,
+MoveIt goals will not execute. Deactivating restores mode 1.
+
+| Node | Input | Moves | Toggle |
+|---|---|---|---|
+| `follow_face_node` | `/vision/follow_face` (`Point`, face offset) | joints to keep the face centred | `/follow_face` |
+| `follow_person_controller` | `/vision/tracker_centroid` + `/cmd_vel` | joint1 only (PID + base feedforward) | `/follow_person` |
+
+Face following needs the whole chain alive:
+
+```
+ZED ─> image_orienter ─> face_recognition ─> /vision/follow_face ─> follow_face_node ─> xArm
+                          (paused by default)
+```
+
+`face_recognition` **starts paused**; the task manager enables it. To test by hand:
+
+```bash
+ros2 service call /follow_face frida_interfaces/srv/FollowFace "{follow_face: true}"
+ros2 topic pub --once -w 1 /vision/face_recognition/active std_msgs/msg/Bool "{data: true}"
+ros2 topic hz /vision/follow_face          # must show a rate while a face is in view
+# stop: same two calls with false
+```
+
+A `success=True` from `/follow_face` only means the arm switched mode. If nothing moves, check the
+chain above with `ros2 topic hz`, one link at a time.
+
+### task_manager does not depend on manipulation
+
+`task_manager` must build without any manipulation package, so the integration container stays small:
+
+- It talks to manipulation only through services and actions typed in `frida_interfaces` / `std_srvs`.
+  The gripper goes through `/manipulation/gripper/set_state`, not the xArm's `/xarm/set_tgpio_digital`.
+- No `xarm_msgs` in `task_manager/package.xml` or `CMakeLists.txt`.
+- `task_manager` still *runs* `xarm_utils` (shelf heights), which pulls `xarm_msgs` in through
+  `--packages-up-to`, so `docker/integration/run.sh` passes `--packages-ignore xarm_msgs`.
+- Nothing in manipulation depends on `task_manager` (`manipulation_general` dropped that `<depend>`,
+  and the follow nodes use `get_logger()` instead of `task_manager`'s `Logger`).
+
+The old copies in `task_manager/scripts/misc/` still import `xarm_msgs` and will not run in the
+integration container. Nothing launches them.
+
+---
+
+## 8. Where to change what
 
 | I want to… | Touch |
 |---|---|
@@ -259,11 +313,12 @@ hardcode them.
 | Change where a place lands | `place/scripts/heatmapPlace_Server.py` |
 | Change object/surface segmentation | `perception_3d/` |
 | Add a named arm pose | `frida_constants/xarm_configurations.py` |
+| Tune face / person following | `manipulation_general/manipulation_general/follow_*.py`; face speed and tolerance are `FOLLOW_FACE_*` in `manipulation_constants.py` |
 | Add a message, service or action | `frida_interfaces/manipulation/` |
 
 ---
 
-## 8. Running it
+## 9. Running it
 
 ### Build
 
@@ -304,7 +359,7 @@ logic still makes the same choices, **not** that the robot works.
 
 ---
 
-## 9. Docker setup
+## 10. Docker setup
 
 **Requirements:** Docker Engine, and the NVIDIA Container Toolkit for CUDA/L4T images.
 
