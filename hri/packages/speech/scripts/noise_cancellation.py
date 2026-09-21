@@ -11,6 +11,7 @@ import rclpy
 import scipy.signal
 import torch
 from rclpy.executors import ExternalShutdownException
+from rclpy.logging import LoggingSeverity
 from rclpy.node import Node
 
 from frida_interfaces.msg import AudioData
@@ -72,18 +73,16 @@ class NoiseCancellation(Node):
         self._audio_queue: queue.Queue = queue.Queue(maxsize=QUEUE_SIZE)
         threading.Thread(target=self._process_loop, daemon=True).start()
 
-        self.get_logger().info(
-            f"NoiseCancellation node ready. {input_topic} → {output_topic}"
-        )
+        self.get_logger().debug(f"NoiseCancellation: {input_topic} → {output_topic}")
 
         if self.use_df:
-            self.get_logger().info(
+            self.get_logger().debug(
                 "Starting DeepFilterNet in background thread. ANC will be active once ready..."
             )
             threading.Thread(target=self._init_df_async, daemon=True).start()
         else:
             self.get_logger().info(
-                "ENABLE_ANC=False or DeepFilterNet not available. Passing audio through."
+                "NoiseCancellation ready (ANC disabled, passthrough)"
             )
 
     def _init_df_async(self):
@@ -98,13 +97,19 @@ class NoiseCancellation(Node):
                 self.use_df = False
                 return
 
-            self.get_logger().info(f"Loading DeepFilterNet model from {model_dir}")
+            self.get_logger().debug(f"Loading DeepFilterNet model from {model_dir}")
+            verbose = self.get_logger().get_effective_level() <= LoggingSeverity.DEBUG
+            # "none" also skips DF's `git rev-parse` call, which prints
+            # "fatal: not a git repository" outside a git checkout.
             self.df_model, self.df_state, _ = DF_MODULE.init_df(
-                model_base_dir=model_dir
+                model_base_dir=model_dir,
+                log_level="INFO" if verbose else "none",
+                log_file=None,
             )
+            device = "cpu"
             if torch.cuda.is_available():
                 self.df_model = self.df_model.to("cuda")
-                self.get_logger().info("CUDA enabled for noise suppression.")
+                device = "cuda"
             else:
                 self.get_logger().warn(
                     "CUDA not available — DeepFilterNet will run on CPU. "
@@ -116,7 +121,7 @@ class NoiseCancellation(Node):
             # Input tensor must stay on CPU — DF_MODULE.enhance handles device placement
             # internally and will fail with 'can't convert cuda tensor to numpy' if
             # the input is already on CUDA.
-            self.get_logger().info("Pre-warming DeepFilterNet (3 dummy inferences)...")
+            self.get_logger().debug("Pre-warming DeepFilterNet (3 dummy inferences)...")
             dummy = (np.random.randn(1024 * RESAMPLE_FACTOR) * 0.01).astype(np.float32)
             dummy_tensor = torch.from_numpy(dummy).unsqueeze(0)  # keep on CPU
             for _ in range(3):
@@ -124,7 +129,7 @@ class NoiseCancellation(Node):
                     DF_MODULE.enhance(self.df_model, self.df_state, dummy_tensor)
 
             self.df_ready = True
-            self.get_logger().info("DeepFilterNet ready. Noise suppression active.")
+            self.get_logger().info(f"NoiseCancellation ready (DeepFilterNet, {device})")
         except Exception as e:
             self.get_logger().error(f"Failed to initialize DeepFilterNet: {e}")
             self.use_df = False

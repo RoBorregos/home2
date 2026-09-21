@@ -82,7 +82,7 @@ esac
 NLP_EXPORTS=""
 if [ -n "${TEST_NLP:-}" ]; then
     NLP_EXPORTS="export TEST_NLP=$(printf '%q' "$TEST_NLP")"
-    for v in NLP_MODEL_ALIAS NLP_OLLAMA_URL NLP_TASKS NLP_RUNS NLP_RESULTS_DIR; do
+    for v in NLP_MODEL_ALIAS NLP_MODEL_NAME NLP_MODEL_FILE NLP_OLLAMA_URL NLP_TASKS NLP_RUNS NLP_RESULTS_DIR NLP_BACKEND; do
         val="${!v:-}"
         NLP_EXPORTS="$NLP_EXPORTS && export $v=$(printf '%q' "$val")"
     done

@@ -3,7 +3,7 @@
 Vision turns the ZED's RGB-D stream into everything the task managers need to reason about
 the world: object detections with 3D points, people with poses, gestures and clothing
 colors, known faces, a tracked person to follow, and free-form visual questions answered by
-a VLM. It runs on `ROS 2` (Humble) inside a single `home2-vision` container, plus one
+a VLM. It runs on `ROS 2` (Jazzy) inside a single `home2-vision` container, plus one
 non-ROS sidecar — `home2-moondream-server` — that serves the Moondream2 VLM over `gRPC`.
 
 > Vision **does not own the camera**. Frames come from the separate `home2-zed` container

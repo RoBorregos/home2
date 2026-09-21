@@ -6,38 +6,32 @@ ARG ROS_DISTRO=jazzy
 RUN mkdir -p /workspace/requirements
 COPY vision/requirements /workspace/requirements
 
-# Download and extract dlib
-RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
-tar jxvf dlib-19.21.tar.bz2
+ENV PIP_NO_CACHE_DIR=1
 
-WORKDIR /workspace/dlib-19.21
-RUN mkdir build
-WORKDIR /workspace/dlib-19.21/build
-
-RUN cmake .. && \
-cmake --build .
-
-WORKDIR /workspace/dlib-19.21
-RUN python3 setup.py install --set DLIB_USE_CUDA=1
+# Disable Ultralytics' runtime auto-install of missing packages (e.g. tensorrt,
+# onnx). It bypasses constraints.txt and pulls unpinned versions at runtime,
+# which requires internet access we won't have at competition time.
+ENV YOLO_AUTOINSTALL=false
 
 RUN pip install --upgrade pip
 
 # Requirements
 WORKDIR /workspace/requirements
 
-RUN pip install -r opencv.txt
-RUN pip install -r torch-gpu.txt
-RUN pip install -r face_recognition.txt
-RUN pip install -r models.txt
-RUN pip install -r utils.txt
-RUN pip install -r moondream.txt
+# These are installed in a single pip invocation so the resolver sees every requirement at once and installs each package exactly once.
+RUN pip install -c constraints.txt \
+    -r torch-gpu.txt \
+    -r face_recognition.txt \
+    -r face_recognition-gpu.txt \
+    -r models.txt \
+    -r utils.txt \
+    -r moondream.txt
 
 WORKDIR /workspace
-RUN git clone https://github.com/ultralytics/yolov5.git
 
 # CV-bridge
-RUN apt update && apt install -y ros-${ROS_DISTRO}-cv-bridge
-RUN apt install -y ros-${ROS_DISTRO}-laser-geometry
+RUN apt update && apt install -y ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-laser-geometry \
+    && rm -rf /var/lib/apt/lists/*
 
 # CycloneDDS with SHM (iceoryx zero-copy for camera frames)
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
