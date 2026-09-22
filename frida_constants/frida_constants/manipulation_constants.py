@@ -89,6 +89,18 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 BOWL_NAME = "bowl"
 RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
+BOX_NAMES = ["cornflakes", "cereal", "milk", "rubiks_cube"]
+CYLINDRICAL_NAMES = ["coke", "pepsi", "red_bull", "pringles", "soju", "bottle"]
+ROUND_NAMES = [
+    "apple",
+    "peach",
+    "lemon",
+    "mangostane",
+    "yellow_bellpepper",
+    "red_bellpepper",
+    "orange",
+    "sports ball",
+]
 
 GENERATE_GRASPS_SERVICE = "/manipulation/generate_grasps"
 GRASP_CLASS_FLAT = "flat"

@@ -6,6 +6,8 @@ import scipy.ndimage as ndi
 from scipy.spatial.transform import Rotation
 
 from frida_constants.manipulation_constants import (
+    BOX_NAMES,
+    CYLINDRICAL_NAMES,
     FLAT_OBJECT_NAMES,
     GRASP_CLASS_BOX,
     GRASP_CLASS_CYLINDRICAL,
@@ -16,15 +18,16 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_ROUND,
     PEAK_NAMES,
     RIM_NAMES,
+    ROUND_NAMES,
 )
 
 GRASP_CLASS_OBJECTS = {
     GRASP_CLASS_FLAT: FLAT_OBJECT_NAMES,
     GRASP_CLASS_RIM: RIM_NAMES,
     GRASP_CLASS_PEAK: PEAK_NAMES,
-    GRASP_CLASS_BOX: ["cornflakes", "cereal", "milk", "rubiks_cube"],
-    GRASP_CLASS_CYLINDRICAL: ["coke", "pepsi", "red_bull", "pringles", "soju", "bottle"],
-    GRASP_CLASS_ROUND: [],
+    GRASP_CLASS_BOX: BOX_NAMES,
+    GRASP_CLASS_CYLINDRICAL: CYLINDRICAL_NAMES,
+    GRASP_CLASS_ROUND: ROUND_NAMES,
     GRASP_CLASS_HANDLE: [],
 }
 OBJECT_GRASP_CLASS = {
