@@ -3,8 +3,10 @@
 #
 # Both backends bind port 11434 and are started one at a time, so the single
 # Jetson GPU is never shared between them.
-# Accuracy tasks require the HRI NLP ROS services to already be running;
-# is_coherent and llm_wrapper can run as standalone performance-only tasks.
+# Accuracy tasks require the HRI NLP ROS services to already be running, but the
+# HRI stack must be started WITHOUT its llama service, which would hold 11434:
+#   cd docker/hri && docker compose -f compose/docker-compose-l4t.yml \
+#       up hri-ros postgres tts stt
 #
 # Usage:
 #   ./run.sh --model qwen3.5-4b --runs 20       # both backends, same GGUF
@@ -29,9 +31,8 @@ ASSETS_DIR="$REPO_ROOT/hri/packages/nlp/assets"
 REGISTRY="$SCRIPT_DIR/models.json"
 HRI_COMPOSE_DIR="$REPO_ROOT/docker/hri/compose"
 BENCH_COMPOSE="$HRI_COMPOSE_DIR/bench-l4t.yaml"
-# Model overrides go in bench.env, never compose/.env: the production launcher
-# reads that file and only ever resets ROLE, so a stale LLAMA_MODEL_FILE there
-# would silently boot the robot on whatever GGUF was benchmarked last.
+# Model overrides go in bench.env, not compose/.env: that file belongs to the
+# production launcher, which truncates and regenerates it on every run.
 BENCH_ENV="$HRI_COMPOSE_DIR/bench.env"
 COMPOSE_FILES=(--env-file bench.env -f llamacpp-l4t.yaml -f ollama-l4t.yaml -f bench-l4t.yaml)
 RESULTS_DIR="$SCRIPT_DIR/results"
@@ -61,7 +62,7 @@ while [[ $# -gt 0 ]]; do
         --download-only) DOWNLOAD_ONLY=true; shift ;;
         --no-build)      BUILD_FLAG=""; shift ;;
         --keep-up)       KEEP_UP=true; shift ;;
-        -h|--help)       sed -n '2,22p' "$0"; exit 0 ;;
+        -h|--help)       sed -n '2,24p' "$0"; exit 0 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
@@ -218,6 +219,16 @@ container_for_backend() {
         || echo "home2-hri-ollama-l4t"
 }
 
+detect_backend() {
+    if curl -sf "http://localhost:$PORT/api/version" >/dev/null 2>&1; then
+        echo ollama
+    elif curl -sf "http://localhost:$PORT/props" >/dev/null 2>&1; then
+        echo llamacpp
+    else
+        echo none
+    fi
+}
+
 wait_healthy() {
     local backend="$1"
     local probe="http://localhost:$PORT/health"
@@ -251,6 +262,17 @@ echo "Compose:  HRI llama/Ollama definitions + benchmark override"
 REPORTS=()
 FAILED=false
 
+# ROLE tells our own --keep-up leftover apart from HRI's production llama.cpp.
+if [[ -n "$(docker ps -q -f name=home2-hri-llamacpp-l4t 2>/dev/null)" ]] && \
+   [[ "$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' \
+        home2-hri-llamacpp-l4t 2>/dev/null | sed -n 's/^ROLE=//p')" != "bench" ]]; then
+    echo "ERROR: home2-hri-llamacpp-l4t is running for HRI and owns port $PORT."
+    echo "The benchmark needs that port for both backends. Start HRI without it:"
+    echo "  cd docker/hri && docker compose -f compose/docker-compose-l4t.yml \\"
+    echo "      up hri-ros postgres tts stt"
+    exit 1
+fi
+
 for backend in "${BACKENDS[@]}"; do
     echo
     echo "=============================================================="
@@ -263,6 +285,15 @@ for backend in "${BACKENDS[@]}"; do
     (cd "$HRI_COMPOSE_DIR" && \
         docker compose "${COMPOSE_FILES[@]}" --profile bench up -d "$service")
     wait_healthy "$backend"
+
+    serving="$(detect_backend)"
+    if [[ "$serving" != "$backend" ]]; then
+        echo "  ERROR: expected $backend on :$PORT but found '$serving' — skipping leg."
+        docker logs "$(container_for_backend "$backend")" 2>&1 | tail -20
+        FAILED=true
+        continue
+    fi
+    echo "  Serving: $serving"
 
     before="$(ls -1 "$RESULTS_DIR"/benchmark_*.json 2>/dev/null | sort || true)"
 
