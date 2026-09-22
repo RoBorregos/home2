@@ -23,7 +23,7 @@ GRASP_CLASS_OBJECTS = {
     GRASP_CLASS_RIM: RIM_NAMES,
     GRASP_CLASS_PEAK: PEAK_NAMES,
     GRASP_CLASS_BOX: ["cornflakes", "cereal", "milk", "rubiks_cube"],
-    GRASP_CLASS_CYLINDRICAL: [],
+    GRASP_CLASS_CYLINDRICAL: ["coke", "pepsi", "red_bull", "pringles", "soju", "bottle"],
     GRASP_CLASS_ROUND: [],
     GRASP_CLASS_HANDLE: [],
 }
@@ -57,6 +57,9 @@ RIM_TOP_BAND = 0.03
 RIM_NEAR_FRACTION = 0.05
 
 BOX_SUPPORT_MARGIN = 0.01
+
+CYLINDER_TOP_PERCENTILE = 99
+CYLINDER_TOP_BAND = 0.015
 
 PEAK_GRID_RES = 0.05
 PEAK_NBR = 3
@@ -333,12 +336,35 @@ def box(scene: Scene) -> Grasp:
     )
 
 
+def cylinder(scene: Scene) -> Grasp:
+    support_z, points = above_support(scene.points(scene.valid), BOX_SUPPORT_MARGIN)
+    top_z = np.percentile(points[:, 2], CYLINDER_TOP_PERCENTILE)
+    top = points[points[:, 2] > top_z - CYLINDER_TOP_BAND]
+    center = (top if len(top) >= MIN_POINTS_FOR_PCA else points)[:, :2].mean(axis=0)
+
+    diameter = 2 * np.percentile(np.linalg.norm(points[:, :2] - center, axis=1), 99)
+    require(
+        diameter <= GRIPPER_MAX_APERTURE,
+        f"{diameter:.3f} m across, gripper opens {GRIPPER_MAX_APERTURE} m",
+    )
+
+    tangent = np.array([center[1], -center[0], 0.0])
+    depth = GRIPPER_FINGER_LENGTH * 0.85
+
+    return Grasp(
+        np.array(
+            [*center, max(top_z - depth, support_z + GRIPPER_FINGER_LENGTH * 0.15)]
+        ),
+        grasp_frame(TOP_DOWN, tangent),
+    )
+
+
 RECIPES: dict[str, Optional[Callable[[Scene], Grasp]]] = {
     GRASP_CLASS_FLAT: flat,
     GRASP_CLASS_RIM: rim,
     GRASP_CLASS_PEAK: peak,
     GRASP_CLASS_BOX: box,
-    GRASP_CLASS_CYLINDRICAL: None,
+    GRASP_CLASS_CYLINDRICAL: cylinder,
     GRASP_CLASS_ROUND: None,
     GRASP_CLASS_HANDLE: None,
 }
