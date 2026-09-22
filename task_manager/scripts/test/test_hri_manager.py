@@ -1210,19 +1210,19 @@ class TestHriManager(Node):
 
     def _run_perf_side_channel(self, task_name: str) -> dict:
         if not NLP_OLLAMA_URL:
-            return {}
+            return {"errors": ["perf skipped: NLP_OLLAMA_URL unset"]}
         try:
             if BENCHMARK_DIR not in sys.path:
                 sys.path.insert(0, BENCHMARK_DIR)
             from tasks import TASK_REGISTRY, run_perf
         except ImportError as e:
             self.get_logger().warn(f"Perf side-channel skipped (missing dep): {e}")
-            return {}
+            return {"errors": [f"perf skipped (missing dep): {e}"]}
 
         task_cls = TASK_REGISTRY.get(task_name)
         if task_cls is None:
             self.get_logger().warn(f"No perf task class for '{task_name}', skipping perf.")
-            return {}
+            return {"errors": [f"perf skipped: no task class for '{task_name}'"]}
 
         try:
             self.get_logger().info(f"   perf: {NLP_RUNS} run(s) against {NLP_OLLAMA_URL}")
@@ -1235,7 +1235,7 @@ class TestHriManager(Node):
             return perf
         except Exception as e:
             self.get_logger().warn(f"Perf side-channel failed: {e}")
-            return {}
+            return {"errors": [f"perf side-channel failed: {e}"]}
 
     def _benchmark_config(self) -> dict:
         """Stamped into every report so a result can be reproduced."""
