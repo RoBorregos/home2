@@ -241,7 +241,7 @@ def flat(scene: Scene) -> Grasp:
     labels, count = ndi.label(on_table)
     require(count > 0, "nothing above the table")
     points = scene.points(labels == np.argmax(np.bincount(labels.ravel())[1:]) + 1)
-    
+
     xy = points[:, :2]
     center = xy.mean(axis=0)
     eigenvalues, eigenvectors = principal_axes(xy)
@@ -302,10 +302,34 @@ def peak(scene: Scene) -> Grasp:
     peaks_xy = origin + (cells + 0.5) * PEAK_GRID_RES
     center = np.median(points[:, :2], axis=0)
     best = np.argmin(np.linalg.norm(peaks_xy - center, axis=1))
-    
+
     return Grasp(
         np.array([*peaks_xy[best], grid[tuple(cells[best])]]),
         grasp_frame(TOP_DOWN, DEFAULT_CLOSING_AXIS),
+    )
+
+
+def box(scene: Scene) -> Grasp:
+    support_z, points = above_support(scene.points(scene.valid), BOX_SUPPORT_MARGIN)
+    xy = points[:, :2]
+    center = xy.mean(axis=0)
+    _, eigenvectors = principal_axes(xy)
+    short_axis = np.append(eigenvectors[:, 0], 0.0)
+
+    low, high = np.percentile((xy - center) @ short_axis[:2], [1, 99])
+    require(
+        high - low <= GRIPPER_MAX_APERTURE,
+        f"{high - low:.3f} m across, gripper opens {GRIPPER_MAX_APERTURE} m",
+    )
+
+    top_z = np.percentile(points[:, 2], TOP_PERCENTILE)
+    depth = GRIPPER_FINGER_LENGTH * 0.85
+
+    return Grasp(
+        np.array(
+            [*center, max(top_z - depth, support_z + GRIPPER_FINGER_LENGTH * 0.15)]
+        ),
+        grasp_frame(TOP_DOWN, short_axis),
     )
 
 
@@ -313,7 +337,7 @@ RECIPES: dict[str, Optional[Callable[[Scene], Grasp]]] = {
     GRASP_CLASS_FLAT: flat,
     GRASP_CLASS_RIM: rim,
     GRASP_CLASS_PEAK: peak,
-    GRASP_CLASS_BOX: None,
+    GRASP_CLASS_BOX: box,
     GRASP_CLASS_CYLINDRICAL: None,
     GRASP_CLASS_ROUND: None,
     GRASP_CLASS_HANDLE: None,
