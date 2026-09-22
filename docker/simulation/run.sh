@@ -37,7 +37,7 @@ fi
 
 #_________________________RUN_________________________
 
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_ROS="source /opt/ros/jazzy/setup.bash"
 SOURCE_INSTALL="if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi"
 SOURCE_CYCLONE="source /usr/local/bin/cyclonedds_setup.sh"
 GPD_SETUP=". /home/ros/setup_gpd.sh"

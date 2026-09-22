@@ -6,6 +6,10 @@ services:
       dockerfile: dockerfiles/Dockerfile.postgres
     container_name: home2-hri-postgres-${ENV_TYPE:-cpu}
     restart: "no"
+    # Postgres logs its routine startup/shutdown at LOG, which ranks above WARNING,
+    # so no log_min_messages value hides them without also hiding ERRORs.
+    # Keep it out of the attached stream instead; `docker logs` still has everything.
+    attach: false
     environment:
       POSTGRES_USER: rbrgs
       POSTGRES_PASSWORD: rbrgs

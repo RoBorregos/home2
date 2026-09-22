@@ -13,13 +13,13 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 
 #Install directories
-install(DIRECTORY launch vision_general/utils config
+install(DIRECTORY launch scripts/utils config
   DESTINATION share/${PROJECT_NAME})
 
 
 ######################### Python  #########################
 #Python compatability
-ament_python_install_package(${PROJECT_NAME})
+ament_python_install_package(utils PACKAGE_DIR scripts/utils)
 
 #Install python scripts
 file(GLOB PYTHON_SCRIPTS scripts/*.py)
@@ -28,6 +28,20 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# VisionRuntime and the nodes that subclass it.
+file(GLOB TASK_NODE_SCRIPTS scripts/task_nodes/*.py)
+install(PROGRAMS
+  ${TASK_NODE_SCRIPTS}
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install models
+file(GLOB MODEL_SCRIPTS scripts/models/*.py)
+install(PROGRAMS
+  ${MODEL_SCRIPTS}
+  DESTINATION lib/${PROJECT_NAME}/models
 )
 
 

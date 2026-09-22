@@ -9,11 +9,13 @@ services:
         ENV_TYPE: ${ENV_TYPE:-cpu}
     image: roborregos/home2:display-${ENV_TYPE:-cpu}
     runtime: ${RUNTIME:-runc}
-    # Keep display (web_video_server/rosbridge/frontend) off navigation's reserved cores (nav is pinned 0-3).
+    # Keep display (PyQt UI) off navigation's reserved cores (nav is pinned 0-3).
     cpuset: "${COMPUTE_CPUSET:-4-11}"
     volumes:
       - ../../:/workspace/src
       - /tmp:/tmp
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY_HOST:-$HOME/.Xauthority}:/home/ros/.Xauthority:rw
       - /dev/shm:/dev/shm
       - ./build:/workspace/build
       - ./install:/workspace/install
@@ -25,6 +27,8 @@ services:
     privileged: true
     environment:
       DISPLAY: ${DISPLAY:-:0}
+      XAUTHORITY: /home/ros/.Xauthority
+      QT_X11_NO_MITSHM: 1
       TERM: xterm-256color
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
       CYCLONE_SHM: "${CYCLONE_SHM:-1}"

@@ -28,6 +28,7 @@ RUNS=5
 PROMPT=""
 MODEL_OVERRIDE=""  # Leave empty to let the server pick its loaded model
 USECASE=""
+NO_THINK=" /no_think"
 
 ENDPOINTS=()
 LABELS=()
@@ -38,9 +39,10 @@ LABELS=()
 usecase_payload() {
     local uc="$1"
     local model="$2"
+    local no_think="$3"
     case "$uc" in
         extract_data)
-            jq -n --arg model "$model" '{
+            jq -n --arg model "$model" --arg no_think "$no_think" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -48,12 +50,12 @@ usecase_payload() {
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"You will receive a text (`full_text`) and a specific target (`extract_data`). Your task is to extract and return the closest relevant word or phrase that directly answers the target.\nReturn JSON: {\"data\": \"<value or empty string>\"}"},
-                    {role:"user",   content:"<full_text>My name is Carlos and I would like a glass of water.</full_text>\n<extract_data>drink</extract_data> /no_think"}
+                    {role:"user",   content:("<full_text>My name is Carlos and I would like a glass of water.</full_text>\n<extract_data>drink</extract_data>" + $no_think)}
                 ]
             }'
             ;;
         is_coherent)
-            jq -n --arg model "$model" '{
+            jq -n --arg model "$model" --arg no_think "$no_think" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -61,12 +63,12 @@ usecase_payload() {
                 temperature: 0.0,
                 messages: [
                     {role:"system", content:"Determine if a command is complete and executable by a robot. Output JSON: {\"is_coherent\": true/false}"},
-                    {role:"user",   content:"Command: Go to the kitchen and pick up the apple /no_think"}
+                    {role:"user",   content:("Command: Go to the kitchen and pick up the apple" + $no_think)}
                 ]
             }'
             ;;
         llm_wrapper)
-            jq -n --arg model "$model" '{
+            jq -n --arg model "$model" --arg no_think "$no_think" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -74,12 +76,12 @@ usecase_payload() {
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"You are an intelligent assistant. Answer clearly and concisely using the provided context.\n\nContext: The robot picked up a red apple from the kitchen table."},
-                    {role:"user",   content:"What object did the robot pick up? /no_think"}
+                    {role:"user",   content:("What object did the robot pick up?" + $no_think)}
                 ]
             }'
             ;;
         categorize_shelves)
-            jq -n --arg model "$model" '{
+            jq -n --arg model "$model" --arg no_think "$no_think" '{
                 model: $model,
                 stream: true,
                 stream_options: {include_usage: true},
@@ -87,7 +89,7 @@ usecase_payload() {
                 temperature: 0.5,
                 messages: [
                     {role:"system", content:"Assign a unique category to each shelf. Return only JSON: {\"categories\": [\"cat1\",\"cat2\",...]}. Number of categories must match number of shelves."},
-                    {role:"user",   content:"Shelves: [[\"apple\",\"banana\"],[\"water\",\"cup\"],[\"chips\"]], table_objects: [\"soda\"]"}
+                    {role:"user",   content:("Shelves: [[\"apple\",\"banana\"],[\"water\",\"cup\"],[\"chips\"]], table_objects: [\"soda\"]" + $no_think)}
                 ]
             }'
             ;;
@@ -128,10 +130,10 @@ if [[ -z "$PROMPT" && -z "$USECASE" ]]; then
     USECASE="is_coherent"
 fi
 
-# Default: benchmark both backends simultaneously
+# Default: benchmark whichever backend currently owns the production port.
 if [[ ${#ENDPOINTS[@]} -eq 0 ]]; then
-    ENDPOINTS=("http://localhost:11434/v1" "http://localhost:11437/v1")
-    LABELS=("llama.cpp (11434)" "ollama (11437)")
+    ENDPOINTS=("http://localhost:11434/v1")
+    LABELS=("active backend (11434)")
 fi
 
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq is required. Install with: apt-get install -y jq"; exit 1; }
@@ -186,11 +188,11 @@ run_single() {
 
         local payload
         if [[ -n "$USECASE" ]]; then
-            payload=$(usecase_payload "$USECASE" "$model")
+            payload=$(usecase_payload "$USECASE" "$model" "$NO_THINK")
         else
             payload=$(jq -n \
                 --arg model "$model" \
-                --arg content "$PROMPT /no_think" \
+                --arg content "$PROMPT$NO_THINK" \
                 '{model: $model, messages: [{role: "user", content: $content}], stream: true, max_tokens: 512, stream_options: {include_usage: true}}')
         fi
 
@@ -240,18 +242,15 @@ run_single() {
         local ttft=$(( t_first - t_start ))
         local total=$(( t_end - t_start ))
 
-        # Fallback token count: count words in response as rough estimate
-        if [[ "$completion_tokens" -eq 0 ]]; then
-            completion_tokens=50  # rough fallback; avoids division by zero
-        fi
-
-        local tps
-        tps=$(python3 -c "print(f'{($completion_tokens / ($total / 1000)):.1f}')")
-
-        printf "TTFT=%dms  total=%dms  ~%.1f tok/s\n" "$ttft" "$total" "$tps"
-
         ttft_vals+="${ttft}"$'\n'
-        tps_vals+="${tps}"$'\n'
+        if [[ "$completion_tokens" -gt 0 && "$total" -gt 0 ]]; then
+            local tps
+            tps=$(python3 -c "print(f'{($completion_tokens / ($total / 1000)):.1f}')")
+            printf "TTFT=%dms  total=%dms  %.1f tok/s\n" "$ttft" "$total" "$tps"
+            tps_vals+="${tps}"$'\n'
+        else
+            printf "TTFT=%dms  total=%dms  tok/s=n/a (usage missing)\n" "$ttft" "$total"
+        fi
     done
 
     echo "  -- TTFT (ms) --"

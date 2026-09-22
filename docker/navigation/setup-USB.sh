@@ -8,10 +8,10 @@ DESIRED_RULES='#Rule for Lidar with Specific Serial Number
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyUSBlidar2", MODE="0777"
 
 #Rule for Omni Lidar 1 (CP2102N) with Specific Serial Number
-SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="b8cf6308aed5ef11919b744b49d2c684", SYMLINK+="ttyOmniLidar1", MODE="0777"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyOmniLidar1", MODE="0777"
 
 #Rule for Omni Lidar 2 (CP2102N) with Specific Serial Number
-SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="eea02e37a8d5ef11b1176b4b49d2c684", SYMLINK+="ttyOmniLidar2", MODE="0777"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="b8cf6308aed5ef11919b744b49d2c684", SYMLINK+="ttyOmniLidar2", MODE="0777"
 
 #Rule for Omni STM32 (STLINK-V3) with Specific Serial Number
 SUBSYSTEM=="tty", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="374e", ATTRS{serial}=="003400303234510C33353533", SYMLINK+="ttyOmniSTM32", MODE="0777"'

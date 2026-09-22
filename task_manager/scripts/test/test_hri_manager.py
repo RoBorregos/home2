@@ -8,8 +8,10 @@ import csv
 import json
 import os
 import subprocess
+import sys
 import time
 from datetime import datetime
+from types import SimpleNamespace
 from typing import Union
 
 import rclpy
@@ -65,10 +67,24 @@ def confirm_preference(interpreted_text, extracted_data):
 
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
+BENCHMARK_DIR = "/workspace/src/hri/benchmarks/nlp"
 
 COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
-# Choose which tests to perform
+# When TEST_NLP=true, hardcoded TEST_* booleans below are ignored. Tasks come
+# from NLP_TASKS (comma-separated) and a benchmark JSON is emitted alongside
+# the per-task CSVs.
+TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
+NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
+NLP_MODEL_NAME = os.getenv("NLP_MODEL_NAME", "")
+NLP_MODEL_FILE = os.getenv("NLP_MODEL_FILE", "")
+NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
+NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
+NLP_BACKEND = os.getenv("NLP_BACKEND", "")
+NLP_RUNS = int(os.getenv("NLP_RUNS") or "20")  # keep in sync with run.sh RUNS
+NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR") or OUTPUT_DIR
+
+# Choose which tests to perform (used only when TEST_NLP is unset)
 TEST_ASK_AND_CONFIRM = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
@@ -85,7 +101,111 @@ TEST_WORD_CONFIDENCES = False
 TEST_TAKE_ORDER = False
 TEST_MERGER = False
 TEST_FALLBACK_RESUME = False
-TEST_DOOR = True
+TEST_MERGED_PLAN_SPEECH = False
+TEST_DOOR = False
+
+MERGED_PLAN_SPEECH_CASES = [
+    {
+        # Report batched with a fetch, so the say lands mid-plan, not at the end.
+        "name": "count_report_batched_with_fetch",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "tv_stand"},
+                {"action": "count", "target_to_count": "drinks"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me how many drinks there are on the tv stand",
+                    "previous_command_info": ["count"],
+                },
+            ],
+            [
+                {"action": "go_to", "location_to_go": "kitchen"},
+                {"action": "pick_object", "object_to_pick": "apple"},
+                {"action": "go_to", "location_to_go": "living_room"},
+                {"action": "place_object"},
+            ],
+        ],
+    },
+    {
+        "name": "two_reports_in_one_batch",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "kitchen"},
+                {"action": "count", "target_to_count": "foods"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me how many foods there are in the kitchen",
+                    "previous_command_info": ["count"],
+                },
+            ],
+            [
+                {"action": "go_to", "location_to_go": "bedroom"},
+                {"action": "find_person", "attribute_value": "waving"},
+                {"action": "get_person_info", "info_type": "gesture"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me the gesture of the person in the bedroom",
+                    "previous_command_info": ["get_person_info"],
+                },
+            ],
+        ],
+    },
+    {
+        "name": "single_command_trailing_say",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "sofa"},
+                {"action": "get_visual_info", "measure": "biggest", "object_category": "object"},
+                {"action": "go_to", "location_to_go": "start_location"},
+                {
+                    "action": "say_with_context",
+                    "user_instruction": "tell me which is the biggest object on the sofa",
+                    "previous_command_info": ["get_visual_info"],
+                },
+            ]
+        ],
+    },
+    {
+        "name": "no_say_steps",
+        "commands": [
+            [
+                {"action": "go_to", "location_to_go": "storage_rack"},
+                {"action": "pick_object", "object_to_pick": "pringles"},
+                {"action": "go_to", "location_to_go": "living_room"},
+                {"action": "give_object"},
+            ],
+            [
+                {"action": "go_to", "location_to_go": "bathroom"},
+                {"action": "find_person_by_name", "name": "adel"},
+                {"action": "guide_person_to", "destination_room": "kitchen"},
+            ],
+        ],
+    },
+]
+
+MERGED_PLAN_SPEECH_COORDS = {
+    "start_location": [0.0, 0.0],
+    "tv_stand": [0.5, 0.5],
+    "kitchen": [5.0, 5.0],
+    "living_room": [6.0, 5.0],
+    "bedroom": [-2.0, 3.0],
+    "sofa": [3.0, 2.0],
+    "storage_rack": [-1.0, -2.0],
+    "bathroom": [-3.0, 1.0],
+}
+
+# Values that must survive the rewrite; dropping one means a step was lost.
+_SPEECH_TOKEN_FIELDS = (
+    "location_to_go",
+    "object_to_pick",
+    "name",
+    "target_to_count",
+    "destination",
+    "destination_room",
+)
 
 
 class TestHriManager(Node):
@@ -98,6 +218,10 @@ class TestHriManager(Node):
         self.run()
 
     def run(self):
+        if TEST_NLP:
+            self.run_nlp_benchmark()
+            exit(0)
+
         if TEST_ASK_AND_CONFIRM:
             self.test_ask_and_confirm()
 
@@ -145,6 +269,9 @@ class TestHriManager(Node):
 
         if TEST_FALLBACK_RESUME:
             self.test_fallback_resume()
+
+        if TEST_MERGED_PLAN_SPEECH:
+            self.test_merged_plan_speech()
 
         if TEST_DOOR:
             self.test_door()
@@ -277,6 +404,7 @@ class TestHriManager(Node):
         output_file = os.path.join(OUTPUT_DIR, f"categorize_objects_{date_str}.csv")
 
         results = []
+        cases = []
         passed_tests = 0
 
         for i, test_case in enumerate(test_cases, 1):
@@ -334,6 +462,14 @@ class TestHriManager(Node):
                 actual_output = f"EXCEPTION: {str(e)}"
 
             results.append([i, test_case["name"], str(expected), str(actual_output), success])
+            cases.append(
+                {
+                    "input": test_case["name"],
+                    "expected": expected,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
             self.get_logger().info("-" * 50)
 
         # Write results to CSV
@@ -344,6 +480,7 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
 
     def async_llm_test(self):
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
@@ -401,6 +538,7 @@ class TestHriManager(Node):
         output_file = os.path.join(OUTPUT_DIR, f"is_positive_{date_str}.csv")
 
         results = []
+        cases = []
         passed_tests = 0
 
         for i, (input_text, expected_output) in enumerate(test_cases, 1):
@@ -430,6 +568,14 @@ class TestHriManager(Node):
                 actual_output = f"EXCEPTION: {str(e)}"
 
             results.append([i, input_text, expected_output, actual_output, success])
+            cases.append(
+                {
+                    "input": input_text,
+                    "expected": expected_output,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
             self.get_logger().info("-" * 50)
 
         # Write results to CSV
@@ -440,6 +586,7 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
 
     def test_is_negative(self):
         test_cases_file = os.path.join(DATA_DIR, "is_negative.json")
@@ -451,6 +598,7 @@ class TestHriManager(Node):
         output_file = os.path.join(OUTPUT_DIR, f"is_negative_{date_str}.csv")
 
         results = []
+        cases = []
         passed_tests = 0
 
         for i, (input_text, expected_output) in enumerate(test_cases, 1):
@@ -480,6 +628,14 @@ class TestHriManager(Node):
                 actual_output = f"EXCEPTION: {str(e)}"
 
             results.append([i, input_text, expected_output, actual_output, success])
+            cases.append(
+                {
+                    "input": input_text,
+                    "expected": expected_output,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
             self.get_logger().info("-" * 50)
 
         # Write results to CSV
@@ -490,6 +646,7 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
 
     def test_data_extractor(self):
         test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")
@@ -501,6 +658,7 @@ class TestHriManager(Node):
         output_file = os.path.join(OUTPUT_DIR, f"data_extractor_{date_str}.csv")
 
         results = []
+        cases = []
         passed_tests = 0
 
         for i, (input_text, query, context, expected_output) in enumerate(test_cases, 1):
@@ -530,6 +688,14 @@ class TestHriManager(Node):
                 actual_output = f"EXCEPTION: {str(e)}"
 
             results.append([i, input_text, query, context, expected_output, actual_output, success])
+            cases.append(
+                {
+                    "input": [input_text, query, context],
+                    "expected": expected_output,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
             self.get_logger().info("-" * 50)
 
         # Write results to CSV
@@ -550,6 +716,7 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
 
     def test_command_interpreter(self):
         test_cases_file = os.path.join(DATA_DIR, "command_interpreter.json")
@@ -794,6 +961,101 @@ class TestHriManager(Node):
         else:
             self.get_logger().info(f"  PASS (partial={partial}, all_done={all_done}, full={full})")
 
+    def test_merged_plan_speech(self):
+        """Test the merged-plan announcement on its own, without running a batch.
+
+        Runs the real GPSRTM._spoken_merged_plan over MERGED_PLAN_SPEECH_CASES.
+        Only the LLM wrapper service is needed: nothing navigates, nothing is
+        spoken out loud, and no display step is published. Ordering is
+        test_merger's job; this only judges the wording.
+        """
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from gpsr_task_manager import GPSRTM
+
+        from task_manager.gpsr.merger import merge
+
+        # Stand-in self, so the shipped method runs without a second GPSR node.
+        tm = SimpleNamespace(
+            subtask_manager=SimpleNamespace(hri=self.hri_manager),
+            get_logger=self.get_logger,
+        )
+        locator = make_locator(MERGED_PLAN_SPEECH_COORDS)
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"merged_plan_speech_{date_str}.csv")
+
+        results = []
+        passed = 0
+        for case in MERGED_PLAN_SPEECH_CASES:
+            name = case["name"]
+            self.get_logger().info(f"Merged-plan speech scenario: {name}")
+
+            commands = build_commands(case["commands"])
+            plan = merge(commands, locator=locator, origin=(0.0, 0.0))
+            actions = [pa.action for pa in plan.actions]
+            raw = self.hri_manager.parse_plan_to_text(actions)
+
+            try:
+                spoken = GPSRTM._spoken_merged_plan(tm, plan)
+            except Exception as e:
+                spoken, failures = "", [f"EXCEPTION: {e}"]
+            else:
+                failures = self._merged_plan_speech_failures(spoken, raw, actions)
+
+            self.get_logger().info(f"  raw:    {raw}")
+            self.get_logger().info(f"  spoken: {spoken}")
+            if failures:
+                self.get_logger().error(f"  FAIL: {'; '.join(failures)}")
+            else:
+                passed += 1
+                self.get_logger().info("  PASS")
+
+            results.append([name, not failures, "; ".join(failures), raw, spoken])
+
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["scenario", "passed", "failures", "raw", "spoken"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Merged-plan speech results: {passed}/{len(results)} passed")
+        self.get_logger().info(f"Saved to {output_file}")
+
+    def _merged_plan_speech_failures(self, spoken: str, raw: str, actions: list) -> list:
+        """Name every way the rewritten announcement is still unusable."""
+        if not spoken or not spoken.strip():
+            return ["empty announcement"]
+
+        failures = []
+        low = spoken.lower()
+        # "living_room" in the raw rendering vs "living room" in the rewrite.
+        flat = low.replace("_", " ")
+        if spoken.strip() == raw.strip():
+            failures.append("fell back to the raw rendering (LLM unavailable or empty answer)")
+        if "then say" in low:
+            failures.append("still contains 'then say'")
+        if "say:" in low:
+            failures.append("still contains a literal 'say:' step")
+
+        for cmd in actions:
+            if getattr(cmd, "action", None) == "say_with_context":
+                instruction = getattr(cmd, "user_instruction", "")
+                if instruction and instruction.lower() in low:
+                    failures.append(f"quotes the user instruction verbatim: '{instruction}'")
+
+        missing = []
+        for cmd in actions:
+            for field in _SPEECH_TOKEN_FIELDS:
+                value = getattr(cmd, field, None)
+                if not isinstance(value, str) or not value or value == "start_location":
+                    continue
+                if value.replace("_", " ").lower() not in flat:
+                    missing.append(value)
+        if missing:
+            failures.append(f"dropped steps mentioning: {sorted(set(missing))}")
+
+        return failures
+
     def test_command_interpreter_baml(self):
         # Prepare output file
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -823,6 +1085,144 @@ class TestHriManager(Node):
             f.write(f"\n=== RETURN CODE: {result.returncode} ===\n")
 
         self.get_logger().info(f"Results saved to {output_file}")
+
+    _TASK_DISPATCH = {
+        "is_positive": "test_is_positive",
+        "is_negative": "test_is_negative",
+        "extract_data": "test_data_extractor",
+        "categorize_shelves": "test_categorize_shelves",
+    }
+
+    # No accuracy dataset for these; they contribute perf and JSON conformance.
+    _PERF_ONLY_TASKS = {"is_coherent", "llm_wrapper"}
+    _ACCURACY_SERVICE_CLIENTS = {
+        "extract_data": "extract_data_service",
+        "is_positive": "is_positive_service",
+        "is_negative": "is_negative_service",
+    }
+
+    def _require_accuracy_services(self) -> None:
+        missing = []
+        for task_name in NLP_TASKS:
+            client_name = self._ACCURACY_SERVICE_CLIENTS.get(task_name)
+            if client_name and not getattr(self.hri_manager, client_name).wait_for_service(
+                timeout_sec=2.0
+            ):
+                missing.append(task_name)
+        if missing:
+            tasks = ", ".join(missing)
+            raise RuntimeError(
+                f"HRI NLP services are unavailable for: {tasks}. "
+                "Start the HRI NLP services or select only performance tasks."
+            )
+
+    def run_nlp_benchmark(self):
+        if not NLP_MODEL_ALIAS:
+            self.get_logger().error("TEST_NLP set but NLP_MODEL_ALIAS is empty.")
+            return
+        if not NLP_TASKS:
+            self.get_logger().error("TEST_NLP set but NLP_TASKS is empty.")
+            return
+
+        self._require_accuracy_services()
+
+        self.get_logger().info(
+            f"TEST_NLP mode: model={NLP_MODEL_ALIAS} tasks={NLP_TASKS} "
+            f"ollama={NLP_OLLAMA_URL or '(perf disabled)'}"
+        )
+
+        model_results = {}
+        for task_name in NLP_TASKS:
+            method_name = self._TASK_DISPATCH.get(task_name)
+            if method_name is None and task_name not in self._PERF_ONLY_TASKS:
+                supported = sorted(set(self._TASK_DISPATCH) | self._PERF_ONLY_TASKS)
+                self.get_logger().warn(f"Unknown NLP task '{task_name}', supported: {supported}")
+                continue
+
+            cases = []
+            if method_name:
+                self.get_logger().info(f"Running accuracy: {task_name}")
+                cases = getattr(self, method_name)() or []
+            task_r = {"cases": cases}
+
+            perf = self._run_perf_side_channel(task_name)
+            if perf:
+                task_r.update(perf)
+
+            model_results[task_name] = task_r
+
+        self._emit_benchmark_report({NLP_MODEL_ALIAS: model_results})
+
+    def _run_perf_side_channel(self, task_name: str) -> dict:
+        if not NLP_OLLAMA_URL:
+            return {}
+        try:
+            if BENCHMARK_DIR not in sys.path:
+                sys.path.insert(0, BENCHMARK_DIR)
+            from tasks import TASK_REGISTRY, run_perf
+        except ImportError as e:
+            self.get_logger().warn(f"Perf side-channel skipped (missing dep): {e}")
+            return {}
+
+        task_cls = TASK_REGISTRY.get(task_name)
+        if task_cls is None:
+            self.get_logger().warn(f"No perf task class for '{task_name}', skipping perf.")
+            return {}
+
+        try:
+            self.get_logger().info(f"   perf: {NLP_RUNS} run(s) against {NLP_OLLAMA_URL}")
+            perf = run_perf(NLP_OLLAMA_URL, NLP_MODEL_ALIAS, task_cls, NLP_RUNS)
+            ttft = perf.get("avg_ttft_ms")
+            tps = perf.get("avg_tokens_per_s")
+            self.get_logger().info(
+                f"   TTFT={ttft:.0f}ms tok/s={tps:.1f}" if ttft and tps else "   (no perf data)"
+            )
+            return perf
+        except Exception as e:
+            self.get_logger().warn(f"Perf side-channel failed: {e}")
+            return {}
+
+    def _benchmark_config(self) -> dict:
+        """Stamped into every report so a result can be reproduced."""
+        config = {
+            "backend": NLP_BACKEND or "unknown",
+            "model_alias": NLP_MODEL_ALIAS,
+            "model_name": NLP_MODEL_NAME,
+            "model_file": NLP_MODEL_FILE,
+            "url": NLP_OLLAMA_URL,
+            "runs": NLP_RUNS,
+            "tasks": NLP_TASKS,
+        }
+        if NLP_OLLAMA_URL:
+            try:
+                if BENCHMARK_DIR not in sys.path:
+                    sys.path.insert(0, BENCHMARK_DIR)
+                from tasks import probe_backend
+
+                config.update(probe_backend(NLP_OLLAMA_URL))
+            except Exception as e:
+                config["probe_error"] = str(e)
+        if config.get("backend") in (None, "", "unknown") and NLP_BACKEND:
+            config["backend"] = NLP_BACKEND
+        return config
+
+    def _emit_benchmark_report(self, all_results: dict) -> None:
+        try:
+            if BENCHMARK_DIR not in sys.path:
+                sys.path.insert(0, BENCHMARK_DIR)
+            import report as rpt
+        except ImportError as e:
+            self.get_logger().warn(f"Could not import benchmark report module: {e}")
+            return
+
+        os.makedirs(NLP_RESULTS_DIR, exist_ok=True)
+        path = rpt.save_json(all_results, NLP_RESULTS_DIR, self._benchmark_config())
+        self.get_logger().info(f"Benchmark JSON written to: {path}")
+        try:
+            for model, task_results in all_results.items():
+                rpt.print_model_table(model, task_results)
+        except Exception as e:
+            self.get_logger().warn(f"print_model_table failed: {e}")
 
 
 def main(args=None):

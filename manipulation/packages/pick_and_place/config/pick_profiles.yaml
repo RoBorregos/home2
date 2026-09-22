@@ -1,0 +1,89 @@
+# Pick strategy profiles.
+#
+# One entry per pick strategy key. Every tuned number the pick
+# pipeline uses lives here -- retuning contact force or descent depth is a YAML
+# edit, not a code change plus rebuild.
+#
+# The loader validates on startup, so a bad value fails at launch rather than
+# mid-descent with the arm in cartesian-velocity mode.
+
+defaults: &defaults
+  # Name of the manipulation_core ROS param holding this strategy's tip offset.
+  tip_offset_param: ee_link_offset
+  # Extra candidates generated per grasp pose by stepping the tip offset.
+  num_alternatives: 1
+  alternative_step: 0.0
+  pre_grasp_velocity: 0.3
+  # Seconds to wait after commanding the gripper closed, before moving again.
+  close_settle: 1.5
+  # Check the descent endpoint against the robot's own links (MoveIt IK +
+  # state validity) before committing to the approach.
+  validate_endpoint: false
+  lift_after_grasp: false
+  attach_collision_object: false
+
+# Flat objects: forks, plates, toothpaste, sponges, dishwasher tabs.
+# Descends under force guarding because the table height is not known precisely
+# enough to descend a fixed distance onto a 3 mm-thick object.
+flat:
+  <<: *defaults
+  strategy: force_guarded
+  pre_grasp_height: 0.15
+  num_alternatives: 6
+  alternative_step: -0.005
+  close_settle: 2.5 # let the gripper fully close before lifting
+  lift_after_grasp: true
+  post_contact_retract: 0.004 # m upward, relieves Z pressure so the gripper can close
+  force_guard:
+    descent_speed: 12.0 # mm/s (lowered from 20 for less impact force)
+    timeout: 16.0 # s, must cover the 0.15 m pre-grasp at the speed above
+    grace_period: 0.3 # s, ignore effort right after velocity starts
+    contact_settle: 1.0 # s, skip the motion-onset spike before detecting
+    min_contact_descent: 0.08 # m, do not honor a jump before this depth
+    # J1/J6 see no contact force; J2's gravity drift false-trips at 80 mm.
+    ignore_joints: [0, 1, 5]
+    # Jump-based contact: trip on a sudden effort rise vs a trailing reference,
+    # which is robust to the several-N gravity drift seen during a clean descent
+    # (an absolute-vs-rest threshold false-trips).
+    jump_window: 0.3 # s, age of the trailing effort reference
+    jump_trip: 2.5 # N over the window that counts as contact
+    jump_sustain: 3 # consecutive samples (~0.06 s) the jump must hold
+    hard_ceiling: 15.0 # N, last-resort stop
+
+# Baskets: straddle the rim so the fingers close around the wall.
+rim:
+  <<: *defaults
+  strategy: fixed_distance
+  tip_offset_param: rim_tip_offset
+  pre_grasp_height: 0.10
+  grasp_z_tweak: -0.05 # target below the rim top so fingers straddle the wall
+  descent_speed: 20.0 # mm/s
+  validate_endpoint: true
+
+# Bowls: the same rim straddle with a much shorter descent.
+bowl:
+  <<: *defaults
+  strategy: fixed_distance
+  tip_offset_param: bowl_tip_offset
+  pre_grasp_height: 0.10
+  grasp_z_tweak: 0.02 # -> derived descent 0.08 m, fingers ~3 cm below the rim top
+  descent_speed: 20.0
+  validate_endpoint: true
+
+# Clothes: descend onto the highest content inside a cavity.
+peak:
+  <<: *defaults
+  strategy: fixed_distance
+  pre_grasp_height: 0.15
+  grasp_z_tweak: 0.0 # -> derived descent 0.15 m, net zero penetration
+  descent_speed: 20.0
+  validate_endpoint: true
+
+# Default: plan straight to a GPD-generated grasp, no descent phase.
+gpd:
+  <<: *defaults
+  strategy: direct
+  pre_grasp_height: 0.0
+  num_alternatives: 2
+  alternative_step: -0.025
+  attach_collision_object: true

@@ -12,6 +12,8 @@ from kokoro import KPipeline
 from pygame import mixer
 from scipy import signal
 
+PLAYBACK_TIMEOUT_MARGIN = 2.0
+
 
 class TTSService(tts_pb2_grpc.TTSServiceServicer):
     def __init__(self):
@@ -24,27 +26,32 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
                 device = "cuda"
         except Exception:
             pass
-        print("Using device:", device)
+        self.device = device
 
         # Initialize the TTS pipeline
-        self.pipeline = KPipeline(lang_code="a", device=device)
+        self.pipeline = KPipeline(
+            lang_code="a", repo_id="hexgrad/Kokoro-82M", device=device
+        )
         self.original_sample_rate = 24000
         self.target_sample_rate = 48000
 
         # Initialize pygame mixer
         mixer.pre_init(frequency=self.target_sample_rate, buffer=2048)
-        mixer.init()
+        try:
+            mixer.init()
+            self.playback_available = True
+        except Exception as e:
+            print(f"Audio playback unavailable ({e}); serving synthesis only.")
+            self.playback_available = False
 
         # Warm up the model
         try:
-            print("Warming up Kokoro model...")
             warmup_generator = self.pipeline(
                 "Hola, soy tu asistente.", voice="af_heart"
             )
             for i, (_, _, audio) in enumerate(warmup_generator):
                 if i > 0:
                     break  # Just do one chunk to warm up
-            print("Model warm-up complete.")
         except Exception as e:
             print(f"Warm-up failed: {e}")
 
@@ -104,6 +111,9 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
 
     def _play_audio_chunk(self, audio_data):
         """Play audio chunk using pygame mixer."""
+        if not self.playback_available:
+            return
+
         # Normalize audio to int16
         audio_int16 = np.int16(audio_data * 32767)
 
@@ -118,16 +128,20 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
         # Reset buffer position
         buffer.seek(0)
 
-        # Wait until mixer is available
-        while mixer.music.get_busy():
-            time.sleep(0.05)
+        timeout = len(audio_int16) / self.target_sample_rate + PLAYBACK_TIMEOUT_MARGIN
+
+        self._wait_for_mixer(timeout)
 
         # Load and play from memory buffer
         mixer.music.load(buffer)
         mixer.music.play()
 
-        # Wait until this chunk finishes playing
-        while mixer.music.get_busy():
+        self._wait_for_mixer(timeout)
+
+    @staticmethod
+    def _wait_for_mixer(timeout):
+        deadline = time.monotonic() + timeout
+        while mixer.music.get_busy() and time.monotonic() < deadline:
             time.sleep(0.05)
 
     def _save_audio_to_wav(self, audio_data, output_path, sample_rate):
@@ -150,15 +164,15 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
 
 def serve(port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
-    tts_pb2_grpc.add_TTSServiceServicer_to_server(TTSService(), server)
+    service = TTSService()
+    tts_pb2_grpc.add_TTSServiceServicer_to_server(service, server)
     server.add_insecure_port(f"[::]:{port}")
-    print(f"Starting Kokoro TTS server on port {port}...")
     server.start()
+    print(f"TTS ready on :{port} ({service.device})", flush=True)
     server.wait_for_termination()
 
 
 if __name__ == "__main__":
-    print("Starting Kokoro TTS server...")
     parser = argparse.ArgumentParser(description="Kokoro gRPC server")
     parser.add_argument(
         "--port", type=int, default=50050, help="Port to run the gRPC server on"

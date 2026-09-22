@@ -21,8 +21,14 @@ MODEL_CONFIGS: dict[str, dict] = {
         "type": "yolo",
         "conf": 0.6,
         "translation": "robocup2026_translation.json",
+        "use_trt": True,
     },
-    "yolo_generic": {"filename": "yolo26n.pt", "type": "yolo", "conf": 0.5},
+    "yolo_generic": {
+        "filename": "yolo26n.pt",
+        "type": "yolo",
+        "conf": 0.5,
+        "use_trt": True,
+    },
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
 }
 

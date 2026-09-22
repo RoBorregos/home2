@@ -17,7 +17,7 @@ ask_for_model() {
 }
 
 echo "Which models do you want to download?"
-echo "  1) qwen3-8b         (Qwen3-8B Q4_K_M GGUF, for llama.cpp)"
+echo "  1) qwen3-4b         (Qwen3-4B Q4_K_M GGUF, for llama.cpp)"
 echo "  2) rbrgs            (fine-tuned command interpreter GGUF, for llama.cpp)"
 echo "  3) qwen3            (Qwen3 via Ollama)"
 echo "  4) nomic-embed-text (embeddings via Ollama)"
@@ -49,10 +49,10 @@ download_gguf() {
 }
 
 # ── GGUFs for llama.cpp ───────────────────────────────────────────────────────
-if ask_for_model qwen3-8b 1; then
-    download_gguf "qwen3-8b" \
-        "https://huggingface.co/unsloth/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf" \
-        "$SCRIPT_DIR/qwen3-8b.Q4_K_M.gguf"
+if ask_for_model qwen3-4b 1; then
+    download_gguf "qwen3-4b" \
+        "https://huggingface.co/unsloth/Qwen3-4B-GGUF/resolve/main/Qwen3-4B-Q4_K_M.gguf" \
+        "$SCRIPT_DIR/qwen3-4b.Q4_K_M.gguf"
 fi
 
 if ask_for_model rbrgs 2; then
@@ -131,7 +131,7 @@ download_ei_model() {
         "$EI_IMAGE" \
         --api-key "$api_key" \
         --run-http-server "$port" \
-        --force-target runner-linux-aarch64-jetson-orin-6-0 \
+        --force-target runner-linux-aarch64 \
         --force-variant float32)
 
     # Wait for the model to download and the server to start
@@ -182,12 +182,14 @@ download_ei_model() {
     docker rm "$CONTAINER_ID" 2>/dev/null
 }
 
+FAILED_MODELS=""
+
 if ask_for_model ei-door 6; then
-    download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337"
+    download_ei_model "door" "${EI_API_KEY_DOOR:-}" "1337" || FAILED_MODELS="$FAILED_MODELS ei-door"
 fi
 
 if ask_for_model ei-kws 7; then
-    download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338"
+    download_ei_model "kws" "${EI_API_KEY_KWS:-}" "1338" || FAILED_MODELS="$FAILED_MODELS ei-kws"
 fi
 
 if ask_for_model qwen3 3 || ask_for_model nomic-embed-text 4; then
@@ -219,6 +221,11 @@ if ask_for_model qwen3 3 || ask_for_model nomic-embed-text 4; then
     fi
 
     docker stop "$CONTAINER_ID"
+fi
+
+if [ -n "$FAILED_MODELS" ]; then
+    echo "Some models FAILED to download:$FAILED_MODELS"
+    exit 1
 fi
 
 echo "All selected models downloaded."
