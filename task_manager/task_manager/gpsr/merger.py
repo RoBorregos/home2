@@ -77,6 +77,8 @@ class _Segment:
     location: Optional[str]  # the navigation target (from a leading go_to)
     acquires: bool
     releases: bool
+    # Gripper state after the segment's last gripper action; None if it has none.
+    ends_holding: Optional[bool] = None
 
 
 def _kind(action: Any) -> str:
@@ -91,9 +93,10 @@ def _decompose(cmd_idx: int, command: Any) -> List[_Segment]:
     cur_indices: List[int] = []
     cur_acq = False
     cur_rel = False
+    cur_end: Optional[bool] = None
 
     def flush() -> None:
-        nonlocal cur_indices, cur_acq, cur_rel, cur_loc
+        nonlocal cur_indices, cur_acq, cur_rel, cur_loc, cur_end
         if cur_indices:
             segments.append(
                 _Segment(
@@ -102,11 +105,13 @@ def _decompose(cmd_idx: int, command: Any) -> List[_Segment]:
                     location=cur_loc,
                     acquires=cur_acq,
                     releases=cur_rel,
+                    ends_holding=cur_end,
                 )
             )
         cur_indices = []
         cur_acq = False
         cur_rel = False
+        cur_end = None
 
     for i, action in enumerate(actions):
         kind = _kind(action)
@@ -118,8 +123,10 @@ def _decompose(cmd_idx: int, command: Any) -> List[_Segment]:
             cur_indices.append(i)
             if kind in _GRIPPER_ACQUIRES:
                 cur_acq = True
+                cur_end = True
             if kind in _GRIPPER_RELEASES:
                 cur_rel = True
+                cur_end = False
     flush()
     return segments
 
@@ -159,10 +166,9 @@ def _build_holding_after(
         held = False
         ha = [False]
         for seg in segs:
-            if seg.acquires:
-                held = True
-            if seg.releases:
-                held = False
+            # Order within the segment matters: "place, pick" ends held.
+            if seg.ends_holding is not None:
+                held = seg.ends_holding
             ha.append(held)
         result.append(ha)
     return result
