@@ -51,7 +51,7 @@ var classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "customer_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a69e827b782a57aface310d357867c956", null ],
     [ "customer_table_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab74456285a8b03907aa2575e41cdc9c1", null ],
     [ "detect_hand_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a5a3d9063e2500a0d2dc37cfafb70eb5b", null ],
-    [ "detect_person_action_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#aadb75ddadd2e2a01a9147893447db639", null ],
+    [ "detect_person_client", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a23f53b3f8a103951f51fee9396e15f5f", null ],
     [ "face_list_subscriber", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#af7b41bea179020e8f63f8714d1ad5e1e", null ],
     [ "face_name_subscriber", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8bb1441bd9c469bed9a46c2b490e31c7", null ],
     [ "face_subscriber", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html#a1c17ec954ac60c1bbf41f3708df4a45c", null ],

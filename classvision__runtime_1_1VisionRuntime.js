@@ -6,6 +6,7 @@ var classvision__runtime_1_1VisionRuntime =
     [ "_depth_callback", "classvision__runtime_1_1VisionRuntime.html#aaa674a1507053873956a0b8e6ab4c861", null ],
     [ "_image_callback", "classvision__runtime_1_1VisionRuntime.html#a599057efcb81885d58cce35497724f0d", null ],
     [ "_rotation_callback", "classvision__runtime_1_1VisionRuntime.html#ae482a0725a03fbaba1cced799c68ad8a", null ],
+    [ "call_service", "classvision__runtime_1_1VisionRuntime.html#ac971bb8391549c9bd2763a9db36b7b52", null ],
     [ "publish_debug", "classvision__runtime_1_1VisionRuntime.html#af49efb4dbcc5f7a52c80d9bf78c95079", null ],
     [ "active", "classvision__runtime_1_1VisionRuntime.html#a7cea0be75948ad6dadc90cab003ac4d6", null ],
     [ "bridge", "classvision__runtime_1_1VisionRuntime.html#a327cc66a3efa322626a794ad55628b0a", null ],

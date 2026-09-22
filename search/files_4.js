@@ -11,7 +11,7 @@ var searchData=
   ['detecthand_2esrv_8',['DetectHand.srv',['../DetectHand_8srv.html',1,'']]],
   ['detection_2emsg_9',['Detection.msg',['../Detection_8msg.html',1,'']]],
   ['detectionhandler_2esrv_10',['DetectionHandler.srv',['../DetectionHandler_8srv.html',1,'']]],
-  ['detectperson_2eaction_11',['DetectPerson.action',['../DetectPerson_8action.html',1,'']]],
+  ['detectperson_2esrv_11',['DetectPerson.srv',['../DetectPerson_8srv.html',1,'']]],
   ['detectpointingobject_2esrv_12',['DetectPointingObject.srv',['../DetectPointingObject_8srv.html',1,'']]],
   ['disable_5frendering_2epy_13',['disable_rendering.py',['../disable__rendering_8py.html',1,'']]],
   ['dishwasherdetection_2esrv_14',['DishwasherDetection.srv',['../DishwasherDetection_8srv.html',1,'']]],

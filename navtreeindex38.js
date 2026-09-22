@@ -1,11 +1,5 @@
 var NAVTREEINDEX38 =
 {
-"namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0":[38,0,51,2,10],
-"namespacefrida__constants_1_1manipulation__constants.html#a2885d522797d86e74fc04768cf3b50a6":[38,0,51,2,4],
-"namespacefrida__constants_1_1manipulation__constants.html#a2b9fe2eb921dacceca8b4fd08e9eb64f":[38,0,51,2,29],
-"namespacefrida__constants_1_1manipulation__constants.html#a32210c7d93399e9823a0af37fffcf4c0":[38,0,51,2,36],
-"namespacefrida__constants_1_1manipulation__constants.html#a340952326c50f0de5f8bb3c56fbd78c2":[38,0,51,2,71],
-"namespacefrida__constants_1_1manipulation__constants.html#a357986332cbb9033440ee3ef8f471e48":[38,0,51,2,38],
 "namespacefrida__constants_1_1manipulation__constants.html#a35ee56f396288b5c13e1a83118353872":[38,0,51,2,20],
 "namespacefrida__constants_1_1manipulation__constants.html#a38b21f89e935776f5580a76d35638040":[38,0,51,2,27],
 "namespacefrida__constants_1_1manipulation__constants.html#a3a0498c16978b309e61bdc1cd6f65576":[38,0,51,2,45],
@@ -249,5 +243,11 @@ var NAVTREEINDEX38 =
 "namespacegeneral__navigation.html#a7ef9e56e1cb54dea09714dcd59926838":[38,0,57,1],
 "namespacegeneral__navigation.html#af472e117a9a8a68b98c82219ed0d3a14":[38,0,57,0],
 "namespacegpd__ros2.html":[38,0,58],
-"namespacegpsr.html":[38,0,59]
+"namespacegpsr.html":[38,0,59],
+"namespacegpsr.html#a757ec7f17f46a7b35bae9fe8fb05a58c":[38,0,59,0],
+"namespacegpsr__commands.html":[38,0,60],
+"namespacegpsr__commands.html#a56bdb1e15ec9535078a234ee5c42f2df":[38,0,60,2],
+"namespacegpsr__commands.html#a5783abd6bc09633fca3b65604586f3cb":[38,0,60,1],
+"namespacegpsr__commands.html#a7dce31766c14809575920f9d6ebe53a2":[38,0,60,3],
+"namespacegpsr__hric.html":[38,0,61]
 };

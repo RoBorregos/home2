@@ -13,5 +13,6 @@ var hric__commands_8py =
     [ "MAX_DEGREE", "hric__commands_8py.html#a19297de37a6bae70e0adcd79a9f3d19e", null ],
     [ "package_share_dir", "hric__commands_8py.html#a3ab9b8e783f16ed1b5159856ba0fc831", null ],
     [ "PERCENTAGE", "hric__commands_8py.html#a4fe3cec6de0cba927173fcc33169c973", null ],
+    [ "POLL_INTERVAL", "hric__commands_8py.html#a36beb79351df54403135ea9f8da7d6de", null ],
     [ "RIGHT_WRIST_IDX", "hric__commands_8py.html#aa529f9b7149a621d00c8bcd938801105", null ]
 ];

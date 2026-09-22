@@ -1,10 +1,5 @@
 var NAVTREEINDEX40 =
 {
-"namespacemoondream__node.html":[38,0,88],
-"namespacemoondream__node.html#a10b02c02e345a65f36ac440ca0b90cc6":[38,0,88,4],
-"namespacemoondream__node.html#a47c45534e210e7306268a61db7efadfe":[38,0,88,2],
-"namespacemoondream__node.html#a8a3e83538f335b2df8cad8475a2496db":[38,0,88,1],
-"namespacemoondream__node.html#aa2e1e7b7b490eadcc4fe5414c36631b1":[38,0,88,3],
 "namespacemoondream__proto__pb2.html":[38,0,89],
 "namespacemoondream__proto__pb2.html#a0c8c0cd876d97fa191cee4fc98977e35":[38,0,89,1],
 "namespacemoondream__proto__pb2.html#a1da83ca9e5d8a96c48370dabaa1d7603":[38,0,89,0],
@@ -249,5 +244,10 @@ var NAVTREEINDEX40 =
 "namespacepick__and__place_1_1robot_1_1geometry.html#a487048d9bd8f3c6bc2de5c3256acd25f":[38,0,107,6,1,0],
 "namespacepick__and__place_1_1robot_1_1geometry.html#ab6808c85a34ed048dfc8e449916d5bbd":[38,0,107,6,1,2],
 "namespacepick__and__place_1_1robot_1_1perception.html":[38,0,107,6,2],
-"namespacepick__and__place_1_1robot_1_1perception.html#a29b37111eafbc3f7f5058635cc9b1ace":[38,0,107,6,2,3]
+"namespacepick__and__place_1_1robot_1_1perception.html#a29b37111eafbc3f7f5058635cc9b1ace":[38,0,107,6,2,3],
+"namespacepick__and__place_1_1robot_1_1perception.html#a29d178ac460114b1e7848b88940e8a91":[38,0,107,6,2,1],
+"namespacepick__and__place_1_1robot_1_1perception.html#abe18dba1d50a9c7bf971e9d20ce28cd3":[38,0,107,6,2,2],
+"namespacepick__and__place_1_1robot_1_1perception.html#ac00e306c24575ef5c3312e27c89a0232":[38,0,107,6,2,4],
+"namespacepickandplace__task__manager.html":[38,0,108],
+"namespacepickandplace__task__manager.html#a03e0fba6b5784ad7aeb39508c79437ce":[38,0,108,9]
 };

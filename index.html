@@ -242,7 +242,7 @@ Services</h1>
 </div><!-- fragment --><div class="fragment"><div class="line">ros2 service call /example/service_topic std_srvs/srv/SetBool &quot;data: true&quot;</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md321"></a>
 Action services</h1>
-<p>An action service is a more complex service that allows for feedback and goal handling. This also receives a request and should return a response, but it can also send feedback during the process. The ActionServer should be imported from <code>rclpy.action</code>. In this example we are using an action file called <code>DetectPerson</code> that should be imported from <code>frida_interfaces</code> and has the following structure:</p>
+<p>An action service is a more complex service that allows for feedback and goal handling. This also receives a request and should return a response, but it can also send feedback during the process. The ActionServer should be imported from <code>rclpy.action</code>. In this example we are using an action file called <code>ExampleAction</code> that should be imported from <code>frida_interfaces</code> and has the following structure:</p>
 <div class="fragment"><div class="line">bool request</div>
 <div class="line">---</div>
 <div class="line">bool success</div>
@@ -252,7 +252,7 @@ Action services</h1>
 <div class="line">    super().__init__(&quot;example_node&quot;)</div>
 <div class="line"> </div>
 <div class="line">    # Create Action Service</div>
-<div class="line">    self.example_action_server = ActionServer(self, DetectPerson, &quot;/example/action_service_topic&quot;, self.action_callback)</div>
+<div class="line">    self.example_action_server = ActionServer(self, ExampleAction, &quot;/example/action_service_topic&quot;, self.action_callback)</div>
 <div class="line"> </div>
 <div class="line">def action_callback(self, goal_handle):</div>
 <div class="line">    # Get the request data</div>
@@ -265,10 +265,10 @@ Action services</h1>
 <div class="line">        # Check if the request was canceled</div>
 <div class="line">        if goal_handle.is_cancel_requested:</div>
 <div class="line">            goal_handle.canceled()</div>
-<div class="line">            return DetectPerson.Result()</div>
+<div class="line">            return ExampleAction.Result()</div>
 <div class="line"> </div>
 <div class="line">        # Create feedback message</div>
-<div class="line">        feedback_msg = DetectPerson.Feedback()</div>
+<div class="line">        feedback_msg = ExampleAction.Feedback()</div>
 <div class="line">        feedback_msg.feedback = str(i)</div>
 <div class="line"> </div>
 <div class="line">        # Send feedback</div>
@@ -277,14 +277,14 @@ Action services</h1>
 <div class="line">        time.sleep(1)</div>
 <div class="line"> </div>
 <div class="line">    # After finishing a process, send the result</div>
-<div class="line">    result = DetectPerson.Result()</div>
+<div class="line">    result = ExampleAction.Result()</div>
 <div class="line">    result.success = True</div>
 <div class="line">    goal_handle.succeed()</div>
 <div class="line">    return result</div>
 </div><!-- fragment --><p>To test an action service, you can run the node in one terminal and call the action service in another terminal. </p><div class="fragment"><div class="line">ros2 action send_goal &lt;action_name&gt; &lt;action_type&gt; &quot;&lt;goal_data&gt;&quot; --feedback</div>
 </div><!-- fragment --><p> Example:</p>
 <div class="fragment"><div class="line">ros2 run vision_general example_node</div>
-</div><!-- fragment --><div class="fragment"><div class="line">ros2 action send_goal /example/action_service_topic frida_interfaces/action/DetectPerson &quot;request: true&quot; --feedback</div>
+</div><!-- fragment --><div class="fragment"><div class="line">ros2 action send_goal /example/action_service_topic frida_interfaces/action/ExampleAction &quot;request: true&quot; --feedback</div>
 </div><!-- fragment --><h1><a class="anchor" id="autotoc_md322"></a>
 Interfaces</h1>
 <p>Interfaces are files that define the structure of messages, services, and actions. They are defined in <code>.msg</code>, <code>.srv</code>, and <code>.action</code> files respectively. For this repo, the interfaces are located in the <code>frida_interfaces</code> package according to each area.</p>

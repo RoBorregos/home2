@@ -106,7 +106,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code>face_recognition</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="face__recognition__node_8py.html">face_recognition_node.py</a></code>   </td><td class="markdownTableBodyNone">InsightFace <code>buffalo_sc</code> (TRT/CUDA)   </td><td class="markdownTableBodyNone">save/recognize guest faces, publish follow-face point    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="hric__commands_8py.html">hric_commands.py</a></code>   </td><td class="markdownTableBodyNone">YOLO <code>yolo11m-pose</code> (TRT)   </td><td class="markdownTableBodyNone">FindSeat srv, DetectPerson action, DetectHand srv    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="namespacehric__commands.html">hric_commands</a></code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="hric__commands_8py.html">hric_commands.py</a></code>   </td><td class="markdownTableBodyNone">YOLO <code>yolo11m-pose</code> (TRT)   </td><td class="markdownTableBodyNone">FindSeat srv, DetectPerson srv, DetectHand srv    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><code><a class="el" href="namespacemoondream__node.html">moondream_node</a></code>   </td><td class="markdownTableBodyNone"><code>moondream_run/moondream_node.py</code>   </td><td class="markdownTableBodyNone">YOLO <code>yolov8n</code> (person crop) + gRPC→ <b>Moondream2 2B VLM</b>   </td><td class="markdownTableBodyNone">describe_person queries, beverage location    </td></tr>
 <tr class="markdownTableRowEven">
@@ -140,7 +140,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">init, FIND_SEAT   </td><td class="markdownTableBodyNone"><code>camera_upside_down(bool)</code>   </td><td class="markdownTableBodyNone">topic CAMERA_ROTATION_TOPIC (Int16)   </td><td class="markdownTableBodyNone"><a class="el" href="namespaceimage__orienter.html">image_orienter</a>, tracker, <a class="el" href="namespacehric__commands.html">hric_commands</a>   </td><td class="markdownTableBodyNone">—    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">WAIT_FOR_GUEST   </td><td class="markdownTableBodyNone"><code>detect_person(timeout=10)</code>   </td><td class="markdownTableBodyNone"><b>action</b> DetectPerson @ CHECK_PERSON_TOPIC   </td><td class="markdownTableBodyNone"><a class="el" href="namespacehric__commands.html">hric_commands</a> → calls <code>YoloDetect</code> srv   </td><td class="markdownTableBodyNone">yolo26n (class 0)    </td></tr>
+<td class="markdownTableBodyNone">WAIT_FOR_GUEST   </td><td class="markdownTableBodyNone"><code>detect_person(timeout=10)</code>   </td><td class="markdownTableBodyNone">srv DetectPerson @ CHECK_PERSON_TOPIC   </td><td class="markdownTableBodyNone"><a class="el" href="namespacehric__commands.html">hric_commands</a> → calls <code>YoloDetect</code> srv   </td><td class="markdownTableBodyNone">yolo26n (class 0)    </td></tr>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">GREETING   </td><td class="markdownTableBodyNone"><code>activate_face_recognition()</code>; <code>follow_by_name("area")</code>   </td><td class="markdownTableBodyNone">srv SaveName @ FOLLOW_BY_TOPIC   </td><td class="markdownTableBodyNone">face_recognition   </td><td class="markdownTableBodyNone">InsightFace    </td></tr>
 <tr class="markdownTableRowOdd">
@@ -191,7 +191,7 @@ $(document).ready(function(){initNavTree('md_docs_ai_hric_vision_architecture.ht
 <div class="line">        IO[image_orienter]</div>
 <div class="line">    end</div>
 <div class="line"> </div>
-<div class="line">    dp --&gt;|action DetectPerson| HC</div>
+<div class="line">    dp --&gt;|srv DetectPerson| HC</div>
 <div class="line">    dh --&gt;|srv DetectHand| HC</div>
 <div class="line">    fseat --&gt;|srv FindSeat| HC</div>
 <div class="line">    fbn --&gt;|srv FOLLOW_BY| FR</div>

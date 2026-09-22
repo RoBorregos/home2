@@ -1,11 +1,5 @@
 var NAVTREEINDEX36 =
 {
-"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md76":[6,3,0],
-"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md77":[6,3,1],
-"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md78":[6,3,2],
-"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md80":[6,4],
-"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md82":[6,5],
-"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md83":[6,5,0],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md84":[6,5,1],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md85":[6,5,2],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md86":[6,5,3],
@@ -249,5 +243,11 @@ var NAVTREEINDEX36 =
 "namespacedemo__roborregosday.html#acd82569527c62414a42ff3f09ebd357b":[38,0,20,3],
 "namespacedemo__roborregosday.html#aef364237443cdc672f0fdf820f1bf866":[38,0,20,1],
 "namespacedemo__roborregosday.html#af18329abe6c10ff0c8cbbd8bf2b0d922":[38,0,20,2],
-"namespacedetectors.html":[38,0,21]
+"namespacedetectors.html":[38,0,21],
+"namespacedetectors_1_1base.html":[38,0,21,0],
+"namespacedetectors_1_1registry.html":[38,0,21,1],
+"namespacedetectors_1_1registry.html#a51e496b6760bdd844d1c44addc8d5e78":[38,0,21,1,2],
+"namespacedetectors_1_1registry.html#ab29beb337204e36fa21507816aad50c3":[38,0,21,1,1],
+"namespacedetectors_1_1registry.html#aff6ab07af9f7f2e55d84ade3c61d6e48":[38,0,21,1,3],
+"namespacedetectors_1_1utils.html":[38,0,21,2]
 };
