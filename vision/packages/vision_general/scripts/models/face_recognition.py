@@ -14,24 +14,31 @@ TRACK_THRESHOLD = 50
 
 def _insightface_providers() -> list:
     available = ort.get_available_providers()
-    if "TensorrtExecutionProvider" not in available:
+    if (
+        "TensorrtExecutionProvider" not in available
+        and "CUDAExecutionProvider" not in available
+    ):
         raise RuntimeError(
-            "InsightFace requires TensorrtExecutionProvider on Jetson; "
+            "InsightFace requires a GPU execution provider (TensorRT or CUDA); "
             f"available providers: {available}"
         )
-    cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
-    return [
-        (
-            "TensorrtExecutionProvider",
-            {
-                "trt_engine_cache_enable": True,
-                "trt_engine_cache_path": cache_dir,
-                "trt_fp16_enable": True,
-            },
-        ),
-        "CUDAExecutionProvider",
-        "CPUExecutionProvider",
-    ]
+    providers = []
+    if "TensorrtExecutionProvider" in available:
+        cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
+        providers.append(
+            (
+                "TensorrtExecutionProvider",
+                {
+                    "trt_engine_cache_enable": True,
+                    "trt_engine_cache_path": cache_dir,
+                    "trt_fp16_enable": True,
+                },
+            )
+        )
+    if "CUDAExecutionProvider" in available:
+        providers.append("CUDAExecutionProvider")
+    providers.append("CPUExecutionProvider")
+    return providers
 
 
 def _bbox_area(bbox) -> float:

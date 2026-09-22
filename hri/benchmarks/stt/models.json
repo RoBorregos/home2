@@ -1,0 +1,40 @@
+{
+  "models": [
+    {
+      "name": "tiny.en",
+      "description": "Smallest English-only model, fastest"
+    },
+    {
+      "name": "base.en",
+      "description": "Base English-only model"
+    },
+    {
+      "name": "small.en",
+      "description": "Small English-only model"
+    },
+    {
+      "name": "medium.en",
+      "description": "Medium English-only model"
+    },
+    {
+      "name": "distil-small.en",
+      "description": "Distilled small English-only, faster than small.en"
+    },
+    {
+      "name": "distil-medium.en",
+      "description": "Distilled medium English-only"
+    },
+    {
+      "name": "distil-large-v3",
+      "description": "Distilled large v3 multilingual — production model"
+    },
+    {
+      "name": "large-v3-turbo",
+      "description": "Large v3 turbo multilingual"
+    },
+    {
+      "name": "turbo",
+      "description": "Alias for large-v3-turbo"
+    }
+  ]
+}

@@ -12,14 +12,14 @@ _run_sh_autocomplete() {
     # Add area specific flags
     case "${words[1]}" in
         hri)
-            flags="$flags --download-model --regenerate-db --build-proto"
+            flags="$flags --download-model --regenerate-db --build-proto --backup"
+            ;;
+        display)
+            flags="$flags --backup"
             ;;
         integration)
             # TODO: add other important scripts
             flags="$flags --test-hri --demo-becas"
-            ;;
-        display)
-            flags="$flags --build-display --open-display"
             ;;
     esac
 
@@ -51,7 +51,7 @@ _initiate_sh_autocomplete() {
     _init_completion || return
 
     local tasks="--gpsr --hric --ppc --storing-groceries --finals"
-    local flags="--build --recreate --open-display --zed --integration"
+    local flags="--build --recreate --zed --integration"
 
     local options
     case ${COMP_CWORD} in
