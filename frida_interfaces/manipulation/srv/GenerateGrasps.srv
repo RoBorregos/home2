@@ -1,0 +1,9 @@
+string object_name
+int32 num_samples
+---
+geometry_msgs/PoseStamped pose
+string grasp_class
+bool deformable
+bool success
+int32 samples_collected
+string message

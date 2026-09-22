@@ -90,6 +90,15 @@ BOWL_NAME = "bowl"
 RIM_NAMES = ["basket", "laundry_basket", BOWL_NAME]
 PEAK_NAMES = ["clothes"]  # task-level object_name aliases
 
+GENERATE_GRASPS_SERVICE = "/manipulation/generate_grasps"
+GRASP_CLASS_FLAT = "flat"
+GRASP_CLASS_BOX = "box"
+GRASP_CLASS_CYLINDRICAL = "cylindrical"
+GRASP_CLASS_ROUND = "round"
+GRASP_CLASS_RIM = "rim"
+GRASP_CLASS_PEAK = "peak"
+GRASP_CLASS_HANDLE = "handle"
+
 # Default speed for the generic /manipulation/fixed_distance_move service,
 RIM_DESCENT_SPEED = 20.0  # mm/s
 
