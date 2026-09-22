@@ -19,5 +19,12 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="embeddings",
+                executable="semantic_map_node.py",
+                name="semantic_map_node",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )

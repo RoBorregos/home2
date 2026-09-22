@@ -1,0 +1,8 @@
+# Query the semantic map built by embeddings/scripts/semantic_map_node.py.
+# Both filters are optional (empty string = no filter on that field).
+string label
+string area
+---
+bool success
+string message
+frida_interfaces/SemanticObject[] objects

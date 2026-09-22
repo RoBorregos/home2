@@ -52,3 +52,23 @@ CREATE TABLE hand_location (
     m_loc_y FLOAT NOT NULL,
     color VARCHAR(50) NOT NULL
 );
+
+-- Semantic map: detected objects persisted with a map-frame position.
+-- Rows are deduplicated in the adapter (same label within a radius updates
+-- the existing row instead of inserting a new one), so this holds one row
+-- per physically distinct object the robot has observed, not one per detection.
+CREATE TABLE semantic_objects (
+    id SERIAL PRIMARY KEY,
+    label VARCHAR(255) NOT NULL,
+    x FLOAT NOT NULL,
+    y FLOAT NOT NULL,
+    z FLOAT NOT NULL,
+    frame_id VARCHAR(255) NOT NULL DEFAULT 'map',
+    confidence FLOAT NOT NULL,
+    area VARCHAR(255),
+    observations INTEGER NOT NULL DEFAULT 1,
+    first_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_semantic_objects_label ON semantic_objects (label);

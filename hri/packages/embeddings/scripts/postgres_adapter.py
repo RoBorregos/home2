@@ -11,6 +11,7 @@ from embeddings.postgres_collections import (
     Item,
     Knowledge,
     Location,
+    SemanticObject,
     row_to_hand_item,
 )
 from sentence_transformers import SentenceTransformer
@@ -19,7 +20,7 @@ MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
 
 
 class PostgresAdapter:
-    def __init__(self, mock: bool = False):
+    def __init__(self, mock: bool = False, load_embeddings: bool = True):
         if mock:
             print(
                 "Using mock Postgres adapter. No database connection will be established."
@@ -34,13 +35,18 @@ class PostgresAdapter:
         )
         self.cursor = self.conn.cursor()
 
-        if not os.path.exists(MODEL_PATH):
-            print(f"Model not found at {MODEL_PATH}. Downloading...")
-            model = SentenceTransformer("all-MiniLM-L12-v2")
-            model.save(MODEL_PATH)
-        else:
-            print(f"Loading model from {MODEL_PATH}")
-        self.embedding_model = SentenceTransformer(MODEL_PATH)
+        # Consumers that only need the geometric tables (e.g. the semantic
+        # map, which matches objects by label + distance, not by similarity)
+        # can skip this to avoid loading the sentence-transformer model.
+        self.embedding_model = None
+        if load_embeddings:
+            if not os.path.exists(MODEL_PATH):
+                print(f"Model not found at {MODEL_PATH}. Downloading...")
+                model = SentenceTransformer("all-MiniLM-L12-v2")
+                model.save(MODEL_PATH)
+            else:
+                print(f"Loading model from {MODEL_PATH}")
+            self.embedding_model = SentenceTransformer(MODEL_PATH)
 
     def get_all_items(self) -> list[Item]:
         """Method to get all items from the database"""
@@ -379,6 +385,136 @@ class PostgresAdapter:
         rows = self.cursor.fetchall()
         rows_by_description = [row_to_hand_item(row) for row in rows]
         return rows_by_name, rows_by_description
+
+    def upsert_semantic_object(
+        self,
+        label: str,
+        x: float,
+        y: float,
+        z: float,
+        confidence: float,
+        frame_id: str = "map",
+        area: str | None = None,
+        match_radius: float = 0.4,
+    ) -> SemanticObject:
+        """Add a detected object to the semantic map, or fold it into an
+        existing entry if one of the same label is already known within
+        `match_radius` meters. This is what keeps continuous detections from
+        flooding the table with hundreds of rows for the same physical
+        object: matching is (label, distance) only, no embeddings involved.
+
+        On a match, the stored position is nudged towards the new
+        observation (running average weighted by observation count) rather
+        than overwritten, and `confidence` keeps the best score seen.
+        """
+        self.cursor.execute(
+            """
+            SELECT id, x, y, z, confidence, observations
+            FROM semantic_objects
+            WHERE label = %s
+              AND sqrt(power(x - %s, 2) + power(y - %s, 2) + power(z - %s, 2)) <= %s
+            ORDER BY sqrt(power(x - %s, 2) + power(y - %s, 2) + power(z - %s, 2)) ASC
+            LIMIT 1
+            """,
+            (label, x, y, z, match_radius, x, y, z),
+        )
+        row = self.cursor.fetchone()
+
+        if row is None:
+            self.cursor.execute(
+                """
+                INSERT INTO semantic_objects (label, x, y, z, frame_id, confidence, area)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, label, x, y, z, frame_id, confidence, area, observations
+                """,
+                (label, x, y, z, frame_id, confidence, area),
+            )
+        else:
+            obj_id, prev_x, prev_y, prev_z, prev_conf, observations = row
+            new_observations = observations + 1
+            # Running average: each new observation counts for 1/new_observations
+            # of the update, so the position converges but isn't jerked around
+            # by a single noisy detection.
+            avg_x = prev_x + (x - prev_x) / new_observations
+            avg_y = prev_y + (y - prev_y) / new_observations
+            avg_z = prev_z + (z - prev_z) / new_observations
+            best_conf = max(prev_conf, confidence)
+            self.cursor.execute(
+                """
+                UPDATE semantic_objects
+                SET x = %s, y = %s, z = %s, confidence = %s,
+                    area = COALESCE(%s, area), observations = %s,
+                    last_seen = CURRENT_TIMESTAMP
+                WHERE id = %s
+                RETURNING id, label, x, y, z, frame_id, confidence, area, observations
+                """,
+                (avg_x, avg_y, avg_z, best_conf, area, new_observations, obj_id),
+            )
+
+        result_row = self.cursor.fetchone()
+        self.conn.commit()
+        return SemanticObject(
+            id=result_row[0],
+            label=result_row[1],
+            x=result_row[2],
+            y=result_row[3],
+            z=result_row[4],
+            frame_id=result_row[5],
+            confidence=result_row[6],
+            area=result_row[7],
+            observations=result_row[8],
+        )
+
+    def get_semantic_objects(
+        self, label: str | None = None, area: str | None = None
+    ) -> list[SemanticObject]:
+        """Method to list known semantic-map objects, optionally filtered by
+        label and/or area."""
+        query = (
+            "SELECT id, label, x, y, z, frame_id, confidence, area, observations "
+            "FROM semantic_objects WHERE 1=1"
+        )
+        params: list = []
+        if label is not None:
+            query += " AND label = %s"
+            params.append(label)
+        if area is not None:
+            query += " AND area = %s"
+            params.append(area)
+
+        self.cursor.execute(query, params)
+        rows = self.cursor.fetchall()
+        return [
+            SemanticObject(
+                id=r[0],
+                label=r[1],
+                x=r[2],
+                y=r[3],
+                z=r[4],
+                frame_id=r[5],
+                confidence=r[6],
+                area=r[7],
+                observations=r[8],
+            )
+            for r in rows
+        ]
+
+    def expire_stale_objects(self, max_age_seconds: float) -> int:
+        """Delete semantic-map entries not re-observed in `max_age_seconds`.
+
+        Keeps the table from accumulating objects that moved, were removed,
+        or were a one-off false positive that never got reinforced by a
+        second observation. Returns the number of rows deleted."""
+        self.cursor.execute(
+            """
+            DELETE FROM semantic_objects
+            WHERE last_seen < NOW() - (%s * INTERVAL '1 second')
+            """,
+            (max_age_seconds,),
+        )
+        deleted = self.cursor.rowcount
+        self.conn.commit()
+        return deleted
 
     def close(self):
         """Method to close the database connection"""

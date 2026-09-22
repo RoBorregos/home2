@@ -57,6 +57,18 @@ class HandItem(BaseModel):
     color: str
 
 
+class SemanticObject(BaseModel):
+    id: int
+    label: str
+    x: float
+    y: float
+    z: float
+    frame_id: str = "map"
+    confidence: float
+    area: str | None = None
+    observations: int = 1
+
+
 def row_to_hand_item(row):
     HandItem(
         id=row[0],

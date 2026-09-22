@@ -88,6 +88,7 @@ set(msg_files
   "vision/msg/ShelfArray.msg"
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
+  "vision/msg/SemanticObject.msg"
   "navigation/msg/NodeStatus.msg"
   "navigation/msg/MonitorReport.msg"
   )
@@ -168,6 +169,7 @@ set(srv_files
   "vision/srv/YoloDetect.srv"
   "vision/srv/TrashcanDetection.srv"
   "vision/srv/SetTrashCategory.srv"
+  "vision/srv/QuerySemanticMap.srv"
   "navigation/srv/MapAreas.srv"
   "navigation/srv/MoveLocation.srv"
   "navigation/srv/NavQuery.srv"
