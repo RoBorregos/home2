@@ -7,15 +7,16 @@
 # is_coherent and llm_wrapper can run as standalone performance-only tasks.
 #
 # Usage:
-#   ./run.sh --backend llamacpp --model qwen3.5-4b --runs 20
-#   ./run.sh --backend llamacpp                 # menu picks the model
+#   ./run.sh --model qwen3.5-4b --runs 20       # both backends, same GGUF
+#   ./run.sh --backend llamacpp --model qwen3.5-4b
+#   ./run.sh                                    # menu picks the model
 #   ./run.sh --download-only --all              # just fetch GGUFs
 #   ./run.sh --delete                           # delete-cached menu
 #
 # Flags:
-#   --backend  llamacpp | ollama | both   (default: llamacpp)
+#   --backend  llamacpp | ollama | both   (default: both)
 #   --model    registry name or index     (default: interactive menu)
-#   --alias    API model name              (default: qwen3, matching HRI config)
+#   --alias    API model name              (default: frida-llm, matching HRI config)
 #   --runs     timed runs per task        (default: 20, after 1 discarded warmup)
 #   --tasks    comma-separated task list  (default: all)
 #   --download-only / --all / --delete / --no-build / --keep-up
@@ -28,13 +29,16 @@ ASSETS_DIR="$REPO_ROOT/hri/packages/nlp/assets"
 REGISTRY="$SCRIPT_DIR/models.json"
 HRI_COMPOSE_DIR="$REPO_ROOT/docker/hri/compose"
 BENCH_COMPOSE="$HRI_COMPOSE_DIR/bench-l4t.yaml"
-COMPOSE_FILES=(-f llamacpp-l4t.yaml -f ollama-l4t.yaml -f bench-l4t.yaml)
-COMPOSE_ENV="$HRI_COMPOSE_DIR/.env"
+# Model overrides go in bench.env, never compose/.env: the production launcher
+# reads that file and only ever resets ROLE, so a stale LLAMA_MODEL_FILE there
+# would silently boot the robot on whatever GGUF was benchmarked last.
+BENCH_ENV="$HRI_COMPOSE_DIR/bench.env"
+COMPOSE_FILES=(--env-file bench.env -f llamacpp-l4t.yaml -f ollama-l4t.yaml -f bench-l4t.yaml)
 RESULTS_DIR="$SCRIPT_DIR/results"
 CONTAINER_RESULTS_DIR="/workspace/src/hri/benchmarks/nlp/results"
 PORT=11434
 
-BACKEND="llamacpp"
+BACKEND="both"
 MODEL_SELECT=""
 MODEL_ALIAS="frida-llm"
 RUNS=20
@@ -57,7 +61,7 @@ while [[ $# -gt 0 ]]; do
         --download-only) DOWNLOAD_ONLY=true; shift ;;
         --no-build)      BUILD_FLAG=""; shift ;;
         --keep-up)       KEEP_UP=true; shift ;;
-        -h|--help)       sed -n '2,19p' "$0"; exit 0 ;;
+        -h|--help)       sed -n '2,22p' "$0"; exit 0 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
@@ -75,6 +79,7 @@ case "$BACKEND" in
 esac
 
 mkdir -p "$ASSETS_DIR" "$RESULTS_DIR"
+touch "$BENCH_ENV"
 
 upsert_env() {
     local file="$1" key="$2" value="$3"
@@ -232,10 +237,10 @@ wait_healthy() {
 
 trap 'if ! $KEEP_UP; then echo; echo "Stopping backends..."; stop_backends; fi' EXIT
 
-upsert_env "$COMPOSE_ENV" "ROLE" "bench"
-upsert_env "$COMPOSE_ENV" "LLAMA_MODEL_FILE" "$MODEL_FILE"
-upsert_env "$COMPOSE_ENV" "LLAMA_ALIAS" "$ALIAS"
-upsert_env "$COMPOSE_ENV" "LLAMA_CTX_SIZE" "$MODEL_CTX_SIZE"
+upsert_env "$BENCH_ENV" "ROLE" "bench"
+upsert_env "$BENCH_ENV" "LLAMA_MODEL_FILE" "$MODEL_FILE"
+upsert_env "$BENCH_ENV" "LLAMA_ALIAS" "$ALIAS"
+upsert_env "$BENCH_ENV" "LLAMA_CTX_SIZE" "$MODEL_CTX_SIZE"
 
 echo
 echo "Model:    $MODEL_NAME ($MODEL_FILE, ctx=$MODEL_CTX_SIZE, alias=$ALIAS)"

@@ -21,9 +21,9 @@ services:
       LLAMA_ALIAS: ${LLAMA_ALIAS:-frida-llm}
       LLAMA_CTX_SIZE: ${LLAMA_CTX_SIZE:-2048}
       BENCH_PORT: "11434"
-      # Match llama.cpp's flash-attention, q8_0 KV cache, and one request slot.
+      # Match llama.cpp's flash-attention, f16 KV cache, and one request slot.
       OLLAMA_FLASH_ATTENTION: "1"
-      OLLAMA_KV_CACHE_TYPE: q8_0
+      OLLAMA_KV_CACHE_TYPE: f16
       OLLAMA_NUM_PARALLEL: "1"
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility

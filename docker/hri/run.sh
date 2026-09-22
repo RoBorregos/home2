@@ -130,6 +130,12 @@ add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
+# Benchmarks used to write their model overrides here; clear them so llama.cpp
+# serves the pinned production GGUF, not whatever was benchmarked last.
+for stale in LLAMA_MODEL_FILE LLAMA_ALIAS LLAMA_CTX_SIZE; do
+  add_or_update_variable compose/.env "$stale" ""
+done
+
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."
   HRI_IMAGES=(
