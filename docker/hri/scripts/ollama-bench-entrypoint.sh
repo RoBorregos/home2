@@ -41,5 +41,5 @@ ollama create "$ALIAS" -f /tmp/Modelfile.bench
 curl -sf "http://localhost:$PORT/api/generate" \
     -d "{\"model\": \"$ALIAS\", \"keep_alive\": -1}" >/dev/null
 
-echo "Ollama bench server ready (model=$ALIAS, ctx=$CTX)."
+echo "Ollama bench server ready: $MODEL_FILE as '$ALIAS' (ctx=$CTX)."
 tail -f /dev/null

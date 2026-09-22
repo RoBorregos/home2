@@ -140,11 +140,14 @@ add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
-# Benchmarks used to write their model overrides here; clear them so llama.cpp
-# serves the pinned production GGUF, not whatever was benchmarked last.
-for stale in LLAMA_MODEL_FILE LLAMA_ALIAS LLAMA_CTX_SIZE; do
-  add_or_update_variable compose/.env "$stale" ""
-done
+# The NLP benchmark wrote its model overrides here before it moved to bench.env;
+# clear a leftover so llama.cpp falls back to the production GGUF.
+if grep -qE '^LLAMA_(MODEL_FILE|ALIAS|CTX_SIZE)=.+' compose/.env 2>/dev/null; then
+  echo "Clearing stale benchmark LLAMA_* overrides from compose/.env"
+  for stale in LLAMA_MODEL_FILE LLAMA_ALIAS LLAMA_CTX_SIZE; do
+    add_or_update_variable compose/.env "$stale" ""
+  done
+fi
 
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."

@@ -18,6 +18,7 @@ debug_log "Starting with ROLE=$ROLE"
 wait_for_server() {
     local port=$1
     local alias=$2
+    local model=$3
     local max_attempts=30
     local attempt=0
     debug_log "Waiting for llama-server ($alias) on port $port..."
@@ -30,7 +31,7 @@ wait_for_server() {
         debug_log "  attempt $attempt/$max_attempts..."
         sleep 2
     done
-    echo "llama-server ready: $alias on :$port (ROLE=$ROLE)"
+    echo "llama-server ready: $model as '$alias' on :$port (ROLE=$ROLE)"
 }
 
 # Main model on port 11434. LLAMA_MODEL_FILE / LLAMA_ALIAS override the defaults
@@ -48,7 +49,7 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] ||
         echo "ERROR: model not found or empty: $MODELS_DIR/$MAIN_MODEL"
         exit 1
     fi
-    debug_log "Starting $MAIN_MODEL on port 11434 (alias=$MAIN_ALIAS)..."
+    echo "llama.cpp serving $MAIN_MODEL (ctx=$MAIN_CTX, cache=$CACHE_TYPE, alias=$MAIN_ALIAS)"
     llama-server \
         --model "$MODELS_DIR/$MAIN_MODEL" \
         --host 0.0.0.0 \
@@ -63,7 +64,7 @@ if [ "$ROLE" = "hric" ] || [ "$ROLE" = "gpsr" ] || [ "$ROLE" = "restaurant" ] ||
         --parallel 1 \
         --alias "$MAIN_ALIAS" \
         &
-    wait_for_server 11434 "$MAIN_ALIAS"
+    wait_for_server 11434 "$MAIN_ALIAS" "$MAIN_MODEL"
 fi
 
 # rbrgs on port 11435, gpsr only
@@ -81,7 +82,7 @@ if [ "$ROLE" = "gpsr" ]; then
         --temp 1.5 \
         --min-p 0.1 \
         &
-    wait_for_server 11435 rbrgs
+    wait_for_server 11435 rbrgs rbrgs.F16.gguf
 fi
 
 wait

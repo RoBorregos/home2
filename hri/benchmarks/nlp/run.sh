@@ -79,7 +79,6 @@ case "$BACKEND" in
 esac
 
 mkdir -p "$ASSETS_DIR" "$RESULTS_DIR"
-touch "$BENCH_ENV"
 
 upsert_env() {
     local file="$1" key="$2" value="$3"
