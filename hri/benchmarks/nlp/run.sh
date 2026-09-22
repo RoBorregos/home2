@@ -268,6 +268,9 @@ for backend in "${BACKENDS[@]}"; do
 
     echo "  Running accuracy + perf via integration container..."
     set +e
+    # The root run.sh sources lib.sh and writes docker/.env by relative path,
+    # so it only works from the repo root.
+    (cd "$REPO_ROOT" && \
     TEST_NLP=true \
     NLP_BACKEND="$backend" \
     NLP_MODEL_ALIAS="$ALIAS" \
@@ -277,7 +280,7 @@ for backend in "${BACKENDS[@]}"; do
     NLP_TASKS="$TASKS" \
     NLP_RUNS="$RUNS" \
     NLP_RESULTS_DIR="$CONTAINER_RESULTS_DIR" \
-        "$REPO_ROOT/run.sh" integration --test-hri $BUILD_FLAG
+        ./run.sh integration --test-hri $BUILD_FLAG)
     rc=$?
     set -e
     if [[ $rc -ne 0 ]]; then
