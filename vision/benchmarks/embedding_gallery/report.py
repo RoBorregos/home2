@@ -174,11 +174,14 @@ def cases_from_predictions(
     return cases
 
 
-def run_backbone(backbone_name: str, backbone_id: str) -> dict:
+def run_backbone(
+    backbone_name: str, backbone_id: str, img_size: int | None = None
+) -> dict:
     print(
-        f"\n[report] backbone={backbone_name} ({backbone_id}) — embedding all crops once..."
+        f"\n[report] backbone={backbone_name} ({backbone_id}"
+        f"{f', img_size={img_size}' if img_size else ''}) — embedding all crops once..."
     )
-    backbone = EmbeddingBackbone(backbone_id).load()
+    backbone = EmbeddingBackbone(backbone_id, img_size=img_size).load()
 
     gallery_embeddings = embed_gallery_photos(backbone)
     if not gallery_embeddings:
@@ -358,7 +361,7 @@ def main():
     if not selected:
         raise SystemExit(f"No matching backbones in {args.models} for {args.backbones}")
 
-    results = [run_backbone(b["name"], b["id"]) for b in selected]
+    results = [run_backbone(b["name"], b["id"], b.get("img_size")) for b in selected]
     print_table(results)
 
     results_dir = Path(args.results_dir)

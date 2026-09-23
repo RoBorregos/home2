@@ -46,6 +46,13 @@
       "dim": 1024
     },
     {
+      "name": "dinov2_vitb14_224px",
+      "id": "vit_base_patch14_dinov2.lvd142m",
+      "dim": 768,
+      "img_size": 224,
+      "note": "DINOv2's timm default is 518px; measured 1532ms->263ms for an 8-crop batch on a Jetson Orin at 224px. Re-benchmarking accuracy here before switching production over."
+    },
+    {
       "name": "clip_vit_b32",
       "id": "clip:ViT-B/32",
       "dim": 512

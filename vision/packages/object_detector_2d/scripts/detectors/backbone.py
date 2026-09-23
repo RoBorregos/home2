@@ -13,8 +13,14 @@ import numpy as np
 
 
 class EmbeddingBackbone:
-    def __init__(self, backbone_id: str):
+    def __init__(self, backbone_id: str, img_size: int | None = None):
         self.backbone_id = backbone_id
+        # DINOv2's timm default is 518px — ~5.8x the FLOPs of 224px for
+        # roughly the same self-attention cost per patch (measured on a
+        # Jetson Orin: 1532ms -> 263ms for an 8-crop batch). None keeps
+        # timm's own default; only override once the accuracy trade-off at
+        # a smaller size has been re-benchmarked (see report.py).
+        self.img_size = img_size
         self.is_clip = backbone_id.startswith("clip:")
         self._model = None
         self._transform = None
@@ -36,10 +42,13 @@ class EmbeddingBackbone:
         else:
             import timm
 
-            self._model = timm.create_model(
-                self.backbone_id, pretrained=True, num_classes=0
-            )
-            cfg = timm.data.resolve_data_config({}, model=self._model)
+            model_kwargs = {"pretrained": True, "num_classes": 0}
+            cfg_overrides = {}
+            if self.img_size:
+                model_kwargs["img_size"] = self.img_size
+                cfg_overrides["input_size"] = (3, self.img_size, self.img_size)
+            self._model = timm.create_model(self.backbone_id, **model_kwargs)
+            cfg = timm.data.resolve_data_config(cfg_overrides, model=self._model)
             self._transform = timm.data.create_transform(**cfg)
             self._model.to(self._device)
         self._model.eval()
