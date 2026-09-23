@@ -19,16 +19,20 @@ class EmbeddingBackbone:
         self._model = None
         self._transform = None
         self._torch = None
+        self._device = None
 
     def load(self) -> "EmbeddingBackbone":
         import torch
 
         self._torch = torch
+        # Same crop, ~40s vs ~200ms per frame on a Jetson Orin — CUDA is
+        # available but nothing runs on it unless explicitly moved there.
+        self._device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.is_clip:
             import clip
 
             clip_name = self.backbone_id.split("clip:", 1)[1]
-            self._model, self._transform = clip.load(clip_name, device="cpu")
+            self._model, self._transform = clip.load(clip_name, device=self._device)
         else:
             import timm
 
@@ -37,6 +41,7 @@ class EmbeddingBackbone:
             )
             cfg = timm.data.resolve_data_config({}, model=self._model)
             self._transform = timm.data.create_transform(**cfg)
+            self._model.to(self._device)
         self._model.eval()
         return self
 
@@ -55,12 +60,14 @@ class EmbeddingBackbone:
         all_feats = []
         for i in range(0, len(crops), chunk_size):
             chunk = crops[i : i + chunk_size]
-            tensors = self._torch.stack([self._transform(c) for c in chunk])
+            tensors = self._torch.stack([self._transform(c) for c in chunk]).to(
+                self._device
+            )
             with self._torch.no_grad():
                 feats = (
                     self._model.encode_image(tensors)
                     if self.is_clip
                     else self._model(tensors)
                 )
-            all_feats.append(feats.numpy().astype(np.float32))
+            all_feats.append(feats.cpu().numpy().astype(np.float32))
         return np.concatenate(all_feats, axis=0)
