@@ -16,6 +16,13 @@ that `load_yolo_trt` already checks), detector weights land next to
 device (engines are device- and TRT-version-specific — never copy them between
 the laptop and the Orin). A MANIFEST.json with sha256 hashes is kept alongside
 the weights for integrity checks.
+
+Also fetches the embedding-gallery detector's dependencies: the DINOv2
+backbone (HF_MODELS, cached under TENSORRT_CACHE_DIR/hf_cache since it isn't
+a single ultralytics asset) and the few-shot object gallery itself
+(sync_gallery() — build it once with gallery_build.py into
+TENSORRT_CACHE_DIR/gallery, this script copies it beside every
+detectors/registry.py found, same as the .pt weights).
 """
 
 import argparse
@@ -34,6 +41,7 @@ STANDARD_MODELS = {
     "yolov8n.pt": "detect",  # tracker, moondream person crop
     "yolo26n.pt": "detect",  # object_detector yolo_generic
     "yoloe-11l-seg.pt": None,  # zero_shot (loads via its own YOLOE path)
+    "yoloe-11l-seg-pf.pt": None,  # embedding_box_proposer (prompt-free checkpoint)
 }
 
 # Custom weights that cannot be downloaded — verify presence, warn if missing.
@@ -46,7 +54,18 @@ CUSTOM_MODELS = [
 ]
 
 # Weights the object_detector registry expects beside detectors/registry.py.
-DETECTOR_MODELS = ["yolo26n.pt", "yoloe-11l-seg.pt", "robocup2026_v1.pt"]
+DETECTOR_MODELS = [
+    "yolo26n.pt",
+    "yoloe-11l-seg.pt",
+    "yoloe-11l-seg-pf.pt",
+    "robocup2026_v1.pt",
+]
+
+# HF-hub-hosted models (not a single ultralytics asset) — e.g. the DINOv2
+# backbone for the embedding-gallery detector. Verified by presence (a
+# successful load), not a single-file sha256: HF Hub artifacts are
+# multi-file (config.json, model.safetensors, ...).
+HF_MODELS = ["vit_base_patch14_dinov2.lvd142m"]
 
 
 def sha256(path: Path) -> str:
@@ -130,6 +149,56 @@ def sync_detector_models(dest: Path):
                 print(f"[sync]  {name} -> {ddir}")
 
 
+def fetch_hf_models(dest: Path) -> list[str]:
+    """Pre-download timm/HF-hub-hosted models into a persistent cache beside
+    the TensorRT cache, so they survive container rebuilds and don't need
+    internet on competition day (same offline-safety goal as STANDARD_MODELS,
+    different download mechanism)."""
+    hf_cache = dest / "hf_cache"
+    hf_cache.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("HF_HOME", str(hf_cache))
+
+    try:
+        import timm
+    except ImportError:
+        print("[fetch] timm not installed, skipping HF models:", HF_MODELS)
+        return list(HF_MODELS)
+
+    failures = []
+    for name in HF_MODELS:
+        try:
+            print(f"[fetch] getting  {name} (HF hub) ...")
+            timm.create_model(name, pretrained=True, num_classes=0)
+            print(f"[fetch] ok       {name}")
+        except Exception as e:
+            print(f"[fetch] FAILED   {name}: {e}")
+            failures.append(name)
+    return failures
+
+
+def sync_gallery(dest: Path):
+    """Copy the embedding gallery (built by gallery_build.py into
+    weights_dir()/gallery) beside every detectors/registry.py found.
+    Unlike sync_detector_models()'s copy-if-missing, this overwrites files
+    that are newer at the source: the gallery is expected to change during
+    setup day as objects get re-shot or added, unlike the static competition
+    YOLO weights."""
+    src = dest / "gallery"
+    if not src.is_dir():
+        return
+    for ddir in detector_dirs():
+        target_root = ddir / "gallery"
+        for item in src.rglob("*"):
+            if item.is_dir():
+                continue
+            rel = item.relative_to(src)
+            target = target_root / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if not target.exists() or item.stat().st_mtime > target.stat().st_mtime:
+                shutil.copy2(item, target)
+                print(f"[sync]  gallery/{rel} -> {ddir}")
+
+
 def warmup(dest: Path):
     """Pre-build TRT engines + insightface cache for THIS device."""
     sys.path.insert(0, str(REPO_ROOT / "vision" / "packages" / "vision_general"))
@@ -140,6 +209,33 @@ def warmup(dest: Path):
             continue
         print(f"[warmup] building engine for {name} (task={task}) ...")
         load_yolo_trt(str(dest / name), task=task)
+
+    try:
+        import numpy as np
+
+        sys.path.insert(
+            0,
+            str(
+                REPO_ROOT
+                / "vision"
+                / "packages"
+                / "object_detector_2d"
+                / "scripts"
+                / "detectors"
+            ),
+        )
+        from backbone import EmbeddingBackbone
+
+        for name in HF_MODELS:
+            print(f"[warmup] forcing kernel compilation for {name} ...")
+            backbone = EmbeddingBackbone(name).load()
+            from PIL import Image
+
+            dummy = Image.fromarray(np.zeros((224, 224, 3), dtype=np.uint8))
+            backbone.embed_batch([dummy])
+        print("[warmup] embedding backbone(s) ready")
+    except Exception as e:
+        print(f"[warmup] embedding backbone warmup skipped: {e}")
 
     try:
         import numpy as np
@@ -173,14 +269,17 @@ def main():
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 
     failures = fetch_standard(dest, manifest)
+    hf_failures = fetch_hf_models(dest)
     missing = check_customs(manifest)
     sync_detector_models(dest)
+    sync_gallery(dest)
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     print(f"[fetch] manifest -> {manifest_path}")
 
     if args.warmup:
         warmup(dest)
 
+    failures = failures + hf_failures
     if failures or missing:
         print(f"\nIncomplete: failed={failures} missing_custom={missing}")
         sys.exit(1)

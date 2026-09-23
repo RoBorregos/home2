@@ -76,8 +76,12 @@ def load_translation() -> dict[str, str]:
     return json.loads(TRANSLATION_PATH.read_text())
 
 
-GALLERY_PHOTOS_PER_CLASS = 30
-HELD_OUT_PER_CLASS = 12
+GALLERY_PHOTOS_PER_CLASS = 25  # matches the production 10-30 photo workflow
+HELD_OUT_PER_CLASS = 30  # bigger than the 12 used earlier — at 12/class a
+# single wrong prediction moves a class's recall by ~8 points, which made
+# run-to-run noise (different random photo draws) look like a real signal
+# (76% vs 80% between two otherwise-identical DINOv2-B runs). 30/class keeps
+# each wrong prediction worth ~3 points instead.
 HARD_NEGATIVE_PER_CLASS = 10
 OUT_OF_GALLERY_PER_CLASS = 15
 BOX_RECALL_IMAGES = 25

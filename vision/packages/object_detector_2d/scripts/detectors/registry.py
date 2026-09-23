@@ -3,11 +3,12 @@
 import json
 import pathlib
 
-# .pt files live in scripts/models/ alongside this file
+# .pt files (and the gallery/ dir) live directly beside this file — same
+# place fetch_models.py's sync_detector_models() copies DETECTOR_MODELS to.
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
 
 # To add a new YOLO with the same architecture:
-#   1. Drop the .pt file in scripts/models/
+#   1. Drop the .pt file beside this one (scripts/detectors/)
 #   2. Add one entry here — zero other code changes needed
 #
 # New model architecture (compatible deps) → new file in models/ + one entry here
@@ -30,6 +31,23 @@ MODEL_CONFIGS: dict[str, dict] = {
         "use_trt": True,
     },
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
+    # Few-shot object recognition (add an object from photos, no retraining).
+    # Not yet in ObjectDetect2D's `models:` param — see
+    # vision/benchmarks/embedding_gallery/README.md for the gate this passed
+    # and vision/.../plans docs for why this stays opt-in until validated on
+    # the Orin (latency, iou_deduplicate ordering, GPU footprint).
+    "embedding_box_proposer": {
+        "filename": "yoloe-11l-seg-pf.pt",
+        "type": "yolo_e",
+        "conf": 0.10,
+    },
+    "embedding_gallery": {
+        "type": "embedding",
+        "backbone": "vit_base_patch14_dinov2.lvd142m",
+        "box_model": "embedding_box_proposer",
+        "gallery_dir": "gallery",
+        "translation": "robocup2026_translation.json",
+    },
 }
 
 

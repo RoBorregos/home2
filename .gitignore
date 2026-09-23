@@ -46,3 +46,4 @@ vision/benchmarks/embedding_gallery/results/*
 !vision/benchmarks/embedding_gallery/results/.gitkeep
 vision/benchmarks/embedding_gallery/data/*/*
 !vision/benchmarks/embedding_gallery/data/*/.gitkeep
+vision/packages/object_detector_2d/scripts/detectors/gallery/

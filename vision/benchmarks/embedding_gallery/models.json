@@ -19,7 +19,14 @@
       "type": "yolo_e",
       "filename": "yoloe-11l-seg-pf.pt",
       "conf": 0.25,
-      "note": "only if the prompt-free checkpoint is available; skip otherwise"
+      "note": "winner of Phase 0 box_recall_eval.py on real RCW2026_v2 crops: 89.4% recall@IoU0.5 (vs 8.7% yolo_generic_agnostic, 4.8% yoloe_broad_prompt) — see results/box_recall.json"
+    },
+    {
+      "name": "yoloe_prompt_free_lowconf",
+      "type": "yolo_e",
+      "filename": "yoloe-11l-seg-pf.pt",
+      "conf": 0.10,
+      "note": "same checkpoint, lower confidence floor — more false positives is fine, the embedding matcher's job is rejecting them as unknown anyway"
     }
   ],
   "backbones": [
