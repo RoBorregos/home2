@@ -42,3 +42,7 @@ restaurant_runs/
 gpsr_runs/
 hri/benchmarks/*/results/*
 !hri/benchmarks/*/results/.gitkeep
+vision/benchmarks/embedding_gallery/results/*
+!vision/benchmarks/embedding_gallery/results/.gitkeep
+vision/benchmarks/embedding_gallery/data/*/*
+!vision/benchmarks/embedding_gallery/data/*/.gitkeep

@@ -1,0 +1,47 @@
+{
+  "box_proposers": [
+    {
+      "name": "yolo_generic_agnostic",
+      "type": "yolo",
+      "filename": "yolo26n.pt",
+      "conf": 0.25,
+      "agnostic_nms": true
+    },
+    {
+      "name": "yoloe_broad_prompt",
+      "type": "yolo_e",
+      "filename": "yoloe-11l-seg.pt",
+      "conf": 0.25,
+      "prompt_classes": ["object", "item", "container", "tool", "food", "drink", "toy"]
+    },
+    {
+      "name": "yoloe_prompt_free",
+      "type": "yolo_e",
+      "filename": "yoloe-11l-seg-pf.pt",
+      "conf": 0.25,
+      "note": "only if the prompt-free checkpoint is available; skip otherwise"
+    }
+  ],
+  "backbones": [
+    {
+      "name": "dinov2_vits14",
+      "id": "vit_small_patch14_dinov2.lvd142m",
+      "dim": 384
+    },
+    {
+      "name": "dinov2_vitb14",
+      "id": "vit_base_patch14_dinov2.lvd142m",
+      "dim": 768
+    },
+    {
+      "name": "dinov2_vitl14",
+      "id": "vit_large_patch14_dinov2.lvd142m",
+      "dim": 1024
+    },
+    {
+      "name": "clip_vit_b32",
+      "id": "clip:ViT-B/32",
+      "dim": 512
+    }
+  ]
+}
