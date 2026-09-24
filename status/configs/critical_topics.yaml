@@ -1,0 +1,5 @@
+# Topics whose Hz the dashboard samples.
+- /zed/zed_node/rgb/color/rect/image
+- /tf
+- /scan
+- /cmd_vel

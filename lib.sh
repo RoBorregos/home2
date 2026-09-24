@@ -314,6 +314,13 @@ run_task() {
     fi
   done
 
+  local DASHBOARD_CMD="ORIN_SERVER_AREAS='${ORIN_SERVER_AREAS}' bash scripts/dashboard.sh $*"
+  if [ "$local_first" = true ]; then
+    screen -dmS "$SESSION_NAME" -t "status" bash -c "$DASHBOARD_CMD; exec bash"
+  else
+    screen -S "$SESSION_NAME" -X screen -t "status" bash -c "$DASHBOARD_CMD; exec bash"
+  fi
+
   echo "Tasks started in screen session '$SESSION_NAME'."
   echo "To view, run: screen -r $SESSION_NAME"
 }
