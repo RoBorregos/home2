@@ -24,6 +24,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "IS_NEGATIVE_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a40d771feb1bf4ea070ce564f294ec534", null ],
     [ "IS_POSITIVE_SERVICE", "namespacefrida__constants_1_1hri__constants.html#afa75347167cbfc3cf035e80d0f56bacf", null ],
     [ "KEYWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7", null ],
+    [ "LLM_ALIAS", "namespacefrida__constants_1_1hri__constants.html#a525aef44a94c8118f4751b828e12883a", null ],
     [ "LLM_WRAPPER_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f", null ],
     [ "PROCESSED_AUDIO_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8", null ],
     [ "QUERY_ENTRY_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd", null ],

@@ -24,6 +24,7 @@ var hri__constants_8py =
     [ "IS_NEGATIVE_SERVICE", "hri__constants_8py.html#a40d771feb1bf4ea070ce564f294ec534", null ],
     [ "IS_POSITIVE_SERVICE", "hri__constants_8py.html#afa75347167cbfc3cf035e80d0f56bacf", null ],
     [ "KEYWORD_TOPIC", "hri__constants_8py.html#a99a70242344952dd09be65d3260da4a7", null ],
+    [ "LLM_ALIAS", "hri__constants_8py.html#a525aef44a94c8118f4751b828e12883a", null ],
     [ "LLM_WRAPPER_SERVICE", "hri__constants_8py.html#ab7f90239db45986ae7bbd3da087ec35f", null ],
     [ "PROCESSED_AUDIO_TOPIC", "hri__constants_8py.html#a65bd8cf37e345f847ad4d999afeba4f8", null ],
     [ "QUERY_ENTRY_SERVICE", "hri__constants_8py.html#a8641c72f60bac81a60265b6b494950cd", null ],

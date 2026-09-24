@@ -1,5 +1,9 @@
 var NAVTREEINDEX41 =
 {
+"namespacepick__and__place_1_1robot_1_1perception.html#abe18dba1d50a9c7bf971e9d20ce28cd3":[38,0,107,6,2,2],
+"namespacepick__and__place_1_1robot_1_1perception.html#ac00e306c24575ef5c3312e27c89a0232":[38,0,107,6,2,4],
+"namespacepickandplace__task__manager.html":[38,0,108],
+"namespacepickandplace__task__manager.html#a03e0fba6b5784ad7aeb39508c79437ce":[38,0,108,9],
 "namespacepickandplace__task__manager.html#a241f0c9534c486125020deb651c27af6":[38,0,108,8],
 "namespacepickandplace__task__manager.html#a45dea6735a5add12a179a99ef076dbde":[38,0,108,7],
 "namespacepickandplace__task__manager.html#a55f38380759b27b2b7d05391b1cab1aa":[38,0,108,5],
@@ -245,9 +249,5 @@ var NAVTREEINDEX41 =
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a76dad13b740d5b529ca65631e3e56cf5":[38,0,141,1,3,20],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a97443d1a7b24253528138833b23e0e0b":[38,0,141,1,3,1],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a9b9a56e7c7574157b1a411cf05adbd04":[38,0,141,1,3,4],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#aaab6a244ded3f187cd3d2623d2fd0f18":[38,0,141,1,3,6],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ab459dbc3d7e2da19e0024efbc1b1dbc2":[38,0,141,1,3,17],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad1aa144235ceaa598ba03d1f5a343823":[38,0,141,1,3,7],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad342ef5904c6588ef5410380f0f95ebb":[38,0,141,1,3,21],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad6084680e73696d85f214bac1ec74789":[38,0,141,1,3,5]
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#aaab6a244ded3f187cd3d2623d2fd0f18":[38,0,141,1,3,6]
 };

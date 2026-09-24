@@ -175,7 +175,7 @@ var searchData=
   ['stream_172',['stream',['../classvamp_1_1redirect__stream_1_1RedirectStream.html#a27d48ca4185c4ce7cbdca08d65cfa792',1,'vamp::redirect_stream::RedirectStream']]],
   ['stride_173',['stride',['../namespaceutils_1_1models_1_1reid__model.html#ad866cda832511cedc31c66a0efb14eae',1,'utils::models::reid_model']]],
   ['structured_5fcmd_174',['structured_cmd',['../namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ab459dbc3d7e2da19e0024efbc1b1dbc2',1,'task_manager::subtask_managers::gpsr_test_commands']]],
-  ['structured_5fresponse_175',['STRUCTURED_RESPONSE',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#a6b118f59a8f060766e6d86403895727e',1,'frida_constants::hri_constants::MODEL']]],
+  ['structured_5fresponse_175',['STRUCTURED_RESPONSE',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#a524c87f1aaf7923eb41d1ac753a11ec6',1,'frida_constants::hri_constants::MODEL']]],
   ['stt_5faction_5fserver_5fname_176',['STT_ACTION_SERVER_NAME',['../namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29',1,'frida_constants::hri_constants']]],
   ['stt_5fservice_5fname_177',['STT_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a05d8fa1eccd50686fbaff0e84170dcb9',1,'frida_constants::hri_constants']]],
   ['stub_178',['stub',['../classmoondream__node_1_1MoondreamNode.html#acf71cc2e789938b5d9940779fc6b05b7',1,'moondream_node::MoondreamNode']]],

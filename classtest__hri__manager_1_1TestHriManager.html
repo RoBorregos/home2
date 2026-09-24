@@ -135,6 +135,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a54c69995753f4ce05bd076720a89c6b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc972947f62b9ac49382f61b0e245d6e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e">test_object_location</a> (self)</td></tr>
 <tr class="separator:abc972947f62b9ac49382f61b0e245d6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a70531ff6288c279fa8bcec2699efb8d4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a70531ff6288c279fa8bcec2699efb8d4">test_is_coherent</a> (self)</td></tr>
+<tr class="separator:a70531ff6288c279fa8bcec2699efb8d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e36aa8c1a7e0afb23ab8950f8ee5b1e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a5e36aa8c1a7e0afb23ab8950f8ee5b1e">test_is_positive</a> (self)</td></tr>
 <tr class="separator:a5e36aa8c1a7e0afb23ab8950f8ee5b1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ffc27f537aa91090fa44f0e715250e5"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a5ffc27f537aa91090fa44f0e715250e5">test_is_negative</a> (self)</td></tr>
@@ -181,7 +183,7 @@ Protected Attributes</h2></td></tr>
 Static Protected Attributes</h2></td></tr>
 <tr class="memitem:a34704ef7e00e99b171413deb73ecdba2"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#a34704ef7e00e99b171413deb73ecdba2">_TASK_DISPATCH</a></td></tr>
 <tr class="separator:a34704ef7e00e99b171413deb73ecdba2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab157518a1bfedfe6a8f72ccc3bc49ddc"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#ab157518a1bfedfe6a8f72ccc3bc49ddc">_PERF_ONLY_TASKS</a> = {&quot;is_coherent&quot;, &quot;llm_wrapper&quot;}</td></tr>
+<tr class="memitem:ab157518a1bfedfe6a8f72ccc3bc49ddc"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#ab157518a1bfedfe6a8f72ccc3bc49ddc">_PERF_ONLY_TASKS</a> = {&quot;llm_wrapper&quot;}</td></tr>
 <tr class="separator:ab157518a1bfedfe6a8f72ccc3bc49ddc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab6a6ddcb52a5376722ab882fe287bf44"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classtest__hri__manager_1_1TestHriManager.html#ab6a6ddcb52a5376722ab882fe287bf44">_ACCURACY_SERVICE_CLIENTS</a></td></tr>
 <tr class="separator:ab6a6ddcb52a5376722ab882fe287bf44"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -614,6 +616,24 @@ SequentialFallbackLeaf, and asserts it resumes (skips completed non-go_to
 actions) rather than restarting from the beginning.</pre> 
 </div>
 </div>
+<a id="a70531ff6288c279fa8bcec2699efb8d4" name="a70531ff6288c279fa8bcec2699efb8d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70531ff6288c279fa8bcec2699efb8d4">&#9670;&#160;</a></span>test_is_coherent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def test_hri_manager.TestHriManager.test_is_coherent </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a5ffc27f537aa91090fa44f0e715250e5" name="a5ffc27f537aa91090fa44f0e715250e5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5ffc27f537aa91090fa44f0e715250e5">&#9670;&#160;</a></span>test_is_negative()</h2>
 
@@ -808,6 +828,7 @@ PASS/FAIL log + CSV output.</pre>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=  {</div>
+<div class="line">        <span class="stringliteral">&quot;is_coherent&quot;</span>: <span class="stringliteral">&quot;is_coherent_service&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;extract_data&quot;</span>: <span class="stringliteral">&quot;extract_data_service&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;is_positive&quot;</span>: <span class="stringliteral">&quot;is_positive_service&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;is_negative&quot;</span>: <span class="stringliteral">&quot;is_negative_service&quot;</span>,</div>
@@ -847,7 +868,7 @@ PASS/FAIL log + CSV output.</pre>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">dict test_hri_manager.TestHriManager._PERF_ONLY_TASKS = {&quot;is_coherent&quot;, &quot;llm_wrapper&quot;}</td>
+          <td class="memname">dict test_hri_manager.TestHriManager._PERF_ONLY_TASKS = {&quot;llm_wrapper&quot;}</td>
         </tr>
       </table>
   </td>
@@ -879,6 +900,7 @@ PASS/FAIL log + CSV output.</pre>
 </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=  {</div>
+<div class="line">        <span class="stringliteral">&quot;is_coherent&quot;</span>: <span class="stringliteral">&quot;test_is_coherent&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;is_positive&quot;</span>: <span class="stringliteral">&quot;test_is_positive&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;is_negative&quot;</span>: <span class="stringliteral">&quot;test_is_negative&quot;</span>,</div>
 <div class="line">        <span class="stringliteral">&quot;extract_data&quot;</span>: <span class="stringliteral">&quot;test_data_extractor&quot;</span>,</div>

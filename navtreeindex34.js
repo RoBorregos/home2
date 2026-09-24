@@ -1,5 +1,8 @@
 var NAVTREEINDEX34 =
 {
+"lidar__setup_8launch_8py.html":[40,0,4,0,2,0,0,0],
+"lidar__setup_8launch_8py.html#a270b8733299546018e10198255b2f9bf":[40,0,4,0,2,0,0,0,0],
+"lidar__setup_8launch_8py.html#a9990279d91c4caa156096d8ed443c567":[40,0,4,0,2,0,0,0,1],
 "localization_8launch_8py.html":[40,0,4,0,2,0,0,1],
 "localization_8launch_8py.html#a03aa809ae87723efe694476a74017b40":[40,0,4,0,2,0,0,1,0],
 "localization_8launch_8py.html#a76ffb350c3296b7397ddf5effc87c862":[40,0,4,0,2,0,0,1,1],
@@ -246,8 +249,5 @@ var NAVTREEINDEX34 =
 "md_docs_Run_Areas_nav.html#autotoc_md355":[31,1],
 "md_docs_Run_Areas_nav.html#autotoc_md356":[31,1,0],
 "md_docs_Run_Areas_nav.html#autotoc_md357":[31,1,1],
-"md_docs_Run_Areas_nav.html#autotoc_md359":[31,2],
-"md_docs_Run_Areas_nav.html#autotoc_md360":[31,2,0],
-"md_docs_Run_Areas_nav.html#autotoc_md361":[31,2,1],
-"md_docs_Run_Areas_nav.html#autotoc_md363":[31,3]
+"md_docs_Run_Areas_nav.html#autotoc_md359":[31,2]
 };
