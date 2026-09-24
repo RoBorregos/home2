@@ -152,57 +152,6 @@ def json_to_knowledge_dumps(json: list[dict[str, str]], knowledge_type="") -> st
     return "\n".join(dumps)
 
 
-def json_to_hand_items_dumps(json: list[dict[str, str]]) -> str:
-    hand_items = []
-    for item in json:
-        # Support two possible shapes:
-        # legacy marker objects under {"markers": [ ... ]} with keys x,y,color_name
-        # flat items with keys x_loc,y_loc,color
-        name = item.get("name")
-        description = item.get("description", "")
-        embedding_name = p.embedding_model.encode(name)
-        embedding_description = p.embedding_model.encode(description)
-        x_loc = item.get("x_loc", item.get("x"))
-        y_loc = item.get("y_loc", item.get("y"))
-        m_loc_x = item.get("m_loc_x")
-        m_loc_y = item.get("m_loc_y")
-        # prefer explicit hex `color`, fall back to `color_name` if present
-        color = item.get("color", item.get("color_name", ""))
-        hand_items.append(
-            {
-                "name": name,
-                "description": description,
-                "embedding_name": embedding_name.tolist(),
-                "embedding_description": embedding_description.tolist(),
-                "x_loc": x_loc,
-                "y_loc": y_loc,
-                "m_loc_x": m_loc_x,
-                "m_loc_y": m_loc_y,
-                "color": color,
-            }
-        )
-    sql = "INSERT INTO hand_location (name, description, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
-    dumps = []
-    for item in hand_items:
-        dumps.append(
-            p.cursor.mogrify(
-                sql,
-                (
-                    item["name"],
-                    item["description"],
-                    item["embedding_name"],
-                    item["embedding_description"],
-                    item["x_loc"],
-                    item["y_loc"],
-                    item["m_loc_x"],
-                    item["m_loc_y"],
-                    item["color"],
-                ),
-            ).decode("utf-8")
-        )
-    return "\n".join(dumps)
-
-
 def write_to_file(filename: str, content: str):
     with open(filename, "w", encoding="utf-8") as f:
         f.write(content)
@@ -252,15 +201,6 @@ def main():
         json_to_knowledge_dumps(
             jsons["frida_knowledge.json"], KNOWLEDGE_TYPE.FRIDA.value
         ),
-    )
-
-    print("Writing hand items")
-    hand_json = frida_constants_jsons["hand_items.json"]
-    # some packages place markers under a top-level "markers" key
-    markers = hand_json.get("markers", hand_json)
-    write_to_file(
-        os.path.join(DOCKER_PATH, "04-hand_location.sql"),
-        json_to_hand_items_dumps(markers),
     )
 
     print("Fetching areas from AREAS_SERVICE...")
