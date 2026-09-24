@@ -36,7 +36,7 @@ GENERATE_BAML_CLIENT="$CLEAN_BAML_CLIENT && baml-cli generate --from /workspace/
 SOURCE_ROS="source /opt/ros/jazzy/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
+COLCON="colcon build --symlink-install --packages-ignore frida_interfaces frida_constants xarm_msgs --packages-up-to task_manager"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
