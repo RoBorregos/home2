@@ -41,6 +41,8 @@ from frida_constants.manipulation_constants import (
     GO_TO_HAND_ACTION_SERVER,
     FIXED_DISTANCE_MOVE_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
+    FOLLOW_FACE_ARM_SERVICE,
+    FOLLOW_PERSON_ARM_SERVICE,
 )
 import time as t
 
@@ -101,8 +103,8 @@ class ManipulationTasks:
         self._fixed_distance_move_client = self.node.create_client(
             FixedDistanceMove, FIXED_DISTANCE_MOVE_SERVICE
         )
-        self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
-        self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
+        self.follow_face_client = self.node.create_client(FollowFace, FOLLOW_FACE_ARM_SERVICE)
+        self.follow_person_client = self.node.create_client(FollowFace, FOLLOW_PERSON_ARM_SERVICE)
         self._remove_collision_object_client = self.node.create_client(
             RemoveCollisionObject, "/manipulation/remove_collision_object"
         )

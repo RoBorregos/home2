@@ -15,7 +15,9 @@ from frida_constants.manipulation_constants import (
     FOLLOW_FACE_TOLERANCE,
     MOVEIT_MODE,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
+    FOLLOW_FACE_ARM_SERVICE,
 )
+from frida_constants.vision_constants import FOLLOW_TOPIC
 from frida_interfaces.srv import FollowFace
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from geometry_msgs.msg import Point
@@ -46,7 +48,7 @@ class FollowFaceNode(Node):
         # Face detection subscription
         self.create_subscription(
             Point,
-            "/vision/follow_face",
+            FOLLOW_TOPIC,
             self._face_detection_callback,
             2,
             callback_group=callback_group,
@@ -102,7 +104,7 @@ class FollowFaceNode(Node):
         # Follow face service
         self.service = self.create_service(
             FollowFace,
-            "/follow_face",
+            FOLLOW_FACE_ARM_SERVICE,
             self._follow_face_service_callback,
             callback_group=callback_group,
         )

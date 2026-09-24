@@ -252,53 +252,11 @@ hardcode them.
 
 ---
 
-## 7. Face / person following and the task_manager boundary
+## 7. Face / person following
 
-### The follow nodes live here
-
-`follow_face_node` and `follow_person_controller` used to be scripts in `task_manager`. They now live
-in `manipulation_general`. `hric` and `gpsr` launch both; `receptionist` and `restaurant` launch
-only `follow_face_node`. Both drive the arm directly in **xArm velocity mode (4)**: while one is active,
-MoveIt goals will not execute. Deactivating restores mode 1.
-
-| Node | Input | Moves | Toggle |
-|---|---|---|---|
-| `follow_face_node` | `/vision/follow_face` (`Point`, face offset) | joints to keep the face centred | `/follow_face` |
-| `follow_person_controller` | `/vision/tracker_centroid` + `/cmd_vel` | joint1 only (PID + base feedforward) | `/follow_person` |
-
-Face following needs the whole chain alive:
-
-```
-ZED ─> image_orienter ─> face_recognition ─> /vision/follow_face ─> follow_face_node ─> xArm
-                          (paused by default)
-```
-
-`face_recognition` **starts paused**; the task manager enables it. To test by hand:
-
-```bash
-ros2 service call /follow_face frida_interfaces/srv/FollowFace "{follow_face: true}"
-ros2 topic pub --once -w 1 /vision/face_recognition/active std_msgs/msg/Bool "{data: true}"
-ros2 topic hz /vision/follow_face          # must show a rate while a face is in view
-# stop: same two calls with false
-```
-
-A `success=True` from `/follow_face` only means the arm switched mode. If nothing moves, check the
-chain above with `ros2 topic hz`, one link at a time.
-
-### task_manager does not depend on manipulation
-
-`task_manager` must build without any manipulation package, so the integration container stays small:
-
-- It talks to manipulation only through services and actions typed in `frida_interfaces` / `std_srvs`.
-  The gripper goes through `/manipulation/gripper/set_state`, not the xArm's `/xarm/set_tgpio_digital`.
-- No `xarm_msgs` in `task_manager/package.xml` or `CMakeLists.txt`.
-- `task_manager` still *runs* `xarm_utils` (shelf heights), which pulls `xarm_msgs` in through
-  `--packages-up-to`, so `docker/integration/run.sh` passes `--packages-ignore xarm_msgs`.
-- Nothing in manipulation depends on `task_manager` (`manipulation_general` dropped that `<depend>`,
-  and the follow nodes use `get_logger()` instead of `task_manager`'s `Logger`).
-
-The old copies in `task_manager/scripts/misc/` still import `xarm_msgs` and will not run in the
-integration container. Nothing launches them.
+`follow_face_node` (`/follow_face`) and `follow_person_controller` (`/follow_person`) live in `manipulation_general`; they were moved here from `task_manager`.
+While either one is active, the xArm is in velocity mode (4), so turn it off before sending MoveIt goals.
+Face following also needs `face_recognition` enabled (it starts paused). If the arm doesn't move, check `ros2 topic hz /vision/follow_face`.
 
 ---
 
