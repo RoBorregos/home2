@@ -1,13 +1,11 @@
 #!/bin/bash
-# Fase 1.1 - Container & DDS host infrastructure checks.
-# Reuses color helpers from check_nodes.sh (source_colors must be called first).
+# Container and host DDS checks. Needs source_colors from check_nodes.sh.
 
 EXPECTED_RMEM_MAX=2147483647
 CYCLONE_XML_PATH="/etc/cyclonedds.xml"
 CYCLONE_SYSCTL_PATH="/etc/sysctl.d/60-cyclonedds-buffers.conf"
 CYCLONE_ENV_PATH="/etc/cyclonedds.env"
 
-# Track infra failures globally so the final summary can correlate with missing nodes.
 declare -gA INFRA_FAILED_AREAS=()
 INFRA_DDS_OK="unknown"
 
@@ -29,8 +27,7 @@ _shm_expected() {
     return 1
 }
 
-# check_containers <nameref to associative array> <area title>
-# Reads the "containers" key from a *_INFRA assoc array and checks each via docker ps.
+# check_containers <*_INFRA array name> <area title>
 check_containers() {
     local -n INFRA_MAP=$1
     local AREA_TITLE="${2:-Area}"
@@ -53,7 +50,7 @@ check_containers() {
     for container in $CONTAINERS; do
         total=$((total + 1))
         local status
-        status=$(docker ps -a --filter "name=^${container}$" --format '{{.Status}}' 2>/dev/null)
+        status=$(docker ps -a --filter "name=^${container}" --format '{{.Status}}' 2>/dev/null | head -n1)
 
         if [ -z "$status" ]; then
             echo -e "${RED} ⨯ ${container} (not created — run \`./run.sh\` for the area)${NC}"
@@ -80,8 +77,6 @@ check_containers() {
     return 0
 }
 
-# check_dds_host: validates host-side CycloneDDS config + kernel buffers.
-# Run once at the start of status.sh.
 check_dds_host() {
     _print_header "DDS Host Config"
     local ok=true
@@ -109,12 +104,7 @@ check_dds_host() {
         ok=false
     fi
 
-    if [ "${RMW_IMPLEMENTATION:-}" = "rmw_cyclonedds_cpp" ]; then
-        echo -e "${GREEN} ✓ RMW_IMPLEMENTATION = rmw_cyclonedds_cpp${NC}"
-    else
-        echo -e "${RED} ⨯ RMW_IMPLEMENTATION = '${RMW_IMPLEMENTATION:-unset}' (expected rmw_cyclonedds_cpp)${NC}"
-        ok=false
-    fi
+    echo -e "${BLUE} • RMW_IMPLEMENTATION = ${RMW_IMPLEMENTATION:-default}${NC}"
 
     if [ -f "$CYCLONE_ENV_PATH" ]; then
         local iface
@@ -152,7 +142,6 @@ check_dds_host() {
     fi
 }
 
-# print_infra_summary: end-of-run hint correlating infra failures with the missing nodes.
 print_infra_summary() {
     if [ "$INFRA_DDS_OK" = "fail" ] || [ ${#INFRA_FAILED_AREAS[@]} -gt 0 ]; then
         _print_header "Diagnóstico rápido"

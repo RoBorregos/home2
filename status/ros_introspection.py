@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
+INTERNAL_TOPICS = {"/parameter_events", "/rosout"}
 CRITICAL_TOPICS_FILE = (
     Path(__file__).resolve().parent / "configs" / "critical_topics.yaml"
 )
@@ -29,7 +30,7 @@ def _ensure_rclpy():
     except ImportError as e:
         raise RuntimeError(
             "rclpy/rosidl_runtime_py not found. "
-            "Source ROS 2 first: source /opt/ros/humble/setup.bash"
+            "Source ROS 2 first: source /opt/ros/jazzy/setup.bash"
         ) from e
     _rclpy = rclpy
     _get_message = get_message
@@ -123,6 +124,7 @@ def snapshot(hz_window: float = 1.0) -> RosSnapshot:
         snap.nodes = sorted(
             f"{ns.rstrip('/')}/{n}" if ns and ns != "/" else f"/{n}"
             for n, ns in node.get_node_names_and_namespaces()
+            if n != "frida_status_probe"
         )
 
         critical = _load_critical_topics()
@@ -137,6 +139,8 @@ def snapshot(hz_window: float = 1.0) -> RosSnapshot:
             pubc = node.count_publishers(tname)
             subc = node.count_subscribers(tname)
             snap.topics[tname] = TopicInfo(tname, ttypes, pubc, subc)
+            if tname in INTERNAL_TOPICS:
+                continue
             if pubc == 0 and subc > 0:
                 snap.orphans_no_pub.append(tname)
             elif subc == 0 and pubc > 0:

@@ -37,7 +37,6 @@
   <!-- Local Packages Dependencies -->
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
-  <depend>dashgo_driver</depend>
   <depend>map_context</depend>
   <depend>omnidriver</depend>
   <!-- Action server move -->

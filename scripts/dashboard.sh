@@ -1,17 +1,17 @@
 #!/bin/bash
-# Live FRIDA status dashboard wrapper.
-# - Sources ROS 2 if not yet sourced so rclpy is importable.
-# - Sets PYTHONPATH so `python3 -m status.dashboard` finds the package.
-# - Forwards all args (mirror of scripts/status.sh): [area] [task] or [task].
+# Live FRIDA status dashboard. Usage: scripts/dashboard.sh [area] --<task> [run.sh flags]
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if [ -z "$ROS_DISTRO" ] && [ -f /opt/ros/humble/setup.bash ]; then
+if [ -z "$ROS_DISTRO" ] && [ -f /opt/ros/jazzy/setup.bash ]; then
   # shellcheck disable=SC1091
-  source /opt/ros/humble/setup.bash
+  source /opt/ros/jazzy/setup.bash
+fi
+
+if ! python3 -c "import rich, yaml" 2>/dev/null; then
+  echo "Missing dashboard deps. Install with: sudo apt install python3-rich python3-yaml"
+  exit 1
 fi
 
 export PYTHONPATH="$PROJECT_ROOT${PYTHONPATH:+:$PYTHONPATH}"
-
 exec python3 -m status.dashboard "$@"

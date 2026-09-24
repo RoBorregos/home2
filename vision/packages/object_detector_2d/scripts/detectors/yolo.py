@@ -5,11 +5,20 @@ import shutil
 
 from .base import DetectorModel, Detection
 from .registry import ModelRegistry, MODELS_PATH
+from ultralytics import YOLO
+
+
+def _is_tensorrt_available() -> bool:
+    try:
+        import tensorrt  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
 
 
 def _load_yolo_trt(model_path: str):
     """Load YOLO with automatic TensorRT export for Orin AGX."""
-    from ultralytics import YOLO
 
     cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
     engine_name = os.path.basename(model_path).replace(".pt", ".engine")
@@ -27,6 +36,11 @@ def _load_yolo_trt(model_path: str):
         return YOLO(engine_path, task="detect")
 
     model = YOLO(model_path)
+
+    if not _is_tensorrt_available():
+        print("[TRT] TensorRT not available, using PyTorch model")
+        return model
+
     try:
         print(f"[TRT] Exporting {model_path} to TensorRT (first run only)...")
         model.export(format="engine", half=True, device=0, imgsz=640)
@@ -44,7 +58,11 @@ def _load_yolo_trt(model_path: str):
 class YoloModel(DetectorModel):
     def load(self, config: dict):
         model_path = MODELS_PATH + config["filename"]
-        self.model = _load_yolo_trt(model_path)
+        use_trt = config.get("use_trt", True)
+        if use_trt:
+            self.model = _load_yolo_trt(model_path)
+        else:
+            self.model = YOLO(model_path, task="detect")
         self.conf = config.get("conf", 0.6)
         print(f"[YoloModel:{self.name}] loaded from {model_path}")
 

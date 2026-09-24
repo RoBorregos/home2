@@ -1,7 +1,4 @@
-"""Python port of the host-side checks in status/check_infra.sh.
-
-Kept minimal; the bash version remains authoritative for the one-shot
-`scripts/status.sh`. If this list grows, consolidate to a single source."""
+"""Host DDS and container checks for the dashboard (mirror of status/check_infra.sh)."""
 
 from __future__ import annotations
 
@@ -24,7 +21,7 @@ class DdsHealth:
     rmem_max: int
     rmw_impl: str
     cyclone_iface: str
-    iceoryx_roudi_status: str  # "" if not expected, "running", or "missing"
+    iceoryx_roudi_status: str  # "" when SHM is not expected
 
     @property
     def ok(self) -> bool:
@@ -32,7 +29,6 @@ class DdsHealth:
             self.cyclone_xml
             and self.sysctl_conf
             and self.rmem_max >= EXPECTED_RMEM_MAX
-            and self.rmw_impl == "rmw_cyclonedds_cpp"
             and self.iceoryx_roudi_status != "missing"
         )
 
@@ -40,7 +36,7 @@ class DdsHealth:
 @dataclass
 class ContainerStatus:
     name: str
-    state: str  # "up", "unhealthy", "exited", "missing", "docker-missing"
+    state: str  # up | unhealthy | exited | missing | docker-missing
     detail: str = ""
 
     @property
@@ -96,6 +92,7 @@ def _shm_expected() -> bool:
 
 
 def _container_state(name: str) -> ContainerStatus:
+    """Prefix match so "home2-display" also finds "home2-display-l4t"."""
     try:
         out = subprocess.run(
             [
@@ -103,7 +100,7 @@ def _container_state(name: str) -> ContainerStatus:
                 "ps",
                 "-a",
                 "--filter",
-                f"name=^{name}$",
+                f"name=^{name}",
                 "--format",
                 "{{.Status}}",
             ],
@@ -111,6 +108,7 @@ def _container_state(name: str) -> ContainerStatus:
             text=True,
             timeout=2,
         ).stdout.strip()
+        out = out.splitlines()[0] if out else ""
     except FileNotFoundError:
         return ContainerStatus(name, "docker-missing", "docker CLI not found")
 

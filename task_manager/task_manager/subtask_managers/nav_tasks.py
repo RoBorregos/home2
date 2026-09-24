@@ -509,6 +509,87 @@ class NavigationTasks:
         goal.pose.orientation = cur.pose.orientation
         return self.move_to_pose(goal)
 
+    # ── Point/bearing helpers (managers must not touch tf2/atan2 directly) ──
+
+    def to_map_point(self, point_stamped):
+        """Transform a PointStamped to the map frame using the CURRENT TF.
+        Must be called while the robot is still at the pose where the point
+        was detected (detections are stamped with time 0 = latest). Returns
+        None if the point is empty or the transform fails."""
+        if point_stamped is None or point_stamped.header.frame_id == "":
+            return None
+        if point_stamped.header.frame_id == "map":
+            return point_stamped
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                "map",
+                point_stamped.header.frame_id,
+                rclpy.time.Time(),
+                timeout=rclpy.duration.Duration(seconds=1.0),
+            )
+            return do_transform_point(point_stamped, tf)
+        except Exception as e:
+            CLog.nav(
+                self.node,
+                "ERROR",
+                f"to_map_point: TF {point_stamped.header.frame_id}->map failed: {e}",
+            )
+            return None
+
+    def bearing_to(self, point_stamped, frame: str = "base_link"):
+        """Bearing (degrees) from `frame` to a PointStamped in any TF frame.
+        +deg = target to the right, matching the arm's pan_to convention.
+        Returns None if the transform fails."""
+        if point_stamped is None:
+            return None
+        try:
+            tf = self.tf_buffer.lookup_transform(
+                frame, point_stamped.header.frame_id, rclpy.time.Time()
+            )
+            local_point = do_transform_point(point_stamped, tf)
+        except Exception as e:
+            CLog.nav(self.node, "ERROR", f"bearing_to: TF to {frame} failed: {e}")
+            return None
+        return -math.degrees(math.atan2(local_point.point.y, local_point.point.x))
+
+    def rotate_in_place(self, degrees: float):
+        """Rotate the omni base in place by `degrees` (map-frame yaw change)."""
+        status, cur = self.get_current_pose()
+        if status != Status.EXECUTION_SUCCESS or cur is None:
+            return Status.EXECUTION_ERROR
+        yaw = self._yaw_from_quaternion(cur.pose.orientation)
+        cur.pose.orientation = self._yaw_to_quaternion(yaw + math.radians(degrees))
+        status, _ = self.move_to_pose(cur)
+        return status
+
+    def face_point(self, point):
+        """Rotate the base in place to face a map-frame point (or PointStamped
+        in any TF frame). Used when a target's bearing is beyond the arm's pan
+        range and a plain rotation (not a full approach) is enough."""
+        xy = self._resolve_map_xy(point)
+        if xy is None:
+            return Status.EXECUTION_ERROR
+        status, cur = self.get_current_pose()
+        if status != Status.EXECUTION_SUCCESS or cur is None:
+            return Status.EXECUTION_ERROR
+        px, py = xy
+        yaw = math.atan2(py - cur.pose.position.y, px - cur.pose.position.x)
+        cur.pose.orientation = self._yaw_to_quaternion(yaw)
+        status, _ = self.move_to_pose(cur)
+        return status
+
+    def is_ahead_of(self, pose, point) -> bool:
+        """True if map-frame `point` (PointStamped/Point/(x, y)) lies in the
+        forward half-plane of `pose`'s facing direction. Used to filter
+        detections to a sector in front of a reference pose."""
+        xy = self._resolve_map_xy(point)
+        if xy is None:
+            return True
+        yaw = self._yaw_from_quaternion(pose.pose.orientation)
+        dx = xy[0] - pose.pose.position.x
+        dy = xy[1] - pose.pose.position.y
+        return dx * math.cos(yaw) + dy * math.sin(yaw) >= 0.0
+
 
 if __name__ == "__main__":
     rclpy.init()

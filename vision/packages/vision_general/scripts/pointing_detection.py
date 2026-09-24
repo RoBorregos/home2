@@ -10,7 +10,7 @@ from frida_interfaces.srv import DetectPointingObject, SetPointingObjectClasses
 from frida_interfaces.msg import ObjectDetectionArray
 import cv2
 import numpy as np
-from vision_general.utils.trt_utils import load_yolo_trt
+from utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     ZERO_SHOT_DETECTIONS_TOPIC,

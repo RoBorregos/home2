@@ -33,7 +33,7 @@ esac
 # baml_client — edit baml_src and regenerate.
 CLEAN_BAML_CLIENT="rm -rf /workspace/src/task_manager/task_manager/utils/baml_client /workspace/src/hri/packages/nlp/nlp/assets/baml_client"
 GENERATE_BAML_CLIENT="$CLEAN_BAML_CLIENT && baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_ROS="source /opt/ros/jazzy/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 COLCON="colcon build --symlink-install --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
@@ -78,7 +78,21 @@ case $TASK in
         ;;
 esac
 
-COMMAND="$SETUP && $RUN"
+# Propagate TEST_NLP / NLP_* into the container for --test-hri benchmark mode.
+NLP_EXPORTS=""
+if [ -n "${TEST_NLP:-}" ]; then
+    NLP_EXPORTS="export TEST_NLP=$(printf '%q' "$TEST_NLP")"
+    for v in NLP_MODEL_ALIAS NLP_MODEL_NAME NLP_MODEL_FILE NLP_OLLAMA_URL NLP_TASKS NLP_RUNS NLP_RESULTS_DIR NLP_BACKEND; do
+        val="${!v:-}"
+        NLP_EXPORTS="$NLP_EXPORTS && export $v=$(printf '%q' "$val")"
+    done
+fi
+
+if [ -n "$NLP_EXPORTS" ]; then
+    COMMAND="$NLP_EXPORTS && $SETUP && $RUN"
+else
+    COMMAND="$SETUP && $RUN"
+fi
 
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading integration image to DockerHub (env: ${ENV_TYPE})..."

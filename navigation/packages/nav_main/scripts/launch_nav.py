@@ -9,7 +9,7 @@ Non-interactive mode (docker compose): prints nav_central to stdout,
   0 = nav_central only (default)
   1 = nav2 container
   2 = rtabmap container
-  3 = hardware (dashgo, lidar, ekf)
+  3 = hardware (lidar, ekf)
   4 = all logs
   5 = launch messages only
 """
@@ -38,7 +38,7 @@ VIEW_LOG_DIR = '/tmp/nav_views'
 LOG_FILE_KEYWORDS = {
     'nav2': ['nav2_container'],
     'rtabmap': ['rtabmap_container', 'rgbd_sync'],
-    'hardware': ['dashgo', 'sllidar', 'ekf', 'joy_container'],
+    'hardware': ['sllidar', 'ekf', 'joy_container'],
 }
 
 # Which stdout patterns belong to which view
@@ -48,7 +48,7 @@ STDOUT_VIEWS = {
              'behavior_server', 'bt_navigator', 'velocity_smoother', 'lifecycle_manager',
              'local_costmap', 'global_costmap', 'MPPIController'],
     'rtabmap': ['rtabmap_container', 'rtabmap', 'rgbd_sync'],
-    'hardware': ['dashgo', 'DashgoDriver', 'sllidar', 'ekf_node', 'PlayStation', 'joy'],
+    'hardware': ['sllidar', 'ekf_node', 'PlayStation', 'joy'],
     'launch': ['[INFO] [launch', 'process started', 'process died', 'ERROR', 'FATAL'],
 }
 

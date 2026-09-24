@@ -314,8 +314,7 @@ run_task() {
     fi
   done
 
-  # Status dashboard window (Fase 1.3): live view re-using the same task args.
-  local DASHBOARD_CMD="bash scripts/dashboard.sh $*"
+  local DASHBOARD_CMD="ORIN_SERVER_AREAS='${ORIN_SERVER_AREAS}' bash scripts/dashboard.sh $*"
   if [ "$local_first" = true ]; then
     screen -dmS "$SESSION_NAME" -t "status" bash -c "$DASHBOARD_CMD; exec bash"
   else

@@ -70,7 +70,6 @@ from task_manager.subtask_managers.hri_dataclasses import (
     HandItem,
     Location,
 )
-from task_manager.subtask_managers.hri_hand import HRIHand
 from task_manager.utils.baml_client.sync_client import b
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
@@ -254,8 +253,6 @@ class HRITasks:
             Task.DEBUG: all_services,
         }
 
-        self.hand = HRIHand(self)
-
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
@@ -272,6 +269,8 @@ class HRITasks:
         file_path = os.path.join(package_share_directory, "data/names.json")
         with open(file_path, "r") as file:
             self.names = json.load(file)["names"]
+
+        self.names_hotwords = " ".join(self.names)
 
         if not self.mock_data:
             self.setup_services()
@@ -474,8 +473,11 @@ class HRITasks:
         self.cancel_hear_action()
 
         result = goal_future.result().result
+        # On silence or too-short audio the transcription can come back as the hotwords themselves.
+        transcription = result.transcription.strip()
+        heard_text = "" if transcription == self.last_hotwords.strip() else transcription
         execution_status = (
-            Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
+            Status.EXECUTION_SUCCESS if len(heard_text) > 0 else Status.TARGET_NOT_FOUND
         )
 
         word_confidences = (
@@ -487,7 +489,7 @@ class HRITasks:
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
                 self.node,
-                f"hearing result: {result.transcription}",
+                f"hearing result: {heard_text}",
             )
             if word_confidences:
                 Logger.info(
@@ -498,7 +500,7 @@ class HRITasks:
         else:
             Logger.warn(self.node, "hearing result: no text heard")
 
-        return execution_status, result.transcription, word_confidences
+        return execution_status, heard_text, word_confidences
 
     def hear_streaming(
         self,
@@ -865,19 +867,6 @@ class HRITasks:
         future = self.grammar_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
-
-    @service_check("", (Status.SERVICE_CHECK, ("coke", "left")), TIMEOUT)
-    def get_location_orientation(self, room) -> tuple[Status, tuple[str, str]]:
-        """
-        Method to get the location and orientation of where to place the object
-        Returns:
-            tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
-            The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
-        """
-
-        return self.hand.get_complete_placement_info(
-            room=room,
-        )
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []))
     def command_interpreter(

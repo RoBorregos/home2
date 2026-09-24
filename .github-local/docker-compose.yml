@@ -5,4 +5,4 @@ services:
     volumes:
       - ../:/ros2_ws
     # add --progress=plain to avoid buffering
-    command: ["/bin/bash", "-c", "source /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && colcon build --symlink-install"]
+    command: ["/bin/bash", "-c", "source /opt/ros/jazzy/setup.sh && ./.github/workflows/setup.sh && export GPD_INSTALL_DIR=/ros2_ws/install/gpd && export GITHUB_ACTIONS=false && colcon build --symlink-install --packages-ignore realsense_gazebo_plugin xarm_gazebo vamp_moveit_plugin"]

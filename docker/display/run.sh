@@ -7,8 +7,7 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-BUILD_DISPLAY=""
-OPEN_DISPLAY=""
+DISPLAY_BACKUP=""
 
 COMPOSE="docker-compose.yaml"
 parse_common_flags "$COMPOSE" "${ARGS[@]}"
@@ -16,8 +15,8 @@ parse_common_flags "$COMPOSE" "${ARGS[@]}"
 # Parse display-specific flags
 for arg in "${ARGS[@]}"; do
   case "$arg" in
-    "--build-display") BUILD_DISPLAY="true" ;;
-    "--open-display")  OPEN_DISPLAY="true" ;;
+    # Fall back to the legacy Next.js display instead of the default PyQt UI.
+    "--backup") DISPLAY_BACKUP="true" ;;
   esac
 done
 
@@ -27,52 +26,99 @@ setup_common_env "display" ".env"
 
 add_or_update_variable .env "ENV_TYPE" "$ENV_TYPE"
 
+# Prefer the physical display when launching from a shell without DISPLAY.
+# XRDP/TTY sessions fall back to their own Xauthority display.
+DISPLAY_VALUE="${DISPLAY:-}"
+XAUTHORITY_FILE="${XAUTHORITY:-$HOME/.Xauthority}"
+XAUTHORITY_HOST="$XAUTHORITY_FILE"
+PHYSICAL_DISPLAY=""
+PHYSICAL_XAUTHORITY=""
+for shell_pid in $(pgrep -u "$(id -u)" -x gnome-shell 2>/dev/null); do
+  PHYSICAL_DISPLAY=$(tr '\0' '\n' < "/proc/$shell_pid/environ" 2>/dev/null | sed -n 's/^DISPLAY=//p' | head -n 1)
+  PHYSICAL_XAUTHORITY=$(tr '\0' '\n' < "/proc/$shell_pid/environ" 2>/dev/null | sed -n 's/^XAUTHORITY=//p' | head -n 1)
+  [ -n "$PHYSICAL_DISPLAY" ] && break
+done
+if [ -z "$DISPLAY_VALUE" ] && [ -n "$PHYSICAL_DISPLAY" ] && [ -r "$PHYSICAL_XAUTHORITY" ]; then
+  DISPLAY_VALUE="$PHYSICAL_DISPLAY"
+  XAUTHORITY_HOST="$PHYSICAL_XAUTHORITY"
+elif [ -z "$DISPLAY_VALUE" ] && [ -S /tmp/.X11-unix/X0 ]; then
+  PHYSICAL_XAUTHORITY=$(ps -eo args= | sed -n 's|.*Xorg .* -auth \([^ ]*\).*|\1|p' | head -n 1)
+  PHYSICAL_XAUTHORITY_COPY="/tmp/home2-display-xauthority"
+  if [ -n "$PHYSICAL_XAUTHORITY" ] && sudo -n install -o "$(id -u)" -g "$(id -g)" -m 600 "$PHYSICAL_XAUTHORITY" "$PHYSICAL_XAUTHORITY_COPY" 2>/dev/null; then
+    DISPLAY_VALUE=":0"
+    XAUTHORITY_HOST="$PHYSICAL_XAUTHORITY_COPY"
+  fi
+fi
+if [ -z "$DISPLAY_VALUE" ] && [ -r "$XAUTHORITY_FILE" ] && command -v xauth >/dev/null 2>&1; then
+  DISPLAY_NUMBER=$(xauth -f "$XAUTHORITY_FILE" list 2>/dev/null | sed -n 's|.*/unix:\([0-9][0-9]*\).*|\1|p' | head -n 1)
+  if [ -n "$DISPLAY_NUMBER" ]; then
+    DISPLAY_VALUE=":$DISPLAY_NUMBER"
+  fi
+fi
+add_or_update_variable .env "DISPLAY" "${DISPLAY_VALUE:-:0}"
+add_or_update_variable .env "XAUTHORITY_HOST" "$XAUTHORITY_HOST"
+
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable .env "RUNTIME" "nvidia"
-fi
-
-# Install deps + build Next.js bundle if missing (or forced)
-DISPLAY_DIR="../../hri/packages/display/display"
-if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
-  echo "Installing dependencies and building display inside temporary container..."
-  docker compose -f "$COMPOSE" run $BUILD_IMAGE --rm --entrypoint "" display-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
 fi
 
 #_________________________RUN_________________________
 
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_ROS="source /opt/ros/jazzy/setup.bash"
 CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 PACKAGES="display"
-RUN="ros2 launch display display_launch.py"
+
+# Map run.sh task flags to the PyQt display's task views (mirrors docker/hri/run.sh).
+DISPLAY_TASK="${TASK#--}"
+case "$DISPLAY_TASK" in
+  "dlc")               DISPLAY_TASK="laundry" ;;
+  "storing-groceries") DISPLAY_TASK="storing_groceries" ;;
+  "finals")            DISPLAY_TASK="default" ;;
+  "safety")            DISPLAY_TASK="ppc" ;;
+  "backup"|"recreate"|"build"|"build-image"|"clean"|"upload-image"|"cpu"|"cuda"|"l4t"|"") DISPLAY_TASK="default" ;;
+esac
 
 if [ "$BUILD" == "true" ]; then
     BUILD_COMMAND="colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to $PACKAGES &&"
 fi
 
-COMMAND="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
+if [ "$DISPLAY_BACKUP" == "true" ]; then
+  # Legacy Next.js display: install deps + build bundle if missing, then serve
+  # it behind rosbridge/web_video_server and open it in a kiosk browser window.
+  RUN="ros2 launch display display_launch_backup.py"
 
-cleanup() {
-  [ -n "$wait_for_display_pid" ] && kill "$wait_for_display_pid" 2>/dev/null || true
-}
-trap cleanup SIGINT SIGTERM
+  DISPLAY_DIR="../../hri/packages/display/display"
+  if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ]; then
+    echo "Installing dependencies and building the legacy display inside a temporary container..."
+    docker compose -f "$COMPOSE" run $BUILD_IMAGE --rm --entrypoint "" display-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
+  fi
 
-wait_and_launch_display() {
-  until curl --output /dev/null --silent --head --fail http://localhost:3000; do
-    sleep 1
-  done
-  chmod +x open-display.bash
-  local task_route="${TASK#--}"
-  # The safety routine reuses the HRIC display page.
-  [ "$task_route" = "safety" ] && task_route="hric"
-  bash open-display.bash "$task_route"
-}
+  cleanup() {
+    [ -n "$wait_for_display_pid" ] && kill "$wait_for_display_pid" 2>/dev/null || true
+  }
+  trap cleanup SIGINT SIGTERM
 
-if [ -n "$OPEN_DISPLAY" ]; then
+  wait_and_launch_display() {
+    until curl --output /dev/null --silent --head --fail http://localhost:3000; do
+      sleep 1
+    done
+    chmod +x open-display.bash
+    # The safety routine reuses the HRIC display page.
+    local task_route="$DISPLAY_TASK"
+    [ "$TASK" = "--safety" ] && task_route="hric"
+    [ "$task_route" = "default" ] && task_route=""
+    bash open-display.bash "$task_route"
+  }
+
   wait_and_launch_display &
   wait_for_display_pid=$!
+else
+  RUN="ros2 launch display display_launch.py task:=${DISPLAY_TASK}"
 fi
+
+COMMAND="$SOURCE_ROS && $SOURCE_INTERFACES && $CYCLONE_SOURCE && $BUILD_COMMAND source ~/.bashrc && $RUN"
 
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading display image to DockerHub (env: ${ENV_TYPE})..."
