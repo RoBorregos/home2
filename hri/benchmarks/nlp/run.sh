@@ -3,19 +3,22 @@
 #
 # Both backends bind port 11434 and are started one at a time, so the single
 # Jetson GPU is never shared between them.
-# Accuracy tasks require the HRI NLP ROS services to already be running;
-# is_coherent and llm_wrapper can run as standalone performance-only tasks.
+# Accuracy tasks require the HRI NLP ROS services to already be running, but the
+# HRI stack must be started WITHOUT its llama service, which would hold 11434:
+#   cd docker/hri && docker compose -f compose/docker-compose-l4t.yml \
+#       up hri-ros postgres tts stt
 #
 # Usage:
-#   ./run.sh --backend both --model qwen3-4b --runs 5
-#   ./run.sh --backend llamacpp                 # menu picks the model
+#   ./run.sh --model qwen3.5-4b --runs 20       # both backends, same GGUF
+#   ./run.sh --backend llamacpp --model qwen3.5-4b
+#   ./run.sh                                    # menu picks the model
 #   ./run.sh --download-only --all              # just fetch GGUFs
 #   ./run.sh --delete                           # delete-cached menu
 #
 # Flags:
-#   --backend  llamacpp | ollama | both   (default: llamacpp)
+#   --backend  llamacpp | ollama | both   (default: both)
 #   --model    registry name or index     (default: interactive menu)
-#   --alias    API model name              (default: qwen3, matching HRI config)
+#   --alias    API model name              (default: frida-llm, matching HRI config)
 #   --runs     timed runs per task        (default: 20, after 1 discarded warmup)
 #   --tasks    comma-separated task list  (default: all)
 #   --download-only / --all / --delete / --no-build / --keep-up
@@ -28,15 +31,17 @@ ASSETS_DIR="$REPO_ROOT/hri/packages/nlp/assets"
 REGISTRY="$SCRIPT_DIR/models.json"
 HRI_COMPOSE_DIR="$REPO_ROOT/docker/hri/compose"
 BENCH_COMPOSE="$HRI_COMPOSE_DIR/bench-l4t.yaml"
-COMPOSE_FILES=(-f llamacpp-l4t.yaml -f ollama-l4t.yaml -f bench-l4t.yaml)
-COMPOSE_ENV="$HRI_COMPOSE_DIR/.env"
+# Model overrides go in bench.env, not compose/.env: that file belongs to the
+# production launcher, which truncates and regenerates it on every run.
+BENCH_ENV="$HRI_COMPOSE_DIR/bench.env"
+COMPOSE_FILES=(--env-file bench.env -f llamacpp-l4t.yaml -f ollama-l4t.yaml -f bench-l4t.yaml)
 RESULTS_DIR="$SCRIPT_DIR/results"
 CONTAINER_RESULTS_DIR="/workspace/src/hri/benchmarks/nlp/results"
 PORT=11434
 
-BACKEND="llamacpp"
+BACKEND="both"
 MODEL_SELECT=""
-MODEL_ALIAS="qwen3"
+MODEL_ALIAS="frida-llm"
 RUNS=20
 TASKS="is_coherent,extract_data,is_positive,is_negative,llm_wrapper"
 SELECT_ALL=false
@@ -57,7 +62,7 @@ while [[ $# -gt 0 ]]; do
         --download-only) DOWNLOAD_ONLY=true; shift ;;
         --no-build)      BUILD_FLAG=""; shift ;;
         --keep-up)       KEEP_UP=true; shift ;;
-        -h|--help)       sed -n '2,19p' "$0"; exit 0 ;;
+        -h|--help)       sed -n '2,24p' "$0"; exit 0 ;;
         *) echo "Unknown flag: $1"; exit 1 ;;
     esac
 done
@@ -214,6 +219,16 @@ container_for_backend() {
         || echo "home2-hri-ollama-l4t"
 }
 
+detect_backend() {
+    if curl -sf "http://localhost:$PORT/api/version" >/dev/null 2>&1; then
+        echo ollama
+    elif curl -sf "http://localhost:$PORT/props" >/dev/null 2>&1; then
+        echo llamacpp
+    else
+        echo none
+    fi
+}
+
 wait_healthy() {
     local backend="$1"
     local probe="http://localhost:$PORT/health"
@@ -232,10 +247,10 @@ wait_healthy() {
 
 trap 'if ! $KEEP_UP; then echo; echo "Stopping backends..."; stop_backends; fi' EXIT
 
-upsert_env "$COMPOSE_ENV" "ROLE" "bench"
-upsert_env "$COMPOSE_ENV" "LLAMA_MODEL_FILE" "$MODEL_FILE"
-upsert_env "$COMPOSE_ENV" "LLAMA_ALIAS" "$ALIAS"
-upsert_env "$COMPOSE_ENV" "LLAMA_CTX_SIZE" "$MODEL_CTX_SIZE"
+upsert_env "$BENCH_ENV" "ROLE" "bench"
+upsert_env "$BENCH_ENV" "LLAMA_MODEL_FILE" "$MODEL_FILE"
+upsert_env "$BENCH_ENV" "LLAMA_ALIAS" "$ALIAS"
+upsert_env "$BENCH_ENV" "LLAMA_CTX_SIZE" "$MODEL_CTX_SIZE"
 
 echo
 echo "Model:    $MODEL_NAME ($MODEL_FILE, ctx=$MODEL_CTX_SIZE, alias=$ALIAS)"
@@ -246,6 +261,17 @@ echo "Compose:  HRI llama/Ollama definitions + benchmark override"
 
 REPORTS=()
 FAILED=false
+
+# ROLE tells our own --keep-up leftover apart from HRI's production llama.cpp.
+if [[ -n "$(docker ps -q -f name=home2-hri-llamacpp-l4t 2>/dev/null)" ]] && \
+   [[ "$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' \
+        home2-hri-llamacpp-l4t 2>/dev/null | sed -n 's/^ROLE=//p')" != "bench" ]]; then
+    echo "ERROR: home2-hri-llamacpp-l4t is running for HRI and owns port $PORT."
+    echo "The benchmark needs that port for both backends. Start HRI without it:"
+    echo "  cd docker/hri && docker compose -f compose/docker-compose-l4t.yml \\"
+    echo "      up hri-ros postgres tts stt"
+    exit 1
+fi
 
 for backend in "${BACKENDS[@]}"; do
     echo
@@ -260,10 +286,22 @@ for backend in "${BACKENDS[@]}"; do
         docker compose "${COMPOSE_FILES[@]}" --profile bench up -d "$service")
     wait_healthy "$backend"
 
+    serving="$(detect_backend)"
+    if [[ "$serving" != "$backend" ]]; then
+        echo "  ERROR: expected $backend on :$PORT but found '$serving' — skipping leg."
+        docker logs "$(container_for_backend "$backend")" 2>&1 | tail -20
+        FAILED=true
+        continue
+    fi
+    echo "  Serving: $serving"
+
     before="$(ls -1 "$RESULTS_DIR"/benchmark_*.json 2>/dev/null | sort || true)"
 
     echo "  Running accuracy + perf via integration container..."
     set +e
+    # The root run.sh sources lib.sh and writes docker/.env by relative path,
+    # so it only works from the repo root.
+    (cd "$REPO_ROOT" && \
     TEST_NLP=true \
     NLP_BACKEND="$backend" \
     NLP_MODEL_ALIAS="$ALIAS" \
@@ -273,7 +311,7 @@ for backend in "${BACKENDS[@]}"; do
     NLP_TASKS="$TASKS" \
     NLP_RUNS="$RUNS" \
     NLP_RESULTS_DIR="$CONTAINER_RESULTS_DIR" \
-        "$REPO_ROOT/run.sh" integration --test-hri $BUILD_FLAG
+        ./run.sh integration --test-hri $BUILD_FLAG)
     rc=$?
     set -e
     if [[ $rc -ne 0 ]]; then

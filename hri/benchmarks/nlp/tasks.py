@@ -23,6 +23,7 @@ if _NLP_PKG_PARENT not in sys.path:
     sys.path.insert(0, _NLP_PKG_PARENT)
 
 from nlp.assets.dialogs import (  # noqa: E402
+    NO_THINKING,
     get_extract_data_args,
     get_is_answer_negative_args,
     get_is_answer_positive_args,
@@ -116,6 +117,7 @@ def _run_timed(
         "stream_options": {"include_usage": True},
         "max_tokens": max_tokens,
         "temperature": 0,
+        **NO_THINKING,
     }
     schema_req = _schema_request(schema_model)
     schema_mode = "none"
