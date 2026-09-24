@@ -27,7 +27,4 @@ services:
       OLLAMA_NUM_PARALLEL: "1"
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
-      # Without this the mounted tegra libs are never found and Ollama runs on CPU,
-      # which would silently turn the comparison into GPU llama.cpp vs CPU Ollama.
-      LD_LIBRARY_PATH: /usr/lib/aarch64-linux-gnu/tegra
     entrypoint: ["/bin/bash", "/scripts/bench-entrypoint.sh"]
