@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from aiohttp import request
+
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
@@ -14,7 +16,7 @@ from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
 from rtabmap_msgs.srv import GetMap
 from std_srvs.srv import Empty, Trigger
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped, TwistStamped
 from nav_msgs.msg import OccupancyGrid
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from std_msgs.msg import Bool
@@ -89,6 +91,7 @@ import re
 # aborted. send_nav_goal keeps retrying (by default forever) until Nav2 reports
 # the goal SUCCEEDED, so a transient abort no longer leaves the robot stranded.
 NAV_GOAL_RETRY_DELAY = 2.0
+APPROACH_DIRECT_ALIGN_RANGE = 2.0
 # Max time to wait for the arm pointer to home back to its normal pose before
 # returning from a nav goal. Bounded so a stuck/absent arm never blocks nav.
 ARM_HOME_TIMEOUT = 10.0
@@ -259,6 +262,7 @@ class Nav_Central(Node):
         self.approach_point_srv = self.create_service(
             ApproachPoint, APPROACH_POINT_SERVICE, self.approach_point_callback,
             callback_group=self.service_group)
+        self.cmd_vel_pub = self.create_publisher(TwistStamped, "/cmd_vel", 10)
 
         # Occupancy grids for approach_point free-space checks: prefer the
         # global costmap (static map + inflation + live obstacles, latched by
@@ -935,7 +939,28 @@ class Nav_Central(Node):
             self.nav_logger("error", f"Approach_Point -> {response.error}")
             return response
 
-        if math.hypot(tx - rx, ty - ry) <= standoff + 0.05:
+        align = (request.align or "").strip().lower()
+        dist = math.hypot(tx - rx, ty - ry)
+
+        if align in ("left", "right") and dist <= APPROACH_DIRECT_ALIGN_RANGE:
+            if not self.rtabmap_loaded:
+                response.success = False
+                response.error = "Navigation not initialized"
+                return response
+            self.nav_logger(
+                "info",
+                f"Approach_Point -> direct parallel approach "
+                f"({dist:.2f} m away, align={align})")
+            response.goal = self._approach_pose(rx, ry, tx, ty)
+            self._retreat_if_docked()
+            self.resume_slam()
+            ok = self._align_parallel(tx, ty, align, request.final_distance)
+            response.success = ok
+            response.error = "" if ok else "parallel alignment failed"
+            self.pause_slam()
+            return response
+
+        if dist <= standoff + 0.05:
             # Already close enough: face the target, never drive into it.
             goal = self._approach_pose(rx, ry, tx, ty)
             self.nav_logger("info", "Approach_Point -> already close, facing target")
@@ -962,9 +987,13 @@ class Nav_Central(Node):
         self._clear_costmaps()
         ok, msg = self.send_nav_goal(goal)
         if ok:
-            # The goal checker can succeed inside xy tolerance without settling
-            # yaw — make sure the base front actually points at the person.
-            self._face_target(tx, ty)
+            if align in ("left", "right"):
+                if not self._align_parallel(tx, ty, align, request.final_distance):
+                    ok, msg = False, "parallel alignment failed"
+            else:
+                # The goal checker can succeed inside xy tolerance without settling
+                # the yaw — make sure the base front actually points at the person.
+                self._face_target(tx, ty)
         response.success = ok
         response.error = msg
         self.pause_slam()
@@ -990,6 +1019,80 @@ class Nav_Central(Node):
         self.nav_logger(
             "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
         self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
+
+    def _publish_cmd(self, vx=0.0, vy=0.0, wz=0.0):
+        t = TwistStamped()
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "base_link"
+        t.twist.linear.x = float(vx)
+        t.twist.linear.y = float(vy)
+        t.twist.angular.z = float(wz)
+        self.cmd_vel_pub.publish(t)
+
+    def _align_parallel(self, tx, ty, side, final_distance, timeout=35.0, rate=0.05):
+        """Final alignment for approach_point(align=left/right): rotate in
+        place until the base is PARALLEL to the target (target abeam at ±90°),
+        then, if final_distance > 0, strafe until base_link sits that many
+        meters from the target, still abeam. Closed loop on map->base_link TF
+        with direct cmd_vel, so the costmaps cannot veto getting close to a
+        target that is itself marked as an obstacle (e.g. the laundry basket).
+        Holonomic base only — the strafe is a no-op on a diffdrive. The
+        timeout covers the direct-approach case too (up to ~2 m of drive at
+        the 0.12 m/s cap plus the initial rotation)."""
+        offset = -math.pi / 2.0 if side == "right" else math.pi / 2.0
+        want_y = -final_distance if side == "right" else final_distance
+        MAX_V, MAX_W = 0.12, 0.5
+        K_LIN, K_ANG = 0.9, 1.5
+        TOL_LIN, TOL_ANG = 0.04, 0.06
+
+        self.nav_logger(
+            "info",
+            f"Approach_Point -> aligning parallel, target on the {side} "
+            f"(final_distance={final_distance:.2f})")
+        elapsed = 0.0
+        rotated = False
+        try:
+            while elapsed < timeout:
+                try:
+                    tf = self.tf_buffer.lookup_transform(
+                        "map", "base_link", rclpy.time.Time(),
+                        timeout=Duration(seconds=0.5))
+                except Exception as e:
+                    self.nav_logger("warn", f"Approach_Point -> align TF failed: {e}")
+                    return False
+                rx, ry = tf.transform.translation.x, tf.transform.translation.y
+                q = tf.transform.rotation
+                yaw = math.atan2(2.0 * (q.w * q.z + q.x * q.y),
+                                 1.0 - 2.0 * (q.y * q.y + q.z * q.z))
+                dx, dy = tx - rx, ty - ry
+                xb = math.cos(yaw) * dx + math.sin(yaw) * dy
+                yb = -math.sin(yaw) * dx + math.cos(yaw) * dy
+                yaw_err = (math.atan2(dy, dx) - offset - yaw + math.pi) % (2.0 * math.pi) - math.pi
+
+                if not rotated:
+                    if abs(yaw_err) <= TOL_ANG:
+                        rotated = True
+                        if final_distance <= 0.0:
+                            break
+                        continue
+                    self._publish_cmd(wz=max(-MAX_W, min(MAX_W, K_ANG * yaw_err)))
+                else:
+                    ex, ey = xb, yb - want_y
+                    if abs(ex) <= TOL_LIN and abs(ey) <= TOL_LIN and abs(yaw_err) <= TOL_ANG:
+                        break
+                    self._publish_cmd(
+                        vx=max(-MAX_V, min(MAX_V, K_LIN * ex)),
+                        vy=max(-MAX_V, min(MAX_V, K_LIN * ey)),
+                        wz=max(-MAX_W, min(MAX_W, K_ANG * yaw_err)))
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=rate))
+                elapsed += rate
+            else:
+                self.nav_logger("warn", "Approach_Point -> parallel alignment timed out")
+                return False
+        finally:
+            self._publish_cmd()
+        self.nav_logger("info", f"Approach_Point -> parallel alignment done (target abeam {side})")
+        return True
 
     def _approach_pose(self, gx, gy, tx, ty):
         """Map-frame PoseStamped at (gx, gy) facing (tx, ty)."""
