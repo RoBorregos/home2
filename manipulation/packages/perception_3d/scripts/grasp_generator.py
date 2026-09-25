@@ -21,8 +21,10 @@ from tf2_ros.transform_listener import TransformListener
 
 from frida_constants.manipulation_constants import (
     GENERATE_GRASPS_SERVICE,
+    GRASP_CLASS_GENERIC,
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
+    GRASP_LINK_FRAME,
 )
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
@@ -128,12 +130,14 @@ class GraspGenerator(Node):
         self._depth = None  # never reuse a frame from a previous request
         self._collecting = True
 
-    # Majority class wins; its position is the median over its samples
-    # (robust to bad frames), orientation from its latest sample.
+    # Majority class, then majority approach, wins; its position is the median
+    # over its samples (robust to bad frames), orientation from its latest sample.
     def _finish(self, response):
         samples = list(self._samples)
         grasp_class = Counter(s.grasp_class for s in samples).most_common(1)[0][0]
         grasps = [s.grasp for s in samples if s.grasp_class == grasp_class]
+        approach = Counter(g.approach for g in grasps).most_common(1)[0][0]
+        grasps = [g for g in grasps if g.approach == approach]
         measured = Counter(s.measured_class for s in samples)
 
         response.pose = self._pose(
@@ -144,7 +148,7 @@ class GraspGenerator(Node):
         response.samples_collected = len(grasps)
         response.success = True
         response.message = (
-            f"'{self._target}' as {grasp_class} from {len(grasps)}/{len(samples)} "
+            f"'{self._target}' as {grasp_class} ({approach}) from {len(grasps)}/{len(samples)} "
             f"samples, known={self._known}, measured={dict(measured)}"
         )
         self.get_logger().info(response.message)
@@ -187,10 +191,17 @@ class GraspGenerator(Node):
         return label == self._target
 
     # One detection in one frame -> one grasp sample (or GraspRejected).
+    # Unknown objects whose measured recipe fails get the generic solid grasp.
     def _sample(self, detection: ObjectDetection) -> Sample:
         scene = self._scene(detection)
         grasp_class, measured = self._classify(scene)
-        grasp = grasp_for(scene, grasp_class)
+        try:
+            grasp = grasp_for(scene, grasp_class)
+        except GraspRejected:
+            if self._known:
+                raise
+            grasp_class = GRASP_CLASS_GENERIC
+            grasp = grasp_for(scene, grasp_class)
         self._debug_pub.publish(self._pose(grasp.position, grasp.orientation))
         return Sample(grasp_class, measured, grasp)
 
@@ -210,7 +221,8 @@ class GraspGenerator(Node):
         return Scene(
             depth=depth,
             intrinsics=self._intrinsics,
-            cam_to_base=self._cam_to_base(),
+            cam_to_base=self._to_base(self._depth_frame),
+            gripper_to_base=self._to_base(GRASP_LINK_FRAME),
             bbox=parse_bbox(
                 detection.xmin,
                 detection.ymin,
@@ -220,17 +232,17 @@ class GraspGenerator(Node):
             ),
         )
 
-    # Latest camera -> link_base transform as a 4x4 matrix.
-    def _cam_to_base(self) -> np.ndarray:
+    # Latest frame -> link_base transform as a 4x4 matrix.
+    def _to_base(self, frame: str) -> np.ndarray:
         try:
             transform = self._tf_buffer.lookup_transform(
                 BASE_FRAME,
-                self._depth_frame,
+                frame,
                 rclpy.time.Time(),
                 timeout=Duration(seconds=1.0),
             ).transform
         except TransformException as error:
-            raise GraspRejected(f"no TF {self._depth_frame} -> {BASE_FRAME}") from error
+            raise GraspRejected(f"no TF {frame} -> {BASE_FRAME}") from error
         r, t = transform.rotation, transform.translation
         matrix = np.eye(4)
         matrix[:3, :3] = Rotation.from_quat([r.x, r.y, r.z, r.w]).as_matrix()
