@@ -16,11 +16,13 @@ GRIPPER_BOXES = {
     "left_finger": ((0.039, 0.0616, 0.1), (0.0065, 0.0, 0.05)),
 }
 
-# Chassis box replacing the base mesh collisions when the base is mobile: mesh contacts
-# against the ground plane cost about two thirds of the physics budget (size, center)
-BASE_BOX = ((0.648, 0.472, 0.30), (0.0, 0.0, 0.15))
-# Lumped into base_link in SDF, so their collisions go with it
-BASE_LUMPED_LINKS = (
+# The mobile base is driven by gz VelocityControl, which overwrites its velocity every
+# step: contacts cannot stop it, they only inject impulses that end up lifting the robot
+# off the floor. Its collisions come off with the anchor, together with those of the
+# links that SDF lumps into base_link. The mesh contacts also cost two thirds of the
+# physics budget. The arena walls are visual-only for the same reason.
+BASE_COLLISION_LINKS = (
+    "base_link",
     "wheel_FL",
     "wheel_FR",
     "wheel_RL",
@@ -93,10 +95,7 @@ def build_robot_description(
 
     if mobile_base:
         for link in root.findall("link"):
-            name = link.get("name")
-            if name == "base_link":
-                _box_collision(link, *BASE_BOX)
-            elif name in BASE_LUMPED_LINKS:
+            if link.get("name") in BASE_COLLISION_LINKS:
                 for collision in link.findall("collision"):
                     link.remove(collision)
 

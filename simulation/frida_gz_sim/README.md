@@ -55,10 +55,11 @@ Flags: `--areas manip|nav|all`, `--headless` (no Gazebo window), `--no-rviz`
 more CPU for the physics.
 
 `--areas all` loads the arena world and starts both stacks. It is a coexistence
-check, not a working combination: with manipulation and vision running, nav2's
-planner drops from 20 Hz to about 3 Hz on this machine and navigation goals fail,
-while the same goals pass 5/5 under `--areas nav`. The arena also has no objects
-to pick.
+check, not a working combination: both stacks together pull the real-time factor
+down to about 0.4, and nav2's loops are on sim time, so its 20 Hz planner would
+need ~50 Hz of wall clock and every navigation goal fails. The same goals pass
+5/5 under `--areas nav` at a real-time factor of 1.0. The arena also has no
+objects to pick.
 
 Logs land in `docker/gz_sim/logs/`: `sim.log`, `manipulation.log`, `vision.log`,
 `navigation.log`, `rviz.log`.
@@ -188,6 +189,13 @@ Navigation-only pieces:
   (`/odom` plus the `odom -> base_link` TF), and adds a `gpu_lidar` on
   `lidar_front` and `lidar_rear`. Each lidar is blind over the ~90 degree wedge its
   own chassis covers, the same wedge the real driver drops with `ignore_array`.
+- The mobile base has no collision geometry and the arena walls are visual only.
+  `VelocityControl` overwrites the base velocity every step, so a contact cannot
+  stop the robot - it only adds an impulse, and those accumulate until the robot is
+  floating above the arena with its lidars over the walls. The gpu_lidar raycasts
+  against visuals, so navigation is unaffected. Regenerate the world with
+  `--collisions` if you ever drive the base another way. Dropping the base mesh
+  contacts also took the real-time factor from 0.35 to 1.0.
 - `cmd_vel_relay.py` converts nav2's `TwistStamped` `/cmd_vel` into the plain
   `Twist` the gz bridge takes. Subscribing also makes `/cmd_vel` visible to
   `nav_central`'s requirement check before nav2 is up.
@@ -246,9 +254,10 @@ most likely breakage.
 ## Known limits
 
 - HRI is not simulated.
-- The base is velocity-driven, so it does not physically collide with the arena:
-  the lidars see the walls and nav2 avoids them, but a bad command drives through
-  one instead of bumping into it. Check the Gazebo pose, not just the nav result.
+- The base is velocity-driven and collision-free, so it does not physically collide
+  with the arena: the lidars see the walls and nav2 avoids them, but a bad command
+  drives through one instead of bumping into it. Check the Gazebo pose, not just
+  the nav result.
 - The arena walls are the mapped occupancy grid extruded to 1.2 m, so the sim only
   contains what the lidar saw when the map was made: no furniture above lidar
   height, no people, no doors.

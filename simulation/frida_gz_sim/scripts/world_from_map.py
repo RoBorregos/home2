@@ -58,14 +58,19 @@ def merge_rectangles(occupied: np.ndarray) -> list:
     return rects
 
 
-def box_xml(index: int, center, size, wall_height: float) -> str:
+def box_xml(index: int, center, size, wall_height: float, collisions: bool) -> str:
     pose = f"{center[0]:.4f} {center[1]:.4f} {wall_height / 2:.4f} 0 0 0"
     dims = f"{size[0]:.4f} {size[1]:.4f} {wall_height:.4f}"
-    return f"""      <collision name="wall_{index}_collision">
+    collision = (
+        f"""      <collision name="wall_{index}_collision">
         <pose>{pose}</pose>
         <geometry><box><size>{dims}</size></box></geometry>
       </collision>
-      <visual name="wall_{index}_visual">
+"""
+        if collisions
+        else ""
+    )
+    return f"""{collision}      <visual name="wall_{index}_visual">
         <pose>{pose}</pose>
         <geometry><box><size>{dims}</size></box></geometry>
         <material>
@@ -77,7 +82,9 @@ def box_xml(index: int, center, size, wall_height: float) -> str:
 """
 
 
-def build_world(map_yaml: str, world_name: str, wall_height: float) -> str:
+def build_world(
+    map_yaml: str, world_name: str, wall_height: float, collisions: bool
+) -> str:
     with open(map_yaml) as f:
         meta = yaml.safe_load(f)
     image = meta["image"]
@@ -104,6 +111,7 @@ def build_world(map_yaml: str, world_name: str, wall_height: float) -> str:
                 ((x_min + x_max) / 2, (y_min + y_max) / 2),
                 (x_max - x_min, y_max - y_min),
                 wall_height,
+                collisions,
             )
         )
 
@@ -155,7 +163,8 @@ def build_world(map_yaml: str, world_name: str, wall_height: float) -> str:
       </link>
     </model>
 
-    <!-- Arena walls: {len(boxes)} boxes merged from {int(occupied.sum())} occupied cells -->
+    <!-- Arena walls: {len(boxes)} boxes merged from {int(occupied.sum())} occupied cells.
+         {"With collisions." if collisions else "Visual only: the gpu_lidar raycasts against visuals, and the base is driven by gz VelocityControl, so wall contacts only inject impulses that push the robot off the floor."} -->
     <model name="arena_walls">
       <static>true</static>
       <link name="walls">
@@ -171,15 +180,20 @@ def main():
     parser.add_argument("map_yaml", help="nav2 map metadata YAML")
     parser.add_argument("output", help="SDF world file to write")
     parser.add_argument("--wall-height", type=float, default=1.2)
+    parser.add_argument(
+        "--collisions",
+        action="store_true",
+        help="Give the walls collision geometry (off by default, see the world comment)",
+    )
     parser.add_argument("--world-name", default=None)
     args = parser.parse_args()
 
     name = args.world_name or os.path.splitext(os.path.basename(args.output))[0]
-    world = build_world(args.map_yaml, name, args.wall_height)
+    world = build_world(args.map_yaml, name, args.wall_height, args.collisions)
     with open(args.output, "w") as f:
         f.write(world)
     print(
-        f"Wrote {args.output} ({world.count('<collision')} wall boxes)", file=sys.stderr
+        f"Wrote {args.output} ({world.count('_visual\"')} wall boxes)", file=sys.stderr
     )
 
 
