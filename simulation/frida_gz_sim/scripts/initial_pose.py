@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Publishes the robot's known spawn pose on /initialpose.
+"""Publishes the robot's known spawn pose on /initialpose, then stops.
 
 On the robot a human drops a 2D Pose Estimate in RViz; nav_central blocks in
 _wait_for_initial_pose() until that arrives. The sim knows where it spawned the
-robot, so it just says so, repeatedly until nav_central is listening.
+robot, so it says so itself.
+
+It must stop as soon as it has been heard: slam_toolbox re-localizes on every
+/initialpose, so a message that lands after the robot has started driving snaps
+its estimate back to the spawn pose. That desynchronises the scan from the map,
+the planner starts failing and the robot ends up somewhere else entirely.
 """
 
 import math
@@ -25,12 +30,17 @@ class InitialPose(Node):
         self.x = self.declare_parameter("x", 0.0).value
         self.y = self.declare_parameter("y", 0.0).value
         self.yaw = self.declare_parameter("yaw", 0.0).value
-        self.repeat = self.declare_parameter("repeat", 15).value
-        self.period = self.declare_parameter("period", 2.0).value
+        # Messages sent once the consumer is subscribed, then the node exits
+        self.target = self.declare_parameter("target", "nav_central").value
+        self.confirm = self.declare_parameter("confirm", 3).value
+        self.timeout = self.declare_parameter("timeout", 120.0).value
+        self.period = self.declare_parameter("period", 0.5).value
         self.pub = self.create_publisher(
             PoseWithCovarianceStamped, INITIAL_POSE_TOPIC, 10
         )
         self.sent = 0
+        self.heard = 0
+        self.deadline = self.get_clock().now().nanoseconds / 1e9 + self.timeout
         self.create_timer(self.period, self._publish)
 
     def _publish(self):
@@ -48,8 +58,17 @@ class InitialPose(Node):
             self.get_logger().info(
                 f"Initial pose ({self.x:.2f}, {self.y:.2f}, {math.degrees(self.yaw):.1f} deg)"
             )
-        if self.sent >= self.repeat:
-            self.get_logger().info("Initial pose published, exiting")
+        # slam_toolbox also listens here, so wait for the consumer that gates the setup
+        if (
+            self.target in self.get_node_names()
+            and self.pub.get_subscription_count() >= 2
+        ):
+            self.heard += 1
+        if self.heard >= self.confirm:
+            self.get_logger().info("Initial pose delivered, exiting")
+            raise SystemExit
+        if self.get_clock().now().nanoseconds / 1e9 > self.deadline:
+            self.get_logger().warn("Nobody subscribed to the initial pose, exiting")
             raise SystemExit
 
 

@@ -41,7 +41,7 @@ block until the whole stack is live (about a minute for manip, two to three for 
 | (none) | Shell inside the container (ROS already sourced) |
 | `--manip` | Start the pick-and-place sim, open the Gazebo window and RViz, wait until ready |
 | `--nav` | Start the navigation sim the same way |
-| `--all` | Start both stacks in the arena world (experimental, see below) |
+| `--all` | Start both stacks in the arena world (the arena has no objects to pick) |
 | `--tm` | Run the pick-and-place task manager in the foreground |
 | `--nav-tm` | Run the navigation task manager in the foreground |
 | `--rviz` | Open RViz again on a running sim (`--manip` / `--nav` already open it) |
@@ -55,11 +55,10 @@ Docker image), `--headless` (no Gazebo window), `--no-rviz` (no RViz),
 access is granted for you; on a loaded machine `--headless --no-rviz` leaves more
 CPU for the physics.
 
-`--all` loads the arena world and starts both stacks. It is a coexistence check,
-not a working combination: both stacks together pull the real-time factor down to
-about 0.4, and nav2's loops are on sim time, so its 20 Hz planner would need
-~50 Hz of wall clock and every navigation goal fails. The same goals pass 5/5
-under `--nav` at a real-time factor of 1.0. The arena also has no objects to pick.
+`--all` loads the arena world and starts both stacks; navigation passes the same
+5/5 there. It is a coexistence check, not a full integration: the arena has no
+objects to pick, and the extra load can push the real-time factor below 1.0 on a
+smaller machine, which slows nav2's sim-time control loops.
 
 Logs land in `docker/simulation/logs/`: `sim.log`, `manipulation.log`,
 `vision.log`, `navigation.log`, `rviz.log`.
@@ -201,7 +200,10 @@ Navigation-only pieces:
   `Twist` the gz bridge takes. Subscribing also makes `/cmd_vel` visible to
   `nav_central`'s requirement check before nav2 is up.
 - `initial_pose.py` publishes the known spawn pose on `/initialpose`; on the robot
-  a human drops a 2D Pose Estimate and `nav_central` blocks until it arrives.
+  a human drops a 2D Pose Estimate and `nav_central` blocks until it arrives. It
+  stops as soon as `nav_central` has it: slam_toolbox re-localizes on every
+  `/initialpose`, so one that lands after the robot starts driving snaps its
+  estimate back to the spawn pose and navigation never recovers.
 - `nav2_sim_time.py` sets `use_sim_time` on nav2's lifecycle manager, which
   `nav2_omni.launch.py` hardcodes to false; left on wall time it drops the
   servers' bond heartbeats whenever the sim is not at 1.0 real-time factor.
@@ -272,6 +274,5 @@ packages are the most likely breakage.
   table edge; tall objects can still tip over on release.
 - Detection uses the generic COCO `yolo26s` model (`SIM_YOLO_MODEL` to change it),
   not the competition model, because the rendered objects are Fuel meshes.
-- `--all` is not a working combination yet (see above); run one area at a time.
 - Both bottles are detected as `bottle`, so the task manager's per-label attempt
   limit can retire one of them before it is ever tried.

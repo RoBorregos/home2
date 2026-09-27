@@ -115,8 +115,8 @@ def launch_setup(context, *args, **kwargs):
         nav2_sim_time,
         # nav_central sends the nav2 STARTUP; give the lifecycle manager time first
         TimerAction(period=10.0, actions=[nav_central]),
-        # slam_toolbox must have loaded the graph before the pose is accepted
-        TimerAction(period=8.0, actions=[initial_pose]),
+        # After nav_central, so the pose is not delivered before the node that waits for it
+        TimerAction(period=12.0, actions=[initial_pose]),
     ]
 
 

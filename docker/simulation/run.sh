@@ -40,7 +40,7 @@ Tasks:
   (none)           Open a shell in the sim container (ROS already sourced)
   --manip          Start the pick-and-place sim (pnp_table world, static base)
   --nav            Start the navigation sim (arena from the robocup2026_1 map)
-  --all            Start both stacks in the arena world (experimental, see the README)
+  --all            Start both stacks in the arena world (no objects to pick there)
   --tm             Run the pick-and-place task manager (foreground)
   --nav-tm         Run the navigation task manager (foreground)
   --rviz           Open RViz on the running sim
