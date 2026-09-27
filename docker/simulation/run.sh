@@ -183,6 +183,14 @@ start_rviz() {
 kill_sim() {
   # Bracketed patterns keep pkill from matching (and killing) this very shell
   docker exec home2-simulation bash -c "pkill -INT -f '[r]os2 launch'; sleep 3; pkill -9 -f '[g]z sim'; pkill -9 -f '[/]workspace/install/'; pkill -9 -f '[/]opt/ros/jazzy/lib/'; true" >/dev/null 2>&1 || true
+  # Starting a new stack while the old one still holds its DDS endpoints leaves the
+  # /clock bridge dead, so wait for the processes to actually go
+  local waited=0
+  while docker exec home2-simulation bash -c "pgrep -f '[g]z sim|[/]opt/ros/jazzy/lib/ros_gz_bridge' >/dev/null" 2>/dev/null; do
+    [ $waited -ge 20 ] && break
+    sleep 1
+    waited=$((waited + 1))
+  done
 }
 
 #_________________________RUN_________________________
