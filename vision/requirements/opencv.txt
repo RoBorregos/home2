@@ -1,4 +1,0 @@
-numpy==1.26.4
-# NOTE: Do NOT add opencv-python here.
-# The L4T base image ships OpenCV built with CUDA/TensorRT.
-# Pip opencv-python replaces it with a CPU-only build.

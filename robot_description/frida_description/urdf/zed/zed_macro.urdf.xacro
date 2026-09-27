@@ -347,16 +347,6 @@
       </joint>
     </xacro:if>
 
-    <xacro:if value="${simulation}">
-      <xacro:include filename="$(find frida_description)/urdf/zed/zed_gazebo.xacro"/>
-      <xacro:zed_gazebo prefix="${name}" />
-      <mujoco>
-        <reference name="${name}_left_camera_frame">
-          <camera name="${name}_mujoco_camera" mode="fixed" fovy="45" quat="-0.5 -0.5 0.5 0.5 "/>
-        </reference>
-      </mujoco>
-    </xacro:if>
-    
     <xacro:if value="${enable_gnss}">
       <link name="${name}_gnss_link">
         <inertial>

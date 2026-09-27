@@ -76,9 +76,12 @@ COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match onl
 # the per-task CSVs.
 TEST_NLP = os.getenv("TEST_NLP", "false").lower() == "true"
 NLP_MODEL_ALIAS = os.getenv("NLP_MODEL_ALIAS", "")
+NLP_MODEL_NAME = os.getenv("NLP_MODEL_NAME", "")
+NLP_MODEL_FILE = os.getenv("NLP_MODEL_FILE", "")
 NLP_OLLAMA_URL = os.getenv("NLP_OLLAMA_URL", "")
 NLP_TASKS = [t for t in os.getenv("NLP_TASKS", "").split(",") if t]
-NLP_RUNS = int(os.getenv("NLP_RUNS") or "3")
+NLP_BACKEND = os.getenv("NLP_BACKEND", "")
+NLP_RUNS = int(os.getenv("NLP_RUNS") or "20")  # keep in sync with run.sh RUNS
 NLP_RESULTS_DIR = os.getenv("NLP_RESULTS_DIR") or OUTPUT_DIR
 
 # Choose which tests to perform (used only when TEST_NLP is unset)
@@ -401,6 +404,7 @@ class TestHriManager(Node):
         output_file = os.path.join(OUTPUT_DIR, f"categorize_objects_{date_str}.csv")
 
         results = []
+        cases = []
         passed_tests = 0
 
         for i, test_case in enumerate(test_cases, 1):
@@ -458,6 +462,14 @@ class TestHriManager(Node):
                 actual_output = f"EXCEPTION: {str(e)}"
 
             results.append([i, test_case["name"], str(expected), str(actual_output), success])
+            cases.append(
+                {
+                    "input": test_case["name"],
+                    "expected": expected,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
             self.get_logger().info("-" * 50)
 
         # Write results to CSV
@@ -468,6 +480,7 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
 
     def async_llm_test(self):
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
@@ -514,6 +527,54 @@ class TestHriManager(Node):
         res_with_context = self.hri_manager.query_location(object_name, top_k=3, use_context=True)
         for i, location in enumerate(res_with_context):
             self.get_logger().info(f"{i + 1}: {location}")
+
+    def test_is_coherent(self):
+        test_cases_file = os.path.join(DATA_DIR, "is_coherent.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"is_coherent_{date_str}.csv")
+
+        results = []
+        cases = []
+        passed_tests = 0
+
+        for i, (input_text, expected_output) in enumerate(test_cases, 1):
+            self.get_logger().info(f"Test case {i}")
+
+            try:
+                actual_output = self.hri_manager.check_coherence(input_text)
+                success = actual_output == expected_output
+                if success:
+                    passed_tests += 1
+                    self.get_logger().info("Test passed!")
+                else:
+                    self.get_logger().error("Test failed.")
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+                success = False
+
+            results.append([i, input_text, expected_output, actual_output, success])
+            cases.append(
+                {
+                    "input": input_text,
+                    "expected": expected_output,
+                    "got": actual_output,
+                    "passed": success,
+                }
+            )
+            self.get_logger().info("-" * 50)
+
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "input", "expected_output", "actual_output", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+        return cases
 
     def test_is_positive(self):
         test_cases_file = os.path.join(DATA_DIR, "is_positive.json")
@@ -639,6 +700,11 @@ class TestHriManager(Node):
         test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")
         with open(test_cases_file, "r") as f:
             test_cases = json.load(f)
+
+        if TEST_NLP:
+            # Benchmark only requests that always use the LLM. Name and location
+            # take the spaCy-first path and therefore do not measure LLM accuracy.
+            test_cases = [case for case in test_cases if case[1].startswith("LLM_")]
 
         # Prepare output directory and file
         date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -1074,10 +1140,36 @@ class TestHriManager(Node):
         self.get_logger().info(f"Results saved to {output_file}")
 
     _TASK_DISPATCH = {
+        "is_coherent": "test_is_coherent",
         "is_positive": "test_is_positive",
         "is_negative": "test_is_negative",
         "extract_data": "test_data_extractor",
+        "categorize_shelves": "test_categorize_shelves",
     }
+
+    # No accuracy dataset for this task; it contributes perf only.
+    _PERF_ONLY_TASKS = {"llm_wrapper"}
+    _ACCURACY_SERVICE_CLIENTS = {
+        "is_coherent": "is_coherent_service",
+        "extract_data": "extract_data_service",
+        "is_positive": "is_positive_service",
+        "is_negative": "is_negative_service",
+    }
+
+    def _require_accuracy_services(self) -> None:
+        missing = []
+        for task_name in NLP_TASKS:
+            client_name = self._ACCURACY_SERVICE_CLIENTS.get(task_name)
+            if client_name and not getattr(self.hri_manager, client_name).wait_for_service(
+                timeout_sec=2.0
+            ):
+                missing.append(task_name)
+        if missing:
+            tasks = ", ".join(missing)
+            raise RuntimeError(
+                f"HRI NLP services are unavailable for: {tasks}. "
+                "Start the HRI NLP services or select only performance tasks."
+            )
 
     def run_nlp_benchmark(self):
         if not NLP_MODEL_ALIAS:
@@ -1087,6 +1179,8 @@ class TestHriManager(Node):
             self.get_logger().error("TEST_NLP set but NLP_TASKS is empty.")
             return
 
+        self._require_accuracy_services()
+
         self.get_logger().info(
             f"TEST_NLP mode: model={NLP_MODEL_ALIAS} tasks={NLP_TASKS} "
             f"ollama={NLP_OLLAMA_URL or '(perf disabled)'}"
@@ -1095,15 +1189,16 @@ class TestHriManager(Node):
         model_results = {}
         for task_name in NLP_TASKS:
             method_name = self._TASK_DISPATCH.get(task_name)
-            if not method_name:
-                self.get_logger().warn(
-                    f"Unknown NLP task '{task_name}', supported: "
-                    f"{list(self._TASK_DISPATCH.keys())}"
-                )
+            if method_name is None and task_name not in self._PERF_ONLY_TASKS:
+                supported = sorted(set(self._TASK_DISPATCH) | self._PERF_ONLY_TASKS)
+                self.get_logger().warn(f"Unknown NLP task '{task_name}', supported: {supported}")
                 continue
-            self.get_logger().info(f"Running accuracy: {task_name}")
-            cases = getattr(self, method_name)()
-            task_r = {"cases": cases or []}
+
+            cases = []
+            if method_name:
+                self.get_logger().info(f"Running accuracy: {task_name}")
+                cases = getattr(self, method_name)() or []
+            task_r = {"cases": cases}
 
             perf = self._run_perf_side_channel(task_name)
             if perf:
@@ -1115,19 +1210,19 @@ class TestHriManager(Node):
 
     def _run_perf_side_channel(self, task_name: str) -> dict:
         if not NLP_OLLAMA_URL:
-            return {}
+            return {"errors": ["perf skipped: NLP_OLLAMA_URL unset"]}
         try:
             if BENCHMARK_DIR not in sys.path:
                 sys.path.insert(0, BENCHMARK_DIR)
             from tasks import TASK_REGISTRY, run_perf
         except ImportError as e:
             self.get_logger().warn(f"Perf side-channel skipped (missing dep): {e}")
-            return {}
+            return {"errors": [f"perf skipped (missing dep): {e}"]}
 
         task_cls = TASK_REGISTRY.get(task_name)
         if task_cls is None:
             self.get_logger().warn(f"No perf task class for '{task_name}', skipping perf.")
-            return {}
+            return {"errors": [f"perf skipped: no task class for '{task_name}'"]}
 
         try:
             self.get_logger().info(f"   perf: {NLP_RUNS} run(s) against {NLP_OLLAMA_URL}")
@@ -1140,7 +1235,31 @@ class TestHriManager(Node):
             return perf
         except Exception as e:
             self.get_logger().warn(f"Perf side-channel failed: {e}")
-            return {}
+            return {"errors": [f"perf side-channel failed: {e}"]}
+
+    def _benchmark_config(self) -> dict:
+        """Stamped into every report so a result can be reproduced."""
+        config = {
+            "backend": NLP_BACKEND or "unknown",
+            "model_alias": NLP_MODEL_ALIAS,
+            "model_name": NLP_MODEL_NAME,
+            "model_file": NLP_MODEL_FILE,
+            "url": NLP_OLLAMA_URL,
+            "runs": NLP_RUNS,
+            "tasks": NLP_TASKS,
+        }
+        if NLP_OLLAMA_URL:
+            try:
+                if BENCHMARK_DIR not in sys.path:
+                    sys.path.insert(0, BENCHMARK_DIR)
+                from tasks import probe_backend
+
+                config.update(probe_backend(NLP_OLLAMA_URL))
+            except Exception as e:
+                config["probe_error"] = str(e)
+        if config.get("backend") in (None, "", "unknown") and NLP_BACKEND:
+            config["backend"] = NLP_BACKEND
+        return config
 
     def _emit_benchmark_report(self, all_results: dict) -> None:
         try:
@@ -1152,7 +1271,7 @@ class TestHriManager(Node):
             return
 
         os.makedirs(NLP_RESULTS_DIR, exist_ok=True)
-        path = rpt.save_json(all_results, NLP_RESULTS_DIR)
+        path = rpt.save_json(all_results, NLP_RESULTS_DIR, self._benchmark_config())
         self.get_logger().info(f"Benchmark JSON written to: {path}")
         try:
             for model, task_results in all_results.items():

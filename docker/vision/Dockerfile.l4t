@@ -16,17 +16,10 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     curl libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# ── dlib with CUDA for Orin AGX (sm_87) ──
-WORKDIR /tmp
-RUN wget -q http://dlib.net/files/dlib-20.0.tar.bz2 && \
-    tar jxf dlib-20.0.tar.bz2 && rm dlib-20.0.tar.bz2 && \
-    cd dlib-20.0 && \
-    sed -i 's/-arch=sm_50/-arch=sm_87/' dlib/cmake_utils/test_for_cuda/CMakeLists.txt && \
-    python3 setup.py install --set DLIB_USE_CUDA=1 --set USE_NEON=1 --set USE_AVX_INSTRUCTIONS=0 \
-      --set CUDA_ARCHITECTURES=87 --set DLIB_USE_CUDA_COMPUTE_CAPABILITIES=87 \
-      --set CUDA_HOST_COMPILER=/usr/bin/gcc --set CMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
-      --set CMAKE_CXX_FLAGS=-fno-lto --set CMAKE_C_FLAGS=-fno-lto && \
-    cd /tmp && rm -rf dlib-20.0
+# Disable Ultralytics' runtime auto-install of missing packages (e.g. tensorrt,
+# onnx). It bypasses our pinned versions and pulls unpinned ones at runtime,
+# which requires internet access we won't have at competition time.
+ENV YOLO_AUTOINSTALL=false
 
 RUN pip install \
     cmake==3.25.2 \
@@ -47,26 +40,15 @@ RUN pip install \
     ultralytics-thop && \
     pip install --no-deps insightface==1.0.1 ultralytics==8.4.19
 
-# ── YOLOv5 for legacy YoloV5ObjectDetector ──
-ARG YOLOV5_COMMIT=35b48237aef6d71ca9de2c5dea345d7536eb7fa7
 WORKDIR /workspace
-RUN git clone https://github.com/ultralytics/yolov5.git && \
-    git -C yolov5 checkout ${YOLOV5_COMMIT} && rm -rf yolov5/.git
 
 # ── CycloneDDS SHM (iceoryx built in l4t_base) ──
 ENV CYCLONE_SHM=1
 RUN /usr/local/bin/cyclonedds_setup.sh
 
 # ── TensorRT engine cache ──
-# Mount a host volume here to persist TensorRT engines across container restarts.
-# Without this, engines are re-exported on every `docker run` (takes ~2-5 min per model).
-# Usage: docker run -v /path/on/host:/workspace/trt_cache ...
 RUN mkdir -p /workspace/trt_cache && chmod 777 /workspace/trt_cache
 ENV TENSORRT_CACHE_DIR=/workspace/trt_cache
 
-# ── Orin AGX max performance at runtime ──
-# Set MAXN power mode and max clocks before running vision nodes:
-#   sudo nvpmodel -m 0 && sudo jetson_clocks
-# These require host-level access and cannot be set inside the container.
 
 USER ros

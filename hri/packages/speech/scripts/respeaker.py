@@ -66,7 +66,7 @@ class Respeaker(Node):
             String, light_subscriber_topic, self.callback_light, 10
         )
 
-        self.get_logger().info("Respeaker node initialized.")
+        self.get_logger().info("Respeaker ready")
 
     def publish_DOA(self):
         if self.tuning:

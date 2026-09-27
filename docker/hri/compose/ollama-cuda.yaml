@@ -5,6 +5,8 @@ services:
     build:
       context: ..
       dockerfile: dockerfiles/Dockerfile.ollama
+      args:
+        BASE_IMAGE: ${OLLAMA_BASE_IMAGE:-ollama/ollama:0.34.2}
     image: roborregos/home2:hri-ollama-cuda
     runtime: nvidia
     network_mode: host

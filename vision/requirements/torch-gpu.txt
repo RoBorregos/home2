@@ -1,3 +1,5 @@
---find-links https://download.pytorch.org/whl/cu130
-torch==2.6.0 
-torchvision==0.21.0
+--extra-index-url https://download.pytorch.org/whl/cu124
+# torch/torchvision versions are pinned in constraints.txt (must be applied via
+# `pip install -c constraints.txt -r ...`) so there's one place to keep in sync.
+torch
+torchvision
