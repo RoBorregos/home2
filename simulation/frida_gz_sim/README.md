@@ -4,73 +4,74 @@ Gazebo Harmonic (ROS 2 Jazzy) simulation of FRIDA. The real vision, manipulation
 and navigation stacks run unchanged against a simulated xArm6, custom gripper,
 ZED camera, holonomic base and RPLIDAR pair.
 
-Two areas, selected with `--areas`:
+Two modes:
 
-- **manip** (default): pick and place on a static base in the `pnp_table` world.
-- **nav**: the RoboCup arena rebuilt from the `robocup2026_1` map, driving the
+- `--manip`: pick and place on a static base in the `pnp_table` world.
+- `--nav`: the RoboCup arena rebuilt from the `robocup2026_1` map, driving the
   base with slam_toolbox localization + nav2 + `nav_central`.
 
 ## Quick start
 
+The sim is the `simulation` area, driven from the repo root like every other area.
+
 ```bash
-cd ~/Documents/home2-gz-sim                # the sim lives on the sim/gazebo-pnp branch
 git submodule update --init navigation/packages/ira_laser_tools
-docker/gz_sim/run.sh build --build-image   # first time: image + workspace + object meshes
+./run.sh simulation --build --build-image   # first time: image + workspace + object meshes
 
 # pick and place
-docker/gz_sim/run.sh up                    # Gazebo window + RViz + manipulation + detector
-docker/gz_sim/run.sh tm                    # clear the dining table onto the side table
+./run.sh simulation --manip                 # Gazebo window + RViz + manipulation + detector
+./run.sh simulation --tm                    # clear the dining table onto the side table
 
 # navigation
-docker/gz_sim/run.sh up --areas nav        # arena + nav2 + nav_central
-docker/gz_sim/run.sh nav-tm                # drive a route of areas with move_to_location
+./run.sh simulation --nav                   # arena + nav2 + nav_central
+./run.sh simulation --nav-tm                # drive a route of areas with move_to_location
 
-docker/gz_sim/run.sh stop                  # stop the sim (container stays up)
+./run.sh simulation --kill                  # stop the sim (container stays up)
 ```
 
-Wait for `simulation ready` before running a task manager: `up` blocks until the
-whole stack is live (about a minute for manip, two to three for nav).
+Wait for `simulation ready` before running a task manager: `--manip` and `--nav`
+block until the whole stack is live (about a minute for manip, two to three for nav).
 
 ## Commands
 
-`docker/gz_sim/run.sh <command> [flags]`:
+`./run.sh simulation [task] [flags]`:
 
-| Command | What it does |
+| Task | What it does |
 |---|---|
-| `build` | Fetch object meshes and build the ROS workspace (add `--build-image` to rebuild the Docker image) |
-| `up` | Start the simulation, open the Gazebo window and RViz, wait until ready |
-| `tm` | Run the pick-and-place task manager in the foreground |
-| `nav-tm` | Run the navigation task manager in the foreground |
-| `demo` | `build` + `up` + `tm` |
-| `rviz` | Open RViz again on a running sim (`up` already opens it) |
-| `shell` | Shell inside the container (ROS already sourced) |
-| `status` | Show the running sim processes and their memory |
-| `stop` | Kill the sim processes, keep the container |
-| `down` | Remove the container |
+| (none) | Shell inside the container (ROS already sourced) |
+| `--manip` | Start the pick-and-place sim, open the Gazebo window and RViz, wait until ready |
+| `--nav` | Start the navigation sim the same way |
+| `--all` | Start both stacks in the arena world (experimental, see below) |
+| `--tm` | Run the pick-and-place task manager in the foreground |
+| `--nav-tm` | Run the navigation task manager in the foreground |
+| `--rviz` | Open RViz again on a running sim (`--manip` / `--nav` already open it) |
+| `--status` | Show the running sim processes and their memory |
+| `--kill` | Kill the sim processes, keep the container |
 
-The Gazebo window and RViz open by default and X access is granted for you.
-Flags: `--areas manip|nav|all`, `--headless` (no Gazebo window), `--no-rviz`
-(no RViz), `--moveit-rviz` (also open MoveIt's own RViz), `--build-image`
-(rebuild the image first). On a loaded machine, `up --headless --no-rviz` leaves
-more CPU for the physics.
+Flags: `--build` (object meshes + ROS workspace), `--build-image` (rebuild the
+Docker image), `--headless` (no Gazebo window), `--no-rviz` (no RViz),
+`--moveit-rviz` (also open MoveIt's own RViz), plus the usual `--stop`, `--down`,
+`--recreate` and `--clean`. The Gazebo window and RViz open by default and X
+access is granted for you; on a loaded machine `--headless --no-rviz` leaves more
+CPU for the physics.
 
-`--areas all` loads the arena world and starts both stacks. It is a coexistence
-check, not a working combination: both stacks together pull the real-time factor
-down to about 0.4, and nav2's loops are on sim time, so its 20 Hz planner would
-need ~50 Hz of wall clock and every navigation goal fails. The same goals pass
-5/5 under `--areas nav` at a real-time factor of 1.0. The arena also has no
-objects to pick.
+`--all` loads the arena world and starts both stacks. It is a coexistence check,
+not a working combination: both stacks together pull the real-time factor down to
+about 0.4, and nav2's loops are on sim time, so its 20 Hz planner would need
+~50 Hz of wall clock and every navigation goal fails. The same goals pass 5/5
+under `--nav` at a real-time factor of 1.0. The arena also has no objects to pick.
 
-Logs land in `docker/gz_sim/logs/`: `sim.log`, `manipulation.log`, `vision.log`,
-`navigation.log`, `rviz.log`.
+Logs land in `docker/simulation/logs/`: `sim.log`, `manipulation.log`,
+`vision.log`, `navigation.log`, `rviz.log`.
 
 The container runs on `ROS_DOMAIN_ID=77`, so the sim never mixes with other FRIDA
 containers on the host — including when you open a second terminal with
-`run.sh shell`.
+`./run.sh simulation`.
 
 ### Launch options
 
-Run these in `run.sh shell` when you want to change the defaults:
+Run these in `./run.sh simulation` (a shell in the container) when you want to
+change the defaults:
 
 ```bash
 ros2 launch frida_gz_sim sim.launch.py gui:=true \
@@ -92,7 +93,7 @@ ros2 launch frida_gz_sim sim_rviz.launch.py config:=sim_nav.rviz
 
 ### Driving the robot by hand
 
-From `run.sh shell`:
+From `./run.sh simulation`:
 
 ```bash
 # move the arm to a named pose (radians): nav_pose
@@ -131,7 +132,7 @@ ros2 topic hz /zed/zed_node/rgb/color/rect/image
 ros2 topic echo --once /gripper/grasp_state
 ```
 
-RViz (`run.sh rviz`) shows the robot, the camera point cloud, the detections
+RViz (`./run.sh simulation --rviz`) shows the robot, the camera point cloud, the detections
 image and MoveIt's planning scene and planned paths. For the fixed overview
 camera, add an Image display on `/sim/overview_camera/image` — handy when running
 headless, since it watches the robot and both tables from outside.
@@ -158,7 +159,7 @@ Sim-only pieces:
   closes and releases it when it opens. Two-finger pinches slip in Gazebo; this
   stands in for a firm real grasp. It adds one gz `DetachableJoint` per object at
   startup and detaches it right away, so wait for "Grasp attach ready" in
-  `sim.log` before moving the arm (`run.sh up` does). Disable with
+  `sim.log` before moving the arm (`--manip` does). Disable with
   `grasp_assist:=false`.
 - The gripper and finger collisions are boxes in the sim URDF only: Gazebo's
   mesh contacts let objects tunnel into the palm. MoveIt keeps the real meshes.
@@ -228,8 +229,8 @@ blocks grasp poses low enough to reach them.
 
 ## Depends on the rest of the repo
 
-The sim adds no changes outside `simulation/frida_gz_sim/` and `docker/gz_sim/`, so
-it can break when the packages it wraps change. What it relies on:
+The sim adds no changes outside `simulation/frida_gz_sim/` and `docker/simulation/`,
+so it can break when the packages it wraps change. What it relies on:
 
 - `frida_description`: `urdf/omnibase/FRIDA_Real.urdf.xacro` accepting
   `ros2_control_plugin`, the `Custom` gripper (whose `gripper_ros2_control.xacro` must
@@ -247,9 +248,9 @@ it can break when the packages it wraps change. What it relies on:
 - `map_context`: `maps/robocup2026_1.*` and `maps/areas/areas_robocup2026_1.json`.
 - `ira_laser_tools` (a submodule; initialise it before building).
 
-After merging into this branch, rebuild (`run.sh build`) and run once
-(`run.sh up` + `run.sh tm`); launch-argument removals in those packages are the
-most likely breakage.
+After merging into this branch, rebuild (`./run.sh simulation --build`) and run
+once (`./run.sh simulation --manip` + `--tm`); launch-argument removals in those
+packages are the most likely breakage.
 
 ## Known limits
 
@@ -271,6 +272,6 @@ most likely breakage.
   table edge; tall objects can still tip over on release.
 - Detection uses the generic COCO `yolo26s` model (`SIM_YOLO_MODEL` to change it),
   not the competition model, because the rendered objects are Fuel meshes.
-- `--areas all` is not a working combination yet (see above); run one area at a time.
+- `--all` is not a working combination yet (see above); run one area at a time.
 - Both bottles are detected as `bottle`, so the task manager's per-label attempt
   limit can retire one of them before it is ever tried.
