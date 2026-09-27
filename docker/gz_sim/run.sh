@@ -18,22 +18,27 @@ Commands:
   stop             Kill the sim processes (container keeps running)
   down             Remove the container
 
-Flags:
-  --gui            Open the Gazebo GUI window
-  --rviz           Open RViz with MoveIt
+Flags (the Gazebo window and RViz open by default):
+  --headless       Do not open the Gazebo window
+  --no-rviz        Do not open RViz
+  --moveit-rviz    Also open MoveIt's own RViz
   --build-image    Rebuild the Docker image first
 EOF
 }
 
 CMD=${1:-shell}
 [[ "$CMD" == --* ]] && CMD=shell || shift || true
-GUI=false
-RVIZ=false
+GUI=true
+RVIZ_VIEW=true
+MOVEIT_RVIZ=false
 BUILD_IMAGE=""
 for arg in "$@"; do
   case $arg in
+    --headless) GUI=false ;;
+    --no-rviz) RVIZ_VIEW=false ;;
+    --moveit-rviz) MOVEIT_RVIZ=true ;;
     --gui) GUI=true ;;
-    --rviz) RVIZ=true ;;
+    --rviz) RVIZ_VIEW=true ;;
     --build-image) BUILD_IMAGE="--build" ;;
     -h|--help) usage; exit 0 ;;
   esac
@@ -89,18 +94,27 @@ wait_for_logs() {
 
 start_all() {
   stop_all
-  # The Gazebo GUI inside the container needs access to the host X server
-  if [ "$GUI" = true ]; then
+  # The windows inside the container need access to the host X server
+  if [ "$GUI" = true ] || [ "$RVIZ_VIEW" = true ] || [ "$MOVEIT_RVIZ" = true ]; then
     xhost +local: >/dev/null
   fi
-  rm -f logs/sim.log logs/manipulation.log logs/vision.log
+  rm -f logs/sim.log logs/manipulation.log logs/vision.log logs/rviz.log
   in_background sim "ros2 launch frida_gz_sim sim.launch.py gui:=$GUI"
   wait_for_logs "sim:activated xarm6_traj_controller"
-  in_background manipulation "ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=$RVIZ"
+  in_background manipulation "ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=$MOVEIT_RVIZ"
   in_background vision "ros2 launch frida_gz_sim sim_vision.launch.py"
   echo "waiting for the stack to come up..."
   wait_for_logs "sim:Grasp attach ready" "manipulation:Manipulation core started" "vision:Loaded models"
+  # RViz needs the planning scene, so it starts once move_group is up
+  if [ "$RVIZ_VIEW" = true ]; then
+    start_rviz
+  fi
   echo "simulation ready"
+}
+
+start_rviz() {
+  xhost +local: >/dev/null
+  in_background rviz "ros2 launch frida_gz_sim sim_rviz.launch.py"
 }
 
 stop_all() {
@@ -113,7 +127,7 @@ case $CMD in
   build) ensure_container; build_ws ;;
   up) ensure_container; start_all ;;
   tm) ensure_container; in_container "ros2 run frida_gz_sim sim_pnp_task_manager.py" ;;
-  rviz) ensure_container; xhost +local: >/dev/null; in_background rviz "ros2 launch frida_gz_sim sim_rviz.launch.py" ;;
+  rviz) ensure_container; start_rviz ;;
   demo) ensure_container; build_ws; start_all; in_container "ros2 run frida_gz_sim sim_pnp_task_manager.py" ;;
   status) docker exec home2-gzsim bash -c "ps -eo pid,etime,rss,args --sort=-rss | grep -E 'gz sim|move_group|ros2|python3' | grep -v grep | cut -c1-160" ;;
   stop) stop_all ;;
