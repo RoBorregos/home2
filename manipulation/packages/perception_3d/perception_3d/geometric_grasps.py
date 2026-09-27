@@ -1,5 +1,5 @@
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable, Optional
 
 import numpy as np
@@ -74,15 +74,31 @@ DEPTH_JUMP = 0.01
 NEIGHBOUR_PAD = 0.5
 OBSTACLE_MIN_POINTS = 10
 SELF_MARGIN = 0.01
-GRIPPER_FINGER_THICKNESS = 0.01
-APPROACH_CLEARANCE = 0.10
-ANGLE_CUTOFF_DEG = 45
+GRIPPER_FINGER_THICKNESS = 0.03
+PRE_GRASP_DISTANCE = 0.10
 
 TABLE_CLEARANCE = GRIPPER_FINGER_LENGTH * 0.15
 GRIPPER_BODY = np.array([[-0.091, -0.099, 0.0], [0.039, 0.099, 0.081]])
+
+FINGER_SWEEP = np.array(
+    [
+        [
+            -GRIPPER_HALF_THICKNESS,
+            -GRIPPER_MAX_APERTURE / 2 - GRIPPER_FINGER_THICKNESS,
+            -GRIPPER_FINGER_LENGTH - PRE_GRASP_DISTANCE,
+        ],
+        [
+            GRIPPER_HALF_THICKNESS,
+            GRIPPER_MAX_APERTURE / 2 + GRIPPER_FINGER_THICKNESS,
+            0.0,
+        ],
+    ]
+)
+BODY_SWEEP = GRIPPER_BODY - [[0.0, 0.0, PRE_GRASP_DISTANCE], [0.0, 0.0, 0.0]]
 BODY_MIN_CLEARANCE = 0.02
 BODY_CLEARANCE_SCALE = 0.01
 SPARE_SCALE = 0.02
+ARM_SCALE = 0.02
 MOVE_SCALE = 1.0
 
 PEAK_GRID_RES = 0.05
@@ -170,6 +186,15 @@ class Grasp:
     position: np.ndarray
     orientation: np.ndarray
     approach: str = "top"
+    score: float = 0.0
+
+
+@dataclass(frozen=True)
+class Fit:
+    kind: str
+    center: np.ndarray
+    yaw: float
+    size: tuple
 
 
 def parse_bbox(xmin, ymin, xmax, ymax, shape) -> tuple:
@@ -194,7 +219,8 @@ def above_support(points: np.ndarray, margin: float) -> tuple:
 
 
 # defining the object is the biggest depth-continuous blob in the bbox; a
-# neighbour touching it merges in, a bigger neighbour inside the bbox wins.
+# neighbour touching it merges in, a bigger neighbour inside the bbox wins, part outside
+# bbox is obstacle, bigger neighbour inside the bbox still wins.
 def segment(scene: Scene, margin: float) -> tuple:
     xmin, ymin, xmax, ymax = scene.bbox
     height, width = scene.depth.shape
@@ -232,9 +258,10 @@ def segment(scene: Scene, margin: float) -> tuple:
     if counts[target] < MIN_POINTS_FOR_PCA:
         support_z, points = above_support(in_bbox, margin)
         return support_z, points, np.empty((0, 3))
+    ispart = (labels == target) & inside
     sizes = np.bincount(labels.ravel())
-    others = (labels > 0) & (labels != target) & (sizes[labels] >= OBSTACLE_MIN_POINTS)
-    return support_z, xyz[labels == target], xyz[others]
+    others = (labels > 0) & ~ispart & (sizes[labels] >= OBSTACLE_MIN_POINTS)
+    return support_z, xyz[ispart], xyz[others]
 
 
 def principal_axes(xy: np.ndarray) -> tuple:
@@ -303,7 +330,7 @@ def classify(geometry: ObjectGeometry) -> str:
     return GRASP_CLASS_BOX
 
 
-def flat(scene: Scene, grasp_class: Optional[str] = None) -> Grasp:
+def flat(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
     roi, valid = scene.roi, scene.valid
     require(np.count_nonzero(valid) >= MIN_POINTS_FOR_PCA, "too few depth pixels")
     table_depth = np.percentile(roi[valid], FLAT_TABLE_PERCENTILE)
@@ -334,13 +361,15 @@ def flat(scene: Scene, grasp_class: Optional[str] = None) -> Grasp:
 
     xmin, ymin, xmax, ymax = scene.bbox
     table_z = scene.deproject((xmin + xmax) / 2.0, (ymin + ymax) / 2.0, table_depth)
-    return Grasp(
-        np.array([*grasp_xy, table_z[0, 2] + FLAT_SURFACE_OFFSET]),
-        grasp_frame(TOP_DOWN, np.cross(TOP_DOWN, long_axis)),
-    )
+    return None, [
+        Grasp(
+            np.array([*grasp_xy, table_z[0, 2] + FLAT_SURFACE_OFFSET]),
+            grasp_frame(TOP_DOWN, np.cross(TOP_DOWN, long_axis)),
+        )
+    ]
 
 
-def rim(scene: Scene, grasp_class: Optional[str] = None) -> Grasp:
+def rim(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
     _, points = above_support(scene.points(scene.valid), FLOOR_MARGIN)
     top_z = np.percentile(points[:, 2], TOP_PERCENTILE)
     ring = points[points[:, 2] > top_z - RIM_TOP_BAND]
@@ -352,10 +381,10 @@ def rim(scene: Scene, grasp_class: Optional[str] = None) -> Grasp:
 
     radial = np.array([near_rim[0], near_rim[1], 0.0])
     require(np.linalg.norm(radial) > 1e-6, "rim point at the robot origin")
-    return Grasp(near_rim, grasp_frame(TOP_DOWN, radial))
+    return None, [Grasp(near_rim, grasp_frame(TOP_DOWN, radial))]
 
 
-def peak(scene: Scene, grasp_class: Optional[str] = None) -> Grasp:
+def peak(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
     floor_z, points = above_support(scene.points(scene.valid), FLOOR_MARGIN)
     grid, origin = elevation_grid(points, PEAK_GRID_RES)
     require(min(grid.shape) >= PEAK_NBR, "container too small to search for peaks")
@@ -374,10 +403,12 @@ def peak(scene: Scene, grasp_class: Optional[str] = None) -> Grasp:
     center = np.median(points[:, :2], axis=0)
     best = np.argmin(np.linalg.norm(peaks_xy - center, axis=1))
 
-    return Grasp(
-        np.array([*peaks_xy[best], grid[tuple(cells[best])]]),
-        grasp_frame(TOP_DOWN, DEFAULT_CLOSING_AXIS),
-    )
+    return None, [
+        Grasp(
+            np.array([*peaks_xy[best], grid[tuple(cells[best])]]),
+            grasp_frame(TOP_DOWN, DEFAULT_CLOSING_AXIS),
+        )
+    ]
 
 
 def fit_box(points: np.ndarray) -> tuple:
@@ -421,7 +452,21 @@ def approaches(grasp_class, away, short_axis, long_axis) -> list:
     return found
 
 
-def solid(scene: Scene, grasp_class: str) -> Grasp:
+def pad_contact(center, normal, extent, bottom, span, tip, rotation) -> np.ndarray:
+    s, z = np.meshgrid(
+        np.linspace(-extent / 2, extent / 2, 9), np.linspace(bottom, bottom + span, 9)
+    )
+    section = np.column_stack((center + np.outer(s.ravel(), normal), z.ravel()))
+    local = (section - tip) @ rotation
+    on_pads = (
+        (np.abs(local[:, 0]) <= GRIPPER_HALF_THICKNESS)
+        & (local[:, 2] <= 0)
+        & (local[:, 2] >= -GRIPPER_FINGER_LENGTH)
+    )
+    return section[on_pads]
+
+
+def solid(scene: Scene, grasp_class: str) -> tuple:
     support_z, points, obstacles = segment(scene, SOLID_SUPPORT_MARGIN)
     points = points[:: max(1, len(points) // SOLID_MAX_POINTS)]
     top_z = np.percentile(points[:, 2], SOLID_TOP_PERCENTILE)
@@ -431,21 +476,32 @@ def solid(scene: Scene, grasp_class: str) -> Grasp:
     middle = np.array([*center, (support_z + top_z) / 2])
     top_tip_z = max(top_z - 0.85 * GRIPPER_FINGER_LENGTH, support_z + TABLE_CLEARANCE)
 
+    height = top_z - support_z
+    yaw = np.arctan2(long_axis[1], long_axis[0])
+    if grasp_class == GRASP_CLASS_ROUND:
+        fit = Fit("sphere", middle, yaw, (height / 2,) * 3)
+        bottom, span = middle[2], 0.0
+    elif grasp_class == GRASP_CLASS_CYLINDRICAL:
+        fit = Fit("cylinder", middle, yaw, (long / 2, long / 2, height))
+        bottom, span = support_z, height
+    else:
+        fit = Fit("box", middle, yaw, (long, short, height))
+        bottom, span = support_z, height
+
     camera = scene.cam_to_base[:3, 3]
     view = (center - camera[:2]) / max(np.linalg.norm(center - camera[:2]), 1e-6)
     sees_top = camera[2] > top_z + TOP_VISIBLE_MARGIN and scene.bbox[1] > 0
 
-    # neighbours as gaps to the fitted rectangle and bearings from
-    # its centre, blocked within a fixed cone; MoveIt's octomap is the real check.
+    # obstacle points this close to the fitted footprint are the object's own
+    # surface cut off by a depth edge, not a neighbour
     rel = obstacles[:, :2] - center
     gap = np.hypot(
         np.maximum(np.abs(rel @ long_axis) - long / 2, 0),
         np.maximum(np.abs(rel @ short_axis) - short / 2, 0),
     )
-    bearing = rel / np.maximum(np.linalg.norm(rel, axis=1, keepdims=True), 1e-6)
-    cone = np.cos(np.radians(ANGLE_CUTOFF_DEG))
+    obstacles = obstacles[gap >= SELF_MARGIN]
 
-    grasps, rejected = [], Counter()
+    grasps, costs, rejected = [], [], Counter()
     for label, tilt, side, closing in approaches(
         grasp_class, away, short_axis, long_axis
     ):
@@ -482,8 +538,18 @@ def solid(scene: Scene, grasp_class: str) -> Grasp:
             & (np.abs(local[:, 1] - (low + high) / 2) <= GRIPPER_MAX_APERTURE / 2)
         )
         lowest = tip[2] - GRIPPER_HALF_THICKNESS * abs(rotation[2, 0])
-        near = (gap >= SELF_MARGIN) & (obstacles[:, 2] >= lowest)
-        finger_room = (GRIPPER_MAX_APERTURE - width) / 2 + GRIPPER_FINGER_THICKNESS
+        in_fingers = count_inside((obstacles - tip) @ rotation, FINGER_SWEEP)
+        normal = np.array([-closing[1], closing[0]])
+        extent = abs(normal @ long_axis) * long + abs(normal @ short_axis) * short
+        held = pad_contact(
+            center,
+            normal,
+            extent if fit.kind == "box" else 0.0,
+            bottom,
+            span,
+            tip,
+            rotation,
+        )
 
         if lowest < support_z + TABLE_CLEARANCE - 1e-3:
             rejected["gripper hits the table"] += 1
@@ -491,50 +557,58 @@ def solid(scene: Scene, grasp_class: str) -> Grasp:
             rejected["wider than the gripper opens"] += 1
         elif np.count_nonzero(palm) >= MIN_POINTS_FOR_PCA:
             rejected["palm hits the object"] += 1
-        elif np.any(near & (gap < finger_room) & (np.abs(bearing @ closing) >= cone)):
+        elif len(held) == 0:
+            rejected["fingers miss the widest part"] += 1
+        elif in_fingers >= OBSTACLE_MIN_POINTS:
             rejected["neighbour beside the fingers"] += 1
-        elif tilt and np.any(
-            near & (gap < APPROACH_CLEARANCE) & (bearing @ -side >= cone)
-        ):
-            rejected["neighbour in the approach path"] += 1
         else:
+            arm = abs((held[:, :2].mean(axis=0) - center) @ normal)
+            flange = tip - approach * GRIPPER_REACH
             for sign, suffix in ((1, ""), (-1, " flipped")):
-                grasp = Grasp(
-                    tip, grasp_frame(approach, sign * rotation[:, 1]), label + suffix
-                )
-                value = score(scene, grasp, support_z, width)
-                if value > 0:
-                    grasps.append((value, grasp))
+                flipped = rotation * [sign, sign, 1]
+                body_z = flange[2] + (flipped[2] * GRIPPER_BODY).min(axis=0).sum()
+                in_body = count_inside((obstacles - flange) @ flipped, BODY_SWEEP)
+                if body_z - support_z < BODY_MIN_CLEARANCE:
+                    rejected["gripper body too close to the table"] += 1
+                elif in_body >= OBSTACLE_MIN_POINTS:
+                    rejected["neighbour hits the gripper body"] += 1
                 else:
-                    rejected["camera hits the table"] += 1
+                    value = score(width, arm, body_z - support_z)
+                    orientation = Rotation.from_matrix(flipped).as_quat()
+                    grasps.append(Grasp(tip, orientation, label + suffix, value))
+                    costs.append(move_cost(scene, flipped, flange))
 
     if not grasps:
         raise GraspRejected(
             "; ".join(f"{reason} x{count}" for reason, count in rejected.most_common())
         )
-    return max(grasps, key=lambda scored: scored[0])[1]
+    cheapest = min(costs)  # the trip every candidate shares cancels out
+    grasps = [
+        replace(grasp, score=grasp.score * np.exp(-(cost - cheapest) / MOVE_SCALE))
+        for grasp, cost in zip(grasps, costs)
+    ]
+    return fit, sorted(grasps, key=lambda grasp: grasp.score, reverse=True)
 
 
-def score(scene: Scene, grasp: Grasp, support_z: float, width: float) -> float:
-    rotation = Rotation.from_quat(grasp.orientation).as_matrix()
-    flange = grasp.position - rotation[:, 2] * GRIPPER_REACH
+def count_inside(points: np.ndarray, box: np.ndarray) -> int:
+    return np.count_nonzero(np.all((points >= box[0]) & (points <= box[1]), axis=1))
 
+
+def score(width: float, arm: float, clearance: float) -> float:
     spare = GRIPPER_MAX_APERTURE + APERTURE_TOLERANCE - width
     opening = 1 - np.exp(-spare / SPARE_SCALE)
-    clearance = flange[2] + (rotation[2] * GRIPPER_BODY).min(axis=0).sum() - support_z
-    if clearance < BODY_MIN_CLEARANCE:
-        return 0.0
+    centred = np.exp(-arm / ARM_SCALE)
     clear = 1 - np.exp(-clearance / BODY_CLEARANCE_SCALE)
+    return opening * centred * clear
 
+
+def move_cost(scene: Scene, rotation: np.ndarray, flange: np.ndarray) -> float:
     current = scene.gripper_to_base
-    moved = np.linalg.norm(flange - current[:3, 3])
     turned = Rotation.from_matrix(current[:3, :3].T @ rotation).magnitude()
-    move = np.exp(-(moved + GRIPPER_REACH * turned) / MOVE_SCALE)
-
-    return opening * clear * move
+    return np.linalg.norm(flange - current[:3, 3]) + GRIPPER_REACH * turned
 
 
-RECIPES: dict[str, Callable[[Scene, str], Grasp]] = {
+RECIPES: dict[str, Callable[[Scene, str], tuple]] = {
     GRASP_CLASS_FLAT: flat,
     GRASP_CLASS_RIM: rim,
     GRASP_CLASS_PEAK: peak,
@@ -545,7 +619,7 @@ RECIPES: dict[str, Callable[[Scene, str], Grasp]] = {
 }
 
 
-def grasp_for(scene: Scene, grasp_class: str) -> Grasp:
+def grasp_for(scene: Scene, grasp_class: str) -> tuple:
     recipe = RECIPES.get(grasp_class)
     require(recipe is not None, f"no grasp recipe for '{grasp_class}' yet")
     return recipe(scene, grasp_class)

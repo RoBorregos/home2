@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from typing import Optional
 
@@ -25,6 +25,7 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
     GRASP_LINK_FRAME,
+    PICK_OBJECT_NAMESPACE,
 )
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
@@ -32,11 +33,12 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     DETECTIONS_TOPIC,
 )
-from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
+from frida_interfaces.msg import CollisionObject, ObjectDetection, ObjectDetectionArray
 from frida_interfaces.srv import GenerateGrasps
 from perception_3d.geometric_grasps import (
     DEFORMABLE_OBJECTS,
     OBJECT_GRASP_CLASS,
+    Fit,
     Grasp,
     GraspRejected,
     Intrinsics,
@@ -58,7 +60,8 @@ COLLECT_TIMEOUT = 5.0  # s, give up collecting after this
 class Sample:
     grasp_class: str
     measured_class: Optional[str]
-    grasp: Grasp
+    fit: Optional[Fit]
+    grasps: list
 
 
 class GraspGenerator(Node):
@@ -130,29 +133,57 @@ class GraspGenerator(Node):
         self._depth = None  # never reuse a frame from a previous request
         self._collecting = True
 
-    # Majority class, then majority approach, wins; its position is the median
-    # over its samples (robust to bad frames), orientation from its latest sample.
+    # Majority class wins. Per approach: median position over the frames that
+    # produced it (robust to bad frames), orientation and fit from the latest,
     def _finish(self, response):
         samples = list(self._samples)
         grasp_class = Counter(s.grasp_class for s in samples).most_common(1)[0][0]
-        grasps = [s.grasp for s in samples if s.grasp_class == grasp_class]
-        approach = Counter(g.approach for g in grasps).most_common(1)[0][0]
-        grasps = [g for g in grasps if g.approach == approach]
+        voted = [s for s in samples if s.grasp_class == grasp_class]
         measured = Counter(s.measured_class for s in samples)
-
-        response.pose = self._pose(
-            np.median([g.position for g in grasps], axis=0), grasps[-1].orientation
+        by_approach = defaultdict(list)
+        for sample in voted:
+            for grasp in sample.grasps:
+                by_approach[grasp.approach].append(grasp)
+        ranked = sorted(
+            (
+                Grasp(
+                    np.median([g.position for g in grasps], axis=0),
+                    grasps[-1].orientation,
+                    approach,
+                    sum(g.score for g in grasps) / len(voted),
+                )
+                for approach, grasps in by_approach.items()
+            ),
+            key=lambda grasp: grasp.score,
+            reverse=True,
         )
+
+        response.grasps = [self._pose(g.position, g.orientation) for g in ranked]
+        response.scores = [float(g.score) for g in ranked]
+        response.approaches = [g.approach for g in ranked]
+        response.pose = response.grasps[0]
+        if voted[-1].fit is not None:
+            response.object = self._collision_object(voted[-1].fit)
         response.grasp_class = grasp_class
         response.deformable = self._target in DEFORMABLE_OBJECTS
-        response.samples_collected = len(grasps)
+        response.samples_collected = len(voted)
         response.success = True
         response.message = (
-            f"'{self._target}' as {grasp_class} ({approach}) from {len(grasps)}/{len(samples)} "
-            f"samples, known={self._known}, measured={dict(measured)}"
+            f"'{self._target}' as {grasp_class} ({ranked[0].approach}, score "
+            f"{ranked[0].score:.2f}, {len(ranked)} candidates) from {len(voted)}/"
+            f"{len(samples)} samples, known={self._known}, measured={dict(measured)}"
         )
         self.get_logger().info(response.message)
         return response
+
+    def _collision_object(self, fit: Fit) -> CollisionObject:
+        shape = CollisionObject()
+        shape.id = PICK_OBJECT_NAMESPACE + self._target
+        shape.type = fit.kind
+        shape.pose = self._pose(fit.center, Rotation.from_euler("z", fit.yaw).as_quat())
+        size = shape.dimensions
+        size.x, size.y, size.z = map(float, fit.size)
+        return shape
 
     def _fail(self, response, message: str):
         self.get_logger().warn(message)
@@ -196,14 +227,14 @@ class GraspGenerator(Node):
         scene = self._scene(detection)
         grasp_class, measured = self._classify(scene)
         try:
-            grasp = grasp_for(scene, grasp_class)
+            fit, grasps = grasp_for(scene, grasp_class)
         except GraspRejected:
             if self._known:
                 raise
             grasp_class = GRASP_CLASS_GENERIC
-            grasp = grasp_for(scene, grasp_class)
-        self._debug_pub.publish(self._pose(grasp.position, grasp.orientation))
-        return Sample(grasp_class, measured, grasp)
+            fit, grasps = grasp_for(scene, grasp_class)
+        self._debug_pub.publish(self._pose(grasps[0].position, grasps[0].orientation))
+        return Sample(grasp_class, measured, fit, grasps)
 
     # Returns (class to use, class geometry measured). Known names always win;
     # geometry is still measured so the logs show whether it would have agreed.

@@ -2,6 +2,10 @@ string object_name
 int32 num_samples
 ---
 geometry_msgs/PoseStamped pose
+geometry_msgs/PoseStamped[] grasps
+float32[] scores
+string[] approaches
+frida_interfaces/CollisionObject object
 string grasp_class
 bool deformable
 bool success
