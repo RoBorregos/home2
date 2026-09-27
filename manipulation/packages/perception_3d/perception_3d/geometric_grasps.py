@@ -73,15 +73,17 @@ TOP_VISIBLE_MARGIN = 0.03
 DEPTH_JUMP = 0.01
 NEIGHBOUR_PAD = 0.5
 OBSTACLE_MIN_POINTS = 10
+SELF_MARGIN = 0.01
 GRIPPER_FINGER_THICKNESS = 0.01
 APPROACH_CLEARANCE = 0.10
 ANGLE_CUTOFF_DEG = 45
 
 TABLE_CLEARANCE = GRIPPER_FINGER_LENGTH * 0.15
-CAMERA_RADIUS = 0.09
-ZED_OFFSET = np.array([-0.096, 0.0, 0.041])  # copy of pick.py's, keep equal
-CAMERA_CLEARANCE_SCALE = 0.03
-MOVE_SCALE = 0.3
+GRIPPER_BODY = np.array([[-0.091, -0.099, 0.0], [0.039, 0.099, 0.081]])
+BODY_MIN_CLEARANCE = 0.02
+BODY_CLEARANCE_SCALE = 0.01
+SPARE_SCALE = 0.02
+MOVE_SCALE = 1.0
 
 PEAK_GRID_RES = 0.05
 PEAK_NBR = 3
@@ -480,7 +482,7 @@ def solid(scene: Scene, grasp_class: str) -> Grasp:
             & (np.abs(local[:, 1] - (low + high) / 2) <= GRIPPER_MAX_APERTURE / 2)
         )
         lowest = tip[2] - GRIPPER_HALF_THICKNESS * abs(rotation[2, 0])
-        near = obstacles[:, 2] >= lowest
+        near = (gap >= SELF_MARGIN) & (obstacles[:, 2] >= lowest)
         finger_room = (GRIPPER_MAX_APERTURE - width) / 2 + GRIPPER_FINGER_THICKNESS
 
         if lowest < support_z + TABLE_CLEARANCE - 1e-3:
@@ -500,7 +502,7 @@ def solid(scene: Scene, grasp_class: str) -> Grasp:
                 grasp = Grasp(
                     tip, grasp_frame(approach, sign * rotation[:, 1]), label + suffix
                 )
-                value = score(scene, grasp, support_z)
+                value = score(scene, grasp, support_z, width)
                 if value > 0:
                     grasps.append((value, grasp))
                 else:
@@ -513,20 +515,23 @@ def solid(scene: Scene, grasp_class: str) -> Grasp:
     return max(grasps, key=lambda scored: scored[0])[1]
 
 
-def score(scene: Scene, grasp: Grasp, support_z: float) -> float:
+def score(scene: Scene, grasp: Grasp, support_z: float, width: float) -> float:
     rotation = Rotation.from_quat(grasp.orientation).as_matrix()
     flange = grasp.position - rotation[:, 2] * GRIPPER_REACH
 
-    camera_z = flange[2] + (rotation @ ZED_OFFSET)[2]
-    clearance = max(camera_z - support_z - CAMERA_RADIUS, 0.0)
-    camera = 1 - np.exp(-clearance / CAMERA_CLEARANCE_SCALE)
+    spare = GRIPPER_MAX_APERTURE + APERTURE_TOLERANCE - width
+    opening = 1 - np.exp(-spare / SPARE_SCALE)
+    clearance = flange[2] + (rotation[2] * GRIPPER_BODY).min(axis=0).sum() - support_z
+    if clearance < BODY_MIN_CLEARANCE:
+        return 0.0
+    clear = 1 - np.exp(-clearance / BODY_CLEARANCE_SCALE)
 
     current = scene.gripper_to_base
     moved = np.linalg.norm(flange - current[:3, 3])
     turned = Rotation.from_matrix(current[:3, :3].T @ rotation).magnitude()
     move = np.exp(-(moved + GRIPPER_REACH * turned) / MOVE_SCALE)
 
-    return camera * move
+    return opening * clear * move
 
 
 RECIPES: dict[str, Callable[[Scene, str], Grasp]] = {
