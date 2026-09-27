@@ -6,14 +6,17 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from frida_gz_sim.moveit_config import build_moveit_config
 from launch import LaunchDescription
-from launch.actions import OpaqueFunction
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def launch_setup(context, *args, **kwargs):
     moveit_config = build_moveit_config(context)
     rviz_config = os.path.join(
-        get_package_share_directory("frida_gz_sim"), "config", "sim.rviz"
+        get_package_share_directory("frida_gz_sim"),
+        "config",
+        LaunchConfiguration("config").perform(context),
     )
     return [
         Node(
@@ -32,4 +35,9 @@ def launch_setup(context, *args, **kwargs):
 
 
 def generate_launch_description():
-    return LaunchDescription([OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument("config", default_value="sim.rviz"),
+            OpaqueFunction(function=launch_setup),
+        ]
+    )

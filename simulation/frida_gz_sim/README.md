@@ -1,21 +1,35 @@
 # frida_gz_sim
 
-Gazebo Harmonic (ROS 2 Jazzy) simulation of FRIDA for pick and place. The real
-vision and manipulation stacks run unchanged against a simulated xArm6, custom
-gripper and ZED camera.
+Gazebo Harmonic (ROS 2 Jazzy) simulation of FRIDA. The real vision, manipulation
+and navigation stacks run unchanged against a simulated xArm6, custom gripper,
+ZED camera, holonomic base and RPLIDAR pair.
+
+Two areas, selected with `--areas`:
+
+- **manip** (default): pick and place on a static base in the `pnp_table` world.
+- **nav**: the RoboCup arena rebuilt from the `robocup2026_1` map, driving the
+  base with slam_toolbox localization + nav2 + `nav_central`.
 
 ## Quick start
 
 ```bash
 cd ~/Documents/home2-gz-sim                # the sim lives on the sim/gazebo-pnp branch
+git submodule update --init navigation/packages/ira_laser_tools
 docker/gz_sim/run.sh build --build-image   # first time: image + workspace + object meshes
+
+# pick and place
 docker/gz_sim/run.sh up                    # Gazebo window + RViz + manipulation + detector
 docker/gz_sim/run.sh tm                    # clear the dining table onto the side table
+
+# navigation
+docker/gz_sim/run.sh up --areas nav        # arena + nav2 + nav_central
+docker/gz_sim/run.sh nav-tm                # drive a route of areas with move_to_location
+
 docker/gz_sim/run.sh stop                  # stop the sim (container stays up)
 ```
 
-Wait for `simulation ready` before running `tm`: `up` blocks until Gazebo,
-manipulation and the detector are all live (about a minute).
+Wait for `simulation ready` before running a task manager: `up` blocks until the
+whole stack is live (about a minute for manip, two to three for nav).
 
 ## Commands
 
@@ -24,8 +38,9 @@ manipulation and the detector are all live (about a minute).
 | Command | What it does |
 |---|---|
 | `build` | Fetch object meshes and build the ROS workspace (add `--build-image` to rebuild the Docker image) |
-| `up` | Start Gazebo + manipulation + vision, open the Gazebo window and RViz, wait until ready |
+| `up` | Start the simulation, open the Gazebo window and RViz, wait until ready |
 | `tm` | Run the pick-and-place task manager in the foreground |
+| `nav-tm` | Run the navigation task manager in the foreground |
 | `demo` | `build` + `up` + `tm` |
 | `rviz` | Open RViz again on a running sim (`up` already opens it) |
 | `shell` | Shell inside the container (ROS already sourced) |
@@ -34,12 +49,19 @@ manipulation and the detector are all live (about a minute).
 | `down` | Remove the container |
 
 The Gazebo window and RViz open by default and X access is granted for you.
-Flags: `--headless` (no Gazebo window), `--no-rviz` (no RViz), `--moveit-rviz`
-(also open MoveIt's own RViz), `--build-image` (rebuild the image first). On a
-loaded machine, `up --headless --no-rviz` leaves more CPU for the physics.
+Flags: `--areas manip|nav|all`, `--headless` (no Gazebo window), `--no-rviz`
+(no RViz), `--moveit-rviz` (also open MoveIt's own RViz), `--build-image`
+(rebuild the image first). On a loaded machine, `up --headless --no-rviz` leaves
+more CPU for the physics.
+
+`--areas all` loads the arena world and starts both stacks. It is a coexistence
+check, not a working combination: with manipulation and vision running, nav2's
+planner drops from 20 Hz to about 3 Hz on this machine and navigation goals fail,
+while the same goals pass 5/5 under `--areas nav`. The arena also has no objects
+to pick.
 
 Logs land in `docker/gz_sim/logs/`: `sim.log`, `manipulation.log`, `vision.log`,
-`rviz.log`.
+`navigation.log`, `rviz.log`.
 
 The container runs on `ROS_DOMAIN_ID=77`, so the sim never mixes with other FRIDA
 containers on the host — including when you open a second terminal with
@@ -56,6 +78,15 @@ ros2 launch frida_gz_sim sim.launch.py gui:=true \
 ros2 launch frida_gz_sim sim_manipulation.launch.py show_rviz:=true
 SIM_YOLO_MODEL=yolo26m.pt ros2 launch frida_gz_sim sim_vision.launch.py
 ros2 run frida_gz_sim sim_pnp_task_manager.py --ros-args -p max_objects:=1
+
+# navigation: mobile base in the arena, then the real nav stack on top
+ros2 launch frida_gz_sim sim.launch.py gui:=true world:=arena_robocup2026_1.sdf \
+    mobile_base:=true grasp_assist:=false \
+    spawn_x:=4.1776 spawn_y:=-11.6974 spawn_z:=0.02 spawn_yaw:=-1.9890
+ros2 launch frida_gz_sim sim_nav.launch.py map_name:=robocup2026_1
+ros2 run frida_gz_sim sim_nav_task_manager.py \
+    --ros-args -p route:="kitchen/sink,bedroom/bed"
+ros2 launch frida_gz_sim sim_rviz.launch.py config:=sim_nav.rviz
 ```
 
 ### Driving the robot by hand
@@ -80,6 +111,13 @@ ros2 service call /xarm/set_tgpio_digital xarm_msgs/srv/SetDigitalIO '{ionum: 1,
 
 # what the detector sees right now
 ros2 service call /vision/detection_handler frida_interfaces/srv/DetectionHandler '{label: all}'
+
+# navigate to one area (what move_to_location calls)
+ros2 service call /navigation/go_to_map_area frida_interfaces/srv/MoveLocation \
+  '{location: kitchen, sublocation: sink}'
+
+# drive the base by hand
+ros2 topic pub -r 10 /sim/cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.2}}'
 ```
 
 ### Looking at the sim
@@ -104,6 +142,7 @@ headless, since it watches the robot and both tables from outside.
 | `sim.launch.py` | Gazebo world, robot spawn, `gz_ros2_control`, ZED topic bridge, gripper bridge, grasp assist |
 | `sim_manipulation.launch.py` | MoveIt + `pick_and_place/pick_and_place.launch.py`, all on sim time |
 | `sim_vision.launch.py` | `image_orienter` + `object_detector_2d` with the COCO `yolo26s` model |
+| `sim_nav.launch.py` | `laserscan_multi_merger` + `localization.launch.py` + `nav2_omni.launch.py` + `nav_central.py`, all on sim time |
 
 Sim-only pieces:
 
@@ -125,9 +164,45 @@ Sim-only pieces:
 - `sim_manipulation.launch.py` applies `SetParameter(use_sim_time=True)` to everything
   it launches. The manipulation launches no longer take a `use_sim_time` argument,
   and every node must read TF against `/clock` or the pick pipeline fails.
+- `octomap_cloud_filter.py` feeds MoveIt's octomap a cloud with everything above the
+  table surface removed, remapped onto `/sim/octomap_cloud` for `move_group` only.
+  Gazebo's depth camera is noise-free, so each object becomes a solid block of
+  occupied voxels and MoveIt reports the gripper in collision with the very object
+  it is reaching for - every GPD candidate comes back "grasp pose unreachable"
+  (confirmed with `/compute_ik` + `/check_state_validity`). The real ZED cloud is
+  sparse enough that the same grasps clear. The table, floor and surroundings stay
+  in the octomap, so the arm still avoids them.
 - `sim_pnp_task_manager.py` uses the real `VisionTasks` / `ManipulationTasks`:
   look at the table, pick the closest graspable detection, place it next to the
   bowl on the side table, repeat.
+
+Navigation-only pieces:
+
+- `scripts/world_from_map.py` turns `robocup2026_1.pgm` + `.yaml` into
+  `worlds/arena_robocup2026_1.sdf`: the occupied cells are merged into wall boxes
+  **in map coordinates**, so the Gazebo world frame and the navigation map frame
+  are the same and `areas_robocup2026_1.json` applies unchanged. Regenerate with
+  `ros2 run frida_gz_sim world_from_map.py <map>.yaml worlds/<world>.sdf`.
+- `mobile_base:=true` swaps the `world -> base_link` anchor for gz's
+  `VelocityControl` (holonomic, driven from `/cmd_vel`) and `OdometryPublisher`
+  (`/odom` plus the `odom -> base_link` TF), and adds a `gpu_lidar` on
+  `lidar_front` and `lidar_rear`. Each lidar is blind over the ~90 degree wedge its
+  own chassis covers, the same wedge the real driver drops with `ignore_array`.
+- `cmd_vel_relay.py` converts nav2's `TwistStamped` `/cmd_vel` into the plain
+  `Twist` the gz bridge takes. Subscribing also makes `/cmd_vel` visible to
+  `nav_central`'s requirement check before nav2 is up.
+- `initial_pose.py` publishes the known spawn pose on `/initialpose`; on the robot
+  a human drops a 2D Pose Estimate and `nav_central` blocks until it arrives.
+- `nav2_sim_time.py` sets `use_sim_time` on nav2's lifecycle manager, which
+  `nav2_omni.launch.py` hardcodes to false; left on wall time it drops the
+  servers' bond heartbeats whenever the sim is not at 1.0 real-time factor.
+- `config/nav2_sim_overlay.yaml` is deep-merged onto `nav2_omni_limp.yaml` by
+  `nav2_omni.launch.py`: sim time everywhere, `odom_topic: /odom`, and the RGBD
+  voxel layers dropped (the sim has no `/point_cloud`; nav runs off the 2D lidar).
+- `config/mapper_params_sim.yaml` is `mapper_params_localization.yaml` with sim
+  time and `map_start_pose` set to the spawn pose. Keep the two in sync.
+- `sim_nav_task_manager.py` uses the real `NavigationTasks.move_to_location()`
+  and grades each goal against the robot's ground-truth Gazebo pose.
 
 ## Debugging headless
 
@@ -154,8 +229,15 @@ it can break when the packages it wraps change. What it relies on:
   `ros2_control`), and the `zed` link/joint names.
 - `pick_and_place.launch.py`, `arm_pkg` MoveIt launches, `perception_3d` and the
   `object_detector_2d` registry (`yolo_generic`).
-- `task_manager` `ManipulationTasks` / `VisionTasks` and the `frida_constants` topic
-  and frame names.
+- `task_manager` `ManipulationTasks` / `VisionTasks` / `NavigationTasks` and the
+  `frida_constants` topic and frame names.
+- `nav_main`: `omni_setup/localization.launch.py` and `omni_setup/nav2_omni.launch.py`
+  keeping their `map`, `params_file`, `nav2_overlay_file`, `use_static_map_server`
+  and `map_yaml` arguments, `nav_central.py`'s `/navigation/go_to_map_area` service
+  and its `default_base` / `nav_type` / `areas_map_name` parameters, and the
+  `nav2_omni_limp.yaml` node and plugin names the sim overlay patches.
+- `map_context`: `maps/robocup2026_1.*` and `maps/areas/areas_robocup2026_1.json`.
+- `ira_laser_tools` (a submodule; initialise it before building).
 
 After merging into this branch, rebuild (`run.sh build`) and run once
 (`run.sh up` + `run.sh tm`); launch-argument removals in those packages are the
@@ -163,9 +245,23 @@ most likely breakage.
 
 ## Known limits
 
-- The arm base is static; navigation and HRI are not simulated.
+- HRI is not simulated.
+- The base is velocity-driven, so it does not physically collide with the arena:
+  the lidars see the walls and nav2 avoids them, but a bad command drives through
+  one instead of bumping into it. Check the Gazebo pose, not just the nav result.
+- The arena walls are the mapped occupancy grid extruded to 1.2 m, so the sim only
+  contains what the lidar saw when the map was made: no furniture above lidar
+  height, no people, no doors.
+- `laundry/shelf` and `kitchen/counter` sit about 0.4 m from an obstacle, inside
+  nav2's 0.45 m inflation radius. They are reachable on the robot (the costmap is
+  softer than the real clearance) but flaky in sim; the default route avoids them.
+- `grasp_attach.py` assumes `base_link` is the world origin, which only holds with
+  a static base, so grasp assist is off in the nav worlds.
 - Placement uses the real heatmap place, which prefers the point closest to the
   robot. The sim aims it at the bowl (`close_to`) so objects do not land on the
   table edge; tall objects can still tip over on release.
 - Detection uses the generic COCO `yolo26s` model (`SIM_YOLO_MODEL` to change it),
   not the competition model, because the rendered objects are Fuel meshes.
+- `--areas all` is not a working combination yet (see above); run one area at a time.
+- Both bottles are detected as `bottle`, so the task manager's per-label attempt
+  limit can retire one of them before it is ever tried.

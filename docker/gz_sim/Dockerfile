@@ -72,6 +72,20 @@ RUN cd /tmp/gpd && rm -rf build && mkdir build && cd build \
     && cmake .. -DCMAKE_BUILD_TYPE=Release && make -j"$(nproc)" && make install \
     && ldconfig && rm -rf /tmp/gpd
 
+# Navigation stack (its own layer so the heavy layers above stay cached).
+# Explicit list rather than rosdep: nav_main also declares hardware-only packages
+# (omnidriver, sllidar_ros2, the joy interface) that the sim never runs.
+RUN apt-get update && apt-get install -y \
+    ros-${ROS_DISTRO}-navigation2 \
+    ros-${ROS_DISTRO}-nav2-bringup \
+    ros-${ROS_DISTRO}-slam-toolbox \
+    ros-${ROS_DISTRO}-rtabmap-slam \
+    ros-${ROS_DISTRO}-rtabmap-sync \
+    ros-${ROS_DISTRO}-rclcpp-lifecycle \
+    ros-${ROS_DISTRO}-rclcpp-action \
+    nlohmann-json3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN mkdir -p /workspace && chown -R $USERNAME:$USERNAME /workspace \
     && echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /home/$USERNAME/.bashrc \
     && echo "if [ -f /workspace/install/setup.bash ]; then source /workspace/install/setup.bash; fi" >> /home/$USERNAME/.bashrc

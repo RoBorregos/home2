@@ -37,16 +37,7 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
-    downsample_pcd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution(
-                [FindPackageShare("perception_3d"), "launch", "downsample_pc.launch.py"]
-            )
-        ),
-        launch_arguments={"use_sim_time": "true"}.items(),
-    )
-
-    return [moveit_common, downsample_pcd]
+    return [moveit_common]
 
 
 def generate_launch_description():

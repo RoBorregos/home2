@@ -4,17 +4,80 @@
   <xacro:arg name="image_width" default="640"/>
   <xacro:arg name="image_height" default="360"/>
   <xacro:arg name="camera_rate" default="10"/>
+  <!-- Mobile base: drop the world anchor and add the gz drive, odometry and lidars -->
+  <xacro:arg name="mobile_base" default="false"/>
+  <xacro:arg name="cmd_vel_topic" default="/sim/cmd_vel"/>
+  <xacro:arg name="lidar_rate" default="10"/>
+  <xacro:property name="mobile_base" value="$(arg mobile_base)"/>
 
   <!-- Real robot description; pass ros2_control_plugin:=gz_ros2_control/GazeboSimSystem -->
   <xacro:include filename="$(find frida_description)/urdf/omnibase/FRIDA_Real.urdf.xacro"/>
 
-  <!-- Static base: the sim does not navigate -->
-  <link name="world"/>
-  <joint name="world_to_base_link" type="fixed">
-    <parent link="world"/>
-    <child link="base_link"/>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-  </joint>
+  <!-- Static base for the manipulation worlds; the nav worlds drive base_link instead -->
+  <xacro:unless value="${mobile_base}">
+    <link name="world"/>
+    <joint name="world_to_base_link" type="fixed">
+      <parent link="world"/>
+      <child link="base_link"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:unless>
+
+  <xacro:if value="${mobile_base}">
+    <!-- Holonomic drive: gz sets the base velocity directly, like the mecanum base does -->
+    <gazebo>
+      <plugin filename="gz-sim-velocity-control-system" name="gz::sim::systems::VelocityControl">
+        <topic>$(arg cmd_vel_topic)</topic>
+      </plugin>
+      <plugin filename="gz-sim-odometry-publisher-system" name="gz::sim::systems::OdometryPublisher">
+        <odom_frame>odom</odom_frame>
+        <robot_base_frame>base_link</robot_base_frame>
+        <odom_topic>/sim/odom</odom_topic>
+        <tf_topic>/sim/odom_tf</tf_topic>
+        <odom_publish_frequency>50</odom_publish_frequency>
+        <dimensions>2</dimensions>
+      </plugin>
+    </gazebo>
+    <!-- The base is velocity-driven, so gravity would only fight the controller -->
+    <gazebo reference="base_link">
+      <gravity>false</gravity>
+    </gazebo>
+
+    <!-- RPLIDAR C1 pair. Each one is blind over the ~90 deg wedge its own chassis
+         covers, the same wedge the real driver drops with ignore_array. -->
+    <xacro:macro name="omni_lidar" params="link topic">
+      <gazebo reference="${link}">
+        <sensor name="${link}_scan" type="gpu_lidar">
+          <always_on>true</always_on>
+          <update_rate>$(arg lidar_rate)</update_rate>
+          <topic>${topic}</topic>
+          <gz_frame_id>${link}</gz_frame_id>
+          <lidar>
+            <scan>
+              <horizontal>
+                <samples>370</samples>
+                <resolution>1</resolution>
+                <min_angle>1.6057</min_angle>
+                <max_angle>6.2483</max_angle>
+              </horizontal>
+            </scan>
+            <range>
+              <min>0.20</min>
+              <max>12.0</max>
+              <resolution>0.01</resolution>
+            </range>
+            <noise>
+              <type>gaussian</type>
+              <mean>0.0</mean>
+              <stddev>0.01</stddev>
+            </noise>
+          </lidar>
+        </sensor>
+      </gazebo>
+    </xacro:macro>
+    <xacro:omni_lidar link="lidar_front" topic="scan_front"/>
+    <xacro:omni_lidar link="lidar_rear" topic="scan_rear"/>
+  </xacro:if>
 
   <!-- Gripper fingers, both commanded directly (no mimic in sim) -->
   <ros2_control name="FridaGripperSystem" type="system">
