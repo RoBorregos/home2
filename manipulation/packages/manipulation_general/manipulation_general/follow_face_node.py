@@ -16,6 +16,8 @@ from frida_constants.manipulation_constants import (
     MOVEIT_MODE,
     MANIPULATION_ENSURE_ARM_READY_SERVICE,
     FOLLOW_FACE_ARM_SERVICE,
+    MANIPULATION_ARM_BUSY_TOPIC,
+    ESTOP_TOPIC,
 )
 from frida_constants.vision_constants import FOLLOW_TOPIC
 from frida_interfaces.srv import FollowFace
@@ -23,6 +25,8 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from geometry_msgs.msg import Point
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile
+from std_msgs.msg import Bool
 from std_srvs.srv import Trigger
 from xarm_msgs.srv import MoveVelocity, SetInt16
 
@@ -44,6 +48,24 @@ class FollowFaceNode(Node):
     def __init__(self):
         super().__init__("follow_face_node")
         callback_group = ReentrantCallbackGroup()
+
+        # Manipulation owns the arm while busy or in e-stop
+        self.arm_busy = False
+        self.estop = False
+        self.create_subscription(
+            Bool,
+            MANIPULATION_ARM_BUSY_TOPIC,
+            lambda msg: setattr(self, "arm_busy", msg.data),
+            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
+            callback_group=callback_group,
+        )
+        self.create_subscription(
+            Bool,
+            ESTOP_TOPIC,
+            lambda msg: setattr(self, "estop", msg.data),
+            10,
+            callback_group=callback_group,
+        )
 
         # Face detection subscription
         self.create_subscription(
@@ -189,6 +211,12 @@ class FollowFaceNode(Node):
         self, request: FollowFace.Request, response: FollowFace.Response
     ):
         """Handle follow face service requests."""
+        if self.arm_busy or self.estop:
+            if request.follow_face:
+                self.get_logger().warn("Arm busy or e-stop, not following face")
+            self._yield_arm()
+            response.success = not request.follow_face
+            return response
         if request.follow_face:
             if self.is_following_face_active:
                 self.get_logger().info("Face following already active, skipping")
@@ -281,10 +309,21 @@ class FollowFaceNode(Node):
         finally:
             self.arm_moving = False
 
+    def _yield_arm(self):
+        """Stop and turn off without touching the xArm mode: manipulation owns it."""
+        if self.is_following_face_active:
+            self.get_logger().warn("Arm busy or e-stop, face following off")
+            self.is_following_face_active = False
+            self.arm_ready = False
+            self._send_velocity(0.0, 0.0)
+
     # -- Main loop --
 
     def _run_loop(self):
         """Timer callback: send velocity commands to track the face."""
+        if self.arm_busy or self.estop:
+            self._yield_arm()
+            return
         if not self.is_following_face_active or not self.arm_ready:
             return
 
