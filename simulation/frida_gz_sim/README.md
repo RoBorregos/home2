@@ -261,6 +261,13 @@ packages are the most likely breakage.
   with the arena: the lidars see the walls and nav2 avoids them, but a bad command
   drives through one instead of bumping into it. Check the Gazebo pose, not just
   the nav result.
+- Odometry comes straight from Gazebo's `OdometryPublisher` plugin (ground truth),
+  not from the real STM32/ODrive/EKF chain, and the wheel joints in `robot.xacro`
+  are fixed (cosmetic only) — the base moves as a single rigid body via
+  `VelocityControl`. This sim validates the nav2 stack (planner, costmaps,
+  behavior tree, nav_central), but not STM firmware, per-wheel IK, encoder
+  odometry, or wheel slip (e.g. the 3-wheel limp behavior described in
+  `nav2_omni_limp.yaml`). Bugs specific to that layer will not show up here.
 - The arena walls are the mapped occupancy grid extruded to 1.2 m, so the sim only
   contains what the lidar saw when the map was made: no furniture above lidar
   height, no people, no doors.

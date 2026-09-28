@@ -24,7 +24,10 @@
   </xacro:unless>
 
   <xacro:if value="${mobile_base}">
-    <!-- Holonomic drive: gz sets the base velocity directly, like the mecanum base does -->
+    <!-- Holonomic drive: gz sets the base velocity directly, like the mecanum base does.
+         The wheel_FL/FR/RL/RR joints from FRIDA_Real.urdf.xacro are fixed (cosmetic
+         only) - there is no per-wheel actuation, so this does not reproduce wheel-level
+         dynamics or the 3-wheel limp behavior described in nav2_omni_limp.yaml. -->
     <gazebo>
       <plugin filename="gz-sim-velocity-control-system" name="gz::sim::systems::VelocityControl">
         <topic>$(arg cmd_vel_topic)</topic>

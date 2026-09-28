@@ -27,6 +27,7 @@ def launch_setup(context, *args, **kwargs):
     map_name = LaunchConfiguration("map_name").perform(context)
     maps_dir = os.path.join(get_package_share_directory("map_context"), "maps")
     map_path = os.path.join(maps_dir, map_name)
+    nav2_config_file = LaunchConfiguration("nav2_config_file").perform(context)
 
     # Same merge the robot runs: two RPLIDARs -> one 360 deg /scan in base_link
     merger = Node(
@@ -62,17 +63,25 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
+    # nav2_omni.launch.py defaults to nav2_omni_limp.yaml (3-wheel degraded profile)
+    # when nav2_config_file is left unset, so leaving it out here keeps sim in sync
+    # with whatever profile the real robot is currently running. Pass
+    # nav2_config_file:=.../nav2_omni.yaml explicitly to test the healthy-base tuning.
+    nav2_launch_arguments = {
+        "nav2": "true",
+        "nav2_overlay_file": os.path.join(share, "config", "nav2_sim_overlay.yaml"),
+        "use_keepout": "false",
+        "use_static_map_server": "true",
+        "map_yaml": map_path + ".yaml",
+    }
+    if nav2_config_file:
+        nav2_launch_arguments["nav2_config_file"] = nav2_config_file
+
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(nav_main, "launch", "omni_setup", "nav2_omni.launch.py")
         ),
-        launch_arguments={
-            "nav2": "true",
-            "nav2_overlay_file": os.path.join(share, "config", "nav2_sim_overlay.yaml"),
-            "use_keepout": "false",
-            "use_static_map_server": "true",
-            "map_yaml": map_path + ".yaml",
-        }.items(),
+        launch_arguments=nav2_launch_arguments.items(),
     )
 
     # nav2's lifecycle manager ignores the launch-wide sim time; fix it before it bonds
@@ -124,6 +133,15 @@ def generate_launch_description():
     return LaunchDescription(
         [
             DeclareLaunchArgument("map_name", default_value="robocup2026_1"),
+            DeclareLaunchArgument(
+                "nav2_config_file",
+                default_value="",
+                description=(
+                    "Override for nav2_omni.launch.py's nav2_config_file arg. Leave "
+                    "empty to inherit its default (currently nav2_omni_limp.yaml, the "
+                    "3-wheel limp profile the real robot is running)."
+                ),
+            ),
             OpaqueFunction(function=launch_setup),
         ]
     )
