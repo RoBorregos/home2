@@ -112,7 +112,6 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         return raw_data.astype(np.float32) / 32768.0
 
 
-def serve(port, model, log_transcriptions, language="en", task="transcribe"):
 def load_warmup_audio(path):
     """Read a 16-bit wav as 16 kHz mono float32.
 
@@ -128,7 +127,7 @@ def load_warmup_audio(path):
     return np.interp(positions, np.arange(len(audio)), audio).astype(np.float32)
 
 
-def serve(port, model, log_transcriptions):
+def serve(port, model, log_transcriptions, language="en", task="transcribe"):
     # Create the gRPC server
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
