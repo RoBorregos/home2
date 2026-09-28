@@ -1,0 +1,4 @@
+# Shared pip constraints for the vision cuda/cpu images. Having this here reduces docker image size
+numpy==1.26.4
+torch==2.6.0
+torchvision==0.21.0

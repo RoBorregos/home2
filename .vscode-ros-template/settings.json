@@ -6,7 +6,7 @@
   "python.analysis.extraPaths": [
     {{PYTHON_PATHS}}
   ],
-  "ros.distro": "humble",
+  "ros.distro": "jazzy",
   "C_Cpp.intelliSenseEngine": "disabled",
   "clangd.path": "{{CLANGD_PATH}}",
   "clangd.enable": true,

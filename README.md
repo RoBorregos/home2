@@ -91,7 +91,6 @@ The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) a
 | `--build` | Builds the ROS 2 packages inside the container |
 | `--build-image` | Builds the Docker image for the specified area or task |
 | `--recreate` | Forces the recreation of containers |
-| `--open-display` | Opens the graphical interface for HRI or Vision |
 
 ## Cyclone DDS Setup
 

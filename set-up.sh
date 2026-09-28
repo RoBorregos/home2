@@ -1,5 +1,5 @@
 echo "RoBorregos @Home setup script for home2 environment";
-echo "Intended for Ubuntu 22.04 LTS";
+echo "Intended for Ubuntu 24.04 LTS";
 
 build=true
 upgrade=true
@@ -36,7 +36,7 @@ if [ "$upgrade" = true ]; then
 fi
 
 # Based in the tutorial: https://github.com/kineticsystem/vscode_ros2
-source /opt/ros/humble/setup.bash
+source /opt/ros/${ROS_DISTRO:-jazzy}/setup.bash
 
 if [ "$build" = true ]; then 
     if [ "$yes" = true ]; then

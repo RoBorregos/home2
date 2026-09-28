@@ -327,7 +327,7 @@ jobs:
             roborregos/home2:hri-cpu \
             bash -c "
               cd /workspace &&
-              source /opt/ros/humble/setup.bash &&
+              source /opt/ros/jazzy/setup.bash &&
               colcon build --packages-select frida_interfaces frida_constants nlp embeddings &&
               source install/setup.bash &&
               python3 src/hri/packages/embeddings/scripts/create_sql_dump.py

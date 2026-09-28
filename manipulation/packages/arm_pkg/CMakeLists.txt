@@ -95,7 +95,6 @@ target_link_libraries(gpd_service
 install(TARGETS gpd_test DESTINATION lib/${PROJECT_NAME})
 install(TARGETS gpd_service DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
-install(DIRECTORY worlds DESTINATION share/${PROJECT_NAME})
 
 # Python components
 ament_python_install_package(${PROJECT_NAME})

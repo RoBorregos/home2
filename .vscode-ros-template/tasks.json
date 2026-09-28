@@ -5,7 +5,7 @@
       "label": "colcon: build",
       "type": "shell",
       "command": [
-        "source /opt/ros/humble/setup.bash;",
+        "source /opt/ros/jazzy/setup.bash;",
         "colcon",
         "build",
         "--build-base {{WS_PATH}}/build",
