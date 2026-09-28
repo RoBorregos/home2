@@ -14,6 +14,14 @@ by yolo_finetuned):
     labels are discarded.
   - backbone: DINOv2 ViT-B/14, frozen.
   - matching: gallery_matcher.Gallery (per-class floor + top1-vs-top2 margin).
+
+TensorRT (config "use_trt": True, default): backbone runs via onnxruntime's
+TensorrtExecutionProvider (ONNX export + FP16 engine, cached under
+TENSORRT_CACHE_DIR like the other engines) instead of plain PyTorch —
+measured 932ms -> 209ms for an 8-crop batch on a Jetson Orin, cosine
+similarity 0.99995 against the PyTorch embeddings (FP16 loss is negligible).
+First load after a cache miss builds the engine (a few minutes); every
+restart after that reuses the cached one, same as load_yolo_trt.
 """
 
 import numpy as np
@@ -29,7 +37,9 @@ from .registry import MODELS_PATH, ModelRegistry
 class EmbeddingModel(DetectorModel):
     def load(self, config: dict):
         self.box_model = ModelRegistry.get(config["box_model"])
-        self.backbone = EmbeddingBackbone(config["backbone"]).load()
+        self.backbone = EmbeddingBackbone(
+            config["backbone"], use_trt=config.get("use_trt", True)
+        ).load()
         self.gallery = Gallery.load(MODELS_PATH + config["gallery_dir"])
         self.publish_unknown = config.get("publish_unknown", False)
         # Stable per-run label -> class_id; gallery objects have no fixed

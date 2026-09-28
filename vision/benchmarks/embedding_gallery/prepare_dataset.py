@@ -1,27 +1,33 @@
 #!/usr/bin/env python3
-"""One-off converter: RCW2026_v2 (Ultralytics YOLO-seg export, the real
-training data behind robocup2026_v1.pt) -> this benchmark's data/ layout.
+"""One-off converter: any Ultralytics YOLO-seg export (dataset/{train,valid,
+test}/{images,labels} + dataset/data.yaml with a `names:` list) -> this
+benchmark's data/ layout. Dataset-agnostic — point --source at any dataset
+in this shape, including a brand new one; class names come entirely from
+that dataset's own data.yaml and dataset_config.json (see that file), never
+hardcoded here.
 
-KNOWN LIMITATION (read before trusting any number this produces): per
-RCW2026_v2/imported_classes.json, every class's source images come from a
-SINGLE "from_repo" identifier (e.g. apple's images are all
-"apple_RCWarmUp2.0"). dataset/data.yaml's train/valid/test split is a random
-split of frames WITHIN that one capture session, not a split across
-independent sessions. So held_out/ built from this script is a
+Calibrated so far only against RCW2026_v2 (the real training data behind
+robocup2026_v1.pt — see README.md / git history for those results).
+
+KNOWN LIMITATION with RCW2026_v2 specifically (read before trusting any
+number this produces against THAT dataset): per its imported_classes.json,
+every class's source images come from a SINGLE "from_repo" identifier (e.g.
+apple's images are all "apple_RCWarmUp2.0"). Its data.yaml train/valid/test
+split is a random split of frames WITHIN that one capture session, not a
+split across independent sessions. So held_out/ built from RCW2026_v2 is a
 different-FRAME split, not a different-SESSION split — recall@1 measured on
 it is an optimistic sanity check (same lighting/background/backdrop as
-gallery_photos/), not the field number the plan's Phase 1 gate actually
-requires. A real gate pass still needs a second, independently-shot photo
-session for held_out/. This script exists to validate the matching CODE end
-to end on real objects, and to get a rough DINOv2-vs-CLIP signal — not to
-sign off on recall@1/unknown-rejection targets.
+gallery_photos/), not the field number a real gate should require. A
+genuine validation still needs a second, independently-shot photo session
+for held_out/ — check whether a NEW dataset you point this at has the same
+limitation before trusting its numbers either.
 
 Labels are YOLO-SEG format (class_id x1 y1 x2 y2 ... xn yn, normalized
 polygon), not plain bbox — bbox here is the polygon's axis-aligned bounding
 box.
 
 Usage:
-    python3 prepare_dataset.py --source ~/Downloads/RCW2026_v2
+    python3 prepare_dataset.py --source /path/to/your/dataset
 """
 
 import argparse
@@ -31,6 +37,8 @@ import shutil
 from pathlib import Path
 
 from PIL import Image
+
+from dataset_config import load_dataset_config
 
 HERE = Path(__file__).parent
 DATA_DIR = HERE / "data"
@@ -43,31 +51,12 @@ TRANSLATION_PATH = (
     / "robocup2026_translation.json"
 )
 
-# Held out of gallery_photos/ entirely, so their held_out crops can serve as
-# genuine "not in the gallery" negatives for unknown_rejection_rate.
-# Names are PUBLISHED labels (post-translation) — see load_translation().
-OUT_OF_GALLERY_CLASSES = {"mangostane", "rubiks_cube", "seaweed"}
-
-# Curated because they're visually close within this 28-class set (per the
-# plan's critique: hard negatives must be *chosen*, not random) — cutlery,
-# kitchenware silhouettes, and round fruit are the closest look-alikes here.
-# coca_cola/coca_cola_zero and blue/brown_cereal_box are deliberately
-# excluded: robocup2026_translation.json already collapses each pair to one
-# published label (coke / cornflakes), so confusing them isn't a real error
-# for this matcher — the gallery is built on published labels below, so
-# those pairs never even become two separate classes to confuse.
-HARD_NEGATIVE_CLASSES = {
-    "fork",
-    "knife",
-    "spoon",
-    "cup",
-    "bowl",
-    "plate",
-    "red_bellpepper",
-    "yellow_bellpepper",
-    "apple",
-    "peach",
-}
+# Dataset-specific class names live in dataset_config.json, not here — edit
+# THAT file to adapt this script to a new object set. Names are PUBLISHED
+# labels (post-translation) — see load_translation().
+_cfg = load_dataset_config()
+OUT_OF_GALLERY_CLASSES = _cfg["out_of_gallery_classes"]
+HARD_NEGATIVE_CLASSES = _cfg["hard_negative_classes"]
 
 
 def load_translation() -> dict[str, str]:
@@ -300,7 +289,11 @@ def main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("--source", required=True, help="path to RCW2026_v2")
+    parser.add_argument(
+        "--source",
+        required=True,
+        help="path to a YOLO-seg export (see module docstring)",
+    )
     args = parser.parse_args()
     source = Path(args.source).expanduser()
 

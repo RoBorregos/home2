@@ -38,6 +38,8 @@ import numpy as np
 from backbone import EmbeddingBackbone
 from gallery_matcher import UNKNOWN, Gallery
 
+from dataset_config import load_dataset_config
+
 try:
     from rich.console import Console
     from rich.table import Table
@@ -62,29 +64,19 @@ DATA_DIR = HERE / "data"
 RECALL_TARGET = 0.80
 REJECTION_TARGET = 0.80
 
-# Published labels excluded from the recall gate, each with a specific,
-# evidenced reason — not a growing list to make the number look better:
-#   fork/knife/spoon, cup/bowl/plate: confuse ONLY within their own group
-#   (thin-cutlery / round-kitchenware silhouettes), never with an unrelated
-#   class — see results/benchmark_*.json cases.
-#   coke/red_bull: confuse ONLY with each other (both cylindrical cans) —
-#   same failure shape as cutlery, just discovered later on a bigger
-#   held_out sample (n=12/class was too small to catch it — see git history).
-# All of these are ALREADY covered by yolo_finetuned (part of
-# robocup2026_v1.pt's trained classes), so the embedding path doesn't need
-# to solve them too. Classes NOT here (e.g. "milk", ~37% fail with no clean
-# look-alike — just noisy embeddings) are real, accepted weak points, kept
-# IN the gate rather than swept out to inflate the pass rate.
-KNOWN_LIMITATION_CLASSES = {
-    "fork",
-    "knife",
-    "spoon",
-    "cup",
-    "bowl",
-    "plate",
-    "coke",
-    "red_bull",
-}
+# Published labels excluded from the recall gate. Lives in
+# dataset_config.json, not here — see that file's docstring for how this
+# list is derived (empirically, from a benchmark run's per-class confusion
+# breakdown — never guessed ahead of time) and why it must be re-derived,
+# not copied, for a new object set. For RCW2026_v2 specifically, each entry
+# has a specific, evidenced reason (not a growing list to inflate the pass
+# rate): fork/knife/spoon and cup/bowl/plate confuse ONLY within their own
+# group (thin-cutlery / round-kitchenware silhouettes) never with an
+# unrelated class; coke/red_bull confuse ONLY with each other (both
+# cylindrical cans). All are ALREADY covered by yolo_finetuned. Classes NOT
+# here (e.g. "milk", ~37% fail with no clean look-alike — just noisy
+# embeddings) are real, accepted weak points, kept IN the gate.
+KNOWN_LIMITATION_CLASSES = load_dataset_config()["known_limitation_classes"]
 
 # Coarse grid on cached embeddings — cheap, widen freely.
 SIM_GRID = [round(v, 2) for v in np.arange(0.10, 0.95, 0.05)]

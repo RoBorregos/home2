@@ -47,6 +47,7 @@ MODEL_CONFIGS: dict[str, dict] = {
         "box_model": "embedding_box_proposer",
         "gallery_dir": "gallery",
         "translation": "robocup2026_translation.json",
+        "use_trt": True,  # 932ms->209ms/8crops on Orin, 0.99995 cosine-sim vs PyTorch
     },
 }
 

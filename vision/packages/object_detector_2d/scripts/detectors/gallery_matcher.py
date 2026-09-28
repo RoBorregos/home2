@@ -14,13 +14,18 @@ import numpy as np
 
 UNKNOWN = "unknown"
 
-# Calibrated by vision/benchmarks/embedding_gallery/report.py's Phase 1 grid
-# sweep on real RCW2026_v2 crops with DINOv2 ViT-B/14 (82% recall@1 gated /
-# 84% unknown-rejection — see that benchmark's README.md and
-# results/thresholds.json). New objects fall back to these until re-tuned;
-# per-class values from manifest.json override both.
-DEFAULT_MIN_SIMILARITY = 0.5
-DEFAULT_MARGIN_MIN = 0.02
+# Calibrated by vision/benchmarks/embedding_gallery/e2e_calibrate.py against
+# REAL box-proposer crops (YOLOE prompt-free, matched to RCW2026_v2 ground
+# truth), not report.py's ground-truth-polygon crops. report.py's oracle
+# threshold (0.5/0.02: 82% recall / 84% rejection on clean crops) measured
+# 82% recall / only 76% rejection once real, noisier proposer crops were in
+# the loop — the floor was tuned for cleaner crops than production actually
+# sees. This one (83% recall / 81% rejection on the SAME real crops) is
+# lower-but-stricter: a lower similarity floor tolerates real-crop noise,
+# and a wider margin still rejects ambiguous matches. New objects fall back
+# to these until re-tuned; per-class values from manifest.json override both.
+DEFAULT_MIN_SIMILARITY = 0.4
+DEFAULT_MARGIN_MIN = 0.04
 
 
 def l2_normalize(vectors: np.ndarray) -> np.ndarray:
