@@ -177,10 +177,26 @@ def launch_function(context, *args, **kwargs):
         parameters=[smoother_params],
     )
 
+    # Semantic navigation: patrol routes over the tagged sublocation poses and
+    # scan bookkeeping for revisits (issue #1268, navigation's half).
+    semantic_nav_node = Node(
+        package='nav_main',
+        executable='semantic_nav_node.py',
+        name='semantic_nav',
+        output='screen',
+        emulate_tty=True,
+        parameters=[
+            os.path.join(
+                get_package_share_directory('nav_main'), 'config', 'semantic_nav.yaml'),
+            {'map_name': areas_map_name},
+        ],
+    )
+
     launch_actions = [
         nav_central_node,
         nav_ui_node,
         person_goal_smoother_node,
+        semantic_nav_node,
         omni_basics,
     ]
 

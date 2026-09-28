@@ -1,0 +1,19 @@
+# Request
+# Which map area (room) contains this point, and which named sublocations
+# (furniture/placement poses) of that area are closest to it. The point may be
+# stamped in any TF frame; nav_central transforms it to the map frame first.
+#
+# Single source of truth for "where is this?": vision and task_manager should
+# call this instead of re-implementing point-in-polygon against their own copy
+# of areas.json (only the active map's areas_<MAP_NAME>.json is authoritative).
+
+geometry_msgs/PointStamped point
+float32 max_sublocation_distance   # meters; <= 0 uses the default (1.5)
+---
+#Response
+bool success
+string area                        # "" when the point is in no area polygon
+string[] sublocations              # names in `area`, sorted by XY distance
+float32[] distances                # meters, same order as sublocations
+bool in_house                      # inside ANY area polygon
+string error

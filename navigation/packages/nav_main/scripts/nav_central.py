@@ -27,6 +27,8 @@ from frida_constants.navigation_constants import(
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
         AREAS_SERVICE,
+        GET_AREA_FOR_POINT_SERVICE,
+        SUBLOCATION_MAX_DISTANCE,
         TIMEOUT_REQUIREMENTS,
         CAMERA_RGB_TOPIC,
         CAMERA_INFO_TOPIC,
@@ -75,6 +77,7 @@ from frida_interfaces.srv import (
         GoToPose,
         GetRobotPose,
         ApproachPoint,
+        GetAreaForPoint,
         )
 from ament_index_python.packages import get_package_share_directory
 import tf2_ros
@@ -193,6 +196,9 @@ class Nav_Central(Node):
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
         self.map_areas_srv = self.create_service(MapAreas, AREAS_SERVICE, self.map_areas_callback, callback_group=self.service_group)
+        self.get_area_for_point_srv = self.create_service(
+            GetAreaForPoint, GET_AREA_FOR_POINT_SERVICE, self.get_area_for_point_callback,
+            callback_group=self.service_group)
         self.range_min = DOOR_CHECK.LIDAR_RANGE_MIN.value  
         self.range_max = DOOR_CHECK.LIDAR_RANGE_MAX.value
         self.door_rate = DOOR_CHECK.CHECKING_RATE.value
@@ -665,6 +671,118 @@ class Nav_Central(Node):
         else:
             response.areas = json.dumps(self.areas_data)
             self.nav_logger("info", "Map_areas -> Map Areas Sent")
+        return response
+
+    # ---------------------------------------------------------------- area lookup
+    # Keys of an area dict that are not placement sublocations: "polygon" is the
+    # room outline and "safe_place" is a nav standoff pose, not a surface where
+    # objects sit.
+    NON_SUBLOCATION_KEYS = ("polygon", "safe_place")
+
+    @staticmethod
+    def _point_in_polygon(x, y, polygon):
+        """Ray casting: is (x, y) inside `polygon` (list of [x, y] vertices)?"""
+        inside = False
+        n = len(polygon)
+        if n < 3:
+            return False
+        p1x, p1y = polygon[0][0], polygon[0][1]
+        for i in range(1, n + 1):
+            p2x, p2y = polygon[i % n][0], polygon[i % n][1]
+            if min(p1y, p2y) < y <= max(p1y, p2y) and x <= max(p1x, p2x):
+                if p1y != p2y:
+                    xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                    if p1x == p2x or x <= xinters:
+                        inside = not inside
+            p1x, p1y = p2x, p2y
+        return inside
+
+    def _areas_containing(self, x, y):
+        """Names of every area whose polygon contains (x, y). Areas without a
+        polygon (start_area, entrance, exit, inspection_point: referee waypoints,
+        not rooms) can never match."""
+        hits = []
+        for name, data in (self.areas_data or {}).items():
+            if not isinstance(data, dict):
+                continue
+            polygon = data.get("polygon") or []
+            if polygon and self._point_in_polygon(x, y, polygon):
+                hits.append(name)
+        return hits
+
+    def _nearest_sublocations(self, x, y, area, max_distance):
+        """(names, distances) of `area`'s sublocations sorted by XY distance,
+        keeping only those within `max_distance`."""
+        ranked = []
+        for name, pose in (self.areas_data or {}).get(area, {}).items():
+            if name in self.NON_SUBLOCATION_KEYS or name.endswith("_meta"):
+                continue
+            if not isinstance(pose, (list, tuple)) or len(pose) < 2:
+                continue
+            try:
+                dist = math.hypot(float(pose[0]) - x, float(pose[1]) - y)
+            except (TypeError, ValueError):
+                continue
+            if dist <= max_distance:
+                ranked.append((dist, name))
+        ranked.sort()
+        return [name for _, name in ranked], [float(d) for d, _ in ranked]
+
+    def get_area_for_point_callback(self, request, response):
+        """Point (any TF frame) -> containing area + its nearest sublocations.
+
+        Single source of truth for "where is this?": vision and task_manager call
+        this instead of running point-in-polygon against their own copy of
+        areas.json. Only the active map's areas_<MAP_NAME>.json is authoritative.
+        """
+        response.success = False
+        response.area = ""
+        response.sublocations = []
+        response.distances = []
+        response.in_house = False
+        response.error = ""
+
+        if self.areas_data is None:
+            response.error = "no areas data loaded"
+            self.nav_logger("error", "Get_area_for_point -> no areas data loaded")
+            return response
+
+        point = request.point
+        frame = point.header.frame_id or "map"
+        if frame != "map":
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    "map", frame, rclpy.time.Time(), timeout=Duration(seconds=1.0))
+                point = do_transform_point(point, tf)
+            except Exception as e:
+                response.error = f"TF {frame}->map failed: {e}"
+                self.nav_logger("error", f"Get_area_for_point -> {response.error}")
+                return response
+
+        x, y = point.point.x, point.point.y
+        max_distance = (request.max_sublocation_distance
+                        if request.max_sublocation_distance > 0.0
+                        else SUBLOCATION_MAX_DISTANCE)
+
+        hits = self._areas_containing(x, y)
+        response.in_house = len(hits) > 0
+        # Polygons may overlap slightly; the nearest sublocation breaks the tie.
+        if len(hits) > 1:
+            hits.sort(key=lambda a: (self._nearest_sublocations(x, y, a, float("inf"))[1] or [1e9])[0])
+        if hits:
+            response.area = hits[0]
+            names, distances = self._nearest_sublocations(x, y, response.area, max_distance)
+            response.sublocations = names
+            response.distances = distances
+
+        # Success means the lookup ran, not that the point landed in a room:
+        # the polygons do not tile the map, so "in no area" is a valid answer.
+        response.success = True
+        self.nav_logger(
+            "info",
+            f"Get_area_for_point -> ({x:.2f}, {y:.2f}) -> "
+            f"area='{response.area or 'unknown'}' "
+            f"sublocations={list(response.sublocations)[:3]}")
         return response
 
     def goal_feedback(self, feedback_msg):
