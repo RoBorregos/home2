@@ -10,6 +10,12 @@ Follows the `hri/benchmarks/{nlp,stt}/` shape (`models.json`, `run.sh`,
 diff and runnable headless/CI — a deliberate deviation from the original
 design doc's "offline notebook" wording.
 
+**Just here to add an object?** Skip to [Production workflow](#production-workflow-adding-a-real-object-no-retraining).
+**Swapping `yolo_finetuned` for a different model?** Skip to
+[Portability](#portability-a-different-yolo-model-or-a-different-dataset). Everything
+else on this page is the benchmark that validated the design and calibrated
+its defaults — useful context, not required reading to use the system.
+
 ## How it works
 
 Two separate phases — setup happens once per new object, runtime happens on
@@ -53,7 +59,7 @@ setup just wrote, adding an object silently does nothing.
 ## Results (real data, not simulated)
 
 Benchmarked against `RCW2026_v2`, the actual training set behind
-`robocup2026_v1.pt` (28 raw classes → 23 published classes after
+`robocup2026_v1.pt` (28 raw classes → 26 published classes after
 `robocup2026_translation.json` merges `coca_cola`+`coca_cola_zero`→`coke` and
 `blue_cereal_box`+`brown_cereal_box`→`cornflakes`). See
 `prepare_dataset.py`'s docstring for exactly how the real dataset gets
@@ -139,11 +145,11 @@ are **not** excluded; they're accepted, visible weak points, not hidden ones.
 
 ```
 data/
-  box_recall/            # Phase 0: images + annotations.json (pixel bboxes)
-  gallery_photos/<obj>/  # Phase 1: enrollment crops, one dir per published label
+  box_recall/             # Phase 0: images + annotations.json (pixel bboxes)
+  gallery_photos/<obj>/   # Phase 1: enrollment crops, one dir per published label
   held_out/               # Phase 1: recall@1 eval crops + annotations.json
-  hard_negatives/          # Phase 1: curated look-alike crops + annotations.json
-  out_of_gallery/           # Phase 1: crops of objects NOT in gallery_photos/
+  hard_negatives/         # Phase 1: curated look-alike crops + annotations.json
+  out_of_gallery/         # Phase 1: crops of objects NOT in gallery_photos/
 ```
 
 Rebuild all five from a fresh copy of a `RCW2026_v2`-shaped YOLO-seg export
@@ -181,21 +187,38 @@ benchmark), capture with the arena in mind:
 ## Running
 
 ```bash
-./run.sh boxes                                        # Phase 0
-./run.sh embeddings                                    # Phase 1, all backbones
-./run.sh embeddings --backbones dinov2_vitb14           # Phase 1, one backbone
-python3 finetune_head.py                                # Phase 4 (optional, not the default path)
+# Phase 0/1 — oracle-crop benchmark, on data/ (see "Dataset layout")
+./run.sh boxes                                          # Phase 0: box-proposer recall
+./run.sh embeddings                                     # Phase 1: all backbones in models.json
+./run.sh embeddings --backbones dinov2_vitb14            # Phase 1: one backbone
+
+# Real box-proposer crops — needs a YOLO-seg export, not just data/
+python3 e2e_eval.py --source /path/to/dataset --n-images 150       # sanity check, oracle vs real
+python3 e2e_calibrate.py --source /path/to/dataset --n-images 149  # (re)calibrate thresholds
+python3 e2e_calibrate.py --from-cache                                # re-optimize without re-embedding
+
+# Optional fine-tunes (not wired into production by default — see
+# "Real box-proposer crops vs. oracle crops")
+python3 finetune_head.py                                             # triplet loss, oracle crops
+python3 finetune_arcface.py --source /path/to/dataset --n-images 400 # ArcFace, real crops
+python3 finetune_arcface.py --from-cache                             # reuse cached train crops
 ```
 
 `results/thresholds.json` is written when a backbone clears the adjusted
-gate; `gallery_build.py` (in `detectors/`) reads it to seed default
-per-object match thresholds.
+gate; `gallery_build.py` reads it to seed default per-object match
+thresholds. `e2e_calibrate.py` writes its own
+`results/e2e_thresholds_perclass.json` separately (per-class, calibrated
+against real crops) — the two are not the same file and are not
+interchangeable inputs.
 
 ## Production workflow: adding a real object, no retraining
 
 This is the actual on-robot flow (separate from rebuilding this benchmark's
-`data/` above). Structure, in
-`vision/packages/object_detector_2d/scripts/detectors/`:
+`data/` above). Everything in this section runs from inside the container,
+**with your shell in**
+`vision/packages/object_detector_2d/scripts/detectors/` (where
+`add_object.sh` and `gallery_build.py` live) unless a command explicitly
+says otherwise:
 
 ```
 gallery_photos/<object_name>/*.jpg   # raw photos you provide (gitignored)
@@ -233,12 +256,15 @@ and colcon has no reason to know a gitignored runtime data directory
 changed — it only tracks source `.py` files. Running plain `gallery_build.py`
 against the **source** tree therefore has **zero effect** on a node running
 from `install/` until that directory is manually re-synced — which is
-exactly what `add_object.sh` automates:
+exactly what `add_object.sh` automates. Unlike every other command in this
+section, this one uses **absolute paths from the ROS workspace root**
+(`/workspace/` inside the container) — it doesn't matter what directory
+your shell is in when you run it:
 
 ```bash
-rm -rf install/object_detector_2d/lib/object_detector_2d/detectors/gallery
-cp -r vision/packages/object_detector_2d/scripts/detectors/gallery \
-      install/object_detector_2d/lib/object_detector_2d/detectors/gallery
+rm -rf /workspace/install/object_detector_2d/lib/object_detector_2d/detectors/gallery
+cp -r /workspace/src/vision/packages/object_detector_2d/scripts/detectors/gallery \
+      /workspace/install/object_detector_2d/lib/object_detector_2d/detectors/gallery
 ```
 
 Symptoms if this ever gets skipped (e.g. a different install layout
@@ -250,16 +276,48 @@ built in source. Re-running `colcon build` does **not** fix it. Verify what
 a running node actually has loaded with `ros2 topic echo
 /vision/detections_image` (annotated frame) if in doubt.
 
-## Adapting to a new dataset
+## Portability: a different YOLO model, or a different dataset
 
-`dataset_config.json` (loaded via `dataset_config.py`) is the **only** place
-dataset-specific class names live in this benchmark —
+Two independent axes — swapping one doesn't require touching the other.
+
+**Swapping `yolo_finetuned` for a different trained model.**
+`embedding_gallery` (the few-shot system this whole README is about) does
+not know or care what `yolo_finetuned` is. It runs its own box proposer
+(`embedding_box_proposer`, class-agnostic YOLOE) and matches against a
+gallery you build yourself with `add_object.sh` — nothing about it
+references RCW2026_v2, `robocup2026_v1.pt`, or any trained class name.
+Confirmed by reading `detectors/yolo.py`: it has zero hardcoded class names
+or dataset references; every model-specific bit lives in `registry.py`:
+
+```python
+"yolo_finetuned": {
+    "filename": "robocup2026_v1.pt",          # <- swap this
+    "type": "yolo",
+    "conf": 0.6,
+    "translation": "robocup2026_translation.json",  # <- and this (or drop it)
+    "use_trt": True,
+},
+```
+
+Drop the new `.pt` beside `registry.py`, point `filename` at it, and either
+write a new `translation.json` (raw model class name -> published label) or
+remove the `translation` key if the model's own class names are already
+what you want published. That's it — no other file changes.
+
+What this does **not** carry over automatically: `embedding_gallery`'s own
+calibration (`DEFAULT_MIN_SIMILARITY`/`DEFAULT_MARGIN_MIN` in
+`gallery_matcher.py`, `KNOWN_LIMITATION_CLASSES` in `report.py`) was
+measured against RCW2026_v2's specific objects and lighting. It's a
+reasonable starting point for a different model or environment, not a
+guarantee — re-run `report.py`/`e2e_calibrate.py` against your own data if
+you want numbers you can actually trust for the new setup.
+
+**Swapping the dataset this *benchmark* (not production) is validated
+against.** `dataset_config.json` (loaded via `dataset_config.py`) is the
+**only** place dataset-specific class names live here —
 `out_of_gallery_classes`, `hard_negative_classes` and
 `known_limitation_classes` (see `dataset_config.py`'s docstring for what
 each means and how to derive it; `known_limitation_classes` specifically
 cannot be guessed ahead of time, only discovered from a benchmark run's
 confusion breakdown). Point `prepare_dataset.py --source` at a new
 YOLO-seg export and edit that JSON file — no `.py` script needs touching.
-`gallery_matcher.py`'s `DEFAULT_MIN_SIMILARITY`/`DEFAULT_MARGIN_MIN` stay
-dataset-agnostic (they're a property of the backbone/margin design, not the
-object set) and don't need re-deriving unless you recalibrate.
