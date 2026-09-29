@@ -387,13 +387,11 @@ class Nav_Central(Node):
         if (self.no_topics_count >= NO_TOPICS_LIMIT or self.no_tf_count >= NO_TF_LIMIT) and self.nodes_status:
             self.nodes_status = False
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, {'Topics not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, pausing nodes ...")
-            self.pause_slam()
-            self.pause_nav2()
+            self._set_paused(True)
         elif self.no_topics_count == 0 and self.no_tf_count == 0 and not self.nodes_status:
             self.nodes_status = True
             self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
-            self.resume_slam()
-            self.resume_nav2()
+            self._set_paused(False)
         
 
     _LOG_COLORS = {"info": "38;5;119", "warn": "33", "error": "38;5;167", "fatal": "38;5;88"}
@@ -406,8 +404,7 @@ class Nav_Central(Node):
     def _resume_nav_callback(self, request, response):
         """Service callback: manually resume RTABMap and nav2 from the UI."""
         self.nav_logger("info", "Resume Nav Service -> Manual resume requested")
-        self.resume_slam()
-        self.resume_nav2()
+        self._set_paused(False)
         self.nodes_status = True
         self.no_topics_count = 0
         self.no_tf_count = 0
@@ -438,12 +435,8 @@ class Nav_Central(Node):
         # introduction) the idle monitor pauses Nav2, so bt_navigator is INACTIVE
         # and rejects the follow goal ("Action server is inactive"). Mirror the
         # go_to_pose/go_to_area path so the lifecycle is active before we send.
-        self.resume_slam()
-        self.resume_nav2()
-        if self.nav2_paused or not self.rtabmap_loaded:
-            self.nav_logger("error", "Follow Person -> Navigation not initialized; cannot follow")
+        if not self._ready_to_drive("Follow Person"):
             return
-        self._clear_costmaps()
 
         # 1. Tell person_goal_smoother to switch Nav2 params to follow mode
         if self.follow_mode_client.wait_for_service(timeout_sec=FOLLOW_MODE_SERVICE_TIMEOUT):
@@ -775,6 +768,28 @@ class Nav_Central(Node):
         # command motion into the brief blind window right after the clear.
         self.get_clock().sleep_for(Duration(seconds=settle_s))
 
+    def _ready_to_drive(self, tag):
+        """Resume SLAM + Nav2 and clear costmaps. False if navigation isn't up."""
+        self._set_paused(False)
+        if self.nav2_paused or not self.rtabmap_loaded:
+            self.nav_logger("error", f"{tag} -> Navigation not initialized")
+            return False
+        self._clear_costmaps()
+        return True
+
+    def _navigate(self, goal, tag, behavior_tree=None, after=None):
+        """Shared goal pipeline: back off a docked surface (so nav2 doesn't plan
+        from inside the inflation zone), resume + clear costmaps, drive, run
+        `after` on success while nav2 is still up, then pause. Returns (ok, msg)."""
+        self._retreat_if_docked()
+        if not self._ready_to_drive(tag):
+            return (False, "Navigation not initialized")
+        ok, msg = self.send_nav_goal(goal, behavior_tree)
+        if ok and after:
+            after()
+        self._set_paused(True)
+        return (ok, msg)
+
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
 
@@ -785,67 +800,25 @@ class Nav_Central(Node):
             response.success = False
             response.error = "Areas not loaded"
             return response
-        fetch_coords = self.areas_data.get(request.location, {}).get(request.sublocation)
+        fetch_coords = self._fetch_area_coords(request.location, request.sublocation)
         if fetch_coords is None:
             self.nav_logger("error", "Go_To_Area -> Area not found")
             response.success = False
             response.error = "Area not found"
             return response
 
-        # If parked at a surface, back off first so nav2 plans from a clear pose
-        # (avoids the planner starting inside the inflation/lethal zone).
-        self._retreat_if_docked()
-
-        self.resume_slam()
-        self.resume_nav2()
-        if self.nav2_paused or not self.rtabmap_loaded:
-            self.nav_logger("error", "Go_To_Area -> Navigation not initialized")
-            response.success = False
-            response.error = "Navigation not initialized"
-            return response 
-        # Fresh costmaps before planning/driving (clears stale marks from the
-        # docked/retreated pose, then settles for sensor repopulation).
-        self._clear_costmaps()
-
-        goal_coord = PoseStamped()
-        goal_coord.header.frame_id = "map"
-        goal_coord.pose.position.x = fetch_coords[0]
-        goal_coord.pose.position.y = fetch_coords[1]
-        goal_coord.pose.position.z = fetch_coords[2]
-        goal_coord.pose.orientation.x = fetch_coords[3]
-        goal_coord.pose.orientation.y = fetch_coords[4]
-        goal_coord.pose.orientation.z = fetch_coords[5]
-        goal_coord.pose.orientation.w = fetch_coords[6]
-
-        future = self.send_nav_goal(goal_coord)
-        response.success = future[0]
-        response.error = future[1]
-        self.pause_slam()
-        self.pause_nav2()
+        response.success, response.error = self._navigate(
+            self._pose_from_coords(fetch_coords), "Go_To_Area")
         return response
 
     def go_to_pose_callback(self, request, response):
         """Navigate to an arbitrary map-frame pose, through the same omni goal
         pipeline as go_to_area (retreat-if-docked, resume, clear costmaps, send goal)."""
         self.nav_logger("info", "Go_To_Pose -> Starting navigation to pose")
-        self._retreat_if_docked()
-        self.resume_slam()
-        self.resume_nav2()
-        if self.nav2_paused or not self.rtabmap_loaded:
-            self.nav_logger("error", "Go_To_Pose -> Navigation not initialized")
-            response.success = False
-            response.error = "Navigation not initialized"
-            return response
-        self._clear_costmaps()
         goal = request.target_pose
-        if not goal.header.frame_id:
-            goal.header.frame_id = "map"
-        bt = request.behavior_tree if request.behavior_tree else None
-        ok, msg = self.send_nav_goal(goal, behavior_tree=bt)
-        response.success = ok
-        response.error = msg
-        self.pause_slam()
-        self.pause_nav2()
+        goal.header.frame_id = goal.header.frame_id or "map"
+        response.success, response.error = self._navigate(
+            goal, "Go_To_Pose", request.behavior_tree or None)
         return response
 
     def get_robot_pose_callback(self, request, response):
@@ -913,23 +886,10 @@ class Nav_Central(Node):
                 f"{goal.pose.position.y:.2f}) for target ({tx:.2f}, {ty:.2f})")
 
         response.goal = goal
-        self._retreat_if_docked()
-        self.resume_slam()
-        self.resume_nav2()
-        if self.nav2_paused or not self.rtabmap_loaded:
-            response.success = False
-            response.error = "Navigation not initialized"
-            return response
-        self._clear_costmaps()
-        ok, msg = self.send_nav_goal(goal)
-        if ok:
-            # The goal checker can succeed inside xy tolerance without settling
-            # yaw — make sure the base front actually points at the person.
-            self._face_target(tx, ty)
-        response.success = ok
-        response.error = msg
-        self.pause_slam()
-        self.pause_nav2()
+        # The goal checker can succeed inside xy tolerance without settling
+        # yaw — make sure the base front actually points at the person.
+        response.success, response.error = self._navigate(
+            goal, "Approach_Point", after=lambda: self._face_target(tx, ty))
         return response
 
     def _face_target(self, tx, ty, tol=0.25):
@@ -1096,8 +1056,7 @@ class Nav_Central(Node):
 
         # Planner needs nav2 active; remember prior state to restore it after
         was_paused = self.nav2_paused
-        self.resume_slam()
-        self.resume_nav2()
+        self._set_paused(False)
         if self.nav2_paused:
             self.nav_logger("error", "Query_Path -> Could not resume nav2")
             response.error = "Could not resume nav2"
@@ -1114,8 +1073,7 @@ class Nav_Central(Node):
             self.nav_logger("info", f"Query_Path -> Path found: {distance:.2f} m")
         finally:
             if was_paused:
-                self.pause_slam()
-                self.pause_nav2()
+                self._set_paused(True)
         return response
 
     def check_for_topics(self, topics):
@@ -1250,62 +1208,25 @@ class Nav_Central(Node):
             return False
         return True
 
-    def pause_slam(self):
-        """Pause Slam function"""
-        if self.use_slam_toolbox:
-            # slam_toolbox self-recovers (respawn) — nothing to pause.
+    def _set_paused(self, paused):
+        """Pause/resume SLAM (RTABMap only; slam_toolbox self-recovers), then the
+        Nav2 lifecycle. No-op for whatever is disabled or already in that state."""
+        verb = "Pausing" if paused else "Resuming"
+        if not self.use_slam_toolbox:
+            if not self.rtabmap_loaded:
+                self.nav_logger("warn", f"{verb} Slam -> Rtabmap not loaded, skipping")
+            elif self._call_service_with_timeout(
+                    self.rtabmap_pause_client if paused else self.rtabmap_resume_client,
+                    Empty.Request(), TIMEOUT_RTAB_SERVICE, f"{verb} Slam"):
+                self.nav_logger("info", f"{verb} Slam -> done")
+        if not self.use_nav2 or self.nav2_paused == paused:
             return
-        if not self.rtabmap_loaded:
-            self.nav_logger("warn", "Pausing Slam -> Rtabmap not loaded, skipping")
-            return
-        self.nav_logger("info", "Pausing Slam -> Starting pause slam..")
-        ok = self._call_service_with_timeout(
-            self.rtabmap_pause_client, Empty.Request(),
-            TIMEOUT_RTAB_SERVICE, "Pausing Slam")
-        if ok:
-            self.nav_logger("info", "Pausing Slam -> Finished pausing slam")
-
-    def resume_slam(self):
-        """Resuming Slam function"""
-        if self.use_slam_toolbox:
-            return
-        if not self.rtabmap_loaded:
-            self.nav_logger("warn", "Resuming Slam -> Rtabmap not loaded, skipping")
-            return
-        self.nav_logger("info", "Resuming Slam -> Starting resume slam..")
-        ok = self._call_service_with_timeout(
-            self.rtabmap_resume_client, Empty.Request(),
-            TIMEOUT_RTAB_SERVICE, "Resuming Slam")
-        if ok:
-            self.nav_logger("info", "Resuming Slam -> Finished resuming slam")
-
-    def pause_nav2(self):
-        """Nav2 nodes pausing lifecycle"""
-
-        if not self.use_nav2 or self.nav2_paused:
-            return
-        self.nav_logger("info", "Pausing Nav2 -> Starting nav2 lifecycle pausing ...")
         req = ManageLifecycleNodes.Request()
-        req.command = ManageLifecycleNodes.Request.PAUSE
-        ok = self._call_service_with_timeout(
-            self.lifecycle_client, req, TIMEOUT_NAV2_LIFECYCLE, "Pausing Nav2")
-        if ok:
-            self.nav2_paused = True
-            self.nav_logger("info", "Pausing Nav2 -> Fully Paused nav2 lifecycles")
-
-    def resume_nav2(self):
-        """Nav2 nodes resume lifecycle"""
-
-        if not self.use_nav2 or not self.nav2_paused:
-            return
-        self.nav_logger("info", "Resume Nav2 -> Starting nav2 lifecycle resume ...")
-        req = ManageLifecycleNodes.Request()
-        req.command = ManageLifecycleNodes.Request.RESUME
-        ok = self._call_service_with_timeout(
-            self.lifecycle_client, req, TIMEOUT_NAV2_LIFECYCLE, "Resume Nav2")
-        if ok:
-            self.nav2_paused = False
-            self.nav_logger("info", "Resume Nav2 -> Fully resumed nav2 lifecycles")
+        req.command = ManageLifecycleNodes.Request.PAUSE if paused else ManageLifecycleNodes.Request.RESUME
+        if self._call_service_with_timeout(
+                self.lifecycle_client, req, TIMEOUT_NAV2_LIFECYCLE, f"{verb} Nav2"):
+            self.nav2_paused = paused
+            self.nav_logger("info", f"{verb} Nav2 -> done")
 
 def main(args=None):
     rclpy.init(args=args)
