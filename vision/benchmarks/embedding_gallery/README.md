@@ -24,7 +24,7 @@ every camera frame:
 flowchart TD
     subgraph SETUP["Setup — once per object, no retraining"]
         direction TB
-        P["10-30 photos<br/>gallery_photos/&lt;object&gt;/*.jpg"] --> GB["gallery_build.py"]
+        P["10-30 photos<br/>gallery_photos/&lt;object&gt;/*.jpg"] --> GB["add_object.sh<br/>(gallery_build.py + sync to install/)"]
         GB --> NPY["gallery/&lt;object&gt;.npy<br/>+ manifest.json (thresholds)"]
     end
 
@@ -210,30 +210,30 @@ Steps:
 mkdir -p gallery_photos/<object_name>
 # ...copy 10-30 photos in (see "Capture conditions" above)...
 
-python3 gallery_build.py \
-  --object <object_name> \
-  --photos "gallery_photos/<object_name>/*.jpg" \
-  --gallery-dir gallery/
+./add_object.sh <object_name>
+# equivalent to: --photos "gallery_photos/<object_name>/*.jpg"
 ```
 
-No `--backbone` needed — it defaults to whatever `MODEL_CONFIGS["embedding_gallery"]["backbone"]`
-in `registry.py` uses (single source of truth), and refuses to write (rather
-than silently corrupt the gallery) if the new object's embedding dimension
-doesn't match the rest — the failure mode that motivated that guard was
-exactly a mismatched `--backbone` flag. `embedding_gallery` is already in
-`config/parameters.yaml`'s `models:` list, so a plain node restart is all
-that's needed after this — no code change, no rebuild of anything *code*-
-related.
+`add_object.sh` builds the gallery entry **and** syncs it into `install/` in
+one step (see the gotcha below for why that second part is required — skip
+it and the new object silently never shows up). It does not restart the
+node; that part is still manual, on purpose. No `--backbone` needed — it
+defaults to `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in
+`registry.py` (single source of truth), and refuses to write if the new
+object's embedding dimension doesn't match the rest. `embedding_gallery` is
+already in `config/parameters.yaml`'s `models:` list, so a plain node
+restart is all that's needed afterward — no code change, no rebuild.
 
-**Critical gotcha (found the hard way, 2026-09-28): `colcon build` does NOT
-re-sync `gallery/` into `install/`.** A ROS2 ament_python package's
-installed copy (`install/object_detector_2d/lib/object_detector_2d/detectors/gallery/`)
-is populated once, whenever `gallery/` last happened to exist at build time,
-and colcon has no reason to know a gitignored runtime data directory changed
-— it only tracks source `.py` files. Running `gallery_build.py` against the
-**source** tree's `gallery/` (`vision/packages/object_detector_2d/scripts/detectors/gallery/`)
-therefore has **zero effect** on a node running from `install/` until that
-directory is manually re-synced:
+**Critical gotcha `add_object.sh` exists to paper over (found the hard way,
+2026-09-28): `colcon build` does NOT re-sync `gallery/` into `install/`.** A
+ROS2 ament_python package's installed copy
+(`install/object_detector_2d/lib/object_detector_2d/detectors/gallery/`) is
+populated once, whenever `gallery/` last happened to exist at build time,
+and colcon has no reason to know a gitignored runtime data directory
+changed — it only tracks source `.py` files. Running plain `gallery_build.py`
+against the **source** tree therefore has **zero effect** on a node running
+from `install/` until that directory is manually re-synced — which is
+exactly what `add_object.sh` automates:
 
 ```bash
 rm -rf install/object_detector_2d/lib/object_detector_2d/detectors/gallery
@@ -241,18 +241,14 @@ cp -r vision/packages/object_detector_2d/scripts/detectors/gallery \
       install/object_detector_2d/lib/object_detector_2d/detectors/gallery
 ```
 
-Symptoms if you skip this: the node loads and runs fine, logs a plausible
-`gallery=N objects`, and your new object simply never appears in
-`/vision/detections` — silently, no error, no crash, because the stale
-install-side gallery is internally consistent with itself, just not with
-what you just built in source. `gallery_build.py`'s dimension guard can't
-catch this either: it runs once, at write time, against the source tree —
-it has no way to know a *different*, already-loaded copy exists elsewhere.
-Re-running `colcon build` does **not** fix it. Verify what a running node
-actually has loaded with `ros2 topic echo /vision/detections_image`
-(annotated frame) or by adding a one-off
-`print(sorted(self.gallery.thresholds))` in `embedding.py`'s `load()` if in
-doubt.
+Symptoms if this ever gets skipped (e.g. a different install layout
+`add_object.sh` doesn't recognize): the node loads and runs fine, logs a
+plausible `gallery=N objects`, and the new object silently never appears in
+`/vision/detections` — no error, no crash, because the stale install-side
+gallery is internally consistent with itself, just not with what was just
+built in source. Re-running `colcon build` does **not** fix it. Verify what
+a running node actually has loaded with `ros2 topic echo
+/vision/detections_image` (annotated frame) if in doubt.
 
 ## Adapting to a new dataset
 
