@@ -42,6 +42,12 @@ SURFACE_TYPES: dict[str, tuple[float, str, float]] = {
     "unknown": (0.75, DEFAULT_ARM_POSE, DEFAULT_DWELL_S),
 }
 
+# Sublocations that are navigation waypoints, not furniture: a door or an entry
+# has no surface to stare at, so patrolling it only burns time.
+NON_SURFACE_NAMES = frozenset(
+    {"house_entry", "entry", "entrance", "exit", "door", "start", "start_point"}
+)
+
 # Substring -> type. Order matters: the first match wins, so put the specific
 # names before the generic ones ("bedside_table" before "table").
 NAME_TYPE_RULES: tuple[tuple[str, str], ...] = (
@@ -72,10 +78,15 @@ NAME_TYPE_RULES: tuple[tuple[str, str], ...] = (
     ("couch", "low_surface"),
     ("seats", "low_surface"),
     ("chair", "low_surface"),
+    ("coat_rack", "shelf"),
+    ("rack", "shelf"),
+    ("hanger", "shelf"),
     ("counter", "surface"),
     ("desk", "surface"),
     ("bar", "surface"),
     ("table", "surface"),
+    ("surface", "surface"),
+    ("items", "surface"),
 )
 
 # Not placement sublocations: the room outline and nav's own standoff pose.
@@ -84,8 +95,14 @@ META_SUFFIX = "_meta"
 
 
 def classify(name: str) -> str:
-    """Surface type for a sublocation name, or ``"unknown"``."""
+    """Surface type for a sublocation name.
+
+    Returns ``"waypoint"`` for entries that are navigation points rather than
+    furniture, and ``"unknown"`` when no rule matches.
+    """
     key = name.strip().lower()
+    if key in NON_SURFACE_NAMES:
+        return "waypoint"
     for token, surface_type in NAME_TYPE_RULES:
         if token in key:
             return surface_type
@@ -125,10 +142,13 @@ def load_viewpoints(
     areas_data: dict,
     areas: list[str] | None = None,
     require_polygon: bool = True,
+    include_waypoints: bool = False,
 ) -> list[Viewpoint]:
     """Every tagged sublocation of `areas_data` as a :class:`Viewpoint`.
 
-    `areas` filters by area name (``None`` = all). With `require_polygon`, areas
+    `areas` filters by area name (``None`` = all). Entries that are navigation
+    waypoints rather than furniture (``house_entry`` and friends) are skipped
+    unless `include_waypoints`. With `require_polygon`, areas
     without a ``"polygon"`` are skipped: ``start_area``, ``start_location``,
     ``entrance``, ``exit`` and ``inspection_point`` are referee waypoints, not
     rooms, and patrolling them wastes time.
@@ -157,6 +177,8 @@ def load_viewpoints(
 
             meta = data.get(f"{name}{META_SUFFIX}") or {}
             surface_type = str(meta.get("type") or classify(name))
+            if surface_type == "waypoint" and not include_waypoints:
+                continue
             height, arm_pose, dwell = SURFACE_TYPES.get(
                 surface_type, SURFACE_TYPES["unknown"]
             )

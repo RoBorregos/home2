@@ -25,6 +25,7 @@ import time
 import rclpy
 import tf2_ros
 from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import OccupancyGrid
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
@@ -35,6 +36,8 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 from frida_constants.navigation_constants import (
     AREAS_SERVICE,
+    GLOBAL_COSTMAP_TOPIC,
+    MAP_TOPIC,
     PATROL_MARKERS_TOPIC,
     PATROL_SCAN_RADIUS,
     PATROL_SCAN_YAW_TOLERANCE,
@@ -46,6 +49,7 @@ from frida_interfaces.srv import MapAreas, PlanPatrol
 from nav_main.semantic.route import order_by_staleness, order_route, route_length
 from nav_main.semantic.staleness import ScanLog
 from nav_main.semantic.surfaces import load_viewpoints
+from nav_main.semantic.viewpoints import Grid, validate_viewpoints
 
 MAP_FRAME = "map"
 BASE_FRAME = "base_link"
@@ -67,6 +71,15 @@ class SemanticNav(Node):
         self.marker_period = self._param("marker_period", 2.0)
         self.quick_mode_per_area = self._param("quick_mode_per_area", 1)
         snapshot_dir = self._param("snapshot_dir", "")
+
+        # A tagged pose that now sits inside the inflation makes Nav2 reject the
+        # goal and stalls the whole patrol, so every viewpoint is checked against
+        # the costmap and relocated around its furniture when it is blocked.
+        self.validate_with_costmap = self._param("validate_with_costmap", True)
+        self.viewpoint_check_radius = self._param("viewpoint_check_radius", 0.25)
+        self.viewpoint_max_cost = int(self._param("viewpoint_max_cost", 50))
+        self.viewpoint_max_shift = self._param("viewpoint_max_shift", 0.6)
+        self.viewpoint_probe_distance = self._param("viewpoint_probe_distance", 0.8)
 
         self.areas_data = None
         self.viewpoints = []
@@ -91,6 +104,21 @@ class SemanticNav(Node):
         self.staleness_pub = self.create_publisher(String, PATROL_STALENESS_TOPIC, latched)
         self.marker_pub = self.create_publisher(MarkerArray, PATROL_MARKERS_TOPIC, latched)
 
+        # Prefer the global costmap (static map + inflation + live obstacles,
+        # latched by Nav2 even while paused); fall back to the SLAM/static map.
+        self._costmap = None
+        self._static_map = None
+        self.create_subscription(
+            OccupancyGrid, GLOBAL_COSTMAP_TOPIC,
+            lambda msg: setattr(self, "_costmap", msg), latched,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            OccupancyGrid, MAP_TOPIC,
+            lambda msg: setattr(self, "_static_map", msg), latched,
+            callback_group=self.callback_group,
+        )
+
         self.create_timer(
             self.areas_retry_period, self._areas_timer, callback_group=self.callback_group
         )
@@ -104,11 +132,18 @@ class SemanticNav(Node):
             self.marker_period, self._marker_timer, callback_group=self.callback_group
         )
 
+        # NOT fetched here: _fetch_areas waits on a future that only the
+        # executor can complete, and the executor does not exist yet during
+        # __init__. A short one-shot timer does the first attempt instead, so
+        # the map is loaded ~1 s in rather than after the first retry period.
+        self._first_fetch_timer = self.create_timer(
+            1.0, self._first_fetch, callback_group=self.callback_group
+        )
+
         self.get_logger().info(
             f"semantic_nav up (map='{self.map_name or 'unset'}', "
             f"snapshot='{self.scan_log.path or 'memory only'}')"
         )
-        self._fetch_areas()
 
     # --------------------------------------------------------------------- setup
 
@@ -138,6 +173,11 @@ class SemanticNav(Node):
         return ""
 
     # ---------------------------------------------------------------- map areas
+
+    def _first_fetch(self):
+        """One-shot first attempt, cancelled as soon as the areas are in."""
+        if self.areas_data is not None or self._fetch_areas():
+            self._first_fetch_timer.cancel()
 
     def _areas_timer(self):
         if self.areas_data is None:
@@ -289,6 +329,24 @@ class SemanticNav(Node):
         }
         self.staleness_pub.publish(String(data=json.dumps(payload)))
 
+    # ------------------------------------------------------------------ grid
+
+    def _grid(self) -> Grid | None:
+        """The occupancy grid to validate viewpoints against, or None."""
+        if not self.validate_with_costmap:
+            return None
+        msg = self._costmap or self._static_map
+        if msg is None:
+            return None
+        return Grid(
+            data=msg.data,
+            width=msg.info.width,
+            height=msg.info.height,
+            resolution=msg.info.resolution,
+            origin_x=msg.info.origin.position.x,
+            origin_y=msg.info.origin.position.y,
+        )
+
     # --------------------------------------------------------------- service
 
     def plan_patrol_callback(self, request, response):
@@ -332,6 +390,28 @@ class SemanticNav(Node):
                 ]
             ]
 
+        grid = self._grid()
+        if grid is None and self.validate_with_costmap:
+            self.get_logger().warn(
+                "Plan_patrol -> no costmap yet; returning the tagged poses unchecked",
+                throttle_duration_sec=30.0,
+            )
+        report = validate_viewpoints(
+            viewpoints,
+            grid,
+            radius=self.viewpoint_check_radius,
+            max_cost=self.viewpoint_max_cost,
+            max_shift=self.viewpoint_max_shift,
+            probe_distance=self.viewpoint_probe_distance,
+        )
+        if report.relocated or report.dropped:
+            self.get_logger().warn(f"Plan_patrol -> costmap check: {report.summary}")
+        viewpoints = report.kept
+        if not viewpoints:
+            response.error = "every viewpoint is blocked in the costmap"
+            self.get_logger().error(f"Plan_patrol -> {response.error}")
+            return response
+
         if mode == "revisit":
             ordered, total = order_by_staleness(
                 viewpoints, self.scan_log.scans, self._now(), start
@@ -362,7 +442,7 @@ class SemanticNav(Node):
         response.success = True
         self.get_logger().info(
             f"Plan_patrol -> mode='{mode}' {len(ordered)} viewpoints, {total:.1f} m, "
-            f"dwell {sum(vp.dwell_s for vp in ordered):.0f} s"
+            f"dwell {sum(vp.dwell_s for vp in ordered):.0f} s ({report.summary})"
         )
         return response
 

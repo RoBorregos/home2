@@ -80,6 +80,7 @@ from frida_interfaces.srv import (
         GetAreaForPoint,
         )
 from ament_index_python.packages import get_package_share_directory
+from nav_main.semantic.areas import area_for_point
 import tf2_ros
 import json
 import time as t
@@ -674,59 +675,8 @@ class Nav_Central(Node):
         return response
 
     # ---------------------------------------------------------------- area lookup
-    # Keys of an area dict that are not placement sublocations: "polygon" is the
-    # room outline and "safe_place" is a nav standoff pose, not a surface where
-    # objects sit.
-    NON_SUBLOCATION_KEYS = ("polygon", "safe_place")
-
-    @staticmethod
-    def _point_in_polygon(x, y, polygon):
-        """Ray casting: is (x, y) inside `polygon` (list of [x, y] vertices)?"""
-        inside = False
-        n = len(polygon)
-        if n < 3:
-            return False
-        p1x, p1y = polygon[0][0], polygon[0][1]
-        for i in range(1, n + 1):
-            p2x, p2y = polygon[i % n][0], polygon[i % n][1]
-            if min(p1y, p2y) < y <= max(p1y, p2y) and x <= max(p1x, p2x):
-                if p1y != p2y:
-                    xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-                    if p1x == p2x or x <= xinters:
-                        inside = not inside
-            p1x, p1y = p2x, p2y
-        return inside
-
-    def _areas_containing(self, x, y):
-        """Names of every area whose polygon contains (x, y). Areas without a
-        polygon (start_area, entrance, exit, inspection_point: referee waypoints,
-        not rooms) can never match."""
-        hits = []
-        for name, data in (self.areas_data or {}).items():
-            if not isinstance(data, dict):
-                continue
-            polygon = data.get("polygon") or []
-            if polygon and self._point_in_polygon(x, y, polygon):
-                hits.append(name)
-        return hits
-
-    def _nearest_sublocations(self, x, y, area, max_distance):
-        """(names, distances) of `area`'s sublocations sorted by XY distance,
-        keeping only those within `max_distance`."""
-        ranked = []
-        for name, pose in (self.areas_data or {}).get(area, {}).items():
-            if name in self.NON_SUBLOCATION_KEYS or name.endswith("_meta"):
-                continue
-            if not isinstance(pose, (list, tuple)) or len(pose) < 2:
-                continue
-            try:
-                dist = math.hypot(float(pose[0]) - x, float(pose[1]) - y)
-            except (TypeError, ValueError):
-                continue
-            if dist <= max_distance:
-                ranked.append((dist, name))
-        ranked.sort()
-        return [name for _, name in ranked], [float(d) for d, _ in ranked]
+    # The polygon maths lives in nav_main.semantic.areas so it can be tested
+    # offline and reused (the repo already had three divergent copies).
 
     def get_area_for_point_callback(self, request, response):
         """Point (any TF frame) -> containing area + its nearest sublocations.
@@ -764,16 +714,12 @@ class Nav_Central(Node):
                         if request.max_sublocation_distance > 0.0
                         else SUBLOCATION_MAX_DISTANCE)
 
-        hits = self._areas_containing(x, y)
-        response.in_house = len(hits) > 0
-        # Polygons may overlap slightly; the nearest sublocation breaks the tie.
-        if len(hits) > 1:
-            hits.sort(key=lambda a: (self._nearest_sublocations(x, y, a, float("inf"))[1] or [1e9])[0])
-        if hits:
-            response.area = hits[0]
-            names, distances = self._nearest_sublocations(x, y, response.area, max_distance)
-            response.sublocations = names
-            response.distances = distances
+        area, names, distances, in_house = area_for_point(
+            self.areas_data, x, y, max_distance)
+        response.area = area
+        response.sublocations = names
+        response.distances = distances
+        response.in_house = in_house
 
         # Success means the lookup ran, not that the point landed in a room:
         # the polygons do not tile the map, so "in no area" is a valid answer.
