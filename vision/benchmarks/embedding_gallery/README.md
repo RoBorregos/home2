@@ -5,10 +5,10 @@ proposals, then compare DINOv2 vs CLIP as the embedding backbone and
 calibrate the gallery match threshold — **before** any code lands in
 `detectors/registry.py`. See the plan for the full phase breakdown and gates.
 
-Follows the `hri/benchmarks/{nlp,stt}/` shape (`models.json`, `tasks.py`,
-`run.sh`, `report.py`, `results/`) rather than a notebook, so it's reviewable
-as a diff and runnable headless/CI — a deliberate deviation from the
-original design doc's "offline notebook" wording.
+Follows the `hri/benchmarks/{nlp,stt}/` shape (`models.json`, `run.sh`,
+`report.py`, `results/`) rather than a notebook, so it's reviewable as a
+diff and runnable headless/CI — a deliberate deviation from the original
+design doc's "offline notebook" wording.
 
 ## How it works
 
