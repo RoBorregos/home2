@@ -25,6 +25,8 @@ from frida_constants.navigation_constants import (
     GO_TO_POSE_SERVICE,
     GET_ROBOT_POSE_SERVICE,
     APPROACH_POINT_SERVICE,
+    GET_AREA_FOR_POINT_SERVICE,
+    PLAN_PATROL_SERVICE,
     SUBTASK_MANAGER,
 )
 from frida_interfaces.srv import (
@@ -36,6 +38,8 @@ from frida_interfaces.srv import (
     GoToPose,
     GetRobotPose,
     ApproachPoint,
+    GetAreaForPoint,
+    PlanPatrol,
 )
 from std_srvs.srv import SetBool
 
@@ -89,6 +93,12 @@ class NavigationTasks:
         self.go_to_pose_srv = self.node.create_client(GoToPose, GO_TO_POSE_SERVICE)
         self.get_robot_pose_srv = self.node.create_client(GetRobotPose, GET_ROBOT_POSE_SERVICE)
         self.approach_point_srv = self.node.create_client(ApproachPoint, APPROACH_POINT_SERVICE)
+        # Semantic navigation (issue #1268): point -> area/furniture, and the
+        # patrol route over the tagged sublocation poses.
+        self.get_area_for_point_srv = self.node.create_client(
+            GetAreaForPoint, GET_AREA_FOR_POINT_SERVICE
+        )
+        self.plan_patrol_srv = self.node.create_client(PlanPatrol, PLAN_PATROL_SERVICE)
         # TF buffer so move_to_point can accept a PointStamped in any frame (e.g. a
         # camera-frame customer detection) and transform it to map before navigating.
         self.tf_buffer = tf2_ros.Buffer()
@@ -105,6 +115,11 @@ class NavigationTasks:
                 "follow_person_srv": {"client": self.follow_person_srv, "type": "service"},
                 "nav_query_srv": {"client": self.nav_query_srv, "type": "service"},
                 "dock_table_srv": {"client": self.dock_table_srv, "type": "service"},
+                "get_area_for_point_srv": {
+                    "client": self.get_area_for_point_srv,
+                    "type": "service",
+                },
+                "plan_patrol_srv": {"client": self.plan_patrol_srv, "type": "service"},
             },
             Task.RESTAURANT: {
                 "go_to_pose_srv": {"client": self.go_to_pose_srv, "type": "service"},
@@ -179,6 +194,123 @@ class NavigationTasks:
         else:
             CLog.nav(self.node, "INFO", "Map Areas dumped Succesfully")
             return (Status.EXECUTION_SUCCESS, json.loads(str(future.result().areas)))
+
+    # ── Semantic navigation (issue #1268) ──
+
+    @mockable(
+        return_value=(
+            Status.EXECUTION_SUCCESS,
+            {
+                "area": "kitchen",
+                "sublocations": ["dinner_table"],
+                "distances": [0.4],
+                "in_house": True,
+            },
+        ),
+        delay=1,
+    )
+    @service_check(
+        "get_area_for_point_srv",
+        (Status.EXECUTION_ERROR, {}),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def get_area_for_point(self, point: PointStamped, max_sublocation_distance: float = 0.0):
+        """Which room and piece of furniture a map point belongs to.
+
+        `point` may be stamped in any TF frame; nav_central transforms it. Use this
+        instead of running point-in-polygon locally: only the active map's
+        areas_<MAP_NAME>.json is authoritative.
+
+        Returns (Status, {"area", "sublocations", "distances", "in_house"}); `area`
+        is "" when the point falls in no room, which is a valid answer because the
+        polygons do not tile the map.
+        """
+        request = GetAreaForPoint.Request()
+        request.point = point
+        request.max_sublocation_distance = float(max_sublocation_distance)
+
+        future = self.get_area_for_point_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        )
+        result = future.result()
+        if result is None:
+            CLog.nav(self.node, "ERROR", "get_area_for_point: no response")
+            return (Status.EXECUTION_ERROR, {})
+        if not result.success:
+            CLog.nav(self.node, "WARN", f"get_area_for_point: {result.error}")
+            return (Status.EXECUTION_ERROR, {})
+
+        payload = {
+            "area": result.area,
+            "sublocations": list(result.sublocations),
+            "distances": list(result.distances),
+            "in_house": result.in_house,
+        }
+        CLog.nav(
+            self.node,
+            "INFO",
+            f"Point is in '{payload['area'] or 'unknown'}' " f"near {payload['sublocations'][:1]}",
+        )
+        return (Status.EXECUTION_SUCCESS, payload)
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=1)
+    @service_check(
+        "plan_patrol_srv",
+        (Status.EXECUTION_ERROR, []),
+        timeout=SUBTASK_MANAGER.SERVICE_TIMEOUT.value,
+    )
+    def plan_patrol(self, areas: list = [], mode: str = "full", max_viewpoints: int = 0):
+        """Ordered patrol route over the tagged furniture poses of the active map.
+
+        Nav plans, this manager drives: for each entry navigate to `pose`, ask
+        manipulation for `arm_pose`, then wait `dwell_s` so vision can confirm what
+        is on that surface.
+
+        `mode`: "full" (every surface), "quick" (one per room), "revisit" (stalest
+        first). Returns (Status, [{"pose", "area", "sublocation", "arm_pose",
+        "dwell_s"}]) in visit order.
+        """
+        request = PlanPatrol.Request()
+        request.areas = list(areas)
+        request.mode = mode
+        request.max_viewpoints = int(max_viewpoints)
+
+        future = self.plan_patrol_srv.call_async(request)
+        rclpy.spin_until_future_complete(
+            self.node, future, timeout_sec=SUBTASK_MANAGER.SERVICE_TIMEOUT.value
+        )
+        result = future.result()
+        if result is None:
+            CLog.nav(self.node, "ERROR", "plan_patrol: no response")
+            return (Status.EXECUTION_ERROR, [])
+        if not result.success:
+            CLog.nav(self.node, "WARN", f"plan_patrol: {result.error}")
+            return (Status.EXECUTION_ERROR, [])
+
+        route = [
+            {
+                "pose": pose,
+                "area": area,
+                "sublocation": sublocation,
+                "arm_pose": arm_pose,
+                "dwell_s": float(dwell),
+            }
+            for pose, area, sublocation, arm_pose, dwell in zip(
+                result.viewpoints,
+                result.areas_out,
+                result.sublocations,
+                result.arm_poses,
+                result.dwell_s,
+            )
+        ]
+        CLog.nav(
+            self.node,
+            "SUCCESS",
+            f"Patrol '{mode or 'full'}': {len(route)} viewpoints, "
+            f"{result.total_distance:.1f} m",
+        )
+        return (Status.EXECUTION_SUCCESS, route)
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, ""), delay=3)
     @service_check(
