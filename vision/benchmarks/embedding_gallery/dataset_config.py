@@ -1,26 +1,15 @@
-"""Per-object-set config — the ONLY place dataset-specific class names live
-in this benchmark. A new object set (new dataset, new competition season,
-new robot) almost certainly needs different values here:
+"""Per-object-set config — the only place dataset-specific class names live
+in this benchmark. Edit dataset_config.json (not this file) to adapt to a
+new object set:
 
-  - out_of_gallery_classes: which classes to hold out of gallery_photos/
-    entirely, so their crops can serve as genuine "not in the gallery"
-    negatives for unknown_rejection_rate. Pick 2-3 classes you don't mind
-    losing from the gallery for calibration purposes.
-  - hard_negative_classes: classes worth curating into hard_negatives/
-    because they're visually close (see the plan: hard negatives must be
-    *chosen*, not random). You can guess a first pass from the object list
-    (cutlery, same-shape-different-color items, etc.).
-  - known_limitation_classes: classes the calibrated gate excludes because
-    they ONLY confuse with each other, never with an unrelated class, and
-    are already covered by another detector (e.g. yolo_finetuned). This
-    CANNOT be guessed ahead of time — it's discovered by running
-    report.py/e2e_calibrate.py on the new dataset and reading the
-    per-class confusion breakdown in results/*.json, the same way this
-    benchmark's own list was built. Start this one empty for a new object
-    set; only add a class once you have evidence, not a hunch.
-
-Edit dataset_config.json (not this file, not the scripts that import it) to
-adapt to a new object set.
+  - out_of_gallery_classes: 2-3 classes held out of gallery_photos/ to serve
+    as "not in gallery" negatives for unknown-rejection.
+  - hard_negative_classes: visually-close classes curated into
+    hard_negatives/ — chosen, not random.
+  - known_limitation_classes: classes excluded from the recall gate because
+    they only confuse each other, never an unrelated class. Can't be
+    guessed — start empty, add a class only once report.py/e2e_calibrate.py
+    shows evidence in its confusion breakdown.
 """
 
 import json

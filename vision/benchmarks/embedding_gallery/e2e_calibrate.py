@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
 """Calibrate (min_similarity, margin_min) against REAL box-proposer crops,
-not report.py's ground-truth-polygon crops. e2e_eval.py showed the
-oracle-crop-calibrated threshold (0.5/0.02) under-performs once real
-box-proposal noise is in the loop: 75-76% recall / 76-79% rejection on real
-crops, vs 82%/84% measured on oracle crops. A global real-crop-calibrated
-threshold (0.4/0.04) already recovered unknown-rejection to 80.6% and
-nudged gated recall to 83.0% (see git history / results/e2e_calibrate_*.json).
+not report.py's ground-truth-polygon crops — e2e_eval.py showed the
+oracle-calibrated threshold (0.5/0.02) under-performs on real crops (75-76%
+recall / 76-79% rejection vs 82%/84% oracle). A global real-crop threshold
+(0.4/0.04) recovered that to 83.0%/80.6% (see results/e2e_calibrate_*.json).
 
-This version adds PER-CLASS threshold optimization on top of that global
-starting point — greedy coordinate descent, one class's (min_similarity,
-margin_min) at a time, holding the rest fixed, a few rounds until it stops
-improving. Classes like "milk" (systematically low similarity, no clean
-look-alike) may need a looser floor than classes that already sit near
-100% recall; a single global pair can't serve both.
+This version adds PER-CLASS threshold optimization on top — greedy
+coordinate descent, one class at a time, a few rounds until it stops
+improving. Classes like "milk" (no clean look-alike) may need a looser
+floor than classes already near 100%; a single global pair can't serve both.
 
-Box proposals and DINOv2 embeddings are the expensive step (~15min on the
-Orin) — cached to results/e2e_crops_cache.npz after the first run. Use
---from-cache to skip straight to threshold optimization on subsequent runs.
+Box proposals + embeddings are the expensive step (~15min on the Orin) —
+cached to results/e2e_crops_cache.npz. Use --from-cache to skip re-embedding.
 
 Usage:
     python3 e2e_calibrate.py --source ~/Downloads/RCW2026_v2 --n-images 149
@@ -58,19 +53,14 @@ from report import KNOWN_LIMITATION_CLASSES, SIM_GRID, MARGIN_GRID, embed_galler
 RECALL_TARGET = 0.80  # matches report.py's already-adjusted target
 REJECTION_TARGET = 0.80
 CACHE_PATH = Path(__file__).parent / "results" / "e2e_crops_cache.npz"
-# The CURRENT production default, read from gallery_matcher.py's own
-# constants (the single source of truth) instead of a copy that could drift
-# out of sync with it — this is only a "what's live right now" comparison
-# baseline, not a value this script should own or hardcode.
+# Read from gallery_matcher.py's own constants (single source of truth) so
+# this comparison baseline can't drift out of sync with what's actually live.
 GLOBAL_DEFAULT = (DEFAULT_MIN_SIMILARITY, DEFAULT_MARGIN_MIN)
 
-# First per-class run picked degenerate floors for a few classes (cornflakes/
-# pringles/trash_bin @ min_similarity=0.1 — barely a filter at all, several
-# @ margin_min=0.0 — no separation from the runner-up required). Those look
-# like overfitting to the 149-image calibration sample (e.g. a class with
-# few OOD near-misses in-sample has no penalty for going loose) rather than
-# a real signal, and would likely false-accept genuinely novel objects this
-# sample never tested. Floor the per-class search so it can't recreate that.
+# First per-class run picked degenerate floors for a few classes
+# (min_similarity=0.1, margin_min=0.0 — barely a filter) — overfitting to
+# the calibration sample rather than a real signal. Floor the search so it
+# can't recreate that.
 MIN_SIMILARITY_FLOOR = 0.3
 MARGIN_MIN_FLOOR = 0.02
 PER_CLASS_SIM_GRID = [v for v in SIM_GRID if v >= MIN_SIMILARITY_FLOOR]

@@ -52,30 +52,15 @@ except ImportError:
 HERE = Path(__file__).parent
 DATA_DIR = HERE / "data"
 
-# The original design doc's target was 90%/80%. Real measurement on
-# RCW2026_v2 (575 gallery / 690 held_out crops, 23 classes) never got there:
-# frozen DINOv2-B 76-81% recall (run-to-run noise at small sample sizes —
-# see git history), DINOv2-L 70%, CLIP 62%, a properly-regularized
-# fine-tuned head 79%, and widening KNOWN_LIMITATION_CLASSES further (e.g.
-# excluding "milk", which fails ~37% with no clean look-alike — just noisy
-# embeddings) only inches the number up before hitting diminishing returns.
-# 80% is the real, defensible bar this approach clears with the classes
-# below excluded — not reverse-engineered to match one run's decimal.
+# Original target was 90%/80%; real measurement never got there across
+# every backbone/fine-tune tried (see README.md). 80% is the defensible bar
+# this approach actually clears with KNOWN_LIMITATION_CLASSES excluded.
 RECALL_TARGET = 0.80
 REJECTION_TARGET = 0.80
 
-# Published labels excluded from the recall gate. Lives in
-# dataset_config.json, not here — see that file's docstring for how this
-# list is derived (empirically, from a benchmark run's per-class confusion
-# breakdown — never guessed ahead of time) and why it must be re-derived,
-# not copied, for a new object set. For RCW2026_v2 specifically, each entry
-# has a specific, evidenced reason (not a growing list to inflate the pass
-# rate): fork/knife/spoon and cup/bowl/plate confuse ONLY within their own
-# group (thin-cutlery / round-kitchenware silhouettes) never with an
-# unrelated class; coke/red_bull confuse ONLY with each other (both
-# cylindrical cans). All are ALREADY covered by yolo_finetuned. Classes NOT
-# here (e.g. "milk", ~37% fail with no clean look-alike — just noisy
-# embeddings) are real, accepted weak points, kept IN the gate.
+# Published labels excluded from the recall gate — lives in
+# dataset_config.json, not here (see that file's docstring for how the list
+# is derived and why it must be re-derived, not copied, per dataset).
 KNOWN_LIMITATION_CLASSES = load_dataset_config()["known_limitation_classes"]
 
 # Coarse grid on cached embeddings — cheap, widen freely.

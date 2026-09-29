@@ -14,10 +14,8 @@ from pathlib import Path
 
 import numpy as np
 
-# Same batch range embed_batch() actually uses (chunk_size=32) — the TRT
-# engine is built once for this whole range via an optimization profile, so
-# it doesn't silently rebuild (multi-minute stall) the first time a frame
-# happens to have a different crop count than some earlier frame.
+# Must cover embed_batch()'s chunk_size=32 range — the TRT engine builds
+# once for this whole range; a batch outside it forces a slow rebuild.
 TRT_MIN_BATCH = 1
 TRT_OPT_BATCH = 8
 TRT_MAX_BATCH = 32
@@ -28,18 +26,13 @@ class EmbeddingBackbone:
         self, backbone_id: str, img_size: int | None = None, use_trt: bool = False
     ):
         self.backbone_id = backbone_id
-        # DINOv2's timm default is 518px — ~5.8x the FLOPs of 224px for
-        # roughly the same self-attention cost per patch (measured on a
-        # Jetson Orin: 1532ms -> 263ms for an 8-crop batch). None keeps
-        # timm's own default; only override once the accuracy trade-off at
-        # a smaller size has been re-benchmarked (see report.py).
+        # None keeps timm's 518px default (1532ms->263ms/8-crop at 224px on
+        # an Orin) — only override once that accuracy trade-off is re-benchmarked.
         self.img_size = img_size
         self.is_clip = backbone_id.startswith("clip:")
-        # TensorRT via onnxruntime — same runtime insightface already uses
-        # in this repo (see vision_general/scripts/models/face_recognition.py's
-        # _insightface_providers()), not a new pattern. CLIP isn't supported
-        # here (ONNX-exporting CLIP's image tower is its own can of worms) —
-        # falls back to plain PyTorch with a warning.
+        # Same onnxruntime/TensorRT pattern face_recognition.py already uses.
+        # CLIP isn't supported (ONNX-exporting its image tower is its own
+        # project) — falls back to plain PyTorch with a warning.
         self.use_trt = use_trt and not self.is_clip
         self._model = None
         self._transform = None
@@ -163,14 +156,10 @@ class EmbeddingBackbone:
         )
 
     def embed_batch(self, crops: list, chunk_size: int = 32) -> np.ndarray:
-        """crops: list of PIL.Image (RGB). Returns [N, D] float32, NOT normalized
-        (callers that need cosine similarity should L2-normalize, e.g. via
-        gallery_matcher.l2_normalize) — kept raw here so callers that want to
-        cache embeddings before deciding on a normalization/threshold strategy
-        aren't forced to redo the forward pass.
-
-        Chunked internally: a single 600+-crop batch on CPU (the offline
-        benchmark's enrollment set) would otherwise allocate one huge tensor.
+        """crops: list of PIL.Image (RGB). Returns [N, D] float32, NOT
+        normalized (L2-normalize via gallery_matcher.l2_normalize if needed)
+        — kept raw so callers can cache before choosing a threshold strategy.
+        Chunked internally so a large batch doesn't allocate one huge tensor.
         """
         if self._model is None:
             self.load()

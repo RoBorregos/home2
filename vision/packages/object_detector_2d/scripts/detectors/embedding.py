@@ -3,25 +3,17 @@ embedding matched against a small per-object gallery (gallery_build.py) — no
 retraining to add an object. Anything outside the gallery reports as
 "unknown" (dropped by default; see `publish_unknown`).
 
-Chosen config (see vision/benchmarks/embedding_gallery/README.md for the
-real-data benchmark this comes from — recall@1 ~82%, unknown-rejection ~84%,
-excluding a short, evidenced list of shape-ambiguous classes already covered
-by yolo_finetuned):
-  - box proposer: YOLOE prompt-free (`yoloe-11l-seg-pf.pt`) at conf 0.10 —
-    97.1% recall@IoU0.5 on real RCW2026_v2 crops (see
-    vision/benchmarks/embedding_gallery/results/box_recall.json). Reused
-    as-is via the existing "yolo_e" type; only its boxes are used, its own
-    labels are discarded.
-  - backbone: DINOv2 ViT-B/14, frozen.
-  - matching: gallery_matcher.Gallery (per-class floor + top1-vs-top2 margin).
+Box proposer: YOLOE prompt-free (`yoloe-11l-seg-pf.pt`, conf 0.10, the
+"yolo_e" type) — only its boxes are used, its own labels are discarded.
+Backbone: DINOv2 ViT-B/14, frozen. Matching: gallery_matcher.Gallery
+(per-class floor + top1-vs-top2 margin). See
+vision/benchmarks/embedding_gallery/README.md for the benchmark this was
+calibrated against.
 
 TensorRT (config "use_trt": True, default): backbone runs via onnxruntime's
-TensorrtExecutionProvider (ONNX export + FP16 engine, cached under
-TENSORRT_CACHE_DIR like the other engines) instead of plain PyTorch —
-measured 932ms -> 209ms for an 8-crop batch on a Jetson Orin, cosine
-similarity 0.99995 against the PyTorch embeddings (FP16 loss is negligible).
-First load after a cache miss builds the engine (a few minutes); every
-restart after that reuses the cached one, same as load_yolo_trt.
+TensorrtExecutionProvider instead of plain PyTorch (932ms -> 209ms for an
+8-crop batch on a Jetson Orin, negligible accuracy loss). First load after a
+cache miss builds the engine (a few minutes); reused after that.
 """
 
 import numpy as np

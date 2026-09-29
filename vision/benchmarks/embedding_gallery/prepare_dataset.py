@@ -1,30 +1,19 @@
 #!/usr/bin/env python3
 """One-off converter: any Ultralytics YOLO-seg export (dataset/{train,valid,
 test}/{images,labels} + dataset/data.yaml with a `names:` list) -> this
-benchmark's data/ layout. Dataset-agnostic — point --source at any dataset
-in this shape, including a brand new one; class names come entirely from
-that dataset's own data.yaml and dataset_config.json (see that file), never
-hardcoded here.
+benchmark's data/ layout. Dataset-agnostic — class names come entirely from
+the dataset's own data.yaml and dataset_config.json, never hardcoded here.
 
-Calibrated so far only against RCW2026_v2 (the real training data behind
-robocup2026_v1.pt — see README.md / git history for those results).
-
-KNOWN LIMITATION with RCW2026_v2 specifically (read before trusting any
-number this produces against THAT dataset): per its imported_classes.json,
-every class's source images come from a SINGLE "from_repo" identifier (e.g.
-apple's images are all "apple_RCWarmUp2.0"). Its data.yaml train/valid/test
-split is a random split of frames WITHIN that one capture session, not a
-split across independent sessions. So held_out/ built from RCW2026_v2 is a
-different-FRAME split, not a different-SESSION split — recall@1 measured on
-it is an optimistic sanity check (same lighting/background/backdrop as
-gallery_photos/), not the field number a real gate should require. A
-genuine validation still needs a second, independently-shot photo session
-for held_out/ — check whether a NEW dataset you point this at has the same
-limitation before trusting its numbers either.
+KNOWN LIMITATION with RCW2026_v2 (the dataset this was calibrated against):
+per its imported_classes.json, every class's images come from a SINGLE
+capture session, so its train/valid/test split is a different-FRAME split,
+not a different-SESSION split — recall@1 measured on held_out/ is an
+optimistic sanity check (same lighting/backdrop as gallery_photos/), not a
+real field number. Check whether a NEW dataset has the same limitation
+before trusting its numbers.
 
 Labels are YOLO-SEG format (class_id x1 y1 x2 y2 ... xn yn, normalized
-polygon), not plain bbox — bbox here is the polygon's axis-aligned bounding
-box.
+polygon) — bbox here is the polygon's axis-aligned bounding box.
 
 Usage:
     python3 prepare_dataset.py --source /path/to/your/dataset
@@ -66,11 +55,8 @@ def load_translation() -> dict[str, str]:
 
 
 GALLERY_PHOTOS_PER_CLASS = 25  # matches the production 10-30 photo workflow
-HELD_OUT_PER_CLASS = 30  # bigger than the 12 used earlier — at 12/class a
-# single wrong prediction moves a class's recall by ~8 points, which made
-# run-to-run noise (different random photo draws) look like a real signal
-# (76% vs 80% between two otherwise-identical DINOv2-B runs). 30/class keeps
-# each wrong prediction worth ~3 points instead.
+HELD_OUT_PER_CLASS = 30  # at 12/class one wrong prediction moved recall by
+# ~8pts, making random-draw noise look like a real signal; 30 keeps it ~3pts.
 HARD_NEGATIVE_PER_CLASS = 10
 OUT_OF_GALLERY_PER_CLASS = 15
 BOX_RECALL_IMAGES = 25

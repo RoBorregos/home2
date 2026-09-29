@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 """End-to-end recall check: the production BOX PROPOSER's own predicted
 crops -> DINOv2 -> gallery match, instead of report.py's ground-truth-polygon
-crops. report.py's ~82% gated recall was measured on crops cut from
-RCW2026_v2's hand-labeled polygons — perfect boxes a real detector never
-gives you. A first run of this script (plain bbox crops) measured 71.6%
-recall (all classes) — a real ~5-10pt drop, because loose/shifted real boxes
-include background clutter the embedding matcher never saw during
-calibration.
+crops. Real boxes are loose/shifted and drag in background clutter the
+matcher never saw during calibration — report.py's ~82% gated recall dropped
+to 71.6% (all classes) once real proposer crops were used.
 
-This version also tests a fix: YOLOE is a SEGMENTATION model — it already
-returns a per-instance mask, never used anywhere in this pipeline before.
-Blanking the background OUTSIDE the mask (filled with DINOv2's own
-normalization mean, so it contributes ~zero signal post-normalization,
-rather than an arbitrary black square) before embedding should remove the
-clutter that a loose bbox crop drags in. Both variants (plain bbox vs.
-masked) run in the SAME pass over the SAME box proposals, so the comparison
-is apples-to-apples and YOLOE only runs once.
+Also tests a fix: YOLOE returns a per-instance mask (unused elsewhere in
+this pipeline) — blanking the background OUTSIDE it (filled with DINOv2's
+normalization mean, not an arbitrary black square) before embedding should
+remove that clutter. Both variants (plain bbox vs. masked) run in the same
+pass over the same box proposals, so the comparison is apples-to-apples.
 
 Two distinct failure modes are reported separately:
   - "missed_by_proposer": the box proposer never localized the object at

@@ -14,16 +14,11 @@ import numpy as np
 
 UNKNOWN = "unknown"
 
-# Calibrated by vision/benchmarks/embedding_gallery/e2e_calibrate.py against
-# REAL box-proposer crops (YOLOE prompt-free, matched to RCW2026_v2 ground
-# truth), not report.py's ground-truth-polygon crops. report.py's oracle
-# threshold (0.5/0.02: 82% recall / 84% rejection on clean crops) measured
-# 82% recall / only 76% rejection once real, noisier proposer crops were in
-# the loop — the floor was tuned for cleaner crops than production actually
-# sees. This one (83% recall / 81% rejection on the SAME real crops) is
-# lower-but-stricter: a lower similarity floor tolerates real-crop noise,
-# and a wider margin still rejects ambiguous matches. New objects fall back
-# to these until re-tuned; per-class values from manifest.json override both.
+# Calibrated by e2e_calibrate.py against REAL box-proposer crops, not
+# report.py's ground-truth-polygon ones — those looked better (82%/84%) but
+# only scored 76% rejection once real, noisier proposer crops were in the
+# loop. New objects fall back to these until re-tuned; manifest.json's
+# per-class values override both. See that benchmark's README for the numbers.
 DEFAULT_MIN_SIMILARITY = 0.4
 DEFAULT_MARGIN_MIN = 0.04
 
@@ -78,16 +73,13 @@ class Gallery:
 
     def match_batch(self, queries: np.ndarray) -> list[tuple[str, float, float]]:
         """queries: [Q, D], any scale. Returns one (label, top1_similarity, margin)
-        per row; label is UNKNOWN when the winning class misses its floor or its
-        margin over the runner-up class.
+        per row; label is UNKNOWN when the winning class misses its floor or
+        its margin over the runner-up class.
 
-        Margin is taken between CLASSES (best similarity per label), not between
-        the two closest individual vectors — with N photos per object, the
-        second-closest vector is usually another photo of the *same* object,
-        which would collapse the margin to ~0 even for a confident, correct
-        match. Ranking per-class maxima first is what makes the margin mean
-        "distinguishable from the next best object," which is the actual
-        rejection signal we want.
+        Margin is between CLASSES (best similarity per label), not between
+        the two closest vectors — with N photos per object the closest
+        runner-up vector is usually the *same* object, which would collapse
+        the margin to ~0 even for a correct match.
         """
         n = len(queries)
         if self.vectors.size == 0 or n == 0:

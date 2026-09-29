@@ -8,11 +8,10 @@ backbone id starts with "clip:"):
         --photos "gallery_photos/coke/*.jpg" \\
         --gallery-dir gallery/
 
---backbone defaults to whatever MODEL_CONFIGS["embedding_gallery"]["backbone"]
-in registry.py uses — override it only if you deliberately want a mismatched
-object (you don't: every object in one gallery must share the same backbone,
-same embedding dimension, or Gallery.load() crashes at the NEXT node restart,
-not now, which is a much worse time to find out).
+--backbone defaults to MODEL_CONFIGS["embedding_gallery"]["backbone"] in
+registry.py — don't override it. Every object in one gallery must share the
+same embedding dimension, or Gallery.load() crashes at the next node
+restart, not now.
 
 Writes gallery/<object>.npy (float32 [N, D], L2-normalized) and updates a
 single gallery/manifest.json across all objects (mirrors the MANIFEST.json
@@ -63,10 +62,8 @@ def build_gallery(
     backbone = EmbeddingBackbone(backbone_id).load()
     vectors = l2_normalize(backbone.embed_batch(crops))
 
-    # Every object in one gallery must share embedding dimension (Gallery
-    # stacks them into one matrix). Check against another object BEFORE
-    # writing anything — this exact mismatch (wrong --backbone) used to
-    # write a bad .npy silently and crash at the NEXT node restart instead.
+    # Check dimension against another object BEFORE writing anything — a
+    # wrong --backbone used to write a bad .npy silently and crash later.
     manifest_path = gallery_dir / "manifest.json"
     existing_manifest = (
         json.loads(manifest_path.read_text()) if manifest_path.exists() else {}

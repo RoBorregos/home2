@@ -1,22 +1,17 @@
 #!/usr/bin/env python3
-"""ArcFace fine-tune — the issue explicitly named "ArcFace or triplet loss";
-finetune_head.py only tried triplet (+3pt recall on ORACLE crops, not
-adopted). This trains a small linear projection with additive angular
-margin loss (Deng et al., ArcFace) on REAL box-proposer crops from
-RCW2026_v2's TRAIN split — not oracle ground-truth crops, and not the TEST
-split used for threshold calibration/evaluation, so this stays honest.
+"""ArcFace fine-tune — trains a small linear projection with additive
+angular margin loss (Deng et al.) on REAL box-proposer crops from the TRAIN
+split, kept separate from the TEST split used for calibration/evaluation.
 
-Design: the ArcFace classifier weight matrix is TRAINING-ONLY scaffolding,
-discarded after training. Inference still matches the trained projection's
-output against a per-object gallery via cosine similarity
-(gallery_matcher.Gallery) — same as the frozen backbone — so the "add a
-genuinely new object without retraining" property is preserved; only
+Design: the ArcFace classifier weight matrix is training-only scaffolding,
+discarded after training. Inference still matches the projection's output
+against the gallery via cosine similarity (gallery_matcher.Gallery), same as
+the frozen backbone — "add an object without retraining" still holds, only
 existing objects' embeddings get reshaped by the projection.
 
-Evaluated by reprojecting e2e_calibrate.py's already-cached TEST-split real
-crops (results/e2e_crops_cache.npz) through the trained head — no need to
-re-run the box proposer for evaluation, only for the one-time TRAIN-split
-collection (~15-18min on the Orin, cached separately so reruns are fast).
+Evaluated by reprojecting e2e_calibrate.py's cached TEST-split crops through
+the trained head — no box-proposer re-run needed for evaluation, only for
+the one-time TRAIN-split collection (~15-18min on the Orin, cached).
 
 Usage:
     python3 finetune_arcface.py --source ~/Downloads/RCW2026_v2 --n-images 400
