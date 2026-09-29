@@ -7,6 +7,7 @@ on:
       # Shared files that affect all areas
       - "docker/Dockerfile.ROS"
       - "docker/Dockerfile.ROS-l4t"
+      - "docker/l4t.yaml"
       # Area-specific files
       - "docker/hri/**"
       - "docker/vision/**"
@@ -50,8 +51,10 @@ jobs:
           filters: |
             base:
               - 'docker/Dockerfile.ROS'
+              - 'docker/Dockerfile.ROS-l4t'
               - 'docker/cpu.yaml'
               - 'docker/cuda.yaml'
+              - 'docker/l4t.yaml'
             hri:
               - 'docker/hri/**'
             vision:
@@ -60,10 +63,15 @@ jobs:
               - 'docker/navigation/Dockerfile.cpu'
             navigation_cuda:
               - 'docker/navigation/Dockerfile.cuda'
+            navigation_l4t:
+              - 'docker/navigation/Dockerfile.l4t'
+              - 'docker/navigation/Dockerfile.l4t-eigen'
             manipulation_cpu:
               - 'docker/manipulation/Dockerfile.cpu'
             manipulation_cuda:
               - 'docker/manipulation/Dockerfile.cuda'
+            manipulation_l4t:
+              - 'docker/manipulation/Dockerfile.l4t'
             integration:
               - 'docker/integration/**'
             display:
@@ -78,7 +86,7 @@ jobs:
           elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             needed=true
           else
-            for tag in cpu_base cuda_base; do
+            for tag in cpu_base cuda_base l4t_base; do
               if ! docker manifest inspect "roborregos/home2:${tag}" > /dev/null 2>&1; then
                 echo "::notice::Base image roborregos/home2:${tag} not found on DockerHub, will build"
                 needed=true
@@ -95,11 +103,12 @@ jobs:
           nav='[]'
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             if [ "${{ github.event.inputs.area }}" == "navigation" ] || [ "${{ github.event.inputs.area }}" == "all" ]; then
-              nav='["cpu","cuda"]'
+              nav='["cpu","cuda","l4t"]'
             fi
           else
             [ "${{ steps.filter.outputs.navigation_cpu }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["cpu"]')
             [ "${{ steps.filter.outputs.navigation_cuda }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["cuda"]')
+            [ "${{ steps.filter.outputs.navigation_l4t }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["l4t"]')
           fi
           echo "navigation=$nav" >> $GITHUB_OUTPUT
 
@@ -107,11 +116,12 @@ jobs:
           manip='[]'
           if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
             if [ "${{ github.event.inputs.area }}" == "manipulation" ] || [ "${{ github.event.inputs.area }}" == "all" ]; then
-              manip='["cpu","cuda"]'
+              manip='["cpu","cuda","l4t"]'
             fi
           else
             [ "${{ steps.filter.outputs.manipulation_cpu }}" == "true" ] && manip=$(echo "$manip" | jq -c '. + ["cpu"]')
             [ "${{ steps.filter.outputs.manipulation_cuda }}" == "true" ] && manip=$(echo "$manip" | jq -c '. + ["cuda"]')
+            [ "${{ steps.filter.outputs.manipulation_l4t }}" == "true" ] && manip=$(echo "$manip" | jq -c '. + ["l4t"]')
           fi
           echo "manipulation=$manip" >> $GITHUB_OUTPUT
 
@@ -120,7 +130,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────
   base:
     name: "Base [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(matrix.runner) }}
     needs: detect
     if: needs.detect.outputs.base_needed == 'true'
     strategy:
@@ -130,9 +140,20 @@ jobs:
           - env: cpu
             base_image: ubuntu:22.04
             tag: roborregos/home2:cpu_base
+            dockerfile: docker/Dockerfile.ROS
+            runner: '["ubuntu-latest"]'
           - env: cuda
             base_image: nvidia/cuda:11.8.0-devel-ubuntu22.04
             tag: roborregos/home2:cuda_base
+            dockerfile: docker/Dockerfile.ROS
+            runner: '["ubuntu-latest"]'
+          - env: l4t
+            base_image: ubuntu:24.04
+            tag: roborregos/home2:l4t_base
+            dockerfile: docker/Dockerfile.ROS-l4t
+            # Built on the Orin: JetPack's CUDA/TensorRT/OpenCV stack only
+            # exists on the actual aarch64 hardware, no cross-build possible.
+            runner: '["self-hosted", "l4t"]'
 
     steps:
       - name: Checkout
@@ -151,20 +172,23 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: docker
-          file: docker/Dockerfile.ROS
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ matrix.tag }}
           build-args: |
             BASE_IMAGE=${{ matrix.base_image }}
+            ROS_DISTRO=jazzy
+            USER_UID=1000
+            USER_GID=1000
           cache-from: type=registry,ref=${{ matrix.tag }}
           cache-to: type=inline
 
   # ─────────────────────────────────────────────────────────────
-  # HRI — 5 images × cpu + cuda (l4t excluded, requires self-hosted Jetson runner)
+  # HRI — 5 images × cpu + cuda + l4t (l4t builds on the self-hosted Orin runner)
   # ─────────────────────────────────────────────────────────────
   hri:
     name: "HRI [${{ matrix.service }}] [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted", "l4t"]') || 'ubuntu-latest' }}
     needs: [detect, base]
     if: |
       always() &&
@@ -177,10 +201,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
+        env: [cpu, cuda, l4t]
         service: [ros, stt, tts, ollama]
         exclude:
-          # ollama only exists for cuda (and l4t when re-enabled)
+          # ollama only exists for cuda and l4t
           - service: ollama
             env: cpu
 
@@ -226,7 +250,11 @@ jobs:
               echo "context=." >> $GITHUB_OUTPUT
               ;;
             tts)
-              echo "path=docker/hri/dockerfiles/Dockerfile.tts" >> $GITHUB_OUTPUT
+              if [ "${{ matrix.env }}" = "l4t" ]; then
+                echo "path=docker/hri/dockerfiles/Dockerfile.tts-l4t" >> $GITHUB_OUTPUT
+              else
+                echo "path=docker/hri/dockerfiles/Dockerfile.tts" >> $GITHUB_OUTPUT
+              fi
               echo "context=." >> $GITHUB_OUTPUT
               ;;
             ollama)
@@ -352,11 +380,11 @@ jobs:
           cache-to: type=inline
 
   # ─────────────────────────────────────────────────────────────
-  # VISION — cpu + cuda (l4t excluded, requires self-hosted Jetson runner)
+  # VISION — cpu + cuda + l4t (l4t builds on the self-hosted Orin runner)
   # ─────────────────────────────────────────────────────────────
   vision:
     name: "Vision [${{ matrix.image }}] [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted", "l4t"]') || 'ubuntu-latest' }}
     needs: [detect, base]
     if: |
       always() &&
@@ -369,7 +397,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
+        env: [cpu, cuda, l4t]
         image: [vision, moondream-server]
         exclude:
           # moondream images are env-independent (single tag), skip duplicates
@@ -429,11 +457,11 @@ jobs:
           cache-to: type=inline
 
   # ─────────────────────────────────────────────────────────────
-  # NAVIGATION — cpu + cuda (l4t excluded, requires self-hosted Jetson runner)
+  # NAVIGATION — cpu + cuda + l4t (l4t builds on the self-hosted Orin runner)
   # ─────────────────────────────────────────────────────────────
   navigation:
     name: "Navigation [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted", "l4t"]') || 'ubuntu-latest' }}
     needs: [detect, base]
     if: |
       always() &&
@@ -482,11 +510,11 @@ jobs:
           cache-to: type=inline
 
   # ─────────────────────────────────────────────────────────────
-  # MANIPULATION — cpu + cuda (l4t excluded, requires self-hosted Jetson runner)
+  # MANIPULATION — cpu + cuda + l4t (l4t builds on the self-hosted Orin runner)
   # ─────────────────────────────────────────────────────────────
   manipulation:
     name: "Manipulation [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted", "l4t"]') || 'ubuntu-latest' }}
     needs: [detect, base]
     if: |
       always() &&
@@ -535,11 +563,11 @@ jobs:
           cache-to: type=inline
 
   # ─────────────────────────────────────────────────────────────
-  # INTEGRATION — cpu + cuda (l4t excluded, requires self-hosted Jetson runner)
+  # INTEGRATION — cpu + cuda + l4t (l4t builds on the self-hosted Orin runner)
   # ─────────────────────────────────────────────────────────────
   integration:
     name: "Integration [${{ matrix.env }}]"
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.env == 'l4t' && fromJSON('["self-hosted", "l4t"]') || 'ubuntu-latest' }}
     needs: [detect, base]
     if: |
       always() &&
@@ -552,7 +580,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
+        env: [cpu, cuda, l4t]
 
     steps:
       - name: Checkout
