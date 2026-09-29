@@ -117,14 +117,12 @@ Functions</h2></td></tr>
 <tr class="separator:a6c82ef3cbcbb140092965676f4a24ed4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23a128ee3f3a9ab2fae5cfe2cd612f15"><td class="memItemLeft" align="right" valign="top">Optional[Tuple[float, float]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a23a128ee3f3a9ab2fae5cfe2cd612f15">_segment_xy</a> (<a class="el" href="classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html">_Segment</a> seg, <a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a80b7c89c3b1f6cea2b445f77493481b4">Locator</a> locator)</td></tr>
 <tr class="separator:a23a128ee3f3a9ab2fae5cfe2cd612f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a478b6559d51d686336d903567b78fa09"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a478b6559d51d686336d903567b78fa09">_seg_kind</a> (<a class="el" href="classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html">_Segment</a> seg)</td></tr>
-<tr class="separator:a478b6559d51d686336d903567b78fa09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3045ece173e7aeb7ef2575312470f018"><td class="memItemLeft" align="right" valign="top">List[List[bool]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a3045ece173e7aeb7ef2575312470f018">_build_holding_after</a> (Sequence[Sequence[<a class="el" href="classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html">_Segment</a>]] segments_per_cmd)</td></tr>
 <tr class="separator:a3045ece173e7aeb7ef2575312470f018"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ca8d248df6c7ca3a5f5c267b69ba21f"><td class="memItemLeft" align="right" valign="top">Optional[int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a2ca8d248df6c7ca3a5f5c267b69ba21f">_gripper_holder</a> (int S, int n_cmds, Sequence[int] cmd_seg_mask, Sequence[Sequence[bool]] holding_after)</td></tr>
 <tr class="separator:a2ca8d248df6c7ca3a5f5c267b69ba21f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a41828e11a9e27a359fa36032a81ea8d0"><td class="memItemLeft" align="right" valign="top">List[int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a41828e11a9e27a359fa36032a81ea8d0">_optimal_schedule</a> (Sequence[<a class="el" href="classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html">_Segment</a>] segments, Sequence[int] seg_cmd, Sequence[int] seg_pos, Sequence[int] cmd_seg_mask, Sequence[Sequence[bool]] holding_after, Sequence[str] seg_kinds, int n_cmds, <a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a80b7c89c3b1f6cea2b445f77493481b4">Locator</a> locator, Optional[Tuple[float, float]] origin)</td></tr>
-<tr class="separator:a41828e11a9e27a359fa36032a81ea8d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae2ca6e832c822e494d2378a7eedbd8cb"><td class="memItemLeft" align="right" valign="top">List[int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#ae2ca6e832c822e494d2378a7eedbd8cb">_optimal_schedule</a> (Sequence[<a class="el" href="classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html">_Segment</a>] segments, Sequence[int] seg_cmd, Sequence[int] seg_pos, Sequence[int] cmd_seg_mask, Sequence[Sequence[bool]] holding_after, int n_cmds, <a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a80b7c89c3b1f6cea2b445f77493481b4">Locator</a> locator, Optional[Tuple[float, float]] origin)</td></tr>
+<tr class="separator:ae2ca6e832c822e494d2378a7eedbd8cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdf1e6110b8d239def2680ef72d66d6a"><td class="memItemLeft" align="right" valign="top">List[int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#afdf1e6110b8d239def2680ef72d66d6a">_sequential_schedule</a> (Sequence[int] seg_cmd, Sequence[int] seg_pos)</td></tr>
 <tr class="separator:afdf1e6110b8d239def2680ef72d66d6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a821369fdc9d8991017c2ed4b24b73af3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classtask__manager_1_1gpsr_1_1merger_1_1InterleavedPlan.html">InterleavedPlan</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a821369fdc9d8991017c2ed4b24b73af3">merge</a> (Sequence[Any] commands, Optional[<a class="el" href="namespacetask__manager_1_1gpsr_1_1merger.html#a80b7c89c3b1f6cea2b445f77493481b4">Locator</a>] locator=None, Optional[Tuple[float, float]] origin=None)</td></tr>
@@ -412,8 +410,8 @@ any time, so we return the first match.
 
 </div>
 </div>
-<a id="a41828e11a9e27a359fa36032a81ea8d0" name="a41828e11a9e27a359fa36032a81ea8d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a41828e11a9e27a359fa36032a81ea8d0">&#9670;&#160;</a></span>_optimal_schedule()</h2>
+<a id="ae2ca6e832c822e494d2378a7eedbd8cb" name="ae2ca6e832c822e494d2378a7eedbd8cb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae2ca6e832c822e494d2378a7eedbd8cb">&#9670;&#160;</a></span>_optimal_schedule()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -450,12 +448,6 @@ any time, so we return the first match.
           <td></td>
           <td class="paramtype">Sequence[Sequence[bool]]&#160;</td>
           <td class="paramname"><em>holding_after</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">Sequence[str]&#160;</td>
-          <td class="paramname"><em>seg_kinds</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -497,7 +489,8 @@ Eligibility for adding segment u to S:
   1. Per-command prefix: bin(S &amp; cmd_seg_mask[seg_cmd[u]]).count("1")
      must equal seg_pos[u].
   2. Gripper-state: if some command c' currently holds the gripper and
-     c' != seg_cmd[u], then seg_kinds[u] must be "neutral".
+     c' != seg_cmd[u], then segment u must be gripper-neutral
+     (segments[u].ends_holding is None).
 
 Cost: f(S|{u}, u) = f(S, last) + dist(seg_xy[last], seg_xy[u])
                    + epsilon * (seg_cmd[u] != seg_cmd[last]).
@@ -509,32 +502,6 @@ enough to never override a real distance difference.
 
 Complexity: O(2^M · M²). M is capped at _M_CAP by the caller.
 </pre> 
-</div>
-</div>
-<a id="a478b6559d51d686336d903567b78fa09" name="a478b6559d51d686336d903567b78fa09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a478b6559d51d686336d903567b78fa09">&#9670;&#160;</a></span>_seg_kind()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"> str task_manager.gpsr.merger._seg_kind </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classtask__manager_1_1gpsr_1_1merger_1_1__Segment.html">_Segment</a>&#160;</td>
-          <td class="paramname"><em>seg</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
 </div>
 </div>
 <a id="a23a128ee3f3a9ab2fae5cfe2cd612f15" name="a23a128ee3f3a9ab2fae5cfe2cd612f15"></a>
