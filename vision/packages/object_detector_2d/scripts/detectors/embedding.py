@@ -13,13 +13,8 @@ from PIL import Image
 
 from .backbone import EmbeddingBackbone
 from .base import Detection, DetectorModel
-from .gallery_matcher import UNKNOWN, Gallery
+from .gallery_matcher import DEFAULT_MAX_BOX_AREA_FRAC, UNKNOWN, Gallery
 from .registry import MODELS_PATH, ModelRegistry
-
-# A box covering most of the frame is clutter, not an object — can score
-# higher than a correct small crop against a sparse gallery. Override via
-# MODEL_CONFIGS[...]["max_box_area_frac"] in registry.py if needed.
-DEFAULT_MAX_BOX_AREA_FRAC = 0.5
 
 
 @ModelRegistry.register("embedding")

@@ -18,16 +18,29 @@ single gallery/manifest.json across all objects (mirrors the MANIFEST.json
 convention fetch_models.py already uses). Re-running for the same object
 overwrites its .npy and refreshes photo count/backbone, but preserves any
 match thresholds already tuned by hand in manifest.json.
+
+By default each photo is cut down to its main object with the SAME box
+proposer and oversized-box filter the runtime detector uses, so the gallery
+holds crops like the ones it will be matched against (a whole-frame photo
+embeds background clutter the runtime crops never contain). Crops are saved
+to <photos dir>/_crops/ for a visual check; photos with no usable box are
+skipped with a warning. Pass --no-crop if the photos are already tight crops.
 """
 
 import argparse
 import glob
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 from backbone import EmbeddingBackbone
-from gallery_matcher import DEFAULT_MARGIN_MIN, DEFAULT_MIN_SIMILARITY, l2_normalize
+from gallery_matcher import (
+    DEFAULT_MARGIN_MIN,
+    DEFAULT_MAX_BOX_AREA_FRAC,
+    DEFAULT_MIN_SIMILARITY,
+    l2_normalize,
+)
 
 RECOMMENDED_MIN_PHOTOS = 10
 RECOMMENDED_MAX_PHOTOS = 30
@@ -43,22 +56,106 @@ except Exception:
     DEFAULT_BACKBONE = "vit_base_patch14_dinov2.lvd142m"
 
 
+def load_box_proposer() -> tuple:
+    """Return (proposer, max_box_area_frac) as configured for production.
+
+    Imported through the `detectors` package (not the bare modules used
+    elsewhere in this script) because yolo_e.py uses relative imports.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    import detectors  # noqa: F401  (registers the model types)
+    from detectors.registry import MODEL_CONFIGS, ModelRegistry
+
+    config = MODEL_CONFIGS["embedding_gallery"]
+    proposer = ModelRegistry.get(config["box_model"])
+    return proposer, config.get("max_box_area_frac", DEFAULT_MAX_BOX_AREA_FRAC)
+
+
+def pick_main_box(detections: list, w: int, h: int, max_area_frac: float):
+    """Pixel box (x1, y1, x2, y2) of the most likely main object, or None.
+
+    Drops oversized boxes (same rule as the runtime detector), then prefers
+    high-confidence boxes near the image centre — enrollment photos are
+    meant to have the object front and centre.
+    """
+    best, best_score = None, 0.0
+    for det in detections:
+        x1 = max(0, int(det.bbox_.x1 * w))
+        y1 = max(0, int(det.bbox_.y1 * h))
+        x2 = min(w, int(det.bbox_.x2 * w))
+        y2 = min(h, int(det.bbox_.y2 * h))
+        if x2 <= x1 or y2 <= y1:
+            continue
+        if (x2 - x1) * (y2 - y1) > max_area_frac * w * h:
+            continue
+        cx, cy = (x1 + x2) / 2 / w, (y1 + y2) / 2 / h
+        score = det.confidence_ * max(0.0, 1.0 - abs(cx - 0.5) - abs(cy - 0.5))
+        if score > best_score:
+            best, best_score = (x1, y1, x2, y2), score
+    return best
+
+
+def crop_photos(paths: list[str]) -> tuple[list, list[str]]:
+    """Cut each photo to its main object. Returns (crops, kept_paths);
+    photos with no usable box are skipped with a warning."""
+    from PIL import Image
+
+    proposer, max_area_frac = load_box_proposer()
+    crops_dir = Path(paths[0]).parent / "_crops"
+    crops_dir.mkdir(exist_ok=True)
+
+    crops, kept = [], []
+    for path in paths:
+        img = Image.open(path).convert("RGB")
+        w, h = img.size
+        box = pick_main_box(
+            proposer.detect(np.asarray(img)[:, :, ::-1]), w, h, max_area_frac
+        )
+        if box is None:
+            print(f"[gallery_build] WARNING: no usable box in {path}, skipped")
+            continue
+        crop = img.crop(box)
+        crop.save(crops_dir / f"{Path(path).stem}.jpg")
+        crops.append(crop)
+        kept.append(path)
+    print(
+        f"[gallery_build] cropped {len(kept)}/{len(paths)} photos "
+        f"(review them in {crops_dir})"
+    )
+    return crops, kept
+
+
 def build_gallery(
-    object_name: str, photo_glob: str, backbone_id: str, gallery_dir: Path
+    object_name: str,
+    photo_glob: str,
+    backbone_id: str,
+    gallery_dir: Path,
+    crop: bool = True,
 ) -> int:
     from PIL import Image
 
     paths = sorted(glob.glob(photo_glob))
     if not paths:
         raise SystemExit(f"No photos matched {photo_glob!r}")
+
+    if crop:
+        crops, paths = crop_photos(paths)
+        if not crops:
+            raise SystemExit(
+                f"[gallery_build] no photo of {object_name!r} produced a usable box; "
+                f"retake them with the object front and centre, or pass --no-crop "
+                f"if they are already tight crops"
+            )
+    else:
+        crops = [Image.open(p).convert("RGB") for p in paths]
+
     if not (RECOMMENDED_MIN_PHOTOS <= len(paths) <= RECOMMENDED_MAX_PHOTOS):
         print(
-            f"[gallery_build] WARNING: {len(paths)} photos for {object_name!r} "
+            f"[gallery_build] WARNING: {len(paths)} usable photos for {object_name!r} "
             f"(recommended {RECOMMENDED_MIN_PHOTOS}-{RECOMMENDED_MAX_PHOTOS})"
         )
 
     gallery_dir.mkdir(parents=True, exist_ok=True)
-    crops = [Image.open(p).convert("RGB") for p in paths]
     backbone = EmbeddingBackbone(backbone_id).load()
     vectors = l2_normalize(backbone.embed_batch(crops))
 
@@ -122,8 +219,19 @@ def main():
         "production's embedding_gallery backbone; see module docstring before overriding",
     )
     parser.add_argument("--gallery-dir", default="gallery")
+    parser.add_argument(
+        "--no-crop",
+        action="store_true",
+        help="embed photos as-is (use only if they are already tight object crops)",
+    )
     args = parser.parse_args()
-    build_gallery(args.object, args.photos, args.backbone, Path(args.gallery_dir))
+    build_gallery(
+        args.object,
+        args.photos,
+        args.backbone,
+        Path(args.gallery_dir),
+        crop=not args.no_crop,
+    )
 
 
 if __name__ == "__main__":

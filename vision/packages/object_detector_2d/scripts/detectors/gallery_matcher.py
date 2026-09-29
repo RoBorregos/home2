@@ -20,6 +20,12 @@ UNKNOWN = "unknown"
 DEFAULT_MIN_SIMILARITY = 0.4
 DEFAULT_MARGIN_MIN = 0.04
 
+# A box covering most of the frame is clutter, not an object — can score
+# higher than a correct small crop against a sparse gallery. Shared by the
+# runtime detector and gallery_build.py so both crop by the same rule.
+# Override via MODEL_CONFIGS[...]["max_box_area_frac"] in registry.py.
+DEFAULT_MAX_BOX_AREA_FRAC = 0.5
+
 
 def l2_normalize(vectors: np.ndarray) -> np.ndarray:
     vectors = np.asarray(vectors, dtype=np.float32)
