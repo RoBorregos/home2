@@ -56,6 +56,26 @@ The two phases only share one thing: the `.npy`/`manifest.json` files
 much: if the runtime side is reading a *different* `gallery/` than the one
 setup just wrote, adding an object silently does nothing.
 
+### Oversized boxes vs. a small gallery
+
+The class-agnostic box proposer sometimes returns a box covering most of
+the frame — desk/shelf clutter, not a single object. Embedding a crop that
+large and matching it against a gallery with only one or two objects can
+score a deceptively *high* similarity, higher than the correctly-boxed
+object itself: found empirically adding a real `screwdriver` object — a
+box spanning almost the whole frame matched at 0.79, the correctly-boxed
+screwdriver at only 0.55. The per-class margin check
+(`gallery_matcher.py`) doesn't catch this either, because with few gallery
+objects there's little for the winning class to be "distinguishable from"
+— see that file's `match_batch` docstring.
+
+`EmbeddingModel` now drops any box covering more than `max_box_area_frac`
+of the frame (default `0.5`, configurable per-model in `registry.py`)
+*before* it's even embedded — cheaper than embedding it and lets the
+matching decision alone. Verified on the Orin: the same screwdriver test
+that produced the 0.79 false positive above dropped it entirely after this
+filter, leaving only the correct 0.60 detection.
+
 ## Results (real data, not simulated)
 
 Benchmarked against `RCW2026_v2`, the actual training set behind
