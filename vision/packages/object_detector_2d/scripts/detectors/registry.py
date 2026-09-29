@@ -31,11 +31,8 @@ MODEL_CONFIGS: dict[str, dict] = {
         "use_trt": True,
     },
     "zero_shot": {"filename": "yoloe-11l-seg.pt", "type": "yolo_e", "conf": 0.25},
-    # Few-shot object recognition (add an object from photos, no retraining).
-    # Not yet in ObjectDetect2D's `models:` param — see
-    # vision/benchmarks/embedding_gallery/README.md for the gate this passed
-    # and vision/.../plans docs for why this stays opt-in until validated on
-    # the Orin (latency, iou_deduplicate ordering, GPU footprint).
+    # Few-shot object recognition — add an object from photos, no
+    # retraining. See vision/benchmarks/embedding_gallery/README.md.
     "embedding_box_proposer": {
         "filename": "yoloe-11l-seg-pf.pt",
         "type": "yolo_e",

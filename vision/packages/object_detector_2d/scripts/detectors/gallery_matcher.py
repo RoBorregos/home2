@@ -14,11 +14,9 @@ import numpy as np
 
 UNKNOWN = "unknown"
 
-# Calibrated by e2e_calibrate.py against REAL box-proposer crops, not
-# report.py's ground-truth-polygon ones — those looked better (82%/84%) but
-# only scored 76% rejection once real, noisier proposer crops were in the
-# loop. New objects fall back to these until re-tuned; manifest.json's
-# per-class values override both. See that benchmark's README for the numbers.
+# Calibrated by e2e_calibrate.py against real box-proposer crops (not
+# oracle ones, which score better but don't hold up in production — see
+# the benchmark README). manifest.json's per-class values override both.
 DEFAULT_MIN_SIMILARITY = 0.4
 DEFAULT_MARGIN_MIN = 0.04
 

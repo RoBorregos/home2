@@ -1,19 +1,11 @@
 """Few-shot object recognition: class-agnostic boxes + a frozen DINOv2 crop
-embedding matched against a small per-object gallery (gallery_build.py) — no
-retraining to add an object. Anything outside the gallery reports as
-"unknown" (dropped by default; see `publish_unknown`).
+embedding matched against a small per-object gallery — no retraining to add
+an object. Anything outside the gallery reports as "unknown".
 
-Box proposer: YOLOE prompt-free (`yoloe-11l-seg-pf.pt`, conf 0.10, the
-"yolo_e" type) — only its boxes are used, its own labels are discarded.
-Backbone: DINOv2 ViT-B/14, frozen. Matching: gallery_matcher.Gallery
-(per-class floor + top1-vs-top2 margin). See
-vision/benchmarks/embedding_gallery/README.md for the benchmark this was
-calibrated against.
-
-TensorRT (config "use_trt": True, default): backbone runs via onnxruntime's
-TensorrtExecutionProvider instead of plain PyTorch (932ms -> 209ms for an
-8-crop batch on a Jetson Orin, negligible accuracy loss). First load after a
-cache miss builds the engine (a few minutes); reused after that.
+Box proposer: YOLOE prompt-free, boxes only (labels discarded). Backbone:
+DINOv2 ViT-B/14, frozen, TensorRT-accelerated. Matching:
+gallery_matcher.Gallery. See vision/benchmarks/embedding_gallery/README.md
+for the calibration behind these choices.
 """
 
 import numpy as np
@@ -24,14 +16,9 @@ from .base import Detection, DetectorModel
 from .gallery_matcher import UNKNOWN, Gallery
 from .registry import MODELS_PATH, ModelRegistry
 
-# The class-agnostic box proposer sometimes returns a box covering most of
-# the frame (background/desk clutter, not a single object). A wide crop
-# like that can score a deceptively high similarity against a small
-# gallery — with few gallery objects, the per-class margin check has
-# little to discriminate against (see gallery_matcher.py's match_batch
-# docstring), so nothing else rejects it. Override per-model via
-# MODEL_CONFIGS[...]["max_box_area_frac"] in registry.py if a legitimate
-# object genuinely needs to fill more of the frame than this.
+# A box covering most of the frame is clutter, not an object — can score
+# higher than a correct small crop against a sparse gallery. Override via
+# MODEL_CONFIGS[...]["max_box_area_frac"] in registry.py if needed.
 DEFAULT_MAX_BOX_AREA_FRAC = 0.5
 
 
