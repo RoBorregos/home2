@@ -673,7 +673,7 @@ class Nav_Central(Node):
         feedback = feedback_msg.feedback
         self.nav_logger("info", f"Goal_handler -> feedback data = {feedback.distance_remaining}")
 
-    def send_nav_goal(self, pose, behaivor_tree = None, max_attempts = None):
+    def send_nav_goal(self, pose, behavior_tree=None, max_attempts=None):
         """Send a NavigateToPose goal and keep retrying until Nav2 reports the
         goal SUCCEEDED.
 
@@ -685,8 +685,8 @@ class Nav_Central(Node):
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = pose
-        if behaivor_tree is not None:
-            goal_msg.behaivor_tree = behaivor_tree
+        if behavior_tree is not None:
+            goal_msg.behavior_tree = behavior_tree
 
         # Publish destination + active flag for the arm pointer; finally clears the
         # flag on any exit (success, failure, or exception).
@@ -873,7 +873,7 @@ class Nav_Central(Node):
         if not goal.header.frame_id:
             goal.header.frame_id = "map"
         bt = request.behavior_tree if request.behavior_tree else None
-        ok, msg = self.send_nav_goal(goal, behaivor_tree=bt)
+        ok, msg = self.send_nav_goal(goal, behavior_tree=bt)
         response.success = ok
         response.error = msg
         self.pause_slam()
@@ -989,7 +989,7 @@ class Nav_Central(Node):
             return
         self.nav_logger(
             "info", f"Approach_Point -> correcting final yaw by {math.degrees(err):.0f} deg")
-        self.send_nav_goal(self._approach_pose(rx, ry, tx, ty))
+        self.send_nav_goal(self._approach_pose(rx, ry, tx, ty), max_attempts=1)
 
     def _approach_pose(self, gx, gy, tx, ty):
         """Map-frame PoseStamped at (gx, gy) facing (tx, ty)."""
@@ -1335,7 +1335,7 @@ class Nav_Central(Node):
     def pause_nav2(self):
         """Nav2 nodes pausing lifecycle"""
 
-        if self.nav2_paused:
+        if not self.use_nav2 or self.nav2_paused:
             return
         self.nav_logger("info", "Pausing Nav2 -> Starting nav2 lifecycle pausing ...")
         req = ManageLifecycleNodes.Request()
@@ -1349,7 +1349,7 @@ class Nav_Central(Node):
     def resume_nav2(self):
         """Nav2 nodes resume lifecycle"""
 
-        if not self.nav2_paused:
+        if not self.use_nav2 or not self.nav2_paused:
             return
         self.nav_logger("info", "Resume Nav2 -> Starting nav2 lifecycle resume ...")
         req = ManageLifecycleNodes.Request()
