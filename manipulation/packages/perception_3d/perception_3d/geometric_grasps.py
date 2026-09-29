@@ -17,9 +17,12 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_PEAK,
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
+    GRASP_CLASS_TRASH,
     PEAK_NAMES,
+    PLACE_TRASH_HEIGHT_OFFSET,
     RIM_NAMES,
     ROUND_NAMES,
+    TRASH_BIN_NAME,
 )
 
 GRASP_CLASS_OBJECTS = {
@@ -29,6 +32,7 @@ GRASP_CLASS_OBJECTS = {
     GRASP_CLASS_BOX: BOX_NAMES,
     GRASP_CLASS_CYLINDRICAL: CYLINDRICAL_NAMES,
     GRASP_CLASS_ROUND: ROUND_NAMES,
+    GRASP_CLASS_TRASH: [TRASH_BIN_NAME],
 }
 OBJECT_GRASP_CLASS = {
     name.lower(): grasp_class
@@ -61,6 +65,8 @@ TOP_PERCENTILE = 90
 
 RIM_TOP_BAND = 0.03
 RIM_NEAR_FRACTION = 0.05
+
+TRASH_TOP_BBOX_FRACTION = 0.5
 
 SOLID_SUPPORT_MARGIN = 0.01
 SOLID_TOP_PERCENTILE = 99
@@ -411,6 +417,21 @@ def peak(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
     ]
 
 
+def trash_bin(scene: Scene, grasp_class: Optional[str] = None) -> tuple:
+    top_half = scene.valid
+    top_half[int(len(top_half) * TRASH_TOP_BBOX_FRACTION) :] = False
+    _, points = above_support(scene.points(top_half), FLOOR_MARGIN)
+    center_x, center_y = np.median(points[:, :2], axis=0)
+    drop_z = np.percentile(points[:, 2], TOP_PERCENTILE) + PLACE_TRASH_HEIGHT_OFFSET
+    return None, [
+        Grasp(
+            np.array([center_x, center_y, drop_z]),
+            grasp_frame(TOP_DOWN, DEFAULT_CLOSING_AXIS),
+            "place",
+        )
+    ]
+
+
 def fit_box(points: np.ndarray) -> tuple:
     angles = np.radians(np.arange(0, 180, FIT_STEP_DEG))
     axes = np.column_stack((np.cos(angles), np.sin(angles)))
@@ -612,6 +633,7 @@ RECIPES: dict[str, Callable[[Scene, str], tuple]] = {
     GRASP_CLASS_FLAT: flat,
     GRASP_CLASS_RIM: rim,
     GRASP_CLASS_PEAK: peak,
+    GRASP_CLASS_TRASH: trash_bin,
     GRASP_CLASS_BOX: solid,
     GRASP_CLASS_CYLINDRICAL: solid,
     GRASP_CLASS_ROUND: solid,

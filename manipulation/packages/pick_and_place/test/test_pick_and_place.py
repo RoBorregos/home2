@@ -14,7 +14,7 @@ import yaml
 
 from fakes import (
     FakeArm,
-    FakeFlatResponse,
+    FakeGenerateGraspsResponse,
     FakeLogger,
     FakePerception,
     make_cluster,
@@ -123,7 +123,7 @@ def test_gpd_still_reports_the_pick_when_attaching_fails(strategies):
 
 
 def flat_perception(z=0.5):
-    return FakePerception(flat_response=FakeFlatResponse(make_pose(z=z)))
+    return FakePerception(generated_grasps=FakeGenerateGraspsResponse(make_pose(z=z)))
 
 
 def run_pick(arm, perception, strategies, **kwargs):
@@ -218,6 +218,16 @@ def test_place_fails_when_no_rung_is_reachable():
     arm = FakeArm(move_to_pose_results=[False] * 8)
     assert run_place(arm, place_perception(), params(is_shelf=False)) is False
     assert "detach_pick_objects" not in arm.calls
+
+
+def test_trash_place_goes_to_the_pose_from_the_grasp_generator():
+    arm = FakeArm()
+    perception = FakePerception(
+        generated_grasps=FakeGenerateGraspsResponse(make_pose(x=0.7, z=0.9))
+    )
+    assert run_place(arm, perception, params(is_trash=True))
+    assert perception.generate_timeouts == [place_pipeline.TRASH_TIMEOUT]
+    assert arm.poses["move_to_pose"][0].pose.position.x == pytest.approx(0.7)
 
 
 # ============================================================================

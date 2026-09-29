@@ -317,7 +317,7 @@ class FakePerception:
         located_point: Optional[PointStamped] = None,
         cluster=None,
         grasps: Optional[List[tuple]] = None,
-        flat_response: Optional[Any] = None,
+        generated_grasps: Optional[Any] = None,
         heatmap_point: Optional[PointStamped] = None,
         surface_cloud: Optional[Any] = None,
     ):
@@ -326,8 +326,8 @@ class FakePerception:
         self._located_point = located_point
         self._cluster = cluster
         self._grasps = list(grasps or [])
-        self._flat_response = flat_response
-        self.flat_timeouts: List[float] = []
+        self._generated_grasps = generated_grasps
+        self.generate_timeouts: List[float] = []
         self.detect_timeouts: List[float] = []
         self.cluster_timeouts: List[float] = []
 
@@ -364,14 +364,14 @@ class FakePerception:
         self.calls.append("detect_grasps")
         return self._grasps.pop(0) if self._grasps else ([], [])
 
-    def estimate_flat_grasp(self, object_name, timeout=8.0):
-        self.calls.append("estimate_flat_grasp")
-        self.flat_timeouts.append(timeout)
-        return self._flat_response
+    def generate_grasps(self, object_name, timeout=8.0):
+        self.calls.append("generate_grasps")
+        self.generate_timeouts.append(timeout)
+        return self._generated_grasps
 
 
-class FakeFlatResponse:
-    """Stand-in for the flat-grasp estimator's reply."""
+class FakeGenerateGraspsResponse:
+    """Stand-in for the grasp generator's reply."""
 
     def __init__(self, pose, samples_collected: int = 5):
         self.pose = pose

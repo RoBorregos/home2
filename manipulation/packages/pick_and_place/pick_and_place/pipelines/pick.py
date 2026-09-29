@@ -105,7 +105,7 @@ class Perceived:
 
     cluster: Optional[object] = None
     height: float = 0.0
-    flat_pose: Optional[object] = None
+    grasps: Optional[object] = None
 
 
 def execute(
@@ -178,20 +178,20 @@ def _perceive(
 ) -> Optional[Perceived]:
     """Locate the object. Returns None when it cannot be found."""
     if strategy_key != PICK_STRATEGY_GPD:
-        return _perceive_flat(perception, request, strategy_key)
+        return _perceive_grasps(perception, request, strategy_key)
     return _perceive_cluster(perception, request)
 
 
-def _perceive_flat(perception, request: PickRequest, strategy_key: str):
-    """Ask the estimator for a top-down pose.
+def _perceive_grasps(perception, request: PickRequest, strategy_key: str):
+    """Ask the grasp generator for the object's grasp candidates.
 
     Deliberately does NOT cluster: clustering adds the table as a collision
     object, which makes MoveIt reject every near-table path.
     """
     perception.logger.info(
-        f"Flat object '{request.object_name}': asking the estimator for a pose"
+        f"'{request.object_name}': asking the grasp generator for candidates"
     )
-    response = perception.estimate_flat_grasp(request.object_name)
+    response = perception.generate_grasps(request.object_name)
     if response is None:
         return None
 
@@ -201,10 +201,10 @@ def _perceive_flat(perception, request: PickRequest, strategy_key: str):
     pose = response.pose
     pose.pose.position.z += z_tweak
     perception.logger.info(
-        f"Flat grasp pose received ({response.samples_collected} samples), "
+        f"Generated grasp pose received ({response.samples_collected} samples), "
         f"z tweak={z_tweak}"
     )
-    return Perceived(flat_pose=pose)
+    return Perceived(grasps=response)
 
 
 def _perceive_cluster(perception, request: PickRequest) -> Optional[Perceived]:
@@ -283,7 +283,7 @@ def _grasp_sets(
 ) -> Iterator[GraspSet]:
     """Yield batches of candidates, best source first.
 
-    Flat objects yield a single set from the estimator. GPD yields one set per
+    Flat objects yield a single set from the generator. GPD yields one set per
     config, so a config whose grasps are all unreachable falls back to the next.
     """
     if strategy_key != PICK_STRATEGY_GPD:
@@ -291,11 +291,11 @@ def _grasp_sets(
         # and collide with it, so the only alternative is the symmetric flip.
         yield GraspSet(
             poses=[
-                perceived.flat_pose,
-                _rotate_about_approach(perceived.flat_pose, 180),
+                perceived.grasps.pose,
+                _rotate_about_approach(perceived.grasps.pose, 180),
             ],
             scores=[1.0, 0.9],
-            source="flat_estimator",
+            source="grasp_generator",
         )
         return
 

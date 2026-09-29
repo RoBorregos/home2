@@ -109,6 +109,7 @@ GRASP_CLASS_CYLINDRICAL = "cylindrical"
 GRASP_CLASS_ROUND = "round"
 GRASP_CLASS_RIM = "rim"
 GRASP_CLASS_PEAK = "peak"
+GRASP_CLASS_TRASH = "trash"
 GRASP_CLASS_GENERIC = "generic"
 
 # Default speed for the generic /manipulation/fixed_distance_move service,
