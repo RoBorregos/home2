@@ -115,6 +115,7 @@ MESSAGE_ICONS = {
 }
 
 AUDIO_STATE_TIMEOUT_MS = 10_000
+LISTENING_STATES = ("listening", "listening_silent")
 HEARD_WATCHDOG_S = 5.0
 
 # Display modes shared by the GPSR/HRIC step machines.
@@ -251,6 +252,7 @@ class DisplaySignals(QObject):
     task_step_changed = pyqtSignal(str)
     command_index_changed = pyqtSignal(int)
     heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
+    keyword_detected = pyqtSignal(str)  # also shown on the overlay while listening
 
 
 class DisplayRosNode(Node):
@@ -277,6 +279,7 @@ class DisplayRosNode(Node):
             String, "/speech/text_spoken", lambda m: self._on_message("spoken", m), 10
         )
         self.create_subscription(String, "/hri/speech/kws", self._on_kws, 10)
+        self.create_subscription(String, "/hri/display/keyword", self._on_kws, 10)
         self.create_subscription(
             String, "/hri/display/answers", lambda m: self._on_message("answer", m), 10
         )
@@ -314,14 +317,14 @@ class DisplayRosNode(Node):
     def _on_audio_state(self, msg: String):
         self._audio_state = msg.data
         self.signals.audio_state_changed.emit(msg.data)
-        if msg.data != "listening":
+        if msg.data not in LISTENING_STATES:
             self._flush_pending_heard()
 
     def _on_vad(self, msg: Float32):
         self.signals.vad_level_changed.emit(msg.data)
 
     def _on_message(self, msg_type: str, msg: String):
-        if msg_type == "heard" and self._audio_state == "listening":
+        if msg_type == "heard" and self._audio_state in LISTENING_STATES:
             # Hold back "heard" text while listening: shown big via the audio
             # overlay instead of the message list, flushed once idle (or
             # after HEARD_WATCHDOG_S if /AudioState never reports idle).
@@ -338,7 +341,7 @@ class DisplayRosNode(Node):
     def _on_heard_watchdog(self):
         self._heard_watchdog.cancel()
         self._heard_watchdog = None
-        if self._audio_state == "listening":
+        if self._audio_state in LISTENING_STATES:
             self._audio_state = "idle"
             self.signals.audio_state_changed.emit("idle")
         self._flush_pending_heard()
@@ -358,6 +361,7 @@ class DisplayRosNode(Node):
             keyword = data.get("keyword")
             if keyword:
                 self.signals.message_received.emit("keyword", str(keyword))
+                self.signals.keyword_detected.emit(str(keyword))
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
@@ -550,6 +554,14 @@ class AudioOverlay(QWidget):
         )
         layout.addWidget(self.heard_label)
 
+        self.keyword_label = QLabel()
+        self.keyword_label.setStyleSheet(
+            f"color: {ORANGE}; background-color: rgba(232,137,90,50);"
+            "border-radius: 12px; padding: 6px 16px; font-size: 22px; font-weight: bold;"
+        )
+        self.keyword_label.hide()
+        layout.addWidget(self.keyword_label, 0, Qt.AlignCenter)
+
         self.hide()
 
     def show_state(self, text: str):
@@ -560,6 +572,10 @@ class AudioOverlay(QWidget):
 
     def show_heard(self, text: str):
         self.heard_label.setText(text)
+
+    def show_keyword(self, keyword: str):
+        self.keyword_label.setText(f"{MESSAGE_ICONS['keyword']} {keyword}")
+        self.keyword_label.show()
 
     def set_vad_level(self, level: float):
         level = max(0.0, min(level, 1.0))
@@ -573,6 +589,7 @@ class AudioOverlay(QWidget):
     def clear(self):
         self.hide()
         self.heard_label.setText("")
+        self.keyword_label.hide()
         self.set_vad_level(0.0)
 
 
@@ -872,6 +889,7 @@ class BaseWindow(QMainWindow):
         ros_node.signals.audio_state_changed.connect(self._on_audio_state)
         ros_node.signals.vad_level_changed.connect(self.audio_overlay.set_vad_level)
         ros_node.signals.heard_buffered.connect(self.audio_overlay.show_heard)
+        ros_node.signals.keyword_detected.connect(self.audio_overlay.show_keyword)
 
         if with_dialogs:
             self.map_dialog = MapDialog(self)
@@ -896,11 +914,12 @@ class BaseWindow(QMainWindow):
         return header
 
     def _on_audio_state(self, state: str):
-        if state in ("thinking", "loading", "listening"):
+        if state in ("thinking", "loading", *LISTENING_STATES):
             label = {
                 "thinking": "Thinking...",
                 "loading": "Loading...",
                 "listening": "Listening...",
+                "listening_silent": "Listening...",
             }[state]
             self.audio_overlay.show_state(label)
             self._audio_timeout_timer.start(AUDIO_STATE_TIMEOUT_MS)

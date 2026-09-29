@@ -39,6 +39,7 @@ from frida_constants.hri_constants import (
     TASK_STEP_TOPIC,
     TIMEOUT,
     KEYWORD_TOPIC,
+    DISPLAY_KEYWORD_TOPIC,
     EI_DETECTION_TOPIC,
     DOORBELL_ARMED_TOPIC,
 )
@@ -213,6 +214,9 @@ class HRITasks:
         )
         self.task_status_publisher = self.node.create_publisher(String, TASK_STATUS_TOPIC, 10)
         self.task_step_publisher = self.node.create_publisher(String, TASK_STEP_TOPIC, 10)
+        self.display_keyword_publisher = self.node.create_publisher(
+            String, DISPLAY_KEYWORD_TOPIC, 10
+        )
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
@@ -840,7 +844,11 @@ class HRITasks:
 
         keyword_listened = contains_any(format_transcription(self.current_transcription), keywords)
 
-        if not keyword_listened:
+        if keyword_listened in keywords:
+            self.display_keyword_publisher.publish(
+                String(data=json.dumps({"keyword": keyword_listened, "source": "stt"}))
+            )
+        else:
             keyword_listened = self.keyword
 
         execution_status = (
