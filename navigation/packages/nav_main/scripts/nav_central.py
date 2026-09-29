@@ -113,6 +113,16 @@ def params_from_yaml(yaml_path, node_name):
     return [make_param(k, v) for k, v in ros_params.items()]
 
 
+def door_window_avg(ranges, lo, hi, sensor_min, far_value):
+    """Mean range over beam indices lo..hi (wraps past the end when lo > hi).
+    inf/over-range beams count as far_value (door open -> beam passes through);
+    nan/under-range beams are ignored. None when no beam is valid."""
+    window = list(ranges[lo:]) + list(ranges[:hi + 1]) if lo > hi else list(ranges[lo:hi + 1])
+    pts = [far_value if (math.isinf(r) or r > far_value) else r for r in window
+           if math.isinf(r) or not (math.isnan(r) or r < sensor_min)]
+    return sum(pts) / len(pts) if pts else None
+
+
 class Nav_Central(Node):
     def __init__(self, node_name):
         super().__init__(node_name)
@@ -182,15 +192,8 @@ class Nav_Central(Node):
             callback_group=self.rtab_service_group)
 
         self.lidar_msg = None
-        self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
         self.map_areas_srv = self.create_service(MapAreas, AREAS_SERVICE, self.map_areas_callback, callback_group=self.service_group)
-        self.range_min = DOOR_CHECK.LIDAR_RANGE_MIN.value  
-        self.range_max = DOOR_CHECK.LIDAR_RANGE_MAX.value
-        self.door_rate = DOOR_CHECK.CHECKING_RATE.value
-        self.door_distance = DOOR_CHECK.DOOR_DISTANCE.value 
-        self.sensor_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_SENSOR.value) # Timeout in seconds to wait for sensors
-        self.door_timeout = Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value) # Timeout in seconds to wait for sensors
         
         self.move_location_srv = self.create_service(MoveLocation, MOVE_LOCATION_SERVICE, self.go_to_area, callback_group=self.service_group)
         self.dock_table_srv = self.create_service(DockTable, DOCK_TABLE_SERVICE, self.dock_table_callback, callback_group=self.service_group)
@@ -545,74 +548,44 @@ class Nav_Central(Node):
     def lidar_callback(self, msg):
         self.lidar_msg = msg
 
-    def check_door(self,request, response):
-        self.nav_logger("info","Check_door -> Service called")
-
+    def check_door(self, request, response):
+        self.nav_logger("info", "Check_door -> Service called")
+        rate = DOOR_CHECK.CHECKING_RATE.value
+        response.status = False
+        self.lidar_msg = None
         # /scan is published with SensorDataQoS (BEST_EFFORT) by laserscan_multi_merger;
         # a default RELIABLE subscription is QoS-incompatible and receives nothing.
-        self.lidar_reciever = self.create_subscription(LaserScan, SCAN_TOPIC, self.lidar_callback, qos_profile_sensor_data, callback_group=self.lidar_group)
-        self.lidar_msg = None  #Clean for cache msgs
-        t.sleep(self.door_rate) #Wait for suscription to start
+        sub = self.create_subscription(LaserScan, SCAN_TOPIC, self.lidar_callback, qos_profile_sensor_data, callback_group=self.lidar_group)
+        try:
+            t.sleep(rate)  # let the subscription connect
+            start_time = self.get_clock().now()
+            while self.lidar_msg is None and (self.get_clock().now() - start_time) < Duration(seconds=DOOR_CHECK.TIMEOUT_SENSOR.value):
+                self.nav_logger("warn", "Check_door ->  waiting for lidar msg...")
+                t.sleep(rate)
+            if self.lidar_msg is None:
+                self.nav_logger("error", "Check_door -> Timeout reached lidar failed to retreive")
+                return response
 
-        start_time = self.get_clock().now()
-        while self.lidar_msg is None and (self.get_clock().now() - start_time) < self.sensor_timeout:
-            self.nav_logger("warn","Check_door ->  waiting for lidar msg...")
-            t.sleep(self.door_rate)
-
-        if self.lidar_msg is None:
-            self.destroy_subscription(self.lidar_reciever)
-            self.lidar_msg = None
-            self.nav_logger("error", "Check_door -> Timeout reached lidar failed to retreive")
-            response.status = False
+            start_time = self.get_clock().now()
+            while (self.get_clock().now() - start_time) < Duration(seconds=DOOR_CHECK.TIMEOUT_TO_OPEN.value):
+                self.nav_logger("info", "Check_door -> Waiting for door to open")
+                msg = self.lidar_msg
+                avg = door_window_avg(
+                    msg.ranges, DOOR_CHECK.LIDAR_RANGE_MIN.value, DOOR_CHECK.LIDAR_RANGE_MAX.value,
+                    max(msg.range_min, 0.0), msg.range_max if msg.range_max > 0.0 else 12.0)
+                if avg is not None:
+                    self.nav_logger("info", f"Check_door -> Window avg distance: {avg:.2f} m")
+                    if avg > DOOR_CHECK.DOOR_DISTANCE.value:
+                        self.nav_logger("info", "Check_door -> Door opened")
+                        response.status = True
+                        return response
+                t.sleep(rate)
+            self.nav_logger("error", "Check_door -> Timeout reached door didnt opened")
             return response
+        finally:
+            self.destroy_subscription(sub)
+            self.lidar_msg = None
 
-        start_time = self.get_clock().now()
-        while (self.get_clock().now() - start_time) < self.door_timeout: #Timeout in case of absolute failure 
-            self.nav_logger("info","Check_door -> Waiting for door to open")
-            # Beams that find nothing (door open -> beam passes through) come back
-            # as inf; clamp them to the sensor max range so they always count as
-            # "far". Average every valid beam in the window each cycle instead of
-            # gating on the inf count.
-            far_value = self.lidar_msg.range_max if self.lidar_msg.range_max > 0.0 else 12.0
-            sensor_min = self.lidar_msg.range_min if self.lidar_msg.range_min > 0.0 else 0.0
-
-            door_points = []
-            for count, r in enumerate(self.lidar_msg.ranges):
-                # Select only the beams pointing at the door (index window, with
-                # wrap-around support when range_min > range_max).
-                if self.range_min > self.range_max:
-                    in_window = (0 <= count <= self.range_max) or (count >= self.range_min)
-                else:
-                    in_window = self.range_min <= count <= self.range_max
-                if not in_window:
-                    continue
-
-                if math.isinf(r) or r > far_value:
-                    door_points.append(far_value)  # nothing in range -> door open
-                elif math.isnan(r) or r < sensor_min:
-                    continue  # invalid reading -> ignore
-                else:
-                    door_points.append(r)
-
-            if door_points:
-                avg_points = sum(door_points) / len(door_points)
-                self.nav_logger("info", f"Check_door -> Window avg distance: {avg_points:.2f} m")
-
-                if avg_points > self.door_distance:
-                    self.nav_logger("info", "Check_door -> Door opened")
-                    self.destroy_subscription(self.lidar_reciever)
-                    self.lidar_msg = None
-                    response.status = True
-                    return response
-
-            t.sleep(self.door_rate)
-
-        self.destroy_subscription(self.lidar_reciever)
-        self.lidar_msg = None
-        self.nav_logger("error", "Check_door -> Timeout reached door didnt opened")
-        response.status = False
-        return response
-             
     def load_map_areas(self):
         try:
             pkg_share = get_package_share_directory('map_context')
