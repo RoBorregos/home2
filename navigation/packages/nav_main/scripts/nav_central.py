@@ -461,7 +461,7 @@ class Nav_Central(Node):
             if elapsed > FOLLOW_GOAL_UPDATE_TIMEOUT:
                 self.nav_logger("warn", "Follow Person -> no goal update yet, using dummy pose")
                 break
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            self.get_clock().sleep_for(Duration(seconds=0.1))
 
         # 3. Build initial goal: use latest smoothed goal if available, else dummy
         if self._latest_goal_update is not None:
@@ -481,10 +481,8 @@ class Nav_Central(Node):
             initial_pose.header.frame_id = "map"
             initial_pose.header.stamp = self.get_clock().now().to_msg()
             initial_pose.pose.orientation.w = 1.0
-            try:
-                tf = self.tf_buffer.lookup_transform(
-                    "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0)
-                )
+            tf = self._robot_tf()
+            if tf is not None:
                 initial_pose.pose.position.x = tf.transform.translation.x
                 initial_pose.pose.position.y = tf.transform.translation.y
                 initial_pose.pose.orientation = tf.transform.rotation
@@ -493,10 +491,8 @@ class Nav_Central(Node):
                     f"Follow Person -> no goal update yet, seeding current pose "
                     f"({initial_pose.pose.position.x:.2f}, {initial_pose.pose.position.y:.2f})",
                 )
-            except Exception as e:
-                self.nav_logger(
-                    "warn", f"Follow Person -> no goal update and no TF ({e}); using origin"
-                )
+            else:
+                self.nav_logger("warn", "Follow Person -> no goal update and no TF; using origin")
 
         goal_msg = NavigateToPose.Goal()
         goal_msg.pose = initial_pose
@@ -550,7 +546,7 @@ class Nav_Central(Node):
     def _wait_for_initial_pose(self):
         self.nav_logger("info", "Setup -> Waiting for initial pose to be set via nav_ui ...")
         while not self._initial_pose_set:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
+            self.get_clock().sleep_for(Duration(seconds=0.5))
         self.nav_logger("info", "Setup -> Initial pose confirmed, continuing setup")
 
     def lidar_callback(self, msg):
@@ -681,24 +677,22 @@ class Nav_Central(Node):
                     self.nav_logger("warn", f"Goal_Handler -> bt_navigator action server not available (attempt {attempt})")
                     if max_attempts is not None and attempt >= max_attempts:
                         return (False, "Action server unavailable")
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                    self.get_clock().sleep_for(Duration(seconds=NAV_GOAL_RETRY_DELAY))
                     continue
 
                 _goal_future = self.goal_action_client.send_goal_async(goal_msg, feedback_callback=self.goal_feedback)
-                while not _goal_future.done():
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                self._wait(_goal_future)
                 goal_handle = _goal_future.result()
 
                 if not goal_handle.accepted:
                     self.nav_logger("warn", f"Goal_Handler -> Goal rejected (attempt {attempt}), retrying ...")
                     if max_attempts is not None and attempt >= max_attempts:
                         return (False, "Goal Rejected")
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                    self.get_clock().sleep_for(Duration(seconds=NAV_GOAL_RETRY_DELAY))
                     continue
 
                 result_future = goal_handle.get_result_async()
-                while not result_future.done():
-                    self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                self._wait(result_future)
                 result = result_future.result()
 
                 if result.status == GoalStatus.STATUS_SUCCEEDED:
@@ -708,14 +702,14 @@ class Nav_Central(Node):
                 self.nav_logger("warn", f"Goal_Handler -> Goal did not succeed (status={result.status}, attempt {attempt}), retrying ...")
                 if max_attempts is not None and attempt >= max_attempts:
                     return (False, f"Goal failed (status {result.status})")
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=NAV_GOAL_RETRY_DELAY))
+                self.get_clock().sleep_for(Duration(seconds=NAV_GOAL_RETRY_DELAY))
         finally:
             self.goal_active_pub.publish(Bool(data=False))
             # Hold the result until the arm has homed back to its normal pose
             # (arm_ready True), so callers don't act while the arm is still moving.
             waited = 0.0
             while not self.arm_ready and waited < ARM_HOME_TIMEOUT:
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+                self.get_clock().sleep_for(Duration(seconds=0.1))
                 waited += 0.1
             if not self.arm_ready:
                 self.nav_logger("warn", "Goal_Handler -> arm did not report ready before timeout")
@@ -747,11 +741,7 @@ class Nav_Central(Node):
         self.nav_logger("info", f"Approach -> docking to surface (front_offset={offset})")
         # Bounded dock call, capturing the actual approach result.
         future = self.dock_client.call_async(Trigger.Request())
-        elapsed = 0.0
-        while not future.done() and elapsed < 90.0:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            elapsed += 0.1
-        if not future.done():
+        if not self._wait(future, 90.0):
             return (False, "dock timed out")
         res = future.result()
         return (res.success, res.message)
@@ -783,7 +773,7 @@ class Nav_Central(Node):
         # Let a sensor cycle repopulate before planning/driving. The omni base strafes
         # and the forward camera won't re-see side/rear obstacles instantly, so don't
         # command motion into the brief blind window right after the clear.
-        self.get_clock().sleep_for(rclpy.duration.Duration(seconds=settle_s))
+        self.get_clock().sleep_for(Duration(seconds=settle_s))
 
     def go_to_area(self,request,response):
         """Callback for navigate to specific area"""
@@ -860,14 +850,10 @@ class Nav_Central(Node):
 
     def get_robot_pose_callback(self, request, response):
         """Return the current robot pose from TF (map -> base_link)."""
-        try:
-            tf = self.tf_buffer.lookup_transform(
-                "map", "base_link", rclpy.time.Time(),
-                timeout=Duration(seconds=1.0))
-        except Exception as e:
-            self.nav_logger("warn", f"Get_Robot_Pose -> TF lookup failed: {e}")
+        tf = self._robot_tf()
+        if tf is None:
             response.success = False
-            response.error = f"TF lookup failed: {e}"
+            response.error = "TF lookup failed"
             return response
         pose = PoseStamped()
         pose.header.frame_id = "map"
@@ -903,15 +889,12 @@ class Nav_Central(Node):
                 return response
         tx, ty = target.point.x, target.point.y
 
-        try:
-            tf = self.tf_buffer.lookup_transform(
-                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=1.0))
-            rx, ry = tf.transform.translation.x, tf.transform.translation.y
-        except Exception as e:
+        tf = self._robot_tf()
+        if tf is None:
             response.success = False
-            response.error = f"robot pose TF failed: {e}"
-            self.nav_logger("error", f"Approach_Point -> {response.error}")
+            response.error = "robot pose TF failed"
             return response
+        rx, ry = tf.transform.translation.x, tf.transform.translation.y
 
         if math.hypot(tx - rx, ty - ry) <= standoff + 0.05:
             # Already close enough: face the target, never drive into it.
@@ -952,10 +935,8 @@ class Nav_Central(Node):
     def _face_target(self, tx, ty, tol=0.25):
         """Final in-place rotation toward (tx, ty) if the base ended up facing
         away after the approach goal (runs while nav2 is still resumed)."""
-        try:
-            tf = self.tf_buffer.lookup_transform(
-                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=0.5))
-        except Exception:
+        tf = self._robot_tf(0.5)
+        if tf is None:
             return
         rx, ry = tf.transform.translation.x, tf.transform.translation.y
         q = tf.transform.rotation
@@ -1051,20 +1032,12 @@ class Nav_Central(Node):
             goal_msg.start = start_pose
             goal_msg.use_start = True
 
-        elapsed = 0.0
-        while not self.compute_path_client.server_is_ready() and elapsed < TIMEOUT_NAV_QUERY:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.2))
-            elapsed += 0.2
-        if not self.compute_path_client.server_is_ready():
+        if not self.compute_path_client.wait_for_server(timeout_sec=TIMEOUT_NAV_QUERY):
             self.nav_logger("error", "Query_Path -> ComputePathToPose server not available")
             return None
 
         send_future = self.compute_path_client.send_goal_async(goal_msg)
-        elapsed = 0.0
-        while not send_future.done() and elapsed < TIMEOUT_NAV_QUERY:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            elapsed += 0.1
-        if not send_future.done():
+        if not self._wait(send_future, TIMEOUT_NAV_QUERY):
             self.nav_logger("error", "Query_Path -> Timeout sending goal to planner")
             return None
 
@@ -1074,11 +1047,7 @@ class Nav_Central(Node):
             return None
 
         result_future = goal_handle.get_result_async()
-        elapsed = 0.0
-        while not result_future.done() and elapsed < TIMEOUT_NAV_QUERY:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            elapsed += 0.1
-        if not result_future.done():
+        if not self._wait(result_future, TIMEOUT_NAV_QUERY):
             goal_handle.cancel_goal_async()
             self.nav_logger("error", "Query_Path -> Timeout waiting for planner result")
             return None
@@ -1175,7 +1144,7 @@ class Nav_Central(Node):
                 self.nav_logger("info", "Waiting Requirements -> Requirements complete")
             else:
                 self.nav_logger("warn", f"Waiting Requirements -> {'TF not available yet' if not tf_ready else ''}, {'Topics not available yet' if not topics_ready else ''}") 
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=TIMEOUT_REQUIREMENTS))
+                self.get_clock().sleep_for(Duration(seconds=TIMEOUT_REQUIREMENTS))
 
     def start_slam(self):
         """Bring up (or confirm) the active SLAM backend."""
@@ -1190,11 +1159,7 @@ class Nav_Central(Node):
         just wait until it is publishing the map."""
         slam_topics = {self.slam_check_topic}
         self.nav_logger("info", "Loading Slam -> Waiting for slam_toolbox map ...")
-        elapsed = 0.0
-        while not self.check_for_topics(slam_topics) and elapsed < TIMEOUT_RTABMAP:
-            t.sleep(0.5)
-            elapsed += 0.5
-        if self.check_for_topics(slam_topics):
+        if self._wait_for_topics(slam_topics, TIMEOUT_RTABMAP):
             self.nav_logger("info", "Loading Slam -> slam_toolbox map available")
         else:
             self.nav_logger("warn", "Loading Slam -> slam_toolbox map not seen yet, continuing")
@@ -1212,8 +1177,7 @@ class Nav_Central(Node):
 
         load_cb_group = ReentrantCallbackGroup()
         rtab_client = self.create_client(LoadNode, RTAB_CONTAINER_NODE, callback_group=load_cb_group)
-        while not rtab_client.service_is_ready():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
+        rtab_client.wait_for_service()
         self.nav_logger("info", "Loading Slam -> Started loading nodes")
         while not self.check_for_topics(rtab_topics):
             req = LoadNode.Request()                                                                                                                                                                
@@ -1221,9 +1185,7 @@ class Nav_Central(Node):
             req.plugin_name = 'rtabmap_slam::CoreWrapper'                                                                                                                                           
             req.node_name = 'rtabmap'                                                                                                                                                               
             req.parameters = rtabmap_params  # your params
-            future = rtab_client.call_async(req)
-            while not future.done():
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            self._wait(rtab_client.call_async(req))
             self.nav_logger("info", "Loading Slam -> RtabCore Loaded")
             req = LoadNode.Request()
             req.package_name = 'rtabmap_sync'
@@ -1231,15 +1193,9 @@ class Nav_Central(Node):
             req.node_name = 'rgbd_sync'
             req.parameters = sync_params
             req.remap_rules = self.rtabmap_remapping
-            future = rtab_client.call_async(req)
-            while not future.done():
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+            self._wait(rtab_client.call_async(req))
             self.nav_logger("info", "Loading Slam -> RtabSync Loaded") 
-            elapsed = 0.0
-            while not self.check_for_topics(rtab_topics) and elapsed < TIMEOUT_RTABMAP:
-                t.sleep(0.5)
-                elapsed += 0.5
-            if self.check_for_topics(rtab_topics):
+            if self._wait_for_topics(rtab_topics, TIMEOUT_RTABMAP):
                 self.nav_logger("info", "Loading Slam -> Topic Founded")
             else:
                 self.nav_logger("error","Loading Slam -> Topics not found trying again ...")
@@ -1251,32 +1207,45 @@ class Nav_Central(Node):
         """Load nav2 nodes activating lifecycle"""
 
         self.nav_logger("info", "Loading Nav2 -> Starting nav2 lifecycle activation ...")
-        while not self.lifecycle_client.service_is_ready():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
+        self.lifecycle_client.wait_for_service()
         self.nav_logger("info", "Loading Nav2 -> Service found, sending STARTUP")
         req = ManageLifecycleNodes.Request()
         req.command = ManageLifecycleNodes.Request.STARTUP
-        future = self.lifecycle_client.call_async(req)
-        while not future.done():
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
+        self._wait(self.lifecycle_client.call_async(req))
         self.nav_logger("info", "Loading Nav2 -> Fully loaded nav2 lifecycles")
             
+    def _wait(self, future, timeout=None):
+        """Sleep-poll until future is done (or timeout s). Returns future.done()."""
+        elapsed = 0.0
+        while not future.done() and (timeout is None or elapsed < timeout):
+            self.get_clock().sleep_for(Duration(seconds=0.1))
+            elapsed += 0.1
+        return future.done()
+
+    def _wait_for_topics(self, topics, timeout):
+        """Poll the ROS graph until all topics exist (or timeout s). Returns found."""
+        elapsed = 0.0
+        while not self.check_for_topics(topics) and elapsed < timeout:
+            t.sleep(0.5)
+            elapsed += 0.5
+        return self.check_for_topics(topics)
+
+    def _robot_tf(self, timeout=1.0):
+        """map -> base_link transform, or None when TF isn't available."""
+        try:
+            return self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=Duration(seconds=timeout))
+        except Exception as e:
+            self.nav_logger("warn", f"Robot pose -> TF lookup failed: {e}")
+            return None
+
     def _call_service_with_timeout(self, client, request, call_timeout, label):
         """Bounded service call — waits up to TIMEOUT_RTAB_SERVICE for readiness and
         call_timeout for the response. Returns True on success, False on timeout."""
-        elapsed = 0.0
-        while not client.service_is_ready() and elapsed < TIMEOUT_RTAB_SERVICE:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.5))
-            elapsed += 0.5
-        if not client.service_is_ready():
+        if not client.wait_for_service(timeout_sec=TIMEOUT_RTAB_SERVICE):
             self.nav_logger("warn", f"{label} -> Service not available after {TIMEOUT_RTAB_SERVICE}s")
             return False
-        future = client.call_async(request)
-        elapsed = 0.0
-        while not future.done() and elapsed < call_timeout:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
-            elapsed += 0.1
-        if not future.done():
+        if not self._wait(client.call_async(request), call_timeout):
             self.nav_logger("error", f"{label} -> Call timed out after {call_timeout}s, no response")
             return False
         return True
