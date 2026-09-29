@@ -4,21 +4,19 @@ from rclpy.node import Node
 from rclpy.duration import Duration
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
-from rclpy.qos import qos_profile_sensor_data
-from composition_interfaces.srv import LoadNode, UnloadNode, ListNodes
+from rclpy.qos import qos_profile_sensor_data, QoSProfile, DurabilityPolicy
+from composition_interfaces.srv import LoadNode
 from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
 from rcl_interfaces.srv import SetParameters
 from nav2_msgs.srv import ManageLifecycleNodes, ClearEntireCostmap
 from nav2_msgs.action import NavigateToPose, ComputePathToPose
 from action_msgs.msg import GoalStatus
 from sensor_msgs.msg import LaserScan
-from rtabmap_msgs.srv import GetMap
-from std_srvs.srv import Empty, Trigger
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, PointStamped
+from std_srvs.srv import Empty, Trigger, SetBool
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers PointStamped transform)
 from std_msgs.msg import Bool
-from rclpy.qos import QoSProfile, DurabilityPolicy
 from frida_constants.navigation_constants import(
         SCAN_TOPIC,
         APPROACH_POINT_SERVICE,
@@ -63,7 +61,6 @@ from frida_constants.navigation_constants import(
         DOCK_TABLE_SERVICE,
         DEFAULT_DOCK_OFFSET,
         )
-from std_srvs.srv import SetBool
 from ament_index_python.packages import get_package_share_directory
 import os
 from frida_interfaces.srv import (
@@ -76,7 +73,6 @@ from frida_interfaces.srv import (
         GetRobotPose,
         ApproachPoint,
         )
-from ament_index_python.packages import get_package_share_directory
 import tf2_ros
 import json
 import time as t
@@ -141,14 +137,11 @@ class Nav_Central(Node):
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = None
-        if self.use_slam_toolbox:
-            # slam_toolbox is lidar-only: no RGBD camera, and the omnibase has no arm.
-            self.required_topics = {'/cmd_vel', '/scan'}
-            self.required_frames = {'link_eef'}
-        else:
-            self.required_topics = {'/zed/zed_node/rgb/camera_info', '/cmd_vel', '/scan'}
-            self.required_frames = {'link_eef'}
-        self.requirements_timeout = TIMEOUT_REQUIREMENTS
+        self.required_frames = {'link_eef'}
+        self.required_topics = {'/cmd_vel', '/scan'}
+        if not self.use_slam_toolbox:
+            # RTABMap is RGBD; slam_toolbox is lidar-only.
+            self.required_topics.add('/zed/zed_node/rgb/camera_info')
 
         self.rtabmap_remapping = [
             f'rgb/image:={CAMERA_RGB_TOPIC}',
@@ -157,7 +150,6 @@ class Nav_Central(Node):
                 ]         
 
         self.config_path = self.localization_config if self.localization else self.mapping_config
-        self.rtab_load_timeout = TIMEOUT_RTABMAP
 
 
         self.areas_map_name = self.declare_parameter('areas_map_name', 'default_map').value
@@ -206,8 +198,7 @@ class Nav_Central(Node):
 
         # Expose the current nav goal + active flag so the arm pointer (manipulation)
         # can aim the camera at the destination. transient_local so a late-joining
-        # subscriber still gets the last goal. ponytail: plain topics, no constants
-        # file — two strings, one consumer.
+        # subscriber still gets the last goal.
         _latched = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
         self.current_goal_pub = self.create_publisher(PoseStamped, "/nav/current_goal", _latched)
         self.goal_active_pub = self.create_publisher(Bool, "/nav/goal_active", _latched)
@@ -288,7 +279,6 @@ class Nav_Central(Node):
         #Setup and Configuration
         self._setup_done = False
         self._setup_timer = self.create_timer(2.0, self._setup, callback_group=ReentrantCallbackGroup())
-        self._montitor_timer = None 
         self.no_topics_count = 0
         self.no_tf_count = 0
         self.nodes_status = False
@@ -398,33 +388,26 @@ class Nav_Central(Node):
             self.nodes_status = False
             self.nav_logger("warn", f"Monitor -> {'TF not available' if self.no_tf_count >= NO_TF_LIMIT else ''}, {'Topics not available' if self.no_topics_count >= NO_TOPICS_LIMIT else ''}, pausing nodes ...")
             self.pause_slam()
-            if self.use_nav2:
-                self.pause_nav2()
-        elif (self.no_topics_count == 0) and (self.no_tf_count == 0):
-            if self.nodes_status == False:
-                self.nodes_status = True
-                self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
-                self.resume_slam()
-                if self.use_nav2:
-                    self.resume_nav2()
+            self.pause_nav2()
+        elif self.no_topics_count == 0 and self.no_tf_count == 0 and not self.nodes_status:
+            self.nodes_status = True
+            self.nav_logger("info", "Monitor -> Requirements available, Activating nodes ...")
+            self.resume_slam()
+            self.resume_nav2()
         
 
-    def nav_logger(self,status, data):
-        if status == "info":
-            self.get_logger().info(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;119m {data}\033[0m")
-        elif status == "warn":
-            self.get_logger().warn(f"\033[35m\033[1mNav_Control: \033[22m\033[33m {data}\033[0m")
-        elif status == "error":
-            self.get_logger().error(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;167m {data}\033[0m")
-        else:
-            self.get_logger().fatal(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;88m {data}\033[0m")
+    _LOG_COLORS = {"info": "38;5;119", "warn": "33", "error": "38;5;167", "fatal": "38;5;88"}
+
+    def nav_logger(self, status, data):
+        status = status if status in self._LOG_COLORS else "fatal"
+        getattr(self.get_logger(), status)(
+            f"\033[35m\033[1mNav_Control: \033[22m\033[{self._LOG_COLORS[status]}m {data}\033[0m")
 
     def _resume_nav_callback(self, request, response):
         """Service callback: manually resume RTABMap and nav2 from the UI."""
         self.nav_logger("info", "Resume Nav Service -> Manual resume requested")
         self.resume_slam()
-        if self.use_nav2:
-            self.resume_nav2()
+        self.resume_nav2()
         self.nodes_status = True
         self.no_topics_count = 0
         self.no_tf_count = 0
@@ -440,14 +423,9 @@ class Nav_Central(Node):
                   standard mode.
         """
         self.nav_logger("info", f"Follow Person Service -> follow={request.data}")
-        if request.data:
-            self._start_follow_person()
-            response.success = True
-            response.message = "Follow person started"
-        else:
-            self._stop_follow_person()
-            response.success = True
-            response.message = "Follow person stopped"
+        (self._start_follow_person if request.data else self._stop_follow_person)()
+        response.success = True
+        response.message = f"Follow person {'started' if request.data else 'stopped'}"
         return response
 
     def _goal_update_cb(self, msg):
@@ -1197,7 +1175,7 @@ class Nav_Central(Node):
                 self.nav_logger("info", "Waiting Requirements -> Requirements complete")
             else:
                 self.nav_logger("warn", f"Waiting Requirements -> {'TF not available yet' if not tf_ready else ''}, {'Topics not available yet' if not topics_ready else ''}") 
-                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=self.requirements_timeout))
+                self.get_clock().sleep_for(rclpy.duration.Duration(seconds=TIMEOUT_REQUIREMENTS))
 
     def start_slam(self):
         """Bring up (or confirm) the active SLAM backend."""
@@ -1213,7 +1191,7 @@ class Nav_Central(Node):
         slam_topics = {self.slam_check_topic}
         self.nav_logger("info", "Loading Slam -> Waiting for slam_toolbox map ...")
         elapsed = 0.0
-        while not self.check_for_topics(slam_topics) and elapsed < self.rtab_load_timeout:
+        while not self.check_for_topics(slam_topics) and elapsed < TIMEOUT_RTABMAP:
             t.sleep(0.5)
             elapsed += 0.5
         if self.check_for_topics(slam_topics):
@@ -1258,7 +1236,7 @@ class Nav_Central(Node):
                 self.get_clock().sleep_for(rclpy.duration.Duration(seconds=0.1))
             self.nav_logger("info", "Loading Slam -> RtabSync Loaded") 
             elapsed = 0.0
-            while not self.check_for_topics(rtab_topics) and elapsed < self.rtab_load_timeout:
+            while not self.check_for_topics(rtab_topics) and elapsed < TIMEOUT_RTABMAP:
                 t.sleep(0.5)
                 elapsed += 0.5
             if self.check_for_topics(rtab_topics):
