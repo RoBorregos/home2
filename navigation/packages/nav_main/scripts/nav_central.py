@@ -397,12 +397,16 @@ class Nav_Central(Node):
             self._set_paused(False)
         
 
-    _LOG_COLORS = {"info": "38;5;119", "warn": "33", "error": "38;5;167", "fatal": "38;5;88"}
-
     def nav_logger(self, status, data):
-        status = status if status in self._LOG_COLORS else "fatal"
-        getattr(self.get_logger(), status)(
-            f"\033[35m\033[1mNav_Control: \033[22m\033[{self._LOG_COLORS[status]}m {data}\033[0m")
+        # One call per level: rclpy pins a single severity to each call site.
+        if status == "info":
+            self.get_logger().info(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;119m {data}\033[0m")
+        elif status == "warn":
+            self.get_logger().warn(f"\033[35m\033[1mNav_Control: \033[22m\033[33m {data}\033[0m")
+        elif status == "error":
+            self.get_logger().error(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;167m {data}\033[0m")
+        else:
+            self.get_logger().fatal(f"\033[35m\033[1mNav_Control: \033[22m\033[38;5;88m {data}\033[0m")
 
     def _resume_nav_callback(self, request, response):
         """Service callback: manually resume RTABMap and nav2 from the UI."""
