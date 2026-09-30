@@ -225,10 +225,18 @@ def warmup(dest: Path):
             ),
         )
         from backbone import EmbeddingBackbone
+        from registry import MODEL_CONFIGS
 
+        # Match production's actual config (registry.py), not the class
+        # default — otherwise this warms up plain PyTorch while production
+        # runs TensorRT, and the real engine still builds lazily (several
+        # minutes) on the node's first live frame despite --warmup.
+        use_trt = MODEL_CONFIGS.get("embedding_gallery", {}).get("use_trt", True)
         for name in HF_MODELS:
-            print(f"[warmup] forcing kernel compilation for {name} ...")
-            backbone = EmbeddingBackbone(name).load()
+            print(
+                f"[warmup] forcing kernel compilation for {name} (use_trt={use_trt}) ..."
+            )
+            backbone = EmbeddingBackbone(name, use_trt=use_trt).load()
             from PIL import Image
 
             dummy = Image.fromarray(np.zeros((224, 224, 3), dtype=np.uint8))

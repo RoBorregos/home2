@@ -43,6 +43,12 @@ class EmbeddingModel(DetectorModel):
         )
 
     def detect(self, image) -> list[Detection]:
+        # A fresh install has no enrolled objects — every match would be
+        # UNKNOWN anyway, so skip running the box proposer and backbone at
+        # all rather than paying their per-frame cost for nothing.
+        if not self.gallery.thresholds and not self.publish_unknown:
+            return []
+
         box_detections = self.box_model.detect(image)
         if not box_detections:
             return []

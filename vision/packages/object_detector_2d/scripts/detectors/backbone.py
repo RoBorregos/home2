@@ -55,6 +55,14 @@ class EmbeddingBackbone:
             clip_name = self.backbone_id.split("clip:", 1)[1]
             self._model, self._transform = clip.load(clip_name, device=self._device)
         else:
+            # Same persistent cache fetch_models.py's fetch_hf_models() downloads
+            # into — must match, or a fresh container finds nothing offline even
+            # after a successful `--warmup` (setdefault: don't clobber a value
+            # the launcher already set, e.g. to something session-specific).
+            cache_dir = Path(
+                os.environ.get("TENSORRT_CACHE_DIR", "/workspace/trt_cache")
+            )
+            os.environ.setdefault("HF_HOME", str(cache_dir / "hf_cache"))
             import timm
 
             model_kwargs = {"pretrained": True, "num_classes": 0}
