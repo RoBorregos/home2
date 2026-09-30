@@ -76,6 +76,10 @@ def launch_setup(context, *args, **kwargs):
     }
     if nav2_config_file:
         nav2_launch_arguments["nav2_config_file"] = nav2_config_file
+    else:
+        # An include shares this launch's configurations, so the declared empty default
+        # would reach nav2_omni.launch.py and shadow its own nav2_omni_limp.yaml default
+        context.launch_configurations.pop("nav2_config_file", None)
 
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
