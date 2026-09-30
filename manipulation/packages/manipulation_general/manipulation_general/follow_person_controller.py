@@ -30,20 +30,15 @@ import time
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
-from rclpy.qos import DurabilityPolicy, QoSProfile
 
 from geometry_msgs.msg import Point, Twist
-from std_msgs.msg import Bool, Float64
+from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from frida_interfaces.srv import FollowFace
 from frida_pymoveit2.robots import xarm6
 from xarm_msgs.srv import SetInt16, MoveVelocity
 from frida_constants.vision_constants import CENTROID_TOPIC
-from frida_constants.manipulation_constants import (
-    FOLLOW_PERSON_ARM_SERVICE,
-    MANIPULATION_ARM_BUSY_TOPIC,
-    ESTOP_TOPIC,
-)
+from frida_constants.manipulation_constants import FOLLOW_PERSON_ARM_SERVICE
 
 # Topic / service names
 CMD_VEL_TOPIC = "/cmd_vel"
@@ -113,25 +108,8 @@ class FollowPersonController(Node):
         # Computing it in the 20 Hz control loop would alternate spike/zero
         # because the centroid arrives at its own rate.
         self.error_deriv = 0.0
-        # Manipulation owns the arm while busy or in e-stop
-        self.arm_busy = False
-        self.estop = False
 
         # --- Subscribers ---
-        self.create_subscription(
-            Bool,
-            MANIPULATION_ARM_BUSY_TOPIC,
-            lambda msg: setattr(self, "arm_busy", msg.data),
-            QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL),
-            callback_group=cb_group,
-        )
-        self.create_subscription(
-            Bool,
-            ESTOP_TOPIC,
-            lambda msg: setattr(self, "estop", msg.data),
-            10,
-            callback_group=cb_group,
-        )
         self.create_subscription(
             Point,
             CENTROID_TOPIC,
@@ -227,12 +205,6 @@ class FollowPersonController(Node):
             )
 
     def _follow_service_cb(self, request, response):
-        if self.arm_busy or self.estop:
-            if request.follow_face:
-                self.get_logger().warn("Arm busy or e-stop, not following person")
-            self._yield_arm()
-            response.success = not request.follow_face
-            return response
         if request.follow_face:
             self.error_integral = 0.0
             self.error_deriv = 0.0
@@ -277,18 +249,9 @@ class FollowPersonController(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to set arm mode: {e}")
 
-    def _yield_arm(self):
-        """Stop and turn off without touching the xArm mode: manipulation owns it."""
-        if self.active:
-            self.get_logger().warn("Arm busy or e-stop, person following off")
-            self.active = False
-            self._send_joint_velocity(0.0)
-
     # ── Control loop ───────────────────────────────────────────
 
     def _control_loop(self):
-        if self.arm_busy or self.estop:
-            self._yield_arm()
         if not self.active:
             self._publish_base_yaw(0.0)
             return
