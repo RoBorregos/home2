@@ -16,8 +16,16 @@ page holds the background and the production workflow.
 
 ![Setup and runtime flow for the embedding gallery](diagrams/embedding_gallery_process.png)
 
-- **Setup (once per object):** 10-30 photos → `add_object.sh` → `gallery/<object>.npy` + `manifest.json`.
-- **Runtime (every frame, inside `ObjectDetect2D`):** YOLOE prompt-free proposer (conf 0.10) → crops → DINOv2 ViT-B/14 (TensorRT) → `gallery_matcher.py`. A crop is labeled only if `sim >= floor` and `top1-top2 margin >= min`; otherwise it is dropped as unknown.
+| File | Role |
+|---|---|
+| `add_object.sh` | Entry point for setup: takes an object name + photo glob, calls `gallery_build.py` then `fetch_models.py`. |
+| `gallery_build.py` | Crops the main object out of each enrollment photo (same box proposer + oversized-box filter as runtime) and writes `gallery/<object>.npy` + `manifest.json`. |
+| `fetch_models.py` | `sync_gallery()` copies the freshly-built gallery into every `detectors/` directory found (source, `install/`, other checkouts) — without this, a node reading a different copy never sees the new object. |
+| `embedding.py` | `EmbeddingModel` — the runtime detector. Calls the box proposer, applies the `max_box_area_frac` clutter filter, batches the backbone forward pass, and turns matches into `Detection`s. |
+| `yolo_e.py` | `YoloEModel` — wraps YOLOE in prompt-free mode as the class-agnostic box proposer. |
+| `backbone.py` | `EmbeddingBackbone` — loads the frozen DINOv2 ViT-B/14 (TensorRT-accelerated) and embeds a batch of crops. |
+| `gallery_matcher.py` | `Gallery` — cosine similarity against the gallery with a per-class floor + top1-vs-top2 margin; also owns `DEFAULT_MAX_BOX_AREA_FRAC`. |
+| `registry.py` | Wires `embedding_gallery` in `MODEL_CONFIGS`, loaded by the node at startup. |
 
 The two phases share only the files `gallery_build.py` writes and `EmbeddingModel.load()` reads at startup.
 
