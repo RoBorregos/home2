@@ -18,8 +18,11 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_RIM,
     GRASP_CLASS_ROUND,
     GRASP_CLASS_TRASH,
+    GRIPPER_FINGER_LENGTH,
+    GRIPPER_REACH,
     PEAK_NAMES,
     PLACE_TRASH_HEIGHT_OFFSET,
+    PRE_GRASP_DISTANCE,
     RIM_NAMES,
     ROUND_NAMES,
     TRASH_BIN_NAME,
@@ -45,10 +48,7 @@ assert len(OBJECT_GRASP_CLASS) == sum(
 DEFORMABLE_OBJECTS = frozenset({"clothes", "bread", "chip_bag", "towel", "plush_toy"})
 
 GRIPPER_MAX_APERTURE = 0.09
-GRIPPER_FINGER_LENGTH = 0.085
-GRIPPER_PALM_TO_FLANGE = 0.085
 GRIPPER_HALF_THICKNESS = 0.03
-GRIPPER_REACH = GRIPPER_FINGER_LENGTH + GRIPPER_PALM_TO_FLANGE
 
 MIN_POINTS_FOR_PCA = 10
 ELONGATION_MIN_RATIO = 2.0
@@ -81,7 +81,6 @@ NEIGHBOUR_PAD = 0.5
 OBSTACLE_MIN_POINTS = 10
 SELF_MARGIN = 0.01
 GRIPPER_FINGER_THICKNESS = 0.03
-PRE_GRASP_DISTANCE = 0.10
 
 TABLE_CLEARANCE = GRIPPER_FINGER_LENGTH * 0.15
 GRIPPER_BODY = np.array([[-0.091, -0.099, 0.0], [0.039, 0.099, 0.081]])
@@ -549,10 +548,13 @@ def solid(scene: Scene, grasp_class: str) -> tuple:
         tip = tip + rotation[:, 1] * (low + high) / 2
         width = high - low
         if tilt:  # a side band misses the top face, so trust the fitted footprint
-            width = max(
-                width,
-                abs(closing @ long_axis) * long + abs(closing @ short_axis) * short,
-            )
+            if fit.kind == "cylinder":
+                width = max(width, long)
+            else:
+                width = max(
+                    width,
+                    abs(closing @ long_axis) * long + abs(closing @ short_axis) * short,
+                )
         palm = (
             slab
             & (local[:, 2] < -GRIPPER_FINGER_LENGTH)
