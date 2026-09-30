@@ -12,10 +12,10 @@ from PIL import Image
 
 from dataset_config import load_dataset_config
 
-HERE = Path(__file__).parent
-DATA_DIR = HERE / "data"
+ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = ROOT / "data"
 TRANSLATION_PATH = (
-    HERE.parents[1]
+    ROOT.parents[1]
     / "packages"
     / "object_detector_2d"
     / "scripts"

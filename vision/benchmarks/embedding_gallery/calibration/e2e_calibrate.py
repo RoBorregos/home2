@@ -35,7 +35,7 @@ from report import (
 
 RECALL_TARGET = 0.80  # matches report.py's already-adjusted target
 REJECTION_TARGET = 0.80
-CACHE_PATH = Path(__file__).parent / "results" / "e2e_crops_cache.npz"
+CACHE_PATH = Path(__file__).parent.parent / "results" / "e2e_crops_cache.npz"
 # Read from gallery_matcher.py's own constants (single source of truth) so
 # this comparison baseline can't drift out of sync with what's actually live.
 GLOBAL_DEFAULT = (DEFAULT_MIN_SIMILARITY, DEFAULT_MARGIN_MIN)
@@ -377,7 +377,7 @@ def main():
         f"{per_class_result['recall_gated'] * 100:15.1f}% {per_class_result['rejection'] * 100:11.1f}%"
     )
 
-    results_dir = Path(__file__).parent / "results"
+    results_dir = Path(__file__).parent.parent / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
     out_path = (
         results_dir

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(
     0,
     str(
-        Path(__file__).resolve().parents[2]
+        Path(__file__).resolve().parents[3]
         / "packages"
         / "object_detector_2d"
         / "scripts"
@@ -142,7 +142,9 @@ def main():
     )
     parser.add_argument("--data", default="data/box_recall")
     parser.add_argument("--iou", type=float, default=0.5)
-    parser.add_argument("--models", default=str(Path(__file__).parent / "models.json"))
+    parser.add_argument(
+        "--models", default=str(Path(__file__).parent.parent / "models.json")
+    )
     parser.add_argument("--results", default="results/box_recall.json")
     args = parser.parse_args()
 

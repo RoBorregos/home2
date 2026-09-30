@@ -4,7 +4,7 @@ Edit dataset_config.json (not this file): out_of_gallery_classes (unknown-reject
 import json
 from pathlib import Path
 
-DEFAULT_CONFIG_PATH = Path(__file__).parent / "dataset_config.json"
+DEFAULT_CONFIG_PATH = Path(__file__).parent.parent / "dataset_config.json"
 
 _EMPTY = {
     "out_of_gallery_classes": set(),

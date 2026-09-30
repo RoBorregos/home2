@@ -6,19 +6,9 @@ import argparse
 import copy
 import itertools
 import json
-import sys
 from pathlib import Path
 
-sys.path.insert(
-    0,
-    str(
-        Path(__file__).resolve().parents[2]
-        / "packages"
-        / "object_detector_2d"
-        / "scripts"
-        / "detectors"
-    ),
-)
+import _paths  # noqa: F401
 
 import numpy as np
 import torch
@@ -38,7 +28,7 @@ from report import (
 
 RECALL_TARGET = 0.90
 REJECTION_TARGET = 0.80
-HERE = Path(__file__).parent
+ROOT = Path(__file__).resolve().parent.parent
 
 
 class ProjectionHead(nn.Module):
@@ -361,7 +351,7 @@ def main():
         "script's docstring."
     )
 
-    results_dir = HERE / "results"
+    results_dir = ROOT / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
     (results_dir / "finetune_head_result.json").write_text(
         json.dumps(

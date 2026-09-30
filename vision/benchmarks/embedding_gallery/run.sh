@@ -20,10 +20,10 @@ shift || true
 
 case "$MODE" in
     boxes)
-        python3 box_recall_eval.py "$@"
+        python3 core/box_recall_eval.py "$@"
         ;;
     embeddings)
-        python3 report.py "$@"
+        python3 core/report.py "$@"
         ;;
     *)
         echo "Usage: ./run.sh {boxes|embeddings} [extra args]"

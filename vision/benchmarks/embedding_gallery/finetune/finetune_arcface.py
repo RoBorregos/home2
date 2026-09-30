@@ -5,21 +5,10 @@ margin loss on TRAIN-split crops (kept separate from calibration's TEST split) â
 import argparse
 import copy
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-sys.path.insert(
-    0,
-    str(
-        Path(__file__).resolve().parents[2]
-        / "packages"
-        / "object_detector_2d"
-        / "scripts"
-        / "detectors"
-    ),
-)
+import _paths  # noqa: F401
 
 import numpy as np
 import torch
@@ -34,7 +23,9 @@ from e2e_calibrate import (
     optimize_per_class,
 )
 
-TRAIN_CACHE_PATH = Path(__file__).parent / "results" / "e2e_crops_cache_train.npz"
+TRAIN_CACHE_PATH = (
+    Path(__file__).parent.parent / "results" / "e2e_crops_cache_train.npz"
+)
 
 
 class ArcFaceHead(nn.Module):
@@ -300,7 +291,7 @@ def main():
         f"{'ArcFace head (per-class)':40s} {arcface_result['recall_gated'] * 100:15.1f}% {arcface_result['rejection'] * 100:11.1f}%"
     )
 
-    results_dir = Path(__file__).parent / "results"
+    results_dir = Path(__file__).parent.parent / "results"
     results_dir.mkdir(parents=True, exist_ok=True)
     out_path = (
         results_dir

@@ -22,7 +22,7 @@ from prepare_dataset import (
 from report import KNOWN_LIMITATION_CLASSES, embed_gallery_photos
 
 DETECTORS_DIR = (
-    Path(__file__).resolve().parents[2]
+    Path(__file__).resolve().parents[3]
     / "packages"
     / "object_detector_2d"
     / "scripts"
@@ -304,7 +304,7 @@ def main():
             )
 
     out_path = (
-        Path(__file__).parent
+        Path(__file__).parent.parent
         / "results"
         / f"e2e_eval_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     )

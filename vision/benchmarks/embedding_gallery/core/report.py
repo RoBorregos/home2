@@ -26,8 +26,8 @@ try:
 except ImportError:
     _RICH = False
 
-HERE = Path(__file__).parent
-DATA_DIR = HERE / "data"
+ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = ROOT / "data"
 
 # Original target was 90%/80%; no backbone/fine-tune tried got there (see
 # README.md) — 80% is the bar this approach clears with KNOWN_LIMITATION_CLASSES excluded.
@@ -300,8 +300,8 @@ def main():
         action="append",
         help="backbone name(s) from models.json; default: all",
     )
-    parser.add_argument("--models", default=str(HERE / "models.json"))
-    parser.add_argument("--results-dir", default=str(HERE / "results"))
+    parser.add_argument("--models", default=str(ROOT / "models.json"))
+    parser.add_argument("--results-dir", default=str(ROOT / "results"))
     args = parser.parse_args()
 
     all_backbones = json.loads(Path(args.models).read_text())["backbones"]

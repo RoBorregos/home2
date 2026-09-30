@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 _DETECTORS_DIR = (
-    Path(__file__).resolve().parents[2]
+    Path(__file__).resolve().parents[3]
     / "packages"
     / "object_detector_2d"
     / "scripts"
