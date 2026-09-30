@@ -46,9 +46,19 @@ def launch_setup(context, *args, **kwargs):
     grasp_assist = (
         LaunchConfiguration("grasp_assist").perform(context).lower() == "true"
     )
+    mobile_base = LaunchConfiguration("mobile_base").perform(context).lower() == "true"
+    spawn_x = LaunchConfiguration("spawn_x").perform(context)
+    spawn_y = LaunchConfiguration("spawn_y").perform(context)
+    spawn_yaw = LaunchConfiguration("spawn_yaw").perform(context)
+    spawn_z = LaunchConfiguration("spawn_z").perform(context)
+    lidar_rate = int(LaunchConfiguration("lidar_rate").perform(context))
 
     robot_description = build_robot_description(
-        image_width=width, image_height=height, camera_rate=rate
+        image_width=width,
+        image_height=height,
+        camera_rate=rate,
+        mobile_base=mobile_base,
+        lidar_rate=lidar_rate,
     )
     sim_time = {"use_sim_time": True}
 
@@ -72,17 +82,42 @@ def launch_setup(context, *args, **kwargs):
         package="ros_gz_sim",
         executable="create",
         output="screen",
-        arguments=["-topic", "robot_description", "-name", "frida", "-z", "0.0"],
+        arguments=[
+            "-topic",
+            "robot_description",
+            "-name",
+            "frida",
+            "-x",
+            spawn_x,
+            "-y",
+            spawn_y,
+            "-z",
+            spawn_z,
+            "-Y",
+            spawn_yaw,
+        ],
     )
 
-    bridge = Node(
-        package="ros_gz_bridge",
-        executable="parameter_bridge",
+    bridge_configs = [os.path.join(share, "config", "bridge.yaml")]
+    if mobile_base:
+        bridge_configs.append(os.path.join(share, "config", "bridge_nav.yaml"))
+
+    bridges = [
+        Node(
+            package="ros_gz_bridge",
+            executable="parameter_bridge",
+            name=f"gz_bridge_{index}",
+            output="screen",
+            parameters=[{"config_file": config}, sim_time],
+        )
+        for index, config in enumerate(bridge_configs)
+    ]
+
+    cmd_vel_relay = Node(
+        package="frida_gz_sim",
+        executable="cmd_vel_relay.py",
         output="screen",
-        parameters=[
-            {"config_file": os.path.join(share, "config", "bridge.yaml")},
-            sim_time,
-        ],
+        parameters=[sim_time],
     )
 
     def spawner(name):
@@ -132,16 +167,18 @@ def launch_setup(context, *args, **kwargs):
         parameters=[sim_time],
     )
 
-    return [
-        SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", _resource_path()),
-        gazebo,
-        robot_state_publisher,
-        spawn,
-        bridge,
-        controllers,
-        cloud_fix,
-        xarm_bridge,
-    ] + ([grasp_attach] if grasp_assist else [])
+    return (
+        [
+            SetEnvironmentVariable("GZ_SIM_RESOURCE_PATH", _resource_path()),
+            gazebo,
+            robot_state_publisher,
+            spawn,
+        ]
+        + bridges
+        + [controllers, cloud_fix, xarm_bridge]
+        + ([grasp_attach] if grasp_assist else [])
+        + ([cmd_vel_relay] if mobile_base else [])
+    )
 
 
 def generate_launch_description():
@@ -154,6 +191,14 @@ def generate_launch_description():
             DeclareLaunchArgument("camera_rate", default_value="10"),
             # Weld grasped objects to the gripper (physics-only pinches slip in Gazebo)
             DeclareLaunchArgument("grasp_assist", default_value="true"),
+            # Mobile base: gz drives base_link from /cmd_vel and both lidars publish
+            DeclareLaunchArgument("mobile_base", default_value="false"),
+            DeclareLaunchArgument("spawn_x", default_value="0.0"),
+            DeclareLaunchArgument("spawn_y", default_value="0.0"),
+            DeclareLaunchArgument("spawn_yaw", default_value="0.0"),
+            # The chassis collision dips 12 mm below base_link; lift it clear of the floor
+            DeclareLaunchArgument("spawn_z", default_value="0.0"),
+            DeclareLaunchArgument("lidar_rate", default_value="10"),
             OpaqueFunction(function=launch_setup),
         ]
     )

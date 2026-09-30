@@ -16,6 +16,21 @@ GRIPPER_BOXES = {
     "left_finger": ((0.039, 0.0616, 0.1), (0.0065, 0.0, 0.05)),
 }
 
+# The mobile base is driven by gz VelocityControl, which overwrites its velocity every
+# step: contacts cannot stop it, they only inject impulses that end up lifting the robot
+# off the floor. Its collisions come off with the anchor, together with those of the
+# links that SDF lumps into base_link. The mesh contacts also cost two thirds of the
+# physics budget. The arena walls are visual-only for the same reason.
+BASE_COLLISION_LINKS = (
+    "base_link",
+    "wheel_FL",
+    "wheel_FR",
+    "wheel_RL",
+    "wheel_RR",
+    "lidar_front",
+    "lidar_rear",
+)
+
 # Same xacro arguments the real MoveIt launch passes (arm_pkg MoveItConfigsBuilder)
 XARM_ARGS = {
     "ros2_control_plugin": GZ_PLUGIN,
@@ -36,6 +51,8 @@ def build_robot_description(
     image_width: int = 640,
     image_height: int = 360,
     camera_rate: int = 10,
+    mobile_base: bool = False,
+    lidar_rate: int = 10,
 ) -> str:
     """Return the sim URDF string with sim-only patches applied."""
     share = get_package_share_directory("frida_gz_sim")
@@ -46,6 +63,8 @@ def build_robot_description(
             "image_width": str(image_width),
             "image_height": str(image_height),
             "camera_rate": str(camera_rate),
+            "mobile_base": "true" if mobile_base else "false",
+            "lidar_rate": str(lidar_rate),
         }
     )
     doc = xacro.process_file(
@@ -73,6 +92,12 @@ def build_robot_description(
     for link in root.findall("link"):
         if link.get("name") in GRIPPER_BOXES:
             _box_collision(link, *GRIPPER_BOXES[link.get("name")])
+
+    if mobile_base:
+        for link in root.findall("link"):
+            if link.get("name") in BASE_COLLISION_LINKS:
+                for collision in link.findall("collision"):
+                    link.remove(collision)
 
     return ET.tostring(root, encoding="unicode")
 
