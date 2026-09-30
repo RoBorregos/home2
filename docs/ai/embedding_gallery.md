@@ -1,0 +1,114 @@
+# Embedding gallery (few-shot object recognition)
+
+A class-agnostic box proposer finds candidates, a frozen DINOv2 backbone embeds
+each crop, and cosine similarity against a per-object gallery decides the
+label. Adding an object needs photos, not retraining.
+
+The benchmark that chose the backbone and calibrated the thresholds lives in
+`vision/benchmarks/embedding_gallery/` (see its README for how to run it). This
+page holds the background and the production workflow.
+
+- **Adding an object?** → [Production workflow](#production-workflow-adding-an-object)
+- **Swapping `yolo_finetuned`?** → [Portability](#portability)
+- Everything else is background on how the defaults were chosen.
+
+## How it works
+
+![Setup and runtime flow for the embedding gallery](diagrams/embedding_gallery_process.png)
+
+- **Setup (once per object):** 10-30 photos → `add_object.sh` → `gallery/<object>.npy` + `manifest.json`.
+- **Runtime (every frame, inside `ObjectDetect2D`):** YOLOE prompt-free proposer (conf 0.10) → crops → DINOv2 ViT-B/14 (TensorRT) → `gallery_matcher.py`. A crop is labeled only if `sim >= floor` and `top1-top2 margin >= min`; otherwise it is dropped as unknown.
+
+The two phases share only the files `gallery_build.py` writes and `EmbeddingModel.load()` reads at startup.
+
+**Oversized boxes:** the proposer sometimes returns a box covering most of the frame, which can match a small gallery with a deceptively high score (0.79 vs. 0.55 for the correct box, seen with `screwdriver`). `EmbeddingModel` drops boxes covering more than `max_box_area_frac` of the frame (default `0.5`, set per model in `registry.py`) before embedding them.
+
+## Results
+
+Benchmarked on `RCW2026_v2` (the training set behind `robocup2026_v1.pt`; 28 raw classes → 26 published after `robocup2026_translation.json`). `lib/prepare_dataset.py` in the benchmark folder slices it into `data/`.
+
+**Phase 0: box proposer** (IoU 0.5, 25 held-out images / 104 boxes):
+
+| Candidate | Recall@0.5 | FP/image |
+|---|---|---|
+| `yolo_generic` (yolo26n, agnostic_nms) | 8.7% | 1.16 |
+| YOLOE broad text prompt | 4.8% | 0.0 |
+| YOLOE prompt-free, conf 0.25 | 89.4% | 10.92 |
+| **YOLOE prompt-free, conf 0.10** (chosen) | **97.1%** | 22.76 |
+
+The high FP rate is acceptable: the matcher's job is to reject them as unknown.
+
+These Phase 0 figures come from the `data/box_recall/` generated at the time. Re-running the benchmark on a regenerated `data/` (103 boxes) gave 87.4% for conf 0.25 and 92.2% for conf 0.10, with the same ranking of candidates, so expect the absolute numbers to move with the sampled images.
+
+**Phase 1: backbone** (oracle crops: 575 gallery / 690 held-out / 100 hard-negative / 45 out-of-gallery):
+
+| Backbone | Recall@1 | Hard-neg precision | Unknown-rejection |
+|---|---|---|---|
+| DINOv2 ViT-S/14 | 76% | 77% | 76% |
+| **DINOv2 ViT-B/14** | **76-81%** (~84% gated) | 85-94% | 80-84% |
+| DINOv2 ViT-L/14 | 70% | 85% | 82% |
+| CLIP ViT-B/32 | 62% | 64% | 56% |
+| DINOv2-B + fine-tuned head | 79% | 94% | 82% |
+
+**Chosen: frozen DINOv2 ViT-B/14.** The triplet fine-tuned head (`experiments/finetune_head.py`) adds ~3pt recall, not worth the training/versioning cost; it stays as an optional tool.
+
+**Real proposer crops vs. oracle crops** (`e2e_eval` and `e2e_calibrate` tasks). Real boxes are looser than hand-labeled ones, so recall drops; thresholds in `gallery_matcher.py` (`DEFAULT_MIN_SIMILARITY`/`DEFAULT_MARGIN_MIN`) are calibrated on real crops. That file is the source of truth for live values.
+
+| Config | Recall (gated) | Unknown-rejection |
+|---|---|---|
+| Oracle crops, global threshold | ~82% | ~84% |
+| Real crops, oracle threshold (0.5/0.02) | 75-76% | 76-79% |
+| Real crops, recalibrated (0.4/0.04), **production default** | 83.0% | 80.6% |
+| Real crops, per-class thresholds | 84.9% | 84.7% |
+| Real crops, ArcFace head + per-class thresholds | 92.0% | 91.7% |
+
+The ArcFace head (`experiments/finetune_arcface.py` → `results/arcface_head.pt`) is the only config that meets the original targets (recall ≥90%, rejection ≥80%), but it is **not wired into production**. To adopt it, load the head in `embedding.py` and project gallery and query embeddings through it before matching.
+
+## Acceptance gate
+
+The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a frozen backbone. The adjusted gate is **recall@1 ≥ 80%, rejection ≥ 80%**, excluding classes that are only confused with each other and are already handled by `yolo_finetuned`: cutlery (fork/knife/spoon), kitchenware (cup/bowl/plate), cans (coke/red_bull). Other weak classes (e.g. `milk`, ~37%) are not excluded. The numbers live in the benchmark's `lib/dataset.py` (`RECALL_TARGET`, `REJECTION_TARGET`) and `dataset_config.json` (`known_limitation_classes`).
+
+**Caveat:** all `RCW2026_v2` images come from one capture session, so `held_out/` is a different-*frame* split, not a different-*session* split. Treat the numbers as optimistic (same backdrop and lighting as the gallery); a perceptual-hash check found ~3% train/test frame overlap.
+
+## Production workflow: adding an object
+
+Run from inside the container, with your shell in
+`vision/packages/object_detector_2d/scripts/detectors/`.
+
+**Capture tips:** use the robot camera (not a phone), arena-like lighting, at least 4 angles, 2-3 distances, 2-3 shots with occlusion or clutter, 10-30 photos total.
+
+```bash
+mkdir -p gallery_photos/<object_name>
+# copy 10-30 photos in (gitignored)
+./add_object.sh <object_name>
+```
+
+Then restart the node. No code change or rebuild is needed (`embedding_gallery` is already in `config/parameters.yaml`). Takes ~30 s on the Orin.
+
+`add_object.sh`:
+1. Builds the entry into `$TENSORRT_CACHE_DIR/gallery` (default `/workspace/trt_cache/gallery`), a mount that persists across containers and fresh clones. `gallery/` in the source tree is gitignored, so writing there would leave a fresh checkout with zero objects.
+2. Runs `fetch_models.py`, whose `sync_gallery()` copies the gallery next to every `detectors/registry.py` it finds (source, `install/`, other checkouts).
+
+The backbone defaults to `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in `registry.py`, and the script refuses to write if the embedding dimension differs from existing objects.
+
+**Gotchas:**
+- `fetch_models.py` may exit 1 even when the gallery sync worked (it also checks unrelated custom weights). `add_object.sh` ignores that code; look for `[sync]  gallery/...` lines instead.
+- If a node reads a `detectors/` directory that `fetch_models.py` doesn't scan, it starts normally, logs `gallery=N objects`, and the new object silently never appears. Check what is really loaded with `ros2 topic echo /vision/detections_image`.
+
+## Portability
+
+**Swapping `yolo_finetuned`:** `embedding_gallery` is independent of it (own proposer, own gallery). Only `registry.py` references the model:
+
+```python
+"yolo_finetuned": {
+    "filename": "robocup2026_v1.pt",                # swap this
+    "type": "yolo",
+    "conf": 0.6,
+    "translation": "robocup2026_translation.json",  # and this (or drop it)
+    "use_trt": True,
+},
+```
+
+Drop the new `.pt` beside `registry.py`, update `filename`, and write a new translation JSON (raw class → published label) or remove the key. Thresholds in `gallery_matcher.py` and `known_limitation_classes` in `dataset_config.json` were tuned on RCW2026_v2; treat them as a starting point and re-run the `embeddings` and `e2e_calibrate` tasks on your own data.
+
+**Swapping the benchmark dataset:** run `./run.sh prepare --source` on the new export and edit `dataset_config.json`, the only place dataset-specific class names live (`out_of_gallery_classes`, `hard_negative_classes`, `known_limitation_classes`; see the docstring in `lib/dataset.py`). `known_limitation_classes` can only be found from a run's confusion breakdown.

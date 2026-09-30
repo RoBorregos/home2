@@ -4,31 +4,22 @@ on cutlery/kitchenware confusion): trains a small linear projection on frozen DI
 
 import argparse
 import copy
-import itertools
 import json
-from pathlib import Path
-
-import _paths  # noqa: F401
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from backbone import EmbeddingBackbone
-from gallery_matcher import UNKNOWN, Gallery
+from gallery_matcher import UNKNOWN
 
-from report import (
-    embed_gallery_photos,
-    embed_labeled_dir,
-    embed_unlabeled_dir,
-    DATA_DIR,
-    SIM_GRID,
-    MARGIN_GRID,
-)
+from lib.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR
+from lib.embed import embed_gallery_photos, embed_labeled_dir, embed_unlabeled_dir
+from lib.metrics import build_gallery, optimize_global
 
+# This experiment keeps the original, stricter recall bar (the benchmark's
+# gate is 0.80) and scores ungated recall (no excluded classes).
 RECALL_TARGET = 0.90
-REJECTION_TARGET = 0.80
-ROOT = Path(__file__).resolve().parent.parent
 
 
 class ProjectionHead(nn.Module):
@@ -204,47 +195,26 @@ def apply_head(head: ProjectionHead, embeddings: np.ndarray) -> np.ndarray:
         return head(x).numpy().astype(np.float32)
 
 
-def sweep_and_score(
-    gallery_embeddings, held_out_labels, held_out_emb, ood_emb, ood_files
-) -> dict:
-    def build_gallery(min_sim, margin_min):
-        manifest = {
-            "objects": {
-                name: {"min_similarity": min_sim, "margin_min": margin_min}
-                for name in gallery_embeddings
-            }
-        }
-        return Gallery(gallery_embeddings, manifest)
-
-    best = None
-    for min_sim, margin_min in itertools.product(SIM_GRID, MARGIN_GRID):
-        gallery = build_gallery(min_sim, margin_min)
-        recall = sum(
-            1
-            for label, (pred, _, _) in zip(
-                held_out_labels, gallery.match_batch(held_out_emb)
-            )
-            if pred == label
-        ) / len(held_out_labels)
-        rejection = sum(
-            1 for (pred, _, _) in gallery.match_batch(ood_emb) if pred == UNKNOWN
-        ) / len(ood_files)
-        both_met = recall >= RECALL_TARGET and rejection >= REJECTION_TARGET
-        score = min(recall, rejection)
-        candidate = {
-            "min_similarity": min_sim,
-            "margin_min": margin_min,
-            "recall_at_1": recall,
-            "unknown_rejection_rate": rejection,
-            "both_targets_met": both_met,
-            "score": score,
-        }
-        if best is None or (candidate["both_targets_met"], candidate["score"]) > (
-            best["both_targets_met"],
-            best["score"],
-        ):
-            best = candidate
-    return best
+def sweep_and_score(gallery_embeddings, held_out_labels, held_out_emb, ood_emb) -> dict:
+    """Global threshold sweep, ungated recall against this experiment's 0.90 bar."""
+    best = optimize_global(
+        gallery_embeddings,
+        held_out_labels,
+        held_out_emb,
+        ood_emb,
+        excluded=frozenset(),
+        recall_target=RECALL_TARGET,
+        rejection_target=REJECTION_TARGET,
+        verbose=False,
+    )
+    return {
+        "min_similarity": best["min_similarity"],
+        "margin_min": best["margin_min"],
+        "recall_at_1": best["recall_gated"],
+        "unknown_rejection_rate": best["rejection"],
+        "both_targets_met": best["both_met"],
+        "score": best["score"],
+    }
 
 
 def main():
@@ -273,9 +243,7 @@ def main():
     ood_files, ood_raw = embed_unlabeled_dir(backbone, DATA_DIR / "out_of_gallery")
 
     # --- Baseline: frozen backbone, no head ---
-    baseline_best = sweep_and_score(
-        gallery_raw, held_out_labels, held_out_raw, ood_raw, ood_files
-    )
+    baseline_best = sweep_and_score(gallery_raw, held_out_labels, held_out_raw, ood_raw)
     print(f"[finetune] FROZEN baseline: {baseline_best}")
 
     # --- Trained head, with an internal train/val split for early stopping ---
@@ -298,21 +266,18 @@ def main():
     ood_proj = apply_head(head, ood_raw)
 
     projected_best = sweep_and_score(
-        gallery_proj, held_out_labels, held_out_proj, ood_proj, ood_files
+        gallery_proj, held_out_labels, held_out_proj, ood_proj
     )
     print(f"[finetune] PROJECTED (trained head): {projected_best}")
 
     # Final detailed metrics at the projected head's best threshold
-    manifest = {
-        "objects": {
-            name: {
-                "min_similarity": projected_best["min_similarity"],
-                "margin_min": projected_best["margin_min"],
-            }
+    gallery = build_gallery(
+        gallery_proj,
+        {
+            name: (projected_best["min_similarity"], projected_best["margin_min"])
             for name in gallery_proj
-        }
-    }
-    gallery = Gallery(gallery_proj, manifest)
+        },
+    )
     recall_preds = gallery.match_batch(held_out_proj)
     hard_neg_preds = gallery.match_batch(hard_neg_proj)
     ood_preds = gallery.match_batch(ood_proj)
@@ -351,7 +316,7 @@ def main():
         "script's docstring."
     )
 
-    results_dir = ROOT / "results"
+    results_dir = RESULTS_DIR
     results_dir.mkdir(parents=True, exist_ok=True)
     (results_dir / "finetune_head_result.json").write_text(
         json.dumps(

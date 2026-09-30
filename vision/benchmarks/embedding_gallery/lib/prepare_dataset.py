@@ -10,31 +10,12 @@ from pathlib import Path
 
 from PIL import Image
 
-from dataset_config import load_dataset_config
-
-ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = ROOT / "data"
-TRANSLATION_PATH = (
-    ROOT.parents[1]
-    / "packages"
-    / "object_detector_2d"
-    / "scripts"
-    / "detectors"
-    / "robocup2026_translation.json"
+from lib.dataset import (
+    DATA_DIR,
+    HARD_NEGATIVE_CLASSES,
+    OUT_OF_GALLERY_CLASSES,
+    load_translation,
 )
-
-# Dataset-specific class names live in dataset_config.json, not here — edit
-# THAT file to adapt. Names are PUBLISHED labels (post-translation).
-_cfg = load_dataset_config()
-OUT_OF_GALLERY_CLASSES = _cfg["out_of_gallery_classes"]
-HARD_NEGATIVE_CLASSES = _cfg["hard_negative_classes"]
-
-
-def load_translation() -> dict[str, str]:
-    if not TRANSLATION_PATH.exists():
-        return {}
-    return json.loads(TRANSLATION_PATH.read_text())
-
 
 GALLERY_PHOTOS_PER_CLASS = 25  # matches the production 10-30 photo workflow
 HELD_OUT_PER_CLASS = 30  # at 12/class one wrong prediction moved recall by

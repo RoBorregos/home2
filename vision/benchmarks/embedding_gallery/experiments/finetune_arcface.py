@@ -8,24 +8,16 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import _paths  # noqa: F401
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from e2e_calibrate import (
-    CACHE_PATH as TEST_CACHE_PATH,
-    collect_real_crops,
-    load_cached_crops,
-    optimize_global,
-    optimize_per_class,
-)
-
-TRAIN_CACHE_PATH = (
-    Path(__file__).parent.parent / "results" / "e2e_crops_cache_train.npz"
-)
+from lib.dataset import E2E_CACHE_PATH as TEST_CACHE_PATH
+from lib.dataset import E2E_TRAIN_CACHE_PATH as TRAIN_CACHE_PATH
+from lib.dataset import RESULTS_DIR
+from lib.embed import collect_real_crops, load_cached_crops
+from lib.metrics import optimize_global, optimize_per_class
 
 
 class ArcFaceHead(nn.Module):
@@ -291,7 +283,7 @@ def main():
         f"{'ArcFace head (per-class)':40s} {arcface_result['recall_gated'] * 100:15.1f}% {arcface_result['rejection'] * 100:11.1f}%"
     )
 
-    results_dir = Path(__file__).parent.parent / "results"
+    results_dir = RESULTS_DIR
     results_dir.mkdir(parents=True, exist_ok=True)
     out_path = (
         results_dir
