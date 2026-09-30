@@ -82,7 +82,7 @@ OBSTACLE_MIN_POINTS = 10
 SELF_MARGIN = 0.01
 GRIPPER_FINGER_THICKNESS = 0.03
 
-TABLE_CLEARANCE = GRIPPER_FINGER_LENGTH * 0.15
+TABLE_CLEARANCE = GRIPPER_FINGER_LENGTH * 0.5
 GRIPPER_BODY = np.array([[-0.091, -0.099, 0.0], [0.039, 0.099, 0.081]])
 
 FINGER_SWEEP = np.array(
@@ -104,7 +104,7 @@ BODY_MIN_CLEARANCE = 0.02
 BODY_CLEARANCE_SCALE = 0.01
 SPARE_SCALE = 0.02
 ARM_SCALE = 0.02
-MOVE_SCALE = 1.0
+MOVE_SCALE = 0.55
 
 PEAK_GRID_RES = 0.05
 PEAK_NBR = 3
@@ -494,7 +494,7 @@ def solid(scene: Scene, grasp_class: str) -> tuple:
     require(np.linalg.norm(center) > 1e-6, "object at the robot origin")
     away = center / np.linalg.norm(center)
     middle = np.array([*center, (support_z + top_z) / 2])
-    top_tip_z = max(top_z - 0.85 * GRIPPER_FINGER_LENGTH, support_z + TABLE_CLEARANCE)
+    top_tip_z = max(top_z - 0.95 * GRIPPER_FINGER_LENGTH, support_z + TABLE_CLEARANCE)
 
     height = top_z - support_z
     yaw = np.arctan2(long_axis[1], long_axis[0])

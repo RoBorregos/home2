@@ -132,7 +132,7 @@ class CartesianApproachPick(PickStrategy):
 
     The rim strategy, tilted: the arm moves to a pre-grasp behind the grasp, drives
     straight forward along the approach axis (the path the generator checked for
-    collisions), attaches the fitted object, closes and saves its heights are left 
+    collisions), attaches the fitted object, closes and saves its heights are left
     to the pick pipeline, which holds the fitted object
     """
 
@@ -173,7 +173,7 @@ class CartesianApproachPick(PickStrategy):
             with arm.phase("lift"):
                 arm.clear_octomap()
                 arm.move_to_pose(
-                    offset_z(candidate.pose, profile.pre_grasp_height), velocity=0.2
+                    offset_z(candidate.pose, profile.pre_grasp_height), velocity=0.7
                 )
 
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)

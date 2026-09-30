@@ -862,9 +862,9 @@ class RobotArm:
         # cannot be mistaken for progress.
         wait_start = time.time()
         while self.tcp_xyz() is None:
-            if time.time() - wait_start > 2.0:
+            if time.time() - wait_start > 1.0:
                 self._log.error(
-                    f"[{label}] no robot_states after 2s, cannot verify the move"
+                    f"[{label}] no robot_states after 1s, cannot verify the move"
                 )
                 return False
             time.sleep(0.05)
