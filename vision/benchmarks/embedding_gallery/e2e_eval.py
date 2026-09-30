@@ -23,20 +23,10 @@ Usage:
 
 import argparse
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(
-    0,
-    str(
-        Path(__file__).resolve().parents[2]
-        / "packages"
-        / "object_detector_2d"
-        / "scripts"
-        / "detectors"
-    ),
-)
+import _paths  # noqa: F401
 
 import numpy as np
 from backbone import EmbeddingBackbone
@@ -76,6 +66,31 @@ def iou(a, b) -> float:
     area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
     union = area_a + area_b - inter
     return inter / union if union > 0 else 0.0
+
+
+def match_gt_to_boxes(gt_items, kept_px, used: set | None = None, iou_threshold=0.5):
+    """Greedy best-IoU match of (label, gt_bbox) pairs against kept_px boxes.
+    Yields (label, gt_bbox, matched_idx), matched_idx=None on a miss.
+
+    `used`, if given, is updated in place so later pairs in THIS call can't
+    claim an already-matched box (pass None for no exclusion — e.g.
+    out-of-gallery pairs, which don't compete with the gallery pairs' own
+    `used` set since a box can validly be "the nearest gallery box" for one
+    ground-truth object and also considered for an unrelated OOD one)."""
+    for true_label, gt_bbox in gt_items:
+        best_iou, best_idx = 0.0, -1
+        for idx, pred_bbox in enumerate(kept_px):
+            if used is not None and idx in used:
+                continue
+            score = iou(gt_bbox, pred_bbox)
+            if score > best_iou:
+                best_iou, best_idx = score, idx
+        if best_iou < iou_threshold:
+            yield true_label, gt_bbox, None
+            continue
+        if used is not None:
+            used.add(best_idx)
+        yield true_label, gt_bbox, best_idx
 
 
 def make_box_proposer():
@@ -213,43 +228,32 @@ def main():
             masked_labels = [m[0] for m in gallery.match_batch(masked_emb)]
 
         used = set()
-        for true_label, gt_bbox in gt_in_gallery:
-            best_iou, best_idx = 0.0, -1
-            for idx, pred_bbox in enumerate(kept_px):
-                if idx in used:
-                    continue
-                score = iou(gt_bbox, pred_bbox)
-                if score > best_iou:
-                    best_iou, best_idx = score, idx
-            if best_iou < 0.5:
+        for true_label, _gt_bbox, idx in match_gt_to_boxes(
+            gt_in_gallery, kept_px, used=used
+        ):
+            if idx is None:
                 cases.append({"expected": true_label, "missed_by_proposer": True})
                 continue
-            used.add(best_idx)
             cases.append(
                 {
                     "expected": true_label,
                     "missed_by_proposer": False,
-                    "plain_pred": plain_labels[best_idx],
-                    "masked_pred": masked_labels[best_idx],
-                    "had_mask": kept_poly[best_idx] is not None,
+                    "plain_pred": plain_labels[idx],
+                    "masked_pred": masked_labels[idx],
+                    "had_mask": kept_poly[idx] is not None,
                 }
             )
 
-        for true_label, gt_bbox in gt_ood:
-            best_iou, best_idx = 0.0, -1
-            for idx, pred_bbox in enumerate(kept_px):
-                score = iou(gt_bbox, pred_bbox)
-                if score > best_iou:
-                    best_iou, best_idx = score, idx
-            if best_iou < 0.5:
+        for true_label, _gt_bbox, idx in match_gt_to_boxes(gt_ood, kept_px):
+            if idx is None:
                 ood_cases.append({"expected": true_label, "missed_by_proposer": True})
                 continue
             ood_cases.append(
                 {
                     "expected": true_label,
                     "missed_by_proposer": False,
-                    "plain_pred": plain_labels[best_idx],
-                    "masked_pred": masked_labels[best_idx],
+                    "plain_pred": plain_labels[idx],
+                    "masked_pred": masked_labels[idx],
                 }
             )
 

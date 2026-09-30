@@ -19,20 +19,10 @@ import argparse
 import glob
 import itertools
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(
-    0,
-    str(
-        Path(__file__).resolve().parents[2]
-        / "packages"
-        / "object_detector_2d"
-        / "scripts"
-        / "detectors"
-    ),
-)
+import _paths  # noqa: F401
 
 import numpy as np
 from backbone import EmbeddingBackbone

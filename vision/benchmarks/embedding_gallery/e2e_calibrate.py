@@ -21,34 +21,33 @@ Usage:
 import argparse
 import itertools
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
-sys.path.insert(
-    0,
-    str(
-        Path(__file__).resolve().parents[2]
-        / "packages"
-        / "object_detector_2d"
-        / "scripts"
-        / "detectors"
-    ),
-)
+import _paths  # noqa: F401
 
 import numpy as np
 from backbone import EmbeddingBackbone
-from gallery_matcher import DEFAULT_MARGIN_MIN, DEFAULT_MIN_SIMILARITY, UNKNOWN, Gallery
+from gallery_matcher import (
+    DEFAULT_MARGIN_MIN,
+    DEFAULT_MIN_SIMILARITY,
+    UNKNOWN,
+    Gallery,
+)
 
-from e2e_eval import iou, make_box_proposer
+from e2e_eval import make_box_proposer, match_gt_to_boxes
 from prepare_dataset import (
     OUT_OF_GALLERY_CLASSES,
     iter_split,
     load_class_names,
     load_translation,
 )
-from report import KNOWN_LIMITATION_CLASSES, SIM_GRID, MARGIN_GRID, embed_gallery_photos
+from report import (
+    KNOWN_LIMITATION_CLASSES,
+    MARGIN_GRID,
+    SIM_GRID,
+    embed_gallery_photos,
+)
 
 RECALL_TARGET = 0.80  # matches report.py's already-adjusted target
 REJECTION_TARGET = 0.80
@@ -138,31 +137,20 @@ def collect_real_crops(
         )
 
         used = set()
-        for true_label, gt_bbox in gt_in_gallery:
-            best_iou, best_idx = 0.0, -1
-            for idx, pred_bbox in enumerate(kept_px):
-                if idx in used:
-                    continue
-                score = iou(gt_bbox, pred_bbox)
-                if score > best_iou:
-                    best_iou, best_idx = score, idx
-            if best_iou < 0.5:
+        for true_label, _gt_bbox, idx in match_gt_to_boxes(
+            gt_in_gallery, kept_px, used=used
+        ):
+            if idx is None:
                 missed_gallery += 1
                 continue
-            used.add(best_idx)
             held_out_labels.append(true_label)
-            held_out_emb.append(crop_emb[best_idx])
+            held_out_emb.append(crop_emb[idx])
 
-        for true_label, gt_bbox in gt_ood:
-            best_iou, best_idx = 0.0, -1
-            for idx, pred_bbox in enumerate(kept_px):
-                score = iou(gt_bbox, pred_bbox)
-                if score > best_iou:
-                    best_iou, best_idx = score, idx
-            if best_iou < 0.5:
+        for _true_label, _gt_bbox, idx in match_gt_to_boxes(gt_ood, kept_px):
+            if idx is None:
                 missed_ood += 1
                 continue
-            ood_emb.append(crop_emb[best_idx])
+            ood_emb.append(crop_emb[idx])
 
         if (i + 1) % 25 == 0:
             print(f"[calib]   ...{i + 1}/{len(samples)} images processed")
