@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Iterator, List, Optional, Tuple
 
 import numpy as np
-from frida_constants.manipulation_constants import PICK_MAX_DISTANCE
+from frida_constants.manipulation_constants import PICK_MAX_DISTANCE, SAFETY_HEIGHT
 from geometry_msgs.msg import PointStamped
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
@@ -22,6 +22,7 @@ from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
+    SHAPE_STRATEGY_KEYS,
     resolve_pick_strategy,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
@@ -114,6 +115,8 @@ def execute(
     """Pick an object. Returns (success, outcome)."""
     log = arm.logger
     strategy_key = resolve_pick_strategy(request.object_name)
+    if request.is_shelf and strategy_key in SHAPE_STRATEGY_KEYS:
+        strategy_key = PICK_STRATEGY_GPD
     strategy = strategies[strategy_key]
     arm.set_context(strategy_key)
 
@@ -131,7 +134,10 @@ def execute(
     # Open after perceiving: the fingers are in the camera's view while it looks.
     arm.open_gripper()
 
-    # Remember the perceived objects so DirectGraspPick can attach one.
+    if strategy_key in SHAPE_STRATEGY_KEYS:
+        arm.add_collision_object(perceived.grasps.object)
+
+    # Remember the perceived objects so a strategy can attach one.
     arm.snapshot_scene()
 
     outcome = None
@@ -150,6 +156,10 @@ def execute(
     arm.close_gripper(settle_s=0.0)
 
     outcome.object_name = request.object_name
+    if strategy_key in SHAPE_STRATEGY_KEYS:
+        outcome.object_pick_height, outcome.object_height = _fitted_heights(
+            perceived.grasps.object, outcome.pick_pose
+        )
     if request.return_to_carry:
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
@@ -283,9 +293,19 @@ def _grasp_sets(
 ) -> Iterator[GraspSet]:
     """Yield batches of candidates, best source first.
 
-    Flat objects yield a single set from the generator. GPD yields one set per
-    config, so a config whose grasps are all unreachable falls back to the next.
+    Shapes yield the generator's best candidates. Flat objects yield the generator's
+    one pose and its flip. GPD yields one set per config, so a config whose grasps
+    are all unreachable falls back to the next.
     """
+    if strategy_key in SHAPE_STRATEGY_KEYS:
+        response = perceived.grasps
+        yield GraspSet(
+            poses=list(response.grasps[:5]),
+            scores=list(response.scores[:5]),
+            source="grasp_generator",
+        )
+        return
+
     if strategy_key != PICK_STRATEGY_GPD:
         # A 90 deg alternative would align the fingers with a fork's long axis
         # and collide with it, so the only alternative is the symmetric flip.
@@ -478,6 +498,13 @@ def _candidates(arm, profile, grasp_set: GraspSet) -> Iterator[GraspCandidate]:
                 pose_index=pose_index,
                 alternative_index=alternative,
             )
+
+
+def _fitted_heights(fitted, grasp_pose) -> Tuple[float, float]:
+    """The place pipeline's (pick height, object height) for the fitted object."""
+    height = 2 * fitted.dimensions.x if fitted.type == "sphere" else fitted.dimensions.z
+    bottom = fitted.pose.pose.position.z - height / 2
+    return grasp_pose.pose.position.z - bottom + SAFETY_HEIGHT, height
 
 
 # ======================================================================
