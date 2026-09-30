@@ -1,25 +1,6 @@
 #!/usr/bin/env python3
-"""End-to-end recall check: the production BOX PROPOSER's own predicted
-crops -> DINOv2 -> gallery match, instead of report.py's ground-truth-polygon
-crops. Real boxes are loose/shifted and drag in background clutter the
-matcher never saw during calibration — report.py's ~82% gated recall dropped
-to 71.6% (all classes) once real proposer crops were used.
-
-Also tests a fix: YOLOE returns a per-instance mask (unused elsewhere in
-this pipeline) — blanking the background OUTSIDE it (filled with DINOv2's
-normalization mean, not an arbitrary black square) before embedding should
-remove that clutter. Both variants (plain bbox vs. masked) run in the same
-pass over the same box proposals, so the comparison is apples-to-apples.
-
-Two distinct failure modes are reported separately:
-  - "missed_by_proposer": the box proposer never localized the object at
-    IoU>=0.5 at all — an embedding-matching fix can't help this.
-  - "wrong_label": the proposer found the object fine, but the embedding
-    matcher assigned the wrong label (or unknown).
-
-Usage:
-    python3 e2e_eval.py --source ~/Downloads/RCW2026_v2 --n-images 150
-"""
+"""End-to-end recall check using the production box proposer's own crops
+(not report.py's ground-truth crops) — real boxes dragged in clutter that dropped recall from ~82% oracle to 71.6%; also compares plain-bbox vs. mask-blanked-background variants to test a fix."""
 
 import argparse
 import json
@@ -50,9 +31,8 @@ DETECTORS_DIR = (
 BOX_PROPOSER_WEIGHT = DETECTORS_DIR / "yoloe-11l-seg-pf.pt"
 BOX_CONF = 0.10
 
-# DINOv2's own timm normalization mean, in 0-255 RGB — filling the background
-# with this color makes it contribute ~zero signal after normalization,
-# instead of an arbitrary (and out-of-distribution) black square.
+# DINOv2's own timm normalization mean, in 0-255 RGB — fills the background
+# with a color that contributes ~zero signal, instead of an out-of-distribution black square.
 NEUTRAL_FILL_RGB = (124, 116, 104)
 
 
@@ -69,14 +49,8 @@ def iou(a, b) -> float:
 
 
 def match_gt_to_boxes(gt_items, kept_px, used: set | None = None, iou_threshold=0.5):
-    """Greedy best-IoU match of (label, gt_bbox) pairs against kept_px boxes.
-    Yields (label, gt_bbox, matched_idx), matched_idx=None on a miss.
-
-    `used`, if given, is updated in place so later pairs in THIS call can't
-    claim an already-matched box (pass None for no exclusion — e.g.
-    out-of-gallery pairs, which don't compete with the gallery pairs' own
-    `used` set since a box can validly be "the nearest gallery box" for one
-    ground-truth object and also considered for an unrelated OOD one)."""
+    """Greedy best-IoU match of (label, gt_bbox) pairs against kept_px boxes;
+    yields (label, gt_bbox, matched_idx). `used`, if given, excludes already-matched boxes within this call only — pass None (e.g. for OOD pairs) so they don't compete with an unrelated call's matches."""
     for true_label, gt_bbox in gt_items:
         best_iou, best_idx = 0.0, -1
         for idx, pred_bbox in enumerate(kept_px):

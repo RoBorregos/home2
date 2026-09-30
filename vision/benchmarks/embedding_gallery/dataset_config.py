@@ -1,16 +1,5 @@
-"""Per-object-set config — the only place dataset-specific class names live
-in this benchmark. Edit dataset_config.json (not this file) to adapt to a
-new object set:
-
-  - out_of_gallery_classes: 2-3 classes held out of gallery_photos/ to serve
-    as "not in gallery" negatives for unknown-rejection.
-  - hard_negative_classes: visually-close classes curated into
-    hard_negatives/ — chosen, not random.
-  - known_limitation_classes: classes excluded from the recall gate because
-    they only confuse each other, never an unrelated class. Can't be
-    guessed — start empty, add a class only once report.py/e2e_calibrate.py
-    shows evidence in its confusion breakdown.
-"""
+"""Per-object-set config — the only place dataset-specific class names live.
+Edit dataset_config.json (not this file): out_of_gallery_classes (unknown-rejection negatives), hard_negative_classes (curated look-alikes), known_limitation_classes (start empty, add only with confusion-matrix evidence)."""
 
 import json
 from pathlib import Path

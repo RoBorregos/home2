@@ -1,13 +1,5 @@
-"""Loads a frozen embedding backbone and embeds a batch of image crops.
-
-Shared by gallery_build.py, the offline benchmark (vision/benchmarks/embedding_gallery/),
-and the production "embedding" detector — one place that knows how to turn a
-crop into a vector, so all three always embed the same way.
-
-Backbone id convention: a timm model id (DINOv2, e.g.
-"vit_small_patch14_dinov2.lvd142m") loads via timm; a "clip:<name>" id
-(e.g. "clip:ViT-B/32") loads via the `clip` package instead.
-"""
+"""Loads a frozen embedding backbone and embeds crops — shared by
+gallery_build.py, the offline benchmark, and the production detector so all three embed the same way. Backbone id: a timm id loads via timm; "clip:<name>" loads via the `clip` package instead."""
 
 import os
 from pathlib import Path
@@ -30,9 +22,8 @@ class EmbeddingBackbone:
         # an Orin) — only override once that accuracy trade-off is re-benchmarked.
         self.img_size = img_size
         self.is_clip = backbone_id.startswith("clip:")
-        # Same onnxruntime/TensorRT pattern face_recognition.py already uses.
-        # CLIP isn't supported (ONNX-exporting its image tower is its own
-        # project) — falls back to plain PyTorch with a warning.
+        # Same onnxruntime/TensorRT pattern face_recognition.py uses — CLIP
+        # isn't supported (exporting its image tower to ONNX is its own project), falls back to plain PyTorch.
         self.use_trt = use_trt and not self.is_clip
         self._model = None
         self._transform = None
@@ -55,10 +46,8 @@ class EmbeddingBackbone:
             clip_name = self.backbone_id.split("clip:", 1)[1]
             self._model, self._transform = clip.load(clip_name, device=self._device)
         else:
-            # Same persistent cache fetch_models.py's fetch_hf_models() downloads
-            # into — must match, or a fresh container finds nothing offline even
-            # after a successful `--warmup` (setdefault: don't clobber a value
-            # the launcher already set, e.g. to something session-specific).
+            # Same cache fetch_models.py's fetch_hf_models() downloads into —
+            # must match, or a fresh container finds nothing offline (setdefault: don't clobber a launcher-set value).
             cache_dir = Path(
                 os.environ.get("TENSORRT_CACHE_DIR", "/workspace/trt_cache")
             )
@@ -101,9 +90,8 @@ class EmbeddingBackbone:
             opset_version=17,
         )
         try:
-            # torch>=2.6's new "dynamo" exporter needs the optional
-            # `onnxscript` package — force the older TorchScript-based
-            # exporter, which doesn't, for a plain ViT this is plenty.
+            # torch>=2.6's "dynamo" exporter needs the optional `onnxscript`
+            # package — force the older TorchScript-based exporter instead, plenty for a plain ViT.
             self._torch.onnx.export(
                 self._model, dummy, str(onnx_path), dynamo=False, **export_kwargs
             )
@@ -164,11 +152,8 @@ class EmbeddingBackbone:
         )
 
     def embed_batch(self, crops: list, chunk_size: int = 32) -> np.ndarray:
-        """crops: list of PIL.Image (RGB). Returns [N, D] float32, NOT
-        normalized (L2-normalize via gallery_matcher.l2_normalize if needed)
-        — kept raw so callers can cache before choosing a threshold strategy.
-        Chunked internally so a large batch doesn't allocate one huge tensor.
-        """
+        """crops: list of PIL.Image (RGB). Returns [N, D] float32, NOT normalized
+        (kept raw so callers can cache before choosing a threshold strategy) — chunked internally so a large batch doesn't allocate one huge tensor."""
         if self._model is None:
             self.load()
 

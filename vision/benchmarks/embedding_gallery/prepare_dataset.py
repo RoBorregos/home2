@@ -1,23 +1,6 @@
 #!/usr/bin/env python3
-"""One-off converter: any Ultralytics YOLO-seg export (dataset/{train,valid,
-test}/{images,labels} + dataset/data.yaml with a `names:` list) -> this
-benchmark's data/ layout. Dataset-agnostic — class names come entirely from
-the dataset's own data.yaml and dataset_config.json, never hardcoded here.
-
-KNOWN LIMITATION with RCW2026_v2 (the dataset this was calibrated against):
-per its imported_classes.json, every class's images come from a SINGLE
-capture session, so its train/valid/test split is a different-FRAME split,
-not a different-SESSION split — recall@1 measured on held_out/ is an
-optimistic sanity check (same lighting/backdrop as gallery_photos/), not a
-real field number. Check whether a NEW dataset has the same limitation
-before trusting its numbers.
-
-Labels are YOLO-SEG format (class_id x1 y1 x2 y2 ... xn yn, normalized
-polygon) — bbox here is the polygon's axis-aligned bounding box.
-
-Usage:
-    python3 prepare_dataset.py --source /path/to/your/dataset
-"""
+"""One-off converter: Ultralytics YOLO-seg export -> this benchmark's data/
+layout, entirely driven by the dataset's data.yaml/dataset_config.json. KNOWN LIMITATION: RCW2026_v2's train/valid/test split is same-SESSION not same-FRAME, so held_out/ recall is optimistic — check a new dataset before trusting its numbers."""
 
 import argparse
 import json
@@ -41,8 +24,7 @@ TRANSLATION_PATH = (
 )
 
 # Dataset-specific class names live in dataset_config.json, not here — edit
-# THAT file to adapt this script to a new object set. Names are PUBLISHED
-# labels (post-translation) — see load_translation().
+# THAT file to adapt. Names are PUBLISHED labels (post-translation).
 _cfg = load_dataset_config()
 OUT_OF_GALLERY_CLASSES = _cfg["out_of_gallery_classes"]
 HARD_NEGATIVE_CLASSES = _cfg["hard_negative_classes"]
@@ -106,10 +88,7 @@ def polygon_bbox_px(coords: list[float], img_w: int, img_h: int) -> list[int]:
 
 def iter_split(source: Path, split: str, names: list[str], translation: dict[str, str]):
     """Yields (image_path, [(published_label, bbox_px), ...]) for every image
-    with at least one label in this split. Labels are already translated
-    through robocup2026_translation.json — this is what the production
-    detector's Detection.label_ would carry, and it's the identity the
-    acceptance criteria (recall@1, unknown-rejection) actually cares about."""
+    with a label — labels are already translated, matching what the production detector's Detection.label_ would carry."""
     images_dir = source / "dataset" / split / "images"
     labels_dir = source / "dataset" / split / "labels"
     for img_path in sorted(images_dir.iterdir()):
@@ -159,11 +138,8 @@ def save_crop(img_path: Path, bbox: list[int], out_path: Path):
 
 
 def _reset_dir(out_dir: Path):
-    """Wipe out_dir entirely before rebuilding. Both report.py and
-    box_recall_eval.py discover gallery_photos/*/ and out_of_gallery/* by
-    directory listing, not by an explicit manifest — a stale subdirectory or
-    file left over from a previous run (e.g. under an old, pre-translation
-    class name) would silently get counted as gallery content forever."""
+    """Wipe out_dir before rebuilding — report.py/box_recall_eval.py discover
+    content by directory listing, not a manifest, so a stale leftover dir would silently count as gallery content forever."""
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -42,11 +42,8 @@ class YoloEModel(DetectorModel):
         self.model.set_classes(classes, self.model.get_text_pe(classes))
 
     def detect(self, image) -> list[Detection]:
-        # conf must be passed to predict() itself, not just filtered after:
-        # ultralytics' own default (0.25) discards lower-confidence boxes
-        # before NMS even runs, so a configured conf below that (e.g.
-        # embedding_box_proposer's 0.10) silently had no effect and also
-        # changed which boxes competed in NMS.
+        # conf must be passed to predict() itself, not filtered after —
+        # ultralytics' default (0.25) discards low-confidence boxes before NMS runs, so a lower configured conf silently had no effect.
         with _SuppressStderr():
             results = self.model.predict(image, conf=self.conf, verbose=False)
         detections = []

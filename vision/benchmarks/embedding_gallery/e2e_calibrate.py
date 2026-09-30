@@ -1,22 +1,6 @@
 #!/usr/bin/env python3
-"""Calibrate (min_similarity, margin_min) against REAL box-proposer crops,
-not report.py's ground-truth-polygon crops — e2e_eval.py showed the
-oracle-calibrated threshold (0.5/0.02) under-performs on real crops (75-76%
-recall / 76-79% rejection vs 82%/84% oracle). A global real-crop threshold
-(0.4/0.04) recovered that to 83.0%/80.6% (see results/e2e_calibrate_*.json).
-
-This version adds PER-CLASS threshold optimization on top — greedy
-coordinate descent, one class at a time, a few rounds until it stops
-improving. Classes like "milk" (no clean look-alike) may need a looser
-floor than classes already near 100%; a single global pair can't serve both.
-
-Box proposals + embeddings are the expensive step (~15min on the Orin) —
-cached to results/e2e_crops_cache.npz. Use --from-cache to skip re-embedding.
-
-Usage:
-    python3 e2e_calibrate.py --source ~/Downloads/RCW2026_v2 --n-images 149
-    python3 e2e_calibrate.py --from-cache  # re-optimize without re-embedding
-"""
+"""Calibrates (min_similarity, margin_min) per-class against REAL box-proposer
+crops (not report.py's oracle crops) via greedy coordinate descent — see results/e2e_calibrate_*.json for why a single global pair under-performs."""
 
 import argparse
 import itertools
@@ -56,10 +40,8 @@ CACHE_PATH = Path(__file__).parent / "results" / "e2e_crops_cache.npz"
 # this comparison baseline can't drift out of sync with what's actually live.
 GLOBAL_DEFAULT = (DEFAULT_MIN_SIMILARITY, DEFAULT_MARGIN_MIN)
 
-# First per-class run picked degenerate floors for a few classes
-# (min_similarity=0.1, margin_min=0.0 — barely a filter) — overfitting to
-# the calibration sample rather than a real signal. Floor the search so it
-# can't recreate that.
+# First per-class run picked degenerate floors (min_similarity=0.1,
+# margin_min=0.0) — overfit to the calibration sample; floor the search.
 MIN_SIMILARITY_FLOOR = 0.3
 MARGIN_MIN_FLOOR = 0.02
 PER_CLASS_SIM_GRID = [v for v in SIM_GRID if v >= MIN_SIMILARITY_FLOOR]
@@ -85,9 +67,8 @@ def collect_real_crops(
     backbone = EmbeddingBackbone(backbone_id).load()
     gallery_embeddings = embed_gallery_photos(backbone)
     gallery_labels = set(gallery_embeddings)
-    # Derived from the backbone's own output, not hardcoded — a different
-    # --backbone (e.g. DINOv2 ViT-S/14 is 384-dim, ViT-B/14 is 768-dim)
-    # must not silently produce zero-arrays of the wrong shape here.
+    # Derived from the backbone's output, not hardcoded — a different
+    # --backbone (e.g. ViT-S/14 is 384-dim) must not silently zero-array the wrong shape.
     embed_dim = next(iter(gallery_embeddings.values())).shape[-1]
     print(f"[calib] gallery has {len(gallery_labels)} objects, embed_dim={embed_dim}")
 

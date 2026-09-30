@@ -1,12 +1,5 @@
-"""Few-shot object recognition: class-agnostic boxes + a frozen DINOv2 crop
-embedding matched against a small per-object gallery — no retraining to add
-an object. Anything outside the gallery reports as "unknown".
-
-Box proposer: YOLOE prompt-free, boxes only (labels discarded). Backbone:
-DINOv2 ViT-B/14, frozen, TensorRT-accelerated. Matching:
-gallery_matcher.Gallery. See vision/benchmarks/embedding_gallery/README.md
-for the calibration behind these choices.
-"""
+"""Few-shot object recognition: class-agnostic YOLOE-pf boxes + frozen
+DINOv2-B embeddings matched via gallery_matcher.Gallery — no retraining to add an object; out-of-gallery reports "unknown". See the benchmark README for calibration."""
 
 import numpy as np
 from PIL import Image
@@ -44,8 +37,7 @@ class EmbeddingModel(DetectorModel):
 
     def detect(self, image) -> list[Detection]:
         # A fresh install has no enrolled objects — every match would be
-        # UNKNOWN anyway, so skip running the box proposer and backbone at
-        # all rather than paying their per-frame cost for nothing.
+        # UNKNOWN anyway, so skip the box proposer/backbone entirely.
         if not self.gallery.thresholds and not self.publish_unknown:
             return []
 

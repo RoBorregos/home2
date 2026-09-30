@@ -1,22 +1,6 @@
 #!/usr/bin/env python3
-"""ArcFace fine-tune — trains a small linear projection with additive
-angular margin loss (Deng et al.) on REAL box-proposer crops from the TRAIN
-split, kept separate from the TEST split used for calibration/evaluation.
-
-Design: the ArcFace classifier weight matrix is training-only scaffolding,
-discarded after training. Inference still matches the projection's output
-against the gallery via cosine similarity (gallery_matcher.Gallery), same as
-the frozen backbone — "add an object without retraining" still holds, only
-existing objects' embeddings get reshaped by the projection.
-
-Evaluated by reprojecting e2e_calibrate.py's cached TEST-split crops through
-the trained head — no box-proposer re-run needed for evaluation, only for
-the one-time TRAIN-split collection (~15-18min on the Orin, cached).
-
-Usage:
-    python3 finetune_arcface.py --source ~/Downloads/RCW2026_v2 --n-images 400
-    python3 finetune_arcface.py --from-cache  # reuse cached train crops
-"""
+"""ArcFace fine-tune: trains a linear projection with additive angular
+margin loss on TRAIN-split crops (kept separate from calibration's TEST split) — the classifier itself is discarded after training; inference still matches the projection's output via cosine similarity against the gallery, same as the frozen backbone."""
 
 import argparse
 import copy
@@ -54,9 +38,8 @@ TRAIN_CACHE_PATH = Path(__file__).parent / "results" / "e2e_crops_cache_train.np
 
 
 class ArcFaceHead(nn.Module):
-    """Frozen-embedding -> compact projection, trained via an ArcFace
-    (additive angular margin) classification loss. `classifier_weight` is
-    only used to compute the training loss — never touched at inference."""
+    """Frozen-embedding -> compact projection via an ArcFace classification
+    loss; `classifier_weight` trains the loss only, never touched at inference."""
 
     def __init__(
         self,

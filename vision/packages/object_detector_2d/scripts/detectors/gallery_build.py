@@ -1,31 +1,6 @@
 #!/usr/bin/env python3
-"""Build or update one gallery entry (name -> N embeddings) from a folder of photos.
-
-Usage (inside the vision container — needs timm/torch, and clip if the
-backbone id starts with "clip:"):
-
-    python3 gallery_build.py --object coke \\
-        --photos "gallery_photos/coke/*.jpg" \\
-        --gallery-dir gallery/
-
---backbone defaults to MODEL_CONFIGS["embedding_gallery"]["backbone"] in
-registry.py — don't override it. Every object in one gallery must share the
-same embedding dimension, or Gallery.load() crashes at the next node
-restart, not now.
-
-Writes gallery/<object>.npy (float32 [N, D], L2-normalized) and updates a
-single gallery/manifest.json across all objects (mirrors the MANIFEST.json
-convention fetch_models.py already uses). Re-running for the same object
-overwrites its .npy and refreshes photo count/backbone, but preserves any
-match thresholds already tuned by hand in manifest.json.
-
-By default each photo is cut down to its main object with the SAME box
-proposer and oversized-box filter the runtime detector uses, so the gallery
-holds crops like the ones it will be matched against (a whole-frame photo
-embeds background clutter the runtime crops never contain). Crops are saved
-to <photos dir>/_crops/ for a visual check; photos with no usable box are
-skipped with a warning. Pass --no-crop if the photos are already tight crops.
-"""
+"""Build or update one gallery entry (name -> N embeddings) from a folder of
+photos, cropped by the same box proposer + oversized-box filter the runtime detector uses (--no-crop to skip). Every object in one gallery must share the embedding dimension, or Gallery.load() crashes at the next node restart — --backbone defaults to registry.py's MODEL_CONFIGS, don't override it."""
 
 import argparse
 import glob
@@ -46,9 +21,8 @@ RECOMMENDED_MIN_PHOTOS = 10
 RECOMMENDED_MAX_PHOTOS = 30
 
 try:
-    # Single source of truth for "what backbone does production actually
-    # use" — keeps this default from silently drifting out of sync with
-    # MODEL_CONFIGS["embedding_gallery"]["backbone"] in registry.py.
+    # Single source of truth for "what backbone does production use" — keeps
+    # this default in sync with MODEL_CONFIGS["embedding_gallery"]["backbone"].
     from registry import MODEL_CONFIGS
 
     DEFAULT_BACKBONE = MODEL_CONFIGS["embedding_gallery"]["backbone"]
@@ -57,11 +31,8 @@ except Exception:
 
 
 def load_box_proposer() -> tuple:
-    """Return (proposer, max_box_area_frac) as configured for production.
-
-    Imported through the `detectors` package (not the bare modules used
-    elsewhere in this script) because yolo_e.py uses relative imports.
-    """
+    """Return (proposer, max_box_area_frac) as configured for production —
+    imported through the `detectors` package, not bare modules, since yolo_e.py uses relative imports."""
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     import detectors  # noqa: F401  (registers the model types)
     from detectors.registry import MODEL_CONFIGS, ModelRegistry
@@ -72,12 +43,8 @@ def load_box_proposer() -> tuple:
 
 
 def pick_main_box(detections: list, w: int, h: int, max_area_frac: float):
-    """Pixel box (x1, y1, x2, y2) of the most likely main object, or None.
-
-    Drops oversized boxes (same rule as the runtime detector), then prefers
-    high-confidence boxes near the image centre — enrollment photos are
-    meant to have the object front and centre.
-    """
+    """Pixel box (x1, y1, x2, y2) of the most likely main object, or None —
+    drops oversized boxes (same rule as the runtime detector), then prefers high-confidence boxes near the image centre."""
     best, best_score = None, 0.0
     for det in detections:
         x1 = max(0, int(det.bbox_.x1 * w))

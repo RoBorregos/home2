@@ -1,11 +1,5 @@
-"""Side-effect import: adds detectors/ to sys.path so report.py, e2e_eval.py
-and e2e_calibrate.py can import backbone.py/gallery_matcher.py from there
-without installing this benchmark as a package.
-
-`import _paths` (not `from _paths import ...`) is what triggers this — as
-a plain import, it doesn't break the "imports before other code" rule the
-way a sys.path.insert() call or a setup function call would, so the real
-imports after it need no E402 suppression."""
+"""Side-effect import: adds detectors/ to sys.path for backbone.py/gallery_matcher.py.
+Must be `import _paths`, not `from _paths import ...` — a plain import needs no E402 suppression for imports after it."""
 
 import sys
 from pathlib import Path

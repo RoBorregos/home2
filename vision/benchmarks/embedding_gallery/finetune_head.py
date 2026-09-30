@@ -1,30 +1,6 @@
 #!/usr/bin/env python3
-"""Phase 4 (gated — only reached because Phase 1's frozen-backbone gate
-failed, concentrated in cutlery fork/knife/spoon and kitchenware cup/bowl/plate
-confusion; see results/benchmark_*.json). Trains a SMALL linear projection
-head on top of FROZEN DINOv2-B embeddings with a batch-hard triplet loss —
-the backbone itself is never touched, per the plan's "keep it only if it
-beats the frozen backbone" framing.
-
-v2 — the first attempt (see git history) trained on all of gallery_photos/
-with no validation signal, so nothing caught it overfitting until the final
-held_out number came back worse than the frozen baseline (53% vs 80%). This
-version carves an internal train/val split OUT of gallery_photos/ (val is
-never used to build the matching gallery, only to decide when to stop
-training) and adds weight decay + input dropout, so overfitting shows up as
-a visible drop in val accuracy DURING training instead of only at the end.
-
-KNOWN REMAINING LIMITATION: gallery_photos/ and held_out/ still come from
-the SAME RCW2026_v2 capture session (same backdrop/lighting), so even this
-internal val split can't fully substitute for a real second photo session —
-it catches "memorized these exact 690 crops" overfitting, not "memorized
-this session's background" overfitting. Re-run against held_out/ built from
-a genuinely different session once one exists, to get the number the plan's
-Phase 1 gate actually wants.
-
-Usage (this benchmark's .venv):
-    python3 finetune_head.py --backbone dinov2_vitb14 --epochs 300 --patience 20
-"""
+"""Phase 4 (gated — reached only after Phase 1's frozen-backbone gate failed
+on cutlery/kitchenware confusion): trains a small linear projection on frozen DINOv2-B with batch-hard triplet loss + an internal train/val split (v2, after v1 overfit silently) to catch overfitting live; held_out/ still shares gallery_photos/'s capture session, so val isn't a full substitute for a real second one."""
 
 import argparse
 import copy
@@ -66,12 +42,8 @@ HERE = Path(__file__).parent
 
 
 class ProjectionHead(nn.Module):
-    """A single frozen-embedding -> compact-embedding linear map, with input
-    dropout as the main regularizer. Small on purpose: even with a proper
-    val split, ~500 training crops over 23 classes can't support much more
-    without overfitting to this exact photo set instead of learning a
-    reusable "which DINOv2 directions matter for our object set" projection.
-    """
+    """Frozen-embedding -> compact-embedding linear map with input dropout as
+    the main regularizer — kept small since ~500 crops over 23 classes can't support much more without overfitting to this exact photo set."""
 
     def __init__(self, in_dim: int, out_dim: int = 128, dropout: float = 0.3):
         super().__init__()
@@ -87,8 +59,7 @@ def batch_hard_triplet_loss(
     embeddings: torch.Tensor, labels: torch.Tensor, margin: float = 0.2
 ) -> torch.Tensor:
     """Cosine-distance batch-hard triplet loss (Hermans et al.): per anchor,
-    mine the hardest positive (same class, most distant) and hardest
-    negative (different class, closest) within the batch."""
+    mines the hardest same-class positive and hardest different-class negative in the batch."""
     sims = embeddings @ embeddings.T  # cosine, embeddings are already L2-normalized
     dists = 1.0 - sims
 
@@ -112,9 +83,8 @@ def batch_hard_triplet_loss(
 def split_train_val(
     gallery_embeddings: dict[str, np.ndarray], val_frac: float = 0.25, seed: int = 0
 ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
-    """Per-class split so every class appears in both — val is held OUT of
-    training and out of the matching gallery used during training; it only
-    ever informs when to stop."""
+    """Per-class split so every class appears in both — val is held out of
+    training and the matching gallery, used only to decide when to stop."""
     rng = np.random.default_rng(seed)
     train, val = {}, {}
     for name, emb in gallery_embeddings.items():
@@ -143,9 +113,8 @@ def centroid_val_accuracy(
     train_emb: dict[str, np.ndarray],
     val_emb: dict[str, np.ndarray],
 ) -> float:
-    """Nearest-class-centroid accuracy on val, with centroids computed from
-    TRAIN only — a cheap, interpretable proxy for "does this projection
-    generalize to unseen photos of the same objects," checked every epoch."""
+    """Nearest-class-centroid accuracy on val, with centroids from TRAIN only —
+    a cheap proxy for "does this projection generalize," checked every epoch."""
     head.eval()
     with torch.no_grad():
         names = sorted(train_emb)
@@ -332,8 +301,7 @@ def main():
     )
 
     # Final gallery uses ALL enrollment photos (train+val) through the
-    # early-stopped head — val's job (deciding when to stop) is done; using
-    # every photo now maximizes the production-realistic gallery.
+    # early-stopped head — val's job is done, so use everything for a production-realistic gallery.
     gallery_proj = {name: apply_head(head, emb) for name, emb in gallery_raw.items()}
     held_out_proj = apply_head(head, held_out_raw)
     hard_neg_proj = apply_head(head, hard_neg_raw)

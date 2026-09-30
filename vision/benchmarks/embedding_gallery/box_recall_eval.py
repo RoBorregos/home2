@@ -1,21 +1,6 @@
 #!/usr/bin/env python3
-"""Phase 0: box recall of candidate class-agnostic proposers, BEFORE any
-embedding-matching code gets built on top of them.
-
-Why this runs first: the likely bottleneck for few-shot recognition is not the
-embedding backbone, it's whether the proposer even puts a box around a novel
-object in the first place. If nothing here clears the recall bar, stop and
-escalate instead of building Phase 1-3 on an unvalidated assumption.
-
-Ground truth format — one `annotations.json` per data dir, pixel-space boxes:
-    {
-      "image_001.jpg": [{"bbox": [x1, y1, x2, y2], "label": "coke"}, ...],
-      "image_002.jpg": [...]
-    }
-
-Usage (inside the vision container — needs ultralytics):
-    python3 box_recall_eval.py --data data/box_recall --iou 0.5
-"""
+"""Phase 0: box recall of candidate class-agnostic proposers, before any
+embedding-matching code is built on top — if nothing clears the recall bar here, stop and escalate instead of building Phase 1-3 on an unvalidated assumption. Ground truth: one annotations.json per data dir (pixel-space boxes)."""
 
 import argparse
 import json

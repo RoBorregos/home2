@@ -1,11 +1,5 @@
-"""Pure-numpy gallery matching: cosine similarity with a per-class floor and a
-top1-vs-top2 margin.
-
-Shared by the offline benchmark (vision/benchmarks/embedding_gallery/) and the
-production "embedding" detector, so the match decision has exactly one
-implementation. No ROS/ultralytics/torch import here on purpose — this module
-must stay importable from a plain venv running the offline benchmark.
-"""
+"""Pure-numpy gallery matching: cosine similarity with a per-class floor and
+top1-vs-top2 margin — shared by the benchmark and the production detector as the one implementation. No ROS/ultralytics/torch import, so it stays importable from a plain venv."""
 
 import json
 from pathlib import Path
@@ -14,16 +8,13 @@ import numpy as np
 
 UNKNOWN = "unknown"
 
-# Calibrated by e2e_calibrate.py against real box-proposer crops (not
-# oracle ones, which score better but don't hold up in production — see
-# the benchmark README). manifest.json's per-class values override both.
+# Calibrated by e2e_calibrate.py against real box-proposer crops (oracle
+# crops score better but don't hold up in production) — manifest.json's per-class values override both.
 DEFAULT_MIN_SIMILARITY = 0.4
 DEFAULT_MARGIN_MIN = 0.04
 
-# A box covering most of the frame is clutter, not an object — can score
-# higher than a correct small crop against a sparse gallery. Shared by the
-# runtime detector and gallery_build.py so both crop by the same rule.
-# Override via MODEL_CONFIGS[...]["max_box_area_frac"] in registry.py.
+# A box covering most of the frame is clutter, not an object — shared by
+# the runtime detector and gallery_build.py so both crop by the same rule (override via registry.py's max_box_area_frac).
 DEFAULT_MAX_BOX_AREA_FRAC = 0.5
 
 
@@ -76,15 +67,8 @@ class Gallery:
         return cls(embeddings, manifest)
 
     def match_batch(self, queries: np.ndarray) -> list[tuple[str, float, float]]:
-        """queries: [Q, D], any scale. Returns one (label, top1_similarity, margin)
-        per row; label is UNKNOWN when the winning class misses its floor or
-        its margin over the runner-up class.
-
-        Margin is between CLASSES (best similarity per label), not between
-        the two closest vectors — with N photos per object the closest
-        runner-up vector is usually the *same* object, which would collapse
-        the margin to ~0 even for a correct match.
-        """
+        """queries: [Q, D]. Returns one (label, top1_similarity, margin) per row;
+        UNKNOWN when the winner misses its floor/margin. Margin is between CLASSES (best per label), not the two closest vectors, or the runner-up would usually be the same object and collapse it to ~0."""
         n = len(queries)
         if self.vectors.size == 0 or n == 0:
             return [(UNKNOWN, 0.0, 0.0) for _ in range(n)]

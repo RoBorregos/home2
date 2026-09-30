@@ -1,19 +1,6 @@
 #!/usr/bin/env python3
-"""Phase 1 driver: embed data/gallery_photos/ + data/held_out/ +
-data/hard_negatives/ + data/out_of_gallery/ ONCE per backbone, then sweep a
-global (min_similarity, margin_min) threshold on the cached embeddings
-(cheap: pure numpy) to jointly hit both acceptance targets. Writes
-results/thresholds.json for gallery_build.py to seed from.
-
-Usage (inside the vision container, or this benchmark's .venv — needs
-timm/torch, clip for CLIP candidates, PIL):
-    python3 report.py --backbones dinov2_vits14 --backbones clip_vit_b32
-    python3 report.py                      # all backbones in models.json
-
-Requires data/gallery_photos/<object>/*.jpg (enrollment set — must NOT overlap
-with data/held_out/, or recall@1 measures memorization, not matching) plus
-data/held_out/, data/hard_negatives/, data/out_of_gallery/ per README.md.
-"""
+"""Phase 1 driver: embeds gallery_photos/, held_out/, hard_negatives/ and
+out_of_gallery/ once per backbone, sweeps thresholds on cached embeddings -> results/thresholds.json. gallery_photos/ must not overlap held_out/, or recall@1 measures memorization, not matching."""
 
 import argparse
 import glob
@@ -42,15 +29,13 @@ except ImportError:
 HERE = Path(__file__).parent
 DATA_DIR = HERE / "data"
 
-# Original target was 90%/80%; real measurement never got there across
-# every backbone/fine-tune tried (see README.md). 80% is the defensible bar
-# this approach actually clears with KNOWN_LIMITATION_CLASSES excluded.
+# Original target was 90%/80%; no backbone/fine-tune tried got there (see
+# README.md) — 80% is the bar this approach clears with KNOWN_LIMITATION_CLASSES excluded.
 RECALL_TARGET = 0.80
 REJECTION_TARGET = 0.80
 
 # Published labels excluded from the recall gate — lives in
-# dataset_config.json, not here (see that file's docstring for how the list
-# is derived and why it must be re-derived, not copied, per dataset).
+# dataset_config.json, not here (re-derive per dataset, don't copy).
 KNOWN_LIMITATION_CLASSES = load_dataset_config()["known_limitation_classes"]
 
 # Coarse grid on cached embeddings — cheap, widen freely.
