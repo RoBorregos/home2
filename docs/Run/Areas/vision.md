@@ -67,6 +67,28 @@ Vision is divided into the following packages:
 - object_detector_2d
 - moondream_run
 
+# Adding an object
+
+Objects outside the finetuned YOLO can be added from photos, without retraining. Put the
+photos (10-30 `.jpg`, one folder per object) in:
+
+```
+vision/packages/object_detector_2d/scripts/detectors/gallery_photos/<object_name>/
+```
+
+Inside the `home2-vision` container that is
+`/workspace/src/vision/packages/object_detector_2d/scripts/detectors/gallery_photos/<object_name>/`
+(the repo is bind-mounted, so copying into the host path is enough). Then, from the
+`detectors/` directory inside the container:
+
+```bash
+mkdir -p gallery_photos/<object_name>   # if it does not exist yet
+./add_object.sh <object_name>
+```
+
+Restart `ObjectDetect2D` afterwards. Details and troubleshooting:
+[vision/README.md](../../../vision/README.md) (section "Adding an object to the gallery").
+
 # Camera
 
 To use the zed camera run the following command in orin:

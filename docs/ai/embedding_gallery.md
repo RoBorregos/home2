@@ -81,7 +81,9 @@ The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a
 ## Production workflow: adding an object
 
 Run from inside the container, with your shell in
-`vision/packages/object_detector_2d/scripts/detectors/`.
+`/workspace/src/vision/packages/object_detector_2d/scripts/detectors/` (on the host:
+`vision/packages/object_detector_2d/scripts/detectors/`; the repo is bind-mounted). The photos
+go in `gallery_photos/<object_name>/` inside that directory.
 
 **Capture tips:** use the robot camera (not a phone), arena-like lighting, at least 4 angles, 2-3 distances, 2-3 shots with occlusion or clutter, 10-30 photos total.
 
