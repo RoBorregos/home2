@@ -70,7 +70,7 @@ SAFETY_HEIGHT = 0.05
 GRIPPER_FINGER_LENGTH = 0.085
 GRIPPER_PALM_TO_FLANGE = 0.085
 GRIPPER_REACH = GRIPPER_FINGER_LENGTH + GRIPPER_PALM_TO_FLANGE
-PRE_GRASP_DISTANCE = 0.10
+PRE_GRASP_DISTANCE = 0.06
 PICK_MIN_HEIGHT = 0.04
 # Objects picked with the flat-grasp estimator. toothpaste/sponge/dishwasher_tab are
 # low, flat items GPD fails to grasp from above (PPC run 2026-07-02: toothpaste 0/2).

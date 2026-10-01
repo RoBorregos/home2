@@ -531,8 +531,8 @@ def _return_to_carry_pose(arm, strategy_key: str, is_shelf: bool) -> None:
     named = "look_side_stare" if strategy_key == PICK_STRATEGY_PEAK else "table_stare"
     log.info(f"Returning to {named}")
     with arm.phase(f"return/{named}"):
-        arm.clear_octomap()
         for _ in range(5):
+            arm.clear_octomap()
             if arm.move_to_named_position(named, velocity=0.5):
                 return
         log.warn(f"Could not return to {named} after 5 attempts")

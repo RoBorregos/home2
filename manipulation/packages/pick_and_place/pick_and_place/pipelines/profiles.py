@@ -87,6 +87,7 @@ class PickProfile:
     num_alternatives: int
     alternative_step: float
     pre_grasp_height: float
+    post_grasp_height: float
     pre_grasp_velocity: float
     close_settle: float
     validate_endpoint: bool

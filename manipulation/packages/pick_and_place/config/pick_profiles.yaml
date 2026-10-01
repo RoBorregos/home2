@@ -20,6 +20,7 @@ defaults: &defaults
   # state validity) before committing to the approach.
   validate_endpoint: false
   lift_after_grasp: false
+  post_grasp_height: 0.0
   attach_collision_object: false
 
 # Flat objects: forks, plates, toothpaste, sponges, dishwasher tabs.
@@ -87,6 +88,7 @@ box: &shape
   strategy: cartesian
   tip_offset_param: geometric_tip_offset
   pre_grasp_height: 0.06
+  post_grasp_height: 0.25
   descent_speed: 40.0 # mm/s
   validate_endpoint: true
   lift_after_grasp: true

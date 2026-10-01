@@ -172,11 +172,23 @@ class CartesianApproachPick(PickStrategy):
         if profile.lift_after_grasp:
             with arm.phase("lift"):
                 arm.clear_octomap()
-                arm.move_to_pose(
-                    offset_z(candidate.pose, profile.pre_grasp_height), velocity=0.7
+                lifted = arm.move_to_pose(
+                    offset_z(candidate.pose, profile.post_grasp_height), velocity=0.6
                 )
+            if lifted and abs(approach_axis(candidate.pose)[2]) > 0.9:
+                with arm.phase("wrist_turn"):
+                    self._turn_wrist(arm)
 
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+
+    @staticmethod
+    def _turn_wrist(arm) -> None:
+        joints = arm.get_joints(degrees=True)
+        wrist = joints["joints"]["joint6"]
+        turn = wrist + 160.0 if wrist < 90.0 else wrist - 160.0
+        joints["joints"]["joint6"] = max(-175.0, min(175.0, turn))
+        if not arm.move_joints(joints, velocity=0.5):
+            arm.logger.warn("wrist turn failed, might fail to return to previous pose")
 
 
 class ForceGuardedDescentPick(PickStrategy):
