@@ -83,6 +83,7 @@ class SemanticNav(Node):
 
         self.areas_data = None
         self.viewpoints = []
+        self._fetching = False
         self.scan_log = ScanLog(
             map_name=self.map_name,
             path=self._resolve_snapshot_path(snapshot_dir),
@@ -175,9 +176,16 @@ class SemanticNav(Node):
     # ---------------------------------------------------------------- map areas
 
     def _first_fetch(self):
-        """One-shot first attempt, cancelled as soon as the areas are in."""
-        if self.areas_data is not None or self._fetch_areas():
-            self._first_fetch_timer.cancel()
+        """Exactly one fast attempt; retries fall to the slower areas timer.
+
+        Cancelled before the attempt, not after: a failing fetch blocks its thread
+        for up to 7 s (service wait + future poll), so a 1 s timer that kept
+        retrying would stack callbacks and starve the executor's 4 threads while
+        nav_central is still coming up.
+        """
+        self._first_fetch_timer.cancel()
+        if self.areas_data is None:
+            self._fetch_areas()
 
     def _areas_timer(self):
         if self.areas_data is None:
@@ -186,16 +194,27 @@ class SemanticNav(Node):
     def _fetch_areas(self) -> bool:
         """Load the areas from nav_central. Never spins this node: the executor's
         other threads complete the future (spinning from inside a callback
-        corrupts the wait set)."""
+        corrupts the wait set).
+
+        Guarded against re-entry: the callback group is reentrant, so two timer
+        callbacks can overlap while one is blocked waiting for nav_central, and
+        both would load the same areas twice.
+        """
+        if self._fetching:
+            return self.areas_data is not None
         if not self.areas_client.wait_for_service(timeout_sec=2.0):
             self.get_logger().warn(f"{AREAS_SERVICE} not available yet; retrying")
             return False
 
-        future = self.areas_client.call_async(MapAreas.Request())
-        deadline = time.time() + 5.0
-        while not future.done() and time.time() < deadline:
-            time.sleep(0.02)
-        result = future.result() if future.done() else None
+        self._fetching = True
+        try:
+            future = self.areas_client.call_async(MapAreas.Request())
+            deadline = time.time() + 5.0
+            while not future.done() and time.time() < deadline:
+                time.sleep(0.02)
+            result = future.result() if future.done() else None
+        finally:
+            self._fetching = False
         if result is None or not result.areas:
             self.get_logger().warn("Areas service returned no data; retrying")
             return False
@@ -255,6 +274,7 @@ class SemanticNav(Node):
         if marked:
             self.get_logger().info(f"Scanned {marked[0]}", throttle_duration_sec=5.0)
             self._publish_staleness()
+            self._staleness_published = True
 
     def _snapshot_timer(self):
         if not self.scan_log.dirty or not self.scan_log.path:
@@ -265,6 +285,11 @@ class SemanticNav(Node):
             self.get_logger().warn(f"Could not save scan log: {exc}")
 
     def _marker_timer(self):
+        # Staleness goes out on every tick, with or without a marker subscriber:
+        # "what have I never looked at?" must be answerable before the first scan,
+        # which is exactly when a task manager asks it.
+        if self.viewpoints:
+            self._publish_staleness()
         if not self.viewpoints or self.marker_pub.get_subscription_count() == 0:
             return
         now = self._now()
