@@ -300,6 +300,9 @@ class DisplayRosNode(Node):
             )
 
         self.button_pub = self.create_publisher(Empty, "/hri/display/button_press", 10)
+        self.speaker_test_pub = self.create_publisher(
+            Empty, "/hri/display/speaker_test", 10
+        )
         self.answer_pub = self.create_publisher(String, "/hri/display/answers", 10)
 
         self._subscribe_video(self.video_topic)
@@ -396,6 +399,9 @@ class DisplayRosNode(Node):
 
     def publish_button_press(self):
         self.button_pub.publish(Empty())
+
+    def publish_speaker_test(self):
+        self.speaker_test_pub.publish(Empty())
 
     def publish_answer(self, text: str):
         self.answer_pub.publish(String(data=text))
@@ -604,10 +610,24 @@ class AudioPill(QLabel):
             self.hide()
 
 
+def make_speaker_test_button(ros_node: DisplayRosNode, size: int) -> QPushButton:
+    """Small button that makes the robot play 3 chimes to check its speaker."""
+    button = QPushButton("\U0001f50a")
+    button.setFixedSize(size, size)
+    button.setToolTip("Test speaker (plays 3 chimes)")
+    font = button.font()
+    font.setPointSize(max(12, size // 3))
+    button.setFont(font)
+    button.clicked.connect(ros_node.publish_speaker_test)
+    return button
+
+
 class StartButton(QStackedWidget):
     """Shrinks to a floating FAB while the task is active (old web app parity)."""
 
-    def __init__(self, ros_node: DisplayRosNode, xl: bool = False):
+    def __init__(
+        self, ros_node: DisplayRosNode, xl: bool = False, speaker_test: bool = False
+    ):
         super().__init__()
         self.ros_node = ros_node
         self._task_active = False
@@ -639,7 +659,18 @@ class StartButton(QStackedWidget):
         fab_layout.addStretch()
         fab_layout.addWidget(self.fab)
 
-        self.addWidget(self.button)
+        button_wrap = QWidget()
+        button_layout = QHBoxLayout(button_wrap)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.addWidget(self.button, 1)
+        if speaker_test:
+            button_layout.addWidget(
+                make_speaker_test_button(ros_node, 80 if xl else 48),
+                0,
+                Qt.AlignVCenter,
+            )
+
+        self.addWidget(button_wrap)
         self.addWidget(fab_wrap)
 
         ros_node.signals.task_status_changed.connect(self._on_task_status)
@@ -1040,7 +1071,7 @@ class SteppedWindow(BaseWindow):
 
         button_page = QWidget()
         button_layout = QVBoxLayout(button_page)
-        start = StartButton(ros_node, xl=True)
+        start = StartButton(ros_node, xl=True, speaker_test=True)
         start.setMaximumWidth(500)
         button_layout.addWidget(start, 0, Qt.AlignCenter)
         self.stack.addWidget(button_page)
