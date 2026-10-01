@@ -65,7 +65,10 @@ from xarm_utils.shelf_levels import get_compartment_height
 from pick_and_place.pipelines.errors import PickAborted, PickHardwareError
 from pick_and_place.pipelines.profiles import ForceGuardProfile
 from pick_and_place.utils.grasp_utils import move_to_pregrasp_nearest_ik
-from pick_and_place.utils.self_collision_utils import endpoint_self_collides
+from pick_and_place.utils.self_collision_utils import (
+    compute_ik,
+    endpoint_self_collides,
+)
 
 # xArm mode-machine timing. These describe the controller, not any particular
 # pick behavior, so they are not part of the per-strategy profiles.
@@ -439,6 +442,18 @@ class RobotArm:
             latest_joint_state=self._latest_joint_state,
             logger=self._log,
         )
+
+    def pose_has_collision_free_ik(self, pose) -> bool:
+        """Cheap reachability check; True when the IK service is unavailable."""
+        response = compute_ik(
+            self._compute_ik_client,
+            pose,
+            avoid_collisions=True,
+            seed_joint_state=self._latest_joint_state,
+        )
+        if response is None:
+            return True
+        return response.error_code.val == response.error_code.SUCCESS
 
     # ==================================================================
     # Gripper

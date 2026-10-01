@@ -181,6 +181,10 @@ class DirectGraspPick(PickStrategy):
     """
 
     def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
+        # A goal in collision costs the planner its whole budget; IK rejects it at once.
+        if not arm.pose_has_collision_free_ik(candidate.pose):
+            raise PickAttemptFailed("grasp pose in collision or out of reach")
+
         with arm.phase("move_to_grasp"):
             if not arm.move_to_pose(candidate.pose):
                 raise PickAttemptFailed("grasp pose unreachable")

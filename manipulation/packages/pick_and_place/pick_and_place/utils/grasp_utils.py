@@ -1,4 +1,5 @@
 import copy
+import time
 from geometry_msgs.msg import PointStamped, PoseStamped
 from frida_interfaces.srv import GraspDetection
 from frida_constants.manipulation_constants import PICK_VELOCITY
@@ -8,22 +9,33 @@ from frida_pymoveit2.robots.xarm6 import joint_names as xarm6_joint_names
 from pick_and_place.utils.self_collision_utils import compute_ik
 
 
+# gpd_service exits ~0.5 s after answering and is respawned; a call in that window is lost.
+GPD_RESTART_SETTLE = 1.0
+GPD_CALL_ATTEMPTS = 2
+_last_gpd_answer = 0.0
+
+
 def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
-    # wait for the service to be available
-    if not grasp_detection_client.wait_for_service(timeout_sec=5.0):
-        raise RuntimeError("Service not available")
+    global _last_gpd_answer
     request = GraspDetection.Request()
     request.input_cloud = object_cloud
     request.cfg_path = cgf_path
-    future = grasp_detection_client.call_async(request)
-    future = wait_for_future(future, timeout=10)
 
-    if not future:
-        return [], []
+    for _ in range(GPD_CALL_ATTEMPTS):
+        # Let the previous instance die before trusting the service is up
+        settle = GPD_RESTART_SETTLE - (time.time() - _last_gpd_answer)
+        if settle > 0.0:
+            time.sleep(settle)
+        if not grasp_detection_client.wait_for_service(timeout_sec=5.0):
+            raise RuntimeError("Service not available")
+        future = grasp_detection_client.call_async(request)
+        future = wait_for_future(future, timeout=10)
+        _last_gpd_answer = time.time()
+        if future:
+            response = future.result()
+            return response.grasp_poses, response.grasp_scores
 
-    response = future.result()
-
-    return response.grasp_poses, response.grasp_scores
+    return [], []
 
 
 def fake_grasps(object_point: PointStamped):

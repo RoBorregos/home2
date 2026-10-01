@@ -141,6 +141,9 @@ class FakeArm:
         self.named_positions.append(name)
         return self._next(self._named_position_results, True)
 
+    def pose_has_collision_free_ik(self, pose):
+        return True
+
     def move_joints(self, joint_positions, velocity=None):
         self.calls.append("move_joints")
         return True
