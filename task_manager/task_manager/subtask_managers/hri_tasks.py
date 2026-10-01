@@ -270,7 +270,7 @@ class HRITasks:
         with open(file_path, "r") as file:
             self.names = json.load(file)["names"]
 
-        self.names_hotwords = " ".join(self.names)
+        self.names_hotwords = ", ".join(self.names)
 
         if not self.mock_data:
             self.setup_services()

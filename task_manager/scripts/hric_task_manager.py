@@ -21,7 +21,7 @@ from task_manager.utils.subtask_manager import SubtaskManager, Task
 ATTEMPT_LIMIT = 5
 FIRST_GUEST_IDX = 0
 SECOND_GUEST_IDX = 1
-HOT_DRINKS = "fanta water lipton coca-cola soda lemonade pepsi orange juice milk sidral mundet iced tea coke red bull soju"
+HOT_DRINKS = "fanta, water, lipton, coca-cola, soda, lemonade, pepsi, orange juice, milk, sidral mundet, iced tea, coke, red bull, soju"
 
 # Person-following (runs between the introduction and leaving the bag): the robot
 # follows the guest until they say one of these stop keywords. FOLLOW_LISTEN_TIMEOUT
