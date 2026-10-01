@@ -169,7 +169,11 @@ def test_surfaces(areas_data: dict) -> None:
     )
 
     bad_pose = [v.key for v in vps if v.arm_pose not in {t[1] for t in SURFACE_TYPES.values()}]
-    check("cada viewpoint tiene pose de brazo conocida", not bad_pose, str(bad_pose))
+    check(
+        "cada viewpoint tiene pose de brazo conocida",
+        not bad_pose,
+        f"sin mapear: {bad_pose}" if bad_pose else f"{len(vps)} viewpoints",
+    )
 
     check("clasificación por nombre", classify("dinner_table") == "surface", "dinner_table -> surface")
     check("los nombres específicos ganan", classify("bedside_table") == "low_surface")
