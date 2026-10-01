@@ -4,6 +4,7 @@ tested without a robot or a ROS graph."""
 from contextlib import contextmanager
 from typing import Any, Dict, List, Optional
 
+from frida_interfaces.msg import CollisionObject
 from geometry_msgs.msg import PointStamped, PoseStamped
 
 from pick_and_place.pipelines.errors import PickAborted
@@ -94,6 +95,7 @@ class FakeArm:
             "endpoint_self_collides": [],
         }
         self.descents: List[tuple] = []
+        self.approaches: List[tuple] = []
         self.move_kwargs: List[dict] = []
         self.close_settles: List[float] = []
         self.guards: List[Any] = []
@@ -106,6 +108,7 @@ class FakeArm:
             "ee_link_offset": -0.09,
             "rim_tip_offset": -0.18,
             "bowl_tip_offset": -0.12,
+            "geometric_tip_offset": -0.17,
         }
         self._move_to_pose_results = list(move_to_pose_results or [])
         self._pregrasp_results = list(pregrasp_results or [])
@@ -155,6 +158,11 @@ class FakeArm:
     def fixed_distance_descent(self, distance_m, speed_mm_s, descend=True):
         self.calls.append("fixed_distance_descent")
         self.descents.append((distance_m, speed_mm_s))
+        return self._next(self._descent_results, True)
+
+    def cartesian_approach(self, direction, distance_m, speed_mm_s):
+        self.calls.append("cartesian_approach")
+        self.approaches.append((direction, distance_m, speed_mm_s))
         return self._next(self._descent_results, True)
 
     def force_guarded_descent(self, guard):
@@ -213,6 +221,9 @@ class FakeArm:
         self.calls.append("detach_pick_objects")
         return True
 
+    def add_collision_object(self, obj):
+        self.calls.append("add_collision_object")
+
     def add_shelf_ceiling_guard(self, place_pose, table_height):
         self.calls.append("add_shelf_ceiling_guard")
 
@@ -231,6 +242,9 @@ class FakeArm:
 
     def tcp_z(self):
         return 0.5
+
+    def tcp_xyz(self):
+        return (0.5, 0.0, 0.5)
 
     def now(self):
         # A real Time: message fields reject None on assignment.
@@ -373,8 +387,11 @@ class FakePerception:
 class FakeGenerateGraspsResponse:
     """Stand-in for the grasp generator's reply."""
 
-    def __init__(self, pose, samples_collected: int = 5):
+    def __init__(self, pose, samples_collected: int = 5, grasps=None):
         self.pose = pose
+        self.grasps = grasps or [pose]
+        self.scores = [1.0] * len(self.grasps)
+        self.object = CollisionObject(type="box")
         self.samples_collected = samples_collected
         self.success = True
         self.message = ""
