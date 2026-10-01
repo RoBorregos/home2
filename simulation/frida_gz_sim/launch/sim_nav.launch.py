@@ -112,6 +112,21 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    # Semantic navigation: patrol routes over the tagged furniture poses of the
+    # same areas_<map>.json nav_central serves (issue #1268). Plans only, never
+    # drives, so it is safe to have up for every sim run.
+    semantic_nav = Node(
+        package="nav_main",
+        executable="semantic_nav_node.py",
+        name="semantic_nav",
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            os.path.join(nav_main, "config", "semantic_nav.yaml"),
+            {"map_name": map_name},
+        ],
+    )
+
     # nav_central blocks until someone sets the start pose; in sim we already know it
     initial_pose = Node(
         package="frida_gz_sim",
@@ -130,6 +145,8 @@ def launch_setup(context, *args, **kwargs):
         TimerAction(period=10.0, actions=[nav_central]),
         # After nav_central, so the pose is not delivered before the node that waits for it
         TimerAction(period=12.0, actions=[initial_pose]),
+        # After nav_central, whose areas service it asks for the furniture poses
+        TimerAction(period=14.0, actions=[semantic_nav]),
     ]
 
 

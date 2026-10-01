@@ -27,6 +27,8 @@ from frida_constants.navigation_constants import(
         CHECK_DOOR_SERVICE,
         DOOR_CHECK,
         AREAS_SERVICE,
+        GET_AREA_FOR_POINT_SERVICE,
+        SUBLOCATION_MAX_DISTANCE,
         TIMEOUT_REQUIREMENTS,
         CAMERA_RGB_TOPIC,
         CAMERA_INFO_TOPIC,
@@ -75,8 +77,10 @@ from frida_interfaces.srv import (
         GoToPose,
         GetRobotPose,
         ApproachPoint,
+        GetAreaForPoint,
         )
 from ament_index_python.packages import get_package_share_directory
+from nav_main.semantic.areas import area_for_point
 import tf2_ros
 import json
 import time as t
@@ -193,6 +197,9 @@ class Nav_Central(Node):
         self.lidar_reciever = None
         self.check_door_srv = self.create_service(CheckDoor, CHECK_DOOR_SERVICE, self.check_door, callback_group=self.service_group)
         self.map_areas_srv = self.create_service(MapAreas, AREAS_SERVICE, self.map_areas_callback, callback_group=self.service_group)
+        self.get_area_for_point_srv = self.create_service(
+            GetAreaForPoint, GET_AREA_FOR_POINT_SERVICE, self.get_area_for_point_callback,
+            callback_group=self.service_group)
         self.range_min = DOOR_CHECK.LIDAR_RANGE_MIN.value  
         self.range_max = DOOR_CHECK.LIDAR_RANGE_MAX.value
         self.door_rate = DOOR_CHECK.CHECKING_RATE.value
@@ -665,6 +672,63 @@ class Nav_Central(Node):
         else:
             response.areas = json.dumps(self.areas_data)
             self.nav_logger("info", "Map_areas -> Map Areas Sent")
+        return response
+
+    # ---------------------------------------------------------------- area lookup
+    # The polygon maths lives in nav_main.semantic.areas so it can be tested
+    # offline and reused (the repo already had three divergent copies).
+
+    def get_area_for_point_callback(self, request, response):
+        """Point (any TF frame) -> containing area + its nearest sublocations.
+
+        Single source of truth for "where is this?": vision and task_manager call
+        this instead of running point-in-polygon against their own copy of
+        areas.json. Only the active map's areas_<MAP_NAME>.json is authoritative.
+        """
+        response.success = False
+        response.area = ""
+        response.sublocations = []
+        response.distances = []
+        response.in_house = False
+        response.error = ""
+
+        if self.areas_data is None:
+            response.error = "no areas data loaded"
+            self.nav_logger("error", "Get_area_for_point -> no areas data loaded")
+            return response
+
+        point = request.point
+        frame = point.header.frame_id or "map"
+        if frame != "map":
+            try:
+                tf = self.tf_buffer.lookup_transform(
+                    "map", frame, rclpy.time.Time(), timeout=Duration(seconds=1.0))
+                point = do_transform_point(point, tf)
+            except Exception as e:
+                response.error = f"TF {frame}->map failed: {e}"
+                self.nav_logger("error", f"Get_area_for_point -> {response.error}")
+                return response
+
+        x, y = point.point.x, point.point.y
+        max_distance = (request.max_sublocation_distance
+                        if request.max_sublocation_distance > 0.0
+                        else SUBLOCATION_MAX_DISTANCE)
+
+        area, names, distances, in_house = area_for_point(
+            self.areas_data, x, y, max_distance)
+        response.area = area
+        response.sublocations = names
+        response.distances = distances
+        response.in_house = in_house
+
+        # Success means the lookup ran, not that the point landed in a room:
+        # the polygons do not tile the map, so "in no area" is a valid answer.
+        response.success = True
+        self.nav_logger(
+            "info",
+            f"Get_area_for_point -> ({x:.2f}, {y:.2f}) -> "
+            f"area='{response.area or 'unknown'}' "
+            f"sublocations={list(response.sublocations)[:3]}")
         return response
 
     def goal_feedback(self, feedback_msg):
