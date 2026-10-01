@@ -9,16 +9,18 @@ from typing import Optional
 import numpy as np
 import rclpy
 from cv_bridge import CvBridge
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Point, PoseStamped
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.duration import Duration
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from scipy.spatial.transform import Rotation
 from sensor_msgs.msg import CameraInfo, Image
+from std_msgs.msg import ColorRGBA
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
+from visualization_msgs.msg import Marker, MarkerArray
 
 from frida_constants.manipulation_constants import (
     GENERATE_GRASPS_SERVICE,
@@ -27,6 +29,7 @@ from frida_constants.manipulation_constants import (
     GRASP_CLASS_RIM,
     GRASP_LINK_FRAME,
     PICK_OBJECT_NAMESPACE,
+    PRE_GRASP_DISTANCE,
 )
 from frida_constants.vision_constants import (
     CAMERA_FRAME,
@@ -38,6 +41,7 @@ from frida_interfaces.msg import CollisionObject, ObjectDetection, ObjectDetecti
 from frida_interfaces.srv import GenerateGrasps
 from perception_3d.geometric_grasps import (
     DEFORMABLE_OBJECTS,
+    GRIPPER_MAX_APERTURE,
     OBJECT_GRASP_CLASS,
     Fit,
     Grasp,
@@ -52,6 +56,7 @@ from perception_3d.geometric_grasps import (
 
 BASE_FRAME = "link_base"  # every grasp pose is expressed here (z up)
 DEBUG_POSE_TOPIC = "/manipulation/generated_grasp_pose"
+MARKERS_TOPIC = "/manipulation/generated_grasps"
 DEFAULT_SAMPLES = 10  # frames to collect when the caller passes <= 0
 COLLECT_TIMEOUT = 5.0  # s, give up collecting after this
 
@@ -99,6 +104,7 @@ class GraspGenerator(Node):
             callback_group=group,
         )
         self._debug_pub = self.create_publisher(PoseStamped, DEBUG_POSE_TOPIC, 10)
+        self._markers_pub = self.create_publisher(MarkerArray, MARKERS_TOPIC, 10)
         self.create_service(
             GenerateGrasps,
             GENERATE_GRASPS_SERVICE,
@@ -121,6 +127,9 @@ class GraspGenerator(Node):
 
         # Nothing worked: report the most frequent rejection reason.
         if not self._samples:
+            self._markers_pub.publish(
+                MarkerArray(markers=[Marker(action=Marker.DELETEALL)])
+            )
             reason = self._rejections.most_common(1)
             detail = f"{reason[0][0]} (x{reason[0][1]})" if reason else "not detected"
             return self._fail(response, f"no grasp for '{self._target}': {detail}")
@@ -184,7 +193,74 @@ class GraspGenerator(Node):
             f"{len(samples)} samples, known={self._known}, measured={dict(measured)}"
         )
         self.get_logger().info(response.message)
+        self._publish_markers(response)
         return response
+
+    def _publish_markers(self, response) -> None:
+        markers = [Marker(action=Marker.DELETEALL)]
+        for i, (pose, score, approach) in enumerate(
+            zip(response.grasps, response.scores, response.approaches)
+        ):
+            p, q = pose.pose.position, pose.pose.orientation
+            tip = np.array([p.x, p.y, p.z])
+            axes = Rotation.from_quat([q.x, q.y, q.z, q.w]).as_matrix()
+            color = (1.0 - score, score, 0.0, 1.0)
+            half = axes[:, 1] * GRIPPER_MAX_APERTURE / 2
+            markers += [
+                self._marker(
+                    "approach",
+                    i,
+                    Marker.ARROW,
+                    (0.008, 0.016, 0.02),
+                    color,
+                    points=[tip - axes[:, 2] * PRE_GRASP_DISTANCE, tip],
+                ),
+                self._marker(
+                    "closing",
+                    i,
+                    Marker.LINE_LIST,
+                    (0.004, 0.0, 0.0),
+                    color,
+                    points=[tip - half, tip + half],
+                ),
+                self._marker(
+                    "label",
+                    i,
+                    Marker.TEXT_VIEW_FACING,
+                    (0.0, 0.0, 0.03),
+                    (1.0, 1.0, 1.0, 1.0),
+                    pose=self._pose(tip + [0.0, 0.0, 0.04], (0, 0, 0, 1)).pose,
+                    text=f"{i} {approach} {score:.2f}",
+                ),
+            ]
+        if response.object.type:
+            d = response.object.dimensions
+            kind, scale = {
+                "box": (Marker.CUBE, (d.x, d.y, d.z)),
+                "cylinder": (Marker.CYLINDER, (2 * d.x, 2 * d.x, d.z)),
+                "sphere": (Marker.SPHERE, (2 * d.x,) * 3),
+            }[response.object.type]
+            markers.append(
+                self._marker(
+                    "fitted",
+                    0,
+                    kind,
+                    scale,
+                    (0.2, 0.5, 1.0, 0.3),
+                    pose=response.object.pose.pose,
+                )
+            )
+        self._markers_pub.publish(MarkerArray(markers=markers))
+
+    def _marker(self, ns, i, kind, scale, color, pose=None, points=(), text=""):
+        marker = Marker(ns=ns, id=i, type=kind, action=Marker.ADD, text=text)
+        marker.header.frame_id = BASE_FRAME
+        marker.scale.x, marker.scale.y, marker.scale.z = map(float, scale)
+        marker.color = ColorRGBA(**dict(zip("rgba", map(float, color))))
+        marker.points = [Point(**dict(zip("xyz", map(float, v)))) for v in points]
+        if pose is not None:
+            marker.pose = pose
+        return marker
 
     def _collision_object(self, fit: Fit) -> CollisionObject:
         shape = CollisionObject()
