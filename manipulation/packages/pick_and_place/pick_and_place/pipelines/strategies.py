@@ -13,14 +13,21 @@ from geometry_msgs.msg import PoseStamped
 
 from pick_and_place.pipelines.classification import (
     PICK_STRATEGY_BOWL,
+    PICK_STRATEGY_BOX,
+    PICK_STRATEGY_CYLINDRICAL,
     PICK_STRATEGY_FLAT,
     PICK_STRATEGY_GPD,
     PICK_STRATEGY_PEAK,
     PICK_STRATEGY_RIM,
+    PICK_STRATEGY_ROUND,
 )
 from pick_and_place.pipelines.errors import PickAttemptFailed
 from pick_and_place.pipelines.profiles import PickProfile
-from pick_and_place.robot.geometry import offset_z
+from pick_and_place.robot.geometry import (
+    approach_axis,
+    offset_along_approach,
+    offset_z,
+)
 
 
 @dataclass(frozen=True)
@@ -118,6 +125,70 @@ class FixedDistanceDescentPick(PickStrategy):
 
         # No lift: the pick pipeline chooses the return pose.
         return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+
+
+class CartesianApproachPick(PickStrategy):
+    """Back off along the grasp's approach axis, then close straight in on it.
+
+    The rim strategy, tilted: the arm moves to a pre-grasp behind the grasp, drives
+    straight forward along the approach axis (the path the generator checked for
+    collisions), attaches the fitted object, closes and saves its heights are left
+    to the pick pipeline, which holds the fitted object
+    """
+
+    def attempt(self, arm, candidate: GraspCandidate) -> PickOutcome:
+        profile = self.profile
+
+        if profile.validate_endpoint:
+            with arm.phase("validate_endpoint"):
+                if arm.endpoint_self_collides(candidate.pose):
+                    raise PickAttemptFailed("grasp pose self-collides with robot")
+
+        with arm.phase("open_gripper"):
+            arm.open_gripper()
+
+        pre_grasp = offset_along_approach(candidate.pose, -profile.pre_grasp_height)
+        with arm.phase("approach_pre_grasp"):
+            arm.clear_octomap()
+            if not arm.move_to_pregrasp(pre_grasp, profile.pre_grasp_velocity):
+                raise PickAttemptFailed("pre-grasp unreachable")
+
+        with arm.phase("cartesian_approach"):
+            arm.check_abort()
+            distance = profile.effective_descent_distance
+            if not arm.cartesian_approach(
+                approach_axis(candidate.pose), distance, profile.descent_speed
+            ):
+                raise PickAttemptFailed(
+                    f"approach of {distance * 1000:.0f} mm did not complete"
+                )
+
+        with arm.phase("attach_object"):
+            arm.attach_pick_object()
+
+        with arm.phase("close_gripper"):
+            arm.close_gripper(settle_s=profile.close_settle)
+
+        if profile.lift_after_grasp:
+            with arm.phase("lift"):
+                arm.clear_octomap()
+                lifted = arm.move_to_pose(
+                    offset_z(candidate.pose, profile.post_grasp_height), velocity=0.6
+                )
+            if lifted and abs(approach_axis(candidate.pose)[2]) > 0.9:
+                with arm.phase("wrist_turn"):
+                    self._turn_wrist(arm)
+
+        return PickOutcome(pick_pose=candidate.pose, grasp_score=candidate.score)
+
+    @staticmethod
+    def _turn_wrist(arm) -> None:
+        joints = arm.get_joints(degrees=True)
+        wrist = joints["joints"]["joint6"]
+        turn = wrist + 160.0 if wrist < 90.0 else wrist - 160.0
+        joints["joints"]["joint6"] = max(-175.0, min(175.0, turn))
+        if not arm.move_joints(joints, velocity=0.5):
+            arm.logger.warn("wrist turn failed, might fail to return to previous pose")
 
 
 class ForceGuardedDescentPick(PickStrategy):
@@ -220,6 +291,9 @@ STRATEGIES = {
     PICK_STRATEGY_RIM: FixedDistanceDescentPick,
     PICK_STRATEGY_BOWL: FixedDistanceDescentPick,
     PICK_STRATEGY_PEAK: FixedDistanceDescentPick,
+    PICK_STRATEGY_BOX: CartesianApproachPick,
+    PICK_STRATEGY_CYLINDRICAL: CartesianApproachPick,
+    PICK_STRATEGY_ROUND: CartesianApproachPick,
     PICK_STRATEGY_GPD: DirectGraspPick,
 }
 
