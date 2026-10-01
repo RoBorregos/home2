@@ -36,6 +36,15 @@ FIND_PERSON_MAX_ROUNDS = 4
 # Scan points closer than this (map frame, meters) count as the same person across rounds.
 FIND_PERSON_VISITED_RADIUS = 0.75
 
+# Camera pan sweep at each base heading, rotating the omni base between
+# sweeps so the search covers a full circle instead of peeking at a couple
+# of fixed arm-pan angles. 4 headings 90 deg apart, each panning +-45 deg,
+# tile the full 360 deg with no gaps between headings.
+SEARCH_PAN_ANGLES = [-45, 0, 45]
+SEARCH_PAN_SETTLE_TIME = 1.0
+SEARCH_ROTATION_DEG = 90.0
+SEARCH_MAX_ROTATIONS = 3  # + the initial heading = 4 headings, 4 * 90 = 360 deg
+
 
 class GPSRTask(GenericTask):
     """Class to manage the GPSR task"""
@@ -696,6 +705,23 @@ class GPSRTask(GenericTask):
         )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
+    def _iter_search_poses(self):
+        """Yield once per search pose (after aiming the camera there), for
+        up to SEARCH_MAX_ROTATIONS omni-base rotations: pans through
+        SEARCH_PAN_ANGLES at the current heading, then rotates the base by
+        SEARCH_ROTATION_DEG and pans again, covering close to a full circle
+        instead of a couple of fixed arm-pan angles at the starting
+        heading. Callers should pan_to(0) after the loop regardless of how
+        it ends (break on success, or exhausted)."""
+        for rotation in range(SEARCH_MAX_ROTATIONS + 1):
+            for pan in SEARCH_PAN_ANGLES:
+                self.subtask_manager.manipulation.pan_to(pan)
+                time.sleep(SEARCH_PAN_SETTLE_TIME)
+                yield pan
+            if rotation < SEARCH_MAX_ROTATIONS:
+                self.subtask_manager.manipulation.pan_to(0)
+                self.subtask_manager.nav.rotate_in_place(SEARCH_ROTATION_DEG)
+
     def _approach_with_arm(self, point) -> bool:
         """Drive to a person point with the arm tucked (nav_pose), then look
         at them (front_stare) ready for the interaction that follows.
@@ -782,9 +808,8 @@ class GPSRTask(GenericTask):
             f"Searching for {value}.",
         )
 
-        for degree in self.pan_angles:
-            self.subtask_manager.manipulation.pan_to(degree)
-
+        found = False
+        for _ in self._iter_search_poses():
             if command.attribute_value == "":
                 status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
             elif is_value_in_enum(value, Gestures):
@@ -806,6 +831,7 @@ class GPSRTask(GenericTask):
 
             # If next command is "go_to" dont ask to approach robot
             if status == Status.EXECUTION_SUCCESS and count > 0:
+                found = True
                 self.subtask_manager.hri.say(
                     f"I found a {command.attribute_value}.",
                 )
@@ -813,13 +839,14 @@ class GPSRTask(GenericTask):
                     self.subtask_manager.hri.say("Please approach me.")
                 break
 
-            elif status == Status.TARGET_NOT_FOUND:
-                self.subtask_manager.hri.say(
-                    f"I didn't find any person with {command.attribute_value}.",
-                )
-                self.subtask_manager.hri.say(
-                    "Please approach me.",
-                )
+        self.subtask_manager.manipulation.pan_to(0)
+        if not found:
+            self.subtask_manager.hri.say(
+                f"I didn't find any person with {command.attribute_value}.",
+            )
+            self.subtask_manager.hri.say(
+                "Please approach me.",
+            )
 
         return Status.EXECUTION_SUCCESS, "found" + command.attribute_value
 
@@ -956,13 +983,11 @@ class GPSRTask(GenericTask):
         person class), filters them to the robot's current room polygon and
         deprojects each to a camera-frame 3D point. Those points are projected
         to the map HERE, while the camera still holds the scan pose, so they
-        stay valid after the arm moves. Pans through self.pan_angles when
-        nobody is in the front view. Returns map-frame PointStamped list,
-        nearest person first."""
-        for pan in [0] + list(self.pan_angles):
-            if pan:
-                self.subtask_manager.manipulation.pan_to(pan)
-                time.sleep(1.0)
+        stay valid after the arm moves. Sweeps close to a full circle
+        (_iter_search_poses: pan angles x base rotations) and stops at the
+        first pose where somebody is seen. Returns map-frame PointStamped
+        list, nearest person first."""
+        for _ in self._iter_search_poses():
             s, _count = self.subtask_manager.vision.count_person()
             points = list(self.subtask_manager.vision.last_person_points)
             points.sort(key=lambda p: p.point.x**2 + p.point.y**2 + p.point.z**2)
@@ -976,8 +1001,7 @@ class GPSRTask(GenericTask):
                 mp.point.x, mp.point.y = xy
                 map_points.append(mp)
             if map_points:
-                if pan:
-                    self.subtask_manager.manipulation.pan_to(0)
+                self.subtask_manager.manipulation.pan_to(0)
                 return map_points
         self.subtask_manager.manipulation.pan_to(0)
         return []
