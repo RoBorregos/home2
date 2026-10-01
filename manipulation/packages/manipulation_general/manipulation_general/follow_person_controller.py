@@ -25,8 +25,6 @@ Usage:
     ros2 service call /follow_person frida_interfaces/srv/FollowFace "{follow_face: false}"
 """
 
-import time
-
 import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
@@ -36,23 +34,22 @@ from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
 from frida_interfaces.srv import FollowFace
 from frida_pymoveit2.robots import xarm6
-from xarm_msgs.srv import SetInt16, MoveVelocity
 from frida_constants.vision_constants import CENTROID_TOPIC
 from frida_constants.manipulation_constants import FOLLOW_PERSON_ARM_SERVICE
+from pick_and_place.robot.follow_arm import FollowArm
+from pick_and_place.pipelines.follow import (
+    TARGET_JOINT,
+    PersonState,
+    person_centroid,
+    person_off,
+    person_on,
+    person_tick,
+)
 
 # Topic / service names
 CMD_VEL_TOPIC = "/cmd_vel"
 JOINT_STATES_TOPIC = "/joint_states"
 FOLLOW_SERVICE = FOLLOW_PERSON_ARM_SERVICE
-XARM_SETMODE_SERVICE = "/xarm/set_mode"
-XARM_SETSTATE_SERVICE = "/xarm/set_state"
-XARM_VELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
-
-TARGET_JOINT = "joint1"
-
-# xArm modes
-VELOCITY_MODE = 4  # Joint velocity control
-MOVEIT_MODE = 1  # Servo / MoveIt mode
 
 
 class FollowPersonController(Node):
@@ -98,16 +95,7 @@ class FollowPersonController(Node):
         self.declare_parameter("base_yaw_max", 0.25)
 
         # --- State ---
-        self.active = False
-        self.centroid_x = 0.0
-        self.centroid_time = 0.0
-        self.base_omega_z = 0.0
-        self.joint_positions = {}
-        self.error_integral = 0.0
-        # Centroid-rate derivative (filled by _centroid_cb, low-pass filtered).
-        # Computing it in the 20 Hz control loop would alternate spike/zero
-        # because the centroid arrives at its own rate.
-        self.error_deriv = 0.0
+        self.state = PersonState()
 
         # --- Subscribers ---
         self.create_subscription(
@@ -136,21 +124,7 @@ class FollowPersonController(Node):
         self.base_yaw_pub = self.create_publisher(Float64, "/follow/base_yaw", 10)
 
         # --- xArm service clients ---
-        self.mode_client = self.create_client(
-            SetInt16,
-            XARM_SETMODE_SERVICE,
-            callback_group=cb_group,
-        )
-        self.state_client = self.create_client(
-            SetInt16,
-            XARM_SETSTATE_SERVICE,
-            callback_group=cb_group,
-        )
-        self.velocity_client = self.create_client(
-            MoveVelocity,
-            XARM_VELOCITY_SERVICE,
-            callback_group=cb_group,
-        )
+        self.arm = FollowArm(self, cb_group, self._velocity_done_cb)
 
         # --- Follow service ---
         self.create_service(
@@ -178,199 +152,34 @@ class FollowPersonController(Node):
     # ── Callbacks ──────────────────────────────────────────────
 
     def _centroid_cb(self, msg: Point):
-        now = time.time()
-        if self.centroid_time > 0.0:
-            dt = now - self.centroid_time
-            if 0.005 < dt < 0.5:
-                d = (msg.x - self.centroid_x) / dt
-                # LPF (~1/3 weight on the new sample) tames per-frame bbox jitter
-                self.error_deriv = 0.35 * d + 0.65 * self.error_deriv
-            elif dt >= 0.5:
-                self.error_deriv = 0.0  # stale gap — a finite diff would spike
-        self.centroid_x = msg.x
-        self.centroid_time = now
-        self.get_logger().info(f"Centroid: {msg.x:.3f}", once=True)
+        person_centroid(self.arm, self.state, msg)
 
     def _cmd_vel_cb(self, msg: Twist):
-        self.base_omega_z = msg.angular.z
+        self.state.base_omega_z = msg.angular.z
 
     def _joint_states_cb(self, msg: JointState):
         for name, pos in zip(msg.name, msg.position):
             if name in xarm6.joint_names():
-                self.joint_positions[name] = pos
-        if TARGET_JOINT in self.joint_positions:
+                self.state.joint_positions[name] = pos
+        if TARGET_JOINT in self.state.joint_positions:
             self.get_logger().info(
-                f"Joint states received (joint1={self.joint_positions[TARGET_JOINT]:.3f})",
+                f"Joint states received (joint1={self.state.joint_positions[TARGET_JOINT]:.3f})",
                 once=True,
             )
 
     def _follow_service_cb(self, request, response):
         if request.follow_face:
-            self.error_integral = 0.0
-            self.error_deriv = 0.0
-            self.centroid_time = 0.0  # don't act on a centroid from a past run
-            self._set_arm_mode(VELOCITY_MODE)
-            # Activate only AFTER the mode switch: with the multithreaded
-            # executor the control loop keeps ticking during the sleeps above,
-            # and velocity commands before mode 4 error out on the xArm.
-            self.active = True
-            self.get_logger().info("Following enabled (velocity mode)")
+            person_on(self.arm, self.state)
         else:
-            self.active = False
-            self._send_joint_velocity(0.0)
-            time.sleep(0.3)
-            self.error_integral = 0.0
-            self.error_deriv = 0.0
-            self._set_arm_mode(MOVEIT_MODE)
-            self.get_logger().info("Following disabled (back to MoveIt mode)")
+            person_off(self.arm, self.state)
         response.success = True
         return response
-
-    def _set_arm_mode(self, mode: int):
-        """Set xArm mode + state 0. Must set mode first, then state."""
-        try:
-            # Step 1: clear errors by setting state 0
-            state_req = SetInt16.Request()
-            state_req.data = 0
-            self.state_client.call_async(state_req)
-            time.sleep(0.5)
-
-            # Step 2: set desired mode
-            mode_req = SetInt16.Request()
-            mode_req.data = mode
-            self.mode_client.call_async(mode_req)
-            time.sleep(0.5)
-
-            # Step 3: set state 0 again to activate
-            self.state_client.call_async(state_req)
-            time.sleep(0.5)
-
-            self.get_logger().info(f"Arm mode set to {mode}")
-        except Exception as e:
-            self.get_logger().error(f"Failed to set arm mode: {e}")
 
     # ── Control loop ───────────────────────────────────────────
 
     def _control_loop(self):
-        if not self.active:
-            self._publish_base_yaw(0.0)
-            return
-
-        if TARGET_JOINT not in self.joint_positions:
-            self._publish_base_yaw(0.0)
-            return
-
-        current_j1 = self.joint_positions[TARGET_JOINT]
-
-        # Read parameters
-        kp = self.get_parameter("kp").value
-        ki = self.get_parameter("ki").value
-        kd = self.get_parameter("kd").value
-        kff = self.get_parameter("kff").value
-        dead_zone = self.get_parameter("dead_zone").value
-        max_vel = self.get_parameter("max_velocity").value
-        timeout = self.get_parameter("centroid_timeout").value
-        integral_clamp = self.get_parameter("integral_clamp").value
-
-        age = time.time() - self.centroid_time
-
-        if self.centroid_time == 0.0 or age > timeout:
-            self.error_integral = 0.0
-            self.error_deriv = 0.0
-            self._publish_base_yaw(0.0)
-            self._recenter_or_stop(current_j1)
-            return
-
-        # Error: positive centroid_x = person right = positive error
-        # Sign is flipped in _send_joint_velocity (matching temp_follow.py)
-        error = self.centroid_x
-
-        # Dead zone (P/I only — the derivative keeps damping inside it)
-        if abs(error) < dead_zone:
-            error = 0.0
-
-        # PID controller (derivative computed at centroid rate in _centroid_cb)
-        self.error_integral += error * self.dt
-        self.error_integral = max(
-            -integral_clamp, min(integral_clamp, self.error_integral)
-        )
-
-        pid_output = kp * error + ki * self.error_integral + kd * self.error_deriv
-
-        # Feedforward: compensate base rotation
-        feedforward = self.base_omega_z * kff
-
-        # Combined velocity
-        joint1_vel = pid_output + feedforward
-        joint1_vel = max(-max_vel, min(max_vel, joint1_vel))
-
-        # Soft limits: taper to zero across soft_limit_margin instead of a hard
-        # cutoff, so the wide joint1 range never ends in a full-speed slam
-        # (that slam was the old xArm fault mode).
-        joint1_vel, limited = self._apply_soft_limit(current_j1, joint1_vel)
-        if limited:
-            self.error_integral = 0.0
-
-        self.get_logger().info(
-            f"j1={current_j1:.3f} cx={self.centroid_x:.3f} "
-            f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f}",
-            throttle_duration_sec=0.5,
-        )
-        self._send_joint_velocity(joint1_vel)
-
-        # Reactive base yaw: rotate the base to bring joint1 back toward neutral
-        # (unload the arm) so the person stays centred with unlimited pan range.
-        if self.get_parameter("base_yaw_enabled").value:
-            neutral = self.get_parameter("joint1_neutral").value
-            byaw_kp = self.get_parameter("base_yaw_kp").value
-            byaw_max = self.get_parameter("base_yaw_max").value
-            base_yaw = byaw_kp * (current_j1 - neutral)
-            base_yaw = max(-byaw_max, min(byaw_max, base_yaw))
-        else:
-            base_yaw = 0.0
-        self._publish_base_yaw(base_yaw)
-
-    def _apply_soft_limit(self, current_j1: float, cmd_vel: float):
-        """Taper the commanded velocity to zero across soft_limit_margin before a
-        joint1 limit. Returns (scaled_vel, was_limited). Sign note: the actual
-        joint velocity is -cmd_vel (negated in _send_joint_velocity), so
-        cmd_vel > 0 moves joint1 NEGATIVE (toward joint1_min)."""
-        if cmd_vel == 0.0:
-            return 0.0, False
-        j1_min = self.get_parameter("joint1_min").value
-        j1_max = self.get_parameter("joint1_max").value
-        margin = self.get_parameter("soft_limit_margin").value
-        if cmd_vel > 0:  # actual motion toward j1_min
-            dist = current_j1 - j1_min
-        else:  # actual motion toward j1_max
-            dist = j1_max - current_j1
-        if dist >= margin:
-            return cmd_vel, False
-        scale = max(0.0, dist / margin)
-        return cmd_vel * scale, True
-
-    def _recenter_or_stop(self, current_j1: float):
-        """No centroid: either hold still (legacy) or pan slowly back to
-        joint1_neutral so the camera faces where the base is heading (the
-        smoother drives to the person's last-known position on loss)."""
-        if not self.get_parameter("recenter_enabled").value:
-            self._send_joint_velocity(0.0)
-            self.get_logger().warn(
-                "No centroid data — sending zero velocity", throttle_duration_sec=2.0
-            )
-            return
-        neutral = self.get_parameter("joint1_neutral").value
-        recenter_vel = self.get_parameter("recenter_velocity").value
-        err = neutral - current_j1  # desired actual joint displacement
-        if abs(err) < 0.05:
-            self._send_joint_velocity(0.0)
-            return
-        actual_vel = max(-recenter_vel, min(recenter_vel, err))
-        # command is negated by _send_joint_velocity => pass -actual_vel
-        self._send_joint_velocity(-actual_vel)
-        self.get_logger().warn(
-            f"No centroid data — recentering joint1 ({current_j1:.2f} -> {neutral:.2f})",
-            throttle_duration_sec=2.0,
+        person_tick(
+            self.arm, self.state, self.get_parameter, self.dt, self._publish_base_yaw
         )
 
     def _publish_base_yaw(self, value: float):
@@ -379,17 +188,6 @@ class FollowPersonController(Node):
         self.base_yaw_pub.publish(msg)
 
     # ── Velocity command ───────────────────────────────────────
-
-    def _send_joint_velocity(self, velocity: float):
-        """Send joint velocity command — only joint1, all others 0."""
-        req = MoveVelocity.Request()
-        req.is_sync = True
-        req.speeds = [-velocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        try:
-            future = self.velocity_client.call_async(req)
-            future.add_done_callback(self._velocity_done_cb)
-        except Exception as e:
-            self.get_logger().error(f"Velocity command failed: {e}")
 
     def _velocity_done_cb(self, future):
         try:

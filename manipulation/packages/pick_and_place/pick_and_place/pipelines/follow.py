@@ -11,6 +11,7 @@ from frida_constants.manipulation_constants import (
 VELOCITY_MODE = 4
 MAX_VELOCITY = 0.1
 STOP_TIMEOUT = 1.0
+TARGET_JOINT = "joint1"
 
 
 # ======================================================================
@@ -134,3 +135,192 @@ def _send_face_velocity(arm, x_vel: float, y_vel: float):
     except Exception as e:
         arm.busy = False
         arm.logger.error(f"Error sending velocity command: {e}")
+
+
+@dataclass
+class PersonState:
+    active = False
+    centroid_x = 0.0
+    centroid_time = 0.0
+    base_omega_z = 0.0
+    joint_positions: dict = field(default_factory=dict)
+    error_integral = 0.0
+    # Centroid-rate derivative (filled by _centroid_cb, low-pass filtered).
+    # Computing it in the 20 Hz control loop would alternate spike/zero
+    # because the centroid arrives at its own rate.
+    error_deriv = 0.0
+
+
+def person_centroid(arm, state: PersonState, msg):
+    now = time.time()
+    if state.centroid_time > 0.0:
+        dt = now - state.centroid_time
+        if 0.005 < dt < 0.5:
+            d = (msg.x - state.centroid_x) / dt
+            # LPF (~1/3 weight on the new sample) tames per-frame bbox jitter
+            state.error_deriv = 0.35 * d + 0.65 * state.error_deriv
+        elif dt >= 0.5:
+            state.error_deriv = 0.0  # stale gap — a finite diff would spike
+    state.centroid_x = msg.x
+    state.centroid_time = now
+    arm.logger.info(f"Centroid: {msg.x:.3f}", once=True)
+
+
+def person_on(arm, state: PersonState):
+    state.error_integral = 0.0
+    state.error_deriv = 0.0
+    state.centroid_time = 0.0  # don't act on a centroid from a past run
+    arm.set_mode_no_wait(VELOCITY_MODE)
+    # Activate only AFTER the mode switch: with the multithreaded
+    # executor the control loop keeps ticking during the sleeps above,
+    # and velocity commands before mode 4 error out on the xArm.
+    state.active = True
+    arm.logger.info("Following enabled (velocity mode)")
+
+
+def person_off(arm, state: PersonState):
+    state.active = False
+    _send_joint_velocity(arm, 0.0)
+    time.sleep(0.3)
+    state.error_integral = 0.0
+    state.error_deriv = 0.0
+    arm.set_mode_no_wait(MOVEIT_MODE)
+    arm.logger.info("Following disabled (back to MoveIt mode)")
+
+
+# ── Control loop ───────────────────────────────────────────
+
+
+def person_tick(arm, state: PersonState, get_parameter, dt, publish_base_yaw):
+    if not state.active:
+        publish_base_yaw(0.0)
+        return
+
+    if TARGET_JOINT not in state.joint_positions:
+        publish_base_yaw(0.0)
+        return
+
+    current_j1 = state.joint_positions[TARGET_JOINT]
+
+    # Read parameters
+    kp = get_parameter("kp").value
+    ki = get_parameter("ki").value
+    kd = get_parameter("kd").value
+    kff = get_parameter("kff").value
+    dead_zone = get_parameter("dead_zone").value
+    max_vel = get_parameter("max_velocity").value
+    timeout = get_parameter("centroid_timeout").value
+    integral_clamp = get_parameter("integral_clamp").value
+
+    age = time.time() - state.centroid_time
+
+    if state.centroid_time == 0.0 or age > timeout:
+        state.error_integral = 0.0
+        state.error_deriv = 0.0
+        publish_base_yaw(0.0)
+        _recenter_or_stop(arm, get_parameter, current_j1)
+        return
+
+    # Error: positive centroid_x = person right = positive error
+    # Sign is flipped in _send_joint_velocity (matching temp_follow.py)
+    error = state.centroid_x
+
+    # Dead zone (P/I only — the derivative keeps damping inside it)
+    if abs(error) < dead_zone:
+        error = 0.0
+
+    # PID controller (derivative computed at centroid rate in _centroid_cb)
+    state.error_integral += error * dt
+    state.error_integral = max(
+        -integral_clamp, min(integral_clamp, state.error_integral)
+    )
+
+    pid_output = kp * error + ki * state.error_integral + kd * state.error_deriv
+
+    # Feedforward: compensate base rotation
+    feedforward = state.base_omega_z * kff
+
+    # Combined velocity
+    joint1_vel = pid_output + feedforward
+    joint1_vel = max(-max_vel, min(max_vel, joint1_vel))
+
+    # Soft limits: taper to zero across soft_limit_margin instead of a hard
+    # cutoff, so the wide joint1 range never ends in a full-speed slam
+    # (that slam was the old xArm fault mode).
+    joint1_vel, limited = _apply_soft_limit(get_parameter, current_j1, joint1_vel)
+    if limited:
+        state.error_integral = 0.0
+
+    arm.logger.info(
+        f"j1={current_j1:.3f} cx={state.centroid_x:.3f} "
+        f"pid={pid_output:.3f} ff={feedforward:.3f} vel={joint1_vel:.3f}",
+        throttle_duration_sec=0.5,
+    )
+    _send_joint_velocity(arm, joint1_vel)
+
+    # Reactive base yaw: rotate the base to bring joint1 back toward neutral
+    # (unload the arm) so the person stays centred with unlimited pan range.
+    if get_parameter("base_yaw_enabled").value:
+        neutral = get_parameter("joint1_neutral").value
+        byaw_kp = get_parameter("base_yaw_kp").value
+        byaw_max = get_parameter("base_yaw_max").value
+        base_yaw = byaw_kp * (current_j1 - neutral)
+        base_yaw = max(-byaw_max, min(byaw_max, base_yaw))
+    else:
+        base_yaw = 0.0
+    publish_base_yaw(base_yaw)
+
+
+def _apply_soft_limit(get_parameter, current_j1: float, cmd_vel: float):
+    """Taper the commanded velocity to zero across soft_limit_margin before a
+    joint1 limit. Returns (scaled_vel, was_limited). Sign note: the actual
+    joint velocity is -cmd_vel (negated in _send_joint_velocity), so
+    cmd_vel > 0 moves joint1 NEGATIVE (toward joint1_min)."""
+    if cmd_vel == 0.0:
+        return 0.0, False
+    j1_min = get_parameter("joint1_min").value
+    j1_max = get_parameter("joint1_max").value
+    margin = get_parameter("soft_limit_margin").value
+    if cmd_vel > 0:  # actual motion toward j1_min
+        dist = current_j1 - j1_min
+    else:  # actual motion toward j1_max
+        dist = j1_max - current_j1
+    if dist >= margin:
+        return cmd_vel, False
+    scale = max(0.0, dist / margin)
+    return cmd_vel * scale, True
+
+
+def _recenter_or_stop(arm, get_parameter, current_j1: float):
+    """No centroid: either hold still (legacy) or pan slowly back to
+    joint1_neutral so the camera faces where the base is heading (the
+    smoother drives to the person's last-known position on loss)."""
+    if not get_parameter("recenter_enabled").value:
+        _send_joint_velocity(arm, 0.0)
+        arm.logger.warn(
+            "No centroid data — sending zero velocity", throttle_duration_sec=2.0
+        )
+        return
+    neutral = get_parameter("joint1_neutral").value
+    recenter_vel = get_parameter("recenter_velocity").value
+    err = neutral - current_j1  # desired actual joint displacement
+    if abs(err) < 0.05:
+        _send_joint_velocity(arm, 0.0)
+        return
+    actual_vel = max(-recenter_vel, min(recenter_vel, err))
+    # command is negated by _send_joint_velocity => pass -actual_vel
+    _send_joint_velocity(arm, -actual_vel)
+    arm.logger.warn(
+        f"No centroid data — recentering joint1 ({current_j1:.2f} -> {neutral:.2f})",
+        throttle_duration_sec=2.0,
+    )
+
+    # ── Velocity command ───────────────────────────────────────
+
+
+def _send_joint_velocity(arm, velocity: float):
+    """Send joint velocity command — only joint1, all others 0."""
+    try:
+        arm.send_joint_velocity([-velocity, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    except Exception as e:
+        arm.logger.error(f"Velocity command failed: {e}")
