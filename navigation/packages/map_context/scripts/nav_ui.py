@@ -10,7 +10,6 @@ import os
 import shutil
 import math
 import threading
-import time
 import numpy as np
 
 import rclpy
@@ -174,8 +173,6 @@ class NavRosNode(Node):
         # fills map_data first, and this self-cancels without ever calling the service.
         self._static_map_client = None
         self._static_map_pending = False
-        self._static_map_future = None
-        self._static_map_sent = 0.0
         if self.ui_mode == 'navigation':
             self._static_map_client = self.create_client(GetMap, '/map_server/map')
             self._static_map_timer = self.create_timer(1.0, self._fetch_static_map)
@@ -240,18 +237,12 @@ class NavRosNode(Node):
             self._static_map_timer.cancel()
             return
         if self._static_map_pending:
-            if time.monotonic() - self._static_map_sent < 3.0:
-                return  # a call is already in flight
-            # A request sent right as map_server comes up can lose its response
-            # (DDS discovery race) and never complete — drop it and retry.
-            self._static_map_client.remove_pending_request(self._static_map_future)
-            self._static_map_pending = False
+            return  # a call is already in flight
         if self._static_map_client is None or not self._static_map_client.service_is_ready():
             return  # map_server not up yet — try again next tick
         self._static_map_pending = True
-        self._static_map_sent = time.monotonic()
-        self._static_map_future = self._static_map_client.call_async(GetMap.Request())
-        self._static_map_future.add_done_callback(self._on_static_map)
+        future = self._static_map_client.call_async(GetMap.Request())
+        future.add_done_callback(self._on_static_map)
 
     def _on_static_map(self, future):
         self._static_map_pending = False
