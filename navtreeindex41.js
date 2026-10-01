@@ -1,5 +1,7 @@
 var NAVTREEINDEX41 =
 {
+"namespacepick__and__place_1_1robot_1_1perception.html#a29d178ac460114b1e7848b88940e8a91":[38,0,107,6,2,1],
+"namespacepick__and__place_1_1robot_1_1perception.html#abe18dba1d50a9c7bf971e9d20ce28cd3":[38,0,107,6,2,2],
 "namespacepick__and__place_1_1robot_1_1perception.html#ac00e306c24575ef5c3312e27c89a0232":[38,0,107,6,2,4],
 "namespacepickandplace__task__manager.html":[38,0,108],
 "namespacepickandplace__task__manager.html#a03e0fba6b5784ad7aeb39508c79437ce":[38,0,108,9],
@@ -247,7 +249,5 @@ var NAVTREEINDEX41 =
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a76dad13b740d5b529ca65631e3e56cf5":[38,0,141,1,3,20],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a97443d1a7b24253528138833b23e0e0b":[38,0,141,1,3,1],
 "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a9b9a56e7c7574157b1a411cf05adbd04":[38,0,141,1,3,4],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#aaab6a244ded3f187cd3d2623d2fd0f18":[38,0,141,1,3,6],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ab459dbc3d7e2da19e0024efbc1b1dbc2":[38,0,141,1,3,17],
-"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad1aa144235ceaa598ba03d1f5a343823":[38,0,141,1,3,7]
+"namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#aaab6a244ded3f187cd3d2623d2fd0f18":[38,0,141,1,3,6]
 };

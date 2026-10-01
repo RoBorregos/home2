@@ -27,6 +27,7 @@ var test__hri__manager_8py =
     [ "TEST_DATA_EXTRACTOR", "test__hri__manager_8py.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
     [ "TEST_DOOR", "test__hri__manager_8py.html#aa088235952c6afdf84049733a3d8e6d7", null ],
     [ "TEST_FALLBACK_RESUME", "test__hri__manager_8py.html#ad1afdc4bd1aac351029411361b8c7f38", null ],
+    [ "TEST_HOTWORDS", "test__hri__manager_8py.html#abb23aef8530c3d557e35e713c81183be", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "test__hri__manager_8py.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
     [ "TEST_IS_NEGATIVE", "test__hri__manager_8py.html#a0badb875d731e79a361252aae7631ac1", null ],
     [ "TEST_IS_POSITIVE", "test__hri__manager_8py.html#ad6e339590c518dbf7c365f89e90b8be8", null ],

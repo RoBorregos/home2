@@ -27,6 +27,7 @@ var namespacetest__hri__manager =
     [ "TEST_DATA_EXTRACTOR", "namespacetest__hri__manager.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
     [ "TEST_DOOR", "namespacetest__hri__manager.html#aa088235952c6afdf84049733a3d8e6d7", null ],
     [ "TEST_FALLBACK_RESUME", "namespacetest__hri__manager.html#ad1afdc4bd1aac351029411361b8c7f38", null ],
+    [ "TEST_HOTWORDS", "namespacetest__hri__manager.html#abb23aef8530c3d557e35e713c81183be", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
     [ "TEST_IS_NEGATIVE", "namespacetest__hri__manager.html#a0badb875d731e79a361252aae7631ac1", null ],
     [ "TEST_IS_POSITIVE", "namespacetest__hri__manager.html#ad6e339590c518dbf7c365f89e90b8be8", null ],

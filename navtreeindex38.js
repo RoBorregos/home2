@@ -1,5 +1,7 @@
 var NAVTREEINDEX38 =
 {
+"namespacefrida__constants_1_1manipulation__constants.html#a2885d522797d86e74fc04768cf3b50a6":[38,0,51,2,4],
+"namespacefrida__constants_1_1manipulation__constants.html#a2b9fe2eb921dacceca8b4fd08e9eb64f":[38,0,51,2,29],
 "namespacefrida__constants_1_1manipulation__constants.html#a32210c7d93399e9823a0af37fffcf4c0":[38,0,51,2,36],
 "namespacefrida__constants_1_1manipulation__constants.html#a340952326c50f0de5f8bb3c56fbd78c2":[38,0,51,2,71],
 "namespacefrida__constants_1_1manipulation__constants.html#a357986332cbb9033440ee3ef8f471e48":[38,0,51,2,38],
@@ -247,7 +249,5 @@ var NAVTREEINDEX38 =
 "namespacegeneral__navigation.html#af472e117a9a8a68b98c82219ed0d3a14":[38,0,57,0],
 "namespacegpd__ros2.html":[38,0,58],
 "namespacegpsr.html":[38,0,59],
-"namespacegpsr.html#a757ec7f17f46a7b35bae9fe8fb05a58c":[38,0,59,0],
-"namespacegpsr__commands.html":[38,0,60],
-"namespacegpsr__commands.html#a56bdb1e15ec9535078a234ee5c42f2df":[38,0,60,2]
+"namespacegpsr.html#a757ec7f17f46a7b35bae9fe8fb05a58c":[38,0,59,0]
 };

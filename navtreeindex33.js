@@ -1,5 +1,7 @@
 var NAVTREEINDEX33 =
 {
+"gpsr_8launch_8py.html":[40,0,3,0,3,0,1],
+"gpsr_8launch_8py.html#a757ec7f17f46a7b35bae9fe8fb05a58c":[40,0,3,0,3,0,1,0],
 "gpsr__commands_8py.html":[40,0,7,0,2,1,1,2],
 "gpsr__commands_8py.html#a56bdb1e15ec9535078a234ee5c42f2df":[40,0,7,0,2,1,1,2,2],
 "gpsr__commands_8py.html#a5783abd6bc09633fca3b65604586f3cb":[40,0,7,0,2,1,1,2,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX33 =
 "launch__nav_8py.html#af0470fd800e1efdfd2e37f736994e4cc":[40,0,4,0,2,2,2,4],
 "leaf__behaviours_8py.html":[40,0,6,2,0,2],
 "leaf__behaviours_8py.html#a10aa94116ccb2ceb7a36ad503806a10a":[40,0,6,2,0,2,4],
-"leaf__behaviours_8py.html#a40b1802be1d7fc019e2bd61f9f5ffc61":[40,0,6,2,0,2,3],
-"leaf__behaviours_8py.html#a475f0b53640ccdd6c2fe5db63463607b":[40,0,6,2,0,2,6],
-"leaf__behaviours_8py.html#aa32e6d482dbaf01f6ca81e388308cb7a":[40,0,6,2,0,2,5]
+"leaf__behaviours_8py.html#a40b1802be1d7fc019e2bd61f9f5ffc61":[40,0,6,2,0,2,3]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX36 =
 {
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md77":[6,3,1],
+"md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md78":[6,3,2],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md80":[6,4],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md82":[6,5],
 "md_manipulation_packages_vamp_moveit_plugin_ReadMe.html#autotoc_md83":[6,5,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX36 =
 "namespacedemo__roborregosday.html#af18329abe6c10ff0c8cbbd8bf2b0d922":[38,0,20,2],
 "namespacedetectors.html":[38,0,21],
 "namespacedetectors_1_1base.html":[38,0,21,0],
-"namespacedetectors_1_1registry.html":[38,0,21,1],
-"namespacedetectors_1_1registry.html#a51e496b6760bdd844d1c44addc8d5e78":[38,0,21,1,2],
-"namespacedetectors_1_1registry.html#ab29beb337204e36fa21507816aad50c3":[38,0,21,1,1]
+"namespacedetectors_1_1registry.html":[38,0,21,1]
 };
