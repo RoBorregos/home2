@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import threading
 import time
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -81,6 +82,7 @@ class GraspGenerator(Node):
         self._known: Optional[str] = None
         self._samples: list[Sample] = []
         self._rejections: Counter = Counter()
+        self._busy = threading.Lock()
 
         # Reentrant + MultiThreadedExecutor: the service waits while the
         # depth/detection callbacks keep filling samples in other threads.
@@ -105,8 +107,8 @@ class GraspGenerator(Node):
         )
         self.get_logger().info("Grasp generator ready")
 
-    # Service entry: collect up to N samples for object_name, then combine them.
-    def _generate_cb(self, request, response):
+    # collect up to N samples for object_name, then combine them.
+    def _generate(self, request, response):
         if self._intrinsics is None:
             return self._fail(response, "camera intrinsics not received yet")
 
@@ -123,6 +125,14 @@ class GraspGenerator(Node):
             detail = f"{reason[0][0]} (x{reason[0][1]})" if reason else "not detected"
             return self._fail(response, f"no grasp for '{self._target}': {detail}")
         return self._finish(response)
+
+    def _generate_cb(self, request, response):
+        if not self._busy.acquire(blocking=False):
+            return self._fail(response, "busy: another request is collecting")
+        try:
+            return self._generate(request, response)
+        finally:
+            self._busy.release()
 
     # Reset the session; known is None for objects not in the lookup table.
     def _start(self, target: str) -> None:
