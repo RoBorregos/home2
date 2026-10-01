@@ -38,9 +38,10 @@ FIND_PERSON_VISITED_RADIUS = 0.75
 
 # Camera pan sweep at each base heading, rotating the omni base between
 # sweeps so the search covers a full circle instead of peeking at a couple
-# of fixed arm-pan angles. 4 headings 90 deg apart, each panning +-45 deg,
-# tile the full 360 deg with no gaps between headings.
-SEARCH_PAN_ANGLES = [-45, 0, 45]
+# of fixed arm-pan angles. 4 headings 90 deg apart, each panning +-65 deg,
+# tile the full 360 deg with 40 deg of overlap between headings (margin,
+# no gaps).
+SEARCH_PAN_ANGLES = [-65, 0, 65]
 SEARCH_PAN_SETTLE_TIME = 1.0
 SEARCH_ROTATION_DEG = 90.0
 SEARCH_MAX_ROTATIONS = 3  # + the initial heading = 4 headings, 4 * 90 = 360 deg
