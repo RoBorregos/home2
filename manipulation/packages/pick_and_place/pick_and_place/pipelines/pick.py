@@ -8,7 +8,7 @@ Read this file top to bottom and you have the whole pick.
 
 import copy
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Iterator, List, Optional, Tuple
 
 import numpy as np
@@ -113,10 +113,16 @@ def execute(
     arm, perception, request: PickRequest, strategies
 ) -> Tuple[bool, PickOutcome]:
     """Pick an object. Returns (success, outcome)."""
-    log = arm.logger
     strategy_key = resolve_pick_strategy(request.object_name)
     if request.is_shelf and strategy_key in SHAPE_STRATEGY_KEYS:
         strategy_key = PICK_STRATEGY_GPD
+    return _pick(arm, perception, request, strategies, strategy_key)
+
+
+def _pick(
+    arm, perception, request: PickRequest, strategies, strategy_key: str
+) -> Tuple[bool, PickOutcome]:
+    log = arm.logger
     strategy = strategies[strategy_key]
     arm.set_context(strategy_key)
 
@@ -129,6 +135,8 @@ def execute(
 
     perceived = _perceive(perception, request, strategy_key)
     if perceived is None:
+        if strategy_key in SHAPE_STRATEGY_KEYS:
+            return _fall_back_to_gpd(arm, perception, request, strategies)
         return False, PickOutcome()
 
     # Open after perceiving: the fingers are in the camera's view while it looks.
@@ -148,6 +156,10 @@ def execute(
         time.sleep(0.2)
 
     if outcome is None:
+        if strategy_key in SHAPE_STRATEGY_KEYS:
+            return _fall_back_to_gpd(
+                arm, perception, request, strategies, perceived.grasps.object.id
+            )
         log.error(f"[{strategy_key}] pick failed: no candidate succeeded")
         return False, PickOutcome()
 
@@ -164,6 +176,23 @@ def execute(
         _return_to_carry_pose(arm, strategy_key, request.is_shelf)
     log.info(f"[{strategy_key}] pick complete")
     return True, outcome
+
+
+def _fall_back_to_gpd(
+    arm, perception, request: PickRequest, strategies, fitted_id: str = ""
+) -> Tuple[bool, PickOutcome]:
+    arm.logger.warn(
+        f"'{request.object_name}': geometric pick failed, falling back to GPD"
+    )
+    if fitted_id:
+        arm.remove_collision_object(fitted_id)
+    return _pick(
+        arm,
+        perception,
+        replace(request, in_configuration=False),
+        strategies,
+        PICK_STRATEGY_GPD,
+    )
 
 
 # ======================================================================

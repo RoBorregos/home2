@@ -201,6 +201,35 @@ def test_a_shape_pick_adds_the_fitted_object_and_retries_the_next_candidate(stra
     assert outcome.object_pick_height == pytest.approx(0.13 - 0.05 + SAFETY_HEIGHT)
 
 
+@pytest.mark.parametrize("candidates_fail", [False, True])
+def test_a_failed_shape_pick_falls_back_to_gpd(strategies, candidates_fail):
+    generated, arm = None, FakeArm()
+    if candidates_fail:
+        generated = FakeGenerateGraspsResponse(make_pose(z=0.3))
+        generated.object.id = "fitted"
+        arm = FakeArm(pregrasp_results=[False] * 10)
+    perception = FakePerception(
+        located_point=make_point(),
+        cluster=make_cluster(),
+        grasps=[([make_pose()], [0.9])] * 3,
+        generated_grasps=generated,
+    )
+
+    success, _ = run_pick(arm, perception, strategies, object_name="coke")
+
+    assert success
+    assert perception.calls.index("generate_grasps") < perception.calls.index(
+        "detect_grasps"
+    )
+    if candidates_fail:
+        stare_moves = [
+            i for i, c in enumerate(arm.calls) if c == "move_to_named_position"
+        ]
+        assert arm.calls.index("remove_collision_object") < stare_moves[1]
+    else:
+        assert "remove_collision_object" not in arm.calls
+
+
 def test_tip_offset_uses_the_per_strategy_parameter(strategies):
     """rim_tip_offset is -0.18, and the rim pre-grasp sits 0.10 above."""
     arm = FakeArm()
