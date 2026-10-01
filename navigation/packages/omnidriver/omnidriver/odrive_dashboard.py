@@ -642,6 +642,12 @@ class ODriveDashboardNode(Node):
                 return
             try:
                 self.ser.write((text + '\r\n').encode())
+            except serial.SerialTimeoutException:
+                # TX stalled (ST-Link not accepting): drop this command. Closing
+                # here would hang draining the stuck queue; replug the ST-Link.
+                self.get_logger().error(
+                    "Serial write timeout: STM link not accepting data",
+                    throttle_duration_sec=5.0)
             except serial.SerialException as e:
                 self.get_logger().error(f"Serial write: {e}")
                 try:
