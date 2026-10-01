@@ -182,7 +182,8 @@ run_frida_interfaces() {
 }
 
 run_area() {
-  if [ "$INPUT" != "zed" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
+  # simulation builds frida_interfaces itself inside its own workspace
+  if [ "$INPUT" != "zed" ] && [ "$INPUT" != "simulation" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
     echo "Cache directory missing. Building frida_interfaces_cache first..."
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi

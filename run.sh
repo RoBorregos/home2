@@ -40,7 +40,7 @@ Available Areas:
   navigation         Spins up the containers for navigation.
   hri                Spins up the containers for human-robot interaction.
   display            Spins up the standalone PyQt display UI.
-  simulation         Spins up the dedicated MuJoCo simulation container.
+  simulation         Spins up the Gazebo simulation (pick and place, or navigation).
   integration        Spins up the complete integration environment.
   zed                Starts the ZED camera in a container (with CycloneDDS SHM).
   frida_interfaces   Builds and configures FRIDA's custom interfaces/messages.
@@ -67,6 +67,7 @@ Additional Flags:
 
 Examples:
   ./run.sh hri --receptionist
+  ./run.sh simulation --nav
   ./run.sh vision --build
   ./run.sh --gpsr --recreate
   ./run.sh --down
