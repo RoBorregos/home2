@@ -7,9 +7,20 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(frida_interfaces REQUIRED) 
+find_package(frida_interfaces REQUIRED)
+
+file(GLOB PYTHON_SCRIPTS scripts/*.py)
+foreach(script ${PYTHON_SCRIPTS})
+  execute_process(COMMAND chmod +x ${script})
+endforeach()
+install(PROGRAMS
+  ${PYTHON_SCRIPTS}
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -34,6 +34,12 @@ services:
       DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      # Startup log noise. HRI_LOG_LEVEL=debug brings every node's init details back.
+      HRI_LOG_LEVEL: ${HRI_LOG_LEVEL:-info}
+      PYGAME_HIDE_SUPPORT_PROMPT: 1
+      TRANSFORMERS_VERBOSITY: error
+      # The base torch wheel isn't built for sm_87; it still runs, this only hides the notice.
+      PYTHONWARNINGS: "ignore:Found GPU0:UserWarning"
     env_file:
       - .env
     tty: true

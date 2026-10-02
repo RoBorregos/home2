@@ -3,7 +3,7 @@
 Vision turns the ZED's RGB-D stream into everything the task managers need to reason about
 the world: object detections with 3D points, people with poses, gestures and clothing
 colors, known faces, a tracked person to follow, and free-form visual questions answered by
-a VLM. It runs on `ROS 2` (Humble) inside a single `home2-vision` container, plus one
+a VLM. It runs on `ROS 2` (Jazzy) inside a single `home2-vision` container, plus one
 non-ROS sidecar — `home2-moondream-server` — that serves the Moondream2 VLM over `gRPC`.
 
 > Vision **does not own the camera**. Frames come from the separate `home2-zed` container
@@ -23,7 +23,7 @@ home2/
 │
 │frida_interfaces/                         # Custom ROS interfaces
 ├── vision/
-│   ├── action/                            # DetectPerson, Xarmmove
+│   ├── action/                            # ExampleAction, Xarmmove
 │   ├── msg/                               # Objec└── models/swin/               # ReID networktDetection(+Array), Detection, Person,
 │   │                                      # PersonList, CustomerTable, Point2D, Shelf*
 │   └── srv/                               # 30 services (Query, FindSeat, TrackBy, ...)
@@ -192,7 +192,7 @@ Each node has a fixed activation topic (`/vision/object_detector/active`,
 
 | Node | Purpose | Key interfaces | Model |
 | --- | --- | --- | --- |
-| `hric_commands` | Person detection, seat finding, handover point, chair removal | action `DetectPerson`; srvs `FindSeat`, `DetectHand`, `ChairsToRemove` | yolo11m-pose |
+| `hric_commands` | Person detection, seat finding, handover point, chair removal | srvs `DetectPerson`, `FindSeat`, `DetectHand`, `ChairsToRemove` | yolo11m-pose |
 | `gpsr_commands` | Counting and describing people by pose, gesture, clothing color | srvs `CountByPose`, `CountBy`, `CountByColor`, `PersonPoseGesture` | yolo11m-pose |
 | `tracker_node` | Locks onto one person and publishes their 3D point for nav to follow | srvs `SetBool`@`set_tracking_target`, `TrackBy`, `Trigger`@`is_tracking`; pub `/vision/tracking_results` | yolov8n + ByteTrack, yolo11m-pose|
 | `face_recognition` | Learns and recognizes faces; drives the arm's face following | srvs `SaveName`@`new_name`, `SaveName`@`follow_by_name`; pubs `/vision/follow_face`, `/vision/person_list` | InsightFace `buffalo_sc` |

@@ -132,7 +132,7 @@ class HRICVisionTest(Node):
         self._record("face_recognition_toggle", "PASS", time.time() - start)
 
     def step_detect_person(self):
-        """WAIT_FOR_GUEST state: DetectPerson action."""
+        """WAIT_FOR_GUEST state: DetectPerson service."""
         start = time.time()
         status = self.vision.detect_person(timeout=self.detect_person_timeout)
         self._check_status("detect_person", status, time.time() - start)

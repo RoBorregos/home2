@@ -25,7 +25,7 @@ MIN_BUFFER_CHUNKS = 10
 class HearStreaming(Node):
     def __init__(self):
         super().__init__("hear_streaming_node")
-        self.get_logger().info("*Starting Hear Streaming Node*")
+        self.get_logger().debug("Starting HearStreaming node")
 
         server_ip = (
             self.declare_parameter("STT_SERVER_IP", "127.0.0.1:50051")
@@ -52,7 +52,7 @@ class HearStreaming(Node):
         )
 
         self.default_hotwords = (
-            self.declare_parameter("DEFAULT_HOTWORDS", "Frida RoBorregos")
+            self.declare_parameter("DEFAULT_HOTWORDS", "Frida, RoBorregos")
             .get_parameter_value()
             .string_value
         )
@@ -110,7 +110,7 @@ class HearStreaming(Node):
             String, "/speech/raw_command", 10
         )
 
-        self.get_logger().info("*Hear Streaming Node is ready*")
+        self.get_logger().info("HearStreaming ready")
 
     def cancel_callback(self, goal_handle):
         """Accept cancellation requests."""
@@ -176,7 +176,7 @@ class HearStreaming(Node):
                     grpc_audio = local_audio.tobytes()
                     yield speech_pb2.AudioRequest(
                         audio_data=grpc_audio,
-                        hotwords=hotwords,
+                        hotwords=hotwords if first_chunk else "",
                         initial_prompt=initial_prompt if first_chunk else "",
                     )
                     first_chunk = False

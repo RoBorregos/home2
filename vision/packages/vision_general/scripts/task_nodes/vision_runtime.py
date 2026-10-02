@@ -9,6 +9,8 @@ Subclasses opt in through the constructor flags and read ``self.image``,
 owned its own subscriptions.
 """
 
+import time
+
 import rclpy
 import rclpy.qos
 import tf2_ros
@@ -159,6 +161,23 @@ class VisionRuntime(Node):
     def publish_debug(self, frame):
         if self.debug_publisher is not None:
             self.debug_publisher.publish(frame)
+
+    def call_service(self, client, request, timeout: float):
+        """Wait for a service response without spinning: the MultiThreadedExecutor's
+        other threads complete the future.
+
+        Never call ``rclpy.spin_until_future_complete(self, ...)`` from inside a
+        callback: it re-homes the node onto a temporary executor and the node
+        stops serving everything else. This holds one executor thread for the
+        duration of the call instead.
+
+        Returns the response, or ``None`` if the call did not finish in time.
+        """
+        future = client.call_async(request)
+        deadline = time.time() + timeout
+        while not future.done() and time.time() < deadline:
+            time.sleep(0.01)
+        return future.result() if future.done() else None
 
 
 def spin(node, threads: int = 4):
