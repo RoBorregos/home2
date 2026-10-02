@@ -8,7 +8,6 @@ find_package(std_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
-find_package(xarm_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 
 #Install directories

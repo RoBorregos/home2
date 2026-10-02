@@ -29,7 +29,7 @@ def generate_launch_description():
                 executable="motion_planning_server.py",
             ),
             Node(
-                package="task_manager",
+                package="manipulation_general",
                 executable="follow_face_node.py",
                 name="follow_face_node",
                 output="screen",
