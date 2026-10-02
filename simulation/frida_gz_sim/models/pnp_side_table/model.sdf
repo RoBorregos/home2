@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<sdf version="1.9">
+  <model name="pnp_side_table">
+    <static>true</static>
+    <link name="link">
+      <collision name="top_collision">
+        <pose>0 0 0.535 0 0 0</pose>
+        <geometry><box><size>0.8 1.2 0.03</size></box></geometry>
+        <surface>
+          <friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction>
+        </surface>
+      </collision>
+      <visual name="top_visual">
+        <pose>0 0 0.535 0 0 0</pose>
+        <geometry><box><size>0.8 1.2 0.03</size></box></geometry>
+        <material>
+          <ambient>0.55 0.40 0.26 1</ambient>
+          <diffuse>0.62 0.46 0.30 1</diffuse>
+          <specular>0.1 0.1 0.1 1</specular>
+        </material>
+      </visual>
+      <visual name="leg_fl">
+        <pose>0.35 0.55 0.26 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.52</size></box></geometry>
+        <material><diffuse>0.3 0.22 0.15 1</diffuse><ambient>0.3 0.22 0.15 1</ambient></material>
+      </visual>
+      <visual name="leg_fr">
+        <pose>0.35 -0.55 0.26 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.52</size></box></geometry>
+        <material><diffuse>0.3 0.22 0.15 1</diffuse><ambient>0.3 0.22 0.15 1</ambient></material>
+      </visual>
+      <visual name="leg_bl">
+        <pose>-0.35 0.55 0.26 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.52</size></box></geometry>
+        <material><diffuse>0.3 0.22 0.15 1</diffuse><ambient>0.3 0.22 0.15 1</ambient></material>
+      </visual>
+      <visual name="leg_br">
+        <pose>-0.35 -0.55 0.26 0 0 0</pose>
+        <geometry><box><size>0.05 0.05 0.52</size></box></geometry>
+        <material><diffuse>0.3 0.22 0.15 1</diffuse><ambient>0.3 0.22 0.15 1</ambient></material>
+      </visual>
+    </link>
+  </model>
+</sdf>
