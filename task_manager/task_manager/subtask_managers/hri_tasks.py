@@ -381,11 +381,11 @@ class HRITasks:
             self.say(complement)
             return Status.EXECUTION_SUCCESS
         elif command == "clarification":
-            self.say("Sorry, I don't undestand your command.")
+            self.say("Sorry, I did not understand your command.")
             self.say(complement)
             return Status.EXECUTION_SUCCESS
         else:
-            self.say(f"Sorry, I don't know how to {command}")
+            self.say(f"Sorry, I do not know how to {command} yet.")
             return Status.TARGET_NOT_FOUND
 
     def hear_multi(self, status: int) -> bool:
@@ -727,7 +727,7 @@ class HRITasks:
                     if not skip_extract_data and not options:
                         s, target_info = self.extract_data(query, interpreted_text, context)
                         if s != Status.EXECUTION_SUCCESS:
-                            self.say("Sorry, I couldn't understand.")
+                            self.say("Sorry, I did not understand. Could you say it again, please?")
                             continue
                         target_found = True
 
@@ -1126,7 +1126,7 @@ class HRITasks:
         if s_second != Status.EXECUTION_SUCCESS or not second_item:
             # Keep the confirmed first item: delivering one object still scores.
             Logger.warn(self.node, "take_order: second item failed, keeping partial order")
-            self.say(f"I will bring you the {first_item}.")
+            self.say(f"Sure, I will bring you the {first_item}.")
             return Status.EXECUTION_SUCCESS, [first_item]
 
         raw_items = [first_item, second_item]

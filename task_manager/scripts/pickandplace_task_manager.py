@@ -407,7 +407,7 @@ class PickAndPlaceTM(Node):
             target = sublocation if sublocation else location
             pretty_target = target.replace("_", " ")
             CLog.nav(self, "MOVE", f"Moving to {target}")
-            self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
+            self.subtask_manager.hri.say(f"Heading to the {pretty_target} now.", wait=False)
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
 
@@ -813,7 +813,7 @@ class PickAndPlaceTM(Node):
             f"Still holding {name}; placing it here before the next pick.",
             level="warn",
         )
-        self.subtask_manager.hri.say("First I will put down the object I am holding.", wait=False)
+        self.subtask_manager.hri.say("First, let me put down what I am holding.", wait=False)
         for _ in range(ATTEMPT_LIMIT):
             if self.subtask_manager.manipulation.place() == Status.EXECUTION_SUCCESS:
                 self.carrying = None
@@ -838,13 +838,17 @@ class PickAndPlaceTM(Node):
         # ==================== WAIT FOR START ====================
         if self.current_state == PickAndPlaceTM.TaskStates.WAIT_FOR_BUTTON:
             CLog.fsm(self, "STATE", "Waiting for start button...")
-            self.subtask_manager.hri.say("Waiting for start button to be pressed.", wait=False)
+            self.subtask_manager.hri.say(
+                "I am ready. Please press the start button when you want me to begin.", wait=False
+            )
 
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
 
             CLog.fsm(self, "STATE", "Start button pressed. Waiting for door to open...")
-            self.subtask_manager.hri.say("Waiting for the door to open.", wait=False)
+            self.subtask_manager.hri.say(
+                "I am ready. Please open the door so I can go in.", wait=False
+            )
             while True:
                 status, _ = self.subtask_manager.nav.check_door()
                 if status == Status.EXECUTION_SUCCESS:
@@ -962,7 +966,7 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS:
             self._track_state_change(PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS)
             self.subtask_manager.hri.say(
-                f"I have detected {len(self.detected_objects)} objects on the table."
+                f"I found {len(self.detected_objects)} objects on the table."
             )
 
             for obj in self.detected_objects:
@@ -1111,7 +1115,9 @@ class PickAndPlaceTM(Node):
                         f"Gripper reports no object after picking {self.grasped_object.name}.",
                         level="warn",
                     )
-                    self.subtask_manager.hri.say("I did not grasp the object.", wait=False)
+                    self.subtask_manager.hri.say(
+                        "I did not manage to grab it. Let me try again.", wait=False
+                    )
                     status = Status.EXECUTION_ERROR
 
             if status == Status.EXECUTION_SUCCESS and self.use_vision_confirmation:
@@ -1185,7 +1191,7 @@ class PickAndPlaceTM(Node):
         elif self.current_state == PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP:
             self._track_state_change(PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP)
             self.subtask_manager.hri.say(
-                "Could you please open the dishwasher door for me?",
+                "Could you please open the dishwasher door for me? I cannot do it myself.",
                 wait=True,
             )
             _, answer = self.subtask_manager.hri.confirm(
@@ -1238,7 +1244,7 @@ class PickAndPlaceTM(Node):
         # ==================== SCAN CABINET SHELVES ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES:
             self._track_state_change(PickAndPlaceTM.TaskStates.SCAN_CABINET_SHELVES)
-            self.subtask_manager.hri.say("Scanning cabinet shelves.", wait=False)
+            self.subtask_manager.hri.say("Let me take a look at the cabinet shelves.", wait=False)
 
             # Scan each shelf level (move arm, build octomap, detect + filter by height)
             shelf_levels = sorted(self.shelf_level_heights.keys())
@@ -1247,7 +1253,7 @@ class PickAndPlaceTM(Node):
             for idx, level in enumerate(shelf_levels):
                 height = self.shelf_level_heights[level]
                 CLog.vision(self, "SHELF", f"Scanning shelf level {level} at {height}m")
-                self.subtask_manager.hri.say(f"Scanning shelf number {idx + 1}.", wait=False)
+                self.subtask_manager.hri.say(f"Looking at shelf number {idx + 1}.", wait=False)
 
                 # An unreachable level (real level 1) is viewed from the lowest reachable
                 # level's pose — the camera can frame it even though the arm cannot operate
@@ -1502,7 +1508,7 @@ class PickAndPlaceTM(Node):
         # ==================== START BREAKFAST PREP ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP:
             self._track_state_change(PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP)
-            self.subtask_manager.hri.say("Now I will prepare breakfast.", wait=False)
+            self.subtask_manager.hri.say("Now let us get breakfast ready!", wait=False)
             self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== GET BREAKFAST ITEMS ====================
@@ -1586,7 +1592,9 @@ class PickAndPlaceTM(Node):
                         f"Gripper reports no object after picking {item_name}.",
                         level="warn",
                     )
-                    self.subtask_manager.hri.say("I did not grasp the object.", wait=False)
+                    self.subtask_manager.hri.say(
+                        "I did not manage to grab it. Let me try again.", wait=False
+                    )
                     status = Status.EXECUTION_ERROR
 
             if status == Status.EXECUTION_SUCCESS:
@@ -1636,7 +1644,7 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.POUR_INTO_BOWL)
             item_name = self.current_breakfast_item["name"]
             CLog.manip(self, "POUR", f"Pouring {item_name} into the bowl.")
-            self.subtask_manager.hri.say(f"Pouring {item_name} into the bowl.", wait=False)
+            self.subtask_manager.hri.say(f"I am pouring the {item_name} into the bowl.", wait=False)
 
             pour_attempts = 2
             for attempt in range(1, pour_attempts + 1):
@@ -1718,7 +1726,9 @@ class PickAndPlaceTM(Node):
                 CLog.fsm(self, "TIMER", f"{state}: {time_spent:.2f}s ({percentage:.1f}%)")
 
             CLog.fsm(self, "TIMER", "=== END TIMING REPORT ===")
-            self.subtask_manager.hri.say("I have completed the pick and place task.")
+            self.subtask_manager.hri.say(
+                "All done! The table is clean and everything is in its place."
+            )
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.running_task = False
 

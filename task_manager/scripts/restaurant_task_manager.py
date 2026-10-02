@@ -195,7 +195,7 @@ class RestaurantTaskManager(Node):
         Logger.warn(self, f"Requesting human assistance for {object_name}.")
         self.subtask_manager.manipulation.open_gripper()
         self.subtask_manager.hri.say(
-            f"I am having trouble picking the {object_name}. Please place it in my gripper and say yes when done."
+            f"I am having trouble picking up the {object_name}. Could you please place it in my gripper and say yes when you are done?"
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you placed the object in my gripper?",
@@ -205,7 +205,7 @@ class RestaurantTaskManager(Node):
         )
         if confirmation == "yes":
             self.subtask_manager.manipulation.close_gripper()
-            self.subtask_manager.hri.say("Thank you. I have received the object.")
+            self.subtask_manager.hri.say("Thank you, I have the object now.")
             return Status.EXECUTION_SUCCESS
         return Status.EXECUTION_ERROR
 
@@ -220,7 +220,9 @@ class RestaurantTaskManager(Node):
             Logger.warn(self, f"No objects detected, attempt {attempt + 1}/{ATTEMPT_LIMIT}")
 
         if not detections:
-            self.subtask_manager.hri.say(f"I could not see the {object_name}.")
+            self.subtask_manager.hri.say(
+                f"I could not see the {object_name}. I will need a little help."
+            )
             return self.deus_pick(object_name)
 
         labels = self.subtask_manager.vision.get_labels(detections)
@@ -252,7 +254,7 @@ class RestaurantTaskManager(Node):
             self.timeout(1)
 
         self.subtask_manager.hri.say(
-            "I couldn't place the object. Please grab it from my gripper and say yes when done."
+            "I could not place the object. Could you please take it from my gripper and say yes when you are done?"
         )
         _, confirmation = self.subtask_manager.hri.confirm(
             "Have you grabbed the object from my gripper?",
@@ -312,7 +314,7 @@ class RestaurantTaskManager(Node):
             Logger.state(self, "Starting restaurant task...")
             self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
             self.subtask_manager.hri.say(
-                "Hello everyone, I am Frida, your waiter today. "
+                "Hello everyone, I am Frida, and I will be your waiter today. "
                 "If you would like to order, please raise your arm and I will come to your table."
             )
             while self.bar_pose is None:
@@ -341,7 +343,7 @@ class RestaurantTaskManager(Node):
                 self.subtask_manager.hri.publish_display_topic(CUSTOMER)
                 self.subtask_manager.hri.say(
                     "I see you! I am coming to take your order. Please keep your hand raised "
-                    "You can check my screen to confirm I detected you."
+                    "until I get to you. You can check my screen to confirm I detected you."
                 )
                 self.target_person_point = caller
                 self.base_rotations = 0
@@ -359,14 +361,14 @@ class RestaurantTaskManager(Node):
             elif self.search_step < MAX_SEARCH_STEPS:
                 self.base_rotations = 0
                 self.search_step += 1
-                self.subtask_manager.hri.say("I will move to look for customers.", wait=False)
+                self.subtask_manager.hri.say("I will look around to see who needs me.", wait=False)
                 status, _ = self.subtask_manager.nav.explore_zone(SEARCH_STEP_SIZE)
                 if status != Status.EXECUTION_SUCCESS:
                     Logger.warn(self, "Exploration step blocked, will rotate and retry.")
             else:
                 Logger.info(self, "Full area scanned, no customer. Returning to bar.")
                 self.subtask_manager.hri.say(
-                    "I did not find any customers calling. I will return to the bar and wait."
+                    "I did not see anyone calling me. I will go back to the bar and wait there."
                 )
                 self.base_rotations = 0
                 self.search_step = 0
@@ -505,7 +507,7 @@ class RestaurantTaskManager(Node):
             self.subtask_manager.hri.say(
                 f"I found the table that called me, with {total} "
                 f"customer{'s' if total != 1 else ''}. "
-                "Please look at my screen to see the detections. I will take your orders now."
+                "You can see on my screen who I detected. I will take your orders one by one."
             )
             self.current_customer_index = 0
             self.current_state = RestaurantTaskManager.TaskStates.TAKE_ORDERS
@@ -522,7 +524,7 @@ class RestaurantTaskManager(Node):
 
                 # Navigate to the table on the first customer only
                 if self.current_customer_index == 0:
-                    self.subtask_manager.hri.say("Navigating to your table.")
+                    self.subtask_manager.hri.say("I am on my way to your table.")
                     self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
                     status, _ = self.subtask_manager.nav.approach_point(
                         table["table_point"], standoff=TABLE_STANDOFF
@@ -553,12 +555,12 @@ class RestaurantTaskManager(Node):
                         Logger.warn(self, f"Order attempt {order_attempt + 1} failed.")
                         if order_attempt < ATTEMPT_LIMIT - 1:
                             self.subtask_manager.hri.say(
-                                "Sorry, I didn't catch that. Could you please repeat your order?"
+                                "Sorry, I didn't catch that. Could you please tell me your order again?"
                             )
                 if not order_received:
                     Logger.warn(self, "Failed to get order after all attempts.")
                     self.subtask_manager.hri.say(
-                        "Sorry, I couldn't get your order. I'll move to the next customer."
+                        "I am sorry, I still could not understand your order. I will move on to the next customer."
                     )
 
                 self.current_customer_index += 1
@@ -566,13 +568,13 @@ class RestaurantTaskManager(Node):
             elif table["orders"]:
                 Logger.info(self, "All orders taken at the caller table. Going to bar.")
                 self.subtask_manager.hri.say(
-                    "Thank you. I will bring your order as soon as possible."
+                    "Thank you! I will bring your order as soon as it is ready."
                 )
                 self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR
             else:
                 Logger.warn(self, "No orders taken at this table. Waiting for the next call.")
                 self.subtask_manager.hri.say(
-                    "I could not take any order here. Please wave again when you are ready."
+                    "I could not take an order here. Please raise your hand again when you are ready and I will come back."
                 )
                 self._reset_cycle()
                 self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL
@@ -593,7 +595,7 @@ class RestaurantTaskManager(Node):
             Logger.state(self, f"Communicating order to barman: {orders}")
             self.subtask_manager.hri.say(
                 f"Hello barman. I have {len(orders)} item{'s' if len(orders) != 1 else ''} "
-                f"for one table: {', '.join(orders)}. Please help me prepare them."
+                f"for one table: {', '.join(orders)}. Could you please help me prepare them?"
             )
             self.current_delivery_item_index = 0
             self.current_state = RestaurantTaskManager.TaskStates.DELIVER_ORDER
@@ -637,7 +639,7 @@ class RestaurantTaskManager(Node):
 
                     # Return to bar for the next item
                     if self.current_delivery_item_index < len(orders):
-                        self.subtask_manager.hri.say("I will get your next item.", wait=False)
+                        self.subtask_manager.hri.say("Let me get your next item.", wait=False)
                         self.subtask_manager.manipulation.move_to_position(
                             "carry_pose", velocity=0.5
                         )
@@ -649,7 +651,9 @@ class RestaurantTaskManager(Node):
 
             else:
                 Logger.success(self, "Order fully delivered. Waiting for the next call.")
-                self.subtask_manager.hri.say("Enjoy your meal!")
+                self.subtask_manager.hri.say(
+                    "Enjoy your meal! Let me know if you need anything else."
+                )
                 self.subtask_manager.manipulation.move_to_position("carry_pose", velocity=0.5)
                 self._reset_cycle()
                 self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_CALL

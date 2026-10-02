@@ -305,7 +305,7 @@ class GPSRTM(Node):
             f"{len(plan.actions)} interleaved actions"
         )
         spoken = self._spoken_merged_plan(plan)
-        self.subtask_manager.hri.say(f"I will now execute the merged plan: {spoken}")
+        self.subtask_manager.hri.say(f"Okay, I am getting started. Here is my plan: {spoken}")
         self.subtask_manager.hri.publish_display_step("executing", GPSR_TASK_STEP_TOPIC)
 
         fallback_lines = ["Falling back to the sequential plan."]
@@ -382,7 +382,7 @@ class GPSRTM(Node):
             target = sublocation if sublocation else location
             pretty_target = target.replace("_", " ")
             CLog.nav(self, "MOVE", f"Moving to {target}")
-            self.subtask_manager.hri.say(f"Now I will go to the {pretty_target}.", wait=False)
+            self.subtask_manager.hri.say(f"Heading to the {pretty_target} now.", wait=False)
 
         result, error = self.subtask_manager.nav.move_to_location(location, sublocation)
         return result
@@ -400,7 +400,9 @@ class GPSRTM(Node):
             self._publish_command_index(self.executed_commands)
             CLog.fsm(self, "STATE", "Waiting for start button...")
             self.subtask_manager.hri.reset_task_status()
-            self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
+            self.subtask_manager.hri.say(
+                "I am ready. Please press the start button when you want me to begin."
+            )
 
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
@@ -416,7 +418,7 @@ class GPSRTM(Node):
             self.navigate_to("start_location", "", False)
 
             self.subtask_manager.hri.say(
-                "Hi, my name is Frida and I am a general purpose robot. Please press the button on my screen to start telling me the commands one by one."
+                "Hi, my name is Frida and I am a general purpose robot. When you are ready, press the button on my screen and tell me what you need, one command at a time."
             )
             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
 
@@ -432,7 +434,7 @@ class GPSRTM(Node):
                 if time.time() - start_time > say_time:
                     start_time = time.time()
                     self.subtask_manager.hri.say(
-                        "Please press the blue start button to begin.",
+                        "Whenever you are ready, please press the blue start button on my screen.",
                         speed=1,
                     )
                 rclpy.spin_once(self, timeout_sec=0.1)
@@ -468,17 +470,19 @@ class GPSRTM(Node):
                 )
 
             if s != Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say("I am sorry, I could not understand you.")
+                self.subtask_manager.hri.say(
+                    "I am sorry, I could not hear you well. Could you say it again?"
+                )
                 self.current_hear_attempt += 1
             elif not self.subtask_manager.hri.check_coherence(user_command):
                 self.subtask_manager.hri.say(
-                    "I didn't catch that correctly or the command was incomplete. Please tell me again.",
+                    "I am sorry, I did not get the whole command. Could you please say it again?",
                     wait=True,
                 )
                 self.current_hear_attempt += 1
             else:
                 self.subtask_manager.hri.say(
-                    "I am planning how to perform your command, please wait a moment", wait=False
+                    "Got it! Give me a moment while I figure out how to do that.", wait=False
                 )
                 s, self.commands = self.subtask_manager.hri.command_interpreter(user_command)
 
@@ -498,14 +502,17 @@ class GPSRTM(Node):
                         self.current_state = GPSRTM.TaskStates.PLAN_AND_EXECUTE_BATCH
                     else:
                         self.subtask_manager.hri.say(
-                            "Please press the button to give me the next command.", wait=False
+                            "Press the button on my screen when you want to give me the next command.",
+                            wait=False,
                         )
                         if self.test_mode:
                             self.current_state = GPSRTM.TaskStates.WAITING_FOR_COMMAND
                         else:
                             self.current_state = GPSRTM.TaskStates.WAIT_BUTTON_COMMAND
                 else:
-                    self.subtask_manager.hri.say("I will now execute your command.", wait=False)
+                    self.subtask_manager.hri.say(
+                        "Okay, I am getting started on your command.", wait=False
+                    )
                     plan_text = self.subtask_manager.hri.parse_plan_to_text(self.commands)
                     self.subtask_manager.hri.say(plan_text)
                     self.current_state = GPSRTM.TaskStates.EXECUTING_COMMAND
@@ -517,7 +524,7 @@ class GPSRTM(Node):
             self.executed_commands += batch_count
             self.batched_commands = []
             self.subtask_manager.hri.say(
-                "I have finished executing your commands. I will return to the start position.",
+                "All done with your commands! I am heading back to the starting point.",
                 wait=False,
             )
             self.navigate_to("start_location", "", False)
@@ -567,7 +574,7 @@ class GPSRTM(Node):
         elif self.current_state == GPSRTM.TaskStates.FINISHED_COMMAND:
             self._track_state_change(GPSRTM.TaskStates.FINISHED_COMMAND)
             self.subtask_manager.hri.say(
-                "I have finished executing your command. I will return to the start position to await for new commands.",
+                "All done! I am heading back to the starting point, and you can give me a new command from there.",
                 wait=False,
             )
             self.navigate_to("start_location", "", False)
@@ -578,7 +585,7 @@ class GPSRTM(Node):
         elif self.current_state == GPSRTM.TaskStates.DONE:
             self._track_state_change(GPSRTM.TaskStates.DONE)
             self.subtask_manager.hri.say(
-                "I am done with the task. Hip hip, hooray!",
+                "That was fun, thank you for your commands! Hip hip, hooray!",
                 wait=False,
             )
             self.subtask_manager.hri.reset_task_status()
