@@ -1,5 +1,5 @@
 """Class-agnostic box proposers: the production one (YOLOE prompt-free) and
-the Phase 0 candidates listed in models.json."""
+the Phase 0 candidates listed in config/models.json."""
 
 import numpy as np
 

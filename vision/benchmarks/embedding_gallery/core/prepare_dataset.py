@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """One-off converter: Ultralytics YOLO-seg export -> this benchmark's data/
-layout, entirely driven by the dataset's data.yaml/dataset_config.json. KNOWN LIMITATION: RCW2026_v2's train/valid/test split is same-SESSION not same-FRAME, so held_out/ recall is optimistic — check a new dataset before trusting its numbers."""
+layout, entirely driven by the dataset's data.yaml/config/dataset_config.json. KNOWN LIMITATION: RCW2026_v2's train/valid/test split is same-SESSION not same-FRAME, so held_out/ recall is optimistic — check a new dataset before trusting its numbers."""
 
 import argparse
 import json

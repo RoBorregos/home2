@@ -76,7 +76,7 @@ The ArcFace head (`experiments/finetune_arcface.py` → `results/arcface_head.pt
 
 ## Acceptance gate
 
-The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a frozen backbone. The adjusted gate is **recall@1 ≥ 80%, rejection ≥ 80%**, excluding classes that are only confused with each other and are already handled by `yolo_finetuned`: cutlery (fork/knife/spoon), kitchenware (cup/bowl/plate), cans (coke/red_bull). Other weak classes (e.g. `milk`, ~37%) are not excluded. The numbers live in the benchmark's `core/dataset.py` (`RECALL_TARGET`, `REJECTION_TARGET`) and `dataset_config.json` (`known_limitation_classes`).
+The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a frozen backbone. The adjusted gate is **recall@1 ≥ 80%, rejection ≥ 80%**, excluding classes that are only confused with each other and are already handled by `yolo_finetuned`: cutlery (fork/knife/spoon), kitchenware (cup/bowl/plate), cans (coke/red_bull). Other weak classes (e.g. `milk`, ~37%) are not excluded. The numbers live in the benchmark's `core/dataset.py` (`RECALL_TARGET`, `REJECTION_TARGET`) and `config/dataset_config.json` (`known_limitation_classes`).
 
 **Caveat:** all `RCW2026_v2` images come from one capture session, so `held_out/` is a different-*frame* split, not a different-*session* split. Treat the numbers as optimistic (same backdrop and lighting as the gallery); a perceptual-hash check found ~3% train/test frame overlap.
 
@@ -142,8 +142,8 @@ The backbone is always `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in `regi
 },
 ```
 
-Drop the new `.pt` beside `registry.py`, update `filename`, and write a new translation JSON (raw class → published label) or remove the key. Thresholds in `gallery_matcher.py` and `known_limitation_classes` in `dataset_config.json` were tuned on RCW2026_v2; treat them as a starting point and re-run the `embeddings` and `e2e_calibrate` tasks on your own data.
+Drop the new `.pt` beside `registry.py`, update `filename`, and write a new translation JSON (raw class → published label) or remove the key. Thresholds in `gallery_matcher.py` and `known_limitation_classes` in `config/dataset_config.json` were tuned on RCW2026_v2; treat them as a starting point and re-run the `embeddings` and `e2e_calibrate` tasks on your own data.
 
 **Using both:** to keep the old model too, add a second entry in `MODEL_CONFIGS` instead of replacing this one, and list both under `models:` in `config/parameters.yaml`. `ObjectDetect2D` runs every listed model and IoU-dedupes across them (threshold 0.6), which is how `yolo_finetuned` and `embedding_gallery` already run together.
 
-**Swapping the benchmark dataset:** run `./run.sh prepare --source` on the new export and edit `dataset_config.json`, the only place dataset-specific class names live (`out_of_gallery_classes`, `hard_negative_classes`, `known_limitation_classes`; see "Configuration" in the [benchmark README](../../../../benchmarks/embedding_gallery/README.md)). `known_limitation_classes` can only be found from a run's confusion breakdown.
+**Swapping the benchmark dataset:** run `./run.sh prepare --source` on the new export and edit `config/dataset_config.json`, the only place dataset-specific class names live (`out_of_gallery_classes`, `hard_negative_classes`, `known_limitation_classes`; see "Configuration" in the [benchmark README](../../../../benchmarks/embedding_gallery/README.md)). `known_limitation_classes` can only be found from a run's confusion breakdown.

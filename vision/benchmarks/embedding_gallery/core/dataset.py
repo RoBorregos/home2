@@ -11,8 +11,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 RESULTS_DIR = ROOT / "results"
-MODELS_PATH = ROOT / "models.json"
-DATASET_CONFIG_PATH = ROOT / "dataset_config.json"
+CONFIG_DIR = ROOT / "config"
+MODELS_PATH = CONFIG_DIR / "models.json"
+DATASET_CONFIG_PATH = CONFIG_DIR / "dataset_config.json"
 
 DETECTORS_DIR = (
     ROOT.parents[1] / "packages" / "object_detector_2d" / "scripts" / "detectors"

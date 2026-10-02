@@ -3,8 +3,8 @@
 Benchmark behind the few-shot object recognition in `ObjectDetect2D` (objects added
 from photos, no retraining). It chose the box proposer and the DINOv2 backbone and
 calibrated the match thresholds. Same shape as `hri/benchmarks/{nlp,stt}/`: `run.sh` →
-`core/tasks.py` (task registry) → `core/report.py` (tables and JSON), with `models.json` as
-the registry.
+`core/tasks.py` (task registry) → `core/report.py` (tables and JSON), with `config/models.json`
+as the registry.
 
 - **Want to add an object to the robot?** That is not this folder: see
   [Adding an object to the gallery](../../README.md#adding-an-object-to-the-gallery-few-shot)
@@ -78,14 +78,15 @@ they are several times slower.
 | `core/metrics.py` | IoU, gated recall, rejection, global / per-class threshold search |
 | `core/embed.py` | Embeds `data/` crops and real proposer crops (+ crop cache) |
 | `core/proposers.py` | Production box proposer and the Phase 0 candidates |
-| `core/dataset.py` | Paths, gate targets, `dataset_config.json` loader |
+| `core/dataset.py` | Paths, gate targets, `config/dataset_config.json` loader |
+| `config/` | `models.json` (proposers and backbones) and `dataset_config.json` (class lists) |
 | `core/prepare_dataset.py` | YOLO-seg export → `data/` |
 | `experiments/` | Optional fine-tunes (`finetune_head`, `finetune_arcface`) |
 
 ## Configuration
 
-- `models.json`: `box_proposers` (Phase 0 candidates) and `backbones` (timm id, dim, optional `img_size`).
-- `dataset_config.json`: the only place dataset-specific class names live (published labels, after translation).
+- `config/models.json`: `box_proposers` (Phase 0 candidates) and `backbones` (timm id, dim, optional `img_size`).
+- `config/dataset_config.json`: the only place dataset-specific class names live (published labels, after translation).
   - `out_of_gallery_classes`: held out of `gallery_photos/` to serve as "not in gallery" negatives for unknown-rejection.
   - `hard_negative_classes`: visually close classes curated into `hard_negatives/` (chosen, not random).
   - `known_limitation_classes`: excluded from the recall gate because they only confuse each other, never an unrelated class. Start empty and add a class only when a run's confusion breakdown shows evidence.
