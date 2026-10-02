@@ -14,7 +14,7 @@ page holds the background and the production workflow.
 
 ## How it works
 
-![Setup and runtime flow for the embedding gallery](embedding_gallery_process.png)
+![Setup and runtime flow for the embedding gallery](../../../../../docs/ai/diagrams/embedding_gallery_process.png)
 
 `add_object.sh` lives in this folder and the Python code (`gallery_build.py`, `image_embedder.py`, `gallery_matcher.py`, `constants.py`) in `core/`. `embedding.py`, `yolo_e.py` and `registry.py` stay in `../detectors/` (the node's plugin layer: `EmbeddingModel` is the only `DetectorModel` here), and `fetch_models.py` is `vision/scripts/fetch_models.py`.
 
