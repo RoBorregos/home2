@@ -574,6 +574,10 @@ class AudioOverlay(QWidget):
         self.heard_label.setText(text)
 
     def show_keyword(self, keyword: str):
+        # Only while the overlay is up; otherwise the label would stay visible
+        # and reappear with a stale keyword on the next listening state.
+        if not self.isVisible():
+            return
         self.keyword_label.setText(f"{MESSAGE_ICONS['keyword']} {keyword}")
         self.keyword_label.show()
 

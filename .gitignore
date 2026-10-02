@@ -42,3 +42,5 @@ restaurant_runs/
 gpsr_runs/
 hri/benchmarks/*/results/*
 !hri/benchmarks/*/results/.gitkeep
+docker/simulation/logs/
+docker/simulation/cache/
