@@ -2,7 +2,8 @@
 """
 Display UI - PyQt5 replacement for the Next.js HRI display.
 Shows speech/interaction messages, audio state, camera feed, map and
-question modals. Subscribes directly to ROS2 topics (no rosbridge /
+question modals. Also saves per-run evidence for referee appeals (HRI
+messages, task manager logs, snapshots) under logs/evidence/. Subscribes directly to ROS2 topics (no rosbridge /
 web_video_server) to cut CPU usage vs the browser-based version.
 
 The `task` ROS parameter selects the view, mirroring the Next.js routes:
@@ -10,16 +11,29 @@ default (/), gpsr, hric, laundry, ppc, restaurant, storing_groceries.
 """
 
 import json
+import re
+import signal
 import sys
 import threading
+import time
 from datetime import datetime
 from pathlib import Path
 
 import rclpy
+from rclpy.executors import ExternalShutdownException, SingleThreadedExecutor
 from rclpy.node import Node
+from rclpy.signals import SignalHandlerOptions
+from rclpy.validate_topic_name import validate_topic_name
+from rcl_interfaces.msg import Log
 from std_msgs.msg import Empty, Float32, Int32, String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from frida_constants.vision_constants import (
+    CHAIR_REMOVAL_IMAGE_TOPIC,
+    IMAGE_TOPIC,
+    IMAGE_TOPIC_HRIC,
+    RESTAURANT_TABLES_TOPIC,
+)
 
 from PyQt5.QtCore import Qt, QObject, QTimer, pyqtSignal
 from PyQt5.QtGui import QColor, QFont, QImage, QPainter, QPixmap
@@ -27,6 +41,7 @@ from PyQt5.QtWidgets import (
     QApplication,
     QDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -122,6 +137,38 @@ MODE_BUTTON = "button"
 MODE_CAMERA = "camera"
 MODE_LOGS = "logs"
 MODE_BOTH = "both"
+MODE_GALLERY = "gallery"  # end-of-task summary: logs + captured snapshots
+
+# Evidence for referee appeals: every run gets its own folder with the HRI
+# messages, task manager logs (from /rosout) and snapshots requested on
+# /hri/display/capture.
+CAPTURE_TOPIC = "/hri/display/capture"
+CAPTURE_FRAME_TIMEOUT_S = 3.0
+# Annotated topics vision only publishes while serving a request (counts, seat,
+# tables...): by the time the task manager asks for a capture that frame is
+# gone, so the display keeps the latest one of each and uses it if fresh.
+DEFAULT_EVIDENCE_IMAGE_TOPICS = [
+    IMAGE_TOPIC,
+    IMAGE_TOPIC_HRIC,
+    RESTAURANT_TABLES_TOPIC,
+    CHAIR_REMOVAL_IMAGE_TOPIC,
+]
+EVIDENCE_FRAME_MAX_AGE_S = 15.0
+# /rosout node names (regex) whose logs are saved to task_manager.log.
+DEFAULT_EVIDENCE_LOG_NODES = r"task_manager|manager"
+ROSOUT_LEVELS = {10: "DEBUG", 20: "INFO", 30: "WARN", 40: "ERROR", 50: "FATAL"}
+ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+
+# The docker containers mount the repo checkout at /workspace/src, so evidence
+# saved there survives `docker compose down` and is visible on the host.
+_WORKSPACE_SRC = Path("/workspace/src")
+
+
+def evidence_root() -> Path:
+    if _WORKSPACE_SRC.is_dir():
+        return _WORKSPACE_SRC / "logs" / "evidence"
+    return Path.home() / ".frida" / "evidence"
+
 
 # (key, label, icon) — same order as FSM_STEPS in gpsr/page.tsx.
 GPSR_FSM_STEPS = [
@@ -182,7 +229,7 @@ LAUNDRY_TASK_STEPS = [
     ("pick_clothes_wm", "Picking from Machine", "\U0001f9fc", MODE_CAMERA),
     ("close_laundry_machine", "Closing Machine", "\U0001f6aa", MODE_CAMERA),
     ("navigate_to_table_with_clothes", "Navigate to Table", "\U0001f9ed", MODE_CAMERA),
-    ("end", "Finished", "✅", MODE_LOGS),
+    ("end", "Finished", "✅", MODE_GALLERY),
 ]
 
 # (key, label, icon, display_mode) — same order as TASK_STEPS in ppc/page.tsx.
@@ -192,7 +239,7 @@ PPC_TASK_STEPS = [
     ("perceive_table", "Perceive Table", "\U0001f441", MODE_BOTH),
     ("cleanup_phase", "Cleanup Phase", "\U0001f4e6", MODE_BOTH),
     ("breakfast_phase", "Breakfast Phase", "☕", MODE_BOTH),
-    ("end", "Finished", "✅", MODE_LOGS),
+    ("end", "Finished", "✅", MODE_GALLERY),
 ]
 
 # Raw FSM state -> macro step shown in the pill bar (getStepKey in ppc/page.tsx).
@@ -234,6 +281,7 @@ HRIC_TASK_STEPS = [
     ("navigate_to_entrance", "Navigate to Entrance", "\U0001f9ed", MODE_CAMERA),
     ("introduction", "Introduction", "\U0001f9cd", MODE_BOTH),
     ("take_bag_deliver", "Deliver Bag", "\U0001f91d", MODE_BOTH),
+    ("end", "Finished", "✅", MODE_GALLERY),
 ]
 
 
@@ -251,6 +299,76 @@ class DisplaySignals(QObject):
     task_step_changed = pyqtSignal(str)
     command_index_changed = pyqtSignal(int)
     heard_buffered = pyqtSignal(str)  # "heard" text held back while listening
+    capture_added = pyqtSignal(str, QImage)  # label, snapshot
+
+
+class EvidenceRecorder:
+    """Writes this run's evidence folder: messages.log, task_manager.log,
+    captures.jsonl and the snapshot PNGs.
+
+    Only touched from the ROS spin thread (single-threaded executor), so no
+    locking is needed. The folder is created on the first write.
+    """
+
+    def __init__(self, task: str, logger):
+        self.dir = (
+            evidence_root() / f"{task}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        )
+        self._logger = logger
+        self._files = {}
+
+    def _append(self, name: str, line: str):
+        try:
+            f = self._files.get(name)
+            if f is None:
+                self.dir.mkdir(parents=True, exist_ok=True)
+                f = self._files[name] = open(self.dir / name, "a", encoding="utf-8")
+            f.write(line + "\n")
+            f.flush()
+        except (OSError, ValueError) as e:
+            self._logger.warn(f"Could not write {name}: {e}")
+
+    def log_message(self, kind: str, text: str):
+        now = datetime.now().strftime("%H:%M:%S")
+        self._append("messages.log", f"{now} [{kind.upper()}] {text}")
+
+    def log_rosout(self, msg: Log):
+        stamp = datetime.fromtimestamp(msg.stamp.sec + msg.stamp.nanosec / 1e9)
+        level = ROSOUT_LEVELS.get(msg.level, str(msg.level))
+        text = ANSI_ESCAPE.sub("", msg.msg)
+        self._append(
+            "task_manager.log",
+            f"{stamp.strftime('%H:%M:%S.%f')[:-3]} [{level}] [{msg.name}] {text}",
+        )
+
+    def save_capture(self, label: str, qimg: QImage, topic: str, data) -> bool:
+        now = datetime.now()
+        slug = re.sub(r"[^\w-]+", "_", label).strip("_")[:40] or "capture"
+        name = f"{now.strftime('%H%M%S')}_{slug}.png"
+        try:
+            self.dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            self._logger.warn(f"Could not create {self.dir}: {e}")
+            return False
+        if not qimg.save(str(self.dir / name)):
+            self._logger.warn(f"Could not save capture to {self.dir / name}")
+            return False
+        record = {
+            "time": now.isoformat(timespec="seconds"),
+            "label": label,
+            "topic": topic,
+            "file": name,
+            "data": data,
+        }
+        self._append("captures.jsonl", json.dumps(record, ensure_ascii=False))
+        self.log_message("capture", f"{label} -> {name}")
+        self._logger.info(f"Saved capture: {self.dir / name}")
+        return True
+
+    def close(self):
+        files, self._files = self._files, {}
+        for f in files.values():
+            f.close()
 
 
 class DisplayRosNode(Node):
@@ -267,6 +385,14 @@ class DisplayRosNode(Node):
         self._audio_state = "idle"
         self._pending_heard = None
         self._heard_watchdog = None
+        self._last_qimg = None
+        self._ignored_video = None
+        self.evidence = EvidenceRecorder(self.task, self.get_logger())
+        self._evidence_nodes = re.compile(
+            self.declare_parameter(
+                "evidence_log_nodes", DEFAULT_EVIDENCE_LOG_NODES
+            ).value
+        )
 
         self.create_subscription(String, "/AudioState", self._on_audio_state, 10)
         self.create_subscription(Float32, "/hri/speech/vad", self._on_vad, 10)
@@ -290,6 +416,20 @@ class DisplayRosNode(Node):
         self.create_subscription(
             String, "/hri/display/change_video", self._on_change_video, 10
         )
+        self.create_subscription(String, CAPTURE_TOPIC, self._on_capture, 10)
+        self._evidence_frames = {}  # topic -> (Image msg, monotonic receive time)
+        for topic in self.declare_parameter(
+            "evidence_image_topics", DEFAULT_EVIDENCE_IMAGE_TOPICS
+        ).value:
+            self.create_subscription(
+                Image,
+                topic,
+                lambda m, t=topic: self._evidence_frames.__setitem__(
+                    t, (m, time.monotonic())
+                ),
+                1,
+            )
+        self.create_subscription(Log, "/rosout", self._on_rosout, 200)
 
         step_topic = TASK_STEP_TOPICS.get(self.task)
         if step_topic is not None:
@@ -333,7 +473,11 @@ class DisplayRosNode(Node):
                 HEARD_WATCHDOG_S, self._on_heard_watchdog
             )
             return
-        self.signals.message_received.emit(msg_type, msg.data)
+        self._emit_message(msg_type, msg.data)
+
+    def _emit_message(self, msg_type: str, text: str):
+        self.evidence.log_message(msg_type, text)
+        self.signals.message_received.emit(msg_type, text)
 
     def _on_heard_watchdog(self):
         self._heard_watchdog.cancel()
@@ -350,25 +494,29 @@ class DisplayRosNode(Node):
         if self._heard_watchdog is not None:
             self._heard_watchdog.cancel()
             self._heard_watchdog = None
-        self.signals.message_received.emit("heard", text)
+        self._emit_message("heard", text)
 
     def _on_kws(self, msg: String):
         try:
             data = json.loads(msg.data)
             keyword = data.get("keyword")
             if keyword:
-                self.signals.message_received.emit("keyword", str(keyword))
+                self._emit_message("keyword", str(keyword))
         except (json.JSONDecodeError, AttributeError) as e:
             self.get_logger().warn(f"Error parsing KWS message: {e}")
 
     def _on_question(self, msg: String):
+        if msg.data.strip():
+            self.evidence.log_message("question", msg.data)
         self.signals.question_received.emit(msg.data)
 
     def _on_task_status(self, msg: String):
         self.signals.task_status_changed.emit(msg.data == "active")
 
     def _on_task_step(self, msg: String):
-        self.signals.task_step_changed.emit(msg.data.strip().lower())
+        step = msg.data.strip().lower()
+        self.evidence.log_message("step", step)
+        self.signals.task_step_changed.emit(step)
 
     def _on_command_index(self, msg: Int32):
         self.signals.command_index_changed.emit(msg.data)
@@ -382,17 +530,95 @@ class DisplayRosNode(Node):
             self.get_logger().warn(f"Error parsing map message: {e}")
 
     def _on_change_video(self, msg: String):
+        if msg.data == self.video_topic:
+            return  # hri_tasks re-publishes the current topic at 1 Hz
+        try:
+            validate_topic_name(msg.data)
+        except Exception:
+            # e.g. "take_bag.mp4" from HRIC: a video file the web display used to
+            # play. Not a topic, so keep the current feed instead of crashing.
+            if msg.data != self._ignored_video:
+                self._ignored_video = msg.data
+                self.get_logger().warn(f"Ignoring non-topic video source '{msg.data}'")
+            return
         self._subscribe_video(msg.data)
 
-    def _on_frame(self, msg: Image):
+    def _to_qimage(self, msg: Image):
         try:
             cv_img = self.bridge.imgmsg_to_cv2(msg, desired_encoding="rgb8")
         except Exception as e:
             self.get_logger().warn(f"Error converting frame: {e}")
-            return
+            return None
         h, w, ch = cv_img.shape
-        qimg = QImage(cv_img.data, w, h, ch * w, QImage.Format_RGB888).copy()
+        return QImage(cv_img.data, w, h, ch * w, QImage.Format_RGB888).copy()
+
+    def _on_frame(self, msg: Image):
+        qimg = self._to_qimage(msg)
+        if qimg is None:
+            return
+        self._last_qimg = qimg
         self.signals.frame_received.emit(qimg)
+
+    def _on_rosout(self, msg: Log):
+        if msg.name != self.get_name() and self._evidence_nodes.search(msg.name):
+            self.evidence.log_rosout(msg)
+
+    def _on_capture(self, msg: String):
+        """Snapshot request: plain-text label, or JSON {"label", "topic", "data"}.
+
+        With a topic, grab one frame from it (annotated feeds keep publishing
+        even when the display shows another topic); otherwise use the frame
+        currently on screen. `data` (counts, labels, ...) is stored as-is in
+        captures.jsonl next to the image.
+        """
+        label, topic, data = msg.data, "", None
+        try:
+            payload = json.loads(msg.data)
+            if isinstance(payload, dict):
+                label = payload.get("label") or "capture"
+                topic = payload.get("topic") or ""
+                data = payload.get("data")
+        except json.JSONDecodeError:
+            pass
+
+        if not topic or topic == self.video_topic:
+            self._finish_capture(label, self._last_qimg, self.video_topic, data)
+            return
+
+        cached = self._evidence_frames.get(topic)
+        if (
+            cached is not None
+            and time.monotonic() - cached[1] < EVIDENCE_FRAME_MAX_AGE_S
+        ):
+            self._finish_capture(label, self._to_qimage(cached[0]), topic, data)
+            return
+
+        state = {"done": False}
+
+        def finish(qimg, source):
+            if state["done"]:
+                return
+            state["done"] = True
+            self.destroy_subscription(state["sub"])
+            state["timer"].cancel()
+            self.destroy_timer(state["timer"])
+            self._finish_capture(label, qimg, source, data)
+
+        # Fall back to the on-screen frame if the topic stays silent.
+        state["sub"] = self.create_subscription(
+            Image, topic, lambda m: finish(self._to_qimage(m), topic), 1
+        )
+        state["timer"] = self.create_timer(
+            CAPTURE_FRAME_TIMEOUT_S, lambda: finish(self._last_qimg, self.video_topic)
+        )
+
+    def _finish_capture(self, label: str, qimg, topic: str, data):
+        if qimg is None:
+            self.get_logger().warn(f"Capture '{label}' skipped: no frame available")
+            self.evidence.log_message("capture", f"{label} (no frame available)")
+            return
+        if self.evidence.save_capture(label, qimg, topic, data):
+            self.signals.capture_added.emit(label, qimg)
 
     def publish_button_press(self):
         self.button_pub.publish(Empty())
@@ -756,6 +982,100 @@ class MessagesPanel(QScrollArea):
         self._layout.insertWidget(0, entry)
 
 
+class GalleryPanel(QScrollArea):
+    """Grid of snapshots taken during the run via /hri/display/capture."""
+
+    COLUMNS = 3
+    THUMB_WIDTH = 320
+
+    def __init__(self, signals: DisplaySignals, evidence_dir: Path):
+        super().__init__()
+        self.setWidgetResizable(True)
+        container = QWidget()
+        outer = QVBoxLayout(container)
+        outer.setAlignment(Qt.AlignTop)
+
+        path_label = QLabel(f"\U0001f4c1 {evidence_dir}")
+        path_label.setWordWrap(True)
+        path_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        path_label.setStyleSheet(f"color: {TEXT_GRAY}; font-size: 12px; border: none;")
+        outer.addWidget(path_label)
+
+        self._grid = QGridLayout()
+        self._grid.setSpacing(10)
+        outer.addLayout(self._grid)
+        self.setWidget(container)
+
+        self._count = 0
+        self._placeholder = QLabel("\U0001f4f7 No captures yet")
+        self._placeholder.setAlignment(Qt.AlignCenter)
+        self._placeholder.setStyleSheet(
+            f"color: {TEXT_GRAY}; font-size: 14px; border: none;"
+        )
+        self._grid.addWidget(self._placeholder, 0, 0)
+        signals.capture_added.connect(self.add_capture)
+
+    def add_capture(self, label: str, qimg: QImage):
+        if self._count == 0:
+            self._placeholder.hide()
+
+        cell = QWidget()
+        cell.setStyleSheet(
+            f"background-color: {BG_DARKER}; border: 1px solid {BORDER_LIGHT};"
+            "border-radius: 8px;"
+        )
+        layout = QVBoxLayout(cell)
+
+        img_label = QLabel()
+        img_label.setAlignment(Qt.AlignCenter)
+        img_label.setPixmap(
+            QPixmap.fromImage(qimg).scaledToWidth(
+                self.THUMB_WIDTH, Qt.SmoothTransformation
+            )
+        )
+        img_label.setStyleSheet("border: none;")
+        layout.addWidget(img_label)
+
+        caption = QLabel(f"{label} — {datetime.now().strftime('%H:%M:%S')}")
+        caption.setAlignment(Qt.AlignCenter)
+        caption.setWordWrap(True)
+        caption.setStyleSheet(f"color: {TEXT_GRAY}; font-size: 13px; border: none;")
+        layout.addWidget(caption)
+
+        self._grid.addWidget(
+            cell, self._count // self.COLUMNS, self._count % self.COLUMNS
+        )
+        self._count += 1
+
+
+class GalleryDialog(QDialog):
+    def __init__(self, signals: DisplaySignals, evidence_dir: Path, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Captures")
+        self.resize(1100, 700)
+        layout = QVBoxLayout(self)
+        layout.addWidget(GalleryPanel(signals, evidence_dir))
+
+
+class GalleryButton(QPushButton):
+    """Header chip counting captures; opens the gallery dialog."""
+
+    def __init__(self, signals: DisplaySignals, dialog: GalleryDialog):
+        super().__init__("\U0001f4f7 0")
+        self._count = 0
+        self.setStyleSheet(
+            f"color: {AMBER}; background-color: rgba(245,158,11,38);"
+            "border: 1px solid rgba(245,158,11,77); border-radius: 12px;"
+            "padding: 6px 16px; font-size: 18px; font-weight: bold;"
+        )
+        self.clicked.connect(lambda: (dialog.show(), dialog.raise_()))
+        signals.capture_added.connect(self._on_capture)
+
+    def _on_capture(self, _label: str, _qimg: QImage):
+        self._count += 1
+        self.setText(f"\U0001f4f7 {self._count}")
+
+
 class StepPillBar(QWidget):
     """Horizontal done/active/pending progress pills (StepPill in the web app)."""
 
@@ -873,6 +1193,10 @@ class BaseWindow(QMainWindow):
         ros_node.signals.vad_level_changed.connect(self.audio_overlay.set_vad_level)
         ros_node.signals.heard_buffered.connect(self.audio_overlay.show_heard)
 
+        self.gallery_dialog = GalleryDialog(
+            ros_node.signals, ros_node.evidence.dir, self
+        )
+
         if with_dialogs:
             self.map_dialog = MapDialog(self)
             self.question_dialog = QuestionDialog(self)
@@ -892,6 +1216,7 @@ class BaseWindow(QMainWindow):
         layout.addStretch()
         for widget in extra_right:
             layout.addWidget(widget)
+        layout.addWidget(GalleryButton(self.ros_node.signals, self.gallery_dialog))
         layout.addWidget(AudioPill(self.ros_node.signals))
         return header
 
@@ -1019,7 +1344,7 @@ class StartOverlay(QWidget):
 class SteppedWindow(BaseWindow):
     """Step pill bar + button/camera/logs/both stacked content (gpsr / hric)."""
 
-    MODES = (MODE_BUTTON, MODE_CAMERA, MODE_LOGS, MODE_BOTH)
+    MODES = (MODE_BUTTON, MODE_CAMERA, MODE_LOGS, MODE_BOTH, MODE_GALLERY)
 
     def __init__(self, ros_node: DisplayRosNode, title: str, steps, extra_right=()):
         super().__init__(ros_node, title)
@@ -1053,6 +1378,12 @@ class SteppedWindow(BaseWindow):
         both_layout.addWidget(MessagesPanel(signals), 1)
         both_layout.addWidget(VideoView(signals, ros_node.video_topic), 1)
         self.stack.addWidget(both_page)
+
+        gallery_page = QWidget()
+        gallery_layout = QHBoxLayout(gallery_page)
+        gallery_layout.addWidget(MessagesPanel(signals), 1)
+        gallery_layout.addWidget(GalleryPanel(signals, ros_node.evidence.dir), 2)
+        self.stack.addWidget(gallery_page)
 
         root.addWidget(self.stack, 1)
 
@@ -1142,11 +1473,12 @@ class GpsrWindow(SteppedWindow):
             return MODE_BUTTON
         if fsm_state == "start":
             return MODE_CAMERA
+        if fsm_state == "done":
+            return MODE_GALLERY
         if fsm_state in (
             "waiting_for_command",
             "plan_and_execute_batch",
             "finished_command",
-            "done",
         ):
             return MODE_LOGS
         if fsm_state == "executing" and command:
@@ -1200,17 +1532,45 @@ TASK_WINDOWS = {
 }
 
 
+def _spin(executor: SingleThreadedExecutor, logger):
+    # A failing callback must not kill the spin thread: the window would stay
+    # up but frozen and the rest of the run's evidence would be lost.
+    while True:
+        try:
+            executor.spin()
+            return
+        except ExternalShutdownException:
+            return
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Callback failed: {e!r}")
+
+
 def main():
-    rclpy.init()
+    # Qt owns the main thread, so rclpy's default SIGINT handler would only
+    # shut the ROS context down (killing the spin thread) and leave the window
+    # open. Ctrl+C / SIGTERM (ros2 launch, docker stop) quit Qt instead.
+    rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
     signals = DisplaySignals()
     ros_node = DisplayRosNode(signals)
 
-    spin_thread = threading.Thread(target=rclpy.spin, args=(ros_node,), daemon=True)
+    executor = SingleThreadedExecutor()
+    executor.add_node(ros_node)
+    spin_thread = threading.Thread(
+        target=_spin, args=(executor, ros_node.get_logger()), daemon=True
+    )
     spin_thread.start()
 
     app = QApplication(sys.argv)
     app.setApplicationName("Display UI")
     app.setStyleSheet(STYLESHEET)
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        signal.signal(sig, lambda *_: app.quit())
+    # Python signal handlers only run when the interpreter gets control back;
+    # Qt's C++ event loop never gives it, so tick a no-op timer.
+    signal_tick = QTimer()
+    signal_tick.timeout.connect(lambda: None)
+    signal_tick.start(200)
 
     factory = TASK_WINDOWS.get(ros_node.task)
     if factory is None:
@@ -1223,8 +1583,12 @@ def main():
     window.showMaximized()
 
     ret = app.exec_()
+    # Stop callbacks before closing the evidence files they write to.
+    executor.shutdown()
+    spin_thread.join(timeout=2.0)
+    ros_node.evidence.close()
     ros_node.destroy_node()
-    rclpy.shutdown()
+    rclpy.try_shutdown()
     sys.exit(ret)
 
 
