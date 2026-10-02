@@ -200,6 +200,7 @@ class DoingLaundryTM(Node):
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Basket picked.")
+                self.subtask_manager.hri.publish_display_capture("Picked laundry basket")
                 self.basket_pick_attempts = 0
                 self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_LAUNDRY_TABLE)
             else:
@@ -226,6 +227,7 @@ class DoingLaundryTM(Node):
             Logger.info(self, "Opening gripper to release basket.")
             self.subtask_manager.manipulation.open_gripper()
             self.subtask_manager.hri.say("Basket delivered to the table.", wait=False)
+            self.subtask_manager.hri.publish_display_capture("Basket delivered to table")
             self.subtask_manager.manipulation.move_arm_vertical(
                 CLOTHES_BASKET_EXIT_HEIGHT, descend=False
             )
@@ -244,6 +246,9 @@ class DoingLaundryTM(Node):
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from basket.")
+                self.subtask_manager.hri.publish_display_capture(
+                    "Picked clothes from basket", data={"round": self.basket_placed + 1}
+                )
                 self.clothes_pick_attempts = 0
                 self.set_state(DoingLaundryTM.TaskStates.PLACE_CLOTHES_TABLE)
             else:
@@ -277,6 +282,10 @@ class DoingLaundryTM(Node):
                         self,
                         f"WM→table done {self.wm_placed}/{WM_PLACE_ROUNDS}.",
                     )
+                self.subtask_manager.hri.publish_display_capture(
+                    "Placed clothes on table",
+                    data={"basket_placed": self.basket_placed, "wm_placed": self.wm_placed},
+                )
                 self.set_state(self.next_state_after_place())
             else:
                 Logger.error(self, "Place clothes failed. Ending task.")
@@ -301,6 +310,9 @@ class DoingLaundryTM(Node):
 
             if result == Status.EXECUTION_SUCCESS:
                 Logger.success(self, "Clothes picked from washing machine.")
+                self.subtask_manager.hri.publish_display_capture(
+                    "Picked clothes from washing machine", data={"round": self.wm_placed + 1}
+                )
                 self.clothes_pick_attempts = 0
                 # Close the door now while we are still in front of the machine,
                 # but only once we have finished all WM pick rounds.
@@ -327,6 +339,7 @@ class DoingLaundryTM(Node):
             # self.subtask_manager.manipulation.move_to_position("mid_close_laundry_pose")
             # self.subtask_manager.manipulation.move_to_position("end_close_laundry_pose")
             Logger.success(self, "Laundry machine door closed.")
+            self.subtask_manager.hri.publish_display_capture("Laundry machine door closed")
             self.set_state(DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES)
 
         elif self.current_state == DoingLaundryTM.TaskStates.NAVIGATE_TO_TABLE_WITH_CLOTHES:

@@ -42,3 +42,4 @@ restaurant_runs/
 gpsr_runs/
 hri/benchmarks/*/results/*
 !hri/benchmarks/*/results/.gitkeep
+logs/evidence/
