@@ -98,8 +98,9 @@ class VoiceDetection(Node):
                 "ENABLE_VAD=False. Passing all audio through without filtering."
             )
 
-        self.get_logger().info(
-            f"VoiceDetection ready  |  in: {processed_topic}  |  out: {vad_topic}"
+        self.get_logger().info("VoiceDetection ready")
+        self.get_logger().debug(
+            f"VoiceDetection | in: {processed_topic} | out: {vad_topic}"
         )
 
     def _get_mfcc(self, audio_f: np.ndarray) -> np.ndarray:

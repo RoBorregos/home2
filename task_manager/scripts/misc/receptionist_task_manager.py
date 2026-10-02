@@ -183,9 +183,7 @@ class ReceptionistTM(Node):
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?",
                 query="name",
-                use_hotwords=False,
-                hotwords="Here are some available names: "
-                + " ".join(self.subtask_manager.hri.names),
+                hotwords=self.subtask_manager.hri.names_hotwords,
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -225,7 +223,7 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.follow_face(True)
 
             status, interest = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your main interest?", query="LLM_interest", use_hotwords=False
+                question="What is your main interest?", query="LLM_interest"
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -307,8 +305,8 @@ class ReceptionistTM(Node):
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?",
                 query="LLM_drink",
-                use_hotwords=False,
-                hotwords="Some regional drinks are Kuat, kuat it pronounced similar to 4, but don't mistake it, understand kuat.",
+                hotwords="kuat",
+                initial_prompt="The guest was asked for their favorite drink. Kuat sounds like '4', but should be transcribed as kuat.",
                 # options=[
                 #  self.s.objects_data["categories"]["drink"]
                 #  + ["4", "What", "Quatt", "quattre"]

@@ -10,6 +10,8 @@ from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
 
+LOG_LEVEL = os.environ.get("HRI_LOG_LEVEL", "info")
+
 
 def generate_launch_description():
     extract_data_config = parse_ros_config(
@@ -34,6 +36,7 @@ def generate_launch_description():
         Node(
             package="nlp",
             executable="extract_data.py",
+            ros_arguments=["--log-level", f"extract_data:={LOG_LEVEL}"],
             name="extract_data",
             output="screen",
             emulate_tty=True,
@@ -42,6 +45,7 @@ def generate_launch_description():
         Node(
             package="nlp",
             executable="llm_utils.py",
+            ros_arguments=["--log-level", f"llm_utils:={LOG_LEVEL}"],
             name="llm_utils",
             output="screen",
             emulate_tty=True,

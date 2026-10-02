@@ -25,4 +25,4 @@ services:
       bash -c "
       rm -f /tmp/iox-unique-roudi.lock /tmp/roudi.lock 2>/dev/null;
       find /dev/shm -maxdepth 1 -name 'iceoryx*' -delete 2>/dev/null || true;
-      exec su -s /bin/bash ros -c 'source /opt/ros/humble/setup.bash && exec iox-roudi -c /etc/iceoryx/roudi_config.toml'"
+      exec su -s /bin/bash ros -c 'source /opt/ros/jazzy/setup.bash && exec iox-roudi -c /etc/iceoryx/roudi_config.toml'"

@@ -14,8 +14,7 @@ def launch_function(context, *args, **kwargs):
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     
     #Values to select base
-    default_base = LaunchConfiguration('default_base', default='omnibase') # Other option "dashgo"
-    default_base_value = default_base.perform(context)
+    default_base = 'omnibase'
     nav_type = LaunchConfiguration('nav_type', default='2d') # Other 3d
     nav_type_value = nav_type.perform(context) 
     # Default to a dedicated mapping DB — never reuse the navigatiodken database.
@@ -53,25 +52,6 @@ def launch_function(context, *args, **kwargs):
         }],
     )
 
-    nav_basics = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch","dashgo_base", "nav_basics.launch.py"])
-        ),
-    
-    )
-
-    rtabmapnav = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "dashgo_base", "rtabnav2.launch.py"])
-        ),
-        launch_arguments={
-            'localization': 'false',
-            'rtab_config_file': rtab_params,
-            'nav2': 'false',
-            'map_name': rtabmap_map_name,
-        }.items(),
-    )
-
     omni_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution([FindPackageShare("nav_main"), "launch","omni_setup", "omni_basics.launch.py"])
@@ -87,17 +67,11 @@ def launch_function(context, *args, **kwargs):
     launch_actions = [
         nav_central_node,
         nav_ui_node,
+        omni_basics,
     ]
 
-    # When running on the omnibase, nav_basics and rtabmapnav are provided
-    # elsewhere (omnibase bringup), so they must not start here.
-    if default_base_value != 'omnibase':
-        launch_actions.append(nav_basics)
-        launch_actions.append(rtabmapnav)
-    else:
-        launch_actions.append(omni_basics)
-        if nav_type_value == "2d":
-            launch_actions.append(slam_toolbox)
+    if nav_type_value == "2d":
+        launch_actions.append(slam_toolbox)
     
     return launch_actions
 

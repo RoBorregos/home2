@@ -17,7 +17,7 @@ the ZED camera in `home2-zed`.
 | Node | Executable | ML models loaded | Purpose in HRIC |
 |---|---|---|---|
 | `face_recognition` | `face_recognition_node.py` | InsightFace `buffalo_sc` (TRT/CUDA) | save/recognize guest faces, publish follow-face point |
-| `hric_commands` | `hric_commands.py` | YOLO `yolo11m-pose` (TRT) | FindSeat srv, DetectPerson action, DetectHand srv |
+| `hric_commands` | `hric_commands.py` | YOLO `yolo11m-pose` (TRT) | FindSeat srv, DetectPerson srv, DetectHand srv |
 | `moondream_node` | `moondream_run/moondream_node.py` | YOLO `yolov8n` (person crop) + gRPC→ **Moondream2 2B VLM** | describe_person queries, beverage location |
 | `image_orienter` | `image_orienter.py` | — | rotate raw camera frames per CAMERA_ROTATION_TOPIC |
 | `ObjectDetect2D` | `object_detector_2d/object_detector_node.py` | YOLO `yolo26n` (`yolo_generic`) | serves `YoloDetect` (persons/chairs/couches for hric_commands) |
@@ -49,7 +49,7 @@ moondream call while carrying the bag (camera at 180°) would query upside-down 
 |---|---|---|---|---|
 | init / all navigate states | `deactivate_face_recognition()` | topic `/vision/face_recognition/active` (Bool, hardcoded string) | face_recognition | — (pauses InsightFace) |
 | init, FIND_SEAT | `camera_upside_down(bool)` | topic CAMERA_ROTATION_TOPIC (Int16) | image_orienter, tracker, hric_commands | — |
-| WAIT_FOR_GUEST | `detect_person(timeout=10)` | **action** DetectPerson @ CHECK_PERSON_TOPIC | hric_commands → calls `YoloDetect` srv | yolo26n (class 0) |
+| WAIT_FOR_GUEST | `detect_person(timeout=10)` | srv DetectPerson @ CHECK_PERSON_TOPIC | hric_commands → calls `YoloDetect` srv | yolo26n (class 0) |
 | GREETING | `activate_face_recognition()`; `follow_by_name("area")` | srv SaveName @ FOLLOW_BY_TOPIC | face_recognition | InsightFace |
 | GREETING (arm) | *(manipulation.follow_face)* consumes | topic FOLLOW_TOPIC (Point) | face_recognition → manipulation | InsightFace |
 | SAVE_FACE | `save_face_name(name)` | srv SaveName @ SAVE_NAME_TOPIC | face_recognition | InsightFace |
@@ -96,7 +96,7 @@ flowchart LR
         IO[image_orienter]
     end
 
-    dp -->|action DetectPerson| HC
+    dp -->|srv DetectPerson| HC
     dh -->|srv DetectHand| HC
     fseat -->|srv FindSeat| HC
     fbn -->|srv FOLLOW_BY| FR

@@ -133,7 +133,7 @@ def sync_detector_models(dest: Path):
 def warmup(dest: Path):
     """Pre-build TRT engines + insightface cache for THIS device."""
     sys.path.insert(0, str(REPO_ROOT / "vision" / "packages" / "vision_general"))
-    from vision_general.utils.trt_utils import load_yolo_trt
+    from utils.trt_utils import load_yolo_trt
 
     for name, task in STANDARD_MODELS.items():
         if task is None:

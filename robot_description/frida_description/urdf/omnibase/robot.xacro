@@ -3,16 +3,9 @@
   <xacro:property name="black_rgba" value="0.102 0.102 0.102 1" />
 
   <!-- Launch arguments -->
-  <xacro:arg name="use_sim_time" default="false"/>
   <xacro:arg name="robot_type" default="real"/>
 
-  <xacro:property name="use_sim_time" value="$(arg use_sim_time)"/>
   <xacro:property name="mesh_dir" value="file://$(find frida_description)/urdf/meshes/omnibase"/>
-
-  <!-- Conditionally include simulation files -->
-  <xacro:if value="${use_sim_time}">
-    <xacro:include filename="home_base_ros2_control.xacro"/>
-  </xacro:if>
 
   <material name="home_base_gray">
     <color rgba="0.752941176470588 0.752941176470588 0.752941176470588 1"/>
@@ -69,21 +62,11 @@
       </geometry>
     </collision>
   </link>
-  <xacro:if value="${use_sim_time}">
-    <joint name="wheel_FL_joint" type="continuous">
-      <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_FL"/>
-      <axis xyz="0 0 1"/>
-    </joint>
-  </xacro:if>
-  <xacro:unless value="${use_sim_time}">
-    <joint name="wheel_FL_joint" type="fixed">
-      <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_FL"/>
-    </joint>
-  </xacro:unless>
+  <joint name="wheel_FL_joint" type="fixed">
+    <origin xyz="0.184790699909997 0.219394995052441 0.0376959841787657" rpy="-1.5707963267949 0 0"/>
+    <parent link="base_link"/>
+    <child link="wheel_FL"/>
+  </joint>
 
   <!-- =================== wheel_FR =================== -->
   <link name="wheel_FR">
@@ -108,21 +91,11 @@
       </geometry>
     </collision>
   </link>
-  <xacro:if value="${use_sim_time}">
-    <joint name="wheel_FR_joint" type="continuous">
-      <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_FR"/>
-      <axis xyz="0 0 1"/>
-    </joint>
-  </xacro:if>
-  <xacro:unless value="${use_sim_time}">
-    <joint name="wheel_FR_joint" type="fixed">
-      <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_FR"/>
-    </joint>
-  </xacro:unless>
+  <joint name="wheel_FR_joint" type="fixed">
+    <origin xyz="0.184790699909996 -0.219395004947559 0.0376959841787653" rpy="-1.5707963267949 0 0"/>
+    <parent link="base_link"/>
+    <child link="wheel_FR"/>
+  </joint>
 
   <!-- =================== wheel_RL =================== -->
   <link name="wheel_RL">
@@ -147,21 +120,11 @@
       </geometry>
     </collision>
   </link>
-  <xacro:if value="${use_sim_time}">
-    <joint name="wheel_RL_joint" type="continuous">
-      <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_RL"/>
-      <axis xyz="0 0 1"/>
-    </joint>
-  </xacro:if>
-  <xacro:unless value="${use_sim_time}">
-    <joint name="wheel_RL_joint" type="fixed">
-      <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_RL"/>
-    </joint>
-  </xacro:unless>
+  <joint name="wheel_RL_joint" type="fixed">
+    <origin xyz="-0.184790699909991 0.219394995052441 0.0376959841787652" rpy="-1.5707963267949 0 0"/>
+    <parent link="base_link"/>
+    <child link="wheel_RL"/>
+  </joint>
 
   <!-- =================== wheel_RR =================== -->
   <link name="wheel_RR">
@@ -186,21 +149,11 @@
       </geometry>
     </collision>
   </link>
-  <xacro:if value="${use_sim_time}">
-    <joint name="wheel_RR_joint" type="continuous">
-      <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_RR"/>
-      <axis xyz="0 0 1"/>
-    </joint>
-  </xacro:if>
-  <xacro:unless value="${use_sim_time}">
-    <joint name="wheel_RR_joint" type="fixed">
-      <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
-      <parent link="base_link"/>
-      <child link="wheel_RR"/>
-    </joint>
-  </xacro:unless>
+  <joint name="wheel_RR_joint" type="fixed">
+    <origin xyz="-0.184790699909991 -0.219395004947559 0.0376959841787661" rpy="-1.5707963267949 0 0"/>
+    <parent link="base_link"/>
+    <child link="wheel_RR"/>
+  </joint>
 
   <!-- =================== lidar_front =================== -->
   <link name="lidar_front">
@@ -265,16 +218,5 @@
     <child link="xarm_base" />
     <axis xyz="0 0 0" />
   </joint>
-
-
-  <!-- =================== Conditionally add simulation components =================== -->
-  <xacro:if value="${use_sim_time}">
-    <xacro:home_base_ros2_control name="home_base" use_sim_time="${use_sim_time}"/>
-
-    <!-- Webots driver plugin configuration -->
-    <webots>
-      <plugin type="webots_ros2_control::Ros2Control"/>
-    </webots>
-  </xacro:if>
 
 </robot>

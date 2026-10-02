@@ -21,7 +21,7 @@ services:
       - --run-http-server
       - "1337"
       - --force-target
-      - runner-linux-aarch64-jetson-orin-6-0
+      - runner-linux-aarch64
       - --force-variant
       - float32
     stdin_open: true
@@ -54,7 +54,7 @@ services:
       - --run-http-server
       - "1338"
       - --force-target
-      - runner-linux-aarch64-jetson-orin-6-0
+      - runner-linux-aarch64
       - --force-variant
       - float32
     stdin_open: true

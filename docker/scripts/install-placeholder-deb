@@ -1,0 +1,15 @@
+#!/bin/bash
+# Registers empty .deb packages (version 99.0.0) for components l4t_base builds
+# from source (iceoryx, cv_bridge, ...). apt and rosdep then see the dependency as
+# installed and never put the stock package back over the source build.
+set -euo pipefail
+
+for pkg in "$@"; do
+    dir="$(mktemp -d)"
+    mkdir -p "$dir/DEBIAN"
+    printf 'Package: %s\nVersion: 99.0.0\nArchitecture: all\nMaintainer: roborregos\nDescription: built from source in l4t_base\n' "$pkg" > "$dir/DEBIAN/control"
+    dpkg-deb --build "$dir" "$dir.deb" >/dev/null
+    dpkg -i "$dir.deb"
+    apt-mark hold "$pkg" >/dev/null
+    rm -rf "$dir" "$dir.deb"
+done

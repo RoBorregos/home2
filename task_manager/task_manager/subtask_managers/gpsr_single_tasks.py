@@ -8,7 +8,11 @@ from tf2_ros import Buffer, TransformListener, TransformException
 from tf2_geometry_msgs import do_transform_point  # noqa: F401 (registers transform type)
 
 from frida_constants.hri_constants import GPSR_COMMANDS
-from frida_constants.vision_constants import DETECTIONS_IMAGE_TOPIC, IMAGE_ORIENTED_TOPIC
+from frida_constants.vision_constants import (
+    CAMERA_FRAME,
+    DETECTIONS_IMAGE_TOPIC,
+    IMAGE_ORIENTED_TOPIC,
+)
 from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     GetVisualInfo,
@@ -146,7 +150,7 @@ class GPSRSingleTask(GenericTask):
         """base_link Z of a detection's 3D point, or None on TF failure."""
         try:
             p = PointStamped()
-            p.header.frame_id = "zed_left_camera_optical_frame"
+            p.header.frame_id = CAMERA_FRAME
             p.header.stamp = rclpy.time.Time().to_msg()  # latest available
             p.point.x = float(detection.px)
             p.point.y = float(detection.py)

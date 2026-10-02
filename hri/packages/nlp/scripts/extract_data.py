@@ -17,7 +17,7 @@ from nlp.assets.data_extraction_priority import (
     NAME_PRIORITY_LABELS,
     extract_by_priority,
 )
-from nlp.assets.dialogs import get_extract_data_args
+from nlp.assets.dialogs import NO_THINKING, get_extract_data_args, strip_thinking
 from openai import OpenAI
 from pydantic import BaseModel
 from rclpy.node import Node
@@ -65,8 +65,11 @@ class DataExtractor(Node):
         try:
             self.nlp = spacy.load(os.path.join(ASSETS_DIR, spacy_model))
         except OSError:
-            spacy.cli.download(spacy_model)
-            self.nlp = spacy.load(spacy_model)
+            try:
+                self.nlp = spacy.load(spacy_model)
+            except OSError:
+                spacy.cli.download(spacy_model)
+                self.nlp = spacy.load(spacy_model)
             self.nlp.to_disk(os.path.join(ASSETS_DIR, spacy_model))
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
@@ -87,13 +90,13 @@ class DataExtractor(Node):
             .string_value
         )
 
-        self.get_logger().info("Starting data extractor node")
+        self.get_logger().debug("Starting data extractor node")
 
         self.srv = self.create_service(
             ExtractInfo, EXTRACT_DATA_SERVICE, self.extract_info_requested
         )
 
-        self.get_logger().info("Data extractor node started")
+        self.get_logger().info("ExtractData ready")
 
     def extract_info_requested(
         self, request: ExtractInfo.Request, response: ExtractInfo.Response
@@ -151,10 +154,12 @@ class DataExtractor(Node):
                     temperature=self.temperature,
                     messages=messages,
                     response_format=response_format,
+                    extra_body=NO_THINKING,
                 )
                 .choices[0]
                 .message.content
             )
+            response_content = strip_thinking(response_content)
         except Exception as e:
             self.get_logger().error(f"LLM extraction failed: {e}")
             return ""

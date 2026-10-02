@@ -3,13 +3,15 @@ from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 
 
-def get_object_point(object_name: str, detection_handler_client) -> PointStamped:
+def get_object_point(
+    object_name: str, detection_handler_client, timeout: float = 2.0
+) -> PointStamped:
     request = DetectionHandler.Request()
     request.label = object_name
     request.closest_object = False
     detection_handler_client.wait_for_service()
     future = detection_handler_client.call_async(request)
-    future = wait_for_future(future, timeout=2.0)
+    future = wait_for_future(future, timeout=timeout)
     point = PointStamped()
     if not future:
         return point
@@ -34,14 +36,17 @@ def get_object_point(object_name: str, detection_handler_client) -> PointStamped
 
 
 def get_object_cluster(
-    point: PointStamped, perception_3d_client, add_collision_objects=True
+    point: PointStamped,
+    perception_3d_client,
+    add_collision_objects=True,
+    timeout: float = 60.0,
 ):
     request = PickPerceptionService.Request()
     request.point = point
     request.add_collision_objects = add_collision_objects
     perception_3d_client.wait_for_service()
     future = perception_3d_client.call_async(request)
-    future = wait_for_future(future)
+    future = wait_for_future(future, timeout=timeout)
 
     pcl_result = future.result().cluster_result
     if len(pcl_result.data) == 0:

@@ -1,0 +1,17 @@
+# Packages provided once by roborregos/home2:l4t_base.
+# Applied to every pip call through /etc/pip.conf, so no area image can
+# reinstall or replace them (that is what used to duplicate torch/CUDA per image).
+# To change one of these, change it here and rebuild the base.
+numpy==2.5.2
+scipy==1.16.2
+torch==2.11.0
+torchvision==0.26.0
+torchaudio==2.11.0
+onnxruntime-gpu==1.24.0
+# Placeholder distributions (see Dockerfile.ROS-l4t): satisfied by the CUDA
+# builds above, so dependents never pull the CPU wheels from PyPI.
+onnxruntime==1.24.0
+opencv-python==4.14.0
+opencv-contrib-python==4.14.0
+opencv-python-headless==4.14.0
+opencv-contrib-python-headless==4.14.0

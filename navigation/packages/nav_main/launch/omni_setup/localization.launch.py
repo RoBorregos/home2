@@ -39,11 +39,16 @@ out and drop a "2D Pose Estimate" in RViz (publishes /initialpose).
 
 import os
 
+import lifecycle_msgs.msg
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, EmitEvent, OpaqueFunction, RegisterEventHandler
+from launch.event_handlers import OnProcessStart
+from launch.events import matches_action
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch_ros.actions import LifecycleNode
+from launch_ros.event_handlers import OnStateTransition
+from launch_ros.events.lifecycle import ChangeState
 
 
 def launch_setup(context, *args, **kwargs):
@@ -64,10 +69,12 @@ def launch_setup(context, *args, **kwargs):
 
     # Dedicated localization node: rolling-buffer scan match against the loaded
     # graph, publishes map->odom. The map arg overrides map_file_name in the YAML.
-    slam_node = Node(
+    # Lifecycle node: idle until configure -> activate, driven by the events below.
+    slam_node = LifecycleNode(
         package='slam_toolbox',
         executable='localization_slam_toolbox_node',
         name='slam_toolbox',
+        namespace='',
         output='screen',
         emulate_tty=True,
         respawn=True,
@@ -82,7 +89,37 @@ def launch_setup(context, *args, **kwargs):
         remappings=slam_remaps,
     )
 
-    return [slam_node]
+    # On process start, not launch start, so a respawn gets re-configured too.
+    configure_on_start = RegisterEventHandler(
+        OnProcessStart(
+            target_action=slam_node,
+            on_start=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(slam_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_CONFIGURE,
+                    )
+                ),
+            ],
+        )
+    )
+    activate_on_configured = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=slam_node,
+            start_state='configuring',
+            goal_state='inactive',
+            entities=[
+                EmitEvent(
+                    event=ChangeState(
+                        lifecycle_node_matcher=matches_action(slam_node),
+                        transition_id=lifecycle_msgs.msg.Transition.TRANSITION_ACTIVATE,
+                    )
+                ),
+            ],
+        )
+    )
+
+    return [slam_node, configure_on_start, activate_on_configured]
 
 
 def generate_launch_description():

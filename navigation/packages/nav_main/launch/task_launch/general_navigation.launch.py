@@ -13,7 +13,6 @@ def launch_function(context, *args, **kwargs):
 
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route, 'config', 'rtabmap', 'rtabmap_localization_config.yaml')
-    nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_standard.yaml')
     # Omnibase Nav2 profile: 3-WHEEL LIMP params (base running degraded, one
     # wheel out — see nav2_omni_limp.yaml header). Once the base is back to a
     # healthy 4-wheel omni, point this at omni_config/nav2_omni.yaml (runtime
@@ -23,17 +22,15 @@ def launch_function(context, *args, **kwargs):
 
     rtabmap_map_name = LaunchConfiguration('map_name', default=os.getenv('MAP_NAME'))
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
-    nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     nav2_omni_params = LaunchConfiguration('nav2_omni_config_file', default=nav2_omni_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
 
     # Values to select base (same convention as mapping.launch.py)
-    default_base = LaunchConfiguration('default_base', default='omnibase')  # Other option "dashgo"
-    default_base_value = default_base.perform(context)
+    default_base = 'omnibase' 
     nav_type = LaunchConfiguration('nav_type', default='2d')  # Other 3d
     nav_type_value = nav_type.perform(context)
-
+    
     areas_map_name = context.perform_substitution(rtabmap_map_name).replace('.db', '')
 
     # slam_toolbox serialized map for the omnibase localization (absolute path,
@@ -106,26 +103,6 @@ def launch_function(context, *args, **kwargs):
         }],
     )
 
-    # ----- dashgo base: RTABMap RGBD localization + nav2 -----
-    nav_basics = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "dashgo_base", "nav_basics.launch.py"])
-        ),
-    )
-
-    rtabmapnav = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "dashgo_base", "rtabnav2.launch.py"])
-        ),
-        launch_arguments={
-            'localization': localization,
-            'rtab_config_file': rtab_params,
-            'nav2_config_file': nav2_params,
-            'nav2': nav2_activate,
-            'map_name': rtabmap_map_name,
-        }.items(),
-    )
-
     # ----- omnibase: slam_toolbox localization + nav2_omni -----
     omni_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -175,20 +152,21 @@ def launch_function(context, *args, **kwargs):
     # The smoother must switch between the SAME standard config Nav2 was launched
     # with and its matching "<name>_following.yaml" overlay — otherwise leaving
     # follow mode would restore nav2_omni.yaml speeds onto the limp profile.
-    smoother_params = {'default_base': default_base}
-    if default_base_value == 'omnibase':
-        nav2_omni_params_value = nav2_omni_params.perform(context)
-        follow_params_value = nav2_omni_params_value.replace('.yaml', '_following.yaml')
-        if not os.path.exists(follow_params_value):
-            print(f"[general_navigation] WARNING: follow overlay '{follow_params_value}' "
-                  f"not found; person_goal_smoother falls back to nav2_omni_following.yaml")
-            follow_params_value = os.path.join(
-                pkg_file_route, 'config', 'omni_config', 'nav2_omni_following.yaml')
-        print(f"[general_navigation] follow-mode config pair -> "
-              f"standard={os.path.basename(nav2_omni_params_value)}, "
-              f"follow={os.path.basename(follow_params_value)}")
-        smoother_params['standard_config_file'] = nav2_omni_params_value
-        smoother_params['follow_config_file'] = follow_params_value
+    nav2_omni_params_value = nav2_omni_params.perform(context)
+    follow_params_value = nav2_omni_params_value.replace('.yaml', '_following.yaml')
+    if not os.path.exists(follow_params_value):
+        print(f"[general_navigation] WARNING: follow overlay '{follow_params_value}' "
+              f"not found; person_goal_smoother falls back to nav2_omni_following.yaml")
+        follow_params_value = os.path.join(
+            pkg_file_route, 'config', 'omni_config', 'nav2_omni_following.yaml')
+    print(f"[general_navigation] follow-mode config pair -> "
+          f"standard={os.path.basename(nav2_omni_params_value)}, "
+          f"follow={os.path.basename(follow_params_value)}")
+    smoother_params = {
+        'default_base': default_base,
+        'standard_config_file': nav2_omni_params_value,
+        'follow_config_file': follow_params_value,
+    }
 
     person_goal_smoother_node = Node(
         package='nav_main',
@@ -203,19 +181,15 @@ def launch_function(context, *args, **kwargs):
         nav_central_node,
         nav_ui_node,
         person_goal_smoother_node,
+        omni_basics,
     ]
 
-    if default_base_value != 'omnibase':
-        launch_actions.append(nav_basics)
-        launch_actions.append(rtabmapnav)
-    else:
-        launch_actions.append(omni_basics)
-        if nav_type_value == '2d':
-            launch_actions.append(omni_localization)
-        print(f"[general_navigation] omnibase Nav2 config -> "
-              f"{nav2_omni_params.perform(context)}")
-        launch_actions.append(nav2_omni)
-        launch_actions.append(table_docker)
+    if nav_type_value == '2d':
+        launch_actions.append(omni_localization)
+    print(f"[general_navigation] omnibase Nav2 config -> "
+          f"{nav2_omni_params.perform(context)}")
+    launch_actions.append(nav2_omni)
+    launch_actions.append(table_docker)
 
     return launch_actions
 

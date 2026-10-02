@@ -3,7 +3,7 @@
 Vision turns the ZED's RGB-D stream into everything the task managers need to reason about
 the world: object detections with 3D points, people with poses, gestures and clothing
 colors, known faces, a tracked person to follow, and free-form visual questions answered by
-a VLM. It runs on `ROS 2` (Humble) inside a single `home2-vision` container, plus one
+a VLM. It runs on `ROS 2` (Jazzy) inside a single `home2-vision` container, plus one
 non-ROS sidecar — `home2-moondream-server` — that serves the Moondream2 VLM over `gRPC`.
 
 > Vision **does not own the camera**. Frames come from the separate `home2-zed` container
@@ -23,8 +23,8 @@ home2/
 │
 │frida_interfaces/                         # Custom ROS interfaces
 ├── vision/
-│   ├── action/                            # DetectPerson, Xarmmove
-│   ├── msg/                               # ObjectDetection(+Array), Detection, Person,
+│   ├── action/                            # ExampleAction, Xarmmove
+│   ├── msg/                               # Objec└── models/swin/               # ReID networktDetection(+Array), Detection, Person,
 │   │                                      # PersonList, CustomerTable, Point2D, Shelf*
 │   └── srv/                               # 30 services (Query, FindSeat, TrackBy, ...)
 │
@@ -59,14 +59,12 @@ home2/
 │   │   │   ├── ppc_launch.py
 │   │   │   ├── dlc_launch.py
 │   │   │   └── restaurant_launch.py
-│   │   ├── scripts/                       # ROS nodes (see Packages below)
-│   │   └── vision_general/utils/          # Importable library shared by every node
-│   │       ├── calculations.py            # deproject_pixel_to_point, get_depth, centroids
-│   │       ├── trt_utils.py               # load_yolo_trt(): .pt -> cached TensorRT .engine
-│   │       ├── debug_pub.py               # Subscriber-gated, rate-limited debug images
-│   │       ├── area_check.py              # Room filtering via nav MapAreas + TF
-│   │       ├── reid_model.py              # SWIN person re-identification embedder
-│   │       └── models/swin/               # ReID network
+│   │   └── scripts/                       # ROS nodes (see Packages below)
+│   │       └── utils/                     # Importable library shared by every node
+│   │           ├── calculations.py        # deproject_pixel_to_point, get_depth, centroids
+│   │           ├── trt_utils.py           # load_yolo_trt(): .pt -> cached TensorRT .engine
+│   │           ├── debug_pub.py           # Subscriber-gated, rate-limited debug images
+│   │           └── area_check.py          # Room filtering via nav MapAreas + TF     
 │   │
 │   └── moondream_run/                     # Moondream2 VLM bridge
 │       ├── scripts/moondream_node.py      # ROS node; gRPC client to localhost:50052
@@ -123,7 +121,7 @@ instead — that is exactly what `moondream_run` is.
 
 **2D boxes become 3D points in the base class.** `base_detector_node.py` pairs each
 detection with `DEPTH_IMAGE_TOPIC` and `CAMERA_INFO_TOPIC`, deprojects the box centroid via
-`vision_general/utils/calculations.py`, transforms it out of `CAMERA_FRAME` with TF, and
+`utils/calculations.py`, transforms it out of `CAMERA_FRAME` with TF, and
 publishes both `ObjectDetectionArray` and RViz markers.
 
 **TensorRT engines are built, cached, and device-specific.**
@@ -154,7 +152,7 @@ flowchart LR
         IO
         OD["ObjectDetect2D<br/>yolo_finetuned + yolo_generic"]
         ZS["ZeroShotDetect2D<br/>yoloe-11l-seg"]
-        TRK["tracker_node<br/>yolov8n + ByteTrack, yolo11m-pose, SWIN ReID"]
+        TRK["tracker_node<br/>yolov8n + ByteTrack, yolo11m-pose"]
         FR["face_recognition<br/>InsightFace buffalo_sc"]
         HC["hric_commands<br/>yolo11m-pose"]
         GC["gpsr_commands<br/>yolo11m-pose"]
@@ -179,7 +177,8 @@ flowchart LR
 
 The detection backbone. Both nodes share `BaseDetectorNode`, which declares the camera
 topics, `TARGET_FRAME`, `DEPTH_ACTIVE`, `FLIP_IMAGE` and `MAX_DEPTH_THRESH` parameters and
-handles projection and visualization.
+handles projection and visualization. `vision_general` has the same pattern in
+`VisionRuntime` (see below).
 
 | Node | Purpose | Key interfaces |
 | --- | --- | --- |
@@ -193,9 +192,9 @@ Each node has a fixed activation topic (`/vision/object_detector/active`,
 
 | Node | Purpose | Key interfaces | Model |
 | --- | --- | --- | --- |
-| `hric_commands` | Person detection, seat finding, handover point, chair removal | action `DetectPerson`; srvs `FindSeat`, `DetectHand`, `ChairsToRemove` | yolo11m-pose |
+| `hric_commands` | Person detection, seat finding, handover point, chair removal | srvs `DetectPerson`, `FindSeat`, `DetectHand`, `ChairsToRemove` | yolo11m-pose |
 | `gpsr_commands` | Counting and describing people by pose, gesture, clothing color | srvs `CountByPose`, `CountBy`, `CountByColor`, `PersonPoseGesture` | yolo11m-pose |
-| `tracker_node` | Locks onto one person and publishes their 3D point for nav to follow | srvs `SetBool`@`set_tracking_target`, `TrackBy`, `Trigger`@`is_tracking`; pub `/vision/tracking_results` | yolov8n + ByteTrack, yolo11m-pose, SWIN ReID |
+| `tracker_node` | Locks onto one person and publishes their 3D point for nav to follow | srvs `SetBool`@`set_tracking_target`, `TrackBy`, `Trigger`@`is_tracking`; pub `/vision/tracking_results` | yolov8n + ByteTrack, yolo11m-pose|
 | `face_recognition` | Learns and recognizes faces; drives the arm's face following | srvs `SaveName`@`new_name`, `SaveName`@`follow_by_name`; pubs `/vision/follow_face`, `/vision/person_list` | InsightFace `buffalo_sc` |
 | `restaurant_commands` | Maps waving customers onto table positions | srv `CustomerTables` | — (delegates) |
 | `customer_node` | Finds seated / waving customers in the full frame | srv `Customer` | yolo11m-pose |
@@ -206,6 +205,24 @@ Each node has a fixed activation topic (`/vision/object_detector/active`,
 `pose_detection.py` is a library, not a node: it holds the COCO keypoint constants and the
 gesture/pose classification used by `hric_commands`, `gpsr_commands` and `customer_node`.
 
+#### `VisionRuntime`
+
+`scripts/task_nodes/vision_runtime.py` is the counterpart to `object_detector_2d`'s
+`BaseDetectorNode`: camera subscriptions, the `/vision/<node>/active` gate, rotation
+tracking, TF, the debug publisher and a non-spinning `call_service`. Subclasses read
+`self.image`, `self.depth_image` and `self.camera_info` as they did when each node owned
+its own subscriptions.
+
+`scripts/task_nodes/` holds the runtime and every node that subclasses it:
+`gpsr_commands`, `hric_commands`, `restaurant_commands`, `customer_node` and
+`face_recognition_node`. They all install flat into `lib/vision_general/`, so
+`from vision_runtime import ...` resolves in both the source and the installed tree.
+
+`tracker_node` deliberately stays out: it needs a different QoS per stream (BEST_EFFORT
+colour, RELIABLE depth) and a separate callback group per subscription so its 20 Hz
+tracking timer is never starved by a service blocking on moondream. `VisionRuntime`
+expresses neither.
+
 ### `moondream_run`
 
 `moondream_node` is a thin ROS ⇄ gRPC bridge. The model itself lives in a separate container
@@ -215,12 +232,10 @@ because its dependency set conflicts with the ROS one.
 | --- | --- | --- |
 | `/vision/query` | `Query` | Free-form question about the current frame |
 | `/vision/crop_query` | `CropQuery` | Same, restricted to a bounding box |
-| `/vision/beverage_location` | `BeverageLocation` | Locates a named drink |
 | `/vision/object_points` | `ObjectPoints` | 2D points for a described subject |
 | `/vision/moondream_detection` | `MoondreamDetection` | Open-vocabulary detection (normalized bboxes) |
-| `/vision/person_posture` | `PersonPosture` | Describes a person's posture |
 
-The gRPC side (`MoonDreamService` on port `50052`) exposes `EncodeImage`, `FindBeverage`,
+The gRPC side (`MoonDreamService` on port `50052`) exposes `EncodeImage`,
 `FindObjectPoints`, `Query` and `Detect`, backed by `vikhyatk/moondream2`.
 
 
@@ -381,9 +396,6 @@ None of them are fixed by this document.
 - Placeholder and typo'd constants in `vision_constants.py`: `DETECTIONS_ACTIVE_TOPIC` and
   `DEBUG_IMAGE_TOPIC` are both `"asd"`, and `SHELF_DETECTION_TOPIC` reads
   `/vision/storing_grocPeries/shelf_detection`.
-- `person_in_map.py` imports `PERSON_INSIDE_REQUEST_TOPIC`, which `vision_constants.py`
-  never defines — the node fails at import.
-- `trash_detection_node.py` is launched by nothing and has no client.
 - `auto-complete.sh` does not know the vision-only flags (`--warmup`, `--moondream`,
   `--carry`, `--storing-groceries`).
 - `status/configs/vision_nodes.cfg` still refers to `/receptionist_commands`, which is now

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Runs a command with the CUDA driver stub (libcuda.so.1) on the library path.
+# The Jetson torch wheel links libcuda.so.1, which only exists when the container
+# runs with the NVIDIA runtime. `docker build` has no runtime, so build steps that
+# import torch (smoke tests, TorchScript tracing, CMake Torch_DIR lookups) use this.
+# Never use it at runtime: the stub makes CUDA report no device.
+export LD_LIBRARY_PATH="/opt/cuda-stub${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+exec "$@"

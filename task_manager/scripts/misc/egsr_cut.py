@@ -9,6 +9,7 @@ Required nav locations:
 
 import time
 
+from frida_constants.vision_constants import CAMERA_FRAME
 import rclpy
 from rclpy.node import Node
 from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
@@ -256,7 +257,7 @@ class EGPSRTM(Node):
         """Convert the object to height"""
         try:
             stamped_point = PointStamped()
-            stamped_point.header.frame_id = "zed_left_camera_optical_frame"
+            stamped_point.header.frame_id = CAMERA_FRAME
             stamped_point.header.stamp = self.get_clock().now().to_msg()
             stamped_point.point.x = detection.px
             stamped_point.point.y = detection.py

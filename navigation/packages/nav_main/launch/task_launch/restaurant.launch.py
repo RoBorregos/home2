@@ -11,19 +11,14 @@ from launch_ros.substitutions import FindPackageShare
 def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     # Restaurant maps the arena live while serving, so use the mapping rtab config
-    # (dashgo path) / slam_toolbox mapping (omni path) and a dedicated session DB.
+    # and a dedicated session DB.
     rtab_params_file = os.path.join(
         pkg_file_route, 'config', 'rtabmap', 'rtabmap_mapping_config.yaml'
     )
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
 
-    # Legacy diff-drive (dashgo) restaurant config — only used on the dashgo base.
-    nav2_params_file = os.path.join(pkg_file_route, 'config', 'nav2_restaurant.yaml')
-    nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-
     # Base / nav-type selection (same convention as general_navigation/mapping).
-    default_base = LaunchConfiguration('default_base', default='omnibase')  # other: "dashgo"
-    default_base_value = default_base.perform(context)
+    default_base = 'omnibase'
     nav_type = LaunchConfiguration('nav_type', default='2d')  # other: 3d
     nav_type_value = nav_type.perform(context)
 
@@ -60,26 +55,6 @@ def launch_function(context, *args, **kwargs):
             'default_base': default_base,
             'nav_type': nav_type,
         }],
-    )
-
-    # ----- dashgo base (legacy diff-drive): RTABMap mapping + nav2 -----
-    nav_basics = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "dashgo_base", "nav_basics.launch.py"])
-        ),
-    )
-
-    rtabmapnav = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([FindPackageShare("nav_main"), "launch", "dashgo_base", "rtabnav2.launch.py"])
-        ),
-        launch_arguments={
-            'localization': 'false',
-            'rtab_config_file': rtab_params,
-            'nav2_config_file': nav2_params,
-            'nav2': 'true',
-            'map_name': rtabmap_map_name,
-        }.items(),
     )
 
     # ----- omnibase: slam_toolbox MAPPING + nav2_omni + table docking -----
@@ -124,17 +99,12 @@ def launch_function(context, *args, **kwargs):
     launch_actions = [
         nav_central_node,
         nav_ui_node,
+        omni_basics,
     ]
-
-    if default_base_value != 'omnibase':
-        launch_actions.append(nav_basics)
-        launch_actions.append(rtabmapnav)
-    else:
-        launch_actions.append(omni_basics)
-        if nav_type_value == '2d':
-            launch_actions.append(slam_toolbox)
-        launch_actions.append(nav2_omni)
-        launch_actions.append(table_docker)
+    if nav_type_value == '2d':
+        launch_actions.append(slam_toolbox)
+    launch_actions.append(nav2_omni)
+    launch_actions.append(table_docker)
 
     return launch_actions
 

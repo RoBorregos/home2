@@ -5,6 +5,7 @@ Task Manager for Doing Laundry Task
 
 import math
 
+from frida_constants.vision_constants import CAMERA_FRAME
 import rclpy
 from rclpy.node import Node
 from rclpy.duration import Duration
@@ -110,7 +111,7 @@ class DoingLaundryTM(Node):
         """Transform the basket detection to map frame and return the nearer
         candidate sublocation ('basket_left' or 'basket_right')."""
         ps = PointStamped()
-        ps.header.frame_id = "zed_left_camera_optical_frame"
+        ps.header.frame_id = CAMERA_FRAME
         ps.point.x = float(detection.px)
         ps.point.y = float(detection.py)
         ps.point.z = float(detection.pz)

@@ -1,4 +1,5 @@
 import math
+from frida_constants.vision_constants import CAMERA_FRAME, RIGHT_CAMERA_FRAME
 from typing import List
 
 MOVE_GROUP_ARM: str = "xarm6"
@@ -47,7 +48,7 @@ def left_camera_frame_name(prefix: str = "") -> str:
 
 
 def left_camera_optical_frame_name(prefix: str = "") -> str:
-    return prefix + "zed_left_camera_optical_frame"
+    return prefix + CAMERA_FRAME
 
 
 def right_camera_frame_name(prefix: str = "") -> str:
@@ -55,7 +56,7 @@ def right_camera_frame_name(prefix: str = "") -> str:
 
 
 def right_camera_optical_frame_name(prefix: str = "") -> str:
-    return prefix + "zed_right_camera_optical_frame"
+    return prefix + RIGHT_CAMERA_FRAME
 
 
 def gripper_joint_names(prefix: str = "") -> List[str]:

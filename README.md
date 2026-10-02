@@ -49,6 +49,7 @@ The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) a
 ./run.sh navigation
 ./run.sh manipulation
 ./run.sh integration
+./run.sh simulation --nav
 
 # Run a competition task
 ./run.sh --gpsr
@@ -64,6 +65,7 @@ The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) a
 | `navigation` | Spins up the containers for navigation |
 | `hri` | Spins up the containers for human-robot interaction |
 | `integration` | Spins up the complete integration environment |
+| `simulation` | Gazebo simulation of FRIDA — `--manip` for pick and place, `--nav` for navigation (see [simulation/frida_gz_sim](simulation/frida_gz_sim/README.md)) |
 | `frida_interfaces` | Builds and configures FRIDA's custom interfaces/messages |
 
 ### Competition Tasks
@@ -91,7 +93,6 @@ The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) a
 | `--build` | Builds the ROS 2 packages inside the container |
 | `--build-image` | Builds the Docker image for the specified area or task |
 | `--recreate` | Forces the recreation of containers |
-| `--open-display` | Opens the graphical interface for HRI or Vision |
 
 ## Cyclone DDS Setup
 

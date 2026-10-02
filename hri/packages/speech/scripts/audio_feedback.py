@@ -12,7 +12,7 @@ from ament_index_python.packages import get_package_share_directory
 class AudioFeedbackNode(Node):
     def __init__(self):
         super().__init__("audio_feedback")
-        self.get_logger().info("Initializing Audio Feedback node.")
+        self.get_logger().debug("Initializing Audio Feedback node.")
 
         self.create_subscription(String, "/AudioState", self.audio_state_callback, 10)
 
@@ -28,7 +28,7 @@ class AudioFeedbackNode(Node):
         if not os.path.exists(self.chime_path):
             self.get_logger().error(f"Chime file not found at {self.chime_path}")
 
-        self.get_logger().info("Audio Feedback node initialized.")
+        self.get_logger().info("AudioFeedback ready")
 
     def audio_state_callback(self, msg):
         """Play sound when state changes to listening."""

@@ -2,13 +2,13 @@
 
 """Pick benchmark: run N trials per object and record success/retention rate.
 
-Cutlery mode picks spoon/fork/knife from the table; shelf mode scans the
+Flat mode picks spoon/fork/knife from the table; shelf mode scans the
 levels once then picks the given objects (scan_environment=True). The operator
 resets the object and confirms each outcome, since the gripper bit is not a
 reliable retention signal. Results are printed and written to a CSV.
 
 Usage (inside the manipulation container, with the manip launch running):
-    python3 pick_benchmark.py --mode cutlery --trials 10
+    python3 pick_benchmark.py --mode flat --trials 10
     python3 pick_benchmark.py --mode shelf --objects blue_cereal_box --trials 10
     python3 pick_benchmark.py --mode object --objects cup bowl --trials 10
 """
@@ -119,9 +119,7 @@ class PickBenchmark(Node):
 
 def main(args=None):
     parser = argparse.ArgumentParser(description="Pick benchmark")
-    parser.add_argument(
-        "--mode", choices=["cutlery", "shelf", "object"], default="cutlery"
-    )
+    parser.add_argument("--mode", choices=["flat", "shelf", "object"], default="flat")
     parser.add_argument("--trials", type=int, default=10)
     parser.add_argument(
         "--objects", nargs="*", default=None, help="override object list"
@@ -152,7 +150,7 @@ def main(args=None):
                 node.scan_shelf_levels()
             else:
                 objects = parsed.objects or (
-                    ["spoon", "fork", "knife"] if parsed.mode == "cutlery" else ["cup"]
+                    ["spoon", "fork", "knife"] if parsed.mode == "flat" else ["cup"]
                 )
             scan_env = parsed.mode == "shelf"
             for obj in objects:

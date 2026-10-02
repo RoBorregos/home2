@@ -5,7 +5,8 @@ ARG USERNAME=ros
 ARG USER_UID
 ARG USER_GID
 
-ENV ROS_DISTRO=humble
+ARG ROS_DISTRO=jazzy
+ENV ROS_DISTRO=${ROS_DISTRO}
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install language
@@ -25,7 +26,9 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
-RUN groupadd --gid $USER_GID $USERNAME \
+RUN (id -u ubuntu >/dev/null 2>&1 && userdel -r ubuntu || true) \
+    && (getent group ubuntu >/dev/null 2>&1 && groupdel ubuntu || true) \
+    && groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
     # Add sudo support for the non-root user
     && apt-get update \
@@ -41,7 +44,7 @@ RUN apt-get update && apt-get install -y \
 # Install ROS
 RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-    && apt-get update && apt install -y ros-humble-ros-base
+    && apt-get update && apt install -y ros-${ROS_DISTRO}-ros-base
 
 # Install ROS utilities
 RUN apt-get update && apt-get install -y ros-dev-tools
@@ -60,27 +63,164 @@ RUN apt-get update && apt-get install -y git-core bash-completion \
 RUN echo "source /workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
 # Install general utilities
-RUN apt-get update -qq && apt-get install -y  build-essential \
+RUN apt-get update -qq && apt-get install -y build-essential cmake \
     ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
-    terminator nano git wget iputils-ping \
+    terminator nano git wget unzip iputils-ping \
     libcanberra-gtk-module libcanberra-gtk3-module \
     libx11-xcb1 libxkbcommon-x11-0 \
     libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
     libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
     libxcb-cursor0 libxcb-xkb1 \
-    python3-pip
+    libacl1-dev libncurses-dev libboost-dev libboost-python-dev \
+    python3-pip python3-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# CycloneDDS (network-only, no SHM — SHM is vision/ZED-only)
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
-    ros-humble-rmw-cyclonedds-cpp \
-    && sudo rm -rf /var/lib/apt/lists/*
+# ── pip without PIP_BREAK_SYSTEM_PACKAGES / PIP_IGNORE_INSTALLED ──
+# The image is the environment, so the PEP 668 marker is removed instead of
+# overriding it on every call. Index, constraints and no-cache live in
+# /etc/pip.conf so they also apply under `sudo pip`.
+COPY scripts/pip.conf /etc/pip.conf
+COPY scripts/constraints-l4t.txt /etc/pip/constraints.txt
+COPY scripts/pip-install-reqs /usr/local/bin/pip-install-reqs
+RUN rm -f /usr/lib/python3*/EXTERNALLY-MANAGED && chmod +x /usr/local/bin/pip-install-reqs
+# Python packages that apt (ROS) installs and areas upgrade. pip can't uninstall
+# Debian copies (no RECORD file), so a pip-owned copy goes into /usr/local once;
+# it comes first on sys.path and later upgrades replace it normally.
+RUN pip install --ignore-installed \
+    numpy pillow packaging pyyaml typing_extensions requests urllib3 certifi idna \
+    psutil python-dateutil six pyparsing importlib_metadata zipp
 
+# ── CUDA 13.2 / cuDNN 9 / TensorRT 10 (JetPack 7.2) ──
+# Compiler, headers and shared libraries only: no cuda-toolkit meta-package
+# (Nsight profilers) and no static libraries, which were ~9 GB of the old base.
+COPY jetson-apt/nvidia-l4t-apt-source.list /etc/apt/sources.list.d/nvidia-l4t-apt-source.list
+COPY jetson-apt/jetson-ota-public.asc /etc/apt/trusted.gpg.d/jetson-ota-public.asc
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cuda-toolkit-config-common cuda-toolkit-13-config-common cuda-toolkit-13-2-config-common \
+    cuda-minimal-build-13-2 \
+    cuda-libraries-dev-13-2 \
+    cuda-nvtx-13-2 \
+    cuda-cupti-dev-13-2 \
+    libcudnn9-dev-cuda-13 \
+    libnvinfer-dev libnvinfer-plugin-dev libnvonnxparsers10 \
+    python3-libnvinfer \
+    && rm -rf /var/lib/apt/lists/* \
+    && find /usr/local/cuda-13.2 /usr/lib/aarch64-linux-gnu -name 'lib*_static*.a' ! -name 'libcudart_static.a' -delete \
+    && rm -f /usr/lib/aarch64-linux-gnu/libnvinfer_builder_resource_sm90.so* \
+             /usr/lib/aarch64-linux-gnu/libnvinfer_builder_resource_sm100.so*
+ENV PATH=/usr/local/cuda/bin:${PATH} \
+    LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/lib:${LD_LIBRARY_PATH} \
+    CUDA_HOME=/usr/local/cuda
+ENV NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=all
+
+# ── CycloneDDS with iceoryx SHM, built once for every area ──
+# iceoryx with expanded publisher/subscriber limits (navigation + vision + ZED
+# on SHM). SHM stays off unless an area sets CYCLONE_SHM=1 and reruns
+# cyclonedds_setup.sh.
+# Source builds replace apt packages through placeholder .debs (same name,
+# version 99) so apt's dependency tree stays consistent for later installs.
+COPY scripts/install-placeholder-deb /usr/local/bin/install-placeholder-deb
+RUN chmod +x /usr/local/bin/install-placeholder-deb \
+    && apt-get update -qq && apt-get install -y -qq ros-${ROS_DISTRO}-rmw-cyclonedds-cpp \
+    && rm -rf /var/lib/apt/lists/* \
+    && dpkg --force-depends -r ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c \
+    && install-placeholder-deb ros-${ROS_DISTRO}-iceoryx-posh ros-${ROS_DISTRO}-iceoryx-hoofs ros-${ROS_DISTRO}-iceoryx-binding-c \
+    && apt-mark hold ros-${ROS_DISTRO}-cyclonedds
+RUN cd /tmp && \
+    git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
+    cd iceoryx && \
+    sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
+    cmake -S iceoryx_meta -B build \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DIOX_MAX_PUBLISHERS=20000 \
+        -DIOX_MAX_SUBSCRIBERS=20000 \
+        -DIOX_MAX_CHUNKS_HELD_PER_SUBSCRIBER_SIMULTANEOUSLY=2048 \
+        -DBUILD_BINDING_C=ON \
+        -DBUILD_SHARED_LIBS=ON \
+        -DINTROSPECTION=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build -j$(nproc) && \
+    cmake --install build && \
+    cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    cmake -S cyclonedds -B cyclonedds/build \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build cyclonedds/build -j$(nproc) && \
+    cmake --install cyclonedds/build && \
+    ldconfig && \
+    rm -rf /tmp/iceoryx /tmp/cyclonedds
+
+COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
 COPY cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
-RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_setup.sh
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
-RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/$USERNAME/.bashrc
 
-ENV PIP_INDEX_URL=https://pypi.jetson-ai-lab.io/jp6/cu126 \
-    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
-    PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io
+# Build steps that import torch/cv2 run through with-cuda-stub (no GPU in docker build)
+COPY scripts/with-cuda-stub /usr/local/bin/with-cuda-stub
+RUN chmod +x /usr/local/bin/with-cuda-stub \
+    && mkdir -p /opt/cuda-stub && ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /opt/cuda-stub/libcuda.so.1
+
+# OpenCV 4.14 + contrib with CUDA, compiled against the pinned numpy (installed
+# above). Built before torch so changing torch doesn't recompile OpenCV.
+COPY scripts/build_opencv.sh /tmp/build_opencv.sh
+RUN bash /tmp/build_opencv.sh && rm /tmp/build_opencv.sh
+
+# cv_bridge against the CUDA OpenCV. A placeholder ros-<distro>-cv-bridge package
+# keeps apt/rosdep in the areas from installing the stock one over it.
+ARG VISION_OPENCV_COMMIT=50f6f1feccc65dd2ef87f863cb812a8aa0789062
+RUN mkdir -p /tmp/cv_bridge_ws/src && cd /tmp/cv_bridge_ws/src && \
+    git clone https://github.com/ros-perception/vision_opencv.git && \
+    git -C vision_opencv checkout ${VISION_OPENCV_COMMIT} && \
+    cd /tmp/cv_bridge_ws && \
+    . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    colcon build --packages-select cv_bridge image_geometry \
+        --cmake-args -Wno-dev -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && \
+    cp -a install/cv_bridge/. install/image_geometry/. /opt/ros/${ROS_DISTRO}/ && \
+    cd / && rm -rf /tmp/cv_bridge_ws && \
+    ldconfig && \
+    install-placeholder-deb ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-image-geometry
+
+# ── Python ML stack, installed once (what dustynv/l4t-pytorch used to provide) ──
+# torch comes from PyPI: the jetson-ai-lab sbsa/cu130 wheels only ship kernels for
+# Thor (sm_110) and Spark (sm_121), not Orin (sm_87); the PyPI cu130 build includes
+# sm_80 (runs on Orin) and sm_110 (Thor). Its bundled CUDA/cuDNN wheels are left
+# out (Requires-Dist removed) so it uses the system CUDA 13.2 / cuDNN 9 from
+# JetPack; only NCCL, NVSHMEM and cuSPARSELt, which JetPack doesn't ship, come as
+# wheels. triton (torch.compile only) is not installed.
+# onnxruntime-gpu comes from the Jetson index (TensorRT execution provider).
+RUN pip install --no-deps \
+        torch==2.11.0 torchvision==0.26.0 torchaudio==2.11.0 \
+        nvidia-nccl-cu13==2.28.9 nvidia-nvshmem-cu13==3.4.5 nvidia-cusparselt-cu13==0.8.0 \
+    && pip install --no-deps \
+        https://pypi.jetson-ai-lab.io/sbsa/cu130/+f/012/c10bef23a39f0/onnxruntime_gpu-1.24.0-cp312-cp312-linux_aarch64.whl \
+    && sed -i -E '/^Requires-Dist: (cuda-toolkit|cuda-bindings|nvidia-cudnn-cu13|triton)/d' \
+        /usr/local/lib/python3.12/dist-packages/torch-2.11.0.dist-info/METADATA \
+    && pip install numpy scipy torch torchvision torchaudio onnxruntime-gpu \
+    && with-cuda-stub python3 -c "import torch, onnxruntime; print(torch.__version__, torch.cuda.get_arch_list(), onnxruntime.get_available_providers())" \
+    && ! pip list 2>/dev/null | grep -iE '^(triton|nvidia-cudnn|nvidia-cublas|cuda-toolkit) '
+
+# Placeholder dists so ultralytics/insightface/faster-whisper etc. see OpenCV and
+# onnxruntime as installed and never pull the CPU wheels over the CUDA builds.
+RUN SITE=/usr/local/lib/python3.12/dist-packages && \
+    for dist in onnxruntime:1.24.0 opencv_python:4.14.0 opencv_contrib_python:4.14.0 \
+                opencv_python_headless:4.14.0 opencv_contrib_python_headless:4.14.0; do \
+        name=${dist%%:*}; ver=${dist##*:}; d="$SITE/${name}-${ver}.dist-info"; \
+        mkdir -p "$d" && \
+        printf 'Metadata-Version: 2.1\nName: %s\nVersion: %s\nSummary: Provided by l4t_base\n' "$(echo $name | tr _ -)" "$ver" > "$d/METADATA" && \
+        echo l4t_base > "$d/INSTALLER" && : > "$d/RECORD"; \
+    done
+
+# Smoke test: fail the base build if any of the shared GPU stack is broken
+RUN with-cuda-stub python3 -c "import numpy, scipy, torch, torchvision, torchaudio, cv2, onnxruntime, tensorrt; \
+print('numpy', numpy.__version__, 'torch', torch.__version__, 'cv2', cv2.__version__, 'trt', tensorrt.__version__); \
+assert 'cuda' in cv2.getBuildInformation().lower(); \
+assert 'TensorrtExecutionProvider' in onnxruntime.get_available_providers()" \
+    && ! with-cuda-stub ldd /usr/local/lib/python3.12/dist-packages/torch/lib/libtorch_cuda.so | grep -q 'not found' \
+    && ! pip check 2>&1 | grep -iE '^(torch|torchvision|torchaudio|numpy|scipy|onnxruntime)'
