@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from embedding_gallery.constants import MANIFEST_NAME
+from embedding_gallery.core.constants import MANIFEST_NAME
 
 UNKNOWN = "unknown"
 

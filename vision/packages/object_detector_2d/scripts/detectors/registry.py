@@ -3,7 +3,7 @@
 import json
 import pathlib
 
-from embedding_gallery.constants import GALLERY_DIRNAME
+from embedding_gallery.core.constants import GALLERY_DIRNAME
 
 # .pt files (and the gallery/ dir) live directly beside this file.
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"

@@ -52,10 +52,11 @@ home2/
 │   │       │   ├── embedding.py           # @register("embedding") — few-shot object gallery
 │   │       │   └── robocup2026_translation.json     # Raw label -> published label
 │   │       └── embedding_gallery/         # Few-shot object gallery tooling (see its README)
-│   │           ├── image_embedder.py      # Frozen DINOv2 image embedder (PyTorch / TensorRT)
-│   │           ├── gallery_matcher.py     # Cosine matching against the per-object gallery
-│   │           ├── gallery_build.py       # Builds one gallery entry from photos
-│   │           └── add_object.sh          # One-command "add an object" wrapper
+│   │           ├── add_object.sh          # One-command "add an object" wrapper
+│   │           └── core/
+│   │               ├── image_embedder.py  # Frozen DINOv2 image embedder (PyTorch / TensorRT)
+│   │               ├── gallery_matcher.py # Cosine matching against the per-object gallery
+│   │               └── gallery_build.py   # Builds one gallery entry from photos
 │   │
 │   ├── vision_general/                    # People, tracking and the per-task command nodes
 │   │   ├── config/botsort-reid.yaml       # Ultralytics BoT-SORT tracker config

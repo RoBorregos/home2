@@ -16,7 +16,7 @@ page holds the background and the production workflow.
 
 ![Setup and runtime flow for the embedding gallery](embedding_gallery_process.png)
 
-`add_object.sh`, `gallery_build.py`, `image_embedder.py`, `gallery_matcher.py` and `constants.py` live in this folder. `embedding.py`, `yolo_e.py` and `registry.py` stay in `../detectors/` (the node's plugin layer: `EmbeddingModel` is the only `DetectorModel` here), and `fetch_models.py` is `vision/scripts/fetch_models.py`.
+`add_object.sh` lives in this folder and the Python code (`gallery_build.py`, `image_embedder.py`, `gallery_matcher.py`, `constants.py`) in `core/`. `embedding.py`, `yolo_e.py` and `registry.py` stay in `../detectors/` (the node's plugin layer: `EmbeddingModel` is the only `DetectorModel` here), and `fetch_models.py` is `vision/scripts/fetch_models.py`.
 
 | File | Role |
 |---|---|
@@ -96,6 +96,7 @@ host path show up inside the container without `docker cp`.
 ```
 embedding_gallery/
 ├── add_object.sh
+├── core/                        # the Python code
 └── gallery_photos/
     └── ps5_controller/          # <object_name>
         ├── 001.jpg              # 10-30 photos

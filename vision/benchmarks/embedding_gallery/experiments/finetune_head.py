@@ -10,8 +10,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from embedding_gallery.image_embedder import ImageEmbedder
-from embedding_gallery.gallery_matcher import UNKNOWN
+from embedding_gallery.core.image_embedder import ImageEmbedder
+from embedding_gallery.core.gallery_matcher import UNKNOWN
 
 from lib.dataset import DATA_DIR, REJECTION_TARGET, RESULTS_DIR
 from lib.embed import embed_gallery_photos, embed_labeled_dir, embed_unlabeled_dir

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from embedding_gallery.constants import tensorrt_cache_dir
+from embedding_gallery.core.constants import tensorrt_cache_dir
 
 CLIP_PREFIX = "clip:"
 

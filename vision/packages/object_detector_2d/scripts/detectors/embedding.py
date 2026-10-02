@@ -4,8 +4,8 @@ DINOv2-B embeddings matched via gallery_matcher.Gallery — no retraining to add
 import numpy as np
 from PIL import Image
 
-from embedding_gallery.image_embedder import ImageEmbedder
-from embedding_gallery.gallery_matcher import (
+from embedding_gallery.core.image_embedder import ImageEmbedder
+from embedding_gallery.core.gallery_matcher import (
     DEFAULT_MAX_BOX_AREA_FRAC,
     UNKNOWN,
     Gallery,

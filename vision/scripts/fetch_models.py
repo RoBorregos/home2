@@ -18,7 +18,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(
     0, str(REPO_ROOT / "vision" / "packages" / "object_detector_2d" / "scripts")
 )
-from embedding_gallery.constants import GALLERY_DIRNAME  # noqa: E402
+from embedding_gallery.core.constants import GALLERY_DIRNAME  # noqa: E402
 
 # Standard ultralytics-hosted weights: name -> YOLO task (None = fetch only)
 STANDARD_MODELS = {
@@ -194,7 +194,7 @@ def warmup(dest: Path):
         import numpy as np
 
         from detectors.registry import MODEL_CONFIGS
-        from embedding_gallery.image_embedder import ImageEmbedder
+        from embedding_gallery.core.image_embedder import ImageEmbedder
 
         # Use production's config (registry.py), not the class default: otherwise
         # this warms up PyTorch while production runs TensorRT, and the engine is

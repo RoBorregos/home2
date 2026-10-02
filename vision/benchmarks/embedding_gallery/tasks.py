@@ -11,8 +11,8 @@ import time
 from pathlib import Path
 
 import numpy as np
-from embedding_gallery.image_embedder import ImageEmbedder
-from embedding_gallery.gallery_matcher import (
+from embedding_gallery.core.image_embedder import ImageEmbedder
+from embedding_gallery.core.gallery_matcher import (
     DEFAULT_MARGIN_MIN,
     DEFAULT_MIN_SIMILARITY,
     UNKNOWN,

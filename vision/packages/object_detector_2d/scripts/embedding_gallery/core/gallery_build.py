@@ -18,8 +18,8 @@ import numpy as np
 from detectors.registry import MODEL_CONFIGS, ModelRegistry
 from PIL import Image
 
-from embedding_gallery.image_embedder import ImageEmbedder
-from embedding_gallery.constants import (
+from embedding_gallery.core.image_embedder import ImageEmbedder
+from embedding_gallery.core.constants import (
     CROPS_DIRNAME,
     GALLERY_DIRNAME,
     MANIFEST_NAME,
@@ -27,7 +27,7 @@ from embedding_gallery.constants import (
     PHOTOS_DIRNAME,
     tensorrt_cache_dir,
 )
-from embedding_gallery.gallery_matcher import (
+from embedding_gallery.core.gallery_matcher import (
     DEFAULT_MARGIN_MIN,
     DEFAULT_MAX_BOX_AREA_FRAC,
     DEFAULT_MIN_SIMILARITY,
@@ -37,7 +37,7 @@ from embedding_gallery.gallery_matcher import (
 RECOMMENDED_MIN_PHOTOS = 10
 RECOMMENDED_MAX_PHOTOS = 30
 
-PHOTOS_DIR = Path(__file__).resolve().parent / PHOTOS_DIRNAME
+PHOTOS_DIR = Path(__file__).resolve().parents[1] / PHOTOS_DIRNAME
 
 # Every object in one gallery must share the embedding dimension, so the
 # model is always production's (registry.py), never a CLI option.

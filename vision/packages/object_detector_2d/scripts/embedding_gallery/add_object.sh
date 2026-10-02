@@ -20,7 +20,7 @@ cd "$SCRIPT_DIR"
 
 # scripts/ on PYTHONPATH so gallery_build.py can import `detectors` and `embedding_gallery`.
 BUILD_RC=0
-PYTHONPATH="$SCRIPT_DIR/..:${PYTHONPATH:-}" python3 gallery_build.py "$@" || BUILD_RC=$?
+PYTHONPATH="$SCRIPT_DIR/..:${PYTHONPATH:-}" python3 core/gallery_build.py "$@" || BUILD_RC=$?
 
 # Sync what was built even if another object failed. fetch_models.py exits 1 if
 # any custom weight is missing, which says nothing about the gallery sync.
