@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m venv "$VIRTUAL_ENV"
+RUN python3 -m venv "$VIRTUAL_ENV" && pip install --no-cache-dir -U pip
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install requests==2.32.5
