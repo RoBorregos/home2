@@ -1,18 +1,6 @@
-"""Paths, per-dataset class config and gate constants shared by every module
-in this benchmark.
+"""Paths, gate targets and the dataset_config.json class lists, shared by the whole benchmark.
 
-Dataset-specific class names live in dataset_config.json, not in code. Edit
-that file to adapt the benchmark to a new object set:
-
-  - out_of_gallery_classes: classes held out of gallery_photos/ to serve as
-    "not in gallery" negatives for unknown-rejection.
-  - hard_negative_classes: visually-close classes curated into
-    hard_negatives/ (chosen, not random).
-  - known_limitation_classes: classes excluded from the recall gate because
-    they only confuse each other, never an unrelated class. Start empty and
-    add a class only once a run's confusion breakdown shows evidence.
-
-All names are PUBLISHED labels (post-translation).
+Class names live in dataset_config.json (see the README, "Configuration"), not in code.
 """
 
 import json
@@ -46,15 +34,7 @@ MARGIN_GRID = [round(v, 2) for v in np.arange(0.00, 0.25, 0.02)]
 
 
 def load_dataset_config(path: Path | None = None) -> dict[str, set[str]]:
-    """Reads the three class lists from dataset_config.json.
-
-    Args:
-        path: Alternative config file. Defaults to dataset_config.json.
-
-    Returns:
-        Mapping of list name to a set of class labels. Missing file or
-        missing keys yield empty sets.
-    """
+    """Reads the three class lists from dataset_config.json (empty sets if missing)."""
     keys = (
         "out_of_gallery_classes",
         "hard_negative_classes",

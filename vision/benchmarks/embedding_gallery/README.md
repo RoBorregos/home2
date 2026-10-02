@@ -85,7 +85,10 @@ they are several times slower.
 ## Configuration
 
 - `models.json`: `box_proposers` (Phase 0 candidates) and `backbones` (timm id, dim, optional `img_size`).
-- `dataset_config.json`: `out_of_gallery_classes`, `hard_negative_classes`, `known_limitation_classes`. The only place dataset-specific class names live; see the docstring in `lib/dataset.py`.
+- `dataset_config.json`: the only place dataset-specific class names live (published labels, after translation).
+  - `out_of_gallery_classes`: held out of `gallery_photos/` to serve as "not in gallery" negatives for unknown-rejection.
+  - `hard_negative_classes`: visually close classes curated into `hard_negatives/` (chosen, not random).
+  - `known_limitation_classes`: excluded from the recall gate because they only confuse each other, never an unrelated class. Start empty and add a class only when a run's confusion breakdown shows evidence.
 
 ## Data
 

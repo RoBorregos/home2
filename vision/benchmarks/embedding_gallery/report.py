@@ -1,8 +1,6 @@
 """Terminal output and JSON result files for the benchmark tasks.
 
-Tasks (tasks.py) compute and return plain dicts; this module prints them and
-writes them to results/. File names and formats are unchanged from when each
-task was a separate script.
+Tasks (tasks.py) return plain dicts; this module prints them and writes them to results/.
 """
 
 import json
