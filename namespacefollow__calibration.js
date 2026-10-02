@@ -4,7 +4,7 @@ var namespacefollow__calibration =
     [ "TopicStat", "classfollow__calibration_1_1TopicStat.html", "classfollow__calibration_1_1TopicStat" ],
     [ "main", "namespacefollow__calibration.html#ac4fb2bf98f3da2016ac94c887acb68e0", null ],
     [ "ARM_ERR_LAGGY", "namespacefollow__calibration.html#a7132dd9755fb3a5aa19caaefc4cea32e", null ],
-    [ "ARM_FOLLOW_SERVICE", "namespacefollow__calibration.html#a2d35e138ebd026d1bc894188d428f360", null ],
+    [ "ARM_FOLLOW_SERVICE", "namespacefollow__calibration.html#a8a9d10a0c0c87628c75ffc0489d0484c", null ],
     [ "BASE_VX_CAP", "namespacefollow__calibration.html#ab1d59e2c78dfe64d6510fc66ba932c23", null ],
     [ "FLIPS_OSCILLATING", "namespacefollow__calibration.html#ad93bd2e4e06973d61f9131a2c6b21881", null ],
     [ "GOOD_CENTROID_HZ", "namespacefollow__calibration.html#aa0633e01892b5e4ff14d7db050d98027", null ],

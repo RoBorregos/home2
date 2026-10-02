@@ -4,7 +4,7 @@ var follow__calibration_8py =
     [ "follow_calibration.FollowCalibration", "classfollow__calibration_1_1FollowCalibration.html", "classfollow__calibration_1_1FollowCalibration" ],
     [ "main", "follow__calibration_8py.html#ac4fb2bf98f3da2016ac94c887acb68e0", null ],
     [ "ARM_ERR_LAGGY", "follow__calibration_8py.html#a7132dd9755fb3a5aa19caaefc4cea32e", null ],
-    [ "ARM_FOLLOW_SERVICE", "follow__calibration_8py.html#a2d35e138ebd026d1bc894188d428f360", null ],
+    [ "ARM_FOLLOW_SERVICE", "follow__calibration_8py.html#a8a9d10a0c0c87628c75ffc0489d0484c", null ],
     [ "BASE_VX_CAP", "follow__calibration_8py.html#ab1d59e2c78dfe64d6510fc66ba932c23", null ],
     [ "FLIPS_OSCILLATING", "follow__calibration_8py.html#ad93bd2e4e06973d61f9131a2c6b21881", null ],
     [ "GOOD_CENTROID_HZ", "follow__calibration_8py.html#aa0633e01892b5e4ff14d7db050d98027", null ],

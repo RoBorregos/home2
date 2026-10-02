@@ -133,6 +133,7 @@ $(document).ready(function(){initNavTree('md_manipulation_README.html',''); init
 <td class="markdownTableBodyNone"><code>POUR</code>   </td><td class="markdownTableBodyNone">3   </td><td class="markdownTableBodyNone">Pour a held/grasped container into another   </td></tr>
 </table>
 <p>A <code>place</code> is only meaningful after a <code>pick</code> or <code>pour</code> <b>in the same process</b>: the node remembers the last pick outcome and uses its measured object height to decide the drop height.</p>
+<p>Besides the action, <code><a class="el" href="namespacetask__manager.html">task_manager</a></code> uses a few direct services: move joints / fixed-distance moves, the gripper, and the face / person follow toggles (§6, §7). All of them are typed with <code>frida_interfaces</code> or <code>std_srvs</code>, never with xArm types.</p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md109"></a>
 2. The packages</h1>
@@ -153,7 +154,7 @@ Ours (&lt;tt&gt;manipulation/packages/&lt;/tt&gt;)</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">**<code><a class="el" href="namespacearm__pkg.html">arm_pkg</a></code>**   </td><td class="markdownTableBodyNone"><code>gpd_service</code>   </td><td class="markdownTableBodyNone">Wraps the GPD library; also owns the MoveIt launch files    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">**<code><a class="el" href="namespacemanipulation__general.html">manipulation_general</a></code>**   </td><td class="markdownTableBodyNone"><code>manipulation_safeguard</code>   </td><td class="markdownTableBodyNone">Task launch files (<code>ppc</code>, <code>gpsr</code>, …); watches the xArm state and clears errors / re-enables motion    </td></tr>
+<td class="markdownTableBodyNone">**<code><a class="el" href="namespacemanipulation__general.html">manipulation_general</a></code>**   </td><td class="markdownTableBodyNone"><code>manipulation_safeguard</code>, <code>follow_face_node</code>, <code>follow_person_controller</code>   </td><td class="markdownTableBodyNone">Task launch files (<code>ppc</code>, <code>gpsr</code>, …); watches the xArm state and clears errors / re-enables motion; face and person following    </td></tr>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">**<code>frida_pymoveit2</code>**   </td><td class="markdownTableBodyNone">*(library)*   </td><td class="markdownTableBodyNone">xArm6 joint names and <code>JOINT_POSITION_LIMITS</code>    </td></tr>
 <tr class="markdownTableRowEven">
@@ -336,7 +337,11 @@ The five pick strategies</h2>
 <p>Names are constants in <code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code> (<code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code> / <code>..._cpp.hpp</code>) — never hardcode them.</p>
 <hr  />
 <h1><a class="anchor" id="autotoc_md124"></a>
-7. Where to change what</h1>
+7. Face / person following</h1>
+<p><code>follow_face_node</code> (<code>/follow_face</code>) and <code>follow_person_controller</code> (<code>/follow_person</code>) live in <code><a class="el" href="namespacemanipulation__general.html">manipulation_general</a></code>; they were moved here from <code><a class="el" href="namespacetask__manager.html">task_manager</a></code>. While either one is active, the xArm is in velocity mode (4), so turn it off before sending MoveIt goals. Face following also needs <code>face_recognition</code> enabled (it starts paused). If the arm doesn't move, check <code>ros2 topic hz /vision/follow_face</code>.</p>
+<hr  />
+<h1><a class="anchor" id="autotoc_md126"></a>
+8. Where to change what</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">I want to…   </th><th class="markdownTableHeadNone">Touch    </th></tr>
@@ -355,31 +360,33 @@ The five pick strategies</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Add a named arm pose   </td><td class="markdownTableBodyNone"><code><a class="el" href="xarm__configurations_8py.html">frida_constants/xarm_configurations.py</a></code>    </td></tr>
 <tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Tune face / person following   </td><td class="markdownTableBodyNone"><code>manipulation_general/manipulation_general/follow_*.py</code>; face speed and tolerance are <code>FOLLOW_FACE_*</code> in <code><a class="el" href="manipulation__constants_8py.html">manipulation_constants.py</a></code>    </td></tr>
+<tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Add a message, service or action   </td><td class="markdownTableBodyNone"><code>frida_interfaces/manipulation/</code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md126"></a>
-8. Running it</h1>
-<h2><a class="anchor" id="autotoc_md127"></a>
+<h1><a class="anchor" id="autotoc_md128"></a>
+9. Running it</h1>
+<h2><a class="anchor" id="autotoc_md129"></a>
 Build</h2>
 <div class="fragment"><div class="line">./run.sh manipulation --build     # builds inside the container</div>
 </div><!-- fragment --><p>Submodules must be initialised first (§2). Inside the container the workspace is <code>/workspace</code>, with the repository mounted at <code>/workspace/src</code>.</p>
-<h2><a class="anchor" id="autotoc_md128"></a>
+<h2><a class="anchor" id="autotoc_md130"></a>
 Launch</h2>
 <div class="fragment"><div class="line">ros2 launch manipulation_general ppc.launch.py     # pick, place, carry</div>
 </div><!-- fragment --><p>Other entry points in <code>manipulation_general/launch/</code>: <code>gpsr</code>, <code>restaurant</code>, <code>receptionist</code>, <code>carry</code>, <code>hric</code>.</p>
-<h2><a class="anchor" id="autotoc_md129"></a>
+<h2><a class="anchor" id="autotoc_md131"></a>
 Drive it by hand</h2>
 <div class="fragment"><div class="line">ros2 run pick_and_place keyboard_input.py</div>
 </div><!-- fragment --><p>A menu for pick / place / pour and the shelf helpers — the fastest way to test one behaviour without the task manager.</p>
-<h2><a class="anchor" id="autotoc_md130"></a>
+<h2><a class="anchor" id="autotoc_md132"></a>
 Tests</h2>
 <div class="fragment"><div class="line">cd /workspace/src/manipulation/packages/pick_and_place</div>
 <div class="line">python3 -m pytest test/ -q</div>
 </div><!-- fragment --><p>Fakes only, no ROS graph and no hardware. They pin decisions, not geometry: a green run says the logic still makes the same choices, <b>not</b> that the robot works.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md132"></a>
-9. Docker setup</h1>
+<h1><a class="anchor" id="autotoc_md134"></a>
+10. Docker setup</h1>
 <p><b>Requirements:</b> Docker Engine, and the NVIDIA Container Toolkit for CUDA/L4T images.</p>
 <div class="fragment"><div class="line">git clone https://github.com/RoBorregos/home2</div>
 <div class="line">cd home2</div>

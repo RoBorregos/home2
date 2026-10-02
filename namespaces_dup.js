@@ -120,9 +120,7 @@ var namespaces_dup =
       [ "robot_initial_pos", "namespaceflying__sphere.html#a232fa5491ad98ffe851d7e60e220c279", null ]
     ] ],
     [ "follow_calibration", "namespacefollow__calibration.html", "namespacefollow__calibration" ],
-    [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", "namespacefollow__face__node__copt" ],
-    [ "follow_person_controller", "namespacefollow__person__controller.html", "namespacefollow__person__controller" ],
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],
     [ "follow_person_node copy", "namespacefollow__person__node_01copy.html", "namespacefollow__person__node_01copy" ],
     [ "follow_person_v2", "namespacefollow__person__v2.html", "namespacefollow__person__v2" ],

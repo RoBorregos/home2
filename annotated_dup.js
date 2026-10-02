@@ -100,14 +100,8 @@ var annotated_dup =
       [ "FollowCalibration", "classfollow__calibration_1_1FollowCalibration.html", "classfollow__calibration_1_1FollowCalibration" ],
       [ "TopicStat", "classfollow__calibration_1_1TopicStat.html", "classfollow__calibration_1_1TopicStat" ]
     ] ],
-    [ "follow_face_node", "namespacefollow__face__node.html", [
-      [ "FollowFaceNode", "classfollow__face__node_1_1FollowFaceNode.html", "classfollow__face__node_1_1FollowFaceNode" ]
-    ] ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", [
       [ "FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", "classfollow__face__node__copt_1_1FollowFaceNode" ]
-    ] ],
-    [ "follow_person_controller", "namespacefollow__person__controller.html", [
-      [ "FollowPersonController", "classfollow__person__controller_1_1FollowPersonController.html", "classfollow__person__controller_1_1FollowPersonController" ]
     ] ],
     [ "follow_person_node", "namespacefollow__person__node.html", [
       [ "FollowPersonNode", "classfollow__person__node_1_1FollowPersonNode.html", "classfollow__person__node_1_1FollowPersonNode" ]
@@ -190,6 +184,12 @@ var annotated_dup =
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],
     [ "manipulation_general", "namespacemanipulation__general.html", [
+      [ "follow_face_node", "namespacemanipulation__general_1_1follow__face__node.html", [
+        [ "FollowFaceNode", "classmanipulation__general_1_1follow__face__node_1_1FollowFaceNode.html", "classmanipulation__general_1_1follow__face__node_1_1FollowFaceNode" ]
+      ] ],
+      [ "follow_person_controller", "namespacemanipulation__general_1_1follow__person__controller.html", [
+        [ "FollowPersonController", "classmanipulation__general_1_1follow__person__controller_1_1FollowPersonController.html", "classmanipulation__general_1_1follow__person__controller_1_1FollowPersonController" ]
+      ] ],
       [ "manipulation_safeguard", "namespacemanipulation__general_1_1manipulation__safeguard.html", [
         [ "ManipulationSafeguard", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard.html", "classmanipulation__general_1_1manipulation__safeguard_1_1ManipulationSafeguard" ]
       ] ]

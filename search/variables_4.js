@@ -132,8 +132,8 @@ var searchData=
   ['done_129',['DONE',['../classegsr__cut_1_1EGPSRTM_1_1States.html#a9489c46303bc34eb475e2d5dfe4941bc',1,'egsr_cut.EGPSRTM.States.DONE()'],['../classgpsr__task__manager_1_1GPSRTM_1_1TaskStates.html#a662c1536420c67780778b6c63b8e3d24',1,'gpsr_task_manager.GPSRTM.TaskStates.DONE()']]],
   ['door_5farmed_5fpublisher_130',['door_armed_publisher',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a814f43fb2da9ca51578e976163d8853d',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['door_5fchecking_5fsrv_131',['door_checking_srv',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa15303e63911886f96ee093e270f0a73',1,'task_manager::subtask_managers::nav_tasks::NavigationTasks']]],
-  ['door_5fdistance_132',['DOOR_DISTANCE',['../classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html#a9e05d9cb9c3424dab4786ce2618b69b6',1,'frida_constants::navigation_constants::DOOR_CHECK']]],
-  ['door_5fdistance_133',['door_distance',['../classnav__central_1_1Nav__Central.html#ae8bae6ba582ae70ea0df80c1e4323b0e',1,'nav_central::Nav_Central']]],
+  ['door_5fdistance_132',['door_distance',['../classnav__central_1_1Nav__Central.html#ae8bae6ba582ae70ea0df80c1e4323b0e',1,'nav_central::Nav_Central']]],
+  ['door_5fdistance_133',['DOOR_DISTANCE',['../classfrida__constants_1_1navigation__constants_1_1DOOR__CHECK.html#a9e05d9cb9c3424dab4786ce2618b69b6',1,'frida_constants::navigation_constants::DOOR_CHECK']]],
   ['door_5fevent_5fdetected_134',['door_event_detected',['../classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html#a5d55e0b82b069ae09a02660e67c044c6',1,'task_manager::subtask_managers::hri_tasks::HRITasks']]],
   ['door_5frate_135',['door_rate',['../classnav__central_1_1Nav__Central.html#a5ee3f1a94ad695e8439250c5dade9e17',1,'nav_central::Nav_Central']]],
   ['door_5ftimeout_136',['door_timeout',['../classnav__central_1_1Nav__Central.html#abbd6c4f83ef903ef72e740ff30ac9168',1,'nav_central::Nav_Central']]],
@@ -149,7 +149,7 @@ var searchData=
   ['drinks_146',['drinks',['../classtest__clean__table__task__manager_1_1CleanTableTM.html#a529dbf55648e24a0228fe97cfb8bcd60',1,'test_clean_table_task_manager::CleanTableTM']]],
   ['dropout_147',['dropout',['../classutils_1_1models_1_1swin_1_1model_1_1PCB.html#ac09983a75200ee9b0bdfade4865122bd',1,'utils::models::swin::model::PCB']]],
   ['dropouts_148',['dropouts',['../classfollow__calibration_1_1TopicStat.html#a28dc3f1d56fa27071a55dc0092c23af3',1,'follow_calibration::TopicStat']]],
-  ['dt_149',['dt',['../classfollow__person__controller_1_1FollowPersonController.html#a821173a8f32d36faf1625ac8c798297e',1,'follow_person_controller::FollowPersonController']]],
+  ['dt_149',['dt',['../classmanipulation__general_1_1follow__person__controller_1_1FollowPersonController.html#a799a42a7e6213446fed1604d0200057f',1,'manipulation_general::follow_person_controller::FollowPersonController']]],
   ['dup_5fstream_150',['dup_stream',['../classvamp_1_1redirect__stream_1_1RedirectStream.html#af2bf5b8d7f0effaa8e3ada60c275db69',1,'vamp::redirect_stream::RedirectStream']]],
   ['dynamic_5fdomain_151',['dynamic_domain',['../structvamp_1_1planning_1_1RRTCSettings.html#adf8e34d721d3aac2c5a9720c3950af4d',1,'vamp::planning::RRTCSettings']]]
 ];

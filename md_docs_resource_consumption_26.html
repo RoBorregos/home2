@@ -95,7 +95,7 @@ $(document).ready(function(){initNavTree('md_docs_resource_consumption_26.html',
 <div class="contents">
 <div class="textblock"><p>Approximate CPU, GPU, VRAM, RAM, energy footprint per software area, based on a static read of the models, frameworks, and launch configuration in this repo (no profiling was run). Target platform: <b>NVIDIA Jetson Orin AGX</b> (12-core ARM CPU, ~64GB shared LPDDR5, Ampere GPU, 15–60W configurable power envelope). Numbers are engineering estimates.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md300"></a>
+<h1><a class="anchor" id="autotoc_md302"></a>
 Summary Table</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -113,7 +113,7 @@ Summary Table</h1>
 </table>
 <p><b>Read this table relatively, not absolutely</b>: these areas don't all run at full load simultaneously (e.g. GPD only spikes during a pick attempt; RTABMap and the local LLM are both opt-in). Concurrent worst case (everything active at once) plausibly exceeds the Orin AGX's realistic sustained budget — see Contention Risks.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md302"></a>
+<h1><a class="anchor" id="autotoc_md304"></a>
 Vision</h1>
 <p><b>Packages:</b> <code>object_detector_2d</code>, <code>vision_general</code>, <code>moondream_run</code></p>
 <table class="markdownTable">
@@ -134,7 +134,7 @@ Vision</h1>
 </table>
 <p><b>Total concurrent detector stack: ~1.5-2 GB VRAM</b>, plus <b>4-5 GB more</b> if the Moondream2 container is up. All detectors run through TensorRT/onnxruntime-gpu — this is the area most consistently pinned to the GPU. CPU load is comparatively light (frame I/O, NMS, pre/post-processing).</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md304"></a>
+<h1><a class="anchor" id="autotoc_md306"></a>
 Manipulation</h1>
 <p><b>Packages:</b> <code><a class="el" href="namespacepick__and__place.html">pick_and_place</a></code>, <code><a class="el" href="namespacearm__pkg.html">arm_pkg</a></code>, <code><a class="el" href="namespaceperception__3d.html">perception_3d</a></code>, <code>gpd</code>, <code><a class="el" href="namespacevamp__moveit__plugin.html">vamp_moveit_plugin</a></code>, <code>frida_pymoveit2</code>, <code><a class="el" href="namespacexarm6__ikfast__plugin.html">xarm6_ikfast_plugin</a></code></p>
 <table class="markdownTable">
@@ -153,7 +153,7 @@ Manipulation</h1>
 </table>
 <p>Manipulation is <b>CPU-dominant</b>, not GPU-dominant — the bottleneck is motion planning (MoveIt2/OMPL sampling), not grasp inference. GPD's neural net is small and brief. GPU is essentially idle here unless GPD or the upstream detector is explicitly configured to use it.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md306"></a>
+<h1><a class="anchor" id="autotoc_md308"></a>
 Navigation</h1>
 <p><b>Packages:</b> <code>nav_main</code> (Nav2 stack), <code>sllidar_ros2</code>, <code>dashgo_driver</code>, <code>omnidriver</code>, <code>map_context</code>, <code>ira_laser_tools</code></p>
 <table class="markdownTable">
@@ -174,7 +174,7 @@ Navigation</h1>
 </table>
 <p>Default (omnibase) navigation stack is <b>pure classical CPU control</b> — no learned planners, no semantic segmentation. Sustained load is estimated at <b>40-70% of the Orin's CPU</b> (3-4 cores) with <b>0% GPU</b>. The only GPU path is the optional RTABMap visual loop-closure on the legacy dashgo base, disabled by default.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md308"></a>
+<h1><a class="anchor" id="autotoc_md310"></a>
 HRI</h1>
 <p><b>Microservices:</b> STT (Faster-Whisper), TTS (Kokoro), noise cancellation (DeepFilterNet3), embeddings, NLP (sentiment/coherence + LLM wrapper), display</p>
 <table class="markdownTable">
@@ -196,7 +196,7 @@ HRI</h1>
 <p>On Jetson/L4T, the production path serves <code>Qwen3.5-4B-UD-Q4_K_XL.gguf</code> through the NVIDIA <code>llama.cpp</code> Jetson image under the stable <code>frida-llm</code> alias. Reasoning is disabled at server startup for low latency. The KV cache defaults to <code>f16</code> for correctness; set <code>LLAMA_CACHE_TYPE=q8_0</code> for the target-hardware A/B quality check before adopting the lower-memory cache. The CUDA development path uses the pinned official Ollama image, mounts the same model store, and maps the explicit <code>qwen3.5:4b</code> tag to <code>frida-llm</code>.</p>
 <p><b>This is the area with the widest resource range</b>, entirely dependent on one config flag (<code>base_url</code> for the LLM wrapper). With everything local (STT+TTS+noise-cancel+embeddings+deberta+Qwen3.5-4B), GPU-memory demand is approximately <b>5-10 GB</b> — a significant fraction of the Orin AGX's shared memory pool, competing directly with Vision's Moondream2 and detector stack. Routing the LLM to an external API cuts that to <b>2-4 GB</b> and removes the single largest local GPU consumer in the whole system.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md310"></a>
+<h1><a class="anchor" id="autotoc_md312"></a>
 Integration</h1>
 <p><b>Components:</b> <code><a class="el" href="namespacetask__manager.html">task_manager</a></code> (FSM/behavior-tree orchestration), <code>docker/integration</code> compose profile, CycloneDDS + iceoryx (DDS/shared-memory middleware)</p>
 <table class="markdownTable">
@@ -213,7 +213,7 @@ Integration</h1>
 </table>
 <p>Integration is <b>negligible compute</b> on its own — it's coordination glue plus the DDS/iceoryx transport layer that every other area's messages ride on. The <code>docker/integration</code> compose profile pins itself to CPU cores 4-11, explicitly reserved to avoid contention with navigation (pinned to cores 0-3).</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md312"></a>
+<h1><a class="anchor" id="autotoc_md314"></a>
 Contention Risks and Caveats</h1>
 <ul>
 <li><b>GPU/VRAM is the tightest shared resource.</b> Vision's detector stack (~2 GB) + Moondream2 (~4-5 GB) + HRI's local models (~3-6 GB) can together approach or exceed what's comfortable to share with manipulation/navigation's occasional GPU bursts. If all of Vision + HRI's local-LLM path run concurrently, memory pressure is the most likely failure mode — worth watching if the Orin starts throttling or OOM-killing containers.</li>

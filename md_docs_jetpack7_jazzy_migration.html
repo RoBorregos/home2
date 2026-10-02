@@ -93,13 +93,13 @@ $(document).ready(function(){initNavTree('md_docs_jetpack7_jazzy_migration.html'
   <div class="headertitle"><div class="title">Migration Ubuntu 22.04/Humble/JetPack 6 → Ubuntu 24.04/Jazzy/JetPack 7 </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md288"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md290"></a>
 Image names</h1>
 <p>The images keep the same names as on <code>main</code> (<code>l4t_base</code>, <code>vision-l4t</code>, <code>navigation-l4t</code>, <code>manipulation-l4t</code>, <code>roudi-l4t</code>, <code>zed-l4t</code>, <code>hri-l4t</code>, <code>hri-stt-l4t</code>, <code>hri-tts-l4t</code>, <code>integration-cpu</code>, etc.) — with no <code>jazzy_</code> prefix. This Orin is dedicated exclusively to Jazzy, so there is no need to tell them apart by name; <code>docker/l4t.yaml</code>, <code>docker/cpu.yaml</code> and <code>docker/cuda.yaml</code> replace the old base recipes (Humble/<code>dustynv</code>) outright instead of living alongside them.</p>
-<h1><a class="anchor" id="autotoc_md289"></a>
+<h1><a class="anchor" id="autotoc_md291"></a>
 Rationale</h1>
 <p>The team is migrating to the Jetson AGX Thor (JetPack 7, L4T r38+, Ubuntu 24.04, no ROS 2 Humble support). It was validated first on an Orin AGX devkit already running JetPack 7.2 / L4T R39.2 / Ubuntu 24.04 (noble) / CUDA 13.2 / cuDNN 9 / TensorRT 10.16, Ampere GPU <code>sm_87</code>.</p>
-<h1><a class="anchor" id="autotoc_md290"></a>
+<h1><a class="anchor" id="autotoc_md292"></a>
 Base image (&lt;tt&gt;docker/Dockerfile.ROS&lt;/tt&gt;, &lt;tt&gt;docker/Dockerfile.ROS-l4t&lt;/tt&gt;)</h1>
 <ul>
 <li><code>ROS_DISTRO</code> is parameterized (<code>ARG</code>/<code>ENV</code>), default <code>humble</code> left untouched, but the new compose files (<code>docker/jazzy_cpu.yaml</code>, <code>docker/jazzy_cuda.yaml</code>, <code>docker/jazzy_l4t.yaml</code>) set it to <code>jazzy</code>.</li>
@@ -109,12 +109,12 @@ Base image (&lt;tt&gt;docker/Dockerfile.ROS&lt;/tt&gt;, &lt;tt&gt;docker/Dockerf
 <li><code>Dockerfile.ROS-l4t</code> now bakes in Jetson's own APT repo (<code>repo.download.nvidia.com/jetson/{common,som,ffmpeg}</code>, via <code>docker/jetson-apt/</code>) so CUDA/cuDNN are available at build time (not only at runtime through CDI/CSV mounts), which is required to compile dlib (vision) and CTranslate2 (hri-stt).</li>
 <li><code>ENV NVIDIA_VISIBLE_DEVICES=all</code> / <code>NVIDIA_DRIVER_CAPABILITIES=all</code> added to the l4t base. The old <code>dustynv/l4t-pytorch</code> had them baked in (standard in NVIDIA's Jetson images); ours (<code>ubuntu:24.04</code> + ROS) does not, so <code>runtime: nvidia</code> in the compose files alone was not enough — any process that only checked <code>runtime: nvidia</code> without the env var (e.g. CTranslate2 in hri-stt) did not see the GPU and silently fell back to CPU/int8.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md291"></a>
+<h1><a class="anchor" id="autotoc_md293"></a>
 Host configuration (Orin), outside the repo</h1>
 <ul>
 <li>The kernel's <code>net.core.rmem_max</code>/<code>wmem_max</code> were at Ubuntu's default (~208 KB), far below the 10 MB CycloneDDS asks for on its socket — without this, <b>no</b> ROS 2 node could create its DDS domain (<code>rmw_create_node: failed to create domain, error Error</code>), in any container. Raised to 2 GB via <code>/etc/sysctl.d/60-cyclonedds.conf</code> on the Orin (outside the repo — it is host config, not image config).</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md292"></a>
+<h1><a class="anchor" id="autotoc_md294"></a>
 By area</h1>
 <ul>
 <li><b>hri</b>: <code>dockerfiles/Dockerfile.ROS</code> with no fundamental changes (audio deps<ul>
@@ -137,7 +137,7 @@ By area</h1>
 <li><b>zed</b>: Stereolabs SDK updated from <code>zedsdk/5.0/l4t36.4</code> to <code>zedsdk/5.4/l4t38.4</code> (Stereolabs did publish a build for L4T r38); <code>zed-ros2-wrapper</code> from branch <code>humble-v5.0.0</code> to <code>v5.4.1</code>. The <code>ros</code> user was not in the <code>zed</code> group the SDK installer creates (permissions 770 on <code>/usr/local/zed/lib</code>) — it is now added via <code>usermod -aG zed ros</code> in the Dockerfile, and <code>docker-compose.yaml</code> is fixed to pass <code>group_add: zed</code> by name instead of a stale hardcoded GID (<code>1001</code>, which no longer matches the group's real GID after the rebuild).</li>
 <li><b>frida_interfaces_cache</b>: the l4t compose rebuilt the image from <code>ubuntu:22.04</code> with <code>Dockerfile.ROS</code>, silently overwriting the real <code>jazzy_l4t_base</code> tag with a broken image — fixed to reference the already-built image, with no rebuild of its own.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md293"></a>
+<h1><a class="anchor" id="autotoc_md295"></a>
 Verified (build + GPU smoke test) on the real Orin AGX</h1>
 <ul>
 <li><code>jazzy_l4t_base</code>, <code>hri-l4t</code>, <code>hri-stt-l4t</code>, <code>hri-tts-l4t</code> — CUDA/torch confirmed working inside the container.</li>
@@ -147,7 +147,7 @@ Verified (build + GPU smoke test) on the real Orin AGX</h1>
 <li><code>jazzy_integration-cpu</code> — build and container startup verified.</li>
 <li><code>jazzy_zed-l4t</code> — successful build, SDK and group permissions correct.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md294"></a>
+<h1><a class="anchor" id="autotoc_md296"></a>
 End-to-end hri test (&lt;tt&gt;./run.sh --hric l4t&lt;/tt&gt;)</h1>
 <p>With the <code>NVIDIA_VISIBLE_DEVICES</code> and CycloneDDS sysctl fixes, the full <code>hric</code> stack (hri-ros, stt, tts, postgres, llamacpp) came up:</p><ul>
 <li><code>hri-stt</code>: went from <code>Using device: cpu with compute type: int8</code> (failing with <code>ValueError: Requested int8 compute type...</code>) to <code>Using device: cuda with compute type: float16</code> — working.</li>
@@ -161,7 +161,7 @@ End-to-end hri test (&lt;tt&gt;./run.sh --hric l4t&lt;/tt&gt;)</h1>
 <li><code>hri-ros</code> (<code>docker/hri/compose/hri-ros.yaml</code>) had the same audio problem as <code>tts.yaml</code> (classic PulseAudio socket instead of the PipeWire-Pulse one) — it made <code>audio_capturer.py</code> fail with <code>PyAudio: Invalid input device</code>. The same fix was applied: mount <code>/run/user/${LOCAL_USER_ID}/pulse</code> directly and add <code>SDL_AUDIODRIVER: pulse</code> to the shared <code>x-speech-devices</code>.</li>
 <li><code>frida_interfaces_cache</code> (builds <code>frida_interfaces</code>/<code><a class="el" href="namespacefrida__constants.html">frida_constants</a></code>/ <code>xarm_msgs</code> before <code>hri</code>) can be left in an incomplete build (e.g. interrupted by a reboot) with nothing detecting it: <code>lib.sh</code> only rebuilds the cache if the <code>build/</code> folder does not exist, not if the build inside it failed halfway. When that happens, <code>docker/frida_interfaces_cache/{build,install,log}</code> must be deleted by hand (may need <code>sudo rm -rf</code> if the container ran as root because <code>UID</code>/<code>GID</code> were not exported) and <code>./run.sh hri --build</code> rerun. Detection of an incomplete build was not automated in this iteration.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md295"></a>
+<h1><a class="anchor" id="autotoc_md297"></a>
 zed — verified with a real camera (ZED2 over USB)</h1>
 <p>With the camera connected, 4 chained problems were found and fixed (each one masking the next):</p><ol type="1">
 <li><code>docker/zed/.env</code> on the Orin still had <code>BASE_IMAGE</code>/<code>IMAGE_NAME</code> pointing at <code>jazzy_l4t_base</code>/<code>jazzy_zed-l4t</code> — it was not updated in the image rename. Fixed.</li>
@@ -170,7 +170,7 @@ zed — verified with a real camera (ZED2 over USB)</h1>
 <li><code>/usr/local/zed/settings</code> and <code>/usr/local/zed/resources</code> on the host (mounted into the container) were <code>root:root</code> with no write permission — the SDK needs to write the camera's calibration file there (downloaded by serial) and the TensorRT-optimized neural depth model (~26 MB, compiled on first run). <code>chown 2002:2002</code> (the container's UID) on both.</li>
 </ol>
 <p>With all 4 fixes: <code>=== zed started ===</code>, positional tracking active, publishing real RGB/depth/IMU/point cloud — <code>rgb/color/rect/image</code> confirmed at ~30 Hz via <code>ros2 topic hz</code>.</p>
-<h1><a class="anchor" id="autotoc_md296"></a>
+<h1><a class="anchor" id="autotoc_md298"></a>
 Single &lt;tt&gt;l4t_base&lt;/tt&gt; base image (size optimization)</h1>
 <p>The Jazzy l4t images were much heavier than on <code>main</code> (<code>l4t_base</code> 26 GB, <code>hri-l4t</code> 53 GB, <code>manipulation-l4t</code> 50 GB). <code>docker history</code> showed the cause was not PYTHONPATH but three things:</p>
 <ol type="1">
@@ -253,7 +253,7 @@ Single &lt;tt&gt;l4t_base&lt;/tt&gt; base image (size optimization)</h1>
 <li><b>manipulation:</b> ultralytics, CLIP.</li>
 </ul>
 <p>To add or change a torch/numpy/OpenCV version: edit <code>docker/scripts/constraints-l4t.txt</code> (and the wheel URL in <code>Dockerfile.ROS-l4t</code> if it is torch) and rebuild the base.</p>
-<h1><a class="anchor" id="autotoc_md297"></a>
+<h1><a class="anchor" id="autotoc_md299"></a>
 Pending / out of scope for this iteration</h1>
 <ul>
 <li>The <code>cpu</code>/<code>cuda</code> flavors of each area: not prioritized in this iteration (exclusive focus on <code>l4t</code>, which is the robot's real hardware). </li>
