@@ -35,6 +35,11 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+sys.path.insert(
+    0, str(REPO_ROOT / "vision" / "packages" / "object_detector_2d" / "scripts")
+)
+from embedding_gallery.constants import GALLERY_DIRNAME  # noqa: E402
+
 # Standard ultralytics-hosted weights: name -> YOLO task (None = fetch only)
 STANDARD_MODELS = {
     "yolo11m-pose.pt": "pose",  # hric_commands (wrists), tracker/gpsr/customer pose
@@ -183,11 +188,11 @@ def sync_gallery(dest: Path):
     that are newer at the source: the gallery is expected to change during
     setup day as objects get re-shot or added, unlike the static competition
     YOLO weights."""
-    src = dest / "gallery"
+    src = dest / GALLERY_DIRNAME
     if not src.is_dir():
         return
     for ddir in detector_dirs():
-        target_root = ddir / "gallery"
+        target_root = ddir / GALLERY_DIRNAME
         for item in src.rglob("*"):
             if item.is_dir():
                 continue
@@ -196,7 +201,7 @@ def sync_gallery(dest: Path):
             target.parent.mkdir(parents=True, exist_ok=True)
             if not target.exists() or item.stat().st_mtime > target.stat().st_mtime:
                 shutil.copy2(item, target)
-                print(f"[sync]  gallery/{rel} -> {ddir}")
+                print(f"[sync]  {GALLERY_DIRNAME}/{rel} -> {ddir}")
 
 
 def warmup(dest: Path):
@@ -213,10 +218,6 @@ def warmup(dest: Path):
     try:
         import numpy as np
 
-        sys.path.insert(
-            0,
-            str(REPO_ROOT / "vision" / "packages" / "object_detector_2d" / "scripts"),
-        )
         from detectors.registry import MODEL_CONFIGS
         from embedding_gallery.backbone import EmbeddingBackbone
 

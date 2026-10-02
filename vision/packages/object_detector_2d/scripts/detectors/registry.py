@@ -3,6 +3,8 @@
 import json
 import pathlib
 
+from embedding_gallery.constants import GALLERY_DIRNAME
+
 # .pt files (and the gallery/ dir) live directly beside this file — same
 # place fetch_models.py's sync_detector_models() copies DETECTOR_MODELS to.
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/"
@@ -42,7 +44,7 @@ MODEL_CONFIGS: dict[str, dict] = {
         "type": "embedding",
         "backbone": "vit_base_patch14_dinov2.lvd142m",
         "box_model": "embedding_box_proposer",
-        "gallery_dir": "gallery",
+        "gallery_dir": GALLERY_DIRNAME,
         "translation": "robocup2026_translation.json",
         "use_trt": True,  # 932ms->209ms/8crops on Orin, 0.99995 cosine-sim vs PyTorch
     },

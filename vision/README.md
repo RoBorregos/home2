@@ -236,7 +236,7 @@ Then run it inside the `home2-vision` container, from that same `embedding_galle
 ```bash
 cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
 mkdir -p gallery_photos/<object_name>      # then copy the photos in
-./add_object.sh <object_name>
+./add_object.sh <object_name>              # several names at once, or --all for every folder
 # restart ObjectDetect2D; the object shows up in /vision/detections
 ```
 
@@ -244,8 +244,9 @@ Look at `gallery_photos/<object_name>/_crops/` afterwards: if a crop is not the 
 that photo with the object front and centre.
 
 - It takes about 30 s on the Orin. No code change or rebuild is needed.
-- Only `*.jpg` is read by default. For other extensions pass a glob as the second argument:
-  `./add_object.sh <object_name> "gallery_photos/<object_name>/*.png"`.
+- `.jpg`, `.jpeg` and `.png` photos are read, in any letter case.
+- If one object fails (for example no photo yields a usable box) the others are still
+  built and synced, and the script exits with an error listing it.
 - The gallery is written to `TENSORRT_CACHE_DIR/gallery` (inside the container
   `/workspace/trt_cache/gallery`, on the host `docker/vision/trt_cache/gallery/`) and copied
   beside every `detectors/registry.py` by `fetch_models.py`. `gallery_photos/` and `gallery/`

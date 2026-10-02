@@ -6,6 +6,8 @@ from pathlib import Path
 
 import numpy as np
 
+from embedding_gallery.constants import tensorrt_cache_dir
+
 # Must cover embed_batch()'s chunk_size=32 range — the TRT engine builds
 # once for this whole range; a batch outside it forces a slow rebuild.
 TRT_MIN_BATCH = 1
@@ -48,10 +50,7 @@ class EmbeddingBackbone:
         else:
             # Same cache fetch_models.py's fetch_hf_models() downloads into —
             # must match, or a fresh container finds nothing offline (setdefault: don't clobber a launcher-set value).
-            cache_dir = Path(
-                os.environ.get("TENSORRT_CACHE_DIR", "/workspace/trt_cache")
-            )
-            os.environ.setdefault("HF_HOME", str(cache_dir / "hf_cache"))
+            os.environ.setdefault("HF_HOME", str(tensorrt_cache_dir() / "hf_cache"))
             import timm
 
             model_kwargs = {"pretrained": True, "num_classes": 0}
@@ -71,7 +70,7 @@ class EmbeddingBackbone:
         return self
 
     def _onnx_path(self) -> Path:
-        cache_dir = Path(os.environ.get("TENSORRT_CACHE_DIR", "/workspace/trt_cache"))
+        cache_dir = tensorrt_cache_dir()
         cache_dir.mkdir(parents=True, exist_ok=True)
         safe_name = self.backbone_id.replace("/", "_")
         return cache_dir / f"{safe_name}_{self._input_size}px.onnx"
@@ -117,9 +116,7 @@ class EmbeddingBackbone:
             self.use_trt = False
             return
 
-        cache_dir = str(
-            Path(os.environ.get("TENSORRT_CACHE_DIR", "/workspace/trt_cache"))
-        )
+        cache_dir = str(tensorrt_cache_dir())
         providers = []
         if "TensorrtExecutionProvider" in available:
             min_shape = f"input:{TRT_MIN_BATCH}x3x{self._input_size}x{self._input_size}"

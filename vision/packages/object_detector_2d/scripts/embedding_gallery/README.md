@@ -20,7 +20,7 @@ page holds the background and the production workflow.
 
 | File | Role |
 |---|---|
-| `add_object.sh` | Entry point for setup: takes an object name + photo glob, calls `gallery_build.py` then `fetch_models.py`. |
+| `add_object.sh` | Entry point for setup: takes object names (or `--all`), calls `gallery_build.py` then `fetch_models.py`. |
 | `gallery_build.py` | Crops the main object out of each enrollment photo (same box proposer + oversized-box filter as runtime) and writes `gallery/<object>.npy` + `manifest.json`. |
 | `fetch_models.py` | `sync_gallery()` copies the freshly-built gallery into every `detectors/` directory found (source, `install/`, other checkouts) — without this, a node reading a different copy never sees the new object. |
 | `embedding.py` | `EmbeddingModel` — the runtime detector. Calls the box proposer, applies the `max_box_area_frac` clutter filter, batches the backbone forward pass, and turns matches into `Detection`s. |
@@ -91,8 +91,8 @@ go in `gallery_photos/<object_name>/` inside that directory.
 
 ```bash
 mkdir -p gallery_photos/<object_name>
-# copy 10-30 photos in (gitignored)
-./add_object.sh <object_name>
+# copy 10-30 photos in (.jpg, .jpeg or .png; gitignored)
+./add_object.sh <object_name>            # or several names, or --all for every folder
 ```
 
 Then restart the node. No code change or rebuild is needed (`embedding_gallery` is already in `config/parameters.yaml`). Takes ~30 s on the Orin.
@@ -101,7 +101,7 @@ Then restart the node. No code change or rebuild is needed (`embedding_gallery` 
 1. Builds the entry into `$TENSORRT_CACHE_DIR/gallery` (default `/workspace/trt_cache/gallery`), a mount that persists across containers and fresh clones. `gallery/` in the source tree is gitignored, so writing there would leave a fresh checkout with zero objects.
 2. Runs `fetch_models.py`, whose `sync_gallery()` copies the gallery next to every `detectors/registry.py` it finds (source, `install/`, other checkouts).
 
-The backbone defaults to `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in `registry.py`, and the script refuses to write if the embedding dimension differs from existing objects.
+The backbone is always `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in `registry.py` (there is no option to change it), and the script refuses to write if the embedding dimension differs from existing objects. With several objects, one failure does not stop the rest: they are still built and synced, and the script exits with an error listing the ones that failed. `--no-crop` embeds the photos as they are, only for photos that are already tight crops.
 
 **Gotchas:**
 - `fetch_models.py` may exit 1 even when the gallery sync worked (it also checks unrelated custom weights). `add_object.sh` ignores that code; look for `[sync]  gallery/...` lines instead.

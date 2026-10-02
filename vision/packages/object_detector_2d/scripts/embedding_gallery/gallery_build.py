@@ -1,15 +1,32 @@
 #!/usr/bin/env python3
-"""Build or update one gallery entry (name -> N embeddings) from a folder of
-photos, cropped by the same box proposer + oversized-box filter the runtime detector uses (--no-crop to skip). Every object in one gallery must share the embedding dimension, or Gallery.load() crashes at the next node restart — --backbone defaults to registry.py's MODEL_CONFIGS, don't override it."""
+"""Build gallery entries from photos: one folder per object under gallery_photos/.
+
+Each photo is cropped to its main object with the production box proposer, the
+crops are embedded with the production backbone and saved as <object>.npy, and
+manifest.json is updated. Run it through add_object.sh.
+
+    gallery_build.py <object> [<object> ...] [--no-crop]
+    gallery_build.py --all [--no-crop]
+"""
 
 import argparse
-import glob
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 from detectors.registry import MODEL_CONFIGS, ModelRegistry
+from PIL import Image
+
 from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.constants import (
+    CROPS_DIRNAME,
+    GALLERY_DIRNAME,
+    MANIFEST_NAME,
+    PHOTO_EXTENSIONS,
+    PHOTOS_DIRNAME,
+    tensorrt_cache_dir,
+)
 from embedding_gallery.gallery_matcher import (
     DEFAULT_MARGIN_MIN,
     DEFAULT_MAX_BOX_AREA_FRAC,
@@ -20,24 +37,55 @@ from embedding_gallery.gallery_matcher import (
 RECOMMENDED_MIN_PHOTOS = 10
 RECOMMENDED_MAX_PHOTOS = 30
 
-# Single source of truth for "what backbone does production use" — keeps
-# this default in sync with MODEL_CONFIGS["embedding_gallery"]["backbone"].
-DEFAULT_BACKBONE = MODEL_CONFIGS["embedding_gallery"]["backbone"]
+PHOTOS_DIR = Path(__file__).resolve().parent / PHOTOS_DIRNAME
+
+# Every object in one gallery must share the embedding dimension, so the
+# backbone is always production's (registry.py), never a CLI option.
+BACKBONE_ID = MODEL_CONFIGS["embedding_gallery"]["backbone"]
+
+
+class BuildError(Exception):
+    """One object could not be enrolled; the message says why."""
+
+
+def gallery_dir() -> Path:
+    """Persistent gallery location; fetch_models.py copies it beside every detectors/registry.py."""
+    return tensorrt_cache_dir() / GALLERY_DIRNAME
+
+
+def find_photos(object_name: str) -> list[Path]:
+    folder = PHOTOS_DIR / object_name
+    if not folder.is_dir():
+        return []
+    return sorted(
+        p
+        for p in folder.iterdir()
+        if p.is_file() and p.suffix.lower() in PHOTO_EXTENSIONS
+    )
+
+
+def list_objects() -> list[str]:
+    if not PHOTOS_DIR.is_dir():
+        return []
+    return sorted(
+        d.name
+        for d in PHOTOS_DIR.iterdir()
+        if d.is_dir() and not d.name.startswith(("_", "."))
+    )
 
 
 def load_box_proposer() -> tuple:
-    """Return (proposer, max_box_area_frac) as configured for production.
-
-    Importing `detectors.registry` runs detectors/__init__.py, which registers
-    the model types (yolo, yolo_e, embedding)."""
+    """(proposer, max_box_area_frac) as configured for production."""
     config = MODEL_CONFIGS["embedding_gallery"]
     proposer = ModelRegistry.get(config["box_model"])
     return proposer, config.get("max_box_area_frac", DEFAULT_MAX_BOX_AREA_FRAC)
 
 
 def pick_main_box(detections: list, w: int, h: int, max_area_frac: float):
-    """Pixel box (x1, y1, x2, y2) of the most likely main object, or None —
-    drops oversized boxes (same rule as the runtime detector), then prefers high-confidence boxes near the image centre."""
+    """Pixel box (x1, y1, x2, y2) of the most likely main object, or None.
+
+    Drops oversized boxes (same rule as the runtime detector), then prefers
+    high-confidence boxes near the image centre."""
     best, best_score = None, 0.0
     for det in detections:
         x1 = max(0, int(det.bbox_.x1 * w))
@@ -55,14 +103,17 @@ def pick_main_box(detections: list, w: int, h: int, max_area_frac: float):
     return best
 
 
-def crop_photos(paths: list[str]) -> tuple[list, list[str]]:
-    """Cut each photo to its main object. Returns (crops, kept_paths);
-    photos with no usable box are skipped with a warning."""
-    from PIL import Image
+def crop_photos(
+    paths: list[Path], proposer, max_area_frac: float
+) -> tuple[list, list[Path]]:
+    """Cut each photo to its main object. Returns (crops, kept_paths).
 
-    proposer, max_area_frac = load_box_proposer()
-    crops_dir = Path(paths[0]).parent / "_crops"
+    Photos with no usable box are skipped with a warning. The crops are also
+    saved next to the photos (CROPS_DIRNAME) so they can be reviewed."""
+    crops_dir = paths[0].parent / CROPS_DIRNAME
     crops_dir.mkdir(exist_ok=True)
+    for stale in crops_dir.glob("*.jpg"):
+        stale.unlink()
 
     crops, kept = [], []
     for path in paths:
@@ -72,10 +123,10 @@ def crop_photos(paths: list[str]) -> tuple[list, list[str]]:
             proposer.detect(np.asarray(img)[:, :, ::-1]), w, h, max_area_frac
         )
         if box is None:
-            print(f"[gallery_build] WARNING: no usable box in {path}, skipped")
+            print(f"[gallery_build] WARNING: no usable box in {path.name}, skipped")
             continue
         crop = img.crop(box)
-        crop.save(crops_dir / f"{Path(path).stem}.jpg")
+        crop.save(crops_dir / f"{path.stem}.jpg")
         crops.append(crop)
         kept.append(path)
     print(
@@ -85,114 +136,119 @@ def crop_photos(paths: list[str]) -> tuple[list, list[str]]:
     return crops, kept
 
 
-def build_gallery(
+def build_object(
     object_name: str,
-    photo_glob: str,
-    backbone_id: str,
-    gallery_dir: Path,
+    backbone: EmbeddingBackbone,
+    proposer,
+    max_area_frac: float,
+    out_dir: Path,
     crop: bool = True,
 ) -> int:
-    from PIL import Image
-
-    paths = sorted(glob.glob(photo_glob))
+    """Embed one object's photos and write its entry into out_dir. Returns the photo count."""
+    paths = find_photos(object_name)
     if not paths:
-        raise SystemExit(f"No photos matched {photo_glob!r}")
+        raise BuildError(
+            f"no {'/'.join(PHOTO_EXTENSIONS)} photos in {PHOTOS_DIR / object_name}"
+        )
+    if not (RECOMMENDED_MIN_PHOTOS <= len(paths) <= RECOMMENDED_MAX_PHOTOS):
+        print(
+            f"[gallery_build] WARNING: {len(paths)} photos for {object_name!r} "
+            f"(recommended {RECOMMENDED_MIN_PHOTOS}-{RECOMMENDED_MAX_PHOTOS})"
+        )
 
     if crop:
-        crops, paths = crop_photos(paths)
+        crops, paths = crop_photos(paths, proposer, max_area_frac)
         if not crops:
-            raise SystemExit(
-                f"[gallery_build] no photo of {object_name!r} produced a usable box; "
-                f"retake them with the object front and centre, or pass --no-crop "
-                f"if they are already tight crops"
+            raise BuildError(
+                f"no usable box in any photo of {object_name!r}; retake them with "
+                "the object centered, or use --no-crop for tight crops"
             )
     else:
         crops = [Image.open(p).convert("RGB") for p in paths]
 
-    if not (RECOMMENDED_MIN_PHOTOS <= len(paths) <= RECOMMENDED_MAX_PHOTOS):
-        print(
-            f"[gallery_build] WARNING: {len(paths)} usable photos for {object_name!r} "
-            f"(recommended {RECOMMENDED_MIN_PHOTOS}-{RECOMMENDED_MAX_PHOTOS})"
-        )
-
-    gallery_dir.mkdir(parents=True, exist_ok=True)
-    backbone = EmbeddingBackbone(backbone_id).load()
     vectors = l2_normalize(backbone.embed_batch(crops))
 
-    # Check dimension against another object BEFORE writing anything — a
-    # wrong --backbone used to write a bad .npy silently and crash later.
-    manifest_path = gallery_dir / "manifest.json"
-    existing_manifest = (
-        json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
-    )
-    for other_name, other_cfg in (existing_manifest.get("objects") or {}).items():
-        if other_name == object_name:
-            continue
-        other_npy = gallery_dir / other_cfg["npy"]
-        if not other_npy.exists():
+    # Check the dimension against the other objects BEFORE writing anything.
+    manifest_path = out_dir / MANIFEST_NAME
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+    for other_name, other_cfg in (manifest.get("objects") or {}).items():
+        other_npy = out_dir / other_cfg["npy"]
+        if other_name == object_name or not other_npy.exists():
             continue
         other_dim = np.load(other_npy, mmap_mode="r").shape[-1]
         if other_dim != vectors.shape[-1]:
-            raise SystemExit(
-                f"[gallery_build] REFUSING: {object_name!r} embedded at {vectors.shape[-1]} dims "
-                f"(backbone={backbone_id!r}), but {other_name!r} in this gallery is {other_dim} dims "
-                f"(backbone={other_cfg.get('backbone')!r}). Every object in one gallery/ must use the "
-                f"SAME --backbone, or the whole gallery crashes at the next node restart, not now."
+            raise BuildError(
+                f"{object_name!r} has {vectors.shape[-1]} dims but {other_name!r} "
+                f"has {other_dim} (backbone={other_cfg.get('backbone')!r}); every "
+                f"object in {GALLERY_DIRNAME}/ must share one backbone"
             )
 
+    out_dir.mkdir(parents=True, exist_ok=True)
     npy_name = f"{object_name}.npy"
-    np.save(gallery_dir / npy_name, vectors)
+    np.save(out_dir / npy_name, vectors)
 
-    manifest = existing_manifest
-    manifest.setdefault("objects", {})
-    existing = manifest["objects"].get(object_name, {})
-    manifest["objects"][object_name] = {
+    objects = manifest.setdefault("objects", {})
+    previous = objects.get(object_name, {})
+    objects[object_name] = {
         "npy": npy_name,
         "num_photos": len(paths),
-        "backbone": backbone_id,
-        # Preserve hand-tuned thresholds across rebuilds; seed from Phase 1's
-        # calibrated defaults (or the module defaults) only the first time.
-        "min_similarity": existing.get("min_similarity", DEFAULT_MIN_SIMILARITY),
-        "margin_min": existing.get("margin_min", DEFAULT_MARGIN_MIN),
+        "backbone": BACKBONE_ID,
+        # Keep hand-tuned thresholds across rebuilds; seed new objects with the
+        # calibrated defaults.
+        "min_similarity": previous.get("min_similarity", DEFAULT_MIN_SIMILARITY),
+        "margin_min": previous.get("margin_min", DEFAULT_MARGIN_MIN),
     }
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
-    print(
-        f"[gallery_build] {object_name}: {len(paths)} photos -> {gallery_dir / npy_name}"
-    )
+    print(f"[gallery_build] {object_name}: {len(paths)} photos -> {out_dir / npy_name}")
     return len(paths)
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "--object", required=True, help="canonical object name (gallery key)"
+        "objects",
+        nargs="*",
+        help=f"object names (folders under {PHOTOS_DIRNAME}/)",
     )
     parser.add_argument(
-        "--photos", required=True, help='glob pattern, e.g. "gallery_photos/coke/*.jpg"'
+        "--all", action="store_true", help=f"every folder under {PHOTOS_DIRNAME}/"
     )
-    parser.add_argument(
-        "--backbone",
-        default=DEFAULT_BACKBONE,
-        help="timm model id, or clip:<name> (e.g. clip:ViT-B/32) — defaults to "
-        "production's embedding_gallery backbone; see module docstring before overriding",
-    )
-    parser.add_argument("--gallery-dir", default="gallery")
     parser.add_argument(
         "--no-crop",
         action="store_true",
-        help="embed photos as-is (use only if they are already tight object crops)",
+        help="embed photos as they are (only if they are already tight object crops)",
     )
     args = parser.parse_args()
-    build_gallery(
-        args.object,
-        args.photos,
-        args.backbone,
-        Path(args.gallery_dir),
-        crop=not args.no_crop,
-    )
+    if args.all == bool(args.objects):
+        parser.error("pass object names, or --all (not both, not neither)")
+
+    names = list_objects() if args.all else args.objects
+    if not names:
+        print(f"[gallery_build] no object folders in {PHOTOS_DIR}")
+        return 1
+
+    crop = not args.no_crop
+    proposer, max_area_frac = load_box_proposer() if crop else (None, None)
+    backbone = EmbeddingBackbone(BACKBONE_ID).load()
+    out_dir = gallery_dir()
+
+    failures = {}
+    for name in names:
+        try:
+            build_object(name, backbone, proposer, max_area_frac, out_dir, crop)
+        except BuildError as e:
+            print(f"[gallery_build] FAILED {name}: {e}")
+            failures[name] = str(e)
+
+    if failures:
+        print(
+            f"[gallery_build] {len(failures)}/{len(names)} failed: {sorted(failures)}"
+        )
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

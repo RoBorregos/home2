@@ -70,7 +70,7 @@ Vision is divided into the following packages:
 # Adding an object
 
 Objects outside the finetuned YOLO can be added from photos, without retraining. Put the
-photos (10-30 `.jpg`, one folder per object) in:
+photos (10-30 `.jpg`/`.jpeg`/`.png`, one folder per object) in:
 
 ```
 vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/
@@ -83,7 +83,7 @@ Inside the `home2-vision` container that is
 
 ```bash
 mkdir -p gallery_photos/<object_name>   # if it does not exist yet
-./add_object.sh <object_name>
+./add_object.sh <object_name>   # several names at once, or --all for every folder
 ```
 
 Restart `ObjectDetect2D` afterwards. Details and troubleshooting:
