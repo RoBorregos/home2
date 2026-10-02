@@ -84,17 +84,12 @@ add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYP
 case $ENV_TYPE in
     "cpu")
         add_or_update_variable .env "DOCKER_RUNTIME" "runc"
-        PROFILES=("cpu_l4t")
-        ;;
-    "gpu")
-        add_or_update_variable .env "DOCKER_RUNTIME" "runc"
-        PROFILES=("gpu")
         ;;
     *)
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
-        PROFILES=("cpu_l4t")
         ;;
 esac
+PROFILES=("cpu_l4t")
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
