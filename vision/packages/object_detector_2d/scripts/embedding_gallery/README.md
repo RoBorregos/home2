@@ -25,7 +25,7 @@ page holds the background and the production workflow.
 | `fetch_models.py` | `sync_gallery()` copies the freshly-built gallery into every `detectors/` directory found (source, `install/`, other checkouts) — without this, a node reading a different copy never sees the new object. |
 | `embedding.py` | `EmbeddingModel` — the runtime detector. Calls the box proposer, applies the `max_box_area_frac` clutter filter, batches the backbone forward pass, and turns matches into `Detection`s. |
 | `yolo_e.py` | `YoloEModel` — wraps YOLOE in prompt-free mode as the class-agnostic box proposer. |
-| `image_embedder.py` | `ImageEmbedder` — loads the frozen DINOv2 ViT-B/14 (TensorRT-accelerated) and embeds a batch of crops. |
+| `image_embedder.py` | `ImageEmbedder` — loads the frozen DINOv2 ViT-B/14 (TensorRT-accelerated: 8 crops take 209 ms instead of 932 ms on the Orin, 0.99995 cosine similarity vs PyTorch) and embeds a batch of crops. |
 | `gallery_matcher.py` | `Gallery` — cosine similarity against the gallery with a per-class floor + top1-vs-top2 margin; also owns `DEFAULT_MAX_BOX_AREA_FRAC`. |
 | `registry.py` | Wires `embedding_gallery` in `MODEL_CONFIGS`, loaded by the node at startup. |
 
@@ -82,23 +82,43 @@ The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a
 
 ## Production workflow: adding an object
 
-Run from inside the container, with your shell in
-`/workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery/` (on the host:
-`vision/packages/object_detector_2d/scripts/embedding_gallery/`; the repo is bind-mounted). The photos
-go in `gallery_photos/<object_name>/` inside that directory.
+**Where the photos go.** One folder per object, named after it (the name becomes the label).
+`gallery_photos/` is gitignored and does not exist on a fresh clone, so create it:
+
+| Where | Path |
+|---|---|
+| Repo (host) | `vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/` |
+| Inside `home2-vision` | `/workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/` |
+
+The repo is bind-mounted into the container (`../../:/workspace/src`), so photos copied into the
+host path show up inside the container without `docker cp`.
+
+```
+embedding_gallery/
+├── add_object.sh
+└── gallery_photos/
+    └── ps5_controller/          # <object_name>
+        ├── 001.jpg              # 10-30 photos
+        ├── 002.jpg
+        └── _crops/              # created by add_object.sh: the crop taken from each photo
+```
 
 **Capture tips:** use the robot camera (not a phone), arena-like lighting, at least 4 angles, 2-3 distances, 2-3 shots with occlusion or clutter, 10-30 photos total.
 
+Then, inside the `home2-vision` container:
+
 ```bash
-mkdir -p gallery_photos/<object_name>
-# copy 10-30 photos in (.jpg, .jpeg or .png; gitignored)
+cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
+mkdir -p gallery_photos/<object_name>    # then copy the photos in (.jpg, .jpeg or .png, any letter case)
 ./add_object.sh <object_name>            # or several names, or --all for every folder
 ```
 
-Then restart the node. No code change or rebuild is needed (`embedding_gallery` is already in `config/parameters.yaml`). Takes ~30 s on the Orin.
+Look at `gallery_photos/<object_name>/_crops/` afterwards: if a crop is not the object, retake that photo with the object front and centre.
+
+Then restart the node. No code change or rebuild is needed (`embedding_gallery` is already in `config/parameters.yaml`). Takes ~30 s on the Orin. After a fresh setup the first node start also builds the TensorRT engine, which takes several minutes: run `./run.sh vision --warmup` beforehand to avoid it.
 
 `add_object.sh`:
-1. Builds the entry into `$TENSORRT_CACHE_DIR/gallery` (default `/workspace/trt_cache/gallery`), a mount that persists across containers and fresh clones. `gallery/` in the source tree is gitignored, so writing there would leave a fresh checkout with zero objects.
+1. Builds the entry into `$TENSORRT_CACHE_DIR/gallery` (default `/workspace/trt_cache/gallery`, on the host `docker/vision/trt_cache/gallery/`), a mount that persists across containers and fresh clones. `gallery/` in the source tree is gitignored, so writing there would leave a fresh checkout with zero objects.
 2. Runs `fetch_models.py`, whose `sync_gallery()` copies the gallery next to every `detectors/registry.py` it finds (source, `install/`, other checkouts).
 
 The backbone is always `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in `registry.py` (there is no option to change it), and the script refuses to write if the embedding dimension differs from existing objects. With several objects, one failure does not stop the rest: they are still built and synced, and the script exits with an error listing the ones that failed. `--no-crop` embeds the photos as they are, only for photos that are already tight crops.
@@ -122,5 +142,7 @@ The backbone is always `MODEL_CONFIGS["embedding_gallery"]["backbone"]` in `regi
 ```
 
 Drop the new `.pt` beside `registry.py`, update `filename`, and write a new translation JSON (raw class → published label) or remove the key. Thresholds in `gallery_matcher.py` and `known_limitation_classes` in `dataset_config.json` were tuned on RCW2026_v2; treat them as a starting point and re-run the `embeddings` and `e2e_calibrate` tasks on your own data.
+
+**Using both:** to keep the old model too, add a second entry in `MODEL_CONFIGS` instead of replacing this one, and list both under `models:` in `config/parameters.yaml`. `ObjectDetect2D` runs every listed model and IoU-dedupes across them (threshold 0.6), which is how `yolo_finetuned` and `embedding_gallery` already run together.
 
 **Swapping the benchmark dataset:** run `./run.sh prepare --source` on the new export and edit `dataset_config.json`, the only place dataset-specific class names live (`out_of_gallery_classes`, `hard_negative_classes`, `known_limitation_classes`; see "Configuration" in the [benchmark README](../../../../benchmarks/embedding_gallery/README.md)). `known_limitation_classes` can only be found from a run's confusion breakdown.

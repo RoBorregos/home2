@@ -48,6 +48,15 @@ def load_dataset_config(path: Path | None = None) -> dict[str, set[str]]:
     return {k: set(data.get(k, [])) for k in keys}
 
 
+def require_dir(path: Path) -> Path:
+    """Returns `path`, or exits with a hint when data/ has not been built yet."""
+    if not path.is_dir():
+        raise SystemExit(
+            f"{path} not found: build data/ first with `./run.sh prepare --source <export>`."
+        )
+    return path
+
+
 def load_translation() -> dict[str, str]:
     """Raw class name -> published label, or {} if no translation file exists."""
     if not TRANSLATION_PATH.exists():

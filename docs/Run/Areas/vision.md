@@ -69,25 +69,16 @@ Vision is divided into the following packages:
 
 # Adding an object
 
-Objects outside the finetuned YOLO can be added from photos, without retraining. Put the
-photos (10-30 `.jpg`/`.jpeg`/`.png`, one folder per object) in:
-
-```
-vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/
-```
-
-Inside the `home2-vision` container that is
-`/workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/`
-(the repo is bind-mounted, so copying into the host path is enough). Then, from the
-`embedding_gallery/` directory inside the container:
+Objects outside the finetuned YOLO can be added from photos, without retraining. Put 10-30
+photos in `vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/`
+and, inside `home2-vision`:
 
 ```bash
-mkdir -p gallery_photos/<object_name>   # if it does not exist yet
-./add_object.sh <object_name>   # several names at once, or --all for every folder
+cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
+./add_object.sh <object_name>   # then restart ObjectDetect2D
 ```
 
-Restart `ObjectDetect2D` afterwards. Details and troubleshooting:
-[vision/README.md](../../../vision/README.md) (section "Adding an object to the gallery").
+More in [embedding_gallery/README.md](../../../vision/packages/object_detector_2d/scripts/embedding_gallery/README.md).
 
 # Camera
 

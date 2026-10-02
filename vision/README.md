@@ -205,59 +205,21 @@ Each node has a fixed activation topic (`/vision/object_detector/active`,
 
 #### Adding an object to the gallery (few-shot)
 
-`yolo_finetuned` only knows its training classes. Anything else can be added from photos,
-with no retraining: YOLOE (prompt-free) proposes boxes, DINOv2 embeds each crop, and cosine
-similarity against a per-object gallery decides the label. A crop that does not match any
-object closely enough is dropped as unknown.
+`yolo_finetuned` only knows its training classes. Other objects can be added from photos, with
+no retraining: YOLOE proposes boxes and DINOv2 matches each crop against a per-object gallery.
+It runs alongside `yolo_finetuned` (both are listed in `config/parameters.yaml`).
 
-**Where the photos go.** One folder per object, named after the object (that name becomes the
-label). `gallery_photos/` is gitignored and does not exist on a fresh clone, so create it:
-
-| Where | Path |
-| --- | --- |
-| Repo (host) | `vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/` |
-| Inside `home2-vision` | `/workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/` |
-
-The repo is bind-mounted into the container (`../../:/workspace/src`), so photos copied into
-the host path show up inside the container without `docker cp`. Example layout:
-
-```
-vision/packages/object_detector_2d/scripts/embedding_gallery/
-├── add_object.sh
-└── gallery_photos/
-    └── ps5_controller/          # <object_name>
-        ├── 001.jpg              # 10-30 photos: robot camera, arena-like lighting,
-        ├── 002.jpg              # several angles and distances
-        └── _crops/              # created by add_object.sh: the crop taken from each photo
-```
-
-Then run it inside the `home2-vision` container, from that same `embedding_gallery/` directory:
+Put 10-30 photos in
+`vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/`,
+then, inside `home2-vision`:
 
 ```bash
 cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
-mkdir -p gallery_photos/<object_name>      # then copy the photos in
-./add_object.sh <object_name>              # several names at once, or --all for every folder
-# restart ObjectDetect2D; the object shows up in /vision/detections
+./add_object.sh <object_name>    # then restart ObjectDetect2D
 ```
 
-Look at `gallery_photos/<object_name>/_crops/` afterwards: if a crop is not the object, retake
-that photo with the object front and centre.
-
-- It takes about 30 s on the Orin. No code change or rebuild is needed.
-- `.jpg`, `.jpeg` and `.png` photos are read, in any letter case.
-- If one object fails (for example no photo yields a usable box) the others are still
-  built and synced, and the script exits with an error listing it.
-- The gallery is written to `TENSORRT_CACHE_DIR/gallery` (inside the container
-  `/workspace/trt_cache/gallery`, on the host `docker/vision/trt_cache/gallery/`) and copied
-  beside every `detectors/registry.py` by `fetch_models.py`. `gallery_photos/` and `gallery/`
-  are gitignored, so photos are not versioned.
-- After a fresh setup the first node start builds the DINOv2 TensorRT engine, which takes
-  several minutes. Run `./run.sh vision --warmup` beforehand to avoid that (see
-  *Weights are provisioned up front*).
-
-Background, accuracy numbers and troubleshooting are in
-[`embedding_gallery/README.md`](packages/object_detector_2d/scripts/embedding_gallery/README.md); the benchmark that chose
-the defaults is in [`benchmarks/embedding_gallery/`](benchmarks/embedding_gallery/README.md).
+Options, accuracy and troubleshooting: [`embedding_gallery/README.md`](packages/object_detector_2d/scripts/embedding_gallery/README.md).
+The benchmark behind the defaults: [`benchmarks/embedding_gallery/`](benchmarks/embedding_gallery/README.md).
 
 ### `vision_general`
 

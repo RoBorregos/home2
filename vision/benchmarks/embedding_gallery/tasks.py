@@ -28,6 +28,7 @@ from lib.dataset import (
     REJECTION_TARGET,
     RESULTS_DIR,
     load_translation,
+    require_dir,
 )
 from lib.embed import (
     collect_real_crops,
@@ -67,12 +68,12 @@ class BoxesTask:
 
     @classmethod
     def run(cls, data=DATA_DIR / "box_recall", iou_threshold=0.5, **_) -> dict:
-        data_dir = Path(data)
+        data_dir = require_dir(Path(data))
         ann_path = data_dir / "annotations.json"
         if not ann_path.exists():
             raise SystemExit(
-                f"No {ann_path} found. Box recall needs a hand-labeled validation "
-                "set (run prepare_dataset.py) before it can measure anything."
+                f"No {ann_path}: box recall needs the labeled images that "
+                "`./run.sh prepare --source <export>` builds."
             )
         annotations = json.loads(ann_path.read_text())
         candidates = json.loads(MODELS_PATH.read_text())["box_proposers"]

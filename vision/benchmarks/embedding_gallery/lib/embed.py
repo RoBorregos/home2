@@ -12,6 +12,7 @@ from lib.dataset import (
     E2E_CACHE_PATH,
     OUT_OF_GALLERY_CLASSES,
     load_translation,
+    require_dir,
 )
 from lib.metrics import match_gt_to_boxes
 from lib.prepare_dataset import iter_split, load_class_names
@@ -27,7 +28,7 @@ def _load_images(paths: list[Path]):
 def embed_gallery_photos(backbone) -> dict[str, np.ndarray]:
     """Embeds data/gallery_photos/<object>/*.{jpg,png}: {object: [N, D]}."""
     embeddings = {}
-    for obj_dir in sorted((DATA_DIR / "gallery_photos").iterdir()):
+    for obj_dir in sorted(require_dir(DATA_DIR / "gallery_photos").iterdir()):
         if not obj_dir.is_dir():
             continue
         paths = sorted(
@@ -45,7 +46,7 @@ def embed_labeled_dir(
     backbone, data_dir: Path
 ) -> tuple[list[str], list[str], np.ndarray]:
     """Returns (filenames, labels, embeddings[N, D]) from annotations.json."""
-    ann_path = data_dir / "annotations.json"
+    ann_path = require_dir(data_dir) / "annotations.json"
     if not ann_path.exists():
         raise SystemExit(f"No {ann_path}, see README.md for the expected format.")
     labels_by_file = json.loads(ann_path.read_text())
@@ -59,7 +60,7 @@ def embed_unlabeled_dir(backbone, data_dir: Path) -> tuple[list[str], np.ndarray
     """Returns (filenames, embeddings[N, D]) for every image in data_dir."""
     filenames = sorted(
         p.name
-        for p in data_dir.iterdir()
+        for p in require_dir(data_dir).iterdir()
         if p.suffix.lower() in (".jpg", ".jpeg", ".png")
     )
     if not filenames:
