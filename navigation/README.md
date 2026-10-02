@@ -269,7 +269,9 @@ ros2 run task_manager test_navigation_manager.py
 ```
 
 Failures print the reason, and the values read (voltages, axis states, scan
-quality) are listed at the end.
+quality, how far `Explore Zone` moved and how close `Return to Origin` stopped)
+are listed at the end. `Explore Zone` fails if the robot reports the goal reached
+without advancing at least 0.5 m of its 1 m step.
 
 `wheels:=true` spins the base in place while reading `/odrive/vel_est`, so it
 reports any wheel that does not turn or that turns the wrong way. It needs a
@@ -279,9 +281,19 @@ clear floor and only `omni_basics.launch.py`:
 ros2 run task_manager test_navigation_manager.py --ros-args -p wheels:=true
 ```
 
+In the Gazebo sim (`./run.sh simulation --nav`, see
+[`simulation/frida_gz_sim`](../simulation/frida_gz_sim/README.md)) there is no
+ODrive, so `sim:=true` skips the motor, voltage and wheel checks:
+
+```bash
+./run.sh simulation   # shell in the sim container
+ros2 run task_manager test_navigation_manager.py --ros-args -p sim:=true
+```
+
 | Parameter | Default | |
 | --- | --- | --- |
 | `basics` | `true` | Run the base/lidar/TF/service checks |
+| `sim` | `false` | Gazebo sim: skip the ODrive motor, voltage and wheel checks |
 | `wheels` | `false` | Spin the base to test each wheel |
 | `dock` | `false` | Include `dock_table` |
 | `mocked` | `false` | Use the subtask manager mocks, skips the basics |

@@ -37,7 +37,10 @@ WHEEL_TEST_WZ = 0.6
 WHEEL_TEST_TIME = 1.5
 WHEEL_MIN_VEL = 0.1
 
-EXPLORE_STEP = 0.4
+# nav2 accepts a goal within xy_goal_tolerance (0.35 m), so a shorter step
+# can finish having barely moved
+EXPLORE_STEP = 1.0
+MIN_EXPLORE_ADVANCE = 0.5
 
 
 def _front_point(x: float = 1.2) -> PointStamped:
@@ -60,6 +63,8 @@ class TestNavigationManager(Node):
         self.test_dock = self.declare_parameter("dock", False).value
         self.cmd_vel_topic = self.declare_parameter("cmd_vel_topic", "/cmd_vel").value
         self.stamped_cmd_vel = self.declare_parameter("stamped_cmd_vel", True).value
+        # Gazebo has no ODrive, so the motor, voltage and wheel checks are skipped
+        self.sim = self.declare_parameter("sim", False).value
 
         print(f"\n{Logger.BOLD}Starting Navigation Subtask \n")
 
@@ -73,14 +78,15 @@ class TestNavigationManager(Node):
 
         self.basic_funcs = {}
         if self.run_basics and not self.mocked:
-            self.basic_funcs = {
-                "Base Motors": {"func": self.check_motors},
-                "Bus Voltage": {"func": self.check_bus_voltage},
-                "Lidar": {"func": self.check_scan},
-                "Localization (TF map -> base_link)": {"func": self.check_localization},
-                "Nav Services": {"func": self.check_services},
+            if not self.sim:
+                self.basic_funcs["Base Motors"] = {"func": self.check_motors}
+                self.basic_funcs["Bus Voltage"] = {"func": self.check_bus_voltage}
+            self.basic_funcs["Lidar"] = {"func": self.check_scan}
+            self.basic_funcs["Localization (TF map -> base_link)"] = {
+                "func": self.check_localization
             }
-            if self.test_wheels:
+            self.basic_funcs["Nav Services"] = {"func": self.check_services}
+            if self.test_wheels and not self.sim:
                 self.basic_funcs["Wheels"] = {"func": self.check_wheels}
 
         self.tests_funcs = {
@@ -114,10 +120,10 @@ class TestNavigationManager(Node):
                 "standoff": 0.5,
             },
             "Explore Zone": {
-                "func": self.navigation_manager.explore_zone,
+                "func": self.explore_zone,
                 "step": EXPLORE_STEP,
             },
-            "Return to Origin": {"func": self.navigation_manager.return_to_origin},
+            "Return to Origin": {"func": self.return_to_origin},
         }
         if self.test_dock:
             self.tests_funcs["Dock Table"] = {
@@ -125,7 +131,8 @@ class TestNavigationManager(Node):
                 "offset": 0.0,
             }
 
-        print(f"\n{Logger.BOLD}Testing {len(self.tests_funcs)} available subtaks..... \n")
+        total = len(self.basic_funcs) + len(self.tests_funcs)
+        print(f"\n{Logger.BOLD}Testing {total} available subtasks..... \n")
         self.run()
 
     def collect(self, topic, msg_type, count=1):
@@ -243,6 +250,35 @@ class TestNavigationManager(Node):
         missing = [c.srv_name for c in clients if not c.wait_for_service(timeout_sec=2.0)]
         assert not missing, f"Services down: {missing}"
 
+    def _pose_xy(self):
+        status, pose = self.navigation_manager.get_current_pose()
+        if status != Status.EXECUTION_SUCCESS or pose is None:
+            return None
+        return pose.pose.position.x, pose.pose.position.y
+
+    def explore_zone(self, step):
+        """explore_zone, also checking the robot really moved forward."""
+        before = None if self.mocked else self._pose_xy()
+        result = self.navigation_manager.explore_zone(step)
+        if self.mocked or result[0] != Status.EXECUTION_SUCCESS:
+            return result
+        after = self._pose_xy()
+        assert before and after, "Could not read the pose to measure the step"
+        moved = math.dist(before, after)
+        self.readings.append(f"  explore     : moved {moved:.2f} m of a {step} m step")
+        assert moved >= MIN_EXPLORE_ADVANCE, f"Goal reported reached but moved only {moved:.2f} m"
+        return result
+
+    def return_to_origin(self):
+        result = self.navigation_manager.return_to_origin()
+        origin = self.navigation_manager._origin_pose
+        if not self.mocked and result[0] == Status.EXECUTION_SUCCESS and origin is not None:
+            now = self._pose_xy()
+            if now:
+                gap = math.dist(now, (origin.pose.position.x, origin.pose.position.y))
+                self.readings.append(f"  origin      : stopped {gap:.2f} m from the start pose")
+        return result
+
     def check_basic(self, func, *args, **kwargs):
         func(**kwargs)
 
@@ -260,7 +296,7 @@ class TestNavigationManager(Node):
     def run(self):
         passed = 0
         failed = 0
-        if self.test_wheels and not self.mocked:
+        if self.test_wheels and not self.mocked and not self.sim:
             print(
                 f"  {Logger.RED}{Logger.BOLD}Wheel test moves the robot, "
                 f"starting in 5s...{Logger.RESET}"
