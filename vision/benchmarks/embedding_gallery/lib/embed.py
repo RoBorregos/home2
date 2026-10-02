@@ -71,6 +71,33 @@ def embed_unlabeled_dir(backbone, data_dir: Path) -> tuple[list[str], np.ndarray
     return filenames, embeddings
 
 
+def sample_images(source: Path, split: str, n_images: int, seed: int) -> list:
+    """Seeded sample of (image_path, [(label, bbox_px), ...]) from a YOLO-seg export split."""
+    names = load_class_names(source)
+    samples = list(iter_split(source, split, names, load_translation()))
+    np.random.default_rng(seed).shuffle(samples)
+    return samples[:n_images]
+
+
+def split_ground_truth(gt_boxes: list, gallery_labels: set) -> tuple[list, list]:
+    """Splits ground truth into (objects in the gallery, out-of-gallery objects)."""
+    in_gallery = [(label, bbox) for label, bbox in gt_boxes if label in gallery_labels]
+    out_of_gallery = [
+        (label, bbox) for label, bbox in gt_boxes if label in OUT_OF_GALLERY_CLASSES
+    ]
+    return in_gallery, out_of_gallery
+
+
+def clip_proposals(proposals: list, width: int, height: int) -> list:
+    """Clips the proposer's boxes to the image and drops empty ones: [([x1, y1, x2, y2], polygon)]."""
+    clipped = []
+    for (x1, y1, x2, y2), poly in proposals:
+        x1, y1, x2, y2 = max(0, x1), max(0, y1), min(width, x2), min(height, y2)
+        if x2 > x1 and y2 > y1:
+            clipped.append(([x1, y1, x2, y2], poly))
+    return clipped
+
+
 def collect_real_crops(
     source: Path,
     split: str,
@@ -88,9 +115,6 @@ def collect_real_crops(
     import cv2
     from PIL import Image as PILImage
 
-    names = load_class_names(source)
-    translation = load_translation()
-
     print("[calib] loading gallery (data/gallery_photos/, clean enrollment crops)...")
     backbone = ImageEmbedder(backbone_id).load()
     gallery_embeddings = embed_gallery_photos(backbone)
@@ -104,10 +128,7 @@ def collect_real_crops(
     print("[calib] loading box proposer (YOLOE prompt-free, conf=0.10)...")
     propose = make_box_proposer()
 
-    rng = np.random.default_rng(seed)
-    samples = list(iter_split(source, split, names, translation))
-    rng.shuffle(samples)
-    samples = samples[:n_images]
+    samples = sample_images(source, split, n_images, seed)
     print(f"[calib] extracting real-crop embeddings from {len(samples)} images...")
 
     held_out_labels, held_out_emb = [], []
@@ -118,26 +139,16 @@ def collect_real_crops(
         image = cv2.imread(str(img_path))
         if image is None:
             continue
-        h, w = image.shape[:2]
-
-        gt_in_gallery = [
-            (label, bbox) for label, bbox in gt_boxes if label in gallery_labels
-        ]
-        gt_ood = [
-            (label, bbox) for label, bbox in gt_boxes if label in OUT_OF_GALLERY_CLASSES
-        ]
+        gt_in_gallery, gt_ood = split_ground_truth(gt_boxes, gallery_labels)
         if not gt_in_gallery and not gt_ood:
             continue
 
-        crops, kept_px = [], []
-        for bbox, _poly in propose(image):
-            x1, y1, x2, y2 = bbox
-            x1, y1 = max(0, x1), max(0, y1)
-            x2, y2 = min(w, x2), min(h, y2)
-            if x2 <= x1 or y2 <= y1:
-                continue
-            crops.append(PILImage.fromarray(image[y1:y2, x1:x2][:, :, ::-1]))
-            kept_px.append([x1, y1, x2, y2])
+        h, w = image.shape[:2]
+        kept_px = [box for box, _ in clip_proposals(propose(image), w, h)]
+        crops = [
+            PILImage.fromarray(image[y1:y2, x1:x2][:, :, ::-1])
+            for x1, y1, x2, y2 in kept_px
+        ]
 
         crop_emb = (
             backbone.embed_batch(crops)
