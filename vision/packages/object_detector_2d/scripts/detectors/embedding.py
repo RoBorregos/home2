@@ -4,9 +4,14 @@ DINOv2-B embeddings matched via gallery_matcher.Gallery — no retraining to add
 import numpy as np
 from PIL import Image
 
-from .backbone import EmbeddingBackbone
+from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.gallery_matcher import (
+    DEFAULT_MAX_BOX_AREA_FRAC,
+    UNKNOWN,
+    Gallery,
+)
+
 from .base import Detection, DetectorModel
-from .gallery_matcher import DEFAULT_MAX_BOX_AREA_FRAC, UNKNOWN, Gallery
 from .registry import MODELS_PATH, ModelRegistry
 
 

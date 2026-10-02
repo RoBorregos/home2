@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from backbone import EmbeddingBackbone
+from embedding_gallery.backbone import EmbeddingBackbone
 
 from lib.dataset import (
     DATA_DIR,

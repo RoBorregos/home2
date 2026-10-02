@@ -5,7 +5,7 @@ each crop, and cosine similarity against a per-object gallery decides the
 label. Adding an object needs photos, not retraining.
 
 The benchmark that chose the backbone and calibrated the thresholds lives in
-`vision/benchmarks/embedding_gallery/` (see its README for how to run it). This
+`vision/benchmarks/embedding_gallery/` (see its [README](../../../../benchmarks/embedding_gallery/README.md) for how to run it). This
 page holds the background and the production workflow.
 
 - **Adding an object?** → [Production workflow](#production-workflow-adding-an-object)
@@ -14,7 +14,9 @@ page holds the background and the production workflow.
 
 ## How it works
 
-![Setup and runtime flow for the embedding gallery](diagrams/embedding_gallery_process.png)
+![Setup and runtime flow for the embedding gallery](embedding_gallery_process.png)
+
+`add_object.sh`, `gallery_build.py`, `backbone.py` and `gallery_matcher.py` live in this folder. `embedding.py`, `yolo_e.py` and `registry.py` stay in `../detectors/` (the node's plugin layer: `EmbeddingModel` is the only `DetectorModel` here), and `fetch_models.py` is `vision/scripts/fetch_models.py`.
 
 | File | Role |
 |---|---|
@@ -81,8 +83,8 @@ The original target (recall@1 ≥ 90%, rejection ≥ 80%) was not reached with a
 ## Production workflow: adding an object
 
 Run from inside the container, with your shell in
-`/workspace/src/vision/packages/object_detector_2d/scripts/detectors/` (on the host:
-`vision/packages/object_detector_2d/scripts/detectors/`; the repo is bind-mounted). The photos
+`/workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery/` (on the host:
+`vision/packages/object_detector_2d/scripts/embedding_gallery/`; the repo is bind-mounted). The photos
 go in `gallery_photos/<object_name>/` inside that directory.
 
 **Capture tips:** use the robot camera (not a phone), arena-like lighting, at least 4 angles, 2-3 distances, 2-3 shots with occlusion or clutter, 10-30 photos total.

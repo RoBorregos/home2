@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from gallery_matcher import UNKNOWN
+from embedding_gallery.gallery_matcher import UNKNOWN
 
 from lib.dataset import (
     KNOWN_LIMITATION_CLASSES,

@@ -9,7 +9,7 @@ import itertools
 from collections.abc import Iterable
 
 import numpy as np
-from gallery_matcher import UNKNOWN, Gallery
+from embedding_gallery.gallery_matcher import UNKNOWN, Gallery
 
 from lib.dataset import (
     KNOWN_LIMITATION_CLASSES,

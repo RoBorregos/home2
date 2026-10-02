@@ -215,17 +215,10 @@ def warmup(dest: Path):
 
         sys.path.insert(
             0,
-            str(
-                REPO_ROOT
-                / "vision"
-                / "packages"
-                / "object_detector_2d"
-                / "scripts"
-                / "detectors"
-            ),
+            str(REPO_ROOT / "vision" / "packages" / "object_detector_2d" / "scripts"),
         )
-        from backbone import EmbeddingBackbone
-        from registry import MODEL_CONFIGS
+        from detectors.registry import MODEL_CONFIGS
+        from embedding_gallery.backbone import EmbeddingBackbone
 
         # Match production's actual config (registry.py), not the class
         # default — otherwise this warms up plain PyTorch while production

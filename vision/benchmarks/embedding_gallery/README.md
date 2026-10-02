@@ -10,7 +10,7 @@ registry.
   [Adding an object to the gallery](../../README.md#adding-an-object-to-the-gallery-few-shot)
   in `vision/README.md`.
 - Background, accuracy numbers and troubleshooting:
-  [`docs/ai/embedding_gallery.md`](../../../docs/ai/embedding_gallery.md).
+  [`embedding_gallery/README.md`](../../packages/object_detector_2d/scripts/embedding_gallery/README.md).
 
 ## Before you start
 

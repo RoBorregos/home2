@@ -5,12 +5,12 @@ photos, cropped by the same box proposer + oversized-box filter the runtime dete
 import argparse
 import glob
 import json
-import sys
 from pathlib import Path
 
 import numpy as np
-from backbone import EmbeddingBackbone
-from gallery_matcher import (
+from detectors.registry import MODEL_CONFIGS, ModelRegistry
+from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.gallery_matcher import (
     DEFAULT_MARGIN_MIN,
     DEFAULT_MAX_BOX_AREA_FRAC,
     DEFAULT_MIN_SIMILARITY,
@@ -20,23 +20,16 @@ from gallery_matcher import (
 RECOMMENDED_MIN_PHOTOS = 10
 RECOMMENDED_MAX_PHOTOS = 30
 
-try:
-    # Single source of truth for "what backbone does production use" — keeps
-    # this default in sync with MODEL_CONFIGS["embedding_gallery"]["backbone"].
-    from registry import MODEL_CONFIGS
-
-    DEFAULT_BACKBONE = MODEL_CONFIGS["embedding_gallery"]["backbone"]
-except Exception:
-    DEFAULT_BACKBONE = "vit_base_patch14_dinov2.lvd142m"
+# Single source of truth for "what backbone does production use" — keeps
+# this default in sync with MODEL_CONFIGS["embedding_gallery"]["backbone"].
+DEFAULT_BACKBONE = MODEL_CONFIGS["embedding_gallery"]["backbone"]
 
 
 def load_box_proposer() -> tuple:
-    """Return (proposer, max_box_area_frac) as configured for production —
-    imported through the `detectors` package, not bare modules, since yolo_e.py uses relative imports."""
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    import detectors  # noqa: F401  (registers the model types)
-    from detectors.registry import MODEL_CONFIGS, ModelRegistry
+    """Return (proposer, max_box_area_frac) as configured for production.
 
+    Importing `detectors.registry` runs detectors/__init__.py, which registers
+    the model types (yolo, yolo_e, embedding)."""
     config = MODEL_CONFIGS["embedding_gallery"]
     proposer = ModelRegistry.get(config["box_model"])
     return proposer, config.get("max_box_area_frac", DEFAULT_MAX_BOX_AREA_FRAC)

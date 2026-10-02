@@ -49,6 +49,12 @@ install(PROGRAMS ${SCRIPTS_DETECTORS}
   DESTINATION lib/${PROJECT_NAME}/detectors
 )
 
+# Few-shot object gallery (backbone, matcher, gallery_build) imported by detectors/embedding.py
+file(GLOB SCRIPTS_EMBEDDING_GALLERY scripts/embedding_gallery/*.py)
+install(PROGRAMS ${SCRIPTS_EMBEDDING_GALLERY}
+  DESTINATION lib/${PROJECT_NAME}/embedding_gallery
+)
+
 # .pt weight files — installed alongside Python model modules
 file(GLOB MODEL_WEIGHTS models/*.pt)
 install(PROGRAMS ${MODEL_WEIGHTS}

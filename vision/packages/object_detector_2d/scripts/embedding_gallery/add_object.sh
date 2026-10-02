@@ -33,7 +33,8 @@ cd "$SCRIPT_DIR"
 CACHE_DIR="${TENSORRT_CACHE_DIR:-/workspace/trt_cache}"
 GALLERY_DIR="$CACHE_DIR/gallery"
 
-python3 gallery_build.py --object "$OBJECT" --photos "$PHOTOS" --gallery-dir "$GALLERY_DIR"
+# scripts/ on PYTHONPATH so gallery_build.py can import `detectors` and `embedding_gallery`.
+PYTHONPATH="$SCRIPT_DIR/..:${PYTHONPATH:-}" python3 gallery_build.py --object "$OBJECT" --photos "$PHOTOS" --gallery-dir "$GALLERY_DIR"
 
 echo "[add_object] syncing $GALLERY_DIR -> every detectors/ dir (source, install, ...)"
 # fetch_models.py exits 1 if ANY custom weight is missing (e.g. a different

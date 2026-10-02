@@ -44,17 +44,18 @@ home2/
 │   │       ├── object_detector_node.py    # Runs N YOLO models, IoU-dedupes across them
 │   │       ├── zero_shot_object_detector_node.py    # YOLOE open-vocabulary detector
 │   │       ├── vision_3D_utils.py         # Pixel -> 3D point helpers
-│   │       └── detectors/                 # Pluggable model layer
-│   │           ├── base.py                # BBOX, Detection, DetectorModel ABC
-│   │           ├── registry.py            # MODEL_CONFIGS catalog + singleton loader
-│   │           ├── yolo.py                # @register("yolo") — v8/v11/v26
-│   │           ├── yolo_e.py              # @register("yolo_e") — YOLOE zero-shot
-│   │           ├── embedding.py           # @register("embedding") — few-shot object gallery
+│   │       ├── detectors/                 # Pluggable model layer
+│   │       │   ├── base.py                # BBOX, Detection, DetectorModel ABC
+│   │       │   ├── registry.py            # MODEL_CONFIGS catalog + singleton loader
+│   │       │   ├── yolo.py                # @register("yolo") — v8/v11/v26
+│   │       │   ├── yolo_e.py              # @register("yolo_e") — YOLOE zero-shot
+│   │       │   ├── embedding.py           # @register("embedding") — few-shot object gallery
+│   │       │   └── robocup2026_translation.json     # Raw label -> published label
+│   │       └── embedding_gallery/         # Few-shot object gallery tooling (see its README)
 │   │           ├── backbone.py            # DINOv2 embedding backbone (PyTorch / TensorRT)
 │   │           ├── gallery_matcher.py     # Cosine matching against the per-object gallery
 │   │           ├── gallery_build.py       # Builds one gallery entry from photos
-│   │           ├── add_object.sh          # One-command "add an object" wrapper
-│   │           └── robocup2026_translation.json     # Raw label -> published label
+│   │           └── add_object.sh          # One-command "add an object" wrapper
 │   │
 │   ├── vision_general/                    # People, tracking and the per-task command nodes
 │   │   ├── config/botsort-reid.yaml       # Ultralytics BoT-SORT tracker config
@@ -214,14 +215,14 @@ label). `gallery_photos/` is gitignored and does not exist on a fresh clone, so 
 
 | Where | Path |
 | --- | --- |
-| Repo (host) | `vision/packages/object_detector_2d/scripts/detectors/gallery_photos/<object_name>/` |
-| Inside `home2-vision` | `/workspace/src/vision/packages/object_detector_2d/scripts/detectors/gallery_photos/<object_name>/` |
+| Repo (host) | `vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/` |
+| Inside `home2-vision` | `/workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery/gallery_photos/<object_name>/` |
 
 The repo is bind-mounted into the container (`../../:/workspace/src`), so photos copied into
 the host path show up inside the container without `docker cp`. Example layout:
 
 ```
-vision/packages/object_detector_2d/scripts/detectors/
+vision/packages/object_detector_2d/scripts/embedding_gallery/
 ├── add_object.sh
 └── gallery_photos/
     └── ps5_controller/          # <object_name>
@@ -230,10 +231,10 @@ vision/packages/object_detector_2d/scripts/detectors/
         └── _crops/              # created by add_object.sh: the crop taken from each photo
 ```
 
-Then run it inside the `home2-vision` container, from that same `detectors/` directory:
+Then run it inside the `home2-vision` container, from that same `embedding_gallery/` directory:
 
 ```bash
-cd /workspace/src/vision/packages/object_detector_2d/scripts/detectors
+cd /workspace/src/vision/packages/object_detector_2d/scripts/embedding_gallery
 mkdir -p gallery_photos/<object_name>      # then copy the photos in
 ./add_object.sh <object_name>
 # restart ObjectDetect2D; the object shows up in /vision/detections
@@ -254,7 +255,7 @@ that photo with the object front and centre.
   *Weights are provisioned up front*).
 
 Background, accuracy numbers and troubleshooting are in
-[`docs/ai/embedding_gallery.md`](../docs/ai/embedding_gallery.md); the benchmark that chose
+[`embedding_gallery/README.md`](packages/object_detector_2d/scripts/embedding_gallery/README.md); the benchmark that chose
 the defaults is in [`benchmarks/embedding_gallery/`](benchmarks/embedding_gallery/README.md).
 
 ### `vision_general`

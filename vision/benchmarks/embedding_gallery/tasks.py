@@ -19,8 +19,12 @@ import time
 from pathlib import Path
 
 import numpy as np
-from backbone import EmbeddingBackbone
-from gallery_matcher import DEFAULT_MARGIN_MIN, DEFAULT_MIN_SIMILARITY, UNKNOWN
+from embedding_gallery.backbone import EmbeddingBackbone
+from embedding_gallery.gallery_matcher import (
+    DEFAULT_MARGIN_MIN,
+    DEFAULT_MIN_SIMILARITY,
+    UNKNOWN,
+)
 
 from lib.dataset import (
     DATA_DIR,
